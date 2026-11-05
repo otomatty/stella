@@ -1,8 +1,8 @@
 /**
  * 監査ログ API (旧 audit_logs 直 SELECT + RLS の置き換え / Issue #27)。
  *
- * 読み取り専用。 旧 RLS は「同テナントの instructor/admin のみ SELECT、 append-only」。
- * アプリ層で requireRole(instructor, admin) + tenant 突合を行う。 記録は管理 API 側で行う。
+ * 読み取り専用。 旧 RLS は「instructor/admin のみ SELECT、 append-only」。
+ * アプリ層で requireRole(instructor, admin) を行う。 記録は管理 API 側で行う。
  */
 
 import { Hono } from "hono";
@@ -16,7 +16,6 @@ export const auditLogsRoute = new Hono<{ Bindings: Env }>();
 
 const SELECT = {
   id: auditLogs.id,
-  tenant_id: auditLogs.tenantId,
   actor_id: auditLogs.actorId,
   actor_name: auditLogs.actorName,
   actor_role: auditLogs.actorRole,
@@ -37,12 +36,12 @@ auditLogsRoute.get("/api/audit-logs", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
 
     const q = c.req.query();
-    // tenant は常に caller のテナントに固定する (クエリの tenantId は無視)。
-    const conds = [eq(auditLogs.tenantId, caller.tenantId)];
-    if (q.from) conds.push(gte(auditLogs.createdAt, new Date(q.from)));
-    if (q.to) conds.push(lte(auditLogs.createdAt, new Date(q.to)));
-    if (q.actorId) conds.push(eq(auditLogs.actorId, q.actorId));
-    if (q.action) conds.push(eq(auditLogs.action, q.action));
+    const conds = [
+      q.from ? gte(auditLogs.createdAt, new Date(q.from)) : undefined,
+      q.to ? lte(auditLogs.createdAt, new Date(q.to)) : undefined,
+      q.actorId ? eq(auditLogs.actorId, q.actorId) : undefined,
+      q.action ? eq(auditLogs.action, q.action) : undefined,
+    ];
 
     const limit = Math.min(Number(q.limit) || DEFAULT_LIMIT, MAX_LIMIT);
     const offset = Number(q.offset) || 0;

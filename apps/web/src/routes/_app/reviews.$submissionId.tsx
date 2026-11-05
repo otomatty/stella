@@ -13,7 +13,7 @@ function ReviewEditorPage() {
   // 管理者もレビューできる (#34)。API の権限 (講師・管理者) と同じ。
   return (
     <RoleGuard allow={["instructor", "admin"]}>
-      <ReviewEditor tenantId={s.tenantId} submissionId={submissionId} setPage={s.setPage} />
+      <ReviewEditor submissionId={submissionId} setPage={s.setPage} />
     </RoleGuard>
   );
 }

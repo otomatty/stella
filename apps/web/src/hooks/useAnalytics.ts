@@ -7,29 +7,26 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { InstructorOverview, TenantAnalytics } from "@stella/shared/cms/types";
-import { getInstructorOverview, getTenantAnalytics } from "@/lib/analytics-api";
+import type { InstructorOverview, Analytics } from "@stella/shared/cms/types";
+import { getInstructorOverview, getAnalytics } from "@/lib/analytics-api";
 
-interface UseTenantAnalyticsResult {
-  analytics: TenantAnalytics | null;
+interface UseAnalyticsResult {
+  analytics: Analytics | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
-/** 管理者ダッシュボードのテナント KPI。 tenantId を鍵にテナント切替で再取得する。 */
-export function useTenantAnalytics(
-  tenantId: string | null,
-  enabled: boolean,
-): UseTenantAnalyticsResult {
-  const [analytics, setAnalytics] = useState<TenantAnalytics | null>(null);
+/** 管理者ダッシュボードの KPI。 `enabled` が false のあいだは取らない。 */
+export function useAnalytics(enabled: boolean): UseAnalyticsResult {
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!enabled || !tenantId) {
+    if (!enabled) {
       setAnalytics(null);
       setError(null);
       setLoading(false);
@@ -38,7 +35,7 @@ export function useTenantAnalytics(
     setLoading(true);
     setError(null);
     try {
-      const data = await getTenantAnalytics();
+      const data = await getAnalytics();
       if (reqId !== requestIdRef.current) return;
       setAnalytics(data);
     } catch (err) {
@@ -47,7 +44,7 @@ export function useTenantAnalytics(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [enabled, tenantId]);
+  }, [enabled]);
 
   useEffect(() => {
     void refetch();
@@ -65,7 +62,6 @@ interface UseInstructorOverviewResult {
 
 /** 講師ダッシュボードの未返信 / 遅延 / 受講者進捗。 `assignedOnly` で担当の受講者だけ (#38)。 */
 export function useInstructorOverview(
-  tenantId: string | null,
   enabled: boolean,
   assignedOnly = false,
 ): UseInstructorOverviewResult {
@@ -76,7 +72,7 @@ export function useInstructorOverview(
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!enabled || !tenantId) {
+    if (!enabled) {
       setOverview(null);
       setError(null);
       setLoading(false);
@@ -94,7 +90,7 @@ export function useInstructorOverview(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [enabled, tenantId, assignedOnly]);
+  }, [enabled, assignedOnly]);
 
   useEffect(() => {
     void refetch();

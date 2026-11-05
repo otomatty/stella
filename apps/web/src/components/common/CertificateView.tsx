@@ -6,7 +6,7 @@
 interface CertificateViewProps {
   recipientName: string;
   stageTitle: string;
-  /** 発行者表示 (テナント名)。 */
+  /** 発行者表示。発行済みは保存された名前、新しく出すものは DISPLAY_NAME。 */
   issuer: string;
   /** 発行日 (YYYY-MM-DD 等に整形済み)。 */
   issuedAt: string;

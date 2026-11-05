@@ -40,7 +40,6 @@ export interface EnrollmentPresetItemRow {
 /** 割当プリセット本体。 */
 export interface EnrollmentPresetRow {
   id: string;
-  tenant_id: string;
   name: string;
   description: string | null;
   archived: boolean;

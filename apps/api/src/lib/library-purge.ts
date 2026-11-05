@@ -1,3 +1,4 @@
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import type { Env } from "../env.js";
 import { discardPendingStatements, parsePurgePrefix } from "./library-store.js";
 
@@ -22,7 +23,6 @@ export async function runLibraryPurge(env: Env, now = Date.now()): Promise<void>
   )
     .bind(now - STALE_IMPORT_MS)
     .all<{
-      tenant_id: string;
       id: string;
       pending_revision: number;
       pending_signature: string | null;
@@ -31,7 +31,6 @@ export async function runLibraryPurge(env: Env, now = Date.now()): Promise<void>
     await env.DB.batch(
       discardPendingStatements(
         env.DB,
-        book.tenant_id,
         book.id,
         book.pending_revision,
         book.pending_signature,
@@ -74,7 +73,7 @@ export async function runLibraryPurge(env: Env, now = Date.now()): Promise<void>
       statements.push(
         env.DB.prepare(
           "DELETE FROM library_books WHERE tenant_id = ? AND id = ? AND status = 'deleting'",
-        ).bind(target.tenantId, target.bookId),
+        ).bind(LEGACY_TENANT_ID, target.bookId),
       );
     await env.DB.batch(statements);
   }

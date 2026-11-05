@@ -3,7 +3,7 @@
  *
  * - 表示中の週と操作する対象を一致させる。週を切り替えた直後は、前の週の取得結果がまだ手元に
  *   残っている。そのまま出すと、見出しは新しい週なのに前の週のメモから一言を送れてしまう。
- * - 出るメモの範囲を、API が返す範囲 (講師は今担当している受講者、管理者はテナントの全員) どおりに書く。
+ * - 出るメモの範囲を、API が返す範囲 (講師は今担当している受講者、管理者は担当講師のいる全員) どおりに書く。
  */
 
 export interface MemoWeekData<M> {
@@ -24,14 +24,14 @@ export function memosForWeek<M>(
   return data.memos;
 }
 
-/** assigned = 講師 (今担当している受講者のメモ)、tenant = 管理者 (テナントの、担当講師のいる受講者全員)。 */
-export type MemoAudience = "assigned" | "tenant";
+/** assigned = 講師 (今担当している受講者のメモ)、all = 管理者 (担当講師のいる受講者全員)。 */
+export type MemoAudience = "assigned" | "all";
 
 /** 画面の説明と、メモが無いときの文。 */
 export function weeklyMemoIntro(audience: MemoAudience): { scope: string; empty: string } {
-  return audience === "tenant"
+  return audience === "all"
     ? {
-        scope: "テナントの、担当講師のいる受講者の1週間の様子です。",
+        scope: "担当講師のいる受講者の1週間の様子です。",
         empty: "この週のメモはありません。メモは担当講師のいる受講者ごとに、週明けに順に作ります。",
       }
     : {

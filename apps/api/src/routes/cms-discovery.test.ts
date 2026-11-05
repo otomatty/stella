@@ -50,7 +50,6 @@ vi.mock("../lib/audit.js", () => ({
 
 const BASE_CALLER = {
   id: "seed-instructor",
-  tenantId: "ses",
   role: "instructor" as ProfileRole,
   name: "講師",
   email: null,
@@ -179,7 +178,7 @@ beforeEach(() => {
       generator: input.generator,
     });
   });
-  vi.mocked(updateDiscoveryMaterial).mockImplementation(async (_db, _tenant, id, p) =>
+  vi.mocked(updateDiscoveryMaterial).mockImplementation(async (_db, id, p) =>
     // 既定では競合していない前提 (比較交換の検証は専用のテストで行う)。
     materialRow({
       id,
@@ -385,7 +384,7 @@ describe("PATCH /api/cms/discovery/materials/:id", () => {
         },
       ],
     });
-    const saved = vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3].questions;
+    const saved = vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[2].questions;
     expect(saved).toHaveLength(1);
     expect(saved?.[0]?.prompt).toBe("生きた設問");
   });
@@ -395,7 +394,7 @@ describe("PATCH /api/cms/discovery/materials/:id", () => {
       materialRow({ reviewStatus: "approved", reviewedBy: "seed-admin" }),
     );
     await patch("/api/cms/discovery/materials/m1", { review_status: "draft" });
-    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3]).toMatchObject({
+    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[2]).toMatchObject({
       reviewStatus: "draft",
       reviewedBy: null,
     });
@@ -474,7 +473,7 @@ describe("PATCH — 承認と編集が競合したとき", () => {
     const res = await patch("/api/cms/discovery/materials/m1", { review_status: "approved" });
     expect(res.status).toBe(409);
     // 読んだときの状態が更新条件として渡っている (これが無いと上書きで承認が通る)。
-    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[4]).toBe("approved");
+    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3]).toBe("approved");
   });
 
   it("承認は検証した設問そのものを書く (設問を送らない承認でも)", async () => {
@@ -486,7 +485,7 @@ describe("PATCH — 承認と編集が競合したとき", () => {
     const res = await patch("/api/cms/discovery/materials/m1", { review_status: "approved" });
     expect(res.status).toBe(200);
     // 検証した設問が patch に載る = 読んだあとに差し替えられた設問が承認されない。
-    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3].questions).toEqual(pool);
+    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[2].questions).toEqual(pool);
   });
 });
 
@@ -505,7 +504,7 @@ describe("PATCH — 承認済みの再編集", () => {
   ])("承認済みの %s を変えると draft に落ちる (再承認が要る)", async (_field, body) => {
     const res = await patch("/api/cms/discovery/materials/m1", body);
     expect(res.status).toBe(200);
-    const saved = vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3];
+    const saved = vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[2];
     expect(saved).toMatchObject({ reviewStatus: "draft", reviewedBy: null, reviewedAt: null });
     const payload = (await res.json()) as {
       material: { review_status: string };
@@ -549,7 +548,7 @@ describe("PATCH — 承認済みの再編集", () => {
     const res = await patch("/api/cms/discovery/materials/m1", { questions: broken });
     expect(res.status).toBe(200);
     // 承認チェックを迂回して「approved のまま壊れた設問が入る」ことが無い。
-    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3].reviewStatus).toBe("draft");
+    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[2].reviewStatus).toBe("draft");
   });
 
   it("承認のまま残せるのは、明示的に承認を送り直して正答チェックを通したときだけ", async () => {
@@ -575,7 +574,7 @@ describe("PATCH — 承認済みの再編集", () => {
       review_status: "approved",
     });
     expect(ok.status).toBe(200);
-    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[3]).toMatchObject({
+    expect(vi.mocked(updateDiscoveryMaterial).mock.calls[0]?.[2]).toMatchObject({
       reviewStatus: "approved",
       reviewedBy: caller.id,
     });

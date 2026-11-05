@@ -11,8 +11,6 @@ function UsersPage() {
   const s = useAppShell();
   return (
     <UsersAdmin
-      tenantId={s.tenantId}
-      tenantName={s.tenantName}
       currentUserId={s.currentUserId}
       currentUserRole={s.profileRole ?? null}
       backendEnabled={s.backendEnabled}

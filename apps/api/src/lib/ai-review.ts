@@ -126,7 +126,6 @@ export async function runAiReview(
     .insert(aiReviews)
     .values({
       submissionId: row.id,
-      tenantId: row.tenantId,
       taskId: row.taskId ?? "",
       taskContentHash: row.taskContentHash ?? "",
       taskKind: kind,
@@ -185,7 +184,6 @@ export async function applyAiReview(
     // 監査ログの実行者は受講者本人 (役割は system)。合格を確定した講師はいない。
     const system: Caller = {
       id: row.studentId,
-      tenantId: row.tenantId,
       role: "student",
       name: "AI の一次レビュー",
       email: null,
@@ -250,7 +248,6 @@ export async function escalateUnreviewable(
   const [row] = await db
     .select({
       id: submissions.id,
-      tenantId: submissions.tenantId,
       taskId: submissions.taskId,
       taskContentHash: submissions.taskContentHash,
       taskKind: submissions.taskKind,
@@ -275,7 +272,6 @@ export async function escalateUnreviewable(
     .insert(aiReviews)
     .values({
       submissionId: row.id,
-      tenantId: row.tenantId,
       taskId: row.taskId,
       taskContentHash: row.taskContentHash ?? "",
       taskKind: row.taskKind ?? "basic",

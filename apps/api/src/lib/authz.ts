@@ -1,8 +1,8 @@
 /**
- * 認証 (Better Auth のセッション) と認可 (テナント / ロール) のアプリ層ヘルパ。
+ * 認証 (Better Auth のセッション) と認可 (ロール) のアプリ層ヘルパ。
  *
  *   - `verifyToken` … セッション (Cookie / VS Code の Bearer) から利用者を決める
- *   - `getCaller`   … 利用者 + profiles から caller の tenant / role を解決
+ *   - `getCaller`   … 利用者 + profiles から caller の role を解決
  *   - `requireRole` … caller が指定ロールのいずれかであることを保証
  */
 
@@ -11,7 +11,7 @@ import type { Context } from "hono";
 
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
-import { profiles, tenants } from "../db/schema.js";
+import { profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { verifyAccessToken } from "./auth-jwt.js";
 import { getAuth } from "./better-auth.js";
@@ -40,7 +40,6 @@ export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export interface Caller {
   id: string;
-  tenantId: string;
   role: ProfileRole;
   name: string;
   email: string | null;
@@ -82,7 +81,7 @@ export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<{ sub:
 }
 
 /**
- * JWT を検証し、 profiles から caller のテナント / ロールを解決する。
+ * JWT を検証し、 profiles から caller のロールを解決する。
  * 無効化済みアカウントは未失効 JWT を持っていても拒否する。
  */
 export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
@@ -96,38 +95,28 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
   const rows = await db
     .select({
       id: profiles.id,
-      tenantId: profiles.tenantId,
       role: profiles.role,
       displayName: profiles.displayName,
       email: profiles.email,
       disabled: profiles.disabled,
-      tenantActive: tenants.active,
     })
     .from(profiles)
-    .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
     .where(eq(profiles.id, userId))
     .limit(1);
 
   const profile = rows[0];
   if (!profile) throw new ApiError("プロフィールが見つかりません", 403);
   if (profile.disabled) throw new ApiError("このアカウントは無効化されています", 403);
-  assertTenantActive(profile.tenantActive);
 
   return {
     db,
     caller: {
       id: profile.id,
-      tenantId: profile.tenantId,
       role: profile.role as ProfileRole,
       name: profile.displayName,
       email: profile.email,
     },
   };
-}
-
-/** A suspended organization (`tenants.active = 0`) cannot use the API, even with a valid JWT. */
-export function assertTenantActive(active: boolean | null): void {
-  if (active === false) throw new ApiError("この組織は利用を停止しています", 403);
 }
 
 /** caller が指定ロールのいずれかでなければ 403 を投げる。 */
@@ -182,12 +171,8 @@ export function requireCanStartStage(caller: Caller): void {
   }
 }
 
-export function requireTenantAdmin(caller: Caller): void {
+export function requireAdmin(caller: Caller): void {
   requireRole(caller, "admin", "platform_admin");
-}
-
-export function requirePlatformAdmin(caller: Caller): void {
-  requireRole(caller, "platform_admin");
 }
 
 /** ApiError を Hono レスポンスへ。 想定外エラーは 500 に丸める。 */

@@ -182,7 +182,6 @@ function recordingDb(): { db: Db; last: () => RecordedQuery } {
 
 const CALLER: Caller = {
   id: "seed-learner",
-  tenantId: "ses",
   role: "student",
   name: "受講者",
   email: null,
@@ -200,24 +199,15 @@ describe("受講登録の絞り込み (loadEnrolledStageIds / isEnrolledInStage)
     expect(q.params).not.toContain("expired");
   });
 
-  it("テナントも絞る (他テナントに残った行はフォーカス / キューに効かない)", async () => {
-    const { db, last } = recordingDb();
-    await loadEnrolledStageIds(db, CALLER);
-    const q = last();
-    expect(q.sql).toContain('"tenant_id" = ?');
-    expect(q.params).toContain("ses");
-  });
-
-  it("キューの受け入れ判定も同じ規約 (status + tenant) で絞る", async () => {
+  it("キューの受け入れ判定も読める登録だけを数える", async () => {
     const { db, last } = recordingDb();
     await isEnrolledInStage(db, CALLER, "stage-a");
     const q = last();
     expect(q.sql).toContain('"status" in (?, ?)');
-    expect(q.sql).toContain('"tenant_id" = ?');
     expect(q.params).toContain("active");
     expect(q.params).toContain("completed");
     expect(q.params).not.toContain("expired");
-    expect(q.params).toContain("ses");
+    expect(q.params).toContain("stage-a");
   });
 });
 

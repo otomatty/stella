@@ -2,10 +2,11 @@
  * CMS データアクセス層 (Neon / Hono API)。
  *
  * 旧 BaaS 直アクセス (RLS + reorder RPC + Storage アップロード) を Hono API
- * (`/api/cms/*`, `/api/materials/*`) 経由に置き換えた。 認可はサーバ側 (staff / 同テナント)。
+ * (`/api/cms/*`, `/api/materials/*`) 経由に置き換えた。 認可はサーバ側 (staff)。
  * 戻り値は DB 行 (snake_case) のままで、 マッパー (@stella/shared/cms/types) は呼び出し側で適用する。
  */
 
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import type {
   AssignmentRow,
   StageMaterialRow,
@@ -29,7 +30,7 @@ import { apiFetch } from "./api-client";
 // Stages
 // ---------------------------------------------------------------
 
-export async function listStages(_tenantId: string): Promise<StageRow[]> {
+export async function listStages(): Promise<StageRow[]> {
   const { rows } = await apiFetch<{ rows: StageRow[] }>("/api/cms/stages");
   return rows ?? [];
 }
@@ -43,7 +44,6 @@ export async function getStageWithChildren(stageId: string): Promise<StageWithCh
 
 export interface UpsertStageInput {
   id?: string;
-  tenant_id: string;
   slug: string;
   title: string;
   category?: string | null;
@@ -232,7 +232,7 @@ export async function deleteQuizOption(id: string): Promise<void> {
 // Assignments
 // ---------------------------------------------------------------
 
-export async function listAssignments(_tenantId: string): Promise<AssignmentRow[]> {
+export async function listAssignments(): Promise<AssignmentRow[]> {
   const { rows } = await apiFetch<{ rows: AssignmentRow[] }>("/api/cms/assignments");
   return rows ?? [];
 }
@@ -302,7 +302,7 @@ export async function uploadMaterial(file: File, path: string): Promise<UploadMa
 // ---------------------------------------------------------------
 
 /**
- * レッスンに紐づく配布資料一覧。 受講者は同テナントの published ステージのみ返る。
+ * レッスンに紐づく配布資料一覧。 受講者は published のステージのみ返る。
  * `includeArchived` は staff の管理画面用で、 教材から作らなくなった自動生成資料も含める
  * (旧版を版履歴から取るため)。
  */
@@ -439,15 +439,12 @@ export async function downloadLessonMaterialVersion(
  * キー中の `courses/` は「コース → ステージ」改名前からの R2 プレフィックスで、
  * **改名しない** — 変えると既にアップロード済みのオブジェクトを指せなくなる。
  */
-export function buildMaterialPath(args: {
-  tenantId: string;
-  stageId: string;
-  fileName: string;
-}): string {
+export function buildMaterialPath(args: { stageId: string; fileName: string }): string {
   const safe = args.fileName.replace(/[^\p{L}\p{N}.-]+/gu, "_");
   const uniq =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().slice(0, 8)
       : Math.random().toString(36).slice(2, 10);
-  return `tenant/${args.tenantId}/courses/${args.stageId}/${uniq}-${safe}`;
+  // 既存オブジェクトのキー。値は LEGACY_TENANT_ID のまま変えない。
+  return `tenant/${LEGACY_TENANT_ID}/courses/${args.stageId}/${uniq}-${safe}`;
 }

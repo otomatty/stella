@@ -81,7 +81,7 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
         certCode: "FLC-2026-0000-0001",
         recipientName: "受講者",
         stageTitle: "旧講座",
-        tenantName: "テスト",
+        issuerName: "テスト",
       }),
       db.insert(studyActivity).values({
         tenantId: "ses",

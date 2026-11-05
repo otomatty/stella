@@ -66,26 +66,20 @@ describe("課題の配布 API (実 SQLite)", () => {
       "lib/validate.js": encode("export const validate = () => true;\n"),
     };
     await db.batch([
-      db.insert(tenants).values([
-        { id: "ses", name: "テスト" },
-        { id: "other", name: "他社" },
-      ]),
+      db.insert(tenants).values([{ id: "ses", name: "テスト" }]),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-        { id: "outsider", tenantId: "other", displayName: "他社の受講者", role: "student" },
+        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "outsider", displayName: "未受講の受講者", role: "student" },
       ]),
       db.insert(stages).values({
         id: "stage",
-        tenantId: "ses",
         slug: "dev-env-basics",
         title: "開発環境",
         format: 2,
         status: "published",
       }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
-      db
-        .insert(enrollments)
-        .values({ tenantId: "ses", userId: "learner", stageId: "stage", status: "active" }),
+      db.insert(enrollments).values({ userId: "learner", stageId: "stage", status: "active" }),
       db.insert(tasks).values({
         id: fixture.input.taskId,
         sectionId: "unit",
@@ -236,7 +230,7 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect(await response.text()).not.toContain(encode(PRIVATE_MARKER));
   });
 
-  it("受講していない・他テナントの受講者には課題も開始点も 404", async () => {
+  it("受講していない受講者には課題も開始点も 404", async () => {
     await addFixedStart();
     expect((await bundleOf(otherToken)).status).toBe(404);
     expect((await fixedStart(otherToken)).status).toBe(404);
@@ -258,7 +252,6 @@ describe("課題の配布 API (実 SQLite)", () => {
     const uses = await db.select().from(taskFixedStartUses);
     expect(uses).toMatchObject([
       {
-        tenantId: "ses",
         userId: "learner",
         taskId: fixture.input.taskId,
         contentHash: fixture.bundle.contentHash,
@@ -371,7 +364,6 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect((await submit(earlier.input)).status).toBe(201);
     const [row] = await submittedOf(EARLIER_ID);
     const scope = {
-      tenantId: row.tenantId,
       studentId: row.studentId ?? "",
       taskId: EARLIER_ID,
       submittedAt: row.submittedAt,
@@ -380,7 +372,6 @@ describe("課題の配布 API (実 SQLite)", () => {
     // 提出の読み出しより後に記録が届いたが、受け取りの時刻は提出より前 (読み漏れ)。AI の判定の
     // 直前とスキルの証拠を作るときに `hasRecordedSupport` が拾う。
     await db.insert(taskFixedStartUses).values({
-      tenantId: row.tenantId,
       userId: scope.studentId,
       taskId: fixture.input.taskId,
       contentHash: fixture.bundle.contentHash,

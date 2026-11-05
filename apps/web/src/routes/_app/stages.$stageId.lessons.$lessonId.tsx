@@ -30,7 +30,6 @@ function LessonPage() {
           setPage={s.setPage}
           onOpenAIBot={s.onOpenAIBot}
           setAIContext={s.setAIContext}
-          tenantId={s.tenantId}
           studentName={s.studentName}
           studentInitials={s.studentInitials}
           // seq=0 固定で安全: LessonPlayer は「id:seq」キーの変化で適用判定するため、

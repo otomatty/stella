@@ -1,18 +1,17 @@
 /**
  * 分析ダッシュボードのデータアクセス層 (Issue #28 — Neon / Hono API)。
  *
- * 集計はサーバ側 (`/api/analytics/*`) で行い、 同テナントの instructor/admin のみ実行できる。
+ * 集計はサーバ側 (`/api/analytics/*`) で行い、 instructor/admin のみ実行できる。
+ * URL `/api/analytics/tenant` は開いたままの古いタブが呼ぶので変えない。
  */
 
-import type { InstructorOverview, TenantAnalytics } from "@stella/shared/cms/types";
+import type { InstructorOverview, Analytics } from "@stella/shared/cms/types";
 
 import { apiFetch } from "./api-client";
 
-/** 管理者ダッシュボード用のテナント KPI 一式を取得する。 */
-export async function getTenantAnalytics(): Promise<TenantAnalytics | null> {
-  const { analytics } = await apiFetch<{ analytics: TenantAnalytics | null }>(
-    "/api/analytics/tenant",
-  );
+/** 管理者ダッシュボード用の KPI 一式を取得する。 */
+export async function getAnalytics(): Promise<Analytics | null> {
+  const { analytics } = await apiFetch<{ analytics: Analytics | null }>("/api/analytics/tenant");
   return analytics ?? null;
 }
 

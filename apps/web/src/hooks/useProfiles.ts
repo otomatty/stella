@@ -1,5 +1,5 @@
 /**
- * 管理 UI 向けに同テナントの profiles を取得する Hook。
+ * 管理 UI 向けに profiles を取得する Hook。
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,7 +13,8 @@ interface UseProfilesResult {
   refetch: () => Promise<void>;
 }
 
-export function useProfiles(tenantId: string | null): UseProfilesResult {
+/** `enabled` が false のあいだは取らない (ログイン前・権限の無い画面)。 */
+export function useProfiles(enabled = true): UseProfilesResult {
   const [profiles, setProfiles] = useState<AdminProfileRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export function useProfiles(tenantId: string | null): UseProfilesResult {
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!tenantId) {
+    if (!enabled) {
       setProfiles([]);
       setError(null);
       setLoading(false);
@@ -30,7 +31,7 @@ export function useProfiles(tenantId: string | null): UseProfilesResult {
     setLoading(true);
     setError(null);
     try {
-      const rows = await listProfiles(tenantId);
+      const rows = await listProfiles();
       if (reqId !== requestIdRef.current) return;
       setProfiles(rows);
     } catch (err) {
@@ -39,7 +40,7 @@ export function useProfiles(tenantId: string | null): UseProfilesResult {
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [tenantId]);
+  }, [enabled]);
 
   useEffect(() => {
     void refetch();

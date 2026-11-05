@@ -28,11 +28,10 @@ import { AnnouncementFeed } from "./AnnouncementFeed";
 import { createAnnouncement } from "@/lib/notifications-api";
 import { cn } from "@/lib/utils";
 import type { NotificationRow, NotificationType } from "@stella/shared/cms/types";
-import type { Stage, Role, Tenant } from "@/data/types";
+import type { Stage, Role } from "@/data/types";
 
 interface NotificationCenterProps {
   role: Role;
-  tenantId: Tenant["id"];
   notifications: NotificationRow[];
   unreadCount: number;
   loading: boolean;
@@ -40,7 +39,7 @@ interface NotificationCenterProps {
   onMarkAllRead: () => void;
   /** お知らせ作成後に呼ぶ (通知一覧を再取得して fan-out を反映する)。 */
   onAfterCreateAnnouncement: () => void;
-  /** お知らせのステージ指定に使う (任意。 空ならテナント全体)。 */
+  /** お知らせのステージ指定に使う (任意。 空なら全員)。 */
   stages: Stage[];
   onOpenSubmission?: (submissionId: string) => void;
 }
@@ -74,7 +73,6 @@ function relativeTime(iso: string): string {
 
 export const NotificationCenter = ({
   role,
-  tenantId,
   notifications,
   unreadCount,
   loading,
@@ -151,11 +149,7 @@ export const NotificationCenter = ({
           </div>
 
           {isStaff ? (
-            <AnnouncementComposer
-              tenantId={tenantId}
-              stages={stages}
-              onCreated={onAfterCreateAnnouncement}
-            />
+            <AnnouncementComposer stages={stages} onCreated={onAfterCreateAnnouncement} />
           ) : null}
 
           <Tabs defaultValue="notifications" className="min-h-0 flex flex-col">
@@ -226,7 +220,7 @@ export const NotificationCenter = ({
               )}
             </TabsContent>
             <TabsContent value="announcements" className="mt-0 overflow-y-auto">
-              <AnnouncementFeed key={tenantId} />
+              <AnnouncementFeed />
             </TabsContent>
           </Tabs>
         </div>
@@ -236,13 +230,12 @@ export const NotificationCenter = ({
 };
 
 interface AnnouncementComposerProps {
-  tenantId: Tenant["id"];
   stages: Stage[];
   onCreated: () => void;
 }
 
 /** 講師/管理者向けのお知らせ作成フォーム (通知センター内蔵)。 */
-const AnnouncementComposer = ({ tenantId, stages, onCreated }: AnnouncementComposerProps) => {
+const AnnouncementComposer = ({ stages, onCreated }: AnnouncementComposerProps) => {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -265,7 +258,6 @@ const AnnouncementComposer = ({ tenantId, stages, onCreated }: AnnouncementCompo
     setSubmitting(true);
     try {
       await createAnnouncement({
-        tenantId,
         stageId: stageId || null,
         title: t,
         body: b,
@@ -336,7 +328,7 @@ const AnnouncementComposer = ({ tenantId, stages, onCreated }: AnnouncementCompo
         onChange={(e) => setStageId(e.target.value)}
         className="h-8 rounded-sm border border-input bg-card px-2 text-[12.5px]"
       >
-        <option value="">テナント全体</option>
+        <option value="">全員</option>
         {stages.map((c) => (
           <option key={c.id} value={c.id}>
             {c.title}

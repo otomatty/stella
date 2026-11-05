@@ -13,7 +13,6 @@ function ReviewQueuePage() {
   return (
     <RoleGuard allow={["instructor", "admin"]}>
       <ReviewQueue
-        tenantId={s.tenantId}
         setPage={s.setPage}
         onOpenReview={s.onOpenReview}
         currentUserId={s.currentUserId}

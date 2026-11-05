@@ -16,7 +16,6 @@ function Certificates() {
         currentUserId={s.currentUserId}
         studentName={s.studentName}
         studentInitials={s.studentInitials}
-        tenantName={s.tenantName}
         backendEnabled={s.backendEnabled}
       />
     </RoleGuard>

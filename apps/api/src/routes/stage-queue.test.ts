@@ -58,7 +58,7 @@ vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
 }));
 
 /** 呼び出し中の caller (テストごとに差し替えて「他人」を作る)。 */
-let caller = { id: "seed-learner", tenantId: "ses", role: "student", name: "受講者", email: null };
+let caller = { id: "seed-learner", role: "student", name: "受講者", email: null };
 
 vi.mock("../lib/authz.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/authz.js")>();
@@ -146,7 +146,7 @@ async function queueIds(): Promise<string[]> {
 beforeEach(() => {
   // 呼び出し回数を見るアサーション (saveFocusStageId) が前のテストを引きずらないように。
   vi.clearAllMocks();
-  caller = { id: "seed-learner", tenantId: "ses", role: "student", name: "受講者", email: null };
+  caller = { id: "seed-learner", role: "student", name: "受講者", email: null };
   queues = new Map();
 
   vi.mocked(loadStageQueue).mockImplementation(async (_db, c) =>

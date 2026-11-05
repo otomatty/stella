@@ -58,7 +58,6 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
       return {
         caller: {
           id: profile.id,
-          tenantId: profile.tenantId,
           role: profile.role,
           name: profile.id,
           email: null,

@@ -55,13 +55,7 @@ studyActivityRoute.get("/api/study-activity/mine", async (c) => {
         completedLessons: studyActivity.completedLessons,
       })
       .from(studyActivity)
-      .where(
-        and(
-          eq(studyActivity.userId, caller.id),
-          eq(studyActivity.tenantId, caller.tenantId),
-          gte(studyActivity.date, from),
-        ),
-      );
+      .where(and(eq(studyActivity.userId, caller.id), gte(studyActivity.date, from)));
 
     const all: StudyActivityDay[] = rows.map((r) => ({
       date: r.date,

@@ -3,7 +3,7 @@
  *
  * 旧 RLS の置き換え (アプリ層認可):
  *   - 受講者は自分の進捗のみ read/write   … user_id = caller.id を強制
- *   - 講師 / 管理者は同テナントを read    … requireRole + tenant_id = caller.tenantId
+ *   - 講師 / 管理者は read               … requireRole
  *
  * 端末間 Last-Write-Wins は upsert の setWhere (excluded.updated_at > 既存) で担保する
  * (旧 upsert_lesson_progress RPC と同じ意味論)。
@@ -57,15 +57,12 @@ lessonProgressRoute.get("/api/lesson-progress", async (c) => {
   }
 });
 
-/** 講師 / 管理者: 同テナントの進捗 (可視化のデータ経路)。 */
+/** 講師 / 管理者: 進捗 (可視化のデータ経路)。 */
 lessonProgressRoute.get("/api/lesson-progress/tenant", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const rows = await db
-      .select(SELECT)
-      .from(lessonProgress)
-      .where(eq(lessonProgress.tenantId, caller.tenantId));
+    const rows = await db.select(SELECT).from(lessonProgress);
     return c.json({ rows });
   } catch (err) {
     return errorResponse(c, err);
@@ -85,7 +82,6 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
     // 更新できないため、 重複を残すとリクエストごと失敗する)。
     const { rows, reviewedLessonIds } = await reviewedProgressRows(
       db,
-      caller.tenantId,
       caller.id,
       normalizeProgressRows(inputs),
     );
@@ -100,7 +96,7 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
       rows.filter((r) => reviewedLessonIds.has(r.lessonId) && !r.completed).map((r) => r.lessonId),
     );
 
-    await executeLessonProgressWrites(db, caller.tenantId, caller.id, rows);
+    await executeLessonProgressWrites(db, caller.id, rows);
 
     // 実際に完了が外れた (LWW で勝った) レッスンのステージは、 添削の verdict 訂正と
     // 同じく修了条件を再判定し、 満たさなくなった自動発行の修了証と completed の

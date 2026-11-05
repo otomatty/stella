@@ -1,5 +1,5 @@
 /**
- * `/admin/dash` — テナント KPI ダッシュボード (Issue #28)。
+ * `/admin/dash` — KPI ダッシュボード (Issue #28)。
  *
  * KPI カード / 受講推移 / ステージ別完了率 / つまずき分析 / 受講状況サマリを、
  * enrollment + lesson_progress + quiz_attempts + certificates から集計した実データで
@@ -32,34 +32,29 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import type {
-  AnalyticsStumble,
-  AnalyticsTrendPoint,
-  TenantAnalytics,
-} from "@stella/shared/cms/types";
-import { useTenantAnalytics } from "@/hooks/useAnalytics";
+import type { AnalyticsStumble, AnalyticsTrendPoint, Analytics } from "@stella/shared/cms/types";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { WeeklyMemoPanel } from "@/components/instructor/WeeklyMemoPanel";
 import { ENROLLMENT_TREND, COMPLETION_BY_STAGE, STUMBLES } from "@/demo/fixtures";
 
 interface Props {
-  tenantId: string;
   backendEnabled: boolean;
 }
 
-export const AdminDashboard = ({ tenantId, backendEnabled }: Props) => {
+export const AdminDashboard = ({ backendEnabled }: Props) => {
   if (!backendEnabled) {
     return <DashboardDemo />;
   }
-  return <DashboardLive tenantId={tenantId} />;
+  return <DashboardLive />;
 };
 
-function DashboardLive({ tenantId }: { tenantId: string }) {
-  const { analytics, loading, error, refetch } = useTenantAnalytics(tenantId, true);
+function DashboardLive() {
+  const { analytics, loading, error, refetch } = useAnalytics(true);
 
   return (
     <>
       <PageHeader
-        title="テナントKPIダッシュボード"
+        title="KPIダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
         actions={
           <Button onClick={() => void refetch()} disabled={loading}>
@@ -91,15 +86,15 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
         <LiveContent analytics={analytics} />
       )}
 
-      {/* 週次の育成メモ (#38)。管理者にはテナントの、担当講師のいる受講者全員のメモが出る。 */}
+      {/* 週次の育成メモ (#38)。管理者には担当講師のいる受講者全員のメモが出る。 */}
       <div className="mt-6">
-        <WeeklyMemoPanel audience="tenant" />
+        <WeeklyMemoPanel audience="all" />
       </div>
     </>
   );
 }
 
-function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
+function LiveContent({ analytics }: { analytics: Analytics }) {
   return (
     <>
       <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
@@ -276,7 +271,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
   );
 }
 
-function statusTotal(a: TenantAnalytics): number {
+function statusTotal(a: Analytics): number {
   const { active, completed, expired } = a.status_breakdown;
   return active + completed + expired;
 }
@@ -384,7 +379,7 @@ function DashboardDemo() {
   return (
     <>
       <PageHeader
-        title="テナントKPIダッシュボード"
+        title="KPIダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
         actions=<Button>
           <Calendar size={14} />

@@ -5,7 +5,6 @@ import { mapStageToUi, type StageRow, type StageWithChildren } from "./types.js"
 function stageRow(overrides: Partial<StageRow> = {}): StageRow {
   return {
     id: "stage-1",
-    tenant_id: "ses",
     slug: "typescript-basics",
     title: "TypeScript 入門",
     category: "フロントエンド",

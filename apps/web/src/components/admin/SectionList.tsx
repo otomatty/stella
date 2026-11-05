@@ -47,7 +47,6 @@ import { LessonEditor } from "./LessonEditor";
 
 interface Props {
   stage: StageWithChildren;
-  tenantId: string;
   onChange: () => Promise<void> | void;
 }
 
@@ -65,7 +64,7 @@ const LESSON_TYPE_LABELS: Record<LessonType, string> = {
   code: "コード演習",
 };
 
-export function SectionList({ stage, tenantId, onChange }: Props) {
+export function SectionList({ stage, onChange }: Props) {
   const [sections, setSections] = useState<LocalSection[]>(stage.sections);
   const [editingLesson, setEditingLesson] = useState<{
     sectionId: string;
@@ -237,7 +236,6 @@ export function SectionList({ stage, tenantId, onChange }: Props) {
 
       {editingLesson ? (
         <LessonEditor
-          tenantId={tenantId}
           stageId={stage.stage.id}
           sectionId={editingLesson.sectionId}
           lesson={editingLesson.lesson}

@@ -11,14 +11,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mapStageToUi, type StageWithChildren, type UiStage } from "@stella/shared/cms/types";
 import { createLatestRequest } from "@/data/latest-request";
-import type { Stage, Tenant } from "@/data/types";
+import type { Stage } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { getStageWithChildren, listStages } from "@/lib/cms-api";
 import { listEnrollmentsForUser } from "@/lib/enrollments-api";
 import { isReadableEnrollmentStatus } from "@stella/shared/enrollment/access";
 
 /** デモ経路にカタログ stub は置かない。教材は D1 seed（packages/content）だけ。 */
-function fixturesFor(_tenantId: Tenant["id"]): Stage[] {
+function fixturesFor(): Stage[] {
   return [];
 }
 
@@ -47,9 +47,9 @@ interface UseStagesResult {
   refetch: () => Promise<Stage[]>;
 }
 
-export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseStagesResult {
+export function useStages(enabled = true): UseStagesResult {
   const backend = isBackendConfigured();
-  const [stages, setStages] = useState<Stage[]>(() => (backend ? [] : fixturesFor(tenantId)));
+  const [stages, setStages] = useState<Stage[]>(() => (backend ? [] : fixturesFor()));
   const [loading, setLoading] = useState(backend && enabled);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
@@ -71,7 +71,7 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
         return [];
       }
       if (!isBackendConfigured()) {
-        const demo = fixturesFor(tenantId);
+        const demo = fixturesFor();
         setStages(demo);
         setSource("fixtures");
         setError(null);
@@ -81,7 +81,7 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
 
       setLoading(true);
       try {
-        const stageRows = await listStages(tenantId);
+        const stageRows = await listStages();
         if (cancelled()) return superseded();
         // クエリ成功 = DB を真実として採用する。 空 (= 未 seed / RLS で全部 draft 等) でも
         // fixtures に fallback しない (#10 — Codex P2: RLS で隠した draft が漏れるのを防ぐ)。
@@ -104,7 +104,7 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
         setError(null);
         return next;
       } catch (err) {
-        console.error("[useStagesForTenant] DB fetch failed", err);
+        console.error("[useStages] DB fetch failed", err);
         if (cancelled()) return superseded();
         setStages([]);
         setSource("error");
@@ -114,7 +114,7 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
         if (!cancelled()) setLoading(false);
       }
     },
-    [tenantId, enabled],
+    [enabled],
   );
 
   /** 版番号を採ってから読み出し、 進行中として登録する (追い越された側の相乗り先)。 */
@@ -135,7 +135,7 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
 /**
  * 受講者のホーム / ステージ詳細用の「自分に割り当てられたステージ」ソース (Issue #20)。
  *
- * `useStagesForTenant` (テナントの published ステージ一覧 = 公開ステージを「探す」) とは分離し、
+ * `useStages` (published ステージ一覧 = 公開ステージを「探す」) とは分離し、
  * enrollment ベースで自分が受講登録されたステージのみを返す。 各ステージには enrollment 由来の
  * 期限 (`dueAt`) / 必須 (`required`) / 完了 (`completed`) を実データで載せる。
  *
@@ -144,17 +144,13 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
  *   失敗時は空配列 + error（fixtures に戻さない）。
  *   draft ステージの enrollment は stages RLS で詳細取得が null になり、 受講者には現れない。
  */
-export function useEnrolledStagesForTenant(
-  tenantId: Tenant["id"],
-  userId: string | null,
-  enabled = true,
-): UseStagesResult {
+export function useEnrolledStages(userId: string | null, enabled = true): UseStagesResult {
   const backend = isBackendConfigured();
-  const [stages, setStages] = useState<Stage[]>(() => (backend ? [] : fixturesFor(tenantId)));
+  const [stages, setStages] = useState<Stage[]>(() => (backend ? [] : fixturesFor()));
   const [loading, setLoading] = useState(backend && enabled);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
-  /** 読み出しは 1 つの callback に閉じる (上の `useStagesForTenant` と同じ理由)。 */
+  /** 読み出しは 1 つの callback に閉じる (上の `useStages` と同じ理由)。 */
   const requestRef = useRef(createLatestRequest<Stage[]>());
   const fetchStages = useCallback(
     async (reqId: number): Promise<Stage[]> => {
@@ -168,7 +164,7 @@ export function useEnrolledStagesForTenant(
         return [];
       }
       if (!isBackendConfigured()) {
-        const demo = fixturesFor(tenantId);
+        const demo = fixturesFor();
         setStages(demo);
         setSource("fixtures");
         setError(null);
@@ -201,7 +197,7 @@ export function useEnrolledStagesForTenant(
         const details = await Promise.all(
           enrollments.map((e) =>
             getStageWithChildren(e.stage_id).catch((err) => {
-              console.error(`[useEnrolledStagesForTenant] stage ${e.stage_id} fetch failed`, err);
+              console.error(`[useEnrolledStages] stage ${e.stage_id} fetch failed`, err);
               return null;
             }),
           ),
@@ -237,7 +233,7 @@ export function useEnrolledStagesForTenant(
         setError(null);
         return merged;
       } catch (err) {
-        console.error("[useEnrolledStagesForTenant] DB fetch failed", err);
+        console.error("[useEnrolledStages] DB fetch failed", err);
         if (cancelled()) return superseded();
         setStages([]);
         setSource("error");
@@ -247,7 +243,7 @@ export function useEnrolledStagesForTenant(
         if (!cancelled()) setLoading(false);
       }
     },
-    [tenantId, userId, enabled],
+    [userId, enabled],
   );
 
   /** 版番号を採ってから読み出し、 進行中として登録する (追い越された側の相乗り先)。 */

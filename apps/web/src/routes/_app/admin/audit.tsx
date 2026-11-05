@@ -9,5 +9,5 @@ export const Route = createFileRoute("/_app/admin/audit")({
 
 function AuditPage() {
   const s = useAppShell();
-  return <AdminAuditPage tenantId={s.tenantId} backendEnabled={s.backendEnabled} />;
+  return <AdminAuditPage backendEnabled={s.backendEnabled} />;
 }

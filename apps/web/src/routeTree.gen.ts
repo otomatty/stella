@@ -20,7 +20,6 @@ import { Route as AppCertificatesRouteImport } from './routes/_app/certificates'
 import { Route as AppDiscoveryRouteImport } from './routes/_app/discovery'
 import { Route as AppEnrollmentsRouteImport } from './routes/_app/enrollments'
 import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
-import { Route as AppOrgsRouteImport } from './routes/_app/orgs'
 import { Route as AppRecordsRouteImport } from './routes/_app/records'
 import { Route as AppReportRouteImport } from './routes/_app/report'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
@@ -38,7 +37,6 @@ import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
 import { Route as AppAdminAssignmentsRouteImport } from './routes/_app/admin/assignments'
 import { Route as AppAdminAuditRouteImport } from './routes/_app/admin/audit'
 import { Route as AppAdminEnrollmentsRouteImport } from './routes/_app/admin/enrollments'
-import { Route as AppAdminOrgsRouteImport } from './routes/_app/admin/orgs'
 import { Route as AppAdminReportRouteImport } from './routes/_app/admin/report'
 import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
@@ -105,11 +103,6 @@ const AppEnrollmentsRoute = AppEnrollmentsRouteImport.update({
 const AppGradebookRoute = AppGradebookRouteImport.update({
   id: '/gradebook',
   path: '/gradebook',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOrgsRoute = AppOrgsRouteImport.update({
-  id: '/orgs',
-  path: '/orgs',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecordsRoute = AppRecordsRouteImport.update({
@@ -197,11 +190,6 @@ const AppAdminEnrollmentsRoute = AppAdminEnrollmentsRouteImport.update({
   path: '/enrollments',
   getParentRoute: () => AppAdminRoute,
 } as any)
-const AppAdminOrgsRoute = AppAdminOrgsRouteImport.update({
-  id: '/orgs',
-  path: '/orgs',
-  getParentRoute: () => AppAdminRoute,
-} as any)
 const AppAdminReportRoute = AppAdminReportRouteImport.update({
   id: '/report',
   path: '/report',
@@ -283,7 +271,6 @@ export interface FileRoutesByFullPath {
   '/discovery': typeof AppDiscoveryRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
-  '/orgs': typeof AppOrgsRoute
   '/records': typeof AppRecordsRoute
   '/report': typeof AppReportRoute
   '/review': typeof AppReviewRoute
@@ -300,7 +287,6 @@ export interface FileRoutesByFullPath {
   '/admin/assignments': typeof AppAdminAssignmentsRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
-  '/admin/orgs': typeof AppAdminOrgsRoute
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/library/$bookId': typeof AppLibraryBookIdRoute
@@ -325,7 +311,6 @@ export interface FileRoutesByTo {
   '/discovery': typeof AppDiscoveryRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
-  '/orgs': typeof AppOrgsRoute
   '/records': typeof AppRecordsRoute
   '/report': typeof AppReportRoute
   '/review': typeof AppReviewRoute
@@ -343,7 +328,6 @@ export interface FileRoutesByTo {
   '/admin/assignments': typeof AppAdminAssignmentsRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
-  '/admin/orgs': typeof AppAdminOrgsRoute
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/library/$bookId': typeof AppLibraryBookIdRoute
@@ -371,7 +355,6 @@ export interface FileRoutesById {
   '/_app/discovery': typeof AppDiscoveryRoute
   '/_app/enrollments': typeof AppEnrollmentsRoute
   '/_app/gradebook': typeof AppGradebookRoute
-  '/_app/orgs': typeof AppOrgsRoute
   '/_app/records': typeof AppRecordsRoute
   '/_app/report': typeof AppReportRoute
   '/_app/review': typeof AppReviewRoute
@@ -389,7 +372,6 @@ export interface FileRoutesById {
   '/_app/admin/assignments': typeof AppAdminAssignmentsRoute
   '/_app/admin/audit': typeof AppAdminAuditRoute
   '/_app/admin/enrollments': typeof AppAdminEnrollmentsRoute
-  '/_app/admin/orgs': typeof AppAdminOrgsRoute
   '/_app/admin/report': typeof AppAdminReportRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
   '/_app/library/$bookId': typeof AppLibraryBookIdRoute
@@ -418,7 +400,6 @@ export interface FileRouteTypes {
     | '/discovery'
     | '/enrollments'
     | '/gradebook'
-    | '/orgs'
     | '/records'
     | '/report'
     | '/review'
@@ -435,7 +416,6 @@ export interface FileRouteTypes {
     | '/admin/assignments'
     | '/admin/audit'
     | '/admin/enrollments'
-    | '/admin/orgs'
     | '/admin/report'
     | '/admin/users'
     | '/library/$bookId'
@@ -460,7 +440,6 @@ export interface FileRouteTypes {
     | '/discovery'
     | '/enrollments'
     | '/gradebook'
-    | '/orgs'
     | '/records'
     | '/report'
     | '/review'
@@ -478,7 +457,6 @@ export interface FileRouteTypes {
     | '/admin/assignments'
     | '/admin/audit'
     | '/admin/enrollments'
-    | '/admin/orgs'
     | '/admin/report'
     | '/admin/users'
     | '/library/$bookId'
@@ -505,7 +483,6 @@ export interface FileRouteTypes {
     | '/_app/discovery'
     | '/_app/enrollments'
     | '/_app/gradebook'
-    | '/_app/orgs'
     | '/_app/records'
     | '/_app/report'
     | '/_app/review'
@@ -523,7 +500,6 @@ export interface FileRouteTypes {
     | '/_app/admin/assignments'
     | '/_app/admin/audit'
     | '/_app/admin/enrollments'
-    | '/_app/admin/orgs'
     | '/_app/admin/report'
     | '/_app/admin/users'
     | '/_app/library/$bookId'
@@ -626,13 +602,6 @@ declare module '@tanstack/react-router' {
       path: '/gradebook'
       fullPath: '/gradebook'
       preLoaderRoute: typeof AppGradebookRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/orgs': {
-      id: '/_app/orgs'
-      path: '/orgs'
-      fullPath: '/orgs'
-      preLoaderRoute: typeof AppOrgsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/records': {
@@ -754,13 +723,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminEnrollmentsRouteImport
       parentRoute: typeof AppAdminRoute
     }
-    '/_app/admin/orgs': {
-      id: '/_app/admin/orgs'
-      path: '/orgs'
-      fullPath: '/admin/orgs'
-      preLoaderRoute: typeof AppAdminOrgsRouteImport
-      parentRoute: typeof AppAdminRoute
-    }
     '/_app/admin/report': {
       id: '/_app/admin/report'
       path: '/report'
@@ -859,7 +821,6 @@ interface AppAdminRouteChildren {
   AppAdminAssignmentsRoute: typeof AppAdminAssignmentsRoute
   AppAdminAuditRoute: typeof AppAdminAuditRoute
   AppAdminEnrollmentsRoute: typeof AppAdminEnrollmentsRoute
-  AppAdminOrgsRoute: typeof AppAdminOrgsRoute
   AppAdminReportRoute: typeof AppAdminReportRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
   AppAdminIndexRoute: typeof AppAdminIndexRoute
@@ -869,7 +830,6 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminAssignmentsRoute: AppAdminAssignmentsRoute,
   AppAdminAuditRoute: AppAdminAuditRoute,
   AppAdminEnrollmentsRoute: AppAdminEnrollmentsRoute,
-  AppAdminOrgsRoute: AppAdminOrgsRoute,
   AppAdminReportRoute: AppAdminReportRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
   AppAdminIndexRoute: AppAdminIndexRoute,
@@ -888,7 +848,6 @@ interface AppRouteChildren {
   AppDiscoveryRoute: typeof AppDiscoveryRoute
   AppEnrollmentsRoute: typeof AppEnrollmentsRoute
   AppGradebookRoute: typeof AppGradebookRoute
-  AppOrgsRoute: typeof AppOrgsRoute
   AppRecordsRoute: typeof AppRecordsRoute
   AppReportRoute: typeof AppReportRoute
   AppReviewRoute: typeof AppReviewRoute
@@ -921,7 +880,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppDiscoveryRoute: AppDiscoveryRoute,
   AppEnrollmentsRoute: AppEnrollmentsRoute,
   AppGradebookRoute: AppGradebookRoute,
-  AppOrgsRoute: AppOrgsRoute,
   AppRecordsRoute: AppRecordsRoute,
   AppReportRoute: AppReportRoute,
   AppReviewRoute: AppReviewRoute,

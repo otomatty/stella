@@ -1,12 +1,12 @@
 /**
  * 課題ごとの支援の記録 (#38・07 §6.5)。
  *
- * 受講者は自分の記録だけを読む。講師・管理者は同じテナントの受講者の記録を読む
+ * 受講者は自分の記録だけを読む。講師・管理者は受講者の記録を読む
  * (提出のレビューと同じ範囲。担当に限らない)。
  */
 
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller, isStaffRole } from "../lib/authz.js";
@@ -25,7 +25,7 @@ taskSupportRoute.get("/api/task-support", async (c) => {
       const [learner] = await db
         .select({ id: profiles.id })
         .from(profiles)
-        .where(and(eq(profiles.id, userId), eq(profiles.tenantId, caller.tenantId)))
+        .where(eq(profiles.id, userId))
         .limit(1);
       if (!learner) throw new ApiError("受講者が見つかりません", 404);
     } else if (stageId && !(await canAccessTasks(db, caller, stageId))) {
@@ -33,9 +33,8 @@ taskSupportRoute.get("/api/task-support", async (c) => {
       throw new ApiError("task stage not found", 404);
     }
     // 本人には今読めるステージの課題だけを返す (ステージを省略しても、受講をやめた・
-    // 非公開になったステージの課題名を出さない)。講師・管理者はテナントの範囲で見る。
+    // 非公開になったステージの課題名を出さない)。講師・管理者は記録のある課題を見る。
     const records = await loadTaskSupport(db, {
-      tenantId: caller.tenantId,
       userId,
       stageId,
       readableOnly: userId === caller.id,

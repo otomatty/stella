@@ -12,7 +12,7 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
-import { authUsers, authVscodeLinks, profiles, tenants } from "../db/schema.js";
+import { authUsers, authVscodeLinks, profiles } from "../db/schema.js";
 import { clientIp } from "../lib/audit.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { errorResponse, ApiError, getCaller } from "../lib/authz.js";
@@ -29,7 +29,7 @@ import type { Env } from "../env.js";
 export const authRoute = new Hono<{ Bindings: Env }>();
 
 /**
- * The email to give a VS Code token for: only an enabled profile in an active organization.
+ * The email to give a VS Code token for: only an enabled profile.
  * A Better Auth session (`needsLogin`) belongs to an auth_users row, which every web login has;
  * without one the code is just invalid.
  */
@@ -43,16 +43,14 @@ async function resolveVscodeLinkEmail(
       .select({
         email: profiles.email,
         disabled: profiles.disabled,
-        tenantActive: tenants.active,
         loginEmail: authUsers.email,
       })
       .from(profiles)
-      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .leftJoin(authUsers, eq(authUsers.id, profiles.id))
       .where(eq(profiles.id, userId))
       .limit(1)
   )[0];
-  if (!row || row.disabled || row.tenantActive === false) return null;
+  if (!row || row.disabled) return null;
   if (needsLogin && !row.loginEmail) return null;
   // Older profiles have no email; the login's email is in auth_users.
   return row.email ?? row.loginEmail ?? null;

@@ -59,7 +59,6 @@ const noonOf = (date: string) => new Date(studyDateStartMs(date) + 12 * 3_600_00
 
 const caller = (id: string): Caller => ({
   id,
-  tenantId: "ses",
   role: "student",
   name: id,
   email: null,
@@ -115,7 +114,6 @@ describe("類題の出題 (#39)", () => {
     await db.batch([
       db.insert(submissions).values({
         id,
-        tenantId: "ses",
         studentId: userId,
         taskId,
         taskContentHash: "a".repeat(64),
@@ -173,20 +171,16 @@ describe("類題の出題 (#39)", () => {
     } as unknown as Env;
     db = getDb(env);
     await db.batch([
-      db.insert(tenants).values([
-        { id: "ses", name: "テスト" },
-        { id: "other", name: "他社" },
-      ]),
+      db.insert(tenants).values([{ id: "ses", name: "テスト" }]),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-        { id: "learner2", tenantId: "ses", displayName: "受講者2", role: "student" },
-        { id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" },
-        { id: "outsider", tenantId: "other", displayName: "他社の受講者", role: "student" },
+        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "learner2", displayName: "受講者2", role: "student" },
+        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "outsider", displayName: "未受講の受講者", role: "student" },
       ]),
       db.insert(skills).values({ id: "html", title: "HTML" }),
       db.insert(stages).values({
         id: "stage",
-        tenantId: "ses",
         slug: "dev-env-basics",
         title: "開発環境",
         format: 2,
@@ -196,8 +190,8 @@ describe("類題の出題 (#39)", () => {
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
       db.insert(contentUnits).values({ sectionId: "unit", plannedHours: 3 }),
       db.insert(enrollments).values([
-        { tenantId: "ses", userId: "learner", stageId: "stage", status: "active" },
-        { tenantId: "ses", userId: "learner2", stageId: "stage", status: "active" },
+        { userId: "learner", stageId: "stage", status: "active" },
+        { userId: "learner2", stageId: "stage", status: "active" },
       ]),
     ]);
     await addTask(PARENT, "basic", 0, null);
@@ -254,7 +248,7 @@ describe("類題の出題 (#39)", () => {
     expect(JSON.stringify(list)).not.toContain(MARKER);
   });
 
-  it("出題した類題は本人にだけ配り、ほかの受講者・他テナントには返さない", async () => {
+  it("出題した類題は本人にだけ配り、ほかの受講者には返さない", async () => {
     await passParentDaysAgo("learner", 3);
     const variant = await today();
     expect(variant).toMatchObject({
@@ -272,7 +266,7 @@ describe("類題の出題 (#39)", () => {
     const locked = await post("/api/tasks/help/open", { taskId, item: "solution" });
     expect(locked.status).toBe(403);
     expect(await locked.text()).not.toContain(MARKER);
-    // 同じテナントで同じ講座を受講していても、出題していない受講者には返さない。
+    // 同じ講座を受講していても、出題していない受講者には返さない。
     expect((await bundleOf(taskId, "learner2")).status).toBe(404);
     expect((await bundleOf(taskId, "outsider")).status).toBe(404);
     expect(await today("learner2")).toBeNull();
@@ -360,7 +354,6 @@ describe("類題の出題 (#39)", () => {
     // 一意制約: 同じ類題をもう一度出す書き込みは DB が止める。
     await expect(
       db.insert(variantReviews).values({
-        tenantId: "ses",
         userId: "learner",
         pattern: "page",
         step: 99,
@@ -406,7 +399,6 @@ describe("類題の出題 (#39)", () => {
     await db.batch([
       db.insert(stages).values({
         id: "stage2",
-        tenantId: "ses",
         slug: "other-course",
         title: "別の講座",
         format: 2,
@@ -506,7 +498,6 @@ describe("類題の出題 (#39)", () => {
     // 起点の課題を支援なしで合格し、自力の証拠を残す。
     await db.insert(submissions).values({
       id: "parent-pass",
-      tenantId: "ses",
       studentId: "learner",
       taskId: PARENT,
       taskContentHash: "a".repeat(64),
@@ -530,7 +521,6 @@ describe("類題の出題 (#39)", () => {
     const submittedAt = new Date((review.issuedAt?.getTime() ?? 0) + 60_000);
     await db.insert(submissions).values({
       id: "variant-pass",
-      tenantId: "ses",
       studentId: "learner",
       taskId: issued?.taskId ?? "",
       taskContentHash: "a".repeat(64),
@@ -576,7 +566,6 @@ describe("類題の出題 (#39)", () => {
     await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
     await db.insert(submissions).values({
       id: "late-review",
-      tenantId: "ses",
       studentId: "learner",
       taskId: PARENT,
       taskContentHash: "a".repeat(64),
@@ -600,7 +589,6 @@ describe("類題の出題 (#39)", () => {
     vi.setSystemTime(noonOf("2026-10-06"));
     await db.insert(submissions).values({
       id: "variant-pass",
-      tenantId: "ses",
       studentId: "learner",
       taskId: issued?.taskId ?? "",
       taskContentHash: "a".repeat(64),
@@ -627,7 +615,6 @@ describe("類題の出題 (#39)", () => {
       db.insert(submissions).values([
         {
           id: "old-version",
-          tenantId: "ses",
           studentId: "learner",
           taskId: PARENT,
           taskContentHash: "b".repeat(64),
@@ -645,7 +632,6 @@ describe("類題の出題 (#39)", () => {
         },
         {
           id: "new-version",
-          tenantId: "ses",
           studentId: "learner",
           taskId: PARENT,
           taskContentHash: "a".repeat(64),
@@ -690,7 +676,6 @@ describe("類題の出題 (#39)", () => {
       db.insert(submissions).values([
         {
           id: "variant-old",
-          tenantId: "ses",
           studentId: "learner",
           taskId,
           taskContentHash: "b".repeat(64),
@@ -708,7 +693,6 @@ describe("類題の出題 (#39)", () => {
         },
         {
           id: "variant-new",
-          tenantId: "ses",
           studentId: "learner",
           taskId,
           taskContentHash: "a".repeat(64),
@@ -770,7 +754,6 @@ describe("類題の出題 (#39)", () => {
   const submitVariant = (id: string, taskId: string, at: Date) =>
     db.insert(submissions).values({
       id,
-      tenantId: "ses",
       studentId: "learner",
       taskId,
       taskContentHash: "a".repeat(64),
@@ -801,7 +784,6 @@ describe("類題の出題 (#39)", () => {
     ]);
     // ほかのパターンの類題を出している (開いた出題は、ふだんは受講者ごとに 1 つ)。
     await db.insert(variantReviews).values({
-      tenantId: "ses",
       userId: "learner",
       pattern: "other",
       step: 1,
@@ -829,7 +811,6 @@ describe("類題の出題 (#39)", () => {
     // 戻した出題は一意制約から外れるが、ほかの出題を 2 つ開くことは今までどおり DB が止める。
     await expect(
       db.insert(variantReviews).values({
-        tenantId: "ses",
         userId: "learner",
         pattern: "third",
         step: 1,
@@ -869,7 +850,7 @@ describe("類題の出題 (#39)", () => {
     await db.delete(variantReviews).where(eq(variantReviews.step, 2));
     const statements = await reopenVariantStatements(
       db,
-      { tenantId: "ses", studentId: "learner", taskId: taskId ?? "" },
+      { studentId: "learner", taskId: taskId ?? "" },
       noonOf("2026-10-06"),
     );
     // そのあとに、今日の類題を開いた別の要求が次の出題を積んだ。
@@ -898,7 +879,7 @@ describe("類題の出題 (#39)", () => {
               overturned = true;
               const [first, ...rest] = await reopenVariantStatements(
                 target,
-                { tenantId: "ses", studentId: "learner", taskId: taskId ?? "" },
+                { studentId: "learner", taskId: taskId ?? "" },
                 noonOf("2026-10-05"),
               );
               if (first) await target.batch([first, ...rest]);
@@ -945,7 +926,7 @@ describe("類題の出題 (#39)", () => {
                         );
                       const [first, ...rest] = await reopenVariantStatements(
                         target,
-                        { tenantId: "ses", studentId: "learner", taskId: taskId ?? "" },
+                        { studentId: "learner", taskId: taskId ?? "" },
                         noonOf("2026-10-05"),
                       );
                       if (first) await target.batch([first, ...rest]);

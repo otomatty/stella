@@ -118,40 +118,25 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       },
     });
     await db.batch([
-      db.insert(tenants).values([
-        { id: "ses", name: "テスト" },
-        { id: "other", name: "別テナント" },
-      ]),
+      db.insert(tenants).values([{ id: "ses", name: "テスト" }]),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者A", role: "student" },
-        { id: "learner2", tenantId: "ses", displayName: "受講者B", role: "student" },
-        { id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" },
-        { id: "boss", tenantId: "ses", displayName: "管理者", role: "admin" },
-        { id: "outsider", tenantId: "other", displayName: "別の講師", role: "instructor" },
+        { id: "learner", displayName: "受講者A", role: "student" },
+        { id: "learner2", displayName: "受講者B", role: "student" },
+        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "boss", displayName: "管理者", role: "admin" },
       ]),
-      db.insert(stages).values([
-        {
-          id: "stage",
-          tenantId: "ses",
-          slug: "dev-env-basics",
-          title: "開発環境",
-          format: 2,
-          status: "published",
-        },
-        {
-          id: "other-stage",
-          tenantId: "other",
-          slug: "other-course",
-          title: "別の講座",
-          format: 2,
-          status: "published",
-        },
-      ]),
+      db.insert(stages).values({
+        id: "stage",
+        slug: "dev-env-basics",
+        title: "開発環境",
+        format: 2,
+        status: "published",
+      }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
       db.insert(lessons).values({ id: "reading", sectionId: "unit", title: "読む", type: "text" }),
       db.insert(enrollments).values([
-        { tenantId: "ses", userId: "learner", stageId: "stage", status: "active" },
-        { tenantId: "ses", userId: "learner2", stageId: "stage", status: "active" },
+        { userId: "learner", stageId: "stage", status: "active" },
+        { userId: "learner2", stageId: "stage", status: "active" },
       ]),
       db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "teacher" }),
       db.insert(skills).values({ id: "html", title: "HTML" }),
@@ -191,7 +176,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
         }),
       }),
     ]);
-    for (const id of ["learner", "learner2", "teacher", "boss", "outsider"])
+    for (const id of ["learner", "learner2", "teacher", "boss"])
       tokens[id] = await signAccessToken("test-secret", id, `${id}@example.com`);
   });
   afterEach(() => database.sqlite.close());
@@ -342,7 +327,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     it("覆すと、この提出の合格・スキルの証拠・初回の合格日・自動の修了を取り消し、理由を知らせる", async () => {
       await db
         .insert(lessonProgress)
-        .values({ tenantId: "ses", userId: "learner", lessonId: "reading", completed: true });
+        .values({ userId: "learner", lessonId: "reading", completed: true });
       const id = await aiPassed();
       expect(await db.select().from(certificates)).toHaveLength(1);
       expect((await db.select().from(taskProgress))[0]).toMatchObject({ status: "ai-passed" });
@@ -396,7 +381,6 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       await db.batch([
         db.insert(submissions).values({
           id: "later",
-          tenantId: "ses",
           studentId: "learner",
           taskId: fixture.input.taskId,
           taskContentHash: fixture.bundle.contentHash,
@@ -419,7 +403,6 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
           createdAt: later,
         }),
         db.insert(skillEvidence).values({
-          tenantId: "ses",
           userId: "learner",
           skillId: "html",
           level: "independent",
@@ -466,12 +449,9 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect(await list("?from=2999-01-01")).toEqual([]);
       expect((await list("?assigned=mine")).map((r) => r.submissionId)).toEqual([high]);
       expect((await list("", "boss")).length).toBe(2);
-      // 別テナントの講師には出さず、受講者は読めない。
-      expect(await list("", "outsider")).toEqual([]);
+      // 受講者は読めない。
       expect((await call("/api/review-desk/ai-passed", "learner")).status).toBe(403);
       expect((await call("/api/review-desk/ai-passed?confidence=low", "teacher")).status).toBe(400);
-      // 別テナントの講師は確認の操作もできない。
-      expect((await check(high, "confirm", undefined, "outsider")).status).toBe(404);
     });
   });
 
@@ -672,16 +652,12 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect(routed.status).toBe(200);
       expect(await db.select().from(discoveryRequests)).toEqual([
         expect.objectContaining({
-          tenantId: "ses",
           stageId: "stage",
           origin: "review_common",
           topic: "課題「ページを作る」: 見出しが内容を表している",
         }),
       ]);
       expect((await route("missing")).status).toBe(400);
-      // 別テナントの講師には課題ごと見せない。
-      expect((await board("", "outsider")).status).toBe(404);
-      expect((await route("heading", "outsider")).status).toBe(404);
     });
   });
 
@@ -718,14 +694,6 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect((await json<{ template: ReviewCommentTemplate }>(patched)).template.body).toBe(
         "見出しは h1〜h6 で、内容の構造を表します。",
       );
-      // 別テナントからは見えず、直せず、消せない。
-      expect(await json(await call("/api/review-templates", "outsider"))).toEqual({
-        templates: [],
-      });
-      expect(
-        (await call(`/api/review-templates/${template.id}`, "outsider", { method: "DELETE" }))
-          .status,
-      ).toBe(404);
       expect(
         (await call(`/api/review-templates/${template.id}`, "teacher", { method: "DELETE" }))
           .status,
@@ -733,9 +701,9 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect(await listed("")).toHaveLength(2);
     });
 
-    it("空の項目・他テナントの講座・受講者からの作成を止める", async () => {
+    it("空の項目と、無い講座と、受講者からの作成を止める", async () => {
       expect((await create({ violation: "", body: "x" })).status).toBe(400);
-      expect((await create({ stageId: "other-stage", violation: "x", body: "y" })).status).toBe(
+      expect((await create({ stageId: "missing-stage", violation: "x", body: "y" })).status).toBe(
         400,
       );
       expect((await create({ violation: "x", body: "y" }, "learner")).status).toBe(403);

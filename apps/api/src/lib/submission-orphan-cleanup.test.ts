@@ -65,7 +65,6 @@ describe("提出ファイルの孤立オブジェクト回収 (実SQLite)", () =
     await db.batch([
       db.insert(submissions).values({
         id,
-        tenantId: "ses",
         stageTitle: "ステージ",
         assignmentTitle: "課題",
         code: "",

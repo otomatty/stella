@@ -9,5 +9,5 @@ export const Route = createFileRoute("/_app/admin/report")({
 
 function ReportPage() {
   const s = useAppShell();
-  return <AdminReportPage tenantId={s.tenantId} backendEnabled={s.backendEnabled} />;
+  return <AdminReportPage backendEnabled={s.backendEnabled} />;
 }

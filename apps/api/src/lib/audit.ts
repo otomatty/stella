@@ -24,7 +24,6 @@ import type { Env } from "../env.js";
  */
 export interface AuditActor {
   id: string;
-  tenantId: string;
   role: string;
   name: string;
 }
@@ -46,10 +45,12 @@ export function clientIp(c: Context<{ Bindings: Env }>): string | null {
   );
 }
 
-/** 監査ログ 1 件の insert。実行せず、batch に渡せるクエリを返す。 */
+/**
+ * 監査ログ 1 件の insert。実行せず、batch に渡せるクエリを返す。
+ * 組織の列は values に含めない。スキーマの既定値が NOT NULL 列を埋める。
+ */
 export function auditLogInsert(db: Db, actor: AuditActor, entry: AuditEntry) {
   return db.insert(auditLogs).values({
-    tenantId: actor.tenantId,
     actorId: actor.id,
     actorName: actor.name,
     actorRole: actor.role,

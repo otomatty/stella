@@ -13,7 +13,8 @@ interface UseCmsStagesResult {
   refetch: () => Promise<void>;
 }
 
-export function useCmsStages(tenantId: string | null): UseCmsStagesResult {
+/** `enabled` が false のあいだは取らない (ログイン前・権限の無い画面)。 */
+export function useCmsStages(enabled = true): UseCmsStagesResult {
   const [stages, setStages] = useState<StageRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,14 +22,15 @@ export function useCmsStages(tenantId: string | null): UseCmsStagesResult {
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!tenantId) {
+    if (!enabled) {
       setStages([]);
+      setLoading(false);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const rows = await listStages(tenantId);
+      const rows = await listStages();
       if (reqId !== requestIdRef.current) return;
       setStages(rows);
     } catch (err) {
@@ -37,7 +39,7 @@ export function useCmsStages(tenantId: string | null): UseCmsStagesResult {
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [tenantId]);
+  }, [enabled]);
 
   useEffect(() => {
     void refetch();

@@ -56,14 +56,13 @@ export function isGrantedStageVisibleToLearner(
 
 export async function learnerCanSeeGrantedStage(
   db: Db,
-  profileId: string,
-  tenantId: string,
+  userId: string,
   stageId: string,
 ): Promise<boolean> {
   const grantRows = await db
     .select({ stageId: stageGrants.stageId })
     .from(stageGrants)
-    .where(and(eq(stageGrants.profileId, profileId), eq(stageGrants.stageId, stageId)))
+    .where(and(eq(stageGrants.profileId, userId), eq(stageGrants.stageId, stageId)))
     .limit(1);
   if (grantRows[0]) return true;
   const enrolled = await db
@@ -71,8 +70,7 @@ export async function learnerCanSeeGrantedStage(
     .from(enrollments)
     .where(
       and(
-        eq(enrollments.userId, profileId),
-        eq(enrollments.tenantId, tenantId),
+        eq(enrollments.userId, userId),
         eq(enrollments.stageId, stageId),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),
@@ -121,10 +119,9 @@ export function dropOrphanGrantedStages<T extends AudienceStageRow>(rows: T[]): 
   }
 }
 
-/** staff 一覧用: テナントの granted ステージ。 */
-export async function loadGrantedStagesForTenant(
+/** staff 一覧用: 公開済みの granted ステージ。 */
+export async function loadGrantedStages(
   db: Db,
-  tenantId: string,
 ): Promise<{ id: string; slug: string; title: string; category: string | null }[]> {
   return db
     .select({
@@ -134,11 +131,5 @@ export async function loadGrantedStagesForTenant(
       category: stages.category,
     })
     .from(stages)
-    .where(
-      and(
-        eq(stages.tenantId, tenantId),
-        eq(stages.status, "published"),
-        eq(stages.audience, "granted"),
-      ),
-    );
+    .where(and(eq(stages.status, "published"), eq(stages.audience, "granted")));
 }

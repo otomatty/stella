@@ -2,7 +2,7 @@
  * 認証ラッパ (Better Auth の Google ログイン、Issue #117)。
  */
 
-import type { ProfileRow, ProfileTenantInfo } from "@stella/shared/cms/types";
+import type { ProfileRow } from "@stella/shared/cms/types";
 
 import { apiFetch, ApiClientError } from "./api-client";
 import {
@@ -18,8 +18,8 @@ import {
 } from "./auth-client";
 
 export type { Session };
-/** /api/me の profile + 所属テナントの表示情報 (取得できた場合のみ)。 */
-export type Profile = ProfileRow & { tenant?: ProfileTenantInfo | null };
+/** /api/me の profile。応答の tenant は開いたままの古いタブ用なので読まない。 */
+export type Profile = ProfileRow;
 
 export { signInWithGoogle, completeLogin };
 
@@ -39,11 +39,8 @@ export function subscribeToAuth(callback: (session: Session | null) => void): ()
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
   if (!isAuthConfigured() || !cachedSession()) return null;
   try {
-    const { profile, tenant } = await apiFetch<{
-      profile: ProfileRow;
-      tenant?: ProfileTenantInfo | null;
-    }>("/api/me");
-    return profile ? { ...profile, tenant: tenant ?? null } : profile;
+    const { profile } = await apiFetch<{ profile: ProfileRow }>("/api/me");
+    return profile ?? null;
   } catch (err) {
     if (err instanceof ApiClientError && err.status === 403 && err.message === "invite_required") {
       throw err; // 上位で inviteRequired に
@@ -53,7 +50,7 @@ export async function fetchProfile(_userId?: string): Promise<Profile | null> {
 }
 
 /**
- * 設定画面からのユーザー名変更。 更新できるのは表示名のみ (ロール / テナント / メールは
+ * 設定画面からのユーザー名変更。 更新できるのは表示名のみ (ロール / メールは
  * 招待とログインが真実)。 保存すると以後 Google の登録名では上書きされなくなる。
  */
 export async function updateMyDisplayName(displayName: string): Promise<Profile> {

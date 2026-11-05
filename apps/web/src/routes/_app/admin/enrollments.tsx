@@ -9,11 +9,5 @@ export const Route = createFileRoute("/_app/admin/enrollments")({
 
 function EnrollmentsPage() {
   const s = useAppShell();
-  return (
-    <AdminEnrollmentsPage
-      key={s.tenantId}
-      tenantId={s.tenantId}
-      backendEnabled={s.backendEnabled}
-    />
-  );
+  return <AdminEnrollmentsPage backendEnabled={s.backendEnabled} />;
 }

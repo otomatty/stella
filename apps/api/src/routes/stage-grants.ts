@@ -22,7 +22,7 @@ import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { profiles, stageGrants, stageUnlocks, stages } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller, requireCanManageStageGrants } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import { loadGrantedStagesForTenant, parentSlugFromRow } from "../lib/stage-audience.js";
+import { loadGrantedStages, parentSlugFromRow } from "../lib/stage-audience.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -78,14 +78,10 @@ function neighborSlugs(row: GrantStageNode): string[] {
 }
 
 /**
- * 線の親と prerequisites をたどり、同テナントの published な granted の前提講座を集める。
+ * 線の親と prerequisites をたどり、published な granted の前提講座を集める。
  * catalog に着いたらそこから先はたどらない。起点は含めない。訪問済みで循環と重複を止める。
  */
-async function loadGrantedPrerequisites(
-  db: Db,
-  tenantId: string,
-  start: GrantStageNode,
-): Promise<GrantStageNode[]> {
+async function loadGrantedPrerequisites(db: Db, start: GrantStageNode): Promise<GrantStageNode[]> {
   const visited = new Set<string>();
   if (start.slug) visited.add(start.slug);
   const found: GrantStageNode[] = [];
@@ -105,9 +101,7 @@ async function loadGrantedPrerequisites(
         prerequisites: stages.prerequisites,
       })
       .from(stages)
-      .where(
-        and(eq(stages.tenantId, tenantId), eq(stages.slug, slug), eq(stages.status, "published")),
-      )
+      .where(and(eq(stages.slug, slug), eq(stages.status, "published")))
       .limit(1);
     const row = rows[0];
     if (row?.audience !== "granted") continue;
@@ -126,7 +120,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
     const { caller, db } = await getCaller(c);
     requireCanManageStageGrants(caller);
 
-    const grantedStages = await loadGrantedStagesForTenant(db, caller.tenantId);
+    const grantedStages = await loadGrantedStages(db);
     const grantRows =
       grantedStages.length === 0
         ? []
@@ -137,12 +131,9 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
             })
             .from(stageGrants)
             .where(
-              and(
-                eq(stageGrants.tenantId, caller.tenantId),
-                inArray(
-                  stageGrants.stageId,
-                  grantedStages.map((s) => s.id),
-                ),
+              inArray(
+                stageGrants.stageId,
+                grantedStages.map((s) => s.id),
               ),
             );
 
@@ -157,7 +148,6 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
             .from(stageUnlocks)
             .where(
               and(
-                eq(stageUnlocks.tenantId, caller.tenantId),
                 eq(stageUnlocks.via, "staff"),
                 inArray(
                   stageUnlocks.stageId,
@@ -189,8 +179,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
         role: profiles.role,
         disabled: profiles.disabled,
       })
-      .from(profiles)
-      .where(eq(profiles.tenantId, caller.tenantId));
+      .from(profiles);
 
     const learners = profileRows
       .filter((row) => {
@@ -257,7 +246,6 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
         id: stages.id,
         slug: stages.slug,
         audience: stages.audience,
-        tenantId: stages.tenantId,
         parent: stages.parent,
         prerequisites: stages.prerequisites,
       })
@@ -265,7 +253,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       .where(eq(stages.id, stageId))
       .limit(1);
     const stage = stageRows[0];
-    if (!stage || stage.tenantId !== caller.tenantId) {
+    if (!stage) {
       throw new ApiError("ステージが見つかりません", 404);
     }
     if (stage.audience !== "granted") {
@@ -283,7 +271,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       const profileRows = await db
         .select({ id: profiles.id, role: profiles.role, disabled: profiles.disabled })
         .from(profiles)
-        .where(and(eq(profiles.tenantId, caller.tenantId), inArray(profiles.id, profileIds)));
+        .where(inArray(profiles.id, profileIds));
       if (profileRows.length !== profileIds.length) {
         throw new ApiError("割当できない受講者が含まれています", 400);
       }
@@ -299,14 +287,13 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const newlyAdded = profileIds.filter((id) => !existingGrantIds.has(id));
     const ancestorInserts: { stageId: string; profileId: string }[] = [];
     if (newlyAdded.length > 0) {
-      const ancestors = await loadGrantedPrerequisites(db, caller.tenantId, stage);
+      const ancestors = await loadGrantedPrerequisites(db, stage);
       if (ancestors.length > 0) {
         const existingAncestorRows = await db
           .select({ stageId: stageGrants.stageId, profileId: stageGrants.profileId })
           .from(stageGrants)
           .where(
             and(
-              eq(stageGrants.tenantId, caller.tenantId),
               inArray(
                 stageGrants.stageId,
                 ancestors.map((row) => row.id),
@@ -328,7 +315,6 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
 
     const deleteOp = db.delete(stageGrants).where(eq(stageGrants.stageId, stageId));
     const valuesFor = (row: { stageId: string; profileId: string }) => ({
-      tenantId: caller.tenantId,
       stageId: row.stageId,
       profileId: row.profileId,
       grantedBy: caller.id,
@@ -343,7 +329,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const existingUnlocks = await db
       .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
       .from(stageUnlocks)
-      .where(and(eq(stageUnlocks.stageId, stageId), eq(stageUnlocks.tenantId, caller.tenantId)));
+      .where(eq(stageUnlocks.stageId, stageId));
     const assigned = new Set(profileIds);
     // 一意制約は user × stage。腕試しの行がある人へ staff は入らない (上書きしない)。
     const blockedByOtherVia = new Set(
@@ -362,19 +348,12 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const deleteUnlocks = deleteAllStaff
       ? db
           .delete(stageUnlocks)
-          .where(
-            and(
-              eq(stageUnlocks.stageId, stageId),
-              eq(stageUnlocks.tenantId, caller.tenantId),
-              eq(stageUnlocks.via, "staff"),
-            ),
-          )
+          .where(and(eq(stageUnlocks.stageId, stageId), eq(stageUnlocks.via, "staff")))
       : db
           .delete(stageUnlocks)
           .where(
             and(
               eq(stageUnlocks.stageId, stageId),
-              eq(stageUnlocks.tenantId, caller.tenantId),
               eq(stageUnlocks.via, "staff"),
               notInArray(stageUnlocks.userId, retainedStaffIds),
             ),
@@ -383,7 +362,6 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       db
         .insert(stageUnlocks)
         .values({
-          tenantId: caller.tenantId,
           userId,
           stageId,
           via: "staff",

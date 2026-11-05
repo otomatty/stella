@@ -19,7 +19,6 @@ import { useCmsStages } from "@/hooks/useCmsStages";
 import { StageEditor } from "./StageEditor";
 
 interface Props {
-  tenantId: string;
   /**
    * 開いた直後に編集画面を出すステージ ID (Issue #77 — Topbar の検索からの遷移)。
    * 呼び出し側は値を変えるときに `key` も変えてマウントし直す。
@@ -27,15 +26,14 @@ interface Props {
   initialStageId?: string | null;
 }
 
-export function AdminStagesPage({ tenantId, initialStageId = null }: Props) {
-  const { stages, loading, error, refetch } = useCmsStages(tenantId);
+export function AdminStagesPage({ initialStageId = null }: Props) {
+  const { stages, loading, error, refetch } = useCmsStages();
   const [editingId, setEditingId] = useState<string | null>(initialStageId);
 
   if (editingId) {
     return (
       <StageEditor
         stageId={editingId}
-        tenantId={tenantId}
         onBack={() => setEditingId(null)}
         onMetadataChanged={refetch}
       />
@@ -46,7 +44,6 @@ export function AdminStagesPage({ tenantId, initialStageId = null }: Props) {
     const baseSlug = `stage-${Date.now().toString(36)}`;
     try {
       const row = await upsertStage({
-        tenant_id: tenantId,
         slug: baseSlug,
         title: "新しいステージ",
         status: "draft",

@@ -10,7 +10,7 @@ import { sqliteD1 } from "../testing/sqlite-d1.js";
 
 /**
  * ログインなしで読める教材 (Issue #41)。印 (`lessons.public`) のあるレッスンだけを、
- * 公開テナントの入口の講座からだけ返すことを、実 SQLite (全 migration 適用済み) で確かめる。
+ * 公開中・catalog・前提なし・format 2 のステージから返すことを、実 SQLite で確かめる。
  */
 
 const PRIVATE_MARKER = "PRIVATE_SOLUTION_MARKER_41";
@@ -20,15 +20,13 @@ function setup(): void {
   db = sqliteD1();
   db.sqlite.exec(`
     INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES
-      ('ses', 'SES', 0, 1, 0, 1, 1),
-      ('coach', 'Coach', 0, 1, 0, 1, 1);
+      ('ses', 'SES', 0, 1, 0, 1, 1);
     INSERT INTO stages (id, tenant_id, slug, title, description, status, audience, format, prerequisites, created_at, updated_at) VALUES
       ('root', 'ses', 'dev-env-basics', '開発環境とWebの入口', 'ROOT_DESCRIPTION', 'published', 'catalog', 2, NULL, 1, 1),
       ('locked', 'ses', 'html-css-basics', 'HTMLとCSS', NULL, 'published', 'catalog', 2, '["dev-env-basics"]', 1, 1),
       ('granted', 'ses', 'salesforce-dev-basics', 'Salesforce', NULL, 'published', 'granted', 2, NULL, 1, 1),
       ('draft', 'ses', 'draft-course', '下書き', NULL, 'draft', 'catalog', 2, NULL, 1, 1),
-      ('legacy', 'ses', 'python-basics', 'Python', NULL, 'published', 'catalog', 1, NULL, 1, 1),
-      ('other', 'coach', 'dev-env-basics', '別テナントの入口', NULL, 'published', 'catalog', 2, '[]', 1, 1);
+      ('legacy', 'ses', 'python-basics', 'Python', NULL, 'published', 'catalog', 1, NULL, 1, 1);
     INSERT INTO sections (id, stage_id, title, "order", created_at) VALUES
       ('u00', 'root', 'U00 開始と事前確認', 0, 1),
       ('u01', 'root', 'U01 VS Code の準備', 1, 1),
@@ -36,8 +34,7 @@ function setup(): void {
       ('locked-unit', 'locked', '単元', 0, 1),
       ('granted-unit', 'granted', '単元', 0, 1),
       ('draft-unit', 'draft', '単元', 0, 1),
-      ('legacy-unit', 'legacy', '単元', 0, 1),
-      ('other-unit', 'other', '単元', 0, 1);
+      ('legacy-unit', 'legacy', '単元', 0, 1);
     INSERT INTO lessons (id, section_id, title, type, "order", duration_label, markdown, total_pages, public, created_at, updated_at) VALUES
       ('u00-slides', 'u00', '学習の進め方', 'slides', 0, '3分', '# はじめに\n\n---\n\n# 2 枚目', 2, 1, 1, 1),
       ('u00-doc', 'u00', '0-1 まとめ', 'text', 1, '10分', ':::os windows\nWindows の手順\n:::\n:::os macos\nmacOS の手順\n:::', NULL, 1, 1, 1),
@@ -49,8 +46,7 @@ function setup(): void {
       ('locked-doc', 'locked-unit', 'まとめ', 'text', 0, NULL, 'LOCKED_DOC', NULL, 1, 1, 1),
       ('granted-doc', 'granted-unit', 'まとめ', 'text', 0, NULL, 'GRANTED_DOC', NULL, 1, 1, 1),
       ('draft-doc', 'draft-unit', 'まとめ', 'text', 0, NULL, 'DRAFT_DOC', NULL, 1, 1, 1),
-      ('legacy-doc', 'legacy-unit', 'まとめ', 'text', 0, NULL, 'LEGACY_DOC', NULL, 1, 1, 1),
-      ('other-doc', 'other-unit', 'まとめ', 'text', 0, NULL, 'OTHER_TENANT_DOC', NULL, 1, 1, 1);
+      ('legacy-doc', 'legacy-unit', 'まとめ', 'text', 0, NULL, 'LEGACY_DOC', NULL, 1, 1, 1);
     INSERT INTO tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id) VALUES
       ('dev-env-basics/m0/q01', 'm0', '課題', 'practice', 'p', '{"uses":[],"assesses":[]}', 10, 0, 'h', '{}', '{}', 1, 'm0-task');
     INSERT INTO task_private (task_id, files) VALUES ('dev-env-basics/m0/q01', '${PRIVATE_MARKER}');
@@ -58,7 +54,7 @@ function setup(): void {
 }
 
 function envOf(overrides: Partial<Env> = {}): Env {
-  return { DB: db.binding, PUBLIC_CONTENT_TENANT_ID: "ses", ...overrides } as Env;
+  return { DB: db.binding, ...overrides } as Env;
 }
 
 async function get(path: string, env = envOf(), init: RequestInit & { token?: string } = {}) {
@@ -107,19 +103,6 @@ describe("GET /api/public/units", () => {
     ])
       expect(body, marker).not.toContain(marker);
   });
-
-  it("公開テナントが未設定なら何も返さない", async () => {
-    const res = await get("/api/public/units", envOf({ PUBLIC_CONTENT_TENANT_ID: undefined }));
-    expect(res.status).toBe(200);
-    expect((await json<{ units: PublicUnit[] }>(res)).units).toEqual([]);
-  });
-
-  it("テナントは設定で決まり、別テナントの単元は混ざらない", async () => {
-    const res = await get("/api/public/units", envOf({ PUBLIC_CONTENT_TENANT_ID: "coach" }));
-    const { units } = await json<{ units: PublicUnit[] }>(res);
-    expect(units.map((u) => u.id)).toEqual(["other-unit"]);
-    expect(units[0]?.stage_title).toBe("別テナントの入口");
-  });
 });
 
 describe("GET /api/public/lessons/:id", () => {
@@ -158,7 +141,6 @@ describe("GET /api/public/lessons/:id", () => {
     ["専用星 (audience: granted)", "granted-doc"],
     ["下書きの講座", "draft-doc"],
     ["旧形式の講座", "legacy-doc"],
-    ["別テナント", "other-doc"],
     ["存在しない", "no-such-lesson"],
   ])("%s は 404 で、中身を返さない", async (_label, id) => {
     const res = await get(`/api/public/lessons/${id}`);
@@ -174,29 +156,17 @@ describe("GET /api/public/lessons/:id", () => {
       "GRANTED_DOC",
       "DRAFT_DOC",
       "LEGACY_DOC",
-      "OTHER_TENANT_DOC",
     ])
       expect(body).not.toContain(marker);
   });
 
-  it("公開テナントが未設定なら 404", async () => {
-    const res = await get("/api/public/lessons/u00-doc", envOf({ PUBLIC_CONTENT_TENANT_ID: "  " }));
-    expect(res.status).toBe(404);
-  });
-
-  it("別テナントを公開テナントにすると、そのテナントのレッスンだけが返る", async () => {
-    const env = envOf({ PUBLIC_CONTENT_TENANT_ID: "coach" });
-    expect((await get("/api/public/lessons/other-doc", env)).status).toBe(200);
-    expect((await get("/api/public/lessons/u00-doc", env)).status).toBe(404);
-  });
-
-  it("ログイン済みでも応答は同じで、トークンでテナントや範囲は変わらない", async () => {
+  it("ログイン済みでも応答は同じで、トークンで範囲は変わらない", async () => {
     db.sqlite.exec(
-      `INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES ('coach-admin', 'coach', 'admin', '管理者', 0, 'google', 1);`,
+      `INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES ('signed-in', 'ses', 'admin', '管理者', 0, 'google', 1);`,
     );
     const secret = "public-content-test-secret";
     const env = envOf({ AUTH_JWT_SECRET: secret });
-    const token = await signAccessToken(secret, "coach-admin", "admin@example.test");
+    const token = await signAccessToken(secret, "signed-in", "admin@example.test");
     const res = await get("/api/public/lessons/m0-doc", env, { token });
     expect(res.status).toBe(404);
     const units = await json<{ units: PublicUnit[] }>(

@@ -8,7 +8,7 @@
 import type { AnnouncementRow, NotificationRow } from "@stella/shared/cms/types";
 import { apiFetch } from "./api-client";
 
-/** 通知の有無によらず、現在の所属・受講登録で読めるお知らせを取得する。 */
+/** 通知の有無によらず、現在の受講登録で読めるお知らせを取得する。 */
 export async function listAnnouncements(
   offset: number,
   signal?: AbortSignal,
@@ -20,8 +20,7 @@ export async function listAnnouncements(
 }
 
 export interface CreateAnnouncementInput {
-  tenantId: string;
-  /** ステージ単位のお知らせにする場合の対象ステージ (省略 / null でテナント全体)。 */
+  /** ステージ単位のお知らせにする場合の対象ステージ (省略 / null で全員)。 */
   stageId?: string | null;
   title: string;
   body: string;
@@ -44,8 +43,6 @@ export async function createAnnouncement(input: CreateAnnouncementInput): Promis
 }
 
 export interface ListNotificationsOpts {
-  /** 対象テナント (サーバは caller のテナントに固定するため送信のみ互換)。 */
-  tenantId: string;
   /** 未読のみに絞る。 */
   unreadOnly?: boolean;
   /** 取得件数の上限 (既定 30)。 */
@@ -71,7 +68,7 @@ export async function markNotificationRead(id: string): Promise<void> {
   });
 }
 
-/** 自分宛の未読通知をすべて既読にする (当該テナント内)。 */
-export async function markAllNotificationsRead(_tenantId: string): Promise<void> {
+/** 自分宛の未読通知をすべて既読にする。 */
+export async function markAllNotificationsRead(): Promise<void> {
   await apiFetch("/api/notifications/read-all", { method: "POST" });
 }

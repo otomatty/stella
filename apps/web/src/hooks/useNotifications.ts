@@ -25,17 +25,13 @@ export interface UseNotificationsResult {
   markAllRead: () => Promise<void>;
 }
 
-export function useNotifications(
-  tenantId: string,
-  userId: string | null,
-  enabled = true,
-): UseNotificationsResult {
+export function useNotifications(userId: string | null, enabled = true): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
 
-  // userId を鍵に含め、 ログアウト→別ユーザーのログイン (同テナント) でも
+  // userId を鍵に含め、 ログアウト→別ユーザーのログインでも
   // 前ユーザーの通知が残らないよう refetch / クリアされるようにする。
   const active = enabled && isBackendConfigured() && Boolean(userId);
 
@@ -50,7 +46,7 @@ export function useNotifications(
     setLoading(true);
     setError(null);
     try {
-      const rows = await listNotifications({ tenantId, limit: 30 });
+      const rows = await listNotifications({ limit: 30 });
       if (reqId !== requestIdRef.current) return;
       setNotifications(rows);
     } catch (err) {
@@ -59,7 +55,7 @@ export function useNotifications(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [active, tenantId]);
+  }, [active]);
 
   useEffect(() => {
     void refetch();
@@ -84,12 +80,12 @@ export function useNotifications(
     if (!active) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      await markAllNotificationsRead(tenantId);
+      await markAllNotificationsRead();
     } catch (err) {
       console.error("[useNotifications] markAllRead failed", err);
       await refetch();
     }
-  }, [active, tenantId, refetch]);
+  }, [active, refetch]);
 
   const unreadCount = notifications.reduce((n, x) => n + (x.read ? 0 : 1), 0);
 

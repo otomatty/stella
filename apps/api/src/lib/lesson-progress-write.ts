@@ -46,7 +46,6 @@ export function assertProgressSyncSize(count: number): void {
 }
 
 type ProgressValue = {
-  tenantId: string;
   userId: string;
   lessonId: string;
   completed: boolean;
@@ -56,13 +55,8 @@ type ProgressValue = {
   updatedAt: Date;
 };
 
-function toValues(
-  tenantId: string,
-  userId: string,
-  rows: readonly NormalizedProgressRow[],
-): ProgressValue[] {
+function toValues(userId: string, rows: readonly NormalizedProgressRow[]): ProgressValue[] {
   return rows.map((r) => ({
-    tenantId,
     userId,
     lessonId: r.lessonId,
     completed: r.completed,
@@ -74,7 +68,7 @@ function toValues(
 }
 
 /**
- * 同テナントのコードレッスンの完了は、書き込むその文の中でレビューの合格から決め直す
+ * コードレッスンの完了は、書き込むその文の中でレビューの合格から決め直す
  * (`reviewedProgressRows` と同じ条件: 提出の課題がレッスンの課題と一致する合格)。
  * 合格を先に読んでから書くと、その間に講師が合格を訂正したとき、端末の時刻が LWW で
  * 勝てば古い「合格あり」で訂正を上書きしてしまう。新規行は端末の値を入れるが、
@@ -83,13 +77,11 @@ function toValues(
  */
 const reviewedCompleted = sql`case when exists (
   select 1 from lessons l
-  inner join sections se on se.id = l.section_id
-  inner join stages st on st.id = se.stage_id
-  where l.id = excluded.lesson_id and l.type = 'code' and st.tenant_id = excluded.tenant_id
+  where l.id = excluded.lesson_id and l.type = 'code'
 ) then exists (
   select 1 from submissions s
   inner join lessons l on l.id = s.lesson_id and l.assignment_id = s.assignment_id
-  where s.tenant_id = excluded.tenant_id and s.student_id = excluded.user_id
+  where s.student_id = excluded.user_id
     and s.lesson_id = excluded.lesson_id and s.verdict = 'pass'
 ) else excluded.completed end`;
 
@@ -116,28 +108,26 @@ function buildProgressUpsert(db: Db, values: ProgressValue[]) {
  */
 export function planLessonProgressWrites(
   db: Db,
-  tenantId: string,
   userId: string,
   rows: readonly NormalizedProgressRow[],
 ) {
   if (rows.length === 0) return [];
-  const values = toValues(tenantId, userId, rows);
+  const values = toValues(userId, rows);
   const perInsert = rowsPerInsert((n) => buildProgressUpsert(db, values.slice(0, n)));
   return chunk([...rows], perInsert).map((rowChunk) => {
     const increments = rowChunk
       .filter((r) => r.countsTowardActivity)
-      .map((r) => buildStudyActivityIncrement(db, tenantId, userId, r));
-    return [...increments, buildProgressUpsert(db, toValues(tenantId, userId, rowChunk))];
+      .map((r) => buildStudyActivityIncrement(db, userId, r));
+    return [...increments, buildProgressUpsert(db, toValues(userId, rowChunk))];
   });
 }
 
 export async function executeLessonProgressWrites(
   db: Db,
-  tenantId: string,
   userId: string,
   rows: readonly NormalizedProgressRow[],
 ): Promise<void> {
-  for (const statements of planLessonProgressWrites(db, tenantId, userId, rows)) {
+  for (const statements of planLessonProgressWrites(db, userId, rows)) {
     const [first, ...rest] = statements;
     if (first === undefined) continue;
     if (rest.length === 0) await first;

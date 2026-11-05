@@ -46,7 +46,6 @@ export interface UpdatedCard extends SrsCardState {
  */
 export async function applyOutcomesToCards(
   db: Db,
-  tenantId: string,
   userId: string,
   outcomes: readonly QuestionOutcome[],
   at: Date,
@@ -71,7 +70,6 @@ export async function applyOutcomesToCards(
       .where(
         and(
           inArray(quizQuestions.id, ids),
-          eq(stages.tenantId, tenantId),
           or(eq(stages.format, 1), eq(quizzes.source, "knowledge")),
         ),
       );
@@ -110,7 +108,6 @@ export async function applyOutcomesToCards(
         .insert(reviewCards)
         .values({
           id: cardId,
-          tenantId,
           userId,
           questionId: o.questionId,
           ...next,
@@ -126,7 +123,6 @@ export async function applyOutcomesToCards(
       // log は必ず自分のカード upsert より後ろ (FK 先が同一 batch 内で先に確定する)。
       statements.push(
         db.insert(reviewLogs).values({
-          tenantId,
           userId,
           cardId,
           questionId: o.questionId,

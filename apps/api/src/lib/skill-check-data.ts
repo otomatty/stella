@@ -8,6 +8,7 @@
 
 import { and, count, desc, eq, exists, gte, inArray, lt, sql } from "drizzle-orm";
 
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { SKILL_CHECK_DAILY_LIMIT } from "@stella/shared/skill-map/skill-check";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 
@@ -269,7 +270,7 @@ export async function insertSkillCheckAttempt(
   const inserted = await db.run(
     sql`insert into skill_check_attempts
           (id, tenant_id, user_id, stage_id, score, max_score, passed, question_ids, answers, submitted_at)
-        select ${crypto.randomUUID()}, ${caller.tenantId}, ${caller.id}, ${record.stageId},
+        select ${crypto.randomUUID()}, ${LEGACY_TENANT_ID}, ${caller.id}, ${record.stageId},
                ${record.score}, ${record.maxScore}, ${record.passed ? 1 : 0},
                ${JSON.stringify(record.questionIds)}, ${JSON.stringify(record.answers)}, ${now.getTime()}
         where (select count(*) from skill_check_attempts
@@ -300,14 +301,12 @@ export async function insertSkillCheckAttempt(
  * 飛び級で開いた星を記録する。
  *
  * 既にあれば何もしない (`do nothing`) — 2 度目の合格で `unlocked_at` を上書きすると、
- * 「いつ開いたか」が受け直すたびに新しくなってしまう。テナントは行の作成時のものを
- * 残す (テナントを移った受講者の解放は、移動先で取り直すのが正しい)。
+ * 「いつ開いたか」が受け直すたびに新しくなってしまう。
  */
 export async function upsertStageUnlock(db: Db, caller: Caller, stageId: string): Promise<void> {
   await db
     .insert(stageUnlocks)
     .values({
-      tenantId: caller.tenantId,
       userId: caller.id,
       stageId,
       via: "skill_check",
@@ -316,16 +315,11 @@ export async function upsertStageUnlock(db: Db, caller: Caller, stageId: string)
     .onConflictDoNothing({ target: [stageUnlocks.userId, stageUnlocks.stageId] });
 }
 
-/**
- * 飛び級で開いた星の id 集合 (評価器の `unlockedStageIds`)。
- *
- * テナントも絞る — テナントを移った受講者の古い行が残っていると、他テナントの星が
- * 開いたままになる (`loadEnrolledStageIds` と同じ理由)。
- */
+/** 飛び級で開いた星の id 集合 (評価器の `unlockedStageIds`)。本人の行だけ。 */
 export async function loadUnlockedStageIds(db: Db, caller: Caller): Promise<Set<string>> {
   const rows = await db
     .select({ stageId: stageUnlocks.stageId })
     .from(stageUnlocks)
-    .where(and(eq(stageUnlocks.userId, caller.id), eq(stageUnlocks.tenantId, caller.tenantId)));
+    .where(eq(stageUnlocks.userId, caller.id));
   return new Set(rows.map((row) => row.stageId));
 }

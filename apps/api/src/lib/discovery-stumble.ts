@@ -19,16 +19,15 @@
  * 入力に任意の文を書ける**ことになる。だから題名は必ず D1 の正本 (lessons /
  * assignments) から引き直し、引けなければ汎用の文言に落とす。
  *
- * レッスン id / 課題 id も外から来る値なので、引き当ては **テナントで絞る**
- * (`resolveLessonStage` / `resolveAssignmentTitle`)。他テナントの id を送るだけで
- * 行が作られる経路を残さない。
+ * レッスン id / 課題 id も外から来る値なので、引き当ては正本の行があるときだけ
+ * (`resolveLessonStage` / `resolveAssignmentTitle`)。無い id では行を作らない。
  *
  * ## なぜ「2 回目」なのか
  *
  * 1 回落としただけでは、教材を作るほどの詰まりとは言えない (読み違い・操作ミスも
  * 混ざる)。同じ小テストを 2 回落として初めて「理解が足りていない文脈」と見なす。
- * 3 回目以降で行が増えないのは、リクエストの一意索引 (tenant × stage × topic) が
- * `do nothing` で受け止めるため — 数える必要も、誰が落としたかを持つ必要も無い。
+ * 3 回目以降で行が増えないのは、リクエストの一意索引が `do nothing` で受け止めるため
+ * — 数える必要も、誰が落としたかを持つ必要も無い。
  */
 
 import type { Db } from "../db/client.js";
@@ -50,16 +49,15 @@ export const DISCOVERY_QUIZ_FAIL_THRESHOLD = 2;
  */
 export async function noteQuizStumble(
   db: Db,
-  input: { tenantId: string; userId: string; quizId: string; lessonId: string },
+  input: { userId: string; quizId: string; lessonId: string },
 ): Promise<void> {
   const failures = await countFailedQuizAttempts(db, input.userId, input.quizId);
   if (failures < DISCOVERY_QUIZ_FAIL_THRESHOLD) return;
 
   // レッスン名は D1 の正本 (`lessons.title`)。小テストの題名は受講者から来ない。
-  const stage = await resolveLessonStage(db, input.tenantId, input.lessonId);
+  const stage = await resolveLessonStage(db, input.lessonId);
   if (!stage) return;
   await upsertDiscoveryRequest(db, {
-    tenantId: input.tenantId,
     stageId: stage.stageId,
     topic: `確認テスト「${stage.lessonTitle}」`,
     origin: "quiz_fail",
@@ -77,16 +75,15 @@ export async function noteQuizStumble(
  */
 export async function noteSubmissionStumble(
   db: Db,
-  input: { tenantId: string; lessonId: string | null; assignmentId: string | null },
+  input: { lessonId: string | null; assignmentId: string | null },
 ): Promise<void> {
   if (!input.lessonId) return;
-  const stage = await resolveLessonStage(db, input.tenantId, input.lessonId);
+  const stage = await resolveLessonStage(db, input.lessonId);
   if (!stage) return;
   const assignmentTitle = input.assignmentId
-    ? await resolveAssignmentTitle(db, input.tenantId, input.assignmentId)
+    ? await resolveAssignmentTitle(db, input.assignmentId)
     : null;
   await upsertDiscoveryRequest(db, {
-    tenantId: input.tenantId,
     stageId: stage.stageId,
     topic: assignmentTitle
       ? `課題「${assignmentTitle}」`

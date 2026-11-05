@@ -1,7 +1,7 @@
 import { and, eq, inArray, or } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
-import { lessonProgress, lessons, sections, stages, submissions } from "../db/schema.js";
+import { lessonProgress, lessons, submissions } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
 
 /**
@@ -17,7 +17,7 @@ export function passCountsForLesson() {
   );
 }
 
-/** id リストのチャンク幅。固定バインド (テナント・受講者・判定) を引いて D1 の上限 100 に収める。 */
+/** id リストのチャンク幅。固定バインド (受講者・判定) を引いて D1 の上限 100 に収める。 */
 const IDS_PER_QUERY = 90;
 
 /**
@@ -25,12 +25,11 @@ const IDS_PER_QUERY = 90;
  *
  * 旧形式の提出の lesson_id / assignment_id は受講者が送る値なので、指したレッスンの課題
  * (`lessons.assignment_id`) への提出である合格だけを数える。別の課題を名乗る提出の合格で
- * そのレッスンの完了を作らせない。`codeLessonIds` は呼び出し側でテナントと
+ * そのレッスンの完了を作らせない。`codeLessonIds` は呼び出し側で
  * `type = 'code'` を確かめたものを渡す。
  */
 export async function reviewedPassLessonIds(
   db: Db,
-  tenantId: string,
   userId: string,
   codeLessonIds: readonly string[],
 ): Promise<Set<string>> {
@@ -48,7 +47,6 @@ export async function reviewedPassLessonIds(
       )
       .where(
         and(
-          eq(submissions.tenantId, tenantId),
           eq(submissions.studentId, userId),
           eq(submissions.verdict, "pass"),
           inArray(submissions.lessonId, ids),
@@ -68,7 +66,6 @@ export interface ReviewedProgress {
 /** コードの完了はレビューの合格を正本にする。端末の自己申告で合格や取消を作らない。 */
 export async function reviewedProgressRows(
   db: Db,
-  tenantId: string,
   userId: string,
   rows: NormalizedProgressRow[],
 ): Promise<ReviewedProgress> {
@@ -81,16 +78,11 @@ export async function reviewedProgressRows(
     const codeLessons = await db
       .select({ id: lessons.id })
       .from(lessons)
-      .innerJoin(sections, eq(sections.id, lessons.sectionId))
-      .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(
-        and(inArray(lessons.id, ids), eq(stages.tenantId, tenantId), eq(lessons.type, "code")),
-      );
+      .where(and(inArray(lessons.id, ids), eq(lessons.type, "code")));
     if (!codeLessons.length) continue;
     for (const l of codeLessons) reviewed.add(l.id);
     const ok = await reviewedPassLessonIds(
       db,
-      tenantId,
       userId,
       codeLessons.map((l) => l.id),
     );

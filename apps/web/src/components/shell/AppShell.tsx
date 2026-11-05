@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Sparkles } from "@/lib/icons";
-import { TENANTS } from "@/data/seed-catalog";
 import { CURRENT_USER } from "@/demo/fixtures";
-import type { Stage, Role, Tenant, User } from "@/data/types";
+import type { Stage, Role, User } from "@/data/types";
 import type { ChatContext } from "@stella/shared/ai/types";
 import { LessonAIProvider } from "@/components/common/LessonAIContext";
-import { useStagesForTenant, useEnrolledStagesForTenant } from "@/data/stages-source";
+import { useStages, useEnrolledStages } from "@/data/stages-source";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from "@/lib/auth";
@@ -68,7 +67,6 @@ interface PersistedState {
   /** localStorage `lms_state` のキー名は据え置き (保存済みの値を読み落とさないため)。 */
   stage?: AuthStage;
   role?: Role;
-  tenantId?: Tenant["id"];
   showAIBot?: boolean;
   lastLocation?: PersistedLastLocation | null;
   /** staff が受講者シェルを開いているときだけ 'learner'。 API の role は変えない。 */
@@ -77,7 +75,6 @@ interface PersistedState {
 
 const DEFAULTS = {
   role: "learner" as Role,
-  tenant: "ses" as Tenant["id"],
   showAIBot: true,
 };
 
@@ -111,7 +108,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   enrollments: "/admin/enrollments",
   assignments: "/admin/assignments",
   audit: "/admin/audit",
-  orgs: "/admin/orgs",
   report: "/admin/report",
   settings: "/settings",
 };
@@ -150,8 +146,6 @@ export function AppShell() {
   });
   const page = pageKeyFromPath(pathname);
 
-  const defaultTenant = TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[0];
-
   const backendEnabled = isBackendConfigured();
   const {
     session,
@@ -169,10 +163,6 @@ export function AppShell() {
     // 旧デモの tenant-select は廃止。保存されていてもアプリへ進む。
     if (saved === "tenant-select") return "app";
     return "login";
-  });
-  const [tenant, setTenant] = useState<Tenant>(() => {
-    const saved = loadSaved();
-    return (saved?.tenantId && TENANTS.find((t) => t.id === saved.tenantId)) || defaultTenant;
   });
   const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
   const [uiRoleOverride, setUiRoleOverride] = useState<Role | null>(
@@ -196,9 +186,9 @@ export function AppShell() {
   // 橋渡し。 URL が真実になったため state ではなく ref で十分。
   const selectedStageRef = useRef<Stage | null>(null);
   const reviewIdRef = useRef<string | null>(null);
-  const prevSessionRef = useRef<{ tenantId: Tenant["id"]; role: Role } | null>(null);
+  const prevRoleRef = useRef<Role | null>(null);
 
-  // バックエンドが設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
+  // バックエンドが設定済みかつ profile を取得済みなら、 そこから role を上書きする。
   // staff は UI だけ受講者シェルへ切り替えられる（認可は profiles.role のまま）。
   const { role: effectiveRole, canSwitchToLearner } = resolveUiRole({
     backendEnabled,
@@ -206,24 +196,6 @@ export function AppShell() {
     uiRoleOverride,
     demoRole: role,
   });
-  const effectiveTenant: Tenant = useMemo(() => {
-    if (backendEnabled && profile) {
-      // DB (GET /api/me の tenant) を真実とする。 seed カタログに無いテナントでも
-      // fixtures の 'ses' 等へフォールバックせず、 実テナントとして扱う。
-      const info = profile.tenant;
-      const seedIcon = TENANTS.find((t) => t.id === profile.tenant_id)?.icon;
-      const icon: Tenant["icon"] =
-        info?.icon === "cpu" || info?.icon === "school" ? info.icon : (seedIcon ?? "school");
-      return {
-        id: profile.tenant_id,
-        name: info?.name ?? profile.tenant_id,
-        subtitle: info?.subtitle ?? "",
-        icon,
-        active: 0,
-      };
-    }
-    return tenant;
-  }, [backendEnabled, profile, tenant]);
 
   const effectiveUser: User = useMemo(() => {
     if (backendEnabled) {
@@ -247,15 +219,11 @@ export function AppShell() {
   }, [backendEnabled, profile, session]);
 
   // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 instructor/admin は
-  // 従来どおりテナントのステージ一覧を使う (公開ステージを「探す」用途)。
+  // 公開ステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
   // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
-  const browseStages = useStagesForTenant(effectiveTenant.id, effectiveRole !== "learner");
-  const enrolledStages = useEnrolledStagesForTenant(
-    effectiveTenant.id,
-    session?.user.id ?? null,
-    effectiveRole === "learner",
-  );
+  const browseStages = useStages(effectiveRole !== "learner");
+  const enrolledStages = useEnrolledStages(session?.user.id ?? null, effectiveRole === "learner");
   // DB 由来ステージは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
   const progressMap = useLessonProgressMap();
   const rawStages = effectiveRole === "learner" ? enrolledStages.stages : browseStages.stages;
@@ -267,14 +235,13 @@ export function AppShell() {
   const stageError = effectiveRole === "learner" ? enrolledStages.error : browseStages.error;
   // 自己開始 (Phase 3b) で受講登録が増えたときに、いま見ている側の一覧だけを取り直す。
   const refetchStages = effectiveRole === "learner" ? enrolledStages.refetch : browseStages.refetch;
-  // 検索 API は staff に同テナントの全講座 (draft 含む) を返すため、 staff が受講者シェルを
+  // 検索 API は staff に全講座 (draft 含む) を返すため、 staff が受講者シェルを
   // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
-  const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
+  const pendingReviewCount = usePendingReviewCount();
   // 人の件数・AI の状態はほかの講師や AI の非同期の結果で変わるので、staff のあいだは取り直す (#34)。
   useSubmissionsAutoRefresh(
-    effectiveTenant.id,
     backendEnabled && (effectiveRole === "instructor" || effectiveRole === "admin"),
   );
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
@@ -293,7 +260,7 @@ export function AppShell() {
         : undefined;
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
-  const notifications = useNotifications(effectiveTenant.id, session?.user.id ?? null, true);
+  const notifications = useNotifications(session?.user.id ?? null, true);
 
   // ステージの自動クリア (修了証の自動発行) を受けたら、受講ステージ一覧と修了証を
   // 取り直す。取り直さないと、一覧・ダッシュボードの完了状態とサイドバーのバッジ件数が
@@ -487,14 +454,14 @@ export function AppShell() {
     }
   }, [pathname]);
 
-  // テナント / ロール切替時のみ添削対象をクリア
+  // ロール切替時のみ添削対象をクリア
   useEffect(() => {
-    const prev = prevSessionRef.current;
-    if (prev && (prev.tenantId !== tenant.id || prev.role !== role)) {
+    const prev = prevRoleRef.current;
+    if (prev && prev !== role) {
       reviewIdRef.current = null;
     }
-    prevSessionRef.current = { tenantId: tenant.id, role };
-  }, [tenant.id, role]);
+    prevRoleRef.current = role;
+  }, [role]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -502,13 +469,12 @@ export function AppShell() {
       JSON.stringify({
         stage: authStage,
         role,
-        tenantId: tenant.id,
         showAIBot,
         lastLocation,
         uiRoleOverride,
       }),
     );
-  }, [authStage, role, tenant, showAIBot, lastLocation, uiRoleOverride]);
+  }, [authStage, role, showAIBot, lastLocation, uiRoleOverride]);
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
@@ -516,7 +482,6 @@ export function AppShell() {
     if (backendEnabled && session && profile) {
       configureRemoteSync({
         userId: session.user.id,
-        tenantId: profile.tenant_id,
       });
     } else {
       configureRemoteSync(null);
@@ -567,7 +532,6 @@ export function AppShell() {
       return (
         <LoginScreen
           onMockLogin={() => {
-            setTenant(TENANTS[0] ?? tenant);
             setAuthStage("app");
             void navigate({ to: "/" });
           }}
@@ -589,8 +553,6 @@ export function AppShell() {
     onActiveLessonChange: handleActiveLessonChange,
     onOpenAIBot: () => setAiOpen(true),
     setAIContext: setAiContext,
-    tenantId: effectiveTenant.id,
-    tenantName: effectiveTenant.name,
     currentUserId: session?.user.id ?? null,
     backendEnabled,
     onOpenReview,
@@ -627,7 +589,6 @@ export function AppShell() {
             searchStageIds={scopeSearchToOwnStages ? new Set(stages.map((c) => c.id)) : null}
             notify={{
               role: effectiveRole,
-              tenantId: effectiveTenant.id,
               notifications: notifications.notifications,
               unreadCount: notifications.unreadCount,
               loading: notifications.loading,
@@ -688,13 +649,11 @@ export function AppShell() {
       {tweaksVisible && !backendEnabled ? (
         <TweaksPanel
           role={role}
-          tenant={tenant}
           showAIBot={showAIBot}
           onRole={(r) => {
             setRole(r);
             void navigate({ to: "/" });
           }}
-          onTenant={(t) => setTenant(t)}
           onToggleAIBot={() => setShowAIBot((v) => !v)}
         />
       ) : null}
@@ -757,8 +716,7 @@ export function EmptyStagesNotice({ setPage }: { setPage: (p: string) => void })
     <div className="max-w-md mx-auto mt-16 text-center">
       <div className="text-[15px] font-semibold mb-2">受講可能なステージがありません</div>
       <div className="text-[12.5px] text-ink-3 mb-4">
-        現在このテナントに公開中のステージはありません。
-        管理者がステージを公開するまでお待ちください。
+        現在公開中のステージはありません。 管理者がステージを公開するまでお待ちください。
       </div>
       <button
         type="button"

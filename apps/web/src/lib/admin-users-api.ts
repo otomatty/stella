@@ -11,7 +11,7 @@ import { apiFetch } from "./api-client";
 
 export type AdminProfileRow = ProfileRow & { disabled: boolean };
 
-export async function listProfiles(_tenantId: string): Promise<AdminProfileRow[]> {
+export async function listProfiles(): Promise<AdminProfileRow[]> {
   const { rows } = await apiFetch<{ rows: ProfileRow[] }>("/api/admin/users");
   return (rows ?? []).map((row) => ({
     ...row,

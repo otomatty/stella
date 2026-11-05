@@ -49,7 +49,7 @@ function holdHydration(): { release: () => void; started: () => Promise<void> } 
 let seq = 0;
 /** 同期先を切り替える (同じ userId だと `configureRemoteSync` が素通しになる)。 */
 function startSync(): void {
-  configureRemoteSync({ userId: `user-${++seq}`, tenantId: "ses" });
+  configureRemoteSync({ userId: `user-${++seq}` });
 }
 
 afterEach(() => {

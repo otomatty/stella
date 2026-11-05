@@ -1,7 +1,7 @@
 /**
  * 週次の育成メモ (#38・07 §6.5)。担当講師が読み、一言の声掛けかペースの調整をする。
  *
- * - 読めるのは、その受講者の今の担当講師と、同じテナントの管理者だけ。受講者本人には返さない
+ * - 読めるのは、その受講者の今の担当講師と、管理者だけ。受講者本人には返さない
  *   (メモは AI の所見を含むので、人が確定する前の AI の所見を受講者に見せない 07 §6.3 も守る)。
  * - 一言の声掛けは受講者への通知 (`mentor_message`) で、本文は講師が書いた文だけを送る。
  * - ペースの調整は既存の学習ペースの編集 (`PATCH /api/learning-pace/:userId`) で行い、
@@ -24,12 +24,11 @@ import { isMemoAction, memoWeekOf, mentorMemoView } from "../lib/mentor-memo.js"
 
 export const mentorMemosRoute = new Hono<{ Bindings: Env }>();
 
-const isTenantAdmin = (caller: Caller) =>
-  caller.role === "admin" || caller.role === "platform_admin";
+const isAdmin = (caller: Caller) => caller.role === "admin" || caller.role === "platform_admin";
 
-/** 担当講師は自分が今担当している受講者だけ。管理者はテナントの全員。 */
+/** 担当講師は自分が今担当している受講者だけ。管理者は全員。 */
 function visibleLearners(db: Db, caller: Caller) {
-  return isTenantAdmin(caller)
+  return isAdmin(caller)
     ? undefined
     : inArray(
         mentorMemos.learnerId,
@@ -44,18 +43,8 @@ async function loadMemo(db: Db, caller: Caller, id: string) {
   const [row] = await db
     .select({ memo: mentorMemos, learnerName: profiles.displayName })
     .from(mentorMemos)
-    .innerJoin(
-      profiles,
-      and(eq(profiles.id, mentorMemos.learnerId), eq(profiles.tenantId, mentorMemos.tenantId)),
-    )
-    .where(
-      and(
-        eq(mentorMemos.id, id),
-        eq(mentorMemos.tenantId, caller.tenantId),
-        eq(profiles.disabled, false),
-        visibleLearners(db, caller),
-      ),
-    )
+    .innerJoin(profiles, eq(profiles.id, mentorMemos.learnerId))
+    .where(and(eq(mentorMemos.id, id), eq(profiles.disabled, false), visibleLearners(db, caller)))
     .limit(1);
   // 担当外のメモは、あるかどうかも見せない。
   if (!row) throw new ApiError("育成メモが見つかりません", 404);
@@ -72,13 +61,9 @@ mentorMemosRoute.get("/api/mentor-memos", async (c) => {
     const rows = await db
       .select({ memo: mentorMemos, learnerName: profiles.displayName })
       .from(mentorMemos)
-      .innerJoin(
-        profiles,
-        and(eq(profiles.id, mentorMemos.learnerId), eq(profiles.tenantId, mentorMemos.tenantId)),
-      )
+      .innerJoin(profiles, eq(profiles.id, mentorMemos.learnerId))
       .where(
         and(
-          eq(mentorMemos.tenantId, caller.tenantId),
           eq(mentorMemos.weekStart, week),
           eq(profiles.disabled, false),
           visibleLearners(db, caller),
@@ -123,7 +108,6 @@ mentorMemosRoute.post("/api/mentor-memos/:id/actions", async (c) => {
       // 本文は講師が書いた文だけ。メモ・材料・AI の所見は載せない。
       notify = {
         userId: memo.learnerId,
-        tenantId: memo.tenantId,
         type: "mentor_message",
         title: `${caller.name}さんからの一言`,
         body: message,
@@ -135,7 +119,7 @@ mentorMemosRoute.post("/api/mentor-memos/:id/actions", async (c) => {
       const [learner] = await db
         .select({ weeklyHours: profiles.weeklyHours, startDate: profiles.learningStartDate })
         .from(profiles)
-        .where(and(eq(profiles.id, memo.learnerId), eq(profiles.tenantId, caller.tenantId)))
+        .where(eq(profiles.id, memo.learnerId))
         .limit(1);
       if (!learner) throw new ApiError("受講者が見つかりません", 404);
       record.detail = `週${learner.weeklyHours}時間 · 開始${learner.startDate ?? "は初回受講日"}`;
@@ -146,7 +130,7 @@ mentorMemosRoute.post("/api/mentor-memos/:id/actions", async (c) => {
         actions: sql`json_insert(${mentorMemos.actions}, '$[#]', json(${JSON.stringify(record)}))`,
         handledAt: sql`coalesce(${mentorMemos.handledAt}, ${now.getTime()})`,
       })
-      .where(and(eq(mentorMemos.id, memo.id), eq(mentorMemos.tenantId, caller.tenantId)));
+      .where(eq(mentorMemos.id, memo.id));
     if (notify) await db.batch([db.insert(notifications).values(notify), update]);
     else await update;
     const updated = await loadMemo(db, caller, memo.id);

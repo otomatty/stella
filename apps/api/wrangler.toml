@@ -19,9 +19,6 @@ INVITE_REDIRECT_URL = "https://stella.saedgewell.workers.dev"
 # Better Auth の基点 (受講者用の Web。API は Web の /api/* の中継で受ける)。Google のリダイレクト URI は
 # ${BETTER_AUTH_URL}/api/auth/callback/google。BETTER_AUTH_SECRET は deploy が secret に入れる。
 BETTER_AUTH_URL = "https://stella.saedgewell.workers.dev"
-# ログインなしで読める教材 (GET /api/public/*。Issue #41) のテナント。未ログインでは JWT から
-# テナントが決まらないので、教材を seed するテナント (ses) をここで決める。外すと公開 API は何も返さない。
-PUBLIC_CONTENT_TENANT_ID = "ses"
 
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。

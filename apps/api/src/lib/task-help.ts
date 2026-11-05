@@ -54,15 +54,11 @@ import {
 import { ApiError, type Caller } from "./authz.js";
 import { canAccessTask } from "./task-access.js";
 
-type Scope = { tenantId: string; userId: string; taskId: string };
+type Scope = { userId: string; taskId: string };
 
-/** 受講者がこの課題で開いた記録 (テナント・本人・課題で絞る)。 */
+/** 受講者がこの課題で開いた記録 (本人と課題で絞る)。 */
 export function helpOpensOf(scope: Scope) {
-  return and(
-    eq(taskHelpOpens.tenantId, scope.tenantId),
-    eq(taskHelpOpens.userId, scope.userId),
-    eq(taskHelpOpens.taskId, scope.taskId),
-  );
+  return and(eq(taskHelpOpens.userId, scope.userId), eq(taskHelpOpens.taskId, scope.taskId));
 }
 
 interface HelpOpen {
@@ -283,7 +279,7 @@ async function loadServed(
 }
 
 /**
- * 受講者が読める課題 (`canAccessTask`: 同じテナントの公開中の format 2 で、受講中か修了。予備の
+ * 受講者が読める課題 (`canAccessTask`: 公開中の format 2 で、受講中か修了。予備の
  * 類題は出題した受講者だけ、#39) の解放の判定に要るものを集める。読めない課題は 404 (課題がある
  * かどうかも返さない)。類題の解放の条件は、その類題の種別の方針 (`taskHelpAccess`) に従う。
  */
@@ -311,7 +307,7 @@ async function loadHelpContext(
     .limit(1);
   if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
   const kind = row.kind as TaskKind;
-  const scope = { tenantId: caller.tenantId, userId: caller.id, taskId: row.id };
+  const scope = { userId: caller.id, taskId: row.id };
   const [[progress], [runs], [submitted], [latest], opens, served] = await Promise.all([
     db
       .select({ status: taskProgress.status, contentHash: taskProgress.contentHash })
@@ -321,34 +317,16 @@ async function loadHelpContext(
     db
       .select({ failed: taskLocalRuns.failedRuns })
       .from(taskLocalRuns)
-      .where(
-        and(
-          eq(taskLocalRuns.tenantId, caller.tenantId),
-          eq(taskLocalRuns.userId, caller.id),
-          eq(taskLocalRuns.taskId, row.id),
-        ),
-      )
+      .where(and(eq(taskLocalRuns.userId, caller.id), eq(taskLocalRuns.taskId, row.id)))
       .limit(1),
     db
       .select({ n: count() })
       .from(submissions)
-      .where(
-        and(
-          eq(submissions.tenantId, caller.tenantId),
-          eq(submissions.studentId, caller.id),
-          eq(submissions.taskId, row.id),
-        ),
-      ),
+      .where(and(eq(submissions.studentId, caller.id), eq(submissions.taskId, row.id))),
     db
       .select({ id: submissions.id, attempt: submissions.attempt })
       .from(submissions)
-      .where(
-        and(
-          eq(submissions.tenantId, caller.tenantId),
-          eq(submissions.studentId, caller.id),
-          eq(submissions.taskId, row.id),
-        ),
-      )
+      .where(and(eq(submissions.studentId, caller.id), eq(submissions.taskId, row.id)))
       // 同じ時刻の提出は試行の番号で決める (提出の処理はロックの中で attempt を振る)。
       .orderBy(desc(submissions.submittedAt), desc(submissions.attempt))
       .limit(1),
@@ -524,7 +502,7 @@ export async function openTaskHelp(
     };
     await db
       .insert(taskHelpOpens)
-      .values({ tenantId: caller.tenantId, userId: caller.id, taskId: ctx.task.id, ...open })
+      .values({ userId: caller.id, taskId: ctx.task.id, ...open })
       .onConflictDoNothing();
     ctx.opens.push(open);
   }

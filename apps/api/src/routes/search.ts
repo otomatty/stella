@@ -4,7 +4,7 @@
  * Topbar の検索ボックスから呼ばれ、 ステージとレッスンをまとめて引く。
  *
  * アプリ層認可 (materials.ts と同基準):
- *   - staff (instructor / admin / platform_admin) … 同テナントの全ステージ
+ *   - staff (instructor / admin / platform_admin) … 全ステージ
  *   - student … published かつ閲覧可能な enrollment (active / completed) のステージのみ
  *
  * ユーザー (profiles) は検索対象に含めない。 受講者一覧はロールによって遷移先が
@@ -43,8 +43,8 @@ const blankToNull = (value: string | null): string | null => {
 
 /**
  * caller が検索してよいステージ ID の集合を返す。
- * staff は同テナントの全ステージ、 受講者は published + 閲覧可能な enrollment のみ。
- * null は「絞り込み不要 (テナント条件のみ)」を意味する。
+ * staff は全ステージ、 受講者は published + 閲覧可能な enrollment のみ。
+ * null は「ステージ ID で絞らない (staff)」を意味する。
  */
 async function visibleStageIds(db: Db, caller: Caller): Promise<string[] | null> {
   if (isStaffRole(caller.role)) return null;
@@ -56,7 +56,6 @@ async function visibleStageIds(db: Db, caller: Caller): Promise<string[] | null>
       and(
         eq(enrollments.userId, caller.id),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
-        eq(stages.tenantId, caller.tenantId),
         eq(stages.status, "published"),
       ),
     );
@@ -73,7 +72,7 @@ searchRoute.get("/api/search", async (c) => {
     }
 
     const scopedIds = await visibleStageIds(db, caller);
-    // 受講中ステージが 0 件の受講者は、 テナント条件だけで全件返さないよう早期に空を返す。
+    // 受講中ステージが 0 件の受講者は、 全件返さないよう早期に空を返す。
     if (scopedIds !== null && scopedIds.length === 0) {
       return c.json({ query, results: [] });
     }
@@ -82,9 +81,7 @@ searchRoute.get("/api/search", async (c) => {
     const pattern = buildLikePattern(query);
     const prefix = buildPrefixLikePattern(query);
 
-    const stageScope = scopedIds
-      ? inArray(stages.id, scopedIds)
-      : eq(stages.tenantId, caller.tenantId);
+    const stageScope = scopedIds ? inArray(stages.id, scopedIds) : undefined;
 
     const stageRows = await db
       .select({

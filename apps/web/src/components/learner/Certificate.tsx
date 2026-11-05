@@ -32,7 +32,6 @@ interface CertificatePageProps {
   currentUserId: string | null;
   studentName: string;
   studentInitials: string;
-  tenantName: string;
   backendEnabled: boolean;
 }
 
@@ -41,7 +40,6 @@ export const CertificatePage = ({
   currentUserId,
   studentName,
   studentInitials,
-  tenantName,
   backendEnabled,
 }: CertificatePageProps) => {
   if (!backendEnabled) {
@@ -52,12 +50,7 @@ export const CertificatePage = ({
     return <SkeletonRows rows={3} className="py-6" />;
   }
   return (
-    <LiveCertificates
-      stages={stages}
-      userId={currentUserId}
-      studentInitials={studentInitials}
-      tenantName={tenantName}
-    />
+    <LiveCertificates stages={stages} userId={currentUserId} studentInitials={studentInitials} />
   );
 };
 
@@ -69,10 +62,9 @@ interface LiveProps {
   stages: Stage[];
   userId: string;
   studentInitials: string;
-  tenantName: string;
 }
 
-function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveProps) {
+function LiveCertificates({ stages, userId, studentInitials }: LiveProps) {
   const [certs, setCerts] = useState<CertificateRow[]>([]);
   const [completions, setCompletions] = useState<Record<string, StageCompletion | null>>({});
   const [loading, setLoading] = useState(true);
@@ -191,7 +183,7 @@ function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveP
             <div className="text-[13px] text-ink-3">受講登録されたステージがありません。</div>
           ) : null}
 
-          <p className="text-[11.5px] text-ink-4">発行者: {tenantName}</p>
+          <p className="text-[11.5px] text-ink-4">発行者: {DISPLAY_NAME}</p>
         </div>
       )}
     </>
@@ -223,7 +215,7 @@ function IssuedCertificate({
       <CertificateView
         recipientName={cert.recipient_name}
         stageTitle={cert.stage_title}
-        issuer={cert.tenant_name}
+        issuer={cert.issuer_name}
         issuedAt={formatIssuedAt(cert.issued_at)}
         certCode={cert.cert_code}
         initials={fallbackInitials}

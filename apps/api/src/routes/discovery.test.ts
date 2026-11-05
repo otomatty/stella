@@ -63,7 +63,6 @@ vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
 
 const BASE_CALLER = {
   id: "seed-learner",
-  tenantId: "ses",
   role: "student" as ProfileRole,
   name: "受講者",
   email: null,
@@ -197,10 +196,7 @@ beforeEach(() => {
   vi.mocked(loadStudyDays).mockResolvedValue([]);
   vi.mocked(loadFocusCompletions).mockResolvedValue([]);
 
-  // 本物と同じくテナントで絞る (ライブラリはテナント `ses` のものとして持つ)。
-  vi.mocked(loadDiscoveryMaterial).mockImplementation(async (_db, tenantId, id) =>
-    tenantId === "ses" ? (library.get(id) ?? null) : null,
-  );
+  vi.mocked(loadDiscoveryMaterial).mockImplementation(async (_db, id) => library.get(id) ?? null);
   // 一覧は見出しだけを読む (設問の全文は受験でしか要らない)。
   vi.mocked(loadApprovedDiscoverySummaries).mockImplementation(async () =>
     [...library.values()]
@@ -348,11 +344,6 @@ describe("GET /api/discovery/:id", () => {
       );
     },
   );
-
-  it("他テナントの教材も同じ 400", async () => {
-    caller = { ...BASE_CALLER, tenantId: "other" };
-    expect((await get("/api/discovery/m-active")).status).toBe(400);
-  });
 });
 
 describe("POST /api/discovery/:id — 採点", () => {

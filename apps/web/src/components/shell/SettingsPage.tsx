@@ -5,8 +5,7 @@
  * 時に Google アカウントの氏名から自動で入るため、 ここは「上書きしたい人だけが使う」画面。
  * 一度保存すると name_source='user' になり、 以後の Google ログインでは上書きされない。
  *
- * メール / ロール / 所属テナントは招待とログインが真実なので読み取り専用で見せる。
- * テナント管理者にはテナント設定 (テストモード) も同じ画面に並べる。
+ * メール / ロールは招待とログインが真実なので読み取り専用で見せる。
  * 教材の OS 別の手順で既定に開く OS (profiles.os_preference) もここで変える。
  */
 
@@ -16,7 +15,6 @@ import { toast } from "sonner";
 import { isOsName, OS_LABELS, OS_NAMES, type OsName } from "@stella/shared/markdown/os-blocks";
 import { Loader2, Save } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
-import { TenantSettingsCard } from "@/components/admin/TenantSettingsCard";
 import { LearningPacePanel } from "@/components/learner/LearningPacePanel";
 import { LearningPaceManager } from "@/components/instructor/LearningPaceManager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,14 +33,13 @@ const MAX_NAME_LENGTH = 50;
 const ROLE_LABELS: Record<string, string> = {
   student: "受講者",
   instructor: "講師",
-  admin: "テナント管理者",
+  admin: "管理者",
   platform_admin: "プラットフォーム管理者",
 };
 
 interface SettingsPageProps {
   role: Role;
   profile: Profile | null;
-  tenantName: string;
   backendEnabled: boolean;
   /** 保存後に /api/me を取り直して、 サイドバー等の表示名を更新する。 */
   onProfileUpdated: () => Promise<void>;
@@ -51,19 +48,14 @@ interface SettingsPageProps {
 export const SettingsPage = ({
   role,
   profile,
-  tenantName,
   backendEnabled,
   onProfileUpdated,
 }: SettingsPageProps) => (
   <>
-    <PageHeader
-      title="設定"
-      sub={role === "admin" ? `アカウント / ${tenantName} のテナント設定` : "アカウント設定"}
-    />
+    <PageHeader title="設定" sub="アカウント設定" />
     <div className="max-w-[720px] flex flex-col gap-5">
       <AccountCard
         profile={profile}
-        tenantName={tenantName}
         backendEnabled={backendEnabled}
         onProfileUpdated={onProfileUpdated}
       />
@@ -74,24 +66,17 @@ export const SettingsPage = ({
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
       {backendEnabled && role === "admin" ? <LearningPaceManager admin /> : null}
-      {role === "admin" ? <TenantSettingsCard backendEnabled={backendEnabled} /> : null}
     </div>
   </>
 );
 
 interface AccountCardProps {
   profile: Profile | null;
-  tenantName: string;
   backendEnabled: boolean;
   onProfileUpdated: () => Promise<void>;
 }
 
-const AccountCard = ({
-  profile,
-  tenantName,
-  backendEnabled,
-  onProfileUpdated,
-}: AccountCardProps) => {
+const AccountCard = ({ profile, backendEnabled, onProfileUpdated }: AccountCardProps) => {
   const savedName = profile?.display_name ?? "";
   const [name, setName] = useState(savedName);
   const [saving, setSaving] = useState(false);
@@ -145,10 +130,7 @@ const AccountCard = ({
           </Avatar>
           <div className="min-w-0 text-[12.5px] text-ink-3">
             <div>{profile?.email ?? "—"}</div>
-            <div>
-              {tenantName}
-              {profile ? ` ・ ${ROLE_LABELS[profile.role] ?? profile.role}` : ""}
-            </div>
+            <div>{profile ? (ROLE_LABELS[profile.role] ?? profile.role) : ""}</div>
             <div className="text-[11.5px] text-ink-4">
               プロフィール画像は Google アカウントのものを使用します。
             </div>
@@ -185,8 +167,7 @@ const AccountCard = ({
         </div>
 
         <div className="mt-4 pt-4 border-t border-border text-[11.5px] text-ink-4">
-          メールアドレス・ロール・所属は管理者が管理します。
-          変更が必要な場合は管理者へ依頼してください。
+          メールアドレスとロールは管理者が管理します。 変更が必要な場合は管理者へ依頼してください。
         </div>
       </CardContent>
     </Card>

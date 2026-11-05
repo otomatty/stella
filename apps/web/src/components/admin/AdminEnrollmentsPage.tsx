@@ -13,7 +13,7 @@
  * 「割り当てる」導線は復活させない — 自己開始のモデルが崩れるため。
  *
  * データ取得は 2 本に分ける。受講者一覧のバッジは件数サマリ (`/api/enrollments/summary`)、
- * 右ペインの受講状況は選択中の受講者ぶんだけを取る。テナント全件を取ると
+ * 右ペインの受講状況は選択中の受講者ぶんだけを取る。全件を取ると
  * 受講者数 × ステージ数に比例して応答が膨らむため。
  *
  * バックエンド未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
@@ -51,27 +51,26 @@ import {
 /**
  * CSV に出せる行数の上限 (受講者 × 教材)。
  *
- * 全受講者を対象にすると行数がテナント規模 × 教材数で増える。 ブラウザ側で行配列と
+ * 全受講者を対象にすると行数が受講者数 × 教材数で増える。 ブラウザ側で行配列と
  * CSV 文字列を二重に持つため、 上限を超える指定は出力せず対象を絞ってもらう。
  */
 const MAX_CSV_ROWS = 20_000;
 
 interface Props {
-  tenantId: string;
   backendEnabled: boolean;
 }
 
-export function AdminEnrollmentsPage({ tenantId, backendEnabled }: Props) {
+export function AdminEnrollmentsPage({ backendEnabled }: Props) {
   if (!backendEnabled) {
     return <EnrollmentsDemoNotice />;
   }
-  return <EnrollmentsLive tenantId={tenantId} />;
+  return <EnrollmentsLive />;
 }
 
-function EnrollmentsLive({ tenantId }: { tenantId: string }) {
-  const { stages, loading: stagesLoading } = useCmsStages(tenantId);
-  const { profiles, loading: profilesLoading, error: profilesError } = useProfiles(tenantId);
-  const { summaries, error: summariesError } = useEnrollmentSummaries(tenantId);
+function EnrollmentsLive() {
+  const { stages, loading: stagesLoading } = useCmsStages();
+  const { profiles, loading: profilesLoading, error: profilesError } = useProfiles();
+  const { summaries, error: summariesError } = useEnrollmentSummaries();
 
   const [learnerFilter, setLearnerFilter] = useState<LearnerFilter>("student");
   const [learnerQuery, setLearnerQuery] = useState("");

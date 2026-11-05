@@ -17,7 +17,7 @@ vi.mock("./lesson-progress-api", () => ({
 let sequence = 0;
 beforeEach(async () => {
   upsert.mockReset();
-  configureRemoteSync({ userId: `synced-${++sequence}`, tenantId: "ses" });
+  configureRemoteSync({ userId: `synced-${++sequence}` });
   await whenProgressReady();
 });
 afterEach(() => {

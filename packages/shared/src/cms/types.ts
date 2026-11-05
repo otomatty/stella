@@ -36,30 +36,12 @@ export type LessonType = "video" | "slides" | "text" | "quiz" | "assignment" | "
 // DB 行型
 // ---------------------------------------------------------------
 
-export interface TenantRow {
-  id: string;
-  name: string;
-  subtitle: string | null;
-  icon: string | null;
-  active_count: number;
-  created_at: string;
-}
-
-/** GET /api/me が profile と一緒に返す所属テナントの表示情報。 */
-export interface ProfileTenantInfo {
-  id: string;
-  name: string;
-  subtitle: string | null;
-  icon: string | null;
-}
-
 export interface ProfileRow {
   weekly_hours?: number;
   learning_start_date?: string | null;
   /** 教材の OS 別ブロックで既定に開く OS。null / 未取得は端末から推定する。 */
   os_preference?: OsName | null;
   id: string;
-  tenant_id: string;
   role: ProfileRole;
   display_name: string;
   initials: string | null;
@@ -77,7 +59,6 @@ export interface ProfileRow {
 export interface StageRow {
   format?: 1 | 2;
   id: string;
-  tenant_id: string;
   slug: string;
   title: string;
   category: string | null;
@@ -211,7 +192,6 @@ export interface QuizOptionRow {
 
 export interface QuizAttemptRow {
   id: string;
-  tenant_id: string;
   quiz_id: string;
   user_id: string;
   score: number;
@@ -301,7 +281,6 @@ export type EnrollmentStatus = "active" | "completed" | "expired";
  */
 export interface EnrollmentRow {
   id: string;
-  tenant_id: string;
   user_id: string;
   stage_id: string;
   assigned_by: string | null;
@@ -404,7 +383,6 @@ export interface StageGradebook {
 /** 修了証 DB 行。 */
 export interface CertificateRow {
   id: string;
-  tenant_id: string;
   user_id: string;
   stage_id: string;
   cert_code: string;
@@ -413,7 +391,8 @@ export interface CertificateRow {
   criteria_snapshot: StageCompletion | Record<string, unknown>;
   recipient_name: string;
   stage_title: string;
-  tenant_name: string;
+  /** 修了証に刷る発行者。新しく発行するものは `DISPLAY_NAME`。発行済みは保存された値。 */
+  issuer_name: string;
   revoked: boolean;
 }
 
@@ -426,7 +405,8 @@ export interface IssuedCertificate {
   issued_at: string;
   recipient_name: string;
   stage_title: string;
-  tenant_name: string;
+  /** 修了証に刷る発行者。新しく発行するものは `DISPLAY_NAME`。発行済みは保存された値。 */
+  issuer_name: string;
   revoked: boolean;
   already_existed: boolean;
 }
@@ -438,7 +418,8 @@ export interface CertificateVerification {
   cert_code?: string;
   recipient_name?: string;
   stage_title?: string;
-  tenant_name?: string;
+  /** 修了証に刷る発行者。新しく発行するものは `DISPLAY_NAME`。発行済みは保存された値。 */
+  issuer_name?: string;
   issued_at?: string;
 }
 
@@ -505,8 +486,8 @@ export interface AnalyticsStumble {
   correct_pct: number;
 }
 
-/** get_tenant_analytics RPC の戻り値。 管理者ダッシュボードの KPI 一式。 */
-export interface TenantAnalytics {
+/** 管理者ダッシュボードの KPI。 */
+export interface Analytics {
   active_learners: number;
   total_learners: number;
   completion_rate: number;
@@ -552,7 +533,6 @@ export interface InstructorOverview {
  */
 export interface AnnouncementRow {
   id: string;
-  tenant_id: string;
   stage_id: string | null;
   author_id: string | null;
   author_name: string;
@@ -586,7 +566,6 @@ export type NotificationType =
 export interface NotificationRow {
   id: string;
   user_id: string;
-  tenant_id: string;
   type: NotificationType;
   title: string;
   body: string;
@@ -597,7 +576,6 @@ export interface NotificationRow {
 
 export interface AssignmentRow {
   id: string;
-  tenant_id: string;
   stage: Stage;
   chapter_id: ChapterId;
   title: string;

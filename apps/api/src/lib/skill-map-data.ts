@@ -217,7 +217,7 @@ export async function loadSkillMapSource(
       audience: stages.audience,
     })
     .from(stages)
-    .where(and(eq(stages.tenantId, caller.tenantId), eq(stages.status, "published")));
+    .where(eq(stages.status, "published"));
 
   const grantedStageIds = await loadGrantedStageIds(db, caller.id);
   const audienceRows = filterStagesByAudience(stageRows, grantedStageIds);
@@ -310,10 +310,7 @@ export function selectableActiveStages(
  * ステータスの絞り込みはリポジトリ既存の規約 `READABLE_ENROLLMENT_STATUSES`
  * (active / completed) に合わせる。`expired` を混ぜると、期限切れで教材を開けない
  * 星が道の上で「始められる星」になり、フォーカスやキューが**開けないレッスン**を
- * 指してしまう (一覧には出るが開くと 404、の不一致そのもの)。
- *
- * テナントも絞る。ユーザ id で一意とはいえ、テナントを移った受講者の古い行が
- * 残っていると、他テナントの星をフォーカス / キューに載せられてしまう。
+ * 指してしまう (一覧には出るが開くと 404、の不一致そのもの)。本人の登録だけを読む。
  */
 export async function loadEnrolledStageIds(db: Db, caller: Caller): Promise<Set<string>> {
   const rows = await db
@@ -322,7 +319,6 @@ export async function loadEnrolledStageIds(db: Db, caller: Caller): Promise<Set<
     .where(
       and(
         eq(enrollments.userId, caller.id),
-        eq(enrollments.tenantId, caller.tenantId),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),
     );
@@ -383,7 +379,7 @@ export async function loadFocusStageId(db: Db, caller: Caller): Promise<string |
   const rows = await db
     .select({ activeStageId: learnerFocus.activeStageId })
     .from(learnerFocus)
-    .where(and(eq(learnerFocus.userId, caller.id), eq(learnerFocus.tenantId, caller.tenantId)))
+    .where(eq(learnerFocus.userId, caller.id))
     .limit(1);
   return rows[0]?.activeStageId ?? undefined;
 }
@@ -391,8 +387,7 @@ export async function loadFocusStageId(db: Db, caller: Caller): Promise<string |
 /**
  * フォーカスを保存する (`null` = 外す)。
  *
- * 行は 1 人 1 行なので upsert。`tenant_id` も毎回書き直すのは、テナントを移った
- * 受講者の行が古いテナントに残らないようにするため。
+ * 行は 1 人 1 行なので upsert。衝突したときは進行中の星と更新時刻だけを書き直す。
  */
 export async function saveFocusStageId(
   db: Db,
@@ -403,13 +398,12 @@ export async function saveFocusStageId(
     .insert(learnerFocus)
     .values({
       userId: caller.id,
-      tenantId: caller.tenantId,
       activeStageId: stageId,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: learnerFocus.userId,
-      set: { tenantId: caller.tenantId, activeStageId: stageId, updatedAt: new Date() },
+      set: { activeStageId: stageId, updatedAt: new Date() },
     });
 }
 
@@ -433,7 +427,6 @@ export async function loadFocusCompletions(
     .where(
       and(
         eq(lessonProgress.userId, caller.id),
-        eq(lessonProgress.tenantId, caller.tenantId),
         eq(lessonProgress.completed, true),
         gte(lessonProgress.updatedAt, new Date(fromMs)),
       ),
@@ -446,23 +439,11 @@ export async function loadClearedStageIds(db: Db, caller: Caller): Promise<Set<s
   const completed = await db
     .select({ stageId: enrollments.stageId })
     .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.userId, caller.id),
-        eq(enrollments.tenantId, caller.tenantId),
-        eq(enrollments.status, "completed"),
-      ),
-    );
+    .where(and(eq(enrollments.userId, caller.id), eq(enrollments.status, "completed")));
   const certified = await db
     .select({ stageId: certificates.stageId })
     .from(certificates)
-    .where(
-      and(
-        eq(certificates.userId, caller.id),
-        eq(certificates.tenantId, caller.tenantId),
-        eq(certificates.revoked, false),
-      ),
-    );
+    .where(and(eq(certificates.userId, caller.id), eq(certificates.revoked, false)));
   return new Set([...completed, ...certified].map((row) => row.stageId));
 }
 
@@ -489,7 +470,7 @@ async function findActiveStageId(
     .from(lessonProgress)
     .innerJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .where(and(eq(lessonProgress.userId, caller.id), eq(lessonProgress.tenantId, caller.tenantId)))
+    .where(eq(lessonProgress.userId, caller.id))
     .groupBy(sections.stageId)
     .orderBy(desc(lastAt))
     .limit(ACTIVE_STAGE_CANDIDATES);
@@ -527,24 +508,12 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
   const lessonRows = await db
     .select({ n: count() })
     .from(lessonProgress)
-    .where(
-      and(
-        eq(lessonProgress.userId, caller.id),
-        eq(lessonProgress.tenantId, caller.tenantId),
-        eq(lessonProgress.completed, true),
-      ),
-    );
+    .where(and(eq(lessonProgress.userId, caller.id), eq(lessonProgress.completed, true)));
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })
     .from(quizAttempts)
-    .where(
-      and(
-        eq(quizAttempts.userId, caller.id),
-        eq(quizAttempts.tenantId, caller.tenantId),
-        eq(quizAttempts.passed, true),
-      ),
-    );
+    .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.passed, true)));
   const clearedStageIds = await loadClearedStageIds(db, caller);
   return {
     completedLessons: Number(lessonRows[0]?.n ?? 0),
@@ -566,13 +535,7 @@ export async function loadStudyDays(
       completedLessons: studyActivity.completedLessons,
     })
     .from(studyActivity)
-    .where(
-      and(
-        eq(studyActivity.userId, caller.id),
-        eq(studyActivity.tenantId, caller.tenantId),
-        gte(studyActivity.date, from),
-      ),
-    );
+    .where(and(eq(studyActivity.userId, caller.id), gte(studyActivity.date, from)));
   return rows.map((row) => ({
     date: row.date,
     watched_sec: row.watchedSec,

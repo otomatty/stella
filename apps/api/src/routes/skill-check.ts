@@ -124,7 +124,7 @@ async function resolveStage(
   requireCanTakeSkillCheck(caller);
   const source = await loadSkillMapSource(db, caller, opts);
   const stage = source.stages.find((row) => row.id === stageId);
-  // 存在しない星と、霧より先の星と、他テナントの星を **同じ 400** に丸める。
+  // 存在しない星と、霧より先の星を **同じ 400** に丸める。
   if (!stage) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
 
   const result = evaluateSkillMapFor(source);

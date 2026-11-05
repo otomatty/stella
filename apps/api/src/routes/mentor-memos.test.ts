@@ -89,28 +89,22 @@ beforeEach(async () => {
   app = mountTestApp(env, mentorMemosRoute).app;
   complete.mockReset();
   await db.batch([
-    db.insert(tenants).values([
-      { id: "ses", name: "SES" },
-      { id: "other", name: "Other" },
-    ]),
+    db.insert(tenants).values([{ id: "ses", name: "SES" }]),
     db.insert(profiles).values([
       {
         id: "learner",
-        tenantId: "ses",
         displayName: "山田 太郎",
         email: "taro@example.test",
         role: "student",
       },
-      { id: "peer", tenantId: "ses", displayName: "担当のない受講者", role: "student" },
-      { id: "late", tenantId: "ses", displayName: "今週から始めた受講者", role: "student" },
-      { id: "teacher", tenantId: "ses", displayName: "担当講師", role: "instructor" },
-      { id: "teacher2", tenantId: "ses", displayName: "別の講師", role: "instructor" },
-      { id: "admin", tenantId: "ses", displayName: "管理者", role: "admin" },
-      { id: "outsider", tenantId: "other", displayName: "他テナントの講師", role: "instructor" },
+      { id: "peer", displayName: "担当のない受講者", role: "student" },
+      { id: "late", displayName: "今週から始めた受講者", role: "student" },
+      { id: "teacher", displayName: "担当講師", role: "instructor" },
+      { id: "teacher2", displayName: "別の講師", role: "instructor" },
+      { id: "admin", displayName: "管理者", role: "admin" },
     ]),
     db.insert(stages).values({
       id: "stage",
-      tenantId: "ses",
       slug: "dev-env-basics",
       title: "開発環境",
       format: 2,
@@ -132,21 +126,18 @@ beforeEach(async () => {
     db.insert(skills).values({ id: "html", title: "HTML" }),
     db.insert(enrollments).values([
       {
-        tenantId: "ses",
         userId: "learner",
         stageId: "stage",
         status: "active",
         enrolledAt: new Date("2026-09-28T00:00:00Z"),
       },
       {
-        tenantId: "ses",
         userId: "peer",
         stageId: "stage",
         status: "active",
         enrolledAt: new Date("2026-09-28T00:00:00Z"),
       },
       {
-        tenantId: "ses",
         userId: "late",
         stageId: "stage",
         status: "active",
@@ -158,7 +149,7 @@ beforeEach(async () => {
       { learnerId: "late", instructorId: "teacher" },
     ]),
   ]);
-  await db.update(stages).set({ status: "published" }).where(eq(stages.tenantId, "ses"));
+  await db.update(stages).set({ status: "published" }).where(eq(stages.id, "stage"));
 });
 afterEach(() => database.sqlite.close());
 
@@ -167,15 +158,13 @@ async function seedWeek() {
   const at = (iso: string) => new Date(iso);
   await db.insert(studyActivity).values([
     {
-      tenantId: "ses",
       userId: "learner",
       date: "2026-10-06",
       watchedSec: 600,
       completedLessons: 2,
     },
-    { tenantId: "ses", userId: "learner", date: "2026-10-08", watchedSec: 0, completedLessons: 1 },
+    { userId: "learner", date: "2026-10-08", watchedSec: 0, completedLessons: 1 },
     {
-      tenantId: "ses",
       userId: "learner",
       date: "2026-10-12",
       watchedSec: 999,
@@ -183,7 +172,6 @@ async function seedWeek() {
     },
   ]);
   const base = {
-    tenantId: "ses",
     studentId: "learner",
     taskId: "practice",
     taskContentHash: HASH,
@@ -212,7 +200,6 @@ async function seedWeek() {
   ]);
   await db.insert(aiReviews).values({
     submissionId: "s1",
-    tenantId: "ses",
     taskId: "practice",
     taskContentHash: HASH,
     taskKind: "basic",
@@ -261,7 +248,6 @@ async function seedWeek() {
   });
   await db.insert(skillEvidence).values([
     {
-      tenantId: "ses",
       userId: "learner",
       skillId: "html",
       level: "supported",
@@ -270,7 +256,6 @@ async function seedWeek() {
       createdAt: at("2026-10-01T00:00:00Z"),
     },
     {
-      tenantId: "ses",
       userId: "learner",
       skillId: "html",
       level: "independent",
@@ -283,7 +268,6 @@ async function seedWeek() {
     {
       id: "stumble:idle:learner:teacher:2026-10-01",
       userId: "teacher",
-      tenantId: "ses",
       type: "learner_stumble",
       payload: { learner_id: "learner", signal: "idle" },
       createdAt: at("2026-10-06T00:00:00Z"),
@@ -291,7 +275,6 @@ async function seedWeek() {
     {
       id: "stumble:idle:peer:teacher:2026-10-01",
       userId: "teacher",
-      tenantId: "ses",
       type: "learner_stumble",
       payload: { learner_id: "peer", signal: "idle" },
       createdAt: at("2026-10-06T00:00:00Z"),
@@ -299,7 +282,6 @@ async function seedWeek() {
     {
       id: "stumble:local:learner:teacher:2026-10-13",
       userId: "teacher",
-      tenantId: "ses",
       type: "learner_stumble",
       payload: { learner_id: "learner", signal: "local-failures" },
       createdAt: at("2026-10-13T00:00:00Z"),
@@ -307,14 +289,12 @@ async function seedWeek() {
   ]);
   await db.insert(taskSupportEvents).values([
     {
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       kind: "ai-chat",
       createdAt: at("2026-10-06T05:00:00Z"),
     },
     {
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       kind: "ai-chat",
@@ -324,7 +304,6 @@ async function seedWeek() {
   await db.insert(taskLocalRuns).values({
     userId: "learner",
     taskId: "practice",
-    tenantId: "ses",
     contentHash: HASH,
     failedRuns: 4,
     failureStreak: 4,
@@ -368,7 +347,6 @@ describe("週次の育成メモを積む (cron)", () => {
       .where(eq(enrollments.userId, "learner"));
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
     await db.insert(studyActivity).values({
-      tenantId: "ses",
       userId: "learner",
       date: "2026-10-07",
       watchedSec: 300,
@@ -385,7 +363,6 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
     await db.insert(submissions).values({
       id: "only-submission",
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -399,11 +376,11 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
   });
 
-  it("担当が無効・別テナントの講師なら積まない", async () => {
+  it("担当が無効な講師、または講師でない人なら積まない", async () => {
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
     await db.delete(learnerInstructors);
-    await db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "outsider" });
+    await db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "peer" });
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
   });
 
@@ -423,7 +400,6 @@ describe("週次の育成メモを積む (cron)", () => {
       .where(eq(enrollments.userId, "learner"));
     // 8/31 の週からメモを作っていた。そのあと cron が止まっていた。
     await db.insert(mentorMemos).values({
-      tenantId: "ses",
       learnerId: "learner",
       weekStart: "2026-08-31",
       state: "ready",
@@ -447,7 +423,6 @@ describe("週次の育成メモを積む (cron)", () => {
       .where(eq(enrollments.userId, "learner"));
     // 9/21 の週に機能を入れた (この週のメモは別の受講者にだけある)。
     await db.insert(mentorMemos).values({
-      tenantId: "ses",
       learnerId: "late",
       weekStart: "2026-09-21",
       state: "ready",
@@ -466,7 +441,6 @@ describe("週次の育成メモを積む (cron)", () => {
     await enqueueWeeklyMemos(db, NOW);
     await expect(
       db.insert(mentorMemos).values({
-        tenantId: "ses",
         learnerId: "learner",
         weekStart: WEEK,
         nextAttemptAt: NOW,
@@ -584,7 +558,6 @@ describe("週次の育成メモを書く (cron)", () => {
     expect((await memoRows())[0]).toMatchObject({ weekStart: WEEK, state: "queued" });
     await db.insert(submissions).values({
       id: "late",
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -607,7 +580,6 @@ describe("週次の育成メモを書く (cron)", () => {
 
   it("固定した開始点は受け取った週の支援に数え、提出に写った同じ受け取りとは重ねない", async () => {
     await db.insert(taskFixedStartUses).values({
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       contentHash: HASH,
@@ -621,7 +593,6 @@ describe("週次の育成メモを書く (cron)", () => {
     await db.delete(mentorMemos);
     await db.insert(submissions).values({
       id: "with-fixed-start",
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -642,7 +613,6 @@ describe("週次の育成メモを書く (cron)", () => {
 
   it("ヒント・解答例・解説を開いた記録は開いた週の支援に数え、提出に写った同じ記録とは重ねない", async () => {
     const open = (item: "hint" | "solution", level: number, at: string, contentHash = HASH) => ({
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       item,
@@ -669,7 +639,6 @@ describe("週次の育成メモを書く (cron)", () => {
     await db.delete(mentorMemos);
     await db.insert(submissions).values({
       id: "with-help",
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -696,7 +665,6 @@ describe("週次の育成メモを書く (cron)", () => {
     await seedWeek();
     await db.insert(submissions).values({
       id: "monday",
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -782,14 +750,11 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
     vi.useRealTimers();
   }
   const keepActive = () =>
-    db
-      .insert(studyActivity)
-      .values({ tenantId: "ses", userId: "learner", date: "2026-10-07", watchedSec: 60 });
+    db.insert(studyActivity).values({ userId: "learner", date: "2026-10-07", watchedSec: 60 });
   async function escalated(id: string, hoursAgo: number) {
     const at = new Date(IN_WEEK.getTime() - hoursAgo * 3_600_000);
     await db.insert(submissions).values({
       id,
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -802,7 +767,6 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
     });
     await db.insert(aiReviews).values({
       submissionId: id,
-      tenantId: "ses",
       taskId: "practice",
       taskContentHash: HASH,
       taskKind: "basic",
@@ -822,7 +786,6 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
       await db.insert(taskLocalRuns).values({
         userId: "learner",
         taskId: "practice",
-        tenantId: "ses",
         contentHash: HASH,
         failedRuns: 5,
         failureStreak: 5,
@@ -834,14 +797,11 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
     },
     // 最後の学習は 10/2 (金)。月・火・水と記録がない。
     idle: () =>
-      db
-        .insert(studyActivity)
-        .values({ tenantId: "ses", userId: "learner", date: "2026-10-02", watchedSec: 60 }),
+      db.insert(studyActivity).values({ userId: "learner", date: "2026-10-02", watchedSec: 60 }),
     "assessment-b": async () => {
       await keepActive();
       await db.insert(submissions).values({
         id: "b",
-        tenantId: "ses",
         studentId: "learner",
         taskId: "practice",
         taskContentHash: HASH,
@@ -870,7 +830,6 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
         .where(eq(tasks.id, "practice"));
       await db.insert(taskHelpOpens).values(
         [1, 2].map((level) => ({
-          tenantId: "ses",
           userId: "learner",
           taskId: "practice",
           item: "hint" as const,
@@ -923,9 +882,8 @@ describe("講師の画面 (GET /api/mentor-memos)", () => {
     expect(other.memos).toEqual([]);
   });
 
-  it("担当外の講師・別テナントには見えず、受講者本人は読めない。管理者はテナントの全員を読む", async () => {
+  it("担当外の講師には見えず、受講者本人は読めない。管理者は全員を読む", async () => {
     expect((await json<List>(await list("teacher2"))).memos).toEqual([]);
-    expect((await json<List>(await list("outsider"))).memos).toEqual([]);
     expect((await list("learner")).status).toBe(403);
     expect((await json<List>(await list("admin"))).memos).toHaveLength(1);
     // 担当を外れたら読めなくなる。
@@ -965,7 +923,6 @@ describe("講師の対応 (POST /api/mentor-memos/:id/actions)", () => {
     const sent = await learnerNotifications();
     expect(sent).toMatchObject([
       {
-        tenantId: "ses",
         title: "担当講師さんからの一言",
         body: "先週もおつかれさまでした。",
         payload: { from_id: "teacher" },
@@ -1002,9 +959,8 @@ describe("講師の対応 (POST /api/mentor-memos/:id/actions)", () => {
     expect(await learnerNotifications()).toEqual([]);
   });
 
-  it("担当外・受講者・別テナントは対応できず、空の一言と知らない対応は 400", async () => {
+  it("担当外と受講者は対応できず、空の一言と知らない対応は 400", async () => {
     expect((await act({ kind: "message", message: "x" }, "teacher2")).status).toBe(404);
-    expect((await act({ kind: "message", message: "x" }, "outsider")).status).toBe(404);
     expect((await act({ kind: "message", message: "x" }, "learner")).status).toBe(403);
     expect((await act({ kind: "message", message: "  " })).status).toBe(400);
     expect((await act({ kind: "message", message: "あ".repeat(501) })).status).toBe(400);

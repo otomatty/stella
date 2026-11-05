@@ -7,10 +7,8 @@ import { Label } from "@/components/ui/label";
 import type { Stage, Lesson } from "@/data/types";
 import { createSubmission, createSubmissionAsync } from "@/lib/submissions-store";
 import { isBackendConfigured } from "@/lib/backend";
-import type { Tenant } from "@/data/types";
 
 interface AssignmentSubmitPanelProps {
-  tenantId: Tenant["id"];
   stage: Stage;
   lesson: Lesson;
   sectionTitle?: string;
@@ -20,7 +18,6 @@ interface AssignmentSubmitPanelProps {
 }
 
 export function AssignmentSubmitPanel({
-  tenantId,
   stage,
   lesson,
   sectionTitle,
@@ -54,8 +51,8 @@ export function AssignmentSubmitPanel({
         priority: "normal" as const,
       };
       const created = isBackendConfigured()
-        ? await createSubmissionAsync(tenantId, payload)
-        : createSubmission(tenantId, payload);
+        ? await createSubmissionAsync(payload)
+        : createSubmission(payload);
       if (!created) {
         toast.error(
           isBackendConfigured()

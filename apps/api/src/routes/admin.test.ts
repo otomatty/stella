@@ -7,13 +7,85 @@ import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { adminRoute } from "./admin.js";
 
+describe("ユーザー管理", () => {
+  const SECRET = "admin-test-secret";
+  let db: ReturnType<typeof sqliteD1>;
+  let env: Env;
+  let app: ReturnType<typeof mountTestApp>["app"];
+
+  beforeEach(() => {
+    db = sqliteD1();
+    db.sqlite.exec(`
+      INSERT INTO tenants (id, name, active_count, active, created_at, updated_at) VALUES
+        ('ses', 'SES', 0, 1, 1, 1);
+      INSERT INTO profiles (id, tenant_id, role, display_name, email, disabled, name_source, created_at) VALUES
+        ('admin', 'ses', 'admin', '管理者', 'admin@example.test', 0, 'invite', 1),
+        ('taken', 'ses', 'student', '別', 'taken@example.test', 0, 'invite', 2);
+    `);
+    env = { DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env;
+    app = mountTestApp(env, adminRoute).app;
+  });
+  afterEach(() => db.sqlite.close());
+
+  const token = () => signAccessToken(SECRET, "admin", "admin@example.test");
+
+  it("招待するとロールが保存され、受講登録は作られない", async () => {
+    const res = await request(app, env, "/api/admin/users/invite", {
+      method: "POST",
+      token: await token(),
+      body: JSON.stringify({
+        invites: [{ email: "new@example.test", displayName: "新規", role: "student" }],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{ results: { email: string; ok: boolean; userId?: string }[] }>(res);
+    expect(body.results).toEqual([
+      { email: "new@example.test", ok: true, userId: body.results[0]?.userId },
+    ]);
+    const row = db.sqlite
+      .prepare("select role from profiles where email = ?")
+      .get("new@example.test") as { role: string };
+    expect(row).toEqual({ role: "student" });
+    expect(
+      db.sqlite.prepare("select count(*) as n from enrollments").get() as { n: number },
+    ).toEqual({ n: 0 });
+  });
+
+  it("登録済みのメールは同じ文言で拒む", async () => {
+    const res = await request(app, env, "/api/admin/users/invite", {
+      method: "POST",
+      token: await token(),
+      body: JSON.stringify({
+        invites: [{ email: "taken@example.test", displayName: "別", role: "student" }],
+      }),
+    });
+    const body = await json<{ results: { email: string; ok: boolean; error?: string }[] }>(res);
+    expect(body.results).toEqual([
+      {
+        email: "taken@example.test",
+        ok: false,
+        error: "このメールアドレスは既に登録されています",
+      },
+    ]);
+    expect(JSON.stringify(body)).not.toContain("別のテナント");
+  });
+
+  it("存在しないユーザーは 404", async () => {
+    const res = await request(app, env, "/api/admin/users/disable", {
+      method: "POST",
+      token: await token(),
+      body: JSON.stringify({ userId: "missing", disabled: true }),
+    });
+    expect(res.status).toBe(404);
+  });
+});
+
 const SECRET = "admin-delete-test-secret";
 const ADMIN = "33333333-3333-4333-8333-333333333333";
 const INSTRUCTOR = "44444444-4444-4444-8444-444444444444";
 const PLATFORM = "66666666-6666-4666-8666-666666666666";
 const LEARNER = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
-const OUTSIDER = "55555555-5555-4555-8555-555555555555";
 const BOOK_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
 const BOOK_B = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
 const BOOK_OTHER = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1";
@@ -45,13 +117,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
       "ses",
       "SES",
     );
-    run(
-      `INSERT INTO tenants
-        (id, name, active_count, active, test_mode, created_at, updated_at)
-       VALUES (?, ?, 0, 1, 0, 1, 1)`,
-      "other",
-      "Other",
-    );
     const profile = `INSERT INTO profiles
       (id, tenant_id, role, display_name, email, disabled, created_at)
      VALUES (?, ?, ?, ?, ?, 0, 1)`;
@@ -60,7 +125,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     run(profile, PLATFORM, "ses", "platform_admin", "基盤", "platform@example.com");
     run(profile, LEARNER, "ses", "student", "受講者太郎", "Learner@Example.com");
     run(profile, OTHER, "ses", "student", "別の受講者", "other@example.com");
-    run(profile, OUTSIDER, "other", "student", "他社", "outsider@example.com");
 
     const authUser = `INSERT INTO auth_users
       (id, email, name, email_verified, created_at, updated_at)
@@ -305,7 +369,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
       .prepare("SELECT prefix, created_at FROM library_r2_purges ORDER BY prefix")
       .all() as { prefix: string; created_at: number }[];
     expect(purges.map((row) => row.prefix)).toEqual(
-      [bookPrefix("ses", BOOK_A), bookPrefix("ses", BOOK_B)].sort(),
+      [bookPrefix(BOOK_A), bookPrefix(BOOK_B)].sort(),
     );
     for (const row of purges) expect(row.created_at).toBeGreaterThanOrEqual(before);
 
@@ -408,7 +472,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     );
   });
 
-  it("platform_admin はテナント管理者から削除できない", async () => {
+  it("platform_admin は管理者から削除できない", async () => {
     await expectRejected(
       { userId: PLATFORM, confirmEmail: "platform@example.com" },
       403,
@@ -451,14 +515,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
       { userId: MISSING, confirmEmail: "nobody@example.com" },
       404,
       "対象ユーザーが見つかりません",
-    );
-  });
-
-  it("別テナントの受講者は削除できない", async () => {
-    await expectRejected(
-      { userId: OUTSIDER, confirmEmail: "outsider@example.com" },
-      403,
-      "他テナントのユーザーは操作できません",
     );
   });
 

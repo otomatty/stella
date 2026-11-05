@@ -13,7 +13,6 @@ function StudentsPage() {
     <RoleGuard allow={["instructor"]}>
       <InstructorGeneric
         page="students"
-        tenantId={s.tenantId}
         backendEnabled={s.backendEnabled}
         highlightStageId={null}
         highlightSeq={0}

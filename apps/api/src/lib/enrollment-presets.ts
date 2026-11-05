@@ -30,7 +30,7 @@ export interface ArchivedEmptyPreset {
  *
  * `returning` で畳んだプリセットを返すため、 呼び出し側は事前の SELECT なしで監査に残せる。
  */
-export function archiveEmptiedPresetsStatement(db: Db, tenantId: string) {
+export function archiveEmptiedPresetsStatement(db: Db) {
   const hasNoItems = notExists(
     db
       .select({ one: sql`1` })
@@ -40,13 +40,7 @@ export function archiveEmptiedPresetsStatement(db: Db, tenantId: string) {
   return db
     .update(enrollmentPresets)
     .set({ archived: true })
-    .where(
-      and(
-        eq(enrollmentPresets.tenantId, tenantId),
-        eq(enrollmentPresets.archived, false),
-        hasNoItems,
-      ),
-    )
+    .where(and(eq(enrollmentPresets.archived, false), hasNoItems))
     .returning({ id: enrollmentPresets.id, name: enrollmentPresets.name });
 }
 
@@ -60,24 +54,21 @@ export function archiveEmptiedPresetsStatement(db: Db, tenantId: string) {
  * **教材を削除する文より前** に流すこと。 削除後は cascade で項目が消えており、
  * どのプリセットが影響を受けたのか引けなくなる。
  */
-export function touchPresetsContainingStageStatement(db: Db, tenantId: string, stageId: string) {
+export function touchPresetsContainingStageStatement(db: Db, stageId: string) {
   return db
     .update(enrollmentPresets)
     .set({ updatedAt: new Date() })
     .where(
-      and(
-        eq(enrollmentPresets.tenantId, tenantId),
-        exists(
-          db
-            .select({ one: sql`1` })
-            .from(enrollmentPresetItems)
-            .where(
-              and(
-                eq(enrollmentPresetItems.presetId, enrollmentPresets.id),
-                eq(enrollmentPresetItems.stageId, stageId),
-              ),
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(enrollmentPresetItems)
+          .where(
+            and(
+              eq(enrollmentPresetItems.presetId, enrollmentPresets.id),
+              eq(enrollmentPresetItems.stageId, stageId),
             ),
-        ),
+          ),
       ),
     );
 }

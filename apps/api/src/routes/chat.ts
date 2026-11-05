@@ -58,7 +58,6 @@ async function taskChatContext(
 async function recordAiChatSupport(db: Db, caller: Caller, taskId: string) {
   try {
     await recordSupportEvent(db, {
-      tenantId: caller.tenantId,
       userId: caller.id,
       taskId,
       kind: "ai-chat",

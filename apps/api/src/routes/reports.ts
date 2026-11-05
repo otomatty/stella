@@ -6,8 +6,7 @@
  * まとめて書き出す」ことを目的とする。 列定義は `@stella/shared/admin/reports` に置き、
  * CSV 化はフロント (`lib/csv`) が行う (アプリ内の他の CSV 出力と同じ経路)。
  *
- * 認可は同テナントの admin / platform_admin のみ。 母集合を caller.tenantId に固定する
- * ことで越テナント参照を構造的に遮断する。
+ * 認可は admin / platform_admin のみ。
  */
 
 import { Hono } from "hono";
@@ -37,7 +36,7 @@ import {
   submissions,
 } from "../db/schema.js";
 import type { Db } from "../db/client.js";
-import { ApiError, errorResponse, getCaller, requireTenantAdmin } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import type { Env } from "../env.js";
 
 export const reportsRoute = new Hono<{ Bindings: Env }>();
@@ -96,7 +95,7 @@ function round(n: number): number {
 reportsRoute.get("/api/reports/:type", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireTenantAdmin(caller);
+    requireAdmin(caller);
 
     const type = c.req.param("type");
     if (!isReportType(type)) {
@@ -108,14 +107,7 @@ reportsRoute.get("/api/reports/:type", async (c) => {
     const limit = Math.min(Math.max(Number(q.limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
     const offset = Math.max(Number(q.offset) || 0, 0);
 
-    const { rows, total } = await buildReport(
-      db,
-      caller.tenantId,
-      type as ReportType,
-      range,
-      limit,
-      offset,
-    );
+    const { rows, total } = await buildReport(db, type as ReportType, range, limit, offset);
 
     return c.json({
       report: {
@@ -134,7 +126,6 @@ reportsRoute.get("/api/reports/:type", async (c) => {
 
 async function buildReport(
   db: Db,
-  tenantId: string,
   type: ReportType,
   range: Range,
   limit: number,
@@ -142,13 +133,13 @@ async function buildReport(
 ): Promise<{ rows: ReportRow[]; total: number }> {
   switch (type) {
     case "enrollments":
-      return enrollmentsReport(db, tenantId, range, limit, offset);
+      return enrollmentsReport(db, range, limit, offset);
     case "grades":
-      return gradesReport(db, tenantId, range, limit, offset);
+      return gradesReport(db, range, limit, offset);
     case "certificates":
-      return certificatesReport(db, tenantId, range, limit, offset);
+      return certificatesReport(db, range, limit, offset);
     case "audit":
-      return auditReport(db, tenantId, range, limit, offset);
+      return auditReport(db, range, limit, offset);
     default:
       // 種別を増やしたときに分岐の取りこぼしをコンパイルエラーにする。
       return assertNeverType(type);
@@ -166,14 +157,14 @@ function assertNeverType(type: never): never {
 /** 受講登録 (期間 = 登録日時) の明細に、 レッスン進捗から算出した進捗率を添える。 */
 async function enrollmentsReport(
   db: Db,
-  tenantId: string,
   range: Range,
   limit: number,
   offset: number,
 ): Promise<{ rows: EnrollmentReportRow[]; total: number }> {
-  const conds = [eq(enrollments.tenantId, tenantId)];
-  if (range.from) conds.push(gte(enrollments.enrolledAt, range.from));
-  if (range.to) conds.push(lte(enrollments.enrolledAt, range.to));
+  const conds = [
+    range.from ? gte(enrollments.enrolledAt, range.from) : undefined,
+    range.to ? lte(enrollments.enrolledAt, range.to) : undefined,
+  ];
 
   const totalRow = (
     await db
@@ -238,13 +229,7 @@ async function enrollmentsReport(
         db
           .select({ userId: lessonProgress.userId, lessonId: lessonProgress.lessonId })
           .from(lessonProgress)
-          .where(
-            and(
-              eq(lessonProgress.tenantId, tenantId),
-              inArray(lessonProgress.userId, ids),
-              eq(lessonProgress.completed, true),
-            ),
-          ),
+          .where(and(inArray(lessonProgress.userId, ids), eq(lessonProgress.completed, true))),
       ),
     )
   ).flat();
@@ -295,18 +280,19 @@ async function enrollmentsReport(
  */
 async function gradesReport(
   db: Db,
-  tenantId: string,
   range: Range,
   limit: number,
   offset: number,
 ): Promise<{ rows: GradeReportRow[]; total: number }> {
-  const quizConds = [eq(quizAttempts.tenantId, tenantId)];
-  if (range.from) quizConds.push(gte(quizAttempts.submittedAt, range.from));
-  if (range.to) quizConds.push(lte(quizAttempts.submittedAt, range.to));
+  const quizConds = [
+    range.from ? gte(quizAttempts.submittedAt, range.from) : undefined,
+    range.to ? lte(quizAttempts.submittedAt, range.to) : undefined,
+  ];
 
-  const subConds = [eq(submissions.tenantId, tenantId)];
-  if (range.from) subConds.push(gte(submissions.submittedAt, range.from));
-  if (range.to) subConds.push(lte(submissions.submittedAt, range.to));
+  const subConds = [
+    range.from ? gte(submissions.submittedAt, range.from) : undefined,
+    range.to ? lte(submissions.submittedAt, range.to) : undefined,
+  ];
 
   const [quizCountRow, subCountRow] = await Promise.all([
     db
@@ -406,14 +392,14 @@ async function gradesReport(
 
 async function certificatesReport(
   db: Db,
-  tenantId: string,
   range: Range,
   limit: number,
   offset: number,
 ): Promise<{ rows: CertificateReportRow[]; total: number }> {
-  const conds = [eq(certificates.tenantId, tenantId)];
-  if (range.from) conds.push(gte(certificates.issuedAt, range.from));
-  if (range.to) conds.push(lte(certificates.issuedAt, range.to));
+  const conds = [
+    range.from ? gte(certificates.issuedAt, range.from) : undefined,
+    range.to ? lte(certificates.issuedAt, range.to) : undefined,
+  ];
 
   const totalRow = (
     await db
@@ -464,14 +450,14 @@ async function certificatesReport(
  */
 async function auditReport(
   db: Db,
-  tenantId: string,
   range: Range,
   limit: number,
   offset: number,
 ): Promise<{ rows: AuditReportRow[]; total: number }> {
-  const conds = [eq(auditLogs.tenantId, tenantId)];
-  if (range.from) conds.push(gte(auditLogs.createdAt, range.from));
-  if (range.to) conds.push(lte(auditLogs.createdAt, range.to));
+  const conds = [
+    range.from ? gte(auditLogs.createdAt, range.from) : undefined,
+    range.to ? lte(auditLogs.createdAt, range.to) : undefined,
+  ];
 
   const totalRow = (
     await db

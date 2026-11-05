@@ -18,10 +18,8 @@ export async function canAccessTasks(
     .where(
       and(
         eq(stages.id, stageId),
-        eq(stages.tenantId, caller.tenantId),
         eq(stages.status, "published"),
         eq(stages.format, 2),
-        eq(enrollments.tenantId, caller.tenantId),
         eq(enrollments.userId, caller.id),
         inArray(
           enrollments.status,
@@ -33,14 +31,13 @@ export async function canAccessTasks(
   return rows.length > 0;
 }
 
-/** 受講者にこの類題を出題したか (出した・合格した)。テナントと本人で絞る。 */
+/** 受講者にこの類題を出題したか (出した・合格した)。本人で絞る。 */
 export async function isVariantIssuedTo(db: Db, caller: Caller, taskId: string): Promise<boolean> {
   const [issued] = await db
     .select({ id: variantReviews.id })
     .from(variantReviews)
     .where(
       and(
-        eq(variantReviews.tenantId, caller.tenantId),
         eq(variantReviews.userId, caller.id),
         eq(variantReviews.variantTaskId, taskId),
         inArray(variantReviews.status, ["issued", "passed"]),

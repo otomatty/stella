@@ -40,7 +40,7 @@ export function paceProfileUpdate(settings: Partial<PaceSettings>, userId: strin
       : {
           learningStartDate:
             settings.startDate ??
-            sql`(select date(e.enrolled_at / 1000, 'unixepoch', '+9 hours') from enrollments e join stages s on s.id = e.stage_id join profiles p on p.id = e.user_id where e.user_id = ${userId} and e.tenant_id = p.tenant_id and s.slug = 'dev-env-basics' order by e.enrolled_at limit 1)`,
+            sql`(select date(e.enrolled_at / 1000, 'unixepoch', '+9 hours') from enrollments e join stages s on s.id = e.stage_id where e.user_id = ${userId} and s.slug = 'dev-env-basics' order by e.enrolled_at limit 1)`,
         }),
   };
 }
@@ -49,14 +49,13 @@ export async function requirePaceLearner(db: Db, caller: Caller, userId: string)
   const [learner] = await db
     .select({
       id: profiles.id,
-      tenantId: profiles.tenantId,
       role: profiles.role,
       name: profiles.displayName,
       email: profiles.email,
       disabled: profiles.disabled,
     })
     .from(profiles)
-    .where(and(eq(profiles.id, userId), eq(profiles.tenantId, caller.tenantId)))
+    .where(eq(profiles.id, userId))
     .limit(1);
   if (!learner || learner.disabled) throw new ApiError("受講者が見つかりません", 404);
   if (!["student", "admin", "platform_admin"].includes(learner.role))
@@ -101,7 +100,6 @@ export async function loadLearningPace(
     .from(stages)
     .where(
       and(
-        eq(stages.tenantId, learner.tenantId),
         eq(stages.status, "published"),
         inArray(stages.slug, [...LEARNING_PROGRAM_SLUGS]),
         eq(stages.audience, "catalog"),
@@ -151,11 +149,7 @@ export async function loadLearningPace(
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
         .leftJoin(
           lessonProgress,
-          and(
-            eq(lessonProgress.lessonId, lessons.id),
-            eq(lessonProgress.userId, learner.id),
-            eq(lessonProgress.tenantId, learner.tenantId),
-          ),
+          and(eq(lessonProgress.lessonId, lessons.id), eq(lessonProgress.userId, learner.id)),
         )
         .where(inArray(sections.stageId, ids))
         .orderBy(asc(lessons.order)),
@@ -258,7 +252,6 @@ export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date())) 
   const rows = await db
     .select({
       id: profiles.id,
-      tenantId: profiles.tenantId,
       role: profiles.role,
       name: profiles.displayName,
       email: profiles.email,
@@ -266,12 +259,11 @@ export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date())) 
     })
     .from(learnerInstructors)
     .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-    // 担当は同じテナントの有効な講師だけ。受講者ごとに引き直さず 1 クエリで絞る。
+    // 担当は有効な講師だけ。受講者ごとに引き直さず 1 クエリで絞る。
     .innerJoin(
       instructor,
       and(
         eq(instructor.id, learnerInstructors.instructorId),
-        eq(instructor.tenantId, profiles.tenantId),
         eq(instructor.role, "instructor"),
         eq(instructor.disabled, false),
       ),
@@ -304,7 +296,6 @@ export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date())) 
         .values({
           id,
           userId: learner.instructorId,
-          tenantId: learner.tenantId,
           type: "learning_pace_delayed",
           title: `${learner.name}さんの学習ペースを確認してください`,
           body: `進んだ予定時間が目安より${Math.round(-pace.differenceMinutes / 60)}時間少なくなっています。残りの予定は引き直しています。週の時間や支援を相談してください。`,

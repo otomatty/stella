@@ -286,16 +286,14 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
       db.insert(profiles).values([
         {
           id: STUDENT,
-          tenantId: "ses",
           displayName: STUDENT_NAME,
           email: STUDENT_EMAIL,
           role: "student",
         },
-        { id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "instructor" },
       ]),
       db.insert(stages).values({
         id: "stage",
-        tenantId: "ses",
         slug: "dev-env-basics",
         title: "開発環境",
         format: 2,
@@ -303,13 +301,9 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
       }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
       db.insert(lessons).values({ id: "reading", sectionId: "unit", title: "読む", type: "text" }),
-      db
-        .insert(enrollments)
-        .values({ tenantId: "ses", userId: STUDENT, stageId: "stage", status: "active" }),
+      db.insert(enrollments).values({ userId: STUDENT, stageId: "stage", status: "active" }),
       db.insert(skills).values({ id: "html", title: "HTML" }),
-      db
-        .insert(lessonProgress)
-        .values({ tenantId: "ses", userId: STUDENT, lessonId: "reading", completed: true }),
+      db.insert(lessonProgress).values({ userId: STUDENT, lessonId: "reading", completed: true }),
       db.insert(codingRules).values({
         id: "CR-SCOPE-01",
         scope: "common",

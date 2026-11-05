@@ -21,7 +21,7 @@
  *   - `locked`  … 400。**前提の名前は返してよい** — その星は既に見えていて (`name-only`
  *     以上)、同じ解放条件をスキルマップの `lock_reasons` が返している。ただし霧の中に
  *     ある前提だけは伏せる (`maskedLockReasons`)
- *   - `fog` / 存在しない / 他テナント … `UNSELECTABLE_STAGE_MESSAGE` の 400。
+ *   - `fog` / 存在しない … `UNSELECTABLE_STAGE_MESSAGE` の 400。
  *     フォーカス切り替え・腕試しと **同じ汎用文言**。書き分けると、3 つの API の応答を
  *     突き合わせて霧の向こうの星の有無が読めてしまう
  *
@@ -59,7 +59,7 @@ stageStartRoute.post("/api/stages/:id/start", async (c) => {
 
     const source = await loadSkillMapSource(db, caller, { showAllIslands: wantsDevReveal(c) });
     const stage = source.stages.find((row) => row.id === stageId);
-    // 存在しない星・他テナントの星・未公開の星をまとめて汎用文言へ丸める。
+    // 存在しない星と未公開の星をまとめて汎用文言へ丸める。
     if (!stage) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
 
     const result = evaluateSkillMapFor(source);

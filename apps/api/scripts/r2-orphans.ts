@@ -12,19 +12,21 @@
  *     `R2_ADMIN_ID` (既定 `seed-admin`) の JWT を発行する。
  *   - 本番など: `ADMIN_TOKEN` に admin の JWT を渡す。 `API_BASE_URL` で向き先を変える。
  *
- * 走査も削除も呼び出し元テナント配下 (`tenant/<tenantId>/`) に閉じる。
+ * 走査も削除も保存済みキーの接頭辞 (`tenant/ses/`) に閉じる。
  * 参照判定には配布資料だけでなくレッスンの動画 / スライドのパスも含まれる。
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { SignJWT } from "jose";
 
 const apiDir = join(import.meta.dirname, "..");
 const BASE = (process.env.API_BASE_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 const ADMIN_ID = process.env.R2_ADMIN_ID ?? "seed-admin";
 const doDelete = process.argv.includes("--delete");
+const scanPrefix = `tenant/${LEGACY_TENANT_ID}/`;
 
 /** API 側の 1 リクエストあたり削除上限に合わせる。 */
 const DELETE_BATCH = 1000;
@@ -115,7 +117,7 @@ async function main(): Promise<void> {
   const token = await resolveToken();
 
   // API は 1 リクエストあたりの走査件数に上限があるため、 カーソルを辿って
-  // テナント配下を最後まで走査する (上限で止めると後ろの孤児に到達できない)。
+  // 接頭辞の下を最後まで走査する (上限で止めると後ろの孤児に到達できない)。
   const orphans: Orphan[] = [];
   let scanned = 0;
   let pages = 0;
@@ -132,7 +134,7 @@ async function main(): Promise<void> {
   } while (cursor);
 
   const orphanBytes = orphans.reduce((a, o) => a + o.size, 0);
-  console.log(`対象プレフィクス : ${first.prefix}`);
+  console.log(`対象プレフィクス : ${scanPrefix}`);
   console.log(`走査オブジェクト : ${scanned}${pages > 1 ? ` (${pages} ページ)` : ""}`);
   console.log(`参照中のパス     : ${first.referenced_count}`);
   console.log(`孤児             : ${orphans.length} 件 / ${formatBytes(orphanBytes)}`);

@@ -19,6 +19,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 
 const uuid = () =>
   text("id")
@@ -158,7 +159,7 @@ export const authVscodeLinks = sqliteTable("auth_vscode_links", {
 });
 
 // ---------------------------------------------------------------
-// テナント / プロフィール
+// プロフィール (`tenants` 表は次の migration まで残す)
 // ---------------------------------------------------------------
 
 export const tenants = sqliteTable("tenants", {
@@ -185,7 +186,8 @@ export const profiles = sqliteTable(
     id: text("id").primaryKey(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     role: text("role", {
       enum: ["student", "instructor", "admin", "platform_admin"],
     })
@@ -227,7 +229,8 @@ export const stages = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     slug: text("slug").notNull(),
     format: integer("format").notNull().default(1),
     environment: text("environment"),
@@ -468,7 +471,8 @@ export const taskFixedStartUses = sqliteTable(
   {
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -501,7 +505,8 @@ export const taskHelpOpens = sqliteTable(
   {
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -544,7 +549,8 @@ export const variantReviews = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -635,7 +641,8 @@ export const taskLocalRuns = sqliteTable(
       .references(() => tasks.id, { onDelete: "cascade" }),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     contentHash: text("content_hash").notNull(),
     passedRuns: integer("passed_runs").notNull().default(0),
     failedRuns: integer("failed_runs").notNull().default(0),
@@ -669,7 +676,8 @@ export const taskSupportEvents = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -698,7 +706,8 @@ export const mentorMemos = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     learnerId: text("learner_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -748,7 +757,8 @@ export const assignments = sqliteTable("assignments", {
   id: text("id").primaryKey(),
   tenantId: text("tenant_id")
     .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
+    .references(() => tenants.id, { onDelete: "cascade" })
+    .$defaultFn(() => LEGACY_TENANT_ID),
   stage: text("stage").notNull(),
   chapterId: text("chapter_id").notNull(),
   title: text("title").notNull(),
@@ -810,8 +820,8 @@ export const lessons = sqliteTable(
 
 /**
  * レッスンに紐づく配布資料。 実体は R2 (`MATERIALS_BUCKET`) 上のオブジェクトで、
- * `path` は `tenant/{tenantId}/lessons/{lessonId}/...` 形式。
- * テナントはレッスン → セクション → ステージの join で解決する (authz はアプリ層)。
+ * `path` は保存済みの `tenant/ses/lessons/{lessonId}/...` (この接頭辞の値は変えない)。
+ * 認可はアプリ層。
  */
 export const lessonMaterials = sqliteTable(
   "lesson_materials",
@@ -909,7 +919,8 @@ export const lessonProgress = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -944,7 +955,8 @@ export const studyActivity = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -979,7 +991,8 @@ export const stagePathEvents = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1031,7 +1044,8 @@ export const learnerFocus = sqliteTable("learner_focus", {
     .references(() => profiles.id, { onDelete: "cascade" }),
   tenantId: text("tenant_id")
     .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
+    .references(() => tenants.id, { onDelete: "cascade" })
+    .$defaultFn(() => LEGACY_TENANT_ID),
   /** null = フォーカスなし (導出フォールバックに戻す)。 */
   activeStageId: text("active_stage_id").references(() => stages.id, { onDelete: "set null" }),
   updatedAt: tsNowUpd("updated_at"),
@@ -1053,7 +1067,8 @@ export const stageQueue = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1089,7 +1104,8 @@ export const stageUnlocks = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1122,7 +1138,8 @@ export const skillCheckAttempts = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1166,7 +1183,8 @@ export const discoveryRequests = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     /** つまずいた文脈のあるステージ (= 教材の源流。公開条件もここで判定する)。 */
     stageId: text("stage_id")
       .notNull()
@@ -1199,7 +1217,8 @@ export const discoveryMaterials = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     stageId: text("stage_id")
       .notNull()
       .references(() => stages.id, { onDelete: "cascade" }),
@@ -1242,7 +1261,8 @@ export const discoveryAttempts = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1332,7 +1352,8 @@ export const quizAttempts = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     quizId: text("quiz_id")
       .notNull()
       .references(() => quizzes.id, { onDelete: "cascade" }),
@@ -1365,7 +1386,8 @@ export const reviewCards = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1397,7 +1419,8 @@ export const reviewLogs = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1424,7 +1447,8 @@ export const enrollments = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1494,7 +1518,8 @@ export const enrollmentPresets = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     name: text("name").notNull(),
     description: text("description"),
     /**
@@ -1507,7 +1532,8 @@ export const enrollmentPresets = sqliteTable(
     updatedAt: tsNowUpd("updated_at"),
   },
   (t) => ({
-    // 同じ名前が並ぶと適用時に選び間違えるため、 テナント内で一意にする。
+    // 同じ名前が並ぶと適用時に選び間違えるため、 名前を一意にする。
+    // 物理の一意索引は (tenant_id, name) のまま。 tenant_id 列は次の migration で消す。
     //
     // ただし **退役していないものに限る** 部分インデックスにする。 削除は `archived` を立てる
     // 論理削除なので、 無条件の一意制約だと消した名前が永久に予約され、 同じ名前で作り直せない
@@ -1556,7 +1582,8 @@ export const announcements = sqliteTable("announcements", {
   id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
+    .references(() => tenants.id, { onDelete: "cascade" })
+    .$defaultFn(() => LEGACY_TENANT_ID),
   stageId: text("stage_id"),
   authorId: text("author_id"),
   authorName: text("author_name").notNull().default(""),
@@ -1573,7 +1600,8 @@ export const notifications = sqliteTable("notifications", {
     .references(() => profiles.id, { onDelete: "cascade" }),
   tenantId: text("tenant_id")
     .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
+    .references(() => tenants.id, { onDelete: "cascade" })
+    .$defaultFn(() => LEGACY_TENANT_ID),
   type: text("type", {
     enum: [
       "announcement",
@@ -1605,7 +1633,8 @@ export const submissions = sqliteTable("submissions", {
   id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
+    .references(() => tenants.id, { onDelete: "cascade" })
+    .$defaultFn(() => LEGACY_TENANT_ID),
   studentId: text("student_id"),
   lessonId: text("lesson_id"),
   assignmentId: text("assignment_id"),
@@ -1713,7 +1742,9 @@ export const aiReviewJobs = sqliteTable(
     submissionId: text("submission_id")
       .primaryKey()
       .references(() => submissions.id, { onDelete: "cascade" }),
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     state: text("state", { enum: ["queued", "done", "cancelled"] })
       .notNull()
       .default("queued"),
@@ -1743,7 +1774,9 @@ export const aiReviews = sqliteTable(
     submissionId: text("submission_id")
       .notNull()
       .references(() => submissions.id, { onDelete: "cascade" }),
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     taskId: text("task_id").notNull(),
     taskContentHash: text("task_content_hash").notNull(),
     taskKind: text("task_kind").notNull(),
@@ -1814,7 +1847,8 @@ export const submissionChecks = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     submissionId: text("submission_id")
       .notNull()
       .references(() => submissions.id, { onDelete: "cascade" }),
@@ -1843,7 +1877,8 @@ export const aiReviewOverrides = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     submissionId: text("submission_id")
       .notNull()
       .references(() => submissions.id, { onDelete: "cascade" }),
@@ -1867,7 +1902,7 @@ export const aiReviewOverrides = sqliteTable(
 
 /**
  * コメント集 (#34、07 §6.4 の 4)。課題のパターンごとに、よくある違反と定型コメントを持つ。
- * `stage_id` が null ならテナントの全講座、`pattern` が null なら講座の全パターンに出す。
+ * `stage_id` が null なら全講座、`pattern` が null なら講座の全パターンに出す。
  */
 export const reviewCommentTemplates = sqliteTable(
   "review_comment_templates",
@@ -1875,7 +1910,8 @@ export const reviewCommentTemplates = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     stageId: text("stage_id").references(() => stages.id, { onDelete: "cascade" }),
     pattern: text("pattern"),
     /** コーディング規則の ID (`coding_rules` は seed で入れ直すので外部キーにしない)。 */
@@ -1921,7 +1957,8 @@ export const skillEvidence = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1951,7 +1988,8 @@ export const certificates = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -1964,7 +2002,7 @@ export const certificates = sqliteTable(
     criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
     recipientName: text("recipient_name").notNull(),
     stageTitle: text("stage_title").notNull(),
-    tenantName: text("tenant_name").notNull(),
+    issuerName: text("tenant_name").notNull(),
     revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
   },
   (t) => ({
@@ -2003,7 +2041,8 @@ export const stageGrants = sqliteTable(
     id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
     stageId: text("stage_id")
       .notNull()
       .references(() => stages.id, { onDelete: "cascade" }),
@@ -2025,7 +2064,9 @@ export const stageGrants = sqliteTable(
 
 export const auditLogs = sqliteTable("audit_logs", {
   id: uuid(),
-  tenantId: text("tenant_id").notNull(),
+  tenantId: text("tenant_id")
+    .notNull()
+    .$defaultFn(() => LEGACY_TENANT_ID),
   actorId: text("actor_id"),
   actorName: text("actor_name").notNull().default(""),
   actorRole: text("actor_role"),

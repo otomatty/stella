@@ -3,7 +3,7 @@
  *
  * - video / slides: MaterialUploader で動画 / PDF をアップロード
  * - text: markdown を textarea で編集
- * - assignment / code: 同テナントの assignment 一覧から紐付け先を選択
+ * - assignment / code: assignment 一覧から紐付け先を選択
  * - quiz: クイズ設問の編集は将来対応 (タイトルのみ編集可能)
  */
 
@@ -26,7 +26,6 @@ import { MaterialUploader } from "./MaterialUploader";
 import { QuizEditor } from "./QuizEditor";
 
 interface Props {
-  tenantId: string;
   stageId: string;
   sectionId: string;
   lesson: LessonRow | null;
@@ -47,14 +46,7 @@ const TYPES: { value: LessonType; label: string }[] = [
   { value: "assignment", label: "課題提出" },
 ];
 
-export function LessonEditor({
-  tenantId,
-  stageId,
-  sectionId: _sectionId,
-  lesson,
-  onClose,
-  onSubmit,
-}: Props) {
+export function LessonEditor({ stageId, sectionId: _sectionId, lesson, onClose, onSubmit }: Props) {
   const [title, setTitle] = useState(lesson?.title ?? "新しいレッスン");
   const [type, setType] = useState<LessonType>(lesson?.type ?? "text");
   const [duration, setDuration] = useState(lesson?.duration_label ?? "");
@@ -77,7 +69,7 @@ export function LessonEditor({
     let cancelled = false;
     (async () => {
       try {
-        const rows = await listAssignments(tenantId);
+        const rows = await listAssignments();
         if (!cancelled) setAssignments(rows);
       } catch {
         // toast はメインのカタログ画面で出すので、 ここでは silent
@@ -86,7 +78,7 @@ export function LessonEditor({
     return () => {
       cancelled = true;
     };
-  }, [tenantId, type]);
+  }, [type]);
 
   const submit = async () => {
     setSubmitting(true);
@@ -155,7 +147,6 @@ export function LessonEditor({
             <>
               <MaterialUploader
                 kind="video"
-                tenantId={tenantId}
                 stageId={stageId}
                 currentPath={videoPath}
                 onChange={setVideoPath}
@@ -176,7 +167,6 @@ export function LessonEditor({
             <>
               <MaterialUploader
                 kind="pdf"
-                tenantId={tenantId}
                 stageId={stageId}
                 currentPath={pdfPath}
                 onChange={setPdfPath}

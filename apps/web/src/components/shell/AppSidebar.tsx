@@ -37,7 +37,7 @@ interface AppSidebarProps {
   user: User;
   /** ナビ ID ごとの実件数バッジ (添削待ち / 修了証 等)。 0 は非表示。 */
   counts?: Partial<Record<NavId, number>>;
-  /** profiles.role — 組織マスタは platform_admin のみ表示 */
+  /** profiles.role — 受講者シェルへの切り替え表示に使う */
   profileRole?: ProfileRole;
   canSwitchToLearner?: boolean;
   onSwitchToLearner?: () => void;
@@ -82,7 +82,7 @@ export const AppSidebar = ({
         <SidebarGroup className="p-0">
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarMenu>
-            {navForRole(role, profileRole).map((link) => {
+            {navForRole(role).map((link) => {
               const count = counts?.[link.id];
               const showBadge = typeof count === "number" && count > 0;
               const Icon = link.icon;

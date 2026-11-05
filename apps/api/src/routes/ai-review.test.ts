@@ -158,12 +158,11 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-        { id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" },
+        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "teacher", displayName: "講師", role: "instructor" },
       ]),
       db.insert(stages).values({
         id: "stage",
-        tenantId: "ses",
         slug: "dev-env-basics",
         title: "開発環境",
         format: 2,
@@ -171,13 +170,9 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
       db.insert(lessons).values({ id: "reading", sectionId: "unit", title: "読む", type: "text" }),
-      db
-        .insert(enrollments)
-        .values({ tenantId: "ses", userId: "learner", stageId: "stage", status: "active" }),
+      db.insert(enrollments).values({ userId: "learner", stageId: "stage", status: "active" }),
       db.insert(skills).values({ id: "html", title: "HTML" }),
-      db
-        .insert(lessonProgress)
-        .values({ tenantId: "ses", userId: "learner", lessonId: "reading", completed: true }),
+      db.insert(lessonProgress).values({ userId: "learner", lessonId: "reading", completed: true }),
       db.insert(codingRules).values([
         {
           id: "CR-SCOPE-01",
@@ -823,7 +818,6 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
   describe("サーバーが記録した支援 (課題の AI チャット・相談、#38)", () => {
     const recordSupport = (createdAt: Date) =>
       db.insert(taskSupportEvents).values({
-        tenantId: "ses",
         userId: "learner",
         taskId: fixture.input.taskId,
         kind: "ai-chat",
@@ -946,7 +940,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
   it("提出のロックを取れなければ結果を残して後で当て、AI を呼び直さない", async () => {
     complete.mockResolvedValue(answer(aiOutput()));
     const row = await submit();
-    const lockId = `task-submission:ses:learner:${fixture.input.taskId}`;
+    const lockId = `task-submission:learner:${fixture.input.taskId}`;
     await db
       .insert(resourceLocks)
       .values({ id: lockId, holder: "human", expiresAt: new Date(Date.now() + 60_000) });
@@ -1034,7 +1028,6 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       await db.batch([
         db.insert(submissions).values({
           id,
-          tenantId: "ses",
           studentId: "learner",
           stageTitle: "開発環境",
           assignmentTitle: "x",
@@ -1042,7 +1035,6 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
         }),
         db.insert(aiReviewJobs).values({
           submissionId: id,
-          tenantId: "ses",
           state: "done",
           nextAttemptAt: new Date(later),
           leasedAt: new Date(later - 30_000),
@@ -1067,8 +1059,8 @@ describe("旧形式の提出も、確定前の下書きは受講者に返さな�
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-        { id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" },
+        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "teacher", displayName: "講師", role: "instructor" },
       ]),
     ]);
     const token = await signAccessToken("test-secret", "learner", "l@example.com");

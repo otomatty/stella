@@ -45,7 +45,6 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
   let objects: Map<string, Uint8Array>;
   const caller = {
     id: "teacher",
-    tenantId: "ses",
     role: "instructor" as const,
     name: "講師",
     email: null,
@@ -74,13 +73,12 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-        { id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" },
-        { id: "other", tenantId: "ses", displayName: "他の受講者", role: "student" },
+        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "other", displayName: "他の受講者", role: "student" },
       ]),
       db.insert(stages).values({
         id: "stage",
-        tenantId: "ses",
         slug: "dev-env-basics",
         title: "開発環境",
         format: 2,
@@ -88,9 +86,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
       db.insert(lessons).values({ id: "reading", sectionId: "unit", title: "読む", type: "text" }),
-      db
-        .insert(enrollments)
-        .values({ tenantId: "ses", userId: "learner", stageId: "stage", status: "active" }),
+      db.insert(enrollments).values({ userId: "learner", stageId: "stage", status: "active" }),
       db.insert(tasks).values({
         id: fixture.input.taskId,
         sectionId: "unit",
@@ -117,9 +113,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         bundle: JSON.stringify(fixture.bundle),
       }),
       db.insert(skills).values({ id: "html", title: "HTML" }),
-      db
-        .insert(lessonProgress)
-        .values({ tenantId: "ses", userId: "learner", lessonId: "reading", completed: true }),
+      db.insert(lessonProgress).values({ userId: "learner", lessonId: "reading", completed: true }),
     ]);
     token = await signAccessToken("test-secret", "learner", "test@example.com");
     instructorToken = await signAccessToken("test-secret", "teacher", "teacher@example.com");
@@ -572,7 +566,6 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       const id = crypto.randomUUID();
       await db.insert(submissions).values({
         id,
-        tenantId: "ses",
         studentId: "learner",
         stageTitle: "開発環境",
         assignmentTitle: taskId,
@@ -730,7 +723,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         activityDate: "2026-10-05",
       },
     ];
-    expect((await reviewedProgressRows(db, "ses", "learner", rows)).rows[0].completed).toBe(false);
+    expect((await reviewedProgressRows(db, "learner", rows)).rows[0].completed).toBe(false);
     const { app } = mountTestApp(env, submissionsRoute);
     const body = {
       lessonId: "code",
@@ -770,7 +763,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       (await db.select().from(lessonProgress).where(eq(lessonProgress.lessonId, "code")))[0]
         .completed,
     ).toBe(true);
-    expect((await reviewedProgressRows(db, "ses", "learner", rows)).rows[0].completed).toBe(true);
+    expect((await reviewedProgressRows(db, "learner", rows)).rows[0].completed).toBe(true);
   });
 
   /** lesson_progress を書く文の直前に、別の講師がその提出を不合格に訂正する D1 を作る。 */
@@ -855,13 +848,11 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       countsTowardActivity: true,
       activityDate: "2026-10-05",
     };
-    expect((await reviewedProgressRows(db, "ses", "learner", [sync])).rows[0].completed).toBe(
-      false,
-    );
+    expect((await reviewedProgressRows(db, "learner", [sync])).rows[0].completed).toBe(false);
     // そのレッスンの課題への提出の合格なら完了する。
     await legacyReview("code", "exercise", "pass");
     expect(await progressOf("code")).toBe(true);
-    expect((await reviewedProgressRows(db, "ses", "learner", [sync])).rows[0].completed).toBe(true);
+    expect((await reviewedProgressRows(db, "learner", [sync])).rows[0].completed).toBe(true);
   });
 
   it("判定の訂正が同期と重なっても、進捗は最後に保存された判定に揃う", async () => {
@@ -923,7 +914,6 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       await db.batch([
         db.insert(stages).values({
           id: "legacy",
-          tenantId: "ses",
           slug: "legacy-ts",
           title: "旧講座",
           status: "published",
@@ -937,28 +927,25 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
           assignmentId: "exercise",
         }),
         db.insert(enrollments).values({
-          tenantId: "ses",
           userId: "learner",
           stageId: "legacy",
           status: "completed",
           completedAt: new Date("2026-01-01T00:00:00Z"),
         }),
         db.insert(lessonProgress).values({
-          tenantId: "ses",
           userId: "learner",
           lessonId: "legacy-code",
           completed: true,
           updatedAt: new Date("2026-01-01T00:00:00Z"),
         }),
         db.insert(certificates).values({
-          tenantId: "ses",
           userId: "learner",
           stageId: "legacy",
           certCode: "FLC-2026-0000-0001",
           issuedBy,
           recipientName: "受講者",
           stageTitle: "旧講座",
-          tenantName: "テスト",
+          issuerName: "テスト",
         }),
       ]);
     }
@@ -1009,7 +996,6 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       expect(await legacyCertificates()).toHaveLength(1);
       // そのレッスンの課題へのレビュー合格があれば、同期しても完了のまま。
       await db.insert(submissions).values({
-        tenantId: "ses",
         studentId: "learner",
         lessonId: "legacy-code",
         assignmentId: "exercise",
@@ -1038,7 +1024,6 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       await db.batch([
         db.insert(stages).values({
           id: "legacy",
-          tenantId: "ses",
           slug: "legacy-ts",
           title: "旧講座",
           status: "published",
@@ -1052,13 +1037,11 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
           assignmentId: "exercise",
         }),
         db.insert(enrollments).values({
-          tenantId: "ses",
           userId: "learner",
           stageId: "legacy",
           status: "active",
         }),
         db.insert(lessonProgress).values({
-          tenantId: "ses",
           userId: "learner",
           lessonId: "legacy-code",
           completed: true,

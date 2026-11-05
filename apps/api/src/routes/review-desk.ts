@@ -89,7 +89,7 @@ reviewDeskRoute.get("/api/review-desk/metrics", async (c) => {
     const days = raw === undefined ? 30 : Number(raw);
     if (!Number.isInteger(days) || days < 1 || days > 366)
       throw new ApiError("days は 1〜366 で指定してください", 400);
-    return c.json(await reviewMetrics(db, caller.tenantId, days));
+    return c.json(await reviewMetrics(db, days));
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -124,7 +124,6 @@ reviewDeskRoute.post("/api/review-desk/task-board/discovery", async (c) => {
     return c.json(
       await routeTaskToDiscovery(
         db,
-        caller,
         body.taskId,
         (body.rubricId as string | null | undefined) ?? null,
       ),
@@ -141,7 +140,7 @@ reviewDeskRoute.get("/api/review-templates", async (c) => {
     const stageId = c.req.query("stageId");
     const pattern = c.req.query("pattern");
     return c.json({
-      templates: await listTemplates(db, caller, {
+      templates: await listTemplates(db, {
         ...(stageId ? { stageId } : {}),
         ...(pattern ? { pattern } : {}),
       }),
@@ -167,7 +166,7 @@ reviewDeskRoute.patch("/api/review-templates/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requireStaff(caller);
     const input = parseTemplateInput(await readJson(c), true);
-    return c.json({ template: await updateTemplate(db, caller, c.req.param("id"), input) });
+    return c.json({ template: await updateTemplate(db, c.req.param("id"), input) });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -177,7 +176,7 @@ reviewDeskRoute.delete("/api/review-templates/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireStaff(caller);
-    await deleteTemplate(db, caller, c.req.param("id"));
+    await deleteTemplate(db, c.req.param("id"));
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);

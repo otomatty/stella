@@ -12,8 +12,6 @@ import type {
   User,
 } from "@/data/types";
 
-export { TENANTS } from "@/data/seed-catalog";
-
 export const CURRENT_USER: User = {
   name: "田中 翔太",
   email: "tanaka@example.com",

@@ -106,13 +106,10 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
     try {
       await db.batch([
         db.insert(tenants).values({ id: "ses", name: "テスト" }),
-        db
-          .insert(profiles)
-          .values({ id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" }),
+        db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "instructor" }),
         db.insert(submissions).values(
           ["same-time", "checked", "unreviewed", "overturned"].map((id) => ({
             id,
-            tenantId: "ses",
             stageTitle: "講座",
             assignmentTitle: "課題",
             code: "",
@@ -124,7 +121,6 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
       const review = (submissionId: string, outcome: "confirmed" | "escalated") => ({
         id: `ai-${submissionId}`,
         submissionId,
-        tenantId: "ses",
         taskId: "c/u/t",
         taskContentHash: "a".repeat(64),
         taskKind: "basic",
@@ -162,10 +158,10 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
             human("overturned", "resubmit", new Date(at.getTime() + 60_000)),
           ]),
         db.insert(submissionChecks).values([
-          { tenantId: "ses", submissionId: "checked", result: "confirmed", createdAt: at },
-          { tenantId: "ses", submissionId: "checked", result: "commented", createdAt: at },
-          { tenantId: "ses", submissionId: "overturned", result: "confirmed", createdAt: at },
-          { tenantId: "ses", submissionId: "overturned", result: "overturned", createdAt: at },
+          { submissionId: "checked", result: "confirmed", createdAt: at },
+          { submissionId: "checked", result: "commented", createdAt: at },
+          { submissionId: "overturned", result: "confirmed", createdAt: at },
+          { submissionId: "overturned", result: "overturned", createdAt: at },
         ]),
       ]);
       const rows = database.sqlite.prepare(EVAL_SOURCE_SQL).all() as unknown as EvalSourceRow[];
@@ -188,12 +184,9 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
     try {
       await db.batch([
         db.insert(tenants).values({ id: "ses", name: "テスト" }),
-        db
-          .insert(profiles)
-          .values({ id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" }),
+        db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "instructor" }),
         db.insert(submissions).values({
           id: "same-time",
-          tenantId: "ses",
           stageTitle: "講座",
           assignmentTitle: "課題",
           code: "",
@@ -204,7 +197,6 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
       const review = (id: string, outcome: "confirmed" | "escalated") => ({
         id,
         submissionId: "same-time",
-        tenantId: "ses",
         taskId: "c/u/t",
         taskContentHash: "a".repeat(64),
         taskKind: "basic",

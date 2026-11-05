@@ -99,6 +99,6 @@ export async function withResourceLock<T>(
  * 合格の PATCH とその訂正が重なったとき、読んだ判定材料が書く前に古びる隙を閉じる
  * (`stage-auto-complete.ts`)。
  */
-export function stageClearLockId(tenantId: string, userId: string, stageId: string): string {
-  return `stage-clear:${tenantId}:${userId}:${stageId}`;
+export function stageClearLockId(userId: string, stageId: string): string {
+  return `stage-clear:${userId}:${stageId}`;
 }

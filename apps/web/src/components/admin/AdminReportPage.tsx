@@ -57,18 +57,17 @@ const PRESET_OPTIONS: ReportPeriodPreset[] = [
 ];
 
 interface Props {
-  tenantId: string;
   backendEnabled: boolean;
 }
 
-export function AdminReportPage({ tenantId, backendEnabled }: Props) {
+export function AdminReportPage({ backendEnabled }: Props) {
   if (!backendEnabled) {
     return <ReportUnavailable />;
   }
-  return <ReportLive tenantId={tenantId} />;
+  return <ReportLive />;
 }
 
-function ReportLive({ tenantId }: { tenantId: string }) {
+function ReportLive() {
   const [type, setType] = useState<ReportType>("enrollments");
   const [preset, setPreset] = useState<ReportPeriodPreset>("this_month");
   const [customFrom, setCustomFrom] = useState("");
@@ -84,7 +83,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
   );
 
   const invalidPeriod = isInvalidPeriod(period);
-  const { report, loading, error, refetch } = useReport(tenantId, type, period, true);
+  const { report, loading, error, refetch } = useReport(type, period, true);
 
   const meta = REPORT_META[type];
   const rows = report?.rows ?? [];

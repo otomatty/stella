@@ -43,7 +43,6 @@ import {
   queueGroupOf,
   sortQueue,
 } from "@/lib/review-queue";
-import type { Tenant } from "@/data/types";
 import type { AvatarTone } from "@/data/types";
 import { AssignedScopeToggle } from "./AssignedScopeToggle";
 import { AiPassedList } from "./AiPassedList";
@@ -52,7 +51,6 @@ import { TaskBoardPanel } from "./TaskBoardPanel";
 import { VariantStockPanel } from "./VariantStockPanel";
 
 interface ReviewQueueProps {
-  tenantId: Tenant["id"];
   setPage: (p: string) => void;
   onOpenReview: (submissionId: string) => void;
   currentUserId?: string | null;
@@ -71,15 +69,14 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
  * - 類題の在庫: コードの復習の類題が足りないパターンと、在庫切れで待っている受講者 (#39)。
  */
 export const ReviewQueue = ({
-  tenantId,
   setPage,
   onOpenReview,
   currentUserId = null,
   backendEnabled = false,
 }: ReviewQueueProps) => {
-  const { submissions } = useSubmissions(tenantId);
+  const { submissions } = useSubmissions();
   // 開いたときに取り直す (ほかの講師の確定・AI の結果を反映する)。
-  useRefreshSubmissionsOnOpen(tenantId, backendEnabled);
+  useRefreshSubmissionsOnOpen(backendEnabled);
   const scope = useAssignedScope(currentUserId, backendEnabled);
   const [tab, setTab] = useState("queue");
   const [group, setGroup] = useState<GroupFilter>("all");
@@ -121,7 +118,6 @@ export const ReviewQueue = ({
   if (boardTaskId) {
     return (
       <TaskBoardPanel
-        tenantId={tenantId}
         taskId={boardTaskId}
         assignedOnly={scope.assignedOnly}
         onOpen={open}
