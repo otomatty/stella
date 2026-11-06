@@ -40,7 +40,7 @@ describe("parseStageGrantDiff", () => {
 });
 
 describe("prepareStageGrantDiff", () => {
-  it("選べない人の追加と、受講者でない免除を拒否する", () => {
+  it("存在しない人・無効な人の追加を拒否し、講師の追加と割当済みの免除を受け付ける", () => {
     expect(
       prepareStageGrantDiff(
         { add: ["missing"], remove: [], exempt: [], unexempt: [] },
@@ -56,7 +56,7 @@ describe("prepareStageGrantDiff", () => {
         new Set(),
         new Set(),
       ).ok,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       prepareStageGrantDiff(
         { add: ["old"], remove: [], exempt: [], unexempt: [] },
@@ -72,7 +72,7 @@ describe("prepareStageGrantDiff", () => {
         new Set(["teacher"]),
         new Set(),
       ).ok,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("保存後に割り当てが無い人の免除は拒否する", () => {
@@ -83,7 +83,7 @@ describe("prepareStageGrantDiff", () => {
       new Set(),
     );
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("前提を免除できるのは、割り当てる受講者だけです");
+    if (!result.ok) expect(result.error).toBe("前提を免除できるのは、割り当てるユーザーだけです");
   });
 
   it("新しい割り当てと免除を足し、既にある割り当てと腕試しは書き直さない", () => {
