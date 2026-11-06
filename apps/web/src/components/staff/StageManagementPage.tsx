@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 
 import { SkillTree, type SkillTreeHandle } from "@/components/learner/tree/SkillTree";
 import { routeAccentOf } from "@/components/learner/tree/route-accents";
@@ -18,11 +18,11 @@ import { ChevronDown, ChevronUp } from "@/lib/icons";
 import {
   getStaffSkillMap,
   getStaffSkillMapIcons,
-  staffEnrollStage,
   type StaffSkillMapStageNode,
 } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
+import { StaffEnrollButton } from "./StaffEnrollButton";
 import { StageGrantEditor } from "./StageGrantEditor";
 import {
   entryStageId,
@@ -223,7 +223,7 @@ export function StageManagementPage({
               const stage = byId.get(node.id);
               if (!stage) return null;
               return (
-                <StaffStageDetail
+                <StarDetailCard
                   stage={stage}
                   onOpenAsLearner={onOpenAsLearner}
                   onAssign={() => {
@@ -394,6 +394,11 @@ export function StageManagementPage({
                             </div>
                             <p className="mt-1 text-[11px] text-ink-3">{offBoardNote(stage)}</p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
+                              <Button asChild variant="primary" size="sm">
+                                <Link to="/stages/$stageId" params={{ stageId: stage.id }}>
+                                  ステージ詳細を開く
+                                </Link>
+                              </Button>
                               {stage.audience === "granted" ? (
                                 <Button
                                   type="button"
@@ -462,40 +467,7 @@ export function StageManagementPage({
   );
 }
 
-function StaffEnrollButton({
-  stageId,
-  onOpenAsLearner,
-}: {
-  stageId: string;
-  onOpenAsLearner: (stageId: string) => void;
-}) {
-  const [pending, setPending] = useState(false);
-  const open = async () => {
-    setPending(true);
-    try {
-      await staffEnrollStage(stageId);
-      onOpenAsLearner(stageId);
-    } catch (err: unknown) {
-      toast.error(`開けませんでした: ${err instanceof Error ? err.message : "unknown"}`);
-    } finally {
-      setPending(false);
-    }
-  };
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      title="初めて開くときは自分を受講登録します"
-      disabled={pending}
-      onClick={() => void open()}
-    >
-      受講者の画面で確かめる
-    </Button>
-  );
-}
-
-function StaffStageDetail({
+function StarDetailCard({
   stage,
   onAssign,
   onOpenAsLearner,
@@ -522,6 +494,11 @@ function StaffStageDetail({
         {stage.audience === "granted" ? ` · 割り当て ${stage.granted_count}` : ""}
       </p>
       <div className="flex flex-wrap gap-1.5">
+        <Button asChild variant="primary" size="sm">
+          <Link to="/stages/$stageId" params={{ stageId: stage.id }}>
+            ステージ詳細を開く
+          </Link>
+        </Button>
         {stage.audience === "granted" ? (
           <Button type="button" size="sm" variant="outline" onClick={onAssign}>
             受講者を割り当てる

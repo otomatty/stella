@@ -244,8 +244,10 @@ export async function getSkillMapIcons(signal?: AbortSignal): Promise<Record<str
  * 講師・管理者向けのスキルツリー。霧も割当も島の表示条件も掛けず、
  * Basic と Extra を 1 つの盤面で返す。
  */
-export async function getStaffSkillMap(): Promise<{ stages: StaffSkillMapStageNode[] }> {
-  return await apiFetch<{ stages: StaffSkillMapStageNode[] }>("/api/skill-map/staff");
+export async function getStaffSkillMap(
+  signal?: AbortSignal,
+): Promise<{ stages: StaffSkillMapStageNode[] }> {
+  return await apiFetch<{ stages: StaffSkillMapStageNode[] }>("/api/skill-map/staff", { signal });
 }
 
 /** ステージ管理の盤面に載るステージアイコン。取り方は `getSkillMapIcons` と同じ。 */

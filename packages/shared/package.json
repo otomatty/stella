@@ -71,6 +71,7 @@
     "./brand/display": "./src/brand/display.ts",
     "./legacy-tenant": "./src/legacy-tenant.ts",
     "./tasks/catalog": "./src/tasks/catalog.ts",
+    "./tasks/staff-stage": "./src/tasks/staff-stage.ts",
     "./vscode/uris": "./src/vscode/uris.ts",
     "./tasks/submission": "./src/tasks/submission.ts",
     "./tasks/submission-support": "./src/tasks/submission-support.ts",

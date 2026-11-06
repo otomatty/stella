@@ -25,9 +25,13 @@ export async function listStages(): Promise<StageRow[]> {
   return rows ?? [];
 }
 
-export async function getStageWithChildren(stageId: string): Promise<StageWithChildren | null> {
+export async function getStageWithChildren(
+  stageId: string,
+  signal?: AbortSignal,
+): Promise<StageWithChildren | null> {
   const { stage } = await apiFetch<{ stage: StageWithChildren | null }>(
     `/api/cms/stages/${encodeURIComponent(stageId)}`,
+    { signal },
   );
   return stage ?? null;
 }
@@ -71,45 +75,6 @@ export async function listStageMaterials(stageId: string): Promise<StageMaterial
     `/api/materials?stageId=${encodeURIComponent(stageId)}`,
   );
   return rows ?? [];
-}
-
-/**
- * 配布資料をアップロードしてレッスンに紐付ける (staff のみ)。
- * 保存先パスはサーバ側で組み立てられる。
- */
-export async function uploadLessonMaterial(
-  file: File,
-  lessonId: string,
-): Promise<LessonMaterialRow> {
-  const { getAccessToken } = await import("./auth-client");
-  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
-  const token = getAccessToken();
-  const form = new FormData();
-  form.append("lessonId", lessonId);
-  form.append("file", file);
-  const res = await fetch(`${serverUrl}/api/materials/upload`, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: form,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    let message = `アップロードに失敗しました (${res.status})`;
-    try {
-      const data = JSON.parse(text) as { error?: string };
-      if (data.error) message = data.error;
-    } catch {
-      /* noop */
-    }
-    throw new Error(message);
-  }
-  const { row } = (await res.json()) as { row: LessonMaterialRow };
-  return row;
-}
-
-/** 配布資料を削除する (staff のみ)。 R2 オブジェクトも削除される。 */
-export async function deleteLessonMaterial(id: string): Promise<void> {
-  await apiFetch(`/api/materials/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 /**
