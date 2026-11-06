@@ -783,7 +783,12 @@ export const SkillTree = ({
     (key: string): boolean => {
       let bounds: RadialBounds | null = null;
       if (key === mainlandTitle && drawnCounts.mainland > 0) bounds = layout.mainlandBounds;
-      else if (layout.sectors.some((sector) => sector.key === key)) {
+      else if (
+        drawnStars.some(
+          (star) =>
+            star.sector === key && !layout.islands.some((island) => island.key === star.sector),
+        )
+      ) {
         const stars = drawnStars.filter((star) => star.sector === key);
         if (stars.length > 0)
           bounds = {

@@ -208,8 +208,8 @@ export function StageManagementPage({
   };
 
   const focusRegion = (key: string) => {
-    setSelectedRegion(key);
-    treeRef.current?.focusRegion(key);
+    const focused = treeRef.current?.focusRegion(key);
+    setSelectedRegion(focused ? key : null);
   };
 
   const selectStage = (id: string) => {
