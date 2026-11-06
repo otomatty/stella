@@ -17,7 +17,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の組み込みの API とモジュールの範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -25,7 +25,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の組み込みの API とモジュールの範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
