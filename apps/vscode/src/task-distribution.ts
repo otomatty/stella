@@ -1,4 +1,3 @@
-import { constants } from "node:fs";
 import {
   lstat,
   mkdir,
@@ -9,7 +8,6 @@ import {
   rm,
   rmdir,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -19,7 +17,7 @@ import {
 } from "@stella/shared/tasks/catalog";
 import { isSafeRelativePattern, parseTaskManifest } from "@stella/shared/tasks/manifest";
 import type { SupportEvent } from "@stella/shared/tasks/submission";
-import { LIMITS, readFileInRoot } from "./runner/files.js";
+import { createNewFile, LIMITS, readFileInRoot } from "./runner/files.js";
 
 /** 通常の配布と、前の実装が壊れていて進めないときの「固定した開始点」(01 §4)。 */
 export type TaskVariant = "standard" | "fixed-start";
@@ -132,13 +130,9 @@ async function isPlainDirectory(base: string, dir: string): Promise<boolean> {
   );
 }
 
-/** 新しいファイルとしてだけ作る。既存のファイルにもリンクにも書かない (O_EXCL・O_NOFOLLOW)。 */
-const CREATE_NEW =
-  constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0);
-
 async function writeNewFile(base: string, dir: string, name: string, data: Buffer): Promise<void> {
   await assertPlainDirectory(base, dir);
-  await writeFile(path.join(dir, name), data, { flag: CREATE_NEW });
+  await createNewFile(path.join(dir, name), data);
 }
 
 /**
