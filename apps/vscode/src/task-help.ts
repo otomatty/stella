@@ -196,10 +196,13 @@ export function buildTaskHelpHtml(input: {
   const os = input.os ?? defaultOsForPlatform();
   const working = help.phase === "working";
   const body = [
+    help.viewer === "staff"
+      ? `<p class="notice">${escapeHtml("講師・管理者として表示しています。受講者には解放の条件 (ヒントの順番・挑戦の回数・合格) を満たすまで出ません。開いても記録しません。")}</p>`
+      : "",
     `<h1>${escapeHtml(help.title)}</h1>`,
     `<p class="meta">${TASK_KIND_LABELS[help.kind]} ・ ${escapeHtml(TASK_STATUS_LABELS[help.status])}</p>`,
     help.notice ? `<p class="notice">${escapeHtml(help.notice)}</p>` : "",
-    !help.referencesOnly
+    help.viewer !== "staff" && !help.referencesOnly
       ? `<p class="hint">ヒント・解答例・解説を開くと、支援の記録に残ります。罰ではなく、学習の記録です。${working ? "" : "合格後に開いたものは、合格した提出の記録を変えません。"}</p>`
       : "",
     referencesHtml(input.manifest?.references),
@@ -333,10 +336,15 @@ export async function solutionContent(
   const contentHash = new URLSearchParams(uri.query).get("contentHash") ?? "";
   if (!encodedTaskId || !rel || !/^[a-f0-9]{64}$/.test(contentHash)) return UNAVAILABLE;
   try {
-    const help = await fetchInSession<TaskHelpResponse>(
+    let help = await fetchInSession<TaskHelpResponse>(
       session,
       helpUrl(decodeURIComponent(encodedTaskId), contentHash),
     );
+    if (help.viewer === "staff" && help.solution.state === "available")
+      help = await fetchInSession<TaskHelpResponse>(session, "/api/tasks/help/open", {
+        method: "POST",
+        body: { taskId: decodeURIComponent(encodedTaskId), contentHash, item: "solution" },
+      });
     const file =
       help.solution.state === "opened"
         ? help.solution.files?.find((f) => f.path === rel)
@@ -501,7 +509,7 @@ async function openTaskHelpItemCommand(
       session,
       helpUrl(target.taskId, target.contentHash),
     );
-    if (current.phase === "working") {
+    if (current.viewer !== "staff" && current.phase === "working") {
       const open = "解答例を開く";
       const choice = await vscode.window.showWarningMessage(
         "解答例を開きますか",
@@ -537,10 +545,15 @@ async function compareTaskSolutionCommand(requested: unknown, rel: unknown): Pro
     throw new Error("解答例を開き直してから、もう一度選んでください");
   const session = authSession();
   const target = await resolveTarget(requested);
-  const help = await fetchInSession<TaskHelpResponse>(
+  let help = await fetchInSession<TaskHelpResponse>(
     session,
     helpUrl(target.taskId, target.contentHash),
   );
+  if (help.viewer === "staff" && help.solution.state === "available")
+    help = await fetchInSession<TaskHelpResponse>(session, "/api/tasks/help/open", {
+      method: "POST",
+      body: { taskId: target.taskId, contentHash: target.contentHash, item: "solution" },
+    });
   if (help.solution.state !== "opened" || !help.solution.files?.some((f) => f.path === rel))
     throw new Error("解答例を開き直してから、もう一度選んでください");
   const left = solutionUri(target.taskId, rel, target.contentHash);
