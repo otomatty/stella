@@ -23,7 +23,7 @@ Extra ステージも stella の stages/ に置く。stella は公開リポジ�
 評価は format 2 では課題 (`tasks/`) と知識問題 (`knowledge.md`) です。`THEME_TO_STAGE.md` の「コード演習は javascript / typescript / sql だけ」は、旧形式の QuickJS 演習の話です。format 2 の実行は runner ごとに固定の手順で、テンプレートは `templates/runners/` にあります。
 
 - **Basic**。公開リポジトリのカタログに載るステージ。`audience` は書かないか `catalog`。slug、前提、線の親、カテゴリの正本は `docs/curriculum/07-stella-adoption-redesign.md` の §3.1 と §3.4。前提の無い根は `dev-env-basics` だけです。ここへ前提を足さないでください。
-- **Extra**。`stage.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA のステージの slug。退役した slug は使えません。
+- **Extra**。`stage.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA のステージの slug。退役した slug は使えません。新しい島が要るときは `packages/shared/src/skill-map/islands.ts` に足し、旧画面が本土の扇に混ぜないよう `SKILL_MAP_ISLAND_MIN_TIERS` と Web の `tiers` (`apps/web/src/lib/skill-map-api.ts` の `SKILL_MAP_TIERS`) も上げる。
 
 slug、ステージ名、ファイル名に受講者の名前を入れないでください。R2 のキーと D1 に残ります。
 
