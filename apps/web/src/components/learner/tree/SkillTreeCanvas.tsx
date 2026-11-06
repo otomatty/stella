@@ -82,8 +82,11 @@ export interface SkillTreeCanvasHandle {
    * 中心だけ合わせる (全体表示からのクリックで「まず寄る」ために使う)。
    */
   focusOn: (x: number, y: number, targetScale: number) => void;
-  /** 全体を表示に戻す。 */
-  fit: () => void;
+  /**
+   * 全体を表示に戻す。箱の大きさがまだ無いときは false (何もしない)。
+   * 成功したあとのリサイズは、触っていなければもう一度全体表示に収め直す。
+   */
+  fit: () => boolean;
 }
 
 interface SkillTreeCanvasProps {
@@ -183,6 +186,12 @@ export const SkillTreeCanvas = ({
    * 全体表示へ組み直してよいか / いまの見え方を保つべきかの判断に使う。
    */
   const touched = useRef(false);
+  /**
+   * 触っていないときの戻し先。全体表示のあとは 1× の初期視点へ戻さず、
+   * 箱の大きさに合わせて全体表示を組み直す (開いた直後の fit が
+   * ResizeObserver に消えないようにするためでもある)。
+   */
+  const opening = useRef<"home" | "fit">("home");
   const [dragging, setDragging] = useState(false);
   /** プログラム起点の移動 (フィット / フォーカス追従) だけ transition を効かせる。 */
   const [animated, setAnimated] = useState(false);
@@ -261,20 +270,22 @@ export const SkillTreeCanvas = ({
   // `fitView` の名は biome が `fit()` をテストの focus と誤認しないため。
   const fitView = useCallback(() => {
     const viewport = viewportRef.current;
-    if (!viewport || worldWidth <= 0 || worldHeight <= 0) return;
+    if (!viewport || worldWidth <= 0 || worldHeight <= 0) return false;
     const vw = viewport.clientWidth;
     const vh = viewport.clientHeight;
-    if (vw <= 0 || vh <= 0) return;
+    if (vw <= 0 || vh <= 0) return false;
     const scale = fitScaleOf(vw, vh);
     updateZoomFloor(vw, vh);
     setAnimated(true);
-    // 全体表示に戻したら「見ている場所」も無い状態に戻す (下の resize の扱いを参照)。
+    // 手で動かした場所は手放す。戻し先は全体表示 (下の resize を参照)。
+    opening.current = "fit";
     touched.current = false;
     setTransform({
       x: centerXOf(vw) - (worldWidth * scale) / 2,
       y: (vh - worldHeight * scale) / 2,
       scale,
     });
+    return true;
   }, [worldWidth, worldHeight, fitScaleOf, updateZoomFloor, centerXOf]);
 
   /**
@@ -293,6 +304,7 @@ export const SkillTreeCanvas = ({
     const cx = worldWidth / 2;
     const cy = worldHeight / 2;
     setAnimated(true);
+    opening.current = "home";
     touched.current = false;
     setTransform(
       constrain({
@@ -318,7 +330,8 @@ export const SkillTreeCanvas = ({
    *
    * **まだ触っていないときだけ初期視点に組み直し、触ったあとは可動域へ丸めるだけ**に
    * する。リサイズのたびに全体表示へ戻すと、拡大して見ている最中にウィンドウを
-   * 動かしただけで見ていた場所を失う。
+   * 動かしただけで見ていた場所を失う。全体表示にしたあとの戻し先は、1× の
+   * 初期視点ではなく、その箱に収まる全体表示。
    */
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -329,13 +342,15 @@ export const SkillTreeCanvas = ({
         // (このあと「全体を表示」を押したときに全体が出るように)。
         updateZoomFloor(viewport.clientWidth, viewport.clientHeight);
         setTransform((t) => constrain(t));
+      } else if (opening.current === "fit") {
+        fitView();
       } else {
         homeView();
       }
     });
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [constrain, homeView, updateZoomFloor]);
+  }, [constrain, homeView, updateZoomFloor, fitView]);
 
   const zoomAt = useCallback(
     (cx: number, cy: number, factor: number) => {
@@ -540,7 +555,9 @@ export const SkillTreeCanvas = ({
     onViewChange?.({ ...transform, width: viewport.clientWidth, height: viewport.clientHeight });
   }, [transform, onViewChange]);
 
-  useEffect(() => {
+  // 親の useLayoutEffect (開いた直後の fit / 現在地への寄せ) から届くよう、
+  // 描画の前に受け口を渡す。
+  useLayoutEffect(() => {
     if (handleRef) handleRef.current = { ensureVisible, focusOn, fit: fitView };
     return () => {
       if (handleRef) handleRef.current = null;

@@ -44,4 +44,39 @@ describe("offscreenMarkers", () => {
   it("箱の大きさが 0 なら何も出さない (初回レンダー前)", () => {
     expect(offscreenMarkers([{ key: "a", x: 0, y: 0 }], { ...view, width: 0 })).toEqual([]);
   });
+
+  it("点は視界の外でも、矩形が視界と重なれば矢印を出さない", () => {
+    // 0.5× で点 (2000, 600) は画面 (1000, 300) = 右の外。矩形は画面の右端にかかる。
+    const scaled = { ...view, scale: 0.5 };
+    expect(
+      offscreenMarkers(
+        [
+          {
+            key: "a",
+            x: 2000,
+            y: 600,
+            rect: { minX: 1000, minY: 400, maxX: 1400, maxY: 800 },
+          },
+        ],
+        scaled,
+      ),
+    ).toEqual([]);
+  });
+
+  it("矩形も視界の外なら矢印を出す", () => {
+    const scaled = { ...view, scale: 0.5 };
+    const [m] = offscreenMarkers(
+      [
+        {
+          key: "a",
+          x: 2000,
+          y: 600,
+          rect: { minX: 1800, minY: 400, maxX: 2200, maxY: 800 },
+        },
+      ],
+      scaled,
+    );
+    expect(m?.key).toBe("a");
+    expect(m?.angle).toBeCloseTo(90);
+  });
 });

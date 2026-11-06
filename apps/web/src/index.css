@@ -830,6 +830,21 @@
   color: rgba(240, 160, 210, 0.72);
 }
 
+/* 島・本土の 2 行目 (「n ステージ」)。ink-3 相当。暗い盤面では一段明るくする。 */
+.tree-place-caption {
+  color: var(--ink-3);
+}
+
+.dark .tree-place-caption {
+  color: rgba(214, 218, 232, 0.82);
+}
+
+/* 本土の見出し。暗い盤面ではブランドの淡い紫 (#ddd6fe = --brand-ink)。 */
+.tree-mainland-label {
+  color: var(--brand-ink);
+  letter-spacing: 0.04em;
+}
+
 .tree-edge-lit {
   stroke: var(--brand);
   stroke-width: 2.6;

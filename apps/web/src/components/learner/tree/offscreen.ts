@@ -5,6 +5,8 @@
  * 1× で開くので島は最初は視界の外にあり、パンしなければ存在に気づけない。矢印は
  * 視界の中心から目印へ向かう向きで、縁から `inset` だけ内側の矩形に投影する。
  * 視界の中にある目印には出さない (星そのものが見えている)。
+ * `rect` を渡した目印は、その範囲を画面座標に直して視界と少しでも重なれば出さない
+ * (島の中心だけがカードの陰に入っても、枠やタイトルが見えていれば矢印にしない)。
  */
 
 /** キャンバスの見え方: 盤面の平行移動 + 倍率と、箱の大きさ (px)。 */
@@ -25,8 +27,29 @@ export interface OffscreenMarker {
   angle: number;
 }
 
+export interface OffscreenTarget {
+  key: string;
+  /** 盤面座標。矢印の向きは常にこの点へ向ける。 */
+  x: number;
+  y: number;
+  /**
+   * 盤面座標の範囲。画面座標に直した矩形が視界と少しでも重なれば矢印を出さない。
+   * 無いときは、点が見えているかだけで判定する。
+   */
+  rect?: { minX: number; minY: number; maxX: number; maxY: number };
+}
+
+/** 盤面の矩形を画面座標にして、視界 (箱全体) と面積が重なるか。 */
+function rectOverlapsView(rect: NonNullable<OffscreenTarget["rect"]>, view: ViewState): boolean {
+  const left = rect.minX * view.scale + view.x;
+  const right = rect.maxX * view.scale + view.x;
+  const top = rect.minY * view.scale + view.y;
+  const bottom = rect.maxY * view.scale + view.y;
+  return left < view.width && right > 0 && top < view.height && bottom > 0;
+}
+
 export function offscreenMarkers(
-  targets: readonly { key: string; x: number; y: number }[],
+  targets: readonly OffscreenTarget[],
   view: ViewState,
   inset = 32,
 ): OffscreenMarker[] {
@@ -40,7 +63,9 @@ export function offscreenMarkers(
   for (const target of targets) {
     const sx = target.x * view.scale + view.x;
     const sy = target.y * view.scale + view.y;
-    if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) continue;
+    if (target.rect) {
+      if (rectOverlapsView(target.rect, view)) continue;
+    } else if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) continue;
     const dx = sx - cx;
     const dy = sy - cy;
     // 中心から目印へ伸ばした線が、内側の矩形の縁と交わる所。
