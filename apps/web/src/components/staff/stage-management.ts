@@ -72,15 +72,6 @@ export function stageAudienceLabel(
   return audience === "granted" ? "Extra" : "Basic";
 }
 
-/** 公開中なら下書きへ、それ以外 (下書き・アーカイブ) は公開へ。 */
-export function nextPublishStatus(status: StaffSkillMapStageNode["status"]): "draft" | "published" {
-  return status === "published" ? "draft" : "published";
-}
-
-export function publishToggleLabel(status: StaffSkillMapStageNode["status"]): string {
-  return status === "published" ? "下書きに戻す" : "公開する";
-}
-
 export function offBoardNote(stage: StaffSkillMapStageNode): string {
   if (stage.status === "archived") return "アーカイブのため、盤面には載せていません";
   return "カテゴリも親も無いため、盤面には載せていません";

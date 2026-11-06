@@ -120,7 +120,7 @@ bun run --filter=@stella/shared typecheck
 ### コード演習（VS Code 拡張）
 
 学習者のコード演習はブラウザではなく VS Code 拡張 `saedgewell.stella-lms`（`apps/vscode`）で行う。
-Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師の課題プレビュー（`AssignmentEditor`）だけ Web に残る。
+Web はログイン・動画・ドキュメント・クイズ用。教材の正本はリポジトリに置き、Web に課題の編集画面は持たない。
 
 **学習者**
 

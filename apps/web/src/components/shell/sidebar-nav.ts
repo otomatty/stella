@@ -14,7 +14,6 @@ import {
   Book,
   ClipboardList,
   Compass,
-  Code,
   Edit,
   FileText,
   GraduationCap,
@@ -41,7 +40,6 @@ export type NavId =
   | "enrollments"
   | "report"
   | "audit"
-  | "assignments"
   | "discovery"
   | "settings"
   | "__logout";
@@ -73,7 +71,6 @@ const NAV: Record<Role, NavItem[]> = {
   admin: [
     { id: "dash", label: "KPIダッシュボード", icon: BarChart },
     { id: "stages", label: "ステージ管理", icon: Book },
-    { id: "assignments", label: "課題管理", icon: Code },
     { id: "discovery", label: "発見教材", icon: Sparkles },
     // 人に回した提出・AI が合格にした提出の確認・見直しの数字 (#34)。管理者もレビューできる。
     { id: "review-queue", label: "レビュー", icon: Edit },

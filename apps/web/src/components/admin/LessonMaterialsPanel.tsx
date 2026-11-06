@@ -1,5 +1,5 @@
 /**
- * レッスン配布資料の管理パネル (LessonEditor 内 / Issue #72)。
+ * レッスン配布資料の管理パネル (ステージ詳細の配布資料へ移す予定 / Issue #72)。
  *
  * - アップロード: `POST /api/materials/upload` に lessonId を付けて R2 保存 + 行登録
  *   (ボタン選択 / ドラッグ&ドロップの両対応 — MaterialUploader と同様)
