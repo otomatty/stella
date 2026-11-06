@@ -32,7 +32,7 @@
 // - loadProfile の時間の制限には、q01 の timeout を使う
 // - loadUsers と loadDashboard のユーザーの取得は、q04 の tryAsync で包んで、成功と失敗を分ける
 // - loadDashboard の投稿の取得のやり直しには、q04 の withRetry を使う
-// どれも、このファイルの先頭で import してある。前の問題がまだ解けていないと、この問題も解けたと数えられない
+// どれも、このファイルの先頭で import してある。前の問題が解けていないと、この問題のテストも通らない
 
 import { timeout } from "./q01-promise";
 import { tryAsync, withRetry } from "./q04-async-errors";

@@ -17,7 +17,7 @@
 //   - price.ts の TAX_RATE と priceWithTax を re-export する
 //   - format.ts のデフォルト export を、formatYen という名前で re-export する
 //
-// フォルダとファイルは、VS Code のエクスプローラーで作れます（q05-modules フォルダは src/09-builtins-modules の中に作る）。
+// フォルダとファイルは、VS Code のエクスプローラーで作れます（q05-modules フォルダは src の中に作る）。
 // テスト（q05-modules.test.ts）は、それぞれのファイルから import して確かめます。
 // q05-modules フォルダの中のファイルも、型と書き方と整形のチェックの対象です。
 //
@@ -26,7 +26,7 @@
 // addItem は、item.quantity が1以上の整数でなければ、q04 の ValidationError を
 // new ValidationError("quantity", "数量は1以上の整数にしてください") の形で投げるようにする（元のコードにはない確かめなので足す）。
 // ValidationError は、このファイルの先頭で import してある。cart.ts に移すときは import も移す（パスは "../q04-error"）。
-// q04 がまだ解けていないと、この問題も解けたと数えられない
+// q04 が解けていないと、この問題のテストも通らない
 //
 // 説明すること（答えは、この下に // のコメントで書く）
 // - 名前付き export とデフォルト export の違い。自分ならどちらを使うか、その理由

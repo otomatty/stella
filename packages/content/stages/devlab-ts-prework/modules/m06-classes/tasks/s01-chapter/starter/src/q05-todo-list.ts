@@ -18,7 +18,7 @@
 // 前の問題を使う
 // 使う問題: q01（Counter）
 // id は、q01 の Counter で振る。Counter を private なフィールドに持ち、increment() の戻り値を id にする。
-// Counter は、このファイルの先頭で import してある。q01 がまだ解けていないと、この問題も解けたと数えられない
+// Counter は、このファイルの先頭で import してある。q01 が解けていないと、この問題のテストも通らない
 
 import { Counter } from "./q01-class-basics";
 

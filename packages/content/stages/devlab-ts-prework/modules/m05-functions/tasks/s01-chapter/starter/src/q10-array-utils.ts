@@ -27,7 +27,7 @@
 // 使う問題: q02（clamp）、q05（sumAll）
 // - topN の n は、q02 の clamp で 0 以上・生徒の人数以下に収めてから使う
 // - averageBy の点数の合計は、q05 の sumAll で出す
-// どちらも、このファイルの先頭で import してある。前の問題がまだ解けていないと、この問題も解けたと数えられない
+// どちらも、このファイルの先頭で import してある。前の問題が解けていないと、この問題のテストも通らない
 
 import { clamp } from "./q02-params-return";
 import { sumAll } from "./q05-rest-params";

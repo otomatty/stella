@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m05-functions@1",
-  "contentHash": "42cd785dc3b274f97e0e5bc5d59599be453a5450c710228a96ec6e2b3551a244",
+  "unitId": "devlab-ts-prework/m05-functions@2",
+  "contentHash": "cb8b5f9779df3f4977e6e0432eaf833c3b4d3f391fb8ffc85aab0c62ce834c43",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -28,7 +28,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -39,7 +39,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

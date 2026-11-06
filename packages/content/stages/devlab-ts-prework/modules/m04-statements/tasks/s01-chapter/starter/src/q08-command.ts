@@ -30,7 +30,7 @@
 // - parseCommand の数値の読み取りには、q06 の toNumber を使う（null なら "数値ではありません: …" の Error）
 // - execute の switch の default では、q07 の assertNever を使う
 // - run の catch では、q05 の errorMessage でメッセージを取り出す
-// どれも、このファイルの先頭で import してある。前の問題がまだ解けていないと、この問題も解けたと数えられない
+// どれも、このファイルの先頭で import してある。前の問題が解けていないと、この問題のテストも通らない
 
 import { errorMessage } from "./q05-exception";
 import { toNumber } from "./q06-unknown";
