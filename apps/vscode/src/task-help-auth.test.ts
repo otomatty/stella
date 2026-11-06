@@ -98,6 +98,7 @@ const encode = (text: string) => Buffer.from(text).toString("base64");
 
 function help(overrides: Partial<TaskHelpResponse> = {}): TaskHelpResponse {
   return {
+    viewer: "learner",
     taskId: TASK_ID,
     title: "最初のページを作る",
     kind: "basic",

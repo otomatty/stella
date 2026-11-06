@@ -15,7 +15,7 @@ stella/
 ├── apps/
 │   ├── web/                  # @stella/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
 │   │   ├── src/              # Learner / Instructor / Admin UI
-│   │   └── vite-plugins/     # copy-sqljs-wasm
+│   │   └── vite-plugins/     # PDF アセット同期・CSP 生成など
 │   ├── api/                  # @stella/api — Hono API → Cloudflare Workers
 │   │   └── src/              # /api/chat, /api/healthz
 │   └── vscode/               # stella (`saedgewell.stella-lms`) — 学習者のコード演習用 VS Code 拡張
@@ -45,7 +45,7 @@ stella/
 - **Tailwind CSS v4 + shadcn/ui** (`apps/web/src/components/ui/`)
 - **Radix UI** プリミティブ
 - **Bun** (パッケージマネージャ / Workspaces)
-- **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
+- **旧形式の採点エンジン (VS Code 拡張内)**: QuickJS WASM / sql.js
 - **VS Code 拡張** (`saedgewell.stella-lms` / `apps/vscode`) — 学習者のコード演習
 - **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
 
@@ -120,7 +120,7 @@ bun run --filter=@stella/shared typecheck
 ### コード演習（VS Code 拡張）
 
 学習者のコード演習はブラウザではなく VS Code 拡張 `saedgewell.stella-lms`（`apps/vscode`）で行う。
-Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師の課題プレビュー（`AssignmentEditor`）だけ Web に残る。
+Web はログイン・動画・ドキュメント・クイズ用。教材の正本はリポジトリに置き、Web に課題の編集画面は持たない。
 
 **学習者**
 
@@ -235,7 +235,7 @@ bun run smoke:core   # ターミナル 2
 
 検証内容（45 ステップ）: ステージ作成 → 公開（draft は受講者に見えないことも確認）→
 **受講者による自己開始**（割当が無くても道に星が出て「次の一歩」の候補になること / 開始が冪等で
-期限も必須も付かないこと / 存在しない星は汎用文言の 400 / 講師は 403 / 退役した割当 API
+期限も必須も付かないこと / 存在しない星は汎用文言の 400 / 講師も自分で開始できる / 退役した割当 API
 `POST /api/enrollments`・`/bulk`・プリセット適用が 410 を返すこと）→
 割当プリセットの定義（同名の 409 / 退役した名前の再利用 / 教材削除で空になったプリセットの自動退役）→
 レッスン進捗 → 課題提出 → VS Code からの引き継ぎ（同一課題の未添削提出が upsert され、
@@ -257,7 +257,7 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 前提: `dev:api` + `dev`、Google ログイン、必要なら admin/instructor 昇格。
 受講登録は **学習者が自分で作る**（Phase 3b で管理者の割当は廃止）。
 
-- [ ] Admin がステージを公開し、教材を R2 にアップロードできる
+- [ ] Admin がステージを公開し、seed が登録した配布資料をダウンロードできる
 - [ ] 受講登録が 0 件の学習者のホームに「学びの地図へようこそ」（プレースメント）が出て、
       ツリーの星の「ここから始める」を押すとそのステージが進行中になる（「あとで選ぶ」で閉じられる）
 - [ ] ホームの「ステージの道」／スキルツリーで、解放済みの星から「ここから始める」で開始できる
@@ -299,11 +299,11 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 2. Dashboard → R2 → バケット → **Settings** で **Public Development URL** (`r2.dev`) または
    **Custom Domain** を有効化し、 公開ベース URL を `VITE_MATERIALS_BASE_URL` に設定する
    (例: `https://pub-xxxx.r2.dev`)。
-3. アップロードは `/api/materials/upload` 経由 (講師/管理者)。 Workers の R2 バインディングを使うため
-   S3 API トークンは不要。
+3. 教材の正本は `packages/content/stages/`。画像・PDF は `main` への push で R2 に配置され、
+   配布資料は seed が登録する。配布資料のアップロード・削除 API は提供しない。
 4. 既存オブジェクトを R2 へ移送する（必要なら）。
 
-seed 教材パスは `tenant/ses/courses/{stageUuid}/...` 形式 (`courses/` は改名前からの R2 キーで、値は変えていない)。オブジェクトが R2 に無いと再生は失敗する。Admin の教材アップロード、または同キーでの配置で確認する。
+seed 教材パスは `tenant/ses/courses/{stageUuid}/...` 形式 (`courses/` は改名前からの R2 キーで、値は変えていない)。オブジェクトが R2 に無いと再生は失敗する。同キーへの教材の配置を確認する。
 
 #### 孤児オブジェクトの棚卸し・掃除（#64）
 
@@ -416,9 +416,9 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 |---|---|---|
 | **P0** | monorepo化 + js-review-prototype取り込み + 教材ストレージ | #2 |
 | **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
-| **P2** | コード演習統合 (PracticeWorkspace + AIChatBot リアル化) | #4 |
+| **P2** | コード演習統合 (VS Code 拡張 + AI チャット) | #4 |
 | **P3** | 講師添削ワークフロー (提出 → AI下書き → ルーブリック採点 → 確定) | #8 |
-| **P5** | 教材 CMS — 講師が UI からステージ・レッスン・課題を作成 / 編集 (DB スキーマ + RLS + 管理画面 骨組み) | #10 |
+| **P5** | 教材管理 — 講師・管理者がステージ・課題の詳細と配布資料を確認 (教材の編集はリポジトリ) | #10 |
 
 ## デプロイ
 
@@ -448,7 +448,7 @@ Git 上のゼロ UUID はローカル専用で、本番デプロイには使わ�
 | `GOOGLE_CLIENT_SECRET` | Secret | Google OAuth シークレット |
 | `ANTHROPIC_API_KEY` | Secret | Anthropic API |
 | `DB` | D1 binding | データベース (`wrangler.toml`) |
-| `MATERIALS_BUCKET` | R2 binding | 教材アップロード |
+| `MATERIALS_BUCKET` | R2 binding | 配布資料のダウンロード・ステージ削除時の旧添付の削除 |
 | `ALLOWED_ORIGINS` | var | CORS 許可オリジン |
 
 ### バックエンド — 完全 Cloudflare

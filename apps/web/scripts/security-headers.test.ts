@@ -63,6 +63,8 @@ describe("buildContentSecurityPolicy", () => {
   it("inline script は個別のハッシュでだけ許し、'unsafe-inline' を付けない", () => {
     expect(d.get("script-src")).toContain(sha256("theme()"));
     expect(d.get("script-src")).not.toContain("'unsafe-inline'");
+    expect(d.get("script-src")).not.toContain("'unsafe-eval'");
+    expect(d.get("script-src")).toContain("'wasm-unsafe-eval'");
     expect(d.get("script-src")).not.toContain("https:");
   });
 
@@ -129,6 +131,8 @@ describe("securityHeaders (Vite build)", () => {
     const built = readFileSync(path.join(root, "dist/index.html"), "utf8");
     expect(inlineScriptsOf(built)).toEqual([inline]);
     expect(d.get("script-src")).toContain(sha256(inline));
+    expect(d.get("script-src")).not.toContain("'unsafe-eval'");
+    expect(d.get("script-src")).toContain("'wasm-unsafe-eval'");
     expect(d.get("connect-src")).toEqual([
       "'self'",
       "https://api.example.test",

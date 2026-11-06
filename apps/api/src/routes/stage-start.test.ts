@@ -6,7 +6,7 @@
  *   - 断り方が状態ごとに正しい (cleared はそのまま / locked は前提名 / fog は汎用文言)
  *   - 霧の 400 が「存在しない星」「フォーカス切り替え」と **同じ文言** (存在を漏らさない)
  *   - 二重に始めても登録が増えない (冪等)
- *   - 学習を見る側のロール (講師) は 403
+ *   - 講師も受講者と同じく自分で始められる
  *
  * D1 は `lib/skill-map-data.js` / `lib/enrollment-write.js` を差し替えて、インメモリの
  * 道と登録集合で代用する (skill-map.test.ts / stage-queue.test.ts と同じ流儀)。
@@ -20,6 +20,7 @@ import { recordAudit } from "../lib/audit.js";
 import type { ProfileRole } from "../lib/authz.js";
 import { startSelfEnrollment } from "../lib/enrollment-write.js";
 import { loadEnrolledStageIds, loadSkillMapSource } from "../lib/skill-map-data.js";
+import { loadStaffEnrollableStage } from "../lib/staff-stage-enroll.js";
 import { skillMapRoute } from "./skill-map.js";
 import { stageStartRoute } from "./stage-start.js";
 
@@ -41,6 +42,10 @@ vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
 
 vi.mock("../lib/enrollment-write.js", () => ({
   startSelfEnrollment: vi.fn(),
+}));
+
+vi.mock("../lib/staff-stage-enroll.js", () => ({
+  loadStaffEnrollableStage: vi.fn(),
 }));
 
 // 監査は best-effort の付随処理。ここでは呼ばれても落ちないことだけ担保する。
@@ -275,11 +280,11 @@ describe("POST /api/stages/:id/start", () => {
     expect(await errorOf(started)).toBe(await errorOf(focus));
   });
 
-  it("学習を見る側のロール (講師) は 403", async () => {
+  it("講師も受講者と同じく自分で始められる (受講者の画面で確かめるため)", async () => {
     caller = { ...BASE_CALLER, role: "instructor" };
     const res = await start("stage-a");
-    expect(res.status).toBe(403);
-    expect(startSelfEnrollment).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(startSelfEnrollment).toHaveBeenCalled();
   });
 
   it("管理者は受講者と同じく自分で始められる (腕試しと同じ顔ぶれ)", async () => {
@@ -294,5 +299,102 @@ describe("POST /api/stages/:id/start", () => {
       reactivated: false,
     });
     expect((await start("stage-a")).status).toBe(500);
+  });
+});
+
+describe("POST /api/stages/:id/staff-enroll", () => {
+  function staffEnroll(stageId = "stage-c", auth = true) {
+    return app.request(
+      `/api/stages/${stageId}/staff-enroll`,
+      { method: "POST", headers: auth ? { Authorization: "Bearer test" } : {} },
+      env,
+    );
+  }
+
+  beforeEach(() => {
+    caller = { ...BASE_CALLER, role: "instructor" };
+    vi.mocked(loadStaffEnrollableStage).mockResolvedValue({ id: "stage-c", slug: "stage-c" });
+  });
+
+  it.each(["instructor", "admin", "platform_admin"] as const)(
+    "%s は前提未完了・霧の星でも確認用に登録できる",
+    async (role) => {
+      caller = { ...BASE_CALLER, role };
+      const res = await staffEnroll();
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        enrollment: { id: "enr-stage-c" },
+        created: true,
+        reactivated: false,
+      });
+      expect(loadStaffEnrollableStage).toHaveBeenCalledWith({}, "stage-c");
+      expect(startSelfEnrollment).toHaveBeenCalledWith({}, caller, "stage-c");
+      expect(loadSkillMapSource).not.toHaveBeenCalled();
+    },
+  );
+
+  it("受講者は 403 で登録しない", async () => {
+    caller = { ...BASE_CALLER };
+    expect((await staffEnroll()).status).toBe(403);
+    expect(startSelfEnrollment).not.toHaveBeenCalled();
+    expect(loadStaffEnrollableStage).not.toHaveBeenCalled();
+  });
+
+  it("認証が無ければ 401", async () => {
+    expect((await staffEnroll("stage-c", false)).status).toBe(401);
+    expect(startSelfEnrollment).not.toHaveBeenCalled();
+  });
+
+  it("対象外のステージは 404", async () => {
+    vi.mocked(loadStaffEnrollableStage).mockResolvedValueOnce(null);
+    const res = await staffEnroll();
+    expect(res.status).toBe(404);
+    expect(await errorOf(res)).toBe("ステージが見つかりません");
+    expect(startSelfEnrollment).not.toHaveBeenCalled();
+  });
+
+  it("登録作成は staff 経由として監査に残し、2 度目は残さない", async () => {
+    expect((await staffEnroll()).status).toBe(200);
+    expect(recordAudit).toHaveBeenCalledWith({}, caller, {
+      action: "stage_self_start",
+      targetType: "enrollment",
+      targetId: "enr-stage-c",
+      ip: null,
+      metadata: { stage_id: "stage-c", via: "staff", created: true, reactivated: false },
+    });
+    vi.mocked(recordAudit).mockClear();
+    const again = await staffEnroll();
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ created: false, reactivated: false });
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  it("期限切れの再開も監査に残す", async () => {
+    vi.mocked(startSelfEnrollment).mockResolvedValueOnce({
+      row: { id: "enr-stage-c" },
+      created: false,
+      reactivated: true,
+    } as Awaited<ReturnType<typeof startSelfEnrollment>>);
+    const res = await staffEnroll();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ created: false, reactivated: true });
+    expect(recordAudit).toHaveBeenCalledWith(
+      {},
+      caller,
+      expect.objectContaining({
+        action: "stage_self_start",
+        metadata: { stage_id: "stage-c", via: "staff", created: false, reactivated: true },
+      }),
+    );
+  });
+
+  it("登録を読み戻せなければ 500", async () => {
+    vi.mocked(startSelfEnrollment).mockResolvedValueOnce({
+      row: undefined,
+      created: false,
+      reactivated: false,
+    });
+    expect((await staffEnroll()).status).toBe(500);
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 });

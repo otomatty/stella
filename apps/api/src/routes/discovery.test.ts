@@ -426,11 +426,12 @@ describe("受験できるロール (腕試しと同じ顔ぶれ)", () => {
     ).toBe(200);
   });
 
-  it.each(["instructor"] as const)("%s は出題も採点も 403", async (role) => {
-    caller = { ...BASE_CALLER, id: `seed-${role}`, role };
-    expect((await get("/api/discovery/m-active")).status).toBe(403);
-    expect((await post("/api/discovery/m-active", { answers: [] })).status).toBe(403);
-    expect(insertDiscoveryAttempt).not.toHaveBeenCalled();
+  it("講師は受講者と同じ発見教材を受けられる", async () => {
+    caller = { ...BASE_CALLER, id: "seed-instructor", role: "instructor" };
+    const paper = await fetchPaper("m-active");
+    expect(
+      (await post("/api/discovery/m-active", { answers: correctAnswers(paper.questions) })).status,
+    ).toBe(200);
   });
 });
 

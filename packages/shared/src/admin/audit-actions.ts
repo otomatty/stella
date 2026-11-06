@@ -25,6 +25,9 @@ const LABELS = {
   stage_unpublish: "ステージ非公開",
   stage_status_change: "ステージ状態変更",
   stage_delete: "ステージ削除",
+  // 配布資料
+  material_withdraw: "配布資料を配信から外す",
+  material_restore: "配布資料を配信に戻す",
   // 受講登録 (#20)
   //
   // Phase 3b で **割当を廃止** した。 登録を作る入口は受講者の自己開始だけで、

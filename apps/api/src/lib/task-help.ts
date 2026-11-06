@@ -51,7 +51,7 @@ import {
   taskRevisions,
   tasks,
 } from "../db/schema.js";
-import { ApiError, type Caller } from "./authz.js";
+import { ApiError, type Caller, isStaffRole } from "./authz.js";
 import { canAccessTask } from "./task-access.js";
 
 type Scope = { userId: string; taskId: string };
@@ -150,6 +150,7 @@ interface ServedVersion {
 
 /** 解放の判定と本文に要るもの。どれもサーバーの記録から読む (受講者の申告は使わない)。 */
 interface HelpContext {
+  viewer: TaskHelpResponse["viewer"];
   /** 今の版の課題。判定は今の版の表で行う。 */
   task: { id: string; title: string; kind: TaskKind; contentHash: string };
   support: TaskSupportConfig;
@@ -366,12 +367,13 @@ async function loadHelpContext(
     served !== null &&
     sameHelpPolicy({ kind, support }, { kind: served.kind, support: served.support });
   return {
+    viewer: isStaffRole(caller.role) ? "staff" : "learner",
     task: { id: row.id, title: row.title, kind, contentHash: row.contentHash },
     support,
     served: sameVersionPolicy ? served : null,
     status,
     passed,
-    opens,
+    opens: isStaffRole(caller.role) ? [] : opens,
     attempts: countHelpAttempts({
       failedLocalRuns: runs?.failed ?? 0,
       submissions: submitted?.n ?? 0,
@@ -395,6 +397,17 @@ function accessOf(ctx: HelpContext): TaskHelpAccess {
   const current = taskHelpAccess({ ...facts, kind: ctx.task.kind, support: ctx.support });
   const { served } = ctx;
   if (!served) return staleHelpAccess(current);
+  if (ctx.viewer === "staff")
+    return {
+      ...current,
+      referencesOnly: false,
+      notice: null,
+      attempts: null,
+      hints: Array.from({ length: served.support.hintLevels }, () => ({ open: true })),
+      solution: served.solution.length > 0 ? { open: true } : NOT_OFFERED,
+      explanation: served.explanation !== null ? { open: true } : NOT_OFFERED,
+      autoOpen: [],
+    };
   return {
     ...current,
     solution: served.solution.length > 0 ? current.solution : NOT_OFFERED,
@@ -435,6 +448,7 @@ function helpResponse(ctx: HelpContext): TaskHelpResponse {
   const solution = viewOf(access.solution, openedIn(ctx, "solution"));
   const explanation = viewOf(access.explanation, openedIn(ctx, "explanation"));
   return {
+    viewer: ctx.viewer,
     taskId: ctx.task.id,
     title: ctx.task.title,
     kind: ctx.task.kind,
@@ -500,10 +514,12 @@ export async function openTaskHelp(
       contentHash: served.contentHash,
       privateHash: served.privateHash,
     };
-    await db
-      .insert(taskHelpOpens)
-      .values({ userId: caller.id, taskId: ctx.task.id, ...open })
-      .onConflictDoNothing();
+    if (ctx.viewer === "learner")
+      await db
+        .insert(taskHelpOpens)
+        .values({ userId: caller.id, taskId: ctx.task.id, ...open })
+        .onConflictDoNothing();
+    // 講師・管理者は、この応答の中だけで開いたものとして本文を返す。
     ctx.opens.push(open);
   }
   return helpResponse(ctx);

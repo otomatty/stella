@@ -22,6 +22,7 @@ import {
   sections,
 } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { learnerOnly } from "../lib/learner-scope.js";
 import type { Env } from "../env.js";
 import type { QuizAnswer } from "@stella/shared/cms/types";
 
@@ -56,10 +57,15 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
         status: enrollments.status,
         enrolledAt: enrollments.enrolledAt,
       })
-      .from(enrollments);
+      .from(enrollments)
+      .where(learnerOnly(enrollments.userId));
 
-    const activeLearners = new Set(enr.filter((e) => e.status === "active").map((e) => e.userId))
-      .size;
+    const enabledLearnerIds = new Set(learners.filter((l) => !l.disabled).map((l) => l.id));
+    const activeLearners = new Set(
+      enr
+        .filter((e) => e.status === "active" && enabledLearnerIds.has(e.userId))
+        .map((e) => e.userId),
+    ).size;
     const totalEnroll = enr.length;
     const completedEnroll = enr.filter((e) => e.status === "completed").length;
     const expiredEnroll = enr.filter((e) => e.status === "expired").length;
@@ -74,14 +80,15 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
     const certs = await db
       .select({ issuedAt: certificates.issuedAt })
       .from(certificates)
-      .where(eq(certificates.revoked, false));
+      .where(and(eq(certificates.revoked, false), learnerOnly(certificates.userId)));
     const certsTotal = certs.length;
     const certsMonth = certs.filter((c) => c.issuedAt >= monthStart).length;
 
     // 平均学習時間 (時間)。
     const progress = await db
       .select({ userId: lessonProgress.userId, watchedSec: lessonProgress.watchedSec })
-      .from(lessonProgress);
+      .from(lessonProgress)
+      .where(learnerOnly(lessonProgress.userId));
     const distinctUsers = new Set(progress.map((p) => p.userId)).size;
     const totalSec = progress.reduce((s, p) => s + (p.watchedSec ?? 0), 0);
     const avgStudyHours =
@@ -145,7 +152,8 @@ async function computeStumbles(
   // 全 attempt (quizId, answers)。
   const attempts = await db
     .select({ quizId: quizAttempts.quizId, answers: quizAttempts.answers })
-    .from(quizAttempts);
+    .from(quizAttempts)
+    .where(learnerOnly(quizAttempts.userId));
   if (attempts.length === 0) return [];
 
   const quizIds = [...new Set(attempts.map((a) => a.quizId))];
@@ -223,7 +231,13 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
       .select({ id: learnerInstructors.learnerId })
       .from(learnerInstructors)
       .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-      .where(and(eq(learnerInstructors.instructorId, caller.id), eq(profiles.disabled, false)));
+      .where(
+        and(
+          eq(learnerInstructors.instructorId, caller.id),
+          eq(profiles.disabled, false),
+          learnerOnly(profiles.id),
+        ),
+      );
     const mineIds = new Set(mine.map((r) => r.id));
 
     const allEnr = (
@@ -235,6 +249,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
           dueAt: enrollments.dueAt,
         })
         .from(enrollments)
+        .where(learnerOnly(enrollments.userId))
     ).filter((e) => !assigned || mineIds.has(e.userId));
 
     const overdue = allEnr.filter(

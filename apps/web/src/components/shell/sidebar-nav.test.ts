@@ -22,9 +22,9 @@ describe("navForRole", () => {
   });
 
   it("発見教材は staff (講師 / 管理者) に出す (Phase 4)", () => {
-    // 管理者は課題管理の直後。
+    // 管理者は KPI → ステージ管理 → 発見教材の順。
     const admin = ids("admin");
-    expect(admin.indexOf("discovery")).toBe(admin.indexOf("assignments") + 1);
+    expect(admin.slice(0, 3)).toEqual(["dash", "stages", "discovery"]);
     // 下書きを読んで承認するのは講師の仕事なので、講師にも導線を出す (API も staff)。
     expect(ids("instructor")).toContain("discovery");
     // 受講者には出さない (レビュー前の下書きを開ける導線を作らない)。
@@ -33,7 +33,7 @@ describe("navForRole", () => {
 
   it("レビュー (人に回した提出・AI の合格の確認) は講師と管理者に出す (#34)", () => {
     expect(ids("instructor")).toContain("review-queue");
-    // 管理者は発見教材の直後 (課題管理 → 発見教材 の並びは崩さない)。
+    // 管理者は発見教材の直後。
     const admin = ids("admin");
     expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
     expect(ids("learner")).not.toContain("review-queue");
@@ -56,6 +56,7 @@ describe("navForRole", () => {
   it("廃止した画面はどのロールにも出さない", () => {
     for (const role of ["learner", "instructor", "admin"] as const) {
       for (const retired of [
+        "assignments",
         "records",
         "interview-prep",
         "hall-of-fame",

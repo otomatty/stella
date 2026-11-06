@@ -27,6 +27,7 @@ function StagesPageBody() {
       backendEnabled={s.backendEnabled}
       currentUserId={s.currentUserId}
       highlightStage={s.highlightStage}
+      onOpenAsLearner={s.openStageAsLearner}
     />
   );
 }

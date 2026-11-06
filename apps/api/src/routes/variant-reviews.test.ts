@@ -366,6 +366,30 @@ describe("類題の出題 (#39)", () => {
     ).rejects.toThrow();
   });
 
+  it("講師・管理者の登録と出題は受講者数・未見の最少数・在庫待ちに含めない", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), true);
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-02"));
+    await recordPass("learner2", PARENT, noonOf("2026-10-01"), true);
+    for (const [i, day] of ["2026-10-02", "2026-10-03"].entries()) {
+      const issued = await loadTodayVariant(db, caller("learner2"), noonOf(day));
+      await recordPass("learner2", issued?.taskId ?? "", noonOf(day), i === 0);
+    }
+    await loadTodayVariant(db, caller("learner2"), noonOf("2026-10-04"));
+    for (const role of ["instructor", "admin"] as const) {
+      await db.update(profiles).set({ role }).where(eq(profiles.id, "learner2"));
+      const { patterns } = await json<{ patterns: VariantStockSummary[] }>(
+        await get("/api/variant-reviews/stock", "teacher"),
+      );
+      expect(patterns).toEqual([
+        expect.objectContaining({
+          learners: 1,
+          fewestUnseen: { remedial: 1, check: 3 },
+          waiting: [],
+        }),
+      ]);
+    }
+  });
+
   it("在庫が尽きたら出さず、講師が在庫の不足と待っている受講者を見られる", async () => {
     await recordPass("learner", PARENT, noonOf("2026-10-01"), true);
     for (const [i, day] of ["2026-10-02", "2026-10-03"].entries()) {

@@ -193,12 +193,136 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       body: JSON.stringify({ ...fixture.input, support: [] }),
     });
 
+  describe("講師・管理者の教材確認", () => {
+    const staff = async (role: "instructor" | "admin" | "platform_admin" = "instructor") => {
+      await db.update(profiles).set({ role }).where(eq(profiles.id, "learner"));
+    };
+
+    it.each(["instructor", "admin", "platform_admin"] as const)(
+      "%s は全素材を条件なしで開け、記録せず、その応答だけに本文を返す",
+      async (role) => {
+        await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
+        // ロール変更前に開いた履歴があっても GET では本文を出さない。
+        expect((await ok(await open("hint", 1))).viewer).toBe("learner");
+        const recorded = await opens();
+        await staff(role);
+        const available = {
+          viewer: "staff",
+          hints: [
+            { level: 1, state: "available" },
+            { level: 2, state: "available" },
+          ],
+          solution: { state: "available" },
+          explanation: { state: "available" },
+          autoOpen: [],
+        };
+        const body = await ok(await help());
+        expect(body).toMatchObject(available);
+        expect(leaked(body, ...Object.values(MARK))).toEqual([]);
+        for (const level of [2, 1]) {
+          const opened = await ok(await open("hint", level));
+          expect(opened.hints[level - 1]).toMatchObject({
+            state: "opened",
+            markdown: level === 1 ? MARK.hint1 : MARK.hint2,
+          });
+          expect(opened.solution).toEqual({ state: "available" });
+        }
+        const solved = await ok(await open("solution"));
+        expect(solved.solution).toEqual({
+          state: "opened",
+          files: [{ path: "index.html", content: PRIVATE_FILES["solution/index.html"] }],
+        });
+        const explained = await ok(await open("explanation"));
+        expect(explained.explanation).toEqual({
+          state: "opened",
+          markdown: expect.stringContaining(MARK.explanation),
+        });
+        expect(explained.solution).toEqual({ state: "available" });
+        for (const response of [solved, explained])
+          expect(leaked(response, MARK.review, MARK.variant)).toEqual([]);
+        const refreshed = await ok(await help());
+        expect(refreshed).toMatchObject(available);
+        expect(leaked(refreshed, ...Object.values(MARK))).toEqual([]);
+        expect(await opens()).toEqual(recorded);
+      },
+    );
+
+    it("never でも解答例と解説を開け、行を追加しない", async () => {
+      await setup("basic", { hintLevels: 2, solutionUnlock: "never" });
+      await staff();
+      expect((await ok(await open("solution"))).solution.state).toBe("opened");
+      expect((await ok(await open("explanation"))).explanation.state).toBe("opened");
+      expect(await opens()).toEqual([]);
+    });
+
+    it("確認Bでも種別の制限なしで素材を表示し、自動では開かない", async () => {
+      await setup("assessment-b", { hintLevels: 0, solutionUnlock: "never" });
+      await staff();
+      await pass();
+      expect(await ok(await help())).toMatchObject({
+        viewer: "staff",
+        referencesOnly: false,
+        notice: null,
+        solution: { state: "available" },
+        explanation: { state: "available" },
+        autoOpen: [],
+      });
+      expect(await opens()).toEqual([]);
+    });
+
+    it("素材が無い解答例・解説は出さない", async () => {
+      await setup("basic", { hintLevels: 2, solutionUnlock: "never" });
+      await staff();
+      await db
+        .update(taskPrivate)
+        .set({ files: JSON.stringify({ "hints.md": PRIVATE_FILES["hints.md"] }) });
+      expect(await ok(await help())).toMatchObject({
+        solution: { state: "locked", reason: "not-offered" },
+        explanation: { state: "locked", reason: "not-offered" },
+      });
+      expect((await open("solution")).status).toBe(403);
+      expect((await open("explanation")).status).toBe(403);
+      expect(await opens()).toEqual([]);
+    });
+
+    it("素材の版が分からなければ講師も本文を取得できない", async () => {
+      await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
+      await staff();
+      const hash = "f".repeat(64);
+      const body = await ok(await helpAt(hash));
+      expect(body).toMatchObject({
+        viewer: "staff",
+        hints: [
+          { level: 1, state: "locked", reason: "stale-version" },
+          { level: 2, state: "locked", reason: "stale-version" },
+        ],
+        solution: { state: "locked", reason: "stale-version" },
+        explanation: { state: "locked", reason: "stale-version" },
+        autoOpen: [],
+      });
+      expect(leaked(body, ...Object.values(MARK))).toEqual([]);
+      for (const item of ["hint", "solution", "explanation"])
+        expect((await openAt(hash, item, item === "hint" ? 1 : undefined)).status).toBe(409);
+      expect(await opens()).toEqual([]);
+    });
+
+    it("受講登録が無い講師には GET・POST とも 404", async () => {
+      await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
+      await staff();
+      await db.delete(enrollments);
+      expect((await help()).status).toBe(404);
+      expect((await open("solution")).status).toBe(404);
+      expect(await opens()).toEqual([]);
+    });
+  });
+
   describe("基礎 (ヒント 2 段 → 解答例、合格後に解答例と解説)", () => {
     beforeEach(() => setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" }));
 
     it("解放前は状態だけを返し、ヒントの題・本文・解答例・解説・観点・予備を返さない", async () => {
       const body = await ok(await help());
       expect(body).toMatchObject({
+        viewer: "learner",
         kind: "basic",
         status: "not-started",
         phase: "working",

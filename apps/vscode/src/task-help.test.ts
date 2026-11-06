@@ -124,6 +124,7 @@ const encode = (text: string) => Buffer.from(text).toString("base64");
 
 function help(overrides: Partial<TaskHelpResponse> = {}): TaskHelpResponse {
   return {
+    viewer: "learner",
     taskId: TASK_ID,
     title: "最初のページを作る",
     kind: "basic",
@@ -145,6 +146,23 @@ function help(overrides: Partial<TaskHelpResponse> = {}): TaskHelpResponse {
 }
 
 describe("buildTaskHelpHtml", () => {
+  it("講師・管理者には先頭に記録しない案内を出す", () => {
+    const html = buildTaskHelpHtml({ help: help({ viewer: "staff" }), root: "/work/q01" });
+    const notice =
+      "講師・管理者として表示しています。受講者には解放の条件 (ヒントの順番・挑戦の回数・合格) を満たすまで出ません。開いても記録しません。";
+    expect(html).toContain(notice);
+    expect(html.indexOf(notice)).toBeLessThan(html.indexOf("<h1>"));
+    expect(html).not.toContain("支援の記録に残ります");
+  });
+
+  it("古い API の viewer が無い応答は受講者として表示する", () => {
+    const legacy = help();
+    Reflect.deleteProperty(legacy, "viewer");
+    const html = buildTaskHelpHtml({ help: legacy, root: "/work/q01" });
+    expect(html).not.toContain("講師・管理者として表示しています");
+    expect(html).toContain("支援の記録に残ります");
+  });
+
   it("開ける段だけをリンクにし、開けない理由を出す。スクリプトは許さない", () => {
     const html = buildTaskHelpHtml({ help: help(), root: "/work/q01" });
     expect(html).toContain("default-src 'none'");
@@ -394,6 +412,41 @@ describe("課題パネルのコマンド", () => {
       `/api/tasks/help?${new URLSearchParams({ taskId: TASK_ID, contentHash: HASH })}`,
       { session: expect.any(Number) },
     );
+  });
+
+  it("講師は記録の確認なしで解答例を開き、差分と仮想ドキュメントも POST の本文を使う", async () => {
+    const available = help({ viewer: "staff", solution: { state: "available" } });
+    const opened = help({
+      viewer: "staff",
+      solution: {
+        state: "opened",
+        files: [{ path: "index.html", content: encode("STAFF_SOLUTION") }],
+      },
+    });
+    mocks.apiRequest.mockResolvedValueOnce(available).mockResolvedValueOnce(opened);
+    await run("stella.openTaskHelpItem", root, "solution");
+    expect(state.html.at(-1)).toContain("STAFF_SOLUTION");
+    expect(mocks.apiRequest).toHaveBeenCalledTimes(2);
+    expect(state.warningChoice).toBeUndefined();
+
+    mocks.apiRequest.mockReset();
+    mocks.apiRequest.mockResolvedValueOnce(available).mockResolvedValueOnce(opened);
+    await run("stella.compareTaskSolution", root, "index.html");
+    expect(mocks.executeCommand).toHaveBeenCalledWith(
+      "vscode.diff",
+      expect.objectContaining({ scheme: "stella-solution" }),
+      expect.objectContaining({ fsPath: path.join(root, "index.html") }),
+      "index.html: 解答例 ↔ 自分のコード",
+      { preview: true },
+    );
+    const left = mocks.executeCommand.mock.calls[0][1] as { path: string; query: string };
+    mocks.apiRequest.mockReset();
+    mocks.apiRequest.mockResolvedValueOnce(available).mockResolvedValueOnce(opened);
+    expect(await solutionContent(left)).toBe("STAFF_SOLUTION");
+    expect(mocks.apiRequest.mock.calls[1][1]).toMatchObject({
+      method: "POST",
+      body: { taskId: TASK_ID, contentHash: HASH, item: "solution" },
+    });
   });
 
   it("接続が変わったら、ヘルプのパネル・解答例の控え・開いている解答例の中身が残らない", async () => {

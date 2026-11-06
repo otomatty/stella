@@ -5,8 +5,6 @@
  * - 標準 PDF フォントが埋め込まれていない PDF のために standard_fonts も配置
  * - 開発 / 本番両方で `/pdfjs/cmaps/` 配信される
  * - `<Document options={{ cMapUrl: '/pdfjs/cmaps/', ... }}>` から参照
- *
- * 既存の `copy-sqljs-wasm.ts` と同パターン。
  */
 
 import { createRequire } from "node:module";

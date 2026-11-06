@@ -14,8 +14,7 @@ import type { StaffSkillMapStageNode } from "@/lib/skill-map-api";
 import { layoutRadialSkillTree } from "@/components/learner/tree/radial-layout";
 
 export interface StageManagementCounts {
-  published: number;
-  draft: number;
+  total: number;
   extra: number;
 }
 
@@ -29,19 +28,17 @@ export interface StaffStagePlan {
 export function stageManagementCounts(
   stages: readonly StaffSkillMapStageNode[],
 ): StageManagementCounts {
-  let published = 0;
-  let draft = 0;
+  let total = 0;
   let extra = 0;
   for (const stage of stages) {
-    if (stage.status === "published") published += 1;
-    else if (stage.status === "draft") draft += 1;
+    if (stage.status !== "archived") total += 1;
     if (stage.audience === "granted" && stage.status !== "archived") extra += 1;
   }
-  return { published, draft, extra };
+  return { total, extra };
 }
 
 export function formatStageManagementCounts(counts: StageManagementCounts): string {
-  return `公開中 ${counts.published} · 下書き ${counts.draft} · Extra ${counts.extra}`;
+  return `全 ${counts.total} ステージ · Extra ${counts.extra}`;
 }
 
 /** 星の名前のそばの札。下書きと Extra は両方付くことがある。 */
@@ -70,15 +67,6 @@ export function stageAudienceLabel(
   audience: StaffSkillMapStageNode["audience"],
 ): "Basic" | "Extra" {
   return audience === "granted" ? "Extra" : "Basic";
-}
-
-/** 公開中なら下書きへ、それ以外 (下書き・アーカイブ) は公開へ。 */
-export function nextPublishStatus(status: StaffSkillMapStageNode["status"]): "draft" | "published" {
-  return status === "published" ? "draft" : "published";
-}
-
-export function publishToggleLabel(status: StaffSkillMapStageNode["status"]): string {
-  return status === "published" ? "下書きに戻す" : "公開する";
 }
 
 export function offBoardNote(stage: StaffSkillMapStageNode): string {

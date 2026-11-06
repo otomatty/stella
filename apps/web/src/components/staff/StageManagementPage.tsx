@@ -5,9 +5,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 
-import { StageEditor } from "@/components/admin/StageEditor";
 import { SkillTree, type SkillTreeHandle } from "@/components/learner/tree/SkillTree";
 import { routeAccentOf } from "@/components/learner/tree/route-accents";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { deleteStage, setStageStatus, upsertStage } from "@/lib/cms-api";
-import { ChevronDown, ChevronUp, Edit, Plus } from "@/lib/icons";
+import { ChevronDown, ChevronUp } from "@/lib/icons";
 import {
   getStaffSkillMap,
   getStaffSkillMapIcons,
@@ -24,15 +22,14 @@ import {
 } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
+import { StaffEnrollButton } from "./StaffEnrollButton";
 import { StageGrantEditor } from "./StageGrantEditor";
 import {
   entryStageId,
   filterStagesByQuery,
   formatStageManagementCounts,
-  nextPublishStatus,
   offBoardNote,
   planStaffStages,
-  publishToggleLabel,
   staffMapContents,
   staffStarTag,
   type StaffIslandEntry,
@@ -55,6 +52,7 @@ interface StageManagementPageProps {
   backendEnabled: boolean;
   currentUserId: string | null;
   highlightStage: { id: string; seq: number } | null;
+  onOpenAsLearner: (stageId: string) => void;
 }
 
 export function StageManagementPage({
@@ -62,22 +60,16 @@ export function StageManagementPage({
   backendEnabled,
   currentUserId,
   highlightStage,
+  onOpenAsLearner,
 }: StageManagementPageProps) {
-  const isAdmin = role === "admin";
   const title = stageManagementTitle(role);
   const treeRef = useRef<SkillTreeHandle | null>(null);
-  const appliedAdminHighlight = useRef<number | null>(
-    isAdmin && highlightStage ? highlightStage.seq : null,
-  );
   const focusedHighlight = useRef<number | null>(null);
   const pendingScrollId = useRef<string | null>(null);
 
   const [stages, setStages] = useState<StaffSkillMapStageNode[] | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(() =>
-    isAdmin ? (highlightStage?.id ?? null) : null,
-  );
   const [grantStageId, setGrantStageId] = useState<string | null>(null);
   const [selectedIslandKey, setSelectedIslandKey] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -108,9 +100,9 @@ export function StageManagementPage({
   const contents = useMemo(() => staffMapContents(plan.board, stages ?? []), [plan, stages]);
   const selectedIsland = contents.islands.find((island) => island.key === selectedIslandKey);
   const entryId = useMemo(() => entryStageId(plan.board), [plan.board]);
-  // 検索から開いた講師はその星を優先。PC は全体、それ以外は入口へ寄せる。
+  // 検索から開いたときはその星を優先。PC は全体、それ以外は入口へ寄せる。
   const initialFocusStageId =
-    !isAdmin && highlightStage && plan.board.some((stage) => stage.id === highlightStage.id)
+    highlightStage && plan.board.some((stage) => stage.id === highlightStage.id)
       ? highlightStage.id
       : isDesktop
         ? null
@@ -135,14 +127,7 @@ export function StageManagementPage({
   );
 
   useEffect(() => {
-    if (!highlightStage || !isAdmin) return;
-    if (appliedAdminHighlight.current === highlightStage.seq) return;
-    appliedAdminHighlight.current = highlightStage.seq;
-    setEditingId(highlightStage.id);
-  }, [highlightStage, isAdmin]);
-
-  useEffect(() => {
-    if (!highlightStage || isAdmin || stages === null) return;
+    if (!highlightStage || stages === null) return;
     if (focusedHighlight.current === highlightStage.seq) return;
     const onBoard = plan.board.some((stage) => stage.id === highlightStage.id);
     if (onBoard) {
@@ -152,7 +137,7 @@ export function StageManagementPage({
       scrollOffBoard(highlightStage.id);
     }
     focusedHighlight.current = highlightStage.seq;
-  }, [highlightStage, isAdmin, stages, plan, scrollOffBoard]);
+  }, [highlightStage, stages, plan, scrollOffBoard]);
 
   useEffect(() => {
     const id = pendingScrollId.current;
@@ -162,43 +147,6 @@ export function StageManagementPage({
     pendingScrollId.current = null;
     row.scrollIntoView({ block: "nearest" });
   }, [expanded, selectedIslandKey, query]);
-
-  const togglePublish = async (stage: StaffSkillMapStageNode) => {
-    try {
-      await setStageStatus(stage.id, nextPublishStatus(stage.status));
-      await load();
-    } catch (err: unknown) {
-      toast.error(`状態切替失敗: ${err instanceof Error ? err.message : "unknown"}`);
-    }
-  };
-
-  const removeStage = async (stage: StaffSkillMapStageNode) => {
-    const name = stage.title ?? stage.slug ?? "ステージ";
-    if (!confirm(`ステージ "${name}" を削除します。 セクション / レッスンも一緒に消えます。`)) {
-      return;
-    }
-    try {
-      await deleteStage(stage.id);
-      await load();
-    } catch (err: unknown) {
-      toast.error(`削除失敗: ${err instanceof Error ? err.message : "unknown"}`);
-    }
-  };
-
-  const onCreate = async () => {
-    try {
-      const row = await upsertStage({
-        slug: `stage-${Date.now().toString(36)}`,
-        title: "新しいステージ",
-        status: "draft",
-        color: "indigo",
-      });
-      await load();
-      setEditingId(row.id);
-    } catch (err: unknown) {
-      toast.error(`ステージ作成失敗: ${err instanceof Error ? err.message : "unknown"}`);
-    }
-  };
 
   const selectIsland = (key: string) => {
     setSelectedIslandKey(key);
@@ -221,21 +169,6 @@ export function StageManagementPage({
     }
     scrollOffBoard(id);
   };
-
-  if (editingId !== null && isAdmin) {
-    return (
-      <div className="h-[calc(100dvh-var(--shell-header-height))] overflow-y-auto p-4 sm:p-7">
-        <StageEditor
-          stageId={editingId}
-          onBack={() => {
-            setEditingId(null);
-            void load();
-          }}
-          onMetadataChanged={() => void load()}
-        />
-      </div>
-    );
-  }
 
   const showSkeleton = backendEnabled && loading && stages === null;
   const showError = backendEnabled && error !== null && stages === null;
@@ -290,18 +223,9 @@ export function StageManagementPage({
               const stage = byId.get(node.id);
               if (!stage) return null;
               return (
-                <StaffStageDetail
+                <StarDetailCard
                   stage={stage}
-                  isAdmin={isAdmin}
-                  onEdit={() => {
-                    close();
-                    setEditingId(stage.id);
-                  }}
-                  onToggle={() => {
-                    close();
-                    void togglePublish(stage);
-                  }}
-                  onDelete={() => void removeStage(stage)}
+                  onOpenAsLearner={onOpenAsLearner}
                   onAssign={() => {
                     close();
                     setGrantStageId(stage.id);
@@ -351,12 +275,6 @@ export function StageManagementPage({
                   <ChevronUp size={14} className="hidden lg:block" />
                 </Button>
               </div>
-              {isAdmin && backendEnabled ? (
-                <Button type="button" variant="accent" onClick={() => void onCreate()}>
-                  <Plus size={14} />
-                  新規ステージ
-                </Button>
-              ) : null}
             </header>
 
             <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">
@@ -369,11 +287,8 @@ export function StageManagementPage({
               ) : selectedIsland ? (
                 <StaffIslandDetail
                   island={selectedIsland}
-                  isAdmin={isAdmin}
                   onBack={() => setSelectedIslandKey(null)}
                   onSelectIsland={selectIsland}
-                  onEdit={setEditingId}
-                  onToggle={(stage) => void togglePublish(stage)}
                   onAssign={setGrantStageId}
                 />
               ) : (
@@ -470,43 +385,22 @@ export function StageManagementPage({
                             </div>
                             <div className="text-[11px] text-ink-4">{stage.slug}</div>
                             <div className="mt-1.5 flex flex-wrap gap-1">
-                              <Badge variant={statusBadgeVariant(stage.status)}>
-                                {stageStatusLabel(stage.status)}
-                              </Badge>
+                              {stage.status !== "published" ? (
+                                <Badge variant={statusBadgeVariant(stage.status)}>
+                                  {stageStatusLabel(stage.status)}
+                                </Badge>
+                              ) : null}
                               <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
                                 {stageAudienceLabel(stage.audience)}
                               </Badge>
                             </div>
                             <p className="mt-1 text-[11px] text-ink-3">{offBoardNote(stage)}</p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
-                              {isAdmin ? (
-                                <>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => setEditingId(stage.id)}
-                                  >
-                                    <Edit size={12} />
-                                    編集
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => void togglePublish(stage)}
-                                  >
-                                    {publishToggleLabel(stage.status)}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => void removeStage(stage)}
-                                  >
-                                    削除
-                                  </Button>
-                                </>
-                              ) : null}
+                              <Button asChild variant="primary" size="sm">
+                                <Link to="/stages/$stageId" params={{ stageId: stage.id }}>
+                                  ステージ詳細を開く
+                                </Link>
+                              </Button>
                               {stage.audience === "granted" ? (
                                 <Button
                                   type="button"
@@ -516,6 +410,12 @@ export function StageManagementPage({
                                 >
                                   ユーザーを割り当てる
                                 </Button>
+                              ) : null}
+                              {stage.status === "published" ? (
+                                <StaffEnrollButton
+                                  stageId={stage.id}
+                                  onOpenAsLearner={onOpenAsLearner}
+                                />
                               ) : null}
                             </div>
                           </li>
@@ -569,19 +469,13 @@ export function StageManagementPage({
   );
 }
 
-function StaffStageDetail({
+function StarDetailCard({
   stage,
-  isAdmin,
-  onEdit,
-  onToggle,
-  onDelete,
   onAssign,
+  onOpenAsLearner,
 }: {
   stage: StaffSkillMapStageNode;
-  isAdmin: boolean;
-  onEdit: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
+  onOpenAsLearner: (stageId: string) => void;
   onAssign: () => void;
 }) {
   const category = stage.category?.trim() ?? "";
@@ -592,7 +486,9 @@ function StaffStageDetail({
         {category !== "" ? ` · ${category}` : ""}
       </p>
       <div className="flex flex-wrap gap-1">
-        <Badge variant={statusBadgeVariant(stage.status)}>{stageStatusLabel(stage.status)}</Badge>
+        {stage.status !== "published" ? (
+          <Badge variant={statusBadgeVariant(stage.status)}>{stageStatusLabel(stage.status)}</Badge>
+        ) : null}
         <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
           {stageAudienceLabel(stage.audience)}
         </Badge>
@@ -602,24 +498,18 @@ function StaffStageDetail({
         {stage.audience === "granted" ? ` · 割り当て ${stage.granted_count}` : ""}
       </p>
       <div className="flex flex-wrap gap-1.5">
-        {isAdmin ? (
-          <>
-            <Button type="button" size="sm" onClick={onEdit}>
-              <Edit size={12} />
-              編集
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={onToggle}>
-              {publishToggleLabel(stage.status)}
-            </Button>
-            <Button type="button" size="sm" variant="destructive" onClick={onDelete}>
-              削除
-            </Button>
-          </>
-        ) : null}
+        <Button asChild variant="primary" size="sm">
+          <Link to="/stages/$stageId" params={{ stageId: stage.id }}>
+            ステージ詳細を開く
+          </Link>
+        </Button>
         {stage.audience === "granted" ? (
           <Button type="button" size="sm" variant="outline" onClick={onAssign}>
             ユーザーを割り当てる
           </Button>
+        ) : null}
+        {stage.status === "published" ? (
+          <StaffEnrollButton stageId={stage.id} onOpenAsLearner={onOpenAsLearner} />
         ) : null}
       </div>
     </div>
@@ -692,19 +582,13 @@ function ContentsRow({
 
 function StaffIslandDetail({
   island,
-  isAdmin,
   onBack,
   onSelectIsland,
-  onEdit,
-  onToggle,
   onAssign,
 }: {
   island: StaffIslandEntry;
-  isAdmin: boolean;
   onBack: () => void;
   onSelectIsland: (key: string) => void;
-  onEdit: (id: string) => void;
-  onToggle: (stage: StaffSkillMapStageNode) => void;
   onAssign: (id: string) => void;
 }) {
   return (
@@ -774,30 +658,16 @@ function StaffIslandDetail({
               </div>
               <p className="break-all text-[11px] text-ink-4">{stage.slug}</p>
               <div className="mt-1.5 flex flex-wrap gap-1">
-                <Badge variant={statusBadgeVariant(stage.status)}>
-                  {stageStatusLabel(stage.status)}
-                </Badge>
+                {stage.status !== "published" ? (
+                  <Badge variant={statusBadgeVariant(stage.status)}>
+                    {stageStatusLabel(stage.status)}
+                  </Badge>
+                ) : null}
                 <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
                   {stageAudienceLabel(stage.audience)}
                 </Badge>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {isAdmin ? (
-                  <>
-                    <Button type="button" size="sm" onClick={() => onEdit(stage.id)}>
-                      <Edit size={12} />
-                      編集
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onToggle(stage)}
-                    >
-                      {publishToggleLabel(stage.status)}
-                    </Button>
-                  </>
-                ) : null}
                 {stage.audience === "granted" ? (
                   <Button
                     type="button"

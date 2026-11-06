@@ -140,12 +140,17 @@ export function requireCanManageStageGrants(caller: Caller): void {
 /**
  * 腕試し (SkillCheck / 飛び級) を **受ける** 側になれるロール (Phase 3a)。
  *
- * 管理者は運用の当事者として受講者と同じ腕試しを試せる必要がある (出題や合格ラインの
- * 手触りを確かめる場が他に無い) 一方、講師は対象外 — 飛び級は「自分の星を開ける」
- * 操作で、他人の学習を見る側のロールが自分の `stage_unlocks` を作っても意味が無く、
- * 受験履歴だけが増える。
+ * 講師・管理者は、受講者の画面で教材 (課題文・ヒント・解答例を含む) を確かめるために
+ * 自分を受講登録する。条件は受講者と同じ (前提・霧・割り当ては評価器が決める)。
+ * 自己開始・腕試し・発見教材は同じ顔ぶれにそろえる
+ * (片方だけ開けると「受けられないのに始められる」がねじれる)。
  */
-export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
+export const SKILL_CHECK_ROLES: ProfileRole[] = [
+  "student",
+  "instructor",
+  "admin",
+  "platform_admin",
+];
 
 export function canTakeSkillCheck(role: ProfileRole): boolean {
   return SKILL_CHECK_ROLES.includes(role);

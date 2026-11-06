@@ -48,6 +48,7 @@ import {
   variantReviews,
 } from "../db/schema.js";
 import type { Caller } from "./authz.js";
+import { learnerOnly } from "./learner-scope.js";
 import { isAssistedSubmission } from "./task-support.js";
 
 /** 1 回の要求で、新たに起点に達したパターンの支援の判定をする数 (D1 のクエリ数を抑える)。 */
@@ -660,11 +661,17 @@ export async function loadVariantStock(db: Db): Promise<VariantStockSummary[]> {
         pattern: variantReviews.pattern,
         variantTaskId: variantReviews.variantTaskId,
       })
-      .from(variantReviews),
+      .from(variantReviews)
+      .where(learnerOnly(variantReviews.userId)),
     db
       .select({ userId: enrollments.userId, stageId: enrollments.stageId })
       .from(enrollments)
-      .where(inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES])),
+      .where(
+        and(
+          learnerOnly(enrollments.userId),
+          inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+        ),
+      ),
     db
       .select({
         userId: variantReviews.userId,
@@ -675,7 +682,7 @@ export async function loadVariantStock(db: Db): Promise<VariantStockSummary[]> {
       })
       .from(variantReviews)
       .innerJoin(profiles, eq(profiles.id, variantReviews.userId))
-      .where(eq(variantReviews.status, "out-of-stock"))
+      .where(and(learnerOnly(variantReviews.userId), eq(variantReviews.status, "out-of-stock")))
       .orderBy(asc(variantReviews.dueOn)),
   ]);
   const summaries = new Map<string, VariantStockSummary>();

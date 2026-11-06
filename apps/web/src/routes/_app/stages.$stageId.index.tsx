@@ -1,10 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, type SearchSchemaInput } from "@tanstack/react-router";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { StageNotFoundNotice, EmptyStagesNotice } from "@/components/shell/AppShell";
 import { RoleGuard } from "@/components/shell/RoleGuard";
 import { StageDetail } from "@/components/learner/StageDetail";
 
+import { StaffStageDetail } from "@/components/staff/StaffStageDetail";
+import { parseStaffStageTab } from "@/components/staff/staff-stage-detail";
+
 export const Route = createFileRoute("/_app/stages/$stageId/")({
+  validateSearch: (search: { tab?: unknown } & SearchSchemaInput) => ({
+    tab: parseStaffStageTab(search.tab),
+  }),
   component: StageDetailPage,
 });
 
@@ -13,8 +19,10 @@ function StageDetailPage() {
   const { stageId } = Route.useParams();
   const target = s.stages.find((c) => c.id === stageId);
   return (
-    <RoleGuard allow={["learner"]}>
-      {target ? (
+    <RoleGuard allow={["learner", "instructor", "admin"]}>
+      {s.role !== "learner" ? (
+        <StaffStageDetail key={stageId} stageId={stageId} />
+      ) : target ? (
         <StageDetail
           stage={target}
           setPage={s.setPage}

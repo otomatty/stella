@@ -1,5 +1,5 @@
 /**
- * CMS API (旧 cms-api.ts の BaaS 直アクセス + RLS + reorder RPC の置き換え / Issue #10)。
+ * CMS API (旧 cms-api.ts の BaaS 直アクセス + RLS の置き換え / Issue #10)。
  *
  * 認可 (旧 RLS):
  *   - ステージ**一覧** (`GET /api/cms/stages`) は staff のみ。 受講者に返すと、 割り当てても
@@ -11,7 +11,6 @@
  *   - sections/lessons/assignments の read は published か staff。
  *   - quizzes (CMS 編集) と listAssignments は staff のみ。
  *   - 書き込みはすべて instructor/admin。 子要素は親が存在することを確かめる。
- *   - reorder は単一 UPDATE 相当を順序付き upsert で原子的に行う。
  *
  * 返却形は旧 DB 行 (snake_case) に合わせ、 フロントのマッパー (@stella/shared/cms/types) を無変更に保つ。
  */
@@ -227,7 +226,7 @@ async function requireQuestion(db: Db, questionId: string): Promise<void> {
 }
 
 /**
- * レッスン削除 (直接 / section・stage からの cascade) 前に、 紐づく配布資料の
+ * ステージ削除による cascade 前に、 紐づく配布資料の
  * R2 オブジェクトをベストエフォートで削除する (Issue #72)。
  * DB 行は FK cascade で消えるため、 ここでは R2 実体のみ扱う。
  * R2 未設定・削除失敗でもコンテンツ削除は妨げない (孤児はログに残す)。
@@ -576,52 +575,6 @@ cmsRoute.post("/api/cms/sections", async (c) => {
   }
 });
 
-cmsRoute.delete("/api/cms/sections/:id", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    await requireSection(db, c.req.param("id"));
-    // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
-    const lessonRows = await db
-      .select({ id: lessons.id })
-      .from(lessons)
-      .where(eq(lessons.sectionId, c.req.param("id")));
-    await deleteMaterialObjects(
-      db,
-      c.env,
-      lessonRows.map((l) => l.id),
-    );
-    await db.delete(sections).where(eq(sections.id, c.req.param("id")));
-    return c.json({ ok: true });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-cmsRoute.post("/api/cms/sections/reorder", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const { stageId, orderedIds } = (await c.req.json()) as {
-      stageId: string;
-      orderedIds: string[];
-    };
-    await requireStage(db, stageId);
-    // 順序付きで各行の order を更新する (stage 内に限定)。 並列実行でレイテンシを抑える。
-    await Promise.all(
-      orderedIds.map((id, i) =>
-        db
-          .update(sections)
-          .set({ order: i })
-          .where(and(eq(sections.id, id), eq(sections.stageId, stageId))),
-      ),
-    );
-    return c.json({ ok: true });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
 // =================================================================
 // Lessons
 // =================================================================
@@ -694,43 +647,6 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
       row = await save();
     }
     return c.json({ row: lessonToRow(row) });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-cmsRoute.delete("/api/cms/lessons/:id", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    await requireLesson(db, c.req.param("id"));
-    // cascade で消える配布資料の R2 実体を先に掃除する。
-    await deleteMaterialObjects(db, c.env, [c.req.param("id")]);
-    await db.delete(lessons).where(eq(lessons.id, c.req.param("id")));
-    return c.json({ ok: true });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-cmsRoute.post("/api/cms/lessons/reorder", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const { sectionId, orderedIds } = (await c.req.json()) as {
-      sectionId: string;
-      orderedIds: string[];
-    };
-    await requireSection(db, sectionId);
-    await Promise.all(
-      orderedIds.map((id, i) =>
-        db
-          .update(lessons)
-          .set({ order: i })
-          .where(and(eq(lessons.id, id), eq(lessons.sectionId, sectionId))),
-      ),
-    );
-    return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -968,61 +884,6 @@ cmsRoute.get("/api/cms/assignments/:id", async (c) => {
       if (!linked[0]) return c.json({ row: null });
     }
     return c.json({ row: assignmentToRow(a) });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-cmsRoute.post("/api/cms/assignments", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const input = (await c.req.json()) as Record<string, unknown> & { id: string };
-    const values = {
-      id: String(input.id),
-      stage: String(input.stage),
-      chapterId: String(input.chapter_id),
-      title: String(input.title),
-      description: String(input.description ?? ""),
-      language: String(input.language ?? "javascript"),
-      testKind: String(input.test_kind),
-      starterFiles: Array.isArray(input.starter_files) ? input.starter_files : [],
-      entryFile: (input.entry_file as string | null) ?? null,
-      entryPoints: input.entry_points ?? null,
-      tests: Array.isArray(input.tests) ? input.tests : [],
-      sqlSeed: (input.sql_seed as string | null) ?? null,
-      lintPreset: input.lint_preset ?? null,
-      staticAnalysis: input.static_analysis ?? null,
-      mutation: input.mutation ?? null,
-      demoCall: (input.demo_call as string | null) ?? null,
-    };
-    const row = requireReturning(
-      await db
-        .insert(assignments)
-        .values(values)
-        .onConflictDoUpdate({ target: assignments.id, set: { ...values, updatedAt: new Date() } })
-        .returning(),
-      "assignment upsert",
-    );
-    return c.json({ row: assignmentToRow(row) });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-cmsRoute.delete("/api/cms/assignments/:id", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const id = c.req.param("id");
-    const rows = await db
-      .select({ id: assignments.id })
-      .from(assignments)
-      .where(eq(assignments.id, id))
-      .limit(1);
-    if (!rows[0]) throw new ApiError("対象が見つかりません", 404);
-    await db.delete(assignments).where(eq(assignments.id, id));
-    return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
   }

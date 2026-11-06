@@ -7,10 +7,8 @@ import {
   entryStageId,
   filterStagesByQuery,
   formatStageManagementCounts,
-  nextPublishStatus,
   offBoardNote,
   planStaffStages,
-  publishToggleLabel,
   staffMapContents,
   staffStarTag,
   stageAudienceLabel,
@@ -141,15 +139,15 @@ describe("entryStageId", () => {
 });
 
 describe("stageManagementCounts", () => {
-  it("公開中・下書き・Extra を数える。アーカイブの Extra は Extra に入れない", () => {
+  it("全ステージと Extra を数える。アーカイブはどちらにも入れない", () => {
     const counts = stageManagementCounts([
       stage({ id: "a", status: "published" }),
       stage({ id: "b", status: "draft" }),
       stage({ id: "c", status: "published", audience: "granted" }),
       stage({ id: "d", status: "archived", audience: "granted" }),
     ]);
-    expect(counts).toEqual({ published: 2, draft: 1, extra: 1 });
-    expect(formatStageManagementCounts(counts)).toBe("公開中 2 · 下書き 1 · Extra 1");
+    expect(counts).toEqual({ total: 3, extra: 1 });
+    expect(formatStageManagementCounts(counts)).toBe("全 3 ステージ · Extra 1");
   });
 });
 
@@ -180,17 +178,12 @@ describe("filterStagesByQuery", () => {
 });
 
 describe("表示文言", () => {
-  it("状態・掲載範囲・公開の切り替えの文言", () => {
+  it("状態・掲載範囲の文言", () => {
     expect(stageStatusLabel("published")).toBe("公開中");
     expect(stageStatusLabel("draft")).toBe("下書き");
     expect(stageStatusLabel("archived")).toBe("アーカイブ");
     expect(stageAudienceLabel(undefined)).toBe("Basic");
     expect(stageAudienceLabel("granted")).toBe("Extra");
-    expect(nextPublishStatus("published")).toBe("draft");
-    expect(nextPublishStatus("draft")).toBe("published");
-    expect(nextPublishStatus("archived")).toBe("published");
-    expect(publishToggleLabel("published")).toBe("下書きに戻す");
-    expect(publishToggleLabel("draft")).toBe("公開する");
     expect(stageManagementTitle("admin")).toBe("ステージ管理");
     expect(stageManagementTitle("instructor")).toBe("ステージ");
     expect(offBoardNote(stage({ id: "a", status: "archived" }))).toBe(

@@ -431,9 +431,11 @@ export interface HelpSolutionFile {
 
 /**
  * `GET /api/tasks/help` と `POST /api/tasks/help/open` の応答。本文 (`markdown`・`files`) は、
- * 受講者が開いた記録があり、今も開ける素材だけに付く。まだ開いていない素材は状態だけを返す。
+ * 受講者が開いた記録があり、今も開ける素材だけに付く。講師・管理者は記録せず、開いた応答だけに
+ * 本文を付ける。まだ開いていない素材は状態だけを返す。
  */
 export interface TaskHelpResponse {
+  viewer: "learner" | "staff";
   taskId: string;
   title: string;
   kind: TaskKind;

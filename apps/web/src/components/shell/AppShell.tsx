@@ -105,7 +105,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
   enrollments: "/admin/enrollments",
-  assignments: "/admin/assignments",
   audit: "/admin/audit",
   report: "/admin/report",
   settings: "/settings",
@@ -222,7 +221,7 @@ export function AppShell() {
   // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 instructor/admin は
   // 公開ステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
-  // 受講者画面を確認したい staff は対象ステージに自分を受講登録しておく。
+  // 受講者画面で確かめたい staff は、ステージ管理の「受講者の画面で確かめる」で自分を受講登録する (前提・割り当てを問わない)。
   const browseStages = useStages(effectiveRole !== "learner");
   const enrolledStages = useEnrolledStages(session?.user.id ?? null, effectiveRole === "learner");
   // DB 由来ステージは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
@@ -310,6 +309,16 @@ export function AppShell() {
     setUiRoleOverride("learner");
     void navigate({ to: "/" });
   }, [navigate]);
+
+  const openStageAsLearner = useCallback(
+    (stageId: string) => {
+      // 先に受講者へ切り替えると、まだ表示中の /stages が受講者をホームへ送る (<Navigate>) ため、遷移を先に済ませる。
+      void navigate({ to: "/stages/$stageId", params: { stageId } }).then(() =>
+        setUiRoleOverride("learner"),
+      );
+    },
+    [navigate],
+  );
 
   const returnToStaffView = useCallback(() => {
     setUiRoleOverride(null);
@@ -570,6 +579,7 @@ export function AppShell() {
     profile,
     onProfileUpdated: refreshProfile,
     highlightStage,
+    openStageAsLearner,
   };
 
   return (

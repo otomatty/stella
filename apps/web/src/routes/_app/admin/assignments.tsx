@@ -1,7 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AdminAssignmentsPage } from "@/components/admin/AdminAssignmentsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// ロールチェックは親レイアウト `_app/admin.tsx` の RoleGuard が担う。
+/**
+ * 教材の編集画面は廃止した。旧ブックマークの救済のため、ステージ管理へ送る。
+ */
 export const Route = createFileRoute("/_app/admin/assignments")({
-  component: AdminAssignmentsPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/stages", replace: true });
+  },
 });

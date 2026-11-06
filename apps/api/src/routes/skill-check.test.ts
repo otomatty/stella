@@ -508,14 +508,14 @@ describe("受験できるロール (SKILL_CHECK_ROLES)", () => {
     expect(res.status).toBe(200);
   });
 
-  it.each(["instructor"] as const)("%s は出題も採点も 403", async (role) => {
-    caller = { ...BASE_CALLER, id: `seed-${role}`, role };
-    expect((await get("/api/skill-check/id-d")).status).toBe(403);
-    const res = await post("/api/skill-check/id-d", { answers: [] });
-    expect(res.status).toBe(403);
-    // 403 で弾かれた受験は記録も解放もしない。
-    expect(insertSkillCheckAttempt).not.toHaveBeenCalled();
-    expect(upsertStageUnlock).not.toHaveBeenCalled();
+  it("講師は受講者と同じ腕試しを受けられる", async () => {
+    caller = { ...BASE_CALLER, id: "seed-instructor", role: "instructor" };
+    const check = await fetchCheck("id-d");
+    expect(check.supported).toBe(true);
+    const res = await post("/api/skill-check/id-d", {
+      answers: correctAnswers(check.questions ?? []),
+    });
+    expect(res.status).toBe(200);
   });
 });
 

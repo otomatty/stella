@@ -33,6 +33,7 @@ import {
 } from "../db/schema.js";
 import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
+import { learnerOnly } from "./learner-scope.js";
 import { loadUnlockedStageIds } from "./skill-check-data.js";
 import {
   dropOrphanGrantedStages,
@@ -320,6 +321,7 @@ export async function loadStaffSkillMapRows(db: Db): Promise<StaffSkillMapStageR
   const enrollmentRows = await db
     .select({ stageId: enrollments.stageId, n: count() })
     .from(enrollments)
+    .where(learnerOnly(enrollments.userId))
     .groupBy(enrollments.stageId);
 
   const grants = new Map(grantRows.map((row) => [row.stageId, Number(row.n ?? 0)]));
