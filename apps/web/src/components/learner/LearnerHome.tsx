@@ -64,12 +64,12 @@ import { UnlockNotice } from "@/components/learner/home/UnlockNotice";
 import { SkillCheckDialog } from "@/components/learner/tree/SkillCheckDialog";
 import {
   SkillTree,
+  type ActiveStarInfo,
   type SkillTreeHandle,
-  type TreeSpotlight,
 } from "@/components/learner/tree/SkillTree";
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
-import { buildHomeGuide, suggestedStageIds } from "@/lib/home-guide";
+import { buildHomeGuide, startableStageIds } from "@/lib/home-guide";
 import { AlertTriangle, ChevronDown, ChevronUp, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
@@ -210,7 +210,7 @@ export const LearnerHome = ({
       // 消える瞬きを避ける。
       hasEnrollment: skillMap.map ? hasEnrollment : true,
       activeWithoutLesson: Boolean(activeStage && !activeStage.completed && !nextLesson),
-      suggestedStageIds: suggestedStageIds(
+      startableStageIds: startableStageIds(
         nodes,
         skillMap.map?.next_stage_ids ?? [],
         serverActiveStageId,
@@ -230,12 +230,6 @@ export const LearnerHome = ({
   ]);
   /** 先頭 (「次にやること」) は `NextStepCard` が `guide` から引く。ここは残りだけ。 */
   const later = guide.steps.slice(1);
-  /** ガイドが勧める先頭の 1 星 (ツリーの「おすすめ」の輪はこれだけ)。 */
-  const highlightStageIds = useMemo(() => {
-    const choose = guide.steps.find((step) => step.kind === "choose");
-    const first = choose?.kind === "choose" ? choose.stageIds[0] : undefined;
-    return first ? [first] : [];
-  }, [guide]);
 
   // ----- 星を始める / 開く -----
 
@@ -255,9 +249,6 @@ export const LearnerHome = ({
       mountedRef.current = false;
     };
   }, []);
-  /** 開始中の星 (ガイドの「ここから始める」を二重に押させない)。 */
-  const [startingId, setStartingId] = useState<string | null>(null);
-
   /**
    * 星を始めて、そのまま最初のレッスン (一度始めた星なら続き) を開く (Phase 3b)。
    *
@@ -266,7 +257,6 @@ export const LearnerHome = ({
    */
   const startStage = (stageId: string) => {
     const seq = ++startSeqRef.current;
-    setStartingId(stageId);
     void (async () => {
       try {
         await skillMap.startStage(stageId);
@@ -285,16 +275,14 @@ export const LearnerHome = ({
         if (target) onOpenLesson(target.stage, target.lessonId);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "ステージを始められませんでした");
-      } finally {
-        if (mountedRef.current && seq === startSeqRef.current) setStartingId(null);
       }
     })();
   };
 
   /**
-   * ガイドとキューからの「始める」。**既に進めている星があれば乗り換えを確かめる** —
-   * 「1 つに絞る」設計なので黙って切り替えない。ツリーの星のポップオーバーは
-   * 「開く → 押す」の 2 手が確認を兼ねるので、こちらを通さない。
+   * キューからの「始める」。**既に進めている星があれば乗り換えを確かめる** —
+   * 「1 つに絞る」設計なので黙って切り替えない。ツリーの星のカードは
+   * 「カードを開く → 押す」の 2 手が確認を兼ねるので、こちらを通さない。
    */
   const [pendingStageId, setPendingStageId] = useState<string | null>(null);
   const requestStart = (stageId: string) => {
@@ -362,7 +350,6 @@ export const LearnerHome = ({
       if (activeStage) openStage(activeStage.id);
     },
     onOpenPendingTask: openPendingTask,
-    onStartStage: requestStart,
     onShowInTree: showInTree,
   };
   const guideActiveStage: GuideActiveStage | null = activeStage
@@ -378,87 +365,24 @@ export const LearnerHome = ({
     ...handlers,
     activeStage: guideActiveStage,
     nodeOf: (id: string) => nodeById.get(id),
-    startingId,
   };
 
-  /**
-   * ツリーでいま取り組む星に常に出す詳細の札 (押さなくても読める)。
-   *
-   * 進行中の星があればそれ (次のレッスン・進捗・「続きから」)。無ければガイドが勧める
-   * 先頭の星 (到達説明・「ここから始める」)。ガイドの主ボタンと同じ行き先を指す。
-   */
-  const chooseStep = guide.steps.find((step) => step.kind === "choose");
-  const suggestedId = chooseStep?.kind === "choose" ? chooseStep.stageIds[0] : undefined;
-  const suggestedNode = suggestedId ? nodeById.get(suggestedId) : undefined;
-  const spotlight: TreeSpotlight | null =
+  /** 進行中の星の詳細カードに足す情報。 */
+  const activeInfo: ActiveStarInfo | null =
     activeStage && !activeStage.completed
       ? {
-          stageId: activeStage.id,
-          eyebrow: "いま進めている",
           progress: activeStage.progress,
-          ...(nextLesson
-            ? {
-                detail: `次は「${nextLesson.lesson.title}」`,
-                action: {
-                  label: "続きから",
-                  icon: "play" as const,
-                  onClick: () => onOpenLesson(activeStage, nextLesson.lesson.id),
-                },
-                secondary: { label: "レッスン一覧", onClick: () => openStage(activeStage.id) },
-              }
+          detail: nextLesson
+            ? `次は「${nextLesson.lesson.title}」`
             : wrapup
-              ? {
-                  // 課題が残っている (レッスンの 100% はクリアではない)。受講者の番なら
-                  // 課題を開くボタンを主に、レビュー待ちなら一覧だけ。
-                  detail: wrapup.detail,
-                  ...(wrapup.learnerTurn
-                    ? {
-                        action: {
-                          label: "課題に取り組む",
-                          icon: "play" as const,
-                          onClick: openPendingTask,
-                        },
-                        secondary: {
-                          label: "レッスン一覧",
-                          onClick: () => openStage(activeStage.id),
-                        },
-                      }
-                    : {
-                        action: {
-                          label: "レッスン一覧",
-                          icon: "book" as const,
-                          onClick: () => openStage(activeStage.id),
-                        },
-                      }),
-                }
-              : {
-                  detail:
-                    activeStage.lessonsCount === 0
-                      ? "教材の準備中です。"
-                      : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
-                  action: {
-                    label: "レッスン一覧",
-                    icon: "book" as const,
-                    onClick: () => openStage(activeStage.id),
-                  },
-                }),
+              ? // 課題が残っている (レッスンの 100% はクリアではない)。
+                wrapup.detail
+              : activeStage.lessonsCount === 0
+                ? "教材の準備中です。"
+                : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
+          ...(!nextLesson && wrapup?.learnerTurn ? { openTask: openPendingTask } : {}),
         }
-      : suggestedId && suggestedNode
-        ? {
-            stageId: suggestedId,
-            eyebrow:
-              chooseStep?.kind === "choose" && chooseStep.welcome
-                ? "はじめの一歩 · おすすめ"
-                : "次はここ · おすすめ",
-            ...(suggestedNode.can_do ? { detail: `身につくと ${suggestedNode.can_do}。` } : {}),
-            action: {
-              label: startingId === suggestedId ? "開始中…" : "ここから始める",
-              icon: "play" as const,
-              onClick: () => requestStart(suggestedId),
-              disabled: startingId !== null,
-            },
-          }
-        : null;
+      : null;
 
   // ----- 腕試し・発見教材 -----
 
@@ -548,10 +472,9 @@ export const LearnerHome = ({
             onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             revealDev={revealDev}
-            // 開いた直後は現在地へ寄せる。現在地が無ければ、勧めている先頭の星へ。
-            initialFocusStageId={serverActiveStageId ?? highlightStageIds[0] ?? null}
-            highlightStageIds={highlightStageIds}
-            spotlight={spotlight}
+            // 開いた直後は現在地へ寄せる。現在地が無ければ入口の星座。
+            initialFocusStageId={serverActiveStageId}
+            activeInfo={activeInfo}
             handleRef={treeRef}
             // PC で開いたカードの陰は「見えている範囲」から外す。
             insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}

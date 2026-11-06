@@ -11,26 +11,18 @@
  * - **今日のプラン (`buildTodayPlan`) が先**。復習 → 続きのレッスン → つまずきの見直しは
  *   そちらで並べ、ここは順番を崩さない
  * - 進行中のステージのレッスンが尽きた (課題・レビュー待ち) ときは「仕上げ」を足す。
- *   黙って次の星を勧めると、提出の確認が残っていることに気付けない
- * - **次の星の提案はレッスンが無いときだけ**。進めるステージは同時に 1 つという設計
+ *   黙って次のステージの一覧へ進むと、提出の確認が残っていることに気付けない
+ * - **始められるステージの一覧はレッスンが無いときだけ**。進めるステージは同時に 1 つという設計
  *   なので、続きがあるうちは別の星を並べて迷わせない
- * - 何も始めていない人には、提案が **最初の一手** (先頭) になる
- * - 提案はサーバの推奨順 (`next_stage_ids`) のうち、名前が見えていて今すぐ始められる
+ * - 何も始めていない人には、一覧が **最初の一手** (先頭) になる
+ * - 一覧はサーバの順 (`next_stage_ids`) のうち、名前が見えていて今すぐ始められる
  *   星だけ。秘匿の判断はサーバの応答 (`visibility` / `state`) をそのまま使う
- * - **次の星は 1 つだけを大きく出す。** ほかの候補は畳んで、Basic と Extra に分けて出す。
+ * - **特定の星を名指ししない。** 一覧は Basic と Extra に分けて同列に出す。
  *   Extra は講師・管理者が割り当てたステージだけ
  */
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlan, TodayPlanItem } from "@/lib/today-plan";
-
-/**
- * 勧める星の上限。
- *
- * 先頭の 1 つだけを「次にやること」として大きく出す。残りは「ほかにも始められるステージ」に
- * 畳むので、候補はその範囲で残す。並びは推奨順のまま (先頭が「次にやること」)。
- */
-export const GUIDE_MAX_SUGGESTIONS = 6;
 
 export type GuideStep =
   /** 今日のプランの 1 項目 (復習 / 続きのレッスン / つまずきの見直し)。 */
@@ -53,19 +45,18 @@ export interface HomeGuideInput {
   hasEnrollment: boolean;
   /** 進行中のステージがあり、未修了なのに開けるレッスンが残っていない。 */
   activeWithoutLesson: boolean;
-  /** 今すぐ始められる推奨の星 (`suggestedStageIds` の戻り値)。 */
-  suggestedStageIds: string[];
+  /** 今すぐ始められる星 (`startableStageIds` の戻り値)。 */
+  startableStageIds: string[];
   /** 今日の復習を解き終えたか。 */
   reviewDone: boolean;
 }
 
 /**
- * 勧めてよい星。サーバの推奨順のうち、名前が見えていて解放済みの星だけを順に返す。
- *
- * 進行中の星は勧めない (それは「続きから」の役目)。霧の星・ロック星も候補にしない —
- * 押しても始められない星を「次はこれ」と言わないため。
+ * 始められる星。サーバの順 (`next_stage_ids`) のうち、名前が見えていて解放済みの星だけを順に返す。
+ * 進行中の星は入れない (それは「続きから」の役目)。霧の星・ロック星も入れない —
+ * 押しても始められないため。
  */
-export function suggestedStageIds(
+export function startableStageIds(
   nodes: SkillMapStageNode[],
   nextStageIds: string[],
   activeStageId: string | null,
@@ -77,7 +68,6 @@ export function suggestedStageIds(
     const node = byId.get(id);
     if (node?.visibility !== "full" || node.state !== "unlocked" || !node.title) continue;
     picked.push(id);
-    if (picked.length >= GUIDE_MAX_SUGGESTIONS) break;
   }
   return picked;
 }
@@ -87,7 +77,7 @@ export function buildHomeGuide(input: HomeGuideInput): HomeGuide {
   if (input.activeWithoutLesson) steps.push({ kind: "wrapup" });
 
   const hasLesson = input.plan.items.some((item) => item.kind === "lesson");
-  const stageIds = input.suggestedStageIds.slice(0, GUIDE_MAX_SUGGESTIONS);
+  const stageIds = input.startableStageIds;
   if (!hasLesson && stageIds.length > 0) {
     if (input.hasEnrollment) {
       steps.push({ kind: "choose", welcome: false, stageIds });

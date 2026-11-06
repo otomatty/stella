@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
-import { buildHomeGuide, GUIDE_MAX_SUGGESTIONS, suggestedStageIds } from "./home-guide";
+import { buildHomeGuide, startableStageIds } from "./home-guide";
 import { buildTodayPlan } from "./today-plan";
 
 const node = (id: string, over: Partial<SkillMapStageNode> = {}): SkillMapStageNode => ({
@@ -23,12 +23,12 @@ const base = {
   plan: buildTodayPlan({ srsDueCount: 0 }),
   hasEnrollment: true,
   activeWithoutLesson: false,
-  suggestedStageIds: [] as string[],
+  startableStageIds: [] as string[],
   reviewDone: false,
 };
 
-describe("suggestedStageIds", () => {
-  it("推奨順を保ち、解放済みで名前の見える星だけを勧める", () => {
+describe("startableStageIds", () => {
+  it("サーバの順を保ち、解放済みで名前の見える星だけを返す", () => {
     const nodes = [
       node("a"),
       node("b", { state: "locked" }),
@@ -36,21 +36,18 @@ describe("suggestedStageIds", () => {
       node("d", { state: "cleared" }),
       node("e"),
     ];
-    expect(suggestedStageIds(nodes, ["e", "b", "c", "d", "a"], null)).toEqual(["e", "a"]);
+    expect(startableStageIds(nodes, ["e", "b", "c", "d", "a"], null)).toEqual(["e", "a"]);
   });
 
-  it("進行中の星と、応答に無い星は勧めない", () => {
+  it("進行中の星と、応答に無い星は返さない", () => {
     const nodes = [node("a"), node("b")];
-    expect(suggestedStageIds(nodes, ["a", "x", "b"], "a")).toEqual(["b"]);
+    expect(startableStageIds(nodes, ["a", "x", "b"], "a")).toEqual(["b"]);
   });
 
-  it(`勧めるのは ${GUIDE_MAX_SUGGESTIONS} つまで (重複は 1 つに数える)`, () => {
-    const ids = Array.from({ length: GUIDE_MAX_SUGGESTIONS + 1 }, (_, i) => `s${i}`);
+  it("上限なしで全部返し、重複は 1 つにする", () => {
+    const ids = Array.from({ length: 10 }, (_, i) => `s${i}`);
     const nodes = ids.map((id) => node(id));
-    // 先頭を重ねても 1 つに数え、上限の次は落とす。
-    expect(suggestedStageIds(nodes, ["s0", ...ids], null)).toEqual(
-      ids.slice(0, GUIDE_MAX_SUGGESTIONS),
-    );
+    expect(startableStageIds(nodes, ["s0", ...ids], null)).toEqual(ids);
   });
 });
 
@@ -59,7 +56,7 @@ describe("buildHomeGuide", () => {
     const guide = buildHomeGuide({
       ...base,
       plan: buildTodayPlan({ srsDueCount: 6, activeStage: ACTIVE }),
-      suggestedStageIds: ["x"],
+      startableStageIds: ["x"],
     });
     expect(guide.steps.map((s) => (s.kind === "plan" ? s.item.kind : s.kind))).toEqual([
       "review",
@@ -67,11 +64,11 @@ describe("buildHomeGuide", () => {
     ]);
   });
 
-  it("続きのレッスンがあるうちは、別の星を勧めない (1 つに絞る)", () => {
+  it("続きのレッスンがあるうちは、ステージの一覧を出さない (1 つに絞る)", () => {
     const guide = buildHomeGuide({
       ...base,
       plan: buildTodayPlan({ srsDueCount: 0, activeStage: ACTIVE }),
-      suggestedStageIds: ["x", "y"],
+      startableStageIds: ["x", "y"],
     });
     expect(guide.steps.some((s) => s.kind === "choose")).toBe(false);
   });
@@ -80,7 +77,7 @@ describe("buildHomeGuide", () => {
     const guide = buildHomeGuide({
       ...base,
       hasEnrollment: false,
-      suggestedStageIds: ["root"],
+      startableStageIds: ["root"],
     });
     expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root"] }]);
   });
@@ -89,7 +86,7 @@ describe("buildHomeGuide", () => {
     const guide = buildHomeGuide({
       ...base,
       activeWithoutLesson: true,
-      suggestedStageIds: ["next"],
+      startableStageIds: ["next"],
     });
     expect(guide.steps).toEqual([
       { kind: "wrapup" },
@@ -97,11 +94,11 @@ describe("buildHomeGuide", () => {
     ]);
   });
 
-  it("復習だけが残っている日も、次の星の提案は後ろに続く", () => {
+  it("復習だけが残っている日も、ステージの一覧は後ろに続く", () => {
     const guide = buildHomeGuide({
       ...base,
       plan: buildTodayPlan({ srsDueCount: 3 }),
-      suggestedStageIds: ["next"],
+      startableStageIds: ["next"],
     });
     expect(guide.steps.map((s) => s.kind)).toEqual(["plan", "choose"]);
   });

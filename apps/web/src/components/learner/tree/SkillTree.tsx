@@ -31,24 +31,23 @@
  *
  * ## 詳細の器は幅で入れ替える
  *
- * 星をタップ / クリックしたときに出す詳細は、sm 以上ではその星に紐づくポップオーバー、
- * スマホ幅 (`useIsMobileViewport`) では画面下から出るドロワー。スマホでポップオーバーを
+ * 星の詳細は、sm 以上ではマウスを載せると開くポップオーバー (押すと寄せて固定し、
+ * カードの外か Esc で閉じる。タブレットのタップとキーボードの Enter は押した扱い)、
+ * スマホ幅 (`useIsMobileViewport`) ではタップで開くドロワー。スマホでポップオーバーを
  * 出すと、星が盤面の transform の中にあるぶん指の下に潜り込み、幅も画面に対して大きすぎて
  * 位置が定まらない。ドロワーなら盤面と重ならない場所に必ず出て、指の届く下端にボタンが並ぶ。
  * **何を出すかは器ではなく `star-detail.ts` が決める** (器ごとに条件を書くとずれる)。
  *
- * ドロワーは星ごとに持たせず盤面に 1 つだけ置き、開いている星を id で指す
- * (24 星ぶんの Dialog を積まない)。スマホは 1 タップで寄せながら開く — 詳細に名前が
- * 出るので、デスクトップの「まず寄る」1 手目が要らない。
+ * カードは同時に 1 つで、開いている星は `SkillTree` が持つ。ドロワーも星ごとに持たせず
+ * 盤面に 1 つだけ置く (24 星ぶんの Dialog を積まない)。
  *
  * ## ホームの盤面 (ガイドとつながる)
  *
  * この盤面は受講者のホームそのもの (`LearnerHome`)。横のガイドが「次にやること」を
  * 言い、盤面は「それがどこか」を見せる。開いた直後は **現在地の星へ寄せ**
- * (`initialFocusStageId`)、ガイドが勧めている星には「おすすめ」の輪を付ける
- * (`highlightStageIds`)。ガイドの「ツリーで見る」は `handleRef.focusStage` で星へ寄る。
- * いま取り組む星 (現在地、無ければ先頭のおすすめ) には、押さなくても読める詳細の札を
- * 星の下に常に出す (`spotlight`)。ほかのおすすめの星は名前だけを常に出す。
+ * (`initialFocusStageId`)。現在地が無ければ入口の星座。ガイドの「ツリーで見る」は
+ * `handleRef.focusStage` で星へ寄る。進行中の星の詳細カードには進捗と次のレッスンを
+ * 足す (`activeInfo`)。
  * ガイドは盤面の上に浮かぶカードなので、その陰 (`insetLeft`) は見えている範囲から外す —
  * 寄せる中心・画面端の矢印・ルート名の置き場所は、カードの右側だけで決める。島チップは
  * カードと重ならない右上 (ズームボタンの左) に置く。
@@ -89,24 +88,18 @@ import { offscreenMarkers, type ViewState } from "./offscreen";
 import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
-import { describeStar, hasStarActions, labelOf, type StarDetail } from "./star-detail";
+import { describeStar, hasStarActions, type StarDetail } from "./star-detail";
 
 /**
- * いま取り組む星に常に出す詳細の札 (押さなくても読める)。中身は呼び出し側が決める —
- * 盤面は受講中のレッスンを知らないので、「次のレッスン」や進捗はホームが渡す。
+ * 進行中の星の詳細カードに足す情報。盤面は受講中のレッスンを知らないので、ホームが渡す。
  */
-export interface TreeSpotlight {
-  stageId: string;
-  /** 見出しの上の札 (「いま進めている」「おすすめ」など)。 */
-  eyebrow: string;
-  /** 本文 (次のレッスン / 到達説明)。 */
-  detail?: string;
-  /** 進捗 (0-100)。進行中の星だけ。 */
-  progress?: number;
-  /** 主ボタン (強調)。`icon` は始める・続ける (play) か、一覧を開く (book) か。 */
-  action?: { label: string; icon: "play" | "book"; onClick: () => void; disabled?: boolean };
-  /** 控えのボタン。 */
-  secondary?: { label: string; onClick: () => void };
+export interface ActiveStarInfo {
+  /** 進捗 (0-100)。 */
+  progress: number;
+  /** 次のレッスン / 残っている課題の文面。 */
+  detail: string;
+  /** 受講者の番の課題が残っているとき、「続きから」の代わりに「課題に取り組む」を出す。 */
+  openTask?: () => void;
 }
 
 /** 親 (ホームのガイド) から盤面を操作するためのハンドル。 */
@@ -139,10 +132,8 @@ interface SkillTreeProps {
    * 最初に描けたときに 1 回だけ寄る — 再取得のたびに視点を奪わない。
    */
   initialFocusStageId?: string | null;
-  /** ガイドが勧めている星。「おすすめ」の輪を付け、名前を常に出す。 */
-  highlightStageIds?: string[];
-  /** いま取り組む星の詳細の札。null なら出さない。 */
-  spotlight?: TreeSpotlight | null;
+  /** 進行中の星の詳細カードに足す情報。 */
+  activeInfo?: ActiveStarInfo | null;
   /** 操作ハンドルの受け口 (`SkillTreeCanvas` と同じ受け渡し)。 */
   handleRef?: RefObject<SkillTreeHandle | null>;
   /** 左端から浮いたカード (ホームのガイド) に覆われている幅 (px)。 */
@@ -262,6 +253,10 @@ function useStageIconUrls(
 
 /** クリックで寄せる倍率。全体表示からここに来ると名前が出る。 */
 const FOCUS_SCALE = 1.25;
+/** マウスを載せてからカードを開くまで (横切っただけの星で開かない)。 */
+const CARD_OPEN_DELAY_MS = 120;
+/** マウスが離れてからカードを閉じるまで (星からカードへ移る間に閉じない)。 */
+const CARD_CLOSE_DELAY_MS = 200;
 /** この倍率以上で、フォーカス中の星の名前を出す。 */
 const LABEL_FOCUS_SCALE = 0.7;
 /** この倍率以上で、すべての星の名前と扇見出しを出す。 */
@@ -321,8 +316,7 @@ export const SkillTree = ({
   onOpenStage,
   revealDev = false,
   initialFocusStageId = null,
-  highlightStageIds = [],
-  spotlight = null,
+  activeInfo = null,
   handleRef,
   insetLeft = 0,
   renderDetail,
@@ -352,22 +346,48 @@ export const SkillTree = ({
     setScale(next);
     if (next < LABEL_FOCUS_SCALE) setFocusedId(null);
   }, []);
-  const activateStar = useCallback(
-    (placed: RadialNode): boolean => {
-      const shouldZoom = scale < FOCUS_SCALE - 0.02;
-      canvasRef.current?.focusOn(placed.x, placed.y, FOCUS_SCALE);
-      setFocusedId(placed.instanceId);
-      // 全体表示からの 1 手目は寄るだけ。詳細は寄ったあとのクリックで開く。
-      return !shouldZoom;
-    },
-    [scale],
-  );
+  /** 開いている詳細カード。`pinned` は押して開いたもので、マウスが離れても閉じない。 */
+  const [card, setCard] = useState<{ id: string; pinned: boolean } | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(hoverTimerRef.current), []);
+
+  /** マウスが星かカードに載った。固定中のカードは入れ替えない。 */
+  const hoverCard = useCallback((id: string) => {
+    clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      setCard((current) =>
+        current?.pinned || current?.id === id ? current : { id, pinned: false },
+      );
+    }, CARD_OPEN_DELAY_MS);
+  }, []);
+
+  /** マウスが星とカードから離れた。 */
+  const unhoverCard = useCallback(() => {
+    clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      setCard((current) => (current?.pinned ? current : null));
+    }, CARD_CLOSE_DELAY_MS);
+  }, []);
+
+  const closeCard = useCallback(() => {
+    clearTimeout(hoverTimerRef.current);
+    setCard(null);
+  }, []);
+
+  /** 押すと星へ寄せてカードを固定する。固定中にもう一度押すと閉じる。 */
+  const pinCard = (placed: RadialNode) => {
+    clearTimeout(hoverTimerRef.current);
+    if (card?.id === placed.instanceId && card.pinned) {
+      setCard(null);
+      return;
+    }
+    canvasRef.current?.focusOn(placed.x, placed.y, FOCUS_SCALE);
+    setFocusedId(placed.instanceId);
+    setCard({ id: placed.instanceId, pinned: true });
+  };
   /**
-   * スマホ: タップ 1 回で寄せながらシートを開く。
-   *
-   * デスクトップの「まず寄る」1 手目は、寄らないと星の名前が読めないための段。
-   * シートには名前も状態も出るので、スマホでは 1 手目から開いてよい (寄せるのは
-   * どの星を見ているかを盤面側でも示すため — シートは下端に出るので隠れない)。
+   * スマホ: タップ 1 回で寄せながらシートを開く。寄せるのはどの星を見ているかを
+   * 盤面側でも示すため — シートは下端に出るので隠れない。
    */
   const openSheet = useCallback((placed: RadialNode, anchor: HTMLButtonElement) => {
     sheetAnchorRef.current = anchor;
@@ -379,6 +399,9 @@ export const SkillTree = ({
   useEffect(() => {
     if (!isMobile) setSheetId(null);
   }, [isMobile]);
+  useEffect(() => {
+    if (isMobile) closeCard();
+  }, [isMobile, closeCard]);
   /** シートに出す星。教材の公開状況が変わって消えたら閉じる。 */
   const sheetNode = useMemo(
     () => (sheetId ? (layout.nodes.find((n) => n.instanceId === sheetId) ?? null) : null),
@@ -492,15 +515,6 @@ export const SkillTree = ({
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
   }, []);
-  /** 詳細の札を付ける星 (複製された星は最初に描いた器)。描いていない星なら出さない。 */
-  const spotlightStageId = spotlight?.stageId ?? null;
-  const spotlightPlaced = useMemo(
-    () =>
-      spotlightStageId
-        ? (layout.nodes.find((n) => n.node.id === spotlightStageId && drawsStar(n)) ?? null)
-        : null,
-    [layout, spotlightStageId, drawsStar],
-  );
   /** 線をルート色で塗るための、星 id → 扇キーの引き当て。 */
   const sectorOfId = useMemo(() => {
     const sectors = new Map<string, string>();
@@ -656,6 +670,7 @@ export const SkillTree = ({
               onSkillCheck={onSkillCheck}
               onOpenStage={onOpenStage}
               renderDetail={renderDetail}
+              activeInfo={activeInfo}
             />
           ) : null}
         </>
@@ -784,13 +799,8 @@ export const SkillTree = ({
           placed={placed}
           isActive={placed.node.id === activeStageId}
           queued={queuedStageIds.includes(placed.node.id)}
-          highlighted={highlightStageIds.includes(placed.node.id)}
           showLabel={
-            // 札を付けた星は札が名前を持つ。おすすめの星は寄らなくても名前を出す。
-            placed.instanceId !== spotlightPlaced?.instanceId &&
-            (showsAllLabels(scale) ||
-              highlightStageIds.includes(placed.node.id) ||
-              (placed.instanceId === focusedId && showsFocusLabel(scale)))
+            showsAllLabels(scale) || (placed.instanceId === focusedId && showsFocusLabel(scale))
           }
           celebration={celebrations.get(placed.node.id)}
           celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
@@ -799,7 +809,13 @@ export const SkillTree = ({
               ? (iconUrls.get(placed.node.id) ?? null)
               : null
           }
-          onActivate={() => activateStar(placed)}
+          cardOpen={card?.id === placed.instanceId}
+          cardPinned={card?.id === placed.instanceId && card.pinned}
+          onHoverCard={() => hoverCard(placed.instanceId)}
+          onUnhoverCard={unhoverCard}
+          onPinCard={() => pinCard(placed)}
+          onCloseCard={closeCard}
+          activeInfo={placed.node.id === activeStageId ? activeInfo : null}
           sheetMode={isMobile}
           sheetOpen={sheetId === placed.instanceId}
           onOpenSheet={(anchor) => openSheet(placed, anchor)}
@@ -813,82 +829,7 @@ export const SkillTree = ({
           renderDetail={renderDetail}
         />
       ))}
-
-      {spotlight && spotlightPlaced ? (
-        <StarSpotlight placed={spotlightPlaced} spotlight={spotlight} scale={scale} />
-      ) : null}
     </SkillTreeCanvas>
-  );
-};
-
-/**
- * いま取り組む星の詳細の札。星の真下に常に出る (ポップオーバーのように押して開く器ではない)。
- *
- * 盤面と一緒に動くよう transform の中に置き、島タイトルと同じく倍率の逆数で縮めて
- * 画面上の大きさを保つ (全体表示でも読める)。ボタンは `button` なので、押しても
- * 盤面のドラッグは始まらない。
- */
-const StarSpotlight = ({
-  placed,
-  spotlight,
-  scale,
-}: {
-  placed: RadialNode;
-  spotlight: TreeSpotlight;
-  scale: number;
-}) => {
-  const radius = placed.ring === 0 ? 22 : 16;
-  const title = labelOf(placed.node);
-  // フォーカス追従 (SkillTreeCanvas の onFocusCapture) 用の盤面座標。
-  const treeAt = { "data-tree-x": placed.x, "data-tree-y": placed.y };
-  return (
-    <section
-      aria-label={`${spotlight.eyebrow}: ${title}`}
-      className="tree-callout absolute z-20 w-[236px] rounded-xl border p-3 shadow-lg"
-      style={{
-        left: placed.x,
-        // おすすめの輪 (外へ 6px) の下から。
-        top: placed.y + radius + 10,
-        transform: `translate(-50%, 0) scale(${Math.min(8, 1 / Math.max(0.05, scale))})`,
-        transformOrigin: "50% 0",
-      }}
-    >
-      <div className="text-[10.5px] font-semibold tracking-wide text-brand-ink">
-        {spotlight.eyebrow}
-      </div>
-      <div className="mt-0.5 text-[13px] font-semibold leading-snug">{title}</div>
-      {spotlight.progress != null ? (
-        <div className="mt-2 flex items-center gap-2">
-          <Progress value={spotlight.progress} tone="brand" className="flex-1" />
-          <span className="text-[10.5px] tabular-nums text-ink-3">{spotlight.progress}%</span>
-        </div>
-      ) : null}
-      {spotlight.detail ? (
-        <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{spotlight.detail}</p>
-      ) : null}
-      {spotlight.action || spotlight.secondary ? (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {spotlight.action ? (
-            <Button
-              size="sm"
-              variant="accent"
-              disabled={spotlight.action.disabled}
-              onClick={spotlight.action.onClick}
-              {...treeAt}
-            >
-              {spotlight.action.icon === "book" ? <Book size={12} /> : <Play size={12} />}
-              {spotlight.action.label}
-            </Button>
-          ) : null}
-          {spotlight.secondary ? (
-            <Button size="sm" variant="ghost" onClick={spotlight.secondary.onClick} {...treeAt}>
-              <Book size={12} />
-              {spotlight.secondary.label}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
   );
 };
 
@@ -896,8 +837,6 @@ interface StarNodeProps {
   placed: RadialNode;
   isActive: boolean;
   queued: boolean;
-  /** ガイドが勧めている星 (「おすすめ」の輪)。 */
-  highlighted: boolean;
   /** 名前を星の下に出すか。全体表示では出さない。 */
   showLabel: boolean;
   /** 差分で検出した演出 (「解放」/「出現」)。undefined なら演出なし。 */
@@ -909,11 +848,20 @@ interface StarNodeProps {
    * ロックと霧は親が渡さない (ロックは南京錠のまま、霧はサーバが has_icon を伏せる)。
    */
   iconUrl: string | null;
-  /**
-   * クリック 1 手目 (sm 以上)。false なら寄るだけでポップオーバーは開かない
-   * (全体表示からのズームイン)。
-   */
-  onActivate: () => boolean;
+  /** この星の詳細カードが開いているか。 */
+  cardOpen: boolean;
+  /** 押して開いたカードか。マウスが離れても閉じない。 */
+  cardPinned: boolean;
+  /** マウスが星かカードに載った (タッチは含まない)。 */
+  onHoverCard: () => void;
+  /** マウスが星とカードから離れた。 */
+  onUnhoverCard: () => void;
+  /** 押した (マウス・タブレットのタップ・キーボードの Enter)。寄せてカードを固定する。 */
+  onPinCard: () => void;
+  /** カードを閉じる (カードの外・Esc・ボタンを押したあと)。 */
+  onCloseCard: () => void;
+  /** 進行中の星なら、カードに足す進捗と次のレッスン。それ以外は null。 */
+  activeInfo: ActiveStarInfo | null;
   /** スマホ幅か。true ならポップオーバーを持たず、盤面のボトムシートを開く。 */
   sheetMode: boolean;
   /** この星のシートが開いているか (`aria-expanded` に写す)。 */
@@ -935,12 +883,17 @@ const StarNode = ({
   placed,
   isActive,
   queued,
-  highlighted,
   showLabel,
   celebration,
   celebrationIndex,
   iconUrl,
-  onActivate,
+  cardOpen,
+  cardPinned,
+  onHoverCard,
+  onUnhoverCard,
+  onPinCard,
+  onCloseCard,
+  activeInfo,
   sheetMode,
   sheetOpen,
   onOpenSheet,
@@ -953,7 +906,6 @@ const StarNode = ({
   tag,
   renderDetail,
 }: StarNodeProps) => {
-  const [open, setOpen] = useState(false);
   const node = placed.node;
   const detail = describeStar({ node, isActive, queued, revealDev });
   const fog = node.visibility === "fog";
@@ -967,20 +919,13 @@ const StarNode = ({
   // 画像が届くまで (届かなければずっと) 状態グリフのまま。
 
   const act = (run: () => void) => {
-    setOpen(false);
+    onCloseCard();
     run();
   };
 
-  /*
-   * 器が入れ替わったら、開いたままのポップオーバーの状態を捨てる。
-   *
-   * 下の早期 return は Popover を描かなくするだけで `open` は残るので、幅が戻った
-   * とき (端末の回転で 640px を跨ぐ) に前の星の詳細が甦ってしまう。シートで別の星を
-   * 見たあとでも、甦るのは回転前に開いていた星のほう。
-   */
-  useEffect(() => {
-    if (sheetMode) setOpen(false);
-  }, [sheetMode]);
+  // 閉じたあとには読めないので、開いている間の「固定か」を控える。
+  const pinnedRef = useRef(false);
+  if (cardOpen) pinnedRef.current = cardPinned;
 
   // 見た目をぼかしている星は読み上げにも実名を流さない (Issue #272)。ぼかしが演出で
   // あっても、画面で読めない名前がスクリーンリーダーにだけ届くのは情報設計として
@@ -990,7 +935,7 @@ const StarNode = ({
   const star = (
     <button
       type="button"
-      aria-label={`${spokenLabel}（${detail.stateText}${tag ? `・${tag}` : ""}${highlighted ? "・おすすめ" : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+      aria-label={`${spokenLabel}（${detail.stateText}${tag ? `・${tag}` : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
       // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
       // (sm 以上では Radix が同じ属性を付けるため、こちらからは触らない —
       //  `undefined` でも鍵があると Slot の合成で上書きしてしまう。)
@@ -1026,8 +971,6 @@ const StarNode = ({
             <span className="tree-burst tree-burst-late" />
           </>
         ) : null}
-        {/* ガイドが勧めている星。状態の色を変えず、外側の輪だけで「ここ」と示す。 */}
-        {highlighted ? <span className="tree-next-ring" /> : null}
         <span
           className={cn(
             "tree-star grid place-items-center rounded-full border transition-colors",
@@ -1099,10 +1042,6 @@ const StarNode = ({
           <span className="tree-new-badge" aria-hidden="true">
             {celebration === "unlocked" ? "解放!" : "NEW"}
           </span>
-        ) : highlighted ? (
-          <span className="tree-new-badge tree-next-badge" aria-hidden="true">
-            おすすめ
-          </span>
         ) : null}
       </span>
     </button>
@@ -1115,18 +1054,45 @@ const StarNode = ({
 
   return (
     <Popover
-      open={open}
+      open={cardOpen}
       onOpenChange={(next) => {
-        if (next && !onActivate()) return;
-        setOpen(next);
+        // Esc とカードの外を押したとき。開くのはホバーと押下だけ。
+        if (!next) onCloseCard();
       }}
     >
-      <PopoverTrigger asChild>{star}</PopoverTrigger>
+      <PopoverTrigger
+        asChild
+        onClick={(event) => {
+          event.preventDefault();
+          onPinCard();
+        }}
+        onPointerEnter={(event) => {
+          if (event.pointerType !== "touch") onHoverCard();
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "touch") onUnhoverCard();
+        }}
+      >
+        {star}
+      </PopoverTrigger>
 
       <PopoverContent
         align="center"
         side="right"
         className={renderDetail ? "max-h-[min(70vh,32rem)] w-[300px] overflow-y-auto" : "w-[280px]"}
+        onPointerEnter={(event) => {
+          if (event.pointerType !== "touch") onHoverCard();
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "touch") onUnhoverCard();
+        }}
+        // ホバーで開いた間はフォーカスを動かさない。星へ戻すと盤面のフォーカス追従がパンしてしまう。
+        onOpenAutoFocus={(event) => {
+          if (!cardPinned) event.preventDefault();
+        }}
+        onCloseAutoFocus={(event) => {
+          if (!pinnedRef.current) event.preventDefault();
+        }}
       >
         <div className="text-[13px] font-semibold leading-snug">
           {detail.obscured ? (
@@ -1142,11 +1108,11 @@ const StarNode = ({
           )}
         </div>
         {renderDetail ? (
-          <div className="mt-2">{renderDetail(node, () => setOpen(false))}</div>
+          <div className="mt-2">{renderDetail(node, onCloseCard)}</div>
         ) : (
           <>
             <div className="mt-0.5 text-[11px] text-ink-3">{detail.stateText}</div>
-
+            {activeInfo ? <StarActiveInfo info={activeInfo} className="mt-2" /> : null}
             <StarBody detail={detail} size="sm" className="mt-2" />
 
             {hasStarActions(detail.actions) ? (
@@ -1161,6 +1127,7 @@ const StarNode = ({
                   onQueueStage={onQueueStage}
                   onSkillCheck={onSkillCheck}
                   onOpenStage={onOpenStage}
+                  openTask={activeInfo?.openTask}
                 />
               </div>
             ) : null}
@@ -1189,6 +1156,8 @@ interface StarSheetProps {
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   renderDetail?: (node: SkillMapStageNode, close: () => void) => ReactNode;
+  /** 進行中の星の詳細カードに足す情報。 */
+  activeInfo?: ActiveStarInfo | null;
 }
 
 /**
@@ -1211,6 +1180,7 @@ const StarSheet = ({
   onSkillCheck,
   onOpenStage,
   renderDetail,
+  activeInfo = null,
 }: StarSheetProps) => {
   const lastRef = useRef<RadialNode | null>(null);
   /**
@@ -1231,9 +1201,10 @@ const StarSheet = ({
   if (!shown || (!placed && handedOffRef.current)) return null;
 
   const node = shown.node;
+  const isActive = node.id === activeStageId;
   const detail = describeStar({
     node,
-    isActive: node.id === activeStageId,
+    isActive,
     queued: queuedStageIds.includes(node.id),
     revealDev,
   });
@@ -1304,7 +1275,12 @@ const StarSheet = ({
           <div className="overflow-y-auto px-4 pb-4">{renderDetail(node, onClose)}</div>
         ) : (
           <>
-            <StarBody detail={detail} size="md" className="overflow-y-auto px-4 py-3" />
+            <div className="overflow-y-auto px-4 py-3">
+              {isActive && activeInfo ? (
+                <StarActiveInfo info={activeInfo} className="mb-3" />
+              ) : null}
+              <StarBody detail={detail} size="md" />
+            </div>
 
             {hasStarActions(detail.actions) ? (
               // 器の既定は下から積む (`flex-col-reverse`) が、ここは読む順 = 並ぶ順にする。
@@ -1319,6 +1295,7 @@ const StarSheet = ({
                   onQueueStage={onQueueStage}
                   onSkillCheck={handOffToSkillCheck}
                   onOpenStage={onOpenStage}
+                  openTask={isActive ? activeInfo?.openTask : undefined}
                 />
               </DrawerFooter>
             ) : null}
@@ -1328,6 +1305,17 @@ const StarSheet = ({
     </Drawer>
   );
 };
+
+/** 進行中の星の進捗と次のレッスン。ポップオーバーとドロワーで共有する。 */
+const StarActiveInfo = ({ info, className }: { info: ActiveStarInfo; className?: string }) => (
+  <div className={className}>
+    <div className="flex items-center gap-2">
+      <Progress value={info.progress} tone="brand" className="flex-1" />
+      <span className="text-[10.5px] tabular-nums text-ink-3">{info.progress}%</span>
+    </div>
+    <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{info.detail}</p>
+  </div>
+);
 
 /** 詳細の本文 (予告 / 解放条件 / 到達説明)。器を跨いで同じ文面を出す。 */
 const StarBody = ({
@@ -1379,6 +1367,8 @@ interface StarActionsProps {
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
+  /** 受講者の番の課題が残っているとき、「続きから」の代わりに出す。 */
+  openTask?: () => void;
 }
 
 /**
@@ -1396,14 +1386,19 @@ const StarActions = ({
   onQueueStage,
   onSkillCheck,
   onOpenStage,
+  openTask,
 }: StarActionsProps) => {
   const { skillCheck, resume, start, queue, openStage, clearedNote } = detail.actions;
   return (
     <>
       {resume ? (
-        <Button size={size} variant="accent" onClick={() => onAct(() => onResumeStage(stageId))}>
+        <Button
+          size={size}
+          variant="accent"
+          onClick={() => onAct(openTask ?? (() => onResumeStage(stageId)))}
+        >
           <Play size={12} />
-          続きから
+          {openTask ? "課題に取り組む" : "続きから"}
         </Button>
       ) : null}
 
