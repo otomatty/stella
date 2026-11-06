@@ -146,7 +146,7 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
             </p>
             <div className="flex flex-wrap gap-2">
               {node.audience === "granted" ? (
-                <Button onClick={() => setGrantOpen(true)}>受講者を割り当てる</Button>
+                <Button onClick={() => setGrantOpen(true)}>ユーザーを割り当てる</Button>
               ) : null}
               {node.status === "published" ? (
                 <StaffEnrollButton stageId={stageId} onOpenAsLearner={shell.openStageAsLearner} />
