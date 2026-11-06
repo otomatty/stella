@@ -8,6 +8,8 @@
  * レイアウトが置かなかった星も、カードの一覧へ戻す。
  */
 
+import { SKILL_MAP_ISLAND_CATEGORIES, SKILL_MAP_ISLANDS } from "@stella/shared/skill-map/islands";
+
 import type { StaffSkillMapStageNode } from "@/lib/skill-map-api";
 import { layoutRadialSkillTree } from "@/components/learner/tree/radial-layout";
 
@@ -195,4 +197,113 @@ export function planStaffStages(stages: readonly StaffSkillMapStageNode[]): Staf
     .map((stage) => stripParents(stage, boardIds));
   const offBoard = stages.filter((stage) => !boardIds.has(stage.id));
   return { board, offBoard };
+}
+
+export interface StaffIslandEntry {
+  key: string;
+  count: number;
+  stages: StaffSkillMapStageNode[];
+  visibility: string;
+  prerequisite: { id: string; title: string; routeKey: string } | null;
+  next: { key: string; visibility: string }[];
+  allExtra: boolean;
+}
+
+/** 盤面の目次。表示条件と、星を開くための前提は別々に示す。 */
+export function staffMapContents(
+  board: readonly StaffSkillMapStageNode[],
+  stages: readonly StaffSkillMapStageNode[],
+): {
+  mainland: { title: "開発スキル"; count: number; routes: { key: string; count: number }[] };
+  islands: StaffIslandEntry[];
+} {
+  const byId = new Map(board.map((stage) => [stage.id, stage]));
+  const bySlug = new Map(stages.map((stage) => [stage.slug, stage]));
+  const entryId = entryStageId(board);
+  const routeKey = (stage: StaffSkillMapStageNode) => stage.category ?? stage.theme ?? "";
+  const groups = new Map<string, StaffSkillMapStageNode[]>();
+  for (const stage of board) {
+    const key = routeKey(stage);
+    const group = groups.get(key) ?? [];
+    group.push(stage);
+    groups.set(key, group);
+  }
+  const visibilityOf = (key: string): string => {
+    const requires = SKILL_MAP_ISLANDS.find((island) => island.category === key)?.requires ?? [];
+    if (requires.length === 0) return "割り当てのみ";
+    const names = requires.map((slug) => {
+      const stage = bySlug.get(slug);
+      return stage?.id === entryId || slug === "dev-env-basics" ? "入口" : (stage?.title ?? slug);
+    });
+    return `${names.join("、")} クリア後`;
+  };
+  const depth = (stage: StaffSkillMapStageNode): number => {
+    const seen = new Set([stage.id]);
+    let current = stage;
+    let result = 0;
+    while (current.parent_id) {
+      const parent = byId.get(current.parent_id);
+      if (!parent || seen.has(parent.id)) break;
+      seen.add(parent.id);
+      result += 1;
+      current = parent;
+    }
+    return result;
+  };
+  const preferredRoutes = ["基礎", "フロントエンド", "バックエンド", "フルスタック"];
+  const routes = [...groups]
+    .filter(([key]) => !SKILL_MAP_ISLAND_CATEGORIES.has(key))
+    .map(([key, group]) => ({ key, count: group.length }))
+    .sort((a, b) => {
+      const rank = (key: string) => {
+        const index = preferredRoutes.indexOf(key);
+        return index < 0 ? preferredRoutes.length : index;
+      };
+      return rank(a.key) - rank(b.key) || a.key.localeCompare(b.key, "ja");
+    });
+  const islands = [...groups]
+    .filter(([key]) => SKILL_MAP_ISLAND_CATEGORIES.has(key))
+    .sort(([a], [b]) => a.localeCompare(b, "ja"))
+    .map(([key, group]): StaffIslandEntry => {
+      const ordered = [...group].sort(
+        (a, b) =>
+          depth(a) - depth(b) ||
+          (a.title ?? a.slug ?? "").localeCompare(b.title ?? b.slug ?? "", "ja"),
+      );
+      const ids = new Set(group.map((stage) => stage.id));
+      const root = ordered.find((stage) => !stage.parent_id || !ids.has(stage.parent_id));
+      const parent = root?.parent_id ? byId.get(root.parent_id) : undefined;
+      const next = [...groups]
+        .filter(
+          ([otherKey, other]) =>
+            otherKey !== key &&
+            SKILL_MAP_ISLAND_CATEGORIES.has(otherKey) &&
+            other.some((stage) => stage.parent_id !== undefined && ids.has(stage.parent_id)),
+        )
+        .map(([otherKey]) => ({ key: otherKey, visibility: visibilityOf(otherKey) }))
+        .sort((a, b) => a.key.localeCompare(b.key, "ja"));
+      return {
+        key,
+        count: group.length,
+        stages: ordered,
+        visibility: visibilityOf(key),
+        prerequisite: parent
+          ? {
+              id: parent.id,
+              title: parent.title ?? parent.slug ?? parent.id,
+              routeKey: routeKey(parent),
+            }
+          : null,
+        next,
+        allExtra: group.every((stage) => stage.audience === "granted"),
+      };
+    });
+  return {
+    mainland: {
+      title: "開発スキル",
+      count: routes.reduce((sum, route) => sum + route.count, 0),
+      routes,
+    },
+    islands,
+  };
 }

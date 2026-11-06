@@ -27,7 +27,7 @@
  * 星は `<button>` にして、キーボードでも到達できるようにする (SVG の図形に
  * `tabindex` を付けるより素直で、Popover のアンカーにもそのまま使える)。前提の線
  * だけを背後の SVG に敷き、座標は `radial-layout.ts` の決定的な計算に任せる。
- * 島の名前は星団の上のタイトルとジャンプチップ・端の矢印で示す (円の背景は描かない)。
+ * 島の名前は星団の上のタイトルとジャンプチップ・端の矢印で示す。島の範囲は角の丸い枠。
  *
  * ## 詳細の器は幅で入れ替える
  *
@@ -60,7 +60,7 @@
  * すべて止まる。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -85,10 +85,17 @@ import { useSkillTreeCelebration, type CelebrationKind } from "./celebration";
 import { showsStar } from "./fog-display";
 import { iconFetchKey } from "./icon-fetch-key";
 import { offscreenMarkers, type ViewState } from "./offscreen";
-import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
+import {
+  layoutRadialSkillTree,
+  type RadialBounds,
+  type RadialIsland,
+  type RadialNode,
+} from "./radial-layout";
+import { ROUTE_ACCENTS, routeAccentOf } from "./route-accents";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
-import { describeStar, hasStarActions, type StarDetail } from "./star-detail";
+import { describeStar, hasStarActions, labelOf, type StarDetail } from "./star-detail";
+import { estimateStarLabelWidth, placeStarLabels, type StarLabelSide } from "./star-labels";
 
 /**
  * 進行中の星の詳細カードに足す情報。盤面は受講中のレッスンを知らないので、ホームが渡す。
@@ -106,6 +113,8 @@ export interface ActiveStarInfo {
 export interface SkillTreeHandle {
   /** その星へ寄せて名前を出す。盤面に描いていない星なら false。 */
   focusStage: (stageId: string) => boolean;
+  /** 本土・カテゴリ・島へ寄せる。対象が無ければ false。 */
+  focusRegion: (key: string) => boolean;
 }
 
 interface SkillTreeProps {
@@ -156,40 +165,29 @@ interface SkillTreeProps {
    * 受講者の閲覧スナップショットも読まない・書かない。
    */
   celebrate?: boolean;
+  /**
+   * 島タイトルの 2 行目に ` · ` で足す文言。null か空なら「n ステージ」だけ。
+   */
+  islandCaption?: (key: string) => string | null;
+  /** 本土の見出し。既定は「開発スキル」。 */
+  mainlandTitle?: string;
+  /** 右上の島チップを出す。既定は出す。false のときはルート名が避ける障害物からも外す。 */
+  showIslandChips?: boolean;
+  /**
+   * 最初に描けたとき 1 回だけ全体表示にする。
+   * true のときは `initialFocusStageId` へ寄せない。
+   */
+  initialFit?: boolean;
+  selectedIslandKey?: string | null;
+  onSelectIsland?: (key: string) => void;
   className?: string;
 }
 
-/**
- * ルート (本土のカテゴリ) と島ごとのメイン色 — roadmap.sh を参考にした構成の色分け。
- *
- * 扇 / 島のキーは原則カテゴリ (霧の星にも入る)。カテゴリを持たない星はテーマ名に
- * 落ちるので、両方を載せる (`packages/content` の stage.json の category /
- * theme と対で保つ)。値は `rgb(r g b / a)` に埋め込む RGB 三つ組。ここに無い扇
- * (基礎) は従来の星色のまま — ルートや島が増えたらここに 1 行足す。
- */
-const ROUTE_ACCENTS = new Map<string, string>([
-  ["フロントエンド", "56 189 248"], // sky-400
-  ["Web の見た目と動き", "56 189 248"],
-  ["バックエンド", "52 211 153"], // emerald-400
-  ["サーバーとデータの基盤", "52 211 153"],
-  ["フルスタック", "251 113 133"], // rose-400
-  ["Web アプリを作り、届ける力", "251 113 133"],
-  // 島 (本土から離れた星団)。キーは島のカテゴリ = 島タイトル。
-  ["AWS資格", "251 191 36"], // amber-400
-  ["資格で示すクラウド力", "251 191 36"],
-  ["情報処理資格", "167 139 250"], // violet-400
-  ["資格で示す基礎力", "167 139 250"],
-  ["Anthropic認定資格", "232 121 249"], // fuchsia-400
-  ["資格で示すAI開発力", "232 121 249"],
-  ["DevOps", "251 146 60"], // orange-400
-  ["開発と運用をつなぐ", "251 146 60"],
-  ["Python", "45 212 191"], // teal-400
-  ["Python とテストの力", "45 212 191"],
-  ["C#", "129 140 248"], // indigo-400
-]);
+/** 島の枠とタイトルで、ルート色が無いときに使う色 (slate-300)。 */
+const ISLAND_NEUTRAL = "203 213 225";
 
-function routeAccentOf(sector: string): string | undefined {
-  return ROUTE_ACCENTS.get(sector);
+function islandAccentOf(key: string): string {
+  return ROUTE_ACCENTS.get(key) ?? ISLAND_NEUTRAL;
 }
 
 /** ルート色を持つ扇の星に渡す CSS 変数 (index.css の tree-star-* が拾う)。 */
@@ -201,6 +199,117 @@ function routeStyleOf(accent: string | undefined): CSSProperties {
     "--route-glow": `rgb(${accent} / 0.28)`,
     "--route-glow-strong": `rgb(${accent} / 0.6)`,
   } as CSSProperties;
+}
+
+/** 島の星の中心の外接を、上・左・右 40px、下 56px (星の名前) 広げた枠。 */
+function islandFrameOf(island: RadialIsland): RadialBounds {
+  return {
+    minX: island.bounds.minX - 40,
+    maxX: island.bounds.maxX + 40,
+    minY: island.bounds.minY - 40,
+    maxY: island.bounds.maxY + 56,
+  };
+}
+
+/**
+ * 全体表示とパンの可動域。星の外接を全方向 70px、上だけ 110px
+ * (島タイトルと本土の見出し) 広げ、盤面の外には出さない。
+ */
+function paddedContentBounds(bounds: RadialBounds, width: number, height: number): RadialBounds {
+  const clampX = (value: number) => Math.min(Math.max(0, value), Math.max(0, width));
+  const clampY = (value: number) => Math.min(Math.max(0, value), Math.max(0, height));
+  return {
+    minX: clampX(bounds.minX - 70),
+    maxX: clampX(bounds.maxX + 70),
+    minY: clampY(bounds.minY - 110),
+    maxY: clampY(bounds.maxY + 70),
+  };
+}
+
+/**
+ * 画面上の星の直径が下限を下回らない拡大率。
+ * 入口 (h-11 = 44px) は 30px、ほか (h-8 = 32px) は 24px。
+ */
+function starGrowOf(isCenter: boolean, scale: number): number {
+  const s = scale > 0 ? scale : 1;
+  return isCenter ? Math.max(1, 30 / (44 * s)) : Math.max(1, 24 / (32 * s));
+}
+
+function stageCountLine(count: number, extra: string | null | undefined): string {
+  if (typeof extra === "string" && extra.length > 0) return `${count} ステージ · ${extra}`;
+  return `${count} ステージ`;
+}
+
+/** 地名ラベルの逆スケール。画面上の大きさを倍率によらず保つ。 */
+function placeScaleOf(scale: number): number {
+  return Math.min(8, 1 / Math.max(0.05, scale));
+}
+
+/** 下辺中央を基準に、地名の見出しと説明を囲む画面 px の矩形。 */
+function headingObstacle(title: string, detail: string | null, x: number, y: number) {
+  const estimate = (text: string) =>
+    Array.from(text).reduce((sum, char) => sum + (char.charCodeAt(0) <= 0x7f ? 7 : 11), 0);
+  const w = Math.max(estimate(title), detail === null ? 0 : estimate(detail)) + 16;
+  const h = detail === null ? 20 : 34;
+  return { x: x - w / 2, y: y - h, w, h };
+}
+
+function PlaceHeading({
+  title,
+  detail,
+  left,
+  top,
+  scale,
+  titleClassName,
+  titleColor,
+  selected,
+  onSelect,
+}: {
+  title: string;
+  detail: string;
+  left: number;
+  top: number;
+  scale: number;
+  titleClassName?: string;
+  titleColor?: string;
+  selected?: boolean;
+  onSelect?: () => void;
+}) {
+  const Heading = onSelect ? "button" : "div";
+  return (
+    <Heading
+      {...(onSelect
+        ? {
+            type: "button" as const,
+            "aria-label": `${title}の詳細を開く`,
+            "aria-pressed": selected,
+            onClick: onSelect,
+          }
+        : {})}
+      className={cn("absolute text-center", !onSelect && "pointer-events-none")}
+      style={{
+        left,
+        top,
+        transform: `translate(-50%, -100%) scale(${placeScaleOf(scale)})`,
+        transformOrigin: "50% 100%",
+      }}
+    >
+      <span
+        className={cn(
+          "block whitespace-nowrap text-[11px] font-bold tracking-wide",
+          titleClassName,
+        )}
+        style={titleColor ? { color: titleColor } : undefined}
+      >
+        {title}
+      </span>
+      {scale >= LABEL_OVERVIEW_SCALE ? (
+        <span className="tree-place-caption block whitespace-nowrap text-[9px] font-medium leading-tight">
+          {detail}
+        </span>
+      ) : null}
+    </Heading>
+  );
 }
 
 /**
@@ -259,8 +368,11 @@ const CARD_OPEN_DELAY_MS = 120;
 const CARD_CLOSE_DELAY_MS = 200;
 /** この倍率以上で、フォーカス中の星の名前を出す。 */
 const LABEL_FOCUS_SCALE = 0.7;
-/** この倍率以上で、すべての星の名前と扇見出しを出す。 */
+/** この倍率以上で、すべての星の名前を出す。 */
 const LABEL_ALL_SCALE = 1.2;
+const LABEL_OVERVIEW_SCALE = 0.45;
+/** この倍率以上で、見えているルート名を出す。星の名前の出し分けとは別。 */
+const SECTOR_LABEL_MIN_SCALE = 0.35;
 
 function showsAllLabels(scale: number): boolean {
   return scale >= LABEL_ALL_SCALE;
@@ -323,10 +435,20 @@ export const SkillTree = ({
   loadIcons = getSkillMapIcons,
   starTag,
   celebrate = true,
+  islandCaption,
+  mainlandTitle = "開発スキル",
+  showIslandChips = true,
+  initialFit = false,
+  selectedIslandKey = null,
+  onSelectIsland,
   className,
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
   const layout = useMemo(() => layoutRadialSkillTree(nodes), [nodes]);
+  const contentBounds = useMemo(
+    () => paddedContentBounds(layout.bounds, layout.width, layout.height),
+    [layout],
+  );
   const iconUrls = useStageIconUrls(iconFetchKey(currentUserId, nodes), loadIcons);
   // celebrate が false のときは userId を渡さない。フックはスナップショットを触らない。
   const celebrations = useSkillTreeCelebration(celebrate ? currentUserId : null, nodes);
@@ -420,14 +542,22 @@ export const SkillTree = ({
     (placed: RadialNode) => showsStar(placed.node.visibility, revealDev),
     [revealDev],
   );
+  const drawnStars = useMemo(() => layout.nodes.filter(drawsStar), [layout, drawsStar]);
+  const labelScale = Math.max(0.05, Math.round(scale / 0.05) * 0.05);
   const starRadius = useMemo(() => {
     const radii = new Map<string, number>();
     for (const placed of layout.nodes) {
       // 幽霊ノードには核が無いので、線をその座標ちょうどで終わらせる。
-      radii.set(placed.instanceId, !drawsStar(placed) ? 0 : placed.ring === 0 ? 22 : 16);
+      // 描く星は核の拡大率を掛け、線を画面上の縁で止める。
+      if (!drawsStar(placed)) {
+        radii.set(placed.instanceId, 0);
+        continue;
+      }
+      const base = placed.ring === 0 ? 22 : 16;
+      radii.set(placed.instanceId, base * starGrowOf(placed.ring === 0, scale));
     }
     return radii;
-  }, [layout, drawsStar]);
+  }, [layout, drawsStar, scale]);
   /** 幽霊ノードへ伸びる線 (= フェードさせる線) の端点。 */
   const ghostIds = useMemo(() => {
     const ids = new Set<string>();
@@ -446,6 +576,9 @@ export const SkillTree = ({
    *
    * 矢印は名前が全部出る倍率 (`showsAllLabels`) では消す — 寄って読んでいるときに
    * 縁の矢印と名前札が重なり、盤面の外の案内より目の前の星が優先だから。
+   *
+   * 判定は中心の点ではなく範囲。本土は `mainlandBounds`、島は枠。中心だけが
+   * ガイドの陰に入っても、範囲が見えていれば矢印は出さない。
    */
   /**
    * 星が 1 つも描かれない島は、タイトルもジャンプ先も出さない。
@@ -460,12 +593,90 @@ export const SkillTree = ({
       ),
     [layout, drawsStar],
   );
+  const drawnCounts = useMemo(() => {
+    const bySector = new Map<string, number>();
+    const islandKeys = new Set(layout.islands.map((island) => island.key));
+    let mainland = 0;
+    for (const placed of layout.nodes) {
+      if (!drawsStar(placed)) continue;
+      bySector.set(placed.sector, (bySector.get(placed.sector) ?? 0) + 1);
+      if (!islandKeys.has(placed.sector)) mainland += 1;
+    }
+    return { bySector, mainland };
+  }, [layout, drawsStar]);
+  const islandFrames = useMemo(
+    () =>
+      visibleIslands.map((island) => ({
+        island,
+        frame: islandFrameOf(island),
+        count: drawnCounts.bySector.get(island.key) ?? 0,
+      })),
+    [visibleIslands, drawnCounts],
+  );
+  const showPlaceDetails = scale >= LABEL_OVERVIEW_SCALE;
+  // 見出しの文言・星の数・説明行の表示が変わったら、札とルート名の両方を配置し直す。
+  const placeHeadings = useMemo(
+    () => [
+      ...(layout.mainlandBounds && drawnCounts.mainland > 0
+        ? [
+            {
+              title: mainlandTitle,
+              detail: showPlaceDetails ? stageCountLine(drawnCounts.mainland, null) : null,
+              x: (layout.mainlandBounds.minX + layout.mainlandBounds.maxX) / 2,
+              y: layout.mainlandBounds.minY - 48,
+            },
+          ]
+        : []),
+      ...islandFrames.map(({ island, frame, count }) => ({
+        title: island.key,
+        detail: showPlaceDetails ? stageCountLine(count, islandCaption?.(island.key)) : null,
+        x: (frame.minX + frame.maxX) / 2,
+        y: frame.minY,
+      })),
+    ],
+    [
+      layout.mainlandBounds,
+      drawnCounts.mainland,
+      mainlandTitle,
+      islandFrames,
+      islandCaption,
+      showPlaceDetails,
+    ],
+  );
+  const labelSides = useMemo(
+    () =>
+      placeStarLabels(
+        drawnStars.map((placed) => ({
+          id: placed.instanceId,
+          x: placed.x,
+          y: placed.y,
+          r: (placed.ring === 0 ? 22 : 16) * starGrowOf(placed.ring === 0, labelScale) * labelScale,
+          label: labelOf(placed.node),
+          extraHeight: starTag?.(placed.node) ? 12 : 0,
+        })),
+        labelScale,
+        placeHeadings.map(({ title, detail, x, y }) =>
+          headingObstacle(title, detail, x * labelScale, y * labelScale),
+        ),
+      ),
+    [drawnStars, labelScale, starTag, placeHeadings],
+  );
   const jumpTargets = useMemo(
     () => [
-      { key: "開発スキル", x: layout.centerX, y: layout.centerY },
-      ...visibleIslands.map((island) => ({ key: island.key, x: island.cx, y: island.cy })),
+      {
+        key: "開発スキル",
+        x: layout.centerX,
+        y: layout.centerY,
+        ...(layout.mainlandBounds ? { rect: layout.mainlandBounds } : {}),
+      },
+      ...islandFrames.map(({ island, frame }) => ({
+        key: island.key,
+        x: island.cx,
+        y: island.cy,
+        rect: frame,
+      })),
     ],
-    [layout, visibleIslands],
+    [layout, islandFrames],
   );
   /**
    * 見えている範囲 = 浮いたカードの右側。画面端の矢印とルート名はこの範囲で計算し、
@@ -489,28 +700,56 @@ export const SkillTree = ({
   );
   /**
    * ルート名は盤面外周の固定点ではなく、いま見えている星のそばへ出す
-   * (`sectorLabelsInView`)。島の星は島タイトルが担うので本土の扇だけ渡す。
-   * 島チップ / ズームボタンは障害物として避け、オーバーレイに載せるので倍率で縮小しない。
+   * (`sectorLabelsInView`)。本土の星をすべて障害物にし、扇だけに名前を出す。
+   * 出している島チップとズームボタンは障害物として避け、オーバーレイに載せるので倍率で縮小しない。
+   * 星の名前 (`showsAllLabels`) より低い倍率から出す。
    */
   const sectorLabels = useMemo(() => {
-    if (!visibleView || !showsAllLabels(visibleView.scale)) return [];
+    if (!visibleView || visibleView.scale < SECTOR_LABEL_MIN_SCALE) return [];
     const mainland = new Set(layout.sectors.map((s) => s.key));
+    const islandKeys = new Set(layout.islands.map((island) => island.key));
+    const parentIds = new Map(layout.edges.map((edge) => [edge.toId, edge.fromId]));
     const stars = layout.nodes
-      .filter((n) => mainland.has(n.sector) && drawsStar(n))
+      .filter((n) => !islandKeys.has(n.sector) && drawsStar(n))
       .map((n) => ({
+        id: n.instanceId,
+        parentId: parentIds.get(n.instanceId),
         sector: n.sector,
         x: n.x,
         y: n.y,
         radius: n.ring === 0 ? 22 : 16,
       }));
-    // 右上: ズームボタン (縦 3 つ) と、その左の島チップ。
-    const chipsW = visibleIslands.length > 0 ? Math.min(460, visibleView.width - 72) : 0;
-    const chipsH = visibleIslands.length > 0 ? 56 : 0;
-    return sectorLabelsInView(stars, visibleView, [
-      { left: Math.max(0, visibleView.width - 52 - chipsW), top: 8, width: chipsW, height: chipsH },
+    // 右上: ズームボタン (縦 3 つ) と、出すときだけその左の島チップ。
+    const chipsW =
+      showIslandChips && visibleIslands.length > 0 ? Math.min(460, visibleView.width - 72) : 0;
+    const obstacles = [
+      ...(showIslandChips
+        ? [
+            {
+              left: Math.max(0, visibleView.width - 52 - chipsW),
+              top: 8,
+              width: chipsW,
+              height: visibleIslands.length > 0 ? 56 : 0,
+            },
+          ]
+        : []),
       { left: Math.max(0, visibleView.width - 52), top: 8, width: 44, height: 120 },
-    ]).map((label) => ({ ...label, left: label.left + viewInset }));
-  }, [layout, visibleView, viewInset, drawsStar, visibleIslands]);
+    ];
+    // カードの右側を原点とする画面座標へ直す。
+    for (const { title, detail, x, y } of placeHeadings) {
+      const rect = headingObstacle(
+        title,
+        detail,
+        x * visibleView.scale + visibleView.x,
+        y * visibleView.scale + visibleView.y,
+      );
+      obstacles.push({ left: rect.x, top: rect.y, width: rect.w, height: rect.h });
+    }
+    return sectorLabelsInView(stars, visibleView, obstacles, mainland).map((label) => ({
+      ...label,
+      left: label.left + viewInset,
+    }));
+  }, [layout, visibleView, viewInset, drawsStar, visibleIslands, showIslandChips, placeHeadings]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
@@ -540,25 +779,95 @@ export const SkillTree = ({
     },
     [layout, drawsStar],
   );
+  const focusRegion = useCallback(
+    (key: string): boolean => {
+      let bounds: RadialBounds | null = null;
+      if (key === mainlandTitle && drawnCounts.mainland > 0) bounds = layout.mainlandBounds;
+      else if (
+        drawnStars.some(
+          (star) =>
+            star.sector === key && !layout.islands.some((island) => island.key === star.sector),
+        )
+      ) {
+        const stars = drawnStars.filter((star) => star.sector === key);
+        if (stars.length > 0)
+          bounds = {
+            minX: Math.min(...stars.map((star) => star.x)) - 60,
+            maxX: Math.max(...stars.map((star) => star.x)) + 60,
+            minY: Math.min(...stars.map((star) => star.y)) - 60,
+            maxY: Math.max(...stars.map((star) => star.y)) + 60,
+          };
+      } else bounds = islandFrames.find(({ island }) => island.key === key)?.frame ?? null;
+      if (!bounds || !visibleView || !canvasRef.current) return false;
+      const targetScale = Math.max(
+        0.6,
+        Math.min(
+          1.25,
+          visibleView.width / Math.max(1, bounds.maxX - bounds.minX),
+          visibleView.height / Math.max(1, bounds.maxY - bounds.minY),
+        ),
+      );
+      // focusOn は拡大だけなので、縮小が必要なら先に全体表示へ戻す。
+      // 同じ更新内で続けて寄せ、途中の全体表示は描画しない。
+      if (visibleView.scale > targetScale && !canvasRef.current.fit()) return false;
+      canvasRef.current.focusOn(
+        (bounds.minX + bounds.maxX) / 2,
+        (bounds.minY + bounds.maxY) / 2,
+        targetScale,
+      );
+      setFocusedId(null);
+      return true;
+    },
+    [mainlandTitle, drawnCounts.mainland, layout, drawnStars, islandFrames, visibleView],
+  );
+  const selectedBridge = useMemo(() => {
+    const island = visibleIslands.find((island) => island.key === selectedIslandKey);
+    const anchor = drawnStars.find((star) => star.instanceId === island?.anchorId);
+    if (!island || !anchor) return null;
+    const root = drawnStars.find(
+      (star) => star.sector === island.key && star.x === island.cx && star.y === island.cy,
+    );
+    return {
+      island,
+      anchor,
+      ends: edgeEnds(
+        anchor.x,
+        anchor.y,
+        island.cx,
+        island.cy,
+        starRadius.get(anchor.instanceId) ?? 16,
+        root ? (starRadius.get(root.instanceId) ?? 16) : 0,
+      ),
+    };
+  }, [visibleIslands, selectedIslandKey, drawnStars, starRadius]);
   useEffect(() => {
     if (!handleRef) return;
-    handleRef.current = { focusStage: (stageId) => focusStage(stageId) };
+    handleRef.current = { focusStage: (stageId) => focusStage(stageId), focusRegion };
     return () => {
       handleRef.current = null;
     };
-  }, [handleRef, focusStage]);
+  }, [handleRef, focusStage, focusRegion]);
 
   /**
    * 開いた直後は現在地の星へ寄せる (倍率は初期視点のまま)。
+   * `initialFit` のときは全体表示を 1 回だけ行い、現在地へは寄せない。
    *
    * 1 回だけ — 星を始めたあとの取り直しや、FAB での段の切り替えのたびに視点が
-   * 現在地へ引き戻されると、眺めている最中の場所を失う。
+   * 現在地へ引き戻されると、眺めている最中の場所を失う。箱の大きさが 0 のあいだは
+   * 全体表示が何もしないので、視界が取れてからやり直す。
    */
-  const initialFocusDone = useRef(false);
-  useEffect(() => {
-    if (initialFocusDone.current || !initialFocusStageId) return;
-    if (focusStage(initialFocusStageId, 1)) initialFocusDone.current = true;
-  }, [initialFocusStageId, focusStage]);
+  const initialViewDone = useRef(false);
+  useLayoutEffect(() => {
+    if (initialViewDone.current) return;
+    if (initialFit) {
+      // 箱の大きさが 0 のあいだは fit が何もしない。視界が届いてからやり直す。
+      if (view && (view.width <= 0 || view.height <= 0)) return;
+      if (canvasRef.current?.fit()) initialViewDone.current = true;
+      return;
+    }
+    if (!initialFocusStageId) return;
+    if (focusStage(initialFocusStageId, 1)) initialViewDone.current = true;
+  }, [initialFit, initialFocusStageId, focusStage, view]);
 
   if (nodes.length === 0) {
     return (
@@ -569,7 +878,7 @@ export const SkillTree = ({
   }
 
   const chips =
-    visibleIslands.length > 0 ? (
+    showIslandChips && visibleIslands.length > 0 ? (
       <nav className="flex flex-wrap justify-end gap-1" aria-label="島へ移動">
         {jumpTargets.map((target) => {
           const accent = routeAccentOf(target.key);
@@ -597,7 +906,9 @@ export const SkillTree = ({
     <SkillTreeCanvas
       worldWidth={layout.width}
       worldHeight={layout.height}
-      contentBounds={layout.bounds}
+      homeX={layout.centerX}
+      homeY={layout.centerY}
+      contentBounds={contentBounds}
       handleRef={canvasRef}
       onScaleChange={handleScaleChange}
       onViewChange={setView}
@@ -676,6 +987,31 @@ export const SkillTree = ({
         </>
       }
     >
+      {islandFrames.map(({ island, frame }) => {
+        const width = frame.maxX - frame.minX;
+        const height = frame.maxY - frame.minY;
+        const accent = islandAccentOf(island.key);
+        return (
+          <div
+            key={`island-frame-${island.key}`}
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{
+              left: frame.minX,
+              top: frame.minY,
+              width,
+              height,
+              boxSizing: "border-box",
+              borderRadius: Math.min(width, height) / 2,
+              background: `rgb(${accent} / ${selectedIslandKey === island.key ? 0.13 : 0.07})`,
+              border:
+                selectedIslandKey === island.key
+                  ? `1.5px solid rgb(${accent} / 0.75)`
+                  : `1px dashed rgb(${accent} / 0.32)`,
+            }}
+          />
+        );
+      })}
       <svg
         className="absolute inset-0"
         width={layout.width}
@@ -705,6 +1041,15 @@ export const SkillTree = ({
             </feMerge>
           </filter>
         </defs>
+        {selectedBridge ? (
+          <line
+            {...selectedBridge.ends}
+            stroke={`rgb(${islandAccentOf(selectedBridge.island.key)} / 0.85)`}
+            strokeWidth={2}
+            strokeDasharray="2 5"
+            strokeLinecap="round"
+          />
+        ) : null}
         {layout.edges.map((edge) => {
           const ends = edgeEnds(
             edge.x1,
@@ -770,38 +1115,59 @@ export const SkillTree = ({
         })}
       </svg>
 
-      {/* 島タイトル。ズーム段に関わらず常時出す — 全体表示 (アイコンだけ) のとき、
-          離れ小島がレイアウトの事故に見えないための唯一の道しるべ。盤面の縮尺に
-          釣られると全体表示で読めなくなるので、逆スケールで画面上の大きさを保つ
-          (地図アプリの地名ラベルと同じ扱い)。 */}
-      {visibleIslands.map((island) => {
-        const accent = routeAccentOf(island.key);
-        return (
-          <div
-            key={island.key}
-            className="tree-sector-label absolute whitespace-nowrap text-[11px] font-bold tracking-wide"
-            style={{
-              left: island.labelX,
-              top: island.labelY,
-              transform: `translate(-50%, -100%) scale(${Math.min(8, 1 / Math.max(0.05, scale))})`,
-              transformOrigin: "50% 100%",
-              ...(accent ? { color: `rgb(${accent} / 0.9)` } : {}),
-            }}
-          >
-            {island.key}
-          </div>
-        );
-      })}
+      {selectedBridge ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute rounded bg-card/95 px-1.5 py-0.5 text-[10px] text-ink-2"
+          style={{
+            left: (selectedBridge.ends.x1 + selectedBridge.ends.x2) / 2,
+            top: (selectedBridge.ends.y1 + selectedBridge.ends.y2) / 2,
+            transform: `translate(-50%, -50%) scale(${placeScaleOf(scale)})`,
+          }}
+        >
+          前提: {labelOf(selectedBridge.anchor.node)}
+        </div>
+      ) : null}
+      {/* 島タイトル。ズーム段に関わらず常時出す — 全体表示でも離れ小島が
+          読めるように、逆スケールで画面上の大きさを保つ。置き場所は枠の上辺。 */}
+      {islandFrames.map(({ island, frame, count }) => (
+        <PlaceHeading
+          key={`island-title-${island.key}`}
+          title={island.key}
+          selected={selectedIslandKey === island.key}
+          onSelect={onSelectIsland ? () => onSelectIsland(island.key) : undefined}
+          detail={stageCountLine(count, islandCaption?.(island.key))}
+          left={(frame.minX + frame.maxX) / 2}
+          top={frame.minY}
+          scale={scale}
+          titleClassName="tree-sector-label"
+          titleColor={`rgb(${islandAccentOf(island.key)} / 0.9)`}
+        />
+      ))}
+      {layout.mainlandBounds && drawnCounts.mainland > 0 ? (
+        <PlaceHeading
+          title={mainlandTitle}
+          detail={stageCountLine(drawnCounts.mainland, null)}
+          left={(layout.mainlandBounds.minX + layout.mainlandBounds.maxX) / 2}
+          top={layout.mainlandBounds.minY - 48}
+          scale={scale}
+          titleClassName="tree-mainland-label"
+        />
+      ) : null}
 
-      {layout.nodes.filter(drawsStar).map((placed) => (
+      {drawnStars.map((placed) => (
         <StarNode
           key={placed.instanceId}
           placed={placed}
           isActive={placed.node.id === activeStageId}
           queued={queuedStageIds.includes(placed.node.id)}
           showLabel={
-            showsAllLabels(scale) || (placed.instanceId === focusedId && showsFocusLabel(scale))
+            (scale >= LABEL_OVERVIEW_SCALE && labelSides.get(placed.instanceId) !== "hidden") ||
+            (placed.instanceId === focusedId && showsFocusLabel(scale))
           }
+          labelSide={labelSides.get(placed.instanceId) ?? "below"}
+          scale={scale}
+          coreScale={starGrowOf(placed.ring === 0, scale)}
           celebration={celebrations.get(placed.node.id)}
           celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
           iconUrl={
@@ -837,8 +1203,15 @@ interface StarNodeProps {
   placed: RadialNode;
   isActive: boolean;
   queued: boolean;
-  /** 名前を星の下に出すか。全体表示では出さない。 */
+  /** 名前札を出すか。 */
   showLabel: boolean;
+  labelSide: StarLabelSide;
+  scale: number;
+  /**
+   * 核 (`tree-star`) の拡大率。画面上の直径が下限を下回らないようにする。
+   * ボタンの位置は変えない。1 のときは transform を付けない。
+   */
+  coreScale: number;
   /** 差分で検出した演出 (「解放」/「出現」)。undefined なら演出なし。 */
   celebration: CelebrationKind | undefined;
   /** 複数の演出を内側から順に灯すための順番。 */
@@ -884,6 +1257,9 @@ const StarNode = ({
   isActive,
   queued,
   showLabel,
+  labelSide,
+  scale,
+  coreScale,
   celebration,
   celebrationIndex,
   iconUrl,
@@ -931,6 +1307,28 @@ const StarNode = ({
   // あっても、画面で読めない名前がスクリーンリーダーにだけ届くのは情報設計として
   // ちぐはぐで、「まだ見えない」という状態そのものが伝わらない。
   const spokenLabel = detail.obscured ? "まだ見えないスキル" : detail.label;
+
+  const side = labelSide === "hidden" ? "below" : labelSide;
+  const k = Math.max(1, 10 / (8 * scale));
+  const radius = (isCenter ? 22 : 16) * coreScale;
+  const gap = radius + 3 / scale;
+  const labelStyle: CSSProperties = {
+    width: Math.min(90, estimateStarLabelWidth(detail.label)) / (scale * k),
+    textAlign: side === "right" ? "left" : side === "left" ? "right" : "center",
+    left:
+      side === "right" ? `calc(50% + ${gap}px)` : side === "left" ? `calc(50% - ${gap}px)` : "50%",
+    top:
+      side === "below" ? `calc(50% + ${gap}px)` : side === "above" ? `calc(50% - ${gap}px)` : "50%",
+    transform: `${side === "below" ? "translateX(-50%)" : side === "above" ? "translate(-50%, -100%)" : side === "right" ? "translateY(-50%)" : "translate(-100%, -50%)"} scale(${k})`,
+    transformOrigin:
+      side === "below"
+        ? "50% 0%"
+        : side === "above"
+          ? "50% 100%"
+          : side === "right"
+            ? "0% 50%"
+            : "100% 50%",
+  };
 
   const star = (
     <button
@@ -987,6 +1385,7 @@ const StarNode = ({
             fog && detail.obscured ? "opacity-45" : fog ? "opacity-70" : "",
             celebration === "unlocked" ? "tree-unlock-pop" : "",
           )}
+          style={coreScale > 1 ? { transform: `scale(${coreScale})` } : undefined}
         >
           {iconUrl ? (
             <span
@@ -1010,33 +1409,25 @@ const StarNode = ({
           )}
         </span>
         {showLabel ? (
-          tag ? (
-            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 flex w-max max-w-[7rem] -translate-x-1/2 flex-col items-center">
-              <span
-                className={cn(
-                  "line-clamp-2 text-center text-[8px] leading-tight",
-                  isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
-                  detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
-                )}
-              >
-                {detail.label}
-              </span>
-              <span className="mt-0.5 rounded-full bg-card/95 px-1 py-px text-[7px] font-semibold leading-none text-ink-2 ring-1 ring-border">
-                {tag}
-              </span>
-            </span>
-          ) : (
+          <span
+            className="pointer-events-none absolute z-10 flex flex-col items-center text-center"
+            style={labelStyle}
+          >
             <span
               className={cn(
-                "pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 w-[4.5rem] -translate-x-1/2 line-clamp-2 text-center text-[8px] leading-tight",
+                "line-clamp-2 w-full text-[8px] leading-[1.25]",
                 isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
-                // 霧の星は名前をぼかして「予告」だけ見せる。開発者モードではぼかさない。
                 detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
               )}
             >
               {detail.label}
             </span>
-          )
+            {tag ? (
+              <span className="mt-0.5 rounded-full bg-card/95 px-1 py-px text-[7px] font-semibold leading-none text-ink-2 ring-1 ring-border">
+                {tag}
+              </span>
+            ) : null}
+          </span>
         ) : null}
         {celebration ? (
           <span className="tree-new-badge" aria-hidden="true">

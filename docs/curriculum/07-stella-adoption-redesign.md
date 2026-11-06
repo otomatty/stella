@@ -66,16 +66,16 @@ slugは既存の規約(`packages/content/ADDING_STAGE.md`)に従い、英小文�
 | `html-css-basics`(引継ぎ) | HTML/CSSとデザイン基礎 | M02 | 70 | dev-env-basics | dev-env-basics | html-css-basics, modern-css-basics, page-composition-basics |
 | `javascript-basics`(引継ぎ) | JavaScriptの値と制御 | M03 | 105 | dev-env-basics | dev-env-basics | javascript-basics(前半), typescript-basics(m1〜m2) |
 | `javascript-data-basics` | JavaScriptのデータ・関数・状態 | M04 | 70 | javascript-basics | javascript-basics | javascript-basics(配列・関数), typescript-basics(m3〜m4) |
-| `dom-basics` | DOMと画面操作 | M05 | 70 | html-css-basics, javascript-basics, javascript-data-basics | javascript-data-basics | javascript-basics(m7〜m8) |
+| `dom-basics` | DOMと画面操作 | M05 | 70 | html-css-basics, javascript-basics, javascript-data-basics | html-css-basics | javascript-basics(m7〜m8) |
 | `ui-components-basics`(引継ぎ) | HTMLとJavaScriptのUI部品 | M06 | 70 | dom-basics | dom-basics | ui-components-basics, web-a11y-basics |
-| `http-async-basics` | HTTP・非同期・TypeScript | M07 | 70 | javascript-data-basics, dom-basics, ui-components-basics | ui-components-basics | typescript-basics(m5〜m8), typescript-node-basics, fetch-api-basics |
+| `http-async-basics` | HTTP・非同期・TypeScript | M07 | 70 | javascript-data-basics, dom-basics, ui-components-basics | javascript-data-basics | typescript-basics(m5〜m8), typescript-node-basics, fetch-api-basics |
 | `react-basics`(引継ぎ) | Reactの基礎と状態 | M08 | 70 | http-async-basics | http-async-basics | react-basics, npm-build-basics |
 | `react-ui-basics` | ReactのUI部品とデザイン規則 | M09 | 70 | react-basics | react-basics | frontend-testing-basics(Storybook) |
 | `ui-integration-basics` | UIと既存機能の連携 | M10 | 70 | react-ui-basics | react-ui-basics | frontend-testing-basics(統合・E2E) |
-| `node-api-basics` | Node.jsとAPI | M11 | 70 | http-async-basics, ui-integration-basics | ui-integration-basics | node-basics, rest-api-basics |
+| `node-api-basics` | Node.jsとAPI | M11 | 70 | http-async-basics, ui-integration-basics | http-async-basics | node-basics, rest-api-basics |
 | `sql-basics`(引継ぎ) | SQLとデータベース | M12 | 70 | node-api-basics | node-api-basics | sql-basics, db-design-basics |
-| `auth-basics`(引継ぎ) | 認証・認可・セキュリティ | M13 | 70 | node-api-basics, sql-basics | sql-basics | auth-basics, web-security-basics |
-| `nextjs-basics` | Next.jsとWebアプリ構成 | M14 | 70 | react-basics, react-ui-basics, ui-integration-basics, node-api-basics, sql-basics, auth-basics | auth-basics | — |
+| `auth-basics`(引継ぎ) | 認証・認可・セキュリティ | M13 | 70 | node-api-basics, sql-basics | node-api-basics | auth-basics, web-security-basics |
+| `nextjs-basics` | Next.jsとWebアプリ構成 | M14 | 70 | react-basics, react-ui-basics, ui-integration-basics, node-api-basics, sql-basics, auth-basics | react-basics | — |
 | `design-quality-basics` | 要件・設計・品質と改善 | M15 | 35 | nextjs-basics | nextjs-basics | — |
 | `deploy-ops-basics` | 公開・CIと運用 | M16 | 70 | design-quality-basics | design-quality-basics | cli-basics, docker-basics, cicd-basics, linux-ops-basics, observability-basics |
 | `code-reading-basics` | 未知のコードと技術の比較 | M17 | 35 | deploy-ops-basics | deploy-ops-basics | — |
@@ -83,7 +83,7 @@ slugは既存の規約(`packages/content/ADDING_STAGE.md`)に従い、英小文�
 
 - 残すステージと名前は重ならない。`test-design-basics`(残す)と`design-quality-basics`(新)は別のステージである。
 - git-basicsの内容は、新しいステージに分けて配置する(§3.5)。
-- この18ステージの`parent`で数えると、`dev-env-basics`から`html-css-basics`と`javascript-basics`の2本が出て、ほかの星からは最大1本出る。
+- この18ステージの`parent`で数えると、入口の`dev-env-basics`からHTML/CSSとJavaScript、`http-async-basics`からReactとNode.js、`react-basics`からReact UIとNext.js、`node-api-basics`からSQLと認証の2本ずつが出て、ほかの星からは最大1本出る。線の親は解放条件ではないので、線の無い前提(例:`node-api-basics`の`ui-integration-basics`)も解放には必要であり、ロック中の星の解放条件に名前で出る。
 - 既存の枝数テスト(`packages/content/src/manifest.test.ts`)は`parent`ではなく`prerequisites`の全項目を数えている。新しいステージへ切り替える変更で、線は`parent`、解放は全前提のANDという現在の仕様にテストを合わせる。前提を削ってテストを通さない。島と複製の扱いを維持し、残すステージも含めて1つの星から枝が2本までであることを確かめる。
 
 ### 3.2 旧ステージの削除

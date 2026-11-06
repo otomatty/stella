@@ -12,5 +12,5 @@
   "modules": {
     "m0-orientation": "M0. この講座について"
   },
-  "parent": "sql-basics"
+  "parent": "node-api-basics"
 }

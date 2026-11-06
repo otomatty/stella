@@ -9,6 +9,9 @@
 import type { ViewState } from "./offscreen";
 
 export interface SectorStar {
+  id?: string;
+  /** 線でつながる親の id。カテゴリが同じときだけまとまりに含める。 */
+  parentId?: string;
   sector: string;
   /** 盤面座標。 */
   x: number;
@@ -99,6 +102,8 @@ export function sectorLabelsInView(
   stars: readonly SectorStar[],
   view: ViewState,
   obstacles: readonly ScreenRect[] = [],
+  /** 指定したカテゴリだけ名前を出す。それ以外の星も障害物として使う。 */
+  labelSectors?: ReadonlySet<string>,
 ): SectorLabelPlacement[] {
   if (view.width <= 0 || view.height <= 0) return [];
 
@@ -107,6 +112,7 @@ export function sectorLabelsInView(
 
   const bySector = new Map<string, SectorStar[]>();
   for (const star of visible) {
+    if (labelSectors && !labelSectors.has(star.sector)) continue;
     const list = bySector.get(star.sector);
     if (list) list.push(star);
     else bySector.set(star.sector, [star]);
@@ -116,20 +122,75 @@ export function sectorLabelsInView(
   const placedRects: Rect[] = [];
   const out: SectorLabelPlacement[] = [];
 
+  const hasParentInfo = stars.some((star) => star.parentId !== undefined);
   const keys = [...bySector.keys()].sort((a, b) => a.localeCompare(b, "ja"));
   for (const key of keys) {
     const group = bySector.get(key);
     if (!group || group.length === 0) continue;
     const size = labelSize(key);
-    const placement = placeLabel(key, group, visible, view, size, [
-      ...obstacleRects,
-      ...placedRects,
-    ]);
+    const placement = placeLabel(
+      key,
+      hasParentInfo ? largestConnectedGroup(group) : group,
+      visible,
+      view,
+      size,
+      [...obstacleRects, ...placedRects],
+    );
     if (!placement) continue;
     out.push(placement);
     placedRects.push(labelRect(placement.left, placement.top, size.w, size.h));
   }
   return out;
+}
+
+/** 同じカテゴリの見えている星だけで、親子の線を無向のつながりとしてたどる。 */
+function largestConnectedGroup(group: readonly SectorStar[]): readonly SectorStar[] {
+  const byId = new Map(
+    group.filter((star) => star.id !== undefined).map((star) => [star.id, star]),
+  );
+  const neighbors = new Map(group.map((star) => [star, [] as SectorStar[]]));
+  for (const star of group) {
+    const parent = star.parentId !== undefined ? byId.get(star.parentId) : undefined;
+    if (!parent) continue;
+    neighbors.get(star)?.push(parent);
+    neighbors.get(parent)?.push(star);
+  }
+  const visited = new Set<SectorStar>();
+  const components: { stars: SectorStar[]; area: number; minId: string }[] = [];
+  for (const start of group) {
+    if (visited.has(start)) continue;
+    visited.add(start);
+    const pending = [start];
+    const stars: SectorStar[] = [];
+    while (pending.length > 0) {
+      const star = pending.pop();
+      if (!star) break;
+      stars.push(star);
+      for (const neighbor of neighbors.get(star) ?? []) {
+        if (visited.has(neighbor)) continue;
+        visited.add(neighbor);
+        pending.push(neighbor);
+      }
+    }
+    const width =
+      Math.max(...stars.map((star) => star.x + star.radius)) -
+      Math.min(...stars.map((star) => star.x - star.radius));
+    const height =
+      Math.max(...stars.map((star) => star.y + star.radius)) -
+      Math.min(...stars.map((star) => star.y - star.radius));
+    components.push({
+      stars,
+      area: width * height,
+      minId: stars.map((star) => star.id ?? "").sort()[0] ?? "",
+    });
+  }
+  components.sort(
+    (a, b) =>
+      b.stars.length - a.stars.length ||
+      b.area - a.area ||
+      (a.minId < b.minId ? -1 : a.minId > b.minId ? 1 : 0),
+  );
+  return components[0]?.stars ?? group;
 }
 
 function placeLabel(

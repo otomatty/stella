@@ -11,6 +11,7 @@ import {
   offBoardNote,
   planStaffStages,
   publishToggleLabel,
+  staffMapContents,
   staffStarTag,
   stageAudienceLabel,
   stageManagementCounts,
@@ -198,5 +199,95 @@ describe("表示文言", () => {
     expect(offBoardNote(stage({ id: "b", status: "draft", category: "" }))).toBe(
       "カテゴリも親も無いため、盤面には載せていません",
     );
+  });
+});
+
+describe("staffMapContents", () => {
+  const extra = (id: string, category: string, parent_id?: string, title = id) =>
+    stage({ id, slug: id, title, category, parent_id, audience: "granted" });
+  const catalog = [
+    stage({ id: "dev-env-basics", title: "開発環境とWebの入口" }),
+    stage({ id: "html", category: "フロントエンド", parent_id: "dev-env-basics" }),
+    stage({
+      id: "node-api-basics",
+      title: "Node API 入門",
+      category: "バックエンド",
+      parent_id: "html",
+    }),
+    stage({ id: "full", category: "フルスタック", parent_id: "node-api-basics" }),
+    stage({ id: "z", category: "その他Z", parent_id: "full" }),
+    stage({ id: "a", category: "その他A", parent_id: "full" }),
+    extra("python-next", "Python", "python-basics", "A 続編"),
+    extra("python-basics", "Python", "node-api-basics", "Python 入門"),
+    extra("python-z", "Python", "python-basics", "Z 続編"),
+    extra("devops", "DevOps", "python-basics"),
+    extra("devlab-ts-prework", "開発ラボG"),
+    extra("aws", "AWS資格", "dev-env-basics"),
+    extra("archived", "C#", undefined),
+  ];
+  const board = catalog.filter((row) => row.id !== "archived");
+  const contents = staffMapContents(board, catalog);
+  const island = (key: string) => contents.islands.find((entry) => entry.key === key);
+
+  it("本土の数とカテゴリを優先順、そのほかは日本語の名前順にする", () => {
+    expect(contents.mainland).toEqual({
+      title: "開発スキル",
+      count: 6,
+      routes: [
+        { key: "基礎", count: 1 },
+        { key: "フロントエンド", count: 1 },
+        { key: "バックエンド", count: 1 },
+        { key: "フルスタック", count: 1 },
+        { key: "その他A", count: 1 },
+        { key: "その他Z", count: 1 },
+      ],
+    });
+  });
+
+  it("盤面にある島だけを名前順に出し、島内は親の深さ、同じ深さはタイトル順にする", () => {
+    expect(contents.islands.map((entry) => entry.key)).toEqual([
+      "AWS資格",
+      "DevOps",
+      "Python",
+      "開発ラボG",
+    ]);
+    expect(island("Python")?.stages.map((row) => row.id)).toEqual([
+      "python-basics",
+      "python-next",
+      "python-z",
+    ]);
+    expect(island("Python")?.count).toBe(3);
+    expect(island("Python")?.allExtra).toBe(true);
+  });
+
+  it("表示条件と最初の前提を分け、島の先も親から求める", () => {
+    expect(island("Python")?.prerequisite).toEqual({
+      id: "node-api-basics",
+      title: "Node API 入門",
+      routeKey: "バックエンド",
+    });
+    expect(island("DevOps")?.visibility).toBe("Python 入門 クリア後");
+    expect(island("DevOps")?.prerequisite).toEqual({
+      id: "python-basics",
+      title: "Python 入門",
+      routeKey: "Python",
+    });
+    expect(island("開発ラボG")?.visibility).toBe("割り当てのみ");
+    expect(island("開発ラボG")?.prerequisite).toBeNull();
+    expect(island("AWS資格")?.visibility).toBe("入口 クリア後");
+    expect(island("Python")?.next).toEqual([{ key: "DevOps", visibility: "Python 入門 クリア後" }]);
+  });
+
+  it("空の盤面と Basic が混じる島も扱う。入力を並べ替えない", () => {
+    expect(staffMapContents([], catalog)).toEqual({
+      mainland: { title: "開発スキル", count: 0, routes: [] },
+      islands: [],
+    });
+    const mixed = staffMapContents(
+      [...board, stage({ id: "py-basic", category: "Python" })],
+      catalog,
+    );
+    expect(mixed.islands.find((entry) => entry.key === "Python")?.allExtra).toBe(false);
+    expect(board[6]?.id).toBe("python-next");
   });
 });

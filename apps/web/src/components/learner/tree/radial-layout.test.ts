@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
-import { DEPTH_STEP, MIN_SEPARATION, layoutRadialSkillTree } from "./radial-layout";
+import {
+  BRANCH_MIN_DIST,
+  BRANCH_STEP,
+  DEPTH_STEP,
+  MIN_SEPARATION,
+  layoutRadialSkillTree,
+} from "./radial-layout";
 
 /** 星の核の直径 (`SkillTree.tsx` の `h-8 w-8`)。これより近いと円が重なる。 */
 const STAR_CORE = 32;
@@ -386,7 +392,7 @@ describe("layoutRadialSkillTree", () => {
       node({ id: "feb", title: "科目B", category: "情報処理資格", parent_id: "fea" }),
     ];
 
-    it("島は本土の扇に混ざらず、離れた位置に置かれる", () => {
+    it("島は本土の扇に混ざらず、本土のどの星とも 100px 以上離れる", () => {
       const layout = layoutRadialSkillTree(withIslands());
       expect(layout.sectors.map((s) => s.key)).not.toContain("AWS資格");
       const posOf = (id: string) => {
@@ -394,15 +400,12 @@ describe("layoutRadialSkillTree", () => {
         if (!p) throw new Error(`missing node: ${id}`);
         return p;
       };
-      // 本土のどの星よりも、島の星は本土の中心から遠い。
-      const mainlandMax = Math.max(
-        ...["root", "fe"].map((id) =>
-          Math.hypot(posOf(id).x - layout.centerX, posOf(id).y - layout.centerY),
-        ),
-      );
-      for (const id of ["aws", "fea", "feb"]) {
-        const d = Math.hypot(posOf(id).x - layout.centerX, posOf(id).y - layout.centerY);
-        expect(d).toBeGreaterThan(mainlandMax + 50);
+      for (const islandId of ["aws", "fea", "feb"]) {
+        for (const mainId of ["root", "fe"]) {
+          const island = posOf(islandId);
+          const main = posOf(mainId);
+          expect(Math.hypot(island.x - main.x, island.y - main.y)).toBeGreaterThanOrEqual(100);
+        }
       }
     });
 
@@ -755,6 +758,182 @@ describe("layoutRadialSkillTree", () => {
     expect(layout.bounds.maxX).toBeLessThan(layout.width);
   });
 
+  describe("枝の腕と、前提の星のそばの島", () => {
+    /** 本番の現行の木 (18 ステージ + 島 13)。id・カテゴリ・線の親だけを写す。 */
+    const currentCurriculum = (): SkillMapStageNode[] => {
+      const rows: readonly (readonly [string, string, string?])[] = [
+        ["dev-env-basics", "基礎"],
+        ["html-css-basics", "フロントエンド", "dev-env-basics"],
+        ["javascript-basics", "フロントエンド", "dev-env-basics"],
+        ["javascript-data-basics", "フロントエンド", "javascript-basics"],
+        ["dom-basics", "フロントエンド", "html-css-basics"],
+        ["ui-components-basics", "フロントエンド", "dom-basics"],
+        ["http-async-basics", "フロントエンド", "javascript-data-basics"],
+        ["react-basics", "フロントエンド", "http-async-basics"],
+        ["react-ui-basics", "フロントエンド", "react-basics"],
+        ["ui-integration-basics", "フロントエンド", "react-ui-basics"],
+        ["node-api-basics", "バックエンド", "http-async-basics"],
+        ["sql-basics", "バックエンド", "node-api-basics"],
+        ["auth-basics", "バックエンド", "node-api-basics"],
+        ["nextjs-basics", "フルスタック", "react-basics"],
+        ["design-quality-basics", "フルスタック", "nextjs-basics"],
+        ["deploy-ops-basics", "フルスタック", "design-quality-basics"],
+        ["code-reading-basics", "フルスタック", "deploy-ops-basics"],
+        ["fullstack-capstone", "フルスタック", "code-reading-basics"],
+        ["aws-clf-c02-basics", "AWS資格", "dev-env-basics"],
+        ["fe-kamoku-a", "情報処理資格", "dev-env-basics"],
+        ["fe-kamoku-b", "情報処理資格", "fe-kamoku-a"],
+        ["claude-developer-foundations", "Anthropic認定資格", "dev-env-basics"],
+        ["python-basics", "Python", "node-api-basics"],
+        ["python-testing-ci-basics", "Python", "python-basics"],
+        ["test-design-basics", "Python", "python-testing-ci-basics"],
+        ["devops-basics", "DevOps", "python-basics"],
+        ["networking-ops-basics", "DevOps", "devops-basics"],
+        ["terraform-basics", "DevOps", "devops-basics"],
+        ["kubernetes-basics", "DevOps", "networking-ops-basics"],
+        ["salesforce-dev-basics", "Salesforce案件", "sql-basics"],
+        ["devlab-ts-prework", "開発ラボG", "dev-env-basics"],
+      ];
+      return rows.map(([id, category, parentId]) =>
+        node({
+          id,
+          category,
+          ...(parentId !== undefined ? { parent_id: parentId } : {}),
+        }),
+      );
+    };
+
+    const posOf = (layout: ReturnType<typeof layoutRadialSkillTree>, id: string) => {
+      const placed = layout.nodes.find((n) => n.node.id === id);
+      if (!placed) throw new Error(`missing node: ${id}`);
+      return placed;
+    };
+
+    const mainlandOf = (layout: ReturnType<typeof layoutRadialSkillTree>) => {
+      const islandKeys = new Set(layout.islands.map((island) => island.key));
+      return layout.nodes.filter((n) => !islandKeys.has(n.sector));
+    };
+
+    /** 端点を共有しない線分が途中で交わるか。 */
+    const crosses = (
+      a: { x1: number; y1: number; x2: number; y2: number },
+      b: { x1: number; y1: number; x2: number; y2: number },
+    ) => {
+      const orient = (ax: number, ay: number, bx: number, by: number, cx: number, cy: number) =>
+        (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+      const o1 = orient(a.x1, a.y1, a.x2, a.y2, b.x1, b.y1);
+      const o2 = orient(a.x1, a.y1, a.x2, a.y2, b.x2, b.y2);
+      const o3 = orient(b.x1, b.y1, b.x2, b.y2, a.x1, a.y1);
+      const o4 = orient(b.x1, b.y1, b.x2, b.y2, a.x2, a.y2);
+      return o1 * o2 < 0 && o3 * o4 < 0;
+    };
+
+    it("同じ入力でも、並べ替えても、同じ座標になる", () => {
+      const nodes = currentCurriculum();
+      const layout = layoutRadialSkillTree(nodes);
+      expect(layoutRadialSkillTree(nodes)).toEqual(layout);
+      expect(layoutRadialSkillTree([...nodes].reverse())).toEqual(layout);
+    });
+
+    it("本土は枝の腕になり、根が中心、ring 0 は本土に 1 つ", () => {
+      const layout = layoutRadialSkillTree(currentCurriculum());
+      const roots = mainlandOf(layout).filter((n) => n.ring === 0);
+      expect(roots.map((n) => n.node.id)).toEqual(["dev-env-basics"]);
+      expect(roots[0]?.x).toBe(layout.centerX);
+      expect(roots[0]?.y).toBe(layout.centerY);
+    });
+
+    it("本土の線は長さ 100 で交差せず、星は 85px 以上離れる", () => {
+      const layout = layoutRadialSkillTree(currentCurriculum());
+      const mainlandIds = new Set(mainlandOf(layout).map((n) => n.instanceId));
+      const edges = layout.edges.filter(
+        (edge) => mainlandIds.has(edge.fromId) && mainlandIds.has(edge.toId),
+      );
+      expect(edges.length).toBeGreaterThan(0);
+      for (const edge of edges) {
+        const len = Math.hypot(edge.x2 - edge.x1, edge.y2 - edge.y1);
+        expect(len).toBeGreaterThanOrEqual(BRANCH_STEP - 1);
+        expect(len).toBeLessThanOrEqual(BRANCH_STEP + 1);
+      }
+      for (let i = 0; i < edges.length; i++) {
+        for (let j = i + 1; j < edges.length; j++) {
+          const a = edges[i];
+          const b = edges[j];
+          if (!a || !b) continue;
+          const shares =
+            a.fromId === b.fromId ||
+            a.fromId === b.toId ||
+            a.toId === b.fromId ||
+            a.toId === b.toId;
+          if (shares) continue;
+          expect(crosses(a, b), `${a.fromId}->${a.toId} × ${b.fromId}->${b.toId}`).toBe(false);
+        }
+      }
+      const stars = mainlandOf(layout);
+      for (let i = 0; i < stars.length; i++) {
+        for (let j = i + 1; j < stars.length; j++) {
+          const a = stars[i];
+          const b = stars[j];
+          if (!a || !b) continue;
+          expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(BRANCH_MIN_DIST);
+        }
+      }
+    });
+
+    it("本土の外接矩形は幅・高さとも 800px 以下", () => {
+      const box = layoutRadialSkillTree(currentCurriculum()).mainlandBounds;
+      expect(box).not.toBeNull();
+      if (!box) return;
+      expect(box.maxX - box.minX).toBeLessThanOrEqual(800);
+      expect(box.maxY - box.minY).toBeLessThanOrEqual(800);
+    });
+
+    it("Python は Node.js のそば、Salesforce案件は SQL のそばに置かれる", () => {
+      const layout = layoutRadialSkillTree(currentCurriculum());
+      const dist = (a: string, b: string) => {
+        const pa = posOf(layout, a);
+        const pb = posOf(layout, b);
+        return Math.hypot(pa.x - pb.x, pa.y - pb.y);
+      };
+      expect(dist("python-basics", "node-api-basics")).toBeLessThan(
+        dist("python-basics", "dev-env-basics"),
+      );
+      expect(dist("salesforce-dev-basics", "sql-basics")).toBeLessThan(
+        dist("salesforce-dev-basics", "dev-env-basics"),
+      );
+    });
+
+    it("島の星は本土から 100px 以上、別の島の星から 85px 以上離れる", () => {
+      const layout = layoutRadialSkillTree(currentCurriculum());
+      const islandKeys = new Set(layout.islands.map((island) => island.key));
+      const mainland = mainlandOf(layout);
+      const islandStars = layout.nodes.filter((n) => islandKeys.has(n.sector));
+      for (const star of islandStars) {
+        for (const main of mainland) {
+          expect(Math.hypot(star.x - main.x, star.y - main.y)).toBeGreaterThanOrEqual(100);
+        }
+      }
+      for (let i = 0; i < islandStars.length; i++) {
+        for (let j = i + 1; j < islandStars.length; j++) {
+          const a = islandStars[i];
+          const b = islandStars[j];
+          if (!a || !b || a.sector === b.sector) continue;
+          expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(BRANCH_MIN_DIST);
+        }
+      }
+    });
+
+    it("島の錨は前提の星を指し、入口そのものが錨の島は付けない", () => {
+      const byKey = new Map(
+        layoutRadialSkillTree(currentCurriculum()).islands.map((island) => [island.key, island]),
+      );
+      expect(byKey.get("Python")?.anchorId).toBe("node-api-basics");
+      expect(byKey.get("Salesforce案件")?.anchorId).toBe("sql-basics");
+      expect(byKey.get("DevOps")?.anchorId).toBe("python-basics");
+      expect(byKey.get("AWS資格")?.anchorId).toBeUndefined();
+    });
+  });
+
   it("星が 1 つも無ければ空のレイアウト", () => {
     expect(layoutRadialSkillTree([])).toEqual({
       nodes: [],
@@ -762,6 +941,7 @@ describe("layoutRadialSkillTree", () => {
       sectors: [],
       islands: [],
       bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+      mainlandBounds: null,
       width: 0,
       height: 0,
       centerX: 0,
