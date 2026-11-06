@@ -11,6 +11,8 @@ import {
   lessons,
   notifications,
   profiles,
+  quizAttempts,
+  quizzes,
   resourceLocks,
   sections,
   skillEvidence,
@@ -33,6 +35,7 @@ import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { certificatesRoute } from "./certificates.js";
 import { lessonProgressRoute } from "./lesson-progress.js";
+import { reportsRoute } from "./reports.js";
 import { submissionsRoute } from "./submissions.js";
 
 describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
@@ -132,6 +135,63 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect(response.status, await response.clone().text()).toBe(201);
     return (await json<{ row: { id: string; attempt: number } }>(response)).row;
   }
+
+  it("受講・成績・修了証レポートの明細と合計は講師・管理者を除き、null の提出は残す", async () => {
+    await db.insert(profiles).values({ id: "boss", displayName: "管理者", role: "admin" });
+    await db.insert(quizzes).values({ id: "quiz", lessonId: "reading" });
+    for (const userId of ["learner", "teacher", "boss"]) {
+      if (userId !== "learner")
+        await db.insert(enrollments).values({ userId, stageId: "stage", status: "active" });
+      await db
+        .insert(quizAttempts)
+        .values({ quizId: "quiz", userId, score: 1, maxScore: 1, passed: true });
+      await db.insert(certificates).values({
+        userId,
+        stageId: "stage",
+        certCode: `cert-${userId}`,
+        recipientName: userId,
+        stageTitle: "開発環境",
+        issuerName: "テスト",
+      });
+      await db.insert(submissions).values({
+        id: `sub-${userId}`,
+        studentId: userId,
+        code: "",
+        stageTitle: "開発環境",
+        assignmentTitle: "課題",
+      });
+    }
+    await db
+      .insert(submissions)
+      .values({ id: "unknown", studentId: null, code: "", stageTitle: "", assignmentTitle: "" });
+    const { app } = mountTestApp(env, reportsRoute);
+    const adminToken = await signAccessToken("test-secret", "boss", "boss@example.com");
+    const report = async (type: string, query = "") => {
+      const response = await request(app, env, `/api/reports/${type}${query}`, {
+        token: adminToken,
+      });
+      expect(response.status, await response.clone().text()).toBe(200);
+      return (
+        await json<{
+          report: { total: number; rows: { user_id: string | null; kind?: string }[] };
+        }>(response)
+      ).report;
+    };
+    for (const type of ["enrollments", "certificates"]) {
+      const result = await report(type);
+      expect(result.total).toBe(1);
+      expect(result.rows.map((r) => r.user_id)).toEqual(["learner"]);
+      expect(await report(type, "?limit=1&offset=1")).toMatchObject({ total: 1, rows: [] });
+    }
+    const grades = await report("grades");
+    expect(grades.total).toBe(3);
+    expect(grades.rows.filter((r) => r.kind === "quiz").map((r) => r.user_id)).toEqual(["learner"]);
+    expect(grades.rows.filter((r) => r.kind === "assignment").map((r) => r.user_id)).toEqual(
+      expect.arrayContaining(["learner", null]),
+    );
+    expect(await report("grades", "?limit=1&offset=3")).toMatchObject({ total: 3, rows: [] });
+  });
+
   it("全ファイルを R2 に保存し、再提出を新しい試行として残す", async () => {
     const first = await submit();
     const second = await submit();

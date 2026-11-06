@@ -38,6 +38,7 @@ import {
   isStaffRole,
   requireReturning,
 } from "../lib/authz.js";
+import { learnerOrUnknown } from "../lib/learner-scope.js";
 import { clientIp } from "../lib/audit.js";
 import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
 import { withResourceLock } from "../lib/resource-lock.js";
@@ -271,15 +272,18 @@ submissionsRoute.get("/api/submissions", async (c) => {
       .leftJoin(tasks, eq(tasks.id, submissions.taskId))
       .leftJoin(sections, eq(sections.id, tasks.sectionId))
       .where(
-        assigned
-          ? inArray(
-              submissions.studentId,
-              db
-                .select({ id: learnerInstructors.learnerId })
-                .from(learnerInstructors)
-                .where(eq(learnerInstructors.instructorId, caller.id)),
-            )
-          : undefined,
+        and(
+          learnerOrUnknown(submissions.studentId),
+          assigned
+            ? inArray(
+                submissions.studentId,
+                db
+                  .select({ id: learnerInstructors.learnerId })
+                  .from(learnerInstructors)
+                  .where(eq(learnerInstructors.instructorId, caller.id)),
+              )
+            : undefined,
+        ),
       )
       .orderBy(desc(submissions.submittedAt));
 

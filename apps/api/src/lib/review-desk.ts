@@ -60,6 +60,7 @@ import {
 } from "../db/schema.js";
 import { ApiError, type Caller } from "./authz.js";
 import { upsertDiscoveryRequest } from "./discovery-data.js";
+import { learnerOrUnknown } from "./learner-scope.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reclaimAutoCertificatesIfUnmet } from "./stage-auto-complete.js";
 import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js";
@@ -357,6 +358,7 @@ export async function listAiPassed(
   filters: AiPassedFilters,
 ): Promise<{ rows: AiPassedRow[]; truncated: boolean }> {
   const conditions: (SQL | undefined)[] = [
+    learnerOrUnknown(submissions.studentId),
     eq(submissions.aiReviewStatus, "confirmed"),
     filters.stageId ? eq(stages.id, filters.stageId) : undefined,
     filters.taskId ? eq(submissions.taskId, filters.taskId) : undefined,
@@ -516,11 +518,13 @@ export async function reviewMetrics(
       overturned: sql<number>`sum(case when exists (select 1 from submission_checks c where c.submission_id = ${aiReviews.submissionId} and c.result = 'overturned') then 1 else 0 end)`,
     })
     .from(aiReviews)
+    .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
     .innerJoin(tasks, eq(tasks.id, aiReviews.taskId))
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(
       and(
+        learnerOrUnknown(submissions.studentId),
         eq(aiReviews.outcome, "confirmed"),
         eq(aiReviews.disposition, "applied"),
         eq(aiReviews.confidence, "medium"),
@@ -558,6 +562,7 @@ export async function reviewMetrics(
     .from(submissions)
     .where(
       and(
+        learnerOrUnknown(submissions.studentId),
         eq(submissions.aiReviewStatus, "escalated"),
         eq(submissions.reviewSource, "human"),
         gte(submissions.reviewedAt, since),
@@ -624,6 +629,7 @@ export async function reviewMetrics(
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(
       and(
+        learnerOrUnknown(submissions.studentId),
         inArray(submissions.aiReviewStatus, ["confirmed", "escalated"]),
         gte(submissions.submittedAt, since),
       ),
@@ -742,6 +748,7 @@ export async function taskBoard(
     )
     .where(
       and(
+        learnerOrUnknown(submissions.studentId),
         eq(submissions.taskId, taskId),
         sql`${submissions.attempt} = (select max(m.attempt) from submissions m where m.student_id = "submissions"."student_id" and m.task_id = "submissions"."task_id")`,
         assignedOnly ? assignedTo(caller) : undefined,

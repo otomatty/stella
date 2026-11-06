@@ -39,6 +39,8 @@ import type { Db } from "../db/client.js";
 import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import type { Env } from "../env.js";
 
+import { learnerOnly, learnerOrUnknown } from "../lib/learner-scope.js";
+
 export const reportsRoute = new Hono<{ Bindings: Env }>();
 
 const DEFAULT_LIMIT = 200;
@@ -162,6 +164,7 @@ async function enrollmentsReport(
   offset: number,
 ): Promise<{ rows: EnrollmentReportRow[]; total: number }> {
   const conds = [
+    learnerOnly(enrollments.userId),
     range.from ? gte(enrollments.enrolledAt, range.from) : undefined,
     range.to ? lte(enrollments.enrolledAt, range.to) : undefined,
   ];
@@ -285,11 +288,13 @@ async function gradesReport(
   offset: number,
 ): Promise<{ rows: GradeReportRow[]; total: number }> {
   const quizConds = [
+    learnerOnly(quizAttempts.userId),
     range.from ? gte(quizAttempts.submittedAt, range.from) : undefined,
     range.to ? lte(quizAttempts.submittedAt, range.to) : undefined,
   ];
 
   const subConds = [
+    learnerOrUnknown(submissions.studentId),
     range.from ? gte(submissions.submittedAt, range.from) : undefined,
     range.to ? lte(submissions.submittedAt, range.to) : undefined,
   ];
@@ -397,6 +402,7 @@ async function certificatesReport(
   offset: number,
 ): Promise<{ rows: CertificateReportRow[]; total: number }> {
   const conds = [
+    learnerOnly(certificates.userId),
     range.from ? gte(certificates.issuedAt, range.from) : undefined,
     range.to ? lte(certificates.issuedAt, range.to) : undefined,
   ];

@@ -455,6 +455,63 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     });
   });
 
+  it("講師・管理者の試行はキュー・事後確認・数字・並べ見に数えず、null の旧提出はキューに残す", async () => {
+    const kept = await aiPassed("learner", "medium");
+    const staffPass = await aiPassed("learner2", "medium");
+    await check(staffPass, "overturn", "確認用の提出");
+    complete.mockResolvedValue(answer(aiOutput({ confidence: "low" })));
+    const staffDecided = await submit("learner2");
+    await runAi();
+    await call(`/api/submissions/${staffDecided}`, "teacher", {
+      method: "PATCH",
+      body: JSON.stringify({ verdict: "pass" }),
+    });
+    await db
+      .insert(submissions)
+      .values({ id: "unknown", studentId: null, code: "", stageTitle: "", assignmentTitle: "" });
+    await db.insert(learnerInstructors).values({ learnerId: "learner2", instructorId: "teacher" });
+    for (const role of ["instructor", "admin"] as const) {
+      await db.update(profiles).set({ role }).where(eq(profiles.id, "learner2"));
+      const queue = await json<{ rows: { id: string }[] }>(
+        await call("/api/submissions", "teacher"),
+      );
+      expect(queue.rows.map((r) => r.id).sort()).toEqual([kept, "unknown"].sort());
+      const assigned = await json<{ rows: { id: string }[] }>(
+        await call("/api/submissions?assigned=mine", "teacher"),
+      );
+      expect(assigned.rows.map((r) => r.id)).toEqual([kept]);
+      const passed = await json<{ rows: { submissionId: string }[] }>(
+        await call("/api/review-desk/ai-passed", "teacher"),
+      );
+      expect(passed.rows.map((r) => r.submissionId)).toEqual([kept]);
+      const metrics = await json<ReviewMetrics>(await call("/api/review-desk/metrics", "teacher"));
+      expect(metrics.practiceMedium).toEqual([
+        expect.objectContaining({ aiPassed: 1, checked: 0, overturned: 0 }),
+      ]);
+      expect(metrics.escalatedByKind).toEqual([]);
+      expect(metrics.escalatedByReason).toEqual([]);
+      expect(metrics.taskEscalation).toEqual([
+        expect.objectContaining({ reviewed: 1, escalated: 0 }),
+      ]);
+      const board = await json<TaskBoard>(
+        await call(
+          `/api/review-desk/task-board?taskId=${encodeURIComponent(fixture.input.taskId)}`,
+          "teacher",
+        ),
+      );
+      expect(board.submissions.map((r) => r.submissionId)).toEqual([kept]);
+      expect(board.items).toEqual([
+        expect.objectContaining({ id: "CR-SCOPE-01", met: 1, unmet: 0 }),
+        expect.objectContaining({ id: "heading", met: 1, unmet: 0 }),
+      ]);
+      expect((await call(`/api/submissions/${staffDecided}`, "teacher")).status).toBe(200);
+      const mine = await json<{ rows: { id: string }[] }>(
+        await call("/api/submissions/mine", "learner2"),
+      );
+      expect(mine.rows.map((r) => r.id).sort()).toEqual([staffPass, staffDecided].sort());
+    }
+  });
+
   it("しきい値の見直しの数字を出し、境目を超えた行に印を付ける", async () => {
     const medium = await aiPassed("learner", "medium");
     await check(medium, "overturn", "命名が規則に合いません");

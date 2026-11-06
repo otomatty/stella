@@ -35,6 +35,7 @@ import {
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "../lib/enrollment-bulk.js";
+import { learnerOnly } from "../lib/learner-scope.js";
 import { passCountsForLesson } from "../lib/reviewed-progress.js";
 import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audience.js";
 import {
@@ -366,7 +367,7 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
       })
       .from(enrollments)
       .innerJoin(profiles, eq(profiles.id, enrollments.userId))
-      .where(eq(enrollments.stageId, stageId))
+      .where(and(eq(enrollments.stageId, stageId), learnerOnly(enrollments.userId)))
       .orderBy(profiles.displayName);
 
     // 受講者ごとに computeStageCompletion を呼ぶと N+1 になり Workers の subrequest
