@@ -7,9 +7,7 @@
   "header": "開発ラボG 事前課題",
   "tenantId": "ses",
   "audience": "granted",
-  "prerequisites": [
-    "dev-env-basics"
-  ],
+  "prerequisites": ["dev-env-basics"],
   "plannedHours": 95,
   "environment": "ts-test-01",
   "canDo": "TypeScript の型を使って、テストと型の確認が通るコードを書ける",

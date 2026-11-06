@@ -2,9 +2,7 @@
   "plannedHours": 11.5,
   "skills": {
     "uses": [],
-    "assesses": [
-      "devlab-ts-ch01"
-    ]
+    "assesses": ["devlab-ts-ch01"]
   },
   "reuses": []
 }

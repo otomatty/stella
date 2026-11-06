@@ -11,9 +11,7 @@
       "devlab-ts-ch07",
       "devlab-ts-ch08"
     ],
-    "assesses": [
-      "devlab-ts-ch09"
-    ]
+    "assesses": ["devlab-ts-ch09"]
   },
   "reuses": []
 }

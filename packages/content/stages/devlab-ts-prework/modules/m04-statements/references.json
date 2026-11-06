@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-prework/m04-statements@1",
-  "contentHash": "d6abdd54e8efe1ccf079112af3bafe01fde89825a5f3633c06bbdd43a9086750",
+  "contentHash": "45bfa44f641abd2e55c5eec54efbda73400d3021195fe19125d527cd0ff1010c",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -24,9 +24,7 @@
     },
     {
       "contentId": "tasks/s02-extra/README.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-statements-exception"
-      ],
+      "sourceRefs": ["SRC-typescriptbook-statements-exception"],
       "usedFor": "教材独自の課題。サバイバルTypeScript の文と例外の範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",

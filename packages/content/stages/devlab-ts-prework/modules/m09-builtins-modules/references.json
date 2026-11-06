@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-prework/m09-builtins-modules@1",
-  "contentHash": "8b067caa43e636be0b6b686ef9d4a05fbb8a13c79b8a68e584de354a7fa88757",
+  "contentHash": "12a30b37befd8c4067915b2cc172a39867674ef614a86ebcbb597e5b4d0e78ad",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -21,9 +21,7 @@
     },
     {
       "contentId": "tasks/s02-extra/README.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-builtin-api-regexp"
-      ],
+      "sourceRefs": ["SRC-typescriptbook-builtin-api-regexp"],
       "usedFor": "教材独自の課題。サバイバルTypeScript の組み込みの API とモジュールの範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-prework/m07-type-reuse-generics@1",
-  "contentHash": "678d11505f8d9297dc531b22f28b2479888daa046126170b24806a2ac17e6a59",
+  "contentHash": "0e240ec55288704ebe81cc75648058a01727bf7fcd816a187db549d4a5269c27",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

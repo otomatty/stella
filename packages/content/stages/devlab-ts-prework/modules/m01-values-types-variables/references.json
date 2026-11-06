@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-prework/m01-values-types-variables@1",
-  "contentHash": "e763f9fbc8839e2314558cf8fb37975bdcec67dce31b60174cb3a9aff7e5314d",
+  "contentHash": "465d381517570e4137f8bea324502bde6d00f557724a2f6ef723e3416cf912a7",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

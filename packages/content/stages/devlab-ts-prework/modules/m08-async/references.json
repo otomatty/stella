@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-prework/m08-async@1",
-  "contentHash": "c1c6025329f1f108a7b4dbdaaee19832440b83e9a04da138077f680d41429e6a",
+  "contentHash": "efea5eaf86775a7cd278ba3063207d1987f712eac8d287187142d3f2fd9868bd",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
