@@ -93,6 +93,9 @@ interface SkillTreeCanvasProps {
   /** 盤面 (中身) の大きさ (px)。 */
   worldWidth: number;
   worldHeight: number;
+  /** 1× の初期視点の中心 (盤面座標)。省略した軸は盤面の中心を使う。 */
+  homeX?: number;
+  homeY?: number;
   /**
    * 星が実際に広がっている範囲 (盤面座標)。パンの可動域をこれで決める。
    * 盤面の矩形ではなく星の外接を使う理由は `constrain` の説明を参照。
@@ -148,6 +151,8 @@ function wheelDeltaPx(e: WheelEvent, viewportHeight: number): number {
 export const SkillTreeCanvas = ({
   worldWidth,
   worldHeight,
+  homeX,
+  homeY,
   contentBounds,
   handleRef,
   children,
@@ -289,7 +294,8 @@ export const SkillTreeCanvas = ({
   }, [worldWidth, worldHeight, fitScaleOf, updateZoomFloor, centerXOf]);
 
   /**
-   * 中心の星座を 1× で見せる初期視点。全体表示 (`fitView`) は右上のボタンに残す。
+   * 指定された入口の座標 (省略時は盤面の中心) を 1× で見せる初期視点。
+   * 全体表示 (`fitView`) は右上のボタンに残す。
    */
   const homeView = useCallback(() => {
     const viewport = viewportRef.current;
@@ -299,10 +305,9 @@ export const SkillTreeCanvas = ({
     if (vw <= 0 || vh <= 0) return;
     updateZoomFloor(vw, vh);
     const scale = clampScale(HOME_SCALE, zoomFloor.current);
-    // 入口の星 = 盤面の中心。星の外接の重心だと、外周の星に引っ張られて
-    // 入口が画面の端へ寄る。
-    const cx = worldWidth / 2;
-    const cy = worldHeight / 2;
+    // 盤面は全星の外接を含むため、入口の星がその中心にあるとは限らない。
+    const cx = homeX ?? worldWidth / 2;
+    const cy = homeY ?? worldHeight / 2;
     setAnimated(true);
     opening.current = "home";
     touched.current = false;
@@ -313,13 +318,32 @@ export const SkillTreeCanvas = ({
         y: vh / 2 - cy * scale,
       }),
     );
-  }, [worldWidth, worldHeight, constrain, updateZoomFloor, centerXOf]);
+  }, [worldWidth, worldHeight, homeX, homeY, constrain, updateZoomFloor, centerXOf]);
 
-  // 初回と盤面サイズの変化時は中心の星座から始める。
-  // (星の増減 = 教材の公開でしか起きないので、閲覧中に不意に動く心配はない。)
+  // 同じ配置の再取得では、オブジェクトや関数が作り直されても視点を動かさない。
+  const contentKey = [
+    worldWidth,
+    worldHeight,
+    contentBounds.minX,
+    contentBounds.minY,
+    contentBounds.maxX,
+    contentBounds.maxY,
+    homeX,
+    homeY,
+  ].join("|");
+  const previousContentKey = useRef<string | null>(null);
   useLayoutEffect(() => {
-    homeView();
-  }, [homeView]);
+    if (previousContentKey.current === contentKey) return;
+    previousContentKey.current = contentKey;
+    // 配置が変わっても、操作後は見ていた場所を可動域へ丸めるだけにする。
+    if (touched.current) {
+      setTransform((t) => constrain(t));
+    } else if (opening.current === "fit") {
+      fitView();
+    } else {
+      homeView();
+    }
+  }, [contentKey, constrain, homeView, fitView]);
 
   /**
    * 箱の大きさが変わったら、いまの見え方を作り直す。

@@ -36,6 +36,23 @@ describe("placeStarLabels", () => {
     expect(placeStarLabels(crowded, 1).get("center")).toBe("hidden");
   });
 
+  it("見出しの障害物を避けて別の側に置く (障害物は拡縮しない画面座標)", () => {
+    const stars = [star("a", 200, 100)];
+    const obstacles = [{ x: 70, y: 65, w: 60, h: 34 }];
+    expect(placeStarLabels(stars, 0.5).get("a")).toBe("below");
+    expect(placeStarLabels(stars, 0.5, obstacles).get("a")).toBe("above");
+  });
+
+  it("障害物に囲まれて置けない名前は隠す", () => {
+    const obstacles = [
+      { x: -30, y: 15, w: 60, h: 34 },
+      { x: -30, y: -49, w: 60, h: 34 },
+      { x: 15, y: -10, w: 60, h: 20 },
+      { x: -75, y: -10, w: 60, h: 20 },
+    ];
+    expect(placeStarLabels([star("a", 0, 0)], 1, obstacles).get("a")).toBe("hidden");
+  });
+
   it("入力順を変えても配置は同じ", () => {
     expect(placeStarLabels(crowded, 1)).toEqual(placeStarLabels([...crowded].reverse(), 1));
   });

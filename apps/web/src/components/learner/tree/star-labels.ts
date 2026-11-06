@@ -33,6 +33,7 @@ export function estimateStarLabelWidth(label: string): number {
 export function placeStarLabels(
   stars: readonly LabelStar[],
   scale: number,
+  obstacles: readonly Rect[] = [],
 ): Map<string, StarLabelSide> {
   const measured = stars.map((star) => ({
     ...star,
@@ -63,7 +64,8 @@ export function placeStarLabels(
     for (const [side, rect] of candidates) {
       if (
         cores.some((core) => overlaps(rect, core)) ||
-        placed.some((label) => overlaps(rect, label))
+        placed.some((label) => overlaps(rect, label)) ||
+        obstacles.some((obstacle) => overlaps(rect, obstacle))
       ) {
         continue;
       }

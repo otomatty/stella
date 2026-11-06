@@ -92,6 +92,7 @@ import {
   type RadialIsland,
   type RadialNode,
 } from "./radial-layout";
+import { ROUTE_ACCENTS, routeAccentOf } from "./route-accents";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
 import { describeStar, hasStarActions, labelOf, type StarDetail } from "./star-detail";
@@ -191,48 +192,11 @@ interface SkillTreeProps {
   className?: string;
 }
 
-/**
- * ルート (本土のカテゴリ) と島ごとのメイン色 — roadmap.sh を参考にした構成の色分け。
- *
- * 扇 / 島のキーは原則カテゴリ (霧の星にも入る)。カテゴリを持たない星はテーマ名に
- * 落ちるので、両方を載せる (`packages/content` の stage.json の category /
- * theme と対で保つ)。値は `rgb(r g b / a)` に埋め込む RGB 三つ組。ここに無い扇
- * (基礎) は従来の星色のまま — ルートや島が増えたらここに 1 行足す。
- */
-const ROUTE_ACCENTS = new Map<string, string>([
-  ["フロントエンド", "56 189 248"], // sky-400
-  ["Web の見た目と動き", "56 189 248"],
-  ["バックエンド", "52 211 153"], // emerald-400
-  ["サーバーとデータの基盤", "52 211 153"],
-  ["フルスタック", "251 113 133"], // rose-400
-  ["Web アプリを作り、届ける力", "251 113 133"],
-  // 島 (本土から離れた星団)。キーは島のカテゴリ = 島タイトル。
-  ["AWS資格", "251 191 36"], // amber-400
-  ["資格で示すクラウド力", "251 191 36"],
-  ["情報処理資格", "167 139 250"], // violet-400
-  ["資格で示す基礎力", "167 139 250"],
-  ["Anthropic認定資格", "232 121 249"], // fuchsia-400
-  ["資格で示すAI開発力", "232 121 249"],
-  ["DevOps", "251 146 60"], // orange-400
-  ["開発と運用をつなぐ", "251 146 60"],
-  ["Python", "45 212 191"], // teal-400
-  ["Python とテストの力", "45 212 191"],
-  ["C#", "129 140 248"], // indigo-400
-  ["Salesforce案件", "163 230 53"], // lime-400
-  ["業務システムの開発", "163 230 53"],
-  ["開発ラボG", "203 213 225"], // slate-300
-  ["開発ラボG の選考", "203 213 225"],
-]);
-
 /** 島の枠とタイトルで、ルート色が無いときに使う色 (slate-300)。 */
 const ISLAND_NEUTRAL = "203 213 225";
 
 function islandAccentOf(key: string): string {
   return ROUTE_ACCENTS.get(key) ?? ISLAND_NEUTRAL;
-}
-
-function routeAccentOf(sector: string): string | undefined {
-  return ROUTE_ACCENTS.get(sector);
 }
 
 /** ルート色を持つ扇の星に渡す CSS 変数 (index.css の tree-star-* が拾う)。 */
@@ -290,6 +254,15 @@ function placeScaleOf(scale: number): number {
   return Math.min(8, 1 / Math.max(0.05, scale));
 }
 
+/** 下辺中央を基準に、地名の見出しと説明を囲む画面 px の矩形。 */
+function headingObstacle(title: string, detail: string | null, x: number, y: number) {
+  const estimate = (text: string) =>
+    Array.from(text).reduce((sum, char) => sum + (char.charCodeAt(0) <= 0x7f ? 7 : 11), 0);
+  const w = Math.max(estimate(title), detail === null ? 0 : estimate(detail)) + 16;
+  const h = detail === null ? 20 : 34;
+  return { x: x - w / 2, y: y - h, w, h };
+}
+
 function PlaceHeading({
   title,
   detail,
@@ -339,9 +312,11 @@ function PlaceHeading({
       >
         {title}
       </span>
-      <span className="tree-place-caption block whitespace-nowrap text-[9px] font-medium leading-tight">
-        {detail}
-      </span>
+      {scale >= LABEL_OVERVIEW_SCALE ? (
+        <span className="tree-place-caption block whitespace-nowrap text-[9px] font-medium leading-tight">
+          {detail}
+        </span>
+      ) : null}
     </Heading>
   );
 }
@@ -546,21 +521,6 @@ export const SkillTree = ({
   );
   const drawnStars = useMemo(() => layout.nodes.filter(drawsStar), [layout, drawsStar]);
   const labelScale = Math.max(0.05, Math.round(scale / 0.05) * 0.05);
-  const labelSides = useMemo(
-    () =>
-      placeStarLabels(
-        drawnStars.map((placed) => ({
-          id: placed.instanceId,
-          x: placed.x,
-          y: placed.y,
-          r: (placed.ring === 0 ? 22 : 16) * starGrowOf(placed.ring === 0, labelScale) * labelScale,
-          label: labelOf(placed.node),
-          extraHeight: starTag?.(placed.node) ? 12 : 0,
-        })),
-        labelScale,
-      ),
-    [drawnStars, labelScale, starTag],
-  );
   const starRadius = useMemo(() => {
     const radii = new Map<string, number>();
     for (const placed of layout.nodes) {
@@ -629,6 +589,54 @@ export const SkillTree = ({
         count: drawnCounts.bySector.get(island.key) ?? 0,
       })),
     [visibleIslands, drawnCounts],
+  );
+  const showPlaceDetails = scale >= LABEL_OVERVIEW_SCALE;
+  // 見出しの文言・星の数・説明行の表示が変わったら、札とルート名の両方を配置し直す。
+  const placeHeadings = useMemo(
+    () => [
+      ...(layout.mainlandBounds && drawnCounts.mainland > 0
+        ? [
+            {
+              title: mainlandTitle,
+              detail: showPlaceDetails ? stageCountLine(drawnCounts.mainland, null) : null,
+              x: (layout.mainlandBounds.minX + layout.mainlandBounds.maxX) / 2,
+              y: layout.mainlandBounds.minY - 48,
+            },
+          ]
+        : []),
+      ...islandFrames.map(({ island, frame, count }) => ({
+        title: island.key,
+        detail: showPlaceDetails ? stageCountLine(count, islandCaption?.(island.key)) : null,
+        x: (frame.minX + frame.maxX) / 2,
+        y: frame.minY,
+      })),
+    ],
+    [
+      layout.mainlandBounds,
+      drawnCounts.mainland,
+      mainlandTitle,
+      islandFrames,
+      islandCaption,
+      showPlaceDetails,
+    ],
+  );
+  const labelSides = useMemo(
+    () =>
+      placeStarLabels(
+        drawnStars.map((placed) => ({
+          id: placed.instanceId,
+          x: placed.x,
+          y: placed.y,
+          r: (placed.ring === 0 ? 22 : 16) * starGrowOf(placed.ring === 0, labelScale) * labelScale,
+          label: labelOf(placed.node),
+          extraHeight: starTag?.(placed.node) ? 12 : 0,
+        })),
+        labelScale,
+        placeHeadings.map(({ title, detail, x, y }) =>
+          headingObstacle(title, detail, x * labelScale, y * labelScale),
+        ),
+      ),
+    [drawnStars, labelScale, starTag, placeHeadings],
   );
   const jumpTargets = useMemo(
     () => [
@@ -704,54 +712,21 @@ export const SkillTree = ({
         : []),
       { left: Math.max(0, visibleView.width - 52), top: 8, width: 44, height: 120 },
     ];
-    // PlaceHeading の下辺中央を、カードの右側を原点とする画面座標へ直す。
-    const headingObstacle = (title: string, detail: string, left: number, top: number) => {
-      const estimate = (text: string) =>
-        Array.from(text).reduce((sum, char) => sum + (char.charCodeAt(0) <= 0x7f ? 7 : 11), 0);
-      const width = Math.max(estimate(title), estimate(detail)) + 16;
-      return {
-        left: left * visibleView.scale + visibleView.x - width / 2,
-        top: top * visibleView.scale + visibleView.y - 34,
-        width,
-        height: 34,
-      };
-    };
-    if (layout.mainlandBounds && drawnCounts.mainland > 0) {
-      obstacles.push(
-        headingObstacle(
-          mainlandTitle,
-          stageCountLine(drawnCounts.mainland, null),
-          (layout.mainlandBounds.minX + layout.mainlandBounds.maxX) / 2,
-          layout.mainlandBounds.minY - 48,
-        ),
+    // カードの右側を原点とする画面座標へ直す。
+    for (const { title, detail, x, y } of placeHeadings) {
+      const rect = headingObstacle(
+        title,
+        detail,
+        x * visibleView.scale + visibleView.x,
+        y * visibleView.scale + visibleView.y,
       );
-    }
-    for (const { island, frame, count } of islandFrames) {
-      obstacles.push(
-        headingObstacle(
-          island.key,
-          stageCountLine(count, islandCaption?.(island.key)),
-          (frame.minX + frame.maxX) / 2,
-          frame.minY,
-        ),
-      );
+      obstacles.push({ left: rect.x, top: rect.y, width: rect.w, height: rect.h });
     }
     return sectorLabelsInView(stars, visibleView, obstacles, mainland).map((label) => ({
       ...label,
       left: label.left + viewInset,
     }));
-  }, [
-    layout,
-    visibleView,
-    viewInset,
-    drawsStar,
-    visibleIslands,
-    showIslandChips,
-    mainlandTitle,
-    drawnCounts.mainland,
-    islandFrames,
-    islandCaption,
-  ]);
+  }, [layout, visibleView, viewInset, drawsStar, visibleIslands, showIslandChips, placeHeadings]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
@@ -912,6 +887,8 @@ export const SkillTree = ({
     <SkillTreeCanvas
       worldWidth={layout.width}
       worldHeight={layout.height}
+      homeX={layout.centerX}
+      homeY={layout.centerY}
       contentBounds={contentBounds}
       handleRef={canvasRef}
       onScaleChange={handleScaleChange}
