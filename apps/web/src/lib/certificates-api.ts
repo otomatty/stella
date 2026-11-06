@@ -40,6 +40,14 @@ export async function fetchMyStageCompletion(stageId: string): Promise<StageComp
   return completion ?? null;
 }
 
+/** 受講者本人のステージごとの達成状況一覧。 */
+export async function fetchMyStageCompletions(): Promise<StageCompletion[]> {
+  const { completions } = await apiFetch<{ completions: StageCompletion[] }>(
+    "/api/certificates/completions",
+  );
+  return completions ?? [];
+}
+
 /** staff 向け: ステージの成績台帳 (受講者 × 達成状況) を取得する。 */
 export async function fetchStageGradebook(stageId: string): Promise<StageGradebook | null> {
   const { gradebook } = await apiFetch<{ gradebook: StageGradebook | null }>(
@@ -78,6 +86,6 @@ export async function verifyCertificate(certCode: string): Promise<CertificateVe
 
 /** 公開検証ページの共有 URL を組み立てる。 */
 export function buildVerificationUrl(certCode: string): string {
-  if (typeof window === "undefined") return `?cert=${encodeURIComponent(certCode)}`;
-  return `${window.location.origin}/?cert=${encodeURIComponent(certCode)}`;
+  if (typeof window === "undefined") return `/verify/${encodeURIComponent(certCode)}`;
+  return `${window.location.origin}/verify/${encodeURIComponent(certCode)}`;
 }

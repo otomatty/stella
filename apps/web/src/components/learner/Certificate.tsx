@@ -13,10 +13,12 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { DISPLAY_NAME } from "@stella/shared/brand/display";
+import { achievementFromSnapshot } from "@stella/shared/cms/certificate-achievement";
+import { formatIssuedDateJa } from "@/lib/certificate-display";
 import { toast } from "sonner";
 import { Download, ExternalLink, Award, CheckCircle } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
-import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
+import { CertificateView } from "@/components/common/CertificateView";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import type { Stage } from "@/data/types";
@@ -38,20 +40,16 @@ interface CertificatePageProps {
 export const CertificatePage = ({
   stages,
   currentUserId,
-  studentName,
-  studentInitials,
   backendEnabled,
 }: CertificatePageProps) => {
   if (!backendEnabled) {
-    return <DemoCertificate name={studentName} initials={studentInitials} />;
+    return <DemoCertificate />;
   }
   // バックエンド設定済みでセッション復元中 (userId 未取得) はデモ証書ではなく読み込み表示。
   if (!currentUserId) {
     return <SkeletonRows rows={3} className="py-6" />;
   }
-  return (
-    <LiveCertificates stages={stages} userId={currentUserId} studentInitials={studentInitials} />
-  );
+  return <LiveCertificates stages={stages} userId={currentUserId} />;
 };
 
 // ---------------------------------------------------------------
@@ -61,10 +59,9 @@ export const CertificatePage = ({
 interface LiveProps {
   stages: Stage[];
   userId: string;
-  studentInitials: string;
 }
 
-function LiveCertificates({ stages, userId, studentInitials }: LiveProps) {
+function LiveCertificates({ stages, userId }: LiveProps) {
   const [certs, setCerts] = useState<CertificateRow[]>([]);
   const [completions, setCompletions] = useState<Record<string, StageCompletion | null>>({});
   const [loading, setLoading] = useState(true);
@@ -157,7 +154,7 @@ function LiveCertificates({ stages, userId, studentInitials }: LiveProps) {
             ) : (
               <div className="flex flex-col gap-8">
                 {certs.map((cert) => (
-                  <IssuedCertificate key={cert.id} cert={cert} fallbackInitials={studentInitials} />
+                  <IssuedCertificate key={cert.id} cert={cert} />
                 ))}
               </div>
             )}
@@ -190,16 +187,10 @@ function LiveCertificates({ stages, userId, studentInitials }: LiveProps) {
   );
 }
 
-function IssuedCertificate({
-  cert,
-  fallbackInitials,
-}: {
-  cert: CertificateRow;
-  fallbackInitials: string;
-}) {
+function IssuedCertificate({ cert }: { cert: CertificateRow }) {
   const verifyUrl = buildVerificationUrl(cert.cert_code);
   return (
-    <div className="flex flex-col gap-3">
+    <div className="w-full max-w-[880px] mx-auto flex flex-col gap-3">
       <div className="flex justify-end gap-2">
         <Button onClick={() => window.print()}>
           <Download size={14} />
@@ -216,9 +207,10 @@ function IssuedCertificate({
         recipientName={cert.recipient_name}
         stageTitle={cert.stage_title}
         issuer={cert.issuer_name}
-        issuedAt={formatIssuedAt(cert.issued_at)}
+        issuedAt={formatIssuedDateJa(cert.issued_at)}
         certCode={cert.cert_code}
-        initials={fallbackInitials}
+        verifyUrl={verifyUrl}
+        achievement={achievementFromSnapshot(cert.criteria_snapshot)}
       />
     </div>
   );
@@ -280,7 +272,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
 // fixtures デモ版 (バックエンド未設定時)
 // ---------------------------------------------------------------
 
-function DemoCertificate({ name, initials }: { name: string; initials: string }) {
+function DemoCertificate() {
   return (
     <>
       <PageHeader
@@ -294,12 +286,14 @@ function DemoCertificate({ name, initials }: { name: string; initials: string })
         }
       />
       <CertificateView
-        recipientName={name}
-        stageTitle="TypeScript 入門"
+        className="w-full max-w-[880px] mx-auto"
+        recipientName="山田 花子"
+        stageTitle="HTML/CSSとデザイン基礎"
         issuer={DISPLAY_NAME}
-        issuedAt="2026-04-10"
+        issuedAt={formatIssuedDateJa("2026-10-28")}
         certCode="FLC-2026-4A9F-2E11"
-        initials={initials}
+        verifyUrl={buildVerificationUrl("FLC-2026-4A9F-2E11")}
+        achievement={{ lessons: { done: 24, total: 24 }, assignments: { done: 6, total: 6 } }}
       />
     </>
   );

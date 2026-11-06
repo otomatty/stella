@@ -10,9 +10,10 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, XCircle } from "@/lib/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Brand } from "@/components/common/Brand";
-import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
+import { CertificateView } from "@/components/common/CertificateView";
 import { isApiConfigured } from "@/lib/api-client";
-import { verifyCertificate } from "@/lib/certificates-api";
+import { formatIssuedDateJa } from "@/lib/certificate-display";
+import { buildVerificationUrl, verifyCertificate } from "@/lib/certificates-api";
 import type { CertificateVerification } from "@stella/shared/cms/types";
 
 export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
@@ -76,10 +77,13 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
               この修了証は有効です
             </div>
             <CertificateView
+              className="w-full"
+              verifyUrl={buildVerificationUrl(certCode)}
+              achievement={result.achievement}
               recipientName={result.recipient_name ?? ""}
               stageTitle={result.stage_title ?? ""}
               issuer={result.issuer_name ?? ""}
-              issuedAt={result.issued_at ? formatIssuedAt(result.issued_at) : ""}
+              issuedAt={result.issued_at ? formatIssuedDateJa(result.issued_at) : ""}
               certCode={result.cert_code ?? certCode}
             />
           </div>
