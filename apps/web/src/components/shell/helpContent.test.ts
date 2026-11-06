@@ -18,6 +18,15 @@ describe("findHelpTopic", () => {
     );
   });
 
+  it("修了証の詳細は一覧とは別のトピックで、1 セグメントだけ受け取る", () => {
+    expect(findHelpTopic("/certificates/cert-123")?.route).toBe("/certificates/$certId");
+    expect(findHelpTopic("/certificates/cert-123/")?.route).toBe("/certificates/$certId");
+    expect(findHelpTopic("/certificates/cert-123/extra")).toBeNull();
+    expect(
+      findHelpTopic("/certificates/cert-123")?.sections.map((section) => section.heading),
+    ).toEqual(["PDF で保存", "検証用のリンクをコピー", "LinkedIn の資格欄に追加", "修了の内容"]);
+  });
+
   it("セグメント数が違うパスにはマッチしない", () => {
     // /stages/$stageId (2 セグメント) が 3 セグメントのパスを拾わないこと
     expect(findHelpTopic("/stages/ts/extra")).toBeNull();

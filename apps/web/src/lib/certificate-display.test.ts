@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  achievementConditionText,
   achievementLabel,
   achievementRows,
   achievementSummary,
   buildLinkedInAddUrl,
   findIssuedCertificate,
+  formatCheckedAtJa,
   formatIssuedDateJa,
+  normalizeCertCode,
   qrPath,
   splitVerificationUrl,
 } from "./certificate-display";
@@ -204,5 +207,46 @@ describe("qrPath", () => {
   });
   it("行の末尾まで黒い場合も閉じる", () => {
     expect(qrPath([[true, true, true]])).toBe("M0 0h3v1h-3z");
+  });
+});
+
+describe("formatCheckedAtJa", () => {
+  it("日本時間で日付と24時間制の時刻を表示する", () => {
+    expect(formatCheckedAtJa(new Date("2026-11-06T10:40:00Z"))).toBe("2026年11月6日 19:40");
+    expect(formatCheckedAtJa(new Date("2026-12-31T15:05:00Z"))).toBe("2027年1月1日 0:05");
+    expect(formatCheckedAtJa(new Date("2026-11-06T00:09:00+09:00"))).toBe("2026年11月6日 0:09");
+  });
+});
+
+describe("achievementConditionText", () => {
+  it("項目が無ければ null", () => {
+    expect(achievementConditionText(null)).toBeNull();
+    expect(achievementConditionText(undefined)).toBeNull();
+    expect(achievementConditionText({})).toBeNull();
+  });
+  it("1〜3項目を所定の順序でつなぎ、total を使う", () => {
+    const lessons = { done: 20, total: 24 };
+    const quizzes = { done: 2, total: 3 };
+    const assignments = { done: 4, total: 6 };
+    expect(achievementConditionText({ lessons })).toBe("レッスン 24 件の完了");
+    expect(achievementConditionText({ quizzes })).toBe("小テスト 3 件の合格");
+    expect(achievementConditionText({ assignments })).toBe("課題 6 件のレビュー合格");
+    expect(achievementConditionText({ assignments, lessons })).toBe(
+      "レッスン 24 件の完了と、課題 6 件のレビュー合格",
+    );
+    expect(achievementConditionText({ assignments, quizzes, lessons })).toBe(
+      "レッスン 24 件の完了、小テスト 3 件の合格と、課題 6 件のレビュー合格",
+    );
+  });
+});
+
+describe("normalizeCertCode", () => {
+  it("前後・途中の空白を除いて大文字にする", () => {
+    expect(normalizeCertCode("  flc-2026-4a9f-2e11  ")).toBe("FLC-2026-4A9F-2E11");
+    expect(normalizeCertCode("\tflc- 2026-\n4a9f-　2e11\r")).toBe("FLC-2026-4A9F-2E11");
+  });
+  it("空白だけなら null", () => {
+    expect(normalizeCertCode("")).toBeNull();
+    expect(normalizeCertCode(" \t\n　")).toBeNull();
   });
 });

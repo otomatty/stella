@@ -29,6 +29,34 @@ export function formatIssuedDateJa(iso: string): string {
   }).format(date);
 }
 
+/** 照会した瞬間を日本時間の 24 時間制で表示する。 */
+export function formatCheckedAtJa(date: Date): string {
+  const time = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    hour: "numeric",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+  return `${formatIssuedDateJa(date.toISOString())} ${time}`;
+}
+
+export function achievementConditionText(
+  a: CertificateAchievement | null | undefined,
+): string | null {
+  if (!a) return null;
+  const items: string[] = [];
+  if (a.lessons) items.push(`レッスン ${a.lessons.total} 件の完了`);
+  if (a.quizzes) items.push(`小テスト ${a.quizzes.total} 件の合格`);
+  if (a.assignments) items.push(`課題 ${a.assignments.total} 件のレビュー合格`);
+  if (items.length === 0) return null;
+  if (items.length === 1) return items[0];
+  return `${items.slice(0, -1).join("、")}と、${items.at(-1)}`;
+}
+
+export function normalizeCertCode(input: string): string | null {
+  return input.replace(/\s/g, "").toUpperCase() || null;
+}
+
 export function achievementLabel(a: CertificateAchievement | null | undefined): string | null {
   if (!a) return null;
   const labels: string[] = [];
