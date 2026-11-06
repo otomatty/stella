@@ -1,6 +1,11 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import type { StageWithChildren, StageGradebook, StageMaterialRow } from "@stella/shared/cms/types";
+import type {
+  StageWithChildren,
+  StageGradebook,
+  LessonMaterialRow,
+  StageMaterialRow,
+} from "@stella/shared/cms/types";
 import { TASK_KIND_LABELS, type TaskKind } from "@stella/shared/tasks/manifest";
 import type { StaffStageTasksResponse } from "@stella/shared/tasks/staff-stage";
 import { useAppShell } from "@/components/shell/app-shell-context";
@@ -21,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getStageWithChildren,
   listStageMaterials,
+  setLessonMaterialArchived,
   downloadLessonMaterial,
   listLessonMaterialVersions,
   downloadLessonMaterialVersion,
@@ -545,24 +551,31 @@ function LearnersTab({ stageId }: { stageId: string }) {
 function MaterialsTab({ stageId }: { stageId: string }) {
   const load = useCallback(() => listStageMaterials(stageId, { includeArchived: true }), [stageId]);
   const { data, error } = useTabData(load);
+  const [materials, setMaterials] = useState<StageMaterialRow[] | null>(null);
+  useEffect(() => setMaterials(data), [data]);
+  const replaceMaterial = (updated: LessonMaterialRow) => {
+    setMaterials(
+      (rows) => rows?.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)) ?? null,
+    );
+  };
   if (error)
     return (
       <p role="alert" className="text-sm text-danger">
         {error}
       </p>
     );
-  if (!data) return <SkeletonRows />;
-  if (data.length === 0) return <p className="text-sm text-ink-3">配布資料はまだありません</p>;
+  if (!materials) return <SkeletonRows />;
+  if (materials.length === 0) return <p className="text-sm text-ink-3">配布資料はまだありません</p>;
   return (
     <div className="space-y-4">
-      {groupStageMaterials(data).map((section) => (
+      {groupStageMaterials(materials).map((section) => (
         <Card key={section.title} className="space-y-4 p-4">
           <h2 className="text-sm font-semibold">{section.title}</h2>
           {section.lessons.map((lesson) => (
             <div key={lesson.id} className="space-y-2">
               <h3 className="text-[13px] font-medium">{lesson.title}</h3>
               {lesson.materials.map((material) => (
-                <MaterialItem key={material.id} material={material} />
+                <MaterialItem key={material.id} material={material} onUpdate={replaceMaterial} />
               ))}
             </div>
           ))}
@@ -581,32 +594,70 @@ async function downloadMaterial(material: StageMaterialRow, version?: number) {
   }
 }
 
-function MaterialItem({ material }: { material: StageMaterialRow }) {
+function MaterialItem({
+  material,
+  onUpdate,
+}: {
+  material: StageMaterialRow;
+  onUpdate: (material: LessonMaterialRow) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [visited, setVisited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const toggleArchived = async () => {
+    setSaving(true);
+    const archived = !material.archived_at;
+    try {
+      onUpdate(await setLessonMaterialArchived(material.id, archived));
+      toast.success(archived ? "配信から外しました" : "配信に戻しました");
+    } catch (err) {
+      toast.error(`配信の変更に失敗: ${err instanceof Error ? err.message : "失敗"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div className="rounded border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 flex-1 break-words text-[13px]">{material.file_name}</span>
+        {material.source === "upload" ? <Badge>手動アップロード</Badge> : null}
         {material.archived_at ? (
-          <Badge title="教材から作らなくなった資料です。受講者の資料タブには出ません。版履歴から旧版を取得できます。">
-            アーカイブ
+          <Badge
+            title={
+              material.source === "upload"
+                ? "講師・管理者が配信から外した資料です。受講者の資料タブとダウンロードには出ません。"
+                : "教材から作らなくなった資料です。受講者の資料タブには出ません。版履歴から旧版を取得できます。"
+            }
+          >
+            {material.source === "upload" ? "配信から外した" : "アーカイブ"}
           </Badge>
         ) : null}
         <Button size="sm" variant="outline" onClick={() => void downloadMaterial(material)}>
           ダウンロード
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          aria-expanded={open}
-          onClick={() => {
-            setVisited(true);
-            setOpen(!open);
-          }}
-        >
-          版履歴
-        </Button>
+        {material.source === "upload" ? (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={saving}
+            onClick={() => void toggleArchived()}
+          >
+            {material.archived_at ? "配信に戻す" : "配信から外す"}
+          </Button>
+        ) : null}
+        {material.source === "auto" ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-expanded={open}
+            onClick={() => {
+              setVisited(true);
+              setOpen(!open);
+            }}
+          >
+            版履歴
+          </Button>
+        ) : null}
       </div>
       {visited ? (
         <div hidden={!open}>

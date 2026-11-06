@@ -53,7 +53,7 @@ export async function getAssignmentRow(id: string): Promise<AssignmentRow | null
 
 /**
  * レッスンに紐づく配布資料一覧。 受講者は published のステージのみ返る。
- * `includeArchived` は staff の管理画面用で、 教材から作らなくなった自動生成資料も含める
+ * `includeArchived` は staff の管理画面用で、 教材から作らなくなった資料・staff が配信から外した資料も含める
  * (旧版を版履歴から取るため)。
  */
 export async function listLessonMaterials(
@@ -78,6 +78,18 @@ export async function listStageMaterials(
     `/api/materials?stageId=${encodeURIComponent(stageId)}${includeArchived ? "&includeArchived=1" : ""}`,
   );
   return rows ?? [];
+}
+
+/** 手動アップロード資料を配信から外す / 戻す (staff のみ)。 */
+export async function setLessonMaterialArchived(
+  materialId: string,
+  archived: boolean,
+): Promise<LessonMaterialRow> {
+  const { row } = await apiFetch<{ row: LessonMaterialRow }>(
+    `/api/materials/${encodeURIComponent(materialId)}`,
+    { method: "PATCH", body: { archived } },
+  );
+  return row;
 }
 
 /**

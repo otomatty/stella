@@ -1,5 +1,5 @@
 /**
- * レッスン配布資料の閲覧 API。
+ * レッスン配布資料の閲覧・配信管理 API。
  *
  * Cloudflare R2 バインディング (`MATERIALS_BUCKET`) 経由で GET する。
  * 配布資料は教材リポジトリを正本として seed が登録する。
@@ -8,8 +8,9 @@
  *                                         受講者は published + active enrollment (quiz と同基準)。
  * - GET    /api/materials?stageId=...   … ステージ全体の配布資料一覧 (Issue #77 —
  *                                         ステージ詳細「教材をダウンロード」)。 認可は同上。
- *   どちらも教材から作らなくなった auto 資料 (`archived_at`) は外す。staff は
+ *   どちらも教材から作らなくなった資料・staff が配信から外した資料 (`archived_at`) は外す。staff は
  *   `includeArchived=1` で含められる (配布資料の管理画面で旧版をたどるため)。
+ * - PATCH  /api/materials/:id           … 手動アップロード資料の配信から外す / 戻す (staff のみ)。
  * - GET    /api/materials/:id/download  … R2 からのプロキシダウンロード (認可は一覧と同じ。
  *                                         `archived_at` のある資料は staff だけ)。
  *
@@ -33,6 +34,7 @@ import {
   sections,
 } from "../db/schema.js";
 import { errorResponse, getCaller, isStaffRole, requireRole, ApiError } from "../lib/authz.js";
+import { auditLogInsert, clientIp } from "../lib/audit.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -55,7 +57,7 @@ const materialToRow = (m: MaterialSel) => ({
 });
 
 /**
- * 一覧に出す資料。教材から作らなくなった auto 資料 (`archived_at`) は外し、staff が
+ * 一覧に出す資料。教材から作らなくなった資料・staff が配信から外した資料 (`archived_at`) は外し、staff が
  * `includeArchived=1` を付けたとき (配布資料の管理画面) だけ含める — 旧版を版履歴から取るため。
  */
 function listedMaterials(caller: Caller, includeArchived: string | undefined) {
@@ -201,6 +203,54 @@ materialsRoute.get("/api/materials", async (c) => {
   }
 });
 
+/** 手動アップロード資料の配信を切り替える。行と R2 のファイルは残す。 */
+materialsRoute.patch("/api/materials/:id", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
+    const body: unknown = await c.req.json().catch(() => null);
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body) ||
+      Object.keys(body).length !== 1 ||
+      !("archived" in body) ||
+      typeof body.archived !== "boolean"
+    ) {
+      throw new ApiError("archived に真偽値を指定してください", 400);
+    }
+    const rows = await db
+      .select()
+      .from(lessonMaterials)
+      .where(eq(lessonMaterials.id, c.req.param("id")))
+      .limit(1);
+    const material = rows[0];
+    if (!material || !(await lessonStageInfo(db, material.lessonId))) {
+      throw new ApiError("資料が見つかりません", 404);
+    }
+    if (material.source === "auto") {
+      throw new ApiError("教材から作る資料は教材の変更で配信が決まります", 400);
+    }
+    if ((material.archivedAt !== null) === body.archived) {
+      return c.json({ row: materialToRow(material) });
+    }
+    const archivedAt = body.archived ? new Date() : null;
+    await db.batch([
+      db.update(lessonMaterials).set({ archivedAt }).where(eq(lessonMaterials.id, material.id)),
+      auditLogInsert(db, caller, {
+        action: body.archived ? "material_withdraw" : "material_restore",
+        targetType: "lesson_material",
+        targetId: material.id,
+        metadata: { lesson_id: material.lessonId, file_name: material.fileName },
+        ip: clientIp(c),
+      }),
+    ]);
+    return c.json({ row: materialToRow({ ...material, archivedAt }) });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 /**
  * 自動生成資料 (source=auto) の版履歴。**staff のみ** — 旧版は「編集前の文面の
  * 読み上げ」と同じ理屈で受講者には渡さない (受講者は常に最新版のみ)。
@@ -317,7 +367,7 @@ materialsRoute.get("/api/materials/:id/download", async (c) => {
     if (!material) throw new ApiError("資料が見つかりません", 404);
 
     await assertMaterialReadable(db, caller, material.lessonId);
-    // 作らなくなった資料は受講者に渡さない (旧版と同じく staff だけが取れる)。
+    // 作らなくなった資料・staff が配信から外した資料は受講者に渡さない (旧版と同じく staff だけが取れる)。
     if (material.archivedAt && !isStaffRole(caller.role))
       throw new ApiError("資料が見つかりません", 404);
 

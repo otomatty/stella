@@ -60,8 +60,12 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
       .from(enrollments)
       .where(learnerOnly(enrollments.userId));
 
-    const activeLearners = new Set(enr.filter((e) => e.status === "active").map((e) => e.userId))
-      .size;
+    const enabledLearnerIds = new Set(learners.filter((l) => !l.disabled).map((l) => l.id));
+    const activeLearners = new Set(
+      enr
+        .filter((e) => e.status === "active" && enabledLearnerIds.has(e.userId))
+        .map((e) => e.userId),
+    ).size;
     const totalEnroll = enr.length;
     const completedEnroll = enr.filter((e) => e.status === "completed").length;
     const expiredEnroll = enr.filter((e) => e.status === "expired").length;
