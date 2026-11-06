@@ -51,6 +51,7 @@ import { Route as AppLibraryBookIdChapterIdRouteImport } from './routes/_app/lib
 import { Route as AppStagesStageIdIndexRouteImport } from './routes/_app/stages.$stageId.index'
 import { Route as AppCoursesCourseIdLessonsLessonIdRouteImport } from './routes/_app/courses.$courseId.lessons.$lessonId'
 import { Route as AppStagesStageIdLessonsLessonIdRouteImport } from './routes/_app/stages.$stageId.lessons.$lessonId'
+import { Route as AppStagesStageIdTasksSplatRouteImport } from './routes/_app/stages.$stageId.tasks.$'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -265,6 +266,12 @@ const AppStagesStageIdLessonsLessonIdRoute =
     path: '/stages/$stageId/lessons/$lessonId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppStagesStageIdTasksSplatRoute =
+  AppStagesStageIdTasksSplatRouteImport.update({
+    id: '/stages/$stageId/tasks/$',
+    path: '/stages/$stageId/tasks/$',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -308,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
   '/stages/$stageId/lessons/$lessonId': typeof AppStagesStageIdLessonsLessonIdRoute
+  '/stages/$stageId/tasks/$': typeof AppStagesStageIdTasksSplatRoute
 }
 export interface FileRoutesByTo {
   '/support': typeof SupportRoute
@@ -350,6 +358,7 @@ export interface FileRoutesByTo {
   '/stages/$stageId': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
   '/stages/$stageId/lessons/$lessonId': typeof AppStagesStageIdLessonsLessonIdRoute
+  '/stages/$stageId/tasks/$': typeof AppStagesStageIdTasksSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -395,6 +404,7 @@ export interface FileRoutesById {
   '/_app/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/_app/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
   '/_app/stages/$stageId/lessons/$lessonId': typeof AppStagesStageIdLessonsLessonIdRoute
+  '/_app/stages/$stageId/tasks/$': typeof AppStagesStageIdTasksSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/stages/$stageId/'
     | '/courses/$courseId/lessons/$lessonId'
     | '/stages/$stageId/lessons/$lessonId'
+    | '/stages/$stageId/tasks/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/support'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/stages/$stageId'
     | '/courses/$courseId/lessons/$lessonId'
     | '/stages/$stageId/lessons/$lessonId'
+    | '/stages/$stageId/tasks/$'
   id:
     | '__root__'
     | '/_app'
@@ -526,6 +538,7 @@ export interface FileRouteTypes {
     | '/_app/stages/$stageId/'
     | '/_app/courses/$courseId/lessons/$lessonId'
     | '/_app/stages/$stageId/lessons/$lessonId'
+    | '/_app/stages/$stageId/tasks/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -833,6 +846,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStagesStageIdLessonsLessonIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/stages/$stageId/tasks/$': {
+      id: '/_app/stages/$stageId/tasks/$'
+      path: '/stages/$stageId/tasks/$'
+      fullPath: '/stages/$stageId/tasks/$'
+      preLoaderRoute: typeof AppStagesStageIdTasksSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -889,6 +909,7 @@ interface AppRouteChildren {
   AppStagesStageIdIndexRoute: typeof AppStagesStageIdIndexRoute
   AppCoursesCourseIdLessonsLessonIdRoute: typeof AppCoursesCourseIdLessonsLessonIdRoute
   AppStagesStageIdLessonsLessonIdRoute: typeof AppStagesStageIdLessonsLessonIdRoute
+  AppStagesStageIdTasksSplatRoute: typeof AppStagesStageIdTasksSplatRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -923,6 +944,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCoursesCourseIdLessonsLessonIdRoute:
     AppCoursesCourseIdLessonsLessonIdRoute,
   AppStagesStageIdLessonsLessonIdRoute: AppStagesStageIdLessonsLessonIdRoute,
+  AppStagesStageIdTasksSplatRoute: AppStagesStageIdTasksSplatRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

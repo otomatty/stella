@@ -29,14 +29,16 @@ import { createAnnouncement } from "@/lib/notifications-api";
 import { fetchTaskBoard, routeToDiscovery } from "@/lib/review-desk-api";
 import { cn } from "@/lib/utils";
 
-interface TaskBoardPanelProps {
+interface TaskBoardPanelBaseProps {
   taskId: string;
   assignedOnly: boolean;
   onOpen: (submissionId: string) => void;
-  onClose: () => void;
   /** 発見教材の画面へ (下書きはそこで作る)。 */
   onOpenDiscovery: () => void;
 }
+
+type TaskBoardPanelProps = TaskBoardPanelBaseProps &
+  ({ embedded: true; onClose?: () => void } | { embedded?: false; onClose: () => void });
 
 const RESULT_VARIANT = { met: "success", unmet: "danger", undetermined: "warning" } as const;
 const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格" } as const;
@@ -47,6 +49,7 @@ const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格
  * つまずき教材 (発見教材) の待ち行列に回す。
  */
 export function TaskBoardPanel({
+  embedded = false,
   taskId,
   assignedOnly,
   onOpen,
@@ -107,14 +110,16 @@ export function TaskBoardPanel({
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="flex items-center gap-1 mb-3 text-ink-3 text-[12.5px] hover:text-foreground"
-      >
-        <ChevronLeft size={14} />
-        キューに戻る
-      </button>
+      {!embedded ? (
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-1 mb-3 text-ink-3 text-[12.5px] hover:text-foreground"
+        >
+          <ChevronLeft size={14} />
+          キューに戻る
+        </button>
+      ) : null}
       {error ? <p className="text-sm text-destructive mb-3">{error}</p> : null}
       {board === null ? (
         error ? null : (
@@ -122,10 +127,14 @@ export function TaskBoardPanel({
         )
       ) : (
         <>
-          <h2 className="text-lg font-semibold mb-0.5">{board.task.title}</h2>
+          {!embedded ? <h2 className="text-lg font-semibold mb-0.5">{board.task.title}</h2> : null}
           <p className="text-[12px] text-ink-3 mb-4">
-            {board.task.stageTitle} · パターン {board.task.pattern} · 受講者{" "}
-            {board.submissions.length}
+            {!embedded ? (
+              <>
+                {board.task.stageTitle} · パターン {board.task.pattern} ·{" "}
+              </>
+            ) : null}
+            受講者 {board.submissions.length}
             名の最新の提出
           </p>
           <div

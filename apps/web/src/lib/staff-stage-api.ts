@@ -1,4 +1,4 @@
-import type { StaffStageTasksResponse } from "@stella/shared/tasks/staff-stage";
+import type { StaffStageTasksResponse, StaffTaskDetail } from "@stella/shared/tasks/staff-stage";
 import { apiFetch } from "./api-client";
 
 export async function fetchStaffStageTasks(
@@ -9,4 +9,13 @@ export async function fetchStaffStageTasks(
     `/api/staff/stages/${encodeURIComponent(stageId)}/tasks`,
     { signal },
   );
+}
+
+export async function fetchStaffTaskDetail(
+  taskId: string,
+  signal?: AbortSignal,
+): Promise<StaffTaskDetail> {
+  return apiFetch<StaffTaskDetail>(`/api/staff/tasks/detail?taskId=${encodeURIComponent(taskId)}`, {
+    signal,
+  });
 }

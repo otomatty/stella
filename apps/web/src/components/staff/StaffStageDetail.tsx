@@ -200,10 +200,10 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
               <TabsTrigger value="materials">配布資料</TabsTrigger>
             </TabsList>
             <TabsContent value="tasks">
-              <TasksTab sections={sections} slug={stage.slug} />
+              <TasksTab sections={sections} slug={stage.slug} stageId={stageId} />
             </TabsContent>
             <TabsContent value="outline">
-              <OutlineTab sections={sections} />
+              <OutlineTab sections={sections} stageId={stageId} />
             </TabsContent>
             <TabsContent value="learners" forceMount hidden={tab !== "learners"}>
               {visited.stageId === stageId && visited.learners ? (
@@ -240,7 +240,15 @@ function WaitingCount({ count }: { count: number }) {
   );
 }
 
-function TasksTab({ sections, slug }: { sections: StaffStageSection[]; slug: string }) {
+function TasksTab({
+  sections,
+  slug,
+  stageId,
+}: {
+  sections: StaffStageSection[];
+  slug: string;
+  stageId: string;
+}) {
   const [filter, setFilter] = useState<StaffTaskFilter>({
     kind: "all",
     waitingOnly: false,
@@ -335,9 +343,14 @@ function TasksTab({ sections, slug }: { sections: StaffStageSection[]; slug: str
                     section.visible.map((task) => (
                       <TableRow key={task.id}>
                         <TableCell>
-                          <span className="block max-w-72 whitespace-normal break-words font-medium">
+                          <Link
+                            to="/stages/$stageId/tasks/$"
+                            params={{ stageId, _splat: task.id }}
+                            search={{ tab: "overview" }}
+                            className="block max-w-72 whitespace-normal break-words font-medium text-brand hover:underline"
+                          >
                             {task.title}
-                          </span>
+                          </Link>
                           <span className="font-mono text-[11px] text-ink-3">
                             {task.id.split(/[/:]/).at(-1)}
                           </span>
@@ -391,7 +404,7 @@ function TasksTab({ sections, slug }: { sections: StaffStageSection[]; slug: str
   );
 }
 
-function OutlineTab({ sections }: { sections: StaffStageSection[] }) {
+function OutlineTab({ sections, stageId }: { sections: StaffStageSection[]; stageId: string }) {
   return (
     <div className="space-y-4">
       {sections.map((section) => (
@@ -414,7 +427,14 @@ function OutlineTab({ sections }: { sections: StaffStageSection[] }) {
               {section.tasks.map((task) => (
                 <li key={task.id} className="flex flex-wrap items-center gap-2 px-4 py-3">
                   <Badge variant="accent">課題</Badge>
-                  <span className="min-w-0 break-words font-medium">{task.title}</span>
+                  <Link
+                    to="/stages/$stageId/tasks/$"
+                    params={{ stageId, _splat: task.id }}
+                    search={{ tab: "overview" }}
+                    className="min-w-0 break-words font-medium text-brand hover:underline"
+                  >
+                    {task.title}
+                  </Link>
                   <Badge>{TASK_KIND_LABELS[task.kind]}</Badge>
                   <span className="text-xs text-ink-3 tabular-nums">
                     提出 {task.counts.submitted} · 合格 {task.counts.passed}
