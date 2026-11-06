@@ -1,7 +1,48 @@
 import { describe, expect, it } from "vitest";
 import type { CertificateRow, StageCompletion } from "@stella/shared/cms/types";
-import type { Stage } from "@/data/types";
-import { buildCertificateOverview } from "./certificate-overview";
+import type { Lesson, Stage } from "@/data/types";
+import type { LessonProgressMap } from "@/lib/lesson-progress";
+import { buildCertificateOverview, continueTarget } from "./certificate-overview";
+
+describe("continueTarget", () => {
+  const lesson = (id: string): Lesson => ({
+    id,
+    title: id,
+    type: "slides",
+    duration: "3分",
+    status: "todo",
+  });
+  const stage: Stage = {
+    id: "a",
+    title: "ステージA",
+    category: "カテゴリ",
+    color: "indigo",
+    progress: 0,
+    lessonsCount: 2,
+    sections: [{ id: "m0", title: "M0", lessons: [lesson("a"), lesson("b")] }],
+  };
+  const done = { completed: true, updatedAt: "2026-11-06T00:00:00.000Z" };
+
+  it("未完了のレッスンがあればそのレッスンへ進む", () => {
+    const map: LessonProgressMap = { a: done };
+    expect(continueTarget(stage, map)).toEqual({ kind: "lesson", lessonId: "b" });
+  });
+
+  it("全レッスン完了ならステージへ進む", () => {
+    const map: LessonProgressMap = { a: done, b: done };
+    expect(continueTarget(stage, map)).toEqual({ kind: "stage" });
+  });
+
+  it("レッスンが無ければステージへ進む", () => {
+    expect(continueTarget({ ...stage, sections: [], lessonsCount: 0 }, {})).toEqual({
+      kind: "stage",
+    });
+  });
+
+  it("ステージ情報が無ければステージへ進む", () => {
+    expect(continueTarget(undefined, {})).toEqual({ kind: "stage" });
+  });
+});
 
 function completion(overrides: Partial<StageCompletion> = {}): StageCompletion {
   return {

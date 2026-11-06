@@ -1,5 +1,14 @@
 import type { CertificateRow, StageCompletion } from "@stella/shared/cms/types";
 import type { Stage } from "@/data/types";
+import { findNextLesson, type LessonProgressMap } from "@/lib/lesson-progress";
+
+export function continueTarget(
+  stage: Stage | undefined,
+  map: LessonProgressMap,
+): { kind: "lesson"; lessonId: string } | { kind: "stage" } {
+  const next = findNextLesson(stage, map);
+  return next ? { kind: "lesson", lessonId: next.lesson.id } : { kind: "stage" };
+}
 
 export interface OverviewStage {
   id: string;

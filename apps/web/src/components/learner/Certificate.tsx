@@ -11,13 +11,16 @@ import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import type { Stage } from "@/data/types";
 import { formatIssuedDateJa } from "@/lib/certificate-display";
-import { buildCertificateOverview, type OverviewStage } from "@/lib/certificate-overview";
+import {
+  buildCertificateOverview,
+  continueTarget,
+  type OverviewStage,
+} from "@/lib/certificate-overview";
 import {
   buildVerificationUrl,
   fetchMyStageCompletions,
   listCertificatesForUser,
 } from "@/lib/certificates-api";
-import { resumeLessonId } from "@/lib/lesson-progress";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 
 interface CertificatePageProps {
@@ -365,11 +368,14 @@ function SectionTitle({
 
 function ResumeButton({ stage, children }: { stage: OverviewStage; children: ReactNode }) {
   const progressMap = useLessonProgressMap();
-  const lessonId = resumeLessonId(stage.stage, progressMap);
+  const target = continueTarget(stage.stage, progressMap);
   return (
     <Button asChild className="min-h-11 sm:min-h-9">
-      {lessonId ? (
-        <Link to="/stages/$stageId/lessons/$lessonId" params={{ stageId: stage.id, lessonId }}>
+      {target.kind === "lesson" ? (
+        <Link
+          to="/stages/$stageId/lessons/$lessonId"
+          params={{ stageId: stage.id, lessonId: target.lessonId }}
+        >
           {children}
           <ChevronRight size={14} aria-hidden="true" />
         </Link>
