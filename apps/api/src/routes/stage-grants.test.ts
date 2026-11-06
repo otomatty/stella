@@ -5,10 +5,18 @@
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { stageUnlocks } from "../db/schema.js";
+import { drizzle } from "drizzle-orm/d1";
+
+import { stageGrants, stageUnlocks } from "../db/schema.js";
+import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import { recordAudit } from "../lib/audit.js";
+import { D1_MAX_BOUND_PARAMS } from "../lib/enrollment-bulk.js";
 import { loadGrantedStages } from "../lib/stage-audience.js";
+import {
+  grantRowsByStageStatements,
+  planStageGrantWriteStatements,
+} from "../lib/stage-grant-diff.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { stageGrantsRoute } from "./stage-grants.js";
 
@@ -56,7 +64,7 @@ const learnerSelect = vi.fn(async () => [
   {
     id: "seed-learner",
     display_name: "受講者A",
-    email: "a@example.com",
+    email: "a@example.com" as string | null,
     role: "student",
     disabled: false,
   },
@@ -66,7 +74,8 @@ const deleteGrants = vi.fn(() => ({ kind: "delete" }));
 const deleted: { table: unknown; where: unknown }[] = [];
 const conflictIgnored: { stageId: string; profileId: string }[] = [];
 const unlockRows: { stageId: string; userId: string; via: string }[] = [];
-const stageCatalog: { id: string; slug: string; prerequisites: string | null }[] = [];
+const stageCatalog: { id: string; slug: string; title?: string; prerequisites: string | null }[] =
+  [];
 const enrollmentRows: { userId: string; stageId: string; status: string }[] = [];
 const certificateRows: { userId: string; stageId: string; revoked: boolean }[] = [];
 const unlockInserted: {
@@ -75,6 +84,7 @@ const unlockInserted: {
   via: string;
   conflictTarget: unknown;
 }[] = [];
+const instructorLinks: { learnerId: string; instructorId: string }[] = [];
 
 type InsertRow = {
   stageId: string;
@@ -192,26 +202,32 @@ function quotedIds(sketch: string, column: string): Set<string> | null {
   return new Set(ids);
 }
 
-function readEnrollmentRows(where?: unknown): { userId: string; stageId: string }[] {
+function readEnrollmentRows(
+  where?: unknown,
+): { userId: string; stageId: string; status: string }[] {
   const sketch = sqlSketch(where);
   const userIds = quotedIds(sketch, "user_id");
+  const stageIds = stageIdsInSketch(sketch);
   const completedOnly = sketch.includes('status = "completed"');
   return enrollmentRows
     .filter((row) => {
       if (userIds && !userIds.has(row.userId)) return false;
+      if (stageIds && !stageIds.has(row.stageId)) return false;
       if (completedOnly && row.status !== "completed") return false;
       return true;
     })
-    .map((row) => ({ userId: row.userId, stageId: row.stageId }));
+    .map((row) => ({ userId: row.userId, stageId: row.stageId, status: row.status }));
 }
 
 function readCertificateRows(where?: unknown): { userId: string; stageId: string }[] {
   const sketch = sqlSketch(where);
   const userIds = quotedIds(sketch, "user_id");
+  const stageIds = stageIdsInSketch(sketch);
   const activeOnly = sketch.includes("revoked = false");
   return certificateRows
     .filter((row) => {
       if (userIds && !userIds.has(row.userId)) return false;
+      if (stageIds && !stageIds.has(row.stageId)) return false;
       if (activeOnly && row.revoked) return false;
       return true;
     })
@@ -280,6 +296,9 @@ const mockDb = {
     }
     if (table === "certificates") {
       return selectWhereOnly(async (where) => readCertificateRows(where));
+    }
+    if (keys.includes("learnerId")) {
+      return selectWhereOnly(async () => instructorLinks.map((row) => ({ ...row })));
     }
     if (keys.includes("userId")) {
       return selectWhereOnly(unlockSelect);
@@ -527,6 +546,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
       name: "講師",
       email: null,
     };
+    stageLookup.mockClear();
     stageLookup.mockResolvedValue([{ id: "stage-granted-1", audience: "granted" }]);
     grantSelect.mockResolvedValue([]);
     profileLookup.mockResolvedValue([{ id: "seed-learner", role: "student", disabled: false }]);
@@ -1174,5 +1194,708 @@ describe("PUT /api/stage-grants/:stageId", () => {
       ),
     );
     expect(unlockInserted).toEqual([]);
+  });
+});
+
+function person(
+  id: string,
+  displayName: string,
+  role: "student" | "instructor" = "student",
+  disabled = false,
+  email: string | null = `${id}@example.com`,
+) {
+  return { id, display_name: displayName, email, role, disabled };
+}
+
+function writtenRows(): {
+  stageId?: string;
+  profileId?: string;
+  grantedBy?: string;
+  userId?: string;
+  via?: string;
+}[] {
+  const rows: {
+    stageId?: string;
+    profileId?: string;
+    grantedBy?: string;
+    userId?: string;
+    via?: string;
+  }[] = [];
+  for (const call of insertGrant.mock.calls) {
+    const value: unknown = call[0];
+    const list = Array.isArray(value) ? value : [value];
+    for (const row of list) {
+      if (typeof row === "object" && row !== null) rows.push(row);
+    }
+  }
+  return rows;
+}
+
+function dummyDb(): Db {
+  const dummy = {
+    prepare: () => ({ bind: () => ({}) }),
+    batch: async () => [],
+    exec: async () => ({}),
+    dump: async () => "",
+  };
+  return drizzle(dummy as never);
+}
+
+const grantedStage = {
+  id: "stage-granted-1",
+  slug: "custom-basics",
+  title: "専用補講",
+  category: "基礎" as string | null,
+  audience: "granted",
+  parent: null as string | null,
+  prerequisites: null as string | null,
+};
+
+describe("GET /api/stage-grants/:stageId/learners", () => {
+  beforeEach(() => {
+    caller = { id: "seed-instructor", role: "instructor", name: "講師", email: null };
+    stageLookup.mockClear();
+    stageLookup.mockResolvedValue([{ ...grantedStage, prerequisites: '["pre-a","pre-b"]' }]);
+    grantSelect.mockReset();
+    grantSelect.mockResolvedValue([]);
+    learnerSelect.mockReset();
+    learnerSelect.mockResolvedValue([
+      person("ada", "山田", "student", false, "Ada@Example.com"),
+      person("ken", "Ｋｅｎ", "student", false, null),
+      person("sato", "佐藤"),
+    ]);
+    unlockRows.length = 0;
+    stageCatalog.length = 0;
+    stageCatalog.push(
+      { id: "stage-pre-a", slug: "pre-a", title: "前提A", prerequisites: null },
+      { id: "stage-pre-b", slug: "pre-b", title: "前提B", prerequisites: null },
+    );
+    enrollmentRows.length = 0;
+    certificateRows.length = 0;
+    instructorLinks.length = 0;
+    vi.mocked(recordAudit).mockClear();
+  });
+
+  it("student は 403", async () => {
+    caller = { ...caller, id: "seed-learner", role: "student", name: "受講者" };
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
+      token: "t",
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("ステージが無ければ 404、catalog なら 400", async () => {
+    stageLookup.mockResolvedValueOnce([]);
+    const missing = await request(app, env, "/api/stage-grants/missing/learners", { token: "t" });
+    expect(missing.status).toBe(404);
+
+    stageLookup.mockResolvedValueOnce([{ ...grantedStage, audience: "catalog" }]);
+    const catalog = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
+      token: "t",
+    });
+    expect(catalog.status).toBe(400);
+    expect(await json<{ error: string }>(catalog)).toEqual({
+      error: "このステージは Extra ステージ (audience=granted) ではありません",
+    });
+  });
+
+  it("知らない status は 400", async () => {
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners?status=gone", {
+      token: "t",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("名前とメールを、全角半角と大文字小文字を無視して検索する", async () => {
+    const ada = new URLSearchParams({ q: "  ＡＤＡ " });
+    const byEmail = await request(
+      app,
+      env,
+      `/api/stage-grants/stage-granted-1/learners?${ada.toString()}`,
+      { token: "t" },
+    );
+    expect(byEmail.status).toBe(200);
+    const emailBody = await json<{ learners: { id: string }[] }>(byEmail);
+    expect(emailBody.learners.map((row) => row.id)).toEqual(["ada"]);
+
+    const ken = new URLSearchParams({ q: "ken" });
+    const byName = await request(
+      app,
+      env,
+      `/api/stage-grants/stage-granted-1/learners?${ken.toString()}`,
+      { token: "t" },
+    );
+    const nameBody = await json<{ learners: { id: string }[] }>(byName);
+    expect(nameBody.learners.map((row) => row.id)).toEqual(["ken"]);
+  });
+
+  it("割り当て・免除・担当・前提で絞り、counts は絞り込み前の人数", async () => {
+    caller = { ...caller, id: "teacher-1", name: "講師A" };
+    learnerSelect.mockResolvedValue([
+      person("ada", "あ"),
+      person("ken", "い"),
+      person("sato", "う"),
+      person("old", "無効", "student", true),
+      person("teacher-1", "講師A", "instructor"),
+      person("teacher-2", "講師B", "instructor"),
+    ]);
+    grantSelect.mockResolvedValue([
+      { profileId: "ada" },
+      { profileId: "ken" },
+      { profileId: "old" },
+    ]);
+    unlockRows.push({ stageId: "stage-granted-1", userId: "ada", via: "staff" });
+    instructorLinks.push(
+      { learnerId: "ada", instructorId: "teacher-1" },
+      { learnerId: "sato", instructorId: "teacher-2" },
+    );
+    enrollmentRows.push(
+      { userId: "ada", stageId: "stage-pre-a", status: "completed" },
+      { userId: "ada", stageId: "stage-pre-b", status: "completed" },
+      { userId: "ken", stageId: "stage-pre-a", status: "active" },
+    );
+
+    const res = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?status=unassigned",
+      { token: "t" },
+    );
+    expect(res.status).toBe(200);
+    const body = await json<{
+      counts: { learners: number; assigned: number; unassigned: number; exempted: number };
+      instructors: { id: string; display_name: string }[];
+      total: number;
+      learners: { id: string }[];
+      stage: { prerequisites: { slug: string; title: string }[] };
+    }>(res);
+    expect(body.counts).toEqual({ learners: 4, assigned: 3, unassigned: 1, exempted: 1 });
+    expect(body.total).toBe(1);
+    expect(body.learners.map((row) => row.id)).toEqual(["sato"]);
+    expect(body.instructors).toEqual([
+      { id: "teacher-1", display_name: "講師A" },
+      { id: "teacher-2", display_name: "講師B" },
+    ]);
+    expect(body.stage.prerequisites).toEqual([
+      { id: "stage-pre-a", slug: "pre-a", title: "前提A" },
+      { id: "stage-pre-b", slug: "pre-b", title: "前提B" },
+    ]);
+
+    const mine = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?instructor=mine",
+      { token: "t" },
+    );
+    expect(
+      (await json<{ learners: { id: string }[] }>(mine)).learners.map((row) => row.id),
+    ).toEqual(["ada"]);
+    const none = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?instructor=none",
+      { token: "t" },
+    );
+    expect(
+      (await json<{ learners: { id: string }[] }>(none)).learners.map((row) => row.id),
+    ).toEqual(["ken", "old"]);
+    const byTeacher = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?instructor=teacher-2",
+      { token: "t" },
+    );
+    expect(
+      (await json<{ learners: { id: string }[] }>(byTeacher)).learners.map((row) => row.id),
+    ).toEqual(["sato"]);
+    const doing = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?prereq=doing",
+      { token: "t" },
+    );
+    expect(
+      (await json<{ learners: { id: string }[] }>(doing)).learners.map((row) => row.id),
+    ).toEqual(["ken"]);
+  });
+
+  it("前提の 3 状態と腕試しの行を返す。解けない slug は落とす", async () => {
+    learnerSelect.mockResolvedValue([
+      person("done", "完了"),
+      person("doing", "途中"),
+      person("none", "未着手"),
+      person("skill", "腕試し"),
+    ]);
+    grantSelect.mockResolvedValue([{ profileId: "skill" }]);
+    unlockRows.push({ stageId: "stage-granted-1", userId: "skill", via: "skill_check" });
+    enrollmentRows.push({ userId: "doing", stageId: "stage-pre-a", status: "active" });
+    certificateRows.push(
+      { userId: "done", stageId: "stage-pre-a", revoked: false },
+      { userId: "done", stageId: "stage-pre-b", revoked: false },
+      { userId: "done", stageId: "stage-pre-a", revoked: true },
+    );
+
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
+      token: "t",
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      counts: { exempted: number };
+      stage: { prerequisites: { slug: string }[] };
+      learners: {
+        id: string;
+        prerequisite_status: string;
+        prerequisites_cleared: boolean;
+        unlocked_by_skill_check: boolean;
+        exempted: boolean;
+      }[];
+    }>(res);
+    expect(body.stage.prerequisites.map((row) => row.slug)).toEqual(["pre-a", "pre-b"]);
+    const byId = new Map(body.learners.map((row) => [row.id, row]));
+    expect(byId.get("done")).toMatchObject({
+      prerequisite_status: "done",
+      prerequisites_cleared: true,
+    });
+    expect(byId.get("doing")).toMatchObject({ prerequisite_status: "doing" });
+    expect(byId.get("none")).toMatchObject({
+      prerequisite_status: "none",
+      prerequisites_cleared: false,
+    });
+    expect(byId.get("skill")).toMatchObject({
+      unlocked_by_skill_check: true,
+      exempted: false,
+    });
+    expect(body.counts.exempted).toBe(0);
+
+    stageLookup.mockResolvedValue([
+      { ...grantedStage, prerequisites: '["pre-a","missing-stage"]' },
+    ]);
+    const unresolved = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
+      token: "t",
+    });
+    const unresolvedBody = await json<{
+      stage: { prerequisites: { slug: string }[] };
+      learners: { id: string; prerequisites_cleared: boolean }[];
+    }>(unresolved);
+    expect(unresolvedBody.stage.prerequisites.map((row) => row.slug)).toEqual(["pre-a"]);
+    expect(unresolvedBody.learners.find((row) => row.id === "done")?.prerequisites_cleared).toBe(
+      false,
+    );
+  });
+
+  it("前提が空のステージは全員クリア済み", async () => {
+    stageLookup.mockResolvedValue([{ ...grantedStage, prerequisites: null }]);
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners?prereq=done", {
+      token: "t",
+    });
+    const body = await json<{
+      learners: { prerequisite_status: string; prerequisites_cleared: boolean }[];
+      stage: { prerequisites: unknown[] };
+    }>(res);
+    expect(body.stage.prerequisites).toEqual([]);
+    expect(body.learners).toHaveLength(3);
+    expect(
+      body.learners.every((row) => row.prerequisites_cleared && row.prerequisite_status === "done"),
+    ).toBe(true);
+    const none = await request(app, env, "/api/stage-grants/stage-granted-1/learners?prereq=none", {
+      token: "t",
+    });
+    expect((await json<{ total: number }>(none)).total).toBe(0);
+  });
+
+  it("50 人ずつ返し、次の offset が無ければ null", async () => {
+    stageLookup.mockResolvedValue([{ ...grantedStage, prerequisites: null }]);
+    learnerSelect.mockResolvedValue(
+      Array.from({ length: 55 }, (_, index) =>
+        person(`u-${String(index).padStart(2, "0")}`, `受講者${String(index).padStart(2, "0")}`),
+      ),
+    );
+    const first = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
+      token: "t",
+    });
+    const firstBody = await json<{
+      total: number;
+      next_offset: number | null;
+      learners: { id: string }[];
+      counts: { learners: number };
+    }>(first);
+    expect(firstBody.total).toBe(55);
+    expect(firstBody.counts.learners).toBe(55);
+    expect(firstBody.learners).toHaveLength(50);
+    expect(firstBody.next_offset).toBe(50);
+    expect(firstBody.learners[0]?.id).toBe("u-00");
+    expect(firstBody.learners[49]?.id).toBe("u-49");
+
+    const second = await request(app, env, "/api/stage-grants/stage-granted-1/learners?offset=50", {
+      token: "t",
+    });
+    const secondBody = await json<{ next_offset: number | null; learners: { id: string }[] }>(
+      second,
+    );
+    expect(secondBody.learners.map((row) => row.id)).toEqual([
+      "u-50",
+      "u-51",
+      "u-52",
+      "u-53",
+      "u-54",
+    ]);
+    expect(secondBody.next_offset).toBeNull();
+  });
+});
+
+describe("PATCH /api/stage-grants/:stageId", () => {
+  beforeEach(() => {
+    caller = { id: "seed-instructor", role: "instructor", name: "講師", email: null };
+    stageLookup.mockClear();
+    stageLookup.mockResolvedValue([{ ...grantedStage }]);
+    grantSelect.mockReset();
+    grantSelect.mockResolvedValue([]);
+    profileLookup.mockReset();
+    profileLookup.mockResolvedValue([{ id: "seed-learner", role: "student", disabled: false }]);
+    unlockRows.length = 0;
+    unlockSelect.mockClear();
+    deleted.length = 0;
+    unlockInserted.length = 0;
+    conflictIgnored.length = 0;
+    deleteGrants.mockClear();
+    insertGrant.mockClear();
+    batchGrants.mockClear();
+    vi.mocked(recordAudit).mockClear();
+  });
+
+  function patch(body: unknown, stageId = "stage-granted-1") {
+    return request(app, env, `/api/stage-grants/${stageId}`, {
+      token: "t",
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("student は 403", async () => {
+    caller = { ...caller, role: "student", id: "seed-learner", name: "受講者" };
+    expect((await patch({ add: ["seed-learner"] })).status).toBe(403);
+  });
+
+  it("ステージが無ければ 404、catalog なら 400", async () => {
+    stageLookup.mockResolvedValueOnce([]);
+    expect((await patch({ add: ["seed-learner"] }, "missing")).status).toBe(404);
+    stageLookup.mockResolvedValueOnce([{ ...grantedStage, audience: "catalog" }]);
+    const res = await patch({ add: ["seed-learner"] });
+    expect(res.status).toBe(400);
+    expect(await json<{ error: string }>(res)).toEqual({
+      error: "このステージは Extra ステージ (audience=granted) ではありません",
+    });
+  });
+
+  it("空の差分、重なり、配列でない値は 400", async () => {
+    expect((await patch({})).status).toBe(400);
+    expect((await patch({ add: ["seed-learner"], remove: ["seed-learner"] })).status).toBe(400);
+    expect((await patch({ exempt: ["seed-learner"], unexempt: ["seed-learner"] })).status).toBe(
+      400,
+    );
+    const res = await patch({ add: "seed-learner" });
+    expect(res.status).toBe(400);
+    expect(await json<{ error: string }>(res)).toEqual({
+      error: "add は文字列の配列で指定してください",
+    });
+    expect(batchGrants).not.toHaveBeenCalled();
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  it("存在しない id、受講者でない id、無効な受講者の追加は 400", async () => {
+    profileLookup.mockResolvedValue([
+      { id: "seed-learner", role: "student", disabled: false },
+      { id: "old", role: "student", disabled: true },
+      { id: "teacher", role: "instructor", disabled: false },
+    ]);
+    for (const id of ["missing", "teacher", "old"]) {
+      const res = await patch({ add: [id] });
+      expect(res.status).toBe(400);
+      expect(await json<{ error: string }>(res)).toEqual({
+        error: "割当できない受講者が含まれています",
+      });
+    }
+    const exempt = await patch({ exempt: ["teacher"] });
+    expect(exempt.status).toBe(400);
+    expect(await json<{ error: string }>(exempt)).toEqual({
+      error: "割当できない受講者が含まれています",
+    });
+    expect(batchGrants).not.toHaveBeenCalled();
+  });
+
+  it("割り当てが無い人の免除は 400", async () => {
+    const res = await patch({ exempt: ["seed-learner"] });
+    expect(res.status).toBe(400);
+    expect(await json<{ error: string }>(res)).toEqual({
+      error: "前提を免除できるのは、割り当てる受講者だけです",
+    });
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  it("新しい受講者を割り当て、監査ログを残す", async () => {
+    const res = await patch({ add: ["seed-learner"] });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      stage_id: string;
+      counts: { learners: number; assigned: number; unassigned: number; exempted: number };
+      ancestor_grants: unknown[];
+    }>(res);
+    expect(body).toEqual({
+      stage_id: "stage-granted-1",
+      counts: { learners: 1, assigned: 1, unassigned: 0, exempted: 0 },
+      ancestor_grants: [],
+    });
+    expect(batchGrants).toHaveBeenCalledTimes(1);
+    expect(writtenRows()).toEqual([
+      expect.objectContaining({
+        stageId: "stage-granted-1",
+        profileId: "seed-learner",
+        grantedBy: "seed-instructor",
+      }),
+    ]);
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: "seed-instructor" }),
+      expect.objectContaining({
+        action: "stage_grants_update",
+        targetType: "stage",
+        targetId: "stage-granted-1",
+        metadata: {
+          added: ["seed-learner"],
+          removed: [],
+          exempted: [],
+          unexempted: [],
+        },
+      }),
+    );
+  });
+
+  it("既に割り当て済みの追加は書き込まない", async () => {
+    grantSelect.mockResolvedValue([{ profileId: "seed-learner" }]);
+    const res = await patch({ add: ["seed-learner"] });
+    expect(res.status).toBe(200);
+    expect(writtenRows()).toEqual([]);
+    expect(batchGrants).not.toHaveBeenCalled();
+  });
+
+  it("外すと staff の免除だけ消え、腕試しの行は delete の対象に入らない", async () => {
+    grantSelect.mockResolvedValue([{ profileId: "leaving" }, { profileId: "skill-learner" }]);
+    profileLookup.mockResolvedValue([
+      { id: "leaving", role: "student", disabled: false },
+      { id: "skill-learner", role: "student", disabled: false },
+    ]);
+    unlockRows.push(
+      { stageId: "stage-granted-1", userId: "leaving", via: "staff" },
+      { stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" },
+    );
+    const res = await patch({ remove: ["leaving", "skill-learner"] });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      counts: { assigned: number; exempted: number };
+    }>(res);
+    expect(body.counts).toMatchObject({ assigned: 0, exempted: 0 });
+    const grantDelete = deleted.find((op) => op.table === stageGrants);
+    const unlockDelete = deleted.find((op) => op.table === stageUnlocks);
+    expect(sqlSketch(grantDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageGrants.stageId, "stage-granted-1"),
+          inArray(stageGrants.profileId, ["leaving", "skill-learner"]),
+        ),
+      ),
+    );
+    expect(sqlSketch(unlockDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.stageId, "stage-granted-1"),
+          eq(stageUnlocks.via, "staff"),
+          inArray(stageUnlocks.userId, ["leaving", "skill-learner"]),
+        ),
+      ),
+    );
+    expect(writtenRows().filter((row) => row.userId)).toEqual([]);
+  });
+
+  it("割り当て済みの免除を足し、腕試しの人は上書きしない", async () => {
+    grantSelect.mockResolvedValue([{ profileId: "seed-learner" }, { profileId: "skill-learner" }]);
+    profileLookup.mockResolvedValue([
+      { id: "seed-learner", role: "student", disabled: false },
+      { id: "skill-learner", role: "student", disabled: false },
+    ]);
+    unlockRows.push({ stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" });
+    const res = await patch({ exempt: ["seed-learner", "skill-learner"] });
+    expect(res.status).toBe(200);
+    expect(writtenRows().filter((row) => row.userId)).toEqual([
+      expect.objectContaining({
+        userId: "seed-learner",
+        stageId: "stage-granted-1",
+        via: "staff",
+      }),
+    ]);
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          exempted: ["seed-learner"],
+          added: [],
+        }),
+      }),
+    );
+  });
+
+  it("免除の解除は staff の行だけを消す", async () => {
+    grantSelect.mockResolvedValue([{ profileId: "seed-learner" }]);
+    unlockRows.push({ stageId: "stage-granted-1", userId: "seed-learner", via: "staff" });
+    const res = await patch({ unexempt: ["seed-learner"] });
+    expect(res.status).toBe(200);
+    const unlockDelete = deleted.find((op) => op.table === stageUnlocks);
+    expect(sqlSketch(unlockDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.stageId, "stage-granted-1"),
+          eq(stageUnlocks.via, "staff"),
+          inArray(stageUnlocks.userId, ["seed-learner"]),
+        ),
+      ),
+    );
+    expect(deleted.filter((op) => op.table === stageGrants)).toEqual([]);
+  });
+
+  it("新たに割り当てると granted の祖先にも足し、既にある組は触らない", async () => {
+    const queue = [
+      [
+        {
+          id: "stage-child",
+          slug: "kubernetes-basics",
+          title: "子",
+          category: null,
+          audience: "granted",
+          parent: "networking-ops-basics",
+          prerequisites: '["networking-ops-basics"]',
+        },
+      ],
+      [
+        {
+          id: "stage-mid",
+          slug: "networking-ops-basics",
+          audience: "granted",
+          parent: "devops-basics",
+          prerequisites: '["devops-basics"]',
+        },
+      ],
+      [
+        {
+          id: "stage-devops",
+          slug: "devops-basics",
+          audience: "granted",
+          parent: null,
+          prerequisites: '["python-basics"]',
+        },
+      ],
+      [
+        {
+          id: "stage-python",
+          slug: "python-basics",
+          audience: "granted",
+          parent: "node-api-basics",
+          prerequisites: '["node-api-basics"]',
+        },
+      ],
+      [
+        {
+          id: "stage-node",
+          slug: "node-api-basics",
+          audience: "catalog",
+          parent: null,
+          prerequisites: null,
+        },
+      ],
+    ];
+    stageLookup.mockImplementation(async () => queue.shift() ?? []);
+    grantSelect.mockImplementation(async (where?: unknown) => {
+      const stageIds = stageIdsInSketch(sqlSketch(where));
+      const rows = [{ stageId: "stage-mid", profileId: "seed-learner" }];
+      return rows.filter((row) => !stageIds || stageIds.has(row.stageId));
+    });
+    const res = await patch({ add: ["seed-learner"] }, "stage-child");
+    expect(res.status).toBe(200);
+    const body = await json<{
+      ancestor_grants: { stage_id: string; profile_ids: string[] }[];
+    }>(res);
+    expect(body.ancestor_grants).toEqual([
+      { stage_id: "stage-devops", profile_ids: ["seed-learner"] },
+      { stage_id: "stage-python", profile_ids: ["seed-learner"] },
+    ]);
+    expect(writtenRows().map((row) => row.stageId)).toEqual([
+      "stage-child",
+      "stage-devops",
+      "stage-python",
+    ]);
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        action: "stage_grants_update",
+        metadata: expect.objectContaining({
+          added: ["seed-learner"],
+          ancestor_grants: body.ancestor_grants,
+        }),
+      }),
+    );
+  });
+
+  it("300 人を一度に足せる", async () => {
+    const ids = Array.from({ length: 300 }, (_, index) => `learner-${index}`);
+    profileLookup.mockResolvedValue(
+      ids.map((id) => ({ id, role: "student" as const, disabled: false })),
+    );
+    const res = await patch({ add: ids });
+    expect(res.status).toBe(200);
+    expect(batchGrants).toHaveBeenCalledTimes(1);
+    const body = await json<{ counts: { assigned: number } }>(res);
+    expect(body.counts.assigned).toBe(300);
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ added: ids }),
+      }),
+    );
+  });
+});
+
+describe("stage grant writes stay within D1 bind limits", () => {
+  it("300 人の追加・削除・免除でも、どの文もバインドは 100 以下", () => {
+    const ids = Array.from({ length: 300 }, (_, index) => `learner-${index}`);
+    const db = dummyDb();
+    const statements = planStageGrantWriteStatements(db, {
+      stageId: "stage-granted-1",
+      grantedBy: "seed-instructor",
+      grantRows: [
+        ...ids.map((profileId) => ({ stageId: "stage-granted-1", profileId })),
+        ...ids.map((profileId) => ({ stageId: "ancestor", profileId })),
+      ],
+      removeProfileIds: ids,
+      deleteStaffUserIds: ids,
+      exemptUserIds: ids,
+    });
+    const grantInserts = statements.filter((stmt) =>
+      stmt.toSQL().sql.includes('insert into "stage_grants"'),
+    );
+    expect(grantInserts.length).toBeGreaterThan(1);
+    for (const stmt of statements) {
+      expect(stmt.toSQL().params.length).toBeLessThanOrEqual(D1_MAX_BOUND_PARAMS);
+    }
+
+    const lookups = grantRowsByStageStatements(
+      db,
+      Array.from({ length: 150 }, (_, index) => `stage-${index}`),
+    );
+    expect(lookups.length).toBeGreaterThan(1);
+    for (const stmt of lookups) {
+      expect(stmt.toSQL().params.length).toBeLessThanOrEqual(D1_MAX_BOUND_PARAMS);
+      expect(stmt.toSQL().sql).not.toMatch(/profile_id" in/i);
+    }
   });
 });

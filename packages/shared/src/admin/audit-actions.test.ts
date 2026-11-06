@@ -11,6 +11,7 @@ describe("audit-actions", () => {
   it("既知の action は日本語ラベルを返す", () => {
     expect(auditActionLabel("user_role_change")).toBe("ロール変更");
     expect(auditActionLabel("stage_publish")).toBe("ステージ公開");
+    expect(auditActionLabel("stage_grants_update")).toBe("Extra の割り当てを変更");
     expect(auditActionLabel("certificate_issue")).toBe("修了証発行");
   });
 
