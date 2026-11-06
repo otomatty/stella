@@ -543,7 +543,7 @@ function LearnersTab({ stageId }: { stageId: string }) {
 }
 
 function MaterialsTab({ stageId }: { stageId: string }) {
-  const load = useCallback(() => listStageMaterials(stageId), [stageId]);
+  const load = useCallback(() => listStageMaterials(stageId, { includeArchived: true }), [stageId]);
   const { data, error } = useTabData(load);
   if (error)
     return (
@@ -588,6 +588,11 @@ function MaterialItem({ material }: { material: StageMaterialRow }) {
     <div className="rounded border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 flex-1 break-words text-[13px]">{material.file_name}</span>
+        {material.archived_at ? (
+          <Badge title="教材から作らなくなった資料です。受講者の資料タブには出ません。版履歴から旧版を取得できます。">
+            アーカイブ
+          </Badge>
+        ) : null}
         <Button size="sm" variant="outline" onClick={() => void downloadMaterial(material)}>
           ダウンロード
         </Button>

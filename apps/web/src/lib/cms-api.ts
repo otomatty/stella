@@ -70,9 +70,12 @@ export async function listLessonMaterials(
  * ステージ全体の配布資料一覧 (Issue #77 — ステージ詳細「教材をダウンロード」)。
  * セクション → レッスン → 登録順に並んだ状態で返る。
  */
-export async function listStageMaterials(stageId: string): Promise<StageMaterialRow[]> {
+export async function listStageMaterials(
+  stageId: string,
+  { includeArchived = false }: { includeArchived?: boolean } = {},
+): Promise<StageMaterialRow[]> {
   const { rows } = await apiFetch<{ rows: StageMaterialRow[] }>(
-    `/api/materials?stageId=${encodeURIComponent(stageId)}`,
+    `/api/materials?stageId=${encodeURIComponent(stageId)}${includeArchived ? "&includeArchived=1" : ""}`,
   );
   return rows ?? [];
 }
