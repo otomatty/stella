@@ -28,6 +28,9 @@ export default defineConfig({
       "apps/vscode/samples/**",
     ],
     environment: "node",
+    // Windows はプロセスの起動とファイル I/O が遅い。 git を起動するテストや
+    // 教材を全部読むテストが既定の 5 秒を超えるので、 Windows だけ 30 秒にする。
+    testTimeout: process.platform === "win32" ? 30_000 : 5_000,
     // 閾値は置かない。 落とすためではなく、 どこが手薄かを見えるようにするため
     // (数字を見ないまま閾値だけ入れると、 通すためのテストが書かれる)。
     coverage: {

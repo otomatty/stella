@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { mutantsFail, solutionPasses } from "../scripts/lib/task-run-check.js";
@@ -207,7 +207,7 @@ describe("テンプレートから類題を書き出す", () => {
     expect(syncVariantTemplates(stages, { check: true }).changed).toHaveLength(3);
     const written = syncVariantTemplates(stages, { check: false });
     expect(written).toMatchObject({ total: 2 });
-    expect(written.changed.map((p) => p.split("/").at(-1))).toEqual([
+    expect(written.changed.map((p) => basename(p))).toEqual([
       "v01-profile",
       "v02-hobby",
       "generated.json",
@@ -233,13 +233,13 @@ describe("テンプレートから類題を書き出す", () => {
     const readme = join(root, PARENT, "private/variants/v01-profile/README.md");
     writeFileSync(readme, "# 手で直した\n");
     const drift = syncVariantTemplates(stages, { check: true }).changed;
-    expect(drift.map((path) => path.split("/").at(-1))).toEqual(["v01-profile"]);
+    expect(drift.map((path) => basename(path))).toEqual(["v01-profile"]);
     // 余分なファイルも食い違いとして見つける。
     syncVariantTemplates(stages, { check: false });
     writeFileSync(join(root, PARENT, "private/variants/v02-hobby/extra.txt"), "x");
-    expect(
-      syncVariantTemplates(stages, { check: true }).changed.map((p) => p.split("/").at(-1)),
-    ).toEqual(["v02-hobby"]);
+    expect(syncVariantTemplates(stages, { check: true }).changed.map((p) => basename(p))).toEqual([
+      "v02-hobby",
+    ]);
     syncVariantTemplates(stages, { check: false });
     expect(syncVariantTemplates(stages, { check: true }).changed).toEqual([]);
   });
@@ -267,9 +267,10 @@ describe("テンプレートから類題を書き出す", () => {
       join(templateDir, "params.json"),
       JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
     );
-    expect(
-      syncVariantTemplates(stages, { check: true }).changed.map((p) => p.split("/").at(-1)),
-    ).toEqual(["v02-hobby", "generated.json"]);
+    expect(syncVariantTemplates(stages, { check: true }).changed.map((p) => basename(p))).toEqual([
+      "v02-hobby",
+      "generated.json",
+    ]);
     syncVariantTemplates(stages, { check: false });
     expect(existsSync(join(variantsDir, "v02-hobby"))).toBe(false);
     expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([
