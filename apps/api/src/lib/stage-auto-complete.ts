@@ -625,6 +625,52 @@ async function batchComputeCounts(
   return counts;
 }
 
+/** 1 受講者の複数ステージを集計する。対象ステージの認可は呼び出し側で行う。 */
+export async function computeUserStageCompletions(
+  db: Db,
+  userId: string,
+  stageRows: (typeof stages.$inferSelect)[],
+): Promise<StageCompletion[]> {
+  const stageIds = stageRows.map((stage) => stage.id);
+  const countsByStage = await batchComputeCounts(
+    db,
+    stageIds,
+    userId,
+    stageRows.filter((stage) => stage.format === 2).map((stage) => stage.id),
+  );
+  const certRows = await selectChunked(stageIds, (slice) =>
+    db
+      .select({ stageId: certificates.stageId, certCode: certificates.certCode })
+      .from(certificates)
+      .where(and(eq(certificates.userId, userId), inArray(certificates.stageId, slice))),
+  );
+  const certByStage = new Map(certRows.map((row) => [row.stageId, row.certCode]));
+  return stageRows.map((stage) => {
+    const counts = countsByStage.get(stage.id) ?? EMPTY_COUNTS;
+    const certCode = certByStage.get(stage.id) ?? null;
+    return {
+      user_id: userId,
+      stage_id: stage.id,
+      stage_title: stage.title,
+      total_lessons: counts.totalLessons,
+      completed_lessons: counts.completedLessons,
+      total_quizzes: counts.totalQuizzes,
+      passed_quizzes: counts.passedQuizzes,
+      total_assignments: counts.totalAssignments,
+      passed_assignments: counts.passedAssignments,
+      criteria: {
+        require_all_lessons: stage.requireAllLessons,
+        require_quiz_pass: stage.requireQuizPass,
+        require_assignment_pass: stage.requireAssignmentPass,
+        auto_issue_certificate: stage.autoIssueCertificate,
+      },
+      met: completionMet(stage, counts),
+      has_certificate: certCode !== null,
+      cert_code: certCode,
+    };
+  });
+}
+
 /** 発行時点の判定材料を `criteria_snapshot` に残す (手動発行と同じ StageCompletion 形)。 */
 function toCompletionSnapshot(
   stage: typeof stages.$inferSelect,
