@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { StageEditor } from "@/components/admin/StageEditor";
 import { SkillTree, type SkillTreeHandle } from "@/components/learner/tree/SkillTree";
+import { routeAccentOf } from "@/components/learner/tree/route-accents";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,9 @@ import {
   offBoardNote,
   planStaffStages,
   publishToggleLabel,
+  staffMapContents,
   staffStarTag,
+  type StaffIslandEntry,
   stageAudienceLabel,
   stageManagementCounts,
   stageManagementTitle,
@@ -76,6 +79,8 @@ export function StageManagementPage({
     isAdmin ? (highlightStage?.id ?? null) : null,
   );
   const [grantStageId, setGrantStageId] = useState<string | null>(null);
+  const [selectedIslandKey, setSelectedIslandKey] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -100,20 +105,27 @@ export function StageManagementPage({
   }, [load]);
 
   const plan = useMemo(() => planStaffStages(stages ?? []), [stages]);
-  const entryId = useMemo(() => entryStageId(plan.board), [plan]);
-  // 検索から開いた講師は、その星が盤面にあればそこへ。無いときは入口の星へ。
+  const contents = useMemo(() => staffMapContents(plan.board, stages ?? []), [plan, stages]);
+  const selectedIsland = contents.islands.find((island) => island.key === selectedIslandKey);
+  const entryId = useMemo(() => entryStageId(plan.board), [plan.board]);
+  // 検索から開いた講師はその星を優先。PC は全体、それ以外は入口へ寄せる。
   const initialFocusStageId =
     !isAdmin && highlightStage && plan.board.some((stage) => stage.id === highlightStage.id)
       ? highlightStage.id
-      : entryId;
+      : isDesktop
+        ? null
+        : entryId;
   const counts = useMemo(() => stageManagementCounts(stages ?? []), [stages]);
   const matches = useMemo(() => filterStagesByQuery(stages ?? [], query), [stages, query]);
   const byId = useMemo(() => new Map((stages ?? []).map((stage) => [stage.id, stage])), [stages]);
 
   const scrollOffBoard = useCallback(
     (id: string) => {
-      if (expanded) {
-        document.getElementById(`staff-stage-${id}`)?.scrollIntoView({ block: "nearest" });
+      setSelectedIslandKey(null);
+      setQuery("");
+      const row = document.getElementById(`staff-stage-${id}`);
+      if (expanded && row) {
+        row.scrollIntoView({ block: "nearest" });
         return;
       }
       pendingScrollId.current = id;
@@ -144,12 +156,12 @@ export function StageManagementPage({
 
   useEffect(() => {
     const id = pendingScrollId.current;
-    if (!id || !expanded) return;
+    if (!id || !expanded || selectedIslandKey !== null || query.trim() !== "") return;
     const row = document.getElementById(`staff-stage-${id}`);
     if (!row) return;
     pendingScrollId.current = null;
     row.scrollIntoView({ block: "nearest" });
-  }, [expanded]);
+  }, [expanded, selectedIslandKey, query]);
 
   const togglePublish = async (stage: StaffSkillMapStageNode) => {
     try {
@@ -188,7 +200,20 @@ export function StageManagementPage({
     }
   };
 
+  const selectIsland = (key: string) => {
+    setSelectedIslandKey(key);
+    setSelectedRegion(null);
+    setExpandedPref(true);
+    treeRef.current?.focusRegion(key);
+  };
+
+  const focusRegion = (key: string) => {
+    const focused = treeRef.current?.focusRegion(key);
+    setSelectedRegion(focused ? key : null);
+  };
+
   const selectStage = (id: string) => {
+    setSelectedIslandKey(null);
     setQuery("");
     if (plan.board.some((stage) => stage.id === id)) {
       treeRef.current?.focusStage(id);
@@ -245,6 +270,14 @@ export function StageManagementPage({
             activeStageId={null}
             queuedStageIds={EMPTY_QUEUE}
             initialFocusStageId={initialFocusStageId}
+            initialFit={isDesktop && initialFocusStageId === null}
+            showIslandChips={false}
+            islandCaption={(key) => {
+              const island = contents.islands.find((entry) => entry.key === key);
+              return island ? `表示: ${island.visibility}` : null;
+            }}
+            selectedIslandKey={selectedIslandKey}
+            onSelectIsland={selectIsland}
             onResumeStage={noop}
             onStartStage={noop}
             onQueueStage={noop}
@@ -333,6 +366,16 @@ export function StageManagementPage({
                 <SkeletonRows rows={3} />
               ) : showError ? (
                 <p className="text-[12.5px] text-destructive">{error}</p>
+              ) : selectedIsland ? (
+                <StaffIslandDetail
+                  island={selectedIsland}
+                  isAdmin={isAdmin}
+                  onBack={() => setSelectedIslandKey(null)}
+                  onSelectIsland={selectIsland}
+                  onEdit={setEditingId}
+                  onToggle={(stage) => void togglePublish(stage)}
+                  onAssign={setGrantStageId}
+                />
               ) : (
                 <>
                   {error ? <p className="text-[12px] text-destructive">{error}</p> : null}
@@ -372,7 +415,44 @@ export function StageManagementPage({
                     ) : null}
                   </div>
 
-                  {plan.offBoard.length > 0 ? (
+                  {query.trim() === "" ? (
+                    <nav aria-label="地図の目次">
+                      <h2 className="text-[12px] font-semibold">地図の目次</h2>
+                      <p className="text-[11px] text-ink-4">押すとその場所へ寄ります</p>
+                      <h3 className="mb-1 mt-3 text-[11px] text-ink-3">本土 · Basic</h3>
+                      <ContentsRow
+                        label="開発スキル（本土）"
+                        count={contents.mainland.count}
+                        selected={selectedRegion === contents.mainland.title}
+                        onClick={() => focusRegion(contents.mainland.title)}
+                      />
+                      {contents.mainland.routes.map((route) => (
+                        <ContentsRow
+                          key={route.key}
+                          label={route.key}
+                          count={route.count}
+                          routeKey={route.key}
+                          indent
+                          selected={selectedRegion === route.key}
+                          onClick={() => focusRegion(route.key)}
+                        />
+                      ))}
+                      <h3 className="mb-1 mt-3 text-[11px] text-ink-3">島 · Extra</h3>
+                      {contents.islands.map((island) => (
+                        <ContentsRow
+                          key={island.key}
+                          label={island.key}
+                          routeKey={island.key}
+                          count={island.count}
+                          caption={`表示: ${island.visibility}`}
+                          selected={selectedIslandKey === island.key}
+                          onClick={() => selectIsland(island.key)}
+                        />
+                      ))}
+                    </nav>
+                  ) : null}
+
+                  {query.trim() === "" && plan.offBoard.length > 0 ? (
                     <section aria-label="盤面に載らないステージ">
                       <h2 className="text-[12px] font-semibold text-ink-2">
                         盤面に載らないステージ
@@ -559,5 +639,180 @@ function BoardMessage({ children }: { children: ReactNode }) {
     <div className="tree-board flex h-full w-full flex-wrap items-center justify-center gap-3 px-4 text-center text-[12.5px]">
       {children}
     </div>
+  );
+}
+
+function RouteDot({ routeKey }: { routeKey: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block size-2 shrink-0 rounded-full"
+      style={{ backgroundColor: `rgb(${routeAccentOf(routeKey) ?? "203 213 225"})` }}
+    />
+  );
+}
+
+function ContentsRow({
+  label,
+  count,
+  routeKey,
+  caption,
+  indent,
+  selected,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  routeKey?: string;
+  caption?: string;
+  indent?: boolean;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "flex min-h-[30px] w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] hover:bg-sunken",
+        indent && "pl-5",
+        selected && "bg-sunken",
+      )}
+    >
+      {routeKey ? <RouteDot routeKey={routeKey} /> : null}
+      <span className="min-w-0 flex-1">
+        <span className="block">{label}</span>
+        {caption ? <span className="block text-[10px] text-ink-4">{caption}</span> : null}
+      </span>
+      <span className="text-[11px] text-ink-4">{count}</span>
+    </button>
+  );
+}
+
+function StaffIslandDetail({
+  island,
+  isAdmin,
+  onBack,
+  onSelectIsland,
+  onEdit,
+  onToggle,
+  onAssign,
+}: {
+  island: StaffIslandEntry;
+  isAdmin: boolean;
+  onBack: () => void;
+  onSelectIsland: (key: string) => void;
+  onEdit: (id: string) => void;
+  onToggle: (stage: StaffSkillMapStageNode) => void;
+  onAssign: (id: string) => void;
+}) {
+  return (
+    <>
+      <Button type="button" size="sm" variant="ghost" className="self-start" onClick={onBack}>
+        地図の目次へ戻る
+      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <RouteDot routeKey={island.key} />
+        <h2 className="text-[15px] font-semibold">{island.key}</h2>
+        {island.allExtra ? <Badge variant="accent">島 · Extra</Badge> : null}
+      </div>
+      <dl className="space-y-3 text-[12px]">
+        <div>
+          <dt className="text-ink-4">表示条件</dt>
+          <dd>
+            {island.visibility}
+            {island.allExtra ? <span className="ml-1 text-ink-3">＋ 割り当て</span> : null}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-ink-4">最初の前提</dt>
+          <dd>
+            {island.prerequisite ? (
+              <>
+                {island.prerequisite.title}
+                <span className="ml-1 text-ink-3">（{island.prerequisite.routeKey}）</span>
+              </>
+            ) : (
+              "なし"
+            )}
+          </dd>
+        </div>
+        {island.next.length > 0 ? (
+          <div>
+            <dt className="text-ink-4">この島の先</dt>
+            <dd>
+              {island.next.map((next) => (
+                <button
+                  type="button"
+                  key={next.key}
+                  aria-pressed={false}
+                  onClick={() => onSelectIsland(next.key)}
+                  className="flex min-h-[30px] w-full items-center gap-2 rounded-md py-1 text-left hover:bg-sunken"
+                >
+                  <RouteDot routeKey={next.key} />
+                  <span>
+                    {next.key}
+                    <span className="block text-[11px] text-ink-4">表示: {next.visibility}</span>
+                  </span>
+                </button>
+              ))}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+      <section aria-label="島のステージ">
+        <h3 className="text-[12px] font-semibold">
+          ステージ <span className="font-normal text-ink-4">{island.count}</span>
+        </h3>
+        <ol className="mt-2 flex flex-col gap-2">
+          {island.stages.map((stage, index) => (
+            <li key={stage.id} className="rounded-lg border border-border px-3 py-2">
+              <div className="flex items-start gap-2 text-[13px] font-medium">
+                <span className="text-ink-4">{index + 1}.</span>
+                <span>{stage.title ?? stage.slug}</span>
+              </div>
+              <p className="break-all text-[11px] text-ink-4">{stage.slug}</p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                <Badge variant={statusBadgeVariant(stage.status)}>
+                  {stageStatusLabel(stage.status)}
+                </Badge>
+                <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
+                  {stageAudienceLabel(stage.audience)}
+                </Badge>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {isAdmin ? (
+                  <>
+                    <Button type="button" size="sm" onClick={() => onEdit(stage.id)}>
+                      <Edit size={12} />
+                      編集
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onToggle(stage)}
+                    >
+                      {publishToggleLabel(stage.status)}
+                    </Button>
+                  </>
+                ) : null}
+                {stage.audience === "granted" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAssign(stage.id)}
+                  >
+                    受講者を割り当てる
+                  </Button>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </>
   );
 }

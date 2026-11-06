@@ -223,9 +223,26 @@ async function ensureStateDir(root: string): Promise<string> {
 }
 
 /**
+ * Windows の O_EXCL (CREATE_NEW) は先の無いリンクをたどって外に作り、O_NOFOLLOW も無いので、先に lstat で確かめる。
+ */
+export async function createNewFile(file: string, data: string | Buffer): Promise<void> {
+  // ponytail: Windows では lstat と作成の間にリンクへ差し替えられると防げない。
+  try {
+    await lstat(file);
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT") throw error;
+    await writeFile(file, data, {
+      flag: constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0),
+    });
+    return;
+  }
+  throw Object.assign(new Error(`EEXIST: file already exists, open '${file}'`), { code: "EEXIST" });
+}
+
+/**
  * 拡張の状態ファイル (`.stella/<name>`) を書く。信頼していないフォルダーでも HTML の確認は
  * 結果を残すので、置かれていたリンクをたどって課題フォルダーの外を書き換えないようにする。
- * 新しいファイルを `wx` (O_EXCL。リンクも既存とみなして失敗する) で作ってから名前を付け替える。
+ * 新しいファイルを `wx` (O_EXCL。Windows では先の無いリンクをたどる) で作ってから名前を付け替える。
  * 付け替えは置き換え先がリンクでもリンクそのものを置き換え、リンク先には書かない。
  * keepExisting なら、すでに何か (リンクを含む) があれば何もしない。
  */
@@ -239,7 +256,7 @@ export async function writeStateFile(
   const file = path.join(dir, name);
   if (options.keepExisting) {
     try {
-      await writeFile(file, content, { flag: "wx" });
+      await createNewFile(file, content);
     } catch (error) {
       if (errorCode(error) !== "EEXIST") throw error;
     }

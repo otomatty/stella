@@ -262,7 +262,7 @@ def json_bytes(value):
 
 
 def main():
-    sys.stdout.reconfigure(errors="backslashreplace")  # 結果の JSON にサロゲートがあっても落ちない
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")  # 結果の JSON は OS のロケールに依らず常に UTF-8。サロゲートがあっても落ちない
     parser = argparse.ArgumentParser()
     parser.add_argument("book_dir")
     parser.add_argument("-o", "--output")

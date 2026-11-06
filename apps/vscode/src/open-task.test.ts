@@ -394,16 +394,16 @@ describe("課題を開く", () => {
   it("同じ場所かは、あればファイルシステムの実体で比べる", async () => {
     // 大文字と小文字だけが違う別々のフォルダー (大文字小文字を区別するボリューム)。
     // macOS として比べても、実体が違えば別の場所とみなす。
-    const upper = path.join(state.home, "Web-Training");
-    const lower = path.join(state.home, "web-training-case");
+    const upper = path.join(state.home, "Case-Folder");
+    const lower = path.join(state.home, "case-folder-link");
     await mkdir(upper);
     // 大文字小文字を区別しないボリューム (macOS の既定など) では作れないので、確かめない。
-    const caseSensitive = await mkdir(path.join(state.home, "web-Training")).then(
+    const caseSensitive = await mkdir(path.join(state.home, "case-Folder")).then(
       () => true,
       () => false,
     );
     if (caseSensitive)
-      expect(await samePath(upper, path.join(state.home, "web-Training"), "darwin")).toBe(false);
+      expect(await samePath(upper, path.join(state.home, "case-Folder"), "darwin")).toBe(false);
     // 表記が違っても同じ実体なら同じ場所 (大文字小文字を区別しないボリュームやリンク)。
     await symlink(upper, lower);
     expect(await samePath(upper, lower, "darwin")).toBe(true);

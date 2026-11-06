@@ -34,7 +34,7 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import { chunk, D1_MAX_BOUND_PARAMS } from "../lib/enrollment-bulk.js";
+import { D1_MAX_BOUND_PARAMS, chunk } from "../lib/enrollment-bulk.js";
 import { passCountsForLesson } from "../lib/reviewed-progress.js";
 import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audience.js";
 import {
@@ -42,6 +42,7 @@ import {
   completionMet,
   computeUserStageCompletions,
   genCertCode,
+  stageCompletionCounts,
 } from "../lib/stage-auto-complete.js";
 import { recordStagePathEvents } from "../lib/stage-path-events.js";
 import type { Db } from "../db/client.js";
@@ -97,7 +98,35 @@ async function computeStageCompletion(
     .limit(1);
   if (!target[0]) return null;
 
-  return (await computeUserStageCompletions(db, userId, [stage]))[0] ?? null;
+  const counts = await stageCompletionCounts(db, stage, userId);
+  const met = completionMet(stage, counts);
+
+  const certRows = await db
+    .select({ certCode: certificates.certCode })
+    .from(certificates)
+    .where(and(eq(certificates.userId, userId), eq(certificates.stageId, stageId)))
+    .limit(1);
+
+  return {
+    user_id: userId,
+    stage_id: stageId,
+    stage_title: stage.title,
+    total_lessons: counts.totalLessons,
+    completed_lessons: counts.completedLessons,
+    total_quizzes: counts.totalQuizzes,
+    passed_quizzes: counts.passedQuizzes,
+    total_assignments: counts.totalAssignments,
+    passed_assignments: counts.passedAssignments,
+    criteria: {
+      require_all_lessons: stage.requireAllLessons,
+      require_quiz_pass: stage.requireQuizPass,
+      require_assignment_pass: stage.requireAssignmentPass,
+      auto_issue_certificate: stage.autoIssueCertificate,
+    },
+    met,
+    has_certificate: certRows.length > 0,
+    cert_code: certRows[0]?.certCode ?? null,
+  };
 }
 
 /**
@@ -118,7 +147,6 @@ async function batchComputeCompletions(
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
     .where(eq(sections.stageId, stageId));
-  const lessonIds = lessonRows.map((l) => l.id);
   const assignmentLessonIds = lessonRows
     .filter((l) => l.type === "assignment" || l.type === "code")
     .map((l) => l.id);
@@ -134,63 +162,63 @@ async function batchComputeCompletions(
   const totalQuizzes = quizIds.length;
   const totalAssignments = assignmentLessonIds.length;
 
-  // 固定条件 (合否・レッスン種別) に余裕を残し、2 つの IN を合計 100 未満にする。
-  const selectPairs = async <R>(
-    ids: string[],
-    run: (users: string[], ids: string[]) => Promise<R[]>,
-  ): Promise<R[]> => {
-    const rows: R[] = [];
-    const size = Math.floor((D1_MAX_BOUND_PARAMS - 10) / 2);
-    for (const users of chunk(userIds, size)) {
-      for (const slice of chunk(ids, size)) rows.push(...(await run(users, slice)));
-    }
-    return rows;
-  };
-
-  const progressRows = await selectPairs(lessonIds, (users, ids) =>
-    db
-      .select({ userId: lessonProgress.userId, lessonId: lessonProgress.lessonId })
-      .from(lessonProgress)
-      .where(
-        and(
-          eq(lessonProgress.completed, true),
-          inArray(lessonProgress.userId, users),
-          inArray(lessonProgress.lessonId, ids),
-        ),
-      ),
-  );
-  const quizPassRows = await selectPairs(quizIds, (users, ids) =>
-    db
-      .select({ userId: quizAttempts.userId, quizId: quizAttempts.quizId })
-      .from(quizAttempts)
-      .where(
-        and(
-          eq(quizAttempts.passed, true),
-          inArray(quizAttempts.userId, users),
-          inArray(quizAttempts.quizId, ids),
-        ),
-      ),
-  );
-  const assignPassRows = await selectPairs(assignmentLessonIds, (users, ids) =>
-    db
-      .select({ userId: submissions.studentId, lessonId: submissions.lessonId })
-      .from(submissions)
-      .innerJoin(lessons, eq(lessons.id, submissions.lessonId))
-      .where(
-        and(
-          eq(submissions.verdict, "pass"),
-          inArray(submissions.studentId, users),
-          inArray(submissions.lessonId, ids),
-          passCountsForLesson(),
-        ),
-      ),
-  );
-  const certRows = await selectPairs([stageId], (users) =>
-    db
-      .select({ userId: certificates.userId, certCode: certificates.certCode })
-      .from(certificates)
-      .where(and(eq(certificates.stageId, stageId), inArray(certificates.userId, users))),
-  );
+  // 受講者 id だけを刻み、レッスンなどの所属は JOIN でステージに絞る。
+  const progressRows: { userId: string; lessonId: string }[] = [];
+  const quizPassRows: { userId: string; quizId: string }[] = [];
+  const assignPassRows: { userId: string | null; lessonId: string | null }[] = [];
+  const certRows: { userId: string; certCode: string }[] = [];
+  for (const userIdChunk of chunk(userIds, D1_MAX_BOUND_PARAMS - 10)) {
+    progressRows.push(
+      ...(await db
+        .select({ userId: lessonProgress.userId, lessonId: lessonProgress.lessonId })
+        .from(lessonProgress)
+        .innerJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
+        .innerJoin(sections, eq(sections.id, lessons.sectionId))
+        .where(
+          and(
+            eq(lessonProgress.completed, true),
+            inArray(lessonProgress.userId, userIdChunk),
+            eq(sections.stageId, stageId),
+          ),
+        )),
+    );
+    quizPassRows.push(
+      ...(await db
+        .select({ userId: quizAttempts.userId, quizId: quizAttempts.quizId })
+        .from(quizAttempts)
+        .innerJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
+        .innerJoin(lessons, eq(lessons.id, quizzes.lessonId))
+        .innerJoin(sections, eq(sections.id, lessons.sectionId))
+        .where(
+          and(
+            eq(quizAttempts.passed, true),
+            inArray(quizAttempts.userId, userIdChunk),
+            eq(sections.stageId, stageId),
+          ),
+        )),
+    );
+    assignPassRows.push(
+      ...(await db
+        .select({ userId: submissions.studentId, lessonId: submissions.lessonId })
+        .from(submissions)
+        .innerJoin(lessons, eq(lessons.id, submissions.lessonId))
+        .innerJoin(sections, eq(sections.id, lessons.sectionId))
+        .where(
+          and(
+            eq(submissions.verdict, "pass"),
+            inArray(submissions.studentId, userIdChunk),
+            eq(sections.stageId, stageId),
+            passCountsForLesson(),
+          ),
+        )),
+    );
+    certRows.push(
+      ...(await db
+        .select({ userId: certificates.userId, certCode: certificates.certCode })
+        .from(certificates)
+        .where(and(eq(certificates.stageId, stageId), inArray(certificates.userId, userIdChunk)))),
+    );
+  }
 
   const setBy = <T>(rows: T[], key: (r: T) => string | null, val: (r: T) => string | null) => {
     const m = new Map<string, Set<string>>();

@@ -498,7 +498,8 @@ describe("C# のテンプレート (dotnet-test)", () => {
         const second = await run();
         expect(second.steps.find((step) => step.id === "deps")?.status).toBe("skipped");
       } finally {
-        await rm(dir, { recursive: true, force: true });
+        // Windows では dotnet test のあと testhost.exe が少しの間ロックされ、削除が EPERM になる。
+        await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       }
     },
     300_000,
