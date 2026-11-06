@@ -10,6 +10,7 @@ import {
   rosterDiff,
   setRosterAssigned,
   setRosterExempted,
+  stageGrantRoleLabel,
   toggleVisibleAssignments,
   visibleAssignmentState,
   type RosterLocalFilter,
@@ -260,5 +261,18 @@ describe("保存の文言", () => {
     ).toBe(
       "「Kubernetes」の割り当てを保存しました。前のステージ「ネットワーク」にも 2 人を割り当てました。前のステージ「前の Extra ステージ」にも 1 人を割り当てました。",
     );
+  });
+});
+
+describe("stageGrantRoleLabel", () => {
+  it.each([
+    ["instructor", "講師"],
+    ["admin", "管理者"],
+    ["platform_admin", "管理者"],
+    ["student", null],
+    [undefined, null],
+    ["unknown", null],
+  ])("%s のバッジは %s", (role, label) => {
+    expect(stageGrantRoleLabel(role)).toBe(label);
   });
 });

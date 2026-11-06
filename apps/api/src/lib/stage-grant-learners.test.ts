@@ -137,9 +137,9 @@ describe("listStageGrantLearners", () => {
       },
       query({ status: "unassigned" }),
     );
-    expect(result.counts).toEqual({ learners: 4, assigned: 3, unassigned: 1, exempted: 1 });
-    expect(result.learners.map((row) => row.id)).toEqual(["sato"]);
-    expect(result.total).toBe(1);
+    expect(result.counts).toEqual({ learners: 5, assigned: 3, unassigned: 2, exempted: 1 });
+    expect(result.learners.map((row) => row.id)).toEqual(["sato", "staff"]);
+    expect(result.total).toBe(2);
     expect(
       listed(
         {
@@ -289,6 +289,9 @@ describe("listStageGrantLearners", () => {
         profile("ada", "山田"),
         profile("teacher-2", "講師B", null, "instructor", false),
         profile("teacher-1", "講師A", null, "instructor", false),
+        profile("admin", "管理者", null, "admin"),
+        profile("platform", "運営", null, "platform_admin"),
+        profile("disabled-staff", "無効講師", null, "instructor", true),
       ],
       assignedIds: new Set(["old"]),
       instructorLinks: [
@@ -296,9 +299,13 @@ describe("listStageGrantLearners", () => {
         { learnerId: "old", instructorId: "teacher-1" },
       ],
     });
-    expect(result.learners.map((row) => [row.id, row.selectable])).toEqual([
-      ["ada", true],
-      ["old", false],
+    expect(result.learners.map((row) => [row.id, row.selectable, row.role])).toEqual([
+      ["platform", true, "platform_admin"],
+      ["admin", true, "admin"],
+      ["teacher-1", true, "instructor"],
+      ["teacher-2", true, "instructor"],
+      ["ada", true, "student"],
+      ["old", false, "student"],
     ]);
     expect(result.instructors).toEqual([
       { id: "teacher-1", display_name: "講師A" },
@@ -311,10 +318,18 @@ describe("countStageGrantLearners", () => {
   it("絞り込み前の人数を、割り当てと免除に分ける", () => {
     expect(
       countStageGrantLearners(
-        [profile("ada", "あ"), profile("ken", "い"), profile("old", "う", null, "student", true)],
+        [
+          profile("ada", "あ"),
+          profile("ken", "い"),
+          profile("old", "う", null, "student", true),
+          profile("teacher", "講師", null, "instructor"),
+          profile("admin", "管理者", null, "admin"),
+          profile("platform", "運営", null, "platform_admin"),
+          profile("disabled", "無効", null, "admin", true),
+        ],
         new Set(["ada", "old"]),
         new Set(["old"]),
       ),
-    ).toEqual({ learners: 3, assigned: 2, unassigned: 1, exempted: 1 });
+    ).toEqual({ learners: 6, assigned: 2, unassigned: 4, exempted: 1 });
   });
 });

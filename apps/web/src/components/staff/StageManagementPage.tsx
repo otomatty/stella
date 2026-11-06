@@ -514,7 +514,7 @@ export function StageManagementPage({
                                   variant="outline"
                                   onClick={() => setGrantStageId(stage.id)}
                                 >
-                                  受講者を割り当てる
+                                  ユーザーを割り当てる
                                 </Button>
                               ) : null}
                             </div>
@@ -618,7 +618,7 @@ function StaffStageDetail({
         ) : null}
         {stage.audience === "granted" ? (
           <Button type="button" size="sm" variant="outline" onClick={onAssign}>
-            受講者を割り当てる
+            ユーザーを割り当てる
           </Button>
         ) : null}
       </div>
@@ -805,7 +805,7 @@ function StaffIslandDetail({
                     variant="outline"
                     onClick={() => onAssign(stage.id)}
                   >
-                    受講者を割り当てる
+                    ユーザーを割り当てる
                   </Button>
                 ) : null}
               </div>

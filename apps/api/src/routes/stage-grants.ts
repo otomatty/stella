@@ -1,20 +1,20 @@
 /**
- * 専用ステージ (`audience = granted`) の受講者割当 API。
+ * 専用ステージ (`audience = granted`) のユーザー割当 API。
  *
- *   GET /api/stage-grants … granted ステージ一覧 + 割当先 + 前提を免除した受講者
- *     + 前提をクリア済みの受講者 + 受講者ピッカー用一覧
- *   GET /api/stage-grants/:stageId/learners … 1 ステージの受講者を検索・絞り込み・50 人ずつ返す。
+ *   GET /api/stage-grants … granted ステージ一覧 + 割当先 + 前提を免除したユーザー
+ *     + 前提をクリア済みのユーザー + ユーザーピッカー用一覧
+ *   GET /api/stage-grants/:stageId/learners … 1 ステージのユーザーを検索・絞り込み・50 人ずつ返す。
  *   PUT /api/stage-grants/:stageId … `{ profile_ids, unlocked_profile_ids? }` で grant を置換。
  *   PATCH /api/stage-grants/:stageId … `{ add, remove, exempt, unexempt }` の差分を 1 回の batch で書く。
  *     応答は `{ stage_id, profile_ids, unlocked_profile_ids, ancestor_grants }`。ancestor_grants は
  *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
  *
- * `unlocked_profile_ids` は、割り当てた受講者のうち前提を免除する人 (`stage_unlocks.via = staff`)。
+ * `unlocked_profile_ids` は、割り当てたユーザーのうち前提を免除する人 (`stage_unlocks.via = staff`)。
  * 指定すると、そのステージの staff の行のうち指定に無い人だけを消し、指定された人を足す
  * (残した行の日時はそのまま)。省くと、割当から外した人の前提の免除だけを外す。
  * 腕試し (`skill_check`) で開いた行は消さず、上書きもしない。
  * 割り当ても前提の免除も、受講開始は自己開始のまま (`POST /api/stages/:id/start`)。
- * 新たに割り当てた受講者には、線の親と前提をたどった Extra (granted) のステージにも同じ割当を足す
+ * 新たに割り当てたユーザーには、線の親と前提をたどった Extra (granted) のステージにも同じ割当を足す
  * (外したとき、および既にある割当は触らない)。catalog に着いたらそこから先はたどらない。
  * 自動で足す側の insert だけ、同時保存で祖先が重複しても一意制約で失敗しない。
  *
@@ -53,6 +53,7 @@ import {
 } from "../lib/stage-grant-diff.js";
 import {
   countStageGrantLearners,
+  isAssignableStageGrantProfile,
   listStageGrantLearners,
   parseStageGrantLearnerQuery,
 } from "../lib/stage-grant-learners.js";
@@ -85,7 +86,7 @@ function prerequisiteSlugsFromRow(row: { prerequisites: string | null }): string
 }
 
 /**
- * 前提 slug をすべてステージ id に解けてクリアしている受講者。
+ * 前提 slug をすべてステージ id に解けてクリアしているユーザー。
  * 前提が空なら全員。行が無い (undefined) ときは誰も載せない。解けない slug は未達。
  */
 function prerequisitesClearedProfileIds(
@@ -234,7 +235,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
 
     const learners = profileRows
       .filter((row) => {
-        const selectable = row.role === "student" && !row.disabled;
+        const selectable = isAssignableStageGrantProfile(row);
         return selectable || grantedProfileIds.has(row.id);
       })
       .sort((a, b) => a.display_name.localeCompare(b.display_name, "ja"))
@@ -242,7 +243,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
         id: row.id,
         display_name: row.display_name,
         email: row.email,
-        selectable: row.role === "student" && !row.disabled,
+        selectable: isAssignableStageGrantProfile(row),
       }));
 
     const learnerIds = learners.map((row) => row.id);
@@ -316,7 +317,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     if (requestedUnlocks !== undefined) {
       const assigned = new Set(profileIds);
       if (requestedUnlocks.some((id) => !assigned.has(id))) {
-        throw new ApiError("前提を免除できるのは、割り当てる受講者だけです", 400);
+        throw new ApiError("前提を免除できるのは、割り当てるユーザーだけです", 400);
       }
     }
 
@@ -352,14 +353,13 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
         .from(profiles)
         .where(inArray(profiles.id, profileIds));
       if (profileRows.length !== profileIds.length) {
-        throw new ApiError("割当できない受講者が含まれています", 400);
+        throw new ApiError("割当できないユーザーが含まれています", 400);
       }
-      const keepable = profileRows.every((row) => {
-        const selectable = row.role === "student" && !row.disabled;
-        return selectable || existingGrantIds.has(row.id);
-      });
+      const keepable = profileRows.every(
+        (row) => isAssignableStageGrantProfile(row) || existingGrantIds.has(row.id),
+      );
       if (!keepable) {
-        throw new ApiError("割当できない受講者が含まれています", 400);
+        throw new ApiError("割当できないユーザーが含まれています", 400);
       }
     }
 
@@ -511,7 +511,7 @@ function rememberStage(map: Map<string, Set<string>>, userId: string, stageId: s
   else map.set(userId, new Set([stageId]));
 }
 
-/** 前提 slug を id と題名に解く。受講者 id は並べない。 */
+/** 前提 slug を id と題名に解く。ユーザー id は並べない。 */
 async function loadStagesBySlug(db: Db, slugs: readonly string[]) {
   const map = new Map<string, { id: string; title: string }>();
   const unique = [...new Set(slugs)];

@@ -1,5 +1,5 @@
 /**
- * 受講者の割り当て一覧で、サーバーの行に未保存の変更を重ねる。
+ * ユーザーの割り当て一覧で、サーバーの行に未保存の変更を重ねる。
  *
  * ページを移動しても変更は残す。割り当てを外した人の免除は、差分の unexempt には
  * 入れない（サーバーの remove が staff の免除を消す）。
@@ -9,6 +9,7 @@ export interface StageRosterRow {
   id: string;
   display_name: string;
   email: string | null;
+  role?: string;
   selectable: boolean;
   instructor: { id: string; display_name: string } | null;
   assigned: boolean;
@@ -104,7 +105,7 @@ export function exemptionControl(
   return { kind: "switch", checked: exempted, enabled: assigned };
 }
 
-/** 無効な受講者は、いま割り当て済みなら外すことだけできる。 */
+/** 無効なユーザーは、いま割り当て済みなら外すことだけできる。 */
 export function canToggleAssignment(
   row: Pick<StageRosterRow, "selectable">,
   assigned: boolean,
@@ -231,7 +232,7 @@ export function rosterChangeCount(diff: StageRosterDiff): number {
   return diff.add.length + diff.remove.length + diff.exempt.length + diff.unexempt.length;
 }
 
-/** 変更した受講者の人数。同じ人への複数の操作は 1 人。 */
+/** 変更したユーザーの人数。同じ人への複数の操作は 1 人。 */
 export function rosterChangedLearnerCount(diff: StageRosterDiff): number {
   return new Set([...diff.add, ...diff.remove, ...diff.exempt, ...diff.unexempt]).size;
 }
@@ -382,4 +383,11 @@ export function composeRosterRows(args: {
   }
 
   return loaded.map((row) => viewOf(row, pending));
+}
+
+/** 割り当て一覧で表示するロールのバッジ。 */
+export function stageGrantRoleLabel(role: string | undefined): string | null {
+  if (role === "instructor") return "講師";
+  if (role === "admin" || role === "platform_admin") return "管理者";
+  return null;
 }
