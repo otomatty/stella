@@ -70,7 +70,7 @@ async function resolveMaterial(
   id: string,
   opts: SkillMapLoadOptions,
 ): Promise<DiscoveryMaterialRow> {
-  // ロールのゲートも 1 か所に寄せる。顔ぶれは腕試しと同じ (受講者 + 管理者)。
+  // ロールのゲートも 1 か所に寄せる。顔ぶれは腕試しと同じ (受講者・講師・管理者)。
   requireCanTakeSkillCheck(caller);
   const material = await loadDiscoveryMaterial(db, id);
   // 存在しない / 未承認 を **同じ 400** に丸める。

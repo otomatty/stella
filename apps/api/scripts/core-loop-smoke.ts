@@ -176,6 +176,7 @@ async function main(): Promise<void> {
   let correctOptionId = "";
   let wrongOptionId = "";
   let enrollmentId = "";
+  let instructorEnrollmentId = "";
   let presetId = "";
   let soloPresetId = "";
   let sharedPresetId = "";
@@ -372,9 +373,11 @@ async function main(): Promise<void> {
     );
   });
 
-  await step("学習を見る側のロール (講師) は自己開始できない (403)", async () => {
-    const r = await call("POST", `/api/stages/${stageId}/start`, { token: instructor });
-    assert(r.status === 403, `講師: 403 を期待したが ${r.status}`);
+  await step("講師も自分で開始できる (受講者の画面で確かめるため)", async () => {
+    const res = await ok("POST", `/api/stages/${stageId}/start`, { token: instructor });
+    instructorEnrollmentId = res.enrollment.id;
+    assert(instructorEnrollmentId, "enrollment.id が返らない");
+    assert(res.created === true, "初回の開始が created:true にならない");
   });
 
   await step("退役した割当 API は 410 を返す (Phase 3b)", async () => {
@@ -997,6 +1000,8 @@ async function main(): Promise<void> {
       );
     }
     if (enrollmentId) await ok("DELETE", `/api/enrollments/${enrollmentId}`, { token: admin });
+    if (instructorEnrollmentId)
+      await ok("DELETE", `/api/enrollments/${instructorEnrollmentId}`, { token: admin });
     if (stageId) await ok("DELETE", `/api/cms/stages/${stageId}`, { token: admin });
     const res = await ok("GET", "/api/audit-logs?limit=200", { token: admin });
     const rows = res.rows as Array<{
