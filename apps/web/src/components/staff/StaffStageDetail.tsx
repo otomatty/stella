@@ -130,17 +130,11 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
               <Badge variant={node.audience === "granted" ? "accent" : "default"}>
                 {stageAudienceLabel(node.audience)}
               </Badge>
-              <Badge
-                variant={
-                  node.status === "published"
-                    ? "success"
-                    : node.status === "archived"
-                      ? "danger"
-                      : "default"
-                }
-              >
-                {stageStatusLabel(node.status)}
-              </Badge>
+              {node.status !== "published" ? (
+                <Badge variant={node.status === "archived" ? "danger" : "default"}>
+                  {stageStatusLabel(node.status)}
+                </Badge>
+              ) : null}
             </div>
             <h1 className="break-words text-xl font-bold">{stage.title}</h1>
             <p className="break-all font-mono text-xs text-ink-3">{stage.slug}</p>

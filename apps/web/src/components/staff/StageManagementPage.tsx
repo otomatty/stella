@@ -385,9 +385,11 @@ export function StageManagementPage({
                             </div>
                             <div className="text-[11px] text-ink-4">{stage.slug}</div>
                             <div className="mt-1.5 flex flex-wrap gap-1">
-                              <Badge variant={statusBadgeVariant(stage.status)}>
-                                {stageStatusLabel(stage.status)}
-                              </Badge>
+                              {stage.status !== "published" ? (
+                                <Badge variant={statusBadgeVariant(stage.status)}>
+                                  {stageStatusLabel(stage.status)}
+                                </Badge>
+                              ) : null}
                               <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
                                 {stageAudienceLabel(stage.audience)}
                               </Badge>
@@ -484,7 +486,9 @@ function StarDetailCard({
         {category !== "" ? ` · ${category}` : ""}
       </p>
       <div className="flex flex-wrap gap-1">
-        <Badge variant={statusBadgeVariant(stage.status)}>{stageStatusLabel(stage.status)}</Badge>
+        {stage.status !== "published" ? (
+          <Badge variant={statusBadgeVariant(stage.status)}>{stageStatusLabel(stage.status)}</Badge>
+        ) : null}
         <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
           {stageAudienceLabel(stage.audience)}
         </Badge>
@@ -654,9 +658,11 @@ function StaffIslandDetail({
               </div>
               <p className="break-all text-[11px] text-ink-4">{stage.slug}</p>
               <div className="mt-1.5 flex flex-wrap gap-1">
-                <Badge variant={statusBadgeVariant(stage.status)}>
-                  {stageStatusLabel(stage.status)}
-                </Badge>
+                {stage.status !== "published" ? (
+                  <Badge variant={statusBadgeVariant(stage.status)}>
+                    {stageStatusLabel(stage.status)}
+                  </Badge>
+                ) : null}
                 <Badge variant={stage.audience === "granted" ? "accent" : "default"}>
                   {stageAudienceLabel(stage.audience)}
                 </Badge>

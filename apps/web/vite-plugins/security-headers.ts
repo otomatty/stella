@@ -78,15 +78,11 @@ export function buildContentSecurityPolicy(input: CspInput): string {
     [
       "script-src",
       "'self'",
-      // sql.js と QuickJS (課題のプレビュー採点) の WASM。
+      // pdf.js (スライドの PDF の表示) の worker が WebAssembly のデコーダーを使うため。
       "'wasm-unsafe-eval'",
-      // CMS の課題エディタが使うブラウザ版 ESLint は、 ルール設定の検証 (ajv) で `new Function` を
-      // 呼ぶ。 外すと管理者のプレビュー採点が動かない。 inline script・外部 script・
-      // `javascript:` は引き続き止まる。 ESLint を Worker に移せば外せる。
-      "'unsafe-eval'",
       ...input.inlineScripts.map(sha256Source),
     ],
-    // CodeMirror・sonner・xterm が実行時に <style> を差し込むので 'unsafe-inline' が要る。
+    // sonner が実行時に <style> を差し込むので 'unsafe-inline' が要る。
     ["style-src", "'self'", "'unsafe-inline'", GOOGLE_FONTS_CSS],
     ["font-src", "'self'", "data:", GOOGLE_FONTS_FILES],
     // blob: はスキルツリーのステージアイコン (API から取った SVG を blob URL で mask-image に渡す)。

@@ -139,15 +139,15 @@ describe("entryStageId", () => {
 });
 
 describe("stageManagementCounts", () => {
-  it("公開中・下書き・Extra を数える。アーカイブの Extra は Extra に入れない", () => {
+  it("全ステージと Extra を数える。アーカイブはどちらにも入れない", () => {
     const counts = stageManagementCounts([
       stage({ id: "a", status: "published" }),
       stage({ id: "b", status: "draft" }),
       stage({ id: "c", status: "published", audience: "granted" }),
       stage({ id: "d", status: "archived", audience: "granted" }),
     ]);
-    expect(counts).toEqual({ published: 2, draft: 1, extra: 1 });
-    expect(formatStageManagementCounts(counts)).toBe("公開中 2 · 下書き 1 · Extra 1");
+    expect(counts).toEqual({ total: 3, extra: 1 });
+    expect(formatStageManagementCounts(counts)).toBe("全 3 ステージ · Extra 1");
   });
 });
 

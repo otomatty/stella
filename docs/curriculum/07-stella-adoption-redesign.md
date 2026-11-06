@@ -297,7 +297,7 @@ packages/content/
 | `next-app` | nextjs-basics | `next build`と、`next start`で開いた画面のPlaywright |
 | `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える(§5.5、実装済み) |
 | `dotnet-test` | C# のステージ (準備中) | .NET SDK 10・xUnit。手元でビルドとテストを動かす |
-| `quickjs`(旧) | fe-kamoku-b、CMSのプレビュー | 今のまま |
+| `quickjs`(旧) | fe-kamoku-b | 今のまま |
 
 runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。Node.jsは22.13以上の22系と24系に限る。道具の多くが奇数版(23)に対応しないため、環境の要件に使える版の一覧(`majors`)を足し、環境診断は23を「この版は使えません」とする。
 
@@ -841,7 +841,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 上の範囲を実装した。
 
 - **記法:** 行頭の`:::os windows` / `:::os macos`で始め、行頭の`:::`だけの行で閉じる。空行だけを挟んで続くブロックを1組(タブ1つ)にする。入れ子、リスト・引用の中、未知のOS名は誤りとする。コードブロックの中の`:::`は記法として扱わない。
-- **解析:** `packages/shared/src/markdown/os-blocks.ts`の1つを、Web・VS Code・PDF・検査が共有する。誤りのある本文も、その行を本文として残して描く。CMSで直した本文でも、画面から本文が消えない。
+- **解析:** `packages/shared/src/markdown/os-blocks.ts`の1つを、Web・VS Code・PDF・検査が共有する。誤りのある本文も、その行を本文として残して描く。
 - **Web:** まとめ・課題文のテキストレッスンで、OSのタブにする。既定は、プロフィールの設定(`profiles.os_preference`、`POST /api/me`)、端末からの推定、Windowsの順に決める。タブの横に「あなたのOS: Windows(変更)」を出す。「変更」と設定画面の「教材のOS」から保存できる。タブの切り替えでは、設定を変えない。
 - **VS Code:** レッスンのドキュメントと課題文のパネル(`STELLA: 課題文を表示する`)で、`process.platform`のOSのタブを開いておく。WebViewはスクリプトを使わず、ラジオボタンとCSSで切り替える。生のHTMLは、今までどおり文字として出す。
 - **画像:** `<名前>.windows.png` / `<名前>.macos.png`の対で、トピックの`assets/`に置く。R2へは図解と同じ経路で上げる(SVGに加えてPNG・WebP・JPEG)。
