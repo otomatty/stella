@@ -1284,3 +1284,63 @@
     transform: rotate(-54deg);
   }
 }
+
+/* 証書の本文。後の宣言が無効なブラウザでは、先の keep-all が残る。 */
+.certificate-phrase {
+  word-break: keep-all;
+  text-wrap: balance;
+}
+.certificate-phrase {
+  word-break: auto-phrase;
+}
+
+/* 修了証の詳細だけ。名前付きページなので、ほかの画面の印刷サイズは変えない。 */
+@page certificate {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  html:has(.print-certificate),
+  body:has(.print-certificate) {
+    height: 210mm;
+    margin: 0;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  body:has(.print-certificate) {
+    page: certificate;
+  }
+
+  body:has(.print-certificate) * {
+    visibility: hidden;
+    /* シェルの overflow が、固定した証書を紙の外で切らないようにする。 */
+    overflow: visible;
+  }
+
+  body:has(.print-certificate) .print-certificate,
+  body:has(.print-certificate) .print-certificate * {
+    visibility: visible;
+  }
+
+  body:has(.print-certificate) .print-certificate {
+    position: fixed;
+    inset: 0;
+    width: 297mm;
+    height: 210mm;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: hidden;
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body:has(.print-certificate) .print-certificate > * {
+    width: 100%;
+    height: 100%;
+  }
+}

@@ -1,76 +1,403 @@
-/**
- * 修了証の見た目 (プレゼンテーション専用)。
- * 受講者ページ (Certificate.tsx) と公開検証ページ (PublicCertificateVerify.tsx) で共用する。
- */
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
+import type { CertificateAchievement } from "@stella/shared/cms/certificate-achievement";
+import { BrandMark } from "@/components/common/BrandMark";
+import { VerificationQr } from "@/components/common/VerificationQr";
+import { achievementLabel, splitVerificationUrl } from "@/lib/certificate-display";
 
 interface CertificateViewProps {
   recipientName: string;
   stageTitle: string;
-  /** 発行者表示。発行済みは保存された名前、新しく出すものは DISPLAY_NAME。 */
+  /** 発行済みの証書は発行時に保存された名前。 */
   issuer: string;
-  /** 発行日 (YYYY-MM-DD 等に整形済み)。 */
+  /** 日本の発行日として整形済みの文字列。 */
   issuedAt: string;
   certCode: string;
-  /** 受講者イニシャル (中央の丸バッジ)。 */
-  initials?: string;
+  verifyUrl: string;
+  achievement?: CertificateAchievement | null;
+  className?: string;
 }
 
-export const CertificateView = ({
+/** A4 横の証書。内部の長さは紙の幅を基準とした cqw で縮尺を保つ。 */
+export function CertificateView({
   recipientName,
   stageTitle,
   issuer,
   issuedAt,
   certCode,
-  initials,
-}: CertificateViewProps) => (
-  <div className="bg-card border border-border rounded-lg py-14 px-12 relative overflow-hidden max-w-[760px] mx-auto text-center print:shadow-none">
-    <div className="absolute inset-4 border border-border-2 rounded-lg pointer-events-none" />
-    <div className="w-[72px] h-[72px] rounded-full mx-auto mb-4 bg-ink text-card grid place-items-center text-[22px] tracking-tight font-semibold relative">
-      {initials || recipientName.slice(0, 2)}
-    </div>
-    <h2 className="text-xs tracking-widest uppercase text-ink-3 font-semibold mb-1.5 relative">
-      Certificate of Completion
-    </h2>
-    <div className="text-[11.5px] text-ink-3 uppercase tracking-wider relative">修了証明書</div>
-    <div className="text-[32px] tracking-tight font-semibold my-5 relative">{recipientName}</div>
-    <div className="text-sm text-ink-2 leading-relaxed mb-5 relative">
-      上記の者は本学習プログラム
-      <br />
-      <strong className="text-foreground text-[15px]">「{stageTitle}」</strong>
-      <br />
-      の全カリキュラムを修了したことを認定します
-    </div>
-    <div className="flex justify-around text-xs text-ink-3 mt-7 pt-5 border-t border-dashed border-border-2 relative">
-      <Field label="発行日" value={issuedAt} />
-      <Field label="認定番号" value={certCode} />
-      <Field label="発行者" value={issuer} />
-    </div>
-  </div>
-);
+  verifyUrl,
+  achievement,
+  className,
+}: CertificateViewProps) {
+  const label = achievementLabel(achievement);
+  const address = splitVerificationUrl(verifyUrl);
+  return (
+    <div
+      className={className}
+      style={{
+        width: "100%",
+        aspectRatio: "297 / 210",
+        containerType: "inline-size",
+        printColorAdjust: "exact",
+        WebkitPrintColorAdjust: "exact",
+        boxSizing: "border-box",
+        position: "relative",
+        overflow: "hidden",
+        background: "#ffffff",
+        color: "#0e0e10",
+        fontFamily: "'Noto Serif JP', serif",
+        lineHeight: 1.5,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: "2.49332cqw",
+          right: "2.49332cqw",
+          bottom: "2.49332cqw",
+          left: "2.49332cqw",
+          border: "0.13357cqw solid #1c1a3d",
+        }}
+      ></div>
+      <div
+        style={{
+          position: "absolute",
+          top: "3.20570cqw",
+          right: "3.20570cqw",
+          bottom: "3.20570cqw",
+          left: "3.20570cqw",
+          border: "0.08905cqw solid #d6d2f3",
+        }}
+      ></div>
+      <svg
+        viewBox="0 0 512 512"
+        aria-hidden="true"
+        style={{
+          width: "49.86643cqw",
+          height: "49.86643cqw",
+          position: "absolute",
+          left: "25.02226cqw",
+          top: "12.46661cqw",
+          opacity: 0.05,
+        }}
+      >
+        <path
+          fill="none"
+          stroke="#4335c6"
+          strokeWidth="4"
+          d="M256 92 L298 232 L448 232 L326 316 L368 456 L256 372 L144 456 L186 316 L64 232 L214 232 Z"
+        ></path>
+      </svg>
 
-const Field = ({ label, value }: { label: string; value: string }) => (
-  <div>
-    <div className="text-[10px] uppercase tracking-widest font-semibold text-ink-4 mb-0.5">
-      {label}
-    </div>
-    <div className="font-mono text-[12.5px] text-ink-2">{value}</div>
-  </div>
-);
+      <div
+        style={{
+          position: "relative",
+          height: "100%",
+          fontSize: "1.42476cqw",
+          boxSizing: "border-box",
+          padding: "6.23330cqw 8.19234cqw 5.69902cqw",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.89047cqw" }}>
+            <div
+              className="sf-gradient-135-bg"
+              style={{
+                width: "3.02760cqw",
+                height: "3.02760cqw",
+                borderRadius: "0.80142cqw",
+                display: "grid",
+                placeItems: "center",
+                color: "#ffffff",
+              }}
+            >
+              <BrandMark style={{ width: "1.86999cqw", height: "1.86999cqw" }} />
+            </div>
+            <span
+              style={{
+                fontFamily: "Figtree, sans-serif",
+                fontWeight: "700",
+                fontSize: "1.42476cqw",
+                letterSpacing: "0.19947cqw",
+              }}
+            >
+              {DISPLAY_NAME}
+            </span>
+          </div>
+          <div
+            style={{
+              fontFamily: "'Noto Sans JP', sans-serif",
+              fontSize: "1.06857cqw",
+              color: "#4a4a52",
+              display: "flex",
+              alignItems: "baseline",
+              gap: "0.89047cqw",
+            }}
+          >
+            <span>認定番号</span>
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: "1.15761cqw",
+                color: "#0e0e10",
+                letterSpacing: "0.02315cqw",
+              }}
+            >
+              {certCode}
+            </span>
+          </div>
+        </div>
 
-/**
- * issued_at (timestamptz の ISO) → YYYY-MM-DD。 失敗時はそのまま返す。
- * 発行日は閲覧者のタイムゾーンに依らず一貫表示すべきため、 日本のサービスとして
- * Asia/Tokyo に固定して整形する (ローカル時刻で切り出すと日付が前後し得る)。
- */
-export function formatIssuedAt(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    timeZone: "Asia/Tokyo",
-  })
-    .format(d)
-    .replace(/\//g, "-");
+        <div
+          style={{
+            marginTop: "3.02760cqw",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1.06857cqw",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "4.09617cqw",
+              fontWeight: "600",
+              letterSpacing: "1.72039cqw",
+              paddingLeft: "1.72039cqw",
+              lineHeight: "1.1",
+            }}
+          >
+            修了証明書
+          </div>
+          <div
+            style={{
+              fontFamily: "Figtree, sans-serif",
+              fontSize: "1.11309cqw",
+              fontWeight: "600",
+              letterSpacing: "0.37845cqw",
+              paddingLeft: "0.37845cqw",
+              color: "#55555e",
+            }}
+          >
+            CERTIFICATE OF COMPLETION
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: "4.09617cqw",
+            minWidth: "40.96171cqw",
+            padding: "0 3.20570cqw 1.06857cqw",
+            borderBottom: "0.08905cqw solid #1c1a3d",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "baseline",
+            gap: "1.24666cqw",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "4.45236cqw",
+              fontWeight: "600",
+              letterSpacing: "0.26714cqw",
+              lineHeight: "1.15",
+            }}
+          >
+            {recipientName}
+          </span>
+          <span style={{ fontSize: "1.78094cqw", color: "#33333a" }}>殿</span>
+        </div>
+
+        <div
+          style={{
+            margin: "2.67142cqw 0 0",
+            maxWidth: "62.33304cqw",
+            textAlign: "center",
+            fontSize: "1.51380cqw",
+            lineHeight: "2",
+            color: "#26262c",
+          }}
+        >
+          <p className="certificate-phrase" style={{ margin: 0 }}>
+            あなたは {DISPLAY_NAME} のステージ「{stageTitle}」の修了条件をすべて満たしました。
+          </p>
+          <p className="certificate-phrase" style={{ margin: 0 }}>
+            その学びの成果をここに証します。
+          </p>
+        </div>
+
+        {label ? (
+          <div
+            style={{
+              marginTop: "1.42476cqw",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.71238cqw",
+              padding: "0.53428cqw 1.42476cqw",
+              borderRadius: "88.95815cqw",
+              background: "#f2f1fb",
+              color: "#3a2fa8",
+              fontFamily: "'Noto Sans JP', sans-serif",
+              fontSize: "1.15761cqw",
+              fontWeight: "500",
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              style={{ width: "1.33571cqw", height: "1.33571cqw" }}
+            >
+              <path d="M20 6 9 17l-5-5"></path>
+            </svg>
+            {label}
+          </div>
+        ) : null}
+
+        <div style={{ flex: "1 1 auto" }}></div>
+
+        <div
+          style={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
+            alignItems: "end",
+            gap: "2.13713cqw",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.24666cqw" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.26714cqw" }}>
+              <span
+                style={{
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontSize: "0.97952cqw",
+                  letterSpacing: "0.11754cqw",
+                  color: "#55555e",
+                }}
+              >
+                発行日
+              </span>
+              <span style={{ fontSize: "1.51380cqw", fontWeight: "600" }}>{issuedAt}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.26714cqw" }}>
+              <span
+                style={{
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                  fontSize: "0.97952cqw",
+                  letterSpacing: "0.11754cqw",
+                  color: "#55555e",
+                }}
+              >
+                発行者
+              </span>
+              <span style={{ fontSize: "1.51380cqw", fontWeight: "600" }}>{issuer}</span>
+            </div>
+          </div>
+
+          <svg
+            viewBox="0 0 96 96"
+            role="img"
+            aria-label="STELLA の認定印"
+            style={{ width: "8.90472cqw", height: "8.90472cqw" }}
+          >
+            <circle cx="48" cy="48" r="45" fill="none" stroke="#3a2fa8" strokeWidth="2"></circle>
+            <circle
+              cx="48"
+              cy="48"
+              r="38.5"
+              fill="none"
+              stroke="#3a2fa8"
+              strokeWidth="0.8"
+              strokeDasharray="1.6 2.6"
+            ></circle>
+            <path
+              transform="translate(28 19) scale(0.078)"
+              fill="#3a2fa8"
+              d="M256 92 L298 232 L448 232 L326 316 L368 456 L256 372 L144 456 L186 316 L64 232 L214 232 Z"
+            ></path>
+            <text
+              x="48"
+              y="68"
+              textAnchor="middle"
+              fontSize="8.5"
+              letterSpacing="1.6"
+              fill="#3a2fa8"
+              fontFamily="Figtree, sans-serif"
+              fontWeight="700"
+            >
+              {DISPLAY_NAME}
+            </text>
+            <text
+              x="48"
+              y="78"
+              textAnchor="middle"
+              fontSize="6.5"
+              letterSpacing="1.2"
+              fill="#3a2fa8"
+              fontFamily="'Noto Sans JP', sans-serif"
+            >
+              認定
+            </text>
+          </svg>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "flex-end",
+              gap: "1.24666cqw",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: "0.26714cqw",
+                textAlign: "right",
+                fontFamily: "'Noto Sans JP', sans-serif",
+              }}
+            >
+              <span
+                style={{ fontSize: "0.97952cqw", letterSpacing: "0.11754cqw", color: "#55555e" }}
+              >
+                本物かどうかの確認
+              </span>
+              <span style={{ fontSize: "1.06857cqw", color: "#26262c" }}>
+                QR コードか、次のアドレスから
+              </span>
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "0.97952cqw",
+                  color: "#26262c",
+                  lineHeight: "1.5",
+                }}
+              >
+                {address.host}
+                <br />
+                {address.path}
+              </span>
+            </div>
+            <VerificationQr
+              value={verifyUrl}
+              className="block w-[7.1238cqw] h-[7.1238cqw] shrink-0 text-[#0e0e10]"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

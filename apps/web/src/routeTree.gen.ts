@@ -16,7 +16,6 @@ import { Route as AppSplatRouteImport } from './routes/_app/$'
 import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppAssignmentsRouteImport } from './routes/_app/assignments'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
-import { Route as AppCertificatesRouteImport } from './routes/_app/certificates'
 import { Route as AppDiscoveryRouteImport } from './routes/_app/discovery'
 import { Route as AppEnrollmentsRouteImport } from './routes/_app/enrollments'
 import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
@@ -39,6 +38,8 @@ import { Route as AppAdminAuditRouteImport } from './routes/_app/admin/audit'
 import { Route as AppAdminEnrollmentsRouteImport } from './routes/_app/admin/enrollments'
 import { Route as AppAdminReportRouteImport } from './routes/_app/admin/report'
 import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
+import { Route as AppCertificatesIndexRouteImport } from './routes/_app/certificates.index'
+import { Route as AppCertificatesCertIdRouteImport } from './routes/_app/certificates.$certId'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
 import { Route as AppLibraryIndexRouteImport } from './routes/_app/library.index'
 import { Route as AppLibraryBookIdRouteImport } from './routes/_app/library.$bookId'
@@ -83,11 +84,6 @@ const AppAssignmentsRoute = AppAssignmentsRouteImport.update({
 const AppAuditRoute = AppAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCertificatesRoute = AppCertificatesRouteImport.update({
-  id: '/certificates',
-  path: '/certificates',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDiscoveryRoute = AppDiscoveryRouteImport.update({
@@ -200,6 +196,16 @@ const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppCertificatesIndexRoute = AppCertificatesIndexRouteImport.update({
+  id: '/certificates/',
+  path: '/certificates/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCertificatesCertIdRoute = AppCertificatesCertIdRouteImport.update({
+  id: '/certificates/$certId',
+  path: '/certificates/$certId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCoursesIndexRoute = AppCoursesIndexRouteImport.update({
   id: '/courses/',
   path: '/courses/',
@@ -267,7 +273,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AppAdminRouteWithChildren
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
-  '/certificates': typeof AppCertificatesRoute
   '/discovery': typeof AppDiscoveryRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
@@ -289,10 +294,12 @@ export interface FileRoutesByFullPath {
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
+  '/certificates/$certId': typeof AppCertificatesCertIdRoute
   '/library/$bookId': typeof AppLibraryBookIdRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin/': typeof AppAdminIndexRoute
+  '/certificates/': typeof AppCertificatesIndexRoute
   '/courses/': typeof AppCoursesIndexRoute
   '/library/': typeof AppLibraryIndexRoute
   '/stages/': typeof AppStagesIndexRoute
@@ -307,7 +314,6 @@ export interface FileRoutesByTo {
   '/$': typeof AppSplatRoute
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
-  '/certificates': typeof AppCertificatesRoute
   '/discovery': typeof AppDiscoveryRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
@@ -330,10 +336,12 @@ export interface FileRoutesByTo {
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
+  '/certificates/$certId': typeof AppCertificatesCertIdRoute
   '/library/$bookId': typeof AppLibraryBookIdRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin': typeof AppAdminIndexRoute
+  '/certificates': typeof AppCertificatesIndexRoute
   '/courses': typeof AppCoursesIndexRoute
   '/library': typeof AppLibraryIndexRoute
   '/stages': typeof AppStagesIndexRoute
@@ -351,7 +359,6 @@ export interface FileRoutesById {
   '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/assignments': typeof AppAssignmentsRoute
   '/_app/audit': typeof AppAuditRoute
-  '/_app/certificates': typeof AppCertificatesRoute
   '/_app/discovery': typeof AppDiscoveryRoute
   '/_app/enrollments': typeof AppEnrollmentsRoute
   '/_app/gradebook': typeof AppGradebookRoute
@@ -374,10 +381,12 @@ export interface FileRoutesById {
   '/_app/admin/enrollments': typeof AppAdminEnrollmentsRoute
   '/_app/admin/report': typeof AppAdminReportRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
+  '/_app/certificates/$certId': typeof AppCertificatesCertIdRoute
   '/_app/library/$bookId': typeof AppLibraryBookIdRoute
   '/_app/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/_app/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/_app/admin/': typeof AppAdminIndexRoute
+  '/_app/certificates/': typeof AppCertificatesIndexRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
   '/_app/library/': typeof AppLibraryIndexRoute
   '/_app/stages/': typeof AppStagesIndexRoute
@@ -396,7 +405,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assignments'
     | '/audit'
-    | '/certificates'
     | '/discovery'
     | '/enrollments'
     | '/gradebook'
@@ -418,10 +426,12 @@ export interface FileRouteTypes {
     | '/admin/enrollments'
     | '/admin/report'
     | '/admin/users'
+    | '/certificates/$certId'
     | '/library/$bookId'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin/'
+    | '/certificates/'
     | '/courses/'
     | '/library/'
     | '/stages/'
@@ -436,7 +446,6 @@ export interface FileRouteTypes {
     | '/$'
     | '/assignments'
     | '/audit'
-    | '/certificates'
     | '/discovery'
     | '/enrollments'
     | '/gradebook'
@@ -459,10 +468,12 @@ export interface FileRouteTypes {
     | '/admin/enrollments'
     | '/admin/report'
     | '/admin/users'
+    | '/certificates/$certId'
     | '/library/$bookId'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin'
+    | '/certificates'
     | '/courses'
     | '/library'
     | '/stages'
@@ -479,7 +490,6 @@ export interface FileRouteTypes {
     | '/_app/admin'
     | '/_app/assignments'
     | '/_app/audit'
-    | '/_app/certificates'
     | '/_app/discovery'
     | '/_app/enrollments'
     | '/_app/gradebook'
@@ -502,10 +512,12 @@ export interface FileRouteTypes {
     | '/_app/admin/enrollments'
     | '/_app/admin/report'
     | '/_app/admin/users'
+    | '/_app/certificates/$certId'
     | '/_app/library/$bookId'
     | '/_app/reviews/$submissionId'
     | '/_app/submissions/$submissionId'
     | '/_app/admin/'
+    | '/_app/certificates/'
     | '/_app/courses/'
     | '/_app/library/'
     | '/_app/stages/'
@@ -574,13 +586,6 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AppAuditRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/certificates': {
-      id: '/_app/certificates'
-      path: '/certificates'
-      fullPath: '/certificates'
-      preLoaderRoute: typeof AppCertificatesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/discovery': {
@@ -737,6 +742,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminUsersRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/certificates/': {
+      id: '/_app/certificates/'
+      path: '/certificates'
+      fullPath: '/certificates/'
+      preLoaderRoute: typeof AppCertificatesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/certificates/$certId': {
+      id: '/_app/certificates/$certId'
+      path: '/certificates/$certId'
+      fullPath: '/certificates/$certId'
+      preLoaderRoute: typeof AppCertificatesCertIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/courses/': {
       id: '/_app/courses/'
       path: '/courses'
@@ -844,7 +863,6 @@ interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRouteWithChildren
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditRoute: typeof AppAuditRoute
-  AppCertificatesRoute: typeof AppCertificatesRoute
   AppDiscoveryRoute: typeof AppDiscoveryRoute
   AppEnrollmentsRoute: typeof AppEnrollmentsRoute
   AppGradebookRoute: typeof AppGradebookRoute
@@ -858,9 +876,11 @@ interface AppRouteChildren {
   AppStudentsRoute: typeof AppStudentsRoute
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCertificatesCertIdRoute: typeof AppCertificatesCertIdRoute
   AppLibraryBookIdRoute: typeof AppLibraryBookIdRoute
   AppReviewsSubmissionIdRoute: typeof AppReviewsSubmissionIdRoute
   AppSubmissionsSubmissionIdRoute: typeof AppSubmissionsSubmissionIdRoute
+  AppCertificatesIndexRoute: typeof AppCertificatesIndexRoute
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
   AppLibraryIndexRoute: typeof AppLibraryIndexRoute
   AppStagesIndexRoute: typeof AppStagesIndexRoute
@@ -876,7 +896,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRouteWithChildren,
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditRoute: AppAuditRoute,
-  AppCertificatesRoute: AppCertificatesRoute,
   AppDiscoveryRoute: AppDiscoveryRoute,
   AppEnrollmentsRoute: AppEnrollmentsRoute,
   AppGradebookRoute: AppGradebookRoute,
@@ -890,9 +909,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppStudentsRoute: AppStudentsRoute,
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCertificatesCertIdRoute: AppCertificatesCertIdRoute,
   AppLibraryBookIdRoute: AppLibraryBookIdRoute,
   AppReviewsSubmissionIdRoute: AppReviewsSubmissionIdRoute,
   AppSubmissionsSubmissionIdRoute: AppSubmissionsSubmissionIdRoute,
+  AppCertificatesIndexRoute: AppCertificatesIndexRoute,
   AppCoursesIndexRoute: AppCoursesIndexRoute,
   AppLibraryIndexRoute: AppLibraryIndexRoute,
   AppStagesIndexRoute: AppStagesIndexRoute,

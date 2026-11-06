@@ -40,12 +40,14 @@ import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audie
 import {
   autoCompleteEligibleStages,
   completionMet,
+  computeUserStageCompletions,
   genCertCode,
   stageCompletionCounts,
 } from "../lib/stage-auto-complete.js";
 import { recordStagePathEvents } from "../lib/stage-path-events.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
+import { achievementFromSnapshot } from "@stella/shared/cms/certificate-achievement";
 import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import type { StageCompletion, GradebookEntry } from "@stella/shared/cms/types";
 
@@ -308,6 +310,26 @@ certificatesRoute.get("/api/certificates/mine", async (c) => {
   }
 });
 
+/** 本人の active な受講登録の達成状況をまとめて返す。 */
+certificatesRoute.get("/api/certificates/completions", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const rows = await db
+      .select({ stage: stages })
+      .from(enrollments)
+      .innerJoin(stages, eq(stages.id, enrollments.stageId))
+      .where(and(eq(enrollments.userId, caller.id), eq(enrollments.status, "active")));
+    const completions = await computeUserStageCompletions(
+      db,
+      caller.id,
+      rows.map((row) => row.stage),
+    );
+    return c.json({ completions });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 /** 受講者本人の、 あるステージの達成状況。 */
 certificatesRoute.get("/api/certificates/completion/:stageId", async (c) => {
   try {
@@ -531,6 +553,7 @@ certificatesRoute.get("/api/certificates/verify/:certCode", async (c) => {
         issuer_name: certificates.issuerName,
         issued_at: certificates.issuedAt,
         revoked: certificates.revoked,
+        criteria_snapshot: certificates.criteriaSnapshot,
       })
       .from(certificates)
       .where(eq(certificates.certCode, certCode))
@@ -547,6 +570,7 @@ certificatesRoute.get("/api/certificates/verify/:certCode", async (c) => {
     return c.json({
       verification: {
         valid: true,
+        achievement: achievementFromSnapshot(cert.criteria_snapshot),
         cert_code: cert.cert_code,
         recipient_name: cert.recipient_name,
         stage_title: cert.stage_title,

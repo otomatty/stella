@@ -1,3 +1,5 @@
+import type { CertificateAchievement } from "./certificate-achievement.js";
+
 /**
  * CMS DB 行と UI ドメイン型を繋ぐ型 + マッパー。
  *
@@ -413,6 +415,7 @@ export interface IssuedCertificate {
 
 /** verify_certificate RPC (匿名実行可) の戻り値。 */
 export interface CertificateVerification {
+  achievement?: CertificateAchievement | null;
   valid: boolean;
   reason?: "not_found" | "revoked";
   cert_code?: string;
