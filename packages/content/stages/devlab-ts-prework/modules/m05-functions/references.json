@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-prework/m05-functions@1",
+  "contentHash": "5e0cebc1a4daabc759fdc61abbdbd413d3d02ee3c7b24a90625203c240b4c3a6",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/s01-chapter/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-functions-function-declaration",
+        "SRC-typescriptbook-functions-function-expression",
+        "SRC-typescriptbook-functions-arrow-functions",
+        "SRC-typescriptbook-functions-function-parameters",
+        "SRC-typescriptbook-functions-void-type",
+        "SRC-typescriptbook-functions-pass-by-value",
+        "SRC-typescriptbook-functions-optional-parameters",
+        "SRC-typescriptbook-functions-default-parameters",
+        "SRC-typescriptbook-functions-rest-parameters",
+        "SRC-typescriptbook-functions-destructuring-assignment-parameters",
+        "SRC-typescriptbook-functions-keyword-arguments-and-options-object-pattern",
+        "SRC-typescriptbook-functions-callback-functions",
+        "SRC-typescriptbook-functions-function-type-declaration",
+        "SRC-typescriptbook-functions-function-is-a-value",
+        "SRC-typescriptbook-functions-type-guard-functions",
+        "SRC-typescriptbook-functions-assertion-functions",
+        "SRC-typescriptbook-values-types-variables-array-array-operations"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/s02-extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-functions-overload-functions",
+        "SRC-typescriptbook-functions-function-type-declaration"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    }
+  ]
+}

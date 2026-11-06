@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-prework/m00-setup@1",
+  "contentHash": "b74305db7cde7fcfa3db71547c67f653d80eab510b859d887b802bec2453e41a",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q01-hello/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の練習の課題。手元の確認と提出のしかたを確かめる",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "approved"
+    }
+  ]
+}

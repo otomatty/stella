@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-prework/m06-classes@1",
+  "contentHash": "d26da2ad2cca5942d1409244a7aa5b9c4b648827f9d9a477c04026040a6c8e8c",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/s01-chapter/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-object-oriented-class-constructor",
+        "SRC-typescriptbook-object-oriented-class-fields",
+        "SRC-typescriptbook-object-oriented-class-methods",
+        "SRC-typescriptbook-object-oriented-class-field-initializers",
+        "SRC-typescriptbook-object-oriented-class-access-modifiers",
+        "SRC-typescriptbook-object-oriented-class-readonly-modifier-in-classes",
+        "SRC-typescriptbook-object-oriented-class-constructor-shorthand",
+        "SRC-typescriptbook-object-oriented-interface-implementing-interfaces",
+        "SRC-typescriptbook-object-oriented-interface-interface-inheritance",
+        "SRC-typescriptbook-object-oriented-interface-interface-vs-type-alias",
+        "SRC-typescriptbook-object-oriented-interface-readonly-modifier-in-interfaces",
+        "SRC-typescriptbook-object-oriented-class-class-inheritance",
+        "SRC-typescriptbook-object-oriented-class-instanceof-operator"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/s02-extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-object-oriented-class-abstract-class",
+        "SRC-typescriptbook-object-oriented-class-static-fields",
+        "SRC-typescriptbook-object-oriented-class-static-methods",
+        "SRC-typescriptbook-object-oriented-class-return-this-type"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    }
+  ]
+}
