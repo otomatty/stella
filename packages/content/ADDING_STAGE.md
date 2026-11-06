@@ -286,7 +286,7 @@ cp packages/content/templates/stage.json packages/content/stages/<slug>/stage.js
 - `theme` はカテゴリ単位でそろえます（ステージごとに凝った名前を付けない）。まだ見えない範囲では同じテーマのスキルが同じ名前で並ぶのが正です。省略するとまだ見えない範囲では `？？？` と表示されます（名前の無いスキルにはしない）
 - 前提に挙げられたステージは、依存側が公開中のあいだ **非公開にも削除もできません**（CMS が 409 で止めます）。順序を変えるときは依存側の `prerequisites` を先に外します
 - 全部省略できます。省略したステージは「前提なし・到達説明なし・テーマなし・catalog 掲載」として扱われます
-- **`audience: granted`** (Extra) のステージは seed 後も全員のツリーには出ません。Basic = 新18ステージ、それ以外は Extra (`audience: granted`) です。講師 / 管理者のステージ管理の盤面で受講者を選んで初めて、その人のスキルツリーに出ます。granted の親を持ってよいですが、線の親をたどると catalog のステージに着く必要があります。catalog のステージが granted を前提にすることはできません。受講開始は従来どおり自己開始です。Extra ステージを stella の外に置くときは [docs/extra-content.md](../../docs/extra-content.md) を見てください。
+- **`audience: granted`** (Extra) のステージは seed 後も全員のツリーには出ません。Basic = 新18ステージ、それ以外は Extra (`audience: granted`) です。講師 / 管理者のステージ管理の盤面で受講者を選んで初めて、その人のスキルツリーに出ます。granted の親を持ってよいですが、線の親をたどると catalog のステージに着く必要があります。catalog のステージが granted を前提にすることはできません。受講開始は従来どおり自己開始です。
 
 ### 3. カリキュラムを書いてから教材を置く
 

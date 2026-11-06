@@ -1,0 +1,82 @@
+{
+  "id": "devlab-ts-prework/m02-objects-arrays-tuples/s01-chapter",
+  "title": "02章 オブジェクト・配列・タプルの問題",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [],
+    "rubric": [
+      {
+        "id": "no-hardcoded-answers",
+        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
+        "required": true
+      },
+      {
+        "id": "explanations",
+        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
+        "required": true
+      },
+      {
+        "id": "no-type-escape",
+        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never"
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-object-type-annotation-of-objects",
+    "SRC-typescriptbook-values-types-variables-object-shorthand-property-names",
+    "SRC-typescriptbook-values-types-variables-object-optional-property",
+    "SRC-typescriptbook-values-types-variables-object-readonly-property",
+    "SRC-typescriptbook-values-types-variables-object-destructuring-assignment-from-objects",
+    "SRC-typescriptbook-values-types-variables-object-spread-syntax-for-object",
+    "SRC-typescriptbook-values-types-variables-array-type-annotation-of-array",
+    "SRC-typescriptbook-values-types-variables-array-readonly-array",
+    "SRC-typescriptbook-values-types-variables-array-how-to-loop-an-array",
+    "SRC-typescriptbook-values-types-variables-array-array-operations",
+    "SRC-typescriptbook-values-types-variables-array-spread-syntax-for-array",
+    "SRC-typescriptbook-values-types-variables-tuple",
+    "SRC-typescriptbook-values-types-variables-array-destructuring-assignment-from-array",
+    "SRC-typescriptbook-values-types-variables-structural-subtyping",
+    "SRC-typescriptbook-values-types-variables-object-excess-property-checking",
+    "SRC-typescriptbook-values-types-variables-object-index-signature",
+    "SRC-typescriptbook-values-types-variables-object-how-to-loop-an-object"
+  ],
+  "estimatedMinutes": 615,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

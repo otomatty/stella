@@ -2,8 +2,6 @@
 
 形式の正本は `packages/content/src/task-schema.ts` (`parseTaskDefinition`)、読み込みは `src/task-content.ts`、書き方の一覧は `ADDING_STAGE.md` の「新カリキュラムの format 2」。種別ごとのヒントと解答の解放は `packages/shared/src/tasks/help.ts` の `TASK_HELP_POLICIES`。ここは、どの種別を選ぶか、既存の問題集をどこで切るか、下書きに何を埋めるかです。
 
-パスは STELLA 本体の形です。外部リポジトリでは文書の先頭に `.stella/` を付けます。
-
 ## 種別
 
 考え方は `docs/curriculum/03-repeated-practice-and-assessment.md` です。1 つの実装パターンを繰り返し、前に習ったものとつなぎ、手順を自分で選び、壊れたコードを直し、最後に未見の問題で確かめます。支援した問題は練習です。自力の確認には別の問題を使います。

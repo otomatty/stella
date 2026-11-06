@@ -1,0 +1,8 @@
+{
+  "plannedHours": 14,
+  "skills": {
+    "uses": ["devlab-ts-ch01", "devlab-ts-ch02", "devlab-ts-ch03", "devlab-ts-ch04"],
+    "assesses": ["devlab-ts-ch05"]
+  },
+  "reuses": []
+}

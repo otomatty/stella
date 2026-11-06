@@ -106,5 +106,45 @@
   {
     "id": "claude-evals",
     "title": "成功の基準と評価のセットで変更を比べ、つまずきを直す"
+  },
+  {
+    "id": "devlab-ts-setup",
+    "title": "手元の環境で確かめて提出できる"
+  },
+  {
+    "id": "devlab-ts-ch01",
+    "title": "値・型・変数を書ける"
+  },
+  {
+    "id": "devlab-ts-ch02",
+    "title": "オブジェクト・配列・タプルを書ける"
+  },
+  {
+    "id": "devlab-ts-ch03",
+    "title": "ユニオン型とそのほかの型を書ける"
+  },
+  {
+    "id": "devlab-ts-ch04",
+    "title": "文と例外を書ける"
+  },
+  {
+    "id": "devlab-ts-ch05",
+    "title": "関数を書ける"
+  },
+  {
+    "id": "devlab-ts-ch06",
+    "title": "クラスを書ける"
+  },
+  {
+    "id": "devlab-ts-ch07",
+    "title": "型の再利用とジェネリクスを書ける"
+  },
+  {
+    "id": "devlab-ts-ch08",
+    "title": "非同期処理を書ける"
+  },
+  {
+    "id": "devlab-ts-ch09",
+    "title": "組み込みの API とモジュールを書ける"
   }
 ]

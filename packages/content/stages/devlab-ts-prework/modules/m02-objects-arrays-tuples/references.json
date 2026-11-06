@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-prework/m02-objects-arrays-tuples@1",
+  "contentHash": "da2a703ecaf35404d8c1fba755ab63a4fc9f047a72f8a882354301af39fefc27",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/s01-chapter/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-object-type-annotation-of-objects",
+        "SRC-typescriptbook-values-types-variables-object-shorthand-property-names",
+        "SRC-typescriptbook-values-types-variables-object-optional-property",
+        "SRC-typescriptbook-values-types-variables-object-readonly-property",
+        "SRC-typescriptbook-values-types-variables-object-destructuring-assignment-from-objects",
+        "SRC-typescriptbook-values-types-variables-object-spread-syntax-for-object",
+        "SRC-typescriptbook-values-types-variables-array-type-annotation-of-array",
+        "SRC-typescriptbook-values-types-variables-array-readonly-array",
+        "SRC-typescriptbook-values-types-variables-array-how-to-loop-an-array",
+        "SRC-typescriptbook-values-types-variables-array-array-operations",
+        "SRC-typescriptbook-values-types-variables-array-spread-syntax-for-array",
+        "SRC-typescriptbook-values-types-variables-tuple",
+        "SRC-typescriptbook-values-types-variables-array-destructuring-assignment-from-array",
+        "SRC-typescriptbook-values-types-variables-structural-subtyping",
+        "SRC-typescriptbook-values-types-variables-object-excess-property-checking",
+        "SRC-typescriptbook-values-types-variables-object-index-signature",
+        "SRC-typescriptbook-values-types-variables-object-how-to-loop-an-object"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/s02-extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-object-readonly-vs-const",
+        "SRC-typescriptbook-values-types-variables-array-readonly-array",
+        "SRC-typescriptbook-values-types-variables-object-how-to-loop-an-object"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    }
+  ]
+}

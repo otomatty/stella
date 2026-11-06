@@ -1,0 +1,78 @@
+{
+  "id": "devlab-ts-prework/m09-builtins-modules/s01-chapter",
+  "title": "09章 組み込みの API とモジュールの問題",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch09",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08"
+    ],
+    "assesses": [
+      "devlab-ts-ch09"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [],
+    "rubric": [
+      {
+        "id": "no-hardcoded-answers",
+        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
+        "required": true
+      },
+      {
+        "id": "explanations",
+        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
+        "required": true
+      },
+      {
+        "id": "no-type-escape",
+        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never"
+  },
+  "sources": [
+    "SRC-typescriptbook-builtin-api-map",
+    "SRC-typescriptbook-builtin-api-set",
+    "SRC-typescriptbook-builtin-api-date",
+    "SRC-typescriptbook-builtin-api-error",
+    "SRC-typescriptbook-statements-exception",
+    "SRC-typescriptbook-import-export-require"
+  ],
+  "estimatedMinutes": 420,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

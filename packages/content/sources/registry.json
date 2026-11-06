@@ -1500,6 +1500,2186 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M10(直前対策)の tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-let-and-const",
+      "title": "サバイバルTypeScript: letとconst (let-and-const)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/let-and-const",
+      "section": "/reference/values-types-variables/let-and-const",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-vars-problems",
+      "title": "サバイバルTypeScript: letとconst (vars-problems)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/vars-problems",
+      "section": "/reference/values-types-variables/vars-problems",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-type-annotation",
+      "title": "サバイバルTypeScript: 型注釈 (type-annotation)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/type-annotation",
+      "section": "/reference/values-types-variables/type-annotation",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-type-inference",
+      "title": "サバイバルTypeScript: 型推論 (type-inference)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/type-inference",
+      "section": "/reference/values-types-variables/type-inference",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-number",
+      "title": "サバイバルTypeScript: number型 (number)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/number",
+      "section": "/reference/values-types-variables/number",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-string",
+      "title": "サバイバルTypeScript: string型 (string)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/string",
+      "section": "/reference/values-types-variables/string",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-boolean",
+      "title": "サバイバルTypeScript: boolean型 (boolean)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/boolean",
+      "section": "/reference/values-types-variables/boolean",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-truthy-falsy-values",
+      "title": "サバイバルTypeScript: boolean型 (truthy-falsy-values)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values",
+      "section": "/reference/values-types-variables/truthy-falsy-values",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-literal-types",
+      "title": "サバイバルTypeScript: リテラル型 (literal-types)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/literal-types",
+      "section": "/reference/values-types-variables/literal-types",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-any",
+      "title": "サバイバルTypeScript: any をなくす (any)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/any",
+      "section": "/reference/values-types-variables/any",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-bigint",
+      "title": "サバイバルTypeScript: 発展問題 bigint型 (bigint)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/bigint",
+      "section": "/reference/values-types-variables/bigint",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-type-annotation-of-objects",
+      "title": "サバイバルTypeScript: オブジェクトの型 (type-annotation-of-objects)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/type-annotation-of-objects",
+      "section": "/reference/values-types-variables/object/type-annotation-of-objects",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-shorthand-property-names",
+      "title": "サバイバルTypeScript: オブジェクトの型 (shorthand-property-names)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/shorthand-property-names",
+      "section": "/reference/values-types-variables/object/shorthand-property-names",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-optional-property",
+      "title": "サバイバルTypeScript: オプションプロパティと readonly (optional-property)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/optional-property",
+      "section": "/reference/values-types-variables/object/optional-property",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-readonly-property",
+      "title": "サバイバルTypeScript: オプションプロパティと readonly (readonly-property)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/readonly-property",
+      "section": "/reference/values-types-variables/object/readonly-property",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-destructuring-assignment-from-objects",
+      "title": "サバイバルTypeScript: 分割代入とスプレッド構文 (destructuring-assignment-from-objects)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects",
+      "section": "/reference/values-types-variables/object/destructuring-assignment-from-objects",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-spread-syntax-for-object",
+      "title": "サバイバルTypeScript: 分割代入とスプレッド構文 (spread-syntax-for-object)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object",
+      "section": "/reference/values-types-variables/object/spread-syntax-for-object",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-array-type-annotation-of-array",
+      "title": "サバイバルTypeScript: 配列の型 (type-annotation-of-array)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array",
+      "section": "/reference/values-types-variables/array/type-annotation-of-array",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-array-readonly-array",
+      "title": "サバイバルTypeScript: 配列の型 (readonly-array)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/array/readonly-array",
+      "section": "/reference/values-types-variables/array/readonly-array",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-array-how-to-loop-an-array",
+      "title": "サバイバルTypeScript: 配列の型 (how-to-loop-an-array)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array",
+      "section": "/reference/values-types-variables/array/how-to-loop-an-array",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-array-array-operations",
+      "title": "サバイバルTypeScript: 配列を壊さない操作 (array-operations)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/array/array-operations",
+      "section": "/reference/values-types-variables/array/array-operations",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-array-spread-syntax-for-array",
+      "title": "サバイバルTypeScript: 配列を壊さない操作 (spread-syntax-for-array)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array",
+      "section": "/reference/values-types-variables/array/spread-syntax-for-array",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-tuple",
+      "title": "サバイバルTypeScript: タプル (tuple)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/tuple",
+      "section": "/reference/values-types-variables/tuple",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-array-destructuring-assignment-from-array",
+      "title": "サバイバルTypeScript: タプル (destructuring-assignment-from-array)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array",
+      "section": "/reference/values-types-variables/array/destructuring-assignment-from-array",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-structural-subtyping",
+      "title": "サバイバルTypeScript: 構造的型付け (structural-subtyping)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/structural-subtyping",
+      "section": "/reference/values-types-variables/structural-subtyping",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-excess-property-checking",
+      "title": "サバイバルTypeScript: 構造的型付け (excess-property-checking)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/excess-property-checking",
+      "section": "/reference/values-types-variables/object/excess-property-checking",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-index-signature",
+      "title": "サバイバルTypeScript: インデックス型 (index-signature)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/index-signature",
+      "section": "/reference/values-types-variables/object/index-signature",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-how-to-loop-an-object",
+      "title": "サバイバルTypeScript: インデックス型 (how-to-loop-an-object)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/how-to-loop-an-object",
+      "section": "/reference/values-types-variables/object/how-to-loop-an-object",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-readonly-vs-const",
+      "title": "サバイバルTypeScript: 発展問題 入れ子のオブジェクトと readonly (readonly-vs-const)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/readonly-vs-const",
+      "section": "/reference/values-types-variables/object/readonly-vs-const",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-type-alias",
+      "title": "サバイバルTypeScript: 型エイリアスとユニオン型 (type-alias)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/type-alias",
+      "section": "/reference/values-types-variables/type-alias",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-union",
+      "title": "サバイバルTypeScript: 型エイリアスとユニオン型 (union)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/union",
+      "section": "/reference/values-types-variables/union",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-undefined-vs-null",
+      "title": "サバイバルTypeScript: null と undefined (undefined-vs-null)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null",
+      "section": "/reference/values-types-variables/undefined-vs-null",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-object-optional-chaining",
+      "title": "サバイバルTypeScript: null と undefined (optional-chaining)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining",
+      "section": "/reference/values-types-variables/object/optional-chaining",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-discriminated-union",
+      "title": "サバイバルTypeScript: 判別可能なユニオン型 (discriminated-union)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/discriminated-union",
+      "section": "/reference/values-types-variables/discriminated-union",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-intersection",
+      "title": "サバイバルTypeScript: インターセクション型 (intersection)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/intersection",
+      "section": "/reference/values-types-variables/intersection",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-const-assertion",
+      "title": "サバイバルTypeScript: as const (const-assertion)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/const-assertion",
+      "section": "/reference/values-types-variables/const-assertion",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-satisfies",
+      "title": "サバイバルTypeScript: 発展問題 satisfies 演算子 (satisfies)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/satisfies",
+      "section": "/reference/values-types-variables/satisfies",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-values-types-variables-enum",
+      "title": "サバイバルTypeScript: 発展問題 enum をユニオン型に置き換える (enum)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/values-types-variables/enum",
+      "section": "/reference/values-types-variables/enum",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-if-else",
+      "title": "サバイバルTypeScript: if-else文 (if-else)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/if-else",
+      "section": "/reference/statements/if-else",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-ternary-operator",
+      "title": "サバイバルTypeScript: if-else文 (ternary-operator)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/ternary-operator",
+      "section": "/reference/statements/ternary-operator",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-switch",
+      "title": "サバイバルTypeScript: switch文 (switch)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/switch",
+      "section": "/reference/statements/switch",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-switch-fallthrough",
+      "title": "サバイバルTypeScript: switch文 (switch-fallthrough)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/switch-fallthrough",
+      "section": "/reference/statements/switch-fallthrough",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-for-of",
+      "title": "サバイバルTypeScript: for文と for-of文 (for-of)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/for-of",
+      "section": "/reference/statements/for-of",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-exception",
+      "title": "サバイバルTypeScript: 例外処理 (exception)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/exception",
+      "section": "/reference/statements/exception",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-unknown",
+      "title": "サバイバルTypeScript: unknown型と型の絞り込み (unknown)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/unknown",
+      "section": "/reference/statements/unknown",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-control-flow-analysis-and-type-guard",
+      "title": "サバイバルTypeScript: unknown型と型の絞り込み (control-flow-analysis-and-type-guard)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/control-flow-analysis-and-type-guard",
+      "section": "/reference/statements/control-flow-analysis-and-type-guard",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-statements-never",
+      "title": "サバイバルTypeScript: never型と網羅性のチェック (never)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/statements/never",
+      "section": "/reference/statements/never",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-function-declaration",
+      "title": "サバイバルTypeScript: 関数宣言・関数式・アロー関数 (function-declaration)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/function-declaration",
+      "section": "/reference/functions/function-declaration",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-function-expression",
+      "title": "サバイバルTypeScript: 関数宣言・関数式・アロー関数 (function-expression)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/function-expression",
+      "section": "/reference/functions/function-expression",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-arrow-functions",
+      "title": "サバイバルTypeScript: 関数宣言・関数式・アロー関数 (arrow-functions)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/arrow-functions",
+      "section": "/reference/functions/arrow-functions",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-function-parameters",
+      "title": "サバイバルTypeScript: 引数と戻り値の型、void (function-parameters)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/function-parameters",
+      "section": "/reference/functions/function-parameters",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-void-type",
+      "title": "サバイバルTypeScript: 引数と戻り値の型、void (void-type)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/void-type",
+      "section": "/reference/functions/void-type",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-pass-by-value",
+      "title": "サバイバルTypeScript: 引数と戻り値の型、void (pass-by-value)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/pass-by-value",
+      "section": "/reference/functions/pass-by-value",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-optional-parameters",
+      "title": "サバイバルTypeScript: オプション引数 (optional-parameters)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/optional-parameters",
+      "section": "/reference/functions/optional-parameters",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-default-parameters",
+      "title": "サバイバルTypeScript: デフォルト引数 (default-parameters)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/default-parameters",
+      "section": "/reference/functions/default-parameters",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-rest-parameters",
+      "title": "サバイバルTypeScript: 残余引数 (rest-parameters)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/rest-parameters",
+      "section": "/reference/functions/rest-parameters",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-destructuring-assignment-parameters",
+      "title": "サバイバルTypeScript: 分割代入引数 (destructuring-assignment-parameters)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters",
+      "section": "/reference/functions/destructuring-assignment-parameters",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-keyword-arguments-and-options-object-pattern",
+      "title": "サバイバルTypeScript: 分割代入引数 (keyword-arguments-and-options-object-pattern)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern",
+      "section": "/reference/functions/keyword-arguments-and-options-object-pattern",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-callback-functions",
+      "title": "サバイバルTypeScript: コールバック関数 (callback-functions)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/callback-functions",
+      "section": "/reference/functions/callback-functions",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-function-type-declaration",
+      "title": "サバイバルTypeScript: コールバック関数 (function-type-declaration)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/function-type-declaration",
+      "section": "/reference/functions/function-type-declaration",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-function-is-a-value",
+      "title": "サバイバルTypeScript: 関数を返す関数 (function-is-a-value)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/function-is-a-value",
+      "section": "/reference/functions/function-is-a-value",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-type-guard-functions",
+      "title": "サバイバルTypeScript: 型ガード関数とアサーション関数 (type-guard-functions)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/type-guard-functions",
+      "section": "/reference/functions/type-guard-functions",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-assertion-functions",
+      "title": "サバイバルTypeScript: 型ガード関数とアサーション関数 (assertion-functions)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/assertion-functions",
+      "section": "/reference/functions/assertion-functions",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-functions-overload-functions",
+      "title": "サバイバルTypeScript: 発展問題 オーバーロード関数 (overload-functions)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/functions/overload-functions",
+      "section": "/reference/functions/overload-functions",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-constructor",
+      "title": "サバイバルTypeScript: クラスの基本 (constructor)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/constructor",
+      "section": "/reference/object-oriented/class/constructor",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-fields",
+      "title": "サバイバルTypeScript: クラスの基本 (fields)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/fields",
+      "section": "/reference/object-oriented/class/fields",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-methods",
+      "title": "サバイバルTypeScript: クラスの基本 (methods)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/methods",
+      "section": "/reference/object-oriented/class/methods",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-field-initializers",
+      "title": "サバイバルTypeScript: クラスの基本 (field-initializers)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/field-initializers",
+      "section": "/reference/object-oriented/class/field-initializers",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-access-modifiers",
+      "title": "サバイバルTypeScript: アクセス修飾子と readonly (access-modifiers)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/access-modifiers",
+      "section": "/reference/object-oriented/class/access-modifiers",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-readonly-modifier-in-classes",
+      "title": "サバイバルTypeScript: アクセス修飾子と readonly (readonly-modifier-in-classes)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/readonly-modifier-in-classes",
+      "section": "/reference/object-oriented/class/readonly-modifier-in-classes",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-constructor-shorthand",
+      "title": "サバイバルTypeScript: アクセス修飾子と readonly (constructor-shorthand)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/constructor-shorthand",
+      "section": "/reference/object-oriented/class/constructor-shorthand",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-interface-implementing-interfaces",
+      "title": "サバイバルTypeScript: インターフェース (implementing-interfaces)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/interface/implementing-interfaces",
+      "section": "/reference/object-oriented/interface/implementing-interfaces",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-interface-interface-inheritance",
+      "title": "サバイバルTypeScript: インターフェース (interface-inheritance)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/interface/interface-inheritance",
+      "section": "/reference/object-oriented/interface/interface-inheritance",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-interface-interface-vs-type-alias",
+      "title": "サバイバルTypeScript: インターフェース (interface-vs-type-alias)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/interface/interface-vs-type-alias",
+      "section": "/reference/object-oriented/interface/interface-vs-type-alias",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-interface-readonly-modifier-in-interfaces",
+      "title": "サバイバルTypeScript: インターフェース (readonly-modifier-in-interfaces)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/interface/readonly-modifier-in-interfaces",
+      "section": "/reference/object-oriented/interface/readonly-modifier-in-interfaces",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-class-inheritance",
+      "title": "サバイバルTypeScript: クラスの継承 (class-inheritance)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/class-inheritance",
+      "section": "/reference/object-oriented/class/class-inheritance",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-instanceof-operator",
+      "title": "サバイバルTypeScript: クラスの継承 (instanceof-operator)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/instanceof-operator",
+      "section": "/reference/object-oriented/class/instanceof-operator",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-abstract-class",
+      "title": "サバイバルTypeScript: 発展問題 抽象クラス (abstract-class)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/abstract-class",
+      "section": "/reference/object-oriented/class/abstract-class",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-static-fields",
+      "title": "サバイバルTypeScript: 発展問題 static、getter・setter、メソッドチェーン (static-fields)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/static-fields",
+      "section": "/reference/object-oriented/class/static-fields",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-static-methods",
+      "title": "サバイバルTypeScript: 発展問題 static、getter・setter、メソッドチェーン (static-methods)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/static-methods",
+      "section": "/reference/object-oriented/class/static-methods",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-object-oriented-class-return-this-type",
+      "title": "サバイバルTypeScript: 発展問題 static、getter・setter、メソッドチェーン (return-this-type)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/object-oriented/class/return-this-type",
+      "section": "/reference/object-oriented/class/return-this-type",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-typeof-type-operator",
+      "title": "サバイバルTypeScript: typeof 型演算子 (typeof-type-operator)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/typeof-type-operator",
+      "section": "/reference/type-reuse/typeof-type-operator",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-indexed-access-types",
+      "title": "サバイバルTypeScript: typeof 型演算子 (indexed-access-types)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/indexed-access-types",
+      "section": "/reference/type-reuse/indexed-access-types",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-keyof-type-operator",
+      "title": "サバイバルTypeScript: keyof 型演算子 (keyof-type-operator)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/keyof-type-operator",
+      "section": "/reference/type-reuse/keyof-type-operator",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-partial",
+      "title": "サバイバルTypeScript: Partial・Required・Readonly (partial)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/partial",
+      "section": "/reference/type-reuse/utility-types/partial",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-required",
+      "title": "サバイバルTypeScript: Partial・Required・Readonly (required)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/required",
+      "section": "/reference/type-reuse/utility-types/required",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-readonly",
+      "title": "サバイバルTypeScript: Partial・Required・Readonly (readonly)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/readonly",
+      "section": "/reference/type-reuse/utility-types/readonly",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-pick",
+      "title": "サバイバルTypeScript: Pick と Omit (pick)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/pick",
+      "section": "/reference/type-reuse/utility-types/pick",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-omit",
+      "title": "サバイバルTypeScript: Pick と Omit (omit)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/omit",
+      "section": "/reference/type-reuse/utility-types/omit",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-record",
+      "title": "サバイバルTypeScript: Record (record)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/record",
+      "section": "/reference/type-reuse/utility-types/record",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-generics",
+      "title": "サバイバルTypeScript: 型変数（ジェネリクス） (generics)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/generics",
+      "section": "/reference/generics",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-generics-type-variables",
+      "title": "サバイバルTypeScript: 型変数（ジェネリクス） (type-variables)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/generics/type-variables",
+      "section": "/reference/generics/type-variables",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-generics-type-parameter-constraint",
+      "title": "サバイバルTypeScript: 型引数の制約 (type-parameter-constraint)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/generics/type-parameter-constraint",
+      "section": "/reference/generics/type-parameter-constraint",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-mapped-types",
+      "title": "サバイバルTypeScript: 発展問題 Mapped Types (mapped-types)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/mapped-types",
+      "section": "/reference/type-reuse/mapped-types",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-exclude",
+      "title": "サバイバルTypeScript: 発展問題 Exclude・Extract・NonNullable・ReturnType・Awaited (exclude)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/exclude",
+      "section": "/reference/type-reuse/utility-types/exclude",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-extract",
+      "title": "サバイバルTypeScript: 発展問題 Exclude・Extract・NonNullable・ReturnType・Awaited (extract)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/extract",
+      "section": "/reference/type-reuse/utility-types/extract",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-nonnullable",
+      "title": "サバイバルTypeScript: 発展問題 Exclude・Extract・NonNullable・ReturnType・Awaited (nonnullable)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/nonnullable",
+      "section": "/reference/type-reuse/utility-types/nonnullable",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-return-type",
+      "title": "サバイバルTypeScript: 発展問題 Exclude・Extract・NonNullable・ReturnType・Awaited (return-type)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/return-type",
+      "section": "/reference/type-reuse/utility-types/return-type",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-type-reuse-utility-types-awaited",
+      "title": "サバイバルTypeScript: 発展問題 Exclude・Extract・NonNullable・ReturnType・Awaited (awaited)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/type-reuse/utility-types/awaited",
+      "section": "/reference/type-reuse/utility-types/awaited",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-asynchronous",
+      "title": "サバイバルTypeScript: Promise (asynchronous)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/asynchronous",
+      "section": "/reference/asynchronous",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-asynchronous-promise",
+      "title": "サバイバルTypeScript: Promise (promise)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/asynchronous/promise",
+      "section": "/reference/asynchronous/promise",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-asynchronous-async",
+      "title": "サバイバルTypeScript: async と await (async)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/asynchronous/async",
+      "section": "/reference/asynchronous/async",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-asynchronous-await",
+      "title": "サバイバルTypeScript: async と await (await)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/asynchronous/await",
+      "section": "/reference/asynchronous/await",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-builtin-api-map",
+      "title": "サバイバルTypeScript: 発展問題 同じ取得を1回にまとめる（キャッシュ） (map)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/builtin-api/map",
+      "section": "/reference/builtin-api/map",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-builtin-api-set",
+      "title": "サバイバルTypeScript: Set (set)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/builtin-api/set",
+      "section": "/reference/builtin-api/set",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-builtin-api-date",
+      "title": "サバイバルTypeScript: Date (date)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/builtin-api/date",
+      "section": "/reference/builtin-api/date",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-builtin-api-error",
+      "title": "サバイバルTypeScript: Error (error)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/builtin-api/error",
+      "section": "/reference/builtin-api/error",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-import-export-require",
+      "title": "サバイバルTypeScript: import と export (import-export-require)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/import-export-require",
+      "section": "/reference/import-export-require",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-typescriptbook-builtin-api-regexp",
+      "title": "サバイバルTypeScript: 発展問題 正規表現（RegExp） (regexp)",
+      "publisher": "サバイバルTypeScript",
+      "url": "https://typescriptbook.jp/reference/builtin-api/regexp",
+      "section": "/reference/builtin-api/regexp",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-11-05",
+        "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
+      }
     }
   ]
 }

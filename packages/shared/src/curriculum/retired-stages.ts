@@ -1,7 +1,6 @@
 /** 退役した教材と旧デモのステージ。引き継ぐ slug は含めない。
  * 安定 UUID だけを削除し、CMS の別 ID のステージは残す。
- * seed (`export-seed-sql.ts`) がこの一覧のステージを消す。外部のステージが同じ slug を使うと、
- * 入れた直後に消えるので、overlay もここを見て止める。 */
+ * seed (`export-seed-sql.ts`) がこの一覧のステージを消す。 */
 export const RETIRED_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
   { tenantId: "ses", slug: "it-basics" },
   { tenantId: "ses", slug: "modern-css-basics" },

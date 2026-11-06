@@ -143,7 +143,7 @@ python packages/content/scripts/diagram_export.py packages/content/stages/<slug>
 
 ## 現在の状態
 
-教材は `stages/<slug>/modules/` が正本です。新18ステージ・残す11ステージ・あとから足した1ステージの計30ステージがあります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、ステージ全体の予定は35時間です。ほかの新17ステージは M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つステージも全体は準備中です。残すステージのうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えたステージです（説明から【準備中】を外した）。準備中は計23ステージです。
+教材は `stages/<slug>/modules/` が正本です。新18ステージ・残す11ステージ・あとから足した2ステージの計31ステージがあります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、ステージ全体の予定は35時間です。ほかの新17ステージは M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つステージも全体は準備中です。残すステージのうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えたステージです（説明から【準備中】を外した）。あとから足した `devlab-ts-prework`（開発ラボG の島の Extra）は選考の事前課題 第1部で、10 単元・19 課題を持ち、development-lab の ts-prework から変換したステージです。準備中は計23ステージです。
 
 唯一の前提なしステージは `dev-env-basics` です。このステージには前提を追加しないでください。新18ステージの slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 

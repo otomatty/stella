@@ -1,0 +1,27 @@
+{
+  "format": 2,
+  "title": "開発ラボG 事前課題 第1部 TypeScript の書き方",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "サバイバルTypeScript の章立てに沿って、TypeScript のコードを書く選考の事前課題です。手元の VS Code で確かめて、章ごとに提出します。",
+  "header": "開発ラボG 事前課題",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["dev-env-basics"],
+  "plannedHours": 95,
+  "environment": "ts-test-01",
+  "canDo": "TypeScript の型を使って、テストと型の確認が通るコードを書ける",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "m00-setup": "00章 環境の確認",
+    "m01-values-types-variables": "01章 値・型・変数",
+    "m02-objects-arrays-tuples": "02章 オブジェクト・配列・タプル",
+    "m03-unions-and-more": "03章 ユニオン型とそのほかの型",
+    "m04-statements": "04章 文と例外",
+    "m05-functions": "05章 関数",
+    "m06-classes": "06章 クラス",
+    "m07-type-reuse-generics": "07章 型の再利用とジェネリクス",
+    "m08-async": "08章 非同期処理",
+    "m09-builtins-modules": "09章 組み込みの API とモジュール"
+  }
+}

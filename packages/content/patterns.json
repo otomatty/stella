@@ -74,5 +74,45 @@
   {
     "id": "tool-loop-structured-reply",
     "title": "ツールを使いながら、決まった形の答えを返すアシスタントを組み立てる"
+  },
+  {
+    "id": "devlab-ts-setup",
+    "title": "環境の確認の書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch01",
+    "title": "値・型・変数の書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch02",
+    "title": "オブジェクト・配列・タプルの書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch03",
+    "title": "ユニオン型とそのほかの型の書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch04",
+    "title": "文と例外の書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch05",
+    "title": "関数の書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch06",
+    "title": "クラスの書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch07",
+    "title": "型の再利用とジェネリクスの書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch08",
+    "title": "非同期処理の書き方を繰り返して書く"
+  },
+  {
+    "id": "devlab-ts-ch09",
+    "title": "組み込みの API とモジュールの書き方を繰り返して書く"
   }
 ]
