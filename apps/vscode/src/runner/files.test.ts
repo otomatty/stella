@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   asCliPath,
   checkSubmitSizes,
+  createNewFile,
   FileTooLargeError,
   hashFile,
   hashFiles,
@@ -125,6 +126,25 @@ describe("writeStateFile", () => {
     await symlink(target, path.join(root, ".stella", ".gitignore"));
     await writeStateFile(root, ".gitignore", "x\n", { keepExisting: true });
     await expect(stat(target)).rejects.toThrow();
+  });
+
+  it("createNewFile は先の無いリンクと既存ファイルを拒み、無いパスだけ作る", async () => {
+    const outside = await makeTree({});
+    const root = await makeTree({ "keep.txt": "old" });
+    const target = path.join(outside, "via-link.txt");
+    const link = path.join(root, "link.txt");
+    await symlink(target, link);
+    await expect(createNewFile(link, "x")).rejects.toMatchObject({ code: "EEXIST" });
+    await expect(stat(target)).rejects.toThrow();
+
+    const created = path.join(root, "new.txt");
+    await createNewFile(created, "body");
+    expect(await readFile(created, "utf8")).toBe("body");
+
+    await expect(createNewFile(path.join(root, "keep.txt"), "new")).rejects.toMatchObject({
+      code: "EEXIST",
+    });
+    expect(await readFile(path.join(root, "keep.txt"), "utf8")).toBe("old");
   });
 
   it(".stella がリンクなら書かない", async () => {

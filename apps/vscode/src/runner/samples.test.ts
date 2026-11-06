@@ -206,6 +206,7 @@ describe("samples", () => {
 
 const live = await liveDotnet();
 
+// Windows では dotnet test のあと testhost.exe が少しの間ロックされ、削除が EPERM になる。
 describe("dotnet-test (テンプレートから作った見本)", () => {
   const runner = DOTNET_TEMPLATE_RUNNER;
 
@@ -287,7 +288,7 @@ describe("dotnet-test (テンプレートから作った見本)", () => {
         expect(fixed.outcome).toBe("passed");
         expect(canSubmit(fixed)).toBe(true);
       } finally {
-        await rm(base, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       }
     },
     300_000,
@@ -320,7 +321,7 @@ describe("dotnet-test (テンプレートから作った見本)", () => {
         expect(testStep?.status).toBe("skipped");
         expect(testStep?.summary).toBe("「ビルド (C#)」が通らなかったため省略しました");
       } finally {
-        await rm(base, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       }
     },
     300_000,
@@ -355,7 +356,7 @@ describe("dotnet-test (テンプレートから作った見本)", () => {
         expect(testStep?.status).toBe("failed");
         expect(testStep?.summary).toContain("スタックオーバーフロー");
       } finally {
-        await rm(base, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       }
     },
     300_000,
@@ -377,7 +378,7 @@ describe("dotnet-test (テンプレートから作った見本)", () => {
         expect(result.outcome).toBe("passed");
         expect(canSubmit(result)).toBe(true);
       } finally {
-        await rm(base, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       }
     },
     300_000,
@@ -421,7 +422,7 @@ describe("dotnet-test (テンプレートから作った見本)", () => {
         expect(inside.steps.find((step) => step.id === "build")?.status).toBe("passed");
         expect(inside.files.map((file) => file.path)).toContain("src/Helper.cs");
       } finally {
-        await rm(base, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       }
     },
     300_000,

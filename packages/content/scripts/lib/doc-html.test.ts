@@ -1,3 +1,4 @@
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { docBodyHtml } from "./doc-html.js";
@@ -38,7 +39,7 @@ describe("配布 PDF のまとめ・課題文", () => {
     );
     expect(windows).toContain("npm.cmd --version");
     expect(windows).not.toContain("npm --version");
-    expect(windows).toContain('src="file:///tmp/run.windows.png"');
+    expect(windows).toContain(`src="${pathToFileURL(file).href}"`);
     expect(windows).not.toContain("os-block");
     const macos = docBodyHtml(source, new Map(), "macos");
     expect(macos).toContain("npm --version");
