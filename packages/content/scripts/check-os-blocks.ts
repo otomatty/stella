@@ -9,9 +9,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkOsBlocks } from "../src/os-blocks-check.js";
 
-const coursesRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "courses");
-const diagnostics = checkOsBlocks(coursesRoot);
+const stagesRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "stages");
+const diagnostics = checkOsBlocks(stagesRoot);
 for (const d of diagnostics)
-  console.error(`courses/${d.file}${d.line > 0 ? `:${d.line}` : ""} — ${d.message}`);
+  console.error(`stages/${d.file}${d.line > 0 ? `:${d.line}` : ""} — ${d.message}`);
 console.log(`OS 別のブロック: エラー ${diagnostics.length} 件`);
 if (diagnostics.length > 0) process.exitCode = 1;

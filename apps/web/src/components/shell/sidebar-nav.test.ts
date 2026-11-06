@@ -39,16 +39,12 @@ describe("navForRole", () => {
     expect(ids("learner")).not.toContain("review-queue");
   });
 
-  it("Extra 講座は講師と管理者だけに出す", () => {
-    expect(ids("instructor")).toContain("stage-grants");
-    expect(ids("admin")).toContain("stage-grants");
-    expect(navForRole("instructor").find((item) => item.id === "stage-grants")?.label).toBe(
-      "Extra 講座",
-    );
-    expect(navForRole("admin").find((item) => item.id === "stage-grants")?.label).toBe(
-      "Extra 講座",
-    );
-    expect(ids("learner")).not.toContain("stage-grants");
+  it("Extra の割当はステージの画面にまとめたので、別ナビは出さない", () => {
+    for (const role of ["learner", "instructor", "admin"] as const) {
+      expect(ids(role)).not.toContain("stage-grants");
+    }
+    expect(navForRole("instructor").find((item) => item.id === "stages")?.label).toBe("ステージ");
+    expect(navForRole("admin").find((item) => item.id === "stages")?.label).toBe("ステージ管理");
   });
 
   it("本棚は受講者にだけ出す (staff は受講者画面に切り替えて使う)", () => {

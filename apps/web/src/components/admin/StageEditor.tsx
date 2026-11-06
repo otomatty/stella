@@ -2,7 +2,7 @@
  * 単一ステージのメタデータ + セクション/レッスン構成を編集する画面。
  *
  * - 「下書き」 / 「公開」 を切り替えるトグルボタン (status カラムを更新)
- * - 削除ボタンは AdminStagesPage 側のメニューに任せる (このコンポーネントでは扱わない)
+ * - 削除ボタンはステージ管理の盤面側に任せる (このコンポーネントでは扱わない)
  */
 
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ import { SectionList } from "./SectionList";
 interface Props {
   stageId: string;
   onBack: () => void;
-  /** AdminStagesPage に stage の status / title 変更を伝える (一覧の再取得用)。 */
+  /** ステージ管理の盤面に status / title の変更を伝える (取り直し用)。 */
   onMetadataChanged: () => Promise<void> | void;
 }
 

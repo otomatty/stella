@@ -53,7 +53,7 @@ describe("コーディング規則の版 (loadCodingRuleSet)", () => {
 
   it("seed の position が scope の中で一意なら、第 2 キー (id) を足しても版のハッシュは変わらない", async () => {
     // seed (`parseCodingRules`) は文書ごとに 0 始まりの連番を振る。id の順と position の順を
-    // わざと逆にし、共通と講座で同じ position があっても、提出時に記録した版と同じになることを見る。
+    // わざと逆にし、共通とステージで同じ position があっても、提出時に記録した版と同じになることを見る。
     const rows = [
       rule("CR-ZZZ-01", "common", 0),
       rule("CR-AAA-01", "common", 1),

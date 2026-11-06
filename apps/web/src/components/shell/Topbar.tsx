@@ -15,7 +15,7 @@ interface TopbarProps {
   actions?: ReactNode;
   /** 検索パレットで選ばれたステージ / レッスンへの遷移 (Issue #77)。 */
   onSearchSelect: (result: SearchResult) => void;
-  /** 受講者プレビュー時は公開講座に検索を限定する。 */
+  /** 受講者プレビュー時は公開ステージに検索を限定する。 */
   searchStageIds?: ReadonlySet<string> | null;
   /** 通知センター用のコンテキスト / データ / ハンドラ。 */
   notify: {

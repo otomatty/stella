@@ -102,7 +102,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   // 発見教材は staff 共有ページ (講師も承認する)。 `/admin/*` の下には置かない。
   discovery: "/discovery",
   library: "/library",
-  "stage-grants": "/stage-grants",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
   enrollments: "/admin/enrollments",
@@ -221,7 +220,7 @@ export function AppShell() {
   // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 instructor/admin は
   // 公開ステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
-  // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
+  // 受講者画面を確認したい staff は対象ステージに自分を受講登録しておく。
   const browseStages = useStages(effectiveRole !== "learner");
   const enrolledStages = useEnrolledStages(session?.user.id ?? null, effectiveRole === "learner");
   // DB 由来ステージは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
@@ -235,8 +234,8 @@ export function AppShell() {
   const stageError = effectiveRole === "learner" ? enrolledStages.error : browseStages.error;
   // 自己開始 (Phase 3b) で受講登録が増えたときに、いま見ている側の一覧だけを取り直す。
   const refetchStages = effectiveRole === "learner" ? enrolledStages.refetch : browseStages.refetch;
-  // 検索 API は staff に全講座 (draft 含む) を返すため、 staff が受講者シェルを
-  // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
+  // 検索 API は staff にすべてのステージ (draft 含む) を返すため、 staff が受講者シェルを
+  // 開いているときだけクライアント側で自分のステージに絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
   const pendingReviewCount = usePendingReviewCount();
@@ -429,8 +428,8 @@ export function AppShell() {
       });
       return;
     }
-    // instructor / admin: ステージ管理画面へ。 admin は該当ステージの編集画面を直接開き、
-    // instructor は一覧内で該当ステージをハイライトする。
+    // instructor / admin: ステージ管理の盤面へ。 admin はそのステージの編集画面を直接開き、
+    // instructor はその星へ寄せる。
     setHighlightStage((prev) => ({
       id: result.stage_id,
       seq: (prev?.seq ?? 0) + 1,
@@ -540,9 +539,13 @@ export function AppShell() {
     }
   }
 
-  // 受講者のホームはスキルツリーの盤面そのものをコンテンツ領域にする (Card も余白も持たない)。
+  // 受講者のホームと、講師・管理者のステージ管理はスキルツリーの盤面そのもの
+  // (Card も余白も持たない)。
   const isFlush =
-    page === "lesson" || page === "review" || (page === "dash" && effectiveRole === "learner");
+    page === "lesson" ||
+    page === "review" ||
+    (page === "dash" && effectiveRole === "learner") ||
+    (page === "stages" && effectiveRole !== "learner");
 
   const shellValue: AppShellValue = {
     role: effectiveRole,

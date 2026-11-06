@@ -38,7 +38,7 @@ function write(root: string, rel: string, body: string): void {
 
 function contentRoot(): string {
   const root = tempDir();
-  write(root, "courses/dev-env-basics/course.json", '{"title":"入口"}\n');
+  write(root, "stages/dev-env-basics/stage.json", '{"title":"入口"}\n');
   write(root, "skills.json", '[\n  { "id": "html-document", "title": "HTML" }\n]\n');
   write(root, "patterns.json", '[\n  { "id": "html-page", "title": "文書" }\n]\n');
   write(
@@ -56,31 +56,37 @@ function contentRoot(): string {
 }
 
 function extraRoot(patch?: {
-  manifest?: { schemaVersion: number; name: string; courses: string[] };
+  manifest?: { schemaVersion: number; name: string; courses?: string[]; stages?: string[] };
   course?: unknown;
   extraCourseDir?: string;
+  /** 既定は旧い形 (courses キーと courses/<slug>/course.json)。 */
+  shape?: "new" | "old";
   skills?: unknown;
   patterns?: unknown;
   sources?: unknown;
   environment?: { name: string; body: string };
   codingRules?: boolean;
 }): string {
+  const shape = patch?.shape ?? "old";
+  const folder = shape === "new" ? "stages" : "courses";
+  const config = shape === "new" ? "stage.json" : "course.json";
   const root = tempDir();
   const manifest = patch?.manifest ?? {
     schemaVersion: 1,
     name: "csharp",
-    courses: ["csharp-basics"],
+    ...(shape === "new" ? { stages: ["csharp-basics"] } : { courses: ["csharp-basics"] }),
   };
   write(root, "stella-extra.json", `${JSON.stringify(manifest, null, 2)}\n`);
-  if (manifest.courses.includes("csharp-basics")) {
+  const slugs = manifest.stages ?? manifest.courses ?? [];
+  if (slugs.includes("csharp-basics")) {
     write(
       root,
-      "courses/csharp-basics/course.json",
+      `${folder}/csharp-basics/${config}`,
       `${JSON.stringify(patch?.course ?? { title: "C# 入門", audience: "granted", category: "C#" })}\n`,
     );
-    write(root, "courses/csharp-basics/modules/m0/note.txt", "案内\n");
+    write(root, `${folder}/csharp-basics/modules/m0/note.txt`, "案内\n");
   }
-  if (patch?.extraCourseDir) write(root, `courses/${patch.extraCourseDir}/course.json`, "{}\n");
+  if (patch?.extraCourseDir) write(root, `${folder}/${patch.extraCourseDir}/${config}`, "{}\n");
   if (patch?.skills) write(root, "skills.json", `${JSON.stringify(patch.skills, null, 2)}\n`);
   if (patch?.patterns) write(root, "patterns.json", `${JSON.stringify(patch.patterns, null, 2)}\n`);
   if (patch?.sources) {
@@ -98,7 +104,7 @@ function overlay(content = contentRoot(), extra = extraRoot()): OverlayResult {
 }
 
 describe("overlayExtraContent", () => {
-  it("講座と台帳を重ね、.extra-overlay.json に結果を残す", () => {
+  it("旧い形のステージと台帳を重ね、stage.json として写す", () => {
     const content = contentRoot();
     const extra = extraRoot({
       skills: [{ id: "csharp-types", title: "型" }],
@@ -108,15 +114,17 @@ describe("overlayExtraContent", () => {
     });
     const result = overlay(content, extra);
     expect(result).toEqual({
-      courses: ["csharp-basics"],
+      stages: ["csharp-basics"],
       skills: ["csharp-types"],
       patterns: ["csharp-test"],
       sources: ["SRC-csharp"],
       environments: ["dotnet-extra-01"],
     });
-    expect(readFileSync(join(content, "courses/csharp-basics/modules/m0/note.txt"), "utf8")).toBe(
+    expect(readFileSync(join(content, "stages/csharp-basics/modules/m0/note.txt"), "utf8")).toBe(
       "案内\n",
     );
+    expect(existsSync(join(content, "stages/csharp-basics/stage.json"))).toBe(true);
+    expect(existsSync(join(content, "stages/csharp-basics/course.json"))).toBe(false);
     const skills = JSON.parse(readFileSync(join(content, "skills.json"), "utf8")) as {
       id: string;
     }[];
@@ -160,9 +168,9 @@ describe("overlayExtraContent", () => {
     expect(() => overlay(contentRoot(), extra)).toThrow(/islands\.ts/);
   });
 
-  it("slug が stella の講座と重なると止まる", () => {
+  it("slug が stella のステージと重なると止まる", () => {
     const content = contentRoot();
-    write(content, "courses/csharp-basics/course.json", '{"title":"既存"}\n');
+    write(content, "stages/csharp-basics/stage.json", '{"title":"既存"}\n');
     expect(() => overlay(content, extraRoot())).toThrow(/重な/);
   });
 
@@ -176,7 +184,7 @@ describe("overlayExtraContent", () => {
       '{"title":"Acme","audience":"granted","category":"C#"}\n',
     );
     expect(() => overlay(contentRoot(), extra)).toThrow(
-      "stella-extra.json の name「acme」は stella の packages/content/extra-repositories.json にありません。stella に名前を登録してから講座を足してください (外部リポジトリどうしで slug が重ならないようにするため)",
+      "stella-extra.json の name「acme」は stella の packages/content/extra-repositories.json にありません。stella に名前を登録してからステージを足してください (外部リポジトリどうしで slug が重ならないようにするため)",
     );
   });
 
@@ -202,7 +210,7 @@ describe("overlayExtraContent", () => {
       '{"title":"Git","audience":"granted","category":"C#"}\n',
     );
     expect(() => overlay(contentRoot(), retired)).toThrow(
-      "courses/git-basics は stella で退役した講座の slug です。seed が同じ ID のステージを消すので、別の slug にしてください",
+      "stages/git-basics は stella で退役したステージの slug です。seed が同じ ID のステージを消すので、別の slug にしてください",
     );
 
     const coach = extraRoot({
@@ -213,7 +221,7 @@ describe("overlayExtraContent", () => {
       "courses/safety-1/course.json",
       '{"title":"安全","audience":"granted","category":"C#","tenantId":"coach"}\n',
     );
-    expect(() => overlay(contentRoot(), coach)).toThrow(/退役した講座の slug/);
+    expect(() => overlay(contentRoot(), coach)).toThrow(/退役したステージの slug/);
 
     const otherTenant = extraRoot({
       manifest: { schemaVersion: 1, name: "csharp", courses: ["git-basics"] },
@@ -229,7 +237,7 @@ describe("overlayExtraContent", () => {
   it("courses に書いていないフォルダーがあると止まる", () => {
     const extra = extraRoot({ extraCourseDir: "forgotten-basics" });
     expect(() => overlay(contentRoot(), extra)).toThrow(/forgotten-basics/);
-    expect(() => overlay(contentRoot(), extra)).toThrow(/courses にありません/);
+    expect(() => overlay(contentRoot(), extra)).toThrow(/stages にありません/);
   });
 
   it("台帳の id が重なると止まる", () => {
@@ -237,13 +245,13 @@ describe("overlayExtraContent", () => {
     const extra = extraRoot({ skills: [{ id: "html-document", title: "HTML" }] });
     expect(() => overlay(content, extra)).toThrow(/html-document/);
     expect(() => overlay(content, extra)).toThrow(/重な/);
-    expect(existsSync(join(content, "courses/csharp-basics"))).toBe(false);
+    expect(existsSync(join(content, "stages/csharp-basics"))).toBe(false);
   });
 
   it("一番上の coding-rules.md があると止まる", () => {
     const extra = extraRoot({ codingRules: true });
     expect(() => overlay(contentRoot(), extra)).toThrow(
-      "コーディング規則は courses/<slug>/coding-rules.md に書いてください。",
+      "コーディング規則は stages/<slug>/coding-rules.md に書いてください。",
     );
   });
 
@@ -261,7 +269,45 @@ describe("overlayExtraContent", () => {
       throw error;
     }
     expect(() => overlay(content, extra)).toThrow(/シンボリックリンク/);
-    expect(existsSync(join(content, "courses/csharp-basics"))).toBe(false);
+    expect(existsSync(join(content, "stages/csharp-basics"))).toBe(false);
+  });
+
+  it("新しい形 (stages キーと stages/<slug>/stage.json) も重ねられる", () => {
+    const content = contentRoot();
+    const extra = extraRoot({ shape: "new" });
+    const result = overlay(content, extra);
+    expect(result.stages).toEqual(["csharp-basics"]);
+    expect(readFileSync(join(content, "stages/csharp-basics/stage.json"), "utf8")).toContain(
+      "C# 入門",
+    );
+    expect(existsSync(join(content, "stages/csharp-basics/course.json"))).toBe(false);
+    const record = JSON.parse(readFileSync(join(content, EXTRA_OVERLAY_RECORD), "utf8")) as {
+      stages: string[];
+    };
+    expect(record.stages).toEqual(["csharp-basics"]);
+  });
+
+  it("stella-extra.json に stages と courses の両方があると止まる", () => {
+    const extra = extraRoot();
+    const manifest = JSON.parse(readFileSync(join(extra, "stella-extra.json"), "utf8")) as {
+      courses: string[];
+    };
+    write(
+      extra,
+      "stella-extra.json",
+      `${JSON.stringify({ ...manifest, stages: manifest.courses }, null, 2)}\n`,
+    );
+    expect(() => overlay(contentRoot(), extra)).toThrow(/stages と courses の両方は書けません/);
+  });
+
+  it("stages/ と courses/ の両方があると止まる", () => {
+    const extra = extraRoot();
+    write(
+      extra,
+      "stages/csharp-basics/stage.json",
+      '{"title":"C#","audience":"granted","category":"C#"}\n',
+    );
+    expect(() => overlay(contentRoot(), extra)).toThrow(/stages\/ と courses\/ が両方あります/);
   });
 });
 
@@ -276,20 +322,20 @@ describe("assertExtraWorkspace", () => {
 });
 
 describe("checkExtraRepositoryNames", () => {
-  it("stella の講座が登録した名前で始まると止まる", () => {
+  it("stella のステージが登録した名前で始まると止まる", () => {
     const content = contentRoot();
-    write(content, "courses/csharp-taken/course.json", "{}\n");
+    write(content, "stages/csharp-taken/stage.json", "{}\n");
     expect(() => checkExtraRepositoryNames(content, tempDir())).toThrow(/csharp-taken/);
   });
 
-  it("写しに重ねた講座は外す", () => {
+  it("写しに重ねたステージは外す", () => {
     const content = contentRoot();
-    write(content, "courses/csharp-sample/course.json", "{}\n");
+    write(content, "stages/csharp-sample/stage.json", "{}\n");
     const repo = tempDir();
     writeFileSync(join(repo, ".stella-extra-workspace"), "");
     write(content, ".extra-overlay.json", '{"courses":["csharp-sample"]}\n');
     expect(() => checkExtraRepositoryNames(content, repo)).not.toThrow();
-    write(content, "courses/csharp-other/course.json", "{}\n");
+    write(content, "stages/csharp-other/stage.json", "{}\n");
     expect(() => checkExtraRepositoryNames(content, repo)).toThrow(/csharp-other/);
   });
 });

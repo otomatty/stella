@@ -88,7 +88,7 @@ export async function loadLearningPace(
     .where(eq(profiles.id, learner.id))
     .limit(1);
   if (!profile) throw new ApiError("プロフィールが見つかりません", 404);
-  // 新プログラムだけ。残す旧講座・資格の島や補習を1260時間に混ぜない。
+  // 新プログラムだけ。残す旧ステージ・資格の島や補習を1260時間に混ぜない。
   const rows = await db
     .select({
       id: stages.id,
@@ -173,7 +173,7 @@ export async function loadLearningPace(
           taskProgress,
           and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, learner.id)),
         )
-        // 予備の類題 (#39) は講座の予定に入れない (出題した受講者に復習として出す)。
+        // 予備の類題 (#39) はステージの予定に入れない (出題した受講者に復習として出す)。
         .where(and(inArray(sections.stageId, ids), eq(tasks.active, true), isNull(tasks.variantOf)))
         .orderBy(asc(tasks.order)),
     ]);

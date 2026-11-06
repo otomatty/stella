@@ -1,10 +1,10 @@
 /**
- * スキルツリーの「島」— 本土 (Basic = 新カリキュラムの 18 講座。開発環境とWebの入口〜
+ * スキルツリーの「島」— 本土 (Basic = 新カリキュラムの 18 ステージ。開発環境とWebの入口〜
  * フロントエンド / バックエンド / フルスタック) から離れた場所に浮かぶ独立の星団。
  * 資格・Python・DevOps・特定ベンダーの案件トラックのように「目的別の入り口」になる
  * まとまりを、本土の扇ではなく別の島として描く。
  *
- * Basic 以外の講座は `audience: granted` (Extra)。講師・管理者が「Extra 講座」画面で
+ * Basic 以外のステージは `audience: granted` (Extra)。講師・管理者がステージ管理 (`/stages`) の盤面で
  * 割り当てた受講者にだけスキルツリーに出る。島の中身がそれだけのとき、割り当てのない
  * 受講者には星が 1 つも残らないので島ごと現れない。
  *
@@ -32,7 +32,7 @@
  * ## 設定の変え方
  *
  * 島を足す / 条件を変えるのはこの配列を編集するだけ。`category` は
- * `packages/content` の course.json の category (= D1 `stages.category`) と
+ * `packages/content` の stage.json の category (= D1 `stages.category`) と
  * 対で保つ。`requires` は同テナントのステージ slug。**未知の slug は「決して
  * 満たされない条件」になり、島は誰にも出ない** — 開きすぎより閉じすぎに倒す
  * (`parsePrerequisites` の番兵と同じ判断)。

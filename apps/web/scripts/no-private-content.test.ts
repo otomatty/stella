@@ -80,7 +80,7 @@ describe("Web の書き出し済み成果物の検査", () => {
       "assets/private.js.map",
       JSON.stringify({ sources: ["C:\\repo\\packages\\content\\tasks\\one\\private\\review.md"] }),
     ],
-    ["assets/raw.js", 'const a="packages/content/courses/example/tasks/one/private/review.md"'],
+    ["assets/raw.js", 'const a="packages/content/stages/example/tasks/one/private/review.md"'],
     ["private/review.md", "rubric"],
     ["assets/private/solution.wasm", "binary"],
   ])("%s に解答または private/ があれば失敗する", (name, contents) => {
@@ -153,20 +153,20 @@ describe("Vite build の配信境界", () => {
     ],
     [
       "private/ の raw import",
-      'export { default } from "./packages/content/courses/example/tasks/one/private/review.md?raw"',
-      "packages/content/courses/example/tasks/one/private/review.md",
+      'export { default } from "./packages/content/stages/example/tasks/one/private/review.md?raw"',
+      "packages/content/stages/example/tasks/one/private/review.md",
       "Private review rubric without answer property names",
     ],
     [
       "新形式の課題のヒント (hints.md) の raw import",
-      'export { default } from "./packages/content/courses/example/modules/m0/tasks/one/hints.md?raw"',
-      "packages/content/courses/example/modules/m0/tasks/one/hints.md",
+      'export { default } from "./packages/content/stages/example/modules/m0/tasks/one/hints.md?raw"',
+      "packages/content/stages/example/modules/m0/tasks/one/hints.md",
       "## ヒント1 方針\nHint without answer property names",
     ],
     [
       "private/ の URL import",
-      'export { default } from "./packages/content/courses/example/tasks/one/private/answer.txt?url"',
-      "packages/content/courses/example/tasks/one/private/answer.txt",
+      'export { default } from "./packages/content/stages/example/tasks/one/private/answer.txt?url"',
+      "packages/content/stages/example/tasks/one/private/answer.txt",
       "Private answer without property names",
     ],
   ])("%s での課題定義や private/ の取り込みを拒否する", async (_label, entry, name, content) => {

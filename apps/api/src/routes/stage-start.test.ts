@@ -91,7 +91,7 @@ function pathSource(cleared: string[] = []) {
   const stage = (slug: string, prerequisites: string[]) => ({
     id: slug,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     category: "プログラミング",
     theme: "テーマX",
@@ -221,11 +221,11 @@ describe("POST /api/stages/:id/start", () => {
   it("ロック星は 400 で、見えている前提の名前を返す", async () => {
     const res = await start("stage-b");
     expect(res.status).toBe(400);
-    expect(await errorOf(res)).toBe("stage-a の講座 をクリアすると始められます");
+    expect(await errorOf(res)).toBe("stage-a のステージ をクリアすると始められます");
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 
-  it("入口を開けた星は前提を終えていなくても始められる", async () => {
+  it("前提を免除した星は前提を終えていなくても始められる", async () => {
     // staff の stage_unlocks は loadUnlockedStageIds が via で絞らずこの集合に載せる。
     vi.mocked(loadSkillMapSource).mockImplementation(async () => ({
       ...pathSource(),
@@ -244,7 +244,7 @@ describe("POST /api/stages/:id/start", () => {
     expect(res.status).toBe(400);
     const message = await errorOf(res);
     // 見えている前提はそのまま、霧の前提はテーマ名に落ちる。
-    expect(message).toContain("stage-a の講座");
+    expect(message).toContain("stage-a のステージ");
     expect(message).not.toContain("stage-deep");
     expect(message).toContain("テーマX");
   });

@@ -1,8 +1,8 @@
 /**
  * コーディング規則の正本の読み込み (docs/curriculum/07 §6.4.1)。
  *
- * プログラム共通の規則は `packages/content/coding-rules.md`、講座の追加分は
- * `courses/<slug>/coding-rules.md` に置く。AI の一次レビューと人のレビューは、seed で D1 の
+ * プログラム共通の規則は `packages/content/coding-rules.md`、ステージの追加分は
+ * `stages/<slug>/coding-rules.md` に置く。AI の一次レビューと人のレビューは、seed で D1 の
  * `coding_rules` に入れた同じ本文を読む。課題は `task.json` の `review.rules` で規則の ID を指す。
  *
  * 書式は 1 規則 = 1 見出し (`## <ID> <短い名前>`) と、その下の箇条書き 3〜4 行。
@@ -28,7 +28,7 @@ export const CODING_RULES_FILE = "coding-rules.md";
 
 export interface CodingRule {
   id: string;
-  /** `common` か講座の slug。 */
+  /** `common` かステージの slug。 */
   scope: string;
   /** 文書の中の順番。プロンプトに同じ順で並べ、キャッシュを効かせる。 */
   position: number;
@@ -37,7 +37,7 @@ export interface CodingRule {
   statement: string;
   /** 適用する言語・場面。 */
   appliesTo: string;
-  /** 導入する講座 (`<slug>`) か単元 (`<slug>/<単元>`)。 */
+  /** 導入するステージ (`<slug>`) か単元 (`<slug>/<単元>`)。 */
   introducedIn: string;
   exception?: string;
   /** 規則の内容ハッシュ。レビュー結果に残し、改訂後も当時の規則を確かめられるようにする。 */
@@ -127,22 +127,22 @@ function defaultContentRoot(): string {
   return join(dirname(fileURLToPath(import.meta.url)), "..");
 }
 
-/** `courses/` 直下のフォルダー。modules の無い準備中の講座も含む。 */
-function courseDirectorySlugs(contentRoot: string): string[] {
-  const coursesRoot = join(contentRoot, "courses");
-  if (!existsSync(coursesRoot)) return [];
-  return readdirSync(coursesRoot)
-    .filter((slug) => lstatSync(join(coursesRoot, slug)).isDirectory())
+/** `stages/` 直下のフォルダー。modules の無い準備中のステージも含む。 */
+function stageDirectorySlugs(contentRoot: string): string[] {
+  const stagesRoot = join(contentRoot, "stages");
+  if (!existsSync(stagesRoot)) return [];
+  return readdirSync(stagesRoot)
+    .filter((slug) => lstatSync(join(stagesRoot, slug)).isDirectory())
     .sort(compareNatural);
 }
 
-/** seed が規則を入れ替える範囲。共通と、この checkout の講座。 */
+/** seed が規則を入れ替える範囲。共通と、この checkout のステージ。 */
 export function listCodingRuleScopes(contentRoot = defaultContentRoot()): string[] {
-  return [COMMON_RULE_SCOPE, ...courseDirectorySlugs(contentRoot)];
+  return [COMMON_RULE_SCOPE, ...stageDirectorySlugs(contentRoot)];
 }
 
 /**
- * 共通の規則と、講座ごとの追加規則をすべて読む。共通の正本が無ければ共通の規則は 0 件
+ * 共通の規則と、ステージごとの追加規則をすべて読む。共通の正本が無ければ共通の規則は 0 件
  * (教材検査の `check-tasks` が正本の有無を別に確かめる)。
  */
 export function readCodingRules(contentRoot: string): CodingRule[] {
@@ -152,12 +152,12 @@ export function readCodingRules(contentRoot: string): CodingRule[] {
     rules.push(
       ...parseCodingRules(readFileSync(common, "utf8"), COMMON_RULE_SCOPE, CODING_RULES_FILE),
     );
-  const coursesRoot = join(contentRoot, "courses");
-  for (const slug of courseDirectorySlugs(contentRoot)) {
-    const file = join(coursesRoot, slug, CODING_RULES_FILE);
+  const stagesRoot = join(contentRoot, "stages");
+  for (const slug of stageDirectorySlugs(contentRoot)) {
+    const file = join(stagesRoot, slug, CODING_RULES_FILE);
     if (!existsSync(file)) continue;
     rules.push(
-      ...parseCodingRules(readFileSync(file, "utf8"), slug, `courses/${slug}/${CODING_RULES_FILE}`),
+      ...parseCodingRules(readFileSync(file, "utf8"), slug, `stages/${slug}/${CODING_RULES_FILE}`),
     );
   }
   const seen = new Set<string>();
@@ -165,28 +165,28 @@ export function readCodingRules(contentRoot: string): CodingRule[] {
     if (seen.has(rule.id)) throw new Error(`コーディング規則の ID が重複しています: ${rule.id}`);
     seen.add(rule.id);
     const common = rule.scope === COMMON_RULE_SCOPE;
-    // 共通の規則は CR- で始め、講座の規則と見分けられるようにする。
+    // 共通の規則は CR- で始め、ステージの規則と見分けられるようにする。
     if (common !== rule.id.startsWith("CR-"))
       throw new Error(
         common
           ? `共通の規則の ID は CR- で始めてください: ${rule.id}`
-          : `講座の規則の ID に CR- は使えません (共通の規則と区別します): ${rule.id}`,
+          : `ステージの規則の ID に CR- は使えません (共通の規則と区別します): ${rule.id}`,
       );
-    const [course, unit, ...rest] = rule.introducedIn.split("/");
-    const courseDir = join(coursesRoot, course ?? "");
+    const [stage, unit, ...rest] = rule.introducedIn.split("/");
+    const stageDir = join(stagesRoot, stage ?? "");
     if (
       rest.length > 0 ||
-      !course ||
-      !/^[a-z0-9][a-z0-9-]*$/.test(course) ||
-      !existsSync(join(courseDir, "course.json"))
+      !stage ||
+      !/^[a-z0-9][a-z0-9-]*$/.test(stage) ||
+      !existsSync(join(stageDir, "stage.json"))
     )
       throw new Error(
-        `${rule.id}: 導入は <講座slug> か <講座slug>/<単元> で、存在する講座を書いてください`,
+        `${rule.id}: 導入は <ステージslug> か <ステージslug>/<単元> で、存在するステージを書いてください`,
       );
-    if (unit !== undefined && !existsSync(join(courseDir, "modules", unit)))
+    if (unit !== undefined && !existsSync(join(stageDir, "modules", unit)))
       throw new Error(`${rule.id}: 導入の単元がありません: ${rule.introducedIn}`);
-    if (!common && course !== rule.scope)
-      throw new Error(`${rule.id}: 講座の規則は、その講座の中で導入してください`);
+    if (!common && stage !== rule.scope)
+      throw new Error(`${rule.id}: ステージの規則は、そのステージの中で導入してください`);
   }
   return rules;
 }
@@ -195,7 +195,7 @@ export function readCodingRules(contentRoot: string): CodingRule[] {
 export function assertTaskRules(
   task: {
     id: string;
-    courseId: string;
+    stageId: string;
     unitId: string;
     rules: { id: string; required: boolean }[];
   },
@@ -210,20 +210,20 @@ export function assertTaskRules(
       visit(p);
     }
   };
-  visit(task.courseId);
+  visit(task.stageId);
   for (const ref of task.rules) {
     const rule = rules.find((r) => r.id === ref.id);
     if (!rule) throw new Error(`${task.id}: 未知のコーディング規則です: ${ref.id}`);
-    if (rule.scope !== COMMON_RULE_SCOPE && rule.scope !== task.courseId)
+    if (rule.scope !== COMMON_RULE_SCOPE && rule.scope !== task.stageId)
       throw new Error(
-        `${task.id}: 別の講座の規則は指せません (共通の規則に移してください): ${ref.id}`,
+        `${task.id}: 別のステージの規則は指せません (共通の規則に移してください): ${ref.id}`,
       );
     if (!ref.required) continue;
     // 未習の規則は合否の必須条件にしない (07 §6.4.1)。
-    const [course, unit] = rule.introducedIn.split("/");
+    const [stage, unit] = rule.introducedIn.split("/");
     const introduced =
-      (course !== undefined && ancestors.has(course)) ||
-      (course === task.courseId && (unit === undefined || compareNatural(unit, task.unitId) <= 0));
+      (stage !== undefined && ancestors.has(stage)) ||
+      (stage === task.stageId && (unit === undefined || compareNatural(unit, task.unitId) <= 0));
     if (!introduced)
       throw new Error(
         `${task.id}: ${ref.id} はこの課題の時点で未習です (導入: ${rule.introducedIn})。任意にするか、導入の位置を見直してください`,

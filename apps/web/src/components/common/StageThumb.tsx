@@ -16,7 +16,7 @@ interface StageThumbProps {
   label?: string;
   /**
    * サムネイル画像の R2 パス (`stages.thumbnail_path`)。 正本は教材リポジトリの
-   * `packages/content/courses/<slug>/thumbnail.*`。 未設定・ストレージ未設定・
+   * `packages/content/stages/<slug>/thumbnail.*`。 未設定・ストレージ未設定・
    * 読み込み失敗のいずれでも color のストライプ表示にフォールバックする。
    */
   thumbnailPath?: string | null;
@@ -37,7 +37,7 @@ export const StageThumb = ({
   className,
 }: StageThumbProps) => {
   // 失敗を boolean で持つと、同じインスタンスが別ステージのパスを受け取ったとき
-  // (ダッシュボードの「受講中の講座」切り替えなど) に新しい画像を二度と試さなくなる。
+  // (ダッシュボードの「受講中のステージ」切り替えなど) に新しい画像を二度と試さなくなる。
   // 落ちたパス自体を覚えて、そのパスのときだけフォールバックする。
   const [failedPath, setFailedPath] = useState<string | null>(null);
   // パスは内容ハッシュ入りなので、差し替えれば URL ごと変わる (キャッシュを跨がない)。

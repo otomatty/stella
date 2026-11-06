@@ -10,8 +10,8 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-/** courses/<slug>/modules/ の下にファイルを置いた一時ディレクトリを作る。 */
-function courses(files: Record<string, string>): string {
+/** stages/<slug>/modules/ の下にファイルを置いた一時ディレクトリを作る。 */
+function stages(files: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), "stella-os-blocks-"));
   roots.push(root);
   for (const [rel, body] of Object.entries(files)) {
@@ -27,7 +27,7 @@ const pair = (windows: string, macos: string) =>
 
 describe("OS 別のブロックの検査", () => {
   it("doc.md と課題文 README.md の正しいブロックは通す", () => {
-    const root = courses({
+    const root = stages({
       "m0/l1/doc.md": `# まとめ\n\n${pair("PowerShell", "ターミナル")}`,
       "m0/l1/t1/slides.md": "# スライド",
       "m0/tasks/q01/README.md": pair("`npm.cmd`", "`npm`"),
@@ -36,7 +36,7 @@ describe("OS 別のブロックの検査", () => {
   });
 
   it("片方の OS しか無い組・閉じ忘れ・未知の OS を行番号付きで落とす", () => {
-    const root = courses({
+    const root = stages({
       "m0/l1/doc.md": ":::os windows\nA\n:::\n",
       "m0/tasks/q01/README.md": "前\n:::os linux\nA\n:::\n\n:::os macos\nB\n",
     });
@@ -65,7 +65,7 @@ describe("OS 別のブロックの検査", () => {
   });
 
   it("スライド・知識問題・ヒント・解説には書けない (コードブロックの見本は除く)", () => {
-    const root = courses({
+    const root = stages({
       "m0/l1/t1/slides.md": `# スライド\n\n${pair("A", "B")}`,
       "m0/l1/knowledge.md": "問題\n\n:::os windows\nA\n",
       "m0/tasks/q01/hints.md": "```markdown\n:::os windows\nA\n:::\n```\n",
@@ -141,7 +141,7 @@ describe("OS ごとの画像", () => {
   });
 
   it("assets/ には両方の OS の画像を置く (図解の元 .html と生成物は対象外)", () => {
-    const root = courses({
+    const root = stages({
       "m0/l1/t1/assets/install.windows.png": "png",
       "m0/l1/t1/assets/install.macos.png": "png",
       "m0/l1/t1/assets/menu.windows.png": "png",
@@ -158,7 +158,7 @@ describe("OS ごとの画像", () => {
   });
 
   it("スライドでは OS ごとの画像を使えない", () => {
-    const root = courses({
+    const root = stages({
       "m0/l1/t1/slides.md": "# スライド\n\n![図](assets/install.windows.png)",
       "m0/l1/t1/assets/install.windows.png": "png",
       "m0/l1/t1/assets/install.macos.png": "png",

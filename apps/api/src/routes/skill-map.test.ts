@@ -16,15 +16,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
 import type { Env } from "../env.js";
-import { ApiError } from "../lib/authz.js";
+import { ApiError, type Caller } from "../lib/authz.js";
 import {
   loadFocusCompletions,
   loadSkillMapSource,
   loadSkillProfileCounts,
+  loadStaffSkillMapRows,
   loadStudyDays,
   wantsDevReveal,
 } from "../lib/skill-map-data.js";
-import { skillMapRoute, type SkillMapStagePayload as StagePayload } from "./skill-map.js";
+import type { StaffSkillMapStageRow } from "../lib/skill-map-data.js";
+import {
+  skillMapRoute,
+  type SkillMapStagePayload as StagePayload,
+  type StaffSkillMapStagePayload,
+} from "./skill-map.js";
 
 // 発見教材 (Phase 4) の読み出し。このファイルは視界の秘匿だけを見るので、既定は
 // 「教材なし」。discovery の公開条件そのものは `routes/discovery.test.ts` が持つ。
@@ -54,9 +60,10 @@ vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
   loadEnrolledStageIds: vi.fn(),
   loadFocusStageId: vi.fn(),
   saveFocusStageId: vi.fn(),
+  loadStaffSkillMapRows: vi.fn(),
 }));
 
-const CALLER = {
+const CALLER: Caller = {
   id: "seed-learner",
   role: "student",
   name: "受講者",
@@ -118,7 +125,7 @@ function lineSource() {
   const stage = (slug: string, prerequisites: string[]) => ({
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     canDo: `${slug} ができる`,
     theme: "テーマ",
@@ -147,6 +154,7 @@ async function fetchStages(): Promise<Map<string, StagePayload>> {
 }
 
 beforeEach(() => {
+  CALLER.role = "student";
   vi.mocked(wantsDevReveal).mockReturnValue(false);
   vi.mocked(loadSkillMapSource).mockResolvedValue(lineSource());
   vi.mocked(loadSkillProfileCounts).mockResolvedValue({
@@ -401,7 +409,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(c?.state).toBe("locked");
     expect(c?.visibility).toBe("full");
     expect(c?.can_do).toBeUndefined();
-    expect(c?.lock_reasons).toEqual(["b の講座"]);
+    expect(c?.lock_reasons).toEqual(["b のステージ"]);
   });
 
   it("手が届く星にだけ到達説明を返す", async () => {
@@ -444,7 +452,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(d?.visibility).toBe("fog");
     expect(d?.theme).toBe("テーマ");
     // 名前は「ぼかしの予告」用に返す。伏せ方 (blur) は画面側の演出。
-    expect(d?.title).toBe("d の講座");
+    expect(d?.title).toBe("d のステージ");
     expect(d?.category).toBe("プログラミング");
     // 線が無いと盤面が深さ = リングを計算できず、先の星が内側に置かれる。
     expect(d?.parent_id).toBe("id-c");
@@ -452,7 +460,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(d?.can_do).toBeUndefined();
     // 解放条件は 1 歩先まで。2 歩先の「何が要るか」は手前の星が既に語っている。
     expect(d?.lock_reasons).toBeUndefined();
-    // アイコンの形は講座の正体を語るので、slug と同じく霧の中に出さない。
+    // アイコンの形はステージの正体を語るので、slug と同じく霧の中に出さない。
     expect(d?.has_icon).toBeUndefined();
     expect(Object.keys(d ?? {})).not.toContain("icon_path");
   });
@@ -589,7 +597,7 @@ describe("GET /api/skill-map/mine", () => {
     const s = (slug: string, prerequisites: string[]) => ({
       id: `id-${slug}`,
       slug,
-      title: `${slug} の講座`,
+      title: `${slug} のステージ`,
       prerequisites,
       category: "基礎",
     });
@@ -738,7 +746,7 @@ describe("GET /api/skill-map/mine", () => {
         {
           id: "id-x",
           slug: "x",
-          title: "x の講座",
+          title: "x のステージ",
           // 線は b の 1 本だけ。c は「線の無い前提」(AND の 2 本目)。
           prerequisites: ["c", "b"],
           parent: "b",
@@ -752,7 +760,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(x?.state).toBe("locked");
     // b (起点) の隣 = 1 歩なので解放条件が出る。線の無い c も名前で残る。
     expect(x?.visibility).toBe("full");
-    expect(x?.lock_reasons).toEqual(["c の講座", "b の講座"]);
+    expect(x?.lock_reasons).toEqual(["c のステージ", "b のステージ"]);
   });
 
   it("飛び級で開いた星は unlocked になり、視界の起点にもなる", async () => {
@@ -873,7 +881,7 @@ function twoComponentSource() {
   const s = (slug: string, prerequisites: string[], theme?: string) => ({
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     canDo: `${slug} ができる`,
     category: "プログラミング",
@@ -905,8 +913,8 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     expect(stages.get("id-p")?.visibility).toBe("fog");
     const reasons = stages.get("id-x")?.lock_reasons ?? [];
     // 見えている前提 (root1) はタイトルのまま。霧の中の p は伏せる。
-    expect(reasons).toContain("root1 の講座");
-    expect(reasons).not.toContain("p の講座");
+    expect(reasons).toContain("root1 のステージ");
+    expect(reasons).not.toContain("p のステージ");
     // p はテーマも持たないので伏せ字に落ちる。
     expect(reasons).toContain("？？？");
   });
@@ -917,7 +925,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     if (p) Object.assign(p, { theme: "テーマY" });
     vi.mocked(loadSkillMapSource).mockResolvedValue(source);
     const stages = await fetchStages();
-    expect(stages.get("id-x")?.lock_reasons).toEqual(["root1 の講座", "テーマY"]);
+    expect(stages.get("id-x")?.lock_reasons).toEqual(["root1 のステージ", "テーマY"]);
   });
 
   it("霧の星そのものも、テーマが無ければ伏せ字を返す (名無しの星にしない)", async () => {
@@ -925,7 +933,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     const p = stages.get("id-p");
     expect(p?.theme).toBe("？？？");
     // 名前は「ぼかしの予告」として返る (画面側で伏せる)。到達説明は届かないまま。
-    expect(p?.title).toBe("p の講座");
+    expect(p?.title).toBe("p のステージ");
     expect(p?.can_do).toBeUndefined();
   });
 
@@ -934,7 +942,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     source.stages.push({
       id: "id-orphan",
       slug: "orphan",
-      title: "孤児 の講座",
+      title: "孤児 のステージ",
       // root1 を前提に持たせて視界に入れる (孤立させると霧に沈み、解放条件ごと返らない)。
       prerequisites: ["root1", "does-not-exist"],
       canDo: "orphan ができる",
@@ -944,7 +952,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     vi.mocked(loadSkillMapSource).mockResolvedValue(source);
     const stages = await fetchStages();
     const reasons = stages.get("id-orphan")?.lock_reasons ?? [];
-    expect(reasons).toEqual(["root1 の講座", "非公開の教材"]);
+    expect(reasons).toEqual(["root1 のステージ", "非公開の教材"]);
     expect(reasons.join()).not.toContain("does-not-exist");
   });
 });
@@ -955,9 +963,9 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     const stages = await fetchStages();
     const e = stages.get("id-e");
     expect(e?.visibility).toBe("edge");
-    expect(e?.title).toBe("e の講座");
+    expect(e?.title).toBe("e のステージ");
     expect(e?.slug).toBe("e");
-    expect(e?.lock_reasons).toEqual(["d の講座"]);
+    expect(e?.lock_reasons).toEqual(["d のステージ"]);
     expect(e?.has_icon).toBeUndefined();
   });
 
@@ -967,7 +975,7 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     expect(stages.size).toBe(6);
     const f = stages.get("id-f");
     expect(f?.visibility).toBe("hidden");
-    expect(f?.title).toBe("f の講座");
+    expect(f?.title).toBe("f のステージ");
     expect(f?.parent_id).toBe("id-e");
   });
 
@@ -1132,16 +1140,236 @@ describe("GET /api/skill-map/icons", () => {
   });
 });
 
-// 退役した Git 講座を使う固定入力で、複製の汎用機能を引き続き検証する。
+// 退役した Git のステージを使う固定入力で、複製の汎用機能を引き続き検証する。
 vi.mock("@stella/shared/skill-map/appearances", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@stella/shared/skill-map/appearances")>();
   return {
     ...actual,
     appearancesOf: (slug: string) =>
-      slug === "git-basics" ? ["フロントエンド", "バックエンド"] : undefined,
-    appearancePrerequisitesOf: (slug: string) =>
-      slug === "git-basics"
-        ? { フロントエンド: ["javascript-basics"], バックエンド: ["node-basics"] }
+      slug === "git-basics" || slug === "staff-mirror"
+        ? ["フロントエンド", "バックエンド"]
         : undefined,
+    appearancePrerequisitesOf: (slug: string) => {
+      if (slug === "git-basics") {
+        return { フロントエンド: ["javascript-basics"], バックエンド: ["node-basics"] };
+      }
+      // 管理盤面のテスト用。フロントの親は載る星、バックの親は応答に載らない。
+      if (slug === "staff-mirror") {
+        return { フロントエンド: ["live-course"], バックエンド: ["missing-parent"] };
+      }
+      return undefined;
+    },
   };
+});
+
+const staffIconPath = (slug: string) => `tenant/ses/courses/${slug}/icon.svg`;
+
+function staffRow(
+  over: Partial<StaffSkillMapStageRow> & Pick<StaffSkillMapStageRow, "slug">,
+): StaffSkillMapStageRow {
+  return {
+    id: `id-${over.slug}`,
+    tenantId: "ses",
+    title: `${over.slug} のステージ`,
+    category: "フロントエンド",
+    prerequisites: null,
+    parent: null,
+    canDo: `${over.slug} ができる`,
+    theme: "テーマ",
+    iconPath: null,
+    audience: "catalog",
+    status: "published",
+    grantedCount: 0,
+    enrolledCount: 0,
+    ...over,
+    slug: over.slug,
+  };
+}
+
+/** 管理盤面の固定入力。退役・Extra・島・載らない親を混ぜる。 */
+function staffBoardRows(): StaffSkillMapStageRow[] {
+  return [
+    staffRow({ slug: "draft-course", status: "draft", enrolledCount: 1 }),
+    staffRow({
+      slug: "live-course",
+      status: "published",
+      enrolledCount: 4,
+      grantedCount: 9,
+      iconPath: staffIconPath("live-course"),
+    }),
+    staffRow({
+      slug: "old-course",
+      status: "archived",
+      parent: "live-course",
+      prerequisites: JSON.stringify(["live-course"]),
+    }),
+    staffRow({
+      slug: "git-basics",
+      status: "published",
+      iconPath: staffIconPath("git-basics"),
+    }),
+    staffRow({
+      slug: "extra-course",
+      audience: "granted",
+      status: "published",
+      grantedCount: 0,
+      enrolledCount: 2,
+      parent: "dev-env-basics",
+      prerequisites: JSON.stringify(["dev-env-basics"]),
+    }),
+    staffRow({
+      slug: "extra-used",
+      audience: "granted",
+      status: "draft",
+      grantedCount: 3,
+      enrolledCount: 1,
+    }),
+    staffRow({
+      slug: "devops-island",
+      category: "DevOps",
+      status: "published",
+      parent: "python-basics",
+      prerequisites: JSON.stringify(["python-basics"]),
+      iconPath: staffIconPath("devops-island"),
+    }),
+    staffRow({
+      slug: "staff-mirror",
+      status: "published",
+      parent: "live-course",
+      prerequisites: JSON.stringify(["live-course"]),
+    }),
+    staffRow({
+      slug: "orphan-child",
+      status: "published",
+      parent: "git-basics",
+      prerequisites: JSON.stringify(["git-basics"]),
+    }),
+  ];
+}
+
+const staffGet = (path: string, auth = true) =>
+  app.request(path, auth ? { headers: { Authorization: "Bearer test" } } : {}, env);
+
+async function fetchStaffStages(): Promise<Map<string, StaffSkillMapStagePayload>> {
+  const res = await staffGet("/api/skill-map/staff");
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as { stages: StaffSkillMapStagePayload[] };
+  return new Map(body.stages.map((stage) => [stage.slug, stage]));
+}
+
+describe("GET /api/skill-map/staff", () => {
+  beforeEach(() => {
+    CALLER.role = "instructor";
+    vi.mocked(loadStaffSkillMapRows).mockResolvedValue(staffBoardRows());
+  });
+
+  it("認証が無ければ 401", async () => {
+    const res = await staffGet("/api/skill-map/staff", false);
+    expect(res.status).toBe(401);
+  });
+
+  it("受講者は 403、講師と管理者は 200", async () => {
+    CALLER.role = "student";
+    const student = await staffGet("/api/skill-map/staff");
+    expect(student.status).toBe(403);
+    const denied = (await student.json()) as { error: string };
+    expect(denied.error).toBe("権限がありません");
+
+    for (const role of ["instructor", "admin", "platform_admin"] as const) {
+      CALLER.role = role;
+      const res = await staffGet("/api/skill-map/staff");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+    }
+  });
+
+  it("draft・published・archived が status 付きで載り、退役ステージは載らない", async () => {
+    const stages = await fetchStaffStages();
+    expect(stages.get("draft-course")?.status).toBe("draft");
+    expect(stages.get("live-course")?.status).toBe("published");
+    expect(stages.get("old-course")?.status).toBe("archived");
+    expect(stages.get("git-basics")).toBeUndefined();
+    for (const stage of stages.values()) {
+      expect(stage.state).toBe("unlocked");
+      expect(stage.visibility).toBe("full");
+      expect(stage).not.toHaveProperty("enrolled");
+      expect(stage).not.toHaveProperty("lock_reasons");
+    }
+    expect(stages.get("live-course")?.has_icon).toBe(true);
+    expect(stages.get("draft-course")?.has_icon).toBeUndefined();
+  });
+
+  it("Extra は割り当てが無くても載り、audience と granted_count が付く", async () => {
+    const stages = await fetchStaffStages();
+    const empty = stages.get("extra-course");
+    expect(empty?.audience).toBe("granted");
+    expect(empty?.granted_count).toBe(0);
+    expect(empty?.enrolled_count).toBe(2);
+    const used = stages.get("extra-used");
+    expect(used?.audience).toBe("granted");
+    expect(used?.granted_count).toBe(3);
+    expect(used?.enrolled_count).toBe(1);
+    const catalog = stages.get("live-course");
+    expect(catalog?.audience).toBeUndefined();
+    expect(catalog?.granted_count).toBe(0);
+    expect(catalog?.enrolled_count).toBe(4);
+  });
+
+  it("島のステージは表示条件を満たしていなくても載る", async () => {
+    const stages = await fetchStaffStages();
+    const devops = stages.get("devops-island");
+    expect(devops?.category).toBe("DevOps");
+    expect(devops?.status).toBe("published");
+    expect(devops?.parent_id).toBeUndefined();
+  });
+
+  it("載らない親を指す parent_id は出さない", async () => {
+    const stages = await fetchStaffStages();
+    expect(stages.get("old-course")?.parent_id).toBe("id-live-course");
+    expect(stages.get("orphan-child")?.parent_id).toBeUndefined();
+    expect(stages.get("extra-course")?.parent_id).toBeUndefined();
+    const mirror = stages.get("staff-mirror");
+    expect(mirror?.parent_id).toBe("id-live-course");
+    expect(mirror?.appearances).toEqual(["フロントエンド"]);
+    expect(mirror?.appearance_parent_ids).toEqual({ フロントエンド: "id-live-course" });
+  });
+});
+
+describe("GET /api/skill-map/staff/icons", () => {
+  const svgOf = (slug: string) => `<svg xmlns="http://www.w3.org/2000/svg" id="${slug}"/>`;
+
+  beforeEach(() => {
+    CALLER.role = "instructor";
+    vi.mocked(loadStaffSkillMapRows).mockResolvedValue(staffBoardRows());
+  });
+
+  it("受講者は 403", async () => {
+    CALLER.role = "student";
+    const res = await staffGet("/api/skill-map/staff/icons");
+    expect(res.status).toBe(403);
+  });
+
+  it("盤面に載るステージのアイコンだけ返す", async () => {
+    const fetched: string[] = [];
+    env.MATERIALS_BUCKET = fakeMaterialsBucket(
+      {
+        [staffIconPath("live-course")]: svgOf("live-course"),
+        [staffIconPath("devops-island")]: svgOf("devops-island"),
+        [staffIconPath("git-basics")]: svgOf("git-basics"),
+      },
+      (key) => fetched.push(key),
+    ) as unknown as Env["MATERIALS_BUCKET"];
+
+    const res = await staffGet("/api/skill-map/staff/icons");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+    const body = (await res.json()) as { icons: Record<string, string> };
+    expect(body.icons["id-live-course"]).toBe(svgOf("live-course"));
+    expect(body.icons["id-devops-island"]).toBe(svgOf("devops-island"));
+    expect(body.icons["id-git-basics"]).toBeUndefined();
+    expect(body.icons["id-draft-course"]).toBeUndefined();
+    expect(Object.keys(body.icons).sort()).toEqual(["id-devops-island", "id-live-course"]);
+    expect(fetched.some((key) => key.includes("git-basics"))).toBe(false);
+    expect(JSON.stringify(body)).not.toContain("tenant/ses/courses");
+  });
 });

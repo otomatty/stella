@@ -145,7 +145,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     run("INSERT INTO skills (id, title) VALUES ('html', 'HTML')");
     const submission = `INSERT INTO submissions
       (id, tenant_id, student_id, stage_title, assignment_title, code, submitted_at)
-     VALUES (?, 'ses', ?, '講座', '課題', 'code', 1)`;
+     VALUES (?, 'ses', ?, 'ステージ', '課題', 'code', 1)`;
     run(submission, SUB_A, LEARNER);
     run(submission, SUB_B, LEARNER);
     run(submission, SUB_OTHER, OTHER);

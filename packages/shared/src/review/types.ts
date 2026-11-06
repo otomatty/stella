@@ -123,7 +123,7 @@ export interface Submission {
   /** staff 向け (一覧): 受講者の担当講師 (#38)。担当者で並べるのに使う。 */
   assigneeId?: string | null;
   assigneeName?: string | null;
-  /** staff 向け (一覧): 課題の講座とパターン (コメント集の当てはめ・同じ課題をまとめて見る)。 */
+  /** staff 向け (一覧): 課題のステージとパターン (コメント集の当てはめ・同じ課題をまとめて見る)。 */
   stageId?: string | null;
   taskPattern?: string | null;
   /** staff 向け (詳細): AI が合格にした提出を人が確認した記録 (#34)。 */

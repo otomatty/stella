@@ -1,12 +1,15 @@
 /**
  * スキルツリー (ステージマップ) とスキルプロフィールの読み出し API (Phase 1)。
  *
- *   GET /api/skill-map/mine     … 星の状態・視界・解放条件・次の一歩
- *   GET /api/skill-map/icons    … 霧の外の講座アイコン SVG を 1 応答にまとめる
- *   GET /api/skill-profile/mine … XP の内訳とレベル、学習ストリークの要約
+ *   GET /api/skill-map/mine        … 星の状態・視界・解放条件・次の一歩
+ *   GET /api/skill-map/icons       … 霧の外のステージアイコン SVG を 1 応答にまとめる
+ *   GET /api/skill-map/staff       … 講師・管理者向け。全ステージを霧なしで 1 つの盤面に
+ *   GET /api/skill-map/staff/icons … その盤面に載るステージアイコン
+ *   GET /api/skill-profile/mine    … XP の内訳とレベル、学習ストリークの要約
  *
- * どちらも **呼び出した本人ぶんだけ** を返す。他人のマップを覗く用途 (講師の
- * モニタリング) は本フェーズでは持たない。
+ * `/mine` と受講者の `/icons` は **呼び出した本人ぶんだけ** を返す。他人の学習状況を
+ * 覗く用途は持たない。ステージ管理の盤面 (`/staff`) は教材の全ステージで、受講者の
+ * 霧・割当・島の表示条件は掛けない。
  *
  * ## 視界の強制はここで行う
  *
@@ -37,6 +40,7 @@
  */
 
 import { Hono } from "hono";
+import { RETIRED_STAGES } from "@stella/shared/curriculum/retired-stages";
 import { isDiscoveryVisible } from "@stella/shared/discovery/types";
 import { appearancePrerequisitesOf, appearancesOf } from "@stella/shared/skill-map/appearances";
 import { dropIslandsUnknownToClient } from "@stella/shared/skill-map/islands";
@@ -48,6 +52,7 @@ import {
 } from "@stella/shared/skill-map/evaluate";
 import type {
   SkillMapLockReason,
+  SkillMapStage,
   SkillMapState,
   SkillMapVisibility,
 } from "@stella/shared/skill-map/evaluate";
@@ -60,7 +65,7 @@ import {
   toStudyDate,
 } from "@stella/shared/study/activity";
 
-import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";
 import {
   loadApprovedDiscoverySummaries,
@@ -76,11 +81,13 @@ import {
   loadFocusCompletions,
   loadSkillMapSource,
   loadSkillProfileCounts,
+  loadStaffSkillMapRows,
   loadStudyDays,
+  parsePrerequisites,
   saveFocusStageId,
   wantsDevReveal,
 } from "../lib/skill-map-data.js";
-import type { SkillMapSource } from "../lib/skill-map-data.js";
+import type { SkillMapSource, StaffSkillMapStageRow } from "../lib/skill-map-data.js";
 import { dropFromQueue } from "./stage-queue.js";
 import type { Env } from "../env.js";
 
@@ -234,7 +241,7 @@ export interface SkillMapStagePayload {
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバックでもある。 */
   theme?: string;
   /**
-   * 講座アイコンがあるか。**霧の外でだけ true** — アイコンの形は講座の正体を語るので
+   * ステージアイコンがあるか。**霧の外でだけ true** — アイコンの形はステージの正体を語るので
    * slug と同じ秘匿。実体は `GET /api/skill-map/icons` (JWT 必須) でまとめて取る。
    * R2 キーはクライアントに出さない (公開バケット直リンクを足さないため)。
    */
@@ -278,7 +285,7 @@ export interface SkillMapStagePayload {
    */
   appearance_parent_ids?: Record<string, string>;
   /**
-   * Extra (講師・管理者が割り当てた講座)。Basic (`catalog`) の星には付けない。
+   * Extra (講師・管理者が割り当てたステージ)。Basic (`catalog`) の星には付けない。
    * 名前を出す段 (`full`) と開発者表示にだけ載せる。霧・edge には出さない。
    */
   audience?: "granted";
@@ -549,7 +556,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
 });
 
 /**
- * 講座アイコン SVG。JWT 必須、霧の星は 404。
+ * ステージアイコン SVG。JWT 必須、霧の星は 404。
  *
  * 画面は `mask-image` に載せるので、公開 R2 URL を直接渡すと CORS でマスクが黙って
  * 落ちる。ここを通して blob URL にすると同じオリジンになり、キーもクライアントに出ない。
@@ -591,7 +598,7 @@ skillMapRoute.get("/api/skill-map/stages/:id/icon", async (c) => {
 });
 
 /**
- * 霧の外の講座アイコンを 1 回の評価でまとめて返す。
+ * 霧の外のステージアイコンを 1 回の評価でまとめて返す。
  *
  * 星ごとに `stages/:id/icon` を呼ぶと、マップ読み出し (D1 複数本) が星の数だけ走る。
  * ホームの `/mine` に SVG を埋め込まないのは、マップ JSON を開くたびに R2 を踏まないため。
@@ -613,6 +620,160 @@ skillMapRoute.get("/api/skill-map/icons", async (c) => {
       const visibility = result.visibility.get(stage.id) ?? "hidden";
       return visibility === "full" && Boolean(stage.iconPath);
     });
+
+    const icons: Record<string, string> = {};
+    await Promise.all(
+      candidates.map(async (stage) => {
+        const path = stage.iconPath;
+        if (!path) return;
+        const object = await bucket.get(path);
+        if (!object) return;
+        icons[stage.id] = await new Response(object.body).text();
+      }),
+    );
+
+    c.header("Cache-Control", "private, no-store");
+    return c.json({ icons });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 退役ステージ (`tenant_id` + slug)。教材から消えた行で、管理盤面にも出さない。
+ * CMS が別テナントで同じ slug を作った行はここには当たらない。
+ */
+const RETIRED_STAGE_KEYS = new Set(RETIRED_STAGES.map((row) => `${row.tenantId}\0${row.slug}`));
+
+/** 応答に載せるステージ。公開状態は問わず、退役だけ落とす。 */
+function visibleStaffRows(rows: readonly StaffSkillMapStageRow[]): StaffSkillMapStageRow[] {
+  return rows.filter((row) => !RETIRED_STAGE_KEYS.has(`${row.tenantId}\0${row.slug}`));
+}
+
+/** ステージ管理の盤面の星。受講者の `SkillMapStagePayload` に管理用の項目を足す。 */
+export interface StaffSkillMapStagePayload {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  theme?: string;
+  can_do?: string;
+  parent_id?: string;
+  appearances?: string[];
+  appearance_parent_ids?: Record<string, string>;
+  has_icon?: true;
+  /** 盤面の描き分けに使う値。管理画面では常に unlocked。 */
+  state: "unlocked";
+  visibility: "full";
+  /** Extra のときだけ。 */
+  audience?: "granted";
+  status: "draft" | "published" | "archived";
+  /** `stage_grants` の件数。Extra 以外は 0。 */
+  granted_count: number;
+  /** `enrollments` の件数。 */
+  enrolled_count: number;
+}
+
+/**
+ * 管理盤面の星を組み立てる。
+ *
+ * 線の解き方は `/mine` と同じ (`parentSlugOf` と `appearancePayloads`)。端点は
+ * **この応答に載る星だけ** — 退役や未知 slug を指す線は出さない。前提の循環は
+ * 評価器が見つけ、呼び出し側がログする (応答は返す)。
+ */
+function buildStaffSkillMap(rows: readonly StaffSkillMapStageRow[]): {
+  stages: StaffSkillMapStagePayload[];
+  cycles: string[][];
+} {
+  const delivered = visibleStaffRows(rows);
+  const idBySlug = new Map(delivered.map((row) => [row.slug, row.id]));
+  const deliveredIds = new Set(delivered.map((row) => row.id));
+
+  const asStage = (row: StaffSkillMapStageRow): SkillMapStage => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    category: row.category ?? "",
+    prerequisites: parsePrerequisites(row.prerequisites),
+    ...(row.parent ? { parent: row.parent } : {}),
+    ...(row.canDo ? { canDo: row.canDo } : {}),
+    ...(row.theme ? { theme: row.theme } : {}),
+    ...(row.iconPath ? { iconPath: row.iconPath } : {}),
+    ...(row.audience === "granted" ? { audience: "granted" as const } : {}),
+  });
+
+  const mapped = delivered.map((row) => ({ row, stage: asStage(row) }));
+  const evaluated = evaluateSkillMap({
+    stages: mapped.map((item) => item.stage),
+    clearedStageIds: new Set(),
+  });
+  const acceptsParent = (parentId: string): boolean => deliveredIds.has(parentId);
+
+  const stages = mapped.map(({ row, stage }): StaffSkillMapStagePayload => {
+    const parentSlug = parentSlugOf(stage);
+    const parentId = parentSlug === undefined ? undefined : idBySlug.get(parentSlug);
+    return {
+      id: stage.id,
+      state: "unlocked",
+      visibility: "full",
+      slug: stage.slug,
+      title: stage.title,
+      category: stage.category,
+      ...(stage.theme ? { theme: stage.theme } : {}),
+      ...(stage.canDo ? { can_do: stage.canDo } : {}),
+      ...(parentId !== undefined && acceptsParent(parentId) ? { parent_id: parentId } : {}),
+      ...appearancePayloads(stage.slug, idBySlug, acceptsParent),
+      ...hasIconPayload(stage.iconPath, "full"),
+      ...(stage.audience === "granted" ? { audience: "granted" as const } : {}),
+      status: row.status,
+      granted_count: row.audience === "granted" ? row.grantedCount : 0,
+      enrolled_count: row.enrolledCount,
+    };
+  });
+
+  return { stages, cycles: evaluated.cycles };
+}
+
+/**
+ * 講師・管理者のステージ管理盤面。
+ *
+ * 受講者の `/mine` は本人の霧・割当・島の表示条件で星を伏せる。管理画面は
+ * Basic と Extra を 1 つの盤面で見るので、それらを掛けない。`draft` /
+ * `published` / `archived` はすべて返す (盤面に出すかは画面が決める)。
+ * 星の状態は描き分け用に常に `unlocked` / `full`。
+ */
+skillMapRoute.get("/api/skill-map/staff", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
+    const { stages, cycles } = buildStaffSkillMap(await loadStaffSkillMapRows(db));
+    if (cycles.length > 0) {
+      console.error("[skill-map] 前提が循環しています", JSON.stringify(cycles));
+    }
+    c.header("Cache-Control", "private, no-store");
+    return c.json({ stages });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * ステージ管理の盤面に載るステージアイコン。`/api/skill-map/icons` と同じ形。
+ * 盤面に載らないステージ (退役) の SVG は取りに行かない。
+ */
+skillMapRoute.get("/api/skill-map/staff/icons", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
+
+    const bucket = c.env.MATERIALS_BUCKET;
+    if (!bucket) {
+      throw new ApiError("教材ストレージ (R2 バインディング MATERIALS_BUCKET) が未設定です", 503);
+    }
+
+    const candidates = visibleStaffRows(await loadStaffSkillMapRows(db)).filter((stage) =>
+      Boolean(stage.iconPath),
+    );
 
     const icons: Record<string, string> = {};
     await Promise.all(

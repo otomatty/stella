@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repositories": [
-    { "name": "csharp", "note": "C# の研修 (Extra 講座)" },
-    { "name": "devlab", "note": "開発ラボG の選考の事前課題 (Extra 講座)" }
+    { "name": "csharp", "note": "C# の研修 (Extra ステージ)" },
+    { "name": "devlab", "note": "開発ラボG の選考の事前課題 (Extra ステージ)" }
   ]
 }

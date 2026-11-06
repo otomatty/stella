@@ -15,7 +15,7 @@ import {
 } from "./appearances";
 
 describe("appearancesOf", () => {
-  it("退役した Git 講座は複製の対応表に残さない", () => {
+  it("退役した Git のステージは複製の対応表に残さない", () => {
     expect(appearancesOf("git-basics")).toBeUndefined();
     expect(appearancePrerequisitesOf("git-basics")).toBeUndefined();
   });
@@ -36,7 +36,7 @@ describe("appearancesOf", () => {
 });
 
 describe("appearancePrerequisitesOf", () => {
-  it("退役した Git 講座は複製の対応表に残さない", () => {
+  it("退役した Git のステージは複製の対応表に残さない", () => {
     expect(appearancesOf("git-basics")).toBeUndefined();
     expect(appearancePrerequisitesOf("git-basics")).toBeUndefined();
   });

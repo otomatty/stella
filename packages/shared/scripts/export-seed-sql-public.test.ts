@@ -24,15 +24,15 @@ vi.mock("@stella/content", async (importOriginal) => {
     const url = await import("node:url");
     const content = path.join(path.dirname(url.fileURLToPath(import.meta.url)), "../../content");
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "stella-seed-public-"));
-    fs.mkdirSync(path.join(root, "courses"));
+    fs.mkdirSync(path.join(root, "stages"));
     fs.cpSync(
-      path.join(content, "courses/dev-env-basics"),
-      path.join(root, "courses/dev-env-basics"),
+      path.join(content, "stages/dev-env-basics"),
+      path.join(root, "stages/dev-env-basics"),
       { recursive: true },
     );
     for (const name of ["skills.json", "patterns.json", "environments", "sources"])
       fs.cpSync(path.join(content, name), path.join(root, name), { recursive: true });
-    const unit = path.join(root, "courses/dev-env-basics/modules/m0-first-page");
+    const unit = path.join(root, "stages/dev-env-basics/modules/m0-first-page");
     fs.rmSync(path.join(unit, "tasks"), { recursive: true });
     const refs = JSON.parse(fs.readFileSync(path.join(unit, "references.json"), "utf8")) as {
       uses: { contentId: string }[];
@@ -42,8 +42,8 @@ vi.mock("@stella/content", async (importOriginal) => {
     fixture.root = root;
     fixture.unit = unit;
   }
-  const courses = path.join(fixture.root, "courses");
-  return { ...real, buildContentManifest: () => real.buildContentManifest(courses) };
+  const stages = path.join(fixture.root, "stages");
+  return { ...real, buildContentManifest: () => real.buildContentManifest(stages) };
 });
 
 afterAll(() => {

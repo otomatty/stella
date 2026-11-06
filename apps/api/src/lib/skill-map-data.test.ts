@@ -6,13 +6,17 @@ import { filterIslandStages } from "@stella/shared/skill-map/islands";
 
 import type { Db } from "../db/client.js";
 import type { Caller } from "./authz.js";
+import { D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 import { isEnrolledInStage } from "./stage-queue-data.js";
 import {
   INVALID_PREREQUISITE_SENTINEL,
   isDevMode,
   isUsableFocus,
+  loadClearedStageIds,
+  loadClearedStageIdsByUser,
   loadEnrolledStageIds,
+  loadStaffSkillMapRows,
   parsePrerequisites,
   pickActiveStageId,
   selectableActiveStages,
@@ -115,11 +119,11 @@ describe("開発者表示を出すか (shouldRevealDevMap)", () => {
 describe("壊れた prerequisites の行き先", () => {
   it("番兵はどのステージにも解決せず、その星は locked のまま残る", () => {
     const stages = [
-      { id: "id-a", slug: "a", title: "a の講座", prerequisites: [], category: "" },
+      { id: "id-a", slug: "a", title: "a のステージ", prerequisites: [], category: "" },
       {
         id: "id-broken",
         slug: "broken",
-        title: "broken の講座",
+        title: "broken のステージ",
         prerequisites: parsePrerequisites("["),
         category: "",
       },
@@ -148,7 +152,7 @@ interface RecordedQuery {
   params: unknown[];
 }
 
-function recordingDb(): { db: Db; last: () => RecordedQuery } {
+function recordingDb(): { db: Db; last: () => RecordedQuery; all: () => RecordedQuery[] } {
   const queries: RecordedQuery[] = [];
   const driver = {
     prepare: (sql: string) => {
@@ -177,6 +181,7 @@ function recordingDb(): { db: Db; last: () => RecordedQuery } {
       if (!q) throw new Error("SQL が 1 つも発行されていません");
       return q;
     },
+    all: () => queries,
   };
 }
 
@@ -186,6 +191,22 @@ const CALLER: Caller = {
   name: "受講者",
   email: null,
 };
+
+describe("loadStaffSkillMapRows", () => {
+  it("status で絞らず、割当件数と受講件数を数える", async () => {
+    const { db, all } = recordingDb();
+    await loadStaffSkillMapRows(db);
+    const queries = all();
+    const stageQuery = queries.find(
+      (query) => query.sql.includes('"stages"') && !query.sql.includes("stage_grants"),
+    );
+    expect(stageQuery).toBeDefined();
+    expect(stageQuery?.sql.toLowerCase()).not.toContain("where");
+    expect(stageQuery?.sql).toContain('"status"');
+    expect(queries.some((query) => query.sql.includes('"stage_grants"'))).toBe(true);
+    expect(queries.some((query) => query.sql.includes('"enrollments"'))).toBe(true);
+  });
+});
 
 describe("受講登録の絞り込み (loadEnrolledStageIds / isEnrolledInStage)", () => {
   it("読める登録 (active / completed) だけを数える — expired は enrolled 扱いにしない", async () => {
@@ -216,7 +237,7 @@ describe("「進行中」に据えてよい星か (selectableActiveStages)", () 
   const line = ["a", "b", "c", "d"].map((slug, i) => ({
     id: id_(slug),
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     category: "基礎",
     prerequisites: i === 0 ? [] : [String(["a", "b", "c", "d"][i - 1])],
   }));
@@ -274,8 +295,8 @@ describe("進捗から「進行中」を導く (pickActiveStageId)", () => {
 
 describe("C# の島", () => {
   it("割り当てが無いと星が残らない", () => {
-    // loadSkillMapSource と同じ順。stella のカタログに C# の講座は無く、
-    // 外部から入る講座は granted なので、割り当てが無い受講者には島ごと出ない。
+    // loadSkillMapSource と同じ順。stella のカタログに C# のステージは無く、
+    // 外部から入るステージは granted なので、割り当てが無い受講者には島ごと出ない。
     const rows = [
       {
         id: "id-dev-env-basics",
@@ -328,3 +349,103 @@ describe("保存済みフォーカスを採ってよいか (isUsableFocus)", () 
     expect(isUsableFocus("stage-active", cleared, new Set())).toBe(false);
   });
 });
+
+describe("クリア判定 (loadClearedStageIds / loadClearedStageIdsByUser)", () => {
+  it("受講者をまとめて引き、完了した登録と取り消されていない修了証だけを条件にする", async () => {
+    const { db, all } = recordingDb();
+    const cleared = await loadClearedStageIdsByUser(db, ["user-a", "user-b"]);
+    expect(cleared.get("user-a")).toEqual(new Set());
+    expect(cleared.get("user-b")).toEqual(new Set());
+    const queries = all();
+    expect(queries).toHaveLength(2);
+    const enrollment = queries.find((query) => query.sql.includes('"enrollments"'));
+    const certificate = queries.find((query) => query.sql.includes('"certificates"'));
+    expect(enrollment?.sql).toContain('"user_id" in (?, ?)');
+    expect(enrollment?.sql).toContain('"status" = ?');
+    expect(enrollment?.params).toEqual(["user-a", "user-b", "completed"]);
+    expect(certificate?.sql).toContain('"user_id" in (?, ?)');
+    expect(certificate?.sql).toContain('"revoked" = ?');
+    expect(certificate?.params?.slice(0, 2)).toEqual(["user-a", "user-b"]);
+    expect(certificate?.params).toHaveLength(3);
+  });
+
+  it("1 人のクリア判定はまとめて引く関数と同じ SQL になる", async () => {
+    const single = recordingDb();
+    await loadClearedStageIds(single.db, CALLER);
+    const many = recordingDb();
+    await loadClearedStageIdsByUser(many.db, [CALLER.id]);
+    expect(single.all().map((query) => query.sql)).toEqual(many.all().map((query) => query.sql));
+    expect(single.all().map((query) => query.params)).toEqual(
+      many.all().map((query) => query.params),
+    );
+  });
+
+  it("受講者が空なら問い合わせない", async () => {
+    const { db, all } = recordingDb();
+    await expect(loadClearedStageIdsByUser(db, [])).resolves.toEqual(new Map());
+    expect(all()).toEqual([]);
+  });
+
+  it("バインド上限を超える人数でも問い合わせを分け、全員のクリアが揃う", async () => {
+    const ids = Array.from({ length: 250 }, (_, i) => `user-${i}`);
+    const { db, all } = clearedRowsDb();
+    const cleared = await loadClearedStageIdsByUser(db, ids);
+
+    expect(cleared.size).toBe(ids.length);
+    for (const id of ids) {
+      expect(cleared.get(id)).toEqual(new Set([`enrolled-${id}`, `certified-${id}`]));
+    }
+
+    const queries = all();
+    const enrollments = queries.filter((query) => query.sql.includes('"enrollments"'));
+    const certificates = queries.filter((query) => query.sql.includes('"certificates"'));
+    expect(enrollments.length).toBeGreaterThan(1);
+    expect(certificates.length).toBeGreaterThan(1);
+    for (const query of queries) {
+      expect(query.params.length).toBeLessThanOrEqual(D1_MAX_BOUND_PARAMS);
+    }
+    for (const query of enrollments) {
+      expect(query.sql).toContain('"status" = ?');
+      expect(query.params.at(-1)).toBe("completed");
+    }
+    for (const query of certificates) {
+      expect(query.sql).toContain('"revoked" = ?');
+    }
+  });
+});
+
+/**
+ * クリア判定の SELECT に、束縛した受講者ごとの行を返す。
+ * D1 の `raw()` は select の列順 (user_id, stage_id) の配列。
+ * 末尾のバインドは status / revoked なので、受講者 id はそれより前。
+ */
+function clearedRowsDb(): { db: Db; all: () => RecordedQuery[] } {
+  const queries: RecordedQuery[] = [];
+  const driver = {
+    prepare: (sql: string) => {
+      const entry: RecordedQuery = { sql, params: [] as unknown[] };
+      queries.push(entry);
+      const stmt = {
+        bind: (...params: unknown[]) => {
+          entry.params = params;
+          return stmt;
+        },
+        all: async () => ({ results: [], success: true, meta: {} }),
+        run: async () => ({ results: [], success: true, meta: {} }),
+        first: async () => null,
+        raw: async () => {
+          const kind = sql.includes('"certificates"') ? "certified" : "enrolled";
+          return entry.params.slice(0, -1).map((userId) => [userId, `${kind}-${String(userId)}`]);
+        },
+      };
+      return stmt;
+    },
+    batch: async () => [],
+    exec: async () => ({}),
+    dump: async () => "",
+  };
+  return {
+    db: drizzle(driver as never) as unknown as Db,
+    all: () => queries,
+  };
+}

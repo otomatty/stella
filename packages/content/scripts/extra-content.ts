@@ -1,10 +1,10 @@
 /**
- * 外部リポジトリの Extra 講座を、作業用の写しに重ねる。
+ * 外部リポジトリの Extra ステージを、作業用の写しに重ねる。
  *
  *   bun run packages/content/scripts/extra-content.ts overlay --from <外部リポジトリ>
  *
  * リポジトリのルートに `.stella-extra-workspace` が無いときは何も書かずに終了する。
- * 公開リポジトリの作業フォルダーで実行して Extra 講座を混ぜないため。
+ * 公開リポジトリの作業フォルダーで実行して Extra ステージを混ぜないため。
  */
 
 import { join, resolve } from "node:path";
@@ -38,9 +38,9 @@ try {
     contentRoot: join(repoRoot, "packages", "content"),
     extraRoot: resolve(from),
   });
-  const courses = result.courses.join("、");
+  const stages = result.stages.join("、");
   console.log(
-    `Extra 講座を重ねました: ${courses}\n` +
+    `Extra ステージを重ねました: ${stages}\n` +
       `スキル ${result.skills.length} 件、パターン ${result.patterns.length} 件、参照元 ${result.sources.length} 件、環境 ${result.environments.length} 件`,
   );
 } catch (error) {

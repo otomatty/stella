@@ -72,7 +72,7 @@ export const STATIC_CHECK_TYPES = [
 
 export interface TaskManifest {
   schemaVersion: 1;
-  /** `<講座slug>/<単元>/<課題>`。短い番号だけで結果を保存しない (docs/curriculum/04 §3)。 */
+  /** `<ステージslug>/<単元>/<課題>`。短い番号だけで結果を保存しない (docs/curriculum/04 §3)。 */
   id: string;
   title: string;
   kind: TaskKind;
@@ -200,7 +200,7 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     !id.split("/").every((s) => ID_SEGMENT.test(s))
   ) {
     errors.push(
-      'id は "<講座slug>/<単元>/<課題>" の形 (英小文字・数字・ハイフン) で書いてください',
+      'id は "<ステージslug>/<単元>/<課題>" の形 (英小文字・数字・ハイフン) で書いてください',
     );
   }
   if (typeof raw.title !== "string" || raw.title.trim().length === 0) {

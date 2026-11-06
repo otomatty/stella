@@ -1,7 +1,7 @@
 /**
  * 講師のレビュー画面のデータ (Issue #34、docs/curriculum/07 §6.3・§6.4)。
  *
- * - AI が合格にした提出の事後確認: 一覧 (講座・課題・受講者・確信度・日付で絞り込み、既定は
+ * - AI が合格にした提出の事後確認: 一覧 (ステージ・課題・受講者・確信度・日付で絞り込み、既定は
  *   確信度が「中」を先に) と、人ができる 3 つの操作 (確認済み・コメント・再提出に覆す)。
  * - しきい値の月次見直しに使う数字。数字を出すだけで、しきい値は自動では変えない。
  * - 同じ課題の提出を並べて見るための集計と、共通のつまずきの発見教材への回送。
@@ -93,7 +93,7 @@ function assignedTo(caller: Caller) {
   );
 }
 
-/** 課題の講座 (ステージ)。無い id は null。 */
+/** 課題のステージ (ステージ)。無い id は null。 */
 async function taskStage(db: Db, taskId: string) {
   const [task] = await db
     .select({
@@ -506,7 +506,7 @@ export async function reviewMetrics(
 ): Promise<ReviewMetrics> {
   const since = new Date(now - days * 24 * 60 * 60 * 1000);
 
-  // 1. 練習の「中」で AI が合格にした提出のうち、人が覆した割合 (講座ごと)。
+  // 1. 練習の「中」で AI が合格にした提出のうち、人が覆した割合 (ステージごと)。
   const medium = await db
     .select({
       stageId: stages.id,
@@ -860,7 +860,7 @@ const templateColumns = {
 };
 
 /**
- * staff: 定型コメント。`stageId` (と `pattern`) を渡すと、その課題に当てはまるもの (講座・
+ * staff: 定型コメント。`stageId` (と `pattern`) を渡すと、その課題に当てはまるもの (ステージ・
  * パターンが合うか、指定が無いもの) だけを返す。
  */
 export async function listTemplates(
@@ -933,7 +933,7 @@ export function parseTemplateInput(raw: unknown, partial: boolean): TemplateInpu
   };
 }
 
-/** 講座があるか。無い講座に定型コメントを付けさせない。 */
+/** ステージがあるか。無いステージに定型コメントを付けさせない。 */
 async function assertStage(db: Db, stageId: string | null | undefined) {
   if (!stageId) return;
   const [stage] = await db
@@ -941,7 +941,7 @@ async function assertStage(db: Db, stageId: string | null | undefined) {
     .from(stages)
     .where(eq(stages.id, stageId))
     .limit(1);
-  if (!stage) throw new ApiError("講座が見つかりません", 400);
+  if (!stage) throw new ApiError("ステージが見つかりません", 400);
 }
 
 async function templateById(db: Db, id: string) {

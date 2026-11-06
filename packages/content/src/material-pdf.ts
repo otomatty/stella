@@ -14,7 +14,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Course } from "../../../apps/web/src/data/types.js";
+import type { Stage } from "../../../apps/web/src/data/types.js";
 import {
   hasOsBlocks,
   OS_LABELS,
@@ -42,8 +42,8 @@ export interface PdfAsset {
 
 export interface PdfTarget {
   tenantId: string;
-  courseSlug: string;
-  /** 講座タイトル。スライドのヘッダー (アプリの MarkdownSlides と同じ) に使う。 */
+  stageSlug: string;
+  /** ステージタイトル。スライドのヘッダー (アプリの MarkdownSlides と同じ) に使う。 */
   courseTitle: string;
   /** manifest が振るレッスンの安定キー (例: `1-1-2` / `doc-1-1` / `quiz-1-1`)。 */
   lessonId: string;
@@ -58,17 +58,17 @@ export interface PdfTarget {
   /** 本文から参照される画像。ハッシュと描画の両方に使う。 */
   assets: PdfAsset[];
   /**
-   * OS 別に分けた PDF (course.json の `pdfByOs`) が載せる OS。本文の OS 別のブロックは
+   * OS 別に分けた PDF (stage.json の `pdfByOs`) が載せる OS。本文の OS 別のブロックは
    * この OS のものだけを使う。未設定なら OS 別のブロックを両方とも見出し付きで並べる (07 §11)。
    */
   os?: OsName;
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-const coursesRoot = join(here, "..", "courses");
+const stagesRoot = join(here, "..", "stages");
 
 /** コース内の全 assets ファイルを R2 キー → 実ファイルの表にする。 */
-function collectAssetMap(courseSlug: string): Map<string, string> {
+function collectAssetMap(stageSlug: string): Map<string, string> {
   const map = new Map<string, string>();
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir)) {
@@ -78,14 +78,14 @@ function collectAssetMap(courseSlug: string): Map<string, string> {
         const topicDir = basename(dir);
         for (const file of readdirSync(full)) {
           if (!statSync(join(full, file)).isFile()) continue;
-          map.set(assetPath(courseSlug, topicDir, file), join(full, file));
+          map.set(assetPath(stageSlug, topicDir, file), join(full, file));
         }
       } else {
         walk(full);
       }
     }
   };
-  const modulesRoot = join(coursesRoot, courseSlug, "modules");
+  const modulesRoot = join(stagesRoot, stageSlug, "modules");
   walk(modulesRoot);
   return map;
 }
@@ -104,33 +104,33 @@ function referencedAssetKeys(source: string): string[] {
  * 参照先の画像ファイルが無ければ throw する — 壊れた参照のまま PDF を作らない。
  */
 export function collectPdfTargets(
-  manifest: { courses: Course[]; quizzes: QuizSeed[]; pdfByOs?: string[] } = buildContentManifest(),
+  manifest: { stages: Stage[]; quizzes: QuizSeed[]; pdfByOs?: string[] } = buildContentManifest(),
 ): PdfTarget[] {
   const targets: PdfTarget[] = [];
-  for (const course of manifest.courses) {
-    const assetMap = collectAssetMap(course.id);
+  for (const stage of manifest.stages) {
+    const assetMap = collectAssetMap(stage.id);
     const resolveAssets = (source: string, lessonId: string): PdfAsset[] =>
       referencedAssetKeys(source).map((key) => {
         const file = assetMap.get(key);
         if (!file) {
-          throw new Error(`asset not found: ${key} (course ${course.id}, lesson ${lessonId})`);
+          throw new Error(`asset not found: ${key} (stage ${stage.id}, lesson ${lessonId})`);
         }
         return { key, file };
       });
-    for (const section of course.sections ?? []) {
+    for (const section of stage.sections ?? []) {
       for (const lesson of section.lessons) {
-        if (course.format === 2 && lesson.type !== "text") continue;
+        if (stage.format === 2 && lesson.type !== "text") continue;
         let kind: PdfKind;
         let source: string;
         if (lesson.type === "slides" && lesson.markdown) {
           kind = "slides";
           source = lesson.markdown;
         } else if (lesson.type === "text" && lesson.markdown) {
-          kind = course.format === 2 && lesson.id.startsWith("task-") ? "task" : "doc";
+          kind = stage.format === 2 && lesson.id.startsWith("task-") ? "task" : "doc";
           source = lesson.markdown;
         } else if (lesson.type === "quiz") {
           const quiz = manifest.quizzes.find(
-            (q) => q.courseId === course.id && q.lessonId === lesson.id,
+            (q) => q.stageId === stage.id && q.lessonId === lesson.id,
           );
           if (!quiz) continue;
           kind = "practice";
@@ -140,17 +140,17 @@ export function collectPdfTargets(
         }
         const base = {
           tenantId: TENANT_ID,
-          courseSlug: course.id,
-          courseTitle: course.title,
+          stageSlug: stage.id,
+          courseTitle: stage.title,
           lessonId: lesson.id,
           lessonTitle: lesson.title,
           kind,
           source,
         };
-        // OS 別の手順はまとめと課題文にだけ書ける。OS の差が大きい講座は OS ごとに作る。
+        // OS 別の手順はまとめと課題文にだけ書ける。OS の差が大きいステージは OS ごとに作る。
         if (
           (kind === "doc" || kind === "task") &&
-          manifest.pdfByOs?.includes(course.id) &&
+          manifest.pdfByOs?.includes(stage.id) &&
           hasOsBlocks(source)
         ) {
           for (const os of OS_NAMES)
@@ -169,7 +169,7 @@ export function collectPdfTargets(
 }
 
 /**
- * 生成元の内容ハッシュ。本文・講座タイトル (紙面のヘッダーに載る)・参照画像・
+ * 生成元の内容ハッシュ。本文・ステージタイトル (紙面のヘッダーに載る)・参照画像・
  * ジェネレータ版のどれかが変わると変わる。R2 キーに入り、
  * lesson_material_versions.source_hash にもそのまま入る。
  *
@@ -206,10 +206,10 @@ export function pdfSourceHash(
  * R2 のオブジェクトキー。ハッシュ入りで不変 — 版を上書きしない (旧版は全部残す)。
  */
 export function pdfObjectKey(
-  target: Pick<PdfTarget, "tenantId" | "courseSlug" | "lessonId">,
+  target: Pick<PdfTarget, "tenantId" | "stageSlug" | "lessonId">,
   hash: string,
 ): string {
-  return `lesson-pdf/${target.tenantId}/${target.courseSlug}/${target.lessonId}/${hash}.pdf`;
+  return `lesson-pdf/${target.tenantId}/${target.stageSlug}/${target.lessonId}/${hash}.pdf`;
 }
 
 /** 受講者に見えるダウンロードファイル名。OS 別の PDF は「1-1 まとめ (Windows).pdf」。 */

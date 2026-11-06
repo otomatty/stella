@@ -33,7 +33,7 @@ interface StageRowFixture {
 
 const stageFixture = (over: Partial<StageRowFixture> & { id: string }): StageRowFixture => ({
   slug: over.id,
-  title: `${over.id} の講座`,
+  title: `${over.id} のステージ`,
   status: "published",
   prerequisites: null,
   ...over,

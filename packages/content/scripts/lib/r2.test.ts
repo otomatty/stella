@@ -39,9 +39,9 @@ describe("createR2Client (remote)", () => {
     });
     const file = join(dir, "a.svg");
     writeFileSync(file, "<svg/>");
-    await createR2Client(BUCKET, true).putFile("ses/courses/a b.svg", file, "image/svg+xml");
+    await createR2Client(BUCKET, true).putFile("ses/stages/a b.svg", file, "image/svg+xml");
     expect(seen[0]?.url).toBe(
-      `https://api.cloudflare.com/client/v4/accounts/acct/r2/buckets/${BUCKET}/objects/ses/courses/a%20b.svg`,
+      `https://api.cloudflare.com/client/v4/accounts/acct/r2/buckets/${BUCKET}/objects/ses/stages/a%20b.svg`,
     );
     expect(seen[0]?.init?.method).toBe("PUT");
     const headers = seen[0]?.init?.headers as Record<string, string>;

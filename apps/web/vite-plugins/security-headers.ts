@@ -89,7 +89,7 @@ export function buildContentSecurityPolicy(input: CspInput): string {
     // CodeMirror・sonner・xterm が実行時に <style> を差し込むので 'unsafe-inline' が要る。
     ["style-src", "'self'", "'unsafe-inline'", GOOGLE_FONTS_CSS],
     ["font-src", "'self'", "data:", GOOGLE_FONTS_FILES],
-    // blob: はスキルツリーの講座アイコン (API から取った SVG を blob URL で mask-image に渡す)。
+    // blob: はスキルツリーのステージアイコン (API から取った SVG を blob URL で mask-image に渡す)。
     ["img-src", "'self'", "data:", "blob:", ...remote, GOOGLE_AVATAR_HOSTS],
     // blob: は本棚の音声・動画 (API が別オリジンのローカル開発だけ)。 教材の動画は R2 から直接読む。
     ["media-src", "'self'", "blob:", ...remote],

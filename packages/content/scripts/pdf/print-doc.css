@@ -24,7 +24,7 @@ body {
   color: #33333a; /* TEXT */
 }
 
-/* 左上の講座名 (スライドの sf-header に相当) */
+/* 左上のステージ名 (スライドの sf-header に相当) */
 .doc-header {
   margin-bottom: 6mm;
   font-size: 9pt;

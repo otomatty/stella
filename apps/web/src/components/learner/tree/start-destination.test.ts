@@ -31,7 +31,7 @@ const sqlBasics = stageOf("sql-basics", [
   { id: "m0", title: "M0", lessons: [lesson("a"), lesson("b")] },
   { id: "m1", title: "M1", lessons: [lesson("c")] },
 ]);
-/** レッスンをまだ持たない「準備中」の講座。 */
+/** レッスンをまだ持たない「準備中」のステージ。 */
 const placeholder = stageOf("docker-basics", []);
 const stages = [sqlBasics, placeholder];
 const empty: LessonProgressMap = {};

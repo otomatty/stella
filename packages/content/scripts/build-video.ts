@@ -1,7 +1,7 @@
 /**
  * 教材動画 (ナレーション付き解説動画) の生成 — PoC。
  *
- *   bun run --filter=@stella/content video -- courses/it-basics --tts openjtalk
+ *   bun run --filter=@stella/content video -- stages/it-basics --tts openjtalk
  *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake --captioned
  *
  * 対象は `narration.json` を持つトピックだけ。トピックごとに:
@@ -10,7 +10,7 @@
  *   ④ 描画       アプリと同じ slides-skin.css のスライドを Playwright で 1920x1080 に撮る
  *   ⑤ 書き出し   ffmpeg で video.mp4 (字幕は焼き込まない) + captions.vtt + poster.jpg
  *
- * 出力は `--out` (既定 dist/video) の `<course>/<topicId>/`。一覧の確認ページ
+ * 出力は `--out` (既定 dist/video) の `<stage>/<topicId>/`。一覧の確認ページ
  * `index.html` も書く (字幕 <track> は file:// では読めないので
  * `python3 -m http.server -d dist/video` などで開く)。`--captioned` を付けると、
  * 字幕を焼き込んだ確認用の `preview-captioned.mp4` も作る (本番は焼き込まない)。
@@ -131,12 +131,12 @@ function collectTopics(): { topics: VideoTopic[]; invalid: string[] } {
   const slidesTargets = new Map(
     collectPdfTargets()
       .filter((t) => t.kind === "slides")
-      .map((t) => [`${t.courseSlug}/${t.lessonId}`, t]),
+      .map((t) => [`${t.stageSlug}/${t.lessonId}`, t]),
   );
   const topics: VideoTopic[] = [];
   const invalid: string[] = [];
   for (const topic of collectNarrationTopics(selectors)) {
-    const label = `${topic.courseSlug}/${topic.id}`;
+    const label = `${topic.stageSlug}/${topic.id}`;
     if (topic.parseError !== undefined) invalid.push(`${label}: ${topic.parseError}`);
     if (!topic.narration) continue;
     const target = slidesTargets.get(label);
@@ -164,7 +164,7 @@ interface CuePlan {
 }
 
 interface TopicReport {
-  courseSlug: string;
+  stageSlug: string;
   id: string;
   title: string;
   sourceHash: string;
@@ -297,11 +297,11 @@ async function buildTopic(
   browser: Browser,
   warnings: string[],
 ): Promise<TopicReport> {
-  const topicOut = join(outDir, topic.courseSlug, topic.id);
+  const topicOut = join(outDir, topic.stageSlug, topic.id);
   const workDir = join(topicOut, "work");
   rmSync(topicOut, { recursive: true, force: true });
   mkdirSync(workDir, { recursive: true });
-  const label = `${topic.courseSlug}/${topic.id}`;
+  const label = `${topic.stageSlug}/${topic.id}`;
   const anomalies: string[] = [];
 
   // ③ 同期: 無音を削った音声の長さを測る。
@@ -400,7 +400,7 @@ async function buildTopic(
   const speechChars = cues.reduce((n, c) => n + [...c.speech.replace(/\s/g, "")].length, 0);
   const audioSec = pcms.reduce((n, p) => n + p.length / AUDIO_RATE, 0);
   const report: TopicReport = {
-    courseSlug: topic.courseSlug,
+    stageSlug: topic.stageSlug,
     id: topic.id,
     title: topic.title,
     sourceHash,
@@ -437,7 +437,7 @@ function indexHtml(reports: TopicReport[]): string {
     `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, "0")}`;
   const cards = reports
     .map((r) => {
-      const base = `${r.courseSlug}/${r.id}`;
+      const base = `${r.stageSlug}/${r.id}`;
       const timeline = JSON.parse(readFileSync(join(outDir, base, "timeline.json"), "utf8")) as {
         cues: { slide: number; start: number; text: string; speech: string }[];
       };
@@ -453,7 +453,7 @@ function indexHtml(reports: TopicReport[]): string {
         .map((w) => `<li>${escapeHtml(w)}</li>`)
         .join("");
       return `<section>
-<h2>${escapeHtml(r.id)} ${escapeHtml(r.title)} <small>${escapeHtml(r.courseSlug)}</small></h2>
+<h2>${escapeHtml(r.id)} ${escapeHtml(r.title)} <small>${escapeHtml(r.stageSlug)}</small></h2>
 <video controls preload="metadata" poster="${base}/poster.jpg">
   <source src="${base}/video.mp4" type="video/mp4">
   <track kind="captions" srclang="ja" label="日本語" src="${base}/captions.vtt" default>
@@ -512,7 +512,7 @@ async function main(): Promise<void> {
   // 台本の検証 (エラーのあるトピックは作らない)
   const plans: { topic: VideoTopic; cues: CuePlan[]; warnings: string[] }[] = [];
   for (const topic of topics) {
-    const label = `${topic.courseSlug}/${topic.id}`;
+    const label = `${topic.stageSlug}/${topic.id}`;
     const issues = validateTopic(topic, topic.narration);
     for (const issue of issues) console.log(formatIssue(label, issue));
     if (issues.some((i) => i.level === "error")) {
@@ -540,7 +540,7 @@ async function main(): Promise<void> {
 
   const pending = plans.filter(({ topic, cues }) => {
     if (force) return true;
-    const topicOut = join(outDir, topic.courseSlug, topic.id);
+    const topicOut = join(outDir, topic.stageSlug, topic.id);
     // 1 つでも欠けていれば作り直す (途中で止まった回や、一部だけ消された出力を補う)。
     if (outputFiles().some((f) => !existsSync(join(topicOut, f)))) return true;
     const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
@@ -577,7 +577,7 @@ async function main(): Promise<void> {
   const buildable = pending.filter(({ topic, cues }) => {
     const failed = cues.find((c) => ttsErrors.has(c.hash));
     if (!failed) return true;
-    const label = `${topic.courseSlug}/${topic.id}`;
+    const label = `${topic.stageSlug}/${topic.id}`;
     failures.push(
       `${label}: 読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
     );
@@ -593,7 +593,7 @@ async function main(): Promise<void> {
     const browser = await chromium.launch(executablePath ? { executablePath } : {});
     try {
       await mapPool(buildable, concurrency, async ({ topic, cues, warnings }) => {
-        const label = `${topic.courseSlug}/${topic.id}`;
+        const label = `${topic.stageSlug}/${topic.id}`;
         try {
           const report = await buildTopic(
             topic,
@@ -619,7 +619,7 @@ async function main(): Promise<void> {
 
   // 一覧は出力済みの全トピックで作り直す (今回作らなかった最新分も載せる)
   const allReports = plans
-    .map(({ topic }) => join(outDir, topic.courseSlug, topic.id, "report.json"))
+    .map(({ topic }) => join(outDir, topic.stageSlug, topic.id, "report.json"))
     .filter((f) => existsSync(f))
     .map((f) => JSON.parse(readFileSync(f, "utf8")) as TopicReport);
   mkdirSync(outDir, { recursive: true });

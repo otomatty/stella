@@ -1071,7 +1071,7 @@ describe("旧形式の提出も、確定前の下書きは受講者に返さな�
       token,
       body: JSON.stringify({
         assignmentId: "exercise",
-        stageTitle: "旧講座",
+        stageTitle: "旧ステージ",
         assignmentTitle: "演習",
         code: "x",
         priority: "normal",

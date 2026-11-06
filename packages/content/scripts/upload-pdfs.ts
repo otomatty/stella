@@ -50,8 +50,8 @@ const manifestOut = resolve(
   argValue("--manifest") ?? join("dist", "pdf-manifest.json"),
 );
 const concurrency = Number(argValue("--concurrency") ?? 8);
-/** 講座 slug の絞り込み (ローカル検証用)。build-pdf.ts にそのまま渡す。 */
-const courseSlugs = args.filter(
+/** ステージ slug の絞り込み (ローカル検証用)。build-pdf.ts にそのまま渡す。 */
+const stageSlugs = args.filter(
   (a, i) =>
     a !== "--remote" &&
     !a.startsWith("--") &&
@@ -64,10 +64,10 @@ const sha256 = (text: string): string => createHash("sha256").update(text).diges
 
 interface ManifestEntry {
   tenantId: string;
-  courseSlug: string;
+  stageSlug: string;
   lessonId: string;
   kind: string;
-  /** OS ごとに分けた PDF の OS (course.json の `pdfByOs`)。seed が資料の行を分ける。 */
+  /** OS ごとに分けた PDF の OS (stage.json の `pdfByOs`)。seed が資料の行を分ける。 */
   os?: string;
   hash: string;
   key: string;
@@ -122,7 +122,7 @@ async function main(): Promise<void> {
   const rawManifest = join(contentRoot, "dist", "pdf-manifest.raw.json");
   const build = spawnSync(
     "bun",
-    ["run", "scripts/build-pdf.ts", ...courseSlugs, "--skip", skipFile, "--manifest", rawManifest],
+    ["run", "scripts/build-pdf.ts", ...stageSlugs, "--skip", skipFile, "--manifest", rawManifest],
     { cwd: contentRoot, stdio: "inherit" },
   );
   if (build.status !== 0) {

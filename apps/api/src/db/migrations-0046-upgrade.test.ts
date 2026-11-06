@@ -47,7 +47,9 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
     database.sqlite.exec(`insert into profiles (id, tenant_id, role, display_name, created_at) values
       ('learner', 'ses', 'student', '受講者', 1), ('other', 'ses', 'student', '別の受講者', 1)`);
     await db.batch([
-      db.insert(stages).values({ id: "legacy", tenantId: "ses", slug: "legacy", title: "旧講座" }),
+      db
+        .insert(stages)
+        .values({ id: "legacy", tenantId: "ses", slug: "legacy", title: "旧ステージ" }),
       db.insert(sections).values({ id: "unit", stageId: "legacy", title: "演習" }),
     ]);
     // lessons も後の移行で列が増える (0056 の public)。この時点の列だけで入れる。
@@ -80,7 +82,7 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
         stageId: "legacy",
         certCode: "FLC-2026-0000-0001",
         recipientName: "受講者",
-        stageTitle: "旧講座",
+        stageTitle: "旧ステージ",
         issuerName: "テスト",
       }),
       db.insert(studyActivity).values({
@@ -112,7 +114,7 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
     database.sqlite
       .prepare(
         `insert into submissions (id, tenant_id, student_id, lesson_id, assignment_id, stage_title,
-          assignment_title, code, verdict, submitted_at) values (?, ?, ?, ?, ?, '旧講座', '演習', 'x', ?, ?)`,
+          assignment_title, code, verdict, submitted_at) values (?, ?, ?, ?, ?, '旧ステージ', '演習', 'x', ?, ?)`,
       )
       .run(
         crypto.randomUUID(),

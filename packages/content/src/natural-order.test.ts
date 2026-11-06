@@ -12,20 +12,20 @@ describe("sortNatural", () => {
 
   it("パス全体でも数字の桁で崩れない", () => {
     const paths = [
-      "courses/fe-kamoku-a/modules/m10-mock-exam/l1-mock/t1-time-strategy/slides.md",
-      "courses/fe-kamoku-a/modules/m2-computer-systems/l1-processor-memory/t1-five-units/slides.md",
-      "courses/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t10-x/slides.md",
-      "courses/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t2-hex/slides.md",
+      "stages/fe-kamoku-a/modules/m10-mock-exam/l1-mock/t1-time-strategy/slides.md",
+      "stages/fe-kamoku-a/modules/m2-computer-systems/l1-processor-memory/t1-five-units/slides.md",
+      "stages/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t10-x/slides.md",
+      "stages/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t2-hex/slides.md",
     ];
     expect(sortNatural(paths)).toEqual([
-      "courses/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t2-hex/slides.md",
-      "courses/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t10-x/slides.md",
-      "courses/fe-kamoku-a/modules/m2-computer-systems/l1-processor-memory/t1-five-units/slides.md",
-      "courses/fe-kamoku-a/modules/m10-mock-exam/l1-mock/t1-time-strategy/slides.md",
+      "stages/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t2-hex/slides.md",
+      "stages/fe-kamoku-a/modules/m1-foundations/l1-number-systems/t10-x/slides.md",
+      "stages/fe-kamoku-a/modules/m2-computer-systems/l1-processor-memory/t1-five-units/slides.md",
+      "stages/fe-kamoku-a/modules/m10-mock-exam/l1-mock/t1-time-strategy/slides.md",
     ]);
   });
 
-  // 既存講座 (m0〜m9 運用) の並びが変わらないことの担保。桁数が揃っていれば辞書順と同じ。
+  // 既存ステージ (m0〜m9 運用) の並びが変わらないことの担保。桁数が揃っていれば辞書順と同じ。
   it("桁数が揃った名前では辞書順と同じ結果になる", () => {
     const names = [
       "m0-orientation",

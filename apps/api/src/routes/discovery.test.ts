@@ -109,7 +109,7 @@ function lineSource() {
   const stage = (slug: string, prerequisites: string[]) => ({
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     canDo: `${slug} ができる`,
     theme: "テーマ",

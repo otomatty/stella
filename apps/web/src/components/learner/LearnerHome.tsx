@@ -148,7 +148,7 @@ export const LearnerHome = ({
    *
    * サーバが「進行中なし」(null) と言ったら、そのまま進行中なしとして扱う — サーバは
    * 直近の進捗から視界の規則つきで導出したうえで null を返している。ここで受講中の
-   * 先頭を当て推量すると、ツリーではまだ鍵の掛かった星 (全講座に登録のある受講者の
+   * 先頭を当て推量すると、ツリーではまだ鍵の掛かった星 (すべてのステージに登録のある受講者の
    * 島の星など) を「続きから」と言ってしまう。当て推量はデモ (バックエンド未設定) と、
    * 地図の取得に失敗したときの「続きから」の救済にだけ使う。
    */
@@ -280,7 +280,7 @@ export const LearnerHome = ({
         // 押したあとに画面を離れた / 別の星を押し直したなら、ここでの遷移は捨てる
         // (開始自体は済んでいるので、上のトーストとツリーの現在地に残る)。
         if (!mountedRef.current || seq !== startSeqRef.current) return;
-        // 開くレッスンが決まらない星 (準備中の講座など) はホームに留まる。
+        // 開くレッスンが決まらない星 (準備中のステージなど) はホームに留まる。
         const target = startDestination(nextStages, stageId, loadMap());
         if (target) onOpenLesson(target.stage, target.lessonId);
       } catch (err) {

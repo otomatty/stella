@@ -13,7 +13,7 @@
  * ```
  *
  * - テンプレートの文字のファイルに書いた `{{=キー}}` を、パラメータの値に置き換える。組み込みの
- *   `{{=id}}` (類題の ID `<講座>/<単元>/<名前>`) と `{{=name}}` (名前) も使える。
+ *   `{{=id}}` (類題の ID `<ステージ>/<単元>/<名前>`) と `{{=name}}` (名前) も使える。
  * - `.json` のファイルでは、文字列の値を JSON の文字列の中身として書く (`"` などを逃がす)。ほかの
  *   ファイルはそのまま埋める。文字でないファイル (画像など) は置き換えずに写す。
  * - 書き出し先は `private/variants/<名前>/`。生成した類題も手で書いた類題と同じく `content:check` が
@@ -107,7 +107,7 @@ function decodeText(data: Buffer): string | null {
 
 /**
  * テンプレートの一式 (相対パス → 中身) を、パラメータ 1 件ごとの類題の一式に展開する。
- * `idPrefix` は `<講座>/<単元>` (親の課題と同じ)。テンプレートに無いキーを書いた・パラメータの
+ * `idPrefix` は `<ステージ>/<単元>` (親の課題と同じ)。テンプレートに無いキーを書いた・パラメータの
  * キーがテンプレートで使われていない (書き間違い) ときは止める。
  */
 export function expandVariantTemplate(
@@ -264,8 +264,8 @@ export function generatedVariantsOf(taskDir: string): Map<string, Record<string,
   return out;
 }
 
-/** 教材の講座フォルダーの下で、テンプレートを持つ課題のフォルダーを探す。 */
-export function tasksWithTemplates(coursesRoot: string): string[] {
+/** 教材のステージフォルダーの下で、テンプレートを持つ課題のフォルダーを探す。 */
+export function tasksWithTemplates(stagesRoot: string): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir).sort()) {
@@ -281,7 +281,7 @@ export function tasksWithTemplates(coursesRoot: string): string[] {
       walk(path);
     }
   };
-  walk(coursesRoot);
+  walk(stagesRoot);
   return found;
 }
 
@@ -306,12 +306,12 @@ export interface VariantSyncResult {
  * - 台帳はテンプレートが作る類題の名前 (並べた順) にそろえる。`check` は台帳の食い違いも落とす。
  */
 export function syncVariantTemplates(
-  coursesRoot: string,
+  stagesRoot: string,
   options: { check: boolean; filter?: (taskDir: string) => boolean },
 ): VariantSyncResult {
   const changed: string[] = [];
   let total = 0;
-  for (const taskDir of tasksWithTemplates(coursesRoot)) {
+  for (const taskDir of tasksWithTemplates(stagesRoot)) {
     if (options.filter && !options.filter(taskDir)) continue;
     const templates = variantTemplatesOf(taskDir);
     const generated = new Set(templates.flatMap((template) => template.ledger ?? []));

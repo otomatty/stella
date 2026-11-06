@@ -343,7 +343,7 @@ describe("進捗・確認B・通知", () => {
   });
   it("霧の中の名前・ID・コマは本人の計画レスポンスに含めない", async () => {
     sqlite.exec(`insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, prerequisites, parent, created_at, updated_at) values
-      ('next', 'ses', 'javascript-basics', '隣の講座', 'published', 2, 35, 'catalog', '["dev-env-basics"]', 'dev-env-basics', 1, 1),
+      ('next', 'ses', 'javascript-basics', '隣のステージ', 'published', 2, 35, 'catalog', '["dev-env-basics"]', 'dev-env-basics', 1, 1),
       ('fog', 'ses', 'javascript-data-basics', '非公開の名前', 'published', 2, 35, 'catalog', '["javascript-basics"]', 'javascript-basics', 1, 1)`);
     const response = await get("/api/learning-pace");
     const text = await response.text();
@@ -358,9 +358,9 @@ describe("進捗・確認B・通知", () => {
     );
     await notifyPaceDelays(getDb(env), "2026-10-12");
     expect(sqlite.prepare("select count(*) as n from notifications").get()?.n).toBe(0);
-    // 1講座35時間では期待時間が飽和するため、先の講座も計算に加える。
+    // 1ステージ35時間では期待時間が飽和するため、先のステージも計算に加える。
     sqlite.exec(
-      "insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次の講座','published',1,35,'catalog',1,1)",
+      "insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次のステージ','published',1,35,'catalog',1,1)",
     );
     await notifyPaceDelays(getDb(env), "2026-10-13");
     await notifyPaceDelays(getDb(env), "2026-10-13");
@@ -379,7 +379,7 @@ describe("進捗・確認B・通知", () => {
         insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) values ('a-broken', 'ses', 'student', '計算できない受講者', 0, 'google', 1);
         insert into learner_instructors values ('a-broken', 'foreign-teacher'), ('learner', 'teacher');
         update profiles set learning_start_date='2026-10-05' where id in ('learner', 'a-broken');
-        insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次の講座','published',1,35,'catalog',1,1);
+        insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次のステージ','published',1,35,'catalog',1,1);
       `);
       const db = getDb(env);
       const originalInsert = db.insert.bind(db);

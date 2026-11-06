@@ -27,10 +27,10 @@ export interface SkillMapStageNode {
   category?: string;
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
-  /** Extra (講師・管理者が割り当てた講座)。Basic の星には付かない。 */
+  /** Extra (講師・管理者が割り当てたステージ)。Basic の星には付かない。 */
   audience?: "granted";
   /**
-   * 講座アイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
+   * ステージアイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
    * サーバが slug と同じ秘匿ルールで伏せる)。実体は
    * `GET /api/skill-map/icons` (JWT)。R2 キーはクライアントに出ない。
    * 画面は blob URL を CSS mask + currentColor で塗る。
@@ -57,6 +57,18 @@ export interface SkillMapStageNode {
    * **霧の星にも付ける。** 線が無いとリングが崩れるのは `parent_id` と同じ。
    */
   appearance_parent_ids?: Record<string, string>;
+}
+
+/**
+ * ステージ管理の盤面の星。受講者の星に、公開状態と件数を足したもの。
+ * `audience` は Extra のときだけ `"granted"` (Basic には付かない)。
+ */
+export interface StaffSkillMapStageNode extends SkillMapStageNode {
+  status: "draft" | "published" | "archived";
+  /** `stage_grants` の件数。Extra 以外は 0。 */
+  granted_count: number;
+  /** `enrollments` の件数。 */
+  enrolled_count: number;
 }
 
 /** 集中ボーナス (表示専用の係数。XP の保存値は動かさない)。 */
@@ -205,13 +217,29 @@ export async function getSkillMap(): Promise<SkillMapMine> {
 }
 
 /**
- * 霧の外の講座アイコン SVG をまとめて取る。呼び出し側が blob URL にして
+ * 霧の外のステージアイコン SVG をまとめて取る。呼び出し側が blob URL にして
  * `URL.revokeObjectURL` する。`mask-image` は Authorization を付けられないので、
  * JWT 付きで取ってから同じオリジンの blob を渡す (公開 R2 URL 直だと CORS で
  * マスクが透明になる)。マップ JSON には埋め込まない (ホームが R2 を踏まないため)。
  */
 export async function getSkillMapIcons(signal?: AbortSignal): Promise<Record<string, string>> {
   const res = await apiFetch<{ icons: Record<string, string> }>("/api/skill-map/icons", {
+    signal,
+  });
+  return res.icons;
+}
+
+/**
+ * 講師・管理者向けのスキルツリー。霧も割当も島の表示条件も掛けず、
+ * Basic と Extra を 1 つの盤面で返す。
+ */
+export async function getStaffSkillMap(): Promise<{ stages: StaffSkillMapStageNode[] }> {
+  return await apiFetch<{ stages: StaffSkillMapStageNode[] }>("/api/skill-map/staff");
+}
+
+/** ステージ管理の盤面に載るステージアイコン。取り方は `getSkillMapIcons` と同じ。 */
+export async function getStaffSkillMapIcons(signal?: AbortSignal): Promise<Record<string, string>> {
+  const res = await apiFetch<{ icons: Record<string, string> }>("/api/skill-map/staff/icons", {
     signal,
   });
   return res.icons;

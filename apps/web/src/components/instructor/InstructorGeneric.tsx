@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { ChevronRight } from "@/lib/icons";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -13,17 +12,13 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { StageThumb } from "@/components/common/StageThumb";
 import type { AvatarTone } from "@/data/types";
 import type { InstructorStudentProgress } from "@stella/shared/cms/types";
-import { useStages } from "@/data/stages-source";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
-import { cn } from "@/lib/utils";
 
 const titles: Record<string, string> = {
   students: "担当受講者",
   qa: "Q&A 未返信",
-  stages: "担当ステージ",
 };
 
 const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
@@ -50,27 +45,9 @@ function severityOf(s: InstructorStudentProgress): {
 interface Props {
   page: string;
   backendEnabled: boolean;
-  /** 検索から指定されたステージ。 一覧内で強調表示してスクロールする (Issue #77)。 */
-  highlightStageId?: string | null;
-  /** 同じステージを選び直したときにも再度スクロールさせるための版番号。 */
-  highlightSeq?: number;
 }
 
-export const InstructorGeneric = ({
-  page,
-  backendEnabled,
-  highlightStageId = null,
-  highlightSeq = 0,
-}: Props) => {
-  if (page === "stages") {
-    return (
-      <InstructorStagesPage
-        backendEnabled={backendEnabled}
-        highlightStageId={highlightStageId}
-        highlightSeq={highlightSeq}
-      />
-    );
-  }
+export const InstructorGeneric = ({ page, backendEnabled }: Props) => {
   if (page === "students") {
     return <InstructorStudentsPage backendEnabled={backendEnabled} />;
   }
@@ -116,86 +93,6 @@ function InstructorStudentsPage({ backendEnabled }: { backendEnabled: boolean })
               : DEMO_STUDENT_ROWS
           }
         />
-      )}
-    </>
-  );
-}
-
-function InstructorStagesPage({
-  backendEnabled,
-  highlightStageId,
-  highlightSeq,
-}: {
-  backendEnabled: boolean;
-  highlightStageId: string | null;
-  highlightSeq: number;
-}) {
-  const { stages, loading, error } = useStages(true);
-  const highlightRef = useRef<HTMLDivElement>(null);
-
-  // 検索から来たステージを可視領域に入れる。 同じステージを選び直した場合も
-  // highlightSeq が変わるので再度スクロールする。
-  // biome-ignore lint/correctness/useExhaustiveDependencies: highlightSeq / stages は再スクロールのトリガー
-  useEffect(() => {
-    if (!highlightStageId) return;
-    highlightRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [highlightStageId, highlightSeq, stages]);
-
-  const rows = stages.map((c) => ({
-    key: c.id,
-    title: c.title,
-    color: c.color,
-    thumbnailPath: c.thumbnailPath,
-    lessonsCount: c.lessonsCount,
-    statusLabel: c.completed ? "完了" : "公開中",
-    statusVariant: (c.completed ? "success" : "accent") as "success" | "accent",
-  }));
-
-  return (
-    <>
-      <PageHeader title={titles.stages} sub="担当ステージ一覧" />
-      {backendEnabled && loading ? (
-        <Card className="p-6">
-          <SkeletonRows rows={4} />
-        </Card>
-      ) : backendEnabled && error ? (
-        <Card className="p-12 text-center text-sm text-destructive">
-          ステージ一覧の取得に失敗しました: {error}
-        </Card>
-      ) : rows.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-ink-3">担当ステージがありません。</Card>
-      ) : (
-        <div
-          className="grid gap-4"
-          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}
-        >
-          {rows.map((c) => {
-            const highlighted = c.key === highlightStageId;
-            return (
-              <div
-                key={c.key}
-                ref={highlighted ? highlightRef : undefined}
-                className={cn(
-                  "bg-card border rounded-lg overflow-hidden flex flex-col",
-                  highlighted ? "border-brand ring-[3px] ring-brand-soft" : "border-border",
-                )}
-              >
-                <div className="relative">
-                  <StageThumb color={c.color} thumbnailPath={c.thumbnailPath} />
-                  <div className="absolute top-2.5 left-2.5">
-                    <Badge variant={c.statusVariant}>{c.statusLabel}</Badge>
-                  </div>
-                </div>
-                <div className="p-4 flex flex-col gap-2 flex-1">
-                  <div className="text-[15px] font-semibold leading-snug tracking-tight">
-                    {c.title}
-                  </div>
-                  <div className="text-[11.5px] text-ink-3">{c.lessonsCount}レッスン</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       )}
     </>
   );

@@ -1,6 +1,6 @@
 import type { Assignment } from "../../../../../types.js";
 
-/** SQL 入門講座 M3 (ORDER BY / LIMIT) 用。 */
+/** SQL 入門のステージ M3 (ORDER BY / LIMIT) 用。 */
 export const s0SqlCh00OrderLimit: Assignment = {
   id: "S0-Sql-Ch00-06-order-limit",
   stage: "S0",

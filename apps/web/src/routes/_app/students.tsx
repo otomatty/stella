@@ -11,12 +11,7 @@ function StudentsPage() {
   const s = useAppShell();
   return (
     <RoleGuard allow={["instructor"]}>
-      <InstructorGeneric
-        page="students"
-        backendEnabled={s.backendEnabled}
-        highlightStageId={null}
-        highlightSeq={0}
-      />
+      <InstructorGeneric page="students" backendEnabled={s.backendEnabled} />
     </RoleGuard>
   );
 }

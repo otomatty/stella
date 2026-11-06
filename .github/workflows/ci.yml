@@ -92,7 +92,7 @@ jobs:
       # ので runner の python3 をそのまま使う。
       - name: Diagram token lint
         if: inputs.scope != 'code'
-        run: python3 .claude/skills/diagram-design/lint-skin.py packages/content/courses
+        run: python3 .claude/skills/diagram-design/lint-skin.py packages/content/stages
 
       - name: Build
         if: inputs.scope != 'code'

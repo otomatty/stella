@@ -209,7 +209,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     (await json<{ row: Record<string, unknown> }>(await call(`/api/submissions/${id}`, as))).row;
 
   describe("人に回した提出のキュー", () => {
-    it("一覧に人に回した理由・確信度・判定案・担当者・講座とパターンを載せる", async () => {
+    it("一覧に人に回した理由・確信度・判定案・担当者・ステージとパターンを載せる", async () => {
       complete.mockResolvedValue(answer(aiOutput({ confidence: "low" })));
       const escalated = await submit();
       await runAi();
@@ -418,7 +418,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect(progress?.passedAt?.getTime()).toBe(later.getTime());
     });
 
-    it("一覧は確信度が中を先に、未確認・講座・確信度・受講者・日付・担当で絞り込める", async () => {
+    it("一覧は確信度が中を先に、未確認・ステージ・確信度・受講者・日付・担当で絞り込める", async () => {
       const high = await aiPassed("learner", "high");
       const medium = await aiPassed("learner2", "medium");
       const list = async (query = "", as = "teacher") => {
@@ -676,7 +676,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       const { template } = await json<{ template: ReviewCommentTemplate }>(made);
       expect(template).toMatchObject({ pattern: "html-page", createdByName: "講師" });
       await create({ stageId: "stage", pattern: "other", violation: "別", body: "別のパターン" });
-      await create({ violation: "共通", body: "全講座の定型コメント" }, "boss");
+      await create({ violation: "共通", body: "すべてのステージの定型コメント" }, "boss");
       const listed = async (query: string) =>
         (
           await json<{ templates: ReviewCommentTemplate[] }>(
@@ -701,7 +701,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect(await listed("")).toHaveLength(2);
     });
 
-    it("空の項目と、無い講座と、受講者からの作成を止める", async () => {
+    it("空の項目と、無いステージと、受講者からの作成を止める", async () => {
       expect((await create({ violation: "", body: "x" })).status).toBe(400);
       expect((await create({ stageId: "missing-stage", violation: "x", body: "y" })).status).toBe(
         400,

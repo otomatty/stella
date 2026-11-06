@@ -14,7 +14,7 @@ function submission(over: Partial<Submission> & { id: string }): Submission {
     studentName: "受講者",
     studentInitials: "受",
     avatarTone: "c1",
-    stageTitle: "講座",
+    stageTitle: "ステージ",
     assignmentTitle: "課題",
     codeLines: [],
     submittedAt: 0,

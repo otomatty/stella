@@ -174,7 +174,7 @@ export function LearningPacePanel({
             </details>
             {pace.incomplete ? (
               <p className="text-xs text-ink-3">
-                準備中の教材があります。全体の目標は講座の予定時間を含み、今週のコマは用意できた単元だけを表示します。
+                準備中の教材があります。全体の目標はステージの予定時間を含み、今週のコマは用意できた単元だけを表示します。
               </p>
             ) : null}
             <details>

@@ -23,7 +23,7 @@ import {
 import { fetchAiPassed } from "@/lib/review-desk-api";
 
 interface AiPassedListProps {
-  /** 絞り込みの選択肢 (講座・課題・受講者) を作るのに使う提出。 */
+  /** 絞り込みの選択肢 (ステージ・課題・受講者) を作るのに使う提出。 */
   submissions: Submission[];
   assignedOnly: boolean;
   onOpen: (submissionId: string) => void;
@@ -38,7 +38,7 @@ function formatDate(iso: string | null): string {
 
 /**
  * AI が合格にした提出の事後確認の一覧 (#34、07 §6.4 の 6)。期間は限らない。
- * 講座・課題・受講者・確信度・日付で絞り込め、既定では確信度が「中」を先に並べる。
+ * ステージ・課題・受講者・確信度・日付で絞り込め、既定では確信度が「中」を先に並べる。
  */
 export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedListProps) {
   const [state, setState] = useState<AiPassedState>("unchecked");
@@ -51,7 +51,7 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
   const [result, setResult] = useState<{ rows: AiPassedRow[]; truncated: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 選択肢は、新形式の提出から作る (AI の合格が無い講座も選べてよい)。
+  // 選択肢は、新形式の提出から作る (AI の合格が無いステージも選べてよい)。
   const options = useMemo(() => {
     const stages = new Map<string, string>();
     const tasks = new Map<string, { title: string; stageId: string | null }>();
@@ -112,7 +112,7 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
           ))}
         </fieldset>
         <select
-          aria-label="講座"
+          aria-label="ステージ"
           className={SELECT}
           value={stageId}
           onChange={(e) => {
@@ -120,7 +120,7 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
             setTaskId("");
           }}
         >
-          <option value="">すべての講座</option>
+          <option value="">すべてのステージ</option>
           {options.stages.map(([id, title]) => (
             <option key={id} value={id}>
               {title}
@@ -253,7 +253,7 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
       </Card>
       {result?.truncated ? (
         <p className="text-[12px] text-ink-3 mt-2">
-          件数が多いため先頭だけを出しています。講座・課題・日付で絞り込んでください。
+          件数が多いため先頭だけを出しています。ステージ・課題・日付で絞り込んでください。
         </p>
       ) : null}
     </>

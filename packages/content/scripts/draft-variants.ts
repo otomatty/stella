@@ -112,7 +112,7 @@ function sdkModel(client: Anthropic): DraftModel {
 }
 
 function findTask(taskId: string): DraftTarget {
-  const task = buildContentManifest(join(contentRoot, "courses")).tasks.find(
+  const task = buildContentManifest(join(contentRoot, "stages")).tasks.find(
     (t) => t.definition.id === taskId,
   );
   if (!task) throw new Error(`課題が見つかりません: ${taskId}`);

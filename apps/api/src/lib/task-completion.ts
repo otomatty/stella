@@ -5,7 +5,7 @@ import { chunk } from "./enrollment-bulk.js";
 
 /**
  * 手元の合格だけでは修了しない。確定した合格は教材更新後も保持する。
- * 予備の類題 (#39) は講座の課題ではないので、分母にも分子にも数えない。
+ * 予備の類題 (#39) はステージの課題ではないので、分母にも分子にも数えない。
  */
 export async function taskCompletionCounts(db: Db, stageId: string, userIds: string[]) {
   const rows = await db

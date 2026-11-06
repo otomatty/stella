@@ -18,7 +18,7 @@
  * - 提案はサーバの推奨順 (`next_stage_ids`) のうち、名前が見えていて今すぐ始められる
  *   星だけ。秘匿の判断はサーバの応答 (`visibility` / `state`) をそのまま使う
  * - **次の星は 1 つだけを大きく出す。** ほかの候補は畳んで、Basic と Extra に分けて出す。
- *   Extra は講師・管理者が割り当てた講座だけ
+ *   Extra は講師・管理者が割り当てたステージだけ
  */
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
@@ -27,7 +27,7 @@ import type { TodayPlan, TodayPlanItem } from "@/lib/today-plan";
 /**
  * 勧める星の上限。
  *
- * 先頭の 1 つだけを「次にやること」として大きく出す。残りは「ほかにも始められる講座」に
+ * 先頭の 1 つだけを「次にやること」として大きく出す。残りは「ほかにも始められるステージ」に
  * 畳むので、候補はその範囲で残す。並びは推奨順のまま (先頭が「次にやること」)。
  */
 export const GUIDE_MAX_SUGGESTIONS = 6;

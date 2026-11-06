@@ -31,7 +31,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
     if (!(await canAccessTasks(db, caller, stageId)))
       throw new ApiError("task stage not found", 404);
     // definition と bundle と task_private は一覧の SELECT に含めない。予備の類題 (#39) は
-    // 講座の課題一覧に出さない (出題した受講者にだけ、今日の類題として出す)。
+    // ステージの課題一覧に出さない (出題した受講者にだけ、今日の類題として出す)。
     const rows = await db
       .select({
         id: tasks.id,

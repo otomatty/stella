@@ -3,7 +3,7 @@ import type { TaskStatus } from "../tasks/catalog.js";
 import { addStudyDays, studyDateStartMs, studyDateWeekday } from "./activity.js";
 
 export const DEFAULT_WEEKLY_HOURS = 35;
-/** 新設計 §3.1 の標準プログラム。時間の正本は各course.json。補習・資格は別枠。 */
+/** 新設計 §3.1 の標準プログラム。時間の正本は各stage.json。補習・資格は別枠。 */
 export const LEARNING_PROGRAM_SLUGS = [
   "dev-env-basics",
   "html-css-basics",
@@ -27,7 +27,7 @@ export const LEARNING_PROGRAM_SLUGS = [
 const DAY_MS = 86_400_000;
 
 function calendarDayOffset(days: number): number {
-  // 講座ごとの除算を足した丸め誤差で、整数日の予定を翌日に送らない。
+  // ステージごとの除算を足した丸め誤差で、整数日の予定を翌日に送らない。
   return Math.ceil(days - Number.EPSILON * Math.max(1, Math.abs(days)) * 32);
 }
 
@@ -202,7 +202,7 @@ interface ReadyAssessment {
   week: PaceWeekUnit | null;
 }
 
-/** 講座ごとの残り。`finishedAt` は最後の単元・Bを終える時間軸上の時点。 */
+/** ステージごとの残り。`finishedAt` は最後の単元・Bを終える時間軸上の時点。 */
 interface StagePlan {
   prerequisites: StagePlan[];
   units: RemainingUnit[];
@@ -212,10 +212,10 @@ interface StagePlan {
 }
 
 /**
- * 1人の時間軸に全講座を置く。講座の中は単元の順に進め、Bの解禁を待つ間は次の単元へ進む。
- * 講座の残りが未解禁のBだけになったら、前提を終えた別の講座 (同じ親の兄弟など) を進め、
- * 解禁したBから順に割り込ませる。子講座は親のBまで終えてから始める (アプリの解放と同じ)。
- * 進めている講座は単元が残る限り続け、講座を行き来させない。
+ * 1人の時間軸にすべてのステージを置く。ステージの中は単元の順に進め、Bの解禁を待つ間は次の単元へ進む。
+ * ステージの残りが未解禁のBだけになったら、前提を終えた別のステージ (同じ親の兄弟など) を進め、
+ * 解禁したBから順に割り込ませる。子のステージは親のBまで終えてから始める (アプリの解放と同じ)。
+ * 進めているステージは単元が残る限り続け、ステージを行き来させない。
  */
 function scheduleStages(
   plans: StagePlan[],
@@ -266,7 +266,7 @@ function scheduleStages(
       cursor += minutes;
       unit.minutes -= minutes;
     } else if (next) {
-      // どの講座にも今できる単元がない。最も早いBの解禁まで進める。
+      // どのステージにも今できる単元がない。最も早いBの解禁まで進める。
       cursor = next.b.releaseAt;
     } else return;
   }

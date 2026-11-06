@@ -909,13 +909,13 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
   });
 
   describe("レビュー必須の前に自己申告で完了したコードレッスン", () => {
-    /** 旧講座: コードレッスン 1 つだけ。自己申告の完了で修了証が自動発行済み。 */
+    /** 旧ステージ: コードレッスン 1 つだけ。自己申告の完了で修了証が自動発行済み。 */
     async function selfCompletedStage(issuedBy: string | null = null) {
       await db.batch([
         db.insert(stages).values({
           id: "legacy",
           slug: "legacy-ts",
-          title: "旧講座",
+          title: "旧ステージ",
           status: "published",
         }),
         db.insert(sections).values({ id: "legacy-unit", stageId: "legacy", title: "演習" }),
@@ -944,7 +944,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
           certCode: "FLC-2026-0000-0001",
           issuedBy,
           recipientName: "受講者",
-          stageTitle: "旧講座",
+          stageTitle: "旧ステージ",
           issuerName: "テスト",
         }),
       ]);
@@ -999,7 +999,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         studentId: "learner",
         lessonId: "legacy-code",
         assignmentId: "exercise",
-        stageTitle: "旧講座",
+        stageTitle: "旧ステージ",
         assignmentTitle: "演習",
         code: "x",
         status: "passed",
@@ -1025,7 +1025,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         db.insert(stages).values({
           id: "legacy",
           slug: "legacy-ts",
-          title: "旧講座",
+          title: "旧ステージ",
           status: "published",
         }),
         db.insert(sections).values({ id: "legacy-unit", stageId: "legacy", title: "演習" }),

@@ -15,8 +15,8 @@ apps/web/public/sqljs/
 apps/web/public/pdfjs/
 
 # 教材ビルド生成物（.svg は正本なのでコミットする）
-packages/content/courses/**/slides.pptx
-packages/content/courses/**/*.diagram.png
+packages/content/stages/**/slides.pptx
+packages/content/stages/**/*.diagram.png
 packages/content/dist/
 packages/content/**/__pycache__/
 

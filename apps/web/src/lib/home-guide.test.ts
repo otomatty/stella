@@ -9,7 +9,7 @@ const node = (id: string, over: Partial<SkillMapStageNode> = {}): SkillMapStageN
   id,
   state: "unlocked",
   visibility: "full",
-  title: `講座 ${id}`,
+  title: `ステージ ${id}`,
   ...over,
 });
 

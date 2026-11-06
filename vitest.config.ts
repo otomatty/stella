@@ -3,7 +3,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   // packages/** のテストが apps/web の fixtures を辿ることがある（例:
-  // export-seed-sql は fixtures の Course を読む）。web 側は `@` を src に
+  // export-seed-sql は fixtures の Stage を読む）。web 側は `@` を src に
   // 解決するので、同じ別名をここでも張らないと `@/demo/fixtures` が落ちる。
   resolve: {
     alias: {
@@ -20,11 +20,11 @@ export default defineConfig({
       "apps/web/worker/**/*.test.ts",
     ],
     // 受講者に配るテストは課題の道具で動かすもので、 リポジトリのテストではない。
-    // テンプレート・講座の課題・見本の .test.ts を include が拾わないように外す。
+    // テンプレート・ステージの課題・見本の .test.ts を include が拾わないように外す。
     exclude: [
       ...configDefaults.exclude,
       "packages/content/templates/runners/**",
-      "packages/content/courses/**/tasks/**",
+      "packages/content/stages/**/tasks/**",
       "apps/vscode/samples/**",
     ],
     environment: "node",

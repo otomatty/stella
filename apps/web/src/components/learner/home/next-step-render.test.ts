@@ -78,13 +78,13 @@ describe("NextStep choose card", () => {
     expect(markup).toContain("HTML/CSSとデザイン基礎");
     expect(markup).toContain("次にやること");
     expect(markup).toContain("Basic");
-    expect(markup).toContain("「開発環境とWebの入口」の次の講座です");
+    expect(markup).toContain("「開発環境とWebの入口」の次のステージです");
     expect(markup).toContain("身につくと");
     expect(markup).toContain("フロントエンド");
     expect(markup.match(/ここから始める/g)).toEqual(["ここから始める"]);
     expect(markup).toContain("ツリーで見る");
     expect(markup).toContain('aria-expanded="false"');
-    expect(markup).toContain("ほかにも始められる講座");
+    expect(markup).toContain("ほかにも始められるステージ");
     expect(markup).toContain("JavaScriptの値と制御");
     expect(markup).not.toContain("JavaScriptの値と制御 をツリーで見る");
     expect(markup).not.toContain("星を押すと、ツリーの吹き出しから始められます。");
@@ -92,7 +92,7 @@ describe("NextStep choose card", () => {
 
   it("割り当てた AWS は大きなカードに出さず、畳んだ候補の名前に残す", () => {
     const markup = card(["html", "js", "aws"]);
-    const heroEnd = markup.indexOf("ほかにも始められる講座");
+    const heroEnd = markup.indexOf("ほかにも始められるステージ");
     expect(markup.slice(0, heroEnd)).toContain("HTML/CSSとデザイン基礎");
     expect(markup.slice(0, heroEnd)).not.toContain("AWS Cloud Practitioner 入門");
     expect(markup.slice(heroEnd)).toContain("JavaScriptの値と制御・AWS Cloud Practitioner 入門");

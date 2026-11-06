@@ -1,8 +1,8 @@
 /**
  * 教材 (slides.md / doc.md / practice.md) を配布用 PDF に変換する。
  *
- *   bun run --filter=@stella/content pdf                      # 全講座
- *   bun run --filter=@stella/content pdf -- typescript-basics # 講座を絞る
+ *   bun run --filter=@stella/content pdf                      # 全ステージ
+ *   bun run --filter=@stella/content pdf -- typescript-basics # ステージを絞る
  *   bun run --filter=@stella/content pdf -- --manifest out.json --skip existing-keys.txt
  *
  * 見た目はアプリと同じ:
@@ -70,7 +70,7 @@ const outDir = resolve(contentRoot, argValue("--out") ?? join("dist", "pdf"));
 const manifestPath = argValue("--manifest");
 const skipFile = argValue("--skip");
 const concurrency = Number(argValue("--concurrency") ?? 4);
-const courseSlugs = args.filter(
+const stageSlugs = args.filter(
   (a, i) =>
     !a.startsWith("--") &&
     !["--out", "--manifest", "--skip", "--concurrency"].includes(args[i - 1] ?? ""),
@@ -133,7 +133,7 @@ ${body}
 
 interface ManifestEntry {
   tenantId: string;
-  courseSlug: string;
+  stageSlug: string;
   lessonId: string;
   kind: PdfTarget["kind"];
   /** OS ごとに分けた PDF の OS。分けない PDF には無い。 */
@@ -147,7 +147,7 @@ interface ManifestEntry {
 
 async function main(): Promise<void> {
   const targets = collectPdfTargets().filter(
-    (t) => courseSlugs.length === 0 || courseSlugs.includes(t.courseSlug),
+    (t) => stageSlugs.length === 0 || stageSlugs.includes(t.stageSlug),
   );
   const jobs = targets.map((target) => {
     const hash = pdfSourceHash(target);
@@ -185,7 +185,7 @@ async function main(): Promise<void> {
           const job = queue.shift();
           if (!job) break;
           const { target } = job;
-          const label = `${target.courseSlug}/${target.lessonId}/${target.kind}${target.os ? `/${target.os}` : ""}`;
+          const label = `${target.stageSlug}/${target.lessonId}/${target.kind}${target.os ? `/${target.os}` : ""}`;
           try {
             const assets = new Map(target.assets.map((a) => [a.key, a.file]));
             let html: string;
@@ -267,7 +267,7 @@ async function main(): Promise<void> {
   if (manifestPath) {
     const manifest: ManifestEntry[] = jobs.map((j) => ({
       tenantId: j.target.tenantId,
-      courseSlug: j.target.courseSlug,
+      stageSlug: j.target.stageSlug,
       lessonId: j.target.lessonId,
       kind: j.target.kind,
       ...(j.target.os ? { os: j.target.os } : {}),

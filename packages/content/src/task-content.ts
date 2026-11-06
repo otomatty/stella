@@ -33,7 +33,7 @@ import {
 } from "./task-schema.js";
 
 export interface TaskSeed {
-  courseId: string;
+  stageId: string;
   unitId: string;
   /**
    * 課題文を載せるレッスンのキー。seed がこのレッスンと課題を結び、Web の「VS Code で開く」に使う。
@@ -41,7 +41,7 @@ export interface TaskSeed {
    */
   lessonId: string | null;
   /**
-   * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39)。類題は講座の課題一覧・
+   * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39)。類題はステージの課題一覧・
    * レッスン・学習ペース・修了の判定に出さず、出題した受講者にだけ配る。
    */
   variantOf?: string;
@@ -63,7 +63,7 @@ export interface TaskSeed {
   directory: string;
 }
 export interface UnitSeed {
-  courseId: string;
+  stageId: string;
   unitId: string;
   config: UnitConfig;
   references: PublicSourceReference[];
@@ -134,7 +134,7 @@ export function collectFiles(root: string, prefix = ""): Record<string, string> 
 /** 単元の課題を読むときに共通で使う台帳と参照元。 */
 interface UnitContext {
   root: string;
-  courseId: string;
+  stageId: string;
   unitId: string;
   skills: Set<string>;
   patterns: Set<string>;
@@ -156,7 +156,7 @@ const TASK_REQUIRED_PATHS = [
 
 export function readUnit(
   root: string,
-  courseId: string,
+  stageId: string,
   unitId: string,
   directory: string,
   skills = registryIds(root, "skills.json"),
@@ -173,13 +173,13 @@ export function readUnit(
   // 伴い、配布もログイン後の拡張が行うので置かせない (課題文のレッスンも公開しない)。
   if (config.public && existsSync(tasksRoot))
     throw new Error(
-      `ログインなしで読める単元 (unit.json の public) には課題 (tasks/) を置けません: ${courseId}/${unitId}`,
+      `ログインなしで読める単元 (unit.json の public) には課題 (tasks/) を置けません: ${stageId}/${unitId}`,
     );
   // 課題の無い単元 (読むだけの導入の単元など) は tasks/ を置かない。印を外しても読み込める。
-  if (!existsSync(tasksRoot)) return { unit: { courseId, unitId, config, references }, tasks: [] };
+  if (!existsSync(tasksRoot)) return { unit: { stageId, unitId, config, references }, tasks: [] };
   const ctx: UnitContext = {
     root,
-    courseId,
+    stageId,
     unitId,
     skills,
     patterns,
@@ -197,7 +197,7 @@ export function readUnit(
     tasks.push(task);
     variants.push(...readVariants(ctx, task));
   }
-  // 類題の ID は単元の課題と同じ `<講座>/<単元>/<名前>` で、学習フォルダーの置き場所にもなる。
+  // 類題の ID は単元の課題と同じ `<ステージ>/<単元>/<名前>` で、学習フォルダーの置き場所にもなる。
   // 課題・ほかの類題と同じ名前は使えない。
   const ids = new Set<string>();
   for (const task of [...tasks, ...variants]) {
@@ -205,7 +205,7 @@ export function readUnit(
       throw new Error(`課題・類題の ID が重複しています: ${task.definition.id}`);
     ids.add(task.definition.id);
   }
-  return { unit: { courseId, unitId, config, references }, tasks: [...tasks, ...variants] };
+  return { unit: { stageId, unitId, config, references }, tasks: [...tasks, ...variants] };
 }
 
 /**
@@ -233,7 +233,7 @@ function readVariants(ctx: UnitContext, parent: TaskSeed): TaskSeed[] {
  * 類題は親と同じパターンで、レッスンを作らず、固定した開始点と入れ子の予備を持たない。
  */
 function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: TaskSeed): TaskSeed {
-  const { root, courseId, unitId, referenceMap, registry } = ctx;
+  const { root, stageId, unitId, referenceMap, registry } = ctx;
   const label = parent ? "類題" : "課題";
   // 学習フォルダーでは `<課題>-fixed-start/` を固定した開始点に使う。課題と取り違えない。
   if (taskId.endsWith(FIXED_START_SUFFIX))
@@ -243,7 +243,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   const raw = record(json(join(taskDir, "task.json")));
   const environment = readEnvironment(root, raw.environment);
   const definition = parseTaskDefinition(raw, environment);
-  if (definition.id !== `${courseId}/${unitId}/${taskId}`)
+  if (definition.id !== `${stageId}/${unitId}/${taskId}`)
     throw new Error(`task.id とディレクトリが一致しません: ${definition.id}`);
   if (!ctx.patterns.has(definition.pattern))
     throw new Error(`未知のパターン: ${definition.pattern}`);
@@ -343,7 +343,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
     .digest("hex");
   return {
-    courseId,
+    stageId,
     unitId,
     lessonId: parent ? null : `task-${unitId}-${taskId}`,
     ...(parent ? { variantOf: parent.definition.id } : {}),
@@ -506,8 +506,8 @@ function readFixedStart(
 }
 
 /**
- * 固定した開始点が実装を含む課題 (`fixedStart.covers`) は、同じ講座でこの課題より前の課題に限る。
- * `tasks` は 1 つの講座の課題を講座の順 (単元 → 課題) に並べたもの。
+ * 固定した開始点が実装を含む課題 (`fixedStart.covers`) は、同じステージでこの課題より前の課題に限る。
+ * `tasks` は 1 つのステージの課題をステージの順 (単元 → 課題) に並べたもの。
  */
 export function assertFixedStartCovers(tasks: TaskSeed[]): void {
   const earlier = new Set<string>();
@@ -517,7 +517,7 @@ export function assertFixedStartCovers(tasks: TaskSeed[]): void {
         throw new Error(
           tasks.some((t) => t.definition.id === id)
             ? `fixedStart.covers: この課題より前の課題だけを書けます: ${id} (${task.definition.id})`
-            : `fixedStart.covers: 同じ講座の課題が見つかりません: ${id} (${task.definition.id})`,
+            : `fixedStart.covers: 同じステージの課題が見つかりません: ${id} (${task.definition.id})`,
         );
     earlier.add(task.definition.id);
   }

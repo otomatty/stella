@@ -22,7 +22,7 @@ export interface UnitConfig {
   /**
    * ログインなしで読める単元 (Issue #41)。VS Code を入れる前に読む最初の単元 (06 の U00〜U01) に
    * 付ける。付けた単元のスライドとまとめは、未ログインの Web (`/start`) と公開 API が返す。
-   * 課題 (`tasks/`) を置けず、前提のない catalog の講座にだけ置ける (manifest が検査する)。
+   * 課題 (`tasks/`) を置けず、前提のない catalog のステージにだけ置ける (manifest が検査する)。
    * 書かない単元は持たない。
    */
   public?: boolean;
@@ -122,7 +122,7 @@ export function parseTaskDefinition(
   const parsed = parseTaskManifest({ ...value, schemaVersion: 1, environment });
   if (!parsed.ok) throw new Error(parsed.errors.join("\n"));
   if (parsed.manifest.id.split("/").length !== 3)
-    throw new Error("id: <講座>/<単元>/<課題> が必要です");
+    throw new Error("id: <ステージ>/<単元>/<課題> が必要です");
   const submit = object(value.submit, "submit");
   const review = object(value.review, "review");
   if (!Array.isArray(review.rubric)) throw new Error("review.rubric: 配列が必要です");
@@ -203,7 +203,7 @@ export function parseTaskDefinition(
     throw new Error("自力・統合・確認: 説明欄が必要です");
   if (parsed.manifest.kind === "debug" && !debuggingRecord)
     throw new Error("修正課題: 修正記録が必要です");
-  // 講座の中の順序 (前の課題か) は講座の課題をすべて読んでから確かめる (assertFixedStartCovers)。
+  // ステージの中の順序 (前の課題か) はステージの課題をすべて読んでから確かめる (assertFixedStartCovers)。
   const fixedStart =
     value.fixedStart === undefined
       ? undefined
@@ -218,7 +218,7 @@ export function parseTaskDefinition(
             );
           for (const id of covers) {
             if (id.split("/").length !== 3)
-              throw new Error(`fixedStart.covers: <講座>/<単元>/<課題> が必要です: ${id}`);
+              throw new Error(`fixedStart.covers: <ステージ>/<単元>/<課題> が必要です: ${id}`);
             if (id === parsed.manifest.id)
               throw new Error("fixedStart.covers: この課題自身は書けません");
           }

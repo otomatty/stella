@@ -8,7 +8,7 @@ const { tasks, codingRules } = buildContentManifest();
 if (!codingRules.some((rule) => rule.scope === "common"))
   throw new Error("packages/content/coding-rules.md (共通のコーディング規則) がありません");
 console.log(
-  `コーディング規則: 共通 ${codingRules.filter((r) => r.scope === "common").length} 件・講座 ${
+  `コーディング規則: 共通 ${codingRules.filter((r) => r.scope === "common").length} 件・ステージ ${
     codingRules.filter((r) => r.scope !== "common").length
   } 件`,
 );

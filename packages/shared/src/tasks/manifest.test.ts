@@ -62,7 +62,7 @@ describe("parseTaskManifest", () => {
     expect(result.errors.join("\n")).toMatch(/kind/);
   });
 
-  it("id は講座・単元・課題の形に限る", () => {
+  it("id はステージ・単元・課題の形に限る", () => {
     for (const id of ["q01", "Course/Unit/Task", "a//b", "../x/y"]) {
       expect(parseTaskManifest(base({ id })).ok).toBe(false);
     }

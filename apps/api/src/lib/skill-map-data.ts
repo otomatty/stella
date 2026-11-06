@@ -27,10 +27,12 @@ import {
   lessons,
   quizAttempts,
   sections,
+  stageGrants,
   stages,
   studyActivity,
 } from "../db/schema.js";
 import type { Caller } from "./authz.js";
+import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { loadUnlockedStageIds } from "./skill-check-data.js";
 import {
   dropOrphanGrantedStages,
@@ -266,6 +268,71 @@ export async function loadSkillMapSource(
 }
 
 /**
+ * 講師・管理者のステージ管理盤面が読む行。
+ *
+ * 公開状態 (`draft` / `published` / `archived`) では絞らない。霧・島の表示条件・
+ * Extra の割当でも絞らない — それらは受講者の `/mine` の仕事で、管理画面は
+ * 全部を 1 つの盤面で見る。退役ステージを落とすのはルート側 (`RETIRED_STAGES`)。
+ * ここは D1 の行に、割当件数と受講件数を添えて返す。
+ */
+export interface StaffSkillMapStageRow {
+  id: string;
+  tenantId: string;
+  slug: string;
+  title: string;
+  category: string | null;
+  prerequisites: string | null;
+  parent: string | null;
+  canDo: string | null;
+  theme: string | null;
+  iconPath: string | null;
+  audience: "catalog" | "granted";
+  status: "draft" | "published" | "archived";
+  /** `stage_grants` の件数。catalog でも数えたまま返し、0 にするのはルート。 */
+  grantedCount: number;
+  /** `enrollments` の件数。 */
+  enrolledCount: number;
+}
+
+export async function loadStaffSkillMapRows(db: Db): Promise<StaffSkillMapStageRow[]> {
+  const stageRows = await db
+    .select({
+      id: stages.id,
+      tenantId: stages.tenantId,
+      slug: stages.slug,
+      title: stages.title,
+      category: stages.category,
+      prerequisites: stages.prerequisites,
+      parent: stages.parent,
+      canDo: stages.canDo,
+      theme: stages.theme,
+      iconPath: stages.iconPath,
+      audience: stages.audience,
+      status: stages.status,
+    })
+    .from(stages);
+
+  const grantRows = await db
+    .select({ stageId: stageGrants.stageId, n: count() })
+    .from(stageGrants)
+    .groupBy(stageGrants.stageId);
+
+  const enrollmentRows = await db
+    .select({ stageId: enrollments.stageId, n: count() })
+    .from(enrollments)
+    .groupBy(enrollments.stageId);
+
+  const grants = new Map(grantRows.map((row) => [row.stageId, Number(row.n ?? 0)]));
+  const enrolled = new Map(enrollmentRows.map((row) => [row.stageId, Number(row.n ?? 0)]));
+
+  return stageRows.map((row) => ({
+    ...row,
+    grantedCount: grants.get(row.id) ?? 0,
+    enrolledCount: enrolled.get(row.id) ?? 0,
+  }));
+}
+
+/**
  * 「進行中」に据えてよい星 (視界が `full` のもの) を、**active を注入する前の地図**で数える。
  *
  * `active` の星は評価器で無条件に距離 0 の起点になる。つまり保存済みのフォーカスや
@@ -434,17 +501,49 @@ export async function loadFocusCompletions(
   return rows.map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) }));
 }
 
+/**
+ * 受講者 id を `inArray` で引くときの 1 クエリあたりの件数。
+ * status / revoked のぶんを上限から引く (`learning-pace` の通知 ID と同じ余裕)。
+ */
+const CLEARED_USER_IDS_PER_QUERY = D1_MAX_BOUND_PARAMS - 10;
+
+/**
+ * 修了扱いのステージ id を受講者ごとにまとめて引く (登録の completed ∪ 有効な修了証)。
+ * `loadClearedStageIds` と同じ条件。渡した id は結果に必ずあり、クリアが無ければ空集合。
+ * 空の配列では問い合わせない。D1 は 1 文 100 バインドまでなので、id は分けて引いてまとめる。
+ */
+export async function loadClearedStageIdsByUser(
+  db: Db,
+  userIds: readonly string[],
+): Promise<Map<string, Set<string>>> {
+  const ids = [...new Set(userIds)];
+  const cleared = new Map<string, Set<string>>(ids.map((id) => [id, new Set()]));
+  if (ids.length === 0) return cleared;
+
+  const rows: { userId: string; stageId: string }[] = [];
+  for (const part of chunk(ids, CLEARED_USER_IDS_PER_QUERY)) {
+    const completed = await db
+      .select({ userId: enrollments.userId, stageId: enrollments.stageId })
+      .from(enrollments)
+      .where(and(inArray(enrollments.userId, part), eq(enrollments.status, "completed")));
+    const certified = await db
+      .select({ userId: certificates.userId, stageId: certificates.stageId })
+      .from(certificates)
+      .where(and(inArray(certificates.userId, part), eq(certificates.revoked, false)));
+    rows.push(...completed, ...certified);
+  }
+  for (const row of rows) {
+    const set = cleared.get(row.userId) ?? new Set<string>();
+    set.add(row.stageId);
+    cleared.set(row.userId, set);
+  }
+  return cleared;
+}
+
 /** 修了扱いのステージ id (登録の completed ∪ 有効な修了証)。 */
 export async function loadClearedStageIds(db: Db, caller: Caller): Promise<Set<string>> {
-  const completed = await db
-    .select({ stageId: enrollments.stageId })
-    .from(enrollments)
-    .where(and(eq(enrollments.userId, caller.id), eq(enrollments.status, "completed")));
-  const certified = await db
-    .select({ stageId: certificates.stageId })
-    .from(certificates)
-    .where(and(eq(certificates.userId, caller.id), eq(certificates.revoked, false)));
-  return new Set([...completed, ...certified].map((row) => row.stageId));
+  const byUser = await loadClearedStageIdsByUser(db, [caller.id]);
+  return byUser.get(caller.id) ?? new Set();
 }
 
 /**

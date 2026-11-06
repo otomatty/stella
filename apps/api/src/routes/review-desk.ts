@@ -7,7 +7,7 @@
  *   GET    /api/review-desk/task-board?taskId=   同じ課題の提出を並べて見る
  *   POST   /api/review-desk/task-board/discovery 共通のつまずきを発見教材に回す
  *
- * 課題 ID は `<講座>/<単元>/<課題>` とスラッシュを含むので、パスではなくクエリ・本文で受ける。
+ * 課題 ID は `<ステージ>/<単元>/<課題>` とスラッシュを含むので、パスではなくクエリ・本文で受ける。
  *   GET/POST/PATCH/DELETE /api/review-templates  コメント集
  *
  * 人に回した提出のキューは、これまでどおり `GET /api/submissions` が理由・確信度・担当者を返す。

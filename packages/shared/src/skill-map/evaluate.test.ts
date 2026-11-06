@@ -19,7 +19,7 @@ function stage(slug: string, prerequisites: string[] = [], extra: Partial<SkillM
   return {
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     category: "プログラミング",
     ...extra,
@@ -121,7 +121,7 @@ describe("evaluateSkillMap — 分岐 (前提が複数)", () => {
       clearedStageIds: new Set([id("ai-fluency-basics")]),
     });
     expect(r.states.get(id("claude-code-basics"))).toBe("locked");
-    expect(reasonLabels(r, id("claude-code-basics"))).toEqual(["claude-chat-basics の講座"]);
+    expect(reasonLabels(r, id("claude-code-basics"))).toEqual(["claude-chat-basics のステージ"]);
   });
 
   it("両方埋まると開き、解放条件は消える", () => {
@@ -136,8 +136,8 @@ describe("evaluateSkillMap — 分岐 (前提が複数)", () => {
   it("解放条件には未充足の前提だけがタイトルで並ぶ", () => {
     const r = evaluateSkillMap({ stages: branch, clearedStageIds: new Set() });
     expect(reasonLabels(r, id("claude-code-basics"))).toEqual([
-      "ai-fluency-basics の講座",
-      "claude-chat-basics の講座",
+      "ai-fluency-basics のステージ",
+      "claude-chat-basics のステージ",
     ]);
     // 呼び出し側が視界で伏せ直せるよう、前提の id も添える。
     expect(r.lockReasons.get(id("claude-code-basics"))?.map((x) => x.stageId)).toEqual([
@@ -167,7 +167,7 @@ describe("evaluateSkillMap — 視界", () => {
     });
     // 解放は AND のまま: a はクリア済みでも c が残っている。
     expect(r.states.get(id("x"))).toBe("locked");
-    expect(reasonLabels(r, id("x"))).toEqual(["c の講座"]);
+    expect(reasonLabels(r, id("x"))).toEqual(["c のステージ"]);
     // 視界は c 経由だけ: b (起点) → c = 1 歩 → x = 2 歩。a から直接は近づかない。
     expect(r.visibility.get(id("c"))).toBe("full");
     expect(r.visibility.get(id("x"))).toBe("fog");
@@ -316,7 +316,7 @@ describe("evaluateSkillMap — 次の一歩", () => {
 
 describe("evaluateSkillMap — 状態の優先順位 (取りこぼしやすい組み合わせ)", () => {
   it("クリア済みなら前提が未充足でも cleared のまま (解放条件も出さない)", () => {
-    // 前提を後から足した講座で起きる。既に修了した受講者を locked に落とし直さない。
+    // 前提を後から足したステージで起きる。既に修了した受講者を locked に落とし直さない。
     const r = evaluateSkillMap({ stages: line, clearedStageIds: new Set([id("d")]) });
     expect(r.states.get(id("d"))).toBe("cleared");
     expect(r.lockReasons.has(id("d"))).toBe(false);
@@ -345,7 +345,7 @@ describe("evaluateSkillMap — 状態の優先順位 (取りこぼしやすい�
     });
     expect(r.states.get(id("p2"))).toBe("active");
     expect(r.states.get(id("goal"))).toBe("locked");
-    expect(reasonLabels(r, id("goal"))).toEqual(["p2 の講座"]);
+    expect(reasonLabels(r, id("goal"))).toEqual(["p2 のステージ"]);
   });
 });
 
@@ -496,7 +496,7 @@ describe("evaluateSkillMap — 扇ごとの前提 (appearances)", () => {
   });
 });
 
-// 退役した Git 講座を使う固定入力で、複製の汎用機能を引き続き検証する。
+// 退役した Git のステージを使う固定入力で、複製の汎用機能を引き続き検証する。
 vi.mock("./appearances.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./appearances.js")>();
   return {

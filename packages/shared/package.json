@@ -17,6 +17,7 @@
     "./admin/reports": "./src/admin/reports.ts",
     "./admin/audit-actions": "./src/admin/audit-actions.ts",
     "./curriculum/chapters": "./src/curriculum/chapters.ts",
+    "./curriculum/retired-stages": "./src/curriculum/retired-stages.ts",
     "./curriculum/stages": "./src/curriculum/stages.ts",
     "./grading": "./src/grading/index.ts",
     "./grading/ast": "./src/grading/ast.ts",

@@ -57,7 +57,7 @@ function isInside(dir: string, target: string): boolean {
 }
 
 /**
- * このウィンドウが学習フォルダーだけを開いているか。祖先 (ホームなど)・講座のフォルダー・
+ * このウィンドウが学習フォルダーだけを開いているか。祖先 (ホームなど)・ステージのフォルダー・
  * 学習フォルダーを含むマルチルートは違う — 学習フォルダーを唯一のフォルダーにするため。
  */
 export async function windowIsTrainingRoot(

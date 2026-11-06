@@ -65,7 +65,7 @@ export interface StageRow {
   color: StageColor | null;
   /**
    * サムネイル画像の R2 パス。 列が未マイグレーションの環境では undefined になり得るため optional。
-   * 教材リポジトリの `courses/<slug>/thumbnail.*` を seed が書き込む。
+   * 教材リポジトリの `stages/<slug>/thumbnail.*` を seed が書き込む。
    */
   thumbnail_path?: string | null;
   duration_hours: number | null;
