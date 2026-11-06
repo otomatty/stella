@@ -251,10 +251,7 @@ export async function reclaimAutoCertificatesIfUnmet(
           const cert = certRows[0];
           if (!cert || cert.issuedBy !== null || cert.revoked) return null;
 
-          const counts =
-            (
-              await batchComputeCounts(db, [stageId], userId, stage.format === 2 ? [stageId] : [])
-            ).get(stageId) ?? EMPTY_COUNTS;
+          const counts = await stageCompletionCounts(db, stage, userId);
           if (completionMet(stage, counts)) return null;
 
           await db.batch([
@@ -404,10 +401,7 @@ async function runAutoComplete(
           .limit(1);
         if (!enrolled[0]) return null;
 
-        const counts =
-          (
-            await batchComputeCounts(db, [stage.id], userId, stage.format === 2 ? [stage.id] : [])
-          ).get(stage.id) ?? EMPTY_COUNTS;
+        const counts = await stageCompletionCounts(db, stage, userId);
         if (!completionMet(stage, counts)) return null;
         // 修了証の発行と受講登録の completed 化は 1 batch (= D1 のトランザクション)。
         // 別々に流すと、発行だけ成功して落ちた場合に「修了証はあるのに登録が active の
@@ -510,6 +504,22 @@ const EMPTY_COUNTS: CompletionCounts = {
   totalAssignments: 0,
   passedAssignments: 0,
 };
+
+/**
+ * 1 受講者 × 1 ステージの達成数。修了条件の表示・staff の発行・自動発行・巻き戻しで
+ * 同じ数え方を使い、レッスンなどの id は D1 のバインド上限内に刻んで取得する。
+ */
+export async function stageCompletionCounts(
+  db: Db,
+  stage: Pick<typeof stages.$inferSelect, "id" | "format">,
+  userId: string,
+): Promise<CompletionCounts> {
+  return (
+    (await batchComputeCounts(db, [stage.id], userId, stage.format === 2 ? [stage.id] : [])).get(
+      stage.id,
+    ) ?? { ...EMPTY_COUNTS }
+  );
+}
 
 /**
  * 1 受講者 × 複数ステージの達成数を一定回数のクエリで集計する
