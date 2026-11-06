@@ -118,6 +118,8 @@ function pageKeyFromPath(path: string): string {
   }
   if (path.startsWith("/reviews/")) return "review";
   if (path.startsWith("/submissions/")) return "submission-result";
+  // 一覧 (`/certificates`) と詳細 (`/certificates/$certId`) のどちらも「修了証」。
+  if (path === "/certificates" || path.startsWith("/certificates/")) return "cert";
   const hit = Object.entries(PATH_BY_PAGE).find(([, p]) => p === path);
   return hit ? hit[0] : path.replace(/^\//, "") || "dash";
 }

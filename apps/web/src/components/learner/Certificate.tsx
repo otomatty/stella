@@ -2,7 +2,7 @@
  * 受講者の修了証ページ (Issue #26)。
  *
  * - バックエンド設定 + ログイン時: 実データで動作する。
- *   - 発行済みの修了証を一覧表示 (印刷 / 公開検証ページへのリンク付き)。
+ *   - 発行済みの修了証を一覧表示 (詳細・PDF・公開検証ページへのリンク付き)。
  *   - 受講中ステージの達成状況 (進捗 + 小テスト + 課題) を成績台帳として表示する。
  *   - 修了証は**受講者が発行するものではない** — 修了条件を満たした時点でサーバが
  *     自動発行する (講師承認ステージだけは staff の Gradebook 発行を待つ)。一覧の
@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import { achievementFromSnapshot } from "@stella/shared/cms/certificate-achievement";
 import { formatIssuedDateJa } from "@/lib/certificate-display";
@@ -191,10 +192,17 @@ function IssuedCertificate({ cert }: { cert: CertificateRow }) {
   const verifyUrl = buildVerificationUrl(cert.cert_code);
   return (
     <div className="w-full max-w-[880px] mx-auto flex flex-col gap-3">
-      <div className="flex justify-end gap-2">
-        <Button onClick={() => window.print()}>
-          <Download size={14} />
-          PDF / 印刷
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button asChild>
+          <Link to="/certificates/$certId" params={{ certId: cert.id }}>
+            開く
+          </Link>
+        </Button>
+        <Button asChild>
+          <Link to="/certificates/$certId" params={{ certId: cert.id }} search={{ print: "1" }}>
+            <Download size={14} />
+            PDF / 印刷
+          </Link>
         </Button>
         <Button asChild>
           <a href={verifyUrl} target="_blank" rel="noopener noreferrer">

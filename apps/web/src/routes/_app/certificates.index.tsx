@@ -3,7 +3,7 @@ import { useAppShell } from "@/components/shell/app-shell-context";
 import { RoleGuard } from "@/components/shell/RoleGuard";
 import { CertificatePage } from "@/components/learner/Certificate";
 
-export const Route = createFileRoute("/_app/certificates")({
+export const Route = createFileRoute("/_app/certificates/")({
   component: Certificates,
 });
 

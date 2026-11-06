@@ -216,7 +216,7 @@ export function CertificateView({
           <span style={{ fontSize: "1.78094cqw", color: "#33333a" }}>殿</span>
         </div>
 
-        <p
+        <div
           style={{
             margin: "2.67142cqw 0 0",
             maxWidth: "62.33304cqw",
@@ -224,12 +224,15 @@ export function CertificateView({
             fontSize: "1.51380cqw",
             lineHeight: "2",
             color: "#26262c",
-            textWrap: "balance",
           }}
         >
-          あなたは {DISPLAY_NAME} のステージ「{stageTitle}
-          」の修了条件をすべて満たしました。その学びの成果をここに証します。
-        </p>
+          <p className="certificate-phrase" style={{ margin: 0 }}>
+            あなたは {DISPLAY_NAME} のステージ「{stageTitle}」の修了条件をすべて満たしました。
+          </p>
+          <p className="certificate-phrase" style={{ margin: 0 }}>
+            その学びの成果をここに証します。
+          </p>
+        </div>
 
         {label ? (
           <div

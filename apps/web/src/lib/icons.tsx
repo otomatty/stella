@@ -4,6 +4,7 @@
  */
 export {
   Home,
+  ArrowLeft,
   ArrowUp,
   BookOpen as Book,
   Play,
@@ -26,6 +27,7 @@ export {
   ChevronsUpDown,
   X,
   Plus,
+  SquarePlus,
   Sparkles,
   MessageCircle,
   Award,
