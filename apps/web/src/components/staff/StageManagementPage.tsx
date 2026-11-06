@@ -20,6 +20,7 @@ import { ChevronDown, ChevronUp, Edit, Plus } from "@/lib/icons";
 import {
   getStaffSkillMap,
   getStaffSkillMapIcons,
+  staffEnrollStage,
   type StaffSkillMapStageNode,
 } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ interface StageManagementPageProps {
   backendEnabled: boolean;
   currentUserId: string | null;
   highlightStage: { id: string; seq: number } | null;
+  onOpenAsLearner: (stageId: string) => void;
 }
 
 export function StageManagementPage({
@@ -62,6 +64,7 @@ export function StageManagementPage({
   backendEnabled,
   currentUserId,
   highlightStage,
+  onOpenAsLearner,
 }: StageManagementPageProps) {
   const isAdmin = role === "admin";
   const title = stageManagementTitle(role);
@@ -293,6 +296,7 @@ export function StageManagementPage({
                 <StaffStageDetail
                   stage={stage}
                   isAdmin={isAdmin}
+                  onOpenAsLearner={onOpenAsLearner}
                   onEdit={() => {
                     close();
                     setEditingId(stage.id);
@@ -517,6 +521,12 @@ export function StageManagementPage({
                                   受講者を割り当てる
                                 </Button>
                               ) : null}
+                              {stage.status === "published" ? (
+                                <StaffEnrollButton
+                                  stageId={stage.id}
+                                  onOpenAsLearner={onOpenAsLearner}
+                                />
+                              ) : null}
                             </div>
                           </li>
                         ))}
@@ -569,6 +579,39 @@ export function StageManagementPage({
   );
 }
 
+function StaffEnrollButton({
+  stageId,
+  onOpenAsLearner,
+}: {
+  stageId: string;
+  onOpenAsLearner: (stageId: string) => void;
+}) {
+  const [pending, setPending] = useState(false);
+  const open = async () => {
+    setPending(true);
+    try {
+      await staffEnrollStage(stageId);
+      onOpenAsLearner(stageId);
+    } catch (err: unknown) {
+      toast.error(`開けませんでした: ${err instanceof Error ? err.message : "unknown"}`);
+    } finally {
+      setPending(false);
+    }
+  };
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      title="初めて開くときは自分を受講登録します"
+      disabled={pending}
+      onClick={() => void open()}
+    >
+      受講者の画面で確かめる
+    </Button>
+  );
+}
+
 function StaffStageDetail({
   stage,
   isAdmin,
@@ -576,11 +619,13 @@ function StaffStageDetail({
   onToggle,
   onDelete,
   onAssign,
+  onOpenAsLearner,
 }: {
   stage: StaffSkillMapStageNode;
   isAdmin: boolean;
   onEdit: () => void;
   onToggle: () => void;
+  onOpenAsLearner: (stageId: string) => void;
   onDelete: () => void;
   onAssign: () => void;
 }) {
@@ -620,6 +665,9 @@ function StaffStageDetail({
           <Button type="button" size="sm" variant="outline" onClick={onAssign}>
             受講者を割り当てる
           </Button>
+        ) : null}
+        {stage.status === "published" ? (
+          <StaffEnrollButton stageId={stage.id} onOpenAsLearner={onOpenAsLearner} />
         ) : null}
       </div>
     </div>

@@ -183,6 +183,17 @@ export async function startStage(stageId: string): Promise<StartStageResult> {
   return { created: res.created, state: res.state };
 }
 
+/** 講師・管理者が受講者の画面で確かめるために、自分を受講登録する。 */
+export async function staffEnrollStage(
+  stageId: string,
+): Promise<{ created: boolean; reactivated: boolean }> {
+  const res = await apiFetch<{ created: boolean; reactivated: boolean }>(
+    `/api/stages/${encodeURIComponent(stageId)}/staff-enroll`,
+    { method: "POST" },
+  );
+  return { created: res.created, reactivated: res.reactivated };
+}
+
 /**
  * この画面が扱える視界の段の版 (API 側は `SKILL_MAP_TIERS_PARAM`)。
  *

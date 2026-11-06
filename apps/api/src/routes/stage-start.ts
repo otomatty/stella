@@ -2,6 +2,8 @@
  * ステージの自己開始 (Phase 3b)。
  *
  *   POST /api/stages/:id/start … 解放済みの星を「自分で始める」
+ *   POST /api/stages/:id/staff-enroll … 講師・管理者が受講者の画面で確かめるための登録。
+ *     前提・視界・割り当ての条件をかけず、受講者向けの数には数えない前提。
  *
  * ## 何が変わったか
  *
@@ -39,14 +41,48 @@ import { Hono } from "hono";
 
 import { isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
 
-import { ApiError, errorResponse, getCaller, requireCanStartStage } from "../lib/authz.js";
+import {
+  ApiError,
+  errorResponse,
+  getCaller,
+  requireCanStartStage,
+  requireRole,
+} from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { startSelfEnrollment } from "../lib/enrollment-write.js";
+import { loadStaffEnrollableStage } from "../lib/staff-stage-enroll.js";
 import { wantsDevReveal, loadSkillMapSource } from "../lib/skill-map-data.js";
 import { UNSELECTABLE_STAGE_MESSAGE, evaluateSkillMapFor, maskedLockReasons } from "./skill-map.js";
 import type { Env } from "../env.js";
 
 export const stageStartRoute = new Hono<{ Bindings: Env }>();
+
+stageStartRoute.post("/api/stages/:id/staff-enroll", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
+    const stageId = c.req.param("id");
+    const stage = await loadStaffEnrollableStage(db, stageId);
+    if (!stage) throw new ApiError("ステージが見つかりません", 404);
+
+    const { row, created, reactivated } = await startSelfEnrollment(db, caller, stageId);
+    if (!row) throw new ApiError("受講登録を作成できませんでした", 500);
+
+    if (created || reactivated) {
+      await recordAudit(db, caller, {
+        action: "stage_self_start",
+        targetType: "enrollment",
+        targetId: row.id,
+        ip: clientIp(c),
+        metadata: { stage_id: stageId, via: "staff", created, reactivated },
+      });
+    }
+
+    return c.json({ enrollment: row, created, reactivated });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
 
 /** クリア済みの星を断る文言 (本人が終わらせた星なので、そのまま理由を返してよい)。 */
 const ALREADY_CLEARED_MESSAGE = "クリア済みのステージです";
