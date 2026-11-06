@@ -35,8 +35,7 @@ const HELP = `使い方:
     --runner <runner> --kind <kind> --title <題>
   node scripts/scaffold.mjs help
 
-STELLA 本体の --content は packages/content、--stages は packages/content/stages。
-外部リポジトリでは --content .stella/packages/content、--stages stages。旧い courses/ のリポジトリでは --stages courses。
+--content は packages/content、--stages は packages/content/stages。
 templates/runners/<runner>/ の starter と tests を課題へ写し、task.json の下書きを書く。
 既存の課題フォルダーがあるときは何も書かずに止まる。
 `;

@@ -697,9 +697,7 @@ for (const [order, task] of content.tasks.entries()) {
 // コーディング規則の正本 (packages/content/coding-rules.md とステージの stages/<slug>/coding-rules.md)。
 // AI の一次レビューと人のレビューが同じ本文を読む。正本から消えた規則は D1 からも消す
 // (レビュー結果は内容ハッシュで残る)。
-// 消すのはこの checkout の範囲だけ (共通と、packages/content/stages/ にあるステージ。modules が
-// 無くても含める)。外部リポジトリのステージは、この checkout にフォルダーが無い。範囲を絞らないと、
-// 本体の次の seed が外部の CI で入れた規則を消し、外部の課題のレビューが規則の欠けた素材になる。
+// 消すのは、共通と、この checkout の stages/ にあるステージの規則だけ (modules が無くても含める)。
 const codingRules = content.codingRules ?? [];
 const codingRuleScopes = listCodingRuleScopes();
 for (const rule of codingRules)

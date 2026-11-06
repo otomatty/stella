@@ -43,10 +43,6 @@ vite.config.ts.timestamp-*.mjs
 # カバレッジレポート (bun run test:coverage)
 coverage/
 
-# Extra 講座の作業用の写し。公開リポジトリの作業フォルダーに混ざってもコミットしない
-.stella-extra-workspace
-packages/content/.extra-overlay.json
-
 # Packaged VS Code extensions
 *.vsix
 

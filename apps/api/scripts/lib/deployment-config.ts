@@ -172,22 +172,6 @@ export function checkDeploymentConfig(root: string, accountId?: string): void {
   );
 }
 
-/**
- * 外部リポジトリが教材だけを流すときの事前確認。
- * Better Auth と AI の鍵は見ない。値はエラーに出さない。
- */
-const CONTENT_DEPLOYMENT_SETTINGS = [
-  "CLOUDFLARE_API_TOKEN",
-  "CLOUDFLARE_ACCOUNT_ID",
-  "PDF_KEY_SALT",
-  "VITE_MATERIALS_BASE_URL",
-] as const;
-
-export function requireContentDeploymentInputs(env: Record<string, string | undefined>): void {
-  const missing = CONTENT_DEPLOYMENT_SETTINGS.filter((name) => !env[name]?.trim());
-  if (missing.length) throw new Error(`Missing content deployment settings: ${missing.join(", ")}`);
-}
-
 /** Runs only in deployment preflight. Errors contain names, never input values. */
 export function requireDeploymentInputs(env: Record<string, string | undefined>): void {
   const required = [
