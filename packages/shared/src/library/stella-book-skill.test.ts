@@ -265,7 +265,7 @@ describe("stella-book スキルの梱包スクリプト", () => {
       [
         "-I",
         "-c",
-        "import sys,zipfile; print(zipfile.ZipFile(sys.argv[1]).read('chapters/01.md').decode())",
+        "import sys,zipfile; sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read('chapters/01.md') + b'\\n')",
         zip,
       ],
       { encoding: "utf8" },
