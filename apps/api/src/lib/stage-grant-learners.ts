@@ -10,7 +10,7 @@ export const STAGE_GRANT_LEARNER_PAGE_SIZE = 50;
 export const STAGE_GRANT_LEARNER_PAGE_MAX = 100;
 
 export type StageGrantLearnerStatus = "all" | "assigned" | "unassigned" | "exempted";
-export type StageGrantPrerequisiteFilter = "all" | "done" | "doing" | "none";
+export type StageGrantPrerequisiteFilter = "all" | "done" | "doing" | "none" | "not_done";
 export type StageGrantPrerequisiteStatus = "done" | "doing" | "none";
 
 export type StageGrantInstructorFilter =
@@ -20,7 +20,7 @@ export type StageGrantInstructorFilter =
   | { type: "id"; id: string };
 
 const STATUSES = ["all", "assigned", "unassigned", "exempted"] as const;
-const PREREQS = ["all", "done", "doing", "none"] as const;
+const PREREQS = ["all", "done", "doing", "none", "not_done"] as const;
 
 export interface StageGrantLearnerQuery {
   q: string;
@@ -235,6 +235,16 @@ function matchesSearch(displayName: string, email: string | null, rawNeedle: str
   return email?.normalize("NFKC").toLowerCase().includes(needle) ?? false;
 }
 
+/** `not_done` は受講中と未着手（前提をすべてはクリアしていない）。 */
+function matchesPrerequisite(
+  status: StageGrantPrerequisiteStatus,
+  filter: StageGrantPrerequisiteFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "not_done") return status !== "done";
+  return status === filter;
+}
+
 function matchesInstructor(
   instructorId: string | null,
   filter: StageGrantInstructorFilter,
@@ -305,7 +315,7 @@ export function listStageGrantLearners(
     if (query.status === "assigned" && !row.assigned) return false;
     if (query.status === "unassigned" && row.assigned) return false;
     if (query.status === "exempted" && !row.exempted) return false;
-    if (query.prereq !== "all" && row.prerequisite_status !== query.prereq) return false;
+    if (!matchesPrerequisite(row.prerequisite_status, query.prereq)) return false;
     const instructorId = row.instructor?.id ?? instructorByLearner.get(row.id) ?? null;
     return matchesInstructor(instructorId, query.instructor, callerId);
   });

@@ -1,12 +1,17 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
+type TableProps = React.HTMLAttributes<HTMLTableElement> & {
+  /** 見出しをスクロールの中で固定するとき、外側のスクロール枠に渡す。 */
+  containerClassName?: string;
+};
+
+export const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, containerClassName, ...props }, ref) => (
     // 狭幅では表を潰さず横スクロールさせる (成績台帳・管理系テーブル共通)。
     // 最小幅は lg 未満だけに効かせる。 全幅で min-w-max にすると、 設問文のような
     // 長い可変長セルがデスクトップでも折り返さなくなり、 表が不必要に横へ伸びる。
-    <div className="w-full max-w-full overflow-x-auto">
+    <div className={cn("w-full max-w-full", containerClassName ?? "overflow-x-auto")}>
       <table
         ref={ref}
         className={cn(

@@ -71,6 +71,10 @@ describe("parseStageGrantLearnerQuery", () => {
     expect(parseStageGrantLearnerQuery({ prereq: "started" }).ok).toBe(false);
   });
 
+  it("prereq の not_done を受け付ける", () => {
+    expect(parsedQuery({ prereq: "not_done" }).prereq).toBe("not_done");
+  });
+
   it("instructor は all / mine / none / id に分ける", () => {
     expect(parsedQuery({ instructor: "mine" }).instructor).toEqual({ type: "mine" });
     expect(parsedQuery({ instructor: "none" }).instructor).toEqual({ type: "none" });
@@ -213,6 +217,25 @@ describe("listStageGrantLearners", () => {
         "teacher-1",
       ).total,
     ).toBe(0);
+  });
+
+  it("not_done は受講中と未着手を返し、修了と前提が空の人は含めない", () => {
+    const result = listed(
+      {
+        clearedByUser: new Map([["ada", new Set(["stage-pre-a", "stage-pre-b"])]]),
+        enrolledByUser: new Map([["ken", new Set(["stage-pre-a"])]]),
+      },
+      query({ prereq: "not_done" }),
+    );
+    expect(result.learners.map((row) => row.id)).toEqual(["ken", "sato"]);
+    expect(result.total).toBe(2);
+
+    const open = listStageGrantLearners(
+      source({ profiles: [profile("ada", "山田"), profile("ken", "佐藤")] }),
+      query({ prereq: "not_done" }),
+      "teacher-1",
+    );
+    expect(open.total).toBe(0);
   });
 
   it("解けない前提 slug は一覧から落とし、クリア済みにはしない", () => {

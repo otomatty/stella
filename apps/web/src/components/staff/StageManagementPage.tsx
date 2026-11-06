@@ -483,6 +483,7 @@ export function StageManagementPage({
         open={grantStageId !== null}
         onClose={() => setGrantStageId(null)}
         onSaved={() => void load()}
+        stageTitleOf={(id) => byId.get(id)?.title}
       />
     </div>
   );

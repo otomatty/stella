@@ -1299,11 +1299,21 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     });
   });
 
-  it("知らない status は 400", async () => {
-    const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners?status=gone", {
-      token: "t",
-    });
-    expect(res.status).toBe(400);
+  it("知らない status と prereq は 400", async () => {
+    const status = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?status=gone",
+      { token: "t" },
+    );
+    expect(status.status).toBe(400);
+    const prereq = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?prereq=started",
+      { token: "t" },
+    );
+    expect(prereq.status).toBe(400);
   });
 
   it("名前とメールを、全角半角と大文字小文字を無視して検索する", async () => {
@@ -1417,6 +1427,16 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     expect(
       (await json<{ learners: { id: string }[] }>(doing)).learners.map((row) => row.id),
     ).toEqual(["ken"]);
+    const notDone = await request(
+      app,
+      env,
+      "/api/stage-grants/stage-granted-1/learners?prereq=not_done",
+      { token: "t" },
+    );
+    expect(notDone.status).toBe(200);
+    expect(
+      new Set((await json<{ learners: { id: string }[] }>(notDone)).learners.map((row) => row.id)),
+    ).toEqual(new Set(["ken", "sato", "old"]));
   });
 
   it("前提の 3 状態と腕試しの行を返す。解けない slug は落とす", async () => {
