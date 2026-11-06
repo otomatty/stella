@@ -891,7 +891,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "javascript-basics",
       "javascript-data-basics",
     ]);
-    expect(stages.find((c) => c.id === "dom-basics")?.parent).toBe("javascript-data-basics");
+    expect(stages.find((c) => c.id === "dom-basics")?.parent).toBe("html-css-basics");
     expect(stages.find((c) => c.id === "dev-env-basics")?.parent).toBeUndefined();
   });
 
@@ -1016,32 +1016,34 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     );
   });
 
-  it("入口から2枝に分かれ、DOMから卒業制作まで線の親がつながる", () => {
-    const chain = [
-      "javascript-basics",
-      "javascript-data-basics",
-      "dom-basics",
-      "ui-components-basics",
-      "http-async-basics",
-      "react-basics",
-      "react-ui-basics",
-      "ui-integration-basics",
-      "node-api-basics",
-      "sql-basics",
-      "auth-basics",
-      "nextjs-basics",
-      "design-quality-basics",
-      "deploy-ops-basics",
-      "code-reading-basics",
-      "fullstack-capstone",
-    ];
-    expect(stages.find((c) => c.id === "html-css-basics")?.parent).toBe("dev-env-basics");
-    let parent = "dev-env-basics";
-    for (const slug of chain) {
+  it("本土は入口・HTTP・React・Node.js で枝分かれし、線の親は前提に含まれる", () => {
+    const expectedParents: Record<string, string | undefined> = {
+      "dev-env-basics": undefined,
+      "html-css-basics": "dev-env-basics",
+      "javascript-basics": "dev-env-basics",
+      "javascript-data-basics": "javascript-basics",
+      "dom-basics": "html-css-basics",
+      "ui-components-basics": "dom-basics",
+      "http-async-basics": "javascript-data-basics",
+      "react-basics": "http-async-basics",
+      "react-ui-basics": "react-basics",
+      "ui-integration-basics": "react-ui-basics",
+      "node-api-basics": "http-async-basics",
+      "sql-basics": "node-api-basics",
+      "auth-basics": "node-api-basics",
+      "nextjs-basics": "react-basics",
+      "design-quality-basics": "nextjs-basics",
+      "deploy-ops-basics": "design-quality-basics",
+      "code-reading-basics": "deploy-ops-basics",
+      "fullstack-capstone": "code-reading-basics",
+    };
+    for (const [slug, parent] of Object.entries(expectedParents)) {
       const stage = stages.find((c) => c.id === slug);
+      expect(stage, slug).toBeDefined();
       expect(stage?.parent, slug).toBe(parent);
-      expect(stage?.prerequisites, slug).toContain(parent);
-      parent = slug;
+      if (parent !== undefined) {
+        expect(stage?.prerequisites, slug).toContain(parent);
+      }
     }
   });
 
