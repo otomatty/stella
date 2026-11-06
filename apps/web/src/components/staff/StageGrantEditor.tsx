@@ -49,6 +49,7 @@ import {
   rosterDiff,
   setRosterAssigned,
   setRosterExempted,
+  stageGrantRoleLabel,
   toggleVisibleAssignments,
   visibleAssignmentState,
   type RosterLocalFilter,
@@ -600,7 +601,7 @@ function ListRegion({
     <>
       {views.length === 0 ? (
         <p className="px-4 py-8 text-center text-[13px] text-ink-3">
-          {changesOnly ? "変更した受講者はいません" : "該当する受講者がいません"}
+          {changesOnly ? "変更したユーザーはいません" : "該当するユーザーがいません"}
         </p>
       ) : (
         children
@@ -754,13 +755,13 @@ function PcRoster({
     <>
       <DialogHeader className="shrink-0 space-y-1 pr-10">
         <div className="flex items-center gap-2">
-          <DialogTitle>受講者を割り当てる</DialogTitle>
+          <DialogTitle>ユーザーを割り当てる</DialogTitle>
           <Badge variant="accent">Extra</Badge>
         </div>
         <DialogDescription>{stageLabel}</DialogDescription>
         {counts ? (
           <p className="text-[12px] text-ink-3">
-            割り当て済み {counts.assigned} 人 · 前提を免除した {counts.exempted} 人 · 有効な受講者{" "}
+            割り当て済み {counts.assigned} 人 · 前提を免除した {counts.exempted} 人 · 有効なユーザー{" "}
             {counts.learners} 人
           </p>
         ) : null}
@@ -861,7 +862,7 @@ function PcRoster({
                     onChange={onToggleVisible}
                   />
                 </TableHead>
-                <TableHead className={HEAD_CELL}>受講者</TableHead>
+                <TableHead className={HEAD_CELL}>ユーザー</TableHead>
                 <TableHead className={HEAD_CELL}>担当講師</TableHead>
                 <TableHead className={HEAD_CELL}>前提</TableHead>
                 <TableHead className={HEAD_CELL}>前提の免除</TableHead>
@@ -890,6 +891,9 @@ function PcRoster({
                           {view.baseline.display_name}
                         </label>
                         {view.baseline.selectable ? null : <Badge>無効</Badge>}
+                        {stageGrantRoleLabel(view.baseline.role) ? (
+                          <Badge>{stageGrantRoleLabel(view.baseline.role)}</Badge>
+                        ) : null}
                         <ChangeMarks marks={view.marks} />
                       </div>
                       {view.baseline.email ? (
@@ -915,7 +919,7 @@ function PcRoster({
           <p className="text-[13px] text-ink-2">{summary}</p>
           <p className="mt-1 text-[11px] text-ink-4">
             前のステージが Extra
-            のときは、それも一緒に割り当てます。外した受講者は前提の免除も外れます。
+            のときは、それも一緒に割り当てます。外したユーザーは前提の免除も外れます。
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -1040,7 +1044,7 @@ function MobileRoster({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-start justify-between gap-2 px-4 pb-2">
         <div className="min-w-0">
-          <DrawerTitle>受講者を割り当てる</DrawerTitle>
+          <DrawerTitle>ユーザーを割り当てる</DrawerTitle>
           <DrawerDescription className="mt-1 truncate">{stageLabel}</DrawerDescription>
         </div>
         <button
@@ -1164,6 +1168,9 @@ function MobileRoster({
                       <span className="flex flex-wrap items-center gap-1">
                         <span className="font-medium">{view.baseline.display_name}</span>
                         {view.baseline.selectable ? null : <Badge>無効</Badge>}
+                        {stageGrantRoleLabel(view.baseline.role) ? (
+                          <Badge>{stageGrantRoleLabel(view.baseline.role)}</Badge>
+                        ) : null}
                         <ChangeMarks marks={view.marks} />
                       </span>
                       <span className="block truncate text-[12px] text-ink-3">
@@ -1176,6 +1183,9 @@ function MobileRoster({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1">
                         <span className="font-medium">{view.baseline.display_name}</span>
+                        {stageGrantRoleLabel(view.baseline.role) ? (
+                          <Badge>{stageGrantRoleLabel(view.baseline.role)}</Badge>
+                        ) : null}
                         <ChangeMarks marks={view.marks} />
                       </div>
                       <p className="truncate text-[12px] text-ink-3">{learnerSubtitle(view)}</p>

@@ -12,7 +12,7 @@ import { drizzle } from "drizzle-orm/d1";
 import type { Db } from "../db/client.js";
 import { stageGrants, stageUnlocks } from "../db/schema.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
-import type { StageGrantParse } from "./stage-grant-learners.js";
+import { isAssignableStageGrantProfile, type StageGrantParse } from "./stage-grant-learners.js";
 
 export interface StageGrantDiff {
   add: string[];
@@ -34,8 +34,8 @@ export interface PreparedStageGrantDiff {
   deleteStaffIds: string[];
 }
 
-const UNASSIGNABLE = "割当できない受講者が含まれています";
-const EXEMPT_REQUIRES_GRANT = "前提を免除できるのは、割り当てる受講者だけです";
+const UNASSIGNABLE = "割当できないユーザーが含まれています";
+const EXEMPT_REQUIRES_GRANT = "前提を免除できるのは、割り当てるユーザーだけです";
 
 function readIdList(value: unknown, label: string): StageGrantParse<string[]> {
   if (value === undefined) return { ok: true, value: [] };
@@ -56,10 +56,10 @@ function sharesId(left: readonly string[], right: readonly string[]): boolean {
 /** 4 つとも空、または追加と削除 (免除とその解除) が重なれば、その説明。 */
 export function stageGrantDiffShapeError(diff: StageGrantDiff): string | null {
   if (sharesId(diff.add, diff.remove)) {
-    return "同じ受講者を追加と削除の両方に指定できません";
+    return "同じユーザーを追加と削除の両方に指定できません";
   }
   if (sharesId(diff.exempt, diff.unexempt)) {
-    return "同じ受講者を免除と免除の解除の両方に指定できません";
+    return "同じユーザーを免除と免除の解除の両方に指定できません";
   }
   if (
     diff.add.length === 0 &&
@@ -67,7 +67,7 @@ export function stageGrantDiffShapeError(diff: StageGrantDiff): string | null {
     diff.exempt.length === 0 &&
     diff.unexempt.length === 0
   ) {
-    return "変更する受講者を指定してください";
+    return "変更するユーザーを指定してください";
   }
   return null;
 }
@@ -104,13 +104,13 @@ export function prepareStageGrantDiff(
 ): StageGrantParse<PreparedStageGrantDiff> {
   for (const id of diff.add) {
     const profile = profiles.get(id);
-    if (profile?.role !== "student" || profile?.disabled) {
+    if (!profile || !isAssignableStageGrantProfile(profile)) {
       return { ok: false, error: UNASSIGNABLE };
     }
   }
   for (const id of diff.exempt) {
     const profile = profiles.get(id);
-    if (profile?.role !== "student") {
+    if (!profile) {
       return { ok: false, error: UNASSIGNABLE };
     }
   }

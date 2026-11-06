@@ -1,7 +1,7 @@
 /**
  * Extra ステージの割り当て一覧を、Worker の中で絞り込む。
  *
- * 受講者 id を SQL の `inArray` に並べない (D1 は 1 文 100 バインド)。
+ * ユーザー id を SQL の `inArray` に並べない (D1 は 1 文 100 バインド)。
  * 呼び出し側はステージ・前提の数個・担当の全件を渡し、検索・状態・並べ替え・
  * ページ分けはここだけで決める。
  */
@@ -120,9 +120,9 @@ export interface StageGrantLearnerSource {
   /** ステージに書いた順。解けない slug も残す (クリア判定は未達)。 */
   prerequisiteSlugs: readonly string[];
   stagesBySlug: ReadonlyMap<string, { id: string; title: string }>;
-  /** 受講者 → クリアした前提ステージ id。 */
+  /** ユーザー → クリアした前提ステージ id。 */
   clearedByUser: ReadonlyMap<string, ReadonlySet<string>>;
-  /** 受講者 → 受講登録がある前提ステージ id (完了以外も含む)。 */
+  /** ユーザー → 受講登録がある前提ステージ id (完了以外も含む)。 */
   enrolledByUser: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
@@ -137,6 +137,7 @@ export interface StageGrantListedLearner {
   id: string;
   display_name: string;
   email: string | null;
+  role: string;
   selectable: boolean;
   instructor: { id: string; display_name: string } | null;
   assigned: boolean;
@@ -155,12 +156,14 @@ export interface StageGrantLearnerList {
   learners: StageGrantListedLearner[];
 }
 
-/** 有効な受講者か、このステージに割り当てが残っている人。 */
-export function isStageGrantLearner(
-  profile: { role: string; disabled: boolean },
-  assigned: boolean,
-): boolean {
-  return (profile.role === "student" && !profile.disabled) || assigned;
+/** 新しく割り当てられる有効なユーザーか。ロールは問わない。 */
+export function isAssignableStageGrantProfile(profile: { disabled: boolean }): boolean {
+  return !profile.disabled;
+}
+
+/** 有効なユーザーか、このステージに割り当てが残っている人。 */
+export function isStageGrantCandidate(profile: { disabled: boolean }, assigned: boolean): boolean {
+  return isAssignableStageGrantProfile(profile) || assigned;
 }
 
 export function countStageGrantLearners(
@@ -172,7 +175,7 @@ export function countStageGrantLearners(
   let assignedCount = 0;
   let exemptedCount = 0;
   for (const profile of profiles) {
-    if (!isStageGrantLearner(profile, assigned.has(profile.id))) continue;
+    if (!isStageGrantCandidate(profile, assigned.has(profile.id))) continue;
     learners += 1;
     if (assigned.has(profile.id)) assignedCount += 1;
     if (exempted.has(profile.id)) exemptedCount += 1;
@@ -272,7 +275,7 @@ export function listStageGrantLearners(
   const rows: StageGrantListedLearner[] = [];
   for (const profile of source.profiles) {
     const assigned = source.assignedIds.has(profile.id);
-    if (!isStageGrantLearner(profile, assigned)) continue;
+    if (!isStageGrantCandidate(profile, assigned)) continue;
     const instructorId = instructorByLearner.get(profile.id) ?? null;
     const instructorName = instructorId === null ? undefined : nameById.get(instructorId);
     const progress = prerequisiteView(
@@ -285,7 +288,8 @@ export function listStageGrantLearners(
       id: profile.id,
       display_name: profile.display_name,
       email: profile.email,
-      selectable: profile.role === "student" && !profile.disabled,
+      role: profile.role,
+      selectable: isAssignableStageGrantProfile(profile),
       instructor:
         instructorId !== null && instructorName !== undefined
           ? { id: instructorId, display_name: instructorName }

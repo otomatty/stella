@@ -17,6 +17,7 @@ export interface StageGrantLearnerDetail {
   id: string;
   display_name: string;
   email: string | null;
+  role?: string;
   selectable: boolean;
   instructor: { id: string; display_name: string } | null;
   assigned: boolean;
