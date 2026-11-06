@@ -97,7 +97,7 @@ describe("display brand (Phase A–D)", () => {
 
   it("certificate demo issuer uses STELLA constant", () => {
     const certSource = readRepoFile("apps/web/src/components/learner/Certificate.tsx");
-    expect(certSource).toContain("issuer={DISPLAY_NAME}");
+    expect(certSource).toMatch(/issuer(?:=\{|_name:\s*)DISPLAY_NAME/);
   });
 
   it("BrandMark is a star glyph (not the legacy F path)", () => {

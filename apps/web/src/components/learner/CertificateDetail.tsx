@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import { achievementFromSnapshot } from "@stella/shared/cms/certificate-achievement";
 import type { CertificateRow } from "@stella/shared/cms/types";
@@ -100,6 +100,7 @@ function LiveCertificateDetail({
 }
 
 function CertificateBody({ cert, autoPrint }: { cert: CertificateRow; autoPrint: boolean }) {
+  const navigate = useNavigate({ from: "/certificates/$certId" });
   const verifyUrl = buildVerificationUrl(cert.cert_code);
   const issuedLabel = formatIssuedDateJa(cert.issued_at);
   const achievement = achievementFromSnapshot(cert.criteria_snapshot);
@@ -111,7 +112,9 @@ function CertificateBody({ cert, autoPrint }: { cert: CertificateRow; autoPrint:
     if (!autoPrint) return;
     let cancelled = false;
     const print = () => {
-      if (!cancelled) window.print();
+      if (cancelled) return;
+      window.print();
+      void navigate({ search: {}, replace: true });
     };
     // 書体が揃ってから 1 回だけ。Strict Mode の再実行は cancelled で捨てる。
     const ready = document.fonts?.ready ?? Promise.resolve();
@@ -119,7 +122,7 @@ function CertificateBody({ cert, autoPrint }: { cert: CertificateRow; autoPrint:
     return () => {
       cancelled = true;
     };
-  }, [autoPrint]);
+  }, [autoPrint, navigate]);
 
   return (
     <>

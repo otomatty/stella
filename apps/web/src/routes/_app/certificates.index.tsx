@@ -14,8 +14,6 @@ function Certificates() {
       <CertificatePage
         stages={s.stages}
         currentUserId={s.currentUserId}
-        studentName={s.studentName}
-        studentInitials={s.studentInitials}
         backendEnabled={s.backendEnabled}
       />
     </RoleGuard>
