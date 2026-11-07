@@ -148,3 +148,16 @@ describe("NextStep choose card", () => {
     expect(markup).not.toContain("<button");
   });
 });
+
+describe("VS Code の準備", () => {
+  const guide: HomeGuide = { steps: [{ kind: "wrapup" }, { kind: "setup-vscode" }], idle: "empty" };
+  it("そのあとに準備の文と公開案内へのリンクを出す", () => {
+    const markup = renderToStaticMarkup(
+      createElement(LaterSteps, { ...handlers, steps: guide.steps.slice(1) }),
+    );
+    expect(markup).toContain("VS Code の準備がまだです");
+    expect(markup).toContain("課題は VS Code で取り組みます。");
+    expect(markup).toContain('href="/start"');
+    expect(markup).toContain("準備の案内を開く");
+  });
+});

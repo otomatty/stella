@@ -27,6 +27,7 @@ import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlan, TodayPlanItem } from "@/lib/today-plan";
 
 export type GuideStep =
+  | { kind: "setup-vscode" }
   /** 初回に始められる星が Basic の 1 つだけ — その場で始める。 */
   | { kind: "first-stage"; stageId: string }
   /** 今日のプランの 1 項目 (復習 / 続きのレッスン / つまずきの見直し)。 */
@@ -55,6 +56,9 @@ export interface HomeGuideInput {
   stageAudienceById: Readonly<Record<string, SkillMapStageNode["audience"]>>;
   /** 今日の復習を解き終えたか。 */
   reviewDone: boolean;
+  /** 到達リストの取得前・失敗時は undefined (準備案内を出さない)。 */
+  connectedVscode?: boolean;
+  firstStageStarted?: boolean;
 }
 
 /**
@@ -94,6 +98,11 @@ export function buildHomeGuide(input: HomeGuideInput): HomeGuide {
         steps.unshift({ kind: "choose", welcome: true, stageIds });
       }
     }
+  }
+
+  if (input.hasEnrollment && input.connectedVscode === false && input.firstStageStarted === false) {
+    // 今日の先頭を保ち、「そのあと」の先頭へ。他の手順も無ければ案内を先頭にする。
+    steps.splice(Math.min(1, steps.length), 0, { kind: "setup-vscode" });
   }
 
   return { steps, idle: input.reviewDone ? "done" : "empty" };

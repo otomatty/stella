@@ -766,7 +766,7 @@
 <ul>
 <li><strong>腕試しで先のステージへ飛んだ人:</strong> STELLA拡張の接続、学習フォルダー、Gitの学習リポジトリ、Node.jsの準備を経ないまま進む。次の扱いにする。
 <ul>
-<li>ガイドは、U02の最初の課題に合格するまで「VS Code の準備と最初の課題」を案内し続ける(ロックはしない)。</li>
+<li>受講登録があり、dev-env-basics を始めておらず、VS Code の接続記録がない人には、ガイドの「そのあと」の先頭に setup-vscode を出す。今日のプランの先頭は保ち、プランも他の手順もなければ案内が先頭になる。「VS Code の準備がまだです」「課題は VS Code で取り組みます。ログイン前にも読める案内で、VS Code と STELLA 拡張を準備してください。」と表示し、「準備の案内を開く」で公開の /start (U00・U01) へ案内する。接続済み・最初のステージの受講登録あり・到達リストの取得失敗なら出さない(ロックはしない)。</li>
 <li>Node.jsやGitを初めて要するステージの最初の課題の前に、環境診断の課題を1つ置く。</li>
 </ul>
 </li>
@@ -888,42 +888,11 @@
 <li>提出した後のVS Code: 結果が届く場所と、「Webに戻る」の導線を出す。</li>
 </ul>
 <h3 id="section-42">11.3 最初のステージの到達リスト</h3>
-<p>ステージの詳細(またはガイド)に「Stellaの使い方」の到達リストを出す。受講者が手で押すのではなく、記録から自動で付ける。</p>
-<div class="table-scroll"><table>
-<thead>
-<tr>
-<th>項目</th>
-<th>付ける根拠</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>動画を見た</td>
-<td>レッスンの完了</td>
-</tr>
-<tr>
-<td>VS Codeとつながった</td>
-<td>接続コードの交換(<code>auth_vscode_links.used_at</code>。使った行をいつまで残すかは要確認)</td>
-</tr>
-<tr>
-<td>課題を開いた</td>
-<td>今はサーバーに配布の記録が無い。<code>GET /api/tasks/bundle</code> の受け取りを記録するか、最初の確認で代える</td>
-</tr>
-<tr>
-<td>確認した</td>
-<td><code>task_local_runs</code></td>
-</tr>
-<tr>
-<td>提出した</td>
-<td>提出</td>
-</tr>
-<tr>
-<td>結果を読んだ</td>
-<td>AIのレビューの確定</td>
-</tr>
-</tbody>
-</table></div>
-<p>止まった項目は、講師のダッシュボードとつまずきの検知でも見られるようにする(07 §12.1の「途中で止まった場所」の記録にも使う)。</p>
+<p>受講者の dev-env-basics のステージ詳細の上部に「STELLA の使い方」を出す。GET /api/onboarding/first-steps は認証した本人だけの記録を返す。受講者が手で押すのではなく、既存の表から自動で付ける。stage_id はステージの ID (未登録なら null)、stage_started は本人のそのステージの受講登録の有無、items は下の順の { key, done, at }。日時は ISO 形式、未達は null とする。</p>
+<p>共通の定数は @stella/shared/study/first-steps の FIRST_STAGE_SLUG と FIRST_TASK_ID (dev-env-basics/u02-first-task/q01-first-page)。</p>
+<div class="table-scroll"><table><tr><th>項目 (key)</th><th>付ける根拠・日時</th></tr><tr><td>最初のレッスンを読む (read-first-lesson)</td><td>dev-env-basics のいずれかのレッスンの lesson_progress.completed。完了した行の最初の updated_at (完了専用の日時列はない)</td></tr><tr><td>VS Code とつなぐ (connected-vscode)</td><td>本人の auth_vscode_links.used_at の最初の日時。使用済み・期限切れ行の定期削除はなく、現在はユーザー削除時に削除する</td></tr><tr><td>最初の課題を「課題を確認する」で確かめる (checked-first-task)</td><td>最初の課題の task_local_runs の合格・失敗・エラーの合計回数が1以上。first_run_at</td></tr><tr><td>最初の課題を提出する (submitted-first-task)</td><td>最初の課題の本人の submissions.task_id。最初の submitted_at</td></tr><tr><td>結果を受け取る (got-result)</td><td>最初の課題の本人の提出に verdict があること (受講者向け提出 API と同じ確定条件。AI・人の合格・再提出・不合格)。最初の reviewed_at。判定日時がない旧記録は日時だけ null</td></tr></table></div>
+<p>未達の最初の項目に「次はここ」と手順を1文で示す。全て済んだら「STELLA の使い方はひととおり済みました」の1行に畳む。取得に失敗したらカードを隠す。Web は達成を保存せず、API の結果をそのまま表示する。</p>
+<p>講師・管理者は既存の「受講者の学習ペース」 (LearningPaceManager) で受講者を選ぶと、最初のステージの受講登録がある人だけの5項目を小さく確認できる。GET /api/onboarding/first-steps/:userId は requirePaceLearner で担当講師か管理者に限定する。つまずきの自動通知への追加は行わない。</p>
 <h3 id="section-43">11.4 初めの間は見せるものを絞る(試行後に判断)</h3>
 <p>07 §12.1の試行の結果を見てから決める。最初の課題に合格するまで、ホームのレベル・XP・集中・島・キュー・腕試しを隠すか小さくする。</p>
 <h2 id="section-44">12 よくあるつまずきと支援</h2>
@@ -1248,7 +1217,7 @@
 </tr>
 <tr>
 <td>腕試しで飛んだ人</td>
-<td>ロックしない。ガイドがU02の最初の課題の合格まで案内し続ける(§9.6)</td>
+<td>ロックしない。接続記録がなく最初のステージを始めていない人に /start を案内する(§9.6)</td>
 </tr>
 <tr>
 <td>到達リスト</td>

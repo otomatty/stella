@@ -26,6 +26,7 @@
  * 何をどの順でガイドに並べるかは `@/lib/home-guide` (純関数) が決める。
  */
 
+import { useFirstSteps } from "@/hooks/useFirstSteps";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -111,6 +112,7 @@ export const LearnerHome = ({
   backendEnabled,
 }: LearnerHomeProps) => {
   const navigate = useNavigate();
+  const firstSteps = useFirstSteps(undefined, backendEnabled);
   const progressMap = useLessonProgressMap();
   // 取得に失敗すると一覧は空になる (= 「見直す」が黙って消える) ので、失敗も受け取って出す。
   const { submissions, error: submissionsError } = useMySubmissions(true);
@@ -217,6 +219,9 @@ export const LearnerHome = ({
       ),
       stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
       reviewDone,
+      connectedVscode: firstSteps?.items.find((item) => item.key === "connected-vscode")?.done,
+      // 受講登録の取得前は hasEnrollment を true に倒すため、準備案内の判定は待つ。
+      firstStageStarted: skillMap.map ? firstSteps?.stage_started : undefined,
     });
   }, [
     review,
@@ -228,6 +233,7 @@ export const LearnerHome = ({
     nodes,
     serverActiveStageId,
     reviewDone,
+    firstSteps,
   ]);
   /** 先頭 (「次にやること」) は `NextStepCard` が `guide` から引く。ここは残りだけ。 */
   const later = guide.steps.slice(1);

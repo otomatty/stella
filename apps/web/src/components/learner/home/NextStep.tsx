@@ -139,6 +139,19 @@ function summarizeStep(
       ? { icon: Check, eyebrow: "次にやること", title: "今日のぶんは終わりました" }
       : { icon: Compass, eyebrow: "次にやること", title: "いま始められるスキルはありません" };
   }
+  if (step.kind === "setup-vscode") {
+    return {
+      icon: Compass,
+      eyebrow: "次にやること",
+      title: "VS Code の準備がまだです",
+      action: {
+        label: "準備の案内を開く",
+        onClick: () => {
+          window.location.assign("/start");
+        },
+      },
+    };
+  }
   if (step.kind === "first-stage") {
     return {
       icon: Compass,
@@ -278,6 +291,7 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
 };
 
 const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
+  if (step.kind === "setup-vscode") return <SetupVscode />;
   if (step.kind === "first-stage") {
     const summary = summarizeStep(step, "empty", ctx);
     return (
@@ -550,7 +564,21 @@ function stepKey(step: GuideStep): string {
   return step.kind === "plan" ? `plan:${step.item.kind}` : step.kind;
 }
 
+const SetupVscode = () => (
+  <div className="rounded-lg border border-border p-3 text-sm">
+    <p className="font-semibold">VS Code の準備がまだです</p>
+    <p className="my-2 text-xs text-ink-3">
+      課題は VS Code で取り組みます。ログイン前にも読める案内で、VS Code と STELLA
+      拡張を準備してください。
+    </p>
+    <a href="/start" className="text-brand underline">
+      準備の案内を開く
+    </a>
+  </div>
+);
+
 const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
+  if (step.kind === "setup-vscode") return <SetupVscode />;
   if (step.kind === "choose") {
     return (
       <div className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2">

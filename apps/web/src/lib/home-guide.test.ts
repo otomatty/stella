@@ -158,3 +158,28 @@ describe("buildHomeGuide", () => {
     expect(buildHomeGuide({ ...base, reviewDone: true })).toEqual({ steps: [], idle: "done" });
   });
 });
+
+describe("VS Code の準備の案内", () => {
+  const setup = { ...base, connectedVscode: false, firstStageStarted: false };
+  it("今日のプランの先頭を保ち、そのあとの先頭に入れる", () => {
+    const guide = buildHomeGuide({
+      ...setup,
+      plan: buildTodayPlan({ srsDueCount: 6, activeStage: ACTIVE }),
+    });
+    expect(guide.steps.map((step) => step.kind)).toEqual(["plan", "setup-vscode", "plan"]);
+  });
+  it.each([
+    { connectedVscode: true },
+    { hasEnrollment: false },
+    { firstStageStarted: true },
+    { connectedVscode: undefined },
+    { firstStageStarted: undefined },
+  ])("条件を満たさない・取得失敗なら出さない: %o", (override) => {
+    expect(
+      buildHomeGuide({ ...setup, ...override }).steps.some((step) => step.kind === "setup-vscode"),
+    ).toBe(false);
+  });
+  it("プランが無いときにも準備を案内する", () => {
+    expect(buildHomeGuide(setup).steps).toEqual([{ kind: "setup-vscode" }]);
+  });
+});

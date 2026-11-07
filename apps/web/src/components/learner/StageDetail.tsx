@@ -1,3 +1,5 @@
+import { useFirstSteps } from "@/hooks/useFirstSteps";
+import { FirstStepsCard } from "./FirstStepsCard";
 import {
   ChevronLeft,
   ChevronRight,
@@ -95,6 +97,7 @@ export const StageDetail = ({
   onOpenSubmission,
   onAskAiAboutTask,
 }: StageDetailProps) => {
+  const firstSteps = useFirstSteps();
   const sections = stage.sections ?? [];
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const { submissions } = useMySubmissions(true);
@@ -229,6 +232,8 @@ export const StageDetail = ({
         <ChevronLeft size={14} />
         <span>スキルツリーに戻る</span>
       </button>
+
+      {firstSteps?.stage_id === stage.id ? <FirstStepsCard data={firstSteps} /> : null}
 
       <div className="grid gap-6 items-start grid-cols-1 lg:grid-cols-[1fr_320px]">
         <div>
