@@ -10,7 +10,7 @@
  * SQL の中身・チャンク境界・適用順は両方で同じ (分割は lib 側の 1 か所)。
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { closeSync, mkdtempSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -26,6 +26,11 @@ import {
 } from "./lib/d1-remote.js";
 
 const remote = process.argv.includes("--remote");
+const persistIndex = process.argv.indexOf("--persist-to");
+const persistDir = persistIndex < 0 ? undefined : process.argv[persistIndex + 1];
+if (persistIndex >= 0 && (!persistDir || persistDir.startsWith("--") || remote)) {
+  throw new Error("--persist-to <dir> は local seed にだけ指定できます");
+}
 const contentOnly = process.argv.includes("--content-only");
 /** 逃げ道: D1 HTTP API 側で問題が出たときに旧経路 (wrangler CLI) へ戻す。 */
 const viaWrangler = !remote || process.argv.includes("--wrangler");
@@ -69,8 +74,18 @@ if (viaWrangler) {
     const chunk = chunks[i];
     if (chunk === undefined) continue;
     writeFileSync(chunkFile, chunk, "utf8");
-    execSync(
-      `bunx wrangler d1 execute ${DATABASE_NAME} --${target} --file=${JSON.stringify(chunkFile)}`,
+    execFileSync(
+      "bunx",
+      [
+        "wrangler",
+        "d1",
+        "execute",
+        DATABASE_NAME,
+        `--${target}`,
+        "--file",
+        chunkFile,
+        ...(persistDir ? ["--persist-to", persistDir] : []),
+      ],
       {
         cwd: apiDir,
         stdio: "inherit",

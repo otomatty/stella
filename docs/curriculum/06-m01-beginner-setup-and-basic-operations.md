@@ -394,7 +394,7 @@ Stellaで変えること:
 | ログイン | 開発用のサインインAPI | 開発用トークン(`AUTH_JWT_SECRET` で作り、`stella_auth_token_v1` に入れる)。`smoke:core` と同じ |
 | データ | シナリオごとに `/api/dev/seed-demo` で初期化 | シナリオごとに一時のD1へ migrate・seed し直す。初めての人は `seed-learner2` を使う |
 | 要素の指定 | `data-testid` | 今のWebには `data-testid` が1つも無い。台本が触る要素に足す |
-| 置き場所 | `public/tutorials/`(Static Assets) | Senと同じ。台本と仕組みは `apps/web/tutorials/`、動画・サムネイル・字幕・`manifest.json` は `apps/web/public/tutorials/`(Webの Static Assets。CSPの `media-src 'self'` で読める)。1本あたり数MBで、Static Assetsの1ファイルの上限(25MiB)に収める。リポジトリが重くなったら、教材のR2へ移す |
+| 置き場所 | `public/tutorials/`(Static Assets) | Senと同じ。台本と仕組みは `apps/web/scripts/tutorials/`、動画・サムネイル・字幕・`manifest.json` は `apps/web/public/tutorials/`(Webの Static Assets。CSPの `media-src 'self'` で読める)。1本あたり数MBで、Static Assetsの1ファイルの上限(25MiB)に収める。リポジトリが重くなったら、教材のR2へ移す |
 
 ### 10.3 VS Codeの収録(B)
 
