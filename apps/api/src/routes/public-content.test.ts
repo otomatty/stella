@@ -132,6 +132,21 @@ describe("GET /api/public/lessons/:id", () => {
     expect(lesson.total_pages).toBe(2);
   });
 
+  it("公開 slides の動画だけを返し、text や非公開の動画は出さない", async () => {
+    db.sqlite.exec("update lessons set video_path = 'lesson-video/ses/stage/topic/hash.mp4'");
+    const slides = await json<{ lesson: PublicLesson }>(
+      await get("/api/public/lessons/u00-slides"),
+    );
+    expect(slides.lesson.video_path).toBe("lesson-video/ses/stage/topic/hash.mp4");
+    const text = await json<{ lesson: PublicLesson }>(await get("/api/public/lessons/u00-doc"));
+    expect(text.lesson).not.toHaveProperty("video_path");
+    const hidden = await get("/api/public/lessons/m0-doc");
+    expect(hidden.status).toBe(404);
+    expect(await hidden.text()).not.toContain("hash.mp4");
+    db.sqlite.exec("update lessons set public = 0 where id = 'u00-slides'");
+    expect((await get("/api/public/lessons/u00-slides")).status).toBe(404);
+  });
+
   it.each([
     ["印の無いレッスン", "m0-doc"],
     ["知識問題 (印があっても)", "u00-quiz"],

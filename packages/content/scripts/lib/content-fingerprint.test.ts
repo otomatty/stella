@@ -12,6 +12,7 @@ const rootDir = fileURLToPath(new URL("../../../..", import.meta.url));
 const GENERATORS = [
   "packages/shared/scripts/export-seed-sql.ts",
   "packages/content/scripts/upload-pdfs.ts",
+  "packages/content/scripts/upload-videos.ts",
   "packages/content/scripts/upload-materials.ts",
   "packages/content/scripts/build-pdf.ts",
   "apps/api/scripts/seed-d1.ts",
@@ -24,6 +25,7 @@ const GENERATORS = [
 const READ_BY_PATH = [
   "packages/content/stages",
   "packages/content/coding-rules.md",
+  "packages/content/narration",
   "packages/content/skills.json",
   "packages/content/patterns.json",
   "packages/content/environments",

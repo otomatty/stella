@@ -4,6 +4,7 @@
  *   bun run --filter=@stella/content narrate -- stages/it-basics            # 台本が無い / 古いトピックだけ
  *   bun run --filter=@stella/content narrate -- stages/it-basics --batch    # Message Batches (費用半額・非同期)
  *   bun run --filter=@stella/content narrate -- <path> --force               # 台本があっても作り直す
+ *   bun run --filter=@stella/content narrate -- <path> --from-notes          # AI を呼ばずノートから作る
  *   bun run --filter=@stella/content narrate -- <path> --accept              # LLM を呼ばず slidesHash だけ承認し直す
  *   bun run --filter=@stella/content narrate -- <path> --dry-run             # 送るプロンプトを表示するだけ
  *
@@ -30,6 +31,7 @@ import {
   stringifyNarration,
 } from "../src/narration.js";
 import { splitSlides } from "../src/split-slides.js";
+import { narrationFromNotes } from "./lib/narration-from-notes.js";
 import {
   collectNarrationTopics,
   contentRoot,
@@ -46,6 +48,7 @@ const force = args.includes("--force");
 const accept = args.includes("--accept");
 const batch = args.includes("--batch");
 const dryRun = args.includes("--dry-run");
+const fromNotes = args.includes("--from-notes");
 
 const guide = readFileSync(join(contentRoot, "NARRATION_GUIDE.md"), "utf8");
 const guideHash = createHash("sha256").update(guide).digest("hex").slice(0, 8);
@@ -239,7 +242,40 @@ async function draftBatch(
 }
 
 async function main(): Promise<void> {
+  if (fromNotes && (accept || batch || dryRun)) {
+    throw new Error("--from-notes は --accept / --batch / --dry-run と併用できません");
+  }
   const topics = collectNarrationTopics(selectors);
+
+  if (fromNotes) {
+    let written = 0;
+    let failed = 0;
+    for (const topic of topics) {
+      const label = `${topic.stageSlug}/${topic.id}`;
+      try {
+        const narration = narrationFromNotes(
+          topic.slidesSource,
+          topic.narration !== undefined || topic.parseError !== undefined,
+          force,
+        );
+        if (!narration) continue;
+        writeFileSync(topic.narrationFile, stringifyNarration(narration));
+        written++;
+        console.log(`  ✓ ${relative(contentRoot, topic.narrationFile)}`);
+        // 決まった変換の結果を保存し、内容の指摘は手直しのために表示する。
+        for (const issue of validateTopic(topic, narration)) {
+          console.warn(formatIssue(label, issue));
+          if (issue.level === "error") failed++;
+        }
+      } catch (e) {
+        failed++;
+        console.error(`✗ ${label}: ${(e as Error).message}`);
+      }
+    }
+    console.log(`narrate --from-notes: ${written} written, ${failed} errors`);
+    if (failed) process.exitCode = 1;
+    return;
+  }
 
   if (accept) {
     let n = 0;

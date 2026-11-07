@@ -105,6 +105,7 @@ function referencedAssetKeys(source: string): string[] {
  */
 export function collectPdfTargets(
   manifest: { stages: Stage[]; quizzes: QuizSeed[]; pdfByOs?: string[] } = buildContentManifest(),
+  options: { includeFormat2Slides?: boolean } = {},
 ): PdfTarget[] {
   const targets: PdfTarget[] = [];
   for (const stage of manifest.stages) {
@@ -119,7 +120,13 @@ export function collectPdfTargets(
       });
     for (const section of stage.sections ?? []) {
       for (const lesson of section.lessons) {
-        if (stage.format === 2 && lesson.type !== "text") continue;
+        // format 2 のスライドは PDF を配らないが、動画生成は同じ本文・画像を使う。
+        if (
+          stage.format === 2 &&
+          lesson.type !== "text" &&
+          !(options.includeFormat2Slides && lesson.type === "slides")
+        )
+          continue;
         let kind: PdfKind;
         let source: string;
         if (lesson.type === "slides" && lesson.markdown) {

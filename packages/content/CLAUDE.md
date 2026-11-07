@@ -100,14 +100,19 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ビルド生成物(`slides.pptx` / `assets/*.diagram.png` / `dist/`)は `.gitignore` 済みです。コミットしないでください。**`assets/*.svg` も生成物ですが、こちらはコミットします**(`slides.md` / `doc.md` が参照する正本のため)。
 
-### 教材動画 (PoC)
+### 教材動画 (生成と配信)
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。生成基盤は残していますが、現行カタログには台本のあるトピックはありません。配信 (R2・D1・画面) は未実装です。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログには台本のあるトピックはありません。台本を追加すると、main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
 - 検査: `bun run --filter=@stella/content narration:check` (`check:ci` に含まれる)
-- 生成: `bun run content:video -- dev-env-basics --tts openjtalk` → `dist/video/`。ffmpeg と `pip install pyopenjtalk-prebuilt "numpy<2"` が要ります。鍵のある環境では `--tts gemini` (`GEMINI_API_KEY`) / `--tts grok` (AI Gateway) を使います
+- 生成だけの確認: `bun run content:video -- dev-env-basics --tts fake` → `dist/video/`。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。`fake` は音声の代わりに仮の音を作ります。日本語の音声を鍵なしで確かめる場合は `--tts openjtalk` と `pip install pyopenjtalk-prebuilt "numpy<2"` を使います
+- 配信: `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2)。本物の音声は `--tts gemini` (`GEMINI_API_KEY`)、本番 R2 は `--remote`。R2 の資格情報・公開バケットは PDF と同じです
+- `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。旧版は削除しません
+- `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
+- CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です
+- レッスンは「動画」を既定とし「スライド」へ切り替えられます。字幕は既定でオン。動画の視聴でスライドの完了判定は変えません。公開単元の slides は `/start` でも再生でき、進捗は記録しません
 
 ## 絶対に守るルール
 
@@ -151,7 +156,7 @@ Basic = 新18ステージ、それ以外は Extra (`audience: granted`)。講師
 
 退役した19ステージと、2026-10 に退役した AI駆動開発の島の6ステージの教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
-新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、#41 で dev-env-basics の解説を執筆したあとに新しい台本を作り、#20 の PoC を再開します。
+新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、#41 で dev-env-basics の解説を執筆したあとに新しい台本を作り、動画配信の経路に載せます。
 
 残す教材の本文は維持します。新しいステージと教材の追加手順は [ADDING_STAGE.md](ADDING_STAGE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 

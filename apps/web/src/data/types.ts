@@ -31,6 +31,8 @@ export interface User {
 }
 
 export interface Lesson {
+  /** 教材の台本の有無。seed が動画の保持・解除を判断する。 */
+  hasNarration?: boolean;
   id: string;
   title: string;
   type: LessonType;

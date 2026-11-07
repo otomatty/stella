@@ -29,6 +29,7 @@
     "narrate": "bun run scripts/narrate.ts",
     "narration:check": "bun run scripts/check-narration.ts",
     "video": "bun run scripts/build-video.ts",
+    "video:sync": "bun run scripts/upload-videos.ts",
     "check:references": "bun run scripts/check-references.ts",
     "check:links": "bun run scripts/check-source-links.ts",
     "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts",

@@ -29,6 +29,7 @@ import { TopbarSlot } from "@/components/shell/TopbarSlot";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./StageDetail";
 import { LessonCompleteCallout, LessonNavFooter } from "./LessonNav";
+import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
@@ -397,8 +398,7 @@ export const LessonPlayer = ({
               )
             ) : null}
 
-            {/* markdown を持つスライドは教材タブの MarkdownSlides で描画するので、 上の PDF 枠は出さない。 */}
-            {isSlides && !lessonObj.markdown ? (
+            {isSlides && !lessonObj.markdown && !lessonObj.videoPath ? (
               lessonObj.pdfPath ? (
                 <Suspense fallback={<ViewerLoading />}>
                   <SlidesViewer
@@ -488,14 +488,32 @@ export const LessonPlayer = ({
                     />
                   ) : isText ? (
                     <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
-                  ) : isSlides && lessonObj.markdown ? (
-                    <MarkdownSlides
+                  ) : isSlides && (lessonObj.markdown || lessonObj.videoPath) ? (
+                    <SlideLessonMedia
                       key={lessonObj.id}
                       lessonId={lessonObj.id}
-                      markdown={lessonObj.markdown}
-                      header={stage.title}
-                      onComplete={handleMarkComplete}
-                    />
+                      videoPath={lessonObj.videoPath}
+                    >
+                      {lessonObj.markdown ? (
+                        <MarkdownSlides
+                          lessonId={lessonObj.id}
+                          markdown={lessonObj.markdown}
+                          header={stage.title}
+                          onComplete={handleMarkComplete}
+                        />
+                      ) : lessonObj.pdfPath ? (
+                        <Suspense fallback={<ViewerLoading />}>
+                          <SlidesViewer
+                            lessonId={lessonObj.id}
+                            pdfPath={lessonObj.pdfPath}
+                            totalPages={lessonObj.totalPages}
+                            onComplete={handleMarkComplete}
+                          />
+                        </Suspense>
+                      ) : (
+                        <MissingMaterialFallback type="slides" />
+                      )}
+                    </SlideLessonMedia>
                   ) : isVideo || isSlides ? (
                     <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
                   ) : (

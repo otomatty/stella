@@ -80,11 +80,16 @@ afterAll(() => {
 });
 
 /** seed の SQL を同じプロセスで組み立てる。`mutate` で教材 (manifest) を書き換えられる。 */
-async function exportSql(mutate?: (manifest: Manifest) => void): Promise<string> {
+async function exportSql(
+  mutate?: (manifest: Manifest) => void,
+  videoPath?: string,
+): Promise<string> {
   fixture.mutate = mutate ?? null;
   vi.stubEnv("DIALECT", "sqlite");
   vi.stubEnv("CONTENT_ONLY", "0");
   vi.stubEnv("PDF_MANIFEST", pdfManifest);
+  if (videoPath) vi.stubEnv("VIDEO_MANIFEST", videoPath);
+  else vi.stubEnv("VIDEO_MANIFEST", "");
   const logs: string[] = [];
   const spy = vi.spyOn(console, "log").mockImplementation((s) => {
     logs.push(String(s));
@@ -142,6 +147,69 @@ const total = (writes: Record<string, number>) =>
   Object.values(writes).reduce((sum, rows) => sum + rows, 0);
 
 describe("seed の書き込み行数", () => {
+  it(
+    "動画 manifest を反映し、同一 seed は書かず、未指定は保持し、台本削除で解除する",
+    async () => {
+      const db = migratedDb();
+      const file = join(pdfDir, "video-manifest.json");
+      let path = `lesson-video/ses/${COURSE}/${LESSON}/hash.mp4`;
+      writeFileSync(
+        file,
+        JSON.stringify({
+          [LESSON]: {
+            video: path,
+            captions: path.replace(".mp4", ".vtt"),
+            poster: path.replace(".mp4", ".jpg"),
+            durationSec: 30,
+          },
+        }),
+      );
+      const narrated = (manifest: Manifest) => {
+        const lesson = manifest.stages
+          .find((s) => s.id === COURSE)
+          ?.sections?.flatMap((s) => s.lessons)
+          .find((l) => l.id === LESSON);
+        if (!lesson) throw new Error("lesson missing");
+        lesson.hasNarration = true;
+      };
+      const withoutNarration = (manifest: Manifest) => {
+        const lesson = manifest.stages
+          .find((s) => s.id === COURSE)
+          ?.sections?.flatMap((s) => s.lessons)
+          .find((l) => l.id === LESSON);
+        if (!lesson) throw new Error("lesson missing");
+        lesson.hasNarration = false;
+      };
+      const id = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
+      const current = () =>
+        (
+          db.prepare("select video_path from lessons where id = ?").get(id) as {
+            video_path: string | null;
+          }
+        ).video_path;
+      try {
+        const withVideo = await exportSql(narrated, file);
+        apply(db, withVideo);
+        expect(current()).toBe(path);
+        expect(apply(db, withVideo)).toEqual({});
+        const withoutManifest = await exportSql(narrated);
+        expect(apply(db, withoutManifest)).toEqual({});
+        expect(current()).toBe(path);
+        // 空の manifest も、対象を絞った sync で対象外の動画を消さない。
+        writeFileSync(file, "{}");
+        expect(apply(db, await exportSql(narrated, file))).toEqual({});
+        expect(current()).toBe(path);
+        const removed = await exportSql(withoutNarration);
+        expect(total(apply(db, removed))).toBe(1);
+        expect(current()).toBeNull();
+        expect(apply(db, removed)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
   let sql = "";
   let changed = "";
   let revised = "";

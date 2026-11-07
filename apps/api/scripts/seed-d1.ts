@@ -48,6 +48,7 @@ try {
     cwd: rootDir,
     stdio: ["ignore", fd, "inherit"],
     env: {
+      // PDF_MANIFEST / VIDEO_MANIFEST も生成スクリプトへ引き継ぐ。
       ...process.env,
       DIALECT: "sqlite",
       ...(contentOnly ? { CONTENT_ONLY: "1" } : {}),
