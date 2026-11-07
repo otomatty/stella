@@ -16,7 +16,7 @@ import { type DraftModel, type DraftRequest, runDraftGroup } from "./variant-dra
 import { CheckEnvironmentError, scrubbedEnv } from "./task-run-check.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const TASK = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const TASK = "stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page";
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -125,8 +125,8 @@ describe("AI の下書きを検査して書き出す", () => {
       (t) => t.variantOf,
     );
     expect(variants.map((v) => [v.definition.id, v.definition.kind])).toEqual([
-      ["dev-env-basics/m0-first-page/v01-profile", "basic"],
-      ["dev-env-basics/m0-first-page/v02-hobby", "basic"],
+      ["dev-env-basics/u02-first-task/v01-profile", "basic"],
+      ["dev-env-basics/u02-first-task/v02-hobby", "basic"],
     ]);
   });
 

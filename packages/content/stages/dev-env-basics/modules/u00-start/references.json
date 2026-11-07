@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "dev-env-basics/u00-start@1",
+  "contentHash": "c69c1a5908d2a703acf95d0b506a2dc495d35e950fb7a6f7bf354254beaac33a",
+  "environmentRef": "static-web-01@1",
+  "uses": [
+    {
+      "contentId": "l1-how-stella-works/t1-learning-loop/slides.md",
+      "sourceRefs": [],
+      "usedFor": "STELLAで学ぶ流れ。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-stella-works/t2-skill-tree/slides.md",
+      "sourceRefs": [],
+      "usedFor": "スキルツリーの星。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-stella-works/t3-guide-and-pace/slides.md",
+      "sourceRefs": [],
+      "usedFor": "ガイドで今日の一歩を選ぶ。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-stella-works/doc.md",
+      "sourceRefs": [],
+      "usedFor": "ガイドで今日の一歩を選ぶのまとめ。STELLA 独自の操作案内と表は06 §6・§8・§9・§12と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-stella-works/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "レッスンの内容を確かめる教材独自の設問・正答・解説。STELLA の仕様は06 §6・§8と実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-before-you-start/t1-check-os/slides.md",
+      "sourceRefs": ["SRC-dev-env-windows-20261107", "SRC-dev-env-macos-20261107"],
+      "usedFor": "使うOSを確かめる。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-before-you-start/t2-learning-time/slides.md",
+      "sourceRefs": [],
+      "usedFor": "最初の提出までの見通し。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-before-you-start/doc.md",
+      "sourceRefs": ["SRC-dev-env-windows-20261107", "SRC-dev-env-macos-20261107"],
+      "usedFor": "最初の提出までの見通しのまとめ。STELLA 独自の操作案内と表は06 §6・§8・§9・§12と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-before-you-start/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "レッスンの内容を確かめる教材独自の設問・正答・解説。STELLA の仕様は06 §6・§8と実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

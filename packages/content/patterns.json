@@ -114,5 +114,29 @@
   {
     "id": "devlab-ts-ch09",
     "title": "組み込みの API とモジュールの書き方を繰り返して書く"
+  },
+  {
+    "id": "file-basics",
+    "title": "ファイルを作り、名前を変え、保存する"
+  },
+  {
+    "id": "relative-link",
+    "title": "ページを相対パスでつなぐ"
+  },
+  {
+    "id": "terminal-command",
+    "title": "ターミナルの場所でコマンドを実行する"
+  },
+  {
+    "id": "env-diagnose",
+    "title": "開発環境の版を確かめる"
+  },
+  {
+    "id": "git-record",
+    "title": "学習フォルダーで変更を記録する"
+  },
+  {
+    "id": "local-server",
+    "title": "ローカルサーバーで表示する"
   }
 ]

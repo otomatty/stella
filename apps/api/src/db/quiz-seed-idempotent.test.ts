@@ -299,9 +299,14 @@ describe("教材 seed の再実行", () => {
     ).toBe(1);
     const questionRows = db
       .prepare(
-        'select q.id, q.kind, q.skills, z.lesson_id from quiz_questions q join quizzes z on q.quiz_id = z.id join lessons l on z.lesson_id = l.id join sections s on l.section_id = s.id where s.stage_id = ? order by q."order"',
+        'select q.id, q.kind, q.skills, z.lesson_id from quiz_questions q join quizzes z on q.quiz_id = z.id join lessons l on z.lesson_id = l.id join sections s on l.section_id = s.id where s.stage_id = ? and s.id = (select section_id from lessons where id = ?) order by q."order"',
       )
-      .all(stage.id) as { id: string; kind: string; skills: string; lesson_id: string }[];
+      .all(stage.id, list.tasks[0].lessonId) as {
+      id: string;
+      kind: string;
+      skills: string;
+      lesson_id: string;
+    }[];
     expect(questionRows.map((q) => q.kind)).toEqual(["single", "multiple", "boolean"]);
     const quiz = db
       .prepare("select id from quizzes where lesson_id = ?")

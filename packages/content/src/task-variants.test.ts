@@ -19,7 +19,7 @@ import { collectPdfTargets } from "./material-pdf.js";
 /** 予備の類題 (#39) の書き方と検査。見本の課題に類題を足した一時の教材で確かめる。 */
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sample = join(content, "stages/dev-env-basics");
-const PARENT = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const PARENT = "stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page";
 const MARKER = "VARIANT_PRIVATE_MARKER_39";
 const roots: string[] = [];
 afterEach(() => {
@@ -38,7 +38,7 @@ function fixture() {
 
 const parentTask = () =>
   JSON.parse(
-    readFileSync(join(sample, "modules/m0-first-page/tasks/q01-first-page/task.json"), "utf8"),
+    readFileSync(join(sample, "modules/u02-first-task/tasks/q01-first-page/task.json"), "utf8"),
   ) as Record<string, unknown>;
 
 /** 親の課題の類題を 1 問置く。`patch` で task.json を書き換える。 */
@@ -71,7 +71,7 @@ function addVariant(
     join(dir, "task.json"),
     JSON.stringify({
       ...base,
-      id: `dev-env-basics/m0-first-page/${name}`,
+      id: `dev-env-basics/u02-first-task/${name}`,
       title: `類題 ${name}`,
       support: { hintLevels: 0, solutionUnlock: "passed" },
       static: {
@@ -173,8 +173,8 @@ describe("予備の類題", () => {
     expect(
       variants.map((v) => [v.definition.id, v.definition.kind, v.variantOf, v.lessonId]),
     ).toEqual([
-      ["dev-env-basics/m0-first-page/v01-profile", "independent", parent?.definition.id, null],
-      ["dev-env-basics/m0-first-page/v02-hobby", "basic", parent?.definition.id, null],
+      ["dev-env-basics/u02-first-task/v01-profile", "independent", parent?.definition.id, null],
+      ["dev-env-basics/u02-first-task/v02-hobby", "basic", parent?.definition.id, null],
     ]);
     // 親の非公開の素材に類題を入れない (類題はそれぞれ自分の行に入る)。
     expect(Object.keys(parent?.privateFiles ?? {}).some((k) => k.startsWith("variants/"))).toBe(
@@ -250,7 +250,7 @@ describe("予備の類題", () => {
     addVariant(same, "q01-first-page", "同じ名前");
     expect(() => buildContentManifest(join(same, "stages"))).toThrow(/ID が重複/);
     const mismatch = fixture();
-    addVariant(mismatch, "v01-a", "ずれ", { id: "dev-env-basics/m0-first-page/v01-b" });
+    addVariant(mismatch, "v01-a", "ずれ", { id: "dev-env-basics/u02-first-task/v01-b" });
     expect(() => buildContentManifest(join(mismatch, "stages"))).toThrow(/一致しません/);
   });
 

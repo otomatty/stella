@@ -14,7 +14,7 @@
 ```json
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/m0-first-page@1",
+  "unitId": "dev-env-basics/u02-first-task@1",
   "contentHash": "<hash:unit が表示する64桁の指紋>",
   "environmentRef": "static-web-01@1",
   "uses": [{

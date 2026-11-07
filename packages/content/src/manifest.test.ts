@@ -948,12 +948,16 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       const stage = stages.find((c) => c.id === slug);
       expect(stage, slug).toBeDefined();
       expect(stage?.description).toMatch(/^【準備中】/);
-      expect(stage?.sections).toHaveLength(1);
+      expect(stage?.sections?.map((section) => section.id)).toEqual(
+        slug === "dev-env-basics"
+          ? ["u00-start", "u01-vscode-setup", "u02-first-task"]
+          : ["m0-orientation"],
+      );
       expect(
         stage?.sections
           ?.flatMap((section) => section.lessons)
           .filter((lesson) => lesson.type === "slides"),
-      ).toHaveLength(1);
+      ).toHaveLength(slug === "dev-env-basics" ? 14 : 1);
       expect(
         stage?.sections
           ?.flatMap((section) => section.lessons)

@@ -312,7 +312,7 @@ describe("seed の書き込み行数", () => {
       const db = migratedDb();
       try {
         apply(db, sql);
-        const taskId = `${COURSE}/m0-first-page/q01-first-page`;
+        const taskId = `${COURSE}/u02-first-task/q01-first-page`;
         db.prepare(
           `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active)
          select 'retired-task', section_id, title, kind, pattern, skills, estimated_minutes, "order" + 1, content_hash, definition, bundle, 1 from tasks where id = ?`,

@@ -13,6 +13,14 @@
   "canDo": "開発環境を整え、HTMLの変更をブラウザーで確認できる",
   "theme": "開発を始める力",
   "modules": {
-    "m0-first-page": "最初のページを表示する"
+    "u00-start": "STELLAで学ぶ流れと事前確認",
+    "u01-vscode-setup": "VS CodeとSTELLA拡張の準備",
+    "u02-first-task": "はじめての課題を出す",
+    "u03-files": "画面とファイルの操作",
+    "u04-links": "ページを増やしてつなぐ",
+    "u05-terminal-node": "ターミナルとNode.js・npm",
+    "u06-git": "Gitで変更を残す",
+    "u07-local-server": "ローカルサーバーで開く",
+    "u08-check-a": "まとめと確認A"
   }
 }

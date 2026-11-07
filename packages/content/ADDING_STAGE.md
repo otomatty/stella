@@ -186,10 +186,10 @@ tasks/q01-first-page/private/variant-templates/
 類題の下書きを AI (既定は Claude Opus 5.5) に作らせられます (#69)。手元で実行し、書き出した下書きは手で書いた類題と同じく PR でレビューします。
 
 ```bash
-bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page             # 在庫の不足分
-bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --kind independent --count 2
-bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --dry-run   # 作るものと依頼だけを表示
-bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --batch     # Batch API (半額・非同期)
+bun run --filter=@stella/content variants:draft -- dev-env-basics/u02-first-task/q01-first-page             # 在庫の不足分
+bun run --filter=@stella/content variants:draft -- dev-env-basics/u02-first-task/q01-first-page --kind independent --count 2
+bun run --filter=@stella/content variants:draft -- dev-env-basics/u02-first-task/q01-first-page --dry-run   # 作るものと依頼だけを表示
+bun run --filter=@stella/content variants:draft -- dev-env-basics/u02-first-task/q01-first-page --batch     # Batch API (半額・非同期)
 bun run --filter=@stella/content variants:draft -- --collect <batch ID>                                    # Batch の結果を受け取る
 ```
 

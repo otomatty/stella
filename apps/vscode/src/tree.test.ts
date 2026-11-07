@@ -18,13 +18,13 @@ describe("課題文レッスン", () => {
   it("課題に取り組むコマンドにし、状態を添える", () => {
     const node = toLessonNode({
       ...base,
-      task: { id: "dev-env-basics/m0-first-page/q01-first-page", status: "not-started" },
+      task: { id: "dev-env-basics/u02-first-task/q01-first-page", status: "not-started" },
     });
     expect(node.contextValue).toBe("lesson-task");
     expect(lessonCommand(node)).toEqual({
       command: "stella.openTask",
       title: "課題に取り組む",
-      arguments: ["dev-env-basics/m0-first-page/q01-first-page"],
+      arguments: ["dev-env-basics/u02-first-task/q01-first-page"],
     });
     expect(node.task?.status).toBe("not-started");
   });

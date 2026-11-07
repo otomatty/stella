@@ -3680,6 +3680,206 @@
         "reviewedAt": "2026-11-05",
         "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-dev-env-windows-20261107",
+      "title": "Find information about your Windows device",
+      "publisher": "Microsoft",
+      "url": "https://support.microsoft.com/en-us/windows/experience/find-information-about-your-windows-device",
+      "section": "Which version of Windows do I have?",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-macos-20261107",
+      "title": "Find out which macOS your Mac is using",
+      "publisher": "Apple",
+      "url": "https://support.apple.com/en-us/109033#:~:text=Which%20macOS%20is%20installed%3F",
+      "section": "Which macOS is installed?",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-editor-20261107",
+      "title": "Visual Studio Code editor tutorial",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/getting-started/editor-tutorial",
+      "section": "Get started with the editor",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-win-setup-20261107",
+      "title": "Visual Studio Code on Windows",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/setup/windows",
+      "section": "Installation / User setup versus system setup",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-mac-setup-20261107",
+      "title": "Visual Studio Code on macOS",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/setup/mac",
+      "section": "Installation",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-locales-20261107",
+      "title": "Display language",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/configure/locales",
+      "section": "Changing the display language",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-extensions-20261107",
+      "title": "Extension Marketplace",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/configure/extensions/extensions",
+      "section": "Browse for extensions / Install an extension",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-jp-pack-20261107",
+      "title": "Japanese Language Pack for Visual Studio Code",
+      "publisher": "Microsoft",
+      "url": "https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ja",
+      "section": "Usage",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-stella-20261107",
+      "title": "STELLA - Visual Studio Marketplace",
+      "publisher": "saedgewell",
+      "url": "https://marketplace.visualstudio.com/items?itemName=saedgewell.stella-lms",
+      "section": "STELLA",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-trust-20261107",
+      "title": "Workspace Trust",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/workspaces/workspace-trust",
+      "section": "Workspace Trust / Restricted Mode / Trusting a workspace",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
     }
   ]
 }

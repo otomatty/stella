@@ -277,7 +277,7 @@ describe("課題文のパネル", () => {
   });
 
   describe("進め方つき", () => {
-    const root = "/home/me/web-training/dev-env-basics/m0-first-page/q01-first-page";
+    const root = "/home/me/web-training/dev-env-basics/u02-first-task/q01-first-page";
     const staticManifest: TaskManifest = {
       ...manifest,
       title: "最初のページを作る",

@@ -49,7 +49,7 @@ vi.mock("./open-task.js", () => ({
 import { apiRequest } from "./api.js";
 import { activate } from "./extension.js";
 
-const taskId = "dev-env-basics/m0-first-page/q01-first-page";
+const taskId = "dev-env-basics/u02-first-task/q01-first-page";
 const bundleUrl = `http://127.0.0.1:8787/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
 
 beforeEach(() => {
