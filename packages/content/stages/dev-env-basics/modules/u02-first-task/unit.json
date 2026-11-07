@@ -1,8 +1,8 @@
 {
   "plannedHours": 3,
   "skills": {
-    "uses": [],
-    "assesses": ["html-document", "preview-changes"]
+    "uses": ["open-learning-folder"],
+    "assesses": ["stella-task-loop", "html-document", "preview-changes"]
   },
   "reuses": []
 }

@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-mdn-html-20261005]
+sourceRefs: [SRC-mdn-html-20261005, SRC-dev-env-editor-20261107]
 ---
 ## 知識問題
 
@@ -40,5 +40,19 @@ sourceRefs: [SRC-mdn-html-20261005]
 <summary>解答</summary>
 
 **B** — 再読み込みの前にファイルを保存します。
+
+</details>
+
+### Q4. 保存した index.html をページとして表示する方法はどれですか？
+<!-- kind: single; skills: preview-changes -->
+
+- A. ファイルをブラウザーの画面へドラッグする
+- B. VS Code の設定画面を開く
+- C. ファイル名を読むだけでよい
+
+<details>
+<summary>解答</summary>
+
+**A** — 保存した HTML ファイルをブラウザーで開き、見出しの表示を確かめます。
 
 </details>

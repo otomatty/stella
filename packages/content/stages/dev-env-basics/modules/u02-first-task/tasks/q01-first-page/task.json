@@ -20,6 +20,11 @@
         "id": "heading",
         "criterion": "ページの見出しが指定した内容を表している",
         "required": true
+      },
+      {
+        "id": "other-elements",
+        "criterion": "h1 以外の要素を消したり増やしたりしていない",
+        "required": false
       }
     ],
     "escalateWhen": []

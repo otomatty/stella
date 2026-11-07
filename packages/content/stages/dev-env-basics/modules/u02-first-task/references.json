@@ -1,37 +1,109 @@
 {
   "schemaVersion": "2.1",
   "unitId": "dev-env-basics/u02-first-task@1",
-  "contentHash": "8dae96a50276b6470d191a33b27dce874dbd29945cb3897bc61ebead552ab91c",
+  "contentHash": "49dbe77fbd8c8a097d27158819c5ce79f2e3985b79868abd8a74e7463feae15f",
   "environmentRef": "static-web-01@1",
   "uses": [
     {
-      "contentId": "l1-save-and-preview/t1-saved-html/slides.md",
-      "sourceRefs": ["SRC-mdn-html-20261005"],
-      "usedFor": "HTML の文書と見出しを書き、保存したファイルをブラウザーで確認する説明と自作のコード例",
-      "authorship": "summary",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
       "contentId": "l1-save-and-preview/doc.md",
-      "sourceRefs": ["SRC-mdn-html-20261005"],
-      "usedFor": "HTML がページの構造を記述すること、保存とブラウザー表示を対応させる説明",
+      "sourceRefs": ["SRC-mdn-html-20261005", "SRC-dev-env-editor-20261107"],
+      "usedFor": "HTML の文書と見出し、保存してブラウザーで開く説明・自作例と設問。draft: URL と読む節は講師が確認する。対象OSの操作表記と本文の対応も確認する。",
       "authorship": "summary",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
       "contentId": "l1-save-and-preview/knowledge.md",
-      "sourceRefs": ["SRC-mdn-html-20261005"],
-      "usedFor": "HTML の文書構造と、表示を確認する前に保存するという自作問題の正答・解説",
+      "sourceRefs": ["SRC-mdn-html-20261005", "SRC-dev-env-editor-20261107"],
+      "usedFor": "HTML の文書と見出し、保存してブラウザーで開く説明・自作例と設問。draft: URL と読む節は講師が確認する。対象OSの操作表記と本文の対応も確認する。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
+      "contentId": "l1-save-and-preview/t1-saved-html/slides.md",
+      "sourceRefs": ["SRC-mdn-html-20261005"],
+      "usedFor": "HTML の文書と見出し、保存してブラウザーで開く説明・自作例と設問。draft: URL と読む節は講師が確認する。対象OSの操作表記と本文の対応も確認する。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-save-and-preview/t2-open-html/slides.md",
+      "sourceRefs": ["SRC-mdn-html-20261005", "SRC-dev-env-editor-20261107"],
+      "usedFor": "HTML の文書と見出し、保存してブラウザーで開く説明・自作例と設問。draft: URL と読む節は講師が確認する。対象OSの操作表記と本文の対応も確認する。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/doc.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/t1-task-panel/slides.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/t2-run-check/slides.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/t3-read-result/slides.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/t4-submit-and-result/slides.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-check-and-submit/t5-hints/slides.md",
+      "sourceRefs": [],
+      "usedFor": "STELLA 独自の操作・設問。06 §4・§6 U02・§8 と task-guide.ts・task-commands.ts・task-help.ts、Web の提出履歴・星の進捗の実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
       "contentId": "tasks/q01-first-page/README.md",
       "sourceRefs": ["SRC-mdn-html-20261005"],
-      "usedFor": "教材独自の課題。HTML 文書と h1 の見出しを保存し、表示して確かめる受入条件",
+      "usedFor": "教材独自の課題。HTML 文書・見出しの条件。確認・提出・結果の案内は06 §6 U02・§8 と STELLA の実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-heading-again/README.md",
+      "sourceRefs": ["SRC-mdn-html-20261005"],
+      "usedFor": "教材独自の課題。HTML 文書・見出し・段落の条件。確認・提出・結果の案内は06 §6 U02・§8 と STELLA の実装に基づく。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
