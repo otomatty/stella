@@ -22,6 +22,7 @@ const ACTIVE = {
 const base = {
   plan: buildTodayPlan({ srsDueCount: 0 }),
   hasEnrollment: true,
+  hasVisibleExtra: false,
   activeWithoutLesson: false,
   startableStageIds: [] as string[],
   stageAudienceById: {} as Record<string, SkillMapStageNode["audience"]>,
@@ -81,6 +82,18 @@ describe("buildHomeGuide", () => {
       startableStageIds: ["root"],
     });
     expect(guide.steps).toEqual([{ kind: "first-stage", stageId: "root" }]);
+  });
+
+  it("受講 0 件で始められる Basic が 1 つでも、盤面に鍵の付いた Extra があればツリーから選ぶ", () => {
+    const nodes = [node("root"), node("extra", { audience: "granted", state: "locked" })];
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      hasVisibleExtra: nodes.some((node) => node.audience === "granted"),
+      startableStageIds: startableStageIds(nodes, ["root", "extra"], null),
+      stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root"] }]);
   });
 
   it("受講 0 件でも Basic と Extra が 1 つずつなら、ツリーから選ぶ", () => {

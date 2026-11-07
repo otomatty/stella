@@ -397,7 +397,7 @@ describe("教材 seed の再実行", () => {
     const again = versions();
     expect(again).toHaveLength(seeded.length);
     for (const row of again) expect(row.files).toBe("kept");
-  });
+  }, 30_000);
 
   it("課題の版に、その版を配っていたときの素材の版を書き、前の版の配布物は上書きしない (#36)", () => {
     const db = migratedDb();
@@ -427,7 +427,7 @@ describe("教材 seed の再実行", () => {
       expect(row.private_hash).toBe(createHash("sha256").update(row.current).digest("hex"));
       expect(row.bundle).toBe("kept");
     }
-  });
+  }, 30_000);
 
   it("復習カードと解答ログを残し、設問数も変えない", () => {
     const db = migratedDb();

@@ -19,7 +19,8 @@
  *   星だけ。秘匿の判断はサーバの応答 (`visibility` / `state`) をそのまま使う
  * - **特定の星を名指ししない。** 一覧は Basic と Extra に分けて同列に出す。
  *   Extra は講師・管理者が割り当てたステージだけ。例外として受講登録が 0 件で、
- *   始められる星が Basic の 1 つだけ (Extra は無し) の初回は、その星を名指しして始める。
+ *   始められる星が Basic の 1 つだけ (盤面に出ている Extra が無い) の初回は、その星を名指しして始める。
+ *   島の表示条件で盤面に出ていない Extra は数えず、その人には Basic の入口を案内する。
  *   最初の一手で迷わせず、Extra がある人には特定の Basic を勧めない (06 §11.1)
  */
 
@@ -48,6 +49,8 @@ export interface HomeGuideInput {
   plan: TodayPlan;
   /** 受講登録が 1 件でもあるか (サーバの集約フラグ)。 */
   hasEnrollment: boolean;
+  /** 状態を問わず、盤面に Extra の星が 1 つでもあるか。 */
+  hasVisibleExtra: boolean;
   /** 進行中のステージがあり、未修了なのに開けるレッスンが残っていない。 */
   activeWithoutLesson: boolean;
   /** 今すぐ始められる星 (`startableStageIds` の戻り値)。 */
@@ -92,7 +95,11 @@ export function buildHomeGuide(input: HomeGuideInput): HomeGuide {
     if (input.hasEnrollment) {
       steps.push({ kind: "choose", welcome: false, stageIds });
     } else {
-      if (stageIds.length === 1 && input.stageAudienceById[stageIds[0]] !== "granted") {
+      if (
+        !input.hasVisibleExtra &&
+        stageIds.length === 1 &&
+        input.stageAudienceById[stageIds[0]] !== "granted"
+      ) {
         steps.unshift({ kind: "first-stage", stageId: stageIds[0] });
       } else {
         steps.unshift({ kind: "choose", welcome: true, stageIds });
