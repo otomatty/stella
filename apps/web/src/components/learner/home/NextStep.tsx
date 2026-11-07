@@ -1,3 +1,4 @@
+import { OverviewTutorialButton } from "@/components/tutorials/TutorialCard";
 /**
  * ホームのガイドの「次にやること」と「そのあと」(手順の並びは `@/lib/home-guide`)。
  *
@@ -300,6 +301,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <Play size={14} />
           最初のステージを始める
         </Button>
+        <OverviewTutorialButton />
         <Button
           size="sm"
           variant="ghost"

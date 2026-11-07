@@ -3,7 +3,7 @@ import { defineScenario } from "../lib/types";
 export default defineScenario({
   id: "smoke",
   order: 0,
-  screen: "home",
+  screen: "/",
   title: "収録の確認",
   summary: "ホーム画面で字幕と録画の動作を確かめます。",
   start: "/",

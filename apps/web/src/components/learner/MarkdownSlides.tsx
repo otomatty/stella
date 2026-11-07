@@ -1,3 +1,5 @@
+import { parseTutorialBlocks } from "@stella/shared/markdown/tutorial-blocks";
+import { TutorialEmbed } from "@/components/tutorials/TutorialPlayer";
 /**
  * `type: "slides"` のレッスン。教材の slides.md 本文を `---` 区切りで 1 枚ずつ表示する。
  *
@@ -99,7 +101,20 @@ function MarkdownBody({ children }: { children: string }) {
   );
 }
 
-const renderMarkdownBody = (markdown: string) => <MarkdownBody>{markdown}</MarkdownBody>;
+function TutorialMarkdown({ children }: { children: string }) {
+  return (
+    <>
+      {parseTutorialBlocks(children).segments.map((s) =>
+        s.kind === "tutorial" ? (
+          <TutorialEmbed key={s.line} id={s.id} />
+        ) : (
+          <MarkdownBody key={s.line}>{s.markdown}</MarkdownBody>
+        ),
+      )}
+    </>
+  );
+}
+const renderMarkdownBody = (markdown: string) => <TutorialMarkdown>{markdown}</TutorialMarkdown>;
 
 /**
  * レッスン本文 markdown の共通描画 (text レッスン・確認クイズの出典欄)。
@@ -113,12 +128,12 @@ export function LessonMarkdown({ children }: { children: string }) {
     () => (hasOsBlocks(children) ? parseOsBlocks(children).segments : null),
     [children],
   );
-  if (!segments) return <MarkdownBody>{children}</MarkdownBody>;
+  if (!segments) return <TutorialMarkdown>{children}</TutorialMarkdown>;
   return (
     <>
       {segments.map((segment) =>
         segment.kind === "markdown" ? (
-          <MarkdownBody key={`md-${segment.line}`}>{segment.markdown}</MarkdownBody>
+          <TutorialMarkdown key={`md-${segment.line}`}>{segment.markdown}</TutorialMarkdown>
         ) : (
           <OsTabs
             key={`os-${segment.line}`}
