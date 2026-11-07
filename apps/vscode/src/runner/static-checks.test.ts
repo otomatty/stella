@@ -116,3 +116,53 @@ describe("localTarget", () => {
     expect(localTarget("index.html", "docs/")).toBe("docs/index.html");
   });
 });
+
+describe("テキストと元の名前の検査", () => {
+  it("contains は既定で、BOM と CRLF・CR をそろえ、exact は前後の空白を除く", async () => {
+    const root = await makeSite({ "notes.txt": "\uFEFF  今日の学習\r\nGit\r次回\n " });
+    const results = await runStaticChecks(root, [
+      { type: "file-contains", path: "notes.txt", text: "学習\nGit" },
+      { type: "file-contains", path: "notes.txt", text: "今日の学習\nGit\n次回", match: "exact" },
+      { type: "file-contains", path: "notes.txt", text: "Git", match: "exact" },
+      { type: "file-contains", path: "missing.txt", text: "Git" },
+      { type: "file-absent", path: "old.txt" },
+      { type: "file-absent", path: "notes.txt" },
+    ]);
+    expect(results.map((r) => r.status)).toEqual([
+      "passed",
+      "passed",
+      "failed",
+      "failed",
+      "passed",
+      "failed",
+    ]);
+    expect(results[3]?.message).toBe("missing.txt がありません");
+  });
+  it("明示した contains と空ファイルの exact を確かめる", async () => {
+    const root = await makeSite({ "notes.txt": "前\n学習\n後", "empty.txt": "" });
+    const results = await runStaticChecks(root, [
+      { type: "file-contains", path: "notes.txt", text: "学習", match: "contains" },
+      { type: "file-contains", path: "empty.txt", text: "", match: "exact" },
+    ]);
+    expect(results.map((r) => r.status)).toEqual(["passed", "passed"]);
+  });
+  it("フォルダーやリンクが残っていれば不合格", async () => {
+    const root = await makeSite({ "dir/a": "x" });
+    await symlink("missing", path.join(root, "old"));
+    const results = await runStaticChecks(root, [
+      { type: "file-absent", path: "dir" },
+      { type: "file-absent", path: "old" },
+    ]);
+    expect(results.every((r) => r.status === "failed")).toBe(true);
+  });
+  it("バイナリ・不正な UTF-8・大きすぎるファイルは不合格", async () => {
+    const root = await makeSite({ binary: "x\0y", big: "x".repeat(1024 * 1024 + 1) });
+    await writeFile(path.join(root, "invalid"), Buffer.from([0xff]));
+    const results = await runStaticChecks(
+      root,
+      ["binary", "invalid", "big"].map((path) => ({ type: "file-contains", path, text: "x" })),
+    );
+    expect(results.every((r) => r.status === "failed")).toBe(true);
+    expect(results[2]?.message).toContain("大きすぎます");
+  });
+});

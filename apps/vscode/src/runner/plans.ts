@@ -13,6 +13,7 @@ import {
   dotnetRestoreStep,
   dotnetTestStep,
   formatStep,
+  gitRecordStep,
   lintStep,
   nextBuildStep,
   playwrightStep,
@@ -27,6 +28,8 @@ export function buildPlan(manifest: TaskManifest): StepDefinition[] {
   if (manifest.checks.lint) checks.push(lintStep);
   if (manifest.checks.format) checks.push(formatStep);
   switch (RUNNERS[manifest.runner].plan) {
+    case "git":
+      return [...(manifest.static?.checks.length ? [staticStep] : []), gitRecordStep];
     case "static":
       return [staticStep];
     case "diagnose":

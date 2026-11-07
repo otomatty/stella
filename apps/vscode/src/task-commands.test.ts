@@ -205,18 +205,28 @@ describe("stella.runTask", () => {
     expect(saved.outcome).toBe("passed");
   });
 
-  it("プロセスを起動する課題は、信頼していないフォルダーでは実行しない", async () => {
-    const root = await makeTask(
-      { ...staticTask, runner: "node-test", static: undefined },
-      { "index.html": "" },
-    );
-    state.trusted = false;
-    state.folders = [root];
-    state.warningChoice = "フォルダーを信頼する";
-    await run("stella.runTask");
-    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
-    expect(vscodeMock.executeCommand).toHaveBeenCalledWith("workbench.trust.manage");
-  });
+  it.each(["node-test", "git-record"])(
+    "%s は信頼していないフォルダーでは実行しない",
+    async (runner) => {
+      const root = await makeTask(
+        {
+          ...staticTask,
+          runner,
+          static: undefined,
+          ...(runner === "git-record"
+            ? { git: { checks: [{ type: "learning-folder-root" }] } }
+            : {}),
+        },
+        { "index.html": "" },
+      );
+      state.trusted = false;
+      state.folders = [root];
+      state.warningChoice = "フォルダーを信頼する";
+      await run("stella.runTask");
+      expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+      expect(vscodeMock.executeCommand).toHaveBeenCalledWith("workbench.trust.manage");
+    },
+  );
 
   it("保存していないファイルがあれば尋ね、取り消したら実行しない", async () => {
     const root = await makeTask(staticTask, { "index.html": "<h1>x</h1>" });

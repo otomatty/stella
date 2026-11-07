@@ -139,6 +139,30 @@ describe("format 2 の教材", () => {
       expect(() => buildContentManifest(join(root, "stages"))).toThrow();
     }
   });
+  it("Git とテキストの検査を検証して配布の定義に写す", () => {
+    const raw = JSON.parse(readFileSync(taskFile, "utf8"));
+    const git = {
+      checks: [{ type: "learning-folder-root" }, { type: "committed", paths: ["notes.txt"] }],
+    };
+    const staticChecks = {
+      checks: [
+        { type: "file-contains", path: "notes.txt", text: "学習" },
+        { type: "file-absent", path: "old.txt" },
+      ],
+    };
+    const definition = { ...raw, runner: "git-record", git, static: staticChecks };
+    expect(toRuntimeManifest(parseTaskDefinition(definition, {}), {})).toMatchObject({
+      git,
+      static: staticChecks,
+    });
+    expect(() => parseTaskDefinition({ ...definition, git: undefined }, {})).toThrow("git.checks");
+    expect(() =>
+      parseTaskDefinition(
+        { ...definition, git: { checks: [{ type: "ignored", path: "../outside" }] } },
+        {},
+      ),
+    ).toThrow("相対パス");
+  });
   it("CI と公開の課題は、確かめるワークフローを必須にし、配布の定義に写す (07 §5.5)", () => {
     const raw = JSON.parse(readFileSync(taskFile, "utf8")) as Record<string, unknown>;
     const workflow = ".github/workflows/deploy.yml";

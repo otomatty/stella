@@ -19,6 +19,7 @@ export const LOCAL_REPORT_STEP_IDS = [
   "test",
   "build",
   "e2e",
+  "git",
   "static",
   "diagnose",
   "files",

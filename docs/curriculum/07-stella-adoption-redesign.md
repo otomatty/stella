@@ -286,6 +286,7 @@ packages/content/
 | --- | --- | --- |
 | `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
 | `env-diagnose` | dev-env-basics | Node・npm・Gitの版を、環境定義と照合する |
+| `git-record` | dev-env-basics | 固定の引数で git を呼び、学習フォルダーのリポジトリ・ローカルの名前とメール・コミット・無視の設定を確かめる |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
 | `ts-test` | Extra ステージの TypeScript の課題 | TypeScript (tsc) + Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
