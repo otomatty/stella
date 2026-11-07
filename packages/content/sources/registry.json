@@ -3880,6 +3880,186 @@
         "reviewedAt": null,
         "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
       }
+    },
+    {
+      "id": "SRC-dev-env-editing-20261107",
+      "title": "Basic editing",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/codebasics",
+      "section": "Save / Hot Exit",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-explorer-20261107",
+      "title": "User interface",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/getting-started/userinterface",
+      "section": "Explorer view / Tabs / Breadcrumbs",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-workspaces-20261107",
+      "title": "Workspaces",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/workspaces/workspaces",
+      "section": "What is a VS Code workspace? / Single-folder workspaces",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-files-20261107",
+      "title": "Dealing with files",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Dealing_with_files",
+      "section": "File structure / File paths",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-links-20261107",
+      "title": "Creating links",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Creating_links",
+      "section": "Anatomy of a link / A quick primer on URLs and paths",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-web-20261107",
+      "title": "How the web works",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works",
+      "section": "Order in which component files are parsed",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-url-20261107",
+      "title": "What is a URL?",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL",
+      "section": "Basics: anatomy of a URL / Scheme / Authority / Path to resource",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-windows-files-20261107",
+      "title": "Common file name extensions in Windows",
+      "publisher": "Microsoft",
+      "url": "https://support.microsoft.com/en-us/windows/common-file-name-extensions-in-windows-da4a4430-8e76-89c5-59f7-1cdbbc75cb01",
+      "section": "Common file name extensions in Windows",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-mac-files-20261107",
+      "title": "Show or hide filename extensions on Mac",
+      "publisher": "Apple",
+      "url": "https://support.apple.com/guide/mac-help/show-or-hide-filename-extensions-on-mac-mchlp2304/mac",
+      "section": "For all files",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
     }
   ]
 }

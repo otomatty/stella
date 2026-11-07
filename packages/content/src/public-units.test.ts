@@ -8,11 +8,11 @@ import { buildContentManifest } from "./manifest.js";
 /**
  * ログインなしで読める単元 (`unit.json` の `public`。Issue #41)。
  *
- * dev-env-basics の実教材を写し、公開の U00 と課題のある U02 の境界を確かめる。
+ * 固定 fixture の公開単元と課題のある単元の境界を確かめる。
  */
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const sample = join(content, "stages/dev-env-basics");
+const sample = join(content, "src/__fixtures__/format2-sample");
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -22,7 +22,7 @@ function readJson(file: string): Record<string, unknown> {
   return JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
 }
 
-/** 公開の U00 と、非公開の U02 を含む実教材の根。 */
+/** 公開単元と非公開単元を含む固定 fixture の根。 */
 function publicUnitFixture(): { root: string; unit: string; stage: string } {
   const root = mkdtempSync(join(tmpdir(), "stella-public-unit-"));
   roots.push(root);
@@ -47,22 +47,16 @@ describe("ログインなしで読める単元", () => {
     const manifest = buildContentManifest(join(root, "stages"));
     expect(manifest.units.find((u) => u.unitId === "u00-start")?.config.public).toBe(true);
     expect(manifest.tasks.map((t) => t.definition.id)).toEqual([
-      "dev-env-basics/u02-first-task/q01-first-page",
+      "dev-env-basics/m0-first-page/q01-first-page",
     ]);
     const lessons = manifest.stages[0].sections?.find((s) => s.id === "u00-start")?.lessons ?? [];
     expect(lessons.map((l) => [l.id, l.type, l.public === true])).toEqual([
-      ["00-1-1", "slides", true],
-      ["00-1-2", "slides", true],
-      ["00-1-3", "slides", true],
-      ["doc-00-1", "text", true],
-      ["quiz-00-1", "quiz", false],
-      ["00-2-1", "slides", true],
-      ["00-2-2", "slides", true],
-      ["doc-00-2", "text", true],
-      ["quiz-00-2", "quiz", false],
+      ["sample-public-slides", "slides", true],
+      ["doc-sample-public", "text", true],
+      ["quiz-sample-public", "quiz", false],
     ]);
     // 単元の参照元は公開のまとめに載る (出典を落とさない)。
-    expect(lessons.find((l) => l.id === "doc-00-2")?.markdown).toContain("単元の参照元");
+    expect(lessons.find((l) => l.id === "doc-sample-public")?.markdown).toContain("単元の参照元");
   });
 
   it("印の無い単元のレッスンには public を持たせない", () => {
@@ -81,7 +75,7 @@ describe("ログインなしで読める単元", () => {
 
   it("課題 (tasks/) のある単元には付けられない", () => {
     const { root, unit } = publicUnitFixture();
-    cpSync(join(sample, "modules/u02-first-task/tasks"), join(unit, "tasks"), { recursive: true });
+    cpSync(join(sample, "modules/m0-first-page/tasks"), join(unit, "tasks"), { recursive: true });
     expect(() => buildContentManifest(join(root, "stages"))).toThrow("課題 (tasks/) を置けません");
   });
 
@@ -120,14 +114,14 @@ describe("ログインなしで読める単元", () => {
 
   it("public: false は印の無い単元と同じ (課題を置ける)", () => {
     const { root, stage } = publicUnitFixture();
-    const unit = join(stage, "modules/u02-first-task");
+    const unit = join(stage, "modules/m0-first-page");
     editJson(join(unit, "unit.json"), (u) => {
       u.public = false;
     });
     const manifest = buildContentManifest(join(root, "stages"));
     expect(manifest.tasks).toHaveLength(1);
     const lessons =
-      manifest.stages[0].sections?.find((s) => s.id === "u02-first-task")?.lessons ?? [];
+      manifest.stages[0].sections?.find((s) => s.id === "m0-first-page")?.lessons ?? [];
     expect(lessons.some((l) => l.public)).toBe(false);
   });
 });

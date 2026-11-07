@@ -57,6 +57,9 @@ tasks/<task>/
   private/mutants/       # 任意。類題では必須
 ```
 
+名前を変える・ファイルを消す課題は、`private/solution/.stella-solution.json` に `{ "remove": ["memo.txt"] }` のように元のファイルの相対パスを書きます。
+解答例を重ねたあとに削除され、この指定は配布・解答表示には入りません。誤答でも `private/mutants/<名前>/` の直下に同じ形式で置けます。
+
 `fixed-start/` と `fixedStart.covers` は、前の課題の実装が壊れて先へ進めない受講者へ配るときだけです。確認 A・B には置けません。条件は `ADDING_STAGE.md` の fixed-start の節です。
 
 ### task.json の項目

@@ -103,39 +103,42 @@ describe("export-seed-sql (ログインなしで読める単元)", () => {
           .map((r) => [r.type, r.public]);
 
       db.exec(await exportSql(true));
-      expect(rows("u00-start")).toEqual([
-        ["slides", 1],
-        ["slides", 1],
-        ["slides", 1],
-        ["text", 1],
-        ["quiz", 0],
-        ["slides", 1],
-        ["slides", 1],
-        ["text", 1],
-        ["quiz", 0],
-      ]);
-      // 課題を持つ U02 の本文・知識問題・課題文には公開の印を付けない。
-      const privateRows = [
-        ["slides", 0],
-        ["text", 0],
-        ["quiz", 0],
-        ["text", 0],
-      ];
-      expect(rows("u02-first-task")).toEqual(privateRows);
+      const publicRows = rows("u00-start");
+      expect(publicRows.length).toBeGreaterThan(0);
+      expect(new Set(publicRows.map(([type]) => type))).toEqual(
+        new Set(["slides", "text", "quiz"]),
+      );
+      for (const [type, publicFlag] of publicRows)
+        expect(publicFlag).toBe(type === "slides" || type === "text" ? 1 : 0);
+      // 全単元を比べ、課題文と知識問題を含む公開範囲の境界を確かめる。
+      const allRows = () =>
+        db
+          .prepare(
+            "select l.id, l.type, l.public, s.id as section_id from lessons l join sections s on s.id = l.section_id where s.stage_id = ? order by l.id",
+          )
+          .all(stageId);
+      const before = allRows();
+      const manifest = (await import("@stella/content")).buildContentManifest();
+      const publicSections = new Set(
+        manifest.units
+          .filter((unit) => unit.stageId === "dev-env-basics" && unit.config.public)
+          .map((unit) => stableUuid(`section:ses:dev-env-basics:${unit.unitId}`)),
+      );
+      for (const row of before)
+        expect(row.public).toBe(
+          publicSections.has(String(row.section_id)) &&
+            (row.type === "slides" || row.type === "text")
+            ? 1
+            : 0,
+        );
+      expect(rows("u02-first-task").length).toBeGreaterThan(0);
+      expect(rows("u02-first-task").every(([, flag]) => flag === 0)).toBe(true);
 
       db.exec(await exportSql(false));
-      expect(rows("u00-start")).toEqual([
-        ["slides", 0],
-        ["slides", 0],
-        ["slides", 0],
-        ["text", 0],
-        ["quiz", 0],
-        ["slides", 0],
-        ["slides", 0],
-        ["text", 0],
-        ["quiz", 0],
-      ]);
-      expect(rows("u02-first-task")).toEqual(privateRows);
+      const removedSection = stableUuid("section:ses:dev-env-basics:u00-start");
+      expect(allRows()).toEqual(
+        before.map((row) => (row.section_id === removedSection ? { ...row, public: 0 } : row)),
+      );
     } finally {
       db.close();
     }

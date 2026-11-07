@@ -1,0 +1,188 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "dev-env-basics/u03-files@1",
+  "contentHash": "3dc814287267bf63499b4c136489445ea61e255fcf00d68c067a7547e96de7b1",
+  "environmentRef": "static-web-01@1",
+  "uses": [
+    {
+      "contentId": "l1-explorer/t1-explorer/slides.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107"],
+      "usedFor": "エクスプローラーには、開いているフォルダーの中身が並びます。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-explorer/t2-close-tab/slides.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-editing-20261107"],
+      "usedFor": "タブを閉じても、保存したファイルは消えません。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-explorer/doc.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-editing-20261107"],
+      "usedFor": "エクスプローラーとエディター。トピックの解説・操作とつまずきへの案内。STELLA 独自機能は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-explorer/knowledge.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-editing-20261107"],
+      "usedFor": "エクスプローラーとエディター の理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-create-rename/t1-new-file/slides.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107"],
+      "usedFor": "新しいファイルは、エクスプローラーで場所を選んでから作ります。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-create-rename/t2-extension/slides.md",
+      "sourceRefs": ["SRC-dev-env-files-20261107", "SRC-dev-env-explorer-20261107"],
+      "usedFor": "名前の最後の拡張子が、ファイルの種類を表します。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-create-rename/doc.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-files-20261107"],
+      "usedFor": "ファイルを作る・名前を変える。トピックの解説・操作とつまずきへの案内。STELLA 独自機能は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-create-rename/knowledge.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-files-20261107"],
+      "usedFor": "ファイルを作る・名前を変える の理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-folders/t1-open-folder/slides.md",
+      "sourceRefs": ["SRC-dev-env-workspaces-20261107"],
+      "usedFor": "VS Code で開くのは、ファイルではなく作業フォルダーです。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-folders/t2-where-saved/slides.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107"],
+      "usedFor": "保存先は、エディターの上のパンくずリストで分かります。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-folders/doc.md",
+      "sourceRefs": ["SRC-dev-env-workspaces-20261107", "SRC-dev-env-explorer-20261107"],
+      "usedFor": "作業フォルダーと保存先。トピックの解説・操作とつまずきへの案内。STELLA 独自機能は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-folders/knowledge.md",
+      "sourceRefs": ["SRC-dev-env-workspaces-20261107", "SRC-dev-env-explorer-20261107"],
+      "usedFor": "作業フォルダーと保存先 の理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-os-files/t1-path/slides.md",
+      "sourceRefs": ["SRC-dev-env-files-20261107"],
+      "usedFor": "フォルダーは入れ子になり、ファイルの場所はパスで表します。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-os-files/t2-hidden/slides.md",
+      "sourceRefs": [
+        "SRC-dev-env-files-20261107",
+        "SRC-dev-env-windows-files-20261107",
+        "SRC-dev-env-mac-files-20261107"
+      ],
+      "usedFor": "拡張子や隠しファイルは、OS の設定で見え方が変わります。 教材用の説明と自作例。STELLA の操作は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-os-files/doc.md",
+      "sourceRefs": [
+        "SRC-dev-env-files-20261107",
+        "SRC-dev-env-windows-files-20261107",
+        "SRC-dev-env-mac-files-20261107"
+      ],
+      "usedFor": "OSとファイル。トピックの解説・操作とつまずきへの案内。STELLA 独自機能は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-os-files/knowledge.md",
+      "sourceRefs": [
+        "SRC-dev-env-files-20261107",
+        "SRC-dev-env-windows-files-20261107",
+        "SRC-dev-env-mac-files-20261107"
+      ],
+      "usedFor": "OSとファイル の理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-note-file/README.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-editing-20261107"],
+      "usedFor": "メモのファイルを作る の教材独自の課題文と受入条件。確認・提出の案内はSTELLAの実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-reopen/README.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-editing-20261107"],
+      "usedFor": "閉じて開き直して書き足す の教材独自の課題文と受入条件。確認・提出の案内はSTELLAの実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-rename/README.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107", "SRC-dev-env-files-20261107"],
+      "usedFor": "ファイルの名前を変える の教材独自の課題文と受入条件。確認・提出の案内はSTELLAの実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-two-folders/README.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107"],
+      "usedFor": "2つのフォルダーを使い分ける の教材独自の課題文と受入条件。確認・提出の案内はSTELLAの実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/r02-wrong-folder/README.md",
+      "sourceRefs": ["SRC-dev-env-explorer-20261107"],
+      "usedFor": "違うフォルダーのファイルを直していた の教材独自の課題文と受入条件。確認・提出の案内はSTELLAの実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

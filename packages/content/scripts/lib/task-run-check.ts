@@ -29,6 +29,7 @@ function withSolution(task: TaskSeed, distributed: Record<string, string>) {
   for (const [key, value] of Object.entries(task.privateFiles)) {
     if (key.startsWith("solution/")) files[key.slice("solution/".length)] = value;
   }
+  for (const path of task.solutionRemoves ?? []) delete files[path];
   return files;
 }
 
@@ -251,6 +252,7 @@ export async function mutantsFail(task: TaskSeed, options: RunCheckOptions = {})
   const mutants = Object.entries(task.mutants ?? {});
   for (const [name, mutant] of mutants) {
     const files = { ...withSolution(task, task.bundle.files), ...mutant };
+    for (const path of task.mutantRemoves?.[name] ?? []) delete files[path];
     const setup = task.bundle.manifest.runner === "git-record" ? gitMutant(mutant) : {};
     if (task.bundle.manifest.runner === "git-record") delete files[".stella-mutant.json"];
     const result = await runFiles(task, files, options, setup);

@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { parsePublicTaskBundle } from "../../shared/src/tasks/catalog.js";
-import { mutantsFail } from "../scripts/lib/task-run-check.js";
+import { mutantsFail, solutionPasses } from "../scripts/lib/task-run-check.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 
@@ -101,6 +101,116 @@ describe("予備の類題", () => {
     writeFileSync(join(dir, rel), value);
   };
 
+  it("解答例の削除指定を素材から分け、公開 bundle と解答表示用素材に含めない", async () => {
+    const root = fixture();
+    const task = buildContentManifest(join(root, "stages")).tasks.find((t) =>
+      t.definition.id.endsWith("/q03-rename"),
+    );
+    if (!task) throw new Error("名前を変える課題がありません");
+    expect(task.solutionRemoves).toEqual(["memo.txt"]);
+    for (const value of [
+      task.bundle.files,
+      parsePublicTaskBundle(task.bundle),
+      task.privateFiles,
+    ]) {
+      expect(JSON.stringify(value)).not.toContain(".stella-solution.json");
+      expect(JSON.stringify(value)).not.toContain(
+        Buffer.from('{ "remove": ["memo.txt"] }\n').toString("base64"),
+      );
+    }
+    // ヒント・解答 API と AI レビューは、この privateFiles の solution/ だけを素材にする。
+    expect(Object.keys(task.privateFiles).filter((key) => key.startsWith("solution/"))).toEqual([
+      "solution/plan.txt",
+    ]);
+    await expect(solutionPasses(task, task.bundle.files, "配布ファイル")).resolves.toBeUndefined();
+  });
+
+  it("誤答の削除だけの指定も読み、解答に重ねたあとに適用する", async () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-remove", "削除");
+    writeMarker(
+      dir,
+      "private/mutants/m02-remove/.stella-solution.json",
+      '{"remove":["index.html"]}',
+    );
+    const task = buildContentManifest(join(root, "stages")).tasks.find((t) => t.variantOf);
+    if (!task) throw new Error("類題がありません");
+    expect(task.mutants?.["m02-remove"]).toEqual({});
+    expect(task.mutantRemoves).toEqual({ "m02-remove": ["index.html"] });
+    expect(JSON.stringify(task.bundle)).not.toContain(".stella-solution.json");
+    expect(JSON.stringify(task.privateFiles)).not.toContain(".stella-solution.json");
+    expect(await mutantsFail(task)).toBe(2);
+  });
+
+  it.each([
+    ".stella-solution.json",
+    "private/.stella-solution.json",
+    "starter/.stella-solution.json",
+    "tests/.stella-solution.json",
+    "private/solution/nested/.stella-solution.json",
+    "private/mutants/m02-control/nested/.stella-solution.json",
+  ])("解答例・誤答の直下以外の削除指定を拒む: %s", (rel) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-remove", "削除");
+    writeMarker(dir, rel, '{"remove":["index.html"]}');
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/解答例・誤答の直下/);
+  });
+
+  it.each([
+    "null",
+    "[]",
+    "true",
+    '"text"',
+    "{",
+    "{}",
+    '{"remove":[]}',
+    '{"remove":"index.html"}',
+    '{"remove":[null]}',
+    '{"remove":[""]}',
+    '{"remove":[" "]}',
+    '{"remove":["../index.html"]}',
+    '{"remove":["nested/../index.html"]}',
+    '{"remove":["/index.html"]}',
+    '{"remove":["C:/index.html"]}',
+    '{"remove":["."]}',
+    '{"remove":["./index.html"]}',
+    '{"remove":["*.html"]}',
+    '{"remove":["index.html"],"unknown":true}',
+    JSON.stringify({ remove: ["nested\\index.html"] }),
+  ])("解答例・誤答の不正な削除指定を読み込み時に拒む: %s", (value) => {
+    for (const rel of ["private/solution", "private/mutants/m02-control"]) {
+      const root = fixture();
+      const dir = addVariant(root, "v01-remove", "削除");
+      writeMarker(dir, `${rel}/.stella-solution.json`, value);
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow();
+    }
+  });
+
+  it.each(["tests/README.md", "README.md", ".stella/task.json", ".git/config"])(
+    "削除指定でもテスト・管理情報を壊せない: %s",
+    (path) => {
+      for (const rel of ["private/solution", "private/mutants/m02-control"]) {
+        const root = fixture();
+        const dir = addVariant(root, "v01-remove", "削除");
+        writeMarker(dir, `${rel}/.stella-solution.json`, JSON.stringify({ remove: [path] }));
+        expect(() => buildContentManifest(join(root, "stages"))).toThrow(/protected.*管理ファイル/);
+      }
+    },
+  );
+
+  it("誤答では存在しないファイルの削除指定も拒む", () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-remove", "削除");
+    writeMarker(
+      dir,
+      "private/mutants/m02-control/.stella-solution.json",
+      '{"remove":["other.html"]}',
+    );
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(
+      /starter・解答例にあるファイルだけ/,
+    );
+  });
+
   it.each([
     {},
     { skipCommit: true, skipGitignore: false, skipIdentity: false },
@@ -165,7 +275,7 @@ describe("予備の類題", () => {
 
   it("課題として読み、親の素材・レッスン・PDF に混ぜない", () => {
     const root = fixture();
-    addVariant(root, "v01-profile", "自己紹介", CHECK);
+    addVariant(root, "v01-profile", "VARIANT_ONLY_PROFILE_MARKER_39", CHECK);
     addVariant(root, "v02-hobby", "好きなこと");
     const manifest = buildContentManifest(join(root, "stages"));
     const parent = manifest.tasks.find((t) => t.definition.id.endsWith("/q01-first-page"));
@@ -192,10 +302,12 @@ describe("予備の類題", () => {
     // 類題は課題文のレッスンを作らない (Web の課題一覧・資料・PDF に出ない)。
     const lessons = JSON.stringify(manifest.stages);
     expect(lessons).not.toContain("v01-profile");
-    expect(lessons).not.toContain("自己紹介");
-    expect(collectPdfTargets(manifest).some((target) => target.source.includes("自己紹介"))).toBe(
-      false,
-    );
+    expect(lessons).not.toContain("VARIANT_ONLY_PROFILE_MARKER_39");
+    expect(
+      collectPdfTargets(manifest).some((target) =>
+        target.source.includes("VARIANT_ONLY_PROFILE_MARKER_39"),
+      ),
+    ).toBe(false);
   });
 
   it("類題のパターンが親と違えば落とす", () => {

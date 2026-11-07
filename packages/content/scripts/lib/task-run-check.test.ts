@@ -153,3 +153,53 @@ describe("git-record の教材検査", () => {
     await expect(mutantsFail(task)).rejects.toThrow(/誤答 bad .*落ちません \(passed\)/);
   });
 });
+
+describe("解答例・誤答のファイル削除", () => {
+  it.each(["static-preview", "git-record"] as const)(
+    "%s で上書き後に削除し、file-absent を通す",
+    async (runner) => {
+      const task = fixture(runner);
+      task.bundle.files["memo.txt"] = base64("starter");
+      // 解答例にも同じパスがある場合、上書きより削除が後になる。
+      task.privateFiles["solution/memo.txt"] = base64("solution");
+      task.solutionRemoves = ["memo.txt"];
+      task.bundle.manifest.static = {
+        checks: [
+          { type: "file-absent", path: "memo.txt" },
+          { type: "file-absent", path: ".stella-solution.json" },
+          { type: "file-contains", path: "notes.txt", text: "solution" },
+        ],
+      };
+      await expect(
+        solutionPasses(task, task.bundle.files, "配布ファイル"),
+      ).resolves.toBeUndefined();
+      // 別の配布一式 (固定した開始点) でも同じ順で適用する。
+      await expect(
+        solutionPasses(
+          task,
+          { ...task.bundle.files, "memo.txt": base64("fixed") },
+          "固定した開始点",
+        ),
+      ).resolves.toBeUndefined();
+      task.solutionRemoves = [];
+      await expect(solutionPasses(task, task.bundle.files, "配布ファイル")).rejects.toThrow(
+        /検査に通りません/,
+      );
+    },
+  );
+
+  it.each(["static-preview", "git-record"] as const)(
+    "%s の誤答を重ねた後にも削除する",
+    async (runner) => {
+      const task = fixture(runner);
+      task.bundle.manifest.static = {
+        checks: [{ type: "file-contains", path: "notes.txt", text: "solution" }],
+      };
+      task.mutants = { removed: { "notes.txt": base64("solution") } };
+      task.mutantRemoves = { removed: ["notes.txt"] };
+      expect(await mutantsFail(task)).toBe(1);
+      task.mutantRemoves = {};
+      await expect(mutantsFail(task)).rejects.toThrow(/落ちません \(passed\)/);
+    },
+  );
+});

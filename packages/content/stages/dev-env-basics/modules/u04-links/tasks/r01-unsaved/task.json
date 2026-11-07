@@ -1,0 +1,60 @@
+{
+  "id": "dev-env-basics/u04-links/r01-unsaved",
+  "title": "直したはずの見出しが出ない",
+  "kind": "debug",
+  "pattern": "html-page",
+  "skills": {
+    "uses": [
+      "file-save-reopen",
+      "html-document"
+    ],
+    "assesses": [
+      "preview-changes"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "index.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": true
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "index.html の保存された h1 が「新着情報」になっている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-dev-env-editing-20261107"
+  ],
+  "estimatedMinutes": 15,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "element-text",
+        "path": "index.html",
+        "tag": "h1",
+        "text": "新着情報",
+        "match": "exact"
+      }
+    ]
+  }
+}

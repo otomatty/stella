@@ -49,16 +49,19 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), "stella-sources-"));
   roots.push(root);
   mkdirSync(join(root, "stages"));
-  cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
+  cpSync(join(content, "src/__fixtures__/format2-sample"), join(root, "stages/dev-env-basics"), {
     recursive: true,
   });
-  // このゲートの fixture は、参照元の対応を変更する U02 だけに絞る。
-  // U00・U01 の実教材の草稿・公開設定は、それぞれの検査で扱う。
-  for (const unit of ["u00-start", "u01-vscode-setup"])
-    rmSync(join(root, "stages/dev-env-basics/modules", unit), { recursive: true });
+  // 参照元の変更を検証する承認済み単元だけを使う。
+  rmSync(join(root, "stages/dev-env-basics/modules/u00-start"), { recursive: true });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
   const registry = JSON.parse(readFileSync(join(root, "sources/registry.json"), "utf8"));
+  // 台帳の並びや他の参照元が増えても、変更する見本の参照元を一定にする。
+  registry.sources = registry.sources.filter(
+    (source: { id: string }) => source.id === "SRC-mdn-html-20261005",
+  );
+  if (registry.sources.length !== 1) throw new Error("fixture の参照元が台帳にありません");
   // この承認はテストデータだけ。実教材の草稿を承認済みにしない。
   registry.sources[0].review = {
     status: "approved",
@@ -67,7 +70,7 @@ function fixture() {
     scope: "test fixture",
   };
   writeFileSync(join(root, "sources/registry.json"), JSON.stringify(registry));
-  const unit = join(root, "stages/dev-env-basics/modules/u02-first-task");
+  const unit = join(root, "stages/dev-env-basics/modules/m0-first-page");
   const refs = JSON.parse(readFileSync(join(unit, "references.json"), "utf8"));
   for (const use of refs.uses) use.reviewStatus = "approved";
   writeFileSync(join(unit, "references.json"), JSON.stringify(refs));
@@ -84,7 +87,7 @@ function append(file: string, text: string) {
 /** 内容を改訂した単元の版を上げ、確認し直した内容の指紋を記録する。 */
 function reReview(unit: string, version: string) {
   patch(join(unit, "references.json"), (row) => {
-    row.unitId = `dev-env-basics/u02-first-task@${version}`;
+    row.unitId = `dev-env-basics/m0-first-page@${version}`;
     row.contentHash = unitContentHash(unit);
   });
 }
@@ -94,14 +97,14 @@ describe("参照元の公開ゲートと表示", () => {
     expect(checkSourceReferences(root)).toEqual([]);
   });
   it.each([
-    "dev-env-basics/u02-first-task",
-    "dev-env-basics/u02-first-task@",
-    "dev-env-basics/u02-first-task@1@2",
-    "dev-env-basics/u02-first-task@draft",
-    "dev-env-basics/u02-first-task@1.",
-    "dev-env-basics/u02-first-task@1.0/extra",
-    "dev-env-basics/u02-first-task@1 2",
-    "dev-env-basics/u02-first-task@01",
+    "dev-env-basics/m0-first-page",
+    "dev-env-basics/m0-first-page@",
+    "dev-env-basics/m0-first-page@1@2",
+    "dev-env-basics/m0-first-page@draft",
+    "dev-env-basics/m0-first-page@1.",
+    "dev-env-basics/m0-first-page@1.0/extra",
+    "dev-env-basics/m0-first-page@1 2",
+    "dev-env-basics/m0-first-page@01",
     "dev-env-basics/another@1",
   ])("版を含む unitId の形式と対応先を検査する: %s", (unitId) => {
     const { root, unit } = fixture();
@@ -115,7 +118,7 @@ describe("参照元の公開ゲートと表示", () => {
   it("ドット区切りの版を持つ単元も検査を通す", () => {
     const { root, unit } = fixture();
     patch(join(unit, "references.json"), (row) => {
-      row.unitId = "dev-env-basics/u02-first-task@1.0.0";
+      row.unitId = "dev-env-basics/m0-first-page@1.0.0";
     });
     expect(checkSourceReferences(root)).toEqual([]);
   });
@@ -139,7 +142,7 @@ describe("参照元の公開ゲートと表示", () => {
         "単元名",
         (_unit, root) =>
           patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
-            (row.modules as Record<string, string>)["u02-first-task"] = "変更した単元名";
+            (row.modules as Record<string, string>)["m0-first-page"] = "変更した単元名";
           }),
       ],
     ])("同じ版のまま%sを変えると止め、版を上げて確認し直せば通す", (_label, change) => {
@@ -306,7 +309,10 @@ describe("参照元の公開ゲートと表示", () => {
     it.each([undefined, "", "abc", "A".repeat(64), `${"0".repeat(63)}g`])(
       "確認した内容の指紋 contentHash (%s) が無い・不正な references.json を拒否する",
       (contentHash) => {
-        const file = join(content, "stages/dev-env-basics/modules/u02-first-task/references.json");
+        const file = join(
+          content,
+          "src/__fixtures__/format2-sample/modules/m0-first-page/references.json",
+        );
         const row = { ...JSON.parse(readFileSync(file, "utf8")), contentHash };
         expect(() => parseUnitReferences(row)).toThrow("contentHash");
       },
@@ -377,7 +383,7 @@ describe("参照元の公開ゲートと表示", () => {
       ),
     ).toBe(true);
     baseline.exemptions.push({
-      unitId: "dev-env-basics/u02-first-task",
+      unitId: "dev-env-basics/m0-first-page",
       contentHash: unitContentHash(unit),
       reason: "表記だけの修正を確認",
       reviewer: "fixture-reviewer",
@@ -385,7 +391,7 @@ describe("参照元の公開ゲートと表示", () => {
     });
     expect(
       checkSourceReferences(root, baseline)
-        .filter((d) => d.unitId.endsWith("/u02-first-task"))
+        .filter((d) => d.unitId.endsWith("/m0-first-page"))
         .every((d) => d.severity === "warning"),
     ).toBe(true);
   });
@@ -414,7 +420,7 @@ describe("参照元の公開ゲートと表示", () => {
     ]);
     expect(
       diagnostics
-        .filter((d) => d.unitId === "dev-env-basics/u02-first-task")
+        .filter((d) => d.unitId === "dev-env-basics/m0-first-page")
         .every((d) => d.severity === "warning"),
     ).toBe(true);
   });
@@ -428,7 +434,7 @@ describe("参照元の公開ゲートと表示", () => {
       const baseline = createLegacyBaseline(root, "test-base");
       append(join(unit, "l1-save-and-preview/doc.md"), "\n表記を直す。\n");
       baseline.exemptions.push({
-        unitId: "dev-env-basics/u02-first-task",
+        unitId: "dev-env-basics/m0-first-page",
         contentHash: unitContentHash(unit),
         reason: "表記だけの修正を確認",
         reviewer: "fixture-reviewer",
@@ -732,7 +738,7 @@ describe("参照元の公開ゲートと表示", () => {
   describe("制作区分 (authorship) と利用方法 (reuse) を両方向で一致させる", () => {
     const use = (authorship: string, reuse: string) => ({
       schemaVersion: "2.1",
-      unitId: "dev-env-basics/u02-first-task@1",
+      unitId: "dev-env-basics/m0-first-page@1",
       contentHash: "0".repeat(64),
       environmentRef: "static-web-01@1",
       uses: [

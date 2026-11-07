@@ -529,6 +529,19 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(sql).toMatch(/insert into lessons /);
   });
 
+  it("解答例の削除指定を private の素材・公開 bundle・seed SQL に入れない", () => {
+    const control = readFileSync(
+      new URL(
+        "../../content/stages/dev-env-basics/modules/u03-files/tasks/q03-rename/private/solution/.stella-solution.json",
+        import.meta.url,
+      ),
+    );
+    expect(sql).not.toContain(".stella-solution.json");
+    expect(sql).not.toContain(control.toString("base64"));
+    expect(sql).not.toContain("solutionRemoves");
+    expect(sql).not.toContain("mutantRemoves");
+  });
+
   it("課題の private/ とヒントは task_private にだけ入り、配布 bundle・レッスンに出ない", () => {
     const taskDir = new URL(
       "../../content/stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page/",
