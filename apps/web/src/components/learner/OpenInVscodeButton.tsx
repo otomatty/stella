@@ -33,7 +33,13 @@ export function OpenInVscodeButton(
   };
 
   return (
-    <Button type="button" variant="accent" onClick={() => void handleOpen()} disabled={opening}>
+    <Button
+      data-testid="open-in-vscode"
+      type="button"
+      variant="accent"
+      onClick={() => void handleOpen()}
+      disabled={opening}
+    >
       {opening ? <Loader2 size={14} className="animate-spin" /> : <Code size={14} />}
       VS Code で開く
     </Button>

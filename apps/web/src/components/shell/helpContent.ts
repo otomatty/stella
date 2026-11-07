@@ -115,6 +115,20 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
+    route: "/review",
+    title: "今日の復習",
+    sections: [
+      {
+        heading: "答えと解説を確かめる",
+        body: "選択肢を選び、「回答する」を押すと正誤と解説が出ます。複数選ぶ問題では、当てはまるものをすべて選びます。",
+      },
+      {
+        heading: "忘れる前に振り返る",
+        body: "前に解いた知識問題が、時間を空けて出題されます。間違えた問題ほど早くまた出ます。復習する問題がない日は、その案内が表示されます。",
+      },
+    ],
+  },
+  {
     route: "/submissions/$submissionId",
     title: "提出物の見方",
     sections: [

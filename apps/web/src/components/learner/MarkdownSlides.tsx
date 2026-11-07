@@ -352,6 +352,8 @@ function SlideDeck({
   return (
     <div>
       <div
+        data-testid="lesson-slides"
+        data-page={page}
         role="application"
         // biome-ignore lint/a11y/noNoninteractiveTabindex: 矢印キー操作のためコンテナがフォーカスを持つ
         tabIndex={0}
@@ -373,7 +375,12 @@ function SlideDeck({
         >
           {page} / {total}
         </span>
-        <Button variant="outline" onClick={() => go(page + 1)} disabled={page >= total}>
+        <Button
+          data-testid="lesson-next-slide"
+          variant="outline"
+          onClick={() => go(page + 1)}
+          disabled={page >= total}
+        >
           次へ
           <ChevronRight size={14} aria-hidden="true" />
         </Button>
@@ -440,12 +447,15 @@ export function MarkdownSlides({ lessonId, markdown, header = "", onComplete }: 
         <Progress value={progressPct} tone="brand" />
       </div>
       {isCompleted ? (
-        <span className="inline-flex items-center gap-1 text-success text-[12px]">
+        <span
+          data-testid="lesson-completed"
+          className="inline-flex items-center gap-1 text-success text-[12px]"
+        >
           <Check size={13} aria-hidden="true" />
           完了済み
         </span>
       ) : (
-        <Button variant="accent" onClick={markComplete}>
+        <Button data-testid="lesson-complete" variant="accent" onClick={markComplete}>
           <Check size={13} aria-hidden="true" />
           完了にする
         </Button>

@@ -366,7 +366,11 @@ export const LessonPlayer = ({
         </DrawerContent>
       </Drawer>
 
-      <main className="min-w-0 flex flex-col">
+      <main
+        data-testid="lesson-screen"
+        data-lesson-id={lessonObj.id}
+        className="min-w-0 flex flex-col"
+      >
         {isCode && lessonObj.assignmentId ? (
           <CodeLessonHandoff
             stageId={stage.id}
@@ -601,6 +605,8 @@ const LessonToc = ({
               <button
                 type="button"
                 key={l.id}
+                data-testid={`lesson-toc-${l.type}`}
+                data-lesson-id={l.id}
                 onClick={() => {
                   if (status === "locked") return;
                   onSelectLesson(l.id);
@@ -742,7 +748,7 @@ const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
   }, [isCompleted, lesson.markdown, onComplete]);
 
   return (
-    <div className="prose-lms">
+    <div data-testid="lesson-doc" className="prose-lms">
       {lesson.markdown ? (
         <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
       ) : (

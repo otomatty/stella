@@ -272,7 +272,7 @@ export const StageDetail = ({
           {stage.format === 2 ? (
             <TaskList stageId={stage.id} onAskAi={onAskAiAboutTask} onLoaded={handleTasksLoaded} />
           ) : null}
-          <Card className="mb-6">
+          <Card data-testid="stage-syllabus" className="mb-6">
             <CardHeader>
               <CardTitle>シラバス</CardTitle>
               <CardActions>
@@ -370,7 +370,7 @@ export const StageDetail = ({
           </Card>
 
           {criteriaRows.length > 0 ? (
-            <Card>
+            <Card data-testid="stage-completion">
               <CardHeader>
                 <CardTitle>修了条件</CardTitle>
               </CardHeader>
@@ -435,6 +435,8 @@ const LessonRow = ({
   const locked = status === "locked";
   return (
     <button
+      data-testid={`stage-lesson-${lesson.type}`}
+      data-lesson-id={lesson.id}
       type="button"
       disabled={locked}
       onClick={locked ? undefined : onClick}

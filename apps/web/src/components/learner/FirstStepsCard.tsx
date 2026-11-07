@@ -27,7 +27,11 @@ export function FirstStepsCard({
   if (!next)
     return <p className="mb-4 text-sm text-success">STELLA の使い方はひととおり済みました</p>;
   return (
-    <section aria-label="STELLA の使い方" className="mb-4 rounded-lg border border-border p-4">
+    <section
+      data-testid="stage-first-steps"
+      aria-label="STELLA の使い方"
+      className="mb-4 rounded-lg border border-border p-4"
+    >
       <h3 className="mb-2 text-sm font-semibold">STELLA の使い方</h3>
       <ul className={compact ? "flex flex-wrap gap-3 text-xs" : "space-y-2 text-sm"}>
         {data.items.map((item) => (

@@ -97,7 +97,7 @@ export function ReviewResultView({
   const feedback = submission.aiFeedback ?? null;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div data-testid="submission-result" className="max-w-5xl mx-auto">
       <button
         type="button"
         onClick={() => setPage(back.page)}

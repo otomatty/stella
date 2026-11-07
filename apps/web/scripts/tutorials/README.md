@@ -43,6 +43,21 @@ apps/web/scripts/tutorials/
 
 セレクタは `data-testid` を優先して使います（E2E テストと共通）。
 
+## シナリオの項目
+
+`defineScenario` に次の項目を渡します。`seedSql` は操作 API ではなく、収録前のデータ準備です。
+
+| 項目 | 説明 |
+| --- | --- |
+| `id` / `order` | 動画の ID と収録順 |
+| `screen` | ヘルプの route と同じ文字列 |
+| `title` / `summary` | 動画の題と説明 |
+| `start` | 収録を始める画面のパス |
+| `user?` / `freshUser?` | seed の利用者。既定は `seed-learner`、`freshUser: true` なら `seed-learner2` |
+| `theme?` / `draft?` | テーマと、動作確認用の台本かどうか |
+| `seedSql?: string[]` | 台本に固定で書いた収録用 SQL。シナリオごとの写しの復元後、API 起動前に配列順で適用する。`wrangler d1 execute stella-db --local --persist-to <作業場所> --command <SQL>` に引数の配列で渡し、シェルを通さない。外部入力から SQL を作らない。`--url` 指定時は適用せず警告を出す |
+| `run(t)` | 操作 API を使う台本の本体 |
+
 ## 新しい動画を AI に作らせるには
 
 Claude などの AI に、次のように依頼すると新しいシナリオを書いてもらえます。
@@ -67,7 +82,7 @@ AI は画面のコードを読んで操作手順を組み立て、収録した�
 1. 空いている API / プレビュー用ポートを選ぶ
 2. migrations と教材 (`packages/content/stages`)・seed の処理のハッシュから専用 D1 の写しを探す。なければ `os.tmpdir()/stella-tutorials/seed-<hash>` に migrate・seed する（初回は約 7 分）。成功した写しを次回も使う
 3. `VITE_SERVER_URL=http://127.0.0.1:<API ポート>` で `vite build` し、`vite preview --strictPort` を起動する
-4. シナリオごとに API を停止して写しを専用の作業場所へ復元し、`wrangler dev --local --persist-to <作業場所>` を起動する。`/api/healthz` を待つ。開発者の `.wrangler/state` は使わない
+4. シナリオごとに API を停止して写しを専用の作業場所へ復元し、`seedSql` があれば順に適用してから `wrangler dev --local --persist-to <作業場所>` を起動する。`/api/healthz` を待つ。開発者の `.wrangler/state` は使わない
 5. HS256 の開発用 JWT を作り、ページを開く前に `stella_auth_token_v1` に入れる。署名鍵は環境変数 `AUTH_JWT_SECRET`、なければ `apps/api/.dev.vars`。プロフィールは `user`（既定 `seed-learner`）、`freshUser: true` なら受講 0 件の `seed-learner2`
 6. Chromium（1280×800・deviceScaleFactor 1.5）で操作し、CDP → ffmpeg で 30fps / 1600×1000 / H.264 に変換する。Mac の偽装はせず、台本のショートカットは `Ctrl` で書く
 7. 字幕とタイトルカードの音声を AAC で重ねる（`--no-narration` なら省略）。サムネイル JPG・チャプターから変換した WebVTT も書き出す
@@ -81,7 +96,7 @@ AI は画面のコードを読んで操作手順を組み立て、収録した�
 bun run tutorials -- --include-drafts --no-narration smoke
 ```
 
-`--url` は起動済みの Web と API をそのまま使い、ビルド・サーバー起動・データ初期化を行いません。Web はローカル API を `VITE_SERVER_URL` に指定したビルドが必要です（本番向けビルドは開発用トークンを送りません）。
+`--url` は起動済みの Web と API をそのまま使い、ビルド・サーバー起動・データ初期化を行いません。`seedSql` も適用せず、指定のある台本ごとに警告を出します。Web はローカル API を `VITE_SERVER_URL` に指定したビルドが必要です（本番向けビルドは開発用トークンを送りません）。
 
 `t.expect` が 1 つでも失敗したシナリオは動画を書き出さず、終了コード 1 で終わります。
 

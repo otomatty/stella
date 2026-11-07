@@ -1332,6 +1332,8 @@ const StarNode = ({
 
   const star = (
     <button
+      data-testid={node.slug ? `tree-star-${node.slug}` : undefined}
+      data-active={isActive}
       type="button"
       aria-label={`${spokenLabel}（${detail.stateText}${tag ? `・${tag}` : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
       // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
@@ -1794,7 +1796,12 @@ const StarActions = ({
       ) : null}
 
       {start ? (
-        <Button size={size} variant="accent" onClick={() => onAct(() => onStartStage(stageId))}>
+        <Button
+          data-testid="tree-start-stage"
+          size={size}
+          variant="accent"
+          onClick={() => onAct(() => onStartStage(stageId))}
+        >
           <Play size={12} />
           ここから始める
         </Button>
@@ -1812,7 +1819,12 @@ const StarActions = ({
       ) : null}
 
       {openStage ? (
-        <Button size={size} variant="outline" onClick={() => onAct(() => onOpenStage(stageId))}>
+        <Button
+          data-testid="tree-open-stage"
+          size={size}
+          variant="outline"
+          onClick={() => onAct(() => onOpenStage(stageId))}
+        >
           <Book size={12} />
           レッスン一覧
         </Button>

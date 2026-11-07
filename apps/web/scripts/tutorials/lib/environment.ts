@@ -70,6 +70,22 @@ async function command(cwd: string, args: string[], env = process.env): Promise<
   });
 }
 
+/** 台本の固定 SQL を、シェルを通さず 1 つの引数で Wrangler に渡す。 */
+export function seedSqlArgs(persistTo: string, sql: string): string[] {
+  return [
+    "x",
+    "wrangler",
+    "d1",
+    "execute",
+    "stella-db",
+    "--local",
+    "--persist-to",
+    persistTo,
+    "--command",
+    sql,
+  ];
+}
+
 async function hashTree(dir: string, hash: ReturnType<typeof createHash>): Promise<void> {
   for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
     a.name.localeCompare(b.name),
@@ -238,7 +254,7 @@ export class TutorialEnvironment {
     return this.base;
   }
 
-  async reset(secret: string): Promise<void> {
+  async reset(secret: string, seedSql: readonly string[] = []): Promise<void> {
     if (this.api) {
       await stop(this.api);
       await waitUntilDown(`http://127.0.0.1:${this.apiPort}`);
@@ -248,6 +264,7 @@ export class TutorialEnvironment {
     await freePort(this.apiPort);
     await rm(this.state, { recursive: true, force: true });
     await cp(this.snapshot, this.state, { recursive: true });
+    for (const sql of seedSql) await command(API, seedSqlArgs(this.state, sql));
     // 空の env-file で .dev.vars の自動読み込みを避け、鍵をメモリ上で渡す。
     const envFile = path.join(WORK_DIR, "empty.env");
     await writeFile(envFile, "");

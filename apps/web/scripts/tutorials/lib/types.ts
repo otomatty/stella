@@ -14,6 +14,8 @@ export interface Scenario {
   theme?: "light" | "dark";
   /** 既定は seed-learner。freshUser の場合は seed-learner2 */
   user?: string;
+  /** 台本に固定で書く収録用 SQL。写しの復元後、API 起動前に順に流す。--url では適用しない。 */
+  seedSql?: string[];
   /** --include-drafts を付けたときだけ収録する */
   draft?: boolean;
   run(t: Director): Promise<void>;

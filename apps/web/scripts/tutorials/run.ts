@@ -187,7 +187,9 @@ async function main() {
     await narrationReady;
     for (const s of scenarios) {
       log(`収録中: ${s.order}. ${s.title}`);
-      if (!urlArg) await environment.reset(secret);
+      if (!urlArg) await environment.reset(secret, s.seedSql);
+      else if (s.seedSql?.length)
+        console.warn(`警告: ${s.id} の seedSql は --url 指定時には適用しません`);
       const recordingTheme = s.theme ?? theme;
       const context = await browser.newContext({
         baseURL: base,
@@ -218,7 +220,7 @@ async function main() {
       t.posterFile = path.join(OUT_DIR, `${s.id}.jpg`);
       await recorder.start();
       try {
-        await t.title(`レッスン ${s.order}`, s.title, s.summary);
+        await t.title(`使い方 ${s.order}`, s.title, s.summary);
         await s.run(t);
         await t.finish();
         await t.hideCaption();

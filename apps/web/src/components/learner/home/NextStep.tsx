@@ -310,6 +310,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           size="full"
           variant="accent"
           className="mt-4"
+          data-testid="guide-start-stage"
           onClick={() => ctx.onStartStage(step.stageId)}
         >
           <Play size={14} />
@@ -364,7 +365,13 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
             <span className="text-[11px] tabular-nums text-ink-3">{lesson.progress}%</span>
           </div>
         ) : null}
-        <Button size="full" variant="accent" className="mt-4" onClick={planAction(item.kind, ctx)}>
+        <Button
+          data-testid={`guide-${item.kind}`}
+          size="full"
+          variant="accent"
+          className="mt-4"
+          onClick={planAction(item.kind, ctx)}
+        >
           <Icon size={14} />
           {PLAN_ACTION[item.kind]}
         </Button>
@@ -456,6 +463,7 @@ const HeroFrame = ({
   children: ReactNode;
 }) => (
   <section
+    data-testid="guide-primary"
     aria-label={eyebrow}
     className="flex flex-col rounded-xl border border-brand/40 bg-gradient-to-br from-card to-brand-soft p-4 shadow-sm"
   >
@@ -618,7 +626,13 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
       {row.meta ? (
         <span className="shrink-0 text-[11px] tabular-nums text-ink-3">{row.meta}</span>
       ) : null}
-      <Button size="sm" variant="default" className="shrink-0" onClick={row.onClick}>
+      <Button
+        data-testid={step.kind === "plan" ? `guide-${step.item.kind}` : undefined}
+        size="sm"
+        variant="default"
+        className="shrink-0"
+        onClick={row.onClick}
+      >
         {row.action}
       </Button>
     </div>

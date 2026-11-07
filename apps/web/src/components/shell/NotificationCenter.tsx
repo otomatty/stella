@@ -107,6 +107,7 @@ export const NotificationCenter = ({
     <div ref={rootRef} className="relative">
       <button
         className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border relative"
+        data-testid="notifications-toggle"
         title="通知"
         type="button"
         aria-label={`通知${unreadCount > 0 ? ` (未読 ${unreadCount} 件)` : ""}`}
@@ -121,7 +122,10 @@ export const NotificationCenter = ({
       </button>
 
       {open ? (
-        <div className="fixed inset-x-4 top-[var(--shell-header-height)] mt-2 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-[380px] max-h-[70vh] flex flex-col bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+        <div
+          data-testid="notifications-panel"
+          className="fixed inset-x-4 top-[var(--shell-header-height)] mt-2 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-[380px] max-h-[70vh] flex flex-col bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden"
+        >
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
             <div className="text-[13px] font-semibold">通知</div>
             {unreadCount > 0 ? (
@@ -141,6 +145,7 @@ export const NotificationCenter = ({
             <button
               type="button"
               className="text-ink-3 hover:text-foreground"
+              data-testid="notifications-close"
               aria-label="閉じる"
               onClick={() => setOpen(false)}
             >
