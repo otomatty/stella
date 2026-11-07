@@ -167,6 +167,10 @@ const emittedAssignments = new Set<string>();
 
 /** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
+// VIDEO_MANIFEST は seed-d1.ts の process.env 経由で受け取る。
+const videoManifest: Record<string, { video: string }> | null = process.env.VIDEO_MANIFEST
+  ? JSON.parse(readFileSync(process.env.VIDEO_MANIFEST, "utf8"))
+  : null;
 
 const lines: string[] = ["-- seed from fixtures (generated)"];
 if (!isSqlite) lines.push("begin;");
@@ -372,10 +376,19 @@ function emitLesson(
   lesson: Lesson,
 ) {
   const id = lessonUuid(tenantId, stageId, lesson.id);
+  // 台本を削除したら解除。manifest が無い／対象外なら既存値を保持する。
+  // トピック ID はステージ間で重なり得るので、絞り込んだ sync の別ステージを使わない。
+  const manifestVideo = videoManifest?.[lesson.id]?.video;
+  const ownedVideo = manifestVideo?.startsWith(`lesson-video/${tenantId}/${stageId}/${lesson.id}/`)
+    ? manifestVideo
+    : undefined;
+  const preserveVideo = lesson.type === "slides" && lesson.hasNarration && !ownedVideo;
+  const videoPath =
+    lesson.type === "slides" ? (lesson.hasNarration ? ownedVideo : undefined) : lesson.videoPath;
   lines.push(
     [
       `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, created_at, updated_at" : ""})`,
-      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${lesson.videoPath ? `'${esc(lesson.videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${nowExpr()}, ${nowExpr()}` : ""}`,
+      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("sections")} s`,
       `where s.id = '${sectionUuid}'`,
       `on conflict (id) ${doUpdate(
@@ -386,7 +399,7 @@ function emitLesson(
           "type",
           '"order"',
           "duration_label",
-          "video_path",
+          ...(preserveVideo ? [] : ["video_path"]),
           "pdf_path",
           "markdown",
           "assignment_id",

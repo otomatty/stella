@@ -1,0 +1,58 @@
+{
+  "id": "dev-env-basics/u03-files/q01-note-file",
+  "title": "メモのファイルを作る",
+  "kind": "basic",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "stella-task-loop"
+    ],
+    "assesses": [
+      "file-save-reopen"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "note.txt"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "note.txt に「今日から学習を始めました」が保存されている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-explorer-20261107",
+    "SRC-dev-env-editing-20261107"
+  ],
+  "estimatedMinutes": 10,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "file-contains",
+        "path": "note.txt",
+        "text": "今日から学習を始めました"
+      }
+    ]
+  }
+}

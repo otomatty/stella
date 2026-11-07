@@ -1,0 +1,13 @@
+{
+  "format": 2,
+  "title": "開発環境とWebの入口",
+  "prerequisites": [],
+  "plannedHours": 35,
+  "environment": "static-web-01",
+  "pdfByOs": true,
+  "canDo": "開発環境を整え、HTMLの変更をブラウザーで確認できる",
+  "modules": {
+    "u00-start": "公開の見本",
+    "m0-first-page": "最初のページを表示する"
+  }
+}

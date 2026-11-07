@@ -62,6 +62,26 @@ describe("手元の確認の要約", () => {
     expect(html).toMatchObject({ outcome: "passed", failedSteps: [], tests: null });
   });
 
+  it("Git の検査の要約を送り、API 側でも受け付ける", () => {
+    const report = toLocalRunReport(
+      result({
+        runner: "git-record",
+        steps: [
+          {
+            id: "git",
+            label: "Git",
+            status: "failed",
+            durationMs: 1,
+            summary: "要修正",
+            tests: [{ name: "記録", status: "failed", message: "コミットしてください" }],
+          },
+        ],
+      }),
+      receipt,
+    );
+    expect(report).toMatchObject({ failedSteps: ["git"], tests: { passed: 0, failed: 1 } });
+    expect(parseLocalRunReport(report)).toEqual(report);
+  });
   it("型の確認が失敗した手順を報告に残し、受け付ける", () => {
     const report = toLocalRunReport(
       result({

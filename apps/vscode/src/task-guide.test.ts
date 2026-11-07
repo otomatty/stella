@@ -20,7 +20,7 @@ import {
 
 const staticManifest: TaskManifest = {
   schemaVersion: 1,
-  id: "dev-env-basics/m0-first-page/q01-first-page",
+  id: "dev-env-basics/u02-first-task/q01-first-page",
   title: "最初のページを作る",
   kind: "basic",
   runner: "static-preview",
@@ -57,7 +57,7 @@ async function makeRoot(files: Record<string, string>): Promise<string> {
 
 function guide(overrides: Partial<TaskGuideInput> = {}): TaskGuideInput {
   return {
-    root: "/home/me/web-training/dev-env-basics/m0-first-page/q01-first-page",
+    root: "/home/me/web-training/dev-env-basics/u02-first-task/q01-first-page",
     manifest: staticManifest,
     edit: { files: ["index.html"], missing: [] },
     os: "windows",

@@ -59,6 +59,7 @@ export interface TaskDefinition {
   protected: string[];
   checks: TaskManifest["checks"];
   static?: TaskManifest["static"];
+  git?: TaskManifest["git"];
   /** CI と公開 (`ci-deploy`) の課題が指定する GitHub Actions のワークフロー。ci-deploy の課題に必須。 */
   ci?: TaskManifest["ci"];
   /**
@@ -256,6 +257,7 @@ export function toRuntimeManifest(
     protected: task.protected,
     checks: task.checks,
     environment,
+    ...(task.git ? { git: task.git } : {}),
     ...(task.static ? { static: task.static } : {}),
     // CI と公開の課題が指定するワークフロー。API が提出の実行と照らし合わせる (07 §5.5)。
     ...(task.ci ? { ci: task.ci } : {}),

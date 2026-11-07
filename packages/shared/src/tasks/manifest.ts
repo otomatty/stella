@@ -48,6 +48,14 @@ export const TASK_KIND_LABELS: Readonly<Record<TaskKind, string>> = {
  */
 export type StaticCheck =
   | { type: "file-exists"; path: string; name?: string }
+  | { type: "file-absent"; path: string; name?: string }
+  | {
+      type: "file-contains";
+      path: string;
+      text: string;
+      match?: "contains" | "exact";
+      name?: string;
+    }
   | { type: "html-document"; path: string; name?: string }
   | {
       type: "element-text";
@@ -63,12 +71,29 @@ export type StaticCheck =
 
 export const STATIC_CHECK_TYPES = [
   "file-exists",
+  "file-absent",
+  "file-contains",
   "html-document",
   "element-text",
   "element-count",
   "links-resolve",
   "stylesheet-linked",
 ] as const satisfies readonly StaticCheck["type"][];
+
+export type GitCheck =
+  | { type: "learning-folder-root"; name?: string }
+  | { type: "local-identity"; name?: string }
+  | { type: "committed"; paths: string[]; name?: string }
+  | { type: "commit-count"; min: number; name?: string }
+  | { type: "ignored"; path: string; name?: string };
+
+const GIT_CHECK_TYPES = [
+  "learning-folder-root",
+  "local-identity",
+  "committed",
+  "commit-count",
+  "ignored",
+] as const;
 
 export interface TaskManifest {
   schemaVersion: 1;
@@ -88,6 +113,7 @@ export interface TaskManifest {
   references?: PublicSourceReference[];
   environment?: EnvironmentRequirement;
   static?: { checks: StaticCheck[] };
+  git?: { checks: GitCheck[] };
   /**
    * CI と公開 (`ci-deploy`) の課題が指定する GitHub Actions のワークフロー
    * (リポジトリの一番上からのパス。例 `.github/workflows/deploy.yml`)。提出を受けた API が、
@@ -134,6 +160,40 @@ function readPatterns(raw: unknown, at: string, errors: string[]): string[] {
   return patterns;
 }
 
+function validateCheckPath(value: unknown, at: string, errors: string[]): void {
+  if (typeof value !== "string" || !isSafeRelativePattern(value) || /[*?{}[\]]/.test(value)) {
+    errors.push(`${at} は課題フォルダーからの相対パスで書いてください (glob は使えません)`);
+  }
+}
+
+function validateGitCheck(raw: unknown, at: string, errors: string[]): void {
+  if (!isObject(raw)) {
+    errors.push(`${at} はオブジェクトで書いてください`);
+    return;
+  }
+  if (!(GIT_CHECK_TYPES as readonly unknown[]).includes(raw.type)) {
+    errors.push(`${at}.type は ${GIT_CHECK_TYPES.join(" / ")} のどれかにしてください`);
+    return;
+  }
+  if (raw.name !== undefined && typeof raw.name !== "string")
+    errors.push(`${at}.name は文字列で書いてください`);
+  if (raw.type === "ignored") validateCheckPath(raw.path, `${at}.path`, errors);
+  if (raw.type === "committed") {
+    if (!Array.isArray(raw.paths) || raw.paths.length === 0)
+      errors.push(`${at}.paths は 1 件以上の配列で書いてください`);
+    else
+      raw.paths.forEach((p, i) => {
+        validateCheckPath(p, `${at}.paths[${i}]`, errors);
+      });
+  }
+  if (
+    raw.type === "commit-count" &&
+    (typeof raw.min !== "number" || !Number.isInteger(raw.min) || raw.min < 1)
+  ) {
+    errors.push(`${at}.min は 1 以上の整数で書いてください`);
+  }
+}
+
 function validateStaticCheck(raw: unknown, at: string, errors: string[]): void {
   if (!isObject(raw)) {
     errors.push(`${at} はオブジェクトで書いてください`);
@@ -144,13 +204,7 @@ function validateStaticCheck(raw: unknown, at: string, errors: string[]): void {
     errors.push(`${at}.type は ${STATIC_CHECK_TYPES.join(" / ")} のどれかにしてください`);
     return;
   }
-  if (
-    typeof raw.path !== "string" ||
-    !isSafeRelativePattern(raw.path) ||
-    /[*?{}[\]]/.test(raw.path)
-  ) {
-    errors.push(`${at}.path は課題フォルダーからの相対パスで書いてください (glob は使えません)`);
-  }
+  validateCheckPath(raw.path, `${at}.path`, errors);
   if (raw.name !== undefined && typeof raw.name !== "string") {
     errors.push(`${at}.name は文字列で書いてください`);
   }
@@ -159,9 +213,13 @@ function validateStaticCheck(raw: unknown, at: string, errors: string[]): void {
       errors.push(`${at}.tag は小文字のタグ名で書いてください (例 "h1")`);
     }
   }
-  if (type === "element-text") {
-    if (typeof raw.text !== "string" || raw.text.length === 0) {
-      errors.push(`${at}.text は空でない文字列で書いてください`);
+  if (type === "element-text" || type === "file-contains") {
+    if (typeof raw.text !== "string" || (type === "element-text" && raw.text.length === 0)) {
+      errors.push(
+        type === "element-text"
+          ? `${at}.text は空でない文字列で書いてください`
+          : `${at}.text は文字列で書いてください`,
+      );
     }
     if (raw.match !== undefined && raw.match !== "exact" && raw.match !== "contains") {
       errors.push(`${at}.match は "exact" か "contains" にしてください`);
@@ -343,6 +401,20 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     errors.push("runner が static-preview の課題には static.checks が要ります");
   }
 
+  let gitChecks: GitCheck[] | undefined;
+  if (raw.git !== undefined) {
+    if (!isObject(raw.git) || !Array.isArray(raw.git.checks))
+      errors.push("git.checks は配列で書いてください");
+    else {
+      raw.git.checks.forEach((check, index) => {
+        validateGitCheck(check, `git.checks[${index}]`, errors);
+      });
+      gitChecks = raw.git.checks as GitCheck[];
+    }
+  }
+  if (raw.runner === "git-record" && !gitChecks?.length)
+    errors.push("runner が git-record の課題には git.checks が 1 件以上要ります");
+
   let ci: TaskManifest["ci"];
   if (raw.ci !== undefined) {
     const workflow = isObject(raw.ci) ? raw.ci.workflow : undefined;
@@ -393,6 +465,7 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     manifest.environment = raw.environment as EnvironmentRequirement;
   if (references) manifest.references = references;
   if (staticChecks) manifest.static = { checks: staticChecks };
+  if (gitChecks) manifest.git = { checks: gitChecks };
   if (ci) manifest.ci = ci;
   return { ok: true, manifest };
 }

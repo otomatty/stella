@@ -286,6 +286,7 @@ packages/content/
 | --- | --- | --- |
 | `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
 | `env-diagnose` | dev-env-basics | Node・npm・Gitの版を、環境定義と照合する |
+| `git-record` | dev-env-basics | 固定の引数で git を呼び、学習フォルダーのリポジトリ・ローカルの名前とメール・コミット・無視の設定を確かめる |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
 | `ts-test` | Extra ステージの TypeScript の課題 | TypeScript (tsc) + Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
@@ -728,7 +729,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 
 残りは次のとおり。
 
-- 類題の実データ(教材の本文は人が書く。#41)。テンプレートとAIの下書きで在庫を作り、PRで承認する。
+- 類題の実データ(教材の本文は AI が下書きし (`references.json` は `draft`)、講師が参照元と本文を確かめて `approved` にする。#41)。テンプレートとAIの下書きで在庫を作り、PRで承認する。
 
 ## 8 解答と非公開素材のUX
 
@@ -895,7 +896,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 
 ### 12.2 ログインなしで読める入口の実装(Issue #41)
 
-12.1の手順1の入口(どちらの案でも用意する)を実装した。U00〜U01の本文はまだ無い。本文は参照元の承認を経て人が書き、単元に印を付けると公開される。
+12.1の手順1の入口(どちらの案でも用意する)を実装した。U00 `u00-start`・U01 `u01-vscode-setup` の本文は草稿を配置済みで、参照元の承認待ちである。#28 の見本単元は `u02-first-task`（旧 `m0-first-page`）へ移した。本文は AI が下書きし (`references.json` は `draft`)、講師が参照元と本文を確かめて `approved` にする。単元に印を付けると公開される。
 
 - **印:** 単元の`unit.json`に`"public": true`を書く。U00〜U01は単元全体がVS Code導入前に読む内容なので、レッスンごとではなく単元ごとに付ける。印のある単元のスライドとまとめだけを公開し、知識問題(採点はログイン後)は公開しない。課題(`tasks/`)は置けない。課題の配布と提出は、ログイン後の拡張が行うためである。課題の無い単元は`tasks/`を置かなくてよい。
 - **置けるステージ:** 前提が無く、`audience`が`catalog`のステージだけに置ける。現行では`dev-env-basics`だけが該当する。前提のあるステージの本文は、スキルツリーの霧やロックの向こうにあるため公開しない。専用星(`granted`)も公開しない。`content:check`(manifest)が、課題のある単元、`granted`のステージ、前提のあるステージへの印を落とす。

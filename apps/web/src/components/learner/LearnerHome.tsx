@@ -26,6 +26,7 @@
  * 何をどの順でガイドに並べるかは `@/lib/home-guide` (純関数) が決める。
  */
 
+import { useFirstSteps } from "@/hooks/useFirstSteps";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -111,6 +112,7 @@ export const LearnerHome = ({
   backendEnabled,
 }: LearnerHomeProps) => {
   const navigate = useNavigate();
+  const firstSteps = useFirstSteps(undefined, backendEnabled);
   const progressMap = useLessonProgressMap();
   // 取得に失敗すると一覧は空になる (= 「見直す」が黙って消える) ので、失敗も受け取って出す。
   const { submissions, error: submissionsError } = useMySubmissions(true);
@@ -209,13 +211,18 @@ export const LearnerHome = ({
       // マップが届く前 (`null`) は「始めている」側に倒す — 初回の案内が一瞬だけ出て
       // 消える瞬きを避ける。
       hasEnrollment: skillMap.map ? hasEnrollment : true,
+      hasVisibleExtra: nodes.some((node) => node.audience === "granted"),
       activeWithoutLesson: Boolean(activeStage && !activeStage.completed && !nextLesson),
       startableStageIds: startableStageIds(
         nodes,
         skillMap.map?.next_stage_ids ?? [],
         serverActiveStageId,
       ),
+      stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
       reviewDone,
+      connectedVscode: firstSteps?.items.find((item) => item.key === "connected-vscode")?.done,
+      // 受講登録の取得前は hasEnrollment を true に倒すため、準備案内の判定は待つ。
+      firstStageStarted: skillMap.map ? firstSteps?.stage_started : undefined,
     });
   }, [
     review,
@@ -227,9 +234,29 @@ export const LearnerHome = ({
     nodes,
     serverActiveStageId,
     reviewDone,
+    firstSteps,
   ]);
   /** 先頭 (「次にやること」) は `NextStepCard` が `guide` から引く。ここは残りだけ。 */
   const later = guide.steps.slice(1);
+  const firstStep = guide.steps[0];
+  const firstStageId = firstStep?.kind === "first-stage" ? firstStep.stageId : null;
+  const firstStageFocusAttempted = useRef(false);
+  useEffect(() => {
+    if (!firstStageId || firstStageFocusAttempted.current) return;
+    // 既存の初期フォーカスは止め、描画後にこの星へ 1 回だけ寄せる。
+    // まだ描画前なら、次のフレームで 1 回だけ試し直す。
+    let retryFrame: number | undefined;
+    const frame = requestAnimationFrame(() => {
+      firstStageFocusAttempted.current = true;
+      if (!treeRef.current?.focusStage(firstStageId)) {
+        retryFrame = requestAnimationFrame(() => treeRef.current?.focusStage(firstStageId));
+      }
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (retryFrame !== undefined) cancelAnimationFrame(retryFrame);
+    };
+  }, [firstStageId]);
 
   // ----- 星を始める / 開く -----
 
@@ -339,6 +366,7 @@ export const LearnerHome = ({
   };
 
   const handlers: GuideHandlers = {
+    onStartStage: startStage,
     onStartReview: () => setPage("daily-review"),
     onResumeLesson: () => {
       if (activeStage && nextLesson) onOpenLesson(activeStage, nextLesson.lesson.id);
@@ -472,8 +500,8 @@ export const LearnerHome = ({
             onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             revealDev={revealDev}
-            // 開いた直後は現在地へ寄せる。現在地が無ければ入口の星座。
-            initialFocusStageId={serverActiveStageId}
+            // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
+            initialFocusStageId={firstStageId ? null : serverActiveStageId}
             activeInfo={activeInfo}
             handleRef={treeRef}
             // PC で開いたカードの陰は「見えている範囲」から外す。

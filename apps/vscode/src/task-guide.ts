@@ -154,6 +154,7 @@ function editStep(input: TaskGuideInput): string {
   const lines = [`${where}ファイルを書き換え、<kbd>${saveKey(os)}</kbd> で保存します。`];
   if (plan === "static")
     lines.push("保存したら、そのファイルをブラウザーで開いて表示を確かめます。");
+  if (plan === "git") lines.push("保存したら、学習フォルダーでコミットします。");
   if (plan === "ci")
     lines.push(
       "変更をコミットして GitHub に push し、GitHub Actions の実行が成功で終わるまで待ちます。",
@@ -165,6 +166,7 @@ function checkStep(input: TaskGuideInput): string {
   const { manifest, root } = input;
   const plan = RUNNERS[manifest.runner].plan;
   const what: Record<RunnerPlanKind, string> = {
+    git: "学習フォルダーの Git の記録と設定を確かめます。",
     static: "HTML の文書の形と、課題文の条件 (見出しなど) を確かめます。",
     diagnose: "Node.js・npm・Git のバージョンを確かめます。",
     vitest: "テストを手元で実行します。",

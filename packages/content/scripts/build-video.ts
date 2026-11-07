@@ -1,5 +1,5 @@
 /**
- * 教材動画 (ナレーション付き解説動画) の生成 — PoC。
+ * 教材動画 (ナレーション付き解説動画) の生成。
  *
  *   bun run --filter=@stella/content video -- stages/it-basics --tts openjtalk
  *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake --captioned
@@ -15,7 +15,7 @@
  * `python3 -m http.server -d dist/video` などで開く)。`--captioned` を付けると、
  * 字幕を焼き込んだ確認用の `preview-captioned.mp4` も作る (本番は焼き込まない)。
  *
- * R2 / D1 への登録・CI はこの PoC の範囲外 (設計書のフェーズ 2〜3)。
+ * 配信は upload-videos.ts がこの生成処理を呼び、R2 と seed 用 manifest に登録する。
  */
 
 import { createHash } from "node:crypto";
@@ -88,21 +88,18 @@ const contentRoot = resolve(here, "..");
 
 // ---------------------------------------------------------------- 引数
 
-const args = process.argv.slice(2);
-function argValue(name: string): string | null {
-  const i = args.indexOf(name);
-  return i !== -1 && args[i + 1] ? args[i + 1] : null;
+export interface VideoPlan {
+  stageSlug: string;
+  id: string;
+  sourceHash: string;
 }
-const VALUE_FLAGS = ["--tts", "--out", "--concurrency"];
-const outDir = resolve(contentRoot, argValue("--out") ?? join("dist", "video"));
-const cacheDir = join(contentRoot, "dist", "video-cache", "tts");
-const concurrency = Number(argValue("--concurrency") ?? 2);
-const captioned = args.includes("--captioned");
-const force = args.includes("--force");
-const keepWork = args.includes("--keep-work");
-const selectors = args.filter(
-  (a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(args[i - 1] ?? ""),
-);
+
+interface BuildOptions {
+  outDir: string;
+  cacheDir: string;
+  captioned: boolean;
+  keepWork: boolean;
+}
 
 // ---------------------------------------------------------------- 設定
 
@@ -110,11 +107,11 @@ type VoiceFile = { provider: TtsProviderName } & Partial<
   Record<TtsProviderName, Omit<VoiceConfig, "provider">>
 >;
 
-function loadVoice(): VoiceConfig {
+export function loadVideoVoice(providerOverride?: TtsProviderName): VoiceConfig {
   const file = JSON.parse(
     readFileSync(join(contentRoot, "narration", "voice.json"), "utf8"),
   ) as VoiceFile;
-  const provider = (argValue("--tts") as TtsProviderName | null) ?? file.provider;
+  const provider = providerOverride ?? file.provider;
   return { provider, ...(file[provider] ?? {}) };
 }
 
@@ -127,9 +124,9 @@ interface VideoTopic extends NarrationTopic {
   assets: Map<string, string>;
 }
 
-function collectTopics(): { topics: VideoTopic[]; invalid: string[] } {
+function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: string[] } {
   const slidesTargets = new Map(
-    collectPdfTargets()
+    collectPdfTargets(undefined, { includeFormat2Slides: true })
       .filter((t) => t.kind === "slides")
       .map((t) => [`${t.stageSlug}/${t.lessonId}`, t]),
   );
@@ -184,7 +181,7 @@ interface TopicReport {
   anomalies: string[];
 }
 
-function sourceHashOf(topic: VideoTopic, cues: CuePlan[]): string {
+function sourceHashOf(topic: VideoTopic, cues: CuePlan[], voice: VoiceConfig): string {
   const h = createHash("sha256");
   h.update(
     JSON.stringify({
@@ -192,6 +189,13 @@ function sourceHashOf(topic: VideoTopic, cues: CuePlan[]): string {
       courseTitle: topic.courseTitle,
       timing: DEFAULT_TIMING,
       fps: VIDEO_FPS,
+      narration: topic.narration,
+      readings: topic.readings,
+      voice,
+      css: readFileSync(
+        resolve(contentRoot, "../../apps/web/src/components/learner/slides-skin.css"),
+        "utf8",
+      ),
       cues: cues.map((c) => [c.slide, c.text, c.hash]),
     }),
   );
@@ -225,6 +229,7 @@ async function screenshotSlides(
   topic: VideoTopic,
   workDir: string,
   cues: CuePlan[],
+  captioned: boolean,
 ): Promise<void> {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
@@ -296,6 +301,7 @@ async function buildTopic(
   provider: TtsProvider,
   browser: Browser,
   warnings: string[],
+  { outDir, cacheDir, captioned, keepWork }: BuildOptions,
 ): Promise<TopicReport> {
   const topicOut = join(outDir, topic.stageSlug, topic.id);
   const workDir = join(topicOut, "work");
@@ -348,7 +354,7 @@ async function buildTopic(
 
   // ④ 描画
   t0 = Date.now();
-  await screenshotSlides(browser, topic, workDir, cues);
+  await screenshotSlides(browser, topic, workDir, cues, captioned);
   const renderMs = Date.now() - t0;
 
   // ⑤ 書き出し
@@ -432,7 +438,7 @@ async function buildTopic(
 
 // ---------------------------------------------------------------- 一覧ページ
 
-function indexHtml(reports: TopicReport[]): string {
+function indexHtml(reports: TopicReport[], outDir: string): string {
   const fmt = (sec: number) =>
     `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, "0")}`;
   const cards = reports
@@ -489,7 +495,7 @@ ${cards}
 }
 
 /** 1 トピックの出力一式。どれかが欠けていれば作り直す。 */
-function outputFiles(): string[] {
+function outputFiles(captioned: boolean): string[] {
   const base = [
     "video.mp4",
     "captions.vtt",
@@ -503,10 +509,29 @@ function outputFiles(): string[] {
 
 // ---------------------------------------------------------------- main
 
-async function main(): Promise<void> {
-  const voice = loadVoice();
+/** CLI と配信が共用する。skip は R2 に出力一式がある場合だけ true を返す。 */
+export async function buildVideos(
+  args: string[] = [],
+  skip: (plan: VideoPlan) => boolean = () => false,
+): Promise<TopicReport[]> {
+  function argValue(name: string): string | null {
+    const i = args.indexOf(name);
+    return i !== -1 && args[i + 1] ? args[i + 1] : null;
+  }
+  const VALUE_FLAGS = ["--tts", "--out", "--concurrency"];
+  const outDir = resolve(contentRoot, argValue("--out") ?? join("dist", "video"));
+  const cacheDir = join(contentRoot, "dist", "video-cache", "tts");
+  const concurrency = Number(argValue("--concurrency") ?? 2);
+  const captioned = args.includes("--captioned");
+  const force = args.includes("--force");
+  const keepWork = args.includes("--keep-work");
+  const selectors = args.filter(
+    (a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(args[i - 1] ?? ""),
+  );
+
+  const voice = loadVideoVoice(argValue("--tts") as TtsProviderName | undefined);
   const provider = createTtsProvider(voice);
-  const { topics, invalid } = collectTopics();
+  const { topics, invalid } = collectTopics(selectors);
   const failures: string[] = [...invalid];
 
   // 台本の検証 (エラーのあるトピックは作らない)
@@ -538,13 +563,24 @@ async function main(): Promise<void> {
     });
   }
 
+  const skipped = new Set<string>();
   const pending = plans.filter(({ topic, cues }) => {
+    if (
+      skip({
+        stageSlug: topic.stageSlug,
+        id: topic.id,
+        sourceHash: sourceHashOf(topic, cues, voice),
+      })
+    ) {
+      skipped.add(`${topic.stageSlug}/${topic.id}`);
+      return false;
+    }
     if (force) return true;
     const topicOut = join(outDir, topic.stageSlug, topic.id);
     // 1 つでも欠けていれば作り直す (途中で止まった回や、一部だけ消された出力を補う)。
-    if (outputFiles().some((f) => !existsSync(join(topicOut, f)))) return true;
+    if (outputFiles(captioned).some((f) => !existsSync(join(topicOut, f)))) return true;
     const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
-    return report.sourceHash !== sourceHashOf(topic, cues);
+    return report.sourceHash !== sourceHashOf(topic, cues, voice);
   });
   console.log(
     `video: ${plans.length} topics with narration (generate ${pending.length}, up to date ${plans.length - pending.length}) — ${provider.identity}`,
@@ -598,10 +634,11 @@ async function main(): Promise<void> {
           const report = await buildTopic(
             topic,
             cues,
-            sourceHashOf(topic, cues),
+            sourceHashOf(topic, cues, voice),
             provider,
             browser,
             warnings,
+            { outDir, cacheDir, captioned, keepWork },
           );
           reports.push(report);
           console.log(
@@ -619,11 +656,12 @@ async function main(): Promise<void> {
 
   // 一覧は出力済みの全トピックで作り直す (今回作らなかった最新分も載せる)
   const allReports = plans
+    .filter(({ topic }) => !skipped.has(`${topic.stageSlug}/${topic.id}`))
     .map(({ topic }) => join(outDir, topic.stageSlug, topic.id, "report.json"))
     .filter((f) => existsSync(f))
     .map((f) => JSON.parse(readFileSync(f, "utf8")) as TopicReport);
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, "index.html"), indexHtml(allReports));
+  writeFileSync(join(outDir, "index.html"), indexHtml(allReports, outDir));
   writeFileSync(
     join(outDir, "summary.json"),
     `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length, failures }, null, 2)}\n`,
@@ -634,8 +672,16 @@ async function main(): Promise<void> {
 
   if (failures.length > 0) {
     console.error(`✗ ${failures.length} topics failed:\n  ${failures.join("\n  ")}`);
-    process.exit(1);
+    throw new Error(`${failures.length} topics failed`);
   }
+  return allReports.filter((r) =>
+    plans.some(
+      ({ topic, cues }) =>
+        topic.stageSlug === r.stageSlug &&
+        topic.id === r.id &&
+        sourceHashOf(topic, cues, voice) === r.sourceHash,
+    ),
+  );
 }
 
-await main();
+if (import.meta.main) await buildVideos(process.argv.slice(2));

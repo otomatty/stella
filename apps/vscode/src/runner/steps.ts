@@ -1112,3 +1112,144 @@ export const ciStep: StepDefinition = {
     };
   },
 };
+
+/** 学習フォルダーの記録を、固定の Git 引数だけで確かめる。 */
+export const gitRecordStep: StepDefinition = {
+  id: "git",
+  label: "Git の記録の確認",
+  async run(ctx) {
+    const checks = ctx.manifest.git?.checks;
+    if (!checks?.length)
+      return { status: "error", summary: "課題の定義に git.checks がありません" };
+    const git = await findExecutable("git", ctx.env, ctx.platform);
+    if (!git) return { status: "error", summary: GIT_MISSING };
+    const env = { ...ctx.env, GIT_TERMINAL_PROMPT: "0", GIT_OPTIONAL_LOCKS: "0", LC_ALL: "C" };
+    const runGit = (args: string[]) =>
+      ctx.exec({
+        file: git,
+        args,
+        cwd: ctx.root,
+        timeoutMs: TIMEOUTS.git,
+        env,
+      });
+    const tests: TestCaseResult[] = [];
+    for (const check of checks) {
+      let problem: string | undefined;
+      let name: string;
+      // 出力の中断・上限超過・起動の失敗は、学習者の記録の不備と区別する。
+      const run = async (args: string[]) => {
+        const out = await runGit(args);
+        const stopped = interrupted(out, "Git", "error");
+        if (stopped) throw stopped;
+        if (out.truncated)
+          throw {
+            status: "error",
+            summary: "Git の結果が大きすぎます。記録するファイルを教材の手順で見直してください",
+          } satisfies StepOutcome;
+        return out;
+      };
+      try {
+        switch (check.type) {
+          case "learning-folder-root": {
+            name = "学習フォルダーが Git のリポジトリの一番上になっている";
+            const out = await run(["rev-parse", "--show-prefix"]);
+            if (out.exitCode !== 0)
+              problem =
+                "学習フォルダーが Git のリポジトリになっていません。教材の手順で学習フォルダーに git init してください";
+            else if (out.stdout.trim().split("/").filter(Boolean).length !== 3)
+              problem =
+                "git init した場所を確かめ、課題フォルダーから 3 つ上の学習フォルダーをリポジトリの一番上にしてください";
+            break;
+          }
+          case "local-identity": {
+            name = "学習リポジトリに名前とメールを設定している";
+            const user = await run(["config", "--local", "--get", "user.name"]);
+            const email = await run(["config", "--local", "--get", "user.email"]);
+            if (
+              user.exitCode !== 0 ||
+              email.exitCode !== 0 ||
+              !user.stdout.trim() ||
+              !email.stdout.trim()
+            )
+              problem =
+                "教材の手順で、学習フォルダーの Git に名前とメールをローカル設定してください";
+            break;
+          }
+          case "committed": {
+            name = "課題のファイルをコミットしている";
+            const prefix = await run(["rev-parse", "--show-prefix"]);
+            const head = await run(["rev-parse", "--verify", "--quiet", "HEAD"]);
+            if (prefix.exitCode !== 0 || head.exitCode !== 0) {
+              problem =
+                "まだコミットがありません。教材の手順で課題のファイルをコミットしてください";
+              break;
+            }
+            const status = await run([
+              "-c",
+              "core.fsmonitor=false",
+              "status",
+              "--porcelain=v1",
+              "-z",
+              "--untracked-files=no",
+              "--ignore-submodules=all",
+            ]);
+            const tracked = await run(["ls-files", "-z"]);
+            if (status.exitCode !== 0 || tracked.exitCode !== 0)
+              throw {
+                status: "error",
+                summary: "Git の記録を読めません。学習フォルダーを開き直してください",
+              } satisfies StepOutcome;
+            const changed = parsePorcelainZ(status.stdout);
+            const files = new Set(tracked.stdout.split("\0").filter(Boolean));
+            if (
+              check.paths.some((p) => {
+                const relative = path.posix.normalize(p);
+                return !files.has(relative) || changed.has(`${prefix.stdout.trim()}${relative}`);
+              })
+            )
+              problem =
+                "課題のファイルに記録していない変更があります。ファイルを保存してコミットしてください";
+            break;
+          }
+          case "commit-count": {
+            name = `課題の変更を ${check.min} 回以上コミットしている`;
+            const out = await run(["rev-list", "--count", "HEAD", "--", "."]);
+            if (out.exitCode !== 0)
+              problem =
+                "まだコミットがありません。教材の手順で課題のファイルをコミットしてください";
+            else if (!/^\d+$/.test(out.stdout.trim()))
+              throw {
+                status: "error",
+                summary: "コミットの回数を読めません。もう一度確認してください",
+              } satisfies StepOutcome;
+            else if (Number(out.stdout.trim()) === 0)
+              problem = "まだコミットがありません。課題のファイルをコミットしてください";
+            else if (Number(out.stdout.trim()) < check.min)
+              problem = `課題の変更を ${check.min} 回以上に分けてコミットしてください`;
+            break;
+          }
+          case "ignored": {
+            name = `${check.path} が Git の記録から除かれている`;
+            const out = await run(["check-ignore", "-q", "--no-index", "--", check.path]);
+            if (out.exitCode !== 0)
+              problem = `${check.path} を記録しないよう、教材の手順で .gitignore に設定してください`;
+            break;
+          }
+        }
+      } catch (outcome) {
+        return outcome as StepOutcome;
+      }
+      tests.push({
+        name: check.name ?? name,
+        status: problem ? "failed" : "passed",
+        ...(problem ? { message: problem } : {}),
+      });
+    }
+    const passed = tests.filter((test) => test.status === "passed").length;
+    return {
+      status: passed === tests.length ? "passed" : "failed",
+      summary: `${tests.length} 件中 ${passed} 件が通りました`,
+      tests,
+    };
+  },
+};

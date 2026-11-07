@@ -2,7 +2,7 @@
  * 単元の内容指紋 (`unitContentHash`) を表示する。references.json の `contentHash` と、旧単元の
  * 例外 (`sources/legacy-units.json` の `exemptions`) に記録する値はこれで確かめる (SOURCE_GUIDE.md)。
  *
- *   bun run --filter=@stella/content hash:unit -- dev-env-basics/m0-first-page
+ *   bun run --filter=@stella/content hash:unit -- dev-env-basics/u02-first-task
  *
  * 引数は `<slug>/<module>` (版の `@…` は無視) かステージの slug。省略すると全単元。ファイルは
  * 書き換えない。版を上げて参照元を確認し直したことは、人が references.json に残す。

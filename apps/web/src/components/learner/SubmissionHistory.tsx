@@ -16,10 +16,14 @@ export function SubmissionHistory({
   const [open, setOpen] = useState(false);
   return (
     <details
+      data-testid="submissions-history"
       className="mb-6 rounded-lg border border-border"
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
-      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+      <summary
+        data-testid="submissions-toggle"
+        className="cursor-pointer px-4 py-3 text-sm font-semibold"
+      >
         提出・添削を確認する
       </summary>
       {open ? <SubmissionList onOpenSubmission={onOpenSubmission} /> : null}
@@ -47,10 +51,14 @@ function SubmissionList({
     );
   }
   if (submissions.length === 0) {
-    return <p className="p-4 text-sm text-ink-3">提出はまだありません。</p>;
+    return (
+      <p data-testid="submissions-empty" className="p-4 text-sm text-ink-3">
+        提出はまだありません。
+      </p>
+    );
   }
   return (
-    <div>
+    <div data-testid="submissions-list">
       {submissions.map((submission) => {
         const meta = submission.verdict ? VERDICT_META[submission.verdict] : null;
         const pendingLabel =
@@ -61,6 +69,7 @@ function SubmissionList({
           <button
             type="button"
             key={submission.id}
+            data-testid="submission-open"
             onClick={() => onOpenSubmission(submission.id)}
             className="flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left hover:bg-sunken"
           >

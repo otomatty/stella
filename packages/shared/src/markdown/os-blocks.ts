@@ -139,7 +139,7 @@ export function parseOsBlocks(source: string): ParsedOsBlocks {
           line: lineNo,
           message: "OS 別のブロックは入れ子にできません。先に `:::` で閉じてください",
         });
-      else if (/^:::/.test(line))
+      else if (/^:::/.test(line) && !/^:::tutorial(?:[ \t]|$)/.test(line))
         issues.push({
           line: lineNo,
           message: "OS 別のブロックの中に `:::` で始まる行は書けません",
@@ -172,7 +172,7 @@ export function parseOsBlocks(source: string): ParsedOsBlocks {
       });
     } else if (CLOSE.test(line)) {
       issues.push({ line: lineNo, message: "対応する `:::os` の無い `:::` です" });
-    } else if (/^:::/.test(line)) {
+    } else if (/^:::/.test(line) && !/^:::tutorial(?:[ \t]|$)/.test(line)) {
       issues.push({
         line: lineNo,
         message: "未知の記法です。OS 別のブロックは `:::os windows` / `:::os macos` で始めます",

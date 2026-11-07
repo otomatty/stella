@@ -3,6 +3,7 @@
  * ファイルを読んで判定する。外部プロセスは起動しない。
  */
 
+import { lstat } from "node:fs/promises";
 import path from "node:path";
 import type { StaticCheck } from "@stella/shared/tasks/manifest";
 import type { TestCaseResult } from "@stella/shared/tasks/run-result";
@@ -102,6 +103,10 @@ function allElements(root: Node): Element[] {
 
 function defaultName(check: StaticCheck): string {
   switch (check.type) {
+    case "file-absent":
+      return `${check.path} が残っていない`;
+    case "file-contains":
+      return `${check.path} の文字が課題文の条件に合っている`;
     case "file-exists":
       return `${check.path} がある`;
     case "html-document":
@@ -127,6 +132,51 @@ function defaultName(check: StaticCheck): string {
 async function runCheck(root: string, check: StaticCheck): Promise<string | null> {
   if (check.type === "file-exists") {
     return (await isFileInRoot(root, check.path)) ? null : `${check.path} がありません`;
+  }
+
+  if (check.type === "file-absent") {
+    // 親がリンクでも外のフォルダーを調べない。リンク自体も「残っている」とする。
+    const parts = check.path.split("/");
+    try {
+      for (let i = 1; i <= parts.length; i++) {
+        const target = path.resolve(root, ...parts.slice(0, i));
+        const rel = path.relative(path.resolve(root), target);
+        if (rel.startsWith("..") || path.isAbsolute(rel))
+          return `${check.path} の場所を課題フォルダーの中にしてください`;
+        const info = await lstat(target);
+        if (info.isSymbolicLink())
+          return `${check.path} が残っています。教材の手順で名前や場所を確かめてください`;
+      }
+      return `${check.path} が残っています。教材の手順で名前や場所を確かめてください`;
+    } catch (error) {
+      if (
+        (error as NodeJS.ErrnoException).code === "ENOENT" ||
+        (error as NodeJS.ErrnoException).code === "ENOTDIR"
+      )
+        return null;
+      return `${check.path} の有無を確かめられません。フォルダーを開き直してください`;
+    }
+  }
+  if (check.type === "file-contains") {
+    if (!(await isFileInRoot(root, check.path))) return `${check.path} がありません`;
+    try {
+      const bytes = await readFileInRoot(root, check.path, LIMITS.fileBytes);
+      let text: string;
+      try {
+        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\uFEFF/, "");
+        if ([...text].some((char) => char.charCodeAt(0) < 32 && !"\t\n\r".includes(char)))
+          throw new Error("binary");
+      } catch {
+        return `${check.path} を UTF-8 のテキストファイルとして保存してください`;
+      }
+      text = text.replace(/\r\n?/g, "\n");
+      const wanted = check.text.replace(/\r\n?/g, "\n");
+      const ok = check.match === "exact" ? text.trim() === wanted : text.includes(wanted);
+      return ok ? null : `${check.path} の文字を課題文に合わせて保存してください`;
+    } catch (error) {
+      if (error instanceof FileTooLargeError) return error.message;
+      return `${check.path} を読めません。ファイルを保存してから確認してください`;
+    }
   }
 
   const doc = await loadHtml(root, check.path);

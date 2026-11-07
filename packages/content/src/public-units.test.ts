@@ -8,12 +8,11 @@ import { buildContentManifest } from "./manifest.js";
 /**
  * ログインなしで読める単元 (`unit.json` の `public`。Issue #41)。
  *
- * dev-env-basics の見本単元を、課題を外した「公開の単元」に作り替えて確かめる。
- * U00〜U01 の本文はまだ無い (人が書く) ので、仕組みは fixture で検証する。
+ * 固定 fixture の公開単元と課題のある単元の境界を確かめる。
  */
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const sample = join(content, "stages/dev-env-basics");
+const sample = join(content, "src/__fixtures__/format2-sample");
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -23,7 +22,7 @@ function readJson(file: string): Record<string, unknown> {
   return JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
 }
 
-/** dev-env-basics を写し、`m0-first-page` を課題の無い公開の単元にした教材の根。 */
+/** 公開単元と非公開単元を含む固定 fixture の根。 */
 function publicUnitFixture(): { root: string; unit: string; stage: string } {
   const root = mkdtempSync(join(tmpdir(), "stella-public-unit-"));
   roots.push(root);
@@ -32,15 +31,7 @@ function publicUnitFixture(): { root: string; unit: string; stage: string } {
   cpSync(sample, stage, { recursive: true });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
-  const unit = join(stage, "modules/m0-first-page");
-  rmSync(join(unit, "tasks"), { recursive: true });
-  const refs = readJson(join(unit, "references.json"));
-  refs.uses = (refs.uses as { contentId: string }[]).filter(
-    (u) => !u.contentId.startsWith("tasks/"),
-  );
-  writeFileSync(join(unit, "references.json"), JSON.stringify(refs, null, 2));
-  const config = readJson(join(unit, "unit.json"));
-  writeFileSync(join(unit, "unit.json"), JSON.stringify({ ...config, public: true }, null, 2));
+  const unit = join(stage, "modules/u00-start");
   return { root, unit, stage };
 }
 
@@ -54,21 +45,30 @@ describe("ログインなしで読める単元", () => {
   it("スライドとまとめに印を付け、知識問題と課題には付けない", () => {
     const { root } = publicUnitFixture();
     const manifest = buildContentManifest(join(root, "stages"));
-    expect(manifest.units[0].config.public).toBe(true);
-    expect(manifest.tasks).toEqual([]);
-    const lessons = manifest.stages[0].sections?.[0]?.lessons ?? [];
+    expect(manifest.units.find((u) => u.unitId === "u00-start")?.config.public).toBe(true);
+    expect(manifest.tasks.map((t) => t.definition.id)).toEqual([
+      "dev-env-basics/m0-first-page/q01-first-page",
+    ]);
+    const lessons = manifest.stages[0].sections?.find((s) => s.id === "u00-start")?.lessons ?? [];
     expect(lessons.map((l) => [l.id, l.type, l.public === true])).toEqual([
-      ["0-1-1", "slides", true],
-      ["doc-0-1", "text", true],
-      ["quiz-0-1", "quiz", false],
+      ["sample-public-slides", "slides", true],
+      ["doc-sample-public", "text", true],
+      ["quiz-sample-public", "quiz", false],
     ]);
     // 単元の参照元は公開のまとめに載る (出典を落とさない)。
-    expect(lessons.find((l) => l.id === "doc-0-1")?.markdown).toContain("単元の参照元");
+    expect(lessons.find((l) => l.id === "doc-sample-public")?.markdown).toContain("単元の参照元");
   });
 
   it("印の無い単元のレッスンには public を持たせない", () => {
     const manifest = buildContentManifest(join(content, "stages"));
-    const lessons = manifest.stages.flatMap((c) => (c.sections ?? []).flatMap((s) => s.lessons));
+    const publicUnits = new Set(
+      manifest.units.filter((u) => u.config.public).map((u) => `${u.stageId}/${u.unitId}`),
+    );
+    const lessons = manifest.stages.flatMap((stage) =>
+      (stage.sections ?? [])
+        .filter((section) => !publicUnits.has(`${stage.id}/${section.id}`))
+        .flatMap((section) => section.lessons),
+    );
     expect(lessons.length).toBeGreaterThan(0);
     expect(lessons.some((l) => "public" in l)).toBe(false);
   });
@@ -113,14 +113,15 @@ describe("ログインなしで読める単元", () => {
   });
 
   it("public: false は印の無い単元と同じ (課題を置ける)", () => {
-    const { root, unit } = publicUnitFixture();
-    cpSync(join(sample, "modules/m0-first-page/tasks"), join(unit, "tasks"), { recursive: true });
+    const { root, stage } = publicUnitFixture();
+    const unit = join(stage, "modules/m0-first-page");
     editJson(join(unit, "unit.json"), (u) => {
       u.public = false;
     });
     const manifest = buildContentManifest(join(root, "stages"));
     expect(manifest.tasks).toHaveLength(1);
-    const lessons = manifest.stages[0].sections?.[0]?.lessons ?? [];
+    const lessons =
+      manifest.stages[0].sections?.find((s) => s.id === "m0-first-page")?.lessons ?? [];
     expect(lessons.some((l) => l.public)).toBe(false);
   });
 });

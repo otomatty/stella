@@ -16,25 +16,25 @@
 
 - 規則: 課題で求めていない処理・要素や、使われない関数・分岐・ファイルを提出に残していない。
 - 対象: すべての言語・提出ファイル
-- 導入: dev-env-basics/m0-first-page
+- 導入: dev-env-basics/u02-first-task
 
 ## CR-STYLE-01 配布したコードの書き方に合わせる
 
 - 規則: 配布したファイルにある書き方(命名の付け方・インデント・要素や処理を並べる順)に合わせて書き足している。
 - 対象: 配布したファイルに書き足す課題
-- 導入: dev-env-basics/m0-first-page
+- 導入: dev-env-basics/u02-first-task
 
 ## CR-EXPLAIN-01 説明とコードが一致する
 
 - 規則: 説明欄に書いた変更点・設計の理由が、提出したコードの内容と食い違っていない。
 - 対象: 説明欄のある課題(自力・統合・確認A・確認B)
-- 導入: dev-env-basics/m0-first-page
+- 導入: dev-env-basics/u02-first-task
 
 ## CR-DECISION-01 説明が自分の設計判断を述べる
 
 - 規則: 説明欄で、どの書き方を選んだかとその理由を、自分のコードの箇所に即して述べている。課題文の言い換えだけになっていない。
 - 対象: 確認A・確認B
-- 導入: dev-env-basics/m0-first-page
+- 導入: dev-env-basics/u02-first-task
 
 ## CR-NAME-01 名前が意味を表す
 

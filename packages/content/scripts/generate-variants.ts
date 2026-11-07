@@ -2,7 +2,7 @@
  * 類題のテンプレート (`private/variant-templates/`) から類題 (`private/variants/<名前>/`) を書き出す (#69)。
  *
  *   bun run --filter=@stella/content variants:generate                 # 全ステージ
- *   bun run --filter=@stella/content variants:generate -- dev-env-basics/m0-first-page
+ *   bun run --filter=@stella/content variants:generate -- dev-env-basics/u02-first-task
  *   bun run --filter=@stella/content variants:generate -- --check      # 書かずに食い違いを確かめる (content:check)
  *
  * 引数は `<ステージ>` か `<ステージ>/<単元>` (課題の task.json の id の先頭)。生成した類題を手で直すと

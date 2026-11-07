@@ -24,6 +24,35 @@ export const VSCODE_DOWNLOAD_URL = "https://code.visualstudio.com/download";
 const LAUNCH_GRACE_MS = 4_000;
 /** 開いたかの見張りをやめるまで (遅れて開いたら案内を消すため、案内のあとも少し見る)。 */
 const WATCH_MS = 30_000;
+const HANDOFF_HINT_KEY = "stella_vscode_handoff_hint_v1";
+
+/** 壊れた保存値は未表示として扱う。3 回表示したら案内を終える。 */
+export function nextHandoffHintCount(stored: string | null): number | undefined {
+  const parsed = Number(stored);
+  const count = Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+  return count < 3 ? count + 1 : undefined;
+}
+
+function showHandoffHint(): void {
+  let next: number | undefined = 1;
+  try {
+    next = nextHandoffHintCount(localStorage.getItem(HANDOFF_HINT_KEY));
+  } catch {
+    // 保存できない環境でも案内は出す。
+  }
+  if (next === undefined) return;
+  toast("VS Code で課題を開きました", {
+    description:
+      "VS Code の右側の課題文のパネルにある『進め方』を見てください。課題文が出ないときは、次を確かめます: 拡張機能のインストールを尋ねられたら、発行元が saedgewell の STELLA を入れる / 初めてのときは学習フォルダーを選ぶ / 『信頼しますか』と聞かれたら、自分の学習フォルダーなら信頼する",
+    duration: 15_000,
+    cancel: { label: "閉じる", onClick: () => undefined },
+  });
+  try {
+    localStorage.setItem(HANDOFF_HINT_KEY, String(next));
+  } catch {
+    // 端末に回数を残せなければ、次回も表示してよい。
+  }
+}
 
 export type VscodeTarget = { taskId: string } | { stageId: string; lessonId: string };
 
@@ -40,22 +69,31 @@ async function issueLinkCode(): Promise<string | undefined> {
 
 /**
  * ブラウザーから離れた (VS Code が前面に来た) かを見張り、離れなければ VS Code の入手を案内する。
- * 遅れて離れたら (確認に答えるのが遅かった) 案内を消す。
+ * 遅れて離れたら入手の案内を消し、時間内に戻った最初の 1 回だけ進め方を案内する。
  */
 function watchLaunch(): void {
   let toastId: string | number | undefined;
+  let hasLeft = false;
   const cleanup = () => {
     window.clearTimeout(hint);
     window.clearTimeout(stop);
     window.removeEventListener("blur", left);
+    window.removeEventListener("focus", returned);
     document.removeEventListener("visibilitychange", onVisibility);
   };
   const left = () => {
-    cleanup();
+    hasLeft = true;
+    window.clearTimeout(hint);
     if (toastId !== undefined) toast.dismiss(toastId);
+  };
+  const returned = () => {
+    if (!hasLeft || document.visibilityState !== "visible") return;
+    cleanup();
+    showHandoffHint();
   };
   const onVisibility = () => {
     if (document.visibilityState === "hidden") left();
+    else if (document.visibilityState === "visible") returned();
   };
   const hint = window.setTimeout(() => {
     toastId = toast("VS Code が開きませんでしたか？", {
@@ -72,6 +110,7 @@ function watchLaunch(): void {
   }, LAUNCH_GRACE_MS);
   const stop = window.setTimeout(cleanup, WATCH_MS);
   window.addEventListener("blur", left);
+  window.addEventListener("focus", returned);
   document.addEventListener("visibilitychange", onVisibility);
 }
 

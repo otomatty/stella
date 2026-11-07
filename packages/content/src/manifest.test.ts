@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -948,12 +948,36 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       const stage = stages.find((c) => c.id === slug);
       expect(stage, slug).toBeDefined();
       expect(stage?.description).toMatch(/^【準備中】/);
-      expect(stage?.sections).toHaveLength(1);
-      expect(
-        stage?.sections
-          ?.flatMap((section) => section.lessons)
-          .filter((lesson) => lesson.type === "slides"),
-      ).toHaveLength(1);
+      const sectionIds = stage?.sections?.map((section) => section.id);
+      if (slug === "dev-env-basics") {
+        const config = JSON.parse(
+          readFileSync(new URL("../stages/dev-env-basics/stage.json", import.meta.url), "utf8"),
+        ) as { modules: Record<string, string> };
+        expect(sectionIds?.[0]).toBe("u00-start");
+        expect(sectionIds).toEqual(
+          Object.keys(config.modules).filter((unit) =>
+            existsSync(new URL(`../stages/dev-env-basics/modules/${unit}`, import.meta.url)),
+          ),
+        );
+        for (const section of stage?.sections ?? [])
+          expect(section.title).toBe(config.modules[section.id]);
+        const publicUnits = buildContentManifest()
+          .units.filter((unit) => unit.stageId === slug && unit.config.public)
+          .map((unit) => unit.unitId);
+        expect(publicUnits).toEqual(["u00-start", "u01-vscode-setup"]);
+        expect(
+          stage?.sections
+            ?.flatMap((section) => section.lessons)
+            .some((lesson) => lesson.type === "slides"),
+        ).toBe(true);
+      } else {
+        expect(sectionIds).toEqual(["m0-orientation"]);
+        expect(
+          stage?.sections
+            ?.flatMap((section) => section.lessons)
+            .filter((lesson) => lesson.type === "slides"),
+        ).toHaveLength(1);
+      }
       expect(
         stage?.sections
           ?.flatMap((section) => section.lessons)

@@ -1,3 +1,5 @@
+import { parseTutorialBlocks } from "@stella/shared/markdown/tutorial-blocks";
+import { stellaUrl } from "./config.js";
 import {
   DEFAULT_OS,
   OS_LABELS,
@@ -166,6 +168,16 @@ function renderTable(header: string[], rows: string[][]): string {
 
 /** Escape raw HTML first, then emit GFM-equivalent tags. No HTML passthrough. */
 function renderBlocks(markdown: string): string {
+  return parseTutorialBlocks(markdown)
+    .segments.map((s) =>
+      s.kind === "markdown"
+        ? renderPlainBlocks(s.markdown)
+        : `<p><a href="${escapeHtml(`${stellaUrl("webUrl")}/tutorials/${s.id}.mp4`)}">動画: ${s.id} を Web で見る</a></p>`,
+    )
+    .join("\n");
+}
+
+function renderPlainBlocks(markdown: string): string {
   const stripped = markdown.replaceAll("\r\n", "\n").replace(CLASS_DIRECTIVE, "");
   const escaped = escapeHtml(stripped);
   const lines = escaped.split("\n");

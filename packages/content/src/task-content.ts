@@ -48,6 +48,9 @@ export interface TaskSeed {
   definition: TaskDefinition;
   bundle: TaskBundle;
   privateFiles: Record<string, string>;
+  /** 検査専用の削除指定。配布・seed の素材には含めない。 */
+  solutionRemoves?: string[];
+  mutantRemoves?: Record<string, string[]>;
   /**
    * 固定した開始点 (任意。`fixed-start/`)。starter の代わりに置く一式で、tests・README・
    * `.stella/task.json` は通常の配布と同じ。前の課題の動く実装を含みうるので bundle に混ぜず、
@@ -108,7 +111,12 @@ export function assertKnownSkills(skills: string[], ids: Set<string>): void {
   for (const id of skills) if (!ids.has(id)) throw new Error(`未知のスキル: ${id}`);
 }
 /** シンボリックリンクをたどらず、明示したディレクトリだけ収集する。 */
-export function collectFiles(root: string, prefix = ""): Record<string, string> {
+export function collectFiles(
+  root: string,
+  prefix = "",
+  allowGitMutant = false,
+  removes?: string[],
+): Record<string, string> {
   const files: Record<string, string> = {};
   const walk = (dir: string, rel: string) => {
     for (const name of readdirSync(dir).sort()) {
@@ -117,6 +125,19 @@ export function collectFiles(root: string, prefix = ""): Record<string, string> 
       const stat = lstatSync(path);
       if (stat.isSymbolicLink())
         throw new Error(`教材のシンボリックリンクは配布できません: ${path}`);
+      if (name === ".stella-solution.json") {
+        if (!removes || dir !== root || !stat.isFile())
+          throw new Error(".stella-solution.json は解答例・誤答の直下だけに置けます: " + path);
+        removes.push(...parseSolutionRemoves(json(path)));
+        continue;
+      }
+      if (name === ".stella-mutant.json") {
+        if (!allowGitMutant || dir !== root || !stat.isFile())
+          throw new Error(
+            `.stella-mutant.json は git-record の誤答フォルダー直下だけに置けます: ${path}`,
+          );
+        parseGitMutant(json(path));
+      }
       if (stat.isDirectory()) {
         if (["private", "node_modules", ".git", ".stella"].includes(name))
           throw new Error(`配布フォルダーに ${name} を置けません: ${path}`);
@@ -130,6 +151,70 @@ export function collectFiles(root: string, prefix = ""): Record<string, string> 
   };
   walk(root, prefix);
   return files;
+}
+
+/** 検査用の削除指定は、glob ではなく課題フォルダーからのファイルの相対パスだけ。 */
+export function parseSolutionRemoves(raw: unknown): string[] {
+  const value = record(raw);
+  if (
+    Object.keys(value).some((key) => key !== "remove") ||
+    !Array.isArray(value.remove) ||
+    value.remove.length === 0 ||
+    value.remove.some(
+      (path) =>
+        typeof path !== "string" ||
+        !path.trim() ||
+        !isSafeRelativePattern(path) ||
+        /[*?{}[\]]/.test(path) ||
+        path.split("/").includes("."),
+    )
+  )
+    throw new Error(".stella-solution.json は remove に空でない相対パスの配列だけを指定できます");
+  return value.remove as string[];
+}
+
+/** 削除によって確認の条件や配布の管理情報を壊させない。 */
+function assertRemovable(path: string, definition: TaskDefinition): void {
+  const segments = path.toLowerCase().split("/");
+  if (
+    segments.some((part) =>
+      [
+        ".git",
+        ".stella",
+        "private",
+        "node_modules",
+        ".stella-solution.json",
+        ".stella-mutant.json",
+      ].includes(part),
+    ) ||
+    path.toLowerCase() === "readme.md" ||
+    matchesPattern(path, definition.protected)
+  )
+    throw new Error(
+      `削除指定でテスト・設定 (protected) や管理ファイルは消せません: ${path} (${definition.id})`,
+    );
+}
+
+/** 教材の読み込みと実行の両方で、誤答の準備に使える指定を限定する。 */
+export function parseGitMutant(raw: unknown): {
+  skipGitignore?: boolean;
+  skipCommit?: boolean;
+  skipIdentity?: boolean;
+} {
+  if (
+    typeof raw !== "object" ||
+    raw === null ||
+    Array.isArray(raw) ||
+    Object.entries(raw).some(
+      ([key, value]) =>
+        !["skipGitignore", "skipCommit", "skipIdentity"].includes(key) ||
+        typeof value !== "boolean",
+    )
+  )
+    throw new Error(
+      ".stella-mutant.json は skipGitignore / skipCommit / skipIdentity の真偽値だけを指定できます",
+    );
+  return raw;
 }
 /** 単元の課題を読むときに共通で使う台帳と参照元。 */
 interface UnitContext {
@@ -235,6 +320,14 @@ function readVariants(ctx: UnitContext, parent: TaskSeed): TaskSeed[] {
 function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: TaskSeed): TaskSeed {
   const { root, stageId, unitId, referenceMap, registry } = ctx;
   const label = parent ? "類題" : "課題";
+  for (const dir of [taskDir, join(taskDir, "private")]) {
+    if (existsSync(join(dir, ".stella-solution.json")))
+      throw new Error(`.stella-solution.json は解答例・誤答の直下だけに置けます: ${dir}`);
+    if (existsSync(join(dir, ".stella-mutant.json")))
+      throw new Error(
+        `.stella-mutant.json は git-record の誤答フォルダー直下だけに置けます: ${dir}`,
+      );
+  }
   // 学習フォルダーでは `<課題>-fixed-start/` を固定した開始点に使う。課題と取り違えない。
   if (taskId.endsWith(FIXED_START_SUFFIX))
     throw new Error(
@@ -324,12 +417,14 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   assertHintSteps(hints.toString("utf8"), definition);
   // 予備の類題 (`private/variants/`) は親の素材に入れない。類題はそれぞれ自分の課題として
   // seed され、出題した受講者にだけ配る (#39)。
+  const solutionRemoves: string[] = [];
   const privateFiles = {
-    ...collectFiles(join(taskDir, "private/solution"), "solution"),
+    ...collectFiles(join(taskDir, "private/solution"), "solution", false, solutionRemoves),
     "explanation.md": readFileSync(join(taskDir, "private/explanation.md")).toString("base64"),
     "review.md": readFileSync(join(taskDir, "private/review.md")).toString("base64"),
     "hints.md": hints.toString("base64"),
   };
+  for (const path of solutionRemoves) assertRemovable(path, definition);
   // 非公開の素材は D1 の 1 行 (task_private) に入り、API が 1 回の要求で読む。配布一式と同じ上限。
   const privateTooLarge = bundleSizeProblem(privateFiles);
   if (privateTooLarge)
@@ -337,7 +432,15 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   const fixedStart = parent
     ? undefined
     : readFixedStart(taskDir, definition, starter, files, privateFiles, assemble);
-  const mutants = readMutants(taskDir, definition, starter, privateFiles, parent !== undefined);
+  const mutantRemoves: Record<string, string[]> = {};
+  const mutants = readMutants(
+    taskDir,
+    definition,
+    starter,
+    privateFiles,
+    parent !== undefined,
+    mutantRemoves,
+  );
   // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
   const contentHash = createHash("sha256")
     .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
@@ -350,6 +453,8 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     definition,
     bundle: { manifest, contentHash, files },
     privateFiles,
+    ...(solutionRemoves.length ? { solutionRemoves } : {}),
+    ...(Object.keys(mutantRemoves).length ? { mutantRemoves } : {}),
     ...(fixedStart ? { fixedStart } : {}),
     ...(mutants ? { mutants } : {}),
     directory: taskDir,
@@ -369,6 +474,7 @@ export function mutantsCheckable(definition: TaskDefinition): boolean {
  * `private/mutants/` (任意。類題では必須) を読む。典型的な誤答を 1 つ 1 フォルダーで置き、中身は
  * 解答例に重ねるファイル (受講者が書き換えるファイルだけ)。テスト・設定 (protected)・README・
  * `.stella/` を変える誤答は、テストを壊すだけで誤答を確かめないので置けない。
+ * git-record の誤答直下の `.stella-mutant.json` だけは、Git の準備を省く指定として読む。
  * 類題は在庫に入れる前に「典型的な誤答がテストで落ちる」ことを確かめる (07 §7.2) ので、
  * 手元で確かめられる runner の類題には 1 つ以上を求める。
  */
@@ -378,6 +484,7 @@ function readMutants(
   starter: Record<string, string>,
   privateFiles: Record<string, string>,
   isVariant: boolean,
+  mutantRemoves: Record<string, string[]>,
 ): Record<string, Record<string, string>> | undefined {
   const dir = join(taskDir, "private/mutants");
   const required = isVariant && mutantsCheckable(definition);
@@ -410,10 +517,20 @@ function readMutants(
       throw new Error(
         `private/mutants/ には誤答を 1 つ 1 フォルダーで置いてください: ${name} (${definition.id})`,
       );
-    const files = collectFiles(path);
-    if (Object.keys(files).length === 0)
+    const removes: string[] = [];
+    const files = collectFiles(path, "", definition.runner === "git-record", removes);
+    for (const rel of removes) {
+      assertRemovable(rel, definition);
+      if (!editable.has(rel))
+        throw new Error(
+          `誤答で消せるのは starter・解答例にあるファイルだけです: ${rel} (${definition.id})`,
+        );
+    }
+    if (removes.length) mutantRemoves[name] = removes;
+    if (Object.keys(files).length === 0 && removes.length === 0)
       throw new Error(`誤答 ${name} にファイルがありません: ${definition.id}`);
     for (const key of Object.keys(files)) {
+      if (definition.runner === "git-record" && key === ".stella-mutant.json") continue;
       if (matchesPattern(key, definition.protected))
         throw new Error(
           `誤答ではテスト・設定 (protected) を変えられません: ${name}/${key} (${definition.id})`,

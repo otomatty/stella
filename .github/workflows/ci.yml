@@ -42,6 +42,10 @@ jobs:
       - name: Check deployment configuration
         run: bun run deploy:config:check
 
+      - name: Check tutorial freshness
+        continue-on-error: true
+        run: bun run tutorials:check
+
       - name: Typecheck
         run: bun run typecheck
 

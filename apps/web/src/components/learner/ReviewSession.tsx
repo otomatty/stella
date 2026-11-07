@@ -175,6 +175,7 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
                 return (
                   <button
                     key={o.id}
+                    data-testid="review-option"
                     type="button"
                     disabled={feedback != null}
                     onClick={() => toggle(o.id, question.kind === "multiple")}
@@ -196,7 +197,7 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
             </fieldset>
 
             {feedback ? (
-              <div className="mt-4">
+              <div data-testid="review-feedback" className="mt-4">
                 <p
                   className={cn(
                     "text-sm font-medium",
@@ -220,6 +221,7 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
                 <Button
                   variant="accent"
                   disabled={selected.length === 0 || submitting}
+                  data-testid="review-submit"
                   onClick={() => void submit()}
                 >
                   回答する

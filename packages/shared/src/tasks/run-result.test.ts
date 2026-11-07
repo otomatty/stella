@@ -45,9 +45,15 @@ describe("RUNNERS", () => {
     expect(isRunnerId("sh")).toBe(false);
   });
 
-  it("Node.js が要らないのは HTML の確認・環境診断・CI・C# のテストだけ", () => {
+  it("Node.js が要らないのは HTML の確認・環境診断・Git の記録・CI・C# のテストだけ", () => {
     const withoutNode = RUNNER_IDS.filter((id) => !RUNNERS[id].requiresNode);
-    expect(withoutNode).toEqual(["static-preview", "env-diagnose", "ci-deploy", "dotnet-test"]);
+    expect(withoutNode).toEqual([
+      "static-preview",
+      "env-diagnose",
+      "git-record",
+      "ci-deploy",
+      "dotnet-test",
+    ]);
   });
 
   it("ts-test は TypeScript の手順で、Node.js が要り、手元で実行する", () => {

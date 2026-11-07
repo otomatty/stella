@@ -1,0 +1,16 @@
+{
+  "id": "diagnose-node-01",
+  "version": "1",
+  "runner": "env-diagnose",
+  "os": ["windows", "macos", "linux"],
+  "requirements": {
+    "node": {
+      "min": "22.13.0",
+      "majors": [22, 24]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  },
+  "libraries": {}
+}

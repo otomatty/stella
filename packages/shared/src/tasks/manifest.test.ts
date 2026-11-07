@@ -129,7 +129,7 @@ describe("parseTaskManifest", () => {
       "static.checks[0].text は空でない文字列で書いてください",
       "static.checks[1].path は課題フォルダーからの相対パスで書いてください (glob は使えません)",
       "static.checks[1] には min か max のどちらかが要ります",
-      "static.checks[2].type は file-exists / html-document / element-text / element-count / links-resolve / stylesheet-linked のどれかにしてください",
+      "static.checks[2].type は file-exists / file-absent / file-contains / html-document / element-text / element-count / links-resolve / stylesheet-linked のどれかにしてください",
     ]);
   });
 
@@ -428,4 +428,87 @@ describe("isSafeRelativePattern", () => {
     expect(isSafeRelativePattern("")).toBe(false);
     expect(isSafeRelativePattern("src/")).toBe(false);
   });
+});
+
+describe("ファイルと Git の検査の定義", () => {
+  it("新しい検査を読み、Git と static の定義を残す", () => {
+    const git = {
+      checks: [
+        { type: "learning-folder-root" },
+        { type: "local-identity" },
+        { type: "committed", paths: ["notes.txt"] },
+        { type: "commit-count", min: 2 },
+        { type: "ignored", path: "node_modules/probe" },
+      ],
+    };
+    const checks = [
+      { type: "file-contains", path: "notes.txt", text: "学習", match: "exact" },
+      { type: "file-absent", path: "old.txt" },
+    ];
+    expect(
+      parseTaskManifest(base({ runner: "git-record", git, static: { checks } })),
+    ).toMatchObject({ ok: true, manifest: { git, static: { checks } } });
+  });
+  it.each([
+    undefined,
+    { checks: [] },
+    { checks: null },
+    { checks: [null] },
+    { checks: [{ type: "unknown" }] },
+  ])("Git の検査が無い・不正なら拒む: %j", (git) => {
+    expect(parseTaskManifest(base({ runner: "git-record", git })).ok).toBe(false);
+  });
+  it.each([0, -1, 1.5, "1", null])("min が 1 以上の整数でないと拒む: %j", (min) => {
+    expect(
+      parseTaskManifest(
+        base({ runner: "git-record", git: { checks: [{ type: "commit-count", min }] } }),
+      ).ok,
+    ).toBe(false);
+  });
+  it.each(["../outside", "/absolute", "C:/file", "a/../../b", "a\\b", "*.txt"])(
+    "どの検査も安全でないパスを拒む: %s",
+    (path) => {
+      for (const check of [
+        { type: "file-contains", path, text: "x" },
+        { type: "file-absent", path },
+      ]) {
+        expect(
+          parseTaskManifest(base({ runner: "static-preview", static: { checks: [check] } })).ok,
+        ).toBe(false);
+      }
+      for (const check of [
+        { type: "committed", paths: [path] },
+        { type: "ignored", path },
+      ]) {
+        expect(parseTaskManifest(base({ runner: "git-record", git: { checks: [check] } })).ok).toBe(
+          false,
+        );
+      }
+    },
+  );
+  it("空のテキストを指定できる", () => {
+    expect(
+      parseTaskManifest(
+        base({
+          runner: "static-preview",
+          static: {
+            checks: [{ type: "file-contains", path: "empty.txt", text: "", match: "exact" }],
+          },
+        }),
+      ).ok,
+    ).toBe(true);
+  });
+  it.each([{ text: 1 }, { text: "x", match: "regex" }])(
+    "file-contains の文字と比較方法を検証する: %j",
+    (fields) => {
+      expect(
+        parseTaskManifest(
+          base({
+            runner: "static-preview",
+            static: { checks: [{ type: "file-contains", path: "a.txt", ...fields }] },
+          }),
+        ).ok,
+      ).toBe(false);
+    },
+  );
 });

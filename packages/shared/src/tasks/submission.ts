@@ -278,6 +278,7 @@ export async function verifyTaskSubmission(
 /** 提出に必要な手順。deps は準備の再利用 (skipped) を、呼び出し側が今までどおり許す。 */
 function requiredSteps(manifest: TaskBundle["manifest"]): string[] {
   const plan = RUNNERS[manifest.runner].plan;
+  if (plan === "git") return [...(manifest.static?.checks.length ? ["static"] : []), "git"];
   if (plan === "static") return ["static"];
   if (plan === "diagnose") return ["diagnose"];
   if (plan === "ci") return ["test"];

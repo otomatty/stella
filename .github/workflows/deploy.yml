@@ -107,6 +107,22 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
+      - name: Generate & upload lesson videos to R2 (remote)
+        if: steps.content.outputs.changed == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "キーが無いので動画を作りません"
+          else
+            if ! command -v ffmpeg >/dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y ffmpeg
+            fi
+            bun run --filter=@stella/content video:sync --remote --tts gemini
+            echo "VIDEO_MANIFEST=${{ github.workspace }}/packages/content/dist/video-manifest.json" >> "$GITHUB_ENV"
+          fi
+
       # migrate / api / web は教材が変わっていなくても毎回。 migration が
       # 「何もしない」判断は今どおり wrangler に任せる。
       - name: Apply D1 migrations (remote)
@@ -142,7 +158,7 @@ jobs:
         run: bun run deploy:api
 
       # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
-      # 後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
+      # 後でも成立する。PDF_MANIFEST と、動画 sync が GITHUB_ENV に出した VIDEO_MANIFEST を読む。
       - name: Seed D1 content (remote)
         if: steps.content.outputs.changed == 'true'
         run: bun run db:seed:remote:content

@@ -1,0 +1,123 @@
+{
+  "id": "dev-env-basics/u08-check-a/a01-check-a",
+  "title": "確認A: 自己紹介の 2 ページ",
+  "kind": "assessment-a",
+  "pattern": "relative-link",
+  "skills": {
+    "uses": [
+      "stella-task-loop",
+      "open-learning-folder",
+      "html-document",
+      "preview-changes",
+      "terminal-location"
+    ],
+    "assesses": [
+      "file-save-reopen",
+      "relative-link",
+      "git-local-commit",
+      "report-problem"
+    ]
+  },
+  "runner": "git-record",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "profile/index.html",
+      "profile/hobby.html"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "profile/index.html と profile/hobby.html が指定した場所にあり、コミットされている",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "各ファイルが HTML の文書で、見出しが「自己紹介」「好きなこと」である",
+        "required": true
+      },
+      {
+        "id": "condition-3",
+        "criterion": "2ページに相対リンクがあり、指定したページ同士で行き来できる",
+        "required": true
+      },
+      {
+        "id": "condition-4",
+        "criterion": "説明の作成場所・内容・困ったことと試したことが、提出ファイルと変更に合っている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [
+    "SRC-dev-env-links-20261107",
+    "SRC-dev-env-git-commit-20261107",
+    "SRC-dev-env-html-syntax-20261107",
+    "SRC-dev-env-html-headings-20261107"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "profile/index.html"
+      },
+      {
+        "type": "html-document",
+        "path": "profile/hobby.html"
+      },
+      {
+        "type": "element-text",
+        "path": "profile/index.html",
+        "tag": "h1",
+        "text": "自己紹介",
+        "match": "exact"
+      },
+      {
+        "type": "element-text",
+        "path": "profile/hobby.html",
+        "tag": "h1",
+        "text": "好きなこと",
+        "match": "exact"
+      },
+      {
+        "type": "links-resolve",
+        "path": "profile/index.html"
+      },
+      {
+        "type": "links-resolve",
+        "path": "profile/hobby.html"
+      }
+    ]
+  },
+  "git": {
+    "checks": [
+      {
+        "type": "committed",
+        "paths": [
+          "profile/index.html",
+          "profile/hobby.html"
+        ]
+      },
+      {
+        "type": "commit-count",
+        "min": 1
+      }
+    ]
+  }
+}

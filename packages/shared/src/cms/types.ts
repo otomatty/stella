@@ -455,6 +455,8 @@ export interface PublicUnit {
 
 /** ログインなしで読めるレッスン 1 件 (`GET /api/public/lessons/:id`)。 */
 export interface PublicLesson extends PublicLessonSummary {
+  /** 公開の slides の動画だけ。text には付けない。 */
+  video_path?: string | null;
   markdown: string;
   total_pages: number | null;
   unit_id: string;

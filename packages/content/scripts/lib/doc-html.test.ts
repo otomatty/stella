@@ -51,3 +51,13 @@ describe("配布 PDF のまとめ・課題文", () => {
     expect(docBodyHtml("# A\n\nB", new Map(), undefined)).toBe("<h1>A</h1>\n<p>B</p>");
   });
 });
+
+it("renders tutorial references as a note, including inside OS blocks", () => {
+  const source =
+    ":::tutorial overview\n\n:::os windows\n:::tutorial windows-demo\n:::\n:::os macos\n:::tutorial macos-demo\n:::";
+  const html = docBodyHtml(source, new Map(), undefined);
+  expect(html).toContain("動画: 本文の Web 版で見られます (overview)");
+  expect(html).toContain("動画: 本文の Web 版で見られます (windows-demo)");
+  expect(html).not.toContain(":::tutorial");
+  expect(docBodyHtml(source, new Map(), "macos")).not.toContain("windows-demo");
+});

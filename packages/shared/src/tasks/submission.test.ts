@@ -26,6 +26,21 @@ describe("提出の機械照合", () => {
       expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
     },
   );
+  it("Git の課題は Git と指定された static の結果を必須にする", async () => {
+    const { input, bundle } = await submissionFixture({
+      runner: "git-record",
+      git: { checks: [{ type: "learning-folder-root" }] },
+      static: { checks: [{ type: "file-absent", path: "old.txt" }] },
+    });
+    input.localResult.steps = [step("static"), step("git"), step("files")];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+    input.localResult.steps = [step("git"), step("files")];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
+    bundle.manifest.static = undefined;
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+    input.localResult.steps = [step("files")];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
+  });
   it("提出ファイルを持たない環境診断は、通っていれば照合に通る", async () => {
     const { input, bundle } = await submissionFixture({
       runner: "env-diagnose",

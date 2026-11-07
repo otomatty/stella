@@ -1,3 +1,5 @@
+import { useFirstSteps } from "@/hooks/useFirstSteps";
+import { FirstStepsCard } from "./FirstStepsCard";
 import {
   ChevronLeft,
   ChevronRight,
@@ -95,6 +97,7 @@ export const StageDetail = ({
   onOpenSubmission,
   onAskAiAboutTask,
 }: StageDetailProps) => {
+  const firstSteps = useFirstSteps();
   const sections = stage.sections ?? [];
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const { submissions } = useMySubmissions(true);
@@ -230,6 +233,8 @@ export const StageDetail = ({
         <span>スキルツリーに戻る</span>
       </button>
 
+      {firstSteps?.stage_id === stage.id ? <FirstStepsCard data={firstSteps} /> : null}
+
       <div className="grid gap-6 items-start grid-cols-1 lg:grid-cols-[1fr_320px]">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -267,7 +272,7 @@ export const StageDetail = ({
           {stage.format === 2 ? (
             <TaskList stageId={stage.id} onAskAi={onAskAiAboutTask} onLoaded={handleTasksLoaded} />
           ) : null}
-          <Card className="mb-6">
+          <Card data-testid="stage-syllabus" className="mb-6">
             <CardHeader>
               <CardTitle>シラバス</CardTitle>
               <CardActions>
@@ -365,7 +370,7 @@ export const StageDetail = ({
           </Card>
 
           {criteriaRows.length > 0 ? (
-            <Card>
+            <Card data-testid="stage-completion">
               <CardHeader>
                 <CardTitle>修了条件</CardTitle>
               </CardHeader>
@@ -430,6 +435,8 @@ const LessonRow = ({
   const locked = status === "locked";
   return (
     <button
+      data-testid={`stage-lesson-${lesson.type}`}
+      data-lesson-id={lesson.id}
       type="button"
       disabled={locked}
       onClick={locked ? undefined : onClick}

@@ -80,11 +80,16 @@ afterAll(() => {
 });
 
 /** seed の SQL を同じプロセスで組み立てる。`mutate` で教材 (manifest) を書き換えられる。 */
-async function exportSql(mutate?: (manifest: Manifest) => void): Promise<string> {
+async function exportSql(
+  mutate?: (manifest: Manifest) => void,
+  videoPath?: string,
+): Promise<string> {
   fixture.mutate = mutate ?? null;
   vi.stubEnv("DIALECT", "sqlite");
   vi.stubEnv("CONTENT_ONLY", "0");
   vi.stubEnv("PDF_MANIFEST", pdfManifest);
+  if (videoPath) vi.stubEnv("VIDEO_MANIFEST", videoPath);
+  else vi.stubEnv("VIDEO_MANIFEST", "");
   const logs: string[] = [];
   const spy = vi.spyOn(console, "log").mockImplementation((s) => {
     logs.push(String(s));
@@ -142,6 +147,69 @@ const total = (writes: Record<string, number>) =>
   Object.values(writes).reduce((sum, rows) => sum + rows, 0);
 
 describe("seed の書き込み行数", () => {
+  it(
+    "動画 manifest を反映し、同一 seed は書かず、未指定は保持し、台本削除で解除する",
+    async () => {
+      const db = migratedDb();
+      const file = join(pdfDir, "video-manifest.json");
+      let path = `lesson-video/ses/${COURSE}/${LESSON}/hash.mp4`;
+      writeFileSync(
+        file,
+        JSON.stringify({
+          [LESSON]: {
+            video: path,
+            captions: path.replace(".mp4", ".vtt"),
+            poster: path.replace(".mp4", ".jpg"),
+            durationSec: 30,
+          },
+        }),
+      );
+      const narrated = (manifest: Manifest) => {
+        const lesson = manifest.stages
+          .find((s) => s.id === COURSE)
+          ?.sections?.flatMap((s) => s.lessons)
+          .find((l) => l.id === LESSON);
+        if (!lesson) throw new Error("lesson missing");
+        lesson.hasNarration = true;
+      };
+      const withoutNarration = (manifest: Manifest) => {
+        const lesson = manifest.stages
+          .find((s) => s.id === COURSE)
+          ?.sections?.flatMap((s) => s.lessons)
+          .find((l) => l.id === LESSON);
+        if (!lesson) throw new Error("lesson missing");
+        lesson.hasNarration = false;
+      };
+      const id = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
+      const current = () =>
+        (
+          db.prepare("select video_path from lessons where id = ?").get(id) as {
+            video_path: string | null;
+          }
+        ).video_path;
+      try {
+        const withVideo = await exportSql(narrated, file);
+        apply(db, withVideo);
+        expect(current()).toBe(path);
+        expect(apply(db, withVideo)).toEqual({});
+        const withoutManifest = await exportSql(narrated);
+        expect(apply(db, withoutManifest)).toEqual({});
+        expect(current()).toBe(path);
+        // 空の manifest も、対象を絞った sync で対象外の動画を消さない。
+        writeFileSync(file, "{}");
+        expect(apply(db, await exportSql(narrated, file))).toEqual({});
+        expect(current()).toBe(path);
+        const removed = await exportSql(withoutNarration);
+        expect(total(apply(db, removed))).toBe(1);
+        expect(current()).toBeNull();
+        expect(apply(db, removed)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
   let sql = "";
   let changed = "";
   let revised = "";
@@ -312,7 +380,10 @@ describe("seed の書き込み行数", () => {
       const db = migratedDb();
       try {
         apply(db, sql);
-        const taskId = `${COURSE}/m0-first-page/q01-first-page`;
+        const before = db.prepare("select id, active from tasks order by id").all();
+        expect(before.length).toBeGreaterThan(0);
+        expect(before.every((task) => task.active === 1)).toBe(true);
+        const taskId = String(before[0]?.id);
         db.prepare(
           `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active)
          select 'retired-task', section_id, title, kind, pattern, skills, estimated_minutes, "order" + 1, content_hash, definition, bundle, 1 from tasks where id = ?`,
@@ -320,59 +391,12 @@ describe("seed の書き込み行数", () => {
         const writes = apply(db, sql);
         expect(total(writes)).toBe(1);
         expect(Object.keys(writes)[0]).toMatch(/^update tasks set active = 0 /);
-        expect(db.prepare("select id, active from tasks order by id").all()).toEqual([
-          { id: "claude-developer-foundations/m0-exam-and-sources/q01-study-plan", active: 1 },
-          { id: "claude-developer-foundations/m1-messages-api/q01-build-messages", active: 1 },
-          { id: "claude-developer-foundations/m1-messages-api/q02-route-stop-reason", active: 1 },
-          {
-            id: "claude-developer-foundations/m10-final-review/q01-support-assistant",
-            active: 1,
-          },
-          { id: "claude-developer-foundations/m2-integration/q01-retry-transient", active: 1 },
-          { id: "claude-developer-foundations/m2-integration/q02-collect-stream", active: 1 },
-          { id: "claude-developer-foundations/m2-integration/q03-batch-requests", active: 1 },
-          {
-            id: "claude-developer-foundations/m3-models-and-cost/q01-cache-friendly-prompt",
-            active: 1,
-          },
-          { id: "claude-developer-foundations/m3-models-and-cost/q02-estimate-cost", active: 1 },
-          { id: "claude-developer-foundations/m4-prompt-and-context/q01-tagged-prompt", active: 1 },
-          {
-            id: "claude-developer-foundations/m4-prompt-and-context/q02-extraction-schema",
-            active: 1,
-          },
-          { id: "claude-developer-foundations/m5-tools-and-mcp/q01-tool-loop", active: 1 },
-          { id: "claude-developer-foundations/m5-tools-and-mcp/q02-fix-tool-error", active: 1 },
-          { id: "claude-developer-foundations/m6-agents/q01-router", active: 1 },
-          { id: "claude-developer-foundations/m6-agents/q02-chain-with-gate", active: 1 },
-          { id: "claude-developer-foundations/m7-safety/q01-wrap-untrusted", active: 1 },
-          { id: "claude-developer-foundations/m7-safety/q02-least-privilege", active: 1 },
-          {
-            id: "claude-developer-foundations/m8-claude-code-and-evals/q01-eval-compare",
-            active: 1,
-          },
-          { id: taskId, active: 1 },
-          { id: "devlab-ts-prework/m00-setup/q01-hello", active: 1 },
-          { id: "devlab-ts-prework/m01-values-types-variables/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m01-values-types-variables/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m02-objects-arrays-tuples/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m02-objects-arrays-tuples/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m03-unions-and-more/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m03-unions-and-more/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m04-statements/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m04-statements/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m05-functions/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m05-functions/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m06-classes/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m06-classes/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m07-type-reuse-generics/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m07-type-reuse-generics/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m08-async/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m08-async/s02-extra", active: 1 },
-          { id: "devlab-ts-prework/m09-builtins-modules/s01-chapter", active: 1 },
-          { id: "devlab-ts-prework/m09-builtins-modules/s02-extra", active: 1 },
-          { id: "retired-task", active: 0 },
-        ]);
+        expect(
+          db.prepare("select id, active from tasks where id <> 'retired-task' order by id").all(),
+        ).toEqual(before);
+        expect(db.prepare("select active from tasks where id = 'retired-task'").get()).toEqual({
+          active: 0,
+        });
         expect(apply(db, sql)).toEqual({});
       } finally {
         db.close();

@@ -1,0 +1,58 @@
+{
+  "id": "dev-env-basics/u02-first-task/q01-first-page",
+  "title": "最初のページを作る",
+  "kind": "basic",
+  "pattern": "html-page",
+  "skills": {
+    "uses": ["html-document"],
+    "assesses": ["preview-changes"]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": ["index.html"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "heading",
+        "criterion": "ページの見出しが指定した内容を表している",
+        "required": true
+      },
+      {
+        "id": "other-elements",
+        "criterion": "h1 以外の要素を消したり増やしたりしていない",
+        "required": false
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": ["SRC-mdn-html-20261005"],
+  "estimatedMinutes": 30,
+  "protected": ["tests/**"],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "index.html"
+      },
+      {
+        "type": "element-text",
+        "path": "index.html",
+        "tag": "h1",
+        "text": "はじめてのページ",
+        "match": "exact"
+      }
+    ]
+  }
+}

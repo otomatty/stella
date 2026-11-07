@@ -15,6 +15,7 @@
 export const RUNNER_IDS = [
   "static-preview",
   "env-diagnose",
+  "git-record",
   "node-test",
   "ts-test",
   "dom-test",
@@ -37,6 +38,7 @@ export type RunnerId = (typeof RUNNER_IDS)[number];
  * jsdom や Testing Library の違いは課題の配布ファイル (vitest の設定) が持つ。
  */
 export type RunnerPlanKind =
+  | "git"
   | "static"
   | "diagnose"
   | "vitest"
@@ -65,6 +67,13 @@ export const RUNNERS: Readonly<Record<RunnerId, RunnerSpec>> = {
     id: "static-preview",
     label: "HTML の確認",
     plan: "static",
+    requiresNode: false,
+    runsLocally: true,
+  },
+  "git-record": {
+    id: "git-record",
+    label: "Git の記録の確認",
+    plan: "git",
     requiresNode: false,
     runsLocally: true,
   },

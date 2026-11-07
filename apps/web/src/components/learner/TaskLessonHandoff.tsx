@@ -30,7 +30,10 @@ export function TaskLessonHandoff({ stageId, lessonId }: { stageId: string; less
   }, [stageId, lessonId]);
   if (!taskId) return null;
   return (
-    <div className="mb-5 rounded-lg border border-border p-4 flex flex-wrap items-center gap-3">
+    <div
+      data-testid="lesson-task-handoff"
+      className="mb-5 rounded-lg border border-border p-4 flex flex-wrap items-center gap-3"
+    >
       <p className="flex-1 min-w-48 text-[13px] text-ink-2">
         {handheld
           ? "この課題はパソコンの VS Code で進めます。パソコンでこのページを開き、「VS Code で開く」を押してください。"

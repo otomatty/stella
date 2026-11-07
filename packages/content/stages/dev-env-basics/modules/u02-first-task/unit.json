@@ -1,0 +1,8 @@
+{
+  "plannedHours": 3,
+  "skills": {
+    "uses": ["open-learning-folder"],
+    "assesses": ["stella-task-loop", "html-document", "preview-changes"]
+  },
+  "reuses": []
+}

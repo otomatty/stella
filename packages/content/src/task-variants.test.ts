@@ -12,14 +12,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { parsePublicTaskBundle } from "../../shared/src/tasks/catalog.js";
-import { mutantsFail } from "../scripts/lib/task-run-check.js";
+import { mutantsFail, solutionPasses } from "../scripts/lib/task-run-check.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 
 /** 予備の類題 (#39) の書き方と検査。見本の課題に類題を足した一時の教材で確かめる。 */
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sample = join(content, "stages/dev-env-basics");
-const PARENT = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const PARENT = "stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page";
 const MARKER = "VARIANT_PRIVATE_MARKER_39";
 const roots: string[] = [];
 afterEach(() => {
@@ -38,7 +38,7 @@ function fixture() {
 
 const parentTask = () =>
   JSON.parse(
-    readFileSync(join(sample, "modules/m0-first-page/tasks/q01-first-page/task.json"), "utf8"),
+    readFileSync(join(sample, "modules/u02-first-task/tasks/q01-first-page/task.json"), "utf8"),
   ) as Record<string, unknown>;
 
 /** 親の課題の類題を 1 問置く。`patch` で task.json を書き換える。 */
@@ -71,7 +71,7 @@ function addVariant(
     join(dir, "task.json"),
     JSON.stringify({
       ...base,
-      id: `dev-env-basics/m0-first-page/${name}`,
+      id: `dev-env-basics/u02-first-task/${name}`,
       title: `類題 ${name}`,
       support: { hintLevels: 0, solutionUnlock: "passed" },
       static: {
@@ -92,9 +92,190 @@ const CHECK = {
 };
 
 describe("予備の類題", () => {
+  const gitPatch = {
+    runner: "git-record",
+    git: { checks: [{ type: "committed", paths: ["index.html"] }] },
+  };
+  const writeMarker = (dir: string, rel: string, value: string) => {
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), value);
+  };
+
+  it("解答例の削除指定を素材から分け、公開 bundle と解答表示用素材に含めない", async () => {
+    const root = fixture();
+    const task = buildContentManifest(join(root, "stages")).tasks.find((t) =>
+      t.definition.id.endsWith("/q03-rename"),
+    );
+    if (!task) throw new Error("名前を変える課題がありません");
+    expect(task.solutionRemoves).toEqual(["memo.txt"]);
+    for (const value of [
+      task.bundle.files,
+      parsePublicTaskBundle(task.bundle),
+      task.privateFiles,
+    ]) {
+      expect(JSON.stringify(value)).not.toContain(".stella-solution.json");
+      expect(JSON.stringify(value)).not.toContain(
+        Buffer.from('{ "remove": ["memo.txt"] }\n').toString("base64"),
+      );
+    }
+    // ヒント・解答 API と AI レビューは、この privateFiles の solution/ だけを素材にする。
+    expect(Object.keys(task.privateFiles).filter((key) => key.startsWith("solution/"))).toEqual([
+      "solution/plan.txt",
+    ]);
+    await expect(solutionPasses(task, task.bundle.files, "配布ファイル")).resolves.toBeUndefined();
+  });
+
+  it("誤答の削除だけの指定も読み、解答に重ねたあとに適用する", async () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-remove", "削除");
+    writeMarker(
+      dir,
+      "private/mutants/m02-remove/.stella-solution.json",
+      '{"remove":["index.html"]}',
+    );
+    const task = buildContentManifest(join(root, "stages")).tasks.find((t) => t.variantOf);
+    if (!task) throw new Error("類題がありません");
+    expect(task.mutants?.["m02-remove"]).toEqual({});
+    expect(task.mutantRemoves).toEqual({ "m02-remove": ["index.html"] });
+    expect(JSON.stringify(task.bundle)).not.toContain(".stella-solution.json");
+    expect(JSON.stringify(task.privateFiles)).not.toContain(".stella-solution.json");
+    expect(await mutantsFail(task)).toBe(2);
+  });
+
+  it.each([
+    ".stella-solution.json",
+    "private/.stella-solution.json",
+    "starter/.stella-solution.json",
+    "tests/.stella-solution.json",
+    "private/solution/nested/.stella-solution.json",
+    "private/mutants/m02-control/nested/.stella-solution.json",
+  ])("解答例・誤答の直下以外の削除指定を拒む: %s", (rel) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-remove", "削除");
+    writeMarker(dir, rel, '{"remove":["index.html"]}');
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/解答例・誤答の直下/);
+  });
+
+  it.each([
+    "null",
+    "[]",
+    "true",
+    '"text"',
+    "{",
+    "{}",
+    '{"remove":[]}',
+    '{"remove":"index.html"}',
+    '{"remove":[null]}',
+    '{"remove":[""]}',
+    '{"remove":[" "]}',
+    '{"remove":["../index.html"]}',
+    '{"remove":["nested/../index.html"]}',
+    '{"remove":["/index.html"]}',
+    '{"remove":["C:/index.html"]}',
+    '{"remove":["."]}',
+    '{"remove":["./index.html"]}',
+    '{"remove":["*.html"]}',
+    '{"remove":["index.html"],"unknown":true}',
+    JSON.stringify({ remove: ["nested\\index.html"] }),
+  ])("解答例・誤答の不正な削除指定を読み込み時に拒む: %s", (value) => {
+    for (const rel of ["private/solution", "private/mutants/m02-control"]) {
+      const root = fixture();
+      const dir = addVariant(root, "v01-remove", "削除");
+      writeMarker(dir, `${rel}/.stella-solution.json`, value);
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow();
+    }
+  });
+
+  it.each(["tests/README.md", "README.md", ".stella/task.json", ".git/config"])(
+    "削除指定でもテスト・管理情報を壊せない: %s",
+    (path) => {
+      for (const rel of ["private/solution", "private/mutants/m02-control"]) {
+        const root = fixture();
+        const dir = addVariant(root, "v01-remove", "削除");
+        writeMarker(dir, `${rel}/.stella-solution.json`, JSON.stringify({ remove: [path] }));
+        expect(() => buildContentManifest(join(root, "stages"))).toThrow(/protected.*管理ファイル/);
+      }
+    },
+  );
+
+  it("誤答では存在しないファイルの削除指定も拒む", () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-remove", "削除");
+    writeMarker(
+      dir,
+      "private/mutants/m02-control/.stella-solution.json",
+      '{"remove":["other.html"]}',
+    );
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(
+      /starter・解答例にあるファイルだけ/,
+    );
+  });
+
+  it.each([
+    {},
+    { skipCommit: true, skipGitignore: false, skipIdentity: false },
+    { skipCommit: false, skipGitignore: true, skipIdentity: true },
+  ])("git-record の誤答直下の制御ファイルを読み、公開しない: %j", (config) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-git", "Git", gitPatch);
+    const rel = "private/mutants/m02-control/.stella-mutant.json";
+    const encoded = Buffer.from(JSON.stringify(config)).toString("base64");
+    writeMarker(dir, rel, JSON.stringify(config));
+    const task = buildContentManifest(join(root, "stages")).tasks.find((t) => t.variantOf);
+    expect(task).toBeDefined();
+    if (!task) throw new Error("類題がありません");
+    expect(task.mutants?.["m02-control"]).toEqual({ ".stella-mutant.json": encoded });
+    expect(JSON.stringify(task.bundle)).not.toContain(".stella-mutant.json");
+    expect(JSON.stringify(parsePublicTaskBundle(task.bundle))).not.toContain(".stella-mutant.json");
+    expect(JSON.stringify(task.privateFiles)).not.toContain(".stella-mutant.json");
+  });
+
+  it("ほかの runner では starter に同名ファイルがあっても拒む", () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-static", "静的");
+    writeMarker(dir, "private/mutants/m02-control/.stella-mutant.json", "{}");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/git-record.*直下/);
+    writeMarker(dir, "starter/.stella-mutant.json", "{}");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/git-record.*直下/);
+  });
+
+  it.each([
+    ".stella-mutant.json",
+    "private/.stella-mutant.json",
+    "starter/.stella-mutant.json",
+    "tests/.stella-mutant.json",
+    "private/solution/.stella-mutant.json",
+    "private/mutants/m02-control/nested/.stella-mutant.json",
+  ])("git-record でも誤答直下以外では拒む: %s", (rel) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-git", "Git", gitPatch);
+    writeMarker(dir, rel, "{}");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/git-record.*直下/);
+  });
+
+  it.each([
+    "null",
+    "[]",
+    "true",
+    "1",
+    '"text"',
+    "{",
+    '{"unknown":true}',
+    '{"skipCommit":1}',
+    '{"skipIdentity":"true"}',
+    '{"skipGitignore":null}',
+    '{"skipCommit":{}}',
+    '{"skipIdentity":[]}',
+  ])("読み込み時に不正な制御ファイルを拒む: %s", (value) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-git", "Git", gitPatch);
+    writeMarker(dir, "private/mutants/m02-control/.stella-mutant.json", value);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow();
+  });
+
   it("課題として読み、親の素材・レッスン・PDF に混ぜない", () => {
     const root = fixture();
-    addVariant(root, "v01-profile", "自己紹介", CHECK);
+    addVariant(root, "v01-profile", "VARIANT_ONLY_PROFILE_MARKER_39", CHECK);
     addVariant(root, "v02-hobby", "好きなこと");
     const manifest = buildContentManifest(join(root, "stages"));
     const parent = manifest.tasks.find((t) => t.definition.id.endsWith("/q01-first-page"));
@@ -102,8 +283,8 @@ describe("予備の類題", () => {
     expect(
       variants.map((v) => [v.definition.id, v.definition.kind, v.variantOf, v.lessonId]),
     ).toEqual([
-      ["dev-env-basics/m0-first-page/v01-profile", "independent", parent?.definition.id, null],
-      ["dev-env-basics/m0-first-page/v02-hobby", "basic", parent?.definition.id, null],
+      ["dev-env-basics/u02-first-task/v01-profile", "independent", parent?.definition.id, null],
+      ["dev-env-basics/u02-first-task/v02-hobby", "basic", parent?.definition.id, null],
     ]);
     // 親の非公開の素材に類題を入れない (類題はそれぞれ自分の行に入る)。
     expect(Object.keys(parent?.privateFiles ?? {}).some((k) => k.startsWith("variants/"))).toBe(
@@ -121,10 +302,12 @@ describe("予備の類題", () => {
     // 類題は課題文のレッスンを作らない (Web の課題一覧・資料・PDF に出ない)。
     const lessons = JSON.stringify(manifest.stages);
     expect(lessons).not.toContain("v01-profile");
-    expect(lessons).not.toContain("自己紹介");
-    expect(collectPdfTargets(manifest).some((target) => target.source.includes("自己紹介"))).toBe(
-      false,
-    );
+    expect(lessons).not.toContain("VARIANT_ONLY_PROFILE_MARKER_39");
+    expect(
+      collectPdfTargets(manifest).some((target) =>
+        target.source.includes("VARIANT_ONLY_PROFILE_MARKER_39"),
+      ),
+    ).toBe(false);
   });
 
   it("類題のパターンが親と違えば落とす", () => {
@@ -179,7 +362,7 @@ describe("予備の類題", () => {
     addVariant(same, "q01-first-page", "同じ名前");
     expect(() => buildContentManifest(join(same, "stages"))).toThrow(/ID が重複/);
     const mismatch = fixture();
-    addVariant(mismatch, "v01-a", "ずれ", { id: "dev-env-basics/m0-first-page/v01-b" });
+    addVariant(mismatch, "v01-a", "ずれ", { id: "dev-env-basics/u02-first-task/v01-b" });
     expect(() => buildContentManifest(join(mismatch, "stages"))).toThrow(/一致しません/);
   });
 

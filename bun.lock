@@ -35,7 +35,7 @@
     },
     "apps/vscode": {
       "name": "stella-lms",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@stella/code-runner": "workspace:*",
         "@stella/shared": "workspace:*",
@@ -95,6 +95,7 @@
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^6.1.2",
+        "playwright": "1.64.1",
         "tailwindcss": "^4.3.3",
         "typescript": "^7.0.2",
         "vite": "^8.3.5",

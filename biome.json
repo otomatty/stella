@@ -111,6 +111,7 @@
     {
       "includes": [
         "**/apps/api/scripts/**",
+        "**/apps/web/scripts/tutorials/**",
         "**/packages/content/scripts/**",
         "**/packages/shared/scripts/**",
         "**/.claude/skills/*/scripts/**"

@@ -6,12 +6,15 @@
  *   (環境の問題で止まるのではなく、受講者のコードの検査として「不合格」になる)。
  */
 
+import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { promisify } from "node:util";
+import { LEARNING_FOLDER_GITIGNORE } from "../../../shared/src/tasks/learning-folder.js";
 import type { TaskManifest } from "../../../shared/src/tasks/manifest.js";
 import type { RunResult } from "../../../shared/src/tasks/run-result.js";
-import type { TaskSeed } from "../../src/task-content.js";
+import { parseGitMutant, type TaskSeed } from "../../src/task-content.js";
 import { runTask } from "../../../../apps/vscode/src/runner/run-task.js";
 
 /**
@@ -26,6 +29,7 @@ function withSolution(task: TaskSeed, distributed: Record<string, string>) {
   for (const [key, value] of Object.entries(task.privateFiles)) {
     if (key.startsWith("solution/")) files[key.slice("solution/".length)] = value;
   }
+  for (const path of task.solutionRemoves ?? []) delete files[path];
   return files;
 }
 
@@ -97,23 +101,110 @@ async function runFiles(
   task: TaskSeed,
   files: Record<string, string>,
   options: RunCheckOptions = {},
+  mutant: GitMutant = {},
 ): Promise<RunResult> {
   if (options.run) return options.run(task.bundle.manifest, files);
-  const root = await mkdtemp(join(tmpdir(), "stella-solution-"));
+  const temporary = await mkdtemp(join(tmpdir(), "stella-solution-"));
   try {
+    const isGit = task.bundle.manifest.runner === "git-record";
+    const learning = join(temporary, "web-training");
+    const parts = task.definition.id.split("/");
+    if (isGit && (parts.length !== 3 || parts.some((p) => !/^[a-z0-9][a-z0-9._-]*$/.test(p))))
+      throw new Error(
+        `git-record: 課題 ID はステージ/単元/課題の形が必要です: ${task.definition.id}`,
+      );
+    const root = isGit ? join(learning, ...parts) : temporary;
+    await mkdir(root, { recursive: true });
     for (const [key, value] of Object.entries(files)) {
       await mkdir(dirname(join(root, key)), { recursive: true });
       await writeFile(join(root, key), Buffer.from(value, "base64"));
     }
+    const env = isGit ? gitCheckEnv(options.env ?? process.env) : options.env;
+    if (isGit) await prepareGit(task, learning, root, env as NodeJS.ProcessEnv, mutant);
     return await runTask({
       root,
       manifest: task.bundle.manifest,
       manifestSha256: "",
-      ...(options.env ? { env: options.env } : {}),
+      ...(env ? { env } : {}),
     });
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(temporary, { recursive: true, force: true });
   }
+}
+
+type GitMutant = ReturnType<typeof parseGitMutant>;
+
+/** Git の宛先や設定の注入も引き継がず、準備と runner の両方で同じ環境を使う。 */
+function gitCheckEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return {
+    ...Object.fromEntries(
+      Object.entries(base).filter(([key]) => !key.toUpperCase().startsWith("GIT_")),
+    ),
+    GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null",
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_AUTHOR_NAME: "STELLA Check",
+    GIT_AUTHOR_EMAIL: "check@example.invalid",
+    GIT_COMMITTER_NAME: "STELLA Check",
+    GIT_COMMITTER_EMAIL: "check@example.invalid",
+  };
+}
+
+async function prepareGit(
+  task: TaskSeed,
+  learning: string,
+  root: string,
+  env: NodeJS.ProcessEnv,
+  mutant: GitMutant,
+): Promise<void> {
+  const exec = promisify(execFile);
+  const git = (args: string[]) =>
+    exec("git", ["-c", "core.hooksPath=", "-c", "commit.gpgSign=false", ...args], {
+      cwd: learning,
+      env,
+      timeout: 30_000,
+    });
+  // 空のテンプレートを指定し、システムのテンプレートにある hooks も持ち込まない。
+  await git(["init", "--template=", "--quiet"]);
+  if (!mutant.skipIdentity) {
+    await git(["config", "--local", "user.name", "STELLA Check"]);
+    await git(["config", "--local", "user.email", "check@example.invalid"]);
+  }
+  if (!mutant.skipGitignore)
+    await writeFile(join(learning, ".gitignore"), LEARNING_FOLDER_GITIGNORE);
+  if (mutant.skipCommit) return;
+  const count = Math.max(
+    1,
+    ...(task.bundle.manifest.git?.checks ?? []).map((c) => (c.type === "commit-count" ? c.min : 1)),
+  );
+  for (let n = 1; n <= count; n++) {
+    if (n > 1) await writeFile(join(root, `.stella-check-${n}`), "check\n");
+    await git(["add", "-A"]);
+    await git(["commit", "-m", "check", "--quiet"]);
+  }
+}
+
+function gitMutant(files: Record<string, string>): GitMutant {
+  const encoded = files[".stella-mutant.json"];
+  if (encoded === undefined) return {};
+  return parseGitMutant(JSON.parse(Buffer.from(encoded, "base64").toString("utf8")));
+}
+
+function checkDiagnose(task: TaskSeed): void {
+  const manifest = task.bundle.manifest;
+  // readEnvironment が environments/ の実在と要件の形を検証してから、この版付き ID を写す。
+  const id = task.definition.environment;
+  if (manifest.submit.files.length !== 0)
+    throw new Error(`${task.definition.id}: env-diagnose の submit.files は空にしてください`);
+  if (
+    !id ||
+    !manifest.environment?.id?.startsWith(`${id}@`) ||
+    ![manifest.environment.node, manifest.environment.npm, manifest.environment.git].some(Boolean)
+  )
+    throw new Error(
+      `${task.definition.id}: env-diagnose は environments/ の node / npm / git の要件が必要です`,
+    );
+  if (Object.keys(task.mutants ?? {}).length)
+    throw new Error(`${task.definition.id}: env-diagnose に誤答は置けません`);
 }
 
 const stepsOf = (result: Awaited<ReturnType<typeof runFiles>>) =>
@@ -126,6 +217,10 @@ export async function solutionPasses(
   label: string,
   options: RunCheckOptions = {},
 ): Promise<void> {
+  if (task.bundle.manifest.runner === "env-diagnose") {
+    checkDiagnose(task);
+    return;
+  }
   const files = withSolution(task, distributed);
   // CI と公開の課題は受講者の GitHub Actions で動くので、手元ではワークフローのファイルが
   // そろうことだけを確かめる (拡張の手順は実行の URL とコミットを控えるだけ。07 §5.5)。
@@ -150,13 +245,17 @@ export async function solutionPasses(
  * 止まった (`error`) 誤答も、テストで落ちたとは言えないので通さない。
  */
 export async function mutantsFail(task: TaskSeed, options: RunCheckOptions = {}): Promise<number> {
+  if (task.bundle.manifest.runner === "env-diagnose") {
+    checkDiagnose(task);
+    return 0;
+  }
   const mutants = Object.entries(task.mutants ?? {});
   for (const [name, mutant] of mutants) {
-    const result = await runFiles(
-      task,
-      { ...withSolution(task, task.bundle.files), ...mutant },
-      options,
-    );
+    const files = { ...withSolution(task, task.bundle.files), ...mutant };
+    for (const path of task.mutantRemoves?.[name] ?? []) delete files[path];
+    const setup = task.bundle.manifest.runner === "git-record" ? gitMutant(mutant) : {};
+    if (task.bundle.manifest.runner === "git-record") delete files[".stella-mutant.json"];
+    const result = await runFiles(task, files, options, setup);
     if (result.outcome !== "failed")
       throw new Error(
         `${task.definition.id}: 誤答 ${name} を解答例に重ねても、手元の検査で落ちません (${result.outcome})。テストか検査を足してください\n${stepsOf(result)}`,
