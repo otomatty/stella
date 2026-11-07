@@ -50,6 +50,7 @@ import {
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
+import { isProblemSubmissionResult } from "../lib/task-problem-submission.js";
 import {
   createTaskSubmission,
   readSubmissionFiles,
@@ -463,6 +464,8 @@ submissionsRoute.post("/api/submissions", async (c) => {
     }
     if (raw && typeof raw === "object" && "taskId" in raw) {
       const created = await createTaskSubmission(db, caller, c.env, raw);
+      // 問題の提出はテストの記録だけを返し、AI の待ち行列には積まない。
+      if (isProblemSubmissionResult(created)) return c.json(created, 201);
       // 応答を返したあと、この提出の AI 一次レビューを始める。間に合わなければ cron が拾う。
       try {
         c.executionCtx.waitUntil(
@@ -690,6 +693,13 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     const expected = parseExpectedSubmittedAt(patch.expectedSubmittedAt);
     if (expected && expected.getTime() !== before.submittedAt.getTime()) {
       throw submissionChanged();
+    }
+    // テストで確定した合格を再提出に戻すと、受講者は全問提出済みで先へ進めない。
+    if (
+      before.reviewSource === "tests" &&
+      (patch.verdict !== undefined || patch.status !== undefined)
+    ) {
+      throw new ApiError("テストで確認した提出の判定は変えられません", 409);
     }
 
     const set: Partial<SubmissionSelect> = {};

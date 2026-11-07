@@ -394,16 +394,16 @@ describe("課題を開く", () => {
   it("同じ場所かは、あればファイルシステムの実体で比べる", async () => {
     // 大文字と小文字だけが違う別々のフォルダー (大文字小文字を区別するボリューム)。
     // macOS として比べても、実体が違えば別の場所とみなす。
-    const upper = path.join(state.home, "Web-Training");
+    const upper = path.join(state.home, "Case-Upper");
     const lower = path.join(state.home, "web-training-case");
     await mkdir(upper);
     // 大文字小文字を区別しないボリューム (macOS の既定など) では作れないので、確かめない。
-    const caseSensitive = await mkdir(path.join(state.home, "web-Training")).then(
+    const caseSensitive = await mkdir(path.join(state.home, "case-Upper")).then(
       () => true,
       () => false,
     );
     if (caseSensitive)
-      expect(await samePath(upper, path.join(state.home, "web-Training"), "darwin")).toBe(false);
+      expect(await samePath(upper, path.join(state.home, "case-Upper"), "darwin")).toBe(false);
     // 表記が違っても同じ実体なら同じ場所 (大文字小文字を区別しないボリュームやリンク)。
     await symlink(upper, lower);
     expect(await samePath(upper, lower, "darwin")).toBe(true);
@@ -477,6 +477,55 @@ describe("学習フォルダーを唯一のフォルダーにする", () => {
 });
 
 describe("課題を開いた画面", () => {
+  it("問題つきの課題は、次の未提出のファイルだけを開く", async () => {
+    const problems = [
+      { id: "q01-add", title: "足す" },
+      { id: "q02-sub", title: "引く" },
+    ];
+    const problemManifest = {
+      ...manifest,
+      problems,
+      submit: { files: ["src/**/*.ts"] },
+    };
+    const problemBundle: TaskBundle = {
+      ...bundle,
+      manifest: problemManifest,
+      files: {
+        "src/q01-add.ts": Buffer.from("a").toString("base64"),
+        "src/q02-sub.ts": Buffer.from("b").toString("base64"),
+        "tests/q01-add.test.ts": Buffer.from("t").toString("base64"),
+        "README.md": bundle.files["README.md"] ?? "",
+        ".stella/task.json": Buffer.from(JSON.stringify(problemManifest)).toString("base64"),
+      },
+    };
+    state.apiRequest.mockImplementation(async (requestPath: string) => {
+      if (String(requestPath).includes("problem-results")) {
+        return {
+          problems: [
+            {
+              id: "q01-add",
+              title: "足す",
+              status: "passed",
+              firstPassedAt: "2026-11-01T00:00:00.000Z",
+            },
+            { id: "q02-sub", title: "引く", status: "not-submitted", firstPassedAt: null },
+          ],
+          passedProblems: 1,
+          totalProblems: 2,
+          taskPassed: false,
+        };
+      }
+      return { bundle: problemBundle, fixedStart: false };
+    });
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    const opened = state.showTextDocument.mock.calls.map(
+      (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
+    );
+    expect(opened).toEqual([path.join(taskRoot(), "src", "q02-sub.ts")]);
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+  });
+
   it("編集するファイルを左に並べ (最初のファイルを前に)、テストと課題文はテキストで開かない", async () => {
     const many: TaskBundle = {
       ...bundle,

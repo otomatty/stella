@@ -78,6 +78,7 @@ export const SEED_INPUT_PATHS = [
   "packages/shared/src/tasks/hash.ts",
   "packages/shared/src/tasks/help.ts",
   "packages/shared/src/tasks/manifest.ts",
+  "packages/shared/src/tasks/problems.ts",
   "packages/shared/src/tasks/run-result.ts",
   "packages/shared/src/tasks/runners.ts",
   "packages/shared/src/tasks/source-reference.ts",

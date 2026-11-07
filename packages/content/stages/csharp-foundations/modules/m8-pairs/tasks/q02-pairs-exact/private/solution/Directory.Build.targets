@@ -1,0 +1,3 @@
+<Project>
+  <!-- 親フォルダーの Directory.Build.targets を読み込まない。 -->
+</Project>

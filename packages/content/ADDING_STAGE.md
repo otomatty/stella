@@ -76,6 +76,8 @@ modules/<unit>/
 
 `task.json` の必須項目は `id`（`<ステージ>/<単元>/<課題>`）・`title`・`kind`・`pattern`・`skills`・`runner`・`environment`・`submit`・`review`・`support`・`sources`・`estimatedMinutes` です。
 
+問題つきの課題は、同じ課題の中を 1 問 1 ファイルで確認・提出します。`problems` に `{ "id", "title" }` を 1 件以上書きます。`id` は英小文字・数字で始め、英小文字・数字・ハイフンだけです。課題の中で重複しません。書けるのは手順が vitest・typescript・dotnet の runner だけです。ファイルのパスは書きません。`id` から、vitest・typescript は `src/<id>.ts` と `tests/<id>.test.ts`、dotnet は `src/<id>.cs` と `tests/<id>.test.cs` になります。`review` は書かなくてよく、読み込み後は空のルーブリックになります。`submit.explanation` と `submit.debuggingRecord` は `false` でよいです。AI の一次レビューは通さず、問題が全部そろった提出を `review_source = 'tests'` で合格にします。合否は手元のテストが通ったという申告で、サーバーはコードを実行しません。
+
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
 - `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。
 - コーディング規則の正本は [coding-rules.md](coding-rules.md) (プログラム共通) と `stages/<slug>/coding-rules.md` (ステージの追加分) です。課題が指せるのは共通の規則と自分のステージの規則だけで、導入より前の課題では必須にできません。後のステージでも使う規則は共通の規則に書きます。書式は coding-rules.md の冒頭を参照してください。

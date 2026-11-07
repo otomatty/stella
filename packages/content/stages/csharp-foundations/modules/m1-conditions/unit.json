@@ -1,0 +1,20 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": [
+      "csharp-calc",
+      "csharp-if-else",
+      "csharp-else-if",
+      "csharp-and-or"
+    ],
+    "assesses": [
+      "csharp-calc",
+      "csharp-if-else",
+      "csharp-else-if",
+      "csharp-and-or",
+      "csharp-condition-choice",
+      "csharp-condition-repair"
+    ]
+  },
+  "reuses": []
+}

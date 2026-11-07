@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m9-sort-count/q07-check-b",
+  "title": "確認B 小さいK個の合計",
+  "problems": [
+    {
+      "id": "check-b-small-sum",
+      "title": "小さいK個の合計"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-count-ksum",
+  "skills": {
+    "uses": [
+      "csharp-sort-kth"
+    ],
+    "assesses": [
+      "csharp-sort-kth"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

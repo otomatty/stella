@@ -1,8 +1,8 @@
 /**
  * いま取り組んでいる課題を、ステータスバーとエディターの右上のボタンに出す。
  *
- * - ステータスバー: 「課題を確認する」と「課題文」。コマンドパレットを知らなくても、
- *   画面の下から確認と課題文 (進め方) に戻れるようにする。
+ * - ステータスバー: 「課題を確認する」と「課題文」。問題つきの課題は `12/20 問` も出す。
+ *   コマンドパレットを知らなくても、画面の下から確認と課題文 (進め方) に戻れるようにする。
  * - コンテキストキー `stella.inTask`: 開いているファイルが課題フォルダーの中なら true。
  *   エディターの右上の「課題を確認する」「課題文を表示する」のボタンの表示条件 (package.json)。
  *
@@ -13,16 +13,20 @@
 import path from "node:path";
 import * as vscode from "vscode";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
+import { fetchProblemResults, loadProblemStates, problemCountLabel } from "./task-problems.js";
 
 export interface CurrentTask {
   root: string;
   title: string;
+  /** 問題つきの課題の、提出済みと全部の件数。 */
+  problemProgress?: { passed: number; total: number };
 }
 
 let current: CurrentTask | undefined;
 let inTask = false;
 let runItem: vscode.StatusBarItem | undefined;
 let readmeItem: vscode.StatusBarItem | undefined;
+let progressItem: vscode.StatusBarItem | undefined;
 /** 開いているファイルが変わるたびに増やし、古い問い合わせの結果で上書きしない。 */
 let generation = 0;
 
@@ -41,10 +45,11 @@ async function taskRootOfFile(file: string): Promise<string | null> {
 
 function render(): void {
   void vscode.commands.executeCommand("setContext", "stella.inTask", inTask);
-  if (!runItem || !readmeItem) return;
+  if (!runItem || !readmeItem || !progressItem) return;
   if (!current) {
     runItem.hide();
     readmeItem.hide();
+    progressItem.hide();
     return;
   }
   runItem.text = "$(beaker) 課題を確認する";
@@ -61,6 +66,19 @@ function render(): void {
     title: "課題文を表示する",
     arguments: [current.root],
   };
+  const progress = current.problemProgress;
+  if (progress && progress.total > 0) {
+    progressItem.text = problemCountLabel(progress.passed, progress.total);
+    progressItem.tooltip = `「${current.title}」の提出済み ${progressItem.text}`;
+    progressItem.command = {
+      command: "stella.showTaskReadme",
+      title: "課題文を表示する",
+      arguments: [current.root],
+    };
+    progressItem.show();
+  } else {
+    progressItem.hide();
+  }
   runItem.show();
   readmeItem.show();
 }
@@ -87,7 +105,25 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
   if (current?.root !== root) {
     const loaded = await loadTask(root);
     if (ticket !== generation) return;
-    current = { root, title: loaded.ok ? loaded.manifest.title : path.basename(root) };
+    const title = loaded.ok ? loaded.manifest.title : path.basename(root);
+    let problemProgress: CurrentTask["problemProgress"];
+    if (loaded.ok && loaded.manifest.problems?.length) {
+      try {
+        const states = await loadProblemStates(
+          root,
+          loaded.manifest,
+          await fetchProblemResults(loaded.manifest.id),
+        );
+        if (ticket !== generation) return;
+        problemProgress = {
+          passed: states.filter((item) => item.status === "submitted").length,
+          total: states.length,
+        };
+      } catch {
+        problemProgress = undefined;
+      }
+    }
+    current = { root, title, ...(problemProgress ? { problemProgress } : {}) };
   }
   render();
 }
@@ -101,9 +137,16 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     49,
   );
   readmeItem.name = "STELLA: 課題文";
+  progressItem = vscode.window.createStatusBarItem(
+    "stella.problemProgress",
+    vscode.StatusBarAlignment.Left,
+    48,
+  );
+  progressItem.name = "STELLA: 問題の件数";
   context.subscriptions.push(
     runItem,
     readmeItem,
+    progressItem,
     vscode.window.onDidChangeActiveTextEditor((editor) => followEditor(editor)),
     vscode.workspace.onDidChangeWorkspaceFolders(() =>
       followEditor(vscode.window.activeTextEditor),
@@ -112,6 +155,7 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
       dispose: () => {
         runItem = undefined;
         readmeItem = undefined;
+        progressItem = undefined;
         current = undefined;
         inTask = false;
       },

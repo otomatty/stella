@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m01-values-types-variables@1",
-  "contentHash": "465d381517570e4137f8bea324502bde6d00f557724a2f6ef723e3416cf912a7",
+  "unitId": "devlab-ts-prework/m01-values-types-variables@2",
+  "contentHash": "662d02ce2e122718123bb30142b9abf7ec3c81e0ad541f8fa73e39adb25c85d9",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -21,7 +21,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -32,7 +32,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

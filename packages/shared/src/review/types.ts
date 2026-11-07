@@ -107,8 +107,8 @@ export interface Submission {
   taskFiles?: { path: string; text: string }[];
   /** 新形式の提出の AI 一次レビューの状態。旧形式は null。 */
   aiReviewStatus?: import("./ai-review.js").AiReviewStatus | null;
-  /** 確定した判定が AI か人か。 */
-  reviewSource?: "ai" | "human" | null;
+  /** 確定の出どころ。`tests` は問題のテストが揃った提出で、AI の合格 (`ai`) とは別。 */
+  reviewSource?: "ai" | "human" | "tests" | null;
   /** 受講者向け: AI で確定した提出の返信と所見 (人に回した提出では null)。 */
   aiFeedback?: import("./ai-review.js").LearnerAiFeedback | null;
   /** staff 向け: 新形式の提出の AI 一次レビューが記録済みか (旧形式の `aiReady` に当たる)。 */

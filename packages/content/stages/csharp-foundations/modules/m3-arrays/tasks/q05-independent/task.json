@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m3-arrays/q05-independent",
+  "title": "配列の処理を自分で選ぶ",
+  "problems": [
+    {
+      "id": "s01-sum-gte-k",
+      "title": "検査の対象"
+    },
+    {
+      "id": "s02-first-index-gte-k",
+      "title": "最初の該当位置"
+    },
+    {
+      "id": "s03-range-of",
+      "title": "記録の幅"
+    },
+    {
+      "id": "s04-sum-excess",
+      "title": "基準を超えた分"
+    },
+    {
+      "id": "s05-sum-odd-index",
+      "title": "位置で選ぶ"
+    },
+    {
+      "id": "s06-print-neg-count-and-nonneg-sum",
+      "title": "二つの答え"
+    },
+    {
+      "id": "s07-count-same-neighbors",
+      "title": "連続した同じ値"
+    },
+    {
+      "id": "s08-all-in-range",
+      "title": "全員の条件"
+    },
+    {
+      "id": "s09-min-except-zero",
+      "title": "0を除いた最小"
+    },
+    {
+      "id": "s10-print-up-down",
+      "title": "上下の動き"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-array-choice",
+  "skills": {
+    "uses": [
+      "csharp-array-scan",
+      "csharp-array-sum",
+      "csharp-array-count"
+    ],
+    "assesses": [
+      "csharp-array-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "plannedHours": 4,
+  "skills": {
+    "uses": [
+      "csharp-mix-plan",
+      "csharp-mix-after",
+      "csharp-mix-all"
+    ],
+    "assesses": [
+      "csharp-mix-plan",
+      "csharp-mix-after",
+      "csharp-mix-all",
+      "csharp-mix-choice",
+      "csharp-mix-repair"
+    ]
+  },
+  "reuses": []
+}

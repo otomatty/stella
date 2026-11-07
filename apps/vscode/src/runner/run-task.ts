@@ -19,6 +19,7 @@ import {
   type RunStepResult,
 } from "@stella/shared/tasks/run-result";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
+import { problemFiles } from "@stella/shared/tasks/problems";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import {
   checkSubmitSizes,
@@ -31,6 +32,7 @@ import {
   sha256Hex,
   TooManyFilesError,
   UnsafePathError,
+  writeProblemRun,
   writeStateFile,
 } from "./files.js";
 import { buildPlan } from "./plans.js";
@@ -121,6 +123,11 @@ export interface RunTaskOptions {
   now?: () => Date;
   /** CI と公開の課題で、受講者が入力した実行・公開先の URL (07 §5.5)。 */
   ci?: CiRunInput;
+  /**
+   * 課題の中の 1 問。manifest.problems にある ID だけを使う。
+   * 受け取った文字列はそのままコマンドにしない。無いときは課題全体。
+   */
+  problem?: string;
 }
 
 async function resolveToolchain(
@@ -143,6 +150,7 @@ function readProblem(error: unknown): string {
 async function collectFiles(
   root: string,
   manifest: TaskManifest,
+  problemSource?: string,
 ): Promise<{ step: RunStepResult; files: HashedFile[]; protected: HashedFile[] } | null> {
   if (manifest.submit.files.length === 0 && manifest.protected.length === 0) return null;
   const started = Date.now();
@@ -161,7 +169,13 @@ async function collectFiles(
       protected: [],
     };
   }
-  const submit = matchPatterns(listed, manifest.submit.files);
+  const submitAll = matchPatterns(listed, manifest.submit.files);
+  const submit = problemSource
+    ? {
+        files: submitAll.files.filter((file) => file === problemSource),
+        unmatched: submitAll.files.includes(problemSource) ? [] : [problemSource],
+      }
+    : submitAll;
   const prot = matchPatterns(listed, manifest.protected);
   const problems: string[] = [];
   const missing: string[] = [];
@@ -179,14 +193,19 @@ async function collectFiles(
   let protectedFiles: HashedFile[] = [];
   try {
     const sizes = await checkSubmitSizes(root, submit.files);
-    if (sizes.tooMany) problems.push(`提出するファイルが多すぎます (${LIMITS.submitFiles} 件まで)`);
+    // 問題つきの課題を問題の指定なしで実行するのは content:check だけ。
+    // 受講者は 1 問ずつ出すので、件数の上限はここには当てない。1 件の大きさは今のまま。
+    const countLimited = problemSource !== undefined || !manifest.problems?.length;
+    if (sizes.tooMany && countLimited)
+      problems.push(`提出するファイルが多すぎます (${LIMITS.submitFiles} 件まで)`);
     if (sizes.totalTooLarge) problems.push("提出するファイルの合計が大きすぎます (5MB まで)");
     for (const problem of sizes.problems) {
       problems.push(`${problem.path} が大きすぎます (1MB まで)`);
     }
     // 上限を超えた提出は受け付けないので読まない (動画や生成物を誤って含めたときに、
     // 全部をメモリへ載せて拡張ごと止めないため)。
-    const withinLimits = !sizes.tooMany && !sizes.totalTooLarge && sizes.problems.length === 0;
+    const withinLimits =
+      (!sizes.tooMany || !countLimited) && !sizes.totalTooLarge && sizes.problems.length === 0;
     if (withinLimits) files = await hashFiles(root, submit.files, LIMITS.fileBytes);
     protectedFiles = await hashFiles(root, prot.files, LIMITS.protectedFileBytes);
   } catch (error) {
@@ -216,12 +235,52 @@ export function unmetNeed(
   return undefined;
 }
 
+function resolveRunProblem(
+  manifest: TaskManifest,
+  requested: string | undefined,
+):
+  | { ok: true; problem?: { id: string; source: string; test: string } }
+  | { ok: false; summary: string } {
+  if (requested === undefined) return { ok: true };
+  const found = manifest.problems?.find((item) => item.id === requested);
+  const files = found ? problemFiles(RUNNERS[manifest.runner].plan, found.id) : null;
+  if (!found || !files) {
+    return { ok: false, summary: `問題 ${requested} はこの課題にありません` };
+  }
+  return { ok: true, problem: { id: found.id, source: files.source, test: files.test } };
+}
+
 export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   const { root, manifest } = options;
   const platform = options.platform ?? process.platform;
   const env = childEnv(options.env ?? process.env);
   const log = options.log ?? (() => undefined);
   const startedAt = (options.now ?? (() => new Date()))();
+  const selected = resolveRunProblem(manifest, options.problem);
+  if (!selected.ok) {
+    return {
+      schemaVersion: 1,
+      taskId: manifest.id,
+      runner: manifest.runner,
+      outcome: "error",
+      startedAt: startedAt.toISOString(),
+      durationMs: Date.now() - startedAt.getTime(),
+      platform,
+      toolVersions: {},
+      steps: [
+        {
+          id: "files",
+          label: "問題の指定",
+          status: "error",
+          summary: selected.summary,
+          durationMs: 0,
+        },
+      ],
+      files: [],
+      protected: [],
+      manifestSha256: options.manifestSha256,
+    };
+  }
   const runner = RUNNERS[manifest.runner];
 
   const toolchain = options.toolchain
@@ -273,6 +332,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     npm: toolchain.npm,
     dotnet: toolchain.dotnet,
     submitFiles,
+    ...(selected.problem ? { problem: selected.problem } : {}),
     toolVersions,
     ...(options.ci ? { ci: options.ci } : {}),
     outputs: {},
@@ -330,7 +390,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   let files: HashedFile[] = [];
   let protectedFiles: HashedFile[] = [];
   if (!options.signal?.aborted) {
-    const collected = await collectFiles(root, manifest);
+    const collected = await collectFiles(root, manifest, selected.problem?.source);
     if (collected) {
       steps.push(collected.step);
       files = collected.files;
@@ -352,6 +412,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     protected: protectedFiles,
     manifestSha256: options.manifestSha256,
     ...(ctx.outputs.ci ? { ci: ctx.outputs.ci } : {}),
+    ...(selected.problem ? { problemId: selected.problem.id } : {}),
   };
 }
 
@@ -363,6 +424,7 @@ deps.json
 browsers.json
 tmp/
 dotnet/
+problem-runs/
 `;
 
 /**
@@ -370,6 +432,8 @@ dotnet/
  * 信頼していないフォルダーでも呼ばれるので、置かれていたリンクはたどらない (writeStateFile)。
  */
 export async function saveRunResult(root: string, result: RunResult): Promise<void> {
-  await writeStateFile(root, "last-run.json", `${JSON.stringify(result, null, 2)}\n`);
+  const body = `${JSON.stringify(result, null, 2)}\n`;
+  if (result.problemId) await writeProblemRun(root, result.problemId, body);
+  else await writeStateFile(root, "last-run.json", body);
   await writeStateFile(root, ".gitignore", STATE_GITIGNORE, { keepExisting: true });
 }

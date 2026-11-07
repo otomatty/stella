@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m3-arrays/q01-print-array",
+  "title": "配列を順に出す",
+  "problems": [
+    {
+      "id": "q01-print-all",
+      "title": "先頭から出す"
+    },
+    {
+      "id": "q02-print-reverse",
+      "title": "末尾から出す"
+    },
+    {
+      "id": "q03-print-evens",
+      "title": "偶数の要素だけ出す"
+    },
+    {
+      "id": "q04-print-odds",
+      "title": "奇数の要素だけ出す"
+    },
+    {
+      "id": "q05-print-gte-k",
+      "title": "K以上だけ出す"
+    },
+    {
+      "id": "q06-print-gt-k",
+      "title": "Kより大きいものだけ出す"
+    },
+    {
+      "id": "q07-print-even-index",
+      "title": "偶数番目だけ出す"
+    },
+    {
+      "id": "q08-print-doubled",
+      "title": "各要素を2倍して出す"
+    },
+    {
+      "id": "q09-print-first-n-times",
+      "title": "先頭をN行出す"
+    },
+    {
+      "id": "q10-print-abs-diffs",
+      "title": "隣との差を出す"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-array-scan",
+  "skills": {
+    "uses": [
+      "csharp-array-scan"
+    ],
+    "assesses": [
+      "csharp-array-scan"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

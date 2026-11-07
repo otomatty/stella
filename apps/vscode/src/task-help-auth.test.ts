@@ -188,7 +188,7 @@ describe("接続の切り替えと課題パネル (本物の AuthStore と API �
     state.folders = [root];
     secrets = secretStorage("OLD-TOKEN");
     store = new AuthStore(secrets.storage as never);
-    initApi(store);
+    initApi(store, () => "https://stella.saedgewell.workers.dev");
     registerTaskHelp({ subscriptions: [] } as never);
   });
   afterEach(() => vi.unstubAllGlobals());

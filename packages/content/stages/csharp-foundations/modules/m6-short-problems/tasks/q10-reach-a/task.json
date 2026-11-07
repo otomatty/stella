@@ -1,0 +1,56 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q10-reach-a",
+  "title": "到達確認A 残金と件数と末尾",
+  "problems": [
+    {
+      "id": "da-remaining",
+      "title": "残金"
+    },
+    {
+      "id": "da-count-pass",
+      "title": "70以上"
+    },
+    {
+      "id": "da-last-char",
+      "title": "最後の文字"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-reach-change",
+  "skills": {
+    "uses": [
+      "csharp-combine-count",
+      "csharp-combine-one-string"
+    ],
+    "assesses": [
+      "csharp-combine-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -169,18 +169,25 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const action = canSubmit(result)
     ? `<a href="command:stella.submitTask${commandArgs}">提出</a>`
     : `<a href="command:stella.consultTask${commandArgs}">講師に相談</a>`;
+  const passedLine = result.problemId
+    ? "この問題は通りました。提出すると次の問題を開きます。"
+    : "手元の確認はすべて通りました。";
   const footer = input.standalone
     ? ""
     : result.outcome === "cancelled"
       ? `<p class="next">途中で止めたので、結果は残していません。もう一度確認してください。</p>`
       : canSubmit(result)
-        ? `<p class="next">手元の確認はすべて通りました。</p>`
+        ? `<p class="next">${passedLine}</p>`
         : result.outcome === "error"
           ? `<p class="next">環境の問題は、教材の「困ったときの案内」を見るか、講師に相談してください。直したら、もう一度確認してください。</p>`
           : `<p class="next">直したら、保存してもう一度確認してください。</p>`;
+  const problemLine = result.problemId
+    ? `<p class="meta">問題 <code>${escapeHtml(result.problemId)}</code></p>`
+    : "";
   const body = [
     `<h1>${escapeHtml(manifest.title)}</h1>`,
     `<p class="meta">${input.standalone ? "" : `${TASK_KIND_LABELS[manifest.kind]} ・ `}${escapeHtml(runner.label)}</p>`,
+    problemLine,
     referencesHtml(manifest.references),
     `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
     ...result.steps.map(renderStep),

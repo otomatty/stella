@@ -1,0 +1,57 @@
+{
+  "id": "csharp-foundations/m10-mixed/q06-reach-b",
+  "title": "到達確認B 連続と行と順位",
+  "problems": [
+    {
+      "id": "cb-rise-run",
+      "title": "増加の連続"
+    },
+    {
+      "id": "cb-row-span",
+      "title": "行の差"
+    },
+    {
+      "id": "cb-kth-price",
+      "title": "順位の価格"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-mix-reach-b",
+  "skills": {
+    "uses": [
+      "csharp-mix-plan",
+      "csharp-mix-after",
+      "csharp-mix-all"
+    ],
+    "assesses": [
+      "csharp-mix-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

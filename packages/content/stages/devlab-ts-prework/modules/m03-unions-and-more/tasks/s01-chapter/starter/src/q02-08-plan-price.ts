@@ -1,0 +1,14 @@
+// 03-q02 リテラル型のユニオン ドリル
+//
+// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
+//       https://typescriptbook.jp/reference/values-types-variables/union
+//
+// 引数と戻り値には型注釈を付けること。
+// 定義済みの型 Direction、Weekday、Plan を使う。
+// 文字列から型の値に変える関数（parse…）は、どれにも当てはまらなければ undefined を返す。
+
+export type Plan = "free" | "pro" | "enterprise";
+
+// 問8 月額料金を返す。free は 0、pro は 1000、enterprise は 5000
+//     例: planPrice("pro") → 1000
+export function planPrice() {}

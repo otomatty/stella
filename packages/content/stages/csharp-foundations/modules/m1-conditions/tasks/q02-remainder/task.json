@@ -1,0 +1,63 @@
+{
+  "id": "csharp-foundations/m1-conditions/q02-remainder",
+  "title": "余りで分ける",
+  "problems": [
+    {
+      "id": "q06-even-odd",
+      "title": "偶数と奇数"
+    },
+    {
+      "id": "q07-multiple-of3",
+      "title": "3の倍数"
+    },
+    {
+      "id": "q08-multiple-of5",
+      "title": "5の倍数"
+    },
+    {
+      "id": "q09-leap-year",
+      "title": "4で割り切れるか"
+    },
+    {
+      "id": "q10-divisible",
+      "title": "割り切れるか"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-remainder-branch",
+  "skills": {
+    "uses": [
+      "csharp-if-else"
+    ],
+    "assesses": [
+      "csharp-if-else"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

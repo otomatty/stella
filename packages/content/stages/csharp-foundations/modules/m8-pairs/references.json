@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m8-pairs@1",
+  "contentHash": "170205dbb6749eb1f4013a766ecc8953d6ec8397abfc5857bb9d5192ba458e61",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-pairs/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "二つの列、同じ列の異なる位置、行ごとの集計の説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-pairs/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "内側の始め方、順序違い、行の初期化、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-pairs/t1-across/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-if-20261104"
+      ],
+      "usedFor": "別の列では内側を毎回先頭から始める説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-pairs/t2-same/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "同じ列では内側を次の位置から始める説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-pairs/t3-rows/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-readline-20261106"
+      ],
+      "usedFor": "行ごとの数を行が変わるたびに戻す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-across-gte/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。二つの売り場から K 以上の組を数える Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-pairs-exact/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。同じ売り場の合計がちょうど K の組を数える Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-odd-rows/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。行ごとの奇数の個数を出す Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。組み合わせ方を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。内側の始め方を直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。差の絶対値が D 以下の組",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。全要素が 1 の行",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

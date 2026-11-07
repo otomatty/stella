@@ -1,0 +1,79 @@
+{
+  "id": "csharp-foundations/m11-functions/q02-char-bool",
+  "title": "1文字を見て bool で返す",
+  "problems": [
+    {
+      "id": "q11-is-digit-n",
+      "title": "N桁の数字か"
+    },
+    {
+      "id": "q12-is-eight-digits",
+      "title": "8桁の数字か"
+    },
+    {
+      "id": "q14-is-all-digits",
+      "title": "全部数字か"
+    },
+    {
+      "id": "q15-is-all-upper",
+      "title": "全部大文字か"
+    },
+    {
+      "id": "q16-contains-char",
+      "title": "文字を含むか"
+    },
+    {
+      "id": "q17-is-length",
+      "title": "長さがnか"
+    },
+    {
+      "id": "q18-is-digits-at-least",
+      "title": "長さと数字"
+    },
+    {
+      "id": "q19-contains-space",
+      "title": "空白を含むか"
+    },
+    {
+      "id": "q20-is-non-empty-digits",
+      "title": "空でない数字か"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-char-bool",
+  "skills": {
+    "uses": [
+      "csharp-char-bool"
+    ],
+    "assesses": [
+      "csharp-char-bool"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 36,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

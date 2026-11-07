@@ -1,0 +1,13 @@
+// Q29 行ごとの集計
+// 表の各行について奇数の個数を表示する。出力はH行。入力は1行目H W、続くH行にそれぞれW個の整数。1≦H,W≦20、0≦値≦100。
+// 行が変わったときに、何を初期化するか考える。
+// 例: 2 3 / 3 3 0 / 2 1 4 → 2 / 1
+
+public static partial class Answers
+{
+    public static void Q29Odds()
+    {
+        // ここに書く
+        throw new NotImplementedException();
+    }
+}

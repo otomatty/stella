@@ -18,12 +18,12 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
-import { toLocalRunReport } from "@stella/shared/tasks/local-report";
 import { canSubmit, type RunOutcome } from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
-import { apiRequest, apiSession } from "./api.js";
+import { apiSession } from "./api.js";
+import { sendLocalRunReport } from "./local-run-report.js";
 import {
   findTaskRoot,
   type LoadedTask,
@@ -42,6 +42,15 @@ import {
 } from "./task-submission.js";
 import { readLastOutcome, resolveEditFiles } from "./task-guide.js";
 import { showTaskPanel, showTaskReadme, taskReadmeRoot } from "./task-panel.js";
+import {
+  chooseProblem,
+  fetchProblemResults,
+  loadProblemStates,
+  nextUnsubmittedProblem,
+  problemCountLabel,
+  sendProblemSubmission,
+  type ProblemState,
+} from "./task-problems.js";
 import { setCurrentTask } from "./task-status.js";
 import { registerSubmissionForms, showSubmissionForm } from "./submission-form.js";
 import type { SubmissionDraft } from "./submission-form-view.js";
@@ -92,6 +101,25 @@ function isFileUri(value: unknown): value is { scheme: "file"; fsPath: string } 
     (value as { scheme?: unknown }).scheme === "file" &&
     typeof (value as { fsPath?: unknown }).fsPath === "string"
   );
+}
+
+/** 課題フォルダーからの `/` 区切りの相対パス。外なら undefined。 */
+function relativeInRoot(root: string, fsPath: string): string | undefined {
+  if (!isInside(fsPath, root)) return undefined;
+  const rel = path.relative(root, fsPath);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return undefined;
+  return rel.split(path.sep).join("/");
+}
+
+/**
+ * 確認・提出する問題のファイル。引数がファイルならそれ、無ければ開いているファイル。
+ * 課題フォルダーそのものを渡されたときは、開いているファイルを見る。
+ */
+function requestedProblemPath(root: string, requested: unknown): string | undefined {
+  if (isFileUri(requested)) return relativeInRoot(root, requested.fsPath);
+  const active = vscode.window.activeTextEditor?.document.uri;
+  if (active?.scheme === "file") return relativeInRoot(root, active.fsPath);
+  return undefined;
 }
 
 /**
@@ -268,7 +296,21 @@ async function runTaskCommand(output: vscode.OutputChannel, requested?: unknown)
       );
       return undefined;
     });
-    const result = await runTask({ root, manifest, manifestSha256, signal, log, ci });
+    let problem: string | undefined;
+    if (manifest.problems?.length) {
+      const server = await fetchProblemResults(manifest.id).catch(() => undefined);
+      const states = await loadProblemStates(root, manifest, server);
+      problem = chooseProblem(states, requestedProblemPath(root, requested), manifest)?.id;
+    }
+    const result = await runTask({
+      root,
+      manifest,
+      manifestSha256,
+      signal,
+      log,
+      ci,
+      ...(problem ? { problem } : {}),
+    });
     if (receipt?.taskId === manifest.id) result.taskContentHash = receipt.contentHash;
     // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
     if (result.outcome !== "cancelled") {
@@ -291,18 +333,12 @@ async function runTaskCommand(output: vscode.OutputChannel, requested?: unknown)
     // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
     // ログは送らない。配布記録のない見本や中断した実行は送らない。失敗は合格と別の道に送る
     // (旧 API は local-result の本文を見ずに合格として扱うため)。
-    const report = receipt?.taskId === manifest.id ? toLocalRunReport(result, receipt) : null;
-    if (report) {
-      try {
-        await apiRequest(
-          report.outcome === "passed" ? "/api/tasks/local-result" : "/api/tasks/local-runs",
-          { method: "POST", body: report },
-        );
-      } catch (err) {
-        output.appendLine(
-          `手元の確認の結果を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
+    try {
+      await sendLocalRunReport(result, receipt?.taskId === manifest.id ? receipt : undefined);
+    } catch (err) {
+      output.appendLine(
+        `手元の確認の結果を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   });
 }
@@ -350,6 +386,10 @@ async function submitTaskCommand(
       throw new Error("保存していない変更があります。保存してもう一度確認してください");
     const loaded = await loadTask(root);
     if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+    if (mode === "submit" && loaded.manifest.problems?.length) {
+      await submitProblemTask(root, loaded.manifest);
+      return;
+    }
     const result: unknown = JSON.parse(
       new TextDecoder().decode(await readFileInRoot(root, ".stella/last-run.json", 1024 * 1024)),
     );
@@ -421,6 +461,41 @@ async function submitTaskCommand(
   }
 }
 
+/** 問題つきの課題を、説明欄なしで 1 問提出する。通ったら次の問題のファイルを開く。 */
+async function submitProblemTask(root: string, manifest: TaskManifest): Promise<void> {
+  const server = await fetchProblemResults(manifest.id).catch(() => undefined);
+  const states = await loadProblemStates(root, manifest, server);
+  const chosen = chooseProblem(states, requestedProblemPath(root, undefined), manifest);
+  if (!chosen) throw new Error("提出する問題がありません");
+  const response = await sendProblemSubmission(root, chosen.id, apiSession());
+  setCurrentTask({
+    root,
+    title: manifest.title,
+    problemProgress: { passed: response.passedProblems, total: response.totalProblems },
+  });
+  if (response.taskPassed) {
+    void vscode.window.showInformationMessage("課題に合格しました");
+  } else {
+    void vscode.window.showInformationMessage(
+      `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
+    );
+    const marked = states.map((state) =>
+      state.id === chosen.id ? { ...state, status: "submitted" as const } : state,
+    );
+    const next = nextUnsubmittedProblem(marked);
+    if (next) {
+      const file = vscode.Uri.file(await resolveFileInRoot(root, next.source));
+      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file), {
+        viewColumn: vscode.ViewColumn.One,
+        preview: false,
+      });
+    }
+  }
+  if (taskReadmeRoot() === root) {
+    void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
+  }
+}
+
 /** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
 const README_MAX_BYTES = 1024 * 1024;
 
@@ -431,8 +506,20 @@ const README_MAX_BYTES = 1024 * 1024;
  * 変えない — 確認の間に受講者が別の課題のファイルへ移っていれば、そちらが今の課題のため。
  */
 async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}): Promise<void> {
-  const shown = (title: string) => {
-    if (options.reveal !== false) setCurrentTask({ root, title });
+  const shown = (title: string, problems?: ProblemState[]) => {
+    if (options.reveal === false) return;
+    setCurrentTask({
+      root,
+      title,
+      ...(problems
+        ? {
+            problemProgress: {
+              passed: problems.filter((item) => item.status === "submitted").length,
+              total: problems.length,
+            },
+          }
+        : {}),
+    });
   };
   const loaded = await loadTask(root);
   const markdown = new TextDecoder().decode(
@@ -444,20 +531,33 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
     return;
   }
   const { manifest } = loaded;
-  const [edit, lastOutcome] = await Promise.all([
+  const [edit, lastOutcome, problems] = await Promise.all([
     resolveEditFiles(root, manifest),
     readLastOutcome(root, manifest.id),
+    manifest.problems?.length
+      ? loadProblemStates(
+          root,
+          manifest,
+          await fetchProblemResults(manifest.id).catch(() => undefined),
+        )
+      : Promise.resolve(undefined),
   ]);
   showTaskReadme(
     {
       title: manifest.title,
       markdown,
       root,
-      guide: { root, manifest, edit, ...(lastOutcome ? { lastOutcome } : {}) },
+      guide: {
+        root,
+        manifest,
+        edit,
+        ...(lastOutcome ? { lastOutcome } : {}),
+        ...(problems ? { problems } : {}),
+      },
     },
     options,
   );
-  shown(manifest.title);
+  shown(manifest.title, problems);
 }
 
 /** 課題文 (README.md) を OS のタブ付きで表示する。ファイルを読むだけなので信頼は問わない。 */

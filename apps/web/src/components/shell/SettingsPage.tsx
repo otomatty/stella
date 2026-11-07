@@ -24,6 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { updateMyDisplayName, type Profile } from "@/lib/auth";
+import { apiFetch } from "@/lib/api-client";
+import { cliLoginCommand, formatCliCodeExpiry, showCliConnectSection } from "@/lib/cli-connect";
+import type { DeviceNavigator } from "@/lib/device";
 import { detectBrowserOs, setViewOs, updateMyOsPreference } from "@/lib/os-preference";
 import type { Role } from "@/data/types";
 
@@ -62,6 +65,10 @@ export const SettingsPage = ({
       {backendEnabled && profile ? (
         <OsPreferenceCard profile={profile} onProfileUpdated={onProfileUpdated} />
       ) : null}
+      <CliConnectSection
+        enabled={Boolean(backendEnabled && profile)}
+        device={typeof navigator === "undefined" ? undefined : (navigator as DeviceNavigator)}
+      />
       {backendEnabled && profile && role !== "instructor" ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
@@ -241,3 +248,103 @@ const OsPreferenceCard = ({
     </Card>
   );
 };
+
+/** コードは画面の状態だけに持つ。localStorage には残さない。 */
+interface IssuedCliCode {
+  code: string;
+  expiresAt: string;
+}
+
+export function CliConnectSection({
+  enabled,
+  device,
+}: {
+  enabled: boolean;
+  device: DeviceNavigator | undefined;
+}) {
+  if (!enabled || !showCliConnectSection(device)) return null;
+  return <CliConnectCard />;
+}
+
+const CliConnectCard = () => {
+  const [issued, setIssued] = useState<IssuedCliCode | null>(null);
+  const [issuing, setIssuing] = useState(false);
+
+  const onIssue = async () => {
+    setIssuing(true);
+    try {
+      const { code, expires_at } = await apiFetch<{ code: string; expires_at: string }>(
+        "/api/auth/vscode-link",
+        { method: "POST" },
+      );
+      setIssued({ code, expiresAt: expires_at });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "接続コードを発行できませんでした");
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const copy = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label}をコピーしました`);
+    } catch {
+      toast.error("コピーできませんでした");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>CLI で接続する</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-3 text-[12.5px] text-ink-3 leading-relaxed">
+          パソコンのターミナルで stella
+          を使うときに、接続コードを発行します。コードは一度しか使えません。この画面を離れると、コードは残りません。
+        </p>
+        <Button variant="accent" disabled={issuing} onClick={() => void onIssue()}>
+          {issuing ? <Loader2 size={13} className="animate-spin" /> : null}
+          接続コードを発行
+        </Button>
+        {issued ? (
+          <CliConnectIssued code={issued.code} expiresAt={issued.expiresAt} onCopy={copy} />
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+};
+
+export function CliConnectIssued({
+  code,
+  expiresAt,
+  onCopy,
+}: IssuedCliCode & { onCopy: (value: string, label: string) => void }) {
+  const command = cliLoginCommand(code);
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      <div>
+        <p className="text-[12px] font-medium">接続コード</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <code className="text-[13px]">{code}</code>
+          <Button size="sm" type="button" onClick={() => onCopy(code, "接続コード")}>
+            コピー
+          </Button>
+        </div>
+      </div>
+      <div>
+        <p className="text-[12px] font-medium">実行するコマンド</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <code className="text-[13px]">{command}</code>
+          <Button size="sm" type="button" onClick={() => onCopy(command, "コマンド")}>
+            コピー
+          </Button>
+        </div>
+      </div>
+      <p className="text-[12.5px] text-ink-3 leading-relaxed">
+        このコードは一度しか使えません。有効期限は {formatCliCodeExpiry(expiresAt)} までです。
+      </p>
+    </div>
+  );
+}

@@ -296,7 +296,7 @@ packages/content/
 | `db` | sql-basics, auth-basics | PostgreSQL(PGlite。決定、下記) |
 | `next-app` | nextjs-basics | `next build`と、`next start`で開いた画面のPlaywright |
 | `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える(§5.5、実装済み) |
-| `dotnet-test` | C# のステージ (準備中) | .NET SDK 10・xUnit。手元でビルドとテストを動かす |
+| `dotnet-test` | csharp-foundations | .NET SDK 10・xUnit。手元でビルドとテストを動かす |
 | `quickjs`(旧) | fe-kamoku-b、CMSのプレビュー | 今のまま |
 
 runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。Node.jsは22.13以上の22系と24系に限る。道具の多くが奇数版(23)に対応しないため、環境の要件に使える版の一覧(`majors`)を足し、環境診断は23を「この版は使えません」とする。
@@ -408,7 +408,9 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **機械で判定できる規則:** 整形・未使用の変数・禁止した構文などは、lintとASTの検査に入れて手元の実行に含める。
 - **AIと人が見る規則:** 機械で判定しにくい規則を見る。たとえば、名前が意味を表しているか、関数の分け方と責務、重複や不要な複雑さ、単元で教えた書き方を使っているか、既存コードの書き方に合わせているか、説明とコードが一致しているか。
 
-すべての課題が同じ流れを通る。課題の種別で変わるのは、提出に必要なものと、AIが重く見る規則である。
+問題つきでない課題は、同じ流れを通る。課題の種別で変わるのは、提出に必要なものと、AIが重く見る規則である。
+
+問題つきの課題（`task.json` の `problems`）は、この流れの例外で、AIの一次レビューを通さない。利用者の判断で、この課題はテストの合否を確かめるためのものにし、課題ごとにAIを呼ばない。問題が全部そろったときだけ課題の提出を1行作り、`review_source = 'tests'` で合格にする。サーバーはコードを実行しない。合否は、受講者が手元でテストを通したという申告である。
 
 | 種別 | 提出に必要なもの | AIが重く見る規則 | 合格で残る証拠 |
 | --- | --- | --- | --- |

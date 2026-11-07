@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m8-pairs/q01-across-gte",
+  "title": "二つの売り場",
+  "problems": [
+    {
+      "id": "q01-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q02-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q03-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q04-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q05-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q06-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q07-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q08-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q09-across",
+      "title": "K以上の組"
+    },
+    {
+      "id": "q10-across",
+      "title": "K以上の組"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-pairs-across",
+  "skills": {
+    "uses": [
+      "csharp-pairs-across"
+    ],
+    "assesses": [
+      "csharp-pairs-across"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

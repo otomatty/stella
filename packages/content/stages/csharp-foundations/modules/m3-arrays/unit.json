@@ -1,0 +1,14 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["csharp-array-scan", "csharp-array-sum", "csharp-array-count"],
+    "assesses": [
+      "csharp-array-scan",
+      "csharp-array-sum",
+      "csharp-array-count",
+      "csharp-array-choice",
+      "csharp-array-repair"
+    ]
+  },
+  "reuses": []
+}

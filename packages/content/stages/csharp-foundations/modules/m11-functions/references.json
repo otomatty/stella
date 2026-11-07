@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m11-functions@1",
+  "contentHash": "b49257f02405fa3adae93e777206bd19a6b6fb9357ee2cee2105735ccb77c067",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-functions/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-bool-20261106",
+        "SRC-mslearn-csharp-boolean-20261106",
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-indexer-20261106",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "bool で返すこと、1文字の判定、戻り値を次の計算に渡す説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-functions/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-bool-20261106",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "条件を bool で返すこと、空文字の長さ、戻り値を受け取ることの知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-functions/t1-return-bool/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-bool-20261106",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "条件そのものを bool で返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-functions/t2-char-bool/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-indexer-20261106",
+        "SRC-mslearn-csharp-length-20261106"
+      ],
+      "usedFor": "文字列を 1 文字ずつ見て bool で返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-functions/t3-call-return/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-boolean-20261106",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "呼んだメソッドの戻り値を次の計算に使う説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-bool-return/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。条件を bool で返す Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-char-bool/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。1文字を見て bool で返す Q11、Q12、Q14〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-return-value/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。計算の結果を返す Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。関数を組み合わせる S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。戻り値の使い方を直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。隣との差の絶対値を合計する",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。同じ長さの数字かを返す",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m5-stdin/q08-check-b",
+  "title": "確認B 短い名前の件数",
+  "problems": [
+    {
+      "id": "check-b-count-short",
+      "title": "短い名前の件数"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-stdin-name-limit",
+  "skills": {
+    "uses": [
+      "csharp-stdin-one"
+    ],
+    "assesses": [
+      "csharp-stdin-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

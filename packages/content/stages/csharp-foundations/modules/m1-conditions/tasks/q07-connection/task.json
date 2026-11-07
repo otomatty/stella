@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m1-conditions/q07-connection",
+  "title": "時間帯を分ける",
+  "problems": [
+    {
+      "id": "connect-time-of-day",
+      "title": "時間帯"
+    }
+  ],
+  "kind": "connection",
+  "pattern": "csharp-hour-band",
+  "skills": {
+    "uses": [
+      "csharp-else-if",
+      "csharp-and-or"
+    ],
+    "assesses": [
+      "csharp-else-if"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 8,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

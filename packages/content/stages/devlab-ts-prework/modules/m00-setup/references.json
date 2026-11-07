@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m00-setup@1",
-  "contentHash": "5bda068879ac3cb564a2bf9c721020c8ddf164e09be5e6e18b095a7ce4e34f89",
+  "unitId": "devlab-ts-prework/m00-setup@2",
+  "contentHash": "8c401dcef1f3c85ae0b13a42abb76fddf0e3dbd3295382f4b66ce750b5079ccc",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -10,7 +10,7 @@
       "usedFor": "教材独自の練習の課題。手元の確認と提出のしかたを確かめる",
       "authorship": "original-exercise",
       "reuse": "original",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

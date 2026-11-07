@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m2-loops/q01-for-output",
+  "title": "for で順番に出す",
+  "problems": [
+    {
+      "id": "q01-count-up",
+      "title": "1から N"
+    },
+    {
+      "id": "q02-count-down",
+      "title": "Nから1"
+    },
+    {
+      "id": "q03-from-zero",
+      "title": "0から N"
+    },
+    {
+      "id": "q04-evens",
+      "title": "偶数を2から N"
+    },
+    {
+      "id": "q05-odds",
+      "title": "奇数を1から N"
+    },
+    {
+      "id": "q06-repeat-n",
+      "title": "Nを N 行"
+    },
+    {
+      "id": "q07-times-ten",
+      "title": "1から N の10倍"
+    },
+    {
+      "id": "q08-range",
+      "title": "Aから B"
+    },
+    {
+      "id": "q09-fives",
+      "title": "5の倍数を5から N"
+    },
+    {
+      "id": "q10-down-to-zero",
+      "title": "N-1から0"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-for-sequence",
+  "skills": {
+    "uses": [
+      "csharp-for-output"
+    ],
+    "assesses": [
+      "csharp-for-output"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 45,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

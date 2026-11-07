@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m11-functions/q04-independent",
+  "title": "関数を組み合わせる",
+  "problems": [
+    {
+      "id": "s01-count-in-range",
+      "title": "範囲の個数"
+    },
+    {
+      "id": "s02-is-name",
+      "title": "名前の条件"
+    },
+    {
+      "id": "s03-sum-excess",
+      "title": "超過分の合計"
+    },
+    {
+      "id": "s04-both-four-digits",
+      "title": "二つのコード"
+    },
+    {
+      "id": "s05-contains",
+      "title": "含むか"
+    },
+    {
+      "id": "s06-minute-diff",
+      "title": "時刻の差"
+    },
+    {
+      "id": "s07-middle2-is-digits",
+      "title": "中央の数字"
+    },
+    {
+      "id": "s08-check-code",
+      "title": "コードの判定"
+    },
+    {
+      "id": "s09-payment",
+      "title": "支払総額"
+    },
+    {
+      "id": "s10-count-invalid6",
+      "title": "検査の件数"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-func-choice",
+  "skills": {
+    "uses": [
+      "csharp-return-bool",
+      "csharp-char-bool",
+      "csharp-return-value"
+    ],
+    "assesses": [
+      "csharp-func-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

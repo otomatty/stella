@@ -1,0 +1,15 @@
+// 02-q07 構造的型付け ドリル
+//
+// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+//
+// Cat、Dog、Robot など、いくつかの型は定義済みです。引数と戻り値には型注釈を付けること。
+// 引数の型には、関数が本当に使うプロパティだけを書く（例: 名前しか使わないなら { name: string }）。
+// そうすると、名前の違う型でも、そのプロパティを持っていれば渡せる。これが構造的型付け。
+
+export type Box = { width: number; height: number; depth: number };
+
+export type Paper = { width: number; height: number };
+
+// 問19 width × height の合計を返す。Box と Paper が混ざった配列も渡せる
+//     例: sumArea([{ width: 2, height: 3 }, { width: 1, height: 1 }]) → 7
+export function sumArea() {}

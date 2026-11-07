@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m5-stdin@1",
+  "contentHash": "9e448b75aabf34fa19f5c1c0dc6213921e8689802552157ed3200eaf8d599842",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-stdin/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "ReadLine、int.Parse、Split、for、if、Console.WriteLine の説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-stdin/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-split-20261106"
+      ],
+      "usedFor": "ReadLine は文字列、Split で分ける、件数 0 なら続かない、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-stdin/t1-read-one/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "1行を ReadLine と Parse で整数にする説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-stdin/t2-split-line/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-readline-20261106"
+      ],
+      "usedFor": "1行を Split してから Parse する説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-stdin/t3-count-lines/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-for-20261104"
+      ],
+      "usedFor": "先頭の件数だけ続く行を読む説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-one-int/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。1行の整数を読む Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-one-line/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。1行の複数の整数を読む Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-count-line/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。先頭の件数だけ読む Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connection/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。続く行を読んで最大を出す接続練習",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。読み方を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。読む回数と足し方を直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。k より大きい値の合計",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。上限以下の名前の件数",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

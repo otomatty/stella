@@ -1,0 +1,18 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": [
+      "csharp-stdin-one",
+      "csharp-stdin-split",
+      "csharp-stdin-count"
+    ],
+    "assesses": [
+      "csharp-stdin-one",
+      "csharp-stdin-split",
+      "csharp-stdin-count",
+      "csharp-stdin-choice",
+      "csharp-stdin-repair"
+    ]
+  },
+  "reuses": []
+}

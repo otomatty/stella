@@ -453,6 +453,32 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect((await call("/api/review-desk/ai-passed", "learner")).status).toBe(403);
       expect((await call("/api/review-desk/ai-passed?confidence=low", "teacher")).status).toBe(400);
     });
+
+    it("テストで確定した提出は AI が合格にした提出に出ない", async () => {
+      const ai = await aiPassed();
+      const now = new Date();
+      await db.insert(submissions).values({
+        id: "by-tests",
+        studentId: "learner",
+        taskId: fixture.input.taskId,
+        taskContentHash: fixture.bundle.contentHash,
+        taskKind: "basic",
+        stageTitle: "開発環境",
+        assignmentTitle: "ページを作る",
+        code: "",
+        attempt: 2,
+        submittedAt: now,
+        verdict: "pass",
+        status: "passed",
+        reviewSource: "tests",
+        reviewedAt: now,
+      });
+      const response = await call("/api/review-desk/ai-passed", "teacher");
+      expect(response.status, await response.clone().text()).toBe(200);
+      const rows = (await json<{ rows: { submissionId: string }[] }>(response)).rows;
+      expect(rows.map((row) => row.submissionId)).toEqual([ai]);
+      expect(rows.map((row) => row.submissionId)).not.toContain("by-tests");
+    });
   });
 
   it("しきい値の見直しの数字を出し、境目を超えた行に印を付ける", async () => {
