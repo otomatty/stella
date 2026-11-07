@@ -215,6 +215,7 @@ export const LearnerHome = ({
         skillMap.map?.next_stage_ids ?? [],
         serverActiveStageId,
       ),
+      stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
       reviewDone,
     });
   }, [
@@ -230,6 +231,25 @@ export const LearnerHome = ({
   ]);
   /** 先頭 (「次にやること」) は `NextStepCard` が `guide` から引く。ここは残りだけ。 */
   const later = guide.steps.slice(1);
+  const firstStep = guide.steps[0];
+  const firstStageId = firstStep?.kind === "first-stage" ? firstStep.stageId : null;
+  const firstStageFocusAttempted = useRef(false);
+  useEffect(() => {
+    if (!firstStageId || firstStageFocusAttempted.current) return;
+    // 既存の初期フォーカスは止め、描画後にこの星へ 1 回だけ寄せる。
+    // まだ描画前なら、次のフレームで 1 回だけ試し直す。
+    let retryFrame: number | undefined;
+    const frame = requestAnimationFrame(() => {
+      firstStageFocusAttempted.current = true;
+      if (!treeRef.current?.focusStage(firstStageId)) {
+        retryFrame = requestAnimationFrame(() => treeRef.current?.focusStage(firstStageId));
+      }
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (retryFrame !== undefined) cancelAnimationFrame(retryFrame);
+    };
+  }, [firstStageId]);
 
   // ----- 星を始める / 開く -----
 
@@ -339,6 +359,7 @@ export const LearnerHome = ({
   };
 
   const handlers: GuideHandlers = {
+    onStartStage: startStage,
     onStartReview: () => setPage("daily-review"),
     onResumeLesson: () => {
       if (activeStage && nextLesson) onOpenLesson(activeStage, nextLesson.lesson.id);
@@ -472,8 +493,8 @@ export const LearnerHome = ({
             onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             revealDev={revealDev}
-            // 開いた直後は現在地へ寄せる。現在地が無ければ入口の星座。
-            initialFocusStageId={serverActiveStageId}
+            // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
+            initialFocusStageId={firstStageId ? null : serverActiveStageId}
             activeInfo={activeInfo}
             handleRef={treeRef}
             // PC で開いたカードの陰は「見えている範囲」から外す。

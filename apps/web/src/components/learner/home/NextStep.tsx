@@ -46,6 +46,7 @@ export interface GuideActiveStage {
 }
 
 export interface GuideHandlers {
+  onStartStage: (stageId: string) => void;
   onStartReview: () => void;
   onResumeLesson: () => void;
   onOpenMiss: () => void;
@@ -136,6 +137,17 @@ function summarizeStep(
     return idle === "done"
       ? { icon: Check, eyebrow: "次にやること", title: "今日のぶんは終わりました" }
       : { icon: Compass, eyebrow: "次にやること", title: "いま始められるスキルはありません" };
+  }
+  if (step.kind === "first-stage") {
+    return {
+      icon: Compass,
+      eyebrow: "はじめの一歩",
+      title: `『${ctx.nodeOf(step.stageId)?.title ?? "最初のステージ"}』から始めましょう`,
+      action: {
+        label: "最初のステージを始める",
+        onClick: () => ctx.onStartStage(step.stageId),
+      },
+    };
   }
   if (step.kind === "plan") {
     return {
@@ -265,6 +277,42 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
 };
 
 const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
+  if (step.kind === "first-stage") {
+    const summary = summarizeStep(step, "empty", ctx);
+    return (
+      <HeroFrame eyebrow={summary.eyebrow}>
+        <h2 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
+          <Compass size={16} className="mt-1 shrink-0 text-brand" />
+          <span className="min-w-0">{summary.title}</span>
+        </h2>
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+          最初のステージでは、STELLA での学び方と、VS Code で課題を出すまでを順に進めます。
+        </p>
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
+          ひとつ終えると、ツリーの先が少しずつ見えてきます。
+        </p>
+        <Button
+          size="full"
+          variant="accent"
+          className="mt-4"
+          onClick={() => ctx.onStartStage(step.stageId)}
+        >
+          <Play size={14} />
+          最初のステージを始める
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-1.5 self-center"
+          onClick={() => ctx.onShowInTree(step.stageId)}
+        >
+          <Compass size={12} />
+          ツリーで見る
+        </Button>
+      </HeroFrame>
+    );
+  }
+
   if (step.kind === "plan") {
     const { item } = step;
     const Icon = PLAN_ICON[item.kind];
@@ -513,6 +561,7 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
       </div>
     );
   }
+  if (step.kind === "first-stage") return <HeroStep step={step} ctx={ctx} />;
   const row =
     step.kind === "plan"
       ? {

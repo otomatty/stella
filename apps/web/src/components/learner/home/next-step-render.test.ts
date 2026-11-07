@@ -52,6 +52,7 @@ function noop(): void {
 const handlers = {
   activeStage: null,
   nodeOf: (id: string) => nodes.get(id),
+  onStartStage: noop,
   onStartReview: noop,
   onResumeLesson: noop,
   onOpenMiss: noop,
@@ -69,6 +70,32 @@ function card(stageIds: string[], welcome = false): string {
     createElement(NextStepCard, { ...handlers, guide: guideOf(stageIds, welcome), loading: false }),
   );
 }
+
+describe("NextStep first-stage", () => {
+  const guide: HomeGuide = {
+    steps: [{ kind: "first-stage", stageId: "dev" }],
+    idle: "empty",
+  };
+
+  it("カードに最初のステージ名と始める主ボタンを出す", () => {
+    const markup = renderToStaticMarkup(
+      createElement(NextStepCard, { ...handlers, guide, loading: false }),
+    );
+    expect(markup).toContain("はじめの一歩");
+    expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
+    expect(markup).toContain("最初のステージを始める");
+    expect(markup).toContain("ツリーで見る");
+  });
+
+  it("畳んだバーにも最初のステージ名と始める主ボタンを残す", () => {
+    const markup = renderToStaticMarkup(
+      createElement(NextStepBar, { ...handlers, guide, loading: false, onExpand: noop }),
+    );
+    expect(markup).toContain("はじめの一歩");
+    expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
+    expect(markup).toContain("最初のステージを始める");
+  });
+});
 
 describe("NextStep choose card", () => {
   it("星を名指しせず、ツリーから選ぶ案内と同列の一覧を出す", () => {

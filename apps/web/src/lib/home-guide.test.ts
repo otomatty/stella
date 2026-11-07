@@ -24,6 +24,7 @@ const base = {
   hasEnrollment: true,
   activeWithoutLesson: false,
   startableStageIds: [] as string[],
+  stageAudienceById: {} as Record<string, SkillMapStageNode["audience"]>,
   reviewDone: false,
 };
 
@@ -73,13 +74,62 @@ describe("buildHomeGuide", () => {
     expect(guide.steps.some((s) => s.kind === "choose")).toBe(false);
   });
 
-  it("何も始めていない人には、星を選ぶ案内が最初の一手になる", () => {
+  it("受講 0 件で Basic が 1 つだけなら、その星を始める案内が最初の一手になる", () => {
     const guide = buildHomeGuide({
       ...base,
       hasEnrollment: false,
       startableStageIds: ["root"],
     });
-    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root"] }]);
+    expect(guide.steps).toEqual([{ kind: "first-stage", stageId: "root" }]);
+  });
+
+  it("受講 0 件でも Basic と Extra が 1 つずつなら、ツリーから選ぶ", () => {
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      startableStageIds: ["root", "extra"],
+      stageAudienceById: { root: undefined, extra: "granted" },
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root", "extra"] }]);
+  });
+
+  it("受講 0 件でも Basic が 2 つなら、ツリーから選ぶ", () => {
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      startableStageIds: ["root", "other"],
+      stageAudienceById: { root: undefined, other: undefined },
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root", "other"] }]);
+  });
+
+  it("受講 0 件でも Extra だけなら、ツリーから選ぶ", () => {
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      startableStageIds: ["extra"],
+      stageAudienceById: { extra: "granted" },
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["extra"] }]);
+  });
+
+  it("受講があれば Basic が 1 つだけでも初回の案内は出さない", () => {
+    const guide = buildHomeGuide({ ...base, startableStageIds: ["root"] });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: false, stageIds: ["root"] }]);
+  });
+
+  it("受講 0 件で復習があるときも、最初のステージを始める案内を先にする", () => {
+    const plan = buildTodayPlan({ srsDueCount: 3 });
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      plan,
+      startableStageIds: ["root"],
+    });
+    expect(guide.steps).toEqual([
+      { kind: "first-stage", stageId: "root" },
+      ...plan.items.map((item) => ({ kind: "plan", item })),
+    ]);
   });
 
   it("レッスンが尽きた進行中のステージは、仕上げを確かめてから次の星へ", () => {
