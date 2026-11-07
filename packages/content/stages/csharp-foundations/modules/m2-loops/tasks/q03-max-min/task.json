@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m2-loops/q03-max-min",
+  "title": "最大と最小",
+  "problems": [
+    {
+      "id": "q21-max5",
+      "title": "5つの最大"
+    },
+    {
+      "id": "q22-min5",
+      "title": "5つの最小"
+    },
+    {
+      "id": "q23-max3",
+      "title": "3つの最大"
+    },
+    {
+      "id": "q24-min3",
+      "title": "3つの最小"
+    },
+    {
+      "id": "q25-max4",
+      "title": "4つの最大"
+    },
+    {
+      "id": "q26-min4",
+      "title": "4つの最小"
+    },
+    {
+      "id": "q27-max2",
+      "title": "2つの最大"
+    },
+    {
+      "id": "q28-min2",
+      "title": "2つの最小"
+    },
+    {
+      "id": "q29-larger-abs",
+      "title": "符号を無視した大きい方（絶対値が大きい方。同じなら先の引数）"
+    },
+    {
+      "id": "q30-max-positive",
+      "title": "0より大きいものだけでの最大。すべて 0 以下なら 0"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-compare-extremes",
+  "skills": {
+    "uses": [
+      "csharp-max-min"
+    ],
+    "assesses": [
+      "csharp-max-min"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 45,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

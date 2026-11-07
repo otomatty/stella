@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q01-count-people",
+  "title": "点数から人数を数える",
+  "problems": [
+    {
+      "id": "q01-count-gte",
+      "title": "P 以上"
+    },
+    {
+      "id": "q02-count-gt",
+      "title": "P より大きい"
+    },
+    {
+      "id": "q03-count-lt",
+      "title": "P 未満"
+    },
+    {
+      "id": "q04-count-lte",
+      "title": "P 以下"
+    },
+    {
+      "id": "q05-count-eq",
+      "title": "ちょうど P"
+    },
+    {
+      "id": "q06-count-evens",
+      "title": "偶数"
+    },
+    {
+      "id": "q07-count-zero",
+      "title": "0 点"
+    },
+    {
+      "id": "q08-count-full",
+      "title": "満点"
+    },
+    {
+      "id": "q09-count-range",
+      "title": "範囲"
+    },
+    {
+      "id": "q10-sum-scores",
+      "title": "合計点"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-combine-count",
+  "skills": {
+    "uses": [
+      "csharp-combine-count"
+    ],
+    "assesses": [
+      "csharp-combine-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

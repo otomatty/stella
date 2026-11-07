@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m5-stdin/q01-one-int",
+  "title": "整数を1行から読む",
+  "problems": [
+    {
+      "id": "q01-twice",
+      "title": "2倍"
+    },
+    {
+      "id": "q02-plus-one",
+      "title": "+1"
+    },
+    {
+      "id": "q03-mod2",
+      "title": "2で割った余り"
+    },
+    {
+      "id": "q04-even-odd",
+      "title": "even か odd"
+    },
+    {
+      "id": "q05-abs",
+      "title": "絶対値"
+    },
+    {
+      "id": "q06-pass-fail",
+      "title": "60以上なら pass"
+    },
+    {
+      "id": "q07-sign",
+      "title": "符号"
+    },
+    {
+      "id": "q08-multiple-of3",
+      "title": "3の倍数"
+    },
+    {
+      "id": "q09-repeat-add",
+      "title": "NをN回足す"
+    },
+    {
+      "id": "q10-sum-to",
+      "title": "1からNの合計"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-stdin-one",
+  "skills": {
+    "uses": [
+      "csharp-stdin-one"
+    ],
+    "assesses": [
+      "csharp-stdin-one"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

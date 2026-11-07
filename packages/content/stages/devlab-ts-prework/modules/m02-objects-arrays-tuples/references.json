@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m02-objects-arrays-tuples@1",
-  "contentHash": "da2a703ecaf35404d8c1fba755ab63a4fc9f047a72f8a882354301af39fefc27",
+  "unitId": "devlab-ts-prework/m02-objects-arrays-tuples@2",
+  "contentHash": "46805dc243184bf3b412c30c7dc7a4bb56a301e1e8d85a4a57ab2bc14c93a228",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -28,7 +28,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -40,7 +40,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

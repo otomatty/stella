@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m8-pairs/q04-independent",
+  "title": "組み合わせを選ぶ",
+  "problems": [
+    {
+      "id": "s01-budget",
+      "title": "予算内"
+    },
+    {
+      "id": "s02-closest",
+      "title": "最も近い"
+    },
+    {
+      "id": "s03-same-value",
+      "title": "同じ値"
+    },
+    {
+      "id": "s04-max-pair",
+      "title": "最大の合計"
+    },
+    {
+      "id": "s05-row-max",
+      "title": "行の最大"
+    },
+    {
+      "id": "s06-col-sum",
+      "title": "列の合計"
+    },
+    {
+      "id": "s07-row-sum",
+      "title": "合計がK以上"
+    },
+    {
+      "id": "s08-indexes",
+      "title": "組の番号"
+    },
+    {
+      "id": "s09-colors",
+      "title": "異なる色"
+    },
+    {
+      "id": "s10-times",
+      "title": "掛け算"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-pairs-choice",
+  "skills": {
+    "uses": [
+      "csharp-pairs-across",
+      "csharp-pairs-same",
+      "csharp-pairs-rows"
+    ],
+    "assesses": [
+      "csharp-pairs-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

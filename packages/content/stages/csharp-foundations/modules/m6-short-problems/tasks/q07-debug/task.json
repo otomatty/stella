@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q07-debug",
+  "title": "差の絶対値と数字判定を直す",
+  "problems": [
+    {
+      "id": "r1-max-abs-diff",
+      "title": "差の最大"
+    },
+    {
+      "id": "r2-digits-yes",
+      "title": "数字だけ"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-combine-repair",
+  "skills": {
+    "uses": [
+      "csharp-combine-neighbors",
+      "csharp-combine-one-string"
+    ],
+    "assesses": [
+      "csharp-combine-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

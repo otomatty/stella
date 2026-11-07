@@ -1,0 +1,56 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q11-reach-b",
+  "title": "到達確認B 支払額と合計と長さ",
+  "problems": [
+    {
+      "id": "db-pay",
+      "title": "支払額"
+    },
+    {
+      "id": "db-sum-positive",
+      "title": "正の合計"
+    },
+    {
+      "id": "db-same-length",
+      "title": "長さ"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-reach-pay",
+  "skills": {
+    "uses": [
+      "csharp-combine-count",
+      "csharp-combine-two-strings"
+    ],
+    "assesses": [
+      "csharp-combine-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

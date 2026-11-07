@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m8-pairs/q03-odd-rows",
+  "title": "行の奇数",
+  "problems": [
+    {
+      "id": "q21-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q22-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q23-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q24-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q25-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q26-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q27-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q28-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q29-odds",
+      "title": "行の奇数"
+    },
+    {
+      "id": "q30-odds",
+      "title": "行の奇数"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-pairs-rows",
+  "skills": {
+    "uses": [
+      "csharp-pairs-rows"
+    ],
+    "assesses": [
+      "csharp-pairs-rows"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

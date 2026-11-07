@@ -3,7 +3,7 @@
   "title": "開発ラボG 事前課題 第1部 TypeScript の書き方",
   "category": "開発ラボG",
   "color": "indigo",
-  "description": "サバイバルTypeScript の章立てに沿って、TypeScript のコードを書く選考の事前課題です。手元の VS Code で確かめて、章ごとに提出します。",
+  "description": "サバイバルTypeScript の章立てに沿って、TypeScript のコードを書く選考の事前課題です。手元で確かめて、1 問ずつ提出します。",
   "header": "開発ラボG 事前課題",
   "tenantId": "ses",
   "audience": "granted",

@@ -120,4 +120,32 @@ describe("NextStep choose card", () => {
     expect(markup).not.toContain("ツリーで見る");
     expect(markup).not.toContain("<button");
   });
+
+  it("仕上げの案内は残りの問題数を出し、受講者の番なら課題に取り組む", () => {
+    const guide: HomeGuide = { steps: [{ kind: "wrapup" }], idle: "empty" };
+    const detail =
+      "課題「計算」は取り組み中です。残り 15 問です。レビューで合格すると、この星がクリアになります。";
+    const markup = renderToStaticMarkup(
+      createElement(NextStepCard, {
+        ...handlers,
+        guide,
+        loading: false,
+        activeStage: {
+          id: "cs",
+          title: "C# の基礎",
+          progress: 100,
+          lessonsCount: 3,
+          wrapup: {
+            task: { id: "t", title: "計算", status: "local-passed", lessonId: "l" },
+            remaining: 1,
+            learnerTurn: true,
+            detail,
+          },
+        },
+      }),
+    );
+    expect(markup).toContain("残り 15 問");
+    expect(markup).toContain("課題に取り組む");
+    expect(markup).not.toContain("AI が確認中");
+  });
 });

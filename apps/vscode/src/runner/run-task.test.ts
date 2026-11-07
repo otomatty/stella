@@ -137,6 +137,7 @@ describe("runTask (Vitest の手順)", () => {
       ["files", "passed"],
     ]);
     expect(result.outcome).toBe("passed");
+    expect(result).not.toHaveProperty("problemId");
     expect(result.toolVersions.node).toBe(process.version);
     expect(result.files.map((f) => f.path)).toEqual(["src/filter.js"]);
     expect(result.protected.map((f) => f.path)).toEqual(["tests/filter.test.js"]);
@@ -275,6 +276,67 @@ describe("runTask (Vitest の手順)", () => {
     for (let i = 0; i < 51; i++) {
       await makeFile(root, `src/gen/f${i}.js`, "export {};\n");
     }
+    const result = await runTask({
+      root,
+      manifest: manifest({ submit: { files: ["src/**/*.js"] } }),
+      manifestSha256: "m",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(result.steps.map((s) => [s.id, s.status])).toEqual([
+      ["deps", "passed"],
+      ["lint", "skipped"],
+      ["format", "skipped"],
+      ["test", "passed"],
+      ["files", "failed"],
+    ]);
+    expect(result.steps[1]?.summary).toContain("提出するファイルが多すぎる");
+    expect(result.steps[4]?.summary).toContain("提出するファイルが多すぎます");
+    expect(result.outcome).toBe("failed");
+  });
+
+  it("問題つきの課題の全体実行は、提出ファイルが 60 件でも lint と整形を実行する", async () => {
+    const { root, npmCli } = await vitestTask(
+      "export const f = (v, k) => v.filter((x) => x >= k);\n",
+    );
+    for (let i = 0; i < 59; i++) await makeFile(root, `src/gen/f${i}.js`, "export {};\n");
+    await writeFile(
+      path.join(root, "node_modules/eslint/cli.cjs"),
+      `
+const fs = require("node:fs");
+const out = process.argv[process.argv.indexOf("--output-file") + 1];
+const files = process.argv.slice(process.argv.indexOf("--output-file") + 2);
+fs.writeFileSync("eslint-files.json", JSON.stringify(files));
+fs.writeFileSync(out, JSON.stringify(files.map((f) => ({ filePath: require("node:path").resolve(f), messages: [] }))));
+`,
+    );
+    const result = await runTask({
+      root,
+      manifest: manifest({
+        submit: { files: ["src/**/*.js"] },
+        problems: [{ id: "filter", title: "選ぶ" }],
+      }),
+      manifestSha256: "m",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(result.steps.map((s) => [s.id, s.status])).toEqual([
+      ["deps", "passed"],
+      ["lint", "passed"],
+      ["format", "passed"],
+      ["test", "passed"],
+      ["files", "passed"],
+    ]);
+    const linted = JSON.parse(await readFile(path.join(root, "eslint-files.json"), "utf8")) as string[];
+    expect(linted).toHaveLength(60);
+    expect(linted.every((file) => file.startsWith("./src/"))).toBe(true);
+    expect(result.steps[4]?.summary).not.toContain("多すぎます");
+    expect(result.outcome).toBe("passed");
+  });
+
+  it("問題の無い課題は、提出ファイルが 60 件なら lint と整形を省略する", async () => {
+    const { root, npmCli } = await vitestTask(
+      "export const f = (v, k) => v.filter((x) => x >= k);\n",
+    );
+    for (let i = 0; i < 59; i++) await makeFile(root, `src/gen/f${i}.js`, "export {};\n");
     const result = await runTask({
       root,
       manifest: manifest({ submit: { files: ["src/**/*.js"] } }),
@@ -807,5 +869,107 @@ describe("unmetNeed", () => {
 
   it("needs の無い手順は返さない", () => {
     expect(unmetNeed(stepDefinition(), [doneStep("failed")])).toBeUndefined();
+  });
+});
+
+describe("runTask (問題)", () => {
+  const problems = [
+    { id: "a", title: "壊れている" },
+    { id: "b", title: "通る" },
+  ];
+
+  it("一覧に無い ID はプロセスを起動せずにエラーになる", async () => {
+    const root = await makeTask({});
+    let logged = "";
+    const result = await runTask({
+      root,
+      manifest: manifest({ problems }),
+      manifestSha256: "m",
+      problem: "nope",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: ["missing-npm.cjs"] } },
+      log: (text) => {
+        logged += text;
+      },
+    });
+    expect(result.outcome).toBe("error");
+    expect(result.toolVersions).toEqual({});
+    expect(logged).toBe("");
+    expect(result).not.toHaveProperty("problemId");
+    expect(result.steps).toEqual([
+      expect.objectContaining({
+        status: "error",
+        summary: "問題 nope はこの課題にありません",
+      }),
+    ]);
+  });
+
+  it("指定した問題のファイルだけを lint・整形し、結果は problem-runs に残す", async () => {
+    const root = await makeTask({
+      "package.json": JSON.stringify({ name: "task", private: true }),
+      "package-lock.json": "{}",
+      "src/a.ts": "export const a = (((;\n",
+      "src/b.ts": "export const b = 1;\n",
+      "tests/a.test.ts": "export {};\n",
+      "tests/b.test.ts": "export {};\n",
+      ...fakePackage(
+        "eslint",
+        "eslint",
+        `
+const fs = require("node:fs");
+const out = process.argv[process.argv.indexOf("--output-file") + 1];
+const files = process.argv.slice(process.argv.indexOf("--output-file") + 2);
+fs.writeFileSync("eslint-files.json", JSON.stringify(files));
+fs.writeFileSync(out, JSON.stringify(files.map((f) => ({ filePath: require("node:path").resolve(f), messages: [] }))));
+`,
+      ),
+      ...fakePackage("prettier", "prettier", FAKE_PRETTIER),
+      ...fakePackage(
+        "vitest",
+        "vitest",
+        `
+const fs = require("node:fs");
+const out = process.argv.find((a) => a.startsWith("--outputFile=")).slice("--outputFile=".length);
+fs.writeFileSync("vitest-args.json", JSON.stringify(process.argv));
+fs.writeFileSync(out, JSON.stringify({
+  success: true,
+  testResults: [{ name: "tests/b.test.ts", status: "passed", assertionResults: [
+    { ancestorTitles: [], title: "ok", status: "passed", failureMessages: [] }
+  ]}]
+}));
+`,
+      ),
+    });
+    const npmCli = path.join(root, "..", `${path.basename(root)}-npm-cli.cjs`);
+    await writeFile(npmCli, FAKE_NPM);
+    const task = manifest({
+      submit: { files: ["src/**/*.ts"] },
+      protected: ["tests/**"],
+      problems,
+    });
+    const result = await runTask({
+      root,
+      manifest: task,
+      manifestSha256: "m",
+      problem: "b",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(result.outcome).toBe("passed");
+    expect(result.problemId).toBe("b");
+    expect(JSON.parse(await readFile(path.join(root, "eslint-files.json"), "utf8"))).toEqual([
+      "./src/b.ts",
+    ]);
+    expect(JSON.parse(await readFile(path.join(root, "vitest-args.json"), "utf8"))).toContain(
+      "./tests/b.test.ts",
+    );
+    expect(result.files.map((file) => file.path)).toEqual(["src/b.ts"]);
+    expect(result.protected.map((file) => file.path).sort()).toEqual([
+      "tests/a.test.ts",
+      "tests/b.test.ts",
+    ]);
+    await saveRunResult(root, result);
+    const savedPath = path.join(root, ".stella", "problem-runs", "b.json");
+    const saved = JSON.parse(await readFile(savedPath, "utf8"));
+    expect(saved.problemId).toBe("b");
+    await expect(readFile(path.join(root, ".stella", "last-run.json"), "utf8")).rejects.toThrow();
   });
 });

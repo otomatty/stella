@@ -1,0 +1,59 @@
+{
+  "id": "csharp-foundations/m1-conditions/q05-two-compare",
+  "title": "2つの数を比べる",
+  "problems": [
+    {
+      "id": "q24-larger",
+      "title": "大きい方"
+    },
+    {
+      "id": "q25-smaller",
+      "title": "小さい方"
+    },
+    {
+      "id": "q26-abs-diff",
+      "title": "差の絶対値"
+    },
+    {
+      "id": "q27-max-of-three",
+      "title": "3つの最大"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-two-compare",
+  "skills": {
+    "uses": [
+      "csharp-if-else"
+    ],
+    "assesses": [
+      "csharp-if-else"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 16,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

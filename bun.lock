@@ -33,9 +33,24 @@
         "yaml": "^2.9.1",
       },
     },
+    "apps/cli": {
+      "name": "@stella/cli",
+      "version": "0.1.0",
+      "bin": {
+        "stella": "./dist/stella.mjs",
+      },
+      "dependencies": {
+        "@stella/shared": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^26.6.6",
+        "esbuild": "^0.28.2",
+        "typescript": "^7.0.2",
+      },
+    },
     "apps/vscode": {
       "name": "stella-lms",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@stella/code-runner": "workspace:*",
         "@stella/shared": "workspace:*",
@@ -564,6 +579,8 @@
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
     "@stella/api": ["@stella/api@workspace:apps/api"],
+
+    "@stella/cli": ["@stella/cli@workspace:apps/cli"],
 
     "@stella/code-runner": ["@stella/code-runner@workspace:packages/code-runner"],
 

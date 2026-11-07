@@ -293,7 +293,7 @@ export interface TaskBoardSubmission {
   attempt: number;
   submittedAt: string;
   verdict: "pass" | "resubmit" | "fail" | null;
-  reviewSource: "ai" | "human" | null;
+  reviewSource: "ai" | "human" | "tests" | null;
   aiReviewStatus: string | null;
   confidence: Confidence | null;
   routeReasons: RouteReason[];

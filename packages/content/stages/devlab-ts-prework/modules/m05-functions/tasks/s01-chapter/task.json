@@ -16,33 +16,854 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-add3",
+      "title": "【関数宣言】3つの数を足す"
+    },
+    {
+      "id": "q01-02-cube-of",
+      "title": "【関数宣言】3乗を返す"
+    },
+    {
+      "id": "q01-03-initials",
+      "title": "【関数宣言】名と姓の頭文字を「T.Y.」の形にする"
+    },
+    {
+      "id": "q01-04-to-minutes",
+      "title": "【関数宣言】時と分を、0時からの分にする"
+    },
+    {
+      "id": "q01-05-is-all-upper",
+      "title": "【関数宣言】英字を含み、すべて大文字なら true"
+    },
+    {
+      "id": "q01-06-circle-area",
+      "title": "【関数宣言】円の面積を返す"
+    },
+    {
+      "id": "q01-07-is-weekend-day",
+      "title": "【関数宣言】曜日の番号が土日なら true"
+    },
+    {
+      "id": "q01-08-half",
+      "title": "【関数式】半分にする"
+    },
+    {
+      "id": "q01-09-negate",
+      "title": "【関数式】符号を反転する"
+    },
+    {
+      "id": "q01-10-quote",
+      "title": "【関数式】文字列を「\"」で囲む"
+    },
+    {
+      "id": "q01-11-km-to-miles",
+      "title": "【関数式】km をマイルにする"
+    },
+    {
+      "id": "q01-12-percent-text",
+      "title": "【関数式】0〜1 の割合を「50%」の形にする"
+    },
+    {
+      "id": "q01-13-is-multiple-of7",
+      "title": "【関数式】7の倍数なら true"
+    },
+    {
+      "id": "q01-14-last-word",
+      "title": "【関数式】半角スペースで区切った最後の単語を返す"
+    },
+    {
+      "id": "q01-15-triple",
+      "title": "【アロー関数】3倍にする"
+    },
+    {
+      "id": "q01-16-is-positive-number",
+      "title": "【アロー関数】0より大きければ true"
+    },
+    {
+      "id": "q01-17-first-word",
+      "title": "【アロー関数】半角スペースで区切った最初の単語を返す"
+    },
+    {
+      "id": "q01-18-count-spaces",
+      "title": "【アロー関数】半角スペースの数を返す"
+    },
+    {
+      "id": "q01-19-average2",
+      "title": "【アロー関数】2つの数の平均を返す"
+    },
+    {
+      "id": "q01-20-describe-temp",
+      "title": "【アロー関数】気温が 25 以上なら \"夏日\"、それ未満は \"普通\" を返す"
+    },
+    {
+      "id": "q01-function-forms",
+      "title": "関数宣言・関数式・アロー関数（応用問題）"
+    },
+    {
+      "id": "q02-01-log-to",
+      "title": "lines の末尾に message を足す"
+    },
+    {
+      "id": "q02-02-add-all",
+      "title": "target の末尾に values をすべて足す"
+    },
+    {
+      "id": "q02-03-clear-all",
+      "title": "配列を空にする"
+    },
+    {
+      "id": "q02-04-rename",
+      "title": "user の name を書き換える"
+    },
+    {
+      "id": "q02-05-increment-all",
+      "title": "すべての要素を1増やす"
+    },
+    {
+      "id": "q02-06-reset-counter",
+      "title": "counter の count を 0 にする"
+    },
+    {
+      "id": "q02-07-toggle-flag",
+      "title": "flags の key の値を反転する"
+    },
+    {
+      "id": "q02-08-swap-in-place",
+      "title": "items の i 番目と j 番目を入れ替える"
+    },
+    {
+      "id": "q02-09-push-unique",
+      "title": "item が items になければ末尾に足して true、すでにあれば何もせず false を返す"
+    },
+    {
+      "id": "q02-10-clamp-value",
+      "title": "value を min 以上 max 以下に収める"
+    },
+    {
+      "id": "q02-11-parse-port",
+      "title": "1〜65535 の整数の文字列ならその数値、そうでなければ undefined を返す"
+    },
+    {
+      "id": "q02-12-format-bytes",
+      "title": "バイト数を、1024 以上なら「1.5 KB」、1024 × 1024 以上なら「2.0 MB」、それ未満なら「512 B」の形にする"
+    },
+    {
+      "id": "q02-13-sum-and-average",
+      "title": "合計と平均を { sum, average } で返す"
+    },
+    {
+      "id": "q02-14-do-nothing",
+      "title": "引数を受け取らず、何もしない関数"
+    },
+    {
+      "id": "q02-15-greet-all",
+      "title": "それぞれの名前に「さん、こんにちは」を付けた配列を返す"
+    },
+    {
+      "id": "q02-16-describe-user",
+      "title": "{ name, age } を「山田」にする"
+    },
+    {
+      "id": "q02-17-pick-numbers",
+      "title": "文字列と数値が混ざった配列から、数値だけを集める"
+    },
+    {
+      "id": "q02-18-seconds-text",
+      "title": "ミリ秒を「1.5秒」の形にする"
+    },
+    {
+      "id": "q02-19-first-or",
+      "title": "最初の要素を返す"
+    },
+    {
+      "id": "q02-20-sum-values",
+      "title": "オブジェクトの値の合計を返す"
+    },
+    {
+      "id": "q02-params-return",
+      "title": "引数と戻り値の型、void（応用問題）"
+    },
+    {
+      "id": "q03-01-greet-with-title",
+      "title": "name と、省略できる title"
+    },
+    {
+      "id": "q03-02-fixed",
+      "title": "n と、省略できる digits"
+    },
+    {
+      "id": "q03-03-name-text",
+      "title": "last と、省略できる first"
+    },
+    {
+      "id": "q03-04-repeat-once",
+      "title": "text と、省略できる times"
+    },
+    {
+      "id": "q03-05-countdown-from",
+      "title": "from と、省略できる to"
+    },
+    {
+      "id": "q03-06-cut",
+      "title": "text と、省略できる max"
+    },
+    {
+      "id": "q03-07-pad-two",
+      "title": "n と、省略できる width"
+    },
+    {
+      "id": "q03-08-price-label",
+      "title": "price と、省略できる unit"
+    },
+    {
+      "id": "q03-09-first-words",
+      "title": "text と、省略できる count"
+    },
+    {
+      "id": "q03-10-make-user",
+      "title": "name と、省略できる age"
+    },
+    {
+      "id": "q03-11-average-of2",
+      "title": "a と、省略できる b"
+    },
+    {
+      "id": "q03-12-tag-text",
+      "title": "name と、省略できる color"
+    },
+    {
+      "id": "q03-13-is-long-enough",
+      "title": "text と、省略できる min"
+    },
+    {
+      "id": "q03-14-log-text",
+      "title": "message と、省略できる level"
+    },
+    {
+      "id": "q03-15-round-step",
+      "title": "n と、省略できる step"
+    },
+    {
+      "id": "q03-16-age-label",
+      "title": "省略できる age だけを受け取る"
+    },
+    {
+      "id": "q03-17-sum-up-to3",
+      "title": "a と、省略できる b と c"
+    },
+    {
+      "id": "q03-18-build-url",
+      "title": "path と、省略できる query"
+    },
+    {
+      "id": "q03-19-in-range",
+      "title": "n と、省略できる min と max"
+    },
+    {
+      "id": "q03-20-initials-of",
+      "title": "first と、省略できる last"
+    },
+    {
+      "id": "q03-optional-params",
+      "title": "オプション引数（応用問題）"
+    },
+    {
+      "id": "q04-01-greet-guest",
+      "title": "省略できる name を受け取り「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q04-02-power-of",
+      "title": "base を exponent 乗する"
+    },
+    {
+      "id": "q04-03-page-count",
+      "title": "全件数 total を perPage 件ずつに分けたときのページ数を返す"
+    },
+    {
+      "id": "q04-04-price-text",
+      "title": "「1,200円」の形にする"
+    },
+    {
+      "id": "q04-05-stars",
+      "title": "char を times 個並べる"
+    },
+    {
+      "id": "q04-06-bracket",
+      "title": "text を left と right で囲む"
+    },
+    {
+      "id": "q04-07-limit",
+      "title": "value を min 以上 max 以下に収める"
+    },
+    {
+      "id": "q04-08-join-items",
+      "title": "要素を separator でつなぐ"
+    },
+    {
+      "id": "q04-09-with-tax",
+      "title": "税込価格を返す"
+    },
+    {
+      "id": "q04-10-range-of",
+      "title": "end 未満の数を、start から step ずつ増やした配列を返す"
+    },
+    {
+      "id": "q04-11-after-text",
+      "title": "「◯秒後」を返す"
+    },
+    {
+      "id": "q04-12-make-options",
+      "title": "{ size, color } を返す"
+    },
+    {
+      "id": "q04-13-pad-left",
+      "title": "text を width 文字になるよう、前を fill で埋める"
+    },
+    {
+      "id": "q04-14-date-text",
+      "title": "「2026-01-01」の形にする"
+    },
+    {
+      "id": "q04-15-shorten",
+      "title": "max 文字を超えたら、max 文字に切って「…」を付ける"
+    },
+    {
+      "id": "q04-16-pass-or-fail",
+      "title": "score が pass 以上なら \"合格\"、それ未満は \"不合格\""
+    },
+    {
+      "id": "q04-17-percentage",
+      "title": "part が total の何パーセントかを、整数に四捨五入して返す"
+    },
+    {
+      "id": "q04-18-page-title",
+      "title": "「タイトル | サイト名」を返す"
+    },
+    {
+      "id": "q04-19-times-table",
+      "title": "n × 1 から n × upTo までを並べた配列を返す"
+    },
+    {
+      "id": "q04-20-split-by",
+      "title": "text を separator で分けた配列を返す"
+    },
+    {
+      "id": "q04-default-params",
+      "title": "デフォルト引数（応用問題）"
+    },
+    {
+      "id": "q05-01-total",
+      "title": "すべての数の合計"
+    },
+    {
+      "id": "q05-02-largest",
+      "title": "1つ以上の数の最大値"
+    },
+    {
+      "id": "q05-03-smallest",
+      "title": "1つ以上の数の最小値"
+    },
+    {
+      "id": "q05-04-concat-all",
+      "title": "すべての文字列をつなぐ"
+    },
+    {
+      "id": "q05-05-count-args",
+      "title": "渡された引数の数を返す"
+    },
+    {
+      "id": "q05-06-join-words",
+      "title": "1つ目の引数 separator で、残りの単語をつなぐ"
+    },
+    {
+      "id": "q05-07-average-all",
+      "title": "すべての数の平均"
+    },
+    {
+      "id": "q05-08-all-true",
+      "title": "すべて true なら true"
+    },
+    {
+      "id": "q05-09-any-true",
+      "title": "1つでも true なら true"
+    },
+    {
+      "id": "q05-10-path-of",
+      "title": "空でない部品だけを「/」でつなぐ"
+    },
+    {
+      "id": "q05-11-multiply-all",
+      "title": "すべての数を掛ける"
+    },
+    {
+      "id": "q05-12-first-defined",
+      "title": "undefined でない最初の値を返す"
+    },
+    {
+      "id": "q05-13-labeled",
+      "title": "1つ目の引数 label に続けて、残りを「, 」でつなぐ"
+    },
+    {
+      "id": "q05-14-longest-of",
+      "title": "いちばん長い文字列を返す"
+    },
+    {
+      "id": "q05-15-count-of",
+      "title": "1つ目の引数 target が、残りの中にいくつあるかを返す"
+    },
+    {
+      "id": "q05-16-push-all",
+      "title": "target の末尾に残りの数をすべて足し、足した後の長さを返す"
+    },
+    {
+      "id": "q05-17-max-of-array",
+      "title": "配列をスプレッド構文で Math.max に渡して、最大値を返す"
+    },
+    {
+      "id": "q05-18-merge-arrays",
+      "title": "いくつかの配列を受け取り、1つにつないだ配列を返す"
+    },
+    {
+      "id": "q05-19-with-prefix",
+      "title": "1つ目の引数 prefix を、残りのそれぞれの前に付けた配列を返す"
+    },
+    {
+      "id": "q05-20-unique-of",
+      "title": "重複を除いた配列を返す"
+    },
+    {
+      "id": "q05-rest-params",
+      "title": "残余引数（応用問題）"
+    },
+    {
+      "id": "q06-01-hello",
+      "title": "{ name } を受け取り「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q06-02-area-of",
+      "title": "{ width, height } の面積"
+    },
+    {
+      "id": "q06-03-full-name",
+      "title": "{ first, last } を「姓 名」の順でつなぐ"
+    },
+    {
+      "id": "q06-04-point-text",
+      "title": "{ x, y } を「」にする"
+    },
+    {
+      "id": "q06-05-option-text",
+      "title": "{ size, color } を「M/black」の形にする"
+    },
+    {
+      "id": "q06-06-price-text",
+      "title": "{ price, currency } を「1,200円」の形にする"
+    },
+    {
+      "id": "q06-07-first-of",
+      "title": "配列を [first] で受け取り、最初の要素を返す"
+    },
+    {
+      "id": "q06-08-swapped",
+      "title": "タプル [a, b] を受け取り、[b, a] を返す"
+    },
+    {
+      "id": "q06-09-sum-of-pair",
+      "title": "{ a, b } の合計"
+    },
+    {
+      "id": "q06-10-user-label",
+      "title": "{ name, age } を「山田」にする"
+    },
+    {
+      "id": "q06-11-make-member",
+      "title": "{ name, role } から { name, role } を作る"
+    },
+    {
+      "id": "q06-12-page-range",
+      "title": "{ page, perPage } から { offset, limit } を返す"
+    },
+    {
+      "id": "q06-13-query-text",
+      "title": "{ q, limit } を「q=…&limit=…」にする"
+    },
+    {
+      "id": "q06-14-address-text",
+      "title": "{ pref, city, line } をつなぐ"
+    },
+    {
+      "id": "q06-15-perimeter",
+      "title": "{ width, height } の周りの長さ"
+    },
+    {
+      "id": "q06-16-head-and-tail",
+      "title": "配列を [head, ...tail] で受け取り、{ head, tail } を返す"
+    },
+    {
+      "id": "q06-17-ymd",
+      "title": "{ year, month, day } を「2026-12-04」の形にする"
+    },
+    {
+      "id": "q06-18-distance-between",
+      "title": "2つの点 { x, y } の距離を返す"
+    },
+    {
+      "id": "q06-19-name-with",
+      "title": "{ first, last } と、省略できる separator"
+    },
+    {
+      "id": "q06-20-lat-lng-text",
+      "title": "タプル [lat, lng] を「35.68, 139.76」の形にする"
+    },
+    {
+      "id": "q06-destructuring-params",
+      "title": "分割代入引数（応用問題）"
+    },
+    {
+      "id": "q07-01-map-numbers",
+      "title": "それぞれの要素に fn を当てはめた配列を返す"
+    },
+    {
+      "id": "q07-02-filter-numbers",
+      "title": "predicate が true の要素だけを集める"
+    },
+    {
+      "id": "q07-03-each-with-index",
+      "title": "それぞれの要素と番号を fn に渡して呼ぶ"
+    },
+    {
+      "id": "q07-04-count-where",
+      "title": "predicate が true の要素の数"
+    },
+    {
+      "id": "q07-05-some-match",
+      "title": "predicate が true になる要素が1つでもあれば true"
+    },
+    {
+      "id": "q07-06-every-match",
+      "title": "すべての要素で predicate が true なら true"
+    },
+    {
+      "id": "q07-07-find-number",
+      "title": "predicate が true になる最初の要素"
+    },
+    {
+      "id": "q07-08-find-index-where",
+      "title": "predicate が true になる最初の要素の番号"
+    },
+    {
+      "id": "q07-09-times",
+      "title": "fn を n 回呼ぶ"
+    },
+    {
+      "id": "q07-10-reduce-numbers",
+      "title": "initial から始めて、fn で1つの値にまとめる"
+    },
+    {
+      "id": "q07-11-map-strings",
+      "title": "それぞれの文字列に fn を当てはめた配列を返す"
+    },
+    {
+      "id": "q07-12-apply-twice",
+      "title": "x に fn を2回当てはめる"
+    },
+    {
+      "id": "q07-13-sum-by",
+      "title": "それぞれの単語に fn を当てはめた数の合計"
+    },
+    {
+      "id": "q07-14-max-by",
+      "title": "fn の値がいちばん大きい単語を返す"
+    },
+    {
+      "id": "q07-15-sort-by-key",
+      "title": "key の値の小さい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q07-16-reject-numbers",
+      "title": "predicate が true の要素を除いた配列を返す"
+    },
+    {
+      "id": "q07-17-split-by",
+      "title": "predicate が true の要素と false の要素に分け、[true の配列, false の配列] を返す"
+    },
+    {
+      "id": "q07-18-with-log",
+      "title": "log の末尾に \"call\" を足してから、fn の結果を返す"
+    },
+    {
+      "id": "q07-19-retry",
+      "title": "fn が true を返すまで、最大 times 回呼ぶ"
+    },
+    {
+      "id": "q07-20-compose-two",
+      "title": "x に f を当てはめ、その結果に g を当てはめる"
+    },
+    {
+      "id": "q07-callback",
+      "title": "コールバック関数（応用問題）"
+    },
+    {
+      "id": "q08-01-make-adder",
+      "title": "受け取った数に n を足す関数を返す"
+    },
+    {
+      "id": "q08-02-make-times",
+      "title": "受け取った数を n 倍する関数を返す"
+    },
+    {
+      "id": "q08-03-make-greeter",
+      "title": "名前を受け取り「greeting、◯◯さん」を返す関数を返す"
+    },
+    {
+      "id": "q08-04-make-counter",
+      "title": "呼ぶたびに 1、2、3… を返す関数を返す"
+    },
+    {
+      "id": "q08-05-make-counter-from",
+      "title": "呼ぶたびに start、start + 1、… を返す関数を返す"
+    },
+    {
+      "id": "q08-06-make-toggle",
+      "title": "呼ぶたびに真偽値を反転し、反転した後の値を返す関数を返す"
+    },
+    {
+      "id": "q08-07-make-accumulator",
+      "title": "受け取った数を足し続け、それまでの合計を返す関数を返す"
+    },
+    {
+      "id": "q08-08-make-id-maker",
+      "title": "呼ぶたびに \"u1\"、\"u2\"… を返す関数を返す"
+    },
+    {
+      "id": "q08-09-only-once",
+      "title": "fn を最初の1回だけ呼び、2回目からは1回目の結果を返す関数を返す"
+    },
+    {
+      "id": "q08-10-make-limiter",
+      "title": "max 回目までは true、それより後は false を返す関数を返す"
+    },
+    {
+      "id": "q08-11-make-history",
+      "title": "{ add, list } を返す"
+    },
+    {
+      "id": "q08-12-make-stack",
+      "title": "{ push, pop, size } を返す"
+    },
+    {
+      "id": "q08-13-make-square-cache",
+      "title": "{ square, computed } を返す"
+    },
+    {
+      "id": "q08-14-make-cycler",
+      "title": "呼ぶたびに items を先頭から順に返し、最後まで行ったら先頭に戻る関数を返す"
+    },
+    {
+      "id": "q08-15-make-wallet",
+      "title": "{ deposit, withdraw, balance } を返す"
+    },
+    {
+      "id": "q08-16-make-formatter",
+      "title": "数を受け取り「数 + unit」の文字列を返す関数を返す"
+    },
+    {
+      "id": "q08-17-make-validator",
+      "title": "数を受け取り、min 以上 max 以下なら true を返す関数を返す"
+    },
+    {
+      "id": "q08-18-make-lap-timer",
+      "title": "時刻 tを受け取り、前回呼んだときの t との差を返す関数を返す"
+    },
+    {
+      "id": "q08-19-partial",
+      "title": "2つの数を受け取る関数 fn と a を受け取り、b だけを受け取って fn を返す関数を返す"
+    },
+    {
+      "id": "q08-20-make-tagger",
+      "title": "文字列を受け取り「<tag>文字列</tag>」を返す関数を返す"
+    },
+    {
+      "id": "q08-closures",
+      "title": "関数を返す関数（応用問題）"
+    },
+    {
+      "id": "q09-01-is-text",
+      "title": "【型ガード】文字列か"
+    },
+    {
+      "id": "q09-02-is-num",
+      "title": "【型ガード】NaN でない数値か"
+    },
+    {
+      "id": "q09-03-is-bool",
+      "title": "【型ガード】真偽値か"
+    },
+    {
+      "id": "q09-04-is-string-array",
+      "title": "【型ガード】すべての要素が文字列の配列か"
+    },
+    {
+      "id": "q09-05-is-present",
+      "title": "【型ガード】string | null を受け取り、null でないか"
+    },
+    {
+      "id": "q09-06-is-defined-number",
+      "title": "【型ガード】number | undefined を受け取り、undefined でないか"
+    },
+    {
+      "id": "q09-07-is-user",
+      "title": "【型ガード】null でないオブジェクトで、name が文字列、age が数値か"
+    },
+    {
+      "id": "q09-08-is-admin",
+      "title": "【型ガード】User | Admin を受け取り、Admin か"
+    },
+    {
+      "id": "q09-09-is-dog",
+      "title": "【型ガード】Pet が犬か"
+    },
+    {
+      "id": "q09-10-is-cat",
+      "title": "【型ガード】Pet が猫か"
+    },
+    {
+      "id": "q09-11-only-strings",
+      "title": "unknown の配列から、文字列だけを集めた string[] を返す"
+    },
+    {
+      "id": "q09-12-defined-only",
+      "title": "[] から undefined を除いた number[] を返す"
+    },
+    {
+      "id": "q09-13-count-users",
+      "title": "unknown の配列の中で、User の形をしたものの数を返す"
+    },
+    {
+      "id": "q09-14-assert-text",
+      "title": "【アサーション】文字列でなければ \"文字列ではありません\" の Error を投げる"
+    },
+    {
+      "id": "q09-15-assert-defined",
+      "title": "【アサーション】string | undefined を受け取り、undefined なら \"値がありません\" の Error を投げる"
+    },
+    {
+      "id": "q09-16-assert-user",
+      "title": "【アサーション】User の形でなければ \"User ではありません\" の Error を投げる"
+    },
+    {
+      "id": "q09-17-to-user-or-null",
+      "title": "User の形ならそれを、そうでなければ null を返す"
+    },
+    {
+      "id": "q09-18-is-email-like",
+      "title": "【型ガード】「@」を含む文字列か"
+    },
+    {
+      "id": "q09-19-is-point",
+      "title": "【型ガード】x と y が数値のオブジェクトか"
+    },
+    {
+      "id": "q09-20-is-color-name",
+      "title": "【型ガード】文字列が \"red\"、\"green\"、\"blue\" のどれかか"
+    },
+    {
+      "id": "q09-type-guards",
+      "title": "型ガード関数とアサーション関数（応用問題）"
+    },
+    {
+      "id": "q10-01-names-of",
+      "title": "名前の配列を返す"
+    },
+    {
+      "id": "q10-02-average-score",
+      "title": "点数の平均を返す"
+    },
+    {
+      "id": "q10-03-best-student",
+      "title": "点数がいちばん高い生徒を返す"
+    },
+    {
+      "id": "q10-04-in-grade",
+      "title": "grade 年生の生徒だけを返す"
+    },
+    {
+      "id": "q10-05-passed-students",
+      "title": "border 点以上の生徒だけを返す"
+    },
+    {
+      "id": "q10-06-sort-by-score",
+      "title": "点数の高い順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q10-07-rank-labels",
+      "title": "点数の高い順に「1位 佐藤」「2位 山田」…と並べた配列を返す"
+    },
+    {
+      "id": "q10-08-group-by-grade",
+      "title": "学年ごとにまとめる"
+    },
+    {
+      "id": "q10-09-count-by-grade",
+      "title": "学年ごとの人数"
+    },
+    {
+      "id": "q10-10-average-by-grade",
+      "title": "学年ごとの平均点"
+    },
+    {
+      "id": "q10-11-split-by-pass",
+      "title": "border 点以上の生徒とそれ以外に分け、[合格の配列, 不合格の配列] を返す"
+    },
+    {
+      "id": "q10-12-top-students",
+      "title": "点数の高い順に n 人を返す"
+    },
+    {
+      "id": "q10-13-score-table",
+      "title": "{ 名前: 点数 } のオブジェクトを返す"
+    },
+    {
+      "id": "q10-14-has-perfect",
+      "title": "100点の生徒が1人でもいれば true"
+    },
+    {
+      "id": "q10-15-everyone-passed",
+      "title": "全員が border 点以上なら true"
+    },
+    {
+      "id": "q10-16-total-score",
+      "title": "点数の合計"
+    },
+    {
+      "id": "q10-17-score-range",
+      "title": "[最低点, 最高点] を返す"
+    },
+    {
+      "id": "q10-18-find-by-name",
+      "title": "名前で生徒を探す"
+    },
+    {
+      "id": "q10-19-update-score",
+      "title": "name の生徒の点数だけを score にした新しい配列を返す"
+    },
+    {
+      "id": "q10-20-summary-text",
+      "title": "「人数 3、平均 78.3、最高 佐藤」の形にする"
+    },
+    {
+      "id": "q10-array-utils",
+      "title": "配列のユーティリティ（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,

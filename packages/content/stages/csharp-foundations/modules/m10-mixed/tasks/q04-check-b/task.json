@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m10-mixed/q04-check-b",
+  "title": "確認B 基準未満",
+  "problems": [
+    {
+      "id": "check-b-below",
+      "title": "基準未満"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-mix-below",
+  "skills": {
+    "uses": [
+      "csharp-mix-all"
+    ],
+    "assesses": [
+      "csharp-mix-all"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

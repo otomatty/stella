@@ -1,30 +1,117 @@
 # 09章 組み込みの API とモジュールの問題
 
-同じ番号では、ドリルを解いてから応用問題を解き、次の番号に進みます。
+同じ番号では、ドリルの問題を 1 問ずつ確認して提出してから、応用問題に進みます。
 
-この課題で解くファイルです。
+問題の一覧です。課題のパネルにも出ます。
 
-| 順番 | ファイル | 題 | 種類 | 問 |
-| --- | --- | --- | --- | --- |
-| 1 | `src/q01-map.drill.ts` | Map | ドリル | 20 問 |
-| 2 | `src/q01-map.ts` | Map | 応用問題 |  |
-| 3 | `src/q02-set.drill.ts` | Set | ドリル | 20 問 |
-| 4 | `src/q02-set.ts` | Set | 応用問題 |  |
-| 5 | `src/q03-date.drill.ts` | Date | ドリル | 20 問 |
-| 6 | `src/q03-date.ts` | Date | 応用問題 |  |
-| 7 | `src/q04-error.drill.ts` | Error | ドリル | 20 問 |
-| 8 | `src/q04-error.ts` | Error | 応用問題 |  |
-| 9 | `src/q05-modules.drill.ts` | import と export | ドリル | 20 問 |
-| 10 | `src/q05-modules.lib.ts` | のドリル（q05-modules.drill.ts）で import するためのファイルです。書き換えないでください | 応用問題 |  |
-| 11 | `src/q05-modules.ts` | モジュールに分ける | ★総合問題 |  |
+| 番号 | 題 | ドリルの問数 | 応用問題 |
+| --- | --- | --- | --- |
+| q01 | Map | 20 問 | 応用問題 |
+| q02 | Set | 20 問 | 応用問題 |
+| q03 | Date | 20 問 | 応用問題 |
+| q04 | Error | 20 問 | 応用問題 |
+| q05 | import と export | 20 問 | ★総合問題 4 問 |
+
+## 番号ごとの説明
+
+### q01 Map
+
+次の20問を、Map を使って書いてください。引数と戻り値には型注釈を付けること（Map<string, number> など）。
+
+「新しい Map を返す」問題では、引数の Map を変えないこと。引数の型は Map<…> と書く（ReadonlyMap は使わない）。
+
+Map は、入れた順を覚えています。keys()、values()、entries() は入れた順に取り出せる。
+
+配列にしたいときは [...map.keys()] のようにスプレッド構文を使う。
+
+### q02 Set
+
+次の20問を、Set を使って書いてください。引数と戻り値には型注釈を付けること（Set<string> など）。型 User は定義済みです。
+
+引数の配列や Set を変えないこと。引数の型は string[] や Set<string> と書く（readonly や ReadonlySet は使わない）。
+
+Set は、入れた順を覚えています。配列にしたいときは [...set] のようにスプレッド構文を使う。
+
+Set の union や intersection などのメソッドは、このテンプレートの設定（ES2022）では使えないので、has や add を使って書く。
+
+export type User = { id: number; name: string };
+
+### q03 Date
+
+次の20問を、Date を使って書いてください。引数と戻り値には型注釈を付けること。
+
+日付はその環境の時刻（ローカル時刻）で扱う。getFullYear、getMonth、getDate、getDay、getHours、getMinutes を使う。
+
+Date の中では、月は 0〜11（1月が 0）、曜日は 0〜6（日曜が 0）で数える。問題文の「月」は 1〜12 で書いている。
+
+引数の Date は変えないこと。変えたいときは new Date(date.getTime()) でコピーしてから変える。
+
+### q04 Error
+
+次の20問を解いてください。エラーのクラス HttpError と、それを継承した NotFoundError は定義済みです。
+
+引数と戻り値には型注釈を付けること。catch で受け取る値や、引数の error の型は unknown です。
+
+エラーの種類は、name や message の文字列ではなく instanceof で見分ける。子のクラス（NotFoundError）は、親のクラス（HttpError）より先に確かめる。
+
+エラーのクラスを作るときは、extends Error で継承し、constructor の中で super(message) を呼んでから this.name を設定する。
+
+export class HttpError extends Error {
+
+readonly status: number;
+
+constructor(status: number, message: string) {
+
+super(message);
+
+this.name = "HttpError";
+
+this.status = status;
+
+}
+
+}
+
+export class NotFoundError extends HttpError {
+
+constructor(resource: string) {
+
+super(404, `${resource} が見つかりません`);
+
+this.name = "NotFoundError";
+
+}
+
+}
+
+### q05 import と export
+
+次の20問を解いてください。shared/q05-modules.lib.ts（書き換えないファイル）に、定数・型・関数が用意してあります。
+
+export の問題は、テストがこのファイルから import して確かめます。import の問題は、shared/q05-modules.lib から import して使います。
+
+import 文は、ファイルの先頭でなくても、その問題の範囲（「// 問N」の下）に書いてかまいません。
+
+import はどこに書いても、ファイルを読み込むときに最初に実行されます。同じ名前を2回 import しないこと（問ごとに使う名前は分けてある）。
+
+★総合問題は 4 問です。`src/q05-modules.ts` にあるコードを 3 つのファイルに移し、`src/q05-modules.ts` には re-export だけを残します。移すとき、関数の中身は変えません。`src/q05-modules-cart.ts` だけ、数量の確かめを足します。
+
+| ファイル | 中身 |
+| --- | --- |
+| `src/q05-modules-price.ts` | `TAX_RATE` と `priceWithTax` を名前付き export |
+| `src/q05-modules-format.ts` | `formatYen` をデフォルト export |
+| `src/q05-modules-cart.ts` | `CartItem`、`addItem`、`cartTotal`、`cartSummary`。`./q05-modules-price`、`./q05-modules-format`、`./q04-error` から import |
+| `src/q05-modules.ts` | 上の 3 ファイルの re-export だけ |
 
 ## 進め方
 
-ファイルの先頭の問題文を読んで、コードを書きます。
+1 問確認して提出し、次の問題へ進みます。
 
-VS Code のコマンド「STELLA: 課題を確認する」で確かめます。依存パッケージの準備、ESLint、Prettier、型の確認 (tsc)、テストの順に進みます。
+確認と提出は、VS Code 拡張（「STELLA: 課題を確認する」と課題のパネル）か、CLI の `stella check` と `stella submit` でできます。
 
-全部が通ったら、課題のパネルから提出します。章の全部が通るまで提出できません。全部の章を解き終える必要はありません。提出した章の課題を数えます。
+問題を全部提出すると、この課題は合格になります。合否は手元のテストが通ったという申告で、サーバーはコードを実行しません。
+
+ドリルの問題は `src/q01-01-add-tax.ts` のように、番号・問の番号・名前で 1 問 1 ファイルです。応用問題や、クラス・型を 1 ファイルにまとめた問題は `src/q01-let-const.ts` のような名前です。
 
 ## ルール
 
@@ -33,7 +120,6 @@ VS Code のコマンド「STELLA: 課題を確認する」で確かめます。�
 - **`tests/` と設定ファイル (package.json、tsconfig.json、eslint.config.js など) は書き換えない。** 書き換えると提出できない
 - テストが通ったら、なぜそう書くのかを自分の言葉で説明できるか確かめる
 - 「説明すること」は、そのすぐ下に `//` のコメントで書く
-- 提出のときの説明の欄には、詰まったところと調べたこと (何を読んで解決したか) を書く
 
 ## 教材
 

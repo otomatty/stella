@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m5-stdin/q02-one-line",
+  "title": "1行の複数の整数",
+  "problems": [
+    {
+      "id": "q11-sum2",
+      "title": "2つの合計"
+    },
+    {
+      "id": "q12-product2",
+      "title": "2つの積"
+    },
+    {
+      "id": "q13-diff2",
+      "title": "2つの差"
+    },
+    {
+      "id": "q14-remainder",
+      "title": "2つの余り"
+    },
+    {
+      "id": "q15-max2",
+      "title": "大きい方"
+    },
+    {
+      "id": "q16-min2",
+      "title": "小さい方"
+    },
+    {
+      "id": "q17-sum3",
+      "title": "3つの合計"
+    },
+    {
+      "id": "q18-eq-or-ne",
+      "title": "同じなら eq"
+    },
+    {
+      "id": "q19-both-greater10",
+      "title": "どちらも10より大きい"
+    },
+    {
+      "id": "q20-divisible",
+      "title": "割り切れるか"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-stdin-split",
+  "skills": {
+    "uses": [
+      "csharp-stdin-split"
+    ],
+    "assesses": [
+      "csharp-stdin-split"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

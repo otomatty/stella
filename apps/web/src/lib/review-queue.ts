@@ -37,6 +37,29 @@ export function isAiPassed(s: Pick<Submission, "verdict" | "reviewSource" | "tas
   return Boolean(s.taskId) && s.verdict === "pass" && s.reviewSource === "ai";
 }
 
+/**
+ * テストで合格した提出。担当の絞り込みを当て、新しい順に並べる。元の配列は変えない。
+ * `inScope` は人のキューと同じ (担当だけなら、その受講者の提出だけ)。
+ */
+export function testsPassedRows(
+  rows: readonly Submission[],
+  inScope: (row: Submission) => boolean,
+): Submission[] {
+  return rows
+    .filter((row) => row.reviewSource === "tests" && inScope(row))
+    .sort((a, b) => b.submittedAt - a.submittedAt);
+}
+
+/** 合格の出どころ。AI の合格と、テストで確定した合格を混ぜない。 */
+export function passByLabel(
+  s: Pick<Submission, "verdict" | "reviewSource">,
+): "AI で合格" | "テストで確認" | null {
+  if (s.verdict !== "pass") return null;
+  if (s.reviewSource === "tests") return "テストで確認";
+  if (s.reviewSource === "ai") return "AI で合格";
+  return null;
+}
+
 export function queueGroupOf(s: Pick<Submission, "taskId" | "routeReasons">): ReviewQueueGroup {
   return reviewQueueGroup({ taskId: s.taskId ?? null, routeReasons: s.routeReasons ?? [] });
 }

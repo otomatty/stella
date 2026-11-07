@@ -1,0 +1,18 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": [
+      "csharp-sort-kth",
+      "csharp-count-mode",
+      "csharp-count-names"
+    ],
+    "assesses": [
+      "csharp-sort-kth",
+      "csharp-count-mode",
+      "csharp-count-names",
+      "csharp-count-choice",
+      "csharp-count-repair"
+    ]
+  },
+  "reuses": []
+}

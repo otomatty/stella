@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m3-arrays/q02-sum-array",
+  "title": "配列を集計する",
+  "problems": [
+    {
+      "id": "q11-sum-of",
+      "title": "合計"
+    },
+    {
+      "id": "q12-max-of",
+      "title": "最大"
+    },
+    {
+      "id": "q13-min-of",
+      "title": "最小"
+    },
+    {
+      "id": "q14-print-sum-and-max",
+      "title": "合計と最大を2行"
+    },
+    {
+      "id": "q15-sum-evens",
+      "title": "偶数の合計"
+    },
+    {
+      "id": "q16-sum-odds",
+      "title": "奇数の合計"
+    },
+    {
+      "id": "q17-average",
+      "title": "平均"
+    },
+    {
+      "id": "q18-sum-without-first",
+      "title": "先頭を除いた合計"
+    },
+    {
+      "id": "q19-sum-gte-k",
+      "title": "K以上の合計"
+    },
+    {
+      "id": "q20-product-of",
+      "title": "積"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-array-fold",
+  "skills": {
+    "uses": [
+      "csharp-array-sum"
+    ],
+    "assesses": [
+      "csharp-array-sum"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q06-independent",
+  "title": "読み方と条件を自分で選ぶ",
+  "problems": [
+    {
+      "id": "s01-total-shortfall",
+      "title": "追加点"
+    },
+    {
+      "id": "s02-count-in-range",
+      "title": "条件を満たす日"
+    },
+    {
+      "id": "s03-sum-abs-diff",
+      "title": "記録の変化"
+    },
+    {
+      "id": "s04-first-last",
+      "title": "最初と最後"
+    },
+    {
+      "id": "s05-count-len",
+      "title": "文字数制限"
+    },
+    {
+      "id": "s06-count-names",
+      "title": "登録できる名前"
+    },
+    {
+      "id": "s07-count-diff",
+      "title": "表示が違う場所"
+    },
+    {
+      "id": "s08-first-same",
+      "title": "隣の一致位置"
+    },
+    {
+      "id": "s09-neg-pos-zero",
+      "title": "集計の対象"
+    },
+    {
+      "id": "s10-check-codes",
+      "title": "申請の確認"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-combine-choice",
+  "skills": {
+    "uses": [
+      "csharp-combine-count",
+      "csharp-combine-two-strings",
+      "csharp-combine-one-string",
+      "csharp-combine-neighbors"
+    ],
+    "assesses": [
+      "csharp-combine-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

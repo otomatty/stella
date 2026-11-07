@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q03-one-line",
+  "title": "1行の文字列を判定する",
+  "problems": [
+    {
+      "id": "q21-all-digits",
+      "title": "全部数字"
+    },
+    {
+      "id": "q22-len-is8",
+      "title": "長さが 8"
+    },
+    {
+      "id": "q23-eight-digits",
+      "title": "8桁の数字"
+    },
+    {
+      "id": "q24-contains-a",
+      "title": "文字 a"
+    },
+    {
+      "id": "q25-contains-space",
+      "title": "半角空白"
+    },
+    {
+      "id": "q26-count-digits",
+      "title": "数字の個数"
+    },
+    {
+      "id": "q27-len-of",
+      "title": "長さ"
+    },
+    {
+      "id": "q28-head-digit",
+      "title": "先頭が数字"
+    },
+    {
+      "id": "q29-all-same",
+      "title": "全部同じ文字"
+    },
+    {
+      "id": "q30-contains-zero",
+      "title": "0 を含む"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-combine-one-string",
+  "skills": {
+    "uses": [
+      "csharp-combine-one-string"
+    ],
+    "assesses": [
+      "csharp-combine-one-string"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

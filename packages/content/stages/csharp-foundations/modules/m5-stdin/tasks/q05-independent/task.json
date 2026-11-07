@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m5-stdin/q05-independent",
+  "title": "標準入力を自分で読む",
+  "problems": [
+    {
+      "id": "s01-total-price",
+      "title": "価格と個数"
+    },
+    {
+      "id": "s02-pay-with-shipping",
+      "title": "送料"
+    },
+    {
+      "id": "s03-daily-total",
+      "title": "日別の記録"
+    },
+    {
+      "id": "s04-count-equal",
+      "title": "指定値との一致"
+    },
+    {
+      "id": "s05-print-short-names",
+      "title": "短い名前"
+    },
+    {
+      "id": "s06-score-range",
+      "title": "得点差"
+    },
+    {
+      "id": "s07-print-pair-sums",
+      "title": "二つの列"
+    },
+    {
+      "id": "s08-print-tails",
+      "title": "末尾を集める"
+    },
+    {
+      "id": "s09-print-reverse",
+      "title": "列の逆順"
+    },
+    {
+      "id": "s10-print-in-out",
+      "title": "範囲に入るか"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-stdin-choice",
+  "skills": {
+    "uses": [
+      "csharp-stdin-one",
+      "csharp-stdin-split",
+      "csharp-stdin-count"
+    ],
+    "assesses": [
+      "csharp-stdin-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

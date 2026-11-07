@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q04-neighbors",
+  "title": "隣の値を比べる",
+  "problems": [
+    {
+      "id": "q31-max-abs-diff",
+      "title": "差の最大"
+    },
+    {
+      "id": "q32-max-neighbor-sum",
+      "title": "隣の和の最大"
+    },
+    {
+      "id": "q33-sum-abs-diff",
+      "title": "差の合計"
+    },
+    {
+      "id": "q34-count-up",
+      "title": "増加した回数"
+    },
+    {
+      "id": "q35-count-down",
+      "title": "減少した回数"
+    },
+    {
+      "id": "q36-count-same",
+      "title": "隣が同じ"
+    },
+    {
+      "id": "q37-first-abs-diff",
+      "title": "最初の差"
+    },
+    {
+      "id": "q38-last-abs-diff",
+      "title": "最後の差"
+    },
+    {
+      "id": "q39-max-product",
+      "title": "隣の積の最大"
+    },
+    {
+      "id": "q40-non-decreasing",
+      "title": "単調増加"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-combine-neighbors",
+  "skills": {
+    "uses": [
+      "csharp-combine-neighbors"
+    ],
+    "assesses": [
+      "csharp-combine-neighbors"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

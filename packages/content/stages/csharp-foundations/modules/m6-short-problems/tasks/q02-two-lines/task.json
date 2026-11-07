@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q02-two-lines",
+  "title": "2行の文字列を比べる",
+  "problems": [
+    {
+      "id": "q11-same",
+      "title": "一致"
+    },
+    {
+      "id": "q12-different",
+      "title": "不一致"
+    },
+    {
+      "id": "q13-same-len",
+      "title": "長さが同じ"
+    },
+    {
+      "id": "q14-s-longer",
+      "title": "S のほうが長い"
+    },
+    {
+      "id": "q15-len-s",
+      "title": "S の長さ"
+    },
+    {
+      "id": "q16-both-empty",
+      "title": "両方空"
+    },
+    {
+      "id": "q17-same-head",
+      "title": "先頭が同じ"
+    },
+    {
+      "id": "q18-len-contains",
+      "title": "長さで含む"
+    },
+    {
+      "id": "q19-same-upper",
+      "title": "YES / NO"
+    },
+    {
+      "id": "q20-len-sum",
+      "title": "長さの合計"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-combine-two-strings",
+  "skills": {
+    "uses": [
+      "csharp-combine-two-strings"
+    ],
+    "assesses": [
+      "csharp-combine-two-strings"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

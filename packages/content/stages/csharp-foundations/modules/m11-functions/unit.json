@@ -1,0 +1,20 @@
+{
+  "plannedHours": 4,
+  "skills": {
+    "uses": [
+      "csharp-return-bool",
+      "csharp-char-bool",
+      "csharp-return-value",
+      "csharp-call-return"
+    ],
+    "assesses": [
+      "csharp-return-bool",
+      "csharp-char-bool",
+      "csharp-return-value",
+      "csharp-call-return",
+      "csharp-func-choice",
+      "csharp-func-repair"
+    ]
+  },
+  "reuses": []
+}

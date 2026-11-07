@@ -1,0 +1,12 @@
+// S01 受け付けた注文
+// 1行目に在庫xと注文数N。続くN行に注文数量。その時点の在庫以内なら受け付けて数量を引き、足りなければ注文全体を断る。受け付けた注文の件数と最後の在庫を2行表示する。 1≦N≦20、在庫と注文数量は0〜100。
+// 例: 8 4 / 3 / 6 / 5 / 1 → 2 / 0
+
+public static partial class Answers
+{
+    public static void S01Accepted()
+    {
+        // ここに書く
+        throw new NotImplementedException();
+    }
+}

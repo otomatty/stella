@@ -412,6 +412,88 @@ describe("parseTaskManifest (TypeScript の課題)", () => {
   });
 });
 
+describe("parseTaskManifest (問題)", () => {
+  const problems = [
+    { id: "q01-add-tax", title: "税込価格を返す" },
+    { id: "q02-split-bill", title: "割り勘" },
+  ];
+
+  it("vitest・typescript・dotnet の課題は問題を読む", () => {
+    const node = parseTaskManifest(base({ problems }));
+    expect(node.ok).toBe(true);
+    if (!node.ok) return;
+    expect(node.manifest.problems).toEqual(problems);
+    const typescript = parseTaskManifest(
+      base({
+        runner: "ts-test",
+        submit: { files: ["src/**/*.ts"] },
+        protected: [
+          "package.json",
+          "package-lock.json",
+          "tsconfig.json",
+          "eslint.config.js",
+          "vitest.config.js",
+          "tests/**",
+        ],
+        checks: { lint: true },
+        problems,
+      }),
+    );
+    expect(typescript.ok).toBe(true);
+    const dotnet = parseTaskManifest(
+      base({
+        runner: "dotnet-test",
+        submit: { files: ["src/**/*.cs"] },
+        protected: [
+          "Task.csproj",
+          "packages.lock.json",
+          "Directory.Build.props",
+          "Directory.Build.targets",
+          "NuGet.config",
+          "tests/**",
+        ],
+        problems,
+      }),
+    );
+    expect(dotnet.ok).toBe(true);
+  });
+
+  it("問題の無い課題にはキーを足さない", () => {
+    const result = parseTaskManifest(base());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.manifest).not.toHaveProperty("problems");
+  });
+
+  it(".. と空白と -p: を含む ID は落とす", () => {
+    for (const id of ["..", "a b", "-p:b", "a/b", "A", ""]) {
+      const result = parseTaskManifest(base({ problems: [{ id, title: "題" }] }));
+      expect(result.ok, id).toBe(false);
+    }
+  });
+
+  it("空・重複・題の無い問題と、書けない runner を落とす", () => {
+    expect(parseTaskManifest(base({ problems: [] })).ok).toBe(false);
+    expect(
+      parseTaskManifest(
+        base({
+          problems: [
+            { id: "a", title: "一つ" },
+            { id: "a", title: "二つ" },
+          ],
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(parseTaskManifest(base({ problems: [{ id: "a", title: "  " }] })).ok).toBe(false);
+    for (const runner of ["static-preview", "env-diagnose", "e2e", "next-app", "ci-deploy"]) {
+      const result = parseTaskManifest(base({ runner, problems: [{ id: "a", title: "題" }] }));
+      expect(result.ok, runner).toBe(false);
+      if (result.ok) return;
+      expect(result.errors.join("\n")).toMatch(/vitest/);
+    }
+  });
+});
+
 describe("isSafeRelativePattern", () => {
   it("相対の glob を通す", () => {
     for (const pattern of [

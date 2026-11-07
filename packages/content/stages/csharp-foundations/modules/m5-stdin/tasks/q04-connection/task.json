@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m5-stdin/q04-connection",
+  "title": "行ごとに読んで最大を出す",
+  "problems": [
+    {
+      "id": "connect-line-max",
+      "title": "行の最大"
+    }
+  ],
+  "kind": "connection",
+  "pattern": "csharp-stdin-lines",
+  "skills": {
+    "uses": [
+      "csharp-stdin-one",
+      "csharp-stdin-count"
+    ],
+    "assesses": [
+      "csharp-stdin-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 4,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

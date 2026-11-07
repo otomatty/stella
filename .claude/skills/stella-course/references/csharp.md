@@ -66,3 +66,20 @@ public void Q02_CountUp()
 `private/solution/src/` に、テストが通る実装を置きます。`src/` の `.cs` が解答例です。starter の `src/` は、受講者が埋める前の形にします。テンプレートの `src/Answers.cs` は最初から通る見本なので、課題にするときに穴を空けます。
 
 `content:check` は解答例を本物の `dotnet test` で実行します。類題の誤答は、解答例に重ねて実行し、不合格になることまで見ます。手元に .NET SDK 10 が無いと、この検査は環境の不足で止まります。テストの期待値を緩めて通さないでください。
+
+## 問題つきの課題
+
+1 問を 1 ファイルにします。`task.json` の `problems` の `id` がファイル名です。パスは書きません。
+
+受講者のコードは `src/<id>.cs` です。クラスは `public static partial class Answers` にします。問題ごとにファイルを分けても、同じクラスのメソッドとしてコンパイルされます。
+
+```csharp
+public static partial class Answers
+{
+    public static int Q01(int n) => 0;
+}
+```
+
+テストは `tests/<id>.test.cs` に、その問題だけを書きます。テンプレートの `tests/AnswersTests.cs` は、問題つきの課題では問題ごとのファイルに分けます。
+
+問題を指定した確認は `dotnet build` と `dotnet test` に `-p:StellaProblem=<id>` を付けます。`StellaProblem` が空のときは、今までどおり `src/` と `tests/` の `.cs` を全部コンパイルします。指定があるときは、その問題の `src/<id>.cs` と `tests/<id>.test.cs`、および `tests/` のテスト以外の共通ファイルだけをコンパイルします。

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m0-orientation@3",
+  "contentHash": "6b17e9023e815b4ee746d19ba44389329f9671386dfae01e4329a1ede73b95b9",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-how-to/doc.md",
+      "sourceRefs": [],
+      "usedFor": "このステージの進め方。VS Code で課題を開き、確認して提出する手順",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "編集するファイル、プログラムの入口、.NET SDK 10 についての自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t1-open-task/slides.md",
+      "sourceRefs": [],
+      "usedFor": "課題を VS Code で開き、1 問を 1 ファイルに書く説明",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t2-check-submit/slides.md",
+      "sourceRefs": [],
+      "usedFor": "1 問ずつ確認して提出し、全部提出すると課題が合格になる説明と、.NET SDK 10 が要ること",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

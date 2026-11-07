@@ -14,6 +14,7 @@ import {
 import { parseTaskHints } from "../../shared/src/tasks/help.js";
 import { RUNNERS } from "../../shared/src/tasks/runners.js";
 import { variantKindProblem } from "../../shared/src/tasks/variants.js";
+import { problemFiles } from "../../shared/src/tasks/problems.js";
 import { matchesPattern } from "../../shared/src/tasks/submission.js";
 import {
   publicReferences,
@@ -229,6 +230,60 @@ function readVariants(ctx: UnitContext, parent: TaskSeed): TaskSeed[] {
 }
 
 /**
+ * 問題つきの課題は、問題ごとに starter・テスト・解答例の 1 ファイルがあること。
+ * `starter/src/` と `private/solution/src/` に一覧外のファイルは置けない。
+ * `src/shared/` の下だけは共通ファイルとして許し、protected に入っていることを求める。
+ */
+export function assertProblemFiles(taskDir: string, definition: TaskDefinition): void {
+  const problems = definition.problems;
+  if (!problems) return;
+  const plan = RUNNERS[definition.runner].plan;
+  const sources = new Set<string>();
+  for (const problem of problems) {
+    const files = problemFiles(plan, problem.id);
+    if (!files) throw new Error(`problems はこの runner では使えません: ${definition.id}`);
+    sources.add(files.source);
+    for (const rel of [`starter/${files.source}`, files.test, `private/solution/${files.source}`]) {
+      const file = join(taskDir, ...rel.split("/"));
+      let info: ReturnType<typeof lstatSync> | undefined;
+      try {
+        info = lstatSync(file);
+      } catch {
+        info = undefined;
+      }
+      if (!info || info.isSymbolicLink() || !info.isFile()) {
+        throw new Error(`問題 ${problem.id} に ${rel} が必要です: ${definition.id}`);
+      }
+    }
+  }
+  // 解答例も starter と同じく、問題のファイルと src/shared/ 以外を置かない。
+  for (const folder of ["starter", "private/solution"]) {
+    assertListedSources(taskDir, definition, sources, folder);
+  }
+}
+
+/** `src/shared/` だけは問題の一覧の外に置ける。protected に入っていること。 */
+function assertListedSources(
+  taskDir: string,
+  definition: TaskDefinition,
+  sources: Set<string>,
+  folder: string,
+): void {
+  const srcDir = join(taskDir, folder, "src");
+  if (!existsSync(srcDir)) return;
+  for (const key of Object.keys(collectFiles(srcDir, "src"))) {
+    if (sources.has(key)) continue;
+    if (key.startsWith("src/shared/")) {
+      if (!matchesPattern(key, definition.protected)) {
+        throw new Error(`共通ファイルは protected に入れてください: ${key} (${definition.id})`);
+      }
+      continue;
+    }
+    throw new Error(`${folder}/src に問題の一覧にないファイルがあります: ${key} (${definition.id})`);
+  }
+}
+
+/**
  * 課題 1 つ (`parent` を渡すとその課題の類題) を読み、配布一式と非公開の素材を組み立てる。
  * 類題は親と同じパターンで、レッスンを作らず、固定した開始点と入れ子の予備を持たない。
  */
@@ -265,9 +320,12 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
         throw new Error(`類題には ${rel} を置けません: ${definition.id}`);
   }
   for (const rel of parent ? TASK_REQUIRED_PATHS : [...TASK_REQUIRED_PATHS, "private/variants"]) {
+    // 問題つきの課題は AI の一次レビューを通さないので、観点の review.md は置かない。
+    if (rel === "private/review.md" && definition.problems) continue;
     if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
       throw new Error(`${label}に ${rel} が必要です: ${definition.id}`);
   }
+  assertProblemFiles(taskDir, definition);
   // 類題の課題文は単元の参照元の記録 (references.json) に載らない非公開の場所にあるので、
   // 参照元は親の課題文のものを使う。教材内の画像を参照できないのは課題と同じ。
   const readmeId = parent
@@ -324,12 +382,14 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   assertHintSteps(hints.toString("utf8"), definition);
   // 予備の類題 (`private/variants/`) は親の素材に入れない。類題はそれぞれ自分の課題として
   // seed され、出題した受講者にだけ配る (#39)。
-  const privateFiles = {
+  const reviewFile = join(taskDir, "private/review.md");
+  const privateFiles: Record<string, string> = {
     ...collectFiles(join(taskDir, "private/solution"), "solution"),
     "explanation.md": readFileSync(join(taskDir, "private/explanation.md")).toString("base64"),
-    "review.md": readFileSync(join(taskDir, "private/review.md")).toString("base64"),
-    "hints.md": hints.toString("base64"),
   };
+  if (existsSync(reviewFile))
+    privateFiles["review.md"] = readFileSync(reviewFile).toString("base64");
+  privateFiles["hints.md"] = hints.toString("base64");
   // 非公開の素材は D1 の 1 行 (task_private) に入り、API が 1 回の要求で読む。配布一式と同じ上限。
   const privateTooLarge = bundleSizeProblem(privateFiles);
   if (privateTooLarge)

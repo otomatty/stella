@@ -146,5 +146,241 @@
   {
     "id": "devlab-ts-ch09",
     "title": "組み込みの API とモジュールを書ける"
+  },
+  {
+    "id": "csharp-task-workflow",
+    "title": "VS Code で課題を開き、確認して提出する"
+  },
+  {
+    "id": "csharp-for-output",
+    "title": "for で値を順番に出す"
+  },
+  {
+    "id": "csharp-for-aggregate",
+    "title": "for で合計・個数・積を求める"
+  },
+  {
+    "id": "csharp-max-min",
+    "title": "比べて最大または最小を残す"
+  },
+  {
+    "id": "csharp-loop-choice",
+    "title": "問題文から繰り返しの処理を選ぶ"
+  },
+  {
+    "id": "csharp-loop-repair",
+    "title": "繰り返しの終端と初期値を直す"
+  },
+  {
+    "id": "csharp-calc",
+    "title": "計算して返す"
+  },
+  {
+    "id": "csharp-if-else",
+    "title": "if と else で2つに分ける"
+  },
+  {
+    "id": "csharp-else-if",
+    "title": "else if で段階に分ける"
+  },
+  {
+    "id": "csharp-and-or",
+    "title": "かつ・または・範囲で条件を組む"
+  },
+  {
+    "id": "csharp-condition-choice",
+    "title": "問題文から条件を選ぶ"
+  },
+  {
+    "id": "csharp-condition-repair",
+    "title": "条件の境界とつなぎを直す"
+  },
+  {
+    "id": "csharp-array-scan",
+    "title": "配列を順に出す"
+  },
+  {
+    "id": "csharp-array-sum",
+    "title": "配列の合計・最大・最小を求める"
+  },
+  {
+    "id": "csharp-array-count",
+    "title": "条件を満たす要素を数える"
+  },
+  {
+    "id": "csharp-array-choice",
+    "title": "問題文から配列の処理を選ぶ"
+  },
+  {
+    "id": "csharp-array-repair",
+    "title": "配列の初期値と足す対象を直す"
+  },
+  {
+    "id": "csharp-string-length",
+    "title": "文字列の長さと位置を読む"
+  },
+  {
+    "id": "csharp-string-count",
+    "title": "文字を条件で数える"
+  },
+  {
+    "id": "csharp-string-slice",
+    "title": "部分文字列を切り出す"
+  },
+  {
+    "id": "csharp-string-choice",
+    "title": "問題文から文字列の処理を選ぶ"
+  },
+  {
+    "id": "csharp-string-repair",
+    "title": "長さを見る前の切り出しと途中の return を直す"
+  },
+  {
+    "id": "csharp-stdin-one",
+    "title": "1行から整数を1つ読む"
+  },
+  {
+    "id": "csharp-stdin-split",
+    "title": "1行の複数の整数を分ける"
+  },
+  {
+    "id": "csharp-stdin-count",
+    "title": "先頭の件数だけ繰り返す"
+  },
+  {
+    "id": "csharp-stdin-choice",
+    "title": "問題文から標準入力の読み方を選ぶ"
+  },
+  {
+    "id": "csharp-stdin-repair",
+    "title": "読む回数と足し方を直す"
+  },
+  {
+    "id": "csharp-combine-count",
+    "title": "点数を読んで条件で人数を数える"
+  },
+  {
+    "id": "csharp-combine-two-strings",
+    "title": "2行の文字列を比べる"
+  },
+  {
+    "id": "csharp-combine-one-string",
+    "title": "1行の文字列を判定する"
+  },
+  {
+    "id": "csharp-combine-neighbors",
+    "title": "隣の値を比べる"
+  },
+  {
+    "id": "csharp-combine-choice",
+    "title": "読み方と条件を自分で選ぶ"
+  },
+  {
+    "id": "csharp-combine-repair",
+    "title": "絶対値の取り忘れと判定の上書きを直す"
+  },
+  {
+    "id": "csharp-state-apply",
+    "title": "増減を順に足して最後の値を出す"
+  },
+  {
+    "id": "csharp-state-buy",
+    "title": "買えるときだけ所持金を引く"
+  },
+  {
+    "id": "csharp-state-max",
+    "title": "途中の最大を別の変数に残す"
+  },
+  {
+    "id": "csharp-state-choice",
+    "title": "問題文から状態の更新を選ぶ"
+  },
+  {
+    "id": "csharp-state-repair",
+    "title": "足し方と停止条件を直す"
+  },
+  {
+    "id": "csharp-pairs-across",
+    "title": "二つの列から1つずつ選んで数える"
+  },
+  {
+    "id": "csharp-pairs-same",
+    "title": "同じ列の異なる位置の組を数える"
+  },
+  {
+    "id": "csharp-pairs-rows",
+    "title": "行ごとに集計する"
+  },
+  {
+    "id": "csharp-pairs-choice",
+    "title": "組み合わせ方を自分で選ぶ"
+  },
+  {
+    "id": "csharp-pairs-repair",
+    "title": "内側の始め方と行の初期化を直す"
+  },
+  {
+    "id": "csharp-sort-kth",
+    "title": "小さい順のK番目を求める"
+  },
+  {
+    "id": "csharp-count-mode",
+    "title": "0から9の最頻値を小さい方優先で求める"
+  },
+  {
+    "id": "csharp-count-names",
+    "title": "名前ごとの件数を求める"
+  },
+  {
+    "id": "csharp-count-choice",
+    "title": "ソートと集計の処理を自分で選ぶ"
+  },
+  {
+    "id": "csharp-count-repair",
+    "title": "添字と未登録の読み方を直す"
+  },
+  {
+    "id": "csharp-mix-plan",
+    "title": "入力と答えと条件を書き出してから実装する"
+  },
+  {
+    "id": "csharp-mix-after",
+    "title": "更新を終えてから基準と比べる"
+  },
+  {
+    "id": "csharp-mix-all",
+    "title": "全部を見てから成否を決める"
+  },
+  {
+    "id": "csharp-mix-choice",
+    "title": "処理の組み合わせを自分で選ぶ"
+  },
+  {
+    "id": "csharp-mix-repair",
+    "title": "境界の比較と最大の残し方を直す"
+  },
+  {
+    "id": "csharp-return-bool",
+    "title": "条件そのものを bool で返す"
+  },
+  {
+    "id": "csharp-char-bool",
+    "title": "文字を見て bool を返す"
+  },
+  {
+    "id": "csharp-return-value",
+    "title": "計算の結果を return する"
+  },
+  {
+    "id": "csharp-call-return",
+    "title": "呼んだメソッドの戻り値を次の計算に使う"
+  },
+  {
+    "id": "csharp-func-choice",
+    "title": "関数の組み合わせを自分で選ぶ"
+  },
+  {
+    "id": "csharp-func-repair",
+    "title": "戻り値の捨て方と画面出力を直す"
   }
 ]

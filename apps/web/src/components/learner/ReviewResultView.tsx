@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 import { isBackendConfigured } from "@/lib/backend";
+import { passByLabel } from "@/lib/review-queue";
 
 interface ReviewResultViewProps {
   submissionId: string;
@@ -93,7 +94,7 @@ export function ReviewResultView({
     submission.aiReviewStatus && submission.aiReviewStatus !== "confirmed"
       ? AI_REVIEW_STATUS_LABELS[submission.aiReviewStatus]
       : "添削待ち";
-  const byAi = submission.reviewSource === "ai";
+  const passLabel = passByLabel(submission);
   const feedback = submission.aiFeedback ?? null;
 
   return (
@@ -117,9 +118,7 @@ export function ReviewResultView({
         </div>
         <div className="flex-1" />
         {meta ? (
-          <Badge variant={meta.variant}>
-            {byAi && submission.verdict === "pass" ? "AI で合格" : meta.label}
-          </Badge>
+          <Badge variant={meta.variant}>{passLabel ?? meta.label}</Badge>
         ) : (
           <Badge variant="info">{pendingLabel}</Badge>
         )}

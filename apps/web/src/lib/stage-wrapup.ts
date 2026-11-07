@@ -9,6 +9,8 @@
 
 import type { TaskStatus, TaskSummary } from "@stella/shared/tasks/catalog";
 
+import { isProblemTask } from "./task-row";
+
 /** クリアに数える状態 (`task-completion.ts` と同じ)。 */
 const PASSED: ReadonlySet<TaskStatus> = new Set<TaskStatus>(["passed", "ai-passed"]);
 
@@ -30,8 +32,29 @@ export interface StageWrapup {
   detail: string;
 }
 
-function statusSentence(title: string, status: TaskStatus): string {
-  switch (status) {
+function remainingProblems(task: TaskSummary): string {
+  const remaining = Math.max(0, (task.problems_total ?? 0) - (task.problems_passed ?? 0));
+  return remaining > 0 ? `残り ${remaining} 問です。` : "";
+}
+
+function statusSentence(task: TaskSummary): string {
+  const title = task.title;
+  if (isProblemTask(task)) {
+    const rest = remainingProblems(task);
+    // 全問そろうまで課題は合格にならない。AI の確認待ちは案内しない。
+    if (
+      task.status === "local-passed" ||
+      task.status === "submitted" ||
+      task.status === "instructor-pending"
+    ) {
+      return `課題「${title}」は取り組み中です。${rest}`;
+    }
+    if (task.status === "resubmit") {
+      return `課題「${title}」は再提出になっています。レビューの返信を読んで直し、もう一度提出しましょう。${rest}`;
+    }
+    return `課題「${title}」がまだ提出されていません。VS Code で取り組んで提出しましょう。${rest}`;
+  }
+  switch (task.status) {
     case "local-passed":
       return `課題「${title}」は手元の確認に通っています。VS Code から提出しましょう。`;
     case "resubmit":
@@ -58,12 +81,14 @@ export function stageWrapupOf(tasks: readonly TaskSummary[]): StageWrapup | null
   const remaining = pending.length;
   const tail =
     remaining === 1
-      ? "レビューで合格すると、この星がクリアになります。"
+      ? isProblemTask(task)
+        ? "全部の問題を提出すると、この星がクリアになります。"
+        : "レビューで合格すると、この星がクリアになります。"
       : `合格していない課題があと ${remaining} 件あります。すべて合格すると、この星がクリアになります。`;
   return {
     task: { id: task.id, title: task.title, status: task.status, lessonId: task.lessonId },
     remaining,
     learnerTurn: LEARNER_TURN.has(task.status),
-    detail: `${statusSentence(task.title, task.status)}${tail}`,
+    detail: `${statusSentence(task)}${tail}`,
   };
 }

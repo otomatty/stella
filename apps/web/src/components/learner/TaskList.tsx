@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TASK_STATUS_LABELS, type TaskSummary } from "@stella/shared/tasks/catalog";
+import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
 import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
-import { apiFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/lib/api-client";
+import { taskProblemCountLabel, taskStatusLabel } from "@/lib/task-row";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
 import { PcHandoffButton } from "./PcHandoffButton";
@@ -114,13 +115,9 @@ export function TaskList({
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-48">
                   <h3 className="text-sm font-medium">{task.title}</h3>
-                  <p className="text-xs text-ink-3 mt-1">
-                    {TASK_KIND_LABELS[task.kind]} · 約{task.estimatedMinutes}分
-                  </p>
+                  <TaskRowProgress task={task} />
                 </div>
-                <span className="text-xs px-2 py-1 rounded bg-sunken">
-                  {TASK_STATUS_LABELS[task.status]}
-                </span>
+                <span className="text-xs px-2 py-1 rounded bg-sunken">{taskStatusLabel(task)}</span>
                 {onAskAi ? (
                   <Button
                     variant="ghost"
@@ -138,5 +135,15 @@ export function TaskList({
         })
       )}
     </section>
+  );
+}
+
+/** 課題の行の種別・時間・問題数。問題の無い課題は件数を出さない。 */
+export function TaskRowProgress({ task }: { task: TaskSummary }) {
+  const count = taskProblemCountLabel(task);
+  return (
+    <p className="text-xs text-ink-3 mt-1">
+      {TASK_KIND_LABELS[task.kind]} · 約{task.estimatedMinutes}分{count ? ` · ${count}` : ""}
+    </p>
   );
 }

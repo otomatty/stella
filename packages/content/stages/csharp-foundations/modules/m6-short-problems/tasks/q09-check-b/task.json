@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q09-check-b",
+  "title": "確認B 大文字を含む件数",
+  "problems": [
+    {
+      "id": "check-b-count-upper",
+      "title": "大文字を含む件数"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-combine-upper",
+  "skills": {
+    "uses": [
+      "csharp-combine-one-string"
+    ],
+    "assesses": [
+      "csharp-combine-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

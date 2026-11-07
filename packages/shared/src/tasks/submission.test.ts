@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { decodeFile, parseTaskSubmission, verifyTaskSubmission } from "./submission.js";
 import { submissionFixture } from "../testing/task-submission.js";
+import type { TaskManifest } from "./manifest.js";
 import type { RunStepId, RunStepResult, StepStatus } from "./run-result.js";
+import {
+  contentHash,
+  decodeFile,
+  parseTaskSubmission,
+  type TaskSubmissionInput,
+  verifyTaskSubmission,
+} from "./submission.js";
 
 function step(id: RunStepId, status: StepStatus = "passed"): RunStepResult {
   return { id, status, label: id, durationMs: 0, summary: status };
@@ -247,5 +254,132 @@ describe("CI と公開の課題の提出 (07 §5.5)", () => {
       input.localResult.ci = bad;
       expect(() => parseTaskSubmission(input)).toThrow("提出データの形式が不正です");
     }
+  });
+});
+
+describe("問題の提出の照合", () => {
+  async function problemCase(source = "export const add = 1;\n") {
+    const manifest: TaskManifest = {
+      schemaVersion: 1,
+      id: "csharp-foundations/u01/calc",
+      title: "計算",
+      kind: "basic",
+      runner: "node-test",
+      problems: [
+        { id: "q01-add", title: "足す" },
+        { id: "q02-sub", title: "引く" },
+      ],
+      submit: { files: ["src/**/*.ts"] },
+      protected: ["tests/**/*.test.ts"],
+      checks: { lint: false, format: false },
+    };
+    const manifestText = JSON.stringify(manifest);
+    const encoder = new TextEncoder();
+    const test = 'test("q01", () => {});\n';
+    const testBytes = encoder.encode(test);
+    const sourceBytes = encoder.encode(source);
+    const protectedFiles = [
+      {
+        path: "tests/q01-add.test.ts",
+        sha256: await contentHash(testBytes),
+        bytes: testBytes.length,
+      },
+      {
+        path: "tests/q02-sub.test.ts",
+        sha256: await contentHash(testBytes),
+        bytes: testBytes.length,
+      },
+    ];
+    const hashed = {
+      path: "src/q01-add.ts",
+      sha256: await contentHash(sourceBytes),
+      bytes: sourceBytes.length,
+    };
+    const bundle = {
+      manifest,
+      contentHash: "a".repeat(64),
+      files: {
+        ".stella/task.json": Buffer.from(manifestText).toString("base64"),
+        "tests/q01-add.test.ts": Buffer.from(test).toString("base64"),
+        "tests/q02-sub.test.ts": Buffer.from(test).toString("base64"),
+      },
+    };
+    const input: TaskSubmissionInput = {
+      taskId: manifest.id,
+      contentHash: bundle.contentHash,
+      mode: "submit",
+      problemId: "q01-add",
+      files: [{ path: hashed.path, content: Buffer.from(source).toString("base64") }],
+      explanation: "",
+      support: [],
+      protected: protectedFiles,
+      localResult: {
+        schemaVersion: 1 as const,
+        taskId: manifest.id,
+        runner: manifest.runner,
+        outcome: "passed" as const,
+        startedAt: "2026-11-06T00:00:00Z",
+        durationMs: 1,
+        platform: "linux",
+        toolVersions: {},
+        problemId: "q01-add",
+        steps: [step("deps"), step("test")],
+        files: [hashed],
+        protected: protectedFiles,
+        manifestSha256: await contentHash(encoder.encode(manifestText)),
+      },
+    };
+    return { input, bundle };
+  }
+
+  it("その問題のソース 1 ファイルだけを受け、問題 ID の形を確かめる", async () => {
+    const { input, bundle } = await problemCase();
+    expect((await verifyTaskSubmission(input, bundle)).check).toEqual({
+      matched: true,
+      reasons: [],
+    });
+    expect(parseTaskSubmission(input).problemId).toBe("q01-add");
+    expect(() => parseTaskSubmission({ ...input, problemId: "Q1" })).toThrow(
+      "提出データの形式が不正です",
+    );
+    expect(() =>
+      parseTaskSubmission({
+        ...input,
+        localResult: { ...input.localResult, problemId: 1 },
+      }),
+    ).toThrow("提出データの形式が不正です");
+  });
+
+  it("一覧に無い問題・別ファイル・落ちたテスト・64KiB 超えは照合に落とす", async () => {
+    const { input, bundle } = await problemCase();
+    input.problemId = "q99-missing";
+    input.localResult.problemId = "q99-missing";
+    input.files[0].path = "src/q99-missing.ts";
+    input.localResult.files[0].path = "src/q99-missing.ts";
+    expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
+      "問題の ID が一覧にありません",
+    );
+
+    const other = await problemCase();
+    other.input.files[0].path = "src/q02-sub.ts";
+    other.input.localResult.files[0].path = "src/q02-sub.ts";
+    expect((await verifyTaskSubmission(other.input, other.bundle)).check.reasons).toEqual(
+      expect.arrayContaining([
+        "提出するファイルが不足しています",
+        "提出するのはその問題のファイル 1 つだけです",
+      ]),
+    );
+
+    const failed = await problemCase();
+    failed.input.localResult.outcome = "failed";
+    failed.input.localResult.steps = [step("deps"), step("test", "failed")];
+    expect((await verifyTaskSubmission(failed.input, failed.bundle)).check.matched).toBe(false);
+
+    const big = await problemCase(`${"a".repeat(64 * 1024 + 1)}`);
+    expect((await verifyTaskSubmission(big.input, big.bundle)).check.reasons).toContain(
+      "1 問のファイルは 64KiB までです",
+    );
+    const edge = await problemCase("a".repeat(64 * 1024));
+    expect((await verifyTaskSubmission(edge.input, edge.bundle)).check.matched).toBe(true);
   });
 });
