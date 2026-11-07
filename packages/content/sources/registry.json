@@ -4330,6 +4330,78 @@
         "status": "draft",
         "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
       }
+    },
+    {
+      "id": "SRC-dev-env-local-server-20261107",
+      "title": "How do you set up a local testing server?",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Tools_and_setup/set_up_a_local_testing_server",
+      "section": "Local files vs. remote files / Running a local HTTP server",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。ファイルとHTTPの違いを参照。起動・停止のコマンドとserver.mjsは教材独自のもの。対象OSで再現して確認する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-html-syntax-20261107",
+      "title": "Basic HTML syntax",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Basic_HTML_syntax",
+      "section": "Anatomy of an HTML element / Anatomy of an HTML document",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U08のHTML文書の構造と要素の受入条件を確認する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-html-lists-20261107",
+      "title": "Lists",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Lists",
+      "section": "Unordered lists",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U08の見出し・段落・リストの受入条件を対象として確認する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-html-headings-20261107",
+      "title": "Headings and paragraphs",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Headings_and_paragraphs",
+      "section": "Headings and paragraphs / Implementing structural hierarchy",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U08の見出し・段落・リストの受入条件を対象として確認する。"
+      }
     }
   ]
 }

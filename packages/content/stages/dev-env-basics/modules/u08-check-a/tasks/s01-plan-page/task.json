@@ -1,0 +1,81 @@
+{
+  "id": "dev-env-basics/u08-check-a/s01-plan-page",
+  "title": "学習予定のページを作る",
+  "kind": "independent",
+  "pattern": "html-page",
+  "skills": {
+    "uses": [
+      "open-learning-folder",
+      "preview-changes"
+    ],
+    "assesses": [
+      "file-save-reopen",
+      "html-document",
+      "stella-task-loop"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "plan/index.html"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "plan/index.html が HTML の文書で、h1 が「学習予定」である",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "学習する内容が li で3件以上あり、説明が作成した場所と内容に合っている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-dev-env-editor-20261107",
+    "SRC-dev-env-links-20261107",
+    "SRC-dev-env-html-syntax-20261107",
+    "SRC-dev-env-html-headings-20261107",
+    "SRC-dev-env-html-lists-20261107"
+  ],
+  "estimatedMinutes": 40,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "plan/index.html"
+      },
+      {
+        "type": "element-text",
+        "path": "plan/index.html",
+        "tag": "h1",
+        "text": "学習予定",
+        "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "plan/index.html",
+        "tag": "li",
+        "min": 3
+      }
+    ]
+  }
+}
