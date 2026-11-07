@@ -1,0 +1,82 @@
+{
+  "id": "dev-env-basics/u06-git/q01-init-repo",
+  "title": "学習フォルダーの記録を始める",
+  "kind": "basic",
+  "pattern": "git-record",
+  "skills": {
+    "uses": [
+      "terminal-location",
+      "file-save-reopen"
+    ],
+    "assesses": [
+      "git-local-commit"
+    ]
+  },
+  "runner": "git-record",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "index.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "index.html の h1 が「記録の練習」のまま保存されている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-git-init-20261107",
+    "SRC-dev-env-git-config-20261107",
+    "SRC-dev-env-gitignore-20261107",
+    "SRC-dev-env-git-status-20261107",
+    "SRC-dev-env-git-add-20261107",
+    "SRC-dev-env-git-commit-20261107"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "git": {
+    "checks": [
+      {
+        "type": "learning-folder-root"
+      },
+      {
+        "type": "local-identity"
+      },
+      {
+        "type": "ignored",
+        "path": "node_modules/probe"
+      },
+      {
+        "type": "ignored",
+        "path": ".stella/last-run.json"
+      },
+      {
+        "type": "committed",
+        "paths": [
+          "index.html"
+        ]
+      },
+      {
+        "type": "commit-count",
+        "min": 1
+      }
+    ]
+  }
+}

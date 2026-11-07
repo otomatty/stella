@@ -1,0 +1,83 @@
+{
+  "id": "dev-env-basics/u06-git/q02-commit-change",
+  "title": "変更を記録して説明する",
+  "kind": "basic",
+  "pattern": "git-record",
+  "skills": {
+    "uses": [
+      "terminal-location",
+      "file-save-reopen"
+    ],
+    "assesses": [
+      "git-local-commit"
+    ]
+  },
+  "runner": "git-record",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "index.html"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "index.html の h1 が「2回目の記録」になっている",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "説明が、変えたファイルと変えた内容（見出しの文字）を正しく言っている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-git-diff-20261107",
+    "SRC-dev-env-git-log-20261107",
+    "SRC-dev-env-git-status-20261107",
+    "SRC-dev-env-git-add-20261107",
+    "SRC-dev-env-git-commit-20261107"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "element-text",
+        "path": "index.html",
+        "tag": "h1",
+        "text": "2回目の記録",
+        "match": "exact"
+      }
+    ]
+  },
+  "git": {
+    "checks": [
+      {
+        "type": "committed",
+        "paths": [
+          "index.html"
+        ]
+      },
+      {
+        "type": "commit-count",
+        "min": 2
+      }
+    ]
+  }
+}

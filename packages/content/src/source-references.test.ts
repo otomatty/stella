@@ -96,6 +96,100 @@ describe("参照元の公開ゲートと表示", () => {
     const { root } = fixture();
     expect(checkSourceReferences(root)).toEqual([]);
   });
+  describe("使用箇所ごとの環境", () => {
+    const readme = "tasks/q01-first-page/README.md";
+    function mixedEnvironment() {
+      const data = fixture();
+      patch(join(data.unit, "tasks/q01-first-page/task.json"), (row) => {
+        row.environment = "diagnose-node-01";
+      });
+      reReview(data.unit, "3");
+      return data;
+    }
+    function override(unit: string, environmentRef: unknown, contentId = readme) {
+      patch(join(unit, "references.json"), (row) => {
+        const use = (row.uses as Record<string, unknown>[]).find((u) => u.contentId === contentId);
+        if (!use) throw new Error(`使用箇所がありません: ${contentId}`);
+        use.environmentRef = environmentRef;
+      });
+    }
+    it("使用箇所の環境で課題を照合し、既定と指紋・公開表示を変えない", () => {
+      const { root, unit } = mixedEnvironment();
+      const before = unitContentHash(unit);
+      const displayed = publicReferences(
+        readUnitReferences(unit),
+        readSourceRegistry(root),
+        readme,
+      );
+      override(unit, "diagnose-node-01@1");
+      expect(
+        readUnitReferences(unit)?.uses.find((u) => u.contentId === readme)?.environmentRef,
+      ).toBe("diagnose-node-01@1");
+      expect(checkSourceReferences(root)).toEqual([]);
+      expect(unitContentHash(unit)).toBe(before);
+      expect(publicReferences(readUnitReferences(unit), readSourceRegistry(root), readme)).toEqual(
+        displayed,
+      );
+    });
+    it.each([undefined, "diagnose-git-01@1"])(
+      "省略時の既定または指定した環境と課題が違えば落とす: %s",
+      (environmentRef) => {
+        const { root, unit } = mixedEnvironment();
+        if (environmentRef !== undefined) override(unit, environmentRef);
+        expect(checkSourceReferences(root)).toEqual([
+          expect.objectContaining({ message: `${readme}: 課題と参照元の環境が一致しません` }),
+        ]);
+      },
+    );
+    it.each([
+      ["absent@1", "環境の定義がありません"],
+      ["diagnose-node-01@99", "環境の版が一致しません"],
+    ])("指定した定義の存在と版を確かめる: %s", (environmentRef, message) => {
+      const { root, unit } = mixedEnvironment();
+      override(unit, environmentRef);
+      expect(checkSourceReferences(root)).toContainEqual(
+        expect.objectContaining({ message: expect.stringContaining(`${readme}: ${message}`) }),
+      );
+    });
+    it.each(["", "node", "node@", "@1", "node@1@2", "../node@1", "node@1/2", "node@1 2", null, 1])(
+      "読み込みで環境の形の誤りを拒否する: %s",
+      (environmentRef) => {
+        const { unit } = fixture();
+        override(unit, environmentRef);
+        expect(() => readUnitReferences(unit)).toThrow(`${readme}.environmentRef`);
+      },
+    );
+    it("課題以外の使用箇所でも指定した環境の存在を確かめる", () => {
+      const { root, unit } = fixture();
+      override(unit, "absent@1", "l1-save-and-preview/doc.md");
+      expect(checkSourceReferences(root)).toEqual([
+        expect.objectContaining({ message: expect.stringContaining("環境の定義がありません") }),
+      ]);
+    });
+    it("同じ課題の対応表が複数あっても各使用箇所を照合する", () => {
+      const { root, unit } = mixedEnvironment();
+      override(unit, "diagnose-node-01@1");
+      patch(join(unit, "references.json"), (row) => {
+        const uses = row.uses as Record<string, unknown>[];
+        const use = { ...uses.find((u) => u.contentId === readme) };
+        delete use.environmentRef;
+        uses.push(use);
+      });
+      expect(checkSourceReferences(root)).toEqual([
+        expect.objectContaining({ message: `${readme}: 課題と参照元の環境が一致しません` }),
+      ]);
+    });
+    it("使用箇所を指定しても単元の既定とステージの照合は省かない", () => {
+      const { root, unit } = mixedEnvironment();
+      override(unit, "diagnose-node-01@1");
+      patch(join(unit, "references.json"), (row) => {
+        row.environmentRef = "diagnose-node-01@1";
+      });
+      expect(checkSourceReferences(root)).toEqual([
+        expect.objectContaining({ message: "ステージ・課題と参照元の環境が一致しません" }),
+      ]);
+    });
+  });
   it.each([
     "dev-env-basics/m0-first-page",
     "dev-env-basics/m0-first-page@",

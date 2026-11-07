@@ -4060,6 +4060,276 @@
         "reviewedAt": null,
         "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
       }
+    },
+    {
+      "id": "SRC-dev-env-terminal-20261107",
+      "title": "Terminal Basics",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/terminal/basics",
+      "section": "Terminal Basics / Terminal working directory",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-powershell-command-20261107",
+      "title": "about_Command_Precedence",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_command_precedence",
+      "section": "Command precedence / Use command name with extension",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-node-download-20261107",
+      "title": "Node.js®をダウンロードする",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/ja/download",
+      "section": "Node.js®をダウンロードする",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-node-releases-20261107",
+      "title": "Node.js Releases",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/en/about/previous-releases",
+      "section": "Node.js Releases / Release schedule",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-node-intro-20261107",
+      "title": "Introduction to Node.js",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/learn/getting-started/introduction-to-nodejs",
+      "section": "Introduction to Node.js",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-windows-20261107",
+      "title": "Install for Windows",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/install/windows",
+      "section": "Install for Windows",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-mac-20261107",
+      "title": "Install for macOS",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/install/mac",
+      "section": "Install for macOS / Xcode",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-init-20261107",
+      "title": "git-init",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-init",
+      "section": "DESCRIPTION / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-config-20261107",
+      "title": "git-config",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-config",
+      "section": "DESCRIPTION / SCOPES / user.name / user.email",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-gitignore-20261107",
+      "title": "gitignore",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/gitignore",
+      "section": "DESCRIPTION / PATTERN FORMAT",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-commit-20261107",
+      "title": "git-commit",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-commit",
+      "section": "DESCRIPTION / OPTIONS / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-diff-20261107",
+      "title": "git-diff",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-diff",
+      "section": "DESCRIPTION / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-log-20261107",
+      "title": "git-log",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-log",
+      "section": "DESCRIPTION / Commit Formatting",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-add-20261107",
+      "title": "git-add",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-add",
+      "section": "DESCRIPTION / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-status-20261107",
+      "title": "git-status",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-status",
+      "section": "DESCRIPTION / OUTPUT",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
     }
   ]
 }
