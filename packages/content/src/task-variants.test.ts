@@ -92,6 +92,77 @@ const CHECK = {
 };
 
 describe("予備の類題", () => {
+  const gitPatch = {
+    runner: "git-record",
+    git: { checks: [{ type: "committed", paths: ["index.html"] }] },
+  };
+  const writeMarker = (dir: string, rel: string, value: string) => {
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), value);
+  };
+
+  it.each([
+    {},
+    { skipCommit: true, skipGitignore: false, skipIdentity: false },
+    { skipCommit: false, skipGitignore: true, skipIdentity: true },
+  ])("git-record の誤答直下の制御ファイルを読み、公開しない: %j", (config) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-git", "Git", gitPatch);
+    const rel = "private/mutants/m02-control/.stella-mutant.json";
+    const encoded = Buffer.from(JSON.stringify(config)).toString("base64");
+    writeMarker(dir, rel, JSON.stringify(config));
+    const task = buildContentManifest(join(root, "stages")).tasks.find((t) => t.variantOf);
+    expect(task).toBeDefined();
+    if (!task) throw new Error("類題がありません");
+    expect(task.mutants?.["m02-control"]).toEqual({ ".stella-mutant.json": encoded });
+    expect(JSON.stringify(task.bundle)).not.toContain(".stella-mutant.json");
+    expect(JSON.stringify(parsePublicTaskBundle(task.bundle))).not.toContain(".stella-mutant.json");
+    expect(JSON.stringify(task.privateFiles)).not.toContain(".stella-mutant.json");
+  });
+
+  it("ほかの runner では starter に同名ファイルがあっても拒む", () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-static", "静的");
+    writeMarker(dir, "private/mutants/m02-control/.stella-mutant.json", "{}");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/git-record.*直下/);
+    writeMarker(dir, "starter/.stella-mutant.json", "{}");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/git-record.*直下/);
+  });
+
+  it.each([
+    ".stella-mutant.json",
+    "private/.stella-mutant.json",
+    "starter/.stella-mutant.json",
+    "tests/.stella-mutant.json",
+    "private/solution/.stella-mutant.json",
+    "private/mutants/m02-control/nested/.stella-mutant.json",
+  ])("git-record でも誤答直下以外では拒む: %s", (rel) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-git", "Git", gitPatch);
+    writeMarker(dir, rel, "{}");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/git-record.*直下/);
+  });
+
+  it.each([
+    "null",
+    "[]",
+    "true",
+    "1",
+    '"text"',
+    "{",
+    '{"unknown":true}',
+    '{"skipCommit":1}',
+    '{"skipIdentity":"true"}',
+    '{"skipGitignore":null}',
+    '{"skipCommit":{}}',
+    '{"skipIdentity":[]}',
+  ])("読み込み時に不正な制御ファイルを拒む: %s", (value) => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-git", "Git", gitPatch);
+    writeMarker(dir, "private/mutants/m02-control/.stella-mutant.json", value);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow();
+  });
+
   it("課題として読み、親の素材・レッスン・PDF に混ぜない", () => {
     const root = fixture();
     addVariant(root, "v01-profile", "自己紹介", CHECK);
