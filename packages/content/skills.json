@@ -8,6 +8,42 @@
     "title": "変更をブラウザーで確認する"
   },
   {
+    "id": "stella-task-loop",
+    "title": "課題を開き、確認して提出し、結果を読む"
+  },
+  {
+    "id": "open-learning-folder",
+    "title": "作業フォルダーを開き、保存先を説明する"
+  },
+  {
+    "id": "file-save-reopen",
+    "title": "ファイルを作成・編集・保存し、閉じて開き直す"
+  },
+  {
+    "id": "relative-link",
+    "title": "相対パスでページをつなぐ"
+  },
+  {
+    "id": "terminal-location",
+    "title": "ターミナルの場所を確かめ、コマンドを1つずつ実行する"
+  },
+  {
+    "id": "node-npm-ready",
+    "title": "Node.js・npmの版を確かめる"
+  },
+  {
+    "id": "git-local-commit",
+    "title": "変更をcommitし、差分を説明する"
+  },
+  {
+    "id": "local-server-run",
+    "title": "ローカルサーバーを起動・停止する"
+  },
+  {
+    "id": "report-problem",
+    "title": "困った状態を、試したことと一緒に伝える"
+  },
+  {
     "id": "claude-cert-exam-plan",
     "title": "Claude の認定試験の受け方と範囲を確かめる"
   },

@@ -7,7 +7,7 @@
   "submit": { "files": [] },
   "environment": {
     "id": "web-training-01",
-    "node": { "min": "22.12.0", "maxMajor": 24 },
+    "node": { "min": "22.13.0", "majors": [22, 24] },
     "npm": { "min": "10.0.0" },
     "git": { "min": "2.40.0" }
   }

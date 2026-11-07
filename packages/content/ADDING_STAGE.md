@@ -292,6 +292,7 @@ cp packages/content/templates/stage.json packages/content/stages/<slug>/stage.js
 
 ステージごとの `CURRICULUM.md` にモジュール / レッスン / トピックを列す。
 
+- Stella の機能を初めて使うステージは、[06「Stella の機能をどこで初めて教えるか」](../../docs/curriculum/06-m01-beginner-setup-and-basic-operations.md#8-stellaの機能をどこで初めて教えるか)の表に行を足し、使い方動画を用意する。dev-env-basics で教えた機能は説明し直さず、動画と06へリンクする
 - トピック分割の判定は **takeaway が 1 文で書けること**
 - 語彙台帳は **ステージごとに** 検査する。別のステージの語は前提にならない
 - トピック `id` はそのステージの中で一意（別のステージなら `0-1-1` を再利用してよい）
