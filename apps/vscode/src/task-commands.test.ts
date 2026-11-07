@@ -31,10 +31,14 @@ const vscodeMock = vi.hoisted(() => ({
   showTextDocument: vi.fn(),
   showInputBox: vi.fn(),
   showSubmissionForm: vi.fn(),
+  sendTaskSubmission: vi.fn(),
+  getCachedCatalog: vi.fn(),
+  openExternal: vi.fn(),
 }));
 
 vi.mock("vscode", () => ({
-  Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }) },
+  Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }), parse: (url: string) => url },
+  env: { openExternal: vscodeMock.openExternal },
   ViewColumn: { One: 1, Two: 2 },
   window: {
     showTextDocument: vscodeMock.showTextDocument,
@@ -67,6 +71,7 @@ vi.mock("vscode", () => ({
       task({}, { onCancellationRequested: vi.fn() }),
   },
   workspace: {
+    getConfiguration: () => ({ inspect: () => ({ globalValue: "https://stella.example/" }) }),
     get isTrusted() {
       return state.trusted;
     },
@@ -98,6 +103,12 @@ vi.mock("./submission-form.js", () => ({
   registerSubmissionForms: vi.fn(),
   showSubmissionForm: vscodeMock.showSubmissionForm,
 }));
+
+vi.mock("./task-submission.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./task-submission.js")>()),
+  sendTaskSubmission: vscodeMock.sendTaskSubmission,
+}));
+vi.mock("./catalog.js", () => ({ getCachedCatalog: vscodeMock.getCachedCatalog }));
 
 const { registerTaskCommands } = await import("./task-commands.js");
 
@@ -132,6 +143,9 @@ const staticTask = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vscodeMock.showInformationMessage.mockResolvedValue(undefined);
+  vscodeMock.getCachedCatalog.mockReturnValue([]);
+  vscodeMock.sendTaskSubmission.mockResolvedValue({ id: "submission", attempt: 1 });
   state.handlers.clear();
   state.trusted = true;
   state.activeFile = undefined;
@@ -177,6 +191,75 @@ describe("提出の振り返り画面", () => {
       { isDirty: true, uri: { scheme: "file", fsPath: state.activeFile }, save: async () => true },
     ];
     await expect(actions.submit({ explanation: "振り返り" })).rejects.toThrow("保存していない変更");
+  });
+});
+
+describe("提出後の案内", () => {
+  async function submit(
+    mode: "submit" | "consult",
+    choice?: string | Promise<string | undefined>,
+  ): Promise<string> {
+    const root = await makeTask(staticTask, {
+      "index.html": mode === "submit" ? "<h1>今日の学習予定</h1>" : "<h1>未完成</h1>",
+    });
+    state.folders = [root];
+    await run("stella.runTask", root);
+    await run(mode === "submit" ? "stella.submitTask" : "stella.consultTask", root);
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+      submit: (draft: { explanation: string }) => Promise<void>;
+    };
+    vscodeMock.showInformationMessage.mockResolvedValueOnce(choice);
+    await actions.submit({ explanation: "振り返り" });
+    return root;
+  }
+
+  it("提出後に結果を見ると、提出した課題フォルダーで既存のコマンドを実行する", async () => {
+    const root = await submit("submit", "結果を見る");
+    expect(vscodeMock.showInformationMessage).toHaveBeenLastCalledWith(
+      "提出しました。AI が確かめた結果は、ふつう数分で届きます。",
+      "結果を見る",
+      "Web で開く",
+    );
+    expect(vscodeMock.executeCommand).toHaveBeenCalledWith("stella.showTaskHelp", root);
+    expect(vscodeMock.openExternal).not.toHaveBeenCalled();
+  });
+
+  it("通知のボタンを選ぶのを待たずに、提出フォームの処理を完了する", async () => {
+    await submit("submit", new Promise<string | undefined>(() => undefined));
+    expect(vscodeMock.sendTaskSubmission).toHaveBeenCalledTimes(1);
+    expect(vscodeMock.executeCommand).not.toHaveBeenCalled();
+  });
+
+  it("課題一覧で分かったステージと課題文の ID をエンコードして Web で開く", async () => {
+    vscodeMock.getCachedCatalog.mockReturnValue([
+      {
+        sections: [
+          { lessons: [{ stageId: "stage/1", id: "lesson?2", task: { id: staticTask.id } }] },
+        ],
+      },
+    ]);
+    await submit("submit", "Web で開く");
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith(
+      "https://stella.example/stages/stage%2F1/lessons/lesson%3F2",
+    );
+  });
+
+  it("別の課題の ID しかなければホームを開く", async () => {
+    vscodeMock.getCachedCatalog.mockReturnValue([
+      { sections: [{ lessons: [{ stageId: "stage", id: "lesson", task: { id: "other" } }] }] },
+    ]);
+    await submit("submit", "Web で開く");
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
+  });
+
+  it("相談後は返事が届く場所を示し、Web のボタンだけを出す。ID が無ければホームへ戻る", async () => {
+    await submit("consult", "Web で開く");
+    expect(vscodeMock.showInformationMessage).toHaveBeenLastCalledWith(
+      "相談を送りました。講師の返事は通知と、Web のレッスン画面の『提出・添削を確認する』に届きます。",
+      "Web で開く",
+    );
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
+    expect(vscodeMock.executeCommand).not.toHaveBeenCalled();
   });
 });
 
