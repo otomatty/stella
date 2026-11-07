@@ -15,12 +15,13 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 - 前提ステージ: **開発環境とWebの入口(`dev-env-basics`)**。Node.js と VS Code の拡張で課題を確かめられる状態から始める
   (`stage.json` の `prerequisites` に対応)。Claude Code も、試験の範囲のぶんはこのステージで扱う(M8)
 - 推奨(解放条件にはしない): JavaScript / TypeScript で関数と非同期の HTTP 通信が読めること
-  (`javascript-basics`・`http-async-basics` の範囲)。試験の受験者像は Python か TypeScript が読み書きできる人とされる(要確認、下記)
+  (`javascript-basics`・`http-async-basics` の範囲)。試験ガイド v1.0 の受験者像は Python か TypeScript が使える人です(推奨で必須ではない。下記)
 - 問題はすべて自作です。公式のサンプル問題・非公式の問題集・本番の問題を写したとされる教材の転載はしません
 - **合格を保証するものではありません**
 - 対象外:
   - Associate: Foundations・Architect: Foundations・Architect: Professional の対策
-  - Managed Agents・管理用 API(Admin API など)・クラウド各社経由の提供形態の詳しい手順
+  - Managed Agents・管理用 API(Admin API など)・クラウド各社経由の提供形態の**詳しい手順**(どれを選ぶかは範囲に入れます。試験ガイド v1.0 の 1.2・2.3・7.4。下の「試験ガイド v1.0 での見直し」)
+  - 他社のエージェントの枠組み(Strands・LangGraph・PydanticAI)の使い方(位置づけと選び方だけを扱います。試験ガイド v1.0 の 1.3)
   - 有料の API 呼び出しや API キーを前提にした課題
   - 模擬試験専用の計時・採点の仕組み(模試の中身は M9 の知識問題として持つ)
 
@@ -34,16 +35,20 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 - 到達目標: 下の「到達目標」
 - スコープ外: 上の「対象外」
 - 評価方法: 知識問題あり(各レッスン、合格点 80) / コード演習あり(各単元、`node-test-01`。下の「手を動かす課題」) / 模擬試験 = 知識問題(M9)
-- 規模: 11 単元 / 30 レッスン / 91 トピック / 知識問題 213 問(M9 の模擬試験 53 問と M10 のドリル 24 問を含む) / 課題 18 問
-- 出典: 公式ドキュメント(Claude Developer Platform・Claude Code)と Anthropic の記事。下の「公式の情報源」
+- 規模: 11 単元 / 30 レッスン / 91 トピック / 知識問題 213 問(M9 の模擬試験 53 問と M10 のドリル 24 問を含む) / 課題 18 問。下の「試験ガイド v1.0 での見直し」の案を入れると、17 レッスン・47 トピック(うち優先 A は 39、優先 B は 8)と課題 3〜6 問が増え、予定は 54 時間前後になります(案)
+- 出典: 公式ドキュメント(Claude Developer Platform・Claude Code)と Anthropic の記事。下の「公式の情報源」。範囲と配点は試験ガイド v1.0(2026-07。講師の確認待ち)
 - 参照元の台帳: `sources/registry.json`
 - 使用箇所と表示: 単元の `references.json`、各トピック・まとめ・知識問題の `sourceRefs`
 - 書く人 / 改訂する人: 講師(承認者)。試験ガイドの改訂(下記)ごとに範囲の対応を見直す
 
-## 試験の前提(調査 2026-10-31)
+## 試験の前提(調査 2026-10-31、2026-11-07 に試験ガイド v1.0 で更新)
 
-**公式の試験ガイドは、Anthropic Partner Academy(ログインが必要)にあり、執筆環境から取得できていません。**
-下の表の「確度」が ◎ 以外の項目は、受講開始時に試験ガイドと Partner Academy・Pearson のページで確かめてください。
+**試験ガイド v1.0(2026-07、CCDV-F)の PDF を、2026-11-07 に Partner Academy の配信元(Skilljar のファイル置き場)の公開 URL から読めました。**
+第三者の練習問題サイト CertSafari が「Official study guide」としてリンクしていたファイルです:
+`https://everpath-course-content.s3-accelerate.amazonaws.com/instructor%2F6nizmqk8tpzpfjvt6qmmav7rh%2Fpublic%2F1783542875%2FClaude+Certified+Developer+%E2%80%93+Foundations+Exam+Guide.pdf`
+Partner Academy にあるガイドと同じかは、講師が確かめます。下の表の出典「試験ガイド v1.0」はこの PDF のことで、確度の ◎ は講師の確認までの暫定です。
+ガイドは Partner Academy の利用条件の下にあるので、教材(スライド・まとめ・知識問題)には写しません。
+
 講師が確かめるページ(ログインが必要なものを含む):
 
 - 4 資格の一覧と、各資格の試験ガイド・準備講座・申し込み: https://anthropic-partners.skilljar.com/page/partner-certifications
@@ -54,21 +59,25 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 
 執筆環境からは `anthropic-partners.skilljar.com`・`www.pearsonvue.com`・`modelcontextprotocol.io`・
 `www.credly.com` に届かず、Pearson と Credly の記述は Web 検索の要約経由です。
+2026-11-07 の時点では、`platform.claude.com` と `code.claude.com` には届き、`modelcontextprotocol.io` には届きません。
 
 | 項目 | 内容 | 確度 | 出典 |
 | --- | --- | --- | --- |
-| 対象者 | Claude でアプリを作るエンジニア。Claude API・ツール使用・エージェント開発の訓練を含む | ◎ | claude.com の発表(2026-07-23) |
-| 受験資格 | Claude Partner Network の加盟組織の人。加盟は無料で、組織が受験者を登録する | ◎ | 同上 |
-| 実施 | Pearson が監督つきで実施。受験前に本人確認。合格者は Credly のデジタルバッジ | ◎ | 同上 |
-| 準備の講座 | 資格ごとの準備講座が Anthropic Partner Academy にある | ◎ | 同上 |
+| 対象者 | Claude でアプリ・エージェント・ワークフローを作って出すエンジニア。API の組み込み・エージェントとツールの作成・プロンプトとコンテキスト・評価・安全・モデル選びを扱う | ◎ | 試験ガイド v1.0 §1・§3、claude.com の発表(2026-07-23) |
+| 受験資格 | Claude Partner Network の加盟組織の人。加盟は無料で、組織が受験者を登録する | ◎ | claude.com の発表(2026-07-23) |
+| 前提 | 必須の前提・講座はない。推奨は開発の実務 1〜5 年・Claude か LLM の実務 6 か月以上・Python か TypeScript・REST と CLI | ◎ | 試験ガイド v1.0 §4 |
+| 実施 | Pearson VUE が監督つきで実施(オンラインか会場)。当日は写真つきの公的な身分証明書が要る。合格者は Credly のデジタルバッジ | ◎ | 試験ガイド v1.0 §5・§11、claude.com の発表 |
+| 準備の講座 | 資格ごとの準備講座が Anthropic Partner Academy にある | ◎ | claude.com の発表 |
 | 組織の人数 | 認定は個人に属する。有効な認定を持ち、直近 90 日に Claude を使った人を数える | ◎ | anthropic.com の Services Track(2026-06-03) |
-| 形式 | 53 問・120 分・合格 720 / 1000(尺度点) | △ | 第三者の解説・受験記 |
-| 受験料 | 125 USD | △ | 同上 |
+| 形式 | 53 問・120 分。1 つ選ぶ問題と複数選ぶ問題があり、選ぶ数は問題文に書かれる | ◎ | 試験ガイド v1.0 §5 |
+| 合格点と成績 | 尺度点 100〜1000 のうち 720 で合格。成績表には合否・尺度点と、ドメインごとの正答率が出る(合否は総合の尺度点だけで決まる) | ◎ | 試験ガイド v1.0 §5・§9 |
+| 受験料 | 125 USD。加盟の段階による割引は申し込みの画面に出る | ◎ | 試験ガイド v1.0 §5・§10 |
+| 申し込みと変更 | Partner Academy で申し込み、Pearson VUE で日時を選ぶ。変更と取り消しは 24 時間前まで | ◎ | 試験ガイド v1.0 §10 |
+| 再受験 | 不合格のあとの待ち期間は 14 日・30 日・90 日と延びる。12 か月で 4 回まで。受験料は毎回かかる | ◎ | 試験ガイド v1.0 §11 |
+| 有効期間と更新 | 12 か月。期限内なら Partner Academy の無料・監督なしの評価で更新できる。切れたら全額で受け直す。内容が大きく変われば受け直しを求めることがある | ◎ | 試験ガイド v1.0 §14 |
 | 言語 | 日本語でも受験できる | ○ | 講師の確認(2026-10-31)。それ以前の受験記には英語のみとある |
-| 有効期間 | 12 か月 | △ | 第三者の解説 |
-| 受験者像 | 開発の実務 1〜5 年、LLM の実務 6 か月以上、Python か TypeScript(推奨で必須ではない) | △ | 試験ガイドを引用した第三者の解説 |
 | 組織の人数への算入 | Developer は算入される(Associate は算入されない) | △ | 第三者の解説 |
-| **出題の改訂** | **2026-12-07 から出題が変わり、新しい試験ガイドは 2026-11-17 に出る** | ○ | Pearson のページ(検索の要約) |
+| **出題の改訂** | **2026-12-07 から出題が変わり、新しい試験ガイドは 2026-11-17 に出る** | ○ | Pearson のページ(検索の要約)。CertSafari も 2026-10-30 の確認でガイドは v1.0 のまま |
 
 ### 改訂への備え
 
@@ -81,22 +90,304 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 - ステージの説明・タイトル・到達説明(`stage.json`)は全単元の内容指紋に入ります。M0〜M10 がそろったので、講師の指示
   (2026-10-31)で説明から「【準備中】」と「単元を順に公開しています」を外し、全単元の版を 1 つ上げました
   (M0 は @3、M1〜M10 は @2。本文と参照元の対応は変わらない)
+- 2026-11-07 に、試験ガイド v1.0 のサブ項目で設計を見直しました(下の「試験ガイド v1.0 での見直し」)。本文はまだ書かず、11-17 の新しいガイドで対応を直してから書きます
+- 12-07 より前に受ける受講者は v1.0 の範囲で受けます。今の M0〜M10 で足りないサブ項目は、見直しの一覧の「確かめる公式ページ」で補うよう案内します
 
-### ドメインと配点(試験ガイド v1.0、2026-07。第三者の解説による)
+### ドメインと配点(試験ガイド v1.0、2026-07)
 
 | ドメイン | 配点 | 対応する単元 |
 | --- | --- | --- |
-| Applications and Integration | 33.1% | M1(Messages API)・M2(アプリへの組み込み) |
-| Model Selection and Optimization | 16.8% | M3 |
-| Agents and Workflows | 14.7% | M6 |
-| Prompt and Context Engineering | 11.0% | M4 |
-| Tools and MCPs | 10.6% | M5 |
-| Security and Safety | 8.1% | M7 |
-| Claude Code | 3.1% | M8 |
-| Eval, Testing, and Debugging | 2.6% | M8 |
+| Applications and Integration | 33.1% | M1・M2(API の仕組み)。見直しで M1(1-5)・M2(2-5・2-6)・M3(3-5)・M8(8-3〜8-6)を足す |
+| Model Selection and Optimization | 16.8% | M3。見直しで M1(1-4・1-5)・M3(3-4)を足す |
+| Agents and Workflows | 14.7% | M6。見直しで M6(6-4・6-5)を足す |
+| Prompt and Context Engineering | 11.0% | M4。見直しで M4(4-4)を足す |
+| Tools and MCPs | 10.6% | M5。見直しで M5(5-4・5-5)を足す |
+| Security and Safety | 8.1% | M7。見直しで M7(7-3・7-4)と 8-1-4 を足す |
+| Claude Code | 3.1% | M8。見直しで M8(8-3)を足す |
+| Eval, Testing, and Debugging | 2.6% | M8。見直しで M8(8-5)を足す |
+
+ドメインの下のサブ項目(25)と配点は、下の「試験ガイド v1.0 での見直し」の「サブ項目ごとの対応」にあります。
 
 配点は講師が試験ガイドで確かめるまで、受講者向けの本文(スライド・まとめ・知識問題)に数字を書きません。
 M0 は「試験ガイドの配点で時間を配る」ことだけを教え、数字はガイドを開いて確かめさせます。
+
+## 試験ガイド v1.0 での見直し(2026-11-07)
+
+### 見つかったこと
+
+- ドメインの対応だけを見ていて、ドメインの中の穴が見えていませんでした。Applications and Integration(33.1%)に当てた M1・M2 が扱うのは、サブ項目 2.3 Claude API Mechanics(6.8%)だけです。Model Selection and Optimization(16.8%)に当てた M3 が扱うのは、5.3(2.7%)と 5.4(2.8%)だけです。
+- M9 の模擬試験も同じ形です。Applications and Integration の 17 問は復習の戻り先がすべて M1・M2、Model Selection and Optimization の 9 問はすべて M3 です。
+- サブ項目で見ると、十分に扱えているのは配点の 29.6%、一部だけが 41.4%、ほとんど扱っていないのが 29.0% です(講師の判定の前の、執筆者の見立て)。
+
+### サブ項目ごとの対応
+
+判定: ◎ 十分 / ○ ほぼ足りる / △ 一部だけ / × ほとんど無い。括弧つきの ID は優先 B
+
+| ID | サブ項目 | 配点 | 範囲の要点(言い換え) | 今のトピック | 判定 | 足すトピック(案) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.1 | Agent Architecture | 4.5% | ワークフローとエージェントの使い分け、指揮役と作業役の階層、サブエージェント | 6-1-1・6-1-2・6-2-1〜6-2-5・6-3-2・10-2-2 | ◎ | — |
+| 1.2 | Agent Construction with Claude | 5.3% | Agent SDK、自前のループ、自前で動かすか Anthropic に任せるか、決まった処理のフック | 6-3-1・6-3-3・8-1-2 | △ | 6-4-1・6-4-2・8-1-4 |
+| 1.3 | Agent Patterns and Frameworks | 4.9% | ツール使用のループ・サブエージェント・記憶・コンテキストの管理、他社の枠組み | 5-1-2・6-3-2・4-3-3 | △ | 6-5-2・6-5-3 |
+| 2.1 | Understanding Requirements | 3.4% | 業務の要件から、機能と基盤の要件を決める | 3-1-1・10-1-1 | △ | 2-6-1・2-6-2 |
+| 2.2 | Systems Life Cycle | 2.8% | 作る・動かす・保つ。モデルの寿命 | 1-2-3 | × | 3-5-1・3-5-2 |
+| 2.3 | Claude API Mechanics | 6.8% | messages・ツール・ストリーミング・画像・thinking・キャッシュ・クラウド各社経由・バッチとリアルタイムの使い分け | M1・M2・3-2-1〜3-2-3・3-3-2・5-1-1〜5-1-4・10-1-1・10-1-2 | ○ | 2-6-2 |
+| 2.4 | Software Engineering Foundations | 7.4% | REST・JSON・非同期・版管理・開発の工程への組み込み・コードレビュー・リファクタリング | — | × | 1-5-1・2-5-1・2-5-2・8-6-1・(8-6-2) |
+| 2.5 | Claude Application Design | 8.6% | 面(claude.ai・Desktop・Claude Code・API・SDK)ごとの指示の読まれ方、内容の境界、スキーマの設計、セッションの衛生、プラグイン | 1-1-2・4-1-3・4-2-1・5-2-3・7-1-1(境界とスキーマだけ) | × | 8-3-4・8-4-1・8-4-2 |
+| 2.6 | Configuration Management | 4.1% | CLAUDE.md・settings.json・モデルの版の固定・プロンプトの版管理・プラグインの依存 | 8-1-1・8-1-3・1-2-3・8-2-2 | △ | 1-5-3・8-3-1・8-4-2・8-4-3 |
+| 3.1 | Claude Code Operation | 3.1% | Rules・Skills・コマンド・サブエージェント・記憶、セッション、headless・auto mode、CLAUDE.md の階層、settings.json | 8-1-1・8-1-3 | △ | 8-3-1〜8-3-4 |
+| 4.1 | Debugging and Error Handling | 2.6% | エラーの種類、立て直し方、トレース、統合の側かモデルの出力かの切り分け | 2-1-1〜2-1-3・8-2-3・10-1-4 | △ | 8-5-1・8-5-2 |
+| 5.1 | LLM Fundamentals | 5.2% | トークン・コンテキストウィンドウ・サンプリング・非決定性・次のトークンの生成、fast mode・extended / adaptive thinking・effort、zero / single / multi-shot | 1-1-3・4-3-1・3-1-3・3-3-2・4-1-2 | △ | 1-4-1・1-4-2・3-4-2・3-4-3・4-1-2 の改訂 |
+| 5.2 | Technical Fundamentals | 6.1% | REST を包む SDK、WebSocket | 1-2-1 | × | 1-5-1・1-5-2・(2-5-3) |
+| 5.3 | Model Selection and Tradeoffs | 2.7% | Opus・Sonnet・Haiku の向き、adaptive thinking の対応、質・速さ・費用、版の間の挙動の変化 | 3-1-1〜3-1-4 | ○ | 3-4-1・3-5-2・1-5-3 |
+| 5.4 | Cost and Token Management | 2.8% | トークンの予算・使用量の記録・費用の見積もり・キャッシュ | 2-3-2・3-2-1〜3-2-3・3-3-1・10-1-2 | ◎ | — |
+| 6.1 | Context Engineering | 3.8% | コンテキストの管理、劣化と肥大の防止(ツールの出力の刈り込み・圧縮)、サブエージェントでの分離 | 4-3-1〜4-3-3・6-3-2 | ○ | (6-5-1) |
+| 6.2 | Prompt Engineering | 4.6% | 指示の明確さ・例・system と user の置き分け・出力の制約・繰り返しの改善・入力の無害化 | 1-1-2・4-1-1〜4-1-4・4-2-3・7-1-2・8-2-2 | ○ | — |
+| 6.3 | Output Handling | 2.6% | 構造化出力・応答の検証・防御的なパース・自信のある出力を疑う | 4-2-1・4-2-2・7-2-1・7-2-2 | △ | 4-4-1・4-4-2 |
+| 7.1 | AI Application Security | 3.2% | インジェクション・ジェイルブレイク・信頼できない入力・データの漏えい・個人情報・認証と認可 | 7-1-1・7-1-2 | △ | 7-3-3・(7-3-4) |
+| 7.2 | Guardrails and Safe Deployment | 2.3% | コンテンツポリシー・ガードレールの重ね方・最小権限 | 7-1-3 | △ | 7-3-1・5-4-4・(7-3-2) |
+| 7.3 | Claude Hooks | 1.0% | フックで破壊的な操作を止める | 8-1-2 | △ | 8-1-4 |
+| 7.4 | Identity, Secrets, and Key Management | 1.6% | 鍵の管理・本人の確かめ・権限の確認・使われ方の監視 | 1-2-2・7-2-3 | △ | 1-5-2・7-4-1・(7-4-2)・(7-4-3) |
+| 8.1 | Tool Implementation | 4.4% | ツールの定義と説明・エラー・クライアントとサーバーのツール・承認・ツールの組み立て | 5-1-1〜5-1-4・5-2-1〜5-2-4・8-2-3 | ◎ | 5-4-4 |
+| 8.2 | MCP Server Development | 2.1% | サーバーの作成と配置、リソース・ツール・プロンプト、stdio などのつなぎ方 | 5-3-1〜5-3-3・10-2-1 | △ | 5-5-1・(5-5-2) |
+| 8.3 | Agentic Customization | 4.1% | 組み込みツール・自作ツール・Skills・MCP の選び分け | 5-1-4 | × | 5-4-1〜5-4-3 |
+
+### 見直しの方針
+
+- 単元は今までどおり公式ドキュメントの区分で切り、試験とは上の対応表で合わせます。
+- 足すものは、今の単元の末尾に足すレッスン(と 8-1-4 のように今のレッスンの末尾に足すトピック)にします。新しい単元を M9 の前に入れると M9・M10 のディレクトリ名(単元の ID)が変わり、受講済みの進捗に響くので、単元は増やしません。
+- 足すトピックは「選べる・説明できる」水準で書きます。Managed Agents・クラウド各社経由・他社の枠組みは、詳しい手順まで扱いません。
+- 優先 A(39 トピック)を先に書き、優先 B(8 トピック)は 11-17 の新しいガイドを見て入れるかを決めます。
+- 下の takeaway は**書く前の一覧(案)**です。今までの単元と同じく、公式ドキュメントの見出しの範囲で確かめてから確定します。
+
+### 足すレッスンとトピック(案)
+
+#### M1 に足す
+
+レッスン `l4-how-llms-respond`(応答が作られる仕組み)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1-4-1 | `l4-how-llms-respond/t1-next-token` | 次のトークンを選んで続ける | LLM は、それまでのトークンから次のトークンを 1 つずつ選んで応答を書きます。 | LLM, 次のトークンの予測 | トークン, 応答 | 5.1 | A | Glossary(LLM / Tokens) |
+| 1-4-2 | `l4-how-llms-respond/t2-not-deterministic` | 同じ入力でも応答は変わる | 次のトークンは確率に従って選ばれるので、同じリクエストでも毎回同じ応答になるとは限りません。 | サンプリング, 非決定性, temperature | 次のトークンの予測, リクエスト | 5.1 | A | Glossary(Temperature)・Migrating to API version 2026-10-21(Sampling parameters are removed)・Increase output consistency |
+
+レッスン `l5-http-under-sdk`(SDK の下の HTTP)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1-5-1 | `l5-http-under-sdk/t1-rest-api` | SDK は HTTP の API を包む | SDK は、エンドポイントに JSON の本文を送る HTTP の API を、関数の呼び出しとして包んだものです。 | REST API, エンドポイント, JSON | SDK, Messages API, リクエスト | 5.2・2.4 | A | API overview(Request and response format)・Messages(API リファレンス) |
+| 1-5-2 | `l5-http-under-sdk/t2-request-headers` | ヘッダーで鍵と版を伝える | HTTP で直接呼ぶときは、API キーを Authorization ヘッダー、API の版を anthropic-version ヘッダーで送ります。 | リクエストヘッダー, Authorization, anthropic-version | API キー, エンドポイント | 5.2・7.4 | A | API overview(Authentication)・Migrating to API version 2026-10-21(API keys are sent as Authorization: Bearer) |
+| 1-5-3 | `l5-http-under-sdk/t3-api-version` | API の版を決めて上げる | API の版は日付で決まり、SDK のメジャーバージョンを上げると新しい版に切り替わるので、移行ガイドを読んでから上げます。 | API の版, 移行ガイド | anthropic-version, SDK | 2.6・5.3 | A | Versions・Migrating to API version 2026-10-21(Upgrade steps) |
+
+#### M2 に足す
+
+レッスン `l5-async`(非同期で呼ぶ)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2-5-1 | `l5-async/t1-async-call` | 待つ間に止めない | API の呼び出しは非同期の処理として書き、応答を待つ間もほかの処理を止めないようにします。 | 非同期処理, await | リクエスト, SDK | 2.4・5.2 | A | TypeScript SDK(Usage)。MDN の async function(他社の資料。台帳への登録は要相談) |
+| 2-5-2 | `l5-async/t2-limit-concurrency` | 同時に送る数を絞る | 並べて送るリクエストの数は、レート制限に収まるように上限を決めます。 | 同時実行数 | 非同期処理, レート制限 | 2.4 | A | Rate limits(About rate limits) |
+| 2-5-3 | `l5-async/t3-sse` | ストリーミングの届き方 | ストリーミングの応答は、サーバーから一方向に流れる SSE で届き、双方向の WebSocket とは仕組みが違います。 | SSE, WebSocket | ストリーミング, イベント | 5.2 | B | Streaming messages。WebSocket は Anthropic の資料に記述がない(MDN を使うかは要相談) |
+
+レッスン `l6-requirements`(要件から作りを決める)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2-6-1 | `l6-requirements/t1-split-requirements` | 要件を 2 つに分ける | 業務の要件は、何をするか(機能要件)と、速さ・量・データの置き場所などの条件(非機能要件)に分けて書き出します。 | 機能要件, 非機能要件 | 応答, リクエスト | 2.1 | A | Choosing the right model(Establish key criteria)。要件の分け方そのものを書いた公式のページは見つかっていない |
+| 2-6-2 | `l6-requirements/t2-where-to-run` | 呼び出し先を条件で選ぶ | データの置き場所や契約の条件が決まっているときは、Claude API ではなくクラウド各社の経由で Claude を呼びます。 | クラウドプラットフォーム, IAM | 非機能要件, Claude API | 2.1・2.3 | A | API overview(Claude API versus cloud platforms)・Claude in Amazon Bedrock・Claude Models on Google Cloud・Claude in Microsoft Foundry・API and data retention |
+
+#### M3 に足す
+
+レッスン `l4-model-options`(モデルと動かし方の選択肢)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 3-4-1 | `l4-model-options/t1-model-families` | 系統ごとの向き | 迷ったら Opus から始め、速さと費用を優先する仕事では Sonnet・Haiku を自分の評価のセットで比べます。 | Opus, Sonnet, Haiku | モデルの選択, 評価のセット | 5.3 | A | Models overview(Compare models)・Choosing the right model。Fable・Mythos の位置づけも書く前に確かめる |
+| 3-4-2 | `l4-model-options/t2-adaptive-thinking` | 考える量を任せる | 今のモデルは adaptive thinking で考える量を自分で決めるので、量は budget_tokens ではなく effort で調整します。 | adaptive thinking, extended thinking, budget_tokens | 考える過程, effort | 5.1・5.3 | A | Thinking(How thinking works の表)・Extended thinking (legacy) |
+| 3-4-3 | `l4-model-options/t3-fast-mode` | 出力を速くする設定 | fast mode は、同じモデルの出力の速さを上げる代わりに、通常より高い単価がかかる設定です。 | fast mode | 速度, 費用 | 5.1 | A | Fast mode(How fast mode works / Pricing) |
+
+レッスン `l5-model-lifecycle`(モデルの寿命)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 3-5-1 | `l5-model-lifecycle/t1-model-status` | モデルは退役する | モデルは、非推奨になって退役の日が告げられ、退役したあとはリクエストが失敗します。 | 非推奨, 退役 | モデル ID | 2.2 | A | Model deprecations(Overview / Model status) |
+| 3-5-2 | `l5-model-lifecycle/t2-migrate` | 退役の前に移る | 非推奨の告知が来たら、使っているモデル ID を洗い出し、置き換え先を自分の評価のセットで確かめてから移ります。 | 移行 | 非推奨, モデル ID, 評価のセット, 移行ガイド | 2.2・5.3 | A | Model deprecations(Auditing model usage / Migrating to replacements / Best practices)・Upgrade between model versions |
+
+#### M4 に足す
+
+レッスン `l4-output-handling`(出力を確かめて使う)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 4-4-1 | `l4-output-handling/t1-validate` | 使う前に検証する | 応答は、使う前に形と値をコードで検証し、通らなければ使わずに分岐します。 | 出力の検証 | 構造化出力, JSON スキーマ | 6.3 | A | Structured outputs(Important considerations)・Increase output consistency |
+| 4-4-2 | `l4-output-handling/t2-defensive-parsing` | 読めない出力に備える | JSON として読めない応答や項目の欠けた応答も来るものとして、読み取りの失敗を処理の分岐として書きます。 | 防御的なパース | 出力の検証, スキーマに合わない出力 | 6.3 | A | Structured outputs(Important considerations)・Stop reasons and fallback |
+
+#### M5 に足す
+
+レッスン `l4-extension-choice`(足し方を選ぶ)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5-4-1 | `l4-extension-choice/t1-skills` | 手順を Skills にまとめる | Skills は指示・スクリプト・資料をまとめたフォルダーで、最初は説明だけが読まれ、使うときに中身が読み込まれます。 | Skills, SKILL.md, 段階的な読み込み | 指示, コンテキスト | 8.3 | A | Agent Skills overview(How Skills work / Skill structure / Where Skills work) |
+| 5-4-2 | `l4-extension-choice/t2-builtin-first` | 用意されたツールを先に探す | Anthropic が用意したツールで足りる操作は、自分で作らずにそれを使います。 | 組み込みツール | サーバーツール, ツール | 8.3 | A | Tool use with Claude(Choose a tool)・Server tools |
+| 5-4-3 | `l4-extension-choice/t3-skills-or-mcp` | 知識を足すか、つなぎ先を足すか | 手順や知識を足すなら Skills、外のシステムへのつなぎ先をいくつものアプリで共有するなら MCP サーバーを選びます。 | — | Skills, MCP サーバー | 8.3 | A | Extend Claude Code(Match features to your goal / Compare similar features)・Agent Skills overview |
+| 5-4-4 | `l4-extension-choice/t4-approval` | 取り消せない操作は承認を挟む | 送信や削除のような取り消せない操作のツールは、実行の前に人の承認を挟みます。 | 承認 | ツール, tool_use | 8.1・7.2 | A | Handle approvals and user input(Agent SDK)・Configure permissions(Agent SDK) |
+
+レッスン `l5-mcp-server`(MCP サーバーを作る)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5-5-1 | `l5-mcp-server/t1-mcp-primitives` | サーバーが出す 3 つのもの | MCP サーバーは、操作のツール・読むためのリソース・定型の頼み方のプロンプトの 3 つを出せます。 | MCP のリソース, MCP のプロンプト | MCP サーバー, ツール | 8.2 | A | Connect Claude Code to tools via MCP(Use MCP resources / Use MCP prompts as commands)。MCP の仕様のサイトは執筆環境から届かない |
+| 5-5-2 | `l5-mcp-server/t2-sdk-mcp-server` | 自作の関数を MCP で出す | Agent SDK では、自作の関数をその場で動く MCP サーバーとして登録し、ツールとして使わせます。 | SDK の MCP サーバー | MCP サーバー, Agent SDK, mcpServers | 8.2・8.1 | B | Give Claude custom tools(Agent SDK) |
+
+#### M6 に足す
+
+レッスン `l4-build-and-host`(エージェントを作る場所)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 6-4-1 | `l4-build-and-host/t1-own-loop` | ループを自分で回す | Messages API でエージェントを作るときは、stop_reason が tool_use の間ツールを実行して結果を返すループを自分で書くか、SDK のツールランナーに任せます。 | ツールランナー | ツール使用のループ, stop_reason, tool_result | 1.2 | A | Tool runner (SDK)・Handle tool calls |
+| 6-4-2 | `l4-build-and-host/t2-where-to-host` | 動かす場所を選ぶ | エージェントを自分の環境で動かすなら Agent SDK、実行の環境ごと Anthropic に任せるなら Managed Agents を選びます。 | Managed Agents | Agent SDK, エージェント | 1.2 | A | Claude Managed Agents overview(When to use Claude Managed Agents)・Agent SDK overview・Hosting the Agent SDK |
+
+レッスン `l5-long-running`(長く動くエージェント)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 6-5-1 | `l5-long-running/t1-clear-tool-results` | 古いツールの結果を消す | 長く動くエージェントでは、使い終わったツールの結果をコンテキストの編集で消して、枠を空けます。 | ツールの結果の消去 | コンテキストの編集, tool_result, コンテキストウィンドウ | 6.1 | B | Context editing(Tool result clearing) |
+| 6-5-2 | `l5-long-running/t2-memory-tool` | 会話をまたいで覚えさせる | 次の会話でも使いたい情報は、メモリーツールでファイルに書かせ、次の会話で読ませます。 | メモリーツール | ツール, セッション | 1.3 | A | Memory tool(How it works / Security considerations) |
+| 6-5-3 | `l5-long-running/t3-other-frameworks` | ほかの枠組みで作る | Strands・LangGraph・PydanticAI などの枠組みでも Claude のエージェントを作れますが、裏で何をしているかを確かめてから使います。 | Strands, LangGraph, PydanticAI | フレームワーク, エージェント | 1.3 | A | Building effective agents(When and how to use frameworks)。各フレームワークの公式ドキュメント(他社の資料。台帳への登録は要相談) |
+
+#### M7 に足す
+
+レッスン `l3-guardrails`(守りを重ねる)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 7-3-1 | `l3-guardrails/t1-layered-defense` | 1 つの対策に頼らない | 入力のふるい分け・権限の絞り込み・出力の確認・人の承認を重ね、1 つが破られても被害が出ないようにします。 | ガードレール, 多層の防御 | ふるい分け, 最小権限, 承認 | 7.2 | A | Securely deploying AI agents(Security principles)・Mitigate jailbreaks and prompt injections |
+| 7-3-2 | `l3-guardrails/t2-content-policy` | 使い方の決まりを守る | 作るアプリは Anthropic の利用規定に沿わせ、規定に触れる入力と出力を見分ける仕組みを入れます。 | 利用規定, コンテンツモデレーション | ふるい分け | 7.2 | B | Content moderation。利用規定(Usage Policy)の台帳への登録は要相談 |
+| 7-3-3 | `l3-guardrails/t3-personal-data` | 個人情報を送りすぎない | 個人情報は処理に要る分だけを送り、ログや応答に残さないようにします。 | 個人情報 | リクエスト, 応答 | 7.1 | A | API and data retention・Securely deploying AI agents(個人情報を扱う節があるか書く前に確かめる) |
+| 7-3-4 | `l3-guardrails/t4-prompt-leak` | system の中身を漏らさない | system には漏れて困る情報を書かず、そのうえで中身を明かさないよう指示します。 | プロンプトの漏えい | system | 7.1 | B | Reduce prompt leak(Before you try to reduce prompt leak / Strategies to reduce prompt leak) |
+
+レッスン `l4-keys`(鍵と使い道の管理)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 7-4-1 | `l4-keys/t1-workspaces` | 環境ごとに鍵を分ける | 開発と本番でワークスペースと API キーを分け、ワークスペースごとに使える量の上限を決めて見張ります。 | ワークスペース | API キー, レート制限 | 7.4 | A | Workspaces(Environment separation / Workspace limits / Usage and cost tracking) |
+| 7-4-2 | `l4-keys/t2-rotate-keys` | 漏れた鍵はすぐ止める | 鍵が漏れたら、すぐに無効にして新しい鍵に替え、その鍵の使われ方を確かめます。 | 鍵のローテーション | API キー, ワークスペース | 7.4 | B | Get your Claude API key・API Keys(Admin API)。漏れたときの手順を書いた節は書く前に確かめる |
+| 7-4-3 | `l4-keys/t3-workload-identity` | 長く使える鍵を置かない | クラウドで動く処理は、Workload Identity Federation で短い期限のトークンを受け取り、長く使える鍵を置かないようにします。 | Workload Identity Federation, アクセストークン | API キー, Authorization | 7.4 | B | Workload Identity Federation・API overview(Authentication) |
+
+#### M8 に足す
+
+今のレッスン `l1-claude-code` の末尾に足すトピック
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 8-1-4 | `l1-claude-code/t4-block-destructive` | 取り消せない操作を止める | ファイルの削除のような取り消せない操作は、PreToolUse のフックで実行の前に止めます。 | — | フック, PreToolUse | 7.3・1.2 | A | Automate actions with hooks・Intercept and control agent behavior with hooks(Agent SDK) |
+
+レッスン `l3-operate-claude-code`(Claude Code を動かす)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 8-3-1 | `l3-operate-claude-code/t1-instruction-files` | 約束の置き場所を分ける | 毎回効かせる約束は CLAUDE.md に短く、ファイルの種類ごとの約束は .claude/rules/ に、ときどき使う手順は Skills に分けて置きます。 | .claude/rules | CLAUDE.md, Skills | 3.1・2.6 | A | How Claude remembers your project(How CLAUDE.md files load / Organize rules with .claude/rules/)・Extend Claude Code(Compare similar features) |
+| 8-3-2 | `l3-operate-claude-code/t2-headless` | 画面なしで動かす | claude -p で Claude Code を画面なしで動かし、スクリプトや CI に組み込みます。 | ヘッドレスモード | Claude Code | 3.1 | A | Run Claude Code programmatically(Basic usage / Get structured output / Stream responses) |
+| 8-3-3 | `l3-operate-claude-code/t3-permission-modes` | 確認の仕方を選ぶ | 権限のモードで、操作ごとに確認するか、編集だけ任せるか、計画だけさせるか、分類器が判断する auto mode にするかを選びます。 | 権限のモード, plan mode, auto mode | permissionMode, Claude Code | 3.1 | A | Choose a permission mode(Available modes / Eliminate permission prompts with auto mode) |
+| 8-3-4 | `l3-operate-claude-code/t4-session-hygiene` | 仕事ごとに会話を分ける | 関係のない仕事は /clear か新しいセッションで始め、続きの仕事は --resume で前の会話から再開します。 | /clear | セッション, resume, コンテキストの劣化 | 2.5・3.1 | A | Manage sessions・Best practices for Claude Code |
+
+レッスン `l4-app-design`(アプリの設計と構成の管理)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 8-4-1 | `l4-app-design/t1-surfaces` | 面ごとに前提が違う | claude.ai・Claude Code・API・Agent SDK では最初から入っている指示が違うので、同じプロンプトでも結果が変わることがあります。 | claude.ai, 面 | system, Claude Code, Agent SDK, Messages API | 2.5 | A | Modifying system prompts(Agent SDK)・System prompts(リリースノート)・Extend Claude Code |
+| 8-4-2 | `l4-app-design/t2-plugins` | 設定をまとめて配る | Skills・フック・MCP サーバーをチームで配るときは、プラグインにまとめて版と依存を管理します。 | プラグイン, マーケットプレイス | Skills, フック, MCP サーバー | 2.5・2.6 | A | Plugins overview・Plugin dependencies |
+| 8-4-3 | `l4-app-design/t3-pin-versions` | 動かす条件を固定する | 本番では、モデル ID・API の版・プロンプト・プラグインの版を固定し、変えるときは評価のセットを通してから切り替えます。 | 版の固定 | モデル ID, API の版, プラグイン, 評価のセット | 2.6 | A | Model IDs and versioning・Versions・Plugin dependencies |
+
+レッスン `l5-debugging`(失敗の出どころを探す)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 8-5-1 | `l5-debugging/t1-trace` | 記録をたどる | 失敗は、リクエスト・応答・ツールの呼び出しの記録を順にたどり、どこで想定から外れたかを探します。 | トレース | request ID, ツール使用のループ | 4.1 | A | Hosting the Agent SDK(Observability)・Tool runner(Debugging tool execution)・Claude API errors(Request ID) |
+| 8-5-2 | `l5-debugging/t2-integration-or-model` | 統合か、モデルの出力か | HTTP のエラーや形の誤りは統合の側、エラーのない応答の中身の誤りはモデルの出力の側として、直す場所を分けます。 | 統合の層 | トレース, HTTP ステータス, stop_reason | 4.1 | A | Claude API errors・Stop reasons and fallback(Stop reasons versus errors)・Troubleshooting tool use |
+
+レッスン `l6-dev-practices`(Claude と進める開発)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires | サブ項目 | 優先 | 確かめる公式ページ(候補、台帳には未登録) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 8-6-1 | `l6-dev-practices/t1-review-before-merge` | 差分を見てから取り込む | Claude に書かせた変更もブランチに分け、差分のレビューとテストを通してから取り込みます。 | コードレビュー | Claude Code | 2.4 | A | Best practices for Claude Code(Give Claude a check to run / Review against your spec) |
+| 8-6-2 | `l6-dev-practices/t2-large-refactor` | 大きな書き換えを分ける | 大きなリファクタリングは、plan mode で計画を立ててから小さな単位に分け、単位ごとにテストを通します。 | リファクタリング | plan mode, コードレビュー | 2.4 | B | Best practices for Claude Code・Set up Claude Code in a monorepo or large codebase |
+
+### 今のトピックの改訂(案)
+
+本文を書くときに一緒に直します。
+
+- 4-1-2「例で形を伝える」: zero-shot・one-shot・multi-shot の呼び名を足す(introduces に zero-shot, one-shot, multi-shot を足す。takeaway は変えない)。5.1
+- M8 の単元名: 「Claude Code の設定と評価・デバッグ」を「Claude Code・アプリの設計と評価・デバッグ」にする(`stage.json` の `modules`。全単元の内容指紋に入るかを確かめ、本文と同じ変更で直す)
+- M9 の模擬試験と M10 のドリル: 複数選ぶ問題の文を「すべて選んでください」から「2 つ選んでください」のように正解の数を書く形にする(本番は選ぶ数が問題文に書かれる。試験ガイド v1.0 §5)
+- M9 のまとめ: 「53 問は第三者の解説による本番の問題数で、公式の数字ではない」を、試験ガイド v1.0 の数に直す
+- M0: 試験の形式・合格点と成績表・更新・再受験を、上の「試験の前提」の表に合わせる(0-1-3 ほか)
+- 10-4-1「場面の条件を読む」: 試験ガイド v1.0 のサンプル問題が場面を読んで選ぶ問題であることを、断定してよいかを講師と決める
+
+### 課題の案
+
+課題はどれも今までと同じく `node-test-01` で、API キーなしで解ける形にします。
+
+| 単元 | 課題(案) | 種別 | 優先 | 扱うサブ項目 |
+| --- | --- | --- | --- | --- |
+| M1 | HTTP のリクエストを組み立てる(エンドポイント・ヘッダー・JSON の本文を返す関数) | 基礎 | A | 5.2・2.4 |
+| M4 | 応答を検証して分岐する(読めない JSON・欠けた項目・拒否を分ける) | 自力 | A | 6.3 |
+| M10 | 総合課題: 1 つのアプリを通す(system とツールのループ・エラーの扱い・出力の検証・外の文章の扱い・評価のケース) | 総合 | A | 試験ガイド v1.0 §7 の準備のすすめ |
+| M2 | 同時に送る数を絞って並べて送る | 自力 | B | 2.4 |
+| M5 | 取り消せない操作のツールに承認を挟む | 自力 | B | 8.1・7.2 |
+| M8 | 記録から失敗の出どころを分ける | 自力 | B | 4.1 |
+
+### 時間の案
+
+| 単元 | 今 | 見直し後(案) | 足すもの |
+| --- | --- | --- | --- |
+| M0 | 1h | 1h | — |
+| M1 | 5h | 6h | 1-4・1-5、課題 1 |
+| M2 | 5h | 6h | 2-5・2-6 |
+| M3 | 5h | 6h | 3-4・3-5 |
+| M4 | 4h | 5h | 4-4、課題 1 |
+| M5 | 4h | 6h | 5-4・5-5 |
+| M6 | 5h | 6h | 6-4・6-5 |
+| M7 | 3h | 4h | 7-3・7-4 |
+| M8 | 2h | 6h | 8-1-4・8-3〜8-6 |
+| M9 | 3h | 3h | 配分の見直しだけ |
+| M10 | 3h | 5h | 総合課題 |
+| 計 | 40h | 54h | 優先 B を入れると 56h 前後 |
+
+### M9 の模擬試験の配分(案)
+
+ドメインごとの数(17・9・8・6・6・4・2・1)は変えず、ドメインの中をサブ項目の配点で最大剰余法で割り振ります。
+
+| ドメイン | 問題数 | サブ項目ごと(案) | 今 |
+| --- | --- | --- | --- |
+| Applications and Integration | 17 | 2.1: 2・2.2: 1・2.3: 4・2.4: 4・2.5: 4・2.6: 2 | 17 問とも M1・M2(2.3) |
+| Model Selection and Optimization | 9 | 5.1: 3・5.2: 3・5.3: 1・5.4: 2 | 9 問とも M3(5.3・5.4) |
+| Agents and Workflows | 8 | 1.1: 2・1.2: 3・1.3: 3 | M6 |
+| Prompt and Context Engineering | 6 | 6.1: 2・6.2: 3・6.3: 1 | M4 |
+| Tools and MCPs | 6 | 8.1: 3・8.2: 1・8.3: 2 | M5 |
+| Security and Safety | 4 | 7.1: 2・7.2: 1・7.3: 0・7.4: 1 | M7 |
+| Claude Code | 2 | 3.1: 2 | M8 |
+| Eval, Testing, and Debugging | 1 | 4.1: 1 | M8 |
+
+### 今の本文に響きうる公式の変更(2026-11-07 に見つけたもの)
+
+- API の版 `2026-10-21`(Migrating to API version 2026-10-21): SDK と CLI は API キーを `Authorization: Bearer` で送る(`x-api-key` は互換で使える)。`temperature`・`top_p`・`top_k` を送ると 400。`assistant` の発言に直接置いた `document` ブロックは 400。`user` の発言の `citations` は 400。SDK のツールランナーからクライアント側の圧縮が外れた。→ 1-2-2・2-4-2・4-3-3 と、足す 1-4-2・1-5-2・6-4-1 を確かめる
+- Thinking: 今のモデル(Opus 5.5・Sonnet 5.5・Haiku 5.5・Fable 5.1・Mythos 5.1)は adaptive thinking で動き、`enabled` と `budget_tokens` の指定は 400 になる。→ 3-3-2 を確かめる
+- Models overview: 迷ったら Opus 5.5 から始め、難しい推論や長い作業は Fable 5.1 を使うとある。→ 3-1-1〜3-1-4 と、足す 3-4-1 を確かめる
+
+11-17 以降の改訂で、まとめて確かめます。
+
+### 進め方
+
+1. 2026-11-07: この節の設計を書く(本文は書かない)
+2. 2026-11-17 以降: 講師が新しい試験ガイドを確かめる → 上の「サブ項目ごとの対応」と足すトピックを直す → 優先 A の本文・知識問題・課題を書く → M9・M10 を直す → 使った資料を台帳に `draft` で登録し、講師が確かめる → 改訂した単元の `unitId` の版を上げ、`contentHash` を更新する
+3. 12-07 より前に受ける受講者: v1.0 の範囲で受ける。足りないサブ項目は、上の一覧の「確かめる公式ページ」で補うよう案内する
+
+### 参考にした第三者のページ
+
+- CertSafari(https://www.certsafari.com/anthropic/claude-developer-foundations): 個人が運営する無料の練習問題サイトで、Anthropic とは関係がないと明記しています。試験の概要・サブ項目の一覧・練習問題 500 問(無料のサンプル 35 問)・本番と同じ 53 問 120 分の模試・サブ項目ごとの解説 25 本・受験記があり、ガイドの版は v1.0(2026-10-30 に確認)・問題の更新は 2026-11-01 とあります。試験ガイドの PDF へのリンクもここにありました。
+- 使い方: 出題の傾向をつかむ参考にとどめ、本文の根拠にしません。問題と解説は写しません(上の「公式の情報源」の方針どおり)。サンプル問題には、Strands・LangGraph・PydanticAI の比較や PreCompact フックのように、今の教材より細かいところを問うものがあります。
 
 ## 公式の情報源(確認日 2026-10-31)
 
@@ -458,7 +749,11 @@ M1〜M8 の課題は、リクエスト・応答・イベント・結果・usage�
 
 ## 決めていないこと(講師と相談)
 
-- 2026-11-17 に出るとされる新しい試験ガイドへの追従(上の「改訂への備え」)
+- 2026-11-17 に出るとされる新しい試験ガイドへの追従(上の「改訂への備え」と「試験ガイド v1.0 での見直し」)
+- 試験ガイド v1.0 の PDF が Partner Academy のものと同じか。同じなら、受講者向けの本文に配点を書くかを決める
+- 優先 B のトピックと課題を入れるか
+- 他社の資料(各フレームワークの公式ドキュメント・MDN・利用規定)を台帳に登録してよいか
+- 予定時間を 54 時間前後に増やすか(上の「時間の案」)
 
 ## クレジット(原典)
 
