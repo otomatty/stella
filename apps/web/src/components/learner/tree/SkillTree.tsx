@@ -95,6 +95,7 @@ import { ROUTE_ACCENTS, routeAccentOf, routeSolidOf } from "./route-accents";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
 import { describeStar, hasStarActions, labelOf, type StarDetail } from "./star-detail";
+import { nextUnlockIds } from "./next-unlock";
 import { estimateStarLabelWidth, placeStarLabels, type StarLabelSide } from "./star-labels";
 
 /**
@@ -451,6 +452,8 @@ export const SkillTree = ({
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
   const layout = useMemo(() => layoutRadialSkillTree(nodes), [nodes]);
+  const nextUnlocks = useMemo(() => nextUnlockIds(nodes, activeStageId), [nodes, activeStageId]);
+  const activeTitle = nodes.find((node) => node.id === activeStageId)?.title ?? null;
   const contentBounds = useMemo(
     () => paddedContentBounds(layout.bounds, layout.width, layout.height),
     [layout],
@@ -658,15 +661,42 @@ export const SkillTree = ({
           y: placed.y,
           r: (placed.ring === 0 ? 22 : 16) * starGrowOf(placed.ring === 0, labelScale) * labelScale,
           label: labelOf(placed.node),
-          extraHeight: starTag?.(placed.node) ? 12 : 0,
+          extraHeight:
+            (starTag?.(placed.node) ? 12 : 0) + (nextUnlocks.has(placed.node.id) ? 16 : 0),
         })),
         labelScale,
         placeHeadings.map(({ title, detail, x, y }) =>
           headingObstacle(title, detail, x * labelScale, y * labelScale),
         ),
       ),
-    [drawnStars, labelScale, starTag, placeHeadings],
+    [drawnStars, labelScale, starTag, placeHeadings, nextUnlocks],
   );
+  const nextUnlockPaths = useMemo(() => {
+    const activeStars = drawnStars.filter((star) => star.node.id === activeStageId);
+    return drawnStars.flatMap((target) => {
+      if (!nextUnlocks.has(target.node.id)) return [];
+      const edge = layout.edges.find(
+        (edge) =>
+          edge.toId === target.instanceId &&
+          activeStars.some((star) => star.instanceId === edge.fromId),
+      );
+      const source = activeStars.find((star) => star.instanceId === edge?.fromId) ?? activeStars[0];
+      if (!source) return [];
+      return [
+        {
+          id: target.instanceId,
+          ends: edgeEnds(
+            edge?.x1 ?? source.x,
+            edge?.y1 ?? source.y,
+            edge?.x2 ?? target.x,
+            edge?.y2 ?? target.y,
+            starRadius.get(source.instanceId) ?? 16,
+            starRadius.get(target.instanceId) ?? 16,
+          ),
+        },
+      ];
+    });
+  }, [drawnStars, activeStageId, nextUnlocks, layout.edges, starRadius]);
   const jumpTargets = useMemo(
     () => [
       {
@@ -1008,6 +1038,7 @@ export const SkillTree = ({
               onOpenStage={onOpenStage}
               renderDetail={renderDetail}
               activeInfo={activeInfo}
+              activeTitle={activeTitle}
             />
           ) : null}
         </>
@@ -1139,6 +1170,12 @@ export const SkillTree = ({
             />
           );
         })}
+        {nextUnlockPaths.map(({ id, ends }) => (
+          <g key={`next-unlock-${id}`} className="tree-next-unlock-path">
+            <line {...ends} strokeWidth={12} strokeOpacity={0.22} strokeLinecap="round" />
+            <line {...ends} strokeWidth={3} strokeDasharray="2 7" strokeLinecap="round" />
+          </g>
+        ))}
       </svg>
 
       {selectedBridge ? (
@@ -1186,6 +1223,9 @@ export const SkillTree = ({
           key={placed.instanceId}
           placed={placed}
           isActive={placed.node.id === activeStageId}
+          isNextUnlock={nextUnlocks.has(placed.node.id)}
+          activeTitle={activeTitle}
+          activeProgress={activeInfo?.progress}
           queued={queuedStageIds.includes(placed.node.id)}
           showLabel={
             (scale >= LABEL_OVERVIEW_SCALE && labelSides.get(placed.instanceId) !== "hidden") ||
@@ -1228,6 +1268,9 @@ export const SkillTree = ({
 interface StarNodeProps {
   placed: RadialNode;
   isActive: boolean;
+  isNextUnlock: boolean;
+  activeTitle: string | null;
+  activeProgress?: number;
   queued: boolean;
   /** 名前札を出すか。 */
   showLabel: boolean;
@@ -1281,6 +1324,9 @@ interface StarNodeProps {
 const StarNode = ({
   placed,
   isActive,
+  isNextUnlock,
+  activeTitle,
+  activeProgress,
   queued,
   showLabel,
   labelSide,
@@ -1336,17 +1382,16 @@ const StarNode = ({
   const spokenLabel = detail.obscured ? "まだ見えないスキル" : detail.label;
 
   const side = labelSide === "hidden" ? "below" : labelSide;
-  const k = Math.max(1, 10 / (8 * scale));
   const radius = (isCenter ? 22 : 16) * coreScale;
-  const gap = radius + 3 / scale;
+  const gap = radius + 4 / scale;
   const labelStyle: CSSProperties = {
-    width: Math.min(90, estimateStarLabelWidth(detail.label)) / (scale * k),
+    width: Math.min(140, estimateStarLabelWidth(detail.label)),
     textAlign: side === "right" ? "left" : side === "left" ? "right" : "center",
     left:
       side === "right" ? `calc(50% + ${gap}px)` : side === "left" ? `calc(50% - ${gap}px)` : "50%",
     top:
       side === "below" ? `calc(50% + ${gap}px)` : side === "above" ? `calc(50% - ${gap}px)` : "50%",
-    transform: `${side === "below" ? "translateX(-50%)" : side === "above" ? "translate(-50%, -100%)" : side === "right" ? "translateY(-50%)" : "translate(-100%, -50%)"} scale(${k})`,
+    transform: `${side === "below" ? "translateX(-50%)" : side === "above" ? "translate(-50%, -100%)" : side === "right" ? "translateY(-50%)" : "translate(-100%, -50%)"} scale(${1 / scale})`,
     transformOrigin:
       side === "below"
         ? "50% 0%"
@@ -1362,7 +1407,7 @@ const StarNode = ({
       data-testid={node.slug ? `tree-star-${node.slug}` : undefined}
       data-active={isActive}
       type="button"
-      aria-label={`${spokenLabel}（${detail.stateText}${tag ? `・${tag}` : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+      aria-label={`${spokenLabel}（${detail.stateText}${isNextUnlock ? "・次に解放" : ""}${tag ? `・${tag}` : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
       // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
       // (sm 以上では Radix が同じ属性を付けるため、こちらからは触らない —
       //  `undefined` でも鍵があると Slot の合成で上書きしてしまう。)
@@ -1456,6 +1501,17 @@ const StarNode = ({
             </span>
           ) : null}
         </span>
+        {isNextUnlock ? (
+          <svg
+            aria-hidden="true"
+            className="tree-next-unlock-ring pointer-events-none absolute overflow-visible"
+            style={{ left: "50%", top: "50%" }}
+            width={0}
+            height={0}
+          >
+            <circle r={radius + 8} fill="none" strokeWidth={2} strokeDasharray="4 4" />
+          </svg>
+        ) : null}
         {active ? (
           <span
             className="tree-current-pill pointer-events-none absolute whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold leading-none"
@@ -1477,13 +1533,14 @@ const StarNode = ({
           >
             <span
               className={cn(
-                "line-clamp-2 w-full text-[8px] leading-[1.25]",
-                isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
+                "tree-star-label-chip w-full",
+                isActive ? "tree-star-label-active" : "tree-star-label",
                 detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
               )}
             >
-              {detail.label}
+              <span className="line-clamp-2">{detail.label}</span>
             </span>
+            {isNextUnlock ? <span className="tree-next-unlock-pill">次に解放</span> : null}
             {tag ? (
               <span className="mt-0.5 rounded-full bg-card/95 px-1 py-px text-[7px] font-semibold leading-none text-ink-2 ring-1 ring-border">
                 {tag}
@@ -1566,7 +1623,13 @@ const StarNode = ({
           <>
             <div className="mt-0.5 text-[11px] text-ink-3">{detail.stateText}</div>
             {activeInfo ? <StarActiveInfo info={activeInfo} className="mt-2" /> : null}
-            <StarBody detail={detail} size="sm" className="mt-2" />
+            <StarBody
+              detail={detail}
+              size="sm"
+              className="mt-2"
+              activeTitle={activeTitle}
+              activeProgress={activeProgress}
+            />
 
             {hasStarActions(detail.actions) ? (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1598,6 +1661,7 @@ interface StarSheetProps {
    */
   placed: RadialNode | null;
   activeStageId: string | null;
+  activeTitle: string | null;
   queuedStageIds: string[];
   revealDev: boolean;
   /** 閉じたときにフォーカスを戻す星。 */
@@ -1623,6 +1687,7 @@ interface StarSheetProps {
 const StarSheet = ({
   placed,
   activeStageId,
+  activeTitle,
   queuedStageIds,
   revealDev,
   anchorRef,
@@ -1732,7 +1797,12 @@ const StarSheet = ({
               {isActive && activeInfo ? (
                 <StarActiveInfo info={activeInfo} className="mb-3" />
               ) : null}
-              <StarBody detail={detail} size="md" />
+              <StarBody
+                detail={detail}
+                size="md"
+                activeTitle={activeTitle}
+                activeProgress={activeInfo?.progress}
+              />
             </div>
 
             {hasStarActions(detail.actions) ? (
@@ -1775,8 +1845,12 @@ const StarBody = ({
   detail,
   size,
   className,
+  activeTitle,
+  activeProgress,
 }: {
   detail: StarDetail;
+  activeTitle: string | null;
+  activeProgress?: number;
   /** `md` はドロワー (スマホで読む文字)、`sm` はポップオーバー。 */
   size: "sm" | "md";
   className?: string;
@@ -1793,8 +1867,23 @@ const StarBody = ({
   if (body.kind === "lock") {
     return (
       <div className={cn(text, "text-ink-3", className)}>
-        <div className="font-semibold text-ink-2">解放条件</div>
-        <div className="mt-0.5">{body.text}</div>
+        {body.reasons.length > 0 ? (
+          <>
+            <div className="font-bold text-ink-2">解放まであと {body.reasons.length} つ</div>
+            <ul className="mt-0.5 space-y-1">
+              {body.reasons.map((reason) => (
+                <li key={reason}>
+                  {reason}
+                  {reason === activeTitle && activeProgress !== undefined
+                    ? `（いま ${Math.max(0, Math.min(100, activeProgress))}%）`
+                    : ""}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <div>{body.text}</div>
+        )}
       </div>
     );
   }

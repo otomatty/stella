@@ -23,7 +23,7 @@ export type StarDetailBody =
   /** 霧より先の星の予告文 (中身は語らない)。 */
   | { kind: "fog" }
   /** ロック星に出してよいのは解放条件だけ。 */
-  | { kind: "lock"; text: string }
+  | { kind: "lock"; text: string; reasons: string[] }
   /** 「このスキルを身につけた人は …」。 */
   | { kind: "can-do"; text: string }
   | { kind: "none" };
@@ -104,6 +104,7 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
     : locked
       ? {
           kind: "lock",
+          reasons,
           text:
             reasons.length > 0
               ? `${reasons.join(" / ")} をクリアすると開きます`

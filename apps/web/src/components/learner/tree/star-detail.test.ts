@@ -63,6 +63,7 @@ describe("describeStar の本文", () => {
   it("ロック星には解放条件だけを出す", () => {
     expect(describe1({ state: "locked", lock_reasons: ["ITのきほん", "Git 入門"] }).body).toEqual({
       kind: "lock",
+      reasons: ["ITのきほん", "Git 入門"],
       text: "ITのきほん / Git 入門 をクリアすると開きます",
     });
   });
@@ -70,6 +71,7 @@ describe("describeStar の本文", () => {
   it("解放条件の名前が無ければ一般文に落ちる", () => {
     expect(describe1({ state: "locked" }).body).toEqual({
       kind: "lock",
+      reasons: [],
       text: "前提のステージをクリアすると開きます",
     });
   });

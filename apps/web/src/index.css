@@ -1062,15 +1062,55 @@
   -webkit-mask-source-type: alpha;
 }
 
+.tree-star-label-chip {
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: rgb(255 255 255 / 0.9);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dark .tree-star-label-chip {
+  background: rgba(10, 12, 22, 0.72);
+}
+
+.tree-next-unlock-path,
+.tree-next-unlock-ring {
+  stroke: #5749db;
+}
+
+.dark .tree-next-unlock-path,
+.dark .tree-next-unlock-ring {
+  stroke: #c4b5fd;
+}
+
+.tree-next-unlock-pill {
+  height: 16px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: rgb(87 73 219 / 0.12);
+  color: #4335c6;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.dark .tree-next-unlock-pill {
+  background: rgb(167 139 250 / 0.22);
+  color: #ddd6fe;
+}
+
 .tree-star-label {
   color: var(--ink-2);
 }
 
 .dark .tree-star-label {
-  color: rgba(228, 232, 248, 0.82);
+  color: rgba(228, 232, 248, 0.9);
 }
 
 .tree-star-label-active {
+  font-weight: 700;
   color: var(--ink);
 }
 
