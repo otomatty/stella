@@ -8,6 +8,7 @@ interface LabelStar {
   r: number;
   label: string;
   extraHeight?: number;
+  blockedSides?: StarLabelSide[];
 }
 
 interface Rect {
@@ -62,6 +63,7 @@ export function placeStarLabels(
     ] as const;
     result.set(star.id, "hidden");
     for (const [side, rect] of candidates) {
+      if (star.blockedSides?.includes(side)) continue;
       if (
         cores.some((core) => overlaps(rect, core)) ||
         placed.some((label) => overlaps(rect, label)) ||

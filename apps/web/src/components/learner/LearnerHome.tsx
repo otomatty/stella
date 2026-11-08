@@ -27,10 +27,12 @@
  */
 
 import { useFirstSteps } from "@/hooks/useFirstSteps";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+
+import { nebulaCaption } from "@/components/learner/tree/nebula-caption";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -134,6 +136,7 @@ export const LearnerHome = ({
   const revealDev = revealsDevMap(devModeRequested, skillMap.map?.dev_mode);
 
   const nodes = skillMap.map?.stages ?? [];
+  const islandCaption = useCallback((key: string) => nebulaCaption(key, nodes), [nodes]);
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const stageById = useMemo(() => {
     const map = new Map(stages.map((s) => [s.id, s]));
@@ -485,6 +488,7 @@ export const LearnerHome = ({
         ) : (
           <SkillTree
             nodes={nodes}
+            islandCaption={islandCaption}
             currentUserId={currentUserId}
             activeStageId={serverActiveStageId}
             queuedStageIds={stageQueue.queue}

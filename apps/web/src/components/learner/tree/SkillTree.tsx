@@ -27,7 +27,7 @@
  * 星は `<button>` にして、キーボードでも到達できるようにする (SVG の図形に
  * `tabindex` を付けるより素直で、Popover のアンカーにもそのまま使える)。前提の線
  * だけを背後の SVG に敷き、座標は `radial-layout.ts` の決定的な計算に任せる。
- * 島の名前は星団の上のタイトルとジャンプチップ・端の矢印で示す。島の範囲は角の丸い枠。
+ * 島の名前は星団の上のタイトルとジャンプチップ・端の矢印で示す。島の範囲はルート色の光の雲。
  *
  * ## 詳細の器は幅で入れ替える
  *
@@ -60,7 +60,15 @@
  * すべて止まる。
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -167,7 +175,7 @@ interface SkillTreeProps {
    */
   celebrate?: boolean;
   /**
-   * 島タイトルの 2 行目に ` · ` で足す文言。null か空なら「n ステージ」だけ。
+   * 島タイトルの 2 行目に ` · ` で足す文言。null か空なら「星雲 · n ステージ」だけ。
    */
   islandCaption?: (key: string) => string | null;
   /** 本土の見出し。既定は「開発スキル」。 */
@@ -638,7 +646,9 @@ export const SkillTree = ({
         : []),
       ...islandFrames.map(({ island, frame, count }) => ({
         title: island.key,
-        detail: showPlaceDetails ? stageCountLine(count, islandCaption?.(island.key)) : null,
+        detail: showPlaceDetails
+          ? `星雲 · ${stageCountLine(count, islandCaption?.(island.key))}`
+          : null,
         x: (frame.minX + frame.maxX) / 2,
         y: frame.minY,
       })),
@@ -652,25 +662,41 @@ export const SkillTree = ({
       showPlaceDetails,
     ],
   );
-  const labelSides = useMemo(
-    () =>
-      placeStarLabels(
-        drawnStars.map((placed) => ({
-          id: placed.instanceId,
-          x: placed.x,
-          y: placed.y,
-          r: (placed.ring === 0 ? 22 : 16) * starGrowOf(placed.ring === 0, labelScale) * labelScale,
-          label: labelOf(placed.node),
-          extraHeight:
-            (starTag?.(placed.node) ? 12 : 0) + (nextUnlocks.has(placed.node.id) ? 16 : 0),
-        })),
-        labelScale,
-        placeHeadings.map(({ title, detail, x, y }) =>
-          headingObstacle(title, detail, x * labelScale, y * labelScale),
-        ),
+  const labelSides = useMemo(() => {
+    const stars = drawnStars.map((placed) => ({
+      id: placed.instanceId,
+      x: placed.x,
+      y: placed.y,
+      r: (placed.ring === 0 ? 22 : 16) * starGrowOf(placed.ring === 0, labelScale) * labelScale,
+      label: labelOf(placed.node),
+      extraHeight: (starTag?.(placed.node) ? 12 : 0) + (nextUnlocks.has(placed.node.id) ? 16 : 0),
+      blockedSides:
+        placed.node.id === activeStageId &&
+        placed.node.state !== "cleared" &&
+        placed.node.visibility === "full"
+          ? (["above"] as StarLabelSide[])
+          : [],
+    }));
+    const obstacles = [
+      ...placeHeadings.map(({ title, detail, x, y }) =>
+        headingObstacle(title, detail, x * labelScale, y * labelScale),
       ),
-    [drawnStars, labelScale, starTag, placeHeadings, nextUnlocks],
-  );
+      ...stars.flatMap((star, index) => {
+        if (!star.blockedSides.includes("above")) return [];
+        const coreScale = starGrowOf(drawnStars[index].ring === 0, labelScale);
+        // 「いまここ」の下端は核の縁 + 8px (核と同じ拡大率) + 6px (画面上)。
+        return [
+          {
+            x: star.x * labelScale - 50,
+            y: star.y * labelScale - star.r - 8 * coreScale * labelScale - 6 - 24,
+            w: 100,
+            h: 24,
+          },
+        ];
+      }),
+    ];
+    return placeStarLabels(stars, labelScale, obstacles);
+  }, [drawnStars, labelScale, starTag, placeHeadings, nextUnlocks, activeStageId]);
   const nextUnlockPaths = useMemo(() => {
     const activeStars = drawnStars.filter((star) => star.node.id === activeStageId);
     return drawnStars.flatMap((target) => {
@@ -915,24 +941,38 @@ export const SkillTree = ({
 
   const chips =
     showIslandChips && visibleIslands.length > 0 ? (
-      <nav className="flex flex-wrap justify-end gap-1" aria-label="島へ移動">
-        {jumpTargets.map((target) => {
+      <nav className="flex flex-wrap justify-end gap-1" aria-label="星雲へ移動">
+        {jumpTargets.map((target, index) => {
           const accent = routeAccentOf(target.key);
           return (
-            <Button
-              key={target.key}
-              size="sm"
-              variant="outline"
-              className="tree-zoom-btn h-6 gap-1.5 px-2 text-[10.5px]"
-              onClick={() => jumpTo(target.x, target.y)}
-            >
-              <span
-                aria-hidden="true"
-                className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{ background: accent ? `rgb(${accent})` : "rgb(230 232 245 / 0.7)" }}
-              />
-              {target.key}
-            </Button>
+            <Fragment key={target.key}>
+              {index === 1 ? (
+                <span className="self-center px-1 text-[11px] font-bold text-ink-2">星雲</span>
+              ) : null}
+              <Button
+                size="sm"
+                variant="outline"
+                className="tree-zoom-btn h-6 gap-1.5 px-2 text-[10.5px]"
+                onClick={() => jumpTo(target.x, target.y)}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "inline-block rounded-full",
+                    index === 0 ? "h-1.5 w-1.5" : "h-2.5 w-2.5",
+                  )}
+                  style={{
+                    background:
+                      index === 0
+                        ? accent
+                          ? `rgb(${accent})`
+                          : "rgb(230 232 245 / 0.7)"
+                        : `radial-gradient(circle, rgb(${islandAccentOf(target.key)}) 0%, rgb(${islandAccentOf(target.key)} / 0.2) 70%)`,
+                  }}
+                />
+                {target.key}
+              </Button>
+            </Fragment>
           );
         })}
       </nav>
@@ -969,6 +1009,16 @@ export const SkillTree = ({
                   {label}
                 </span>
               ))}
+              {visibleIslands.length > 0 ? (
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  <span
+                    className="tree-nebula h-3 w-6"
+                    style={{ "--nebula": "139 92 246" } as CSSProperties}
+                    aria-hidden="true"
+                  />
+                  星雲
+                </span>
+              ) : null}
             </aside>
           ) : null}
           {sectorLabels.map((label) => {
@@ -1051,21 +1101,22 @@ export const SkillTree = ({
           <div
             key={`island-frame-${island.key}`}
             aria-hidden="true"
-            className="pointer-events-none absolute"
-            style={{
-              left: frame.minX,
-              top: frame.minY,
-              width,
-              height,
-              boxSizing: "border-box",
-              borderRadius: Math.min(width, height) / 2,
-              background: `rgb(${accent} / ${selectedIslandKey === island.key ? 0.13 : 0.07})`,
-              border:
-                selectedIslandKey === island.key
-                  ? `1.5px solid rgb(${accent} / 0.75)`
-                  : `1px dashed rgb(${accent} / 0.32)`,
-            }}
-          />
+            className="tree-nebula pointer-events-none absolute"
+            data-selected={selectedIslandKey === island.key}
+            style={
+              {
+                left: frame.minX - 20,
+                top: frame.minY - 20,
+                width: width + 40,
+                height: height + 40,
+                "--nebula": accent,
+              } as CSSProperties
+            }
+          >
+            <span className="tree-nebula-spark" style={{ left: "22%", top: "68%" }} />
+            <span className="tree-nebula-spark" style={{ left: "62%", top: "26%" }} />
+            <span className="tree-nebula-spark" style={{ left: "80%", top: "60%" }} />
+          </div>
         );
       })}
       <svg
@@ -1198,7 +1249,7 @@ export const SkillTree = ({
           title={island.key}
           selected={selectedIslandKey === island.key}
           onSelect={onSelectIsland ? () => onSelectIsland(island.key) : undefined}
-          detail={stageCountLine(count, islandCaption?.(island.key))}
+          detail={`星雲 · ${stageCountLine(count, islandCaption?.(island.key))}`}
           left={(frame.minX + frame.maxX) / 2}
           top={frame.minY}
           scale={scale}

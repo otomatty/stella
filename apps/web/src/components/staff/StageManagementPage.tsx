@@ -353,7 +353,7 @@ export function StageManagementPage({
                           onClick={() => focusRegion(route.key)}
                         />
                       ))}
-                      <h3 className="mb-1 mt-3 text-[11px] text-ink-3">島 · Extra</h3>
+                      <h3 className="mb-1 mt-3 text-[11px] text-ink-3">星雲 · Extra</h3>
                       {contents.islands.map((island) => (
                         <ContentsRow
                           key={island.key}
@@ -600,7 +600,7 @@ function StaffIslandDetail({
       <div className="flex flex-wrap items-center gap-2">
         <RouteDot routeKey={island.key} />
         <h2 className="text-[15px] font-semibold">{island.key}</h2>
-        {island.allExtra ? <Badge variant="accent">島 · Extra</Badge> : null}
+        {island.allExtra ? <Badge variant="accent">星雲 · Extra</Badge> : null}
       </div>
       <dl className="space-y-3 text-[12px]">
         <div>
@@ -625,7 +625,7 @@ function StaffIslandDetail({
         </div>
         {island.next.length > 0 ? (
           <div>
-            <dt className="text-ink-4">この島の先</dt>
+            <dt className="text-ink-4">この星雲の先</dt>
             <dd>
               {island.next.map((next) => (
                 <button
@@ -646,7 +646,7 @@ function StaffIslandDetail({
           </div>
         ) : null}
       </dl>
-      <section aria-label="島のステージ">
+      <section aria-label="星雲のステージ">
         <h3 className="text-[12px] font-semibold">
           ステージ <span className="font-normal text-ink-4">{island.count}</span>
         </h3>

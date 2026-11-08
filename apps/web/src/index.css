@@ -833,6 +833,56 @@
   letter-spacing: 0.04em;
 }
 
+/* 星雲は境界のない光の雲。選択中だけ外周を示す。 */
+.tree-nebula {
+  --nebula-a1: 0.3;
+  --nebula-a2: 0.22;
+  --nebula-a3: 0.22;
+  --nebula-strength: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 34% 42% at 34% 42%,
+      rgb(var(--nebula) / calc(var(--nebula-a1) * var(--nebula-strength))),
+      rgb(var(--nebula) / 0) 100%
+    ),
+    radial-gradient(
+      ellipse 30% 38% at 66% 62%,
+      rgb(var(--nebula) / calc(var(--nebula-a2) * var(--nebula-strength))),
+      rgb(var(--nebula) / 0) 100%
+    ),
+    radial-gradient(
+      ellipse 50% 50% at 50% 52%,
+      rgb(var(--nebula) / calc(var(--nebula-a3) * var(--nebula-strength))),
+      rgb(var(--nebula) / 0) 100%
+    );
+}
+
+.dark .tree-nebula {
+  --nebula-a1: 0.42;
+  --nebula-a2: 0.3;
+  --nebula-a3: 0.3;
+}
+
+.tree-nebula[data-selected="true"] {
+  --nebula-strength: 1.4;
+  outline: 1.5px solid rgb(var(--nebula) / 0.6);
+}
+
+.tree-nebula-spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgb(var(--nebula) / 0.55);
+}
+
+.dark .tree-nebula-spark {
+  background: white;
+  box-shadow: 0 0 6px white;
+}
+
 .tree-edge-lit {
   stroke: var(--brand);
   stroke-width: 2.6;
