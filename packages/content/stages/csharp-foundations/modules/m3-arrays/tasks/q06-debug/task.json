@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m3-arrays/q06-debug",
+  "title": "配列の誤りを直す",
+  "problems": [
+    {
+      "id": "r1-max",
+      "title": "配列の最大"
+    },
+    {
+      "id": "r2-count",
+      "title": "k以上の個数"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-array-repair",
+  "skills": {
+    "uses": [
+      "csharp-array-sum",
+      "csharp-array-count"
+    ],
+    "assesses": [
+      "csharp-array-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

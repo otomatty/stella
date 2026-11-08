@@ -1,0 +1,18 @@
+// Q04 K番目
+// N個の整数を小さい順に並べたときのK番目の値を表示する。Kは1始まり。同じ値もそれぞれ一つとして数える。入力は1行目N K、2行目N個の整数。1≦K≦N≦20、値は-100〜100。並べ替えた後の位置と、入力時の位置を区別する。
+// 例: 4 1 / 9 0 3 8 → 0
+
+public static partial class Answers
+{
+    public static void Q04Kth()
+    {
+        string[] header = Console.ReadLine().Split();
+        int n = int.Parse(header[0]);
+        int k = int.Parse(header[1]);
+        string[] parts = Console.ReadLine().Split();
+        int[] b = new int[n];
+        for (int i = 0; i < n; i++) b[i] = int.Parse(parts[i]);
+        Array.Sort(b);
+        Console.WriteLine(b[k - 1]);
+    }
+}

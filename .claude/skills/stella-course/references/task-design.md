@@ -41,6 +41,29 @@
 
 ヒントは `hints.md` の段に書きます。段の順は「方針 → 手がかりのコード」で、解答そのものは書きません。支援の記録 (自力、ヒントあり、解答参照) は STELLA が開いた事実から取ります。教材に自己申告の欄を足さないでください。
 
+## 問題つきの課題
+
+同じ書き方の問題を 1 つの課題にまとめ、1 問ずつ確認・提出するときに `problems` を書きます。課題は配布・修了の単位のまま、問題が確認と提出の単位です。確認 A・B は今までどおり 1 問 1 課題にし、`problems` で 1 つの課題にまとめないでください。
+
+`task.json` に次を書きます。パスは書きません。`id` からファイルが決まります。
+
+```json
+{
+  "problems": [
+    { "id": "q01-add-tax", "title": "税込価格を返す" },
+    { "id": "q02-split-bill", "title": "割り勘" }
+  ]
+}
+```
+
+- `id` は英小文字・数字で始め、英小文字・数字・ハイフンだけ。課題の中で重複しない
+- `title` は空でない文字列
+- 書ける runner は vitest・typescript・dotnet だけ (`node-test`・`ts-test`・`dotnet-test` など、その手順のもの)
+- vitest・typescript のファイルは `src/<id>.ts` と `tests/<id>.test.ts`
+- dotnet のファイルは `src/<id>.cs` と `tests/<id>.test.cs`。書き方は `references/csharp.md`
+- `review` は書かなくてよい。`submit.explanation` と `submit.debuggingRecord` は `false`
+- AI の一次レビューは通さない。問題が全部そろった提出を、テストの合否として合格にする。合否は手元の申告で、サーバーはコードを実行しない
+
 ## 1 課題のファイル
 
 ```text

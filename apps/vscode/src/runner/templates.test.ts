@@ -412,7 +412,14 @@ describe("C# のテンプレート (dotnet-test)", () => {
     const compile = [...csproj.matchAll(/<Compile\s+Include="([^"]+)"\s*\/>/g)].map(
       (match) => match[1],
     );
-    expect(compile).toEqual(["src/**/*.cs", "tests/**/*.cs"]);
+    expect(compile).toEqual([
+      "src/**/*.cs",
+      "tests/**/*.cs",
+      "src/$(StellaProblem).cs",
+      "tests/$(StellaProblem).test.cs",
+    ]);
+    expect(csproj).toContain('<Compile Remove="tests/**/*.test.cs" />');
+    expect(csproj).toContain('<Compile Remove="tests/*Tests.cs" />');
     expect((await readTaskFields(runner)).submit.files).toEqual(["src/**/*.cs"]);
   });
 
@@ -500,6 +507,78 @@ describe("C# のテンプレート (dotnet-test)", () => {
       } finally {
         // Windows では dotnet test のあと testhost.exe が少しの間ロックされ、削除が EPERM になる。
         await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+      }
+    },
+    300_000,
+  );
+
+  it.runIf(live.run)(
+    "壊れた別の問題があっても、指定した問題の build と test は通る",
+    async () => {
+      if (live.command === null) throw new Error(live.reason);
+      const dir = await mkdtemp(path.join(tmpdir(), "stella-dotnet-problem-"));
+      try {
+        await cp(path.join(TEMPLATES_DIR, runner, "starter"), dir, { recursive: true });
+        await cp(path.join(TEMPLATES_DIR, runner, "tests"), path.join(dir, "tests"), {
+          recursive: true,
+        });
+        await writeFile(
+          path.join(dir, "src", "a.cs"),
+          "public static class ProblemA { public static int Broken( => 1 }\n",
+        );
+        await writeFile(
+          path.join(dir, "src", "b.cs"),
+          "public static class ProblemB { public static int Double(int n) => n * 2; }\n",
+        );
+        await writeFile(
+          path.join(dir, "tests", "b.test.cs"),
+          [
+            "public class ProblemBTests {",
+            "    [Fact]",
+            "    public void Doubles() { Assert.Equal(4, ProblemB.Double(2)); }",
+            "}",
+            "",
+          ].join("\n"),
+        );
+        await mkdir(path.join(dir, ".stella"), { recursive: true });
+        const manifest = await templateManifest(runner, {
+          problems: [
+            { id: "a", title: "壊れている" },
+            { id: "b", title: "通る" },
+          ],
+        });
+        await writeFile(
+          path.join(dir, ".stella", "task.json"),
+          `${JSON.stringify(manifest, null, 2)}\n`,
+        );
+        const loaded = await loadTask(dir);
+        if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+        const run = (problem?: string) =>
+          runTask({
+            root: loaded.root,
+            manifest: loaded.manifest,
+            manifestSha256: loaded.manifestSha256,
+            ...(problem ? { problem } : {}),
+          });
+        const whole = await run();
+        expect(whole.steps.find((step) => step.id === "build")?.status).toBe("failed");
+        expect(whole).not.toHaveProperty("problemId");
+        const focused = await run("b");
+        expect(focused.problemId).toBe("b");
+        expect(
+          focused.steps
+            .filter((step) => step.id === "build" || step.id === "test")
+            .map((step) => [step.id, step.status]),
+        ).toEqual([
+          ["build", "passed"],
+          ["test", "passed"],
+        ]);
+        expect(focused.files.map((file) => file.path)).toEqual(["src/b.cs"]);
+        expect(focused.protected.map((file) => file.path)).toEqual(
+          expect.arrayContaining(["tests/b.test.cs", "tests/AnswersTests.cs"]),
+        );
+      } finally {
+        await rm(dir, { recursive: true, force: true });
       }
     },
     300_000,

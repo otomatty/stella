@@ -3,6 +3,7 @@ import type { TaskBundle } from "./catalog.js";
 import { type CiRunCheck, parseCiRunClaim } from "./ci-run.js";
 import { normalizeForHash } from "./hash.js";
 import { isSafeRelativePattern } from "./manifest.js";
+import { isProblemId, problemFiles } from "./problems.js";
 import {
   canSubmit,
   decideOutcome,
@@ -21,6 +22,8 @@ export const SUBMISSION_LIMITS = {
   totalBytes: 5 * 1024 * 1024,
   metadataBytes: 1024 * 1024,
 };
+/** 問題つきの課題の、1 問のソースの上限。超えたら照合の理由にする。 */
+const PROBLEM_FILE_BYTES = 64 * 1024;
 export interface SupportEvent {
   kind: (typeof SUPPORT_KINDS)[number];
   at: string;
@@ -37,6 +40,8 @@ export interface TaskSubmissionInput {
   taskId: string;
   contentHash: string;
   mode: "submit" | "consult";
+  /** 問題つきの課題で提出する問題。問題の無い課題では省略する。 */
+  problemId?: string;
   files: { path: string; content: string }[];
   localResult: RunResult;
   protected: HashedFile[];
@@ -100,6 +105,7 @@ export function isRunResult(v: unknown): v is RunResult {
     (v.taskContentHash === undefined ||
       (typeof v.taskContentHash === "string" && HASH_RE.test(v.taskContentHash))) &&
     (v.ci === undefined || parseCiRunClaim(v.ci) !== null) &&
+    (v.problemId === undefined || typeof v.problemId === "string") &&
     hashedFiles(v.files) &&
     hashedFiles(v.protected) &&
     Array.isArray(v.steps) &&
@@ -147,6 +153,7 @@ export function parseTaskSubmission(v: unknown): TaskSubmissionInput {
     typeof v.contentHash !== "string" ||
     !HASH_RE.test(v.contentHash) ||
     !["submit", "consult"].includes(String(v.mode)) ||
+    (v.problemId !== undefined && (typeof v.problemId !== "string" || !isProblemId(v.problemId))) ||
     !isRunResult(v.localResult) ||
     !hashedFiles(v.protected) ||
     !isSupportLog(v.support) ||
@@ -198,6 +205,30 @@ function sameHashes(a: HashedFile[], b: HashedFile[]): boolean {
     a.every((f) => b.some((g) => g.path === f.path && g.sha256 === f.sha256))
   );
 }
+
+/** 問題の提出は、その問題のソース 1 ファイルだけを見る。問題の無い課題の判定は変えない。 */
+function problemFileReasons(
+  input: TaskSubmissionInput,
+  manifest: TaskBundle["manifest"],
+  files: { path: string; bytes: number }[],
+): string[] {
+  const problemId = input.problemId;
+  if (!problemId) return [];
+  const plan = RUNNERS[manifest.runner].plan;
+  const listed = manifest.problems?.some((problem) => problem.id === problemId) ?? false;
+  const paths = problemFiles(plan, problemId);
+  if (!listed || !paths) return ["問題の ID が一覧にありません"];
+  const reasons: string[] = [];
+  if (input.localResult.problemId !== problemId)
+    reasons.push("実行結果の問題と提出の問題が一致しません");
+  if (!files.some((file) => file.path === paths.source))
+    reasons.push("提出するファイルが不足しています");
+  if (files.length !== 1 || files.some((file) => file.path !== paths.source))
+    reasons.push("提出するのはその問題のファイル 1 つだけです");
+  const source = files.find((file) => file.path === paths.source);
+  if (source && source.bytes > PROBLEM_FILE_BYTES) reasons.push("1 問のファイルは 64KiB までです");
+  return reasons;
+}
 export async function verifyTaskSubmission(
   input: TaskSubmissionInput,
   bundle: TaskBundle,
@@ -232,7 +263,8 @@ export async function verifyTaskSubmission(
     files.some((f) => input.localResult.files.find((g) => g.path === f.path)?.bytes !== f.bytes)
   )
     reasons.push("実行したファイルと提出ファイルが一致しません");
-  if (manifest.submit.files.some((p) => !files.some((f) => matchesPattern(f.path, [p]))))
+  if (input.problemId) reasons.push(...problemFileReasons(input, manifest, files));
+  else if (manifest.submit.files.some((p) => !files.some((f) => matchesPattern(f.path, [p]))))
     reasons.push("提出するファイルが不足しています");
   const expectedProtected: HashedFile[] = [];
   for (const [path, encoded] of Object.entries(bundle.files)) {

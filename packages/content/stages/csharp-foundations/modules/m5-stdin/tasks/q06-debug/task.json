@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m5-stdin/q06-debug",
+  "title": "読む回数と足し方を直す",
+  "problems": [
+    {
+      "id": "r1-sum-lines",
+      "title": "行の合計"
+    },
+    {
+      "id": "r2-sum-parts",
+      "title": "1行の合計"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-stdin-repair",
+  "skills": {
+    "uses": [
+      "csharp-stdin-one",
+      "csharp-stdin-count"
+    ],
+    "assesses": [
+      "csharp-stdin-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

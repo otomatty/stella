@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m4-strings/q03-substring",
+  "title": "部分文字列",
+  "problems": [
+    {
+      "id": "q21-print-ymd",
+      "title": "年・月・日"
+    },
+    {
+      "id": "q22-head-n",
+      "title": "先頭 N 文字"
+    },
+    {
+      "id": "q23-tail-n",
+      "title": "末尾 N 文字"
+    },
+    {
+      "id": "q24-print-left2-right2",
+      "title": "左2・右2"
+    },
+    {
+      "id": "q25-middle2",
+      "title": "真ん中2文字"
+    },
+    {
+      "id": "q26-year-of",
+      "title": "年の4文字"
+    },
+    {
+      "id": "q27-month-of",
+      "title": "月"
+    },
+    {
+      "id": "q28-day-of",
+      "title": "日"
+    },
+    {
+      "id": "q29-print-3x3",
+      "title": "3文字ずつ"
+    },
+    {
+      "id": "q30-without-first",
+      "title": "先頭を除く"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-string-slice",
+  "skills": {
+    "uses": [
+      "csharp-string-slice"
+    ],
+    "assesses": [
+      "csharp-string-slice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

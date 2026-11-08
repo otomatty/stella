@@ -1,0 +1,12 @@
+// 08-q03 fetch ドリル
+//
+// 教材: https://typescriptbook.jp/reference/asynchronous/await
+//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+
+export const API = "https://api.example.com";
+
+// 問2
+export async function isOk(url: string): Promise<boolean> {
+  const res = await fetch(url);
+  return res.ok;
+}

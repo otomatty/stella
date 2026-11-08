@@ -1,0 +1,12 @@
+// 確認C
+// 入力は1行目 N、続く N 行に整数 a と b。各行の差の絶対値を1行ずつ表示する。0≦N≦20、a,b は -100〜100。
+// 例: 2 / 2 7 / 8 1→5 / 7
+
+public static partial class Answers
+{
+    public static void CheckCAbsDiff()
+    {
+        // ここに書く
+        throw new NotImplementedException();
+    }
+}

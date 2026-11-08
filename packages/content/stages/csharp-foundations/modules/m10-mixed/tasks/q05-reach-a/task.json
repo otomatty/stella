@@ -1,0 +1,57 @@
+{
+  "id": "csharp-foundations/m10-mixed/q05-reach-a",
+  "title": "到達確認A 残金と組と名前",
+  "problems": [
+    {
+      "id": "ca-skipped",
+      "title": "飛ばした件数"
+    },
+    {
+      "id": "ca-pairs-over",
+      "title": "大きい組"
+    },
+    {
+      "id": "ca-name-total",
+      "title": "名前の合計"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-mix-reach-a",
+  "skills": {
+    "uses": [
+      "csharp-mix-plan",
+      "csharp-mix-after",
+      "csharp-mix-all"
+    ],
+    "assesses": [
+      "csharp-mix-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

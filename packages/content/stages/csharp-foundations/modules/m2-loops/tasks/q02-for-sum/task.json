@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m2-loops/q02-for-sum",
+  "title": "for で集計する",
+  "problems": [
+    {
+      "id": "q11-sum-to",
+      "title": "1から N の合計"
+    },
+    {
+      "id": "q12-sum-evens",
+      "title": "1から N の偶数の合計"
+    },
+    {
+      "id": "q13-sum-odds",
+      "title": "1から N の奇数の合計"
+    },
+    {
+      "id": "q14-product-to",
+      "title": "1から N の積"
+    },
+    {
+      "id": "q15-sum-squares",
+      "title": "1から N の平方の合計"
+    },
+    {
+      "id": "q16-count-threes",
+      "title": "1から N のうち3の倍数の個数"
+    },
+    {
+      "id": "q17-sum-range",
+      "title": "Aから B の合計"
+    },
+    {
+      "id": "q18-repeat-add",
+      "title": "Nを N 回足す"
+    },
+    {
+      "id": "q19-count-greater",
+      "title": "1から N のうち K より大きい個数"
+    },
+    {
+      "id": "q20-sum-fours",
+      "title": "1から N の4の倍数の合計"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-for-fold",
+  "skills": {
+    "uses": [
+      "csharp-for-aggregate"
+    ],
+    "assesses": [
+      "csharp-for-aggregate"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 45,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -197,6 +197,51 @@ describe("buildTaskGuideHtml", () => {
     expect(commandArgs(html, "stella.openTaskFile")).toHaveLength(10);
   });
 
+  it("問題の無い課題では問題の一覧も件数も出さない", () => {
+    const html = buildTaskGuideHtml(guide());
+    expect(html).not.toContain("1問確認する");
+    expect(html).not.toContain("問");
+    expect(html).toContain("実装した内容を短く説明します");
+  });
+
+  it("問題つきの課題は一覧と件数を出し、確認して提出して次へ進む", () => {
+    const input = guide({
+      manifest: {
+        ...staticManifest,
+        runner: "ts-test",
+        problems: [
+          { id: "q01-add", title: "足す" },
+          { id: "q02-sub", title: "引く" },
+        ],
+        submit: { files: ["src/**/*.ts"] },
+      },
+      problems: [
+        { id: "q01-add", title: "足す", source: "src/q01-add.ts", status: "submitted" },
+        { id: "q02-sub", title: "引く", source: "src/q02-sub.ts", status: "local-passed" },
+        { id: "q03-mod", title: "余り", source: "src/q03-mod.ts", status: "not-submitted" },
+      ],
+    });
+    const html = buildTaskGuideHtml(input);
+    expect(html).toContain("1/3 問");
+    expect(html).toContain("提出済み");
+    expect(html).toContain("手元で合格");
+    expect(html).toContain("未提出");
+    expect(html).toContain("1問確認する");
+    expect(html).toContain("次の問題へ");
+    expect(html).toContain("いまここ");
+    expect(html).toContain("提出する");
+    expect(html).not.toContain("説明");
+    expect(html).not.toContain("修正記録");
+    expect(html).not.toContain("ファイルを編集して保存する");
+    expect(commandArgs(html, "stella.openTaskFile")).toEqual([
+      [input.root, "src/q01-add.ts"],
+      [input.root, "src/q02-sub.ts"],
+      [input.root, "src/q03-mod.ts"],
+    ]);
+    const current = /<li class="step current"><h3>([^<]+)/.exec(html)?.[1]?.trim();
+    expect(current).toBe("提出する");
+  });
+
   it("ヒントの無い種別では「レビューの結果」とだけ出す", () => {
     const html = buildTaskGuideHtml(
       guide({ manifest: { ...staticManifest, kind: "assessment-b" } }),

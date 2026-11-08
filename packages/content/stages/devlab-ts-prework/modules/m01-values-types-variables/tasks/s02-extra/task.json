@@ -11,33 +11,22 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "e01-bigint",
+      "title": "bigint型（発展問題）"
+    },
+    {
+      "id": "e02-decimal",
+      "title": "小数の計算の誤差（発展問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,

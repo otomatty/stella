@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m3-arrays@1",
+  "contentHash": "7b60cbec63ae4f8ee4cdd8a6a3dd801c6a2eeaf60a6da4248f2e7d78a358b2a6",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-arrays/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "配列、for、if、Console.WriteLine の説明と、順に出す・集計する・個数の参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-arrays/knowledge.md",
+      "sourceRefs": ["SRC-mslearn-csharp-arrays-20261106", "SRC-mslearn-csharp-for-20261104"],
+      "usedFor": "要素数は Length、合計の箱はループの外、個数は 1 を足す、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-arrays/t1-scan/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-arrays-20261106", "SRC-mslearn-csharp-for-20261104"],
+      "usedFor": "配列を Length 回見て、要素を 1 行ずつ出す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-arrays/t2-sum/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-arrays-20261106", "SRC-mslearn-csharp-for-20261104"],
+      "usedFor": "添字の要素をループの外の変数に足して返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-arrays/t3-count/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-arrays-20261106", "SRC-mslearn-csharp-if-20261104"],
+      "usedFor": "条件に合う要素だけ個数を 1 増やす説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-print-array/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。配列を順に出す Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-sum-array/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。配列を集計する Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-count-array/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。条件を満たす個数の Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connection/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。配列の偶数を数える接続練習",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。配列の処理を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。配列の初期値と足す対象を直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。k 未満の合計と件数",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。最後に現れる位置",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

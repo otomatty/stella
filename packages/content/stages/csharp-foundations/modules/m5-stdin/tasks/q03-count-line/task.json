@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m5-stdin/q03-count-line",
+  "title": "先頭の件数だけ読む",
+  "problems": [
+    {
+      "id": "q21-sum-of",
+      "title": "合計"
+    },
+    {
+      "id": "q22-max-of",
+      "title": "最大"
+    },
+    {
+      "id": "q23-min-of",
+      "title": "最小"
+    },
+    {
+      "id": "q24-count-evens",
+      "title": "偶数の個数"
+    },
+    {
+      "id": "q25-count-gte-k",
+      "title": "K以上の個数"
+    },
+    {
+      "id": "q26-sum-evens",
+      "title": "偶数の合計"
+    },
+    {
+      "id": "q27-first-of",
+      "title": "先頭の値"
+    },
+    {
+      "id": "q28-count-n",
+      "title": "Nそのもの"
+    },
+    {
+      "id": "q29-all-non-negative",
+      "title": "全部0以上"
+    },
+    {
+      "id": "q30-product-of",
+      "title": "積"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-stdin-count",
+  "skills": {
+    "uses": [
+      "csharp-stdin-count"
+    ],
+    "assesses": [
+      "csharp-stdin-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

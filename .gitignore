@@ -40,6 +40,9 @@ vite.config.ts.timestamp-*.mjs
 # カバレッジレポート (bun run test:coverage)
 coverage/
 
+# 課題の解答例・誤答の検査キャッシュ (check-tasks)。中身は空ファイルで、鍵が指紋
+.task-check-cache/
+
 # Packaged VS Code extensions
 *.vsix
 

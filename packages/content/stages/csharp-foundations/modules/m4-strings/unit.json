@@ -1,0 +1,14 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["csharp-string-length", "csharp-string-count", "csharp-string-slice"],
+    "assesses": [
+      "csharp-string-length",
+      "csharp-string-count",
+      "csharp-string-slice",
+      "csharp-string-choice",
+      "csharp-string-repair"
+    ]
+  },
+  "reuses": []
+}

@@ -1,0 +1,29 @@
+{
+  "format": 2,
+  "title": "C# の基礎",
+  "category": "C#",
+  "color": "indigo",
+  "description": "条件で処理を分け、for で順番に値を出し、集計し、最大と最小を選べるようにするステージです。目標は、paiza の D〜C 相当の問題を自分で読み、実装して確認できることです。",
+  "header": "C# の基礎",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["dev-env-basics"],
+  "plannedHours": 54,
+  "environment": "dotnet-test-01",
+  "canDo": "paiza の D〜C 相当の問題を自分で読み、実装して確認できる",
+  "theme": "C# で仕様を実装する力",
+  "modules": {
+    "m0-orientation": "このステージの進め方",
+    "m1-conditions": "条件分岐",
+    "m2-loops": "繰り返し",
+    "m3-arrays": "配列",
+    "m4-strings": "文字列",
+    "m5-stdin": "標準入力",
+    "m6-short-problems": "短い総合問題",
+    "m7-state": "状態更新",
+    "m8-pairs": "二重ループ",
+    "m9-sort-count": "ソートと集計",
+    "m10-mixed": "処理を選んで組み合わせる",
+    "m11-functions": "関数の組み合わせ"
+  }
+}

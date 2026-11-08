@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { hashFile } from "./runner/files.js";
 
 const state = vi.hoisted(() => ({
   handlers: new Map<string, () => Promise<void> | void>(),
@@ -103,6 +104,8 @@ vi.mock("./submission-form.js", () => ({
   registerSubmissionForms: vi.fn(),
   showSubmissionForm: vscodeMock.showSubmissionForm,
 }));
+const apiRequest = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => ({})));
+vi.mock("./api.js", () => ({ apiRequest, apiSession: () => 1 }));
 
 vi.mock("./task-submission.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./task-submission.js")>()),
@@ -146,6 +149,7 @@ beforeEach(() => {
   vscodeMock.showInformationMessage.mockResolvedValue(undefined);
   vscodeMock.getCachedCatalog.mockReturnValue([]);
   vscodeMock.sendTaskSubmission.mockResolvedValue({ id: "submission", attempt: 1 });
+  apiRequest.mockResolvedValue({});
   state.handlers.clear();
   state.trusted = true;
   state.activeFile = undefined;
@@ -542,6 +546,138 @@ describe("stella.runTask (CI と公開の課題)", () => {
     state.inputs = [undefined];
     await run("stella.runTask");
     expect(inputOptions(0).value).toBe(runUrl);
+  });
+});
+
+const problemTask = {
+  schemaVersion: 1,
+  id: "extra/unit/calc",
+  title: "計算",
+  kind: "basic",
+  runner: "node-test",
+  problems: [
+    { id: "q01-add", title: "足す" },
+    { id: "q02-sub", title: "引く" },
+  ],
+  submit: { files: ["src/**/*.ts"] },
+  protected: ["tests/**"],
+  checks: { lint: false, format: false },
+};
+
+describe("問題つきの課題", () => {
+  async function problemRoot(source = "export const add = 1;\n"): Promise<string> {
+    const root = await makeTask(problemTask, {
+      "src/q01-add.ts": source,
+      "src/q02-sub.ts": "export const sub = 1;\n",
+      "README.md": "# 計算",
+    });
+    const hashed = await hashFile(root, "src/q01-add.ts");
+    const taskJson = await hashFile(root, ".stella/task.json");
+    const run = {
+      schemaVersion: 1,
+      taskId: problemTask.id,
+      runner: "node-test",
+      outcome: "passed",
+      startedAt: "2026-11-06T00:00:00.000Z",
+      durationMs: 10,
+      platform: "win32",
+      toolVersions: {},
+      steps: [
+        { id: "test", label: "テスト", status: "passed", durationMs: 10, summary: "通りました" },
+      ],
+      files: [hashed],
+      protected: [],
+      manifestSha256: taskJson.sha256,
+      problemId: "q01-add",
+    };
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(run),
+    );
+    await writeFile(
+      path.join(root, ".stella", "distribution.json"),
+      JSON.stringify({ taskId: problemTask.id, contentHash: "ab".repeat(32) }),
+    );
+    state.folders = [root];
+    state.activeFile = path.join(root, "src", "q01-add.ts");
+    return root;
+  }
+
+  it("信頼していないフォルダーでは確認しない", async () => {
+    const root = await problemRoot();
+    state.trusted = false;
+    state.warningChoice = "フォルダーを信頼する";
+    state.folders = [root];
+    await run("stella.runTask");
+    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+    expect(vscodeMock.executeCommand).toHaveBeenCalledWith("workbench.trust.manage");
+  });
+
+  it("説明欄を出さず、提出したら件数を出して次の問題を開く", async () => {
+    const root = await problemRoot();
+    apiRequest.mockImplementation(async (...args: unknown[]) => {
+      if (args[0] === "/api/submissions") {
+        return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
+      }
+      return {
+        problems: [],
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+      };
+    });
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith("提出しました (1/2 問)");
+    expect(vscodeMock.showTextDocument).toHaveBeenCalledWith(
+      { uri: { scheme: "file", fsPath: path.join(root, "src", "q02-sub.ts") } },
+      { viewColumn: 1, preview: false },
+    );
+    const body = apiRequest.mock.calls.find((call) => call[0] === "/api/submissions")?.[1] as {
+      body: { problemId: string; files: { path: string }[]; explanation: string };
+    };
+    expect(body.body.problemId).toBe("q01-add");
+    expect(body.body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
+    expect(body.body.explanation).toBe("");
+  });
+
+  it("最後の問題では課題に合格しました、と出す", async () => {
+    const root = await problemRoot();
+    apiRequest.mockResolvedValue({
+      problemId: "q01-add",
+      passedProblems: 2,
+      totalProblems: 2,
+      taskPassed: true,
+    });
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith("課題に合格しました");
+    expect(vscodeMock.showTextDocument).not.toHaveBeenCalled();
+  });
+
+  it("ファイルが変わっていたら確認し直してください、と出して送らない", async () => {
+    const root = await problemRoot();
+    await writeFile(path.join(root, "src", "q01-add.ts"), "export const add = 9;\n");
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith("確認し直してください");
+    expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
+  });
+
+  it("API の 400 は理由をそのまま出す", async () => {
+    const root = await problemRoot();
+    apiRequest.mockRejectedValue(new Error("拡張を更新してください"));
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith("拡張を更新してください");
+  });
+
+  it("相談は説明の入力のまま", async () => {
+    const root = await problemRoot();
+    await run("stella.consultTask", root);
+    expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining("last-run.json"),
+    );
+    expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
   });
 });
 

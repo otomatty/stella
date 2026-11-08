@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m9-sort-count/q05-debug",
+  "title": "添字と未登録を直す",
+  "problems": [
+    {
+      "id": "r1-rank",
+      "title": "順位"
+    },
+    {
+      "id": "r2-count-name",
+      "title": "名前の件数"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-count-repair",
+  "skills": {
+    "uses": [
+      "csharp-sort-kth",
+      "csharp-count-names"
+    ],
+    "assesses": [
+      "csharp-count-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

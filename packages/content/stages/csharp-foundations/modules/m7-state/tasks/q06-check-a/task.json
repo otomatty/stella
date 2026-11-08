@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m7-state/q06-check-a",
+  "title": "確認A 初めて負になる操作",
+  "problems": [
+    {
+      "id": "check-a-first-negative",
+      "title": "初めて負"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-state-first-negative",
+  "skills": {
+    "uses": [
+      "csharp-state-apply"
+    ],
+    "assesses": [
+      "csharp-state-apply"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

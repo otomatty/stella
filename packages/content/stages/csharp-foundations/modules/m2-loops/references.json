@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m2-loops@5",
+  "contentHash": "4a419efdc56e01eab6c6a880fa5cf0a5c4ce8e33ae95e0d5f275b93ea77f685a",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-for-loop/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "for、if、Console.WriteLine の説明と、順番に出す・集計する・最大最小の参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-for-loop/knowledge.md",
+      "sourceRefs": ["SRC-mslearn-csharp-for-20261104", "SRC-mslearn-console-writeline-20261104"],
+      "usedFor": "表示は void、合計の初期値は 0、0 回なら初期値が残る、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-for-loop/t1-return-or-not/slides.md",
+      "sourceRefs": ["SRC-mslearn-console-writeline-20261104"],
+      "usedFor": "画面に出す処理は void で、計算結果は return で返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-for-loop/t2-print-order/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-for-20261104"],
+      "usedFor": "for の始まり、終わり、増減を変えて順番に出す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-for-loop/t3-accumulate/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-for-20261104"],
+      "usedFor": "合計はループの外の変数に足してから返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-for-loop/t4-compare-extremes/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-if-20261104"],
+      "usedFor": "先頭の値を答えにして、if で残りと比べて上書きする説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-for-output/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。for で順番に出す Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-for-sum/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。for で集計する Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-max-min/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。最大と最小の Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connection/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。順番に出したあと合計を出す接続練習",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。処理を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。繰り返しの誤りを直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。4 で割り切れる数を除いた合計",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。減らしながら累計を 1 行ずつ出す",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

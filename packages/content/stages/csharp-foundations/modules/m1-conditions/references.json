@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m1-conditions@1",
+  "contentHash": "93ed2b29a89e7fa4adea82580e2c2fd34ada7b7e2191acaa0c640f13b68da9a7",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-conditions/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "return、if、else if、かつ・またはの説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-conditions/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106"
+      ],
+      "usedFor": "以上と比較、大きい閾値を先に見ること、かつは両方、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-conditions/t1-return-calc/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "計算結果は return で返し、画面に出すのは呼び出し側だという説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-conditions/t2-if-else/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-if-20261104", "SRC-mslearn-csharp-comparison-20261106"],
+      "usedFor": "if と else if で条件に合う値を返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-conditions/t3-and-or/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-boolean-20261106", "SRC-mslearn-csharp-if-20261104"],
+      "usedFor": "かつは両方、またははどちらか、範囲は以上かつ以下だという説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-arithmetic/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。計算して返す Q01〜Q05",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-remainder/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。余りで分ける Q06〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-compare/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。比較で分ける Q11〜Q17",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-multi-branch/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。段階で分ける Q18〜Q23",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-two-compare/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。2つの数を比べる Q24〜Q27",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-logic/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。かつ・または・範囲の Q28〜Q32",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-connection/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。時間帯を分ける接続練習",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。条件を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q09-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。条件の誤りを直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q10-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。時間で料金を分ける",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q11-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。年齢の範囲と点数",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

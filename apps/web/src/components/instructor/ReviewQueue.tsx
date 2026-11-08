@@ -13,6 +13,7 @@ import {
   BarChart,
   CheckCheck,
   ChevronRight,
+  ClipboardList,
   Edit,
   ListTree,
   RotateCcw,
@@ -42,6 +43,7 @@ import {
   needsHumanReview,
   queueGroupOf,
   sortQueue,
+  testsPassedRows,
 } from "@/lib/review-queue";
 import type { AvatarTone } from "@/data/types";
 import { AssignedScopeToggle } from "./AssignedScopeToggle";
@@ -65,6 +67,7 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
  * - 人に回した提出: 人に回した理由で分け、待ち時間・理由・担当者で並べる。行から開いて 1 回の
  *   操作で確定する。同じ課題の提出を並べて見て、共通のつまずきを全体への補足・発見教材に回す。
  * - AI が合格にした提出: いつでも確認できる (確認済み・コメント・覆す)。
+ * - テストで合格した提出: 受け取った提出から、テストで確定した行を新しい順に読む。判定は変えない。
  * - 見直しの数字: しきい値の月次見直しに使う割合。
  * - 類題の在庫: コードの復習の類題が足りないパターンと、在庫切れで待っている受講者 (#39)。
  */
@@ -83,7 +86,7 @@ export const ReviewQueue = ({
   const [sort, setSort] = useState<ReviewQueueSort>("wait");
   const [boardTaskId, setBoardTaskId] = useState<string | null>(null);
 
-  const { pending, others, aiChecking } = useMemo(() => {
+  const { pending, others, aiChecking, testsPassed } = useMemo(() => {
     const inScope = (s: Submission) =>
       !scope.assignedOnly || (s.studentId != null && scope.assignedIds.has(s.studentId));
     const all = submissions.filter(needsHumanReview);
@@ -93,6 +96,7 @@ export const ReviewQueue = ({
       pending: mine,
       others: all.length - mine.length,
       aiChecking: submissions.filter((s) => isAiChecking(s) && inScope(s)),
+      testsPassed: testsPassedRows(submissions, inScope),
     };
   }, [submissions, scope.assignedOnly, scope.assignedIds]);
   const aiReadyCount = pending.filter(hasAiDraft).length;
@@ -143,6 +147,9 @@ export const ReviewQueue = ({
             <>
               <TabsTrigger value="ai-passed" icon={<CheckCheck />}>
                 AI が合格にした提出
+              </TabsTrigger>
+              <TabsTrigger value="tests-passed" icon={<ClipboardList />}>
+                テストで合格した提出
               </TabsTrigger>
               <TabsTrigger value="metrics" icon={<BarChart />}>
                 見直しの数字
@@ -248,7 +255,9 @@ export const ReviewQueue = ({
                         )}
                       </TableCell>
                       <TableCell>
-                        {r.aiConfidence ? (
+                        {r.reviewSource === "tests" ? (
+                          <Badge>テストで確認</Badge>
+                        ) : r.aiConfidence ? (
                           <div className="flex flex-wrap gap-1">
                             <Badge>確信度 {CONFIDENCE_LABELS[r.aiConfidence]}</Badge>
                             {r.aiProposedVerdict ? (
@@ -309,6 +318,49 @@ export const ReviewQueue = ({
                 assignedOnly={scope.assignedOnly}
                 onOpen={open}
               />
+            </TabsContent>
+            <TabsContent value="tests-passed">
+              <Card className="overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>受講者</TableHead>
+                      <TableHead>課題</TableHead>
+                      <TableHead>ステージ</TableHead>
+                      <TableHead>提出日</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {testsPassed.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-ink-3 py-10">
+                          テストで合格した提出はありません
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      testsPassed.map((r) => (
+                        <TableRow key={r.id} interactive onClick={() => open(r.id)}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar size="sm">
+                                <AvatarFallback tone={r.avatarTone as AvatarTone}>
+                                  {r.studentInitials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{r.studentName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{r.assignmentTitle}</TableCell>
+                          <TableCell className="text-ink-3">{r.stageTitle}</TableCell>
+                          <TableCell className="text-ink-3">
+                            {new Date(r.submittedAt).toLocaleDateString("ja-JP")}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
             </TabsContent>
             <TabsContent value="metrics">
               <ReviewMetricsPanel />

@@ -12,6 +12,7 @@ import {
   type TaskBoard,
 } from "@stella/shared/review/review-desk";
 import { ChevronLeft, Compass, Megaphone } from "@/lib/icons";
+import { passByLabel } from "@/lib/review-queue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -282,9 +283,7 @@ export function TaskBoardPanel({
                         <TableCell>
                           {s.verdict ? (
                             <Badge variant={s.verdict === "pass" ? "success" : "warning"}>
-                              {s.reviewSource === "ai" && s.verdict === "pass"
-                                ? "AI で合格"
-                                : VERDICT_LABELS[s.verdict]}
+                              {passByLabel(s) ?? VERDICT_LABELS[s.verdict]}
                             </Badge>
                           ) : s.aiReviewStatus === "escalated" ? (
                             <Badge variant="warning">

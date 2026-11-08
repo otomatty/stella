@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m4-strings/q04-connection",
+  "title": "8文字の数字",
+  "problems": [
+    {
+      "id": "connect-eight-digits",
+      "title": "8文字の数字"
+    }
+  ],
+  "kind": "connection",
+  "pattern": "csharp-string-eight-digits",
+  "skills": {
+    "uses": [
+      "csharp-string-length",
+      "csharp-string-count"
+    ],
+    "assesses": [
+      "csharp-string-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 4,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

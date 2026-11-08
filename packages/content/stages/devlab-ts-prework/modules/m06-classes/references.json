@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m06-classes@2",
-  "contentHash": "31f0f513a9da0747427e386d7ac2712f7d7d523094a668d6616ed244b218e53d",
+  "unitId": "devlab-ts-prework/m06-classes@3",
+  "contentHash": "1c6d9a727bacffeb503cd6f8f4fd496992d788b487019b1fbc51403bd34f99c6",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -24,7 +24,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -37,7 +37,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

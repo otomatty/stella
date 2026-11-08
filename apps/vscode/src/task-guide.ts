@@ -17,6 +17,13 @@ import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
 import { escapeHtml } from "./lesson-doc.js";
 import { listFiles, matchPatterns, readFileInRoot } from "./runner/files.js";
+import {
+  nextUnsubmittedProblem,
+  PROBLEM_STATUS_LABELS,
+  problemCountLabel,
+  problemSource,
+  type ProblemState,
+} from "./task-problems.js";
 
 /** 課題文のパネルが開けるコマンド。WebView の `enableCommandUris` にも同じものを渡す。 */
 export const GUIDE_COMMANDS = [
@@ -89,6 +96,8 @@ export interface TaskGuideInput {
   manifest: TaskManifest;
   edit: EditFiles;
   lastOutcome?: RunOutcome;
+  /** 問題つきの課題の、問題ごとの状態。未指定なら一覧を未提出として出す。 */
+  problems?: ProblemState[];
   os: OsName;
 }
 
@@ -207,8 +216,82 @@ const STEP_TITLES: Record<StepId, string> = {
   submit: "提出する",
 };
 
+function guideProblems(input: TaskGuideInput): ProblemState[] | undefined {
+  const listed = input.manifest.problems;
+  if (!listed?.length) return undefined;
+  if (input.problems) return input.problems;
+  return listed.flatMap((problem) => {
+    const source = problemSource(input.manifest, problem.id);
+    return source
+      ? [{ id: problem.id, title: problem.title, source, status: "not-submitted" as const }]
+      : [];
+  });
+}
+
+type ProblemStepId = "check" | "submit" | "next";
+
+/** 問題つきの課題の、いま取り組む段。1 問確認して提出し、次へ進む。 */
+function problemCurrent(items: readonly ProblemState[]): { step: ProblemStepId; note: string } {
+  const next = nextUnsubmittedProblem(items);
+  if (!next) return { step: "next", note: "全部の問題を提出しました。" };
+  if (next.status === "local-passed") {
+    return { step: "submit", note: "手元の確認は通りました。提出すると、次の問題に進みます。" };
+  }
+  return { step: "check", note: "この問題を確認してください。通ったら提出します。" };
+}
+
+const PROBLEM_STEP_TITLES: Record<ProblemStepId, string> = {
+  check: "1問確認する",
+  submit: "提出する",
+  next: "次の問題へ",
+};
+
+function problemListHtml(input: TaskGuideInput, items: readonly ProblemState[]): string {
+  const passed = items.filter((item) => item.status === "submitted").length;
+  const rows = items
+    .map((item) => {
+      const label = PROBLEM_STATUS_LABELS[item.status];
+      const file = link("stella.openTaskFile", [input.root, item.source], escapeHtml(item.title));
+      return `<li>${file} <code>${escapeHtml(item.source)}</code> <span class="problem-status">${label}</span></li>`;
+    })
+    .join("");
+  return `<p class="count">${problemCountLabel(passed, items.length)}</p><ul class="problems">${rows}</ul>`;
+}
+
+/** 問題つきの課題の進め方。説明欄と修正記録は出さない。 */
+function buildProblemGuideHtml(input: TaskGuideInput, items: ProblemState[]): string {
+  const { step: current, note } = problemCurrent(items);
+  const bodies: Record<ProblemStepId, string> = {
+    check: `<p>${link("stella.runTask", [input.root], "課題を確認する", "button")} を押します。開いているファイルが問題のファイルならその問題を、そうでなければ次の未提出の問題を確認します。</p>`,
+    submit: `<p>確認が通っていて、そのあとファイルを変えていなければ ${link("stella.submitTask", [input.root], "提出する", "button")} を押せます。提出すると次の問題のファイルを開きます。</p>`,
+    next: "<p>最後の問題を提出すると、課題は合格です。</p>",
+  };
+  const order: ProblemStepId[] = ["check", "submit", "next"];
+  const steps = order
+    .map((id) => {
+      const here = id === current;
+      return `<li class="step${here ? " current" : ""}"><h3>${PROBLEM_STEP_TITLES[id]}${here ? ' <span class="here">いまここ</span>' : ""}</h3>${bodies[id]}</li>`;
+    })
+    .join("\n");
+  const helpLabel = TASK_HELP_POLICIES[input.manifest.kind].hints
+    ? "ヒント・解答・レビューの結果"
+    : "レビューの結果";
+  const tone = current === "check" ? "none" : "passed";
+  return [
+    `<section class="guide" aria-label="この課題の進め方">`,
+    `<h2>進め方</h2>`,
+    `<p class="status ${tone}">${escapeHtml(note)}</p>`,
+    problemListHtml(input, items),
+    `<ol class="steps">\n${steps}\n</ol>`,
+    `<p class="help">困ったとき・提出のあと: ${link("stella.showTaskHelp", [input.root], helpLabel)} ・ ${link("stella.consultTask", [input.root], "講師に相談")} ・ ${link("stella.showRunLog", [], "実行ログ")}</p>`,
+    `</section>`,
+  ].join("\n");
+}
+
 /** 課題文のパネルの先頭に出す「進め方」。 */
 export function buildTaskGuideHtml(input: TaskGuideInput): string {
+  const problems = guideProblems(input);
+  if (problems) return buildProblemGuideHtml(input, problems);
   const { manifest, root } = input;
   const { step: current, note } = currentStep(input.lastOutcome);
   const bodies: Record<StepId, string> = {
@@ -299,5 +382,9 @@ export const GUIDE_CSS = `
       font-size: 0.9em;
     }
     .files { color: var(--vscode-descriptionForeground); }
+    .count { margin: 0.25rem 0; font-weight: bold; }
+    .problems { list-style: none; padding-left: 0; margin: 0.25rem 0 0.5rem; }
+    .problems li { margin: 0.15rem 0; }
+    .problem-status { color: var(--vscode-descriptionForeground); }
     .help { margin: 0.5rem 0 0.25rem; }
     .readme-title { margin-top: 1.5rem; }`;

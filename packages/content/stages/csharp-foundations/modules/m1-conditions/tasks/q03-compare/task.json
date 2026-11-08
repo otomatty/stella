@@ -1,0 +1,71 @@
+{
+  "id": "csharp-foundations/m1-conditions/q03-compare",
+  "title": "比較で分ける",
+  "problems": [
+    {
+      "id": "q11-pass-fail",
+      "title": "合格点（以上）"
+    },
+    {
+      "id": "q12-big-small",
+      "title": "より大きい"
+    },
+    {
+      "id": "q13-under-zero",
+      "title": "未満"
+    },
+    {
+      "id": "q14-zero-check",
+      "title": "ゼロか"
+    },
+    {
+      "id": "q15-same-check",
+      "title": "同じか"
+    },
+    {
+      "id": "q16-age-group",
+      "title": "以上（年齢）"
+    },
+    {
+      "id": "q17-within-limit",
+      "title": "以下"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-compare-branch",
+  "skills": {
+    "uses": [
+      "csharp-if-else"
+    ],
+    "assesses": [
+      "csharp-if-else"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 28,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m9-sort-count@1",
+  "contentHash": "bbc68f364bdddf8ec16dbf48c95c6af743a3bd5d4ffae2f0cd73639e3e55d32f",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-sort-count/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-containskey-20261106",
+        "SRC-mslearn-csharp-dict-keys-20261106",
+        "SRC-mslearn-csharp-dictionary-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-sort-20261106",
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-string-20261106",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "ソート、0〜9の回数、名前をキーにした集計の説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-sort-count/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-containskey-20261106",
+        "SRC-mslearn-csharp-sort-20261106"
+      ],
+      "usedFor": "同じ値の残り方、同数の更新、未登録の読み方、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-sort-count/t1-sort/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-sort-20261106",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "Array.Sort で並べてから位置を見る説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-sort-count/t2-frequency/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104"
+      ],
+      "usedFor": "値を添字にして回数を数える説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-sort-count/t3-dictionary/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-containskey-20261106",
+        "SRC-mslearn-csharp-dict-keys-20261106",
+        "SRC-mslearn-csharp-dictionary-20261106",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-string-20261106"
+      ],
+      "usedFor": "名前をキーにして回数を読む説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-kth-smallest/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。小さい順のK番目を出す Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-mode/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。0〜9の最頻値を出す Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-name-counts/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。名前の件数を出す Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。ソートと集計を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。添字と未登録の読み方を直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。2回以上の値の種類",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。小さい順のK個の合計",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

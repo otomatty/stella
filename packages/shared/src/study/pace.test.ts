@@ -154,6 +154,28 @@ describe("学習ペース", () => {
     expect(compute([stage([{ ...a, status: "local-passed" }, b])]).assessments).toEqual([]);
     expect(compute([stage([a, { ...b, pattern: "other" }])]).assessments).toEqual([]);
   });
+  it("問題つきの課題は提出した問題の割合だけを完了にし、問題の無い課題は変えない", () => {
+    const plain = { ...task("plain", "basic", 600), status: "local-passed" as const };
+    const partial = {
+      ...plain,
+      problemsTotal: 20,
+      problemsPassed: 5,
+    };
+    const none = compute([stage([plain])]);
+    const some = compute([stage([partial])]);
+    expect(none.completedMinutes).toBe(0);
+    expect(some.completedMinutes).toBe(150);
+    expect(none.targets[0]?.remainingMinutes - (some.targets[0]?.remainingMinutes ?? 0)).toBe(150);
+    expect(compute([stage([{ ...plain, problemsTotal: 20, problemsPassed: 0 }])])).toEqual(none);
+    const passed = { ...task("done", "basic", 600), status: "passed" as const };
+    expect(compute([stage([passed])])).toEqual(
+      compute([stage([{ ...passed, problemsTotal: 20, problemsPassed: 5 }])]),
+    );
+    const assessment = task("B", "assessment-b");
+    expect(compute([stage([assessment])])).toEqual(
+      compute([stage([{ ...assessment, problemsTotal: 4, problemsPassed: 0 }])]),
+    );
+  });
   it("7日経つ前のBは今週に入れず、合格済みBは再予定しない", () => {
     const a = { ...task("A", "assessment-a"), status: "passed" as const, passedDate: "2026-10-05" };
     const b = task("B", "assessment-b");

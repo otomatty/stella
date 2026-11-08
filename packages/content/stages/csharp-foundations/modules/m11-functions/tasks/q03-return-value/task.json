@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m11-functions/q03-return-value",
+  "title": "計算の結果を返す",
+  "problems": [
+    {
+      "id": "q21-max2",
+      "title": "大きい方"
+    },
+    {
+      "id": "q22-min2",
+      "title": "小さい方"
+    },
+    {
+      "id": "q23-abs-diff",
+      "title": "差の絶対値"
+    },
+    {
+      "id": "q24-max3",
+      "title": "3つの最大"
+    },
+    {
+      "id": "q25-sum-of",
+      "title": "配列の合計"
+    },
+    {
+      "id": "q26-max-of",
+      "title": "配列の最大"
+    },
+    {
+      "id": "q27-count-digits",
+      "title": "数字の個数"
+    },
+    {
+      "id": "q28-sum-to",
+      "title": "1からnの合計"
+    },
+    {
+      "id": "q29-pass-fail",
+      "title": "合格か"
+    },
+    {
+      "id": "q30-water-state",
+      "title": "水の状態"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-return-value",
+  "skills": {
+    "uses": [
+      "csharp-return-value"
+    ],
+    "assesses": [
+      "csharp-return-value"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

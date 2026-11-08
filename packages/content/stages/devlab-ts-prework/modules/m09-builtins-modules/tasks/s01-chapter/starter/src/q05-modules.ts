@@ -4,29 +4,20 @@
 //
 // 問題
 // 下のコードは、ネットショップのカートの計算を1つのファイルにまとめたものです。
-// これを q05-modules フォルダの中の3つのファイルに分け、このファイル（q05-modules.ts）には re-export だけを書いてください。
-// 下の「前の問題を使う」の確かめを足す以外は、関数の中身は変えずに、置き場所だけを変えること。
+// これを q05-modules-price.ts、q05-modules-format.ts、q05-modules-cart.ts の3つのファイルに分け、このファイル（q05-modules.ts）には re-export だけを書いてください。
+// q05-modules-cart.ts に足す確かめ以外は、関数の中身は変えずに、置き場所だけを変えること。
 //
-//   q05-modules/price.ts   TAX_RATE と priceWithTax を、名前付き export にする
-//   q05-modules/format.ts  formatYen を、デフォルト export にする
-//   q05-modules/cart.ts    型 CartItem と、addItem・cartTotal・cartSummary を、名前付き export にする。
-//                          price.ts と format.ts から、使うものを import する
+//   q05-modules-price.ts   TAX_RATE と priceWithTax を、名前付き export にする
+//   q05-modules-format.ts  formatYen を、デフォルト export にする
+//   q05-modules-cart.ts    型 CartItem と、addItem・cartTotal・cartSummary を、名前付き export にする。
+//                          q05-modules-price.ts と q05-modules-format.ts から、使うものを import する
 //
 // このファイル（q05-modules.ts）には、次の3つの re-export だけを書く（関数や型の定義は残さない）
-//   - cart.ts の export をすべて re-export する（export * from …）
-//   - price.ts の TAX_RATE と priceWithTax を re-export する
-//   - format.ts のデフォルト export を、formatYen という名前で re-export する
+//   - q05-modules-cart.ts の export をすべて re-export する（export * from …）
+//   - q05-modules-price.ts の TAX_RATE と priceWithTax を re-export する
+//   - q05-modules-format.ts のデフォルト export を、formatYen という名前で re-export する
 //
-// フォルダとファイルは、VS Code のエクスプローラーで作れます（q05-modules フォルダは src の中に作る）。
 // テスト（q05-modules.test.ts）は、それぞれのファイルから import して確かめます。
-// q05-modules フォルダの中のファイルも、型と書き方と整形のチェックの対象です。
-//
-// 前の問題を使う
-// 使う問題: q04（ValidationError）
-// addItem は、item.quantity が1以上の整数でなければ、q04 の ValidationError を
-// new ValidationError("quantity", "数量は1以上の整数にしてください") の形で投げるようにする（元のコードにはない確かめなので足す）。
-// ValidationError は、このファイルの先頭で import してある。cart.ts に移すときは import も移す（パスは "../q04-error"）。
-// q04 が解けていないと、この問題のテストも通らない
 //
 // 説明すること（答えは、この下に // のコメントで書く）
 // - 名前付き export とデフォルト export の違い。自分ならどちらを使うか、その理由

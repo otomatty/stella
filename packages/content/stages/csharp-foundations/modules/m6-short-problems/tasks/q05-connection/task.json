@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m6-short-problems/q05-connection",
+  "title": "P 未満の人数を数える",
+  "problems": [
+    {
+      "id": "connect-count-lt",
+      "title": "P 未満"
+    }
+  ],
+  "kind": "connection",
+  "pattern": "csharp-combine-below",
+  "skills": {
+    "uses": [
+      "csharp-combine-count"
+    ],
+    "assesses": [
+      "csharp-combine-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 4,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

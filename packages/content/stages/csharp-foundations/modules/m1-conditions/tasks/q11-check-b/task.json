@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m1-conditions/q11-check-b",
+  "title": "確認B 範囲と別の条件",
+  "problems": [
+    {
+      "id": "check-b-age-score",
+      "title": "年齢と点数"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-range-and-score",
+  "skills": {
+    "uses": [
+      "csharp-and-or"
+    ],
+    "assesses": [
+      "csharp-and-or"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

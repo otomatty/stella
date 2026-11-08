@@ -11,28 +11,18 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-hello",
+      "title": "環境の確認（練習）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
     "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,

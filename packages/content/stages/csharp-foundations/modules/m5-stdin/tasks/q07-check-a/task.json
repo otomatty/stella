@@ -1,0 +1,47 @@
+{
+  "id": "csharp-foundations/m5-stdin/q07-check-a",
+  "title": "確認A kより大きい合計",
+  "problems": [
+    {
+      "id": "check-a-sum-above",
+      "title": "kより大きい合計"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-stdin-above",
+  "skills": {
+    "uses": [
+      "csharp-stdin-one"
+    ],
+    "assesses": [
+      "csharp-stdin-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

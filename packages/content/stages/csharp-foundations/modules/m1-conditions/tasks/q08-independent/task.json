@@ -1,0 +1,86 @@
+{
+  "id": "csharp-foundations/m1-conditions/q08-independent",
+  "title": "条件を自分で選ぶ",
+  "problems": [
+    {
+      "id": "s01-admission",
+      "title": "入館料"
+    },
+    {
+      "id": "s02-shipping",
+      "title": "箱の送料"
+    },
+    {
+      "id": "s03-rental-fee",
+      "title": "貸出時間"
+    },
+    {
+      "id": "s04-inside",
+      "title": "区間の内側"
+    },
+    {
+      "id": "s05-sign-pair",
+      "title": "符号の組"
+    },
+    {
+      "id": "s06-near",
+      "title": "距離と上限"
+    },
+    {
+      "id": "s07-change",
+      "title": "おつり"
+    },
+    {
+      "id": "s08-total-price",
+      "title": "追加料金"
+    },
+    {
+      "id": "s09-label",
+      "title": "整理札"
+    },
+    {
+      "id": "s10-next-hour",
+      "title": "翌日の時刻"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-condition-choice",
+  "skills": {
+    "uses": [
+      "csharp-calc",
+      "csharp-if-else",
+      "csharp-else-if",
+      "csharp-and-or"
+    ],
+    "assesses": [
+      "csharp-condition-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

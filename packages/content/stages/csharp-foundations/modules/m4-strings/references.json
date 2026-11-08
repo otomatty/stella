@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m4-strings@1",
+  "contentHash": "f0c695e074ec6ee4be4ac3fd54126c13f15597ba11a73646b98a0b232a5fe6a9",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-strings/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-string-20261106",
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-substring-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "文字列、char、Substring、for、if、Console.WriteLine の説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-strings/knowledge.md",
+      "sourceRefs": ["SRC-mslearn-csharp-string-20261106", "SRC-mslearn-csharp-substring-20261106"],
+      "usedFor": "末尾の位置、空文字の個数、先頭の 0 を残す切り出しの知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-strings/t1-index/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-string-20261106", "SRC-mslearn-csharp-char-20261106"],
+      "usedFor": "Length と s[i] で位置の文字を読む説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-strings/t2-count/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-string-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104"
+      ],
+      "usedFor": "空文字は 0 回で、条件に合う文字だけ数える説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-strings/t3-substring/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-substring-20261106", "SRC-mslearn-csharp-string-20261106"],
+      "usedFor": "Substring で切り、数値にしない説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-length-index/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。長さと位置の Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-count-chars/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。1 文字ずつ数える Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-substring/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。部分文字列の Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connection/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。長さ 8 かつ全部数字の接続練習",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。文字列の処理を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。途中の return と、長さを見る前の切り出しを直す",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。検証してから末尾 2 文字を返す",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。先頭と同じ文字の個数",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -58,6 +58,7 @@
     "./tasks/runners": "./src/tasks/runners.ts",
     "./tasks/dotnet": "./src/tasks/dotnet.ts",
     "./tasks/manifest": "./src/tasks/manifest.ts",
+    "./tasks/problems": "./src/tasks/problems.ts",
     "./tasks/environment": "./src/tasks/environment.ts",
     "./tasks/run-result": "./src/tasks/run-result.ts",
     "./tasks/ci-run": "./src/tasks/ci-run.ts",

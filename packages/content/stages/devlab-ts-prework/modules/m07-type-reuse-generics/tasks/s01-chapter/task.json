@@ -18,33 +18,686 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-default-user",
+      "title": "型 DefaultUser を DEFAULT_USER から作る"
+    },
+    {
+      "id": "q01-02-point",
+      "title": "型 Point を ORIGIN から作る"
+    },
+    {
+      "id": "q01-03-settings",
+      "title": "型 Settings を SETTINGS から作る"
+    },
+    {
+      "id": "q01-04-notifications",
+      "title": "型 Notifications を、SETTINGS の notifications プロパティの型として作る"
+    },
+    {
+      "id": "q01-05-color",
+      "title": "型 Color を、COLORS の要素の型として作る"
+    },
+    {
+      "id": "q01-06-level",
+      "title": "型 Level を、LEVELS の要素の型として作る"
+    },
+    {
+      "id": "q01-07-role-labels",
+      "title": "型 RoleLabels を ROLE_LABELS から作る"
+    },
+    {
+      "id": "q01-08-endpoint",
+      "title": "型 Endpoint を、ENDPOINTS のすべての値のユニオン型として作る"
+    },
+    {
+      "id": "q01-09-version",
+      "title": "型 Version を VERSION から作る"
+    },
+    {
+      "id": "q01-10-max-size",
+      "title": "型 MaxSize を MAX_SIZE から作る"
+    },
+    {
+      "id": "q01-11-tag",
+      "title": "型 Tag を、TAGS の要素の型として作る"
+    },
+    {
+      "id": "q01-12-item",
+      "title": "型 Item を、関数 makeItem の戻り値の型として作る"
+    },
+    {
+      "id": "q01-13-click-handler",
+      "title": "型 ClickHandler を、関数 handleClick の型として作る"
+    },
+    {
+      "id": "q01-14-clone-user",
+      "title": "DEFAULT_USER のコピーを返す関数 cloneUser を書く"
+    },
+    {
+      "id": "q01-15-move-point",
+      "title": "点を dx、dy だけ動かした新しい点を返す"
+    },
+    {
+      "id": "q01-16-with-font-size",
+      "title": "settings の fontSize だけを変えた新しい設定を返す"
+    },
+    {
+      "id": "q01-17-is-color",
+      "title": "文字列が COLORS のどれかなら true"
+    },
+    {
+      "id": "q01-18-next-level",
+      "title": "1 → 2 → 3 の順に次のレベルを返す"
+    },
+    {
+      "id": "q01-19-role-label",
+      "title": "ROLE_LABELS からラベルを返す"
+    },
+    {
+      "id": "q01-20-endpoint-of",
+      "title": "ENDPOINTS から URL を返す"
+    },
+    {
+      "id": "q01-typeof",
+      "title": "typeof 型演算子（応用問題）"
+    },
+    {
+      "id": "q02-01-user-key",
+      "title": "型 UserKey を keyof User で作る"
+    },
+    {
+      "id": "q02-02-product-key",
+      "title": "型 ProductKey を keyof Product で作る"
+    },
+    {
+      "id": "q02-03-setting-key",
+      "title": "型 SettingKey を、定数 SETTINGS のキーとして作る"
+    },
+    {
+      "id": "q02-04-color-name",
+      "title": "型 ColorName を、定数 COLOR_CODES のキーとして作る"
+    },
+    {
+      "id": "q02-05-user-or-product-key",
+      "title": "型 UserOrProductKey を、User と Product のどちらかのプロパティ名として作る"
+    },
+    {
+      "id": "q02-06-user-value",
+      "title": "型 UserValue を、User のすべてのプロパティの値の型のユニオン型として作る"
+    },
+    {
+      "id": "q02-07-user-field",
+      "title": "user の key のプロパティを返す"
+    },
+    {
+      "id": "q02-08-product-field",
+      "title": "product の key のプロパティを返す"
+    },
+    {
+      "id": "q02-09-setting-value",
+      "title": "SETTINGS の key の値を返す"
+    },
+    {
+      "id": "q02-10-color-code",
+      "title": "COLOR_CODES から色の番号を返す"
+    },
+    {
+      "id": "q02-11-field-label",
+      "title": "User のプロパティ名を日本語にする"
+    },
+    {
+      "id": "q02-12-is-user-key",
+      "title": "文字列が User のプロパティ名なら true"
+    },
+    {
+      "id": "q02-13-values-of",
+      "title": "user の、keys に並べたプロパティの値を、その順に並べた配列を返す"
+    },
+    {
+      "id": "q02-14-different-keys",
+      "title": "2人の User で値が違うプロパティ名を、id、name、email、age の順で返す"
+    },
+    {
+      "id": "q02-15-sort-by-number-key",
+      "title": "User の配列を、keyの小さい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q02-16-key-count",
+      "title": "オブジェクトのキーの数を返す"
+    },
+    {
+      "id": "q02-17-has-own-key",
+      "title": "obj に key のプロパティがあれば true"
+    },
+    {
+      "id": "q02-18-product-text",
+      "title": "product の keys に並べたプロパティを \"code=A1, price=150\" の形にする"
+    },
+    {
+      "id": "q02-19-user-labels",
+      "title": "型 UserLabels を、User のすべてのプロパティ名をキー、文字列を値にした型として作る"
+    },
+    {
+      "id": "q02-20-total-stock",
+      "title": "Product の配列の、keyのプロパティの合計を返す"
+    },
+    {
+      "id": "q02-keyof",
+      "title": "keyof 型演算子（応用問題）"
+    },
+    {
+      "id": "q03-01-partial-options",
+      "title": "型 PartialOptions を Options から作る"
+    },
+    {
+      "id": "q03-02-required-profile",
+      "title": "型 RequiredProfile を Profile から作る"
+    },
+    {
+      "id": "q03-03-readonly-options",
+      "title": "型 ReadonlyOptions を Options から作る"
+    },
+    {
+      "id": "q03-04-readonly-profile",
+      "title": "型 ReadonlyProfile を Profile から作る"
+    },
+    {
+      "id": "q03-05-with-defaults",
+      "title": "一部だけ指定した Partial<Options> を受け取り、足りないところを DEFAULT_OPTIONS で補った Options を返す"
+    },
+    {
+      "id": "q03-06-patch-options",
+      "title": "options を patchで上書きした、新しい Options を返す"
+    },
+    {
+      "id": "q03-07-complete-profile",
+      "title": "Profile の足りないところを、email は \"\"、age は 0 で補って Required<Profile> を返す"
+    },
+    {
+      "id": "q03-08-freeze-options",
+      "title": "options のコピーを Object.freeze して、Readonly<Options> として返す"
+    },
+    {
+      "id": "q03-09-is-complete",
+      "title": "email と age の両方があれば true"
+    },
+    {
+      "id": "q03-10-count-set",
+      "title": "Partial<Options> のうち、値が入っているプロパティの数を返す"
+    },
+    {
+      "id": "q03-11-merge-patches",
+      "title": "いくつかの Partial<Options> を、前から順に重ねた Partial<Options> を返す"
+    },
+    {
+      "id": "q03-12-update-email",
+      "title": "Readonly<Profile> を受け取り、email だけを変えた新しい Readonly<Profile> を返す"
+    },
+    {
+      "id": "q03-13-require-email",
+      "title": "email を返す"
+    },
+    {
+      "id": "q03-14-diff-options",
+      "title": "a と b で値が違うプロパティだけを、b の値で持つ Partial<Options> を返す"
+    },
+    {
+      "id": "q03-15-toggle-bold",
+      "title": "Readonly<Options> を受け取り、bold を反転した新しい Options を返す"
+    },
+    {
+      "id": "q03-16-size-or",
+      "title": "Partial<Options> の size を返す"
+    },
+    {
+      "id": "q03-17-describe-options",
+      "title": "Readonly<Options> を \"12px black\" の形にする"
+    },
+    {
+      "id": "q03-18-fill-profile",
+      "title": "profile の足りないところを defaultsで補った Required<Profile> を返す"
+    },
+    {
+      "id": "q03-19-empty-patch",
+      "title": "何も指定していない Partial<Options>を返す"
+    },
+    {
+      "id": "q03-20-reset-keys",
+      "title": "options の、keys に並べたプロパティだけを DEFAULT_OPTIONS の値に戻した新しい Options を返す"
+    },
+    {
+      "id": "q03-partial-required-readonly",
+      "title": "Partial・Required・Readonly（応用問題）"
+    },
+    {
+      "id": "q04-01-user-name",
+      "title": "型 UserName を、User から name だけを取り出して作る"
+    },
+    {
+      "id": "q04-02-user-contact",
+      "title": "型 UserContact を、User から name と email を取り出して作る"
+    },
+    {
+      "id": "q04-03-safe-user",
+      "title": "型 SafeUser を、User から password を除いて作る"
+    },
+    {
+      "id": "q04-04-new-user",
+      "title": "型 NewUser を、User から id を除いて作る"
+    },
+    {
+      "id": "q04-05-article-summary",
+      "title": "型 ArticleSummary を、Article から id と title を取り出して作る"
+    },
+    {
+      "id": "q04-06-article-draft",
+      "title": "型 ArticleDraft を、Article から id と publishedAt を除いて作る"
+    },
+    {
+      "id": "q04-07-to-contact",
+      "title": "User から { name, email } を取り出して返す"
+    },
+    {
+      "id": "q04-08-to-safe-user",
+      "title": "User から password を除いたオブジェクトを返す"
+    },
+    {
+      "id": "q04-09-to-summary",
+      "title": "Article から { id, title } を取り出して返す"
+    },
+    {
+      "id": "q04-10-create-user",
+      "title": "Omit<User, \"id\"> と id から User を作る"
+    },
+    {
+      "id": "q04-11-publish",
+      "title": "下書き Omit<Article, \"id\" | \"publishedAt\"> に id と publishedAt を足して Article を作る"
+    },
+    {
+      "id": "q04-12-summaries",
+      "title": "Article の配列を Pick<Article, \"id\" | \"title\"> の配列にする"
+    },
+    {
+      "id": "q04-13-safe-users",
+      "title": "User の配列から、password を除いた配列を返す"
+    },
+    {
+      "id": "q04-14-patch-user",
+      "title": "型 UserPatch を、User の name、email、age だけを、どれも省略できるようにして作る"
+    },
+    {
+      "id": "q04-15-author-info",
+      "title": "型 AuthorInfo を Pick<Article, \"author\"> & { articleCount: number } として作り、authorInfo でその人の記事の数を返す"
+    },
+    {
+      "id": "q04-16-find-contact",
+      "title": "id の User を探し、Pick<User, \"name\" | \"email\"> を返す"
+    },
+    {
+      "id": "q04-17-login",
+      "title": "型 Credentials を Pick<User, \"email\" | \"password\"> として作る"
+    },
+    {
+      "id": "q04-18-to-public-article",
+      "title": "型 PublicArticle を、Article から body を除いて作る"
+    },
+    {
+      "id": "q04-19-to-teaser",
+      "title": "型 Teaser を Pick<Article, \"title\"> & { excerpt: string } として作る"
+    },
+    {
+      "id": "q04-20-to-rows",
+      "title": "型 UserRow を Pick<User, \"id\" | \"name\" | \"age\"> として作る"
+    },
+    {
+      "id": "q04-pick-omit",
+      "title": "Pick と Omit（応用問題）"
+    },
+    {
+      "id": "q05-01-category-count",
+      "title": "型 CategoryCount を、キーが Category、値が数値の Record として作る"
+    },
+    {
+      "id": "q05-02-schedule",
+      "title": "型 Schedule を、キーが Weekday、値が文字列の配列の Record として作る"
+    },
+    {
+      "id": "q05-03-empty-counts",
+      "title": "すべてのカテゴリが 0 の Record<Category, number> を返す"
+    },
+    {
+      "id": "q05-04-count-categories",
+      "title": "カテゴリの配列から、それぞれの数を Record<Category, number> で返す"
+    },
+    {
+      "id": "q05-05-category-name",
+      "title": "定数 CATEGORY_NAMES を Record<Category, string> として宣言して export し、categoryName でその名前を返す"
+    },
+    {
+      "id": "q05-06-empty-schedule",
+      "title": "すべての曜日が空の配列の Record<Weekday, string[]> を返す"
+    },
+    {
+      "id": "q05-07-add-event",
+      "title": "schedule の day に event を足した、新しい Record<Weekday, string[]> を返す"
+    },
+    {
+      "id": "q05-08-busiest-day",
+      "title": "予定がいちばん多い曜日を返す"
+    },
+    {
+      "id": "q05-09-top-scorer",
+      "title": "Record<string, number> の得点表から、最高得点の人を返す"
+    },
+    {
+      "id": "q05-10-invert-record",
+      "title": "Record<string, string> のキーと値を入れ替える"
+    },
+    {
+      "id": "q05-11-sum-record",
+      "title": "Record<string, number> の値の合計"
+    },
+    {
+      "id": "q05-12-map-record",
+      "title": "Record<string, number> のすべての値に fn を当てはめた、新しい Record を返す"
+    },
+    {
+      "id": "q05-13-filter-record",
+      "title": "値が min 以上のものだけを残した、新しい Record<string, number> を返す"
+    },
+    {
+      "id": "q05-14-from-pairs",
+      "title": "[キー, 値] の配列から Record<string, number> を作る"
+    },
+    {
+      "id": "q05-15-to-pairs",
+      "title": "Record<string, number> を [キー, 値] の配列にする"
+    },
+    {
+      "id": "q05-16-price-of",
+      "title": "価格表 Record<Category, number> から、category の価格を返す"
+    },
+    {
+      "id": "q05-17-order-total",
+      "title": "価格表 Record<Category, number> と、注文 Partial<Record<Category, number>>から合計金額を返す"
+    },
+    {
+      "id": "q05-18-weekday-label",
+      "title": "定数 WEEKDAY_LABELS を Record<Weekday, string> として宣言して export し、weekdayLabel でその名前を返す"
+    },
+    {
+      "id": "q05-19-group-by-initial",
+      "title": "単語を最初の1文字ごとにまとめた Record<string, string[]> を返す"
+    },
+    {
+      "id": "q05-20-count-letters",
+      "title": "文字ごとの出てきた回数を Record<string, number> で返す"
+    },
+    {
+      "id": "q05-record",
+      "title": "Record（応用問題）"
+    },
+    {
+      "id": "q06-01-identity",
+      "title": "受け取った値をそのまま返す"
+    },
+    {
+      "id": "q06-02-first-of",
+      "title": "最初の要素を返す"
+    },
+    {
+      "id": "q06-03-last-of",
+      "title": "最後の要素を返す"
+    },
+    {
+      "id": "q06-04-wrap-in-array",
+      "title": "値を1つだけ持つ配列にする"
+    },
+    {
+      "id": "q06-05-repeat-value",
+      "title": "value を times 個並べた配列"
+    },
+    {
+      "id": "q06-06-make-pair",
+      "title": "2つの値を [a, b] のタプルにする"
+    },
+    {
+      "id": "q06-07-swap-pair",
+      "title": "タプル [a, b] を [b, a] にする"
+    },
+    {
+      "id": "q06-08-box-of",
+      "title": "型 Box<T>を定義して export し、boxOf で Box を作る"
+    },
+    {
+      "id": "q06-09-unboxed",
+      "title": "{ value: T } から value を取り出す"
+    },
+    {
+      "id": "q06-10-reversed-copy",
+      "title": "逆順にした新しい配列"
+    },
+    {
+      "id": "q06-11-nth",
+      "title": "index 番目の要素を返す"
+    },
+    {
+      "id": "q06-12-take-first",
+      "title": "先頭から n 個の新しい配列"
+    },
+    {
+      "id": "q06-13-count-of",
+      "title": "target と同じ要素の数"
+    },
+    {
+      "id": "q06-14-includes-value",
+      "title": "value が含まれていれば true"
+    },
+    {
+      "id": "q06-15-without-value",
+      "title": "value と同じ要素をすべて除いた新しい配列"
+    },
+    {
+      "id": "q06-16-last-index-of-value",
+      "title": "value が最後に出てくる番号"
+    },
+    {
+      "id": "q06-17-filled-with",
+      "title": "value を length 個並べた新しい配列"
+    },
+    {
+      "id": "q06-18-or-else",
+      "title": "型 Maybe<T>を定義して export し、orElse で null なら fallback を返す"
+    },
+    {
+      "id": "q06-19-zip",
+      "title": "2つの配列の同じ番号どうしを [a, b] のタプルにした配列"
+    },
+    {
+      "id": "q06-20-toggle-item",
+      "title": "item が含まれていれば除き、なければ末尾に足した新しい配列"
+    },
+    {
+      "id": "q06-type-variables",
+      "title": "型変数（ジェネリクス）（応用問題）"
+    },
+    {
+      "id": "q07-01-get-prop",
+      "title": "obj の key のプロパティを返す"
+    },
+    {
+      "id": "q07-02-shortest",
+      "title": "length を持つ値の配列から、length がいちばん短いものを返す"
+    },
+    {
+      "id": "q07-03-longer",
+      "title": "length が長い方を返す"
+    },
+    {
+      "id": "q07-04-pluck-all",
+      "title": "それぞれの要素の key の値を並べた配列"
+    },
+    {
+      "id": "q07-05-merge-objects",
+      "title": "2つのオブジェクトを合わせた新しいオブジェクト"
+    },
+    {
+      "id": "q07-06-add-id",
+      "title": "オブジェクトに id を足した新しいオブジェクト"
+    },
+    {
+      "id": "q07-07-set-prop",
+      "title": "obj の key だけを value にした新しいオブジェクト"
+    },
+    {
+      "id": "q07-08-max-by",
+      "title": "fn の値がいちばん大きい要素"
+    },
+    {
+      "id": "q07-09-sum-by",
+      "title": "fn の値の合計"
+    },
+    {
+      "id": "q07-10-sort-by-name",
+      "title": "name プロパティを持つものに限り、name の辞書順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q07-11-oldest",
+      "title": "age プロパティを持つものに限り、age がいちばん大きい要素を返す"
+    },
+    {
+      "id": "q07-12-sort-by-number",
+      "title": "fn の値の小さい順に並べた新しい配列"
+    },
+    {
+      "id": "q07-13-find-by-id",
+      "title": "id プロパティを持つものに限り、id が一致する要素を返す"
+    },
+    {
+      "id": "q07-14-update-by-id",
+      "title": "id が一致する要素だけを patchで上書きした新しい配列"
+    },
+    {
+      "id": "q07-15-count-where",
+      "title": "predicate が true の要素の数"
+    },
+    {
+      "id": "q07-16-or-default",
+      "title": "文字列か数値に限り、value が undefined なら fallback を返す"
+    },
+    {
+      "id": "q07-17-has-all-keys",
+      "title": "keys のプロパティがすべて undefined でなければ true"
+    },
+    {
+      "id": "q07-18-first-where",
+      "title": "predicate が true の最初の要素"
+    },
+    {
+      "id": "q07-19-count-by-key",
+      "title": "keyFn が返すキーごとの数"
+    },
+    {
+      "id": "q07-20-to-id-map",
+      "title": "id プロパティを持つものに限り、id をキーにした Record<number, T> を返す"
+    },
+    {
+      "id": "q07-constraints",
+      "title": "型引数の制約（応用問題）"
+    },
+    {
+      "id": "q08-01-group-items",
+      "title": "keyFn が返す文字列ごとにまとめる"
+    },
+    {
+      "id": "q08-02-count-items",
+      "title": "keyFn が返す文字列ごとの数"
+    },
+    {
+      "id": "q08-03-split-by",
+      "title": "predicate が true の配列と false の配列に分ける"
+    },
+    {
+      "id": "q08-04-unique-by-key",
+      "title": "keyFn が同じものは最初の1つだけ残す"
+    },
+    {
+      "id": "q08-05-sort-by-key",
+      "title": "keyFn の数値の小さい順に並べた新しい配列"
+    },
+    {
+      "id": "q08-06-chunked",
+      "title": "size 個ずつに区切る"
+    },
+    {
+      "id": "q08-07-zip-with",
+      "title": "2つの配列の同じ番号どうしを fn で組み合わせた配列"
+    },
+    {
+      "id": "q08-08-flatten-once",
+      "title": "配列の配列を1つの配列にする"
+    },
+    {
+      "id": "q08-09-compact",
+      "title": "null と undefined を除いた配列"
+    },
+    {
+      "id": "q08-10-index-by",
+      "title": "keyFn をキーにした Record<string, T>"
+    },
+    {
+      "id": "q08-11-map-values",
+      "title": "Record<string, T> のすべての値に fn を当てはめた Record<string, U>"
+    },
+    {
+      "id": "q08-12-last-n",
+      "title": "末尾の n 個の新しい配列"
+    },
+    {
+      "id": "q08-13-difference",
+      "title": "a にあって b にない要素"
+    },
+    {
+      "id": "q08-14-intersection",
+      "title": "a と b の両方にある要素"
+    },
+    {
+      "id": "q08-15-union",
+      "title": "a と b のどちらかにある要素を、出てきた順に重複なく並べる"
+    },
+    {
+      "id": "q08-16-take-while",
+      "title": "先頭から、predicate が true のあいだの要素を集める"
+    },
+    {
+      "id": "q08-17-drop-while",
+      "title": "先頭から、predicate が true のあいだの要素を飛ばし、残りを返す"
+    },
+    {
+      "id": "q08-18-find-last-item",
+      "title": "predicate が true の最後の要素"
+    },
+    {
+      "id": "q08-19-sum-of",
+      "title": "fn の合計"
+    },
+    {
+      "id": "q08-20-min-by",
+      "title": "fn の値がいちばん小さい要素"
+    },
+    {
+      "id": "q08-generic-utils",
+      "title": "ジェネリクスのユーティリティ（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,

@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m2-loops/q05-independent",
+  "title": "繰り返しを自分で選ぶ",
+  "problems": [
+    {
+      "id": "s01-count-by2-or5",
+      "title": "対象日の数"
+    },
+    {
+      "id": "s02-sum-skip-threes",
+      "title": "区間の料金"
+    },
+    {
+      "id": "s03-double-n-times",
+      "title": "倍にする"
+    },
+    {
+      "id": "s04-print-running-sum",
+      "title": "途中の合計"
+    },
+    {
+      "id": "s05-last-multiple-of7",
+      "title": "最後の対象"
+    },
+    {
+      "id": "s06-sum-abs-diff",
+      "title": "平均との差"
+    },
+    {
+      "id": "s07-repeat-word",
+      "title": "案内を繰り返す"
+    },
+    {
+      "id": "s08-alternating-sum",
+      "title": "交互の計算"
+    },
+    {
+      "id": "s09-max-abs",
+      "title": "3地点からの距離"
+    },
+    {
+      "id": "s10-print-times-table",
+      "title": "掛け算の列"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-loop-choice",
+  "skills": {
+    "uses": [
+      "csharp-for-output",
+      "csharp-for-aggregate",
+      "csharp-max-min"
+    ],
+    "assesses": [
+      "csharp-loop-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

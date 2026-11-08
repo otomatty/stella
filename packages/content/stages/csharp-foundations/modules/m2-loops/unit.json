@@ -1,0 +1,14 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["csharp-for-output", "csharp-for-aggregate", "csharp-max-min"],
+    "assesses": [
+      "csharp-for-output",
+      "csharp-for-aggregate",
+      "csharp-max-min",
+      "csharp-loop-choice",
+      "csharp-loop-repair"
+    ]
+  },
+  "reuses": []
+}

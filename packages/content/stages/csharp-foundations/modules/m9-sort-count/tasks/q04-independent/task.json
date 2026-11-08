@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m9-sort-count/q04-independent",
+  "title": "ソートと集計を選ぶ",
+  "problems": [
+    {
+      "id": "s01-descending",
+      "title": "大きい順"
+    },
+    {
+      "id": "s02-distinct",
+      "title": "異なる値"
+    },
+    {
+      "id": "s03-missing",
+      "title": "足りない番号"
+    },
+    {
+      "id": "s04-duplicates",
+      "title": "重複"
+    },
+    {
+      "id": "s05-rank-count",
+      "title": "順位の人数"
+    },
+    {
+      "id": "s06-name-count",
+      "title": "指定名"
+    },
+    {
+      "id": "s07-name-total",
+      "title": "名前の合計"
+    },
+    {
+      "id": "s08-once-sum",
+      "title": "1回だけ"
+    },
+    {
+      "id": "s09-buy",
+      "title": "購入個数"
+    },
+    {
+      "id": "s10-unique",
+      "title": "異なる値の順"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-count-choice",
+  "skills": {
+    "uses": [
+      "csharp-sort-kth",
+      "csharp-count-mode",
+      "csharp-count-names"
+    ],
+    "assesses": [
+      "csharp-count-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}
