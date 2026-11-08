@@ -70,10 +70,11 @@ import {
   type ActiveStarInfo,
   type SkillTreeHandle,
 } from "@/components/learner/tree/SkillTree";
+import { SkillLanes } from "@/components/learner/tree/SkillLanes";
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
 import { buildHomeGuide, startableStageIds } from "@/lib/home-guide";
-import { AlertTriangle, ChevronDown, ChevronUp, Sparkles } from "@/lib/icons";
+import { AlertTriangle, ChevronDown, ChevronUp, Compass, ListTree, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
@@ -123,6 +124,21 @@ export const LearnerHome = ({
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
   const treeRef = useRef<SkillTreeHandle | null>(null);
+  const [homeView, setHomeView] = useState<"tree" | "lanes">(() => {
+    try {
+      return localStorage.getItem("stella_home_view_v1") === "lanes" ? "lanes" : "tree";
+    } catch {
+      return "tree";
+    }
+  });
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem("stella_home_view_v1", homeView);
+    } catch {
+      // 保存できない環境でも表示は切り替えられる。
+    }
+  }, [homeView]);
 
   /**
    * FAB の状態 (localStorage)。これ **だけ** ではぼかしを外さない。
@@ -245,7 +261,8 @@ export const LearnerHome = ({
   const firstStageId = firstStep?.kind === "first-stage" ? firstStep.stageId : null;
   const firstStageFocusAttempted = useRef(false);
   useEffect(() => {
-    if (!firstStageId || firstStageFocusAttempted.current) return;
+    if (homeView !== "tree" || pendingFocusId || !firstStageId || firstStageFocusAttempted.current)
+      return;
     // 既存の初期フォーカスは止め、描画後にこの星へ 1 回だけ寄せる。
     // まだ描画前なら、次のフレームで 1 回だけ試し直す。
     let retryFrame: number | undefined;
@@ -259,7 +276,7 @@ export const LearnerHome = ({
       cancelAnimationFrame(frame);
       if (retryFrame !== undefined) cancelAnimationFrame(retryFrame);
     };
-  }, [firstStageId]);
+  }, [firstStageId, homeView, pendingFocusId]);
 
   // ----- 星を始める / 開く -----
 
@@ -360,6 +377,13 @@ export const LearnerHome = ({
   };
 
   const showInTree = (stageId: string) => {
+    if (homeView === "lanes") {
+      firstStageFocusAttempted.current = true;
+      setPendingFocusId(stageId);
+      setHomeView("tree");
+      if (!isDesktop) setExpandedPref(false);
+      return;
+    }
     if (!treeRef.current?.focusStage(stageId)) {
       toast("この星はまだツリーに見えていません");
       return;
@@ -464,6 +488,33 @@ export const LearnerHome = ({
   const expanded = expandedPref ?? isDesktop;
   const loadingMap = backendEnabled && skillMap.map === null && !skillMap.error;
 
+  // 切り替え先の盤面と視界が描かれてから、控えていた星へ一度だけ寄せる。
+  useEffect(() => {
+    if (
+      homeView !== "tree" ||
+      !pendingFocusId ||
+      !backendEnabled ||
+      loadingMap ||
+      (nodes.length === 0 && (skillMap.loading || skillMap.error))
+    )
+      return;
+    const frame = requestAnimationFrame(() => {
+      if (!treeRef.current?.focusStage(pendingFocusId)) {
+        toast("この星はまだツリーに見えていません");
+      }
+      setPendingFocusId(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    homeView,
+    pendingFocusId,
+    backendEnabled,
+    loadingMap,
+    nodes,
+    skillMap.loading,
+    skillMap.error,
+  ]);
+
   return (
     <div className="relative h-[calc(100dvh-var(--shell-header-height))] overflow-hidden">
       {/* 盤面は画面いっぱい。ガイドはこの上に浮かぶ。 */}
@@ -486,33 +537,92 @@ export const LearnerHome = ({
             </Button>
           </BoardMessage>
         ) : (
-          <SkillTree
-            nodes={nodes}
-            islandCaption={islandCaption}
-            currentUserId={currentUserId}
-            activeStageId={serverActiveStageId}
-            queuedStageIds={stageQueue.queue}
-            onResumeStage={resumeStage}
-            onStartStage={startStage}
-            onQueueStage={(stageId) =>
-              void stageQueue
-                .add(stageId)
-                .catch((err: unknown) =>
-                  toast.error(err instanceof Error ? err.message : "キューへの追加に失敗しました"),
-                )
-            }
-            onSkillCheck={setCheckStageId}
-            onOpenStage={openStage}
-            revealDev={revealDev}
-            // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
-            initialFocusStageId={firstStageId ? null : serverActiveStageId}
-            activeInfo={activeInfo}
-            handleRef={treeRef}
-            // PC で開いたカードの陰は「見えている範囲」から外す。
-            insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
-            // 全面なので角丸と枠は要らない。
-            className="h-full w-full rounded-none border-0"
-          />
+          <>
+            <fieldset
+              aria-label="表示"
+              className="absolute left-3 top-3 z-10 flex h-9 items-center rounded-full border border-border bg-white/[0.86] p-0.5 shadow-sm backdrop-blur-md dark:bg-[rgba(12,14,24,0.78)] lg:left-[392px] lg:top-4"
+            >
+              {(["tree", "lanes"] as const).map((view) => {
+                const Icon = view === "tree" ? Compass : ListTree;
+                return (
+                  <button
+                    key={view}
+                    type="button"
+                    aria-pressed={homeView === view}
+                    className={cn(
+                      "inline-flex h-full items-center gap-1.5 rounded-full px-3 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      homeView === view
+                        ? "bg-brand text-white dark:bg-[#a78bfa] dark:text-[#0c0e18]"
+                        : "text-ink-2 hover:bg-sunken",
+                    )}
+                    onClick={() => {
+                      setPendingFocusId(null);
+                      setHomeView(view);
+                    }}
+                  >
+                    <Icon size={14} />
+                    {view === "tree" ? "ツリー" : "道のり"}
+                  </button>
+                );
+              })}
+            </fieldset>
+            {homeView === "lanes" ? (
+              <SkillLanes
+                nodes={nodes}
+                islandCaption={islandCaption}
+                activeStageId={serverActiveStageId}
+                queuedStageIds={stageQueue.queue}
+                revealDev={revealDev}
+                activeInfo={activeInfo}
+                insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
+                onResumeStage={resumeStage}
+                onStartStage={startStage}
+                onQueueStage={(stageId) =>
+                  void stageQueue
+                    .add(stageId)
+                    .catch((err: unknown) =>
+                      toast.error(
+                        err instanceof Error ? err.message : "キューへの追加に失敗しました",
+                      ),
+                    )
+                }
+                onSkillCheck={setCheckStageId}
+                onOpenStage={openStage}
+                onShowInTree={showInTree}
+                className="h-full w-full"
+              />
+            ) : (
+              <SkillTree
+                nodes={nodes}
+                islandCaption={islandCaption}
+                currentUserId={currentUserId}
+                activeStageId={serverActiveStageId}
+                queuedStageIds={stageQueue.queue}
+                onResumeStage={resumeStage}
+                onStartStage={startStage}
+                onQueueStage={(stageId) =>
+                  void stageQueue
+                    .add(stageId)
+                    .catch((err: unknown) =>
+                      toast.error(
+                        err instanceof Error ? err.message : "キューへの追加に失敗しました",
+                      ),
+                    )
+                }
+                onSkillCheck={setCheckStageId}
+                onOpenStage={openStage}
+                revealDev={revealDev}
+                // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
+                initialFocusStageId={firstStageId ? null : serverActiveStageId}
+                activeInfo={activeInfo}
+                handleRef={treeRef}
+                // PC で開いたカードの陰は「見えている範囲」から外す。
+                insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
+                // 全面なので角丸と枠は要らない。
+                className="h-full w-full rounded-none border-0"
+              />
+            )}
+          </>
         )}
       </div>
 

@@ -202,7 +202,7 @@ function islandAccentOf(key: string): string {
 }
 
 /** ルート色を持つ扇の星に渡す CSS 変数 (index.css の tree-star-* が拾う)。 */
-function routeStyleOf(accent: string | undefined, solid: string | undefined): CSSProperties {
+export function routeStyleOf(accent: string | undefined, solid: string | undefined): CSSProperties {
   if (!accent) return {};
   return {
     "--route-solid": solid ? `rgb(${solid})` : undefined,
@@ -1982,7 +1982,7 @@ interface StarActionsProps {
  *
  * 先頭がその星の主な一手 (続きから / ここから始める / 飛び級) で、強調はそこだけ。
  */
-const StarActions = ({
+export const StarActions = ({
   detail,
   stageId,
   size,
