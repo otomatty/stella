@@ -715,16 +715,17 @@ export const SkillTree = ({
           edge.toId === target.instanceId &&
           activeStars.some((star) => star.instanceId === edge.fromId),
       );
-      const source = activeStars.find((star) => star.instanceId === edge?.fromId) ?? activeStars[0];
+      if (!edge) return [];
+      const source = activeStars.find((star) => star.instanceId === edge.fromId);
       if (!source) return [];
       return [
         {
           id: target.instanceId,
           ends: edgeEnds(
-            edge?.x1 ?? source.x,
-            edge?.y1 ?? source.y,
-            edge?.x2 ?? target.x,
-            edge?.y2 ?? target.y,
+            edge.x1,
+            edge.y1,
+            edge.x2,
+            edge.y2,
             starRadius.get(source.instanceId) ?? 16,
             starRadius.get(target.instanceId) ?? 16,
           ),

@@ -29,7 +29,7 @@ export function buildLanes(nodes: readonly SkillMapStageNode[], revealDev: boole
     depths.set(node.id, depth);
   }
   const depthOf = (node: SkillMapStageNode) => depths.get(node.id) ?? 0;
-  const keyOf = (node: SkillMapStageNode) => node.category ?? node.theme ?? "その他";
+  const keyOf = (node: SkillMapStageNode) => node.category || node.theme || "その他";
   const moreKeys = new Set(nodes.filter((node) => node.visibility === "edge").map(keyOf));
   const lanes = new Map<string, Lane>();
   for (const node of nodes) {

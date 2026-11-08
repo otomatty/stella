@@ -97,6 +97,27 @@ describe("buildLanes", () => {
     );
   });
 
+  it("category が空文字なら theme の行、theme も無ければ「その他」に入る", () => {
+    const lanes = buildLanes(
+      [
+        star("theme", { category: "", theme: "テーマ" }),
+        star("edge", { category: "", theme: "テーマ", visibility: "edge" }),
+        star("other", { category: "" }),
+        star("empty-theme", { category: "", theme: "" }),
+      ],
+      false,
+    );
+    expect(lanes).toHaveLength(2);
+    expect(lanes.find((lane) => lane.key === "テーマ")).toMatchObject({
+      stars: [{ id: "theme" }],
+      hasMore: true,
+    });
+    expect(lanes.find((lane) => lane.key === "その他")?.stars.map((node) => node.id)).toEqual([
+      "empty-theme",
+      "other",
+    ]);
+  });
+
   it("親の循環・自己参照で止まる", () => {
     expect(
       buildLanes(
