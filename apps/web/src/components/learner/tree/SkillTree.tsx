@@ -93,6 +93,7 @@ import { useSkillTreeCelebration, type CelebrationKind } from "./celebration";
 import { showsStar } from "./fog-display";
 import { iconFetchKey } from "./icon-fetch-key";
 import { offscreenMarkers, type ViewState } from "./offscreen";
+import { placeOverviewCards, summarizeRegions } from "./overview";
 import {
   layoutRadialSkillTree,
   type RadialBounds,
@@ -145,6 +146,8 @@ interface SkillTreeProps {
   onOpenStage: (stageId: string) => void;
   /** 開発者モード: 段を素通しし、幽霊ノードも星として描く。 */
   revealDev?: boolean;
+  /** 縮小したときに区域のまとめを出す (受講者ホーム用)。 */
+  overview?: boolean;
   /**
    * 開いた直後に寄せる星 (現在地)。null なら入口の星座を見せる。
    * 最初に描けたときに 1 回だけ寄る — 再取得のたびに視点を奪わない。
@@ -376,6 +379,8 @@ function useStageIconUrls(
 
 /** クリックで寄せる倍率。全体表示からここに来ると名前が出る。 */
 const FOCUS_SCALE = 1.25;
+/** これ未満の倍率では、星の名前の代わりに区域のまとめを出す。 */
+const OVERVIEW_SCALE = 0.6;
 /** マウスを載せてからカードを開くまで (横切っただけの星で開かない)。 */
 const CARD_OPEN_DELAY_MS = 120;
 /** マウスが離れてからカードを閉じるまで (星からカードへ移る間に閉じない)。 */
@@ -441,6 +446,7 @@ export const SkillTree = ({
   onSkillCheck,
   onOpenStage,
   revealDev = false,
+  overview = false,
   initialFocusStageId = null,
   activeInfo = null,
   handleRef,
@@ -477,6 +483,11 @@ export const SkillTree = ({
   /** シートを閉じたときにフォーカスを戻す先の星。 */
   const sheetAnchorRef = useRef<HTMLButtonElement | null>(null);
   const [scale, setScale] = useState(1);
+  const isOverview = overview && scale < OVERVIEW_SCALE;
+  const regions = useMemo(
+    () => summarizeRegions(layout, activeStageId, revealDev),
+    [layout, activeStageId, revealDev],
+  );
   /** 見え方 (画面端の矢印の計算用)。初回レンダー前は null。 */
   const [view, setView] = useState<ViewState | null>(null);
   /** クリックで寄せた星。全体表示へ戻すと消える。 */
@@ -750,6 +761,78 @@ export const SkillTree = ({
     return { ...view, x: view.x - inset, width: view.width - inset };
   }, [view, insetLeft]);
   const viewInset = view && visibleView ? view.width - visibleView.width : 0;
+  const overviewLabels = useMemo(() => {
+    if (!isOverview || !visibleView) return [];
+    const estimateWidth = (text: string, fullWidth: number, asciiWidth: number) =>
+      Array.from(text).reduce(
+        (width, char) => width + (char.charCodeAt(0) <= 0x7f ? asciiWidth : fullWidth),
+        0,
+      );
+    const cards = regions.flatMap((region) => {
+      const cx = region.cx * visibleView.scale + visibleView.x;
+      const cy = region.cy * visibleView.scale + visibleView.y;
+      if (cx < 0 || cx > visibleView.width || cy < 0 || cy > visibleView.height) return [];
+      const counts = [
+        ...(region.kind === "nebula" ? ["星雲"] : []),
+        ...(region.cleared > 0 ? [`クリア ${region.cleared}`] : []),
+        ...(region.active > 0 ? [`受講中 ${region.active}`] : []),
+        ...(region.startable > 0 ? [`始められる ${region.startable}`] : []),
+        ...(region.cleared + region.active + region.startable === 0
+          ? [`ロック ${region.locked}`]
+          : []),
+      ].join(" · ");
+      const current =
+        region.active > 0
+          ? `いまここ · ${region.activeTitle ?? ""}${activeInfo ? ` ${activeInfo.progress}%` : ""}`
+          : null;
+      const width = Math.min(
+        220,
+        visibleView.width - 16,
+        Math.ceil(
+          Math.max(
+            estimateWidth(region.key, 15, 9),
+            estimateWidth(counts, 11.5, 6.9),
+            current ? estimateWidth(current, 11, 6.6) + 16 : 0,
+          ),
+        ) + 26,
+      );
+      return [
+        {
+          ...region,
+          cx,
+          cy,
+          width,
+          height: region.active > 0 ? 78 : 56,
+          counts,
+          current,
+          regionTop: region.bounds.minY * visibleView.scale + visibleView.y,
+          regionBottom: region.bounds.maxY * visibleView.scale + visibleView.y,
+        },
+      ];
+    });
+    // 安定した区分で、現在地の区域だけを先に配置する。
+    const ordered = [
+      ...cards.filter((card) => card.active > 0),
+      ...cards.filter((card) => card.active === 0),
+    ];
+    const obstacles = [{ left: visibleView.width - 52, top: 8, width: 44, height: 120 }];
+    if (showIslandChips && visibleIslands.length > 0) {
+      const width = Math.min(460, visibleView.width - 72);
+      obstacles.push({ left: visibleView.width - 52 - width, top: 8, width, height: 72 });
+    }
+    return placeOverviewCards(ordered, obstacles, visibleView).map((card) => ({
+      ...card,
+      left: card.left + viewInset,
+    }));
+  }, [
+    isOverview,
+    visibleView,
+    viewInset,
+    regions,
+    activeInfo,
+    showIslandChips,
+    visibleIslands.length,
+  ]);
   const markers = useMemo(
     () =>
       visibleView && !showsAllLabels(visibleView.scale)
@@ -767,7 +850,7 @@ export const SkillTree = ({
    * 星の名前 (`showsAllLabels`) より低い倍率から出す。
    */
   const sectorLabels = useMemo(() => {
-    if (!visibleView || visibleView.scale < SECTOR_LABEL_MIN_SCALE) return [];
+    if (isOverview || !visibleView || visibleView.scale < SECTOR_LABEL_MIN_SCALE) return [];
     const mainland = new Set(layout.sectors.map((s) => s.key));
     const islandKeys = new Set(layout.islands.map((island) => island.key));
     const parentIds = new Map(layout.edges.map((edge) => [edge.toId, edge.fromId]));
@@ -811,7 +894,16 @@ export const SkillTree = ({
       ...label,
       left: label.left + viewInset,
     }));
-  }, [layout, visibleView, viewInset, drawsStar, visibleIslands, showIslandChips, placeHeadings]);
+  }, [
+    layout,
+    visibleView,
+    viewInset,
+    drawsStar,
+    visibleIslands,
+    showIslandChips,
+    placeHeadings,
+    isOverview,
+  ]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
@@ -862,7 +954,7 @@ export const SkillTree = ({
       } else bounds = islandFrames.find(({ island }) => island.key === key)?.frame ?? null;
       if (!bounds || !visibleView || !canvasRef.current) return false;
       const targetScale = Math.max(
-        0.6,
+        OVERVIEW_SCALE,
         Math.min(
           1.25,
           visibleView.width / Math.max(1, bounds.maxX - bounds.minX),
@@ -1021,6 +1113,49 @@ export const SkillTree = ({
               ) : null}
             </aside>
           ) : null}
+          {overviewLabels.map((region) => (
+            <button
+              key={region.key}
+              type="button"
+              className="tree-overview-card absolute"
+              style={
+                {
+                  left: region.left,
+                  top: region.top,
+                  width: region.width,
+                  height: region.height,
+                  "--overview-solid": routeSolidOf(region.key)
+                    ? `rgb(${routeSolidOf(region.key)})`
+                    : "var(--brand)",
+                  "--overview-accent": routeAccentOf(region.key)
+                    ? `rgb(${routeAccentOf(region.key)})`
+                    : "var(--brand)",
+                } as CSSProperties
+              }
+              aria-label={`${region.key}に近づく（クリア ${region.cleared}・受講中 ${region.active}・始められる ${region.startable}）`}
+              onClick={() => focusRegion(region.key)}
+            >
+              {region.current ? (
+                <span className="tree-overview-current" title={region.current}>
+                  {region.current}
+                </span>
+              ) : null}
+              <span className="tree-overview-title" title={region.key}>
+                {region.key}
+              </span>
+              <span className="tree-overview-counts" title={region.counts}>
+                {region.counts}
+              </span>
+            </button>
+          ))}
+          {isOverview ? (
+            <div
+              className="tree-hint pointer-events-none absolute bottom-20 text-center text-[10.5px]"
+              style={{ left: viewInset, width: visibleView?.width }}
+            >
+              全体の地図 · 近づくとツリー表示に切り替わります
+            </div>
+          ) : null}
           {sectorLabels.map((label) => {
             const accent = routeAccentOf(label.key);
             return (
@@ -1126,6 +1261,28 @@ export const SkillTree = ({
         aria-hidden="true"
       >
         <title>前提のつながり</title>
+        {isOverview
+          ? regions
+              .filter((region) => region.kind === "route")
+              .map((region) => {
+                const accent = routeAccentOf(region.key);
+                const color = accent ? `rgb(${accent})` : "var(--brand)";
+                return (
+                  <ellipse
+                    key={region.key}
+                    cx={region.cx}
+                    cy={region.cy}
+                    rx={(region.bounds.maxX - region.bounds.minX) / 2}
+                    ry={(region.bounds.maxY - region.bounds.minY) / 2}
+                    style={{ fill: color, stroke: color }}
+                    fillOpacity={0.06}
+                    strokeOpacity={0.45}
+                    strokeWidth={1.5}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              })
+          : null}
         <defs>
           {/*
             充足した前提線の輝き。盤面が暗いので、線そのものだけでは沈む。
@@ -1241,23 +1398,23 @@ export const SkillTree = ({
           前提: {labelOf(selectedBridge.anchor.node)}
         </div>
       ) : null}
-      {/* 島タイトル。ズーム段に関わらず常時出す — 全体表示でも離れ小島が
-          読めるように、逆スケールで画面上の大きさを保つ。置き場所は枠の上辺。 */}
-      {islandFrames.map(({ island, frame, count }) => (
-        <PlaceHeading
-          key={`island-title-${island.key}`}
-          title={island.key}
-          selected={selectedIslandKey === island.key}
-          onSelect={onSelectIsland ? () => onSelectIsland(island.key) : undefined}
-          detail={`星雲 · ${stageCountLine(count, islandCaption?.(island.key))}`}
-          left={(frame.minX + frame.maxX) / 2}
-          top={frame.minY}
-          scale={scale}
-          titleClassName="tree-sector-label"
-          titleColor={`rgb(${islandAccentOf(island.key)} / 0.9)`}
-        />
-      ))}
-      {layout.mainlandBounds && drawnCounts.mainland > 0 ? (
+      {/* 通常表示の島タイトル。逆スケールで大きさを保ち、全体の地図では区域札に置き換える。 */}
+      {!isOverview &&
+        islandFrames.map(({ island, frame, count }) => (
+          <PlaceHeading
+            key={`island-title-${island.key}`}
+            title={island.key}
+            selected={selectedIslandKey === island.key}
+            onSelect={onSelectIsland ? () => onSelectIsland(island.key) : undefined}
+            detail={`星雲 · ${stageCountLine(count, islandCaption?.(island.key))}`}
+            left={(frame.minX + frame.maxX) / 2}
+            top={frame.minY}
+            scale={scale}
+            titleClassName="tree-sector-label"
+            titleColor={`rgb(${islandAccentOf(island.key)} / 0.9)`}
+          />
+        ))}
+      {!isOverview && layout.mainlandBounds && drawnCounts.mainland > 0 ? (
         <PlaceHeading
           title={mainlandTitle}
           detail={stageCountLine(drawnCounts.mainland, null)}
@@ -1277,9 +1434,11 @@ export const SkillTree = ({
           activeTitle={activeTitle}
           activeProgress={activeInfo?.progress}
           queued={queuedStageIds.includes(placed.node.id)}
+          showCurrentLabel={!isOverview}
           showLabel={
-            (scale >= LABEL_OVERVIEW_SCALE && labelSides.get(placed.instanceId) !== "hidden") ||
-            (placed.instanceId === focusedId && showsFocusLabel(scale))
+            !isOverview &&
+            ((scale >= LABEL_OVERVIEW_SCALE && labelSides.get(placed.instanceId) !== "hidden") ||
+              (placed.instanceId === focusedId && showsFocusLabel(scale)))
           }
           labelSide={labelSides.get(placed.instanceId) ?? "below"}
           scale={scale}
@@ -1324,6 +1483,7 @@ interface StarNodeProps {
   queued: boolean;
   /** 名前札を出すか。 */
   showLabel: boolean;
+  showCurrentLabel: boolean;
   labelSide: StarLabelSide;
   scale: number;
   /**
@@ -1379,6 +1539,7 @@ const StarNode = ({
   activeProgress,
   queued,
   showLabel,
+  showCurrentLabel,
   labelSide,
   scale,
   coreScale,
@@ -1566,7 +1727,7 @@ const StarNode = ({
             <circle r={radius + 8} fill="none" strokeWidth={2} strokeDasharray="4 4" />
           </svg>
         ) : null}
-        {active ? (
+        {active && showCurrentLabel ? (
           <span
             className="tree-current-pill pointer-events-none absolute whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold leading-none"
             style={{

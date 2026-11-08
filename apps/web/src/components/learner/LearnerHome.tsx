@@ -593,6 +593,7 @@ export const LearnerHome = ({
               />
             ) : (
               <SkillTree
+                overview
                 nodes={nodes}
                 islandCaption={islandCaption}
                 currentUserId={currentUserId}
