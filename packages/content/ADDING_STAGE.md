@@ -268,7 +268,7 @@ cp packages/content/templates/stage.json packages/content/stages/<slug>/stage.js
 
 #### スキルツリー用の任意フィールド
 
-ホームのステージマップ（スキルツリー）は、ステージをスキルとして並べます。スキルの解放と見え方は `stage.json` の任意フィールドが決めます。どこまで見えるか（0〜1 歩 = 名前と解放条件／2 歩 = ぼかした名前だけ／3 歩 = 線だけ／4 歩以上 = 出さない）。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@stella/shared/skill-map`）が読みます。
+ホームのステージマップ（スキルツリー）は、ステージをスキルとして並べます。スキルの解放と見え方は `stage.json` の任意フィールドが決めます。どこまで見えるか（0 歩 = 名前をくっきり表示／1 歩 = full のまま名前をぼかし、アイコンなし・解放条件と腕試しは残す／2 歩 = 線だけ／3 歩以上 = 出さない）。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@stella/shared/skill-map`）が読みます。
 
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |

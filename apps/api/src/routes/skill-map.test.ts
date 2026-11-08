@@ -117,7 +117,7 @@ const getTiers5 = (path: string) =>
 
 /**
  * 一本道 a → b → c → d → e → f。a はクリア済みなので、視界の起点は a (cleared) と
- * b (unlocked)。そこから c = 1 歩 (full) / d = 2 歩 (fog) / e = 3 歩 (edge = 線だけ) /
+ * b (unlocked)。そこから c = 1 歩 (full) / d = 2 歩 (edge = 線だけ) / e = 3 歩 (hidden) /
  * f = 4 歩 (hidden = 応答に載らない)。
  * c は full なのに locked — 到達説明を伏せるのが視界ではなく状態で決まることの実例。
  */
@@ -172,16 +172,16 @@ describe("GET /api/skill-map/mine", () => {
     expect(res.status).toBe(401);
   });
 
-  it("届く範囲の星だけを状態と視界つきで返す (4 歩先は配列ごと落とす)", async () => {
+  it("届く範囲の星だけを状態と視界つきで返す (3 歩以上先は配列ごと落とす)", async () => {
     const stages = await fetchStages();
-    // カタログは 6 星だが、4 歩先 (f) は応答に現れない。
-    expect(stages.size).toBe(5);
+    // カタログは 6 星だが、3 歩以上先 (e・f) は応答に現れない。
+    expect(stages.size).toBe(4);
     expect(stages.get("id-a")?.state).toBe("cleared");
     expect(stages.get("id-b")?.state).toBe("unlocked");
     expect(stages.get("id-c")?.state).toBe("locked");
     expect(stages.get("id-c")?.visibility).toBe("full");
-    expect(stages.get("id-d")?.visibility).toBe("fog");
-    expect(stages.get("id-e")?.visibility).toBe("edge");
+    expect(stages.get("id-d")?.visibility).toBe("edge");
+    expect(stages.get("id-e")).toBeUndefined();
     expect(stages.get("id-f")).toBeUndefined();
   });
 
@@ -189,10 +189,10 @@ describe("GET /api/skill-map/mine", () => {
     const res = await getLegacy("/api/skill-map/mine");
     const body = (await res.json()) as { skill_map: { stages: StagePayload[] } };
     const stages = new Map(body.skill_map.stages.map((stage) => [stage.id, stage]));
-    // 名前のある星 (0〜2 歩) はそのまま。旧画面は今までどおりこれだけを描く。
+    // 名前のある星 (0〜1 歩) はそのまま。旧画面は今までどおりこれだけを描く。
     expect(stages.get("id-c")?.visibility).toBe("full");
-    expect(stages.get("id-d")?.visibility).toBe("fog");
-    // 3 歩先は配らない — 旧 describeStar() は fog 以外を普通の星として描き、
+    expect(stages.get("id-d")).toBeUndefined();
+    // 2 歩先は配らない — 旧 describeStar() は fog 以外を普通の星として描き、
     // 必ず 400 になる腕試しボタンまで出してしまう。
     expect(stages.get("id-e")).toBeUndefined();
     expect(stages.get("id-f")).toBeUndefined();
@@ -374,16 +374,16 @@ describe("GET /api/skill-map/mine", () => {
     const body = (await res.json()) as {
       skill_map: { stages: StagePayload[]; stage_count: number };
     };
-    expect(body.skill_map.stages).toHaveLength(5);
+    expect(body.skill_map.stages).toHaveLength(4);
     expect(body.skill_map.stage_count).toBe(6);
   });
 
-  it("3 歩先は線を引くトポロジだけ (名前もテーマも状態語以上のものも返さない)", async () => {
+  it("2 歩先は線を引くトポロジだけ (名前もテーマも状態語以上のものも返さない)", async () => {
     const stages = await fetchStages();
-    const e = stages.get("id-e");
+    const e = stages.get("id-d");
     expect(e?.visibility).toBe("edge");
     // 線の終点になる座標を盤面が出せるように、親と扇だけは載せる。
-    expect(e?.parent_id).toBe("id-d");
+    expect(e?.parent_id).toBe("id-c");
     expect(e?.category).toBe("プログラミング");
     // 距離 1 以上は必ず locked なので、状態は何も明かさない。
     expect(e?.state).toBe("locked");
@@ -446,13 +446,13 @@ describe("GET /api/skill-map/mine", () => {
     expect(revealed.get("id-c")?.audience).toBeUndefined();
   });
 
-  it("2 歩先 (霧) は名前・カテゴリ・前提線まで (slug・到達説明・解放条件は返さない)", async () => {
+  it("2 歩先はカテゴリ・前提線まで (名前・slug・到達説明・解放条件は返さない)", async () => {
     const stages = await fetchStages();
     const d = stages.get("id-d");
-    expect(d?.visibility).toBe("fog");
-    expect(d?.theme).toBe("テーマ");
-    // 名前は「ぼかしの予告」用に返す。伏せ方 (blur) は画面側の演出。
-    expect(d?.title).toBe("d のステージ");
+    expect(d?.visibility).toBe("edge");
+    expect(d?.theme).toBeUndefined();
+    // 線だけの段なので名前は返さない。
+    expect(d?.title).toBeUndefined();
     expect(d?.category).toBe("プログラミング");
     // 線が無いと盤面が深さ = リングを計算できず、先の星が内側に置かれる。
     expect(d?.parent_id).toBe("id-c");
@@ -465,10 +465,10 @@ describe("GET /api/skill-map/mine", () => {
     expect(Object.keys(d ?? {})).not.toContain("icon_path");
   });
 
-  it("full の星にはアイコンがあることだけ載せる (R2 キーは出さない)", async () => {
+  it("実施できる full の星にはアイコンがあることだけ載せる (R2 キーは出さない)", async () => {
     const stages = await fetchStages();
     expect(stages.get("id-a")?.has_icon).toBe(true);
-    expect(stages.get("id-c")?.has_icon).toBe(true);
+    expect(stages.get("id-c")?.has_icon).toBeUndefined();
     expect(stages.get("id-d")?.has_icon).toBeUndefined();
     expect(Object.keys(stages.get("id-a") ?? {})).not.toContain("icon_path");
   });
@@ -494,7 +494,7 @@ describe("GET /api/skill-map/mine", () => {
           id: "id-js",
           slug: "javascript-basics",
           title: "JavaScript 入門",
-          prerequisites: ["html-css-basics"],
+          prerequisites: ["it-basics"],
           category: "フロントエンド",
         },
         {
@@ -507,12 +507,12 @@ describe("GET /api/skill-map/mine", () => {
           category: "基礎",
         },
       ],
-      // クリア無し = it が unlocked 起点。html=full (1 歩) / js=fog (2 歩) / git=edge (3 歩)。
+      // クリア無し = it が unlocked 起点。html / js = full (1 歩)、git = edge (2 歩)。
       clearedStageIds: new Set<string>(),
       activeStageId: undefined,
     });
     const stages = await fetchStages();
-    expect(stages.get("id-js")?.visibility).toBe("fog");
+    expect(stages.get("id-js")?.visibility).toBe("full");
     expect(stages.get("id-js")?.appearances).toBeUndefined();
     const git = stages.get("id-git");
     // 線だけの段でも扇の複製先は要る (無いとどの扇に幽霊ノードを置くかが決まらない)。
@@ -528,8 +528,8 @@ describe("GET /api/skill-map/mine", () => {
   });
 
   it("幽霊ノードの線は描かれる星にしか繋がない (幽霊どうしの扇は落とす)", async () => {
-    // 現行カタログの形。it → html → js (FE) / it → sql → cli → node (BE)。
-    // Git は FE 扇では js (霧) の次、BE 扇では node (幽霊) の次。
+    // 現行カタログの形。it → js (FE) / it → sql → node (BE)。
+    // Git は FE 扇では js (full) の次、BE 扇では node (幽霊) の次。
     const s = (slug: string, prerequisites: string[], category: string) => ({
       id: `id-${slug.replace(/-basics$/, "")}`,
       slug,
@@ -541,20 +541,20 @@ describe("GET /api/skill-map/mine", () => {
       stages: [
         s("it-basics", [], "基礎"),
         s("html-css-basics", ["it-basics"], "フロントエンド"),
-        s("javascript-basics", ["html-css-basics"], "フロントエンド"),
+        s("javascript-basics", ["it-basics"], "フロントエンド"),
         s("sql-basics", ["it-basics"], "バックエンド"),
         s("cli-basics", ["sql-basics"], "バックエンド"),
-        s("node-basics", ["cli-basics"], "バックエンド"),
+        s("node-basics", ["sql-basics"], "バックエンド"),
         s("git-basics", ["javascript-basics", "node-basics"], "基礎"),
       ],
       clearedStageIds: new Set<string>(),
       activeStageId: undefined,
     });
     const stages = await fetchStages();
-    expect(stages.get("id-javascript")?.visibility).toBe("fog"); // 2 歩
-    expect(stages.get("id-node")?.visibility).toBe("edge"); // 3 歩 = 幽霊
+    expect(stages.get("id-javascript")?.visibility).toBe("full"); // 1 歩
+    expect(stages.get("id-node")?.visibility).toBe("edge"); // 2 歩 = 幽霊
     const git = stages.get("id-git");
-    expect(git?.visibility).toBe("edge"); // js 経由で 3 歩
+    expect(git?.visibility).toBe("edge"); // js 経由で 2 歩
     // BE 扇の親 (node) も幽霊なので、その扇には線を張らない = 複製もしない。
     expect(git?.appearances).toEqual(["フロントエンド"]);
     expect(git?.appearance_parent_ids).toEqual({ フロントエンド: "id-javascript" });
@@ -603,8 +603,8 @@ describe("GET /api/skill-map/mine", () => {
     });
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       // 本線 r → s1 → s2 → s3 → p (p は 4 歩で hidden)。
-      // 飛び級で e を開くと、その手前が e → d → c → x と数えられ、x は 3 歩 = edge に
-      // なる。ところが x の **線** は p 側 (4 歩) へ向いているので、x から引ける線が無い。
+      // 飛び級で d を開くと、その手前が d → c → x と数えられ、x は 2 歩 = edge に
+      // なる。ところが x の **線** は p 側 (3 歩) へ向いているので、x から引ける線が無い。
       stages: [
         s("r", []),
         s("s1", ["r"]),
@@ -617,26 +617,26 @@ describe("GET /api/skill-map/mine", () => {
         s("e", ["d"]),
       ],
       clearedStageIds: new Set<string>(),
-      unlockedStageIds: new Set(["id-e"]),
+      unlockedStageIds: new Set(["id-d"]),
       activeStageId: undefined,
     });
     const stages = await fetchStages();
-    expect(stages.get("id-d")?.visibility).toBe("full"); // 1 歩
-    expect(stages.get("id-c")?.visibility).toBe("fog"); // 2 歩
-    // x は 3 歩 = 幽霊。自分の親 p は 4 歩で届かないが、描かれる c が x を親に
+    expect(stages.get("id-d")?.visibility).toBe("full"); // 起点
+    expect(stages.get("id-c")?.visibility).toBe("full"); // 1 歩
+    // x は 2 歩 = 幽霊。自分の親 p は 3 歩で届かないが、描かれる c が x を親に
     // 指しているので、c → x のフェード線のために残す。
     expect(stages.get("id-x")?.visibility).toBe("edge");
     expect(stages.get("id-c")?.parent_id).toBe("id-x");
     // 幽霊が自分の親として指せるのは描かれる星だけ (幽霊どうしの線は引かない)。
     expect(stages.get("id-x")?.parent_id).toBeUndefined();
-    // 4 歩先は配信しない。
+    // 3 歩以上先は配信しない。
     expect(stages.get("id-p")).toBeUndefined();
   });
 
   it("受講登録の有無は集約フラグで返す (霧より先の登録も数える)", async () => {
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       ...lineSource(),
-      // 唯一の受講登録が 2 歩先 (霧) にある受講者。星ごとの `enrolled` は付かない。
+      // 唯一の受講登録が 2 歩先 (edge) にある受講者。星ごとの `enrolled` は付かない。
       enrolledStageIds: new Set(["id-d"]),
     });
     const res = await get("/api/skill-map/mine");
@@ -647,7 +647,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(body.skill_map.stages.some((stage) => stage.enrolled === true)).toBe(false);
   });
 
-  it("扇ごとの親 id は霧の星にも載せる (複製先で線を張る)", async () => {
+  it("扇ごとの親 id は線だけの星にも載せる (複製先で線を張る)", async () => {
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       stages: [
         {
@@ -668,7 +668,7 @@ describe("GET /api/skill-map/mine", () => {
           id: "id-js",
           slug: "javascript-basics",
           title: "JavaScript 入門",
-          prerequisites: ["html-css-basics"],
+          prerequisites: ["it-basics"],
           category: "フロントエンド",
         },
         {
@@ -758,9 +758,35 @@ describe("GET /api/skill-map/mine", () => {
     const x = stages.get("id-x");
     expect(x?.parent_id).toBe("id-b");
     expect(x?.state).toBe("locked");
-    // b (起点) の隣 = 1 歩なので解放条件が出る。線の無い c も名前で残る。
+    // b (起点) の隣 = 1 歩なので解放条件が出る。線の無い locked の c はテーマ名で残る。
     expect(x?.visibility).toBe("full");
-    expect(x?.lock_reasons).toEqual(["c のステージ", "b のステージ"]);
+    expect(x?.lock_reasons).toEqual(["テーマ", "b のステージ"]);
+  });
+
+  it("full のロックの前提も伏せ、開発者表示では実名を返す", async () => {
+    const source = lineSource();
+    source.stages.push({
+      ...source.stages.find((stage) => stage.slug === "c"),
+      title: "x のステージ",
+      canDo: "x ができる",
+      category: "プログラミング",
+      iconPath: "tenant/ses/courses/x/icon.svg",
+      id: "id-x",
+      slug: "x",
+      prerequisites: ["b", "c"],
+      theme: "テーマ",
+    });
+    const c = source.stages.find((stage) => stage.slug === "c");
+    if (c) c.theme = "テーマC";
+    vi.mocked(loadSkillMapSource).mockResolvedValue(source);
+    const stages = await fetchStages();
+    expect(stages.get("id-c")?.visibility).toBe("full");
+    expect(stages.get("id-c")?.has_icon).toBeUndefined();
+    expect(stages.get("id-x")?.lock_reasons).toEqual(["b のステージ", "テーマC"]);
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const revealed = await fetchStages();
+    expect(revealed.get("id-x")?.lock_reasons).toEqual(["b のステージ", "c のステージ"]);
+    expect(revealed.get("id-c")?.has_icon).toBe(true);
   });
 
   it("飛び級で開いた星は unlocked になり、視界の起点にもなる", async () => {
@@ -772,8 +798,8 @@ describe("GET /api/skill-map/mine", () => {
     expect(stages.get("id-d")?.state).toBe("unlocked");
     // d が起点になるので、その隣 (e) が線だけの段から出て full になる。
     expect(stages.get("id-e")?.visibility).toBe("full");
-    // その先 (f) も 2 歩 = 霧まで浮かび上がる。
-    expect(stages.get("id-f")?.visibility).toBe("fog");
+    // その先 (f) も 2 歩 = 線だけ浮かび上がる。
+    expect(stages.get("id-f")?.visibility).toBe("edge");
   });
 
   it("フォーカスの出どころと集中ボーナスを返す", async () => {
@@ -871,7 +897,7 @@ describe("GET /api/skill-profile/mine", () => {
 /**
  * 2 つの連結成分をまたぐ形。root1 — x と root2 — m — p があり、x は root1 と p の
  * 両方を前提にする。x は 1 歩先 (full) なので解放条件が出るが、p は root2 から 2 歩で
- * 霧の中。このとき x の解放条件に p の **タイトル** を出すと、ぼかしたはずの名前が
+ * 線だけの段。このとき x の解放条件に p の **タイトル** を出すと、ぼかしたはずの名前が
  * 手前の星から読めてしまう。
  *
  * 解放条件を 1 歩先までに絞っても、**線の無い前提 (AND の 2 本目) は視界の外にあり得る**
@@ -910,7 +936,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
   it("霧の前提はタイトルではなくテーマ名 / 伏せ字で並ぶ", async () => {
     const stages = await fetchStages();
     expect(stages.get("id-x")?.visibility).toBe("full");
-    expect(stages.get("id-p")?.visibility).toBe("fog");
+    expect(stages.get("id-p")?.visibility).toBe("edge");
     const reasons = stages.get("id-x")?.lock_reasons ?? [];
     // 見えている前提 (root1) はタイトルのまま。霧の中の p は伏せる。
     expect(reasons).toContain("root1 のステージ");
@@ -928,12 +954,12 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     expect(stages.get("id-x")?.lock_reasons).toEqual(["root1 のステージ", "テーマY"]);
   });
 
-  it("霧の星そのものも、テーマが無ければ伏せ字を返す (名無しの星にしない)", async () => {
+  it("2 歩先の星はテーマも名前も返さない", async () => {
     const stages = await fetchStages();
     const p = stages.get("id-p");
-    expect(p?.theme).toBe("？？？");
-    // 名前は「ぼかしの予告」として返る (画面側で伏せる)。到達説明は届かないまま。
-    expect(p?.title).toBe("p のステージ");
+    expect(p?.theme).toBeUndefined();
+    // 線だけの段なので名前も到達説明も返さない。
+    expect(p?.title).toBeUndefined();
     expect(p?.can_do).toBeUndefined();
   });
 
@@ -962,7 +988,7 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     vi.mocked(wantsDevReveal).mockReturnValue(true);
     const stages = await fetchStages();
     const e = stages.get("id-e");
-    expect(e?.visibility).toBe("edge");
+    expect(e?.visibility).toBe("hidden");
     expect(e?.title).toBe("e のステージ");
     expect(e?.slug).toBe("e");
     expect(e?.lock_reasons).toEqual(["d のステージ"]);
@@ -1036,6 +1062,17 @@ describe("GET /api/skill-map/stages/:id/icon", () => {
     expect(await res.text()).toBe(svg);
   });
 
+  it("full でもロックの星は 404、開発者表示なら返す", async () => {
+    env.MATERIALS_BUCKET = fakeMaterialsBucket({
+      [iconPath("c")]: svg,
+    }) as unknown as Env["MATERIALS_BUCKET"];
+    expect((await get("/api/skill-map/stages/id-c/icon")).status).toBe(404);
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const res = await get("/api/skill-map/stages/id-c/icon");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe(svg);
+  });
+
   it("霧の星は存在ごと 404 (アイコンの有無で霧の中を探れない)", async () => {
     const res = await get("/api/skill-map/stages/id-d/icon");
     expect(res.status).toBe(404);
@@ -1098,7 +1135,7 @@ describe("GET /api/skill-map/icons", () => {
     const body = (await res.json()) as { icons: Record<string, string> };
     expect(body.icons["id-a"]).toBe(svgOf("a"));
     expect(body.icons["id-b"]).toBe(svgOf("b"));
-    expect(body.icons["id-c"]).toBe(svgOf("c"));
+    expect(body.icons["id-c"]).toBeUndefined();
     expect(body.icons["id-d"]).toBeUndefined();
     expect(body.icons["id-e"]).toBeUndefined();
     expect(JSON.stringify(body)).not.toContain("tenant/ses/courses");
@@ -1126,6 +1163,21 @@ describe("GET /api/skill-map/icons", () => {
     const body = (await res.json()) as { icons: Record<string, string> };
     expect(body.icons["id-d"]).toBeUndefined();
     expect(body.icons["id-e"]).toBeUndefined();
+  });
+
+  it("ロックの星は R2 からも読まず、開発者表示では返す", async () => {
+    const keys: string[] = [];
+    env.MATERIALS_BUCKET = fakeMaterialsBucket({ [iconPath("c")]: svgOf("c") }, (key) =>
+      keys.push(key),
+    ) as unknown as Env["MATERIALS_BUCKET"];
+    const res = await get("/api/skill-map/icons");
+    expect(((await res.json()) as { icons: Record<string, string> }).icons["id-c"]).toBeUndefined();
+    expect(keys).not.toContain(iconPath("c"));
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const dev = await get("/api/skill-map/icons");
+    expect(((await dev.json()) as { icons: Record<string, string> }).icons["id-c"]).toBe(
+      svgOf("c"),
+    );
   });
 
   it("R2 に実体が無い星はキーごと落とす (200 のまま)", async () => {

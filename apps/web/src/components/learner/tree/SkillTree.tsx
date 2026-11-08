@@ -963,7 +963,6 @@ export const SkillTree = ({
                 ["active", "進行中"],
                 ["open", "始められる"],
                 ["locked", "ロック"],
-                ["fog", "まだ見えない"],
               ].map(([state, label]) => (
                 <span key={state} className="flex items-center gap-1.5 whitespace-nowrap">
                   <span className={`tree-legend-dot tree-legend-${state}`} aria-hidden="true" />
@@ -1379,7 +1378,11 @@ const StarNode = ({
   // 見た目をぼかしている星は読み上げにも実名を流さない (Issue #272)。ぼかしが演出で
   // あっても、画面で読めない名前がスクリーンリーダーにだけ届くのは情報設計として
   // ちぐはぐで、「まだ見えない」という状態そのものが伝わらない。
-  const spokenLabel = detail.obscured ? "まだ見えないスキル" : detail.label;
+  const spokenLabel = detail.obscured
+    ? node.visibility !== "full"
+      ? "まだ見えないスキル"
+      : "名前の伏せられたスキル"
+    : detail.label;
 
   const side = labelSide === "hidden" ? "below" : labelSide;
   const radius = (isCenter ? 22 : 16) * coreScale;
@@ -1611,7 +1614,9 @@ const StarNode = ({
               <span aria-hidden="true" className="blur-[3px] select-none">
                 {detail.label}
               </span>
-              <span className="sr-only">まだ見えないスキル</span>
+              <span className="sr-only">
+                {node.visibility !== "full" ? "まだ見えないスキル" : "名前の伏せられたスキル"}
+              </span>
             </>
           ) : (
             detail.label
@@ -1770,7 +1775,9 @@ const StarSheet = ({
                   <span aria-hidden="true" className="blur-[3px] select-none">
                     {detail.label}
                   </span>
-                  <span className="sr-only">まだ見えないスキル</span>
+                  <span className="sr-only">
+                    {node.visibility !== "full" ? "まだ見えないスキル" : "名前の伏せられたスキル"}
+                  </span>
                 </>
               ) : (
                 detail.label
@@ -1865,14 +1872,20 @@ const StarBody = ({
     );
   }
   if (body.kind === "lock") {
+    const occurrences = new Map<string, number>();
+    const reasons = body.reasons.map((reason) => {
+      const count = (occurrences.get(reason) ?? 0) + 1;
+      occurrences.set(reason, count);
+      return { reason, key: JSON.stringify([reason, count]) };
+    });
     return (
       <div className={cn(text, "text-ink-3", className)}>
         {body.reasons.length > 0 ? (
           <>
             <div className="font-bold text-ink-2">解放まであと {body.reasons.length} つ</div>
             <ul className="mt-0.5 space-y-1">
-              {body.reasons.map((reason) => (
-                <li key={reason}>
+              {reasons.map(({ reason, key }) => (
+                <li key={key}>
                   {reason}
                   {reason === activeTitle && activeProgress !== undefined
                     ? `（いま ${Math.max(0, Math.min(100, activeProgress))}%）`

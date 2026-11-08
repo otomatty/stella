@@ -48,10 +48,12 @@ describe("describeStar の状態語", () => {
     expect(describe1({}).stateText).toBe("解放済み");
   });
 
-  it("ぼかしは霧の星だけ (開発者モードでは外れる)", () => {
+  it("ぼかしは霧とロックの星 (開発者モードでは外れる)", () => {
     expect(describe1({ visibility: "fog" }).obscured).toBe(true);
     expect(describe1({ visibility: "fog" }, { revealDev: true }).obscured).toBe(false);
     expect(describe1({}).obscured).toBe(false);
+    expect(describe1({ state: "locked" }).obscured).toBe(true);
+    expect(describe1({ state: "locked" }, { revealDev: true }).obscured).toBe(false);
   });
 });
 

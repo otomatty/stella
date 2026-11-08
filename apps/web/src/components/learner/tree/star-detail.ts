@@ -11,7 +11,7 @@
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
-import { fogObscured } from "./fog-display";
+import { nameObscured } from "./fog-display";
 
 /** タイトルは霧の中でも届く (ぼかして出す)。無ければテーマ名 → 伏せ字に落ちる。 */
 export function labelOf(node: SkillMapStageNode): string {
@@ -61,7 +61,7 @@ export function hasStarActions(actions: StarDetailActions): boolean {
 
 export interface StarDetail {
   label: string;
-  /** 名前をぼかすか (`full` より先の段で、開発者モードでないとき)。 */
+  /** 名前をぼかすか (full 以外、または locked。開発者表示では外す)。 */
   obscured: boolean;
   /** 読み上げ用の状態語。見た目 (色・形) だけで区別させない。 */
   stateText: string;
@@ -82,37 +82,39 @@ export interface StarDetailInput {
 export function describeStar({ node, isActive, queued, revealDev }: StarDetailInput): StarDetail {
   /** 霧より先 (= `full` でない) の段。名前は出しても行動の導線は出さない。 */
   const beyond = node.visibility !== "full";
-  const obscured = fogObscured(node.visibility, revealDev);
+  const obscured = nameObscured(node, revealDev);
   const cleared = node.state === "cleared";
   const locked = node.state === "locked";
 
-  const stateText = obscured
-    ? "まだ見えない"
-    : beyond
-      ? "まだ先（開発者表示）"
-      : cleared
-        ? "クリア済み"
-        : isActive
-          ? "進行中"
-          : locked
-            ? "未解放"
-            : "解放済み";
+  const stateText =
+    beyond && !revealDev
+      ? "まだ見えない"
+      : beyond
+        ? "まだ先（開発者表示）"
+        : cleared
+          ? "クリア済み"
+          : isActive
+            ? "進行中"
+            : locked
+              ? "未解放"
+              : "解放済み";
 
   const reasons = node.lock_reasons ?? [];
-  const body: StarDetailBody = obscured
-    ? { kind: "fog" }
-    : locked
-      ? {
-          kind: "lock",
-          reasons,
-          text:
-            reasons.length > 0
-              ? `${reasons.join(" / ")} をクリアすると開きます`
-              : "前提のステージをクリアすると開きます",
-        }
-      : node.can_do
-        ? { kind: "can-do", text: node.can_do }
-        : { kind: "none" };
+  const body: StarDetailBody =
+    beyond && !revealDev
+      ? { kind: "fog" }
+      : locked
+        ? {
+            kind: "lock",
+            reasons,
+            text:
+              reasons.length > 0
+                ? `${reasons.join(" / ")} をクリアすると開きます`
+                : "前提のステージをクリアすると開きます",
+          }
+        : node.can_do
+          ? { kind: "can-do", text: node.can_do }
+          : { kind: "none" };
 
   const actions: StarDetailActions = beyond
     ? // 霧より先の星には導線を出さない。開始も腕試しもフォーカスもサーバが断るので、
