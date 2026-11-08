@@ -90,11 +90,7 @@ export function SkillLanes({
                 />
                 <h2 className="text-sm font-bold">{lane.key}</h2>
                 <span className="text-[11.5px] text-ink-3">
-                  {lane.kind === "nebula"
-                    ? `星雲${caption ? ` · ${caption}` : ""}`
-                    : theme !== lane.key
-                      ? theme
-                      : null}
+                  {lane.kind === "nebula" ? caption : theme !== lane.key ? theme : null}
                 </span>
                 {lane.hasMore ? (
                   <span className="ml-auto text-[11px] text-ink-3">

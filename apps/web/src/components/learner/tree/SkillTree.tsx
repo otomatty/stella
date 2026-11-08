@@ -657,9 +657,7 @@ export const SkillTree = ({
         : []),
       ...islandFrames.map(({ island, frame, count }) => ({
         title: island.key,
-        detail: showPlaceDetails
-          ? `星雲 · ${stageCountLine(count, islandCaption?.(island.key))}`
-          : null,
+        detail: showPlaceDetails ? stageCountLine(count, islandCaption?.(island.key)) : null,
         x: (frame.minX + frame.maxX) / 2,
         y: frame.minY,
       })),
@@ -773,7 +771,6 @@ export const SkillTree = ({
       const cy = region.cy * visibleView.scale + visibleView.y;
       if (cx < 0 || cx > visibleView.width || cy < 0 || cy > visibleView.height) return [];
       const counts = [
-        ...(region.kind === "nebula" ? ["星雲"] : []),
         ...(region.cleared > 0 ? [`クリア ${region.cleared}`] : []),
         ...(region.active > 0 ? [`受講中 ${region.active}`] : []),
         ...(region.startable > 0 ? [`始められる ${region.startable}`] : []),
@@ -790,11 +787,11 @@ export const SkillTree = ({
         visibleView.width - 16,
         Math.ceil(
           Math.max(
-            estimateWidth(region.key, 15, 9),
+            estimateWidth(region.key, 16, 9.5),
             estimateWidth(counts, 11.5, 6.9),
             current ? estimateWidth(current, 11, 6.6) + 16 : 0,
           ),
-        ) + 26,
+        ) + 34,
       );
       return [
         {
@@ -1033,14 +1030,11 @@ export const SkillTree = ({
 
   const chips =
     showIslandChips && visibleIslands.length > 0 ? (
-      <nav className="flex flex-wrap justify-end gap-1" aria-label="星雲へ移動">
+      <nav className="flex flex-wrap justify-end gap-1" aria-label="地図の中を移動">
         {jumpTargets.map((target, index) => {
           const accent = routeAccentOf(target.key);
           return (
             <Fragment key={target.key}>
-              {index === 1 ? (
-                <span className="self-center px-1 text-[11px] font-bold text-ink-2">星雲</span>
-              ) : null}
               <Button
                 size="sm"
                 variant="outline"
@@ -1101,16 +1095,6 @@ export const SkillTree = ({
                   {label}
                 </span>
               ))}
-              {visibleIslands.length > 0 ? (
-                <span className="flex items-center gap-1.5 whitespace-nowrap">
-                  <span
-                    className="tree-nebula h-3 w-6"
-                    style={{ "--nebula": "139 92 246" } as CSSProperties}
-                    aria-hidden="true"
-                  />
-                  星雲
-                </span>
-              ) : null}
             </aside>
           ) : null}
           {overviewLabels.map((region) => (
@@ -1122,7 +1106,7 @@ export const SkillTree = ({
                 {
                   left: region.left,
                   top: region.top,
-                  width: region.width,
+                  maxWidth: visibleView ? Math.min(220, visibleView.width - 16) : 220,
                   height: region.height,
                   "--overview-solid": routeSolidOf(region.key)
                     ? `rgb(${routeSolidOf(region.key)})`
@@ -1406,7 +1390,7 @@ export const SkillTree = ({
             title={island.key}
             selected={selectedIslandKey === island.key}
             onSelect={onSelectIsland ? () => onSelectIsland(island.key) : undefined}
-            detail={`星雲 · ${stageCountLine(count, islandCaption?.(island.key))}`}
+            detail={stageCountLine(count, islandCaption?.(island.key))}
             left={(frame.minX + frame.maxX) / 2}
             top={frame.minY}
             scale={scale}
