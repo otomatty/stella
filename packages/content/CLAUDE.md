@@ -118,7 +118,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 1. **1トピック = 1 Takeaway を崩さない** — スライドを足したくなったら、まずトピックを割れないか考えてください。「関連情報」は Takeaway を強化する枠(図解 or 失敗例)1つだけに収めます。詰め込みは粒度の設計を壊します。
 2. **語彙台帳を必ず更新する** — トピックを追加・移動・改稿したら `introduces` / `requires` を更新し、`bun run --filter=@stella/content materials` で検査を通してください。
-3. **参照元と必要な帰属表示を教材に残す** — [新設計05](../../docs/curriculum/05-sources-and-attribution.md)に従い、台帳 `sources/registry.json` と単元の `references.json` に資料・使用箇所・対象環境・利用方法を記録します。トピック・まとめ・知識問題の front-matter は `sourceRefs`、課題の `task.json` は `sources` でIDを指定します。解説・課題の近く、単元末尾、IDE、配布PDFに出典を載せます。引用・転載・改変では条件と必要な表示も確認します。技術のトップページだけを根拠にせず、講師が対応を確認して `approved` にします。詳細は [SOURCE_GUIDE.md](SOURCE_GUIDE.md)。新形式は初回公開から必須、旧形式は新規・内容改訂の単元から必須、未改訂単元は警告です。
+3. **参照元と必要な帰属表示を教材に残す** — [新設計05](../../docs/curriculum/05-sources-and-attribution.md)に従い、台帳 `sources/registry.json` と単元の `references.json` に資料・使用箇所・対象環境・利用方法を記録します。トピック・まとめ・知識問題の front-matter は `sourceRefs`、課題の `task.json` は `sources` でIDを指定します。解説・課題の近く、単元末尾、IDE、配布PDFに出典を載せます。引用・転載・改変では条件と必要な表示も確認します。技術のトップページだけを根拠にせず、講師が対応を確認して `approved` にします。詳細は [SOURCE_GUIDE.md](SOURCE_GUIDE.md)。新形式は参照元の記録・整合性の検査が初回公開から必須、旧形式は新規・内容改訂の単元から必須、未改訂単元は警告です。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約で追い、講師が後から確かめて承認します。AIは `approved` を付けません。
 4. **`STYLE_GUIDE.md` に従う** — 文体、コード例の書き方、構成のルールがすべて定義されています。新規作成・修正の前に読んでください。
 5. **図解は `.claude/skills/diagram-design/` の規約に従う** — 型を選び、テンプレートから作り、出力前チェックリストを通してください。配色・寸法の正本は `references/style-guide.md` です。
 

@@ -24,6 +24,7 @@ import {
 export interface SourceDiagnostic {
   unitId: string;
   severity: "error" | "warning";
+  kind?: "pending-approval";
   message: string;
 }
 export interface LegacySourceBaseline {
@@ -391,9 +392,10 @@ function checkUnit(
   registry: Map<string, SourceRecord>,
   contentHash: string,
   environment?: string,
-): string[] {
+): Pick<SourceDiagnostic, "message" | "kind">[] {
   const problems: string[] = [];
-  if (!refs) return ["references.json がありません"];
+  const pendingApproval: string[] = [];
+  if (!refs) return [{ message: "references.json がありません" }];
   if (parseUnitId(refs.unitId).path !== unitId)
     problems.push(`unitId が単元と一致しません: ${refs.unitId}`);
   // 版は参照元を確認した内容を指す。同じ版のまま内容を変えると、受講者が見た版と区別できない。
@@ -427,7 +429,7 @@ function checkUnit(
     }
     if (!files.includes(use.contentId)) problems.push(`参照の対応先がありません: ${use.contentId}`);
     if (use.reviewStatus !== "approved")
-      problems.push(`${use.contentId}: レビュー状態が approved ではありません`);
+      pendingApproval.push(`${use.contentId}: レビュー状態が approved ではありません`);
     for (const id of use.sourceRefs) {
       const source = registry.get(id);
       if (!source) {
@@ -435,7 +437,7 @@ function checkUnit(
         continue;
       }
       if (source.review.status !== "approved")
-        problems.push(`${id}: レビュー状態が approved ではありません`);
+        pendingApproval.push(`${id}: レビュー状態が approved ではありません`);
       if (isTechnologyLandingPage(source))
         problems.push(
           `${id}: 技術のトップページだけを根拠にできません。読む節のある個別ページの URL を登録してください`,
@@ -483,7 +485,13 @@ function checkUnit(
       }
     }
   }
-  return [...new Set(problems)];
+  return [
+    ...[...new Set(problems)].map((message) => ({ message })),
+    ...[...new Set(pendingApproval)].map((message) => ({
+      message,
+      kind: "pending-approval" as const,
+    })),
+  ];
 }
 export function checkSourceReferences(
   root: string,
@@ -517,7 +525,7 @@ export function checkSourceReferences(
     const required = !legacy || (recorded.units[unit.unitId] !== hash && !exempt);
     try {
       const refs = readUnitReferences(unit.directory);
-      for (const message of checkUnit(
+      for (const diagnostic of checkUnit(
         root,
         unit.unitId,
         unit.directory,
@@ -528,8 +536,8 @@ export function checkSourceReferences(
       ))
         diagnostics.push({
           unitId: unit.unitId,
-          severity: required ? "error" : "warning",
-          message,
+          severity: required && !diagnostic.kind ? "error" : "warning",
+          ...diagnostic,
         });
     } catch (error) {
       diagnostics.push({
@@ -540,4 +548,33 @@ export function checkSourceReferences(
     }
   }
   return diagnostics;
+}
+
+/** 承認待ちを単元ごとにまとめる。未改訂の旧単元の警告とは分けて扱う。 */
+export function pendingApprovalByUnit(
+  diagnostics: readonly SourceDiagnostic[],
+): Map<string, SourceDiagnostic[]> {
+  const units = new Map<string, SourceDiagnostic[]>();
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.kind !== "pending-approval") continue;
+    const entries = units.get(diagnostic.unitId) ?? [];
+    entries.push(diagnostic);
+    units.set(diagnostic.unitId, entries);
+  }
+  return units;
+}
+
+export function pendingApprovalSummary(diagnostics: readonly SourceDiagnostic[]): string {
+  const units = pendingApprovalByUnit(diagnostics);
+  if (units.size === 0) return "";
+  return [
+    "### 参照元の承認待ち",
+    "",
+    "| 単元 | 承認待ち |",
+    "| --- | ---: |",
+    ...[...units].map(([unitId, entries]) => `| ${unitId} | ${entries.length} 件 |`),
+    "",
+    "承認待ちはマージ・公開を止めません。講師は [SOURCE_GUIDE の「書く順序」5](https://github.com/otomatty/stella/blob/main/packages/content/SOURCE_GUIDE.md#書く順序) に沿って資料と本文を確認し、承認してください。",
+    "",
+  ].join("\n");
 }

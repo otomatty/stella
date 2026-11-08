@@ -11,7 +11,7 @@
    単元の既定とステージの環境の照合は変わりません。
 3. 各 `uses` に公開ファイルの相対パス `contentId`、`sourceRefs`、何を裏付けたかを示す `usedFor`、`authorship`、`reuse`、`reviewStatus` を書きます。解説・参考例・図・課題の対応は講師が確認します。図は `l1-…/t1-…/assets/図.svg` のように個別に記録し、本文に埋め込んだ図の出典も近くに表示します。非公開領域は対応先にしません。
 4. `slides.md`・`doc.md`・`knowledge.md`・旧形式の `practice.md` の冒頭に `sourceRefs: [SRC-…]` を持つ front-matter を置きます。課題は `task.json` の既存の `sources` を使います。単元の対応表とIDの集合を一致させます。
-5. 草稿は `draft` で保存します。講師が資料・対象版・利用条件と本文・受入条件の対応を確認してから、資料の `review.status` と各使用箇所の `reviewStatus` を `approved` にします。資料の承認には `reviewer`・`reviewedAt`・`scope` が必要です。AIによる調査・照合を講師承認として記録しません。
+5. 草稿は `draft` で保存します。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約で追います。公開後も講師が確認して承認します。講師が資料・対象版・利用条件と本文・受入条件の対応を確認してから、資料の `review.status` と各使用箇所の `reviewStatus` を `approved` にします。資料の承認には `reviewer`・`reviewedAt`・`scope` が必要です。AIによる調査・照合を講師承認として記録しません。
 6. `bun run content:check` を実行し、学習画面・IDE・PDFの表示も確認します。
 
 ```json
@@ -65,7 +65,7 @@
 
 ## 旧単元の改訂を判定する
 
-新形式は初回公開から必須です。旧形式では新規単元と内容を改訂した単元の全公開教材を必須にし、未改訂単元の不足は警告にします。`sources/legacy-units.json` は導入時点の旧単元の内容指紋です。**教材を改訂したときに基準を再生成しません。** 本文・コード・課題・解答・評価・画像・環境の変更は内容改訂として扱います。前提・parentの付け替え、スキルツリーの掲載 (`audience`・`category`・`theme`)、参照元の追記だけでは指紋を変えません。
+新形式は参照元の記録・整合性の検査が初回公開から必須です。承認待ちだけは警告とし、マージ・公開を止めません。旧形式では新規単元と内容を改訂した単元の全公開教材を必須にし、未改訂単元の不足は警告にします。`sources/legacy-units.json` は導入時点の旧単元の内容指紋です。**教材を改訂したときに基準を再生成しません。** 本文・コード・課題・解答・評価・画像・環境の変更は内容改訂として扱います。前提・parentの付け替え、スキルツリーの掲載 (`audience`・`category`・`theme`)、参照元の追記だけでは指紋を変えません。
 
 指紋には `stage.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、ステージのタイトル・説明・到達目標などは全単元に反映します。`exercises` の演習は ID・題名に加えて、seed が `packages/shared/src/problems` から引く課題定義 (説明・スターター・テスト・解答・採点設定) も含めるので、同じIDのまま課題を直しても改訂になります。前提・parent・扇への配置・予定時間 (`plannedHours`、学習ペースの見積もり)・スキルツリーの掲載 (`audience`・`category`・`theme`) は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、`bun run --filter=@stella/content baseline:legacy` で記録済みの `baseCommit` の教材・環境定義・課題定義から基準を再計算し、`references.json` の `contentHash` も `hash:unit` で記録し直します (内容は変わっていないので版は上げません)。
 

@@ -97,8 +97,18 @@ jobs:
           restore-keys: task-check-
 
       - name: Content vocabulary check
+        env:
+          CONTENT_REFERENCES_SUMMARY: ${{ runner.temp }}/source-references-summary.md
         if: inputs.scope != 'code'
         run: bun run content:check
+
+      - name: Publish pending source approvals
+        if: always() && inputs.scope != 'code'
+        continue-on-error: true
+        run: |
+          if [ -f "$RUNNER_TEMP/source-references-summary.md" ]; then
+            cat "$RUNNER_TEMP/source-references-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       # 図解 (SVG) のトークン検査。 content:check は Node だけで走る検査で打ち切る
       # ため、 これまで CI では一度も動いていなかった。 標準ライブラリだけで動く
