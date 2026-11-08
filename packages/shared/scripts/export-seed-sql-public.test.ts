@@ -8,8 +8,8 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 /**
  * ログインなしで読める単元の印 (Issue #41) を seed が D1 の `lessons.public` まで運ぶか。
  *
- * U00〜U01 の本文はまだ無いので、dev-env-basics の見本単元を「課題の無い公開の単元」に
- * 作り替えた教材 (fixture) を、本物の manifest で組み立てて seed に渡す。
+ * dev-env-basics の公開単元 U00 と、課題のある U02 の実教材を写し、
+ * 本物の manifest で組み立てて seed に渡す。
  */
 
 const fixture = vi.hoisted(() => ({ root: "", unit: "" }));
@@ -32,13 +32,7 @@ vi.mock("@stella/content", async (importOriginal) => {
     );
     for (const name of ["skills.json", "patterns.json", "environments", "sources"])
       fs.cpSync(path.join(content, name), path.join(root, name), { recursive: true });
-    const unit = path.join(root, "stages/dev-env-basics/modules/m0-first-page");
-    fs.rmSync(path.join(unit, "tasks"), { recursive: true });
-    const refs = JSON.parse(fs.readFileSync(path.join(unit, "references.json"), "utf8")) as {
-      uses: { contentId: string }[];
-    };
-    refs.uses = refs.uses.filter((use) => !use.contentId.startsWith("tasks/"));
-    fs.writeFileSync(path.join(unit, "references.json"), JSON.stringify(refs));
+    const unit = path.join(root, "stages/dev-env-basics/modules/u00-start");
     fixture.root = root;
     fixture.unit = unit;
   }
@@ -100,27 +94,51 @@ describe("export-seed-sql (ログインなしで読める単元)", () => {
     const db = migratedDb();
     try {
       const stageId = stableUuid("course:ses:dev-env-basics");
-      const rows = () =>
+      const rows = (unit: string) =>
         db
           .prepare(
-            `select l.title, l.type, l.public from lessons l join sections s on s.id = l.section_id where s.stage_id = ? order by l."order"`,
+            `select l.title, l.type, l.public from lessons l join sections s on s.id = l.section_id where s.stage_id = ? and s.id = ? order by l."order"`,
           )
-          .all(stageId)
+          .all(stageId, stableUuid(`section:ses:dev-env-basics:${unit}`))
           .map((r) => [r.type, r.public]);
 
       db.exec(await exportSql(true));
-      expect(rows()).toEqual([
-        ["slides", 1],
-        ["text", 1],
-        ["quiz", 0],
-      ]);
+      const publicRows = rows("u00-start");
+      expect(publicRows.length).toBeGreaterThan(0);
+      expect(new Set(publicRows.map(([type]) => type))).toEqual(
+        new Set(["slides", "text", "quiz"]),
+      );
+      for (const [type, publicFlag] of publicRows)
+        expect(publicFlag).toBe(type === "slides" || type === "text" ? 1 : 0);
+      // 全単元を比べ、課題文と知識問題を含む公開範囲の境界を確かめる。
+      const allRows = () =>
+        db
+          .prepare(
+            "select l.id, l.type, l.public, s.id as section_id from lessons l join sections s on s.id = l.section_id where s.stage_id = ? order by l.id",
+          )
+          .all(stageId);
+      const before = allRows();
+      const manifest = (await import("@stella/content")).buildContentManifest();
+      const publicSections = new Set(
+        manifest.units
+          .filter((unit) => unit.stageId === "dev-env-basics" && unit.config.public)
+          .map((unit) => stableUuid(`section:ses:dev-env-basics:${unit.unitId}`)),
+      );
+      for (const row of before)
+        expect(row.public).toBe(
+          publicSections.has(String(row.section_id)) &&
+            (row.type === "slides" || row.type === "text")
+            ? 1
+            : 0,
+        );
+      expect(rows("u02-first-task").length).toBeGreaterThan(0);
+      expect(rows("u02-first-task").every(([, flag]) => flag === 0)).toBe(true);
 
       db.exec(await exportSql(false));
-      expect(rows()).toEqual([
-        ["slides", 0],
-        ["text", 0],
-        ["quiz", 0],
-      ]);
+      const removedSection = stableUuid("section:ses:dev-env-basics:u00-start");
+      expect(allRows()).toEqual(
+        before.map((row) => (row.section_id === removedSection ? { ...row, public: 0 } : row)),
+      );
     } finally {
       db.close();
     }

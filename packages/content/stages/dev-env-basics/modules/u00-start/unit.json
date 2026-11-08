@@ -1,0 +1,9 @@
+{
+  "plannedHours": 1,
+  "public": true,
+  "skills": {
+    "uses": [],
+    "assesses": ["stella-task-loop"]
+  },
+  "reuses": []
+}

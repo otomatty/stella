@@ -514,6 +514,7 @@ function buildOneStage(
           id: fm.id,
           title: fm.title,
           type: "slides",
+          hasNarration: existsSync(join(lessonPath, topicDir, "narration.json")),
           duration: "3分",
           status: "todo",
           ...(publicUnit ? { public: true } : {}),

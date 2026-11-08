@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "dev-env-basics/u03/q01",
+  "title": "学習フォルダーに変更を記録する",
+  "kind": "basic",
+  "runner": "git-record",
+  "submit": { "files": ["notes.txt", ".gitignore"] },
+  "static": { "checks": [{ "type": "file-contains", "path": "notes.txt", "text": "今日の学習" }] },
+  "git": {
+    "checks": [
+      { "type": "learning-folder-root" },
+      { "type": "local-identity" },
+      { "type": "committed", "paths": ["notes.txt", ".gitignore"] },
+      { "type": "commit-count", "min": 1 },
+      { "type": "ignored", "path": "node_modules/probe" },
+      { "type": "ignored", "path": ".stella/last-run.json" }
+    ]
+  }
+}

@@ -208,6 +208,8 @@ describe("教材 seed の再実行", () => {
   it("format 2 を seed し、公開API・7状態・知識問題とSRS・旧課題を通せる", async () => {
     const db = migratedDb();
     applyScript(db, seedSql);
+    const tasksBefore = countOf(db, "tasks");
+    expect(tasksBefore).toBeGreaterThan(0);
     db.exec(
       "insert into profiles (id, tenant_id, role, display_name, created_at) values ('u-format2', 'ses', 'student', '見本受講者', 1), ('u-unenrolled', 'ses', 'student', '未受講', 1)",
     );
@@ -232,8 +234,11 @@ describe("教材 seed の再実行", () => {
     expect((await request(app, env, url)).status).toBe(401);
     expect((await request(app, env, url, { token: otherToken })).status).toBe(404);
     const list = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
-    expect(list.tasks).toHaveLength(1);
-    expect(list.tasks[0].status).toBe("not-started");
+    const taskId = "dev-env-basics/u02-first-task/q01-first-page";
+    const task = list.tasks.find((task) => task.id === taskId);
+    expect(task).toBeDefined();
+    if (!task) throw new Error(`seed した課題が一覧にありません: ${taskId}`);
+    expect(list.tasks.every((task) => task.status === "not-started")).toBe(true);
     expect(JSON.stringify(list)).not.toMatch(/solution|rubric|bundle|private/);
     // 課題文のレッスンと結ばれ、そのレッスンからも「VS Code で開く」で課題を配れる (#31)。
     expect(
@@ -241,9 +246,8 @@ describe("教材 seed の再実行", () => {
         .prepare(
           "select l.type from lessons l join sections s on l.section_id = s.id where l.id = ? and s.stage_id = ?",
         )
-        .get(list.tasks[0].lessonId, stage.id),
+        .get(task.lessonId, stage.id),
     ).toEqual({ type: "text" });
-    const taskId = list.tasks[0].id;
     const bundleUrl = `/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
     expect((await request(app, env, bundleUrl, { token: otherToken })).status).toBe(404);
     const { bundle } = await json<{ bundle: TaskBundle }>(
@@ -283,12 +287,12 @@ describe("教材 seed の再実行", () => {
       200,
     );
     const local = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
-    expect(local.tasks[0].status).toBe("local-passed");
+    expect(local.tasks.find((task) => task.id === taskId)?.status).toBe("local-passed");
     expect((await taskCompletionCounts(getDb(env), stage.id, ["u-format2"])).passed.size).toBe(0);
     db.prepare("update task_progress set status = 'passed' where task_id = ?").run(taskId);
     db.exec("update enrollments set status = 'completed' where id = 'en-format2'");
     const completed = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
-    expect(completed.tasks[0].status).toBe("passed");
+    expect(completed.tasks.find((task) => task.id === taskId)?.status).toBe("passed");
     expect((await request(app, env, bundleUrl, { token })).status).toBe(200);
     expect((await post(resultBody)).status).toBe(404);
     db.exec("update enrollments set status = 'active' where id = 'en-format2'");
@@ -297,12 +301,22 @@ describe("教材 seed の再実行", () => {
       (await taskCompletionCounts(getDb(env), stage.id, ["u-format2"])).passed.get("u-format2")
         ?.size,
     ).toBe(1);
-    const questionRows = db
+    const unitQuestions = db
       .prepare(
-        'select q.id, q.kind, q.skills, z.lesson_id from quiz_questions q join quizzes z on q.quiz_id = z.id join lessons l on z.lesson_id = l.id join sections s on l.section_id = s.id where s.stage_id = ? order by q."order"',
+        'select q.id, q.kind, q.skills, z.lesson_id from quiz_questions q join quizzes z on q.quiz_id = z.id join lessons l on z.lesson_id = l.id join sections s on l.section_id = s.id where s.stage_id = ? and s.id = (select section_id from lessons where id = ?) order by l."order", q."order"',
       )
-      .all(stage.id) as { id: string; kind: string; skills: string; lesson_id: string }[];
-    expect(questionRows.map((q) => q.kind)).toEqual(["single", "multiple", "boolean"]);
+      .all(stage.id, task.lessonId) as {
+      id: string;
+      kind: string;
+      skills: string;
+      lesson_id: string;
+    }[];
+    // 単元に知識問題のレッスンが増えても、1 つのクイズに属する設問で受験する。
+    expect(unitQuestions.length).toBeGreaterThan(0);
+    const questionRows = unitQuestions.filter((q) => q.lesson_id === unitQuestions[0].lesson_id);
+    expect(new Set(questionRows.map((q) => q.kind))).toEqual(
+      new Set(["single", "multiple", "boolean"]),
+    );
     const quiz = db
       .prepare("select id from quizzes where lesson_id = ?")
       .get(questionRows[0].lesson_id) as { id: string };
@@ -323,7 +337,7 @@ describe("教材 seed の再実行", () => {
     expect((await json<{ result: { passed: boolean } }>(attempt)).result.passed).toBe(true);
     expect(
       db.prepare("select count(*) as n from review_cards where user_id = 'u-format2'").get()?.n,
-    ).toBe(3);
+    ).toBe(questionRows.length);
     db.prepare("update quizzes set source = 'practice' where id = ?").run(quiz.id);
     const excluded = await json<{ review: { questions: unknown[] } }>(
       await request(app, env, "/api/srs/today", { token }),
@@ -346,7 +360,7 @@ describe("教材 seed の再実行", () => {
     const today = await json<{ review: { questions: { skills: string[] }[] } }>(
       await request(app, env, "/api/srs/today", { token }),
     );
-    expect(today.review.questions).toHaveLength(3);
+    expect(today.review.questions).toHaveLength(questionRows.length);
     expect(today.review.questions.every((q) => q.skills.length > 0)).toBe(true);
     const assignments = countOf(db, "assignments");
     expect(assignments).toBeGreaterThan(0);
@@ -355,7 +369,7 @@ describe("教材 seed の再実行", () => {
     expect(
       db.prepare("select status from task_progress where task_id = ?").get(taskId)?.status,
     ).toBe("passed");
-    expect(countOf(db, "tasks")).toBe(38);
+    expect(countOf(db, "tasks")).toBe(tasksBefore);
     expect(db.prepare("pragma foreign_key_check").all()).toEqual([]);
     db.close();
   }, 30_000);
@@ -383,7 +397,7 @@ describe("教材 seed の再実行", () => {
     const again = versions();
     expect(again).toHaveLength(seeded.length);
     for (const row of again) expect(row.files).toBe("kept");
-  });
+  }, 30_000);
 
   it("課題の版に、その版を配っていたときの素材の版を書き、前の版の配布物は上書きしない (#36)", () => {
     const db = migratedDb();
@@ -413,7 +427,7 @@ describe("教材 seed の再実行", () => {
       expect(row.private_hash).toBe(createHash("sha256").update(row.current).digest("hex"));
       expect(row.bundle).toBe("kept");
     }
-  });
+  }, 30_000);
 
   it("復習カードと解答ログを残し、設問数も変えない", () => {
     const db = migratedDb();

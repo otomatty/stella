@@ -30,6 +30,7 @@ export type RunStepId =
   | "test"
   | "build"
   | "e2e"
+  | "git"
   | "static"
   | "diagnose"
   | "files";

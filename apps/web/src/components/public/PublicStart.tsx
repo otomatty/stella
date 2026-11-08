@@ -15,6 +15,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import type { PublicLessonSummary, PublicUnit } from "@stella/shared/cms/types";
+import { SlideLessonMedia } from "@/components/learner/SlideLessonMedia";
 import { Brand } from "@/components/common/Brand";
 import { LessonTypeIcon, lessonTypeLabel } from "@/components/learner/StageDetail";
 import { LessonMarkdown, PlainMarkdownSlides } from "@/components/learner/MarkdownSlides";
@@ -261,11 +262,13 @@ export function PublicLessonPage({ lessonId }: { lessonId: string }) {
             <div className="mb-5" />
           )}
           {lesson.type === "slides" ? (
-            <PlainMarkdownSlides
-              key={lesson.id}
-              markdown={lesson.markdown}
-              header={lesson.stage_title}
-            />
+            <SlideLessonMedia key={lesson.id} lessonId={lesson.id} videoPath={lesson.video_path}>
+              <PlainMarkdownSlides
+                key={lesson.id}
+                markdown={lesson.markdown}
+                header={lesson.stage_title}
+              />
+            </SlideLessonMedia>
           ) : (
             <div className="prose-lms">
               <LessonMarkdown>{lesson.markdown}</LessonMarkdown>

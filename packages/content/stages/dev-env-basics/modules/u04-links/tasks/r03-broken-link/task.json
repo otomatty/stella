@@ -1,0 +1,74 @@
+{
+  "id": "dev-env-basics/u04-links/r03-broken-link",
+  "title": "リンクを押すとページが無いと言われる",
+  "kind": "debug",
+  "pattern": "relative-link",
+  "skills": {
+    "uses": [
+      "file-save-reopen",
+      "html-document"
+    ],
+    "assesses": [
+      "relative-link",
+      "preview-changes"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "index.html",
+      "about.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": true
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "index.html のリンクが about.html を指している",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "about.html の名前と内容を変えずに残している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-dev-env-links-20261107"
+  ],
+  "estimatedMinutes": 15,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "links-resolve",
+        "path": "index.html"
+      },
+      {
+        "type": "element-count",
+        "path": "index.html",
+        "tag": "a",
+        "min": 1
+      },
+      {
+        "type": "file-exists",
+        "path": "about.html"
+      }
+    ]
+  }
+}

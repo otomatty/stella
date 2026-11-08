@@ -1,0 +1,76 @@
+{
+  "id": "dev-env-basics/u08-check-a/s02-resume",
+  "title": "次の日に続きを書く",
+  "kind": "independent",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "open-learning-folder",
+      "html-document"
+    ],
+    "assesses": [
+      "file-save-reopen",
+      "stella-task-loop"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "diary.html"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "diary.html に1日目の見出しと段落を残し、2日目の h2 と段落が加わっている",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "説明に Web から開き直した保存先と、続きとして加えた内容が書かれている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-dev-env-editor-20261107",
+    "SRC-dev-env-html-syntax-20261107",
+    "SRC-dev-env-html-headings-20261107"
+  ],
+  "estimatedMinutes": 40,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "diary.html"
+      },
+      {
+        "type": "element-count",
+        "path": "diary.html",
+        "tag": "h2",
+        "min": 2
+      },
+      {
+        "type": "file-contains",
+        "path": "diary.html",
+        "text": "2日目"
+      }
+    ]
+  }
+}

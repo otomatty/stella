@@ -35,6 +35,10 @@ interface Props {
   lessonId: string;
   videoPath: string;
   totalSec?: number;
+  captionsPath?: string;
+  posterPath?: string;
+  /** スライド動画・公開教材は動画から進捗や完了を書き込まない。 */
+  recordProgress?: boolean;
   onComplete?: () => void;
   /** 再生終了後に案内する次のレッスン名。 次が無いステージ末尾では null。 */
   nextLessonTitle?: string | null;
@@ -52,6 +56,9 @@ export function VideoViewer({
   lessonId,
   videoPath,
   totalSec,
+  captionsPath,
+  posterPath,
+  recordProgress = true,
   onComplete,
   nextLessonTitle = null,
   onAdvanceNext,
@@ -92,7 +99,7 @@ export function VideoViewer({
   // どちらが先に終わるか決まっていないので、 両方揃った時点で 1 度だけ実行する。
   const resumePlayback = useCallback(() => {
     const v = videoRef.current;
-    if (!v || resumedRef.current || !ready) return;
+    if (!recordProgress || !v || resumedRef.current || !ready) return;
     if (!Number.isFinite(v.duration) || v.duration <= 0) return;
     resumedRef.current = true;
     const dur = v.duration;
@@ -107,7 +114,7 @@ export function VideoViewer({
         // ignore (range request 失敗など)
       }
     }
-  }, [entry, ready]);
+  }, [entry, ready, recordProgress]);
 
   const onLoadedMetadata = useCallback(() => {
     const v = videoRef.current;
@@ -123,6 +130,7 @@ export function VideoViewer({
 
   const flushSave = useCallback(
     (sec: number) => {
+      if (!recordProgress) return;
       const dur = videoRef.current?.duration || duration || totalSec || 0;
       recordWatchTime(sec, dur);
       if (!completedRef.current && dur > 0 && sec / dur >= COMPLETION_THRESHOLD) {
@@ -131,7 +139,7 @@ export function VideoViewer({
         onComplete?.();
       }
     },
-    [recordWatchTime, duration, totalSec, markComplete, onComplete],
+    [recordProgress, recordWatchTime, duration, totalSec, markComplete, onComplete],
   );
 
   const onTimeUpdate = useCallback(() => {
@@ -154,8 +162,8 @@ export function VideoViewer({
     }
     const v = videoRef.current;
     if (v) flushSave(v.currentTime);
-    flushNow();
-  }, [flushSave]);
+    if (recordProgress) flushNow();
+  }, [flushSave, recordProgress]);
 
   // 最後まで見終わったら次のレッスンへの導線を出す。 自動遷移が有効なら
   // カウントダウンも始める (見直しのために再生を再開したら取り消す)。
@@ -190,7 +198,7 @@ export function VideoViewer({
           // ignore
         }
       }
-      flushNow();
+      if (recordProgress) flushNow();
     };
     // 1 回登録すれば良い
   }, []);
@@ -379,6 +387,8 @@ export function VideoViewer({
           key={reloadKey}
           ref={videoRef}
           src={url}
+          crossOrigin={captionsPath ? "anonymous" : undefined}
+          poster={posterPath ? getMaterialUrl(posterPath) : undefined}
           controls
           preload="metadata"
           className="w-full max-h-[62vh] bg-black"
@@ -389,7 +399,13 @@ export function VideoViewer({
           onEnded={handleEnded}
           onError={() => setHasError(true)}
         >
-          <track kind="captions" />
+          <track
+            kind="captions"
+            src={captionsPath ? getMaterialUrl(captionsPath) : undefined}
+            srcLang="ja"
+            label="日本語"
+            default={Boolean(captionsPath)}
+          />
         </video>
       )}
 
@@ -482,29 +498,31 @@ export function VideoViewer({
         </button>
       </div>
 
-      <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2.5 text-[11.5px] text-ink-3">
-        <span className="inline-flex items-center gap-1.5">
-          {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-          視聴 {Math.round(watched)} / {Math.round(dur) || "?"} 秒{" "}
-          <span className="font-display font-bold text-ink-2">({pct}%)</span>
-        </span>
-        <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
-          <div
-            className={cn("h-full", isCompleted ? "bg-success" : "sf-gradient-bg")}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <div className="flex-1" />
-        {!isCompleted ? (
-          <Button size="sm" variant="accent" onClick={handleMarkComplete}>
-            <Check size={13} /> 完了にする
-          </Button>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-success text-[12px] px-2">
-            <Check size={13} /> 完了済み
+      {recordProgress ? (
+        <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2.5 text-[11.5px] text-ink-3">
+          <span className="inline-flex items-center gap-1.5">
+            {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+            視聴 {Math.round(watched)} / {Math.round(dur) || "?"} 秒{" "}
+            <span className="font-display font-bold text-ink-2">({pct}%)</span>
           </span>
-        )}
-      </div>
+          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
+            <div
+              className={cn("h-full", isCompleted ? "bg-success" : "sf-gradient-bg")}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="flex-1" />
+          {!isCompleted ? (
+            <Button size="sm" variant="accent" onClick={handleMarkComplete}>
+              <Check size={13} /> 完了にする
+            </Button>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-success text-[12px] px-2">
+              <Check size={13} /> 完了済み
+            </span>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

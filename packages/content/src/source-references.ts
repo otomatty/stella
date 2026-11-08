@@ -35,6 +35,8 @@ export interface SourceRecord {
 export interface SourceUse {
   /** 単元から見た公開ファイルのパス。資料と本文の対応を固定する。 */
   contentId: string;
+  /** 省略時は単元の環境。診断課題など、既定と異なる環境の使用箇所に指定する。 */
+  environmentRef?: string;
   sourceRefs: string[];
   usedFor: string;
   authorship: "original" | "original-exercise" | "summary" | "quotation" | "adapted";
@@ -224,6 +226,14 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
       reuse,
       reviewStatus: status(use.reviewStatus),
     };
+    if (use.environmentRef !== undefined) {
+      if (
+        typeof use.environmentRef !== "string" ||
+        !/^[a-z0-9][a-z0-9._-]*@[^@\s/\\]+$/.test(use.environmentRef)
+      )
+        throw new Error(`${contentId}.environmentRef: ID@version の環境定義が必要です`);
+      result.environmentRef = use.environmentRef;
+    }
     // 片方向だけだと original のまま引用・改変を記録でき、「教材独自・引用」のような
     // 食い違う表示が公開ゲートを通ってしまう。
     if (!AUTHORSHIP_BY_REUSE[reuse].includes(authorship))

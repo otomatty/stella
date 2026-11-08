@@ -1,0 +1,67 @@
+{
+  "id": "dev-env-basics/u03-files/q03-rename",
+  "title": "ファイルの名前を変える",
+  "kind": "basic",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "stella-task-loop"
+    ],
+    "assesses": [
+      "file-save-reopen"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "plan.txt"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "plan.txt に元の文が残っている",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "名前変更前の memo.txt が残っていない",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-explorer-20261107",
+    "SRC-dev-env-files-20261107"
+  ],
+  "estimatedMinutes": 10,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "file-contains",
+        "path": "plan.txt",
+        "text": "明日の学習でファイルの操作を練習します"
+      },
+      {
+        "type": "file-absent",
+        "path": "memo.txt"
+      }
+    ]
+  }
+}

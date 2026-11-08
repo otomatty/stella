@@ -83,7 +83,11 @@ export function TaskList({
     };
   }, [load]);
   return (
-    <section className="border border-border rounded-lg mb-6" aria-label="単元の課題">
+    <section
+      data-testid="stage-tasks"
+      className="border border-border rounded-lg mb-6"
+      aria-label="単元の課題"
+    >
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <h2 className="font-semibold text-sm">単元の課題</h2>
         <Button onClick={() => void load()}>状態を更新</Button>
@@ -110,7 +114,13 @@ export function TaskList({
         tasks.map((task) => {
           const record = support.get(task.id);
           return (
-            <div key={task.id} className="p-4 border-b border-border last:border-0">
+            <div
+              data-testid="stage-task"
+              data-task-id={task.id}
+              data-lesson-id={task.lessonId}
+              key={task.id}
+              className="p-4 border-b border-border last:border-0"
+            >
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-48">
                   <h3 className="text-sm font-medium">{task.title}</h3>

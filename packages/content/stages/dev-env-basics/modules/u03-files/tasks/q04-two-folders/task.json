@@ -1,0 +1,74 @@
+{
+  "id": "dev-env-basics/u03-files/q04-two-folders",
+  "title": "2つのフォルダーを使い分ける",
+  "kind": "basic",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "stella-task-loop",
+      "html-document"
+    ],
+    "assesses": [
+      "open-learning-folder",
+      "file-save-reopen"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-01",
+  "submit": {
+    "files": [
+      "practice-a/index.html",
+      "practice-b/index.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "practice-a/index.html の h1 が「練習A」になっている",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "practice-b/index.html の h1 が「練習B」になっている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-explorer-20261107"
+  ],
+  "estimatedMinutes": 20,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "element-text",
+        "path": "practice-a/index.html",
+        "tag": "h1",
+        "text": "練習A",
+        "match": "exact"
+      },
+      {
+        "type": "element-text",
+        "path": "practice-b/index.html",
+        "tag": "h1",
+        "text": "練習B",
+        "match": "exact"
+      }
+    ]
+  }
+}

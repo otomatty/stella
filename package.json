@@ -38,7 +38,9 @@
     "db:seed": "bun run --filter=@stella/api db:seed",
     "db:seed:remote": "bun run --filter=@stella/api db:seed:remote",
     "db:seed:remote:content": "bun run --filter=@stella/api db:seed:remote:content",
-    "skills:install": "node scripts/install-skill.mjs"
+    "skills:install": "node scripts/install-skill.mjs",
+    "tutorials": "bun run --cwd apps/web tutorials",
+    "tutorials:check": "bun run --cwd apps/web tutorials:check"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

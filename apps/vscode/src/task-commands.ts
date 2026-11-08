@@ -24,6 +24,8 @@ import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { apiRequest, apiSession } from "./api.js";
+import { getCachedCatalog } from "./catalog.js";
+import { stellaUrl } from "./config.js";
 import {
   findTaskRoot,
   type LoadedTask,
@@ -407,10 +409,30 @@ async function submitTaskCommand(
               at: new Date().toISOString(),
               detail: CONSULT_SUPPORT_DETAIL,
             });
-          const row = await sendTaskSubmission(root, mode, notes, session);
-          void vscode.window.showInformationMessage(
-            `${mode === "consult" ? "講師に相談を送りました" : "課題を提出しました"} (${row.attempt} 回目)。レビューの結果は Web で確認できます`,
-          );
+          await sendTaskSubmission(root, mode, notes, session);
+          // 課題一覧の応答から作ったカタログにだけ ID がある。配布記録には含まれない。
+          const lesson = getCachedCatalog()
+            .flatMap((stage) => stage.sections.flatMap((section) => section.lessons))
+            .find((item) => item.task?.id === loaded.manifest.id);
+          const webUrl = `${stellaUrl("webUrl")}${
+            lesson?.stageId && lesson.id
+              ? `/stages/${encodeURIComponent(lesson.stageId)}/lessons/${encodeURIComponent(lesson.id)}`
+              : "/"
+          }`;
+          const web = "Web で開く";
+          const result = "結果を見る";
+          void vscode.window
+            .showInformationMessage(
+              mode === "consult"
+                ? "相談を送りました。講師の返事は通知と、Web のレッスン画面の『提出・添削を確認する』に届きます。"
+                : "提出しました。AI が確かめた結果は、ふつう数分で届きます。",
+              ...(mode === "consult" ? [web] : [result, web]),
+            )
+            .then(async (choice) => {
+              if (choice === result)
+                await vscode.commands.executeCommand("stella.showTaskHelp", root);
+              else if (choice === web) await vscode.env.openExternal(vscode.Uri.parse(webUrl));
+            });
         },
       },
     );

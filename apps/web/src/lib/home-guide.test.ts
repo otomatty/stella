@@ -22,8 +22,10 @@ const ACTIVE = {
 const base = {
   plan: buildTodayPlan({ srsDueCount: 0 }),
   hasEnrollment: true,
+  hasVisibleExtra: false,
   activeWithoutLesson: false,
   startableStageIds: [] as string[],
+  stageAudienceById: {} as Record<string, SkillMapStageNode["audience"]>,
   reviewDone: false,
 };
 
@@ -73,13 +75,74 @@ describe("buildHomeGuide", () => {
     expect(guide.steps.some((s) => s.kind === "choose")).toBe(false);
   });
 
-  it("何も始めていない人には、星を選ぶ案内が最初の一手になる", () => {
+  it("受講 0 件で Basic が 1 つだけなら、その星を始める案内が最初の一手になる", () => {
     const guide = buildHomeGuide({
       ...base,
       hasEnrollment: false,
       startableStageIds: ["root"],
     });
+    expect(guide.steps).toEqual([{ kind: "first-stage", stageId: "root" }]);
+  });
+
+  it("受講 0 件で始められる Basic が 1 つでも、盤面に鍵の付いた Extra があればツリーから選ぶ", () => {
+    const nodes = [node("root"), node("extra", { audience: "granted", state: "locked" })];
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      hasVisibleExtra: nodes.some((node) => node.audience === "granted"),
+      startableStageIds: startableStageIds(nodes, ["root", "extra"], null),
+      stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
+    });
     expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root"] }]);
+  });
+
+  it("受講 0 件でも Basic と Extra が 1 つずつなら、ツリーから選ぶ", () => {
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      startableStageIds: ["root", "extra"],
+      stageAudienceById: { root: undefined, extra: "granted" },
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root", "extra"] }]);
+  });
+
+  it("受講 0 件でも Basic が 2 つなら、ツリーから選ぶ", () => {
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      startableStageIds: ["root", "other"],
+      stageAudienceById: { root: undefined, other: undefined },
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["root", "other"] }]);
+  });
+
+  it("受講 0 件でも Extra だけなら、ツリーから選ぶ", () => {
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      startableStageIds: ["extra"],
+      stageAudienceById: { extra: "granted" },
+    });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: true, stageIds: ["extra"] }]);
+  });
+
+  it("受講があれば Basic が 1 つだけでも初回の案内は出さない", () => {
+    const guide = buildHomeGuide({ ...base, startableStageIds: ["root"] });
+    expect(guide.steps).toEqual([{ kind: "choose", welcome: false, stageIds: ["root"] }]);
+  });
+
+  it("受講 0 件で復習があるときも、最初のステージを始める案内を先にする", () => {
+    const plan = buildTodayPlan({ srsDueCount: 3 });
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      plan,
+      startableStageIds: ["root"],
+    });
+    expect(guide.steps).toEqual([
+      { kind: "first-stage", stageId: "root" },
+      ...plan.items.map((item) => ({ kind: "plan", item })),
+    ]);
   });
 
   it("レッスンが尽きた進行中のステージは、仕上げを確かめてから次の星へ", () => {
@@ -106,5 +169,30 @@ describe("buildHomeGuide", () => {
   it("何も無い日は空の手順と、言い分けだけを返す", () => {
     expect(buildHomeGuide(base)).toEqual({ steps: [], idle: "empty" });
     expect(buildHomeGuide({ ...base, reviewDone: true })).toEqual({ steps: [], idle: "done" });
+  });
+});
+
+describe("VS Code の準備の案内", () => {
+  const setup = { ...base, connectedVscode: false, firstStageStarted: false };
+  it("今日のプランの先頭を保ち、そのあとの先頭に入れる", () => {
+    const guide = buildHomeGuide({
+      ...setup,
+      plan: buildTodayPlan({ srsDueCount: 6, activeStage: ACTIVE }),
+    });
+    expect(guide.steps.map((step) => step.kind)).toEqual(["plan", "setup-vscode", "plan"]);
+  });
+  it.each([
+    { connectedVscode: true },
+    { hasEnrollment: false },
+    { firstStageStarted: true },
+    { connectedVscode: undefined },
+    { firstStageStarted: undefined },
+  ])("条件を満たさない・取得失敗なら出さない: %o", (override) => {
+    expect(
+      buildHomeGuide({ ...setup, ...override }).steps.some((step) => step.kind === "setup-vscode"),
+    ).toBe(false);
+  });
+  it("プランが無いときにも準備を案内する", () => {
+    expect(buildHomeGuide(setup).steps).toEqual([{ kind: "setup-vscode" }]);
   });
 });

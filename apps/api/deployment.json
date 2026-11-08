@@ -9,9 +9,10 @@
       "BETTER_AUTH_SECRET",
       "ANTHROPIC_API_KEY",
       "OPENAI_API_KEY",
-      "PDF_KEY_SALT"
+      "PDF_KEY_SALT",
+      "GEMINI_API_KEY"
     ],
-    "optionalSecrets": ["PDF_KEY_SALT", "OPENAI_API_KEY"]
+    "optionalSecrets": ["PDF_KEY_SALT", "OPENAI_API_KEY", "GEMINI_API_KEY"]
   },
   "workerSecrets": {
     "api": ["BETTER_AUTH_SECRET", "GOOGLE_CLIENT_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"]

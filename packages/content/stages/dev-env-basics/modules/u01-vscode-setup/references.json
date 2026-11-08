@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "dev-env-basics/u01-vscode-setup@2",
+  "contentHash": "aa758dc7b7dc990d09edf552f8126da2fbdadeb9ffc21e88081f5db4bcac4ea2",
+  "environmentRef": "static-web-01@1",
+  "uses": [
+    {
+      "contentId": "l1-install-vscode/t1-what-is-editor/slides.md",
+      "sourceRefs": ["SRC-dev-env-editor-20261107"],
+      "usedFor": "VS Codeの役割。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-install-vscode/t2-install/slides.md",
+      "sourceRefs": ["SRC-dev-env-win-setup-20261107", "SRC-dev-env-mac-setup-20261107"],
+      "usedFor": "公式サイトから入れる。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-install-vscode/t3-japanese/slides.md",
+      "sourceRefs": ["SRC-dev-env-locales-20261107", "SRC-dev-env-jp-pack-20261107"],
+      "usedFor": "日本語で表示する。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-install-vscode/doc.md",
+      "sourceRefs": [
+        "SRC-dev-env-editor-20261107",
+        "SRC-dev-env-win-setup-20261107",
+        "SRC-dev-env-mac-setup-20261107",
+        "SRC-dev-env-locales-20261107",
+        "SRC-dev-env-jp-pack-20261107"
+      ],
+      "usedFor": "日本語で表示するのまとめ。STELLA 独自の操作案内と表は06 §6・§8・§9・§12と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-install-vscode/knowledge.md",
+      "sourceRefs": [
+        "SRC-dev-env-editor-20261107",
+        "SRC-dev-env-win-setup-20261107",
+        "SRC-dev-env-mac-setup-20261107",
+        "SRC-dev-env-locales-20261107",
+        "SRC-dev-env-jp-pack-20261107"
+      ],
+      "usedFor": "レッスンの内容を確かめる教材独自の設問・正答・解説。STELLA の仕様は06 §6・§8と実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-stella-extension/t1-install-extension/slides.md",
+      "sourceRefs": ["SRC-dev-env-extensions-20261107", "SRC-dev-env-stella-20261107"],
+      "usedFor": "STELLA 拡張を入れる。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-stella-extension/t2-open-from-web/slides.md",
+      "sourceRefs": ["SRC-dev-env-trust-20261107"],
+      "usedFor": "Webから課題を開く。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-stella-extension/t3-learning-folder/slides.md",
+      "sourceRefs": [],
+      "usedFor": "学習フォルダーの並び。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-stella-extension/doc.md",
+      "sourceRefs": [
+        "SRC-dev-env-extensions-20261107",
+        "SRC-dev-env-stella-20261107",
+        "SRC-dev-env-trust-20261107"
+      ],
+      "usedFor": "学習フォルダーの並びのまとめ。STELLA 独自の操作案内と表は06 §6・§8・§9・§12と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-stella-extension/knowledge.md",
+      "sourceRefs": ["SRC-dev-env-extensions-20261107", "SRC-dev-env-stella-20261107"],
+      "usedFor": "レッスンの内容を確かめる教材独自の設問・正答・解説。STELLA の仕様は06 §6・§8と実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-close-and-resume/t1-trust/slides.md",
+      "sourceRefs": ["SRC-dev-env-trust-20261107"],
+      "usedFor": "フォルダーを信頼する意味。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-close-and-resume/t2-resume/slides.md",
+      "sourceRefs": [],
+      "usedFor": "翌日に同じ課題へ戻る。操作例と説明は教材用に作成。STELLA の仕様は06 §6・§8・§9と実装に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-close-and-resume/doc.md",
+      "sourceRefs": ["SRC-dev-env-trust-20261107"],
+      "usedFor": "翌日に同じ課題へ戻るのまとめ。STELLA 独自の操作案内と表は06 §6・§8・§9・§12と実装に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-close-and-resume/knowledge.md",
+      "sourceRefs": ["SRC-dev-env-trust-20261107"],
+      "usedFor": "レッスンの内容を確かめる教材独自の設問・正答・解説。STELLA の仕様は06 §6・§8と実装に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

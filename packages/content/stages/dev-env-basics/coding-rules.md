@@ -6,4 +6,4 @@
 
 - 規則: ページの見出しは `h1`〜`h6`、文章のまとまりは `p` で書いている。文字を大きく見せるためだけに見出しの要素を使っていない。
 - 対象: HTML
-- 導入: dev-env-basics/m0-first-page
+- 導入: dev-env-basics/u02-first-task

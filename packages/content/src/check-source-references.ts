@@ -416,6 +416,15 @@ function checkUnit(
   }
   const files = publicContentFiles(directory);
   for (const use of refs.uses) {
+    if (use.environmentRef !== undefined) {
+      try {
+        const env = readEnvironment(root, use.environmentRef.split("@")[0]);
+        if (env.id !== use.environmentRef)
+          problems.push(`${use.contentId}: 環境の版が一致しません: ${use.environmentRef}`);
+      } catch (error) {
+        problems.push(`${use.contentId}: 環境の定義がありません: ${String(error)}`);
+      }
+    }
     if (!files.includes(use.contentId)) problems.push(`参照の対応先がありません: ${use.contentId}`);
     if (use.reviewStatus !== "approved")
       problems.push(`${use.contentId}: レビュー状態が approved ではありません`);
@@ -448,7 +457,13 @@ function checkUnit(
           ),
           "task.json",
         );
-        if (typeof task.environment !== "string" || (envParts && task.environment !== envParts[1]))
+        if (
+          typeof task.environment !== "string" ||
+          uses.some((use) => {
+            const id = use.environmentRef?.split("@")[0] ?? envParts?.[1];
+            return id !== undefined && task.environment !== id;
+          })
+        )
           problems.push(`${file}: 課題と参照元の環境が一致しません`);
         if (Array.isArray(task.sources) && task.sources.every((id) => typeof id === "string"))
           declared = task.sources as string[];

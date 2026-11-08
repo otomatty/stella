@@ -529,9 +529,22 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(sql).toMatch(/insert into lessons /);
   });
 
+  it("解答例の削除指定を private の素材・公開 bundle・seed SQL に入れない", () => {
+    const control = readFileSync(
+      new URL(
+        "../../content/stages/dev-env-basics/modules/u03-files/tasks/q03-rename/private/solution/.stella-solution.json",
+        import.meta.url,
+      ),
+    );
+    expect(sql).not.toContain(".stella-solution.json");
+    expect(sql).not.toContain(control.toString("base64"));
+    expect(sql).not.toContain("solutionRemoves");
+    expect(sql).not.toContain("mutantRemoves");
+  });
+
   it("課題の private/ とヒントは task_private にだけ入り、配布 bundle・レッスンに出ない", () => {
     const taskDir = new URL(
-      "../../content/stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/",
+      "../../content/stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page/",
       import.meta.url,
     );
     const statements = sql.split("\n");
@@ -562,16 +575,16 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
   });
 
   it("課題を課題文のレッスンと結び (類題の印は付けない)、固定した開始点の無い課題は開始点を消す", () => {
-    const lessonId = stableUuid("lesson:ses:dev-env-basics:task-m0-first-page-q01-first-page");
+    const lessonId = stableUuid("lesson:ses:dev-env-basics:task-u02-first-task-q01-first-page");
     expect(sql).toContain(`insert into lessons (id, section_id, title, type, "order"`);
     expect(sql).toContain(`select '${lessonId}', s.id,`);
     expect(sql).toMatch(
       new RegExp(
-        `insert into tasks \\([^)]*lesson_id, variant_of\\) values \\('dev-env-basics/m0-first-page/q01-first-page',.*'${lessonId}', null\\) on conflict`,
+        `insert into tasks \\([^)]*lesson_id, variant_of\\) values \\('dev-env-basics/u02-first-task/q01-first-page',.*'${lessonId}', null\\) on conflict`,
       ),
     );
     expect(sql).toContain(
-      "delete from task_fixed_starts where task_id = 'dev-env-basics/m0-first-page/q01-first-page';",
+      "delete from task_fixed_starts where task_id = 'dev-env-basics/u02-first-task/q01-first-page';",
     );
   });
 

@@ -1,3 +1,5 @@
+import { useFirstSteps } from "@/hooks/useFirstSteps";
+import { FirstStepsCard } from "@/components/learner/FirstStepsCard";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { LearningPacePanel } from "@/components/learner/LearningPacePanel";
@@ -15,6 +17,7 @@ interface Learners {
 export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
   const [data, setData] = useState<Learners | null>(null);
   const [selected, setSelected] = useState("");
+  const firstSteps = useFirstSteps(selected, Boolean(selected));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -100,6 +103,7 @@ export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
                 </select>
               </div>
             ) : null}
+            {firstSteps?.stage_started ? <FirstStepsCard data={firstSteps} compact /> : null}
             <LearningPacePanel key={`${selected}:${revision}`} userId={selected} />
             <TaskSupportPanel key={`support-${selected}`} userId={selected} />
             <DiagnosisForm

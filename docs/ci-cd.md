@@ -7,7 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → narrator の退役 (PDF 処理の Worker と Workflows を Cloudflare の API で消す。無ければ何もしない) |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → narrator の退役 (PDF 処理の Worker と Workflows を Cloudflare の API で消す。無ければ何もしない) |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 → 未掲載の版だけ Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -30,7 +30,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 
 `main` への push は毎回 R2 画像 126 件の put・Playwright 導入・PDF 差分・D1 seed をフルで
 流していた。UI だけの変更でもそこに 11 分使うので、**seed に入るものが 1 バイトも
-変わっていない push では画像 upload / Playwright / PDF sync / D1 seed を丸ごと飛ばす**
+変わっていない push では画像 upload / Playwright / PDF sync / 動画 sync / D1 seed を丸ごと飛ばす**
 （Issue #266）。検証ゲート・migrate・deploy:api・deploy:web は毎回走る。
 
 判定は git の diff ではなく**内容指紋**（`packages/content/scripts/lib/content-fingerprint.ts`）。
@@ -58,6 +58,12 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 教材画像 (図解 SVG + ステージサムネイル) は seed の**前**に R2 へ流す。D1 が指す先が先に存在している必要があるため、順序を入れ替えないこと。put は冪等なので、走るときは毎回全件流す（差分台帳は持たない — 図解 SVG のキーは内容ハッシュではないので、台帳が唯一の真実になると `r2:orphans` で消したオブジェクトを「put 済み」として飛ばしてしまう）。remote の put は Cloudflare API 直叩き（`packages/content/scripts/lib/r2.ts`）で、同時 8 本・失敗は 3 回まで再試行して 126 件が十数秒。`wrangler r2 object put` を 1 ファイルにつき 1 プロセス起こしていた頃は、ここだけで 2 分半かかっていた。local (`--local`) はバケットの実体が miniflare の永続ディレクトリなので wrangler のまま。サムネイルの R2 キーは内容ハッシュ入り (`tenant/<tenantId>/courses/<slug>/thumbnail-<hash>.webp`) で、旧世代は `bun run r2:orphans` の棚卸しで掃除する。
 
 このステップは `CLOUDFLARE_API_TOKEN` に **Workers R2 Storage: Edit** 権限を要求する。権限が無いとここで落ち、seed 以降は動かない（D1 が存在しない画像を指すことはない）。
+
+教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。
+
+`narration.json` のあるトピックだけを対象に、スライド・台本・読み辞書・スライド CSS・TTS の provider / モデル / 声 / 速さを内容ハッシュへ含める。公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。台帳はキーの SHA-256 とサイズ・長さだけを保持し、旧版は消さない。`dist/video-manifest.json` (`VIDEO_MANIFEST`) を seed に渡し、`lessons.video_path` を更新する。manifest を渡さない seed は動画を保持し、台本が消えたトピックは参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
+
+手元は ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意し、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。R2 の認証とバケットは PDF と共通。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。動画再生から完了は記録しない。
 
 seed は SQL を D1 の 100KB/query に収まるチャンクへ割って**直列に**適用する（FK 順と upsert 順があるので並列にしないこと）。remote は 1 プロセスから D1 の HTTP API (`/query`) を叩く（`apps/api/scripts/lib/d1-remote.ts`）。チャンクごとに `bunx wrangler d1 execute` を起こしていた頃は、D1 上の実行時間が合計 4 秒なのに壁時計が 8 分半で、差はすべて CLI の起動と通信だった。途中で落ちたら何チャンク目かを出して失敗させる（「成功したことにしない」）。HTTP 側で問題が出たときは `cd apps/api && bun run scripts/seed-d1.ts --remote --content-only --wrangler` で旧経路（チャンクごとに `wrangler d1 execute`）に戻せる。local (`--local`) は miniflare の実体に書く必要があるので wrangler のまま。
 
@@ -148,13 +154,13 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check → narrator の退役 の順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → 動画 → migrate → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check → narrator の退役 の順で進む。画像・PDF・動画・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
 - **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api のデプロイは済んでいる。web とヘルスチェックは動かない）。
 - **教材画像 upload 失敗**: 画像か R2 認証 (API トークンの R2 権限) を直して再 push（seed 以降は動かない）。
-- **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
+- **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / 動画 / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`
   - Web: `bun run deploy:web`

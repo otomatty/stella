@@ -1,0 +1,146 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "dev-env-basics/u05-terminal-node@1",
+  "contentHash": "eed5b87fdaab26c8b73bbb87e04c81986892fcc0ceb7af2d0c7aab5d358b1e19",
+  "environmentRef": "static-web-01@1",
+  "uses": [
+    {
+      "contentId": "l1-terminal/t1-what-is-terminal/slides.md",
+      "sourceRefs": ["SRC-dev-env-terminal-20261107"],
+      "usedFor": "ターミナルは、文字でコマンドを入れて実行する画面です。 概念に基づく独自の説明と例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-terminal/t2-current-folder/slides.md",
+      "sourceRefs": ["SRC-dev-env-terminal-20261107"],
+      "usedFor": "コマンドは、ターミナルがいま開いているフォルダーで実行されます。 概念に基づく独自の説明と例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-terminal/t3-one-by-one/slides.md",
+      "sourceRefs": ["SRC-dev-env-terminal-20261107"],
+      "usedFor": "コマンドは 1 つずつ入れて、結果を読んでから次へ進みます。 概念に基づく独自の説明と例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-node/t1-what-is-node/slides.md",
+      "sourceRefs": ["SRC-dev-env-node-intro-20261107", "SRC-dev-env-node-download-20261107"],
+      "usedFor": "Node.js は、ブラウザーの外で JavaScript を動かす道具です。 概念に基づく独自の説明と例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-node/t2-install-node/slides.md",
+      "sourceRefs": ["SRC-dev-env-node-download-20261107", "SRC-dev-env-node-releases-20261107"],
+      "usedFor": "Node.js は、教材が指定する版を公式サイトから入れます。 概念に基づく独自の説明と例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-node/t3-check-version/slides.md",
+      "sourceRefs": [
+        "SRC-dev-env-node-download-20261107",
+        "SRC-dev-env-node-releases-20261107",
+        "SRC-dev-env-powershell-command-20261107"
+      ],
+      "usedFor": "版は `node --version` で確かめ、教材の指定と照らし合わせます。 概念に基づく独自の説明と例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-asking/t1-report/slides.md",
+      "sourceRefs": [],
+      "usedFor": "相談するときは、しようとしたこと・できたところ・出たメッセージを伝えます。 概念に基づく独自の説明と例。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-terminal/doc.md",
+      "sourceRefs": ["SRC-dev-env-terminal-20261107"],
+      "usedFor": "ターミナルを使うの解説と操作。STELLA独自の機能・相談は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-terminal/knowledge.md",
+      "sourceRefs": ["SRC-dev-env-terminal-20261107"],
+      "usedFor": "ターミナルを使うの理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-node/doc.md",
+      "sourceRefs": [
+        "SRC-dev-env-node-intro-20261107",
+        "SRC-dev-env-node-download-20261107",
+        "SRC-dev-env-node-releases-20261107",
+        "SRC-dev-env-powershell-command-20261107"
+      ],
+      "usedFor": "Node.js と npm を入れるの解説と操作。STELLA独自の機能・相談は06 §8・§12に基づく。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-node/knowledge.md",
+      "sourceRefs": [
+        "SRC-dev-env-node-intro-20261107",
+        "SRC-dev-env-node-download-20261107",
+        "SRC-dev-env-node-releases-20261107"
+      ],
+      "usedFor": "Node.js と npm を入れるの理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-asking/doc.md",
+      "sourceRefs": [],
+      "usedFor": "困ったときの伝え方の解説と操作。STELLA独自の機能・相談は06 §8・§12に基づく。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-asking/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "困ったときの伝え方の理解を確かめる教材独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-where-am-i/README.md",
+      "sourceRefs": ["SRC-dev-env-terminal-20261107"],
+      "usedFor": "ターミナルの場所を確かめてファイルを作るの教材独自の課題文と受入条件。STELLAの確認・提出は06 §8に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/d01-node-check/README.md",
+      "sourceRefs": [
+        "SRC-dev-env-node-download-20261107",
+        "SRC-dev-env-node-releases-20261107",
+        "SRC-dev-env-powershell-command-20261107"
+      ],
+      "usedFor": "Node.js と npm の版を確かめるの教材独自の課題文と受入条件。STELLAの確認・提出は06 §8に基づく。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft",
+      "environmentRef": "diagnose-node-01@1"
+    }
+  ]
+}

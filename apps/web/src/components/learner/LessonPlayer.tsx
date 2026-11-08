@@ -29,6 +29,7 @@ import { TopbarSlot } from "@/components/shell/TopbarSlot";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./StageDetail";
 import { LessonCompleteCallout, LessonNavFooter } from "./LessonNav";
+import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
@@ -366,7 +367,11 @@ export const LessonPlayer = ({
         </DrawerContent>
       </Drawer>
 
-      <main className="min-w-0 flex flex-col">
+      <main
+        data-testid="lesson-screen"
+        data-lesson-id={lessonObj.id}
+        className="min-w-0 flex flex-col"
+      >
         {isCode && lessonObj.assignmentId ? (
           <CodeLessonHandoff
             stageId={stage.id}
@@ -393,8 +398,7 @@ export const LessonPlayer = ({
               )
             ) : null}
 
-            {/* markdown を持つスライドは教材タブの MarkdownSlides で描画するので、 上の PDF 枠は出さない。 */}
-            {isSlides && !lessonObj.markdown ? (
+            {isSlides && !lessonObj.markdown && !lessonObj.videoPath ? (
               lessonObj.pdfPath ? (
                 <Suspense fallback={<ViewerLoading />}>
                   <SlidesViewer
@@ -484,14 +488,32 @@ export const LessonPlayer = ({
                     />
                   ) : isText ? (
                     <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
-                  ) : isSlides && lessonObj.markdown ? (
-                    <MarkdownSlides
+                  ) : isSlides && (lessonObj.markdown || lessonObj.videoPath) ? (
+                    <SlideLessonMedia
                       key={lessonObj.id}
                       lessonId={lessonObj.id}
-                      markdown={lessonObj.markdown}
-                      header={stage.title}
-                      onComplete={handleMarkComplete}
-                    />
+                      videoPath={lessonObj.videoPath}
+                    >
+                      {lessonObj.markdown ? (
+                        <MarkdownSlides
+                          lessonId={lessonObj.id}
+                          markdown={lessonObj.markdown}
+                          header={stage.title}
+                          onComplete={handleMarkComplete}
+                        />
+                      ) : lessonObj.pdfPath ? (
+                        <Suspense fallback={<ViewerLoading />}>
+                          <SlidesViewer
+                            lessonId={lessonObj.id}
+                            pdfPath={lessonObj.pdfPath}
+                            totalPages={lessonObj.totalPages}
+                            onComplete={handleMarkComplete}
+                          />
+                        </Suspense>
+                      ) : (
+                        <MissingMaterialFallback type="slides" />
+                      )}
+                    </SlideLessonMedia>
                   ) : isVideo || isSlides ? (
                     <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
                   ) : (
@@ -601,6 +623,8 @@ const LessonToc = ({
               <button
                 type="button"
                 key={l.id}
+                data-testid={`lesson-toc-${l.type}`}
+                data-lesson-id={l.id}
                 onClick={() => {
                   if (status === "locked") return;
                   onSelectLesson(l.id);
@@ -742,7 +766,7 @@ const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
   }, [isCompleted, lesson.markdown, onComplete]);
 
   return (
-    <div className="prose-lms">
+    <div data-testid="lesson-doc" className="prose-lms">
       {lesson.markdown ? (
         <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
       ) : (

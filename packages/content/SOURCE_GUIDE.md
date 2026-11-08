@@ -6,6 +6,9 @@
 
 1. `sources/registry.json` に資料を登録します。IDは改訂を区別する名前にし、承認・公開済みの資料を書き換えず新しいIDを追加します。資料名・発行主体・個別URL・読む節・言語・資料の版・確認日を記録します。読む節 (`section`) はページの見出しの表記で書き、複数あるときは ` / ` で区切ります。技術・資料群のトップページや目次 (MDN の `/docs/Web`・`/docs/Web/HTML`、`/docs`・`/guide` で終わるURLなど) は、節名を書いても根拠にできません。更新型の資料は `documentVersion.kind: rolling` とし、取得できる改訂番号を `revision` に残します。
 2. 単元の `references.json` を schemaVersion `2.1` で作ります。`unitId` は `<slug>/<module>@<版>` で、版には `1` や `1.0.0` のような数字またはドット区切りの数字を使います。`contentHash` はその版で参照元を確認した単元の内容指紋です ([単元の版と内容の指紋](#単元の版と内容の指紋))。`environmentRef` は `<環境ID>@<版>`、`uses` は使用箇所ごとの記録です。環境IDは `environments/<ID>.json` の版と一致させます。
+   版の診断の課題のように、単元の既定と異なる環境の課題を同じ単元に置く場合は、`uses` の各項目に任意の `environmentRef` (`<環境ID>@<版>`) を書けます。
+   指定した使用箇所はその環境で照合し、省略時は単元の `environmentRef` を使います。
+   単元の既定とステージの環境の照合は変わりません。
 3. 各 `uses` に公開ファイルの相対パス `contentId`、`sourceRefs`、何を裏付けたかを示す `usedFor`、`authorship`、`reuse`、`reviewStatus` を書きます。解説・参考例・図・課題の対応は講師が確認します。図は `l1-…/t1-…/assets/図.svg` のように個別に記録し、本文に埋め込んだ図の出典も近くに表示します。非公開領域は対応先にしません。
 4. `slides.md`・`doc.md`・`knowledge.md`・旧形式の `practice.md` の冒頭に `sourceRefs: [SRC-…]` を持つ front-matter を置きます。課題は `task.json` の既存の `sources` を使います。単元の対応表とIDの集合を一致させます。
 5. 草稿は `draft` で保存します。講師が資料・対象版・利用条件と本文・受入条件の対応を確認してから、資料の `review.status` と各使用箇所の `reviewStatus` を `approved` にします。資料の承認には `reviewer`・`reviewedAt`・`scope` が必要です。AIによる調査・照合を講師承認として記録しません。
@@ -14,7 +17,7 @@
 ```json
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/m0-first-page@1",
+  "unitId": "dev-env-basics/u02-first-task@1",
   "contentHash": "<hash:unit が表示する64桁の指紋>",
   "environmentRef": "static-web-01@1",
   "uses": [{

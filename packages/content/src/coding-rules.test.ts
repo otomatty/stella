@@ -43,7 +43,7 @@ function fixture(common: string, stage = "") {
 function setTaskRules(root: string, rules: unknown) {
   const file = join(
     root,
-    "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/task.json",
+    "stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page/task.json",
   );
   const task = JSON.parse(readFileSync(file, "utf8"));
   task.review.rules = rules;
@@ -156,7 +156,7 @@ describe("課題が指す規則", () => {
   });
   it("教材の読み込みで、課題の review.rules を確かめる", () => {
     const ok = fixture(
-      rule("CR-A-01", "dev-env-basics/m0-first-page"),
+      rule("CR-A-01", "dev-env-basics/u02-first-task"),
       rule("DEV-A-01", "dev-env-basics"),
     );
     setTaskRules(ok, [
@@ -178,7 +178,7 @@ describe("課題が指す規則", () => {
 describe("task.json の review", () => {
   const raw = JSON.parse(
     readFileSync(
-      join(content, "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/task.json"),
+      join(content, "stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page/task.json"),
       "utf8",
     ),
   );

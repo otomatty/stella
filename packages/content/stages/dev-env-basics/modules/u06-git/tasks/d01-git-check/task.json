@@ -1,0 +1,47 @@
+{
+  "id": "dev-env-basics/u06-git/d01-git-check",
+  "title": "Git の版を確かめる",
+  "kind": "basic",
+  "pattern": "env-diagnose",
+  "skills": {
+    "uses": [
+      "terminal-location"
+    ],
+    "assesses": [
+      "git-local-commit"
+    ]
+  },
+  "runner": "env-diagnose",
+  "environment": "diagnose-git-01",
+  "submit": {
+    "files": [],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "確認結果で、必要な道具の版が環境の要件を満たしている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 1,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-git-windows-20261107",
+    "SRC-dev-env-git-mac-20261107"
+  ],
+  "estimatedMinutes": 25,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

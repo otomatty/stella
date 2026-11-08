@@ -313,7 +313,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
           const correctIds = new Set(qResult?.correct_option_ids ?? []);
           const selected = answers[q.id] ?? new Set<string>();
           return (
-            <Card key={q.id} className="p-6">
+            <Card data-testid="quiz-question" key={q.id} className="p-6">
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="text-[11.5px] text-ink-3 font-semibold">問題 {idx + 1}</span>
                 <Badge variant="accent">{KIND_LABEL[q.kind]}</Badge>
@@ -347,6 +347,8 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                   <button
                     type="button"
                     key={o.id}
+                    data-testid="quiz-option"
+                    data-selected={isSelected}
                     onClick={() => toggleOption(q, o.id)}
                     disabled={Boolean(result)}
                     className={cn(

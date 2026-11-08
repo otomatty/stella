@@ -117,7 +117,7 @@ function switchLearner(): void {
 
 const { buildTaskHelpHtml, registerTaskHelp, solutionContent } = await import("./task-help.js");
 
-const TASK_ID = "dev-env-basics/m0-first-page/q01-first-page";
+const TASK_ID = "dev-env-basics/u02-first-task/q01-first-page";
 /** 配布記録 (`.stella/distribution.json`) の版。 */
 const HASH = "a".repeat(64);
 const encode = (text: string) => Buffer.from(text).toString("base64");

@@ -1,3 +1,4 @@
+import { replaceTutorialBlocks } from "../../../shared/src/markdown/tutorial-blocks.js";
 /**
  * まとめ・課題文 (doc / task) の配布 PDF の本文 HTML。build-pdf.ts が A4 の紙面に流し込む。
  *
@@ -21,6 +22,7 @@ export function docBodyHtml(
   assets: Map<string, string>,
   os: OsName | undefined,
 ): string {
+  source = replaceTutorialBlocks(source, (id) => `\n動画: 本文の Web 版で見られます (${id})\n`);
   if (os) return renderMarkdown(selectOsMarkdown(source, os), assets, false);
   const { segments } = parseOsBlocks(source);
   return segments

@@ -8,6 +8,9 @@ import {
 
 vi.mock("vscode", () => ({
   window: { createWebviewPanel: vi.fn() },
+  workspace: {
+    getConfiguration: () => ({ inspect: () => ({ globalValue: "https://configured.example/" }) }),
+  },
   ViewColumn: { Active: 1 },
 }));
 
@@ -256,4 +259,15 @@ describe("OS 別ブロック", () => {
     expect(html).toContain('.os-tab-input[value="macos"]:checked ~ .os-panel[data-os="macos"]');
     expect(html).toContain("default-src 'none'");
   });
+});
+
+it("renders tutorials as Web links without adding media or scripts", () => {
+  const html = markdownToHtml(
+    ":::tutorial overview\n\n:::os windows\n:::tutorial setup\n:::\n:::os macos\n:::tutorial setup\n:::",
+  );
+  expect(html).toContain('href="https://configured.example/tutorials/overview.mp4"');
+  expect(html).toContain("動画: overview を Web で見る");
+  expect(html).toContain("/tutorials/setup.mp4");
+  expect(html).not.toMatch(/<video|<script/);
+  expect(markdownToHtml("```\n:::tutorial overview\n```")).not.toContain("/tutorials/overview.mp4");
 });

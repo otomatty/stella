@@ -91,7 +91,7 @@ const { AuthStore } = await import("./auth.js");
 const { initApi } = await import("./api.js");
 const { registerTaskHelp } = await import("./task-help.js");
 
-const TASK_ID = "dev-env-basics/m0-first-page/q01-first-page";
+const TASK_ID = "dev-env-basics/u02-first-task/q01-first-page";
 const HASH = "a".repeat(64);
 const SECRET = "PREVIOUS_LEARNER_SOLUTION_57";
 const encode = (text: string) => Buffer.from(text).toString("base64");

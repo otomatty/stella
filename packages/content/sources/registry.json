@@ -3680,6 +3680,728 @@
         "reviewedAt": "2026-11-05",
         "scope": "開発ラボG 事前課題 第1部 (devlab-ts-prework) の課題文の教材リンク。各問題のファイルの「教材:」のページと、その問題の書き方の対応を確認。リンクと概念の参照だけで、本文とコードは転載しない。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-dev-env-windows-20261107",
+      "title": "Find information about your Windows device",
+      "publisher": "Microsoft",
+      "url": "https://support.microsoft.com/en-us/windows/experience/find-information-about-your-windows-device",
+      "section": "Which version of Windows do I have?",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-macos-20261107",
+      "title": "Find out which macOS your Mac is using",
+      "publisher": "Apple",
+      "url": "https://support.apple.com/en-us/109033#:~:text=Which%20macOS%20is%20installed%3F",
+      "section": "Which macOS is installed?",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-editor-20261107",
+      "title": "Visual Studio Code editor tutorial",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/getting-started/editor-tutorial",
+      "section": "Get started with the editor",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-win-setup-20261107",
+      "title": "Visual Studio Code on Windows",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/setup/windows",
+      "section": "Installation / User setup versus system setup",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-mac-setup-20261107",
+      "title": "Visual Studio Code on macOS",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/setup/mac",
+      "section": "Installation",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-locales-20261107",
+      "title": "Display language",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/configure/locales",
+      "section": "Changing the display language",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-extensions-20261107",
+      "title": "Extension Marketplace",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/configure/extensions/extensions",
+      "section": "Browse for extensions / Install an extension",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-jp-pack-20261107",
+      "title": "Japanese Language Pack for Visual Studio Code",
+      "publisher": "Microsoft",
+      "url": "https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ja",
+      "section": "Usage",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-stella-20261107",
+      "title": "STELLA - Visual Studio Marketplace",
+      "publisher": "saedgewell",
+      "url": "https://marketplace.visualstudio.com/items?itemName=saedgewell.stella-lms",
+      "section": "STELLA",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-trust-20261107",
+      "title": "Workspace Trust",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/workspaces/workspace-trust",
+      "section": "Workspace Trust / Restricted Mode / Trusting a workspace",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U00・U01 の説明と操作手順を対象OS・表示言語・VS Code の版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-editing-20261107",
+      "title": "Basic editing",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/codebasics",
+      "section": "Save / Hot Exit",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-explorer-20261107",
+      "title": "User interface",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/getting-started/userinterface",
+      "section": "Explorer view / Tabs / Breadcrumbs",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-workspaces-20261107",
+      "title": "Workspaces",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/editing/workspaces/workspaces",
+      "section": "What is a VS Code workspace? / Single-folder workspaces",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-files-20261107",
+      "title": "Dealing with files",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Dealing_with_files",
+      "section": "File structure / File paths",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-links-20261107",
+      "title": "Creating links",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Creating_links",
+      "section": "Anatomy of a link / A quick primer on URLs and paths",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-web-20261107",
+      "title": "How the web works",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works",
+      "section": "Order in which component files are parsed",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-url-20261107",
+      "title": "What is a URL?",
+      "publisher": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL",
+      "section": "Basics: anatomy of a URL / Scheme / Authority / Path to resource",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-windows-files-20261107",
+      "title": "Common file name extensions in Windows",
+      "publisher": "Microsoft",
+      "url": "https://support.microsoft.com/en-us/windows/common-file-name-extensions-in-windows-da4a4430-8e76-89c5-59f7-1cdbbc75cb01",
+      "section": "Common file name extensions in Windows",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-mac-files-20261107",
+      "title": "Show or hide filename extensions on Mac",
+      "publisher": "Apple",
+      "url": "https://support.apple.com/guide/mac-help/show-or-hide-filename-extensions-on-mac-mchlp2304/mac",
+      "section": "For all files",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "draft: URL と読む節は講師が確認する。U03・U04 の説明と操作を対象OS・日本語表示・採用版で照合する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-terminal-20261107",
+      "title": "Terminal Basics",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/terminal/basics",
+      "section": "Terminal Basics / Terminal working directory",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-powershell-command-20261107",
+      "title": "about_Command_Precedence",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_command_precedence",
+      "section": "Command precedence / Use command name with extension",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-node-download-20261107",
+      "title": "Node.js®をダウンロードする",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/ja/download",
+      "section": "Node.js®をダウンロードする",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-node-releases-20261107",
+      "title": "Node.js Releases",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/en/about/previous-releases",
+      "section": "Node.js Releases / Release schedule",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-node-intro-20261107",
+      "title": "Introduction to Node.js",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/learn/getting-started/introduction-to-nodejs",
+      "section": "Introduction to Node.js",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-windows-20261107",
+      "title": "Install for Windows",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/install/windows",
+      "section": "Install for Windows",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-mac-20261107",
+      "title": "Install for macOS",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/install/mac",
+      "section": "Install for macOS / Xcode",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-init-20261107",
+      "title": "git-init",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-init",
+      "section": "DESCRIPTION / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-config-20261107",
+      "title": "git-config",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-config",
+      "section": "DESCRIPTION / SCOPES / user.name / user.email",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-gitignore-20261107",
+      "title": "gitignore",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/gitignore",
+      "section": "DESCRIPTION / PATTERN FORMAT",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-commit-20261107",
+      "title": "git-commit",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-commit",
+      "section": "DESCRIPTION / OPTIONS / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-diff-20261107",
+      "title": "git-diff",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-diff",
+      "section": "DESCRIPTION / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-log-20261107",
+      "title": "git-log",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-log",
+      "section": "DESCRIPTION / Commit Formatting",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-add-20261107",
+      "title": "git-add",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-add",
+      "section": "DESCRIPTION / EXAMPLES",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-git-status-20261107",
+      "title": "git-status",
+      "publisher": "Git project",
+      "url": "https://git-scm.com/docs/git-status",
+      "section": "DESCRIPTION / OUTPUT",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U05・U06の概念・操作・受入条件を確認し、対象OSで再現する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-local-server-20261107",
+      "title": "How do you set up a local testing server?",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Tools_and_setup/set_up_a_local_testing_server",
+      "section": "Local files vs. remote files / Running a local HTTP server",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。ファイルとHTTPの違いを参照。起動・停止のコマンドとserver.mjsは教材独自のもの。対象OSで再現して確認する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-html-syntax-20261107",
+      "title": "Basic HTML syntax",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Basic_HTML_syntax",
+      "section": "Anatomy of an HTML element / Anatomy of an HTML document",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U08のHTML文書の構造と要素の受入条件を確認する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-html-lists-20261107",
+      "title": "Lists",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Lists",
+      "section": "Unordered lists",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U08の見出し・段落・リストの受入条件を対象として確認する。"
+      }
+    },
+    {
+      "id": "SRC-dev-env-html-headings-20261107",
+      "title": "Headings and paragraphs",
+      "publisher": "MDN contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Headings_and_paragraphs",
+      "section": "Headings and paragraphs / Implementing structural hierarchy",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-07",
+      "review": {
+        "status": "draft",
+        "scope": "draft: URL と読む節は講師が確認する。U08の見出し・段落・リストの受入条件を対象として確認する。"
+      }
     }
   ]
 }

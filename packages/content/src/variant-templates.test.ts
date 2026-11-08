@@ -20,7 +20,7 @@ import {
 } from "./variant-templates.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PARENT = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const PARENT = "stages/dev-env-basics/modules/u02-first-task/tasks/q01-first-page";
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -47,12 +47,12 @@ describe("類題のテンプレートの展開", () => {
         "assets/logo.png": png,
       },
       params,
-      "dev-env-basics/m0-first-page",
+      "dev-env-basics/u02-first-task",
       "テスト",
     );
     const quote = out.get("v02-quote") ?? {};
     expect(JSON.parse(text(quote, "task.json") ?? "")).toEqual({
-      id: "dev-env-basics/m0-first-page/v02-quote",
+      id: "dev-env-basics/u02-first-task/v02-quote",
       text: 'He said "hi"',
       n: 5,
     });
@@ -217,8 +217,8 @@ describe("テンプレートから類題を書き出す", () => {
 
     const variants = buildContentManifest(stages).tasks.filter((t) => t.variantOf);
     expect(variants.map((v) => [v.definition.id, v.definition.title])).toEqual([
-      ["dev-env-basics/m0-first-page/v01-profile", "見出しを「自己紹介」にする"],
-      ["dev-env-basics/m0-first-page/v02-hobby", "見出しを「好きなこと」にする"],
+      ["dev-env-basics/u02-first-task/v01-profile", "見出しを「自己紹介」にする"],
+      ["dev-env-basics/u02-first-task/v02-hobby", "見出しを「好きなこと」にする"],
     ]);
     for (const variant of variants) {
       await solutionPasses(variant, variant.bundle.files, "配布ファイル");

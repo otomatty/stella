@@ -1,3 +1,5 @@
+import { TutorialCard } from "@/components/tutorials/TutorialCard";
+import { tutorialsForRoute, useTutorials } from "@/lib/tutorials";
 import { useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { ExternalLink, HelpCircle, X } from "@/lib/icons";
@@ -23,7 +25,11 @@ import type { Role } from "@/data/types";
 export const HelpDrawer = ({ role }: { role: Role }) => {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const topic = (role === "learner" ? findHelpTopic(pathname) : null) ?? GENERIC_HELP;
+  const matchedTopic = role === "learner" ? findHelpTopic(pathname) : null;
+  const topic = matchedTopic ?? GENERIC_HELP;
+
+  const list = useTutorials();
+  const videos = matchedTopic ? tutorialsForRoute(matchedTopic.route, list) : [];
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -52,6 +58,16 @@ export const HelpDrawer = ({ role }: { role: Role }) => {
           </DrawerClose>
         </DrawerHeader>
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5">
+          {videos.length > 0 && (
+            <section>
+              <h3 className="text-[13px] font-semibold mb-1.5">動画で見る</h3>
+              <div className="grid gap-3">
+                {videos.map((tutorial) => (
+                  <TutorialCard key={tutorial.id} tutorial={tutorial} />
+                ))}
+              </div>
+            </section>
+          )}
           {topic.sections.map((section) => (
             <section key={section.heading}>
               <h3 className="text-[13px] font-semibold mb-1.5">{section.heading}</h3>

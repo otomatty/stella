@@ -1,3 +1,4 @@
+import { OverviewTutorialButton } from "@/components/tutorials/TutorialCard";
 /**
  * ホームのガイドの「次にやること」と「そのあと」(手順の並びは `@/lib/home-guide`)。
  *
@@ -46,6 +47,7 @@ export interface GuideActiveStage {
 }
 
 export interface GuideHandlers {
+  onStartStage: (stageId: string) => void;
   onStartReview: () => void;
   onResumeLesson: () => void;
   onOpenMiss: () => void;
@@ -136,6 +138,30 @@ function summarizeStep(
     return idle === "done"
       ? { icon: Check, eyebrow: "次にやること", title: "今日のぶんは終わりました" }
       : { icon: Compass, eyebrow: "次にやること", title: "いま始められるスキルはありません" };
+  }
+  if (step.kind === "setup-vscode") {
+    return {
+      icon: Compass,
+      eyebrow: "次にやること",
+      title: "VS Code の準備がまだです",
+      action: {
+        label: "準備の案内を開く",
+        onClick: () => {
+          window.location.assign("/start");
+        },
+      },
+    };
+  }
+  if (step.kind === "first-stage") {
+    return {
+      icon: Compass,
+      eyebrow: "はじめの一歩",
+      title: `『${ctx.nodeOf(step.stageId)?.title ?? "最初のステージ"}』から始めましょう`,
+      action: {
+        label: "最初のステージを始める",
+        onClick: () => ctx.onStartStage(step.stageId),
+      },
+    };
   }
   if (step.kind === "plan") {
     return {
@@ -265,6 +291,45 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
 };
 
 const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
+  if (step.kind === "setup-vscode") return <SetupVscode />;
+  if (step.kind === "first-stage") {
+    const summary = summarizeStep(step, "empty", ctx);
+    return (
+      <HeroFrame eyebrow={summary.eyebrow}>
+        <h2 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
+          <Compass size={16} className="mt-1 shrink-0 text-brand" />
+          <span className="min-w-0">{summary.title}</span>
+        </h2>
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+          最初のステージでは、STELLA での学び方と、VS Code で課題を出すまでを順に進めます。
+        </p>
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
+          ひとつ終えると、ツリーの先が少しずつ見えてきます。
+        </p>
+        <Button
+          size="full"
+          variant="accent"
+          className="mt-4"
+          data-testid="guide-start-stage"
+          onClick={() => ctx.onStartStage(step.stageId)}
+        >
+          <Play size={14} />
+          最初のステージを始める
+        </Button>
+        <OverviewTutorialButton />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-1.5 self-center"
+          onClick={() => ctx.onShowInTree(step.stageId)}
+        >
+          <Compass size={12} />
+          ツリーで見る
+        </Button>
+      </HeroFrame>
+    );
+  }
+
   if (step.kind === "plan") {
     const { item } = step;
     const Icon = PLAN_ICON[item.kind];
@@ -300,7 +365,13 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
             <span className="text-[11px] tabular-nums text-ink-3">{lesson.progress}%</span>
           </div>
         ) : null}
-        <Button size="full" variant="accent" className="mt-4" onClick={planAction(item.kind, ctx)}>
+        <Button
+          data-testid={`guide-${item.kind}`}
+          size="full"
+          variant="accent"
+          className="mt-4"
+          onClick={planAction(item.kind, ctx)}
+        >
           <Icon size={14} />
           {PLAN_ACTION[item.kind]}
         </Button>
@@ -392,6 +463,7 @@ const HeroFrame = ({
   children: ReactNode;
 }) => (
   <section
+    data-testid="guide-primary"
     aria-label={eyebrow}
     className="flex flex-col rounded-xl border border-brand/40 bg-gradient-to-br from-card to-brand-soft p-4 shadow-sm"
   >
@@ -500,7 +572,21 @@ function stepKey(step: GuideStep): string {
   return step.kind === "plan" ? `plan:${step.item.kind}` : step.kind;
 }
 
+const SetupVscode = () => (
+  <div className="rounded-lg border border-border p-3 text-sm">
+    <p className="font-semibold">VS Code の準備がまだです</p>
+    <p className="my-2 text-xs text-ink-3">
+      課題は VS Code で取り組みます。ログイン前にも読める案内で、VS Code と STELLA
+      拡張を準備してください。
+    </p>
+    <a href="/start" className="text-brand underline">
+      準備の案内を開く
+    </a>
+  </div>
+);
+
 const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
+  if (step.kind === "setup-vscode") return <SetupVscode />;
   if (step.kind === "choose") {
     return (
       <div className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2">
@@ -513,6 +599,7 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
       </div>
     );
   }
+  if (step.kind === "first-stage") return <HeroStep step={step} ctx={ctx} />;
   const row =
     step.kind === "plan"
       ? {
@@ -539,7 +626,13 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
       {row.meta ? (
         <span className="shrink-0 text-[11px] tabular-nums text-ink-3">{row.meta}</span>
       ) : null}
-      <Button size="sm" variant="default" className="shrink-0" onClick={row.onClick}>
+      <Button
+        data-testid={step.kind === "plan" ? `guide-${step.item.kind}` : undefined}
+        size="sm"
+        variant="default"
+        className="shrink-0"
+        onClick={row.onClick}
+      >
         {row.action}
       </Button>
     </div>

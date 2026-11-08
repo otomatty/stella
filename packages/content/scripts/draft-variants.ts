@@ -253,7 +253,9 @@ async function main() {
   if (collectId) return collect(collectId);
   const taskId = positional[0];
   if (!taskId)
-    throw new Error("課題 ID を指定してください (例: dev-env-basics/m0-first-page/q01-first-page)");
+    throw new Error(
+      "課題 ID を指定してください (例: dev-env-basics/u02-first-task/q01-first-page)",
+    );
   const count = option("--count");
   const target = findTask(taskId);
   const stock = variantStockOf(target.taskDir);
