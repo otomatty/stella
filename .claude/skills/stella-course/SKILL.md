@@ -50,7 +50,7 @@ modules/<unit>/
 ```
 
 - `unit.json` は `plannedHours`、`skills.uses` / `skills.assesses`、`reuses`。スキル ID は `skills.json` に `{ id, title }` で足してから指します。ログインなしで読める単元 (`public: true`) には課題を置けません。
-- `references.json` は参照元の使用箇所です。新形式は初回公開から必須です。台帳の作り方、`unitId` の版、`contentHash` は `SOURCE_GUIDE.md`。課題や本文を足したら、版を上げ、参照元を確かめ直し、`bun run --filter=@stella/content hash:unit -- <ステージ>/<単元>` の指紋を `contentHash` に書きます。資料の `review` と使用箇所の `reviewStatus` は `draft` までです。`approved` は講師が資料と本文の対応を確かめてから付けます。
+- `references.json` は参照元の使用箇所です。新形式は参照元の記録・整合性の検査が初回公開から必須です。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約に出ます。AIは `approved` を付けません。台帳の作り方、`unitId` の版、`contentHash` は `SOURCE_GUIDE.md`。課題や本文を足したら、版を上げ、参照元を確かめ直し、`bun run --filter=@stella/content hash:unit -- <ステージ>/<単元>` の指紋を `contentHash` に書きます。資料の `review` と使用箇所の `reviewStatus` は `draft` までです。`approved` は講師が資料と本文の対応を確かめてから付けます。
 - 参照元の ID 自体は `sources/registry.json`。技術のトップページだけを根拠にしないでください。
 - 語彙台帳 (`slides.md` の `introduces` / `requires`) は学習順に検査されます。未導入の語が要るなら、語を足すよりトピックの順を直します。
 
@@ -110,7 +110,7 @@ scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題
 - 検査を通すために tests や protected を弱めない。
 - slug とステージ名に個人名を入れない。
 - 既存のスキル `stella-book` と `diagram-design` の手順を、ステージの作業で書き換えない。
-- 参照元 (`sources/registry.json` の `review`・単元の `references.json` の `reviewStatus`) を `approved` にしない。Claude が書くのは `draft` まで。講師が資料と本文の対応を確かめてから承認する (SOURCE_GUIDE.md の 5。AI の調査・照合を講師の承認として記録しない)。検査が承認の無いことで落ちたら、承認を付けずに、講師に確認を頼むと報告する。
+- 参照元 (`sources/registry.json` の `review`・単元の `references.json` の `reviewStatus`) を `approved` にしない。Claude が書くのは `draft` まで。講師が資料と本文の対応を確かめてから承認する (SOURCE_GUIDE.md の 5。AI の調査・照合を講師の承認として記録しない)。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約に出る。AIは `approved` を付けず、講師が後から確かめて承認する。
 
 ## よくある誤り
 

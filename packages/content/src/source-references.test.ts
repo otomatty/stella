@@ -16,6 +16,7 @@ import {
   checkSourceReferences,
   createLegacyBaseline,
   isTechnologyLandingPage,
+  pendingApprovalSummary,
   resolveSharedAssignment,
   sharedAssignmentResolver,
   unitContentHash,
@@ -431,20 +432,17 @@ describe("参照元の公開ゲートと表示", () => {
   it.each([
     "unregistered",
     "landing",
-    "draft",
-    "usage-draft",
     "environment",
     "version",
     "missing-mapping",
     "missing-frontmatter",
   ])("%s を必須単元のエラーにする", (kind) => {
     const { root, unit } = fixture();
-    if (["unregistered", "landing", "draft"].includes(kind))
+    if (["unregistered", "landing"].includes(kind))
       patch(join(root, "sources/registry.json"), (row) => {
         const sources = row.sources as Record<string, unknown>[];
         if (kind === "unregistered") row.sources = [];
         if (kind === "landing") sources[0].url = "https://react.dev/";
-        if (kind === "draft") sources[0].review = { status: "draft" };
       });
     else if (kind === "missing-frontmatter") {
       const file = join(unit, "l1-save-and-preview/doc.md");
@@ -452,12 +450,96 @@ describe("参照元の公開ゲートと表示", () => {
     } else
       patch(join(unit, "references.json"), (row) => {
         const uses = row.uses as Record<string, unknown>[];
-        if (kind === "usage-draft") uses[0].reviewStatus = "draft";
         if (kind === "environment") row.environmentRef = "absent@1";
         if (kind === "version") row.environmentRef = "static-web-01@99";
         if (kind === "missing-mapping") row.uses = uses.slice(1);
       });
     expect(checkSourceReferences(root).some((d) => d.severity === "error")).toBe(true);
+  });
+  it.each(["reviewer", "reviewedAt", "scope"])("承認済み資料の %s は必須のまま", (field) => {
+    const { root } = fixture();
+    patch(join(root, "sources/registry.json"), (row) => {
+      const review = (row.sources as Record<string, unknown>[])[0].review as Record<
+        string,
+        unknown
+      >;
+      delete review[field];
+    });
+    expect(() => checkSourceReferences(root)).toThrow(field);
+  });
+  it.each(["usage", "source", "legacy-usage", "legacy-source"])(
+    "%s の承認待ちだけなら警告にして通す",
+    (target) => {
+      const { root, unit } = fixture();
+      if (target.startsWith("legacy-"))
+        patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
+          delete row.format;
+        });
+      reReview(unit, "2");
+      if (target.endsWith("usage"))
+        patch(join(unit, "references.json"), (row) => {
+          (row.uses as Record<string, unknown>[])[0].reviewStatus = "draft";
+        });
+      else
+        patch(join(root, "sources/registry.json"), (row) => {
+          (row.sources as Record<string, unknown>[])[0].review = { status: "draft" };
+        });
+      expect(checkSourceReferences(root)).toEqual([
+        {
+          unitId: "dev-env-basics/m0-first-page",
+          severity: "warning",
+          kind: "pending-approval",
+          message: expect.stringContaining("レビュー状態が approved ではありません"),
+        },
+      ]);
+      patch(join(unit, "references.json"), (row) => {
+        row.contentHash = "0".repeat(64);
+        (row.uses as Record<string, unknown>[])[0].contentId = "missing.md";
+      });
+      const diagnostics = checkSourceReferences(root);
+      for (const message of ["contentHash", "参照の対応先がありません"])
+        expect(diagnostics).toContainEqual(
+          expect.objectContaining({
+            severity: "error",
+            message: expect.stringContaining(message),
+          }),
+        );
+      expect(diagnostics.some((d) => d.kind === "pending-approval")).toBe(true);
+    },
+  );
+  it("承認待ちの要約を単元ごとに集計し、ほかの指摘を含めない", () => {
+    const pending = (unitId: string) => ({
+      unitId,
+      severity: "warning" as const,
+      kind: "pending-approval" as const,
+      message: "承認待ち",
+    });
+    const others = [
+      { unitId: "legacy/m0", severity: "warning" as const, message: "不足" },
+      { unitId: "stage/m0", severity: "error" as const, message: "不一致" },
+    ];
+    expect(pendingApprovalSummary([])).toBe("");
+    expect(pendingApprovalSummary(others)).toBe("");
+    expect(
+      pendingApprovalSummary([
+        pending("stage/m0"),
+        ...others,
+        pending("stage/m1"),
+        pending("stage/m0"),
+      ]),
+    ).toBe(
+      [
+        "### 参照元の承認待ち",
+        "",
+        "| 単元 | 承認待ち |",
+        "| --- | ---: |",
+        "| stage/m0 | 2 件 |",
+        "| stage/m1 | 1 件 |",
+        "",
+        "承認待ちはマージ・公開を止めません。講師は [SOURCE_GUIDE の「書く順序」5](https://github.com/otomatty/stella/blob/main/packages/content/SOURCE_GUIDE.md#書く順序) に沿って資料と本文を確認し、承認してください。",
+        "",
+      ].join("\n"),
+    );
   });
   it("旧形式は未改訂の不足を警告、新規・本文改訂をエラーにする", () => {
     const { root, unit } = fixture();
