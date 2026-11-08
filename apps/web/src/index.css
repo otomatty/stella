@@ -11,6 +11,7 @@
 
 :root {
   color-scheme: light;
+  --tree-cleared-base: #5749db;
 
   /* Surface (surface-1 / surface-2 / surface-3) */
   --bg: #f7f7f9;
@@ -98,6 +99,7 @@
 
 .dark {
   color-scheme: dark;
+  --tree-cleared-base: #6d5ce7;
 
   --bg: #0d0d10;
   --bg-raised: #17171b;
@@ -870,20 +872,18 @@
    扇の星にだけ CSS 変数を立て、無い扇は従来色にフォールバックする。 */
 .tree-star-cleared {
   border-color: transparent;
-  background: var(--sf-gradient-135);
+  background: var(--route-solid, var(--tree-cleared-base));
   color: #fff;
   box-shadow:
-    0 0 8px var(--route-glow-strong, rgb(230 47 154 / 0.35)),
-    0 0 16px rgb(10 51 255 / 0.16);
+    0 0 0 3px var(--bg-raised),
+    0 4px 12px rgb(14 14 16 / 0.18);
 }
 
 .dark .tree-star-cleared {
-  /* .dark .tree-star (0-2-0) が状態クラス (0-1-0) の color を上書きするので、
-     クリアの白をここでも指定する。指定しないと mask の currentColor が薄紫になる。 */
   color: #fff;
   box-shadow:
-    0 0 10px var(--route-glow-strong, rgba(124, 109, 240, 0.65)),
-    0 0 22px rgba(130, 48, 200, 0.4);
+    0 0 0 2px rgb(255 255 255 / 0.85),
+    0 0 16px var(--route-glow-strong, rgba(167, 139, 250, 0.65));
 }
 
 .tree-star-active {
@@ -901,31 +901,147 @@
     0 0 18px rgba(124, 109, 240, 0.28);
 }
 
+.tree-progress-ring {
+  --progress-color: var(--brand);
+  --progress-track: rgb(87 73 219 / 0.16);
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--progress-color) 0 var(--tree-progress),
+    var(--progress-track) var(--tree-progress) 100%
+  );
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+  pointer-events: none;
+}
+
+.dark .tree-progress-ring {
+  --progress-color: #a78bfa;
+  --progress-track: rgb(167 139 250 / 0.2);
+}
+
+.tree-current-pill {
+  background: var(--brand);
+  color: #fff;
+}
+
+.dark .tree-current-pill {
+  background: #a78bfa;
+  color: #160f2e;
+}
+
 .tree-star-open {
-  border-color: var(--route-border, var(--line-2));
-  background: var(--bg-raised);
-  color: var(--ink);
-  box-shadow: 0 0 6px var(--route-glow, rgb(14 14 16 / 0.06));
+  border: 3px solid var(--route-border, var(--brand));
+  background: #fff;
+  color: var(--route-solid, var(--brand));
+  box-shadow: 0 0 0 4px var(--route-halo, rgb(87 73 219 / 0.16));
 }
 
 .dark .tree-star-open {
-  border-color: var(--route-border, rgba(230, 200, 230, 0.45));
-  background: rgba(28, 22, 40, 0.8);
-  color: rgba(245, 230, 250, 0.9);
-  box-shadow: 0 0 8px var(--route-glow, rgba(200, 180, 230, 0.2));
+  background: rgba(20, 16, 36, 0.92);
+  color: var(--route-solid, var(--brand));
+  box-shadow:
+    0 0 0 4px var(--route-halo, rgb(87 73 219 / 0.16)),
+    0 0 14px var(--route-open-glow, rgb(87 73 219 / 0.5));
 }
 
 .tree-star-locked {
+  border: 1.5px solid var(--line-2);
+  background: var(--bg-muted);
+  color: var(--ink-3);
+}
+
+.dark .tree-star-locked {
+  border-color: rgba(190, 205, 240, 0.5);
+  background: rgba(16, 20, 36, 0.9);
+  color: rgba(210, 220, 245, 0.78);
+}
+
+/* 霧だけは従来の破線とルート色の薄い枠を保つ。 */
+.tree-star-fog {
   border-style: dashed;
   border-color: var(--route-border-dim, var(--line-2));
   background: var(--bg-muted);
   color: var(--ink-3);
 }
 
-.dark .tree-star-locked {
+.dark .tree-star-fog {
   border-color: var(--route-border-dim, rgba(190, 205, 240, 0.5));
   background: rgba(16, 20, 36, 0.72);
   color: rgba(210, 220, 245, 0.72);
+}
+
+.tree-state-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand-hover);
+}
+
+.dark .tree-state-badge {
+  border-color: rgb(255 255 255 / 0.3);
+  background: #17171b;
+  color: #c4b5fd;
+}
+
+.tree-state-badge-locked {
+  color: var(--ink-3);
+}
+
+.dark .tree-state-badge-locked {
+  color: rgba(210, 220, 245, 0.78);
+}
+
+.tree-legend {
+  border-color: var(--line);
+  background: rgb(255 255 255 / 0.92);
+  color: var(--ink-2);
+}
+
+.dark .tree-legend {
+  border-color: rgb(255 255 255 / 0.12);
+  background: rgba(12, 14, 24, 0.8);
+}
+
+.tree-legend-dot {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+}
+
+.tree-legend-cleared {
+  background: var(--tree-cleared-base);
+}
+
+.tree-legend-active,
+.tree-legend-open {
+  border: 3px solid var(--brand);
+  background: var(--bg-raised);
+}
+
+.tree-legend-open {
+  box-shadow: 0 0 0 3px rgb(87 73 219 / 0.16);
+}
+
+.tree-legend-locked {
+  border: 1.5px solid var(--line-2);
+  background: var(--bg-muted);
+}
+
+.dark .tree-legend-locked {
+  border-color: rgba(190, 205, 240, 0.5);
+  background: rgba(16, 20, 36, 0.9);
+}
+
+.tree-legend-fog {
+  border: 1px dashed var(--ink-3);
+  background: var(--bg-muted);
 }
 
 /* ステージアイコン (単色シルエット SVG)。img ではなく mask + currentColor で塗る —

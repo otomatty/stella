@@ -205,6 +205,7 @@ export function StageManagementPage({
             initialFocusStageId={initialFocusStageId}
             initialFit={isDesktop && initialFocusStageId === null}
             showIslandChips={false}
+            showLegend={false}
             islandCaption={(key) => {
               const island = contents.islands.find((entry) => entry.key === key);
               return island ? `表示: ${island.visibility}` : null;

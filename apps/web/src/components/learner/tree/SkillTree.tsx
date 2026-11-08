@@ -91,7 +91,7 @@ import {
   type RadialIsland,
   type RadialNode,
 } from "./radial-layout";
-import { ROUTE_ACCENTS, routeAccentOf } from "./route-accents";
+import { ROUTE_ACCENTS, routeAccentOf, routeSolidOf } from "./route-accents";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
 import { describeStar, hasStarActions, labelOf, type StarDetail } from "./star-detail";
@@ -173,6 +173,8 @@ interface SkillTreeProps {
   mainlandTitle?: string;
   /** 右上の島チップを出す。既定は出す。false のときはルート名が避ける障害物からも外す。 */
   showIslandChips?: boolean;
+  /** 状態の凡例を出す。講師の管理画面では出さない。 */
+  showLegend?: boolean;
   /**
    * 最初に描けたとき 1 回だけ全体表示にする。
    * true のときは `initialFocusStageId` へ寄せない。
@@ -191,10 +193,13 @@ function islandAccentOf(key: string): string {
 }
 
 /** ルート色を持つ扇の星に渡す CSS 変数 (index.css の tree-star-* が拾う)。 */
-function routeStyleOf(accent: string | undefined): CSSProperties {
+function routeStyleOf(accent: string | undefined, solid: string | undefined): CSSProperties {
   if (!accent) return {};
   return {
-    "--route-border": `rgb(${accent} / 0.7)`,
+    "--route-solid": solid ? `rgb(${solid})` : undefined,
+    "--route-border": `rgb(${accent} / 0.95)`,
+    "--route-halo": `rgb(${accent} / 0.16)`,
+    "--route-open-glow": `rgb(${accent} / 0.5)`,
     "--route-border-dim": `rgb(${accent} / 0.45)`,
     "--route-glow": `rgb(${accent} / 0.28)`,
     "--route-glow-strong": `rgb(${accent} / 0.6)`,
@@ -438,6 +443,7 @@ export const SkillTree = ({
   islandCaption,
   mainlandTitle = "開発スキル",
   showIslandChips = true,
+  showLegend = true,
   initialFit = false,
   selectedIslandKey = null,
   onSelectIsland,
@@ -916,6 +922,26 @@ export const SkillTree = ({
       className={className}
       overlay={
         <>
+          {showLegend && !isMobile ? (
+            <aside
+              className="tree-legend pointer-events-none absolute bottom-9 flex items-center gap-3 rounded-xl border px-3 py-2 text-xs"
+              style={{ left: viewInset + 12 }}
+              aria-label="凡例"
+            >
+              {[
+                ["cleared", "クリア"],
+                ["active", "進行中"],
+                ["open", "始められる"],
+                ["locked", "ロック"],
+                ["fog", "まだ見えない"],
+              ].map(([state, label]) => (
+                <span key={state} className="flex items-center gap-1.5 whitespace-nowrap">
+                  <span className={`tree-legend-dot tree-legend-${state}`} aria-hidden="true" />
+                  {label}
+                </span>
+              ))}
+            </aside>
+          ) : null}
           {sectorLabels.map((label) => {
             const accent = routeAccentOf(label.key);
             return (
@@ -1171,7 +1197,7 @@ export const SkillTree = ({
           celebration={celebrations.get(placed.node.id)}
           celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
           iconUrl={
-            placed.node.state !== "locked" && placed.node.has_icon
+            placed.node.visibility === "full" && placed.node.has_icon
               ? (iconUrls.get(placed.node.id) ?? null)
               : null
           }
@@ -1218,7 +1244,7 @@ interface StarNodeProps {
   celebrationIndex: number;
   /**
    * ステージアイコンの blob URL。無い / 届いていないときは状態グリフ。
-   * ロックと霧は親が渡さない (ロックは南京錠のまま、霧はサーバが has_icon を伏せる)。
+   * full の星だけ親が渡す。ロックは鍵の印を添え、霧には渡さない。
    */
   iconUrl: string | null;
   /** この星の詳細カードが開いているか。 */
@@ -1288,11 +1314,12 @@ const StarNode = ({
   const cleared = node.state === "cleared";
   const locked = node.state === "locked";
   const isCenter = placed.ring === 0;
-  const routeStyle = routeStyleOf(routeAccentOf(placed.sector));
-  // ステージアイコン (単色シルエット)。見える星 (解放済み・進行中・クリア) だけ状態グリフを
-  // 置き換える — ロックは 🔒 のまま (状態が読めなくなる)、霧はサーバが has_icon を
-  // 伏せているので親が URL を渡さない。色は mask + currentColor で状態クラスから継承する。
-  // 画像が届くまで (届かなければずっと) 状態グリフのまま。
+  const full = node.visibility === "full";
+  const active = isActive && !cleared && full;
+  const progress = activeInfo ? Math.max(0, Math.min(100, activeInfo.progress)) : 0;
+  const routeStyle = routeStyleOf(routeAccentOf(placed.sector), routeSolidOf(placed.sector));
+  // full の星は mask + currentColor でアイコンを表示し、ロックには鍵の印を添える。
+  // 画像が届くまでは状態グリフを使い、霧は従来の見た目を保つ。
 
   const act = (run: () => void) => {
     onCloseCard();
@@ -1373,22 +1400,28 @@ const StarNode = ({
         ) : null}
         <span
           className={cn(
-            "tree-star grid place-items-center rounded-full border transition-colors",
+            "tree-star relative grid place-items-center rounded-full border transition-colors",
             isCenter ? "h-11 w-11" : "h-8 w-8",
-            cleared
-              ? "tree-star-cleared"
-              : isActive
-                ? "tree-star-active"
-                : node.state === "unlocked"
-                  ? "tree-star-open"
-                  : "tree-star-locked",
-            // 現在地だけ脈動させる。reduced-motion では止める。
-            isActive ? "animate-pulse motion-reduce:animate-none" : "",
+            !full
+              ? "tree-star-fog"
+              : cleared
+                ? "tree-star-cleared"
+                : isActive
+                  ? "tree-star-active"
+                  : node.state === "unlocked"
+                    ? "tree-star-open"
+                    : "tree-star-locked",
             fog && detail.obscured ? "opacity-45" : fog ? "opacity-70" : "",
             celebration === "unlocked" ? "tree-unlock-pop" : "",
           )}
           style={coreScale > 1 ? { transform: `scale(${coreScale})` } : undefined}
         >
+          {active ? (
+            <span
+              className="tree-progress-ring"
+              style={{ "--tree-progress": `${progress}%` } as CSSProperties}
+            />
+          ) : null}
           {iconUrl ? (
             <span
               className="tree-star-icon"
@@ -1409,7 +1442,34 @@ const StarNode = ({
           ) : (
             <Sparkles size={isCenter ? 16 : 12} />
           )}
+          {full && (cleared || (locked && iconUrl)) ? (
+            <span
+              className={cn("tree-state-badge", locked && "tree-state-badge-locked")}
+              style={{ width: isCenter ? 18 : 16, height: isCenter ? 18 : 16 }}
+              aria-hidden="true"
+            >
+              {cleared ? (
+                <Check size={isCenter ? 12 : 10} strokeWidth={3} />
+              ) : (
+                <Lock size={isCenter ? 11 : 10} strokeWidth={2.5} />
+              )}
+            </span>
+          ) : null}
         </span>
+        {active ? (
+          <span
+            className="tree-current-pill pointer-events-none absolute whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold leading-none"
+            style={{
+              left: "50%",
+              bottom: `calc(50% + ${radius + 8 * coreScale + 6 / scale}px)`,
+              transform: `translateX(-50%) scale(${1 / scale})`,
+              transformOrigin: "50% 100%",
+            }}
+            aria-hidden="true"
+          >
+            いまここ{activeInfo ? ` ${progress}%` : ""}
+          </span>
+        ) : null}
         {showLabel ? (
           <span
             className="pointer-events-none absolute z-10 flex flex-col items-center text-center"
