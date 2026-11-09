@@ -4,8 +4,8 @@
   "kind": "basic",
   "pattern": "html-page",
   "skills": {
-    "uses": ["html-document"],
-    "assesses": ["preview-changes"]
+    "uses": ["html-document", "preview-changes"],
+    "assesses": ["stella-task-loop"]
   },
   "runner": "static-preview",
   "environment": "static-web-01",

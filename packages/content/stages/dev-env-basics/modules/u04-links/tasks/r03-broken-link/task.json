@@ -34,6 +34,11 @@
         "id": "condition-2",
         "criterion": "about.html の名前と内容を変えずに残している",
         "required": true
+      },
+      {
+        "id": "browser-preview",
+        "criterion": "修正記録の「修正後に確かめたこと」に、開いたページと、リンクを押して移った先が書かれている",
+        "required": true
       }
     ],
     "escalateWhen": []

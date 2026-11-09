@@ -24,6 +24,12 @@
     "debuggingRecord": false
   },
   "review": {
+    "rules": [
+      {
+        "id": "DEV-HTML-01",
+        "required": true
+      }
+    ],
     "rubric": [
       {
         "id": "condition-1",
