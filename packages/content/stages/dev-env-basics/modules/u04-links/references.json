@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u04-links@1",
-  "contentHash": "e41df4b971acf37cb7612a7c4bbf52fc25157f23b68b728062adfc3efc93611f",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u04-links@7",
+  "contentHash": "97bbd5d5895a5c43ce933c68bc375d8b85e5dc28c6e3261bc0a9d9e574848ba8",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-second-page/t1-second-file/slides.md",

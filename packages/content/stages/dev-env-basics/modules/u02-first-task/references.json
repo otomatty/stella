@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u02-first-task@2",
-  "contentHash": "4320912d851103ae1490c942fdcc042d31f50b9bac7eb106f512a65ac4e89f73",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u02-first-task@7",
+  "contentHash": "35f46f10ffea581e229cc44e222216a732ef6902f04b87e7e0aa23a07c681a09",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-save-and-preview/doc.md",

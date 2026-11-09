@@ -19,7 +19,7 @@
     ]
   },
   "runner": "git-record",
-  "environment": "static-web-01",
+  "environment": "static-web-02",
   "submit": {
     "files": [
       "profile/index.html",
@@ -29,6 +29,12 @@
     "debuggingRecord": false
   },
   "review": {
+    "rules": [
+      {
+        "id": "DEV-HTML-02",
+        "required": true
+      }
+    ],
     "rubric": [
       {
         "id": "condition-1",
@@ -89,11 +95,25 @@
         "match": "exact"
       },
       {
+        "type": "element-count",
+        "path": "profile/index.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
+      },
+      {
         "type": "element-text",
         "path": "profile/hobby.html",
         "tag": "h1",
         "text": "好きなこと",
         "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "profile/hobby.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
       },
       {
         "type": "links-resolve",

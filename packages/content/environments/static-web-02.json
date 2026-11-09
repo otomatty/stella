@@ -1,0 +1,8 @@
+{
+  "id": "static-web-02",
+  "version": "1",
+  "os": ["windows", "macos", "linux"],
+  "browser": "Google Chrome と Microsoft Edge (Chromium 131 以降)",
+  "requirements": {},
+  "vscode": "1.96 以降"
+}

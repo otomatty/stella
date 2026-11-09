@@ -8,10 +8,10 @@
     "assesses": ["preview-changes", "html-document"]
   },
   "runner": "static-preview",
-  "environment": "static-web-01",
+  "environment": "static-web-02",
   "submit": {
     "files": ["index.html"],
-    "explanation": false,
+    "explanation": true,
     "debuggingRecord": false
   },
   "review": {
@@ -24,6 +24,11 @@
       {
         "id": "paragraph",
         "criterion": "p 要素が1つあり、文章「この文章は変えません。」が残っている",
+        "required": true
+      },
+      {
+        "id": "browser-preview",
+        "criterion": "提出の説明に、ブラウザーで開いたファイルと、表示された見出しが書かれている",
         "required": true
       }
     ],

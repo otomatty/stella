@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { parsePublicTaskBundle } from "../../shared/src/tasks/catalog.js";
@@ -30,7 +30,11 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), "stella-variants-"));
   roots.push(root);
   mkdirSync(join(root, "stages"));
-  cpSync(sample, join(root, "stages/dev-env-basics"), { recursive: true });
+  cpSync(sample, join(root, "stages/dev-env-basics"), {
+    recursive: true,
+    // 必須の空フォルダーを残し、教材の類題・テンプレートの在庫は写さない。
+    filter: (source) => !["variants", "variant-templates"].includes(basename(dirname(source))),
+  });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
   return root;

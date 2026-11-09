@@ -19,7 +19,7 @@
     ]
   },
   "runner": "git-record",
-  "environment": "static-web-01",
+  "environment": "static-web-02",
   "submit": {
     "files": [
       "schedule/index.html",
@@ -29,6 +29,12 @@
     "debuggingRecord": false
   },
   "review": {
+    "rules": [
+      {
+        "id": "DEV-HTML-02",
+        "required": true
+      }
+    ],
     "rubric": [
       {
         "id": "condition-1",
@@ -90,11 +96,25 @@
         "match": "exact"
       },
       {
+        "type": "element-count",
+        "path": "schedule/index.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
+      },
+      {
         "type": "element-text",
         "path": "schedule/detail.html",
         "tag": "h1",
         "text": "詳しい予定",
         "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "schedule/detail.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
       },
       {
         "type": "links-resolve",

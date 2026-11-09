@@ -210,7 +210,7 @@ describe("export-seed-sql (sqlite)", () => {
     expect(line).toBeDefined();
     // 並びは ... status, prerequisites, parent, can_do, theme, audience, format, environment。
     expect(line).toMatch(
-      /'published', null, null, '[^']*', '[^']*', 'catalog', 2, 'static-web-01', cast\(unixepoch/,
+      /'published', null, null, '[^']*', '[^']*', 'catalog', 2, 'static-web-02', cast\(unixepoch/,
     );
     expect(line).not.toContain("'[]'");
   });

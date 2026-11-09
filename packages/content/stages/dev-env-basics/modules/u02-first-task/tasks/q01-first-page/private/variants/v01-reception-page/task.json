@@ -1,0 +1,69 @@
+{
+  "id": "dev-env-basics/u02-first-task/v01-reception-page",
+  "title": "受付の案内を表示する",
+  "kind": "basic",
+  "pattern": "html-page",
+  "skills": {
+    "uses": [
+      "html-document",
+      "preview-changes"
+    ],
+    "assesses": [
+      "stella-task-loop"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "index.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "HTML の文書の形が残り、h1 の文字が「相談会の受付」と完全に一致する",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "h1 以外の要素を消したり増やしたりしていない",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-html-20261005"
+  ],
+  "estimatedMinutes": 8,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "index.html"
+      },
+      {
+        "type": "element-text",
+        "path": "index.html",
+        "tag": "h1",
+        "text": "相談会の受付",
+        "match": "exact"
+      }
+    ]
+  }
+}

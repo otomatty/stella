@@ -4,14 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
+import { type LessonSubmissionTarget, submissionMatchesTarget } from "@/lib/lesson-submissions";
 import { ChevronRight } from "@/lib/icons";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 
 /** 提出履歴はレッスン内とホームから開く。受講登録がなくても過去の添削を確認できる。 */
 export function SubmissionHistory({
   onOpenSubmission,
+  target,
 }: {
   onOpenSubmission: (submissionId: string) => void;
+  target?: LessonSubmissionTarget;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -26,15 +29,17 @@ export function SubmissionHistory({
       >
         提出・添削を確認する
       </summary>
-      {open ? <SubmissionList onOpenSubmission={onOpenSubmission} /> : null}
+      {open ? <SubmissionList target={target} onOpenSubmission={onOpenSubmission} /> : null}
     </details>
   );
 }
 
 function SubmissionList({
   onOpenSubmission,
+  target,
 }: {
   onOpenSubmission: (submissionId: string) => void;
+  target?: LessonSubmissionTarget;
 }) {
   const { submissions, loading, error, reload } = useMySubmissions(true);
   if (loading) return <SkeletonRows rows={3} className="p-4" />;
@@ -50,16 +55,19 @@ function SubmissionList({
       </div>
     );
   }
-  if (submissions.length === 0) {
+  const visibleSubmissions = target
+    ? submissions.filter((submission) => submissionMatchesTarget(submission, target))
+    : submissions;
+  if (visibleSubmissions.length === 0) {
     return (
       <p data-testid="submissions-empty" className="p-4 text-sm text-ink-3">
-        提出はまだありません。
+        {target ? "この課題の提出はまだありません。" : "提出はまだありません。"}
       </p>
     );
   }
   return (
     <div data-testid="submissions-list">
-      {submissions.map((submission) => {
+      {visibleSubmissions.map((submission) => {
         const meta = submission.verdict ? VERDICT_META[submission.verdict] : null;
         const pendingLabel =
           submission.aiReviewStatus && submission.aiReviewStatus !== "confirmed"

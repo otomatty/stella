@@ -1,0 +1,78 @@
+{
+  "id": "dev-env-basics/u03-files/v03-shift-folder",
+  "title": "当番表の表示だけが古い",
+  "kind": "debug",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "stella-task-loop",
+      "html-document"
+    ],
+    "assesses": [
+      "open-learning-folder"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "current/index.html",
+      "archive/index.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": true
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "current/index.html の h1 が「来週の当番表」と完全に一致する",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "archive/index.html の h1 が「当番表」と完全に一致する",
+        "required": true
+      },
+      {
+        "id": "condition-3",
+        "criterion": "修正記録に、表示するファイルと編集したファイルの場所の比較が書かれている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-dev-env-explorer-20261107"
+  ],
+  "estimatedMinutes": 12,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "element-text",
+        "path": "current/index.html",
+        "tag": "h1",
+        "text": "来週の当番表",
+        "match": "exact"
+      },
+      {
+        "type": "element-text",
+        "path": "archive/index.html",
+        "tag": "h1",
+        "text": "当番表",
+        "match": "exact"
+      }
+    ]
+  }
+}
