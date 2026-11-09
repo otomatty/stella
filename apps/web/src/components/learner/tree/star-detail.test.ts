@@ -48,10 +48,12 @@ describe("describeStar の状態語", () => {
     expect(describe1({}).stateText).toBe("解放済み");
   });
 
-  it("ぼかしは霧の星だけ (開発者モードでは外れる)", () => {
+  it("ぼかしは霧とロックの星 (開発者モードでは外れる)", () => {
     expect(describe1({ visibility: "fog" }).obscured).toBe(true);
     expect(describe1({ visibility: "fog" }, { revealDev: true }).obscured).toBe(false);
     expect(describe1({}).obscured).toBe(false);
+    expect(describe1({ state: "locked" }).obscured).toBe(true);
+    expect(describe1({ state: "locked" }, { revealDev: true }).obscured).toBe(false);
   });
 });
 
@@ -63,6 +65,7 @@ describe("describeStar の本文", () => {
   it("ロック星には解放条件だけを出す", () => {
     expect(describe1({ state: "locked", lock_reasons: ["ITのきほん", "Git 入門"] }).body).toEqual({
       kind: "lock",
+      reasons: ["ITのきほん", "Git 入門"],
       text: "ITのきほん / Git 入門 をクリアすると開きます",
     });
   });
@@ -70,6 +73,7 @@ describe("describeStar の本文", () => {
   it("解放条件の名前が無ければ一般文に落ちる", () => {
     expect(describe1({ state: "locked" }).body).toEqual({
       kind: "lock",
+      reasons: [],
       text: "前提のステージをクリアすると開きます",
     });
   });

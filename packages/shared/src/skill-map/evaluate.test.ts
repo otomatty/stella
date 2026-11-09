@@ -170,7 +170,7 @@ describe("evaluateSkillMap — 視界", () => {
     expect(reasonLabels(r, id("x"))).toEqual(["c のステージ"]);
     // 視界は c 経由だけ: b (起点) → c = 1 歩 → x = 2 歩。a から直接は近づかない。
     expect(r.visibility.get(id("c"))).toBe("full");
-    expect(r.visibility.get(id("x"))).toBe("fog");
+    expect(r.visibility.get(id("x"))).toBe("edge");
   });
 
   it("parent 省略時は前提の先頭を親に倒す (CMS 由来の行の互換)", () => {
@@ -188,13 +188,13 @@ describe("evaluateSkillMap — 視界", () => {
     expect(parentSlugOf({ prerequisites: [] })).toBeUndefined();
   });
 
-  it("起点から 0・1 歩は full、2 歩目は fog、3 歩目は edge、4 歩目以降は hidden", () => {
+  it("起点から 0・1 歩は full、2 歩目は edge、3 歩目以降は hidden", () => {
     const r = evaluateSkillMap({ stages: line, clearedStageIds: new Set() });
     // a が unlocked (= 起点、距離 0)。
     expect(r.visibility.get(id("a"))).toBe("full");
     expect(r.visibility.get(id("b"))).toBe("full"); // 1 歩
-    expect(r.visibility.get(id("c"))).toBe("fog"); // 2 歩
-    expect(r.visibility.get(id("d"))).toBe("edge"); // 3 歩 = 線だけ
+    expect(r.visibility.get(id("c"))).toBe("edge"); // 2 歩
+    expect(r.visibility.get(id("d"))).toBe("hidden"); // 3 歩 = 何も出さない
     expect(r.visibility.get(id("e"))).toBe("hidden"); // 4 歩 = 何も出さない
   });
 
@@ -213,8 +213,8 @@ describe("evaluateSkillMap — 視界", () => {
   it("進むと視界も 1 つずつ前に出る", () => {
     const r = evaluateSkillMap({ stages: line, clearedStageIds: new Set([id("a")]) });
     expect(r.visibility.get(id("c"))).toBe("full");
-    expect(r.visibility.get(id("d"))).toBe("fog");
-    expect(r.visibility.get(id("e"))).toBe("edge");
+    expect(r.visibility.get(id("d"))).toBe("edge");
+    expect(r.visibility.get(id("e"))).toBe("hidden");
   });
 
   it("繋がっていない星も、開いていれば見える (入口が霧に沈まない)", () => {
@@ -233,7 +233,7 @@ describe("evaluateSkillMap — 視界", () => {
     // e が起点になるので、その手前の d も 1 歩で見える。
     expect(r.visibility.get(id("e"))).toBe("full");
     expect(r.visibility.get(id("d"))).toBe("full");
-    expect(r.visibility.get(id("c"))).toBe("fog");
+    expect(r.visibility.get(id("c"))).toBe("edge");
   });
 });
 
@@ -365,14 +365,14 @@ describe("evaluateSkillMap — 2 つの連結成分をまたぐ距離", () => {
     stage("p", ["n"], { category: "Y" }),
   ];
 
-  it("どちらの起点からも遠い星は edge、その手前は fog", () => {
+  it("どちらの起点からも遠い星は hidden、その手前は edge", () => {
     const r = evaluateSkillMap({ stages: twoRoots, clearedStageIds: new Set() });
     // 起点は root1 / root2 (どちらも前提なしで unlocked)。
     expect(r.visibility.get(id("root1"))).toBe("full");
     expect(r.visibility.get(id("a"))).toBe("full");
-    expect(r.visibility.get(id("x"))).toBe("fog"); // 2 歩
-    expect(r.visibility.get(id("n"))).toBe("fog"); // root2 から 2 歩
-    expect(r.visibility.get(id("p"))).toBe("edge"); // どちらの起点からも 3 歩
+    expect(r.visibility.get(id("x"))).toBe("edge"); // 2 歩
+    expect(r.visibility.get(id("n"))).toBe("edge"); // root2 から 2 歩
+    expect(r.visibility.get(id("p"))).toBe("hidden"); // どちらの起点からも 3 歩
   });
 
   it("霧より先の星も、手前の星の解放条件には id つきで並ぶ (伏せるのは呼び出し側)", () => {
@@ -491,8 +491,8 @@ describe("evaluateSkillMap — 扇ごとの前提 (appearances)", () => {
       clearedStageIds: new Set([id("it-basics"), id("html-css-basics"), id("javascript-basics")]),
     });
     expect(r.states.get(id("git-basics"))).toBe("unlocked");
-    // Git が起点になっても Node へ橋を渡さない。it → cli → docker で Node は 2 歩 = fog。
-    expect(r.visibility.get(id("node-basics"))).toBe("fog");
+    // Git が起点になっても Node へ橋を渡さない。it → cli → docker で Node は 2 歩 = edge。
+    expect(r.visibility.get(id("node-basics"))).toBe("edge");
   });
 });
 
