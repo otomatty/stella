@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u08-check-a@2",
-  "contentHash": "f95da00e8161b5db57bfba3a0a40701f6fc280440faffb2b3831f0270c467a6b",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u08-check-a@4",
+  "contentHash": "4226c6b17c81063288a239847202d5d6504e6712a624d74814e69c3a4854d3b7",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-wrap-up/t1-loop-again/slides.md",

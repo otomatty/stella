@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u01-vscode-setup@2",
-  "contentHash": "aa758dc7b7dc990d09edf552f8126da2fbdadeb9ffc21e88081f5db4bcac4ea2",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u01-vscode-setup@4",
+  "contentHash": "1a57ac517669dba3e94bd2633720dd9c0b00d02c3ba86255f3675582e78de184",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-install-vscode/t1-what-is-editor/slides.md",

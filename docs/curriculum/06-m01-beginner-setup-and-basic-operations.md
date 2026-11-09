@@ -50,8 +50,8 @@ Windowsを主教材の初期案とし、macOSは独立した操作手順で用�
 
 | 準備するもの | 導入する時点 | 設計上の扱い |
 | --- | --- | --- |
-| 既存のブラウザ | 開始前 | 研修で確認した対応ブラウザを案内する |
-| VS CodeのStable版 | U01 | 研修で検証した版を記載し、公式配布元を案内する |
+| 既存のブラウザ | 開始前 | Google Chrome と Microsoft Edge (Chromium 131 以降) を案内する |
+| VS CodeのStable版 | U01 | 1.96 以降。公式配布元を案内する |
 | 日本語表示 | U01 | 公式の表示言語手順に沿い、Language Packを確認する |
 | STELLA拡張 | U01 | Visual Studio Marketplaceで公開済み。拡張ID `saedgewell.stella-lms`・発行者 `saedgewell` を指定する |
 | Node.jsとnpm | 最初のHTML表示後、U05 | 検証したLTSの具体的な版をコース環境へ登録する。既存の適合版は再インストールしない |

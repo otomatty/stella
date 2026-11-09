@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u03-files@1",
-  "contentHash": "eefb8bbd94e7ea52a37a152d8e9313fed97f57f61eea4f82945f65d28a9e3311",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u03-files@3",
+  "contentHash": "a7a042f789927cdde702ccdf50a83acca6d688f092b64a205def36122e7b7a95",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-explorer/t1-explorer/slides.md",

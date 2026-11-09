@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u05-terminal-node@1",
-  "contentHash": "eed5b87fdaab26c8b73bbb87e04c81986892fcc0ceb7af2d0c7aab5d358b1e19",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u05-terminal-node@3",
+  "contentHash": "ce3266a574e3595101560f46c4df25ca6459375653b9f3e7d5cb1e42ff2bdffa",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-terminal/t1-what-is-terminal/slides.md",

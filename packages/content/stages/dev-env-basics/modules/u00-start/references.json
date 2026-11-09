@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u00-start@2",
-  "contentHash": "ab2bde5cea1484a1c730b698015f2565bdc422dd5d694aae5778978e96aaaaa6",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u00-start@4",
+  "contentHash": "da1e214ffaa21b1138c4438af68b843c5010ee64b267d6ea6229abe3e48f9f6e",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-how-stella-works/t1-learning-loop/slides.md",

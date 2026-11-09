@@ -1,6 +1,14 @@
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -29,6 +37,15 @@ function fixture(common: string, stage = "") {
   cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
     recursive: true,
   });
+  // 実教材の規則から切り離し、setTaskRules で指定した規則だけを検証する。
+  const copiedStage = join(root, "stages/dev-env-basics");
+  for (const relative of readdirSync(copiedStage, { recursive: true, encoding: "utf8" })) {
+    if (basename(relative) !== "task.json") continue;
+    const file = join(copiedStage, relative);
+    const task = JSON.parse(readFileSync(file, "utf8"));
+    if (task.review) delete task.review.rules;
+    writeFileSync(file, JSON.stringify(task));
+  }
   mkdirSync(join(root, "stages/javascript-basics"));
   writeFileSync(
     join(root, "stages/javascript-basics/stage.json"),

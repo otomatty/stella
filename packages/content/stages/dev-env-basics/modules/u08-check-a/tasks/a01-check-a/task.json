@@ -19,7 +19,7 @@
     ]
   },
   "runner": "git-record",
-  "environment": "static-web-01",
+  "environment": "static-web-02",
   "submit": {
     "files": [
       "profile/index.html",

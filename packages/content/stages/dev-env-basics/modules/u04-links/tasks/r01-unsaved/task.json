@@ -13,7 +13,7 @@
     ]
   },
   "runner": "static-preview",
-  "environment": "static-web-01",
+  "environment": "static-web-02",
   "submit": {
     "files": [
       "index.html"
