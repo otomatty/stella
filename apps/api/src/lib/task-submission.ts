@@ -635,6 +635,12 @@ export async function reviewTaskSubmission(
     if (!row?.taskId || !row.studentId) throw new ApiError("課題の提出が見つかりません", 404);
     // テスト確定のやり直しは、合格済みの行を二重に確定しない (ロックを取り直したあと)。
     if (source === "tests" && row.verdict === "pass") return row;
+    // 問題つきの課題の合格は全問の提出だけ。1 問の相談を合格にすると、残りが未提出でも課題全体が合格になる。
+    if (verdict === "pass" && source !== "tests" && row.taskSnapshot?.manifest.problems?.length)
+      throw new ApiError(
+        "問題つきの課題の相談は合格にできません。返信は再提出で送ってください",
+        409,
+      );
     const now = new Date();
     if (source === "ai") {
       try {

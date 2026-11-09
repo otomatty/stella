@@ -268,6 +268,8 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
   // いれば 409 でキューに戻す)。確定済みの提出の訂正は従来どおり上書きする。
   const aiPassedNow = isAiPassed(submission);
   const testsLocked = submission.reviewSource === "tests";
+  // 問題の相談は合格にできない (課題の合格は全問の提出だけ。API も 409)。
+  const problemConsult = !testsLocked && Boolean(taskDetail?.localResult?.problemId);
   const wasAiConfirmed = Boolean(submission.taskId) && submission.aiReviewStatus === "confirmed";
   const proposal = taskDetail?.aiReview?.proposedVerdict ?? submission.aiProposedVerdict ?? null;
   const handleFinalize = async (v: ReviewVerdict) => {
@@ -383,7 +385,10 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
           </>
         ) : (
           <>
-            {submission.verdict === null && proposal && submission.reviewSource !== "tests" ? (
+            {!problemConsult &&
+            submission.verdict === null &&
+            proposal &&
+            submission.reviewSource !== "tests" ? (
               <Badge variant={proposal === "pass" ? "success" : "warning"}>
                 AI の判定案: {proposal === "pass" ? "合格" : "再提出"}
               </Badge>
@@ -400,19 +405,21 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
               <ThumbsDown size={13} />
               {submission.verdict === null ? "再提出にする" : "再提出"}
             </Button>
-            <Button
-              type="button"
-              variant={
-                submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
-              }
-              onClick={() => handleFinalize("pass")}
-              disabled={finalizing || (!!submission.taskId && !taskDetail)}
-            >
-              <ThumbsUp size={13} />
-              {submission.verdict === null && proposal === "pass"
-                ? "判定案どおり合格"
-                : "合格として確定"}
-            </Button>
+            {problemConsult ? null : (
+              <Button
+                type="button"
+                variant={
+                  submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
+                }
+                onClick={() => handleFinalize("pass")}
+                disabled={finalizing || (!!submission.taskId && !taskDetail)}
+              >
+                <ThumbsUp size={13} />
+                {submission.verdict === null && proposal === "pass"
+                  ? "判定案どおり合格"
+                  : "合格として確定"}
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -771,15 +778,22 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 />
 
                 <Label>判定</Label>
+                {problemConsult ? (
+                  <p className="text-[12px] text-ink-3">
+                    問題の相談は合格にできません。返信は「再提出」で送ります。
+                  </p>
+                ) : null}
                 <div className="flex gap-2 mb-4">
-                  <Button
-                    type="button"
-                    variant={verdict === "pass" ? "primary" : "default"}
-                    onClick={() => setVerdict("pass")}
-                  >
-                    <Check size={13} />
-                    合格
-                  </Button>
+                  {problemConsult ? null : (
+                    <Button
+                      type="button"
+                      variant={verdict === "pass" ? "primary" : "default"}
+                      onClick={() => setVerdict("pass")}
+                    >
+                      <Check size={13} />
+                      合格
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant={verdict === "resubmit" ? "primary" : "default"}

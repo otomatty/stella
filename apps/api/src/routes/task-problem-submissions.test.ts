@@ -574,6 +574,61 @@ describe("問題の提出", () => {
     ]);
   });
 
+  it("問題の相談は合格にできず、再提出で返信したあと全問の提出で合格にする", async () => {
+    const consult = await problemInput(CURRENT, PROBLEMS, "q01-add");
+    consult.mode = "consult";
+    consult.explanation = "足し算のテストが通りません";
+    consult.localResult.outcome = "failed";
+    consult.localResult.steps = consult.localResult.steps.map((step) =>
+      step.id === "test" ? { ...step, status: "failed" } : step,
+    );
+    const consulted = await post(consult);
+    expect(consulted.status, await consulted.clone().text()).toBe(201);
+    const { row } = await json<{ row: { id: string } }>(consulted);
+
+    const rejected = await request(app(), env, `/api/submissions/${row.id}`, {
+      method: "PATCH",
+      token: instructorToken,
+      body: JSON.stringify({ verdict: "pass" }),
+    });
+    expect(rejected.status, await rejected.clone().text()).toBe(409);
+    expect(await rejected.json()).toMatchObject({
+      error: "問題つきの課題の相談は合格にできません。返信は再提出で送ってください",
+    });
+    expect(await db.select().from(submissions).where(eq(submissions.id, row.id))).toMatchObject([
+      {
+        submissionMode: "consult",
+        localResult: { problemId: "q01-add" },
+        verdict: null,
+      },
+    ]);
+    expect((await db.select().from(taskProgress))[0]?.status).not.toBe("passed");
+    expect(await db.select().from(skillEvidence)).toEqual([]);
+
+    const replied = await request(app(), env, `/api/submissions/${row.id}`, {
+      method: "PATCH",
+      token: instructorToken,
+      body: JSON.stringify({
+        verdict: "resubmit",
+        reviewNotes: "足し算の結果を確認して、もう一度提出してください。",
+      }),
+    });
+    expect(replied.status, await replied.clone().text()).toBe(200);
+    expect(await db.select().from(submissions).where(eq(submissions.id, row.id))).toMatchObject([
+      { verdict: "resubmit" },
+    ]);
+
+    expect(await submitProblem("q01-add")).toMatchObject({ taskPassed: false });
+    expect(await submitProblem("q02-sub")).toMatchObject({
+      passedProblems: PROBLEMS.length,
+      taskPassed: true,
+    });
+    expect((await db.select().from(taskProgress))[0]?.status).toBe("passed");
+    expect(
+      await db.select().from(submissions).where(eq(submissions.reviewSource, "tests")),
+    ).toMatchObject([{ taskId: TASK_ID, taskContentHash: CURRENT, verdict: "pass" }]);
+  });
+
   it("相談と、問題の無い課題は AI の待ち行列に積む", async () => {
     const consult = await problemInput(CURRENT, PROBLEMS, "q01-add");
     consult.mode = "consult";
