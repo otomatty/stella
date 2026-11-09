@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildContentManifest } from "../../src/manifest.js";
@@ -30,6 +30,8 @@ function fixture() {
     cpSync(join(content, name), join(root, name), { recursive: true });
   cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
     recursive: true,
+    // 必須の空フォルダーを残し、教材の類題・テンプレートの在庫は写さない。
+    filter: (source) => !["variants", "variant-templates"].includes(basename(dirname(source))),
   });
   return { contentRoot: root, taskDir: join(root, TASK) };
 }

@@ -1,0 +1,86 @@
+{
+  "id": "dev-env-basics/u04-links/v01-event-route",
+  "title": "催しの案内へ行って戻る",
+  "kind": "connection",
+  "pattern": "relative-link",
+  "skills": {
+    "uses": [
+      "file-save-reopen",
+      "html-document",
+      "preview-changes"
+    ],
+    "assesses": [
+      "relative-link"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "index.html",
+      "events/session.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "index.html のリンクが events/session.html を開く",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "events/session.html のリンクが index.html を開く",
+        "required": true
+      },
+      {
+        "id": "condition-3",
+        "criterion": "両方のページの見出しと名前が配布時のまま残っている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-links-20261107",
+    "SRC-dev-env-files-20261107"
+  ],
+  "estimatedMinutes": 10,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "element-count",
+        "path": "index.html",
+        "tag": "a",
+        "min": 1
+      },
+      {
+        "type": "links-resolve",
+        "path": "index.html"
+      },
+      {
+        "type": "element-count",
+        "path": "events/session.html",
+        "tag": "a",
+        "min": 1
+      },
+      {
+        "type": "links-resolve",
+        "path": "events/session.html"
+      }
+    ]
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "id": "dev-env-basics/u02-first-task/v02-return-guide",
+  "title": "返却の案内の見出しを変える",
+  "kind": "basic",
+  "pattern": "html-page",
+  "skills": {
+    "uses": [
+      "stella-task-loop",
+      "preview-changes"
+    ],
+    "assesses": [
+      "html-document"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "index.html"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "HTML の文書の形が残り、h1 の文字が「図書の返却案内」と完全に一致する",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "p 要素が1つだけあり、「本は入口の箱へ返してください。」が残っている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 1,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-html-20261005"
+  ],
+  "estimatedMinutes": 8,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "index.html"
+      },
+      {
+        "type": "element-text",
+        "path": "index.html",
+        "tag": "h1",
+        "text": "図書の返却案内",
+        "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "index.html",
+        "tag": "p",
+        "min": 1,
+        "max": 1
+      }
+    ]
+  }
+}
