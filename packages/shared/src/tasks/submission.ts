@@ -106,6 +106,7 @@ export function isRunResult(v: unknown): v is RunResult {
       (typeof v.taskContentHash === "string" && HASH_RE.test(v.taskContentHash))) &&
     (v.ci === undefined || parseCiRunClaim(v.ci) !== null) &&
     (v.problemId === undefined || typeof v.problemId === "string") &&
+    (v.importedFiles === undefined || hashedFiles(v.importedFiles)) &&
     hashedFiles(v.files) &&
     hashedFiles(v.protected) &&
     Array.isArray(v.steps) &&

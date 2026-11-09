@@ -2,7 +2,7 @@
   "name": "stella-lms",
   "displayName": "STELLA 研修",
   "publisher": "saedgewell",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "repository": {
     "type": "git",

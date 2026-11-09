@@ -95,6 +95,17 @@ async function passedRun(root: string, id: string): Promise<RunResult> {
   };
 }
 
+async function passedRunWithImport(root: string): Promise<RunResult> {
+  await writeFile(
+    path.join(root, "src", "q01-add.ts"),
+    'import { sub } from "./q02-sub";\nexport const add = sub;\n',
+  );
+  return {
+    ...(await passedRun(root, "q01-add")),
+    importedFiles: [await hashFile(root, "src/q02-sub.ts")],
+  };
+}
+
 describe("問題の状態", () => {
   it("サーバーの提出済みが先で、無ければ手元の合格、どちらも無ければ未提出", () => {
     expect(problemWorkStatus(true, "failed")).toBe("submitted");
@@ -209,6 +220,57 @@ describe("問題の提出", () => {
     );
   });
 
+  it("import したファイルが変わっていなければ 1 ファイルだけ提出する", async () => {
+    const root = await makeRoot();
+    const run = await passedRunWithImport(root);
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(run),
+    );
+
+    const body = await prepareProblemSubmission(root, "q01-add", []);
+    expect(body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
+    expect(body.localResult.importedFiles).toEqual(run.importedFiles);
+  });
+
+  it.each(["変更", "削除"] as const)(
+    "import したファイルを%sしたら確認し直しにする",
+    async (change) => {
+      const root = await makeRoot();
+      const run = await passedRunWithImport(root);
+      await mkdir(path.join(root, ".stella", "problem-runs"));
+      await writeFile(
+        path.join(root, ".stella", "problem-runs", "q01-add.json"),
+        JSON.stringify(run),
+      );
+      const importedPath = path.join(root, "src", "q02-sub.ts");
+      if (change === "変更") await writeFile(importedPath, "export const sub = 2;\n");
+      else await rm(importedPath);
+
+      await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
+        "確認し直してください",
+      );
+    },
+  );
+
+  it("import の記録が無い古い実行結果でも提出できる", async () => {
+    const root = await makeRoot();
+    const run = await passedRunWithImport(root);
+    delete run.importedFiles;
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(run),
+    );
+    await writeFile(path.join(root, "src", "q02-sub.ts"), "export const sub = 2;\n");
+
+    const body = await prepareProblemSubmission(root, "q01-add", []);
+    expect(body.mode).toBe("submit");
+    expect(body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
+    expect(body.localResult).not.toHaveProperty("importedFiles");
+  });
+
   it("手元が合格していなければ提出しない", async () => {
     const root = await makeRoot();
     const run = await passedRun(root, "q01-add");
@@ -262,6 +324,23 @@ describe("問題の相談", () => {
     ]);
     expect(body.protected).toEqual([await hashFile(root, "tests/q01-add.test.ts")]);
     expect(body.protected).not.toEqual(run.protected);
+  });
+
+  it("import したファイルを確認後に変えていても相談できる", async () => {
+    const root = await makeRoot();
+    const run = await passedRunWithImport(root);
+    run.outcome = "failed";
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(run),
+    );
+    await writeFile(path.join(root, "src", "q02-sub.ts"), "export const sub = 2;\n");
+
+    const body = await prepareProblemConsultation(root, "q01-add", notes);
+    expect(body.mode).toBe("consult");
+    expect(body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
+    expect(body.localResult).toEqual(run);
   });
 
   it("手元の確認が通っていたら提出を案内する", async () => {
