@@ -94,7 +94,7 @@ tasks/<task>/
 | `id` | `<ステージ>/<単元>/<課題フォルダー>`。3 つともフォルダー名と一致させる |
 | `title` | 課題の題。画面に出る |
 | `kind` | 上の表 |
-| `pattern` | `patterns.json` の id。同じパターンの基礎課題と類題で揃える。類題は親と同じ |
+| `pattern` | `patterns.json` の id。同じパターンの基礎課題と類題で揃える。類題は親と同じ。確認 B の `pattern` を同じ単元の対応する確認 A と同じ値にしないと、A の合格から 7 学習日後に予定する処理と定着の判定が働きません。 |
 | `skills.uses` / `skills.assesses` | `skills.json` の id。使うスキルと、この課題で見るスキル |
 | `runner` | `templates/runners/<runner>/task-fields.json` の値。自分でコマンドを書かない |
 | `environment` | `environments/<id>.json` の id。テンプレートの `task-fields.json` を写す。単元の `references.json` の `environmentRef` の id と揃える |
@@ -107,6 +107,7 @@ tasks/<task>/
 | `support.hintLevels` | `hints.md` の段数と一致。確認と統合は 0 |
 | `support.solutionUnlock` | 種別の表のどれか |
 | `support.attempts` | `attempts-or-passed` のときだけ。省略すると 5 |
+| `support.aiChat` | 任意。AI に相談させない課題だけ `false`。省略すると使える |
 | `sources` | 単元の `references.json` に、この README の使用箇所として書いた参照元 ID と同じ配列 |
 | `estimatedMinutes` | 正の数。同じ書き方のまとまりなら 30〜60 を目安にする |
 | `protected` | 配布し、改変を照合する設定とテスト。テンプレートの一覧を空にしない |

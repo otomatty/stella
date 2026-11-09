@@ -56,6 +56,7 @@ export interface TaskDefinition {
     hintLevels: number;
     solutionUnlock: SolutionUnlock;
     attempts?: number;
+    aiChat?: false;
   };
   sources: string[];
   estimatedMinutes: number;
@@ -181,6 +182,8 @@ export function parseTaskDefinition(
         throw new Error(`review.escalateWhen: ${ESCALATE_WHEN.join(" / ")} のどれかにしてください`);
   }
   const support = object(value.support, "support");
+  if (support.aiChat !== undefined && support.aiChat !== false)
+    throw new Error("support.aiChat: 無効にする課題にだけ false と書いてください");
   if (!Number.isInteger(support.hintLevels) || Number(support.hintLevels) < 0)
     throw new Error("support.hintLevels: 0 以上の整数が必要です");
   if (!(SOLUTION_UNLOCKS as readonly unknown[]).includes(support.solutionUnlock))
@@ -251,6 +254,7 @@ export function parseTaskDefinition(
       hintLevels: Number(support.hintLevels),
       solutionUnlock,
       ...(attempts === undefined ? {} : { attempts }),
+      ...(support.aiChat === false ? { aiChat: false } : {}),
     },
     sources: stringList(value.sources, "sources"),
     estimatedMinutes: positive(value.estimatedMinutes, "estimatedMinutes"),

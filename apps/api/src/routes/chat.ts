@@ -5,6 +5,7 @@
 import { buildSystemPrompt } from "@stella/shared/ai/prompt";
 import type { ChatContext, ChatStreamEvent } from "@stella/shared/ai/types";
 import { validateChatRequest } from "@stella/shared/ai/validate-chat-request";
+import { taskAiChatEnabled } from "@stella/shared/tasks/help";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 
@@ -39,6 +40,7 @@ async function taskChatContext(
       stageId: stages.id,
       stageTitle: stages.title,
       variantOf: tasks.variantOf,
+      definition: tasks.definition,
     })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
@@ -48,6 +50,8 @@ async function taskChatContext(
   // 予備の類題 (#39) は出題した受講者だけが相談できる (題名も出題前は返さない)。
   if (!task || !(await canAccessTask(db, caller, task)))
     throw new ApiError("課題が見つかりません", 404);
+  if (!taskAiChatEnabled(JSON.parse(task.definition)))
+    throw new ApiError("この課題では AI に相談できません", 403);
   return {
     context: { kind: "task", taskId: task.id, taskTitle: task.title, stageTitle: task.stageTitle },
     taskId: task.id,

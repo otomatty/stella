@@ -11,6 +11,7 @@ import {
   supportConfigOf,
   TASK_HELP_POLICIES,
   type TaskHelpFacts,
+  taskAiChatEnabled,
   taskHelpAccess,
 } from "./help.js";
 import { TASK_KINDS } from "./manifest.js";
@@ -335,5 +336,25 @@ describe("supportConfigOf", () => {
       hintLevels: 0,
       solutionUnlock: "passed",
     });
+  });
+});
+
+describe("taskAiChatEnabled", () => {
+  it("support や aiChat を省略した課題では使える", () => {
+    expect(taskAiChatEnabled({})).toBe(true);
+    expect(taskAiChatEnabled({ support: { hintLevels: 0, solutionUnlock: "never" } })).toBe(true);
+  });
+
+  it("support.aiChat が false の課題だけ使えない", () => {
+    expect(taskAiChatEnabled({ support: { aiChat: false } })).toBe(false);
+    expect(taskAiChatEnabled({ support: { aiChat: true } })).toBe(true);
+    expect(taskAiChatEnabled({ support: { aiChat: "false" } })).toBe(true);
+  });
+
+  it("定義や support がオブジェクトでなくても使える", () => {
+    for (const value of [undefined, null, false, ""]) {
+      expect(taskAiChatEnabled(value)).toBe(true);
+      expect(taskAiChatEnabled({ support: value })).toBe(true);
+    }
   });
 });

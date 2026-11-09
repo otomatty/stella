@@ -511,6 +511,34 @@ describe("課題の AI チャット", () => {
     expect(system).not.toContain("書き換えた題名");
   });
 
+  it("AI に相談できない課題は 403 で、AI を呼ばず支援も記録しない", async () => {
+    await db
+      .update(tasks)
+      .set({ definition: JSON.stringify({ support: { aiChat: false } }) })
+      .where(eq(tasks.id, "practice"));
+    streamChat.mockImplementation(() => events());
+
+    const res = await post("/api/chat", body("practice"), "learner");
+    expect(res.status).toBe(403);
+    expect(await json(res)).toEqual({ error: "この課題では AI に相談できません" });
+    expect(streamChat).not.toHaveBeenCalled();
+    expect(await db.select().from(taskSupportEvents)).toEqual([]);
+  });
+
+  it("AI に相談できない課題でも、受講していなければ 404 を返す", async () => {
+    await db
+      .update(tasks)
+      .set({ definition: JSON.stringify({ support: { aiChat: false } }) })
+      .where(eq(tasks.id, "hidden"));
+    streamChat.mockImplementation(() => events());
+
+    const res = await post("/api/chat", body("hidden"), "learner");
+    expect(res.status).toBe(404);
+    expect(await json(res)).toEqual({ error: "課題が見つかりません" });
+    expect(streamChat).not.toHaveBeenCalled();
+    expect(await db.select().from(taskSupportEvents)).toEqual([]);
+  });
+
   it("応答が届く前に失敗した相談は記録しない", async () => {
     streamChat.mockImplementation(async function* () {
       yield { type: "error" as const, message: "upstream failed" };

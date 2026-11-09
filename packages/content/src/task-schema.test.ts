@@ -39,6 +39,26 @@ function problemTask(overrides: Record<string, unknown> = {}) {
   };
 }
 
+describe("課題の AI への相談", () => {
+  it("support.aiChat: false を定義に残し、省略した課題には足さない", () => {
+    const parsed = parseTaskDefinition(
+      problemTask({ support: { ...problemTask().support, aiChat: false } }),
+      {},
+    );
+    expect(parsed.support.aiChat).toBe(false);
+    expect(parseTaskDefinition(problemTask(), {}).support).not.toHaveProperty("aiChat");
+  });
+
+  it.each([true, null, 0, "false", {}, []].map((aiChat) => ({ aiChat })))(
+    "support.aiChat の $aiChat は受け付けない",
+    ({ aiChat }) => {
+      expect(() =>
+        parseTaskDefinition(problemTask({ support: { ...problemTask().support, aiChat } }), {}),
+      ).toThrow("support.aiChat: 無効にする課題にだけ false と書いてください");
+    },
+  );
+});
+
 describe("問題つきの課題の定義", () => {
   it("review を省き、実行用の定義に problems だけを足す", () => {
     const parsed = parseTaskDefinition(problemTask(), {});

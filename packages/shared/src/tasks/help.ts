@@ -512,3 +512,13 @@ export function supportConfigOf(definition: unknown): TaskSupportConfig {
       : undefined;
   return { hintLevels, solutionUnlock, ...(attempts === undefined ? {} : { attempts }) };
 }
+
+/** 「AI に相談」を使える課題か。教材が `support.aiChat: false` と書いた課題だけ使えない。 */
+export function taskAiChatEnabled(definition: unknown): boolean {
+  if (typeof definition !== "object" || definition === null || !("support" in definition))
+    return true;
+  const { support } = definition as { support?: unknown };
+  return typeof support !== "object" || support === null || !("aiChat" in support)
+    ? true
+    : (support as { aiChat?: unknown }).aiChat !== false;
+}

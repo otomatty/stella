@@ -128,7 +128,7 @@ export function TaskList({
                   <TaskRowProgress task={task} />
                 </div>
                 <span className="text-xs px-2 py-1 rounded bg-sunken">{taskStatusLabel(task)}</span>
-                {onAskAi ? (
+                {onAskAi && !task.aiChatDisabled ? (
                   <Button
                     variant="ghost"
                     size="sm"
