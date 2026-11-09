@@ -24,6 +24,67 @@ describe("応答から音声を拾う", () => {
     expect(geminiAudioField({ output_audio: {} })).toBeUndefined();
   });
 
+  it("gemini: steps の content から最後の音声を読める", () => {
+    expect(
+      geminiAudioField({
+        status: "completed",
+        object: "interaction",
+        steps: [
+          { type: "model_output", content: [{ type: "audio", data: "QUJD" }] },
+          {
+            type: "model_output",
+            content: [
+              { type: "audio", data: "REVG" },
+              { type: "audio", mime_type: "audio/wav", data: "R0hJ" },
+              { type: "text", data: "text" },
+              { type: "audio", data: "" },
+            ],
+          },
+        ],
+      }),
+    ).toBe("R0hJ");
+  });
+
+  it("gemini: 音声以外や空・文字列以外の data は拾わない", () => {
+    expect(
+      geminiAudioField({
+        steps: [
+          {
+            content: [
+              { type: "text", data: "QUJD" },
+              { data: "QUJD" },
+              { type: "audio", data: "" },
+              { type: "audio", data: 123 },
+              { type: "audio" },
+            ],
+          },
+        ],
+      }),
+    ).toBeUndefined();
+  });
+
+  it("gemini: steps や content の形が不正でも例外を投げない", () => {
+    for (const steps of [undefined, null, {}, "steps", 123]) {
+      expect(geminiAudioField({ steps })).toBeUndefined();
+    }
+    expect(
+      geminiAudioField({
+        steps: [
+          null,
+          "step",
+          123,
+          [],
+          {},
+          { content: null },
+          { content: {} },
+          { content: "content" },
+          { content: [null, "content", 123, [], {}] },
+          { content: [{ type: "audio", data: "QUJD" }] },
+        ],
+      }),
+    ).toBe("QUJD");
+  });
+
   it("grok: Cloudflare の封筒の深さが違っても読める (workers-ai.ts と同じ)", () => {
     expect(grokAudioField({ audio: "a" })).toBe("a");
     expect(grokAudioField({ result: { audio: "b" } })).toBe("b");

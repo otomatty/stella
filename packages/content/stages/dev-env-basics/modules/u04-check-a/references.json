@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "dev-env-basics/u04-check-a@1",
+  "contentHash": "97a522a9bd76694745c0b1114d80712fe02a42cb2411a0cbd3c718389739bdb5",
+  "environmentRef": "static-web-02@1",
+  "uses": [
+    {
+      "contentId": "l1-check-a/doc.md",
+      "sourceRefs": [],
+      "usedFor": "確認Aの自力での取り組み方、提出、クリアと確認Bの時期の独自の案内。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-check-a/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "確認Aの進め方と確認Bの時期を問う、独自の設問と解説。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-check-a/t1-check-a/slides.md",
+      "sourceRefs": [],
+      "usedFor": "確認Aの取り組み方を説明する独自の案内。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/a01-check-a/README.md",
+      "sourceRefs": [
+        "SRC-dev-env-html-headings-20261107",
+        "SRC-dev-env-html-syntax-20261107",
+        "SRC-dev-env-explorer-20261107",
+        "SRC-dev-env-editing-20261107"
+      ],
+      "usedFor": "HTML 文書の見出しの編集と、VS Code でのファイルの作成・保存・名前の変更を確かめる独自の課題と受入条件。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/b01-check-b/README.md",
+      "sourceRefs": [
+        "SRC-dev-env-html-headings-20261107",
+        "SRC-dev-env-html-syntax-20261107",
+        "SRC-dev-env-explorer-20261107",
+        "SRC-dev-env-editing-20261107"
+      ],
+      "usedFor": "HTML 文書の見出しの編集と、VS Code でのファイルの作成・保存・名前の変更を確かめる独自の課題と受入条件。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}
