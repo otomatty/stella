@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m4-strings/q01-length-index",
+  "title": "長さと位置",
+  "problems": [
+    {
+      "id": "q01-print-len-and-head",
+      "title": "長さと先頭"
+    },
+    {
+      "id": "q02-print-len-and-tail",
+      "title": "長さと末尾"
+    },
+    {
+      "id": "q03-len-of",
+      "title": "長さだけ"
+    },
+    {
+      "id": "q04-second-char",
+      "title": "2文字目"
+    },
+    {
+      "id": "q05-same-ends",
+      "title": "先頭と末尾"
+    },
+    {
+      "id": "q06-empty-or-ok",
+      "title": "空文字か"
+    },
+    {
+      "id": "q07-is-length",
+      "title": "長さが N か"
+    },
+    {
+      "id": "q08-is-length-at-least",
+      "title": "長さが N 以上か"
+    },
+    {
+      "id": "q09-starts-with-char",
+      "title": "先頭が文字 c か"
+    },
+    {
+      "id": "q10-ends-with-char",
+      "title": "末尾が文字 c か"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-string-length",
+  "skills": {
+    "uses": [
+      "csharp-string-length"
+    ],
+    "assesses": [
+      "csharp-string-length"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

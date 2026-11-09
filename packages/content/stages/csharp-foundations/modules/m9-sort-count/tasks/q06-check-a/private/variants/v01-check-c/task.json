@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m9-sort-count/v01-check-c",
+  "title": "確認C 名前の有無",
+  "problems": [
+    {
+      "id": "check-c-known",
+      "title": "名前の有無"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-count-kinds",
+  "skills": {
+    "uses": [
+      "csharp-count-mode"
+    ],
+    "assesses": [
+      "csharp-count-mode"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m3-arrays/q04-connection",
+  "title": "偶数の個数を数える",
+  "problems": [
+    {
+      "id": "connect-count-evens",
+      "title": "偶数の個数"
+    }
+  ],
+  "kind": "connection",
+  "pattern": "csharp-array-count-evens",
+  "skills": {
+    "uses": [
+      "csharp-array-scan",
+      "csharp-array-count"
+    ],
+    "assesses": [
+      "csharp-array-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 4,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

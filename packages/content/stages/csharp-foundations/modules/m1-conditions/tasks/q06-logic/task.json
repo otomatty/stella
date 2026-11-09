@@ -1,0 +1,63 @@
+{
+  "id": "csharp-foundations/m1-conditions/q06-logic",
+  "title": "かつ・または・範囲",
+  "problems": [
+    {
+      "id": "q28-can-apply",
+      "title": "かつ"
+    },
+    {
+      "id": "q29-in-range",
+      "title": "範囲"
+    },
+    {
+      "id": "q30-either-ok",
+      "title": "または"
+    },
+    {
+      "id": "q31-both-non-zero",
+      "title": "両方ゼロでない"
+    },
+    {
+      "id": "q32-only-one-positive",
+      "title": "片方だけ正"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-logic-combine",
+  "skills": {
+    "uses": [
+      "csharp-and-or"
+    ],
+    "assesses": [
+      "csharp-and-or"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

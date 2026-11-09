@@ -1,0 +1,63 @@
+{
+  "id": "csharp-foundations/m1-conditions/q01-arithmetic",
+  "title": "計算して返す",
+  "problems": [
+    {
+      "id": "q01-difference",
+      "title": "差"
+    },
+    {
+      "id": "q02-sum-of-three",
+      "title": "3つの合計"
+    },
+    {
+      "id": "q03-remainder",
+      "title": "余り"
+    },
+    {
+      "id": "q04-quotient",
+      "title": "商"
+    },
+    {
+      "id": "q05-twice",
+      "title": "2倍"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-arithmetic",
+  "skills": {
+    "uses": [
+      "csharp-calc"
+    ],
+    "assesses": [
+      "csharp-calc"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -11,37 +11,691 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-add-tax",
+      "title": "税込価格を返す"
+    },
+    {
+      "id": "q01-02-split-bill",
+      "title": "割り勘で1人が払う金額を返す"
+    },
+    {
+      "id": "q01-03-minutes-to-text",
+      "title": "分を「◯時間◯分」の文字列にする"
+    },
+    {
+      "id": "q01-04-average3",
+      "title": "3つの数の平均を返す"
+    },
+    {
+      "id": "q01-05-sum-to",
+      "title": "1から n までの合計を返す"
+    },
+    {
+      "id": "q01-06-factorial",
+      "title": "n の階乗を返す"
+    },
+    {
+      "id": "q01-07-count-down",
+      "title": "n から 1 まで数えて、最後に「発射」を付けた文字列を返す"
+    },
+    {
+      "id": "q01-08-power",
+      "title": "base の exponent 乗を返す"
+    },
+    {
+      "id": "q01-09-count-char",
+      "title": "text の中に char が何回出てくるかを返す"
+    },
+    {
+      "id": "q01-10-reverse-text",
+      "title": "文字列を逆順にして返す"
+    },
+    {
+      "id": "q01-11-digit-sum",
+      "title": "0以上の整数の、各桁の数字の合計を返す"
+    },
+    {
+      "id": "q01-12-fizz-buzz",
+      "title": "3の倍数なら \"Fizz\"、5の倍数なら \"Buzz\"、両方なら \"FizzBuzz\"、どちらでもなければ数字の文字列を返す"
+    },
+    {
+      "id": "q01-13-compound",
+      "title": "元金を年利 rate パーセントで years 年預けたときの金額を返す"
+    },
+    {
+      "id": "q01-14-max-of3",
+      "title": "3つの数の最大値を返す"
+    },
+    {
+      "id": "q01-15-shipping-fee",
+      "title": "送料を返す"
+    },
+    {
+      "id": "q01-16-count-vowels",
+      "title": "英字の文字列に含まれる母音の数を返す"
+    },
+    {
+      "id": "q01-17-collatz-steps",
+      "title": "n が1になるまでの手順の数を返す"
+    },
+    {
+      "id": "q01-18-gcd",
+      "title": "2つの正の整数の最大公約数を返す"
+    },
+    {
+      "id": "q01-19-fibonacci",
+      "title": "フィボナッチ数列の n 番目を返す"
+    },
+    {
+      "id": "q01-20-seconds-to-clock",
+      "title": "秒を「時:分:秒」の形にする"
+    },
+    {
+      "id": "q01-let-const",
+      "title": "letとconst（応用問題）"
+    },
+    {
+      "id": "q02-01-subtract",
+      "title": "a から b を引いた数を返す"
+    },
+    {
+      "id": "q02-02-honorific",
+      "title": "名前の後ろに「さん」を付ける"
+    },
+    {
+      "id": "q02-03-is-adult",
+      "title": "18歳以上なら true を返す"
+    },
+    {
+      "id": "q02-04-repeat-text",
+      "title": "text を times 回つなげた文字列を返す"
+    },
+    {
+      "id": "q02-05-rectangle-area",
+      "title": "長方形の面積を返す"
+    },
+    {
+      "id": "q02-06-full-name",
+      "title": "姓と名を半角スペースでつなぐ"
+    },
+    {
+      "id": "q02-07-celsius-to-fahrenheit",
+      "title": "摂氏を華氏に変える"
+    },
+    {
+      "id": "q02-08-is-even",
+      "title": "偶数なら true を返す"
+    },
+    {
+      "id": "q02-09-greet",
+      "title": "12時より前なら「おはよう、◯◯さん」、12時以降なら「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q02-10-initial",
+      "title": "名前の最初の1文字を返す"
+    },
+    {
+      "id": "q02-11-discount-price",
+      "title": "percentOff パーセント引きの価格を返す"
+    },
+    {
+      "id": "q02-12-format-yen",
+      "title": "金額を3桁ごとのカンマ区切りにし、「円」を付ける"
+    },
+    {
+      "id": "q02-13-is-longer-than",
+      "title": "text の文字数が length より多ければ true を返す"
+    },
+    {
+      "id": "q02-14-half",
+      "title": "半分の数を返す"
+    },
+    {
+      "id": "q02-15-label-with-count",
+      "title": "ラベルの後ろに件数を「」の形で付ける"
+    },
+    {
+      "id": "q02-16-is-between",
+      "title": "value が min 以上 max 以下なら true を返す"
+    },
+    {
+      "id": "q02-17-seconds-to-minutes",
+      "title": "秒を分に変える"
+    },
+    {
+      "id": "q02-18-shout",
+      "title": "英字を大文字にして、最後に「!」を付ける"
+    },
+    {
+      "id": "q02-19-can-drive",
+      "title": "18歳以上で、免許を持っていれば true を返す"
+    },
+    {
+      "id": "q02-20-line",
+      "title": "char を width 個並べた文字列を返す"
+    },
+    {
+      "id": "q02-type-annotation",
+      "title": "型注釈（応用問題）"
+    },
+    {
+      "id": "q03-01-site-name",
+      "title": "定数 SITE_NAME を宣言する"
+    },
+    {
+      "id": "q03-02-max-members",
+      "title": "定数 MAX_MEMBERS を宣言する"
+    },
+    {
+      "id": "q03-03-is-beta",
+      "title": "定数 IS_BETA を宣言する"
+    },
+    {
+      "id": "q03-04-tax-rate",
+      "title": "定数 TAX_RATE を宣言する"
+    },
+    {
+      "id": "q03-05-double",
+      "title": "2倍の数を返す"
+    },
+    {
+      "id": "q03-06-to-text",
+      "title": "数値を文字列にする"
+    },
+    {
+      "id": "q03-07-is-zero",
+      "title": "0 なら true を返す"
+    },
+    {
+      "id": "q03-08-sign",
+      "title": "正なら \"plus\"、負なら \"minus\"、0 なら \"zero\" を返す"
+    },
+    {
+      "id": "q03-09-judge",
+      "title": "60点以上なら \"合格\"、それ未満なら \"不合格\" を返す"
+    },
+    {
+      "id": "q03-10-square",
+      "title": "2乗した数を返す"
+    },
+    {
+      "id": "q03-11-join-words",
+      "title": "2つの単語を半角スペースでつなぐ"
+    },
+    {
+      "id": "q03-12-half-if-even",
+      "title": "偶数なら半分にした数を、奇数なら undefined を返す"
+    },
+    {
+      "id": "q03-13-ampm",
+      "title": "0〜11時なら \"午前\"、12〜23時なら \"午後\" を返す"
+    },
+    {
+      "id": "q03-14-bigger",
+      "title": "2つの数のうち大きい方を返す"
+    },
+    {
+      "id": "q03-15-char-count",
+      "title": "文字数を返す"
+    },
+    {
+      "id": "q03-16-is-empty-text",
+      "title": "空の文字列なら true を返す"
+    },
+    {
+      "id": "q03-17-yes-no",
+      "title": "true なら \"はい\"、false なら \"いいえ\" を返す"
+    },
+    {
+      "id": "q03-18-next-year",
+      "title": "次の年を返す"
+    },
+    {
+      "id": "q03-19-wrap-paren",
+      "title": "文字列を丸かっこ「」で囲む"
+    },
+    {
+      "id": "q03-20-first-char",
+      "title": "text[0] で最初の文字を取り出して返す"
+    },
+    {
+      "id": "q03-type-inference",
+      "title": "型推論（応用問題）"
+    },
+    {
+      "id": "q04-01-round-off",
+      "title": "小数点以下を四捨五入する"
+    },
+    {
+      "id": "q04-02-floor-to10",
+      "title": "1の位を切り捨てる"
+    },
+    {
+      "id": "q04-03-ceil-to100",
+      "title": "100の倍数に切り上げる"
+    },
+    {
+      "id": "q04-04-abs-diff",
+      "title": "2つの数の差の大きさを返す"
+    },
+    {
+      "id": "q04-05-remainder",
+      "title": "a を b で割った余りを返す"
+    },
+    {
+      "id": "q04-06-is-multiple-of",
+      "title": "n が base の倍数なら true を返す"
+    },
+    {
+      "id": "q04-07-cube",
+      "title": "3乗した数を返す"
+    },
+    {
+      "id": "q04-08-square-root",
+      "title": "平方根を返す"
+    },
+    {
+      "id": "q04-09-clamp",
+      "title": "value を min 以上 max 以下に収める"
+    },
+    {
+      "id": "q04-10-to-fixed1",
+      "title": "小数第1位までの文字列にする"
+    },
+    {
+      "id": "q04-11-parse-int-or-zero",
+      "title": "文字列の先頭の整数を取り出す"
+    },
+    {
+      "id": "q04-12-is-finite-number",
+      "title": "NaN でも Infinity でもない数なら true を返す"
+    },
+    {
+      "id": "q04-13-percent-of",
+      "title": "part が total の何パーセントかを、整数に四捨五入して返す"
+    },
+    {
+      "id": "q04-14-average2",
+      "title": "2つの数の平均を返す"
+    },
+    {
+      "id": "q04-15-minutes-to-seconds",
+      "title": "分を秒に変える"
+    },
+    {
+      "id": "q04-16-km-to-meters",
+      "title": "km を m に変える"
+    },
+    {
+      "id": "q04-17-hypotenuse",
+      "title": "直角三角形の2辺から、斜辺の長さを返す"
+    },
+    {
+      "id": "q04-18-digit-count",
+      "title": "0以上の整数の桁数を返す"
+    },
+    {
+      "id": "q04-19-round-to2",
+      "title": "小数第2位までに四捨五入する"
+    },
+    {
+      "id": "q04-20-fahrenheit-to-celsius",
+      "title": "華氏を摂氏に変え、小数第1位までに四捨五入する"
+    },
+    {
+      "id": "q04-number",
+      "title": "number型（応用問題）"
+    },
+    {
+      "id": "q05-01-length-of",
+      "title": "文字数を返す"
+    },
+    {
+      "id": "q05-02-to-upper",
+      "title": "英字を大文字にする"
+    },
+    {
+      "id": "q05-03-first-three",
+      "title": "最初の3文字を返す"
+    },
+    {
+      "id": "q05-04-last-char",
+      "title": "最後の1文字を返す"
+    },
+    {
+      "id": "q05-05-has-word",
+      "title": "text に word が含まれていれば true を返す"
+    },
+    {
+      "id": "q05-06-is-hashtag",
+      "title": "「#」で始まっていれば true を返す"
+    },
+    {
+      "id": "q05-07-is-png",
+      "title": "ファイル名が「.png」で終わっていれば true を返す"
+    },
+    {
+      "id": "q05-08-pad-id",
+      "title": "番号を4桁になるように前を0で埋める"
+    },
+    {
+      "id": "q05-09-normalize",
+      "title": "前後の空白を取り除き、英字を小文字にする"
+    },
+    {
+      "id": "q05-10-snake-spaces",
+      "title": "半角スペースをすべて「_」に置き換える"
+    },
+    {
+      "id": "q05-11-at-position",
+      "title": "「@」が何文字目にあるかを返す"
+    },
+    {
+      "id": "q05-12-capitalize",
+      "title": "最初の1文字だけを大文字にする"
+    },
+    {
+      "id": "q05-13-surround",
+      "title": "text の前後に mark を付ける"
+    },
+    {
+      "id": "q05-14-is-palindrome",
+      "title": "前から読んでも後ろから読んでも同じなら true を返す"
+    },
+    {
+      "id": "q05-15-mask-phone",
+      "title": "「090-1234-5678」の形の電話番号の、真ん中の4桁を「****」にする"
+    },
+    {
+      "id": "q05-16-extension",
+      "title": "ファイル名の拡張子を返す"
+    },
+    {
+      "id": "q05-17-clock-text",
+      "title": "時と分を「09:05」の形にする"
+    },
+    {
+      "id": "q05-18-remove-vowels",
+      "title": "英字の母音を取り除く"
+    },
+    {
+      "id": "q05-19-char-at-or-empty",
+      "title": "index 番目の文字を返す"
+    },
+    {
+      "id": "q05-20-same-ignoring-case",
+      "title": "大文字と小文字の違いを無視して、同じ文字列なら true を返す"
+    },
+    {
+      "id": "q05-string",
+      "title": "string型（応用問題）"
+    },
+    {
+      "id": "q06-01-is-positive",
+      "title": "0より大きければ true"
+    },
+    {
+      "id": "q06-02-is-negative",
+      "title": "0より小さければ true"
+    },
+    {
+      "id": "q06-03-is-odd",
+      "title": "奇数なら true"
+    },
+    {
+      "id": "q06-04-is-teen",
+      "title": "13歳以上19歳以下なら true"
+    },
+    {
+      "id": "q06-05-is-weekend",
+      "title": "曜日の番号が土日なら true"
+    },
+    {
+      "id": "q06-06-is-vowel",
+      "title": "1文字の英字が母音なら true"
+    },
+    {
+      "id": "q06-07-not",
+      "title": "逆の真偽値を返す"
+    },
+    {
+      "id": "q06-08-both",
+      "title": "2つとも true なら true"
+    },
+    {
+      "id": "q06-09-either",
+      "title": "どちらか1つでも true なら true"
+    },
+    {
+      "id": "q06-10-only-one",
+      "title": "どちらか片方だけが true なら true"
+    },
+    {
+      "id": "q06-11-is-empty",
+      "title": "空の文字列なら true"
+    },
+    {
+      "id": "q06-12-is-blank",
+      "title": "空の文字列か、空白だけなら true"
+    },
+    {
+      "id": "q06-13-has-digit",
+      "title": "数字が1文字でも含まれていれば true"
+    },
+    {
+      "id": "q06-14-is-strong-password",
+      "title": "8文字以上で、数字と英大文字を1文字ずつ以上含めば true"
+    },
+    {
+      "id": "q06-15-is-same-sign",
+      "title": "2つの数がどちらも正、またはどちらも負なら true"
+    },
+    {
+      "id": "q06-16-can-buy",
+      "title": "所持金が価格以上で、在庫があれば true"
+    },
+    {
+      "id": "q06-17-is-multiple-of3-or5",
+      "title": "3の倍数か5の倍数なら true"
+    },
+    {
+      "id": "q06-18-is-out-of-range",
+      "title": "value が min より小さいか、max より大きければ true"
+    },
+    {
+      "id": "q06-19-is-valid-name",
+      "title": "空ではなく、max 文字以下なら true"
+    },
+    {
+      "id": "q06-20-is-open",
+      "title": "店が開いていれば true"
+    },
+    {
+      "id": "q06-boolean",
+      "title": "boolean型（応用問題）"
+    },
+    {
+      "id": "q07-01-toggle",
+      "title": "\"on\" なら \"off\"、\"off\" なら \"on\" を返す"
+    },
+    {
+      "id": "q07-02-sign-of",
+      "title": "正なら 1、負なら -1、0 なら 0 を返す"
+    },
+    {
+      "id": "q07-03-coin-side",
+      "title": "偶数なら \"表\"、奇数なら \"裏\" を返す"
+    },
+    {
+      "id": "q07-04-day-type",
+      "title": "曜日の番号が土日なら \"休日\"、それ以外は \"平日\" を返す"
+    },
+    {
+      "id": "q07-05-next-light",
+      "title": "信号の次の色を返す"
+    },
+    {
+      "id": "q07-06-grade-of",
+      "title": "80点以上は \"A\"、60点以上は \"B\"、それ未満は \"C\" を返す"
+    },
+    {
+      "id": "q07-07-is-success",
+      "title": "ステータスコード 200、404、500 のどれかを受け取り、200 なら true を返す"
+    },
+    {
+      "id": "q07-08-size-label",
+      "title": "\"S\" なら \"小\"、\"M\" なら \"中\"、\"L\" なら \"大\" を返す"
+    },
+    {
+      "id": "q07-09-opposite",
+      "title": "反対の方角を返す"
+    },
+    {
+      "id": "q07-10-answer-of",
+      "title": "true なら \"yes\"、false なら \"no\" を返す"
+    },
+    {
+      "id": "q07-11-priority-label",
+      "title": "優先度 1、2、3 を受け取り、1 なら \"高\"、2 なら \"中\"、3 なら \"低\" を返す"
+    },
+    {
+      "id": "q07-12-roll-again",
+      "title": "サイコロの目を受け取り、6 なら true を返す"
+    },
+    {
+      "id": "q07-13-move-x",
+      "title": "\"left\" なら x を1減らし、\"right\" なら1増やした値を返す"
+    },
+    {
+      "id": "q07-14-mode-label",
+      "title": "\"light\" なら \"ライトモード\"、\"dark\" なら \"ダークモード\" を返す"
+    },
+    {
+      "id": "q07-15-bit-of",
+      "title": "true なら 1、false なら 0 を返す"
+    },
+    {
+      "id": "q07-16-season-of",
+      "title": "月から季節を返す"
+    },
+    {
+      "id": "q07-17-compare",
+      "title": "a が小さければ -1、等しければ 0、大きければ 1 を返す"
+    },
+    {
+      "id": "q07-18-method-label",
+      "title": "\"GET\" なら \"取得\"、\"POST\" なら \"作成\"、\"DELETE\" なら \"削除\" を返す"
+    },
+    {
+      "id": "q07-19-status-color",
+      "title": "在席ステータスから色を返す"
+    },
+    {
+      "id": "q07-20-medal",
+      "title": "順位が 1 なら \"金\"、2 なら \"銀\"、3 なら \"銅\"、それ以外は \"なし\" を返す"
+    },
+    {
+      "id": "q07-literal-types",
+      "title": "リテラル型（応用問題）"
+    },
+    {
+      "id": "q08-01-add",
+      "title": "2つの数を足す"
+    },
+    {
+      "id": "q08-02-greet",
+      "title": "「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q08-03-length-of",
+      "title": "文字数を返す"
+    },
+    {
+      "id": "q08-04-is-adult",
+      "title": "20歳以上なら true を返す"
+    },
+    {
+      "id": "q08-05-shout",
+      "title": "英字を大文字にする"
+    },
+    {
+      "id": "q08-06-half",
+      "title": "半分にした数を返す"
+    },
+    {
+      "id": "q08-07-tidy",
+      "title": "前後の空白を取り除く"
+    },
+    {
+      "id": "q08-08-area",
+      "title": "長方形の面積を返す"
+    },
+    {
+      "id": "q08-09-price-text",
+      "title": "金額を3桁ごとのカンマ区切りにし、「円」を付ける"
+    },
+    {
+      "id": "q08-10-is-empty",
+      "title": "空の文字列なら true を返す"
+    },
+    {
+      "id": "q08-11-first-char",
+      "title": "最初の1文字を返す"
+    },
+    {
+      "id": "q08-12-sum3",
+      "title": "3つの数を足す"
+    },
+    {
+      "id": "q08-13-repeat",
+      "title": "text を times 回つなげる"
+    },
+    {
+      "id": "q08-14-larger",
+      "title": "2つの数のうち大きい方を返す"
+    },
+    {
+      "id": "q08-15-contains",
+      "title": "text に word が含まれていれば true を返す"
+    },
+    {
+      "id": "q08-16-to-number",
+      "title": "文字列を数値に変える"
+    },
+    {
+      "id": "q08-17-count-label",
+      "title": "件数の後ろに「件」を付ける"
+    },
+    {
+      "id": "q08-18-round-off",
+      "title": "小数点以下を四捨五入する"
+    },
+    {
+      "id": "q08-19-join-names",
+      "title": "2人の名前を「・」でつなぐ"
+    },
+    {
+      "id": "q08-20-last-char",
+      "title": "最後の1文字を返す"
+    },
+    {
+      "id": "q08-remove-any",
+      "title": "any をなくす（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-values-types-variables-let-and-const",

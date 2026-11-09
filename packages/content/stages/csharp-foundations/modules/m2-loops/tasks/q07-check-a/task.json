@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m2-loops/q07-check-a",
+  "title": "確認A 4の倍数を除いた合計",
+  "problems": [
+    {
+      "id": "check-a-sum-except-fours",
+      "title": "4の倍数を除いた合計"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-loop-tally",
+  "skills": {
+    "uses": [
+      "csharp-for-aggregate"
+    ],
+    "assesses": [
+      "csharp-for-aggregate"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

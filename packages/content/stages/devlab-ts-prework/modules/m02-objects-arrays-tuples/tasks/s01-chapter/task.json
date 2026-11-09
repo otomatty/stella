@@ -13,37 +13,691 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-get-name",
+      "title": "利用者 { name, age } の name を返す"
+    },
+    {
+      "id": "q01-02-get-age",
+      "title": "利用者 { name, age } の age を返す"
+    },
+    {
+      "id": "q01-03-make-point",
+      "title": "x と y から、座標のオブジェクト { x, y } を作る"
+    },
+    {
+      "id": "q01-04-point-text",
+      "title": "座標 { x, y } を「」の文字列にする"
+    },
+    {
+      "id": "q01-05-make-user",
+      "title": "name と age から、利用者のオブジェクト { name, age } を作る"
+    },
+    {
+      "id": "q01-06-is-adult-user",
+      "title": "利用者 { name, age } が18歳以上なら true"
+    },
+    {
+      "id": "q01-07-book-label",
+      "title": "本 { title, price } を「タイトル」にする"
+    },
+    {
+      "id": "q01-08-make-book",
+      "title": "title と price から、本のオブジェクト { title, price } を作る"
+    },
+    {
+      "id": "q01-09-subtotal",
+      "title": "注文 { price, quantity } の小計を返す"
+    },
+    {
+      "id": "q01-10-rect-area",
+      "title": "長方形 { width, height } の面積を返す"
+    },
+    {
+      "id": "q01-11-make-rect",
+      "title": "width と height から、長方形のオブジェクト { width, height } を作る"
+    },
+    {
+      "id": "q01-12-full-name-of",
+      "title": "人 { firstName, lastName } を「姓 名」の順に半角スペースでつなぐ"
+    },
+    {
+      "id": "q01-13-make-person",
+      "title": "firstName と lastName から、人のオブジェクト { firstName, lastName } を作る"
+    },
+    {
+      "id": "q01-14-measure-text",
+      "title": "測定値 { value, unit } を、値と単位をつないだ文字列にする"
+    },
+    {
+      "id": "q01-15-is-same-name",
+      "title": "2つのオブジェクト { name } の name が同じなら true"
+    },
+    {
+      "id": "q01-16-score-total",
+      "title": "成績 { math, english, science } の合計点を返す"
+    },
+    {
+      "id": "q01-17-make-score",
+      "title": "3教科の点数から、成績のオブジェクト { math, english, science } を作る"
+    },
+    {
+      "id": "q01-18-color-text",
+      "title": "色 { r, g, b } を「rgb」の文字列にする"
+    },
+    {
+      "id": "q01-19-make-color",
+      "title": "r、g、b から、色のオブジェクト { r, g, b } を作る"
+    },
+    {
+      "id": "q01-20-middle-of",
+      "title": "区間 { start, end } の真ん中の値を返す"
+    },
+    {
+      "id": "q01-object-type",
+      "title": "オブジェクトの型（応用問題）"
+    },
+    {
+      "id": "q02-01-greet-user",
+      "title": "{ name, nickname? } を受け取り、nickname があれば nickname、なければ name を使って「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q02-02-has-email",
+      "title": "{ email? } に email があれば true"
+    },
+    {
+      "id": "q02-03-email-text",
+      "title": "{ email? } の email を返す"
+    },
+    {
+      "id": "q02-04-age-text",
+      "title": "{ age? } を「◯歳」にする"
+    },
+    {
+      "id": "q02-05-color-of",
+      "title": "{ color? } の color を返す"
+    },
+    {
+      "id": "q02-06-per-page-of",
+      "title": "{ perPage? } の perPage を返す"
+    },
+    {
+      "id": "q02-07-create-todo",
+      "title": "id と title から、ToDo { id, title, done } を作る"
+    },
+    {
+      "id": "q02-08-complete-todo",
+      "title": "ToDo { id, title, done } の done を true にした、新しい ToDo を返す"
+    },
+    {
+      "id": "q02-09-name-with-middle",
+      "title": "{ first, middle?, last } をつなぐ"
+    },
+    {
+      "id": "q02-10-is-complete",
+      "title": "{ name?, email? } の両方がそろっていれば true"
+    },
+    {
+      "id": "q02-11-count-filled",
+      "title": "{ a?, b?, c? } のうち、値があるプロパティの数を返す"
+    },
+    {
+      "id": "q02-12-pay-amount",
+      "title": "{ price, coupon? } の支払額を返す"
+    },
+    {
+      "id": "q02-13-address-text",
+      "title": "{ city, building? } を、building があれば「city building」、なければ「city」にする"
+    },
+    {
+      "id": "q02-14-frozen-point",
+      "title": "x と y から、どちらも読み取り専用の座標 { x, y } を作る"
+    },
+    {
+      "id": "q02-15-move-right",
+      "title": "読み取り専用の座標 { x, y } の x を1増やした、新しい座標を返す"
+    },
+    {
+      "id": "q02-16-title-text",
+      "title": "{ title, subtitle? } を、subtitle があれば「title: subtitle」、なければ「title」にする"
+    },
+    {
+      "id": "q02-17-timeout-ms",
+      "title": "{ timeoutSeconds? } をミリ秒にして返す"
+    },
+    {
+      "id": "q02-18-is-guest",
+      "title": "{ name, memberId? } に memberId がなければ true"
+    },
+    {
+      "id": "q02-19-label-of",
+      "title": "{ id, label? } の label を返す"
+    },
+    {
+      "id": "q02-20-setting-text",
+      "title": "{ darkMode, fontSize? } を「ダーク / 16px」の形にする"
+    },
+    {
+      "id": "q02-optional-readonly",
+      "title": "オプションプロパティと readonly（応用問題）"
+    },
+    {
+      "id": "q03-01-item-label",
+      "title": "分割代入で name と price を取り出し、「りんご 150円」の形にする"
+    },
+    {
+      "id": "q03-02-set-price",
+      "title": "price だけを変えた新しい Item を返す"
+    },
+    {
+      "id": "q03-03-set-stock",
+      "title": "stock だけを変えた新しい Item を返す"
+    },
+    {
+      "id": "q03-04-add-stock",
+      "title": "stock を amount だけ増やした新しい Item を返す"
+    },
+    {
+      "id": "q03-05-rename",
+      "title": "name だけを変えた新しい Item を返す"
+    },
+    {
+      "id": "q03-06-user-summary",
+      "title": "分割代入で name と age を取り出し、「山田」の形にする"
+    },
+    {
+      "id": "q03-07-birthday",
+      "title": "age を1増やした新しい User を返す"
+    },
+    {
+      "id": "q03-08-change-email",
+      "title": "email だけを変えた新しい User を返す"
+    },
+    {
+      "id": "q03-09-pick-id-name",
+      "title": "分割代入で id と name を取り出し、{ id, name } だけのオブジェクトを返す"
+    },
+    {
+      "id": "q03-10-merge-user",
+      "title": "patch { name, email } の値で上書きした新しい User を返す"
+    },
+    {
+      "id": "q03-11-copy-item",
+      "title": "中身が同じで、別のオブジェクトになった Item を返す"
+    },
+    {
+      "id": "q03-12-discount-item",
+      "title": "price を percentOff パーセント引きにした新しい Item を返す"
+    },
+    {
+      "id": "q03-13-greet-by-name",
+      "title": "引数の位置で分割代入して、「こんにちは、山田さん」を返す"
+    },
+    {
+      "id": "q03-14-is-expensive",
+      "title": "引数の位置で price を分割代入し、1000円以上なら true を返す"
+    },
+    {
+      "id": "q03-15-stock-value",
+      "title": "引数の位置で price と stock を分割代入し、在庫金額を返す"
+    },
+    {
+      "id": "q03-16-reset-stock",
+      "title": "stock を 0 にした新しい Item を返す"
+    },
+    {
+      "id": "q03-17-to-option",
+      "title": "分割代入で名前を付け替えて、{ value, label } を返す"
+    },
+    {
+      "id": "q03-18-with-defaults",
+      "title": "{ size?, color? } に、足りない値を size 10、color \"black\" で補ったオブジェクトを返す"
+    },
+    {
+      "id": "q03-19-combine",
+      "title": "{ x } と { y } を合わせて { x, y } にする"
+    },
+    {
+      "id": "q03-20-with-tax",
+      "title": "price を税込にした新しい Item を返す"
+    },
+    {
+      "id": "q03-destructuring-spread",
+      "title": "分割代入とスプレッド構文（応用問題）"
+    },
+    {
+      "id": "q04-01-sum-all",
+      "title": "合計を返す"
+    },
+    {
+      "id": "q04-02-count-items",
+      "title": "要素の数を返す"
+    },
+    {
+      "id": "q04-03-first-or-zero",
+      "title": "最初の要素を返す"
+    },
+    {
+      "id": "q04-04-last-item",
+      "title": "最後の要素を返す"
+    },
+    {
+      "id": "q04-05-double-each",
+      "title": "すべての要素を2倍にした新しい配列を返す"
+    },
+    {
+      "id": "q04-06-lengths",
+      "title": "それぞれの文字列の文字数を並べた配列を返す"
+    },
+    {
+      "id": "q04-07-evens",
+      "title": "偶数だけを集めた配列を返す"
+    },
+    {
+      "id": "q04-08-long-words",
+      "title": "min 文字以上の単語だけを集めた配列を返す"
+    },
+    {
+      "id": "q04-09-contains-item",
+      "title": "target が含まれていれば true"
+    },
+    {
+      "id": "q04-10-position-of",
+      "title": "target が何番目にあるかを返す"
+    },
+    {
+      "id": "q04-11-join-with-comma",
+      "title": "要素を「, 」でつないだ文字列を返す"
+    },
+    {
+      "id": "q04-12-max-value",
+      "title": "最大値を返す"
+    },
+    {
+      "id": "q04-13-min-value",
+      "title": "最小値を返す"
+    },
+    {
+      "id": "q04-14-average-of",
+      "title": "平均を返す"
+    },
+    {
+      "id": "q04-15-upper-all",
+      "title": "すべての英字を大文字にした配列を返す"
+    },
+    {
+      "id": "q04-16-count-positive",
+      "title": "0より大きい要素の数を返す"
+    },
+    {
+      "id": "q04-17-range",
+      "title": "start 以上 end 未満の整数を順に並べた配列を返す"
+    },
+    {
+      "id": "q04-18-repeat-item",
+      "title": "item を times 個並べた配列を返す"
+    },
+    {
+      "id": "q04-19-sum-even-index",
+      "title": "0番目、2番目、4番目…の要素だけを合計する"
+    },
+    {
+      "id": "q04-20-all-positive",
+      "title": "すべての要素が0より大きければ true"
+    },
+    {
+      "id": "q04-array-type",
+      "title": "配列の型と読み取り専用の配列（応用問題）"
+    },
+    {
+      "id": "q05-01-append",
+      "title": "末尾に item を足した新しい配列を返す"
+    },
+    {
+      "id": "q05-02-prepend",
+      "title": "先頭に item を足した新しい配列を返す"
+    },
+    {
+      "id": "q05-03-drop-first",
+      "title": "先頭の要素を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-04-drop-last",
+      "title": "最後の要素を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-05-insert-at",
+      "title": "index 番目に item を差し込んだ新しい配列を返す"
+    },
+    {
+      "id": "q05-06-remove-at",
+      "title": "index 番目の要素を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-07-replace-at",
+      "title": "index 番目の要素を item に置き換えた新しい配列を返す"
+    },
+    {
+      "id": "q05-08-sort-asc",
+      "title": "小さい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-09-sort-desc",
+      "title": "大きい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-10-sort-words",
+      "title": "辞書順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-11-reversed",
+      "title": "逆順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-12-concat-both",
+      "title": "2つの配列をつないだ新しい配列を返す"
+    },
+    {
+      "id": "q05-13-without",
+      "title": "value と同じ要素をすべて除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-14-unique-numbers",
+      "title": "重複を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-15-move-to-front",
+      "title": "index 番目の要素を先頭に移した新しい配列を返す"
+    },
+    {
+      "id": "q05-16-swap-items",
+      "title": "i 番目と j 番目を入れ替えた新しい配列を返す"
+    },
+    {
+      "id": "q05-17-take",
+      "title": "先頭から n 個の要素の新しい配列を返す"
+    },
+    {
+      "id": "q05-18-skip",
+      "title": "先頭の n 個を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-19-filled",
+      "title": "value を length 個並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-20-increment-at",
+      "title": "index 番目の要素だけを1増やした新しい配列を返す"
+    },
+    {
+      "id": "q05-non-destructive",
+      "title": "配列を壊さない操作（応用問題）"
+    },
+    {
+      "id": "q06-01-make-pair",
+      "title": "名前と数を、[名前, 数] のタプルにする"
+    },
+    {
+      "id": "q06-02-flip-pair",
+      "title": "[数, 名前] を [名前, 数] に並べ替える"
+    },
+    {
+      "id": "q06-03-name-of",
+      "title": "[名前, 数] の名前を返す"
+    },
+    {
+      "id": "q06-04-count-of",
+      "title": "[名前, 数] の数を返す"
+    },
+    {
+      "id": "q06-05-add-points",
+      "title": "2つの座標 [x, y] を足した座標を返す"
+    },
+    {
+      "id": "q06-06-scale-point",
+      "title": "座標 [x, y] を k 倍した座標を返す"
+    },
+    {
+      "id": "q06-07-distance-from-origin",
+      "title": "座標 [x, y] の原点からの距離を返す"
+    },
+    {
+      "id": "q06-08-to-point",
+      "title": "x と y から座標 [x, y] を作る"
+    },
+    {
+      "id": "q06-09-point-text",
+      "title": "引数の位置で分割代入して、「」を返す"
+    },
+    {
+      "id": "q06-10-rgb-text",
+      "title": "色 [r, g, b] を「rgb」にする"
+    },
+    {
+      "id": "q06-11-divmod",
+      "title": "a を b で割った [商, 余り] を返す"
+    },
+    {
+      "id": "q06-12-split-name",
+      "title": "「姓 名」の文字列を [姓, 名] に分ける"
+    },
+    {
+      "id": "q06-13-order2",
+      "title": "2つの数を [小さい方, 大きい方] にする"
+    },
+    {
+      "id": "q06-14-head-tail",
+      "title": "配列を [最初の要素, 残りの配列] に分ける"
+    },
+    {
+      "id": "q06-15-expand-range",
+      "title": "[開始, 終了] から、開始以上終了以下の整数を並べた配列を返す"
+    },
+    {
+      "id": "q06-16-is-origin",
+      "title": "座標 [x, y] が原点なら true"
+    },
+    {
+      "id": "q06-17-entry-text",
+      "title": "[名前, 数] を「りんご × 3」の形にする"
+    },
+    {
+      "id": "q06-18-sum-pair",
+      "title": "[a, b] の合計を返す"
+    },
+    {
+      "id": "q06-19-swap-xy",
+      "title": "座標 [x, y] を [y, x] にする"
+    },
+    {
+      "id": "q06-20-with-index",
+      "title": "各要素を [番号, 要素] のタプルにした配列を返す"
+    },
+    {
+      "id": "q06-tuple",
+      "title": "タプル（応用問題）"
+    },
+    {
+      "id": "q07-01-name-of",
+      "title": "name を返す"
+    },
+    {
+      "id": "q07-02-name-length",
+      "title": "name の文字数を返す"
+    },
+    {
+      "id": "q07-03-age-next-year",
+      "title": "来年の年齢を返す"
+    },
+    {
+      "id": "q07-04-is-older-than",
+      "title": "age が years より大きければ true"
+    },
+    {
+      "id": "q07-05-face-area",
+      "title": "width × height を返す"
+    },
+    {
+      "id": "q07-06-is-square-shape",
+      "title": "width と height が同じなら true"
+    },
+    {
+      "id": "q07-07-price-with-tax",
+      "title": "税込価格を返す"
+    },
+    {
+      "id": "q07-08-is-free",
+      "title": "price が 0 なら true"
+    },
+    {
+      "id": "q07-09-price-label",
+      "title": "「名前: 価格円」を返す"
+    },
+    {
+      "id": "q07-10-introduce",
+      "title": "「名前」を返す"
+    },
+    {
+      "id": "q07-11-older-name",
+      "title": "年上の方の名前を返す"
+    },
+    {
+      "id": "q07-12-total-price",
+      "title": "price の合計を返す"
+    },
+    {
+      "id": "q07-13-names-of",
+      "title": "name を並べた配列を返す"
+    },
+    {
+      "id": "q07-14-perimeter-of",
+      "title": "周りの長さを返す"
+    },
+    {
+      "id": "q07-15-orientation",
+      "title": "横長なら \"横長\"、縦長なら \"縦長\"、同じなら \"正方形\" を返す"
+    },
+    {
+      "id": "q07-16-has-long-name",
+      "title": "name が max 文字より長ければ true"
+    },
+    {
+      "id": "q07-17-average-age",
+      "title": "age の平均を返す"
+    },
+    {
+      "id": "q07-18-cheapest-name",
+      "title": "いちばん安いものの name を返す"
+    },
+    {
+      "id": "q07-19-sum-area",
+      "title": "width × height の合計を返す"
+    },
+    {
+      "id": "q07-20-size-text",
+      "title": "「width × height」の文字列を返す"
+    },
+    {
+      "id": "q07-structural-typing",
+      "title": "構造的型付け（応用問題）"
+    },
+    {
+      "id": "q08-01-score-of",
+      "title": "scores から name の点数を返す"
+    },
+    {
+      "id": "q08-02-has-key",
+      "title": "key があれば true"
+    },
+    {
+      "id": "q08-03-set-score",
+      "title": "name の点数を score にした、新しいオブジェクトを返す"
+    },
+    {
+      "id": "q08-04-key-count",
+      "title": "キーの数を返す"
+    },
+    {
+      "id": "q08-05-sum-values",
+      "title": "値の合計を返す"
+    },
+    {
+      "id": "q08-06-increment",
+      "title": "key の値を1増やした、新しいオブジェクトを返す"
+    },
+    {
+      "id": "q08-07-count-words",
+      "title": "単語ごとに、出てきた回数を数える"
+    },
+    {
+      "id": "q08-08-count-chars",
+      "title": "文字ごとに、出てきた回数を数える"
+    },
+    {
+      "id": "q08-09-keys-of",
+      "title": "キーを並べた配列を返す"
+    },
+    {
+      "id": "q08-10-top-key",
+      "title": "値がいちばん大きいキーを返す"
+    },
+    {
+      "id": "q08-11-invert",
+      "title": "キーと値を入れ替えたオブジェクトを返す"
+    },
+    {
+      "id": "q08-12-pick-keys",
+      "title": "keys に含まれるキーだけを取り出した、新しいオブジェクトを返す"
+    },
+    {
+      "id": "q08-13-remove-key",
+      "title": "key を除いた、新しいオブジェクトを返す"
+    },
+    {
+      "id": "q08-14-merge-counts",
+      "title": "2つの集計を合わせる"
+    },
+    {
+      "id": "q08-15-group-by-length",
+      "title": "単語を文字数ごとにまとめる"
+    },
+    {
+      "id": "q08-16-price-of",
+      "title": "価格表から item の価格を返す"
+    },
+    {
+      "id": "q08-17-order-total",
+      "title": "価格表 prices と注文 orderから合計金額を返す"
+    },
+    {
+      "id": "q08-18-filter-at-least",
+      "title": "値が min 以上のキーだけを残した、新しいオブジェクトを返す"
+    },
+    {
+      "id": "q08-19-entries-text",
+      "title": "「キー=値」を「, 」でつないだ文字列にする"
+    },
+    {
+      "id": "q08-20-lookup-or",
+      "title": "key の値を返す"
+    },
+    {
+      "id": "q08-inventory",
+      "title": "在庫の集計（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-values-types-variables-object-type-annotation-of-objects",

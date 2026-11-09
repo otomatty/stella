@@ -24,12 +24,78 @@ import {
   profiles,
   sections,
   stages,
-  tasks,
+  taskProblemResults,
   taskProgress,
+  tasks,
 } from "../db/schema.js";
 import { ApiError, type Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { loadClearedStageIds, loadSkillMapSource, parsePrerequisites } from "./skill-map-data.js";
+import { readTaskDefinition } from "./task-problem-submission.js";
+
+/**
+ * 問題つき課題の、今の版の問題数と提出済み数。課題ごとの SQL にはしない。
+ * 問題の無い課題は Map に入れない（合格するまで完了時間は 0 のまま）。
+ */
+async function problemProgressOf(
+  db: Db,
+  userId: string,
+  taskIds: string[],
+): Promise<Map<string, { total: number; passed: number }>> {
+  const progress = new Map<string, { total: number; passed: number }>();
+  if (taskIds.length === 0) return progress;
+  const definitions = (
+    await Promise.all(
+      chunk(taskIds, D1_MAX_BOUND_PARAMS - 1).map((batch) =>
+        db
+          .select({ id: tasks.id, definition: tasks.definition })
+          .from(tasks)
+          .where(
+            and(
+              inArray(tasks.id, batch),
+              sql`json_type(${tasks.definition}, '$.problems') = 'array'`,
+            ),
+          ),
+      ),
+    )
+  ).flat();
+  const problemsByTask = new Map<string, Set<string>>();
+  for (const row of definitions) {
+    const problems = readTaskDefinition(row.definition).problems;
+    if (!problems) continue;
+    problemsByTask.set(row.id, new Set(problems.map((problem) => problem.id)));
+    progress.set(row.id, { total: problems.length, passed: 0 });
+  }
+  if (problemsByTask.size === 0) return progress;
+  const results = (
+    await Promise.all(
+      chunk([...problemsByTask.keys()], D1_MAX_BOUND_PARAMS - 1).map((batch) =>
+        db
+          .select({
+            taskId: taskProblemResults.taskId,
+            problemId: taskProblemResults.problemId,
+          })
+          .from(taskProblemResults)
+          .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
+          .where(
+            and(
+              eq(taskProblemResults.userId, userId),
+              inArray(taskProblemResults.taskId, batch),
+              eq(taskProblemResults.contentHash, tasks.contentHash),
+            ),
+          ),
+      ),
+    )
+  ).flat();
+  for (const result of results) {
+    const ids = problemsByTask.get(result.taskId);
+    const row = progress.get(result.taskId);
+    if (!ids || !row || !ids.has(result.problemId)) continue;
+    ids.delete(result.problemId);
+    row.passed += 1;
+  }
+  return progress;
+}
 
 /** null は dev-env-basics の初回開始日に戻す。予定の目標日には書き込まない。 */
 export function paceProfileUpdate(settings: Partial<PaceSettings>, userId: string) {
@@ -177,6 +243,11 @@ export async function loadLearningPace(
         .where(and(inArray(sections.stageId, ids), eq(tasks.active, true), isNull(tasks.variantOf)))
         .orderBy(asc(tasks.order)),
     ]);
+    const problemProgress = await problemProgressOf(
+      db,
+      learner.id,
+      taskRows.map((task) => task.id),
+    );
     for (const lesson of lessonRows) {
       const match = /^(\d+(?:\.\d+)?)分$/.exec(lesson.duration ?? "");
       units.get(lesson.unitId)?.lessons.push({
@@ -186,7 +257,8 @@ export async function loadLearningPace(
         completed: lesson.completed === true,
       });
     }
-    for (const task of taskRows)
+    for (const task of taskRows) {
+      const problems = problemProgress.get(task.id);
       units.get(task.unitId)?.tasks.push({
         id: task.id,
         title: task.title,
@@ -197,7 +269,9 @@ export async function loadLearningPace(
         status: task.hash === task.progressHash ? (task.status ?? "not-started") : "not-started",
         passedDate:
           task.hash === task.progressHash && task.passedAt ? toStudyDate(task.passedAt) : null,
+        ...(problems ? { problemsTotal: problems.total, problemsPassed: problems.passed } : {}),
       });
+    }
   }
   const program: PaceStage[] = rows.map((stage) => ({
     id: stage.id,

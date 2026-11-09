@@ -1,0 +1,8 @@
+<Project>
+  <!-- bin/obj を拡張の作業フォルダーの下に出す。このファイルがあると、親フォルダーの Directory.Build.props は読み込まれない。 -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).stella/dotnet/obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory).stella/dotnet/bin/</BaseOutputPath>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+  </PropertyGroup>
+</Project>

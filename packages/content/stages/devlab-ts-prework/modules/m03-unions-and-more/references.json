@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m03-unions-and-more@1",
-  "contentHash": "db13846de99df325c842d9ddd3bda796365b2a93ec369b6efcd886e38d6bc3a4",
+  "unitId": "devlab-ts-prework/m03-unions-and-more@3",
+  "contentHash": "994afd931527476b647ffcc0870f3e989956aa9fa922f7bfdaef7a60a4c5146e",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -19,7 +19,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript のユニオン型とそのほかの型の範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -30,7 +30,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript のユニオン型とそのほかの型の範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

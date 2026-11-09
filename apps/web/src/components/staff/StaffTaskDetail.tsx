@@ -326,34 +326,52 @@ function Overview({ data, onStatement }: { data: Detail; onStatement: () => void
             </Button>
           </Panel>
           <Panel title="判定の項目">
-            <h3 className="font-medium">ルーブリック</h3>
-            {data.rubric.length ? (
-              <ul className="space-y-3">
-                {data.rubric.map((item) => (
-                  <li key={item.id} className="space-y-1">
-                    <code className="break-all">{item.id}</code>{" "}
-                    {item.required ? <Badge>必須</Badge> : null}
-                    <p>{item.criterion}</p>
-                  </li>
-                ))}
-              </ul>
+            {manifest.problems?.length ? (
+              <>
+                <p>
+                  全 {manifest.problems.length} 問のテストが通ると合格します。AI
+                  のレビューには回しません。
+                </p>
+                <ol className="list-decimal space-y-3 pl-5">
+                  {manifest.problems.map((problem) => (
+                    <li key={problem.id}>
+                      {problem.title} <code className="break-all">{problem.id}</code>
+                    </li>
+                  ))}
+                </ol>
+              </>
             ) : (
-              <p className="text-ink-3">ルーブリックの指定なし</p>
-            )}
-            <h3 className="font-medium">コーディング規則</h3>
-            {data.codingRules.length ? (
-              <ul className="space-y-3">
-                {data.codingRules.map((rule) => (
-                  <li key={rule.id} className="space-y-1">
-                    <code className="break-all">{rule.id}</code>{" "}
-                    {rule.required ? <Badge>必須</Badge> : null}
-                    <p className="font-medium">{rule.title}</p>
-                    <p>{rule.statement}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-ink-3">コーディング規則の指定なし</p>
+              <>
+                <h3 className="font-medium">ルーブリック</h3>
+                {data.rubric.length ? (
+                  <ul className="space-y-3">
+                    {data.rubric.map((item) => (
+                      <li key={item.id} className="space-y-1">
+                        <code className="break-all">{item.id}</code>{" "}
+                        {item.required ? <Badge>必須</Badge> : null}
+                        <p>{item.criterion}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-ink-3">ルーブリックの指定なし</p>
+                )}
+                <h3 className="font-medium">コーディング規則</h3>
+                {data.codingRules.length ? (
+                  <ul className="space-y-3">
+                    {data.codingRules.map((rule) => (
+                      <li key={rule.id} className="space-y-1">
+                        <code className="break-all">{rule.id}</code>{" "}
+                        {rule.required ? <Badge>必須</Badge> : null}
+                        <p className="font-medium">{rule.title}</p>
+                        <p>{rule.statement}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-ink-3">コーディング規則の指定なし</p>
+                )}
+              </>
             )}
           </Panel>
           <Panel title="提出と手元の確認">

@@ -14,7 +14,8 @@ import { isCiWorkflowPath } from "./ci-run.js";
 import { DOTNET_PROTECTED_FILES } from "./dotnet.js";
 import { type EnvironmentRequirement, validateEnvironmentRequirement } from "./environment.js";
 import { parsePublicSourceReferences, type PublicSourceReference } from "./source-reference.js";
-import { isRunnerId, RUNNER_IDS, type RunnerId } from "./runners.js";
+import { type TaskProblem, readProblems } from "./problems.js";
+import { isRunnerId, RUNNER_IDS, RUNNERS, type RunnerId } from "./runners.js";
 
 /** 課題フォルダーの中で、拡張が使うディレクトリ。 */
 export const TASK_STATE_DIR = ".stella";
@@ -102,6 +103,11 @@ export interface TaskManifest {
   title: string;
   kind: TaskKind;
   runner: RunnerId;
+  /**
+   * 課題の中の問題。確認・提出の単位。無い課題はキーを持たない
+   * (今の課題の内容ハッシュを変えないため)。
+   */
+  problems?: TaskProblem[];
   submit: {
     /** 提出するファイルの glob。提出と採点で読むのはここに当たるファイルだけ。 */
     files: string[];
@@ -449,6 +455,11 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
       errors.push(String(error));
     }
   }
+
+  const problemPlan = isRunnerId(raw.runner) ? RUNNERS[raw.runner].plan : null;
+  const problems = readProblems(raw.problems, problemPlan);
+  errors.push(...problems.errors);
+
   if (errors.length > 0) return { ok: false, errors };
 
   const manifest: TaskManifest = {
@@ -467,5 +478,6 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
   if (staticChecks) manifest.static = { checks: staticChecks };
   if (gitChecks) manifest.git = { checks: gitChecks };
   if (ci) manifest.ci = ci;
+  if (problems.problems) manifest.problems = problems.problems;
   return { ok: true, manifest };
 }

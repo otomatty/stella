@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m7-state/q04-independent",
+  "title": "状態の更新を選ぶ",
+  "problems": [
+    {
+      "id": "s01-floor",
+      "title": "床で止める"
+    },
+    {
+      "id": "s02-battery",
+      "title": "電池の範囲"
+    },
+    {
+      "id": "s03-bought",
+      "title": "買えた個数"
+    },
+    {
+      "id": "s04-reach",
+      "title": "到達した操作"
+    },
+    {
+      "id": "s05-min",
+      "title": "途中の最小"
+    },
+    {
+      "id": "s06-ones",
+      "title": "1の連続"
+    },
+    {
+      "id": "s07-waiting",
+      "title": "待ち人数"
+    },
+    {
+      "id": "s08-negative",
+      "title": "負の回数"
+    },
+    {
+      "id": "s09-moves",
+      "title": "移動の範囲"
+    },
+    {
+      "id": "s10-cannot",
+      "title": "使えなかった回数"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-state-choice",
+  "skills": {
+    "uses": [
+      "csharp-state-apply",
+      "csharp-state-buy",
+      "csharp-state-max"
+    ],
+    "assesses": [
+      "csharp-state-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

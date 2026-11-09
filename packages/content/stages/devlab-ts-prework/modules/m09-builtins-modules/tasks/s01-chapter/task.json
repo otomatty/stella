@@ -20,37 +20,451 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-to-map",
+      "title": "[名前, 点数] の配列から Map を作る"
+    },
+    {
+      "id": "q01-02-score-of",
+      "title": "name の点数を返す"
+    },
+    {
+      "id": "q01-03-has-name",
+      "title": "name が Map のキーにあれば true"
+    },
+    {
+      "id": "q01-04-with-score",
+      "title": "name に score を設定した新しい Map を返す"
+    },
+    {
+      "id": "q01-05-without-name",
+      "title": "name を取り除いた新しい Map を返す"
+    },
+    {
+      "id": "q01-06-size-of",
+      "title": "Map に入っている数を返す"
+    },
+    {
+      "id": "q01-07-names-of",
+      "title": "キーの配列を返す"
+    },
+    {
+      "id": "q01-08-total-score",
+      "title": "値の合計を返す"
+    },
+    {
+      "id": "q01-09-to-object",
+      "title": "Map をオブジェクトにする"
+    },
+    {
+      "id": "q01-10-from-object",
+      "title": "オブジェクトを Map にする"
+    },
+    {
+      "id": "q01-11-char-counts",
+      "title": "文字ごとの出てきた回数の Map を返す"
+    },
+    {
+      "id": "q01-12-group-by-initial",
+      "title": "単語を、最初の1文字ごとにまとめた Map を返す"
+    },
+    {
+      "id": "q01-13-invert",
+      "title": "キーと値を入れ替えた新しい Map を返す"
+    },
+    {
+      "id": "q01-14-merge-add",
+      "title": "2つの Map をまとめた新しい Map を返す"
+    },
+    {
+      "id": "q01-15-top-name",
+      "title": "値がいちばん大きいキーを返す"
+    },
+    {
+      "id": "q01-16-sorted-by-value",
+      "title": "[キー, 値] の配列を、値の大きい順に並べて返す"
+    },
+    {
+      "id": "q01-17-at-least",
+      "title": "値が min 以上のものだけを残した新しい Map を返す"
+    },
+    {
+      "id": "q01-18-map-values",
+      "title": "すべての値に fn を当てた新しい Map を返す"
+    },
+    {
+      "id": "q01-19-first-index",
+      "title": "単語ごとに、最初に出てきた位置の Map を返す"
+    },
+    {
+      "id": "q01-20-last-seen",
+      "title": "{ user, time } の配列から、ユーザーごとのいちばん大きい time の Map を返す"
+    },
+    {
+      "id": "q01-map",
+      "title": "Map（応用問題）"
+    },
+    {
+      "id": "q02-01-to-set",
+      "title": "配列から Set を作る"
+    },
+    {
+      "id": "q02-02-unique-count",
+      "title": "重複を除いた要素の数を返す"
+    },
+    {
+      "id": "q02-03-has-duplicates",
+      "title": "同じ値が2回以上出てきたら true"
+    },
+    {
+      "id": "q02-04-unique-sorted",
+      "title": "重複を除き、小さい順に並べた配列を返す"
+    },
+    {
+      "id": "q02-05-unique-chars",
+      "title": "重複を除いた文字を、出てきた順につないだ文字列を返す"
+    },
+    {
+      "id": "q02-06-with-added",
+      "title": "value を足した新しい Set を返す"
+    },
+    {
+      "id": "q02-07-with-removed",
+      "title": "value を取り除いた新しい Set を返す"
+    },
+    {
+      "id": "q02-08-toggle",
+      "title": "value があれば取り除き、なければ足した新しい Set を返す"
+    },
+    {
+      "id": "q02-09-union",
+      "title": "a か b のどちらかにある要素の Set を返す"
+    },
+    {
+      "id": "q02-10-intersection",
+      "title": "a と b の両方にある要素の Set を返す"
+    },
+    {
+      "id": "q02-11-difference",
+      "title": "a にあって b にない要素の Set を返す"
+    },
+    {
+      "id": "q02-12-symmetric-difference",
+      "title": "a と b のどちらか一方にだけある要素の Set を返す"
+    },
+    {
+      "id": "q02-13-is-subset",
+      "title": "a の要素がすべて b にあれば true"
+    },
+    {
+      "id": "q02-14-has-all",
+      "title": "values の要素がすべて set にあれば true"
+    },
+    {
+      "id": "q02-15-has-any",
+      "title": "values の要素のどれか1つでも set にあれば true"
+    },
+    {
+      "id": "q02-16-common-chars",
+      "title": "a と b の両方に出てくる文字を、a の順に重複なくつないだ文字列を返す"
+    },
+    {
+      "id": "q02-17-first-repeated",
+      "title": "前から見て、2回目に出てきた最初の要素を返す"
+    },
+    {
+      "id": "q02-18-unique-by-id",
+      "title": "同じ id のユーザーは最初の1人だけを残した配列を返す"
+    },
+    {
+      "id": "q02-19-all-tags",
+      "title": "投稿のタグを、重複なく出てきた順に並べた配列を返す"
+    },
+    {
+      "id": "q02-20-same-members",
+      "title": "順番と重複を無視して、a と b が同じ要素の集まりなら true"
+    },
+    {
+      "id": "q02-set",
+      "title": "Set（応用問題）"
+    },
+    {
+      "id": "q03-01-make-date",
+      "title": "年・月・日から、その日の 0時0分の Date を作る"
+    },
+    {
+      "id": "q03-02-year-of",
+      "title": "年を返す"
+    },
+    {
+      "id": "q03-03-month-of",
+      "title": "月を 1〜12 で返す"
+    },
+    {
+      "id": "q03-04-weekday-name",
+      "title": "曜日を \"日\"・\"月\"・\"火\"・\"水\"・\"木\"・\"金\"・\"土\" のどれかで返す"
+    },
+    {
+      "id": "q03-05-is-weekend",
+      "title": "土曜日か日曜日なら true"
+    },
+    {
+      "id": "q03-06-add-days",
+      "title": "n 日後の新しい Date を返す"
+    },
+    {
+      "id": "q03-07-add-hours",
+      "title": "h 時間後の新しい Date を返す"
+    },
+    {
+      "id": "q03-08-format-date",
+      "title": "\"2026-04-01\" の形の文字列を返す"
+    },
+    {
+      "id": "q03-09-format-time",
+      "title": "\"09:05\" の形の文字列を返す"
+    },
+    {
+      "id": "q03-10-format-japanese",
+      "title": "\"2026年4月1日\" の形の文字列を返す"
+    },
+    {
+      "id": "q03-11-parse-date",
+      "title": "\"2026-04-01\" の形の文字列から、その日の 0時0分の Date を作る"
+    },
+    {
+      "id": "q03-12-is-same-day",
+      "title": "a と b が同じ日付なら true"
+    },
+    {
+      "id": "q03-13-is-before",
+      "title": "a が b より前なら true"
+    },
+    {
+      "id": "q03-14-days-between",
+      "title": "a の日付から b の日付までの日数を返す"
+    },
+    {
+      "id": "q03-15-age-on",
+      "title": "誕生日 birthday の人の、today の時点の満年齢を返す"
+    },
+    {
+      "id": "q03-16-start-of-day",
+      "title": "同じ日の 0時0分0秒0ミリ秒の新しい Date を返す"
+    },
+    {
+      "id": "q03-17-end-of-month",
+      "title": "同じ月の最終日の 0時0分の Date を返す"
+    },
+    {
+      "id": "q03-18-days-in-month",
+      "title": "year 年 month 月の日数を返す"
+    },
+    {
+      "id": "q03-19-latest",
+      "title": "いちばん新しいDate を返す"
+    },
+    {
+      "id": "q03-20-sort-dates",
+      "title": "古い順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q03-date",
+      "title": "Date（応用問題）"
+    },
+    {
+      "id": "q04-01-fail",
+      "title": "message を持つ Error を必ず投げる"
+    },
+    {
+      "id": "q04-02-error-message",
+      "title": "error が Error ならその message、そうでなければ \"不明なエラー\" を返す"
+    },
+    {
+      "id": "q04-03-check-range",
+      "title": "n が min 以上 max 以下ならそのまま返す"
+    },
+    {
+      "id": "q04-04-require-string",
+      "title": "value が文字列ならそのまま返す"
+    },
+    {
+      "id": "q04-05-parse-json-or-null",
+      "title": "text を JSON.parse で読んで返す"
+    },
+    {
+      "id": "q04-06-error-kind",
+      "title": "TypeError なら \"TypeError\"、RangeError なら \"RangeError\"、SyntaxError なら \"SyntaxError\"、それ以外の Error なら \"Error\"、Error でなければ \"unknown\" を返す"
+    },
+    {
+      "id": "q04-07-validation-error",
+      "title": "Error を継承したクラス ValidationError を書く"
+    },
+    {
+      "id": "q04-08-timeout-error",
+      "title": "Error を継承したクラス TimeoutError を書く"
+    },
+    {
+      "id": "q04-09-http-status-of",
+      "title": "error が HttpError ならその status、そうでなければ undefined を返す"
+    },
+    {
+      "id": "q04-10-is-not-found",
+      "title": "error が NotFoundError、または status が 404 の HttpError なら true"
+    },
+    {
+      "id": "q04-11-to-http-error",
+      "title": "status が 404 なら NotFoundError、それ以外なら HttpError を作って返す"
+    },
+    {
+      "id": "q04-12-status-message",
+      "title": "NotFoundError なら \"見つかりません\"、それ以外の HttpError なら `通信エラー`、それ以外の Error なら message、Error でなければ \"不明なエラー\" を返す"
+    },
+    {
+      "id": "q04-13-wrap-error",
+      "title": "message を持つ新しい Error を作って返す"
+    },
+    {
+      "id": "q04-14-root-cause",
+      "title": "error の cause をたどり、いちばん元の原因を返す"
+    },
+    {
+      "id": "q04-15-try-or",
+      "title": "fn を呼んでその値を返す"
+    },
+    {
+      "id": "q04-16-attempt",
+      "title": "fn が値を返したら { ok: true, value }、例外を投げたら { ok: false, error } を返す"
+    },
+    {
+      "id": "q04-17-collect-errors",
+      "title": "fns を順番にすべて呼び、投げられたエラーの message を集めた配列を返す"
+    },
+    {
+      "id": "q04-18-with-finally",
+      "title": "fn の値を返す"
+    },
+    {
+      "id": "q04-19-validate-all",
+      "title": "values に負の数があれば AggregateError を投げる"
+    },
+    {
+      "id": "q04-20-error-to-json",
+      "title": "error が Error なら { name, message }、そうでなければ { name: \"Unknown\", message: String } を返す"
+    },
+    {
+      "id": "q04-error",
+      "title": "Error（応用問題）"
+    },
+    {
+      "id": "q05-01-double",
+      "title": "下の関数 double を、名前付き export にする"
+    },
+    {
+      "id": "q05-02-max-items",
+      "title": "下の定数 MAX_ITEMS を export する"
+    },
+    {
+      "id": "q05-03-point",
+      "title": "下の型 Point を export する"
+    },
+    {
+      "id": "q05-04-add",
+      "title": "下の2つの関数 add と sub を、最後の export { … } の1行でまとめて export する"
+    },
+    {
+      "id": "q05-05-square",
+      "title": "下の関数 internalSquare を、square という名前で export する"
+    },
+    {
+      "id": "q05-06-with-tax",
+      "title": "q05-modules.lib から priceWithTax を import し、それを使って、税込みの金額を返す withTax を書く"
+    },
+    {
+      "id": "q05-07-price-label",
+      "title": "formatYen を yen という名前で import し、yen を使って priceLabel を書く"
+    },
+    {
+      "id": "q05-08-welcome",
+      "title": "q05-modules.lib のデフォルト exportを import し、greet の後ろに \"！\" を付けて返す welcome を書く"
+    },
+    {
+      "id": "q05-09-site-title",
+      "title": "q05-modules.lib の export をすべて shop という名前でまとめて import し、shop.SITE_NAME を使って siteTitle を書く"
+    },
+    {
+      "id": "q05-10-cheapest",
+      "title": "型 Product を import type で import し、cheapest で値段がいちばん安い商品を返す"
+    },
+    {
+      "id": "q05-11-format-yen",
+      "title": "q05-modules.lib の formatYen を、このファイルからそのまま re-export する"
+    },
+    {
+      "id": "q05-12-taxed",
+      "title": "q05-modules.lib の priceWithTax を、taxed という名前で re-export する"
+    },
+    {
+      "id": "q05-13-greet-user",
+      "title": "q05-modules.lib のデフォルト export を、greetUser という名前で re-export する"
+    },
+    {
+      "id": "q05-14-product",
+      "title": "q05-modules.lib の型 Product を、型として re-export する"
+    },
+    {
+      "id": "q05-15-library",
+      "title": "q05-modules.lib の export をすべて、library という名前のまとまりとして re-export する"
+    },
+    {
+      "id": "q05-16-farewell",
+      "title": "下の関数 farewell を、このファイルのデフォルト export にする"
+    },
+    {
+      "id": "q05-17-half",
+      "title": "export const half = … の形で、n の半分を返すアロー関数を export する"
+    },
+    {
+      "id": "q05-18-catalog",
+      "title": "SITE_NAME と products を import し、\"サンプル商店: りんご、みかん、ぶどう\" の形の文字列を返す catalog を書く"
+    },
+    {
+      "id": "q05-19-tax-label",
+      "title": "TAX_RATE を import し、\"消費税 10%\" の形の文字列を返す taxLabel を書く"
+    },
+    {
+      "id": "q05-20-stack",
+      "title": "下のクラス Stack を export する"
+    },
+    {
+      "id": "q05-modules-price",
+      "title": "モジュールに分ける: TAX_RATE と priceWithTax（応用問題）"
+    },
+    {
+      "id": "q05-modules-format",
+      "title": "モジュールに分ける: formatYen（応用問題）"
+    },
+    {
+      "id": "q05-modules-cart",
+      "title": "モジュールに分ける: カートの計算（応用問題）"
+    },
+    {
+      "id": "q05-modules",
+      "title": "モジュールに分ける（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-builtin-api-map",
@@ -69,7 +483,8 @@
     "eslint.config.js",
     ".prettierrc.json",
     ".prettierignore",
-    "tests/**"
+    "tests/**",
+    "src/shared/**"
   ],
   "checks": {
     "lint": true,

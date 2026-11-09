@@ -1,0 +1,63 @@
+{
+  "id": "csharp-foundations/m12-member-code/q02-extra",
+  "title": "会員コードの追加演習",
+  "problems": [
+    {
+      "id": "q01-length-or-char",
+      "title": "長さと文字のログを分ける"
+    },
+    {
+      "id": "q02-leading-zero",
+      "title": "先頭の条件"
+    },
+    {
+      "id": "q03-reimplement",
+      "title": "仕様から再実装する"
+    },
+    {
+      "id": "q04-no-space-six",
+      "title": "空白を受け付けない6桁版"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-member-change",
+  "skills": {
+    "uses": [
+      "csharp-char-bool",
+      "csharp-member-change"
+    ],
+    "assesses": [
+      "csharp-member-change"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-mslearn-csharp-contains-20261108",
+    "SRC-mslearn-csharp-replace-20261108"
+  ],
+  "estimatedMinutes": 120,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

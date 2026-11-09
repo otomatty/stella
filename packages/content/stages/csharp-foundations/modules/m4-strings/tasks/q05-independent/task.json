@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m4-strings/q05-independent",
+  "title": "文字列の処理を自分で選ぶ",
+  "problems": [
+    {
+      "id": "s01-ends-joined",
+      "title": "端の表示"
+    },
+    {
+      "id": "s02-is-code",
+      "title": "表記の条件"
+    },
+    {
+      "id": "s03-count-other",
+      "title": "異なる文字"
+    },
+    {
+      "id": "s04-head2-if6",
+      "title": "受付番号の前半"
+    },
+    {
+      "id": "s05-count-blanks",
+      "title": "区切りの個数"
+    },
+    {
+      "id": "s06-last-index-of",
+      "title": "最後の該当位置"
+    },
+    {
+      "id": "s07-swap-halves",
+      "title": "前後を交換"
+    },
+    {
+      "id": "s08-all-upper",
+      "title": "英字の条件"
+    },
+    {
+      "id": "s09-print-digit-and-upper",
+      "title": "二つの表示"
+    },
+    {
+      "id": "s10-same-ends",
+      "title": "同じ端"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-string-choice",
+  "skills": {
+    "uses": [
+      "csharp-string-length",
+      "csharp-string-count",
+      "csharp-string-slice"
+    ],
+    "assesses": [
+      "csharp-string-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

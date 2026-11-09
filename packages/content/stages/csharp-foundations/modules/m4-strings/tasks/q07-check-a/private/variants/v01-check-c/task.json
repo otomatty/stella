@@ -1,0 +1,51 @@
+{
+  "id": "csharp-foundations/m4-strings/v01-check-c",
+  "title": "確認C 5文字の形",
+  "problems": [
+    {
+      "id": "check-c-letter-digits",
+      "title": "5文字の形"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-string-tail2",
+  "skills": {
+    "uses": [
+      "csharp-string-length",
+      "csharp-string-count",
+      "csharp-string-slice"
+    ],
+    "assesses": [
+      "csharp-string-length",
+      "csharp-string-slice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

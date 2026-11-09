@@ -1,0 +1,50 @@
+{
+  "id": "csharp-foundations/m3-arrays/v01-check-c",
+  "title": "確認C 最大と同じ個数",
+  "problems": [
+    {
+      "id": "check-c-count-max",
+      "title": "最大と同じ個数"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-array-below",
+  "skills": {
+    "uses": [
+      "csharp-array-sum",
+      "csharp-array-count"
+    ],
+    "assesses": [
+      "csharp-array-sum",
+      "csharp-array-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m7-state/v01-check-c",
+  "title": "確認C 3倍で届くまで",
+  "problems": [
+    {
+      "id": "check-c-triple-days",
+      "title": "3倍の回数"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-state-first-negative",
+  "skills": {
+    "uses": [
+      "csharp-state-apply"
+    ],
+    "assesses": [
+      "csharp-state-apply"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

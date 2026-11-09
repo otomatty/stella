@@ -1,0 +1,50 @@
+{
+  "id": "csharp-foundations/m3-arrays/q07-check-a",
+  "title": "確認A k未満の合計と件数",
+  "problems": [
+    {
+      "id": "check-a-sum-count-below",
+      "title": "k未満の合計と件数"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-array-below",
+  "skills": {
+    "uses": [
+      "csharp-array-sum",
+      "csharp-array-count"
+    ],
+    "assesses": [
+      "csharp-array-sum",
+      "csharp-array-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

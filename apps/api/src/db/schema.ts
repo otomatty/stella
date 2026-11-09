@@ -627,6 +627,31 @@ export const taskProgress = sqliteTable(
 );
 
 /**
+ * 問題つきの課題の、問題ごとの合格したコード。1 問は 64KiB までなので R2 には置かない。
+ * 課題の提出 (`submissions`) は、今の版の問題が全部そろったときだけ 1 行作る。
+ */
+export const taskProblemResults = sqliteTable(
+  "task_problem_results",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    problemId: text("problem_id").notNull(),
+    contentHash: text("content_hash").notNull(),
+    path: text("path").notNull(),
+    code: text("code").notNull(),
+    sha256: text("sha256").notNull(),
+    attempts: integer("attempts").notNull().default(1),
+    firstPassedAt: ts("first_passed_at").notNull(),
+    updatedAt: ts("updated_at").notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.userId, t.taskId, t.problemId] }) }),
+);
+
+/**
  * 手元の確認の要約 (#38)。受講者・課題ごとに 1 行の回数だけを持つ。
  * 実行ごとの履歴・コード・メッセージは持たない (07 §6.5)。版が変わると連続の失敗を数え直す。
  */
@@ -1665,7 +1690,8 @@ export const submissions = sqliteTable("submissions", {
   taskSnapshot: safeJson<import("@stella/shared/tasks/catalog").TaskBundle>("task_snapshot"),
   assessedSkills: json<string[]>("assessed_skills", []),
   reviewTaskContentHash: text("review_task_content_hash"),
-  reviewSource: text("review_source", { enum: ["ai", "human"] }),
+  /** `tests` は問題のテストが揃った提出。AI の合格 (`ai`) とは別。 */
+  reviewSource: text("review_source", { enum: ["ai", "human", "tests"] }),
   /** 新形式の提出の AI 一次レビューの状態 (0048)。旧形式の提出は null。 */
   aiReviewStatus: text("ai_review_status", {
     enum: ["queued", "confirmed", "escalated", "superseded", "human"],

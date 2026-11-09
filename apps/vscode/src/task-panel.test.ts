@@ -126,6 +126,33 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("v22.22.0");
   });
 
+  it("問題の確認では、その問題と次へ進む案内を出す", () => {
+    const html = buildTaskPanelHtml({
+      kind: "result",
+      manifest,
+      result: result({ outcome: "passed", steps: [], problemId: "q01-add" }),
+    });
+    expect(html).toContain("問題 <code>q01-add</code>");
+    expect(html).toContain("提出すると次の問題を開きます");
+    expect(html).not.toContain("手元の確認はすべて通りました");
+    expect(html).not.toContain("説明");
+    expect(html).not.toContain("修正記録");
+  });
+
+  it("問題の失敗結果からの相談は、その問題の ID を渡す", () => {
+    const root = "/home/me/web-training/course/unit/q01";
+    const problemId = "q01-add";
+    const html = buildTaskPanelHtml({
+      kind: "result",
+      manifest,
+      result: result({ problemId }),
+      root,
+    });
+    expect(html).toContain(
+      `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">講師に相談`,
+    );
+  });
+
   it("全部通れば次の行動を案内する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",

@@ -19,37 +19,439 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-resolve-with",
+      "title": "value ですぐに解決する Promise を返す"
+    },
+    {
+      "id": "q01-02-reject-with",
+      "title": "message を持つ Error で失敗する Promise を返す"
+    },
+    {
+      "id": "q01-03-wait",
+      "title": "ms ミリ秒たったら解決する Promise<void> を返す"
+    },
+    {
+      "id": "q01-04-wait-value",
+      "title": "ms ミリ秒たったら value で解決する Promise を返す"
+    },
+    {
+      "id": "q01-05-double",
+      "title": "then で、promise の値を2倍にした Promise を返す"
+    },
+    {
+      "id": "q01-06-length-of",
+      "title": "then で、promise の文字列の文字数を返す"
+    },
+    {
+      "id": "q01-07-trimmed",
+      "title": "then で、promise の文字列の前後の空白を取り除く"
+    },
+    {
+      "id": "q01-08-add-both",
+      "title": "a の then の中で b の then を呼び、2つの値の合計を返す"
+    },
+    {
+      "id": "q01-09-parse-number",
+      "title": "then の中で Number で数に変換する"
+    },
+    {
+      "id": "q01-10-recover",
+      "title": "catch で、promise が失敗したら 0 で解決する Promise にする"
+    },
+    {
+      "id": "q01-11-error-message",
+      "title": "成功なら \"成功\"、失敗の理由が Error ならその message、Error でなければ \"不明なエラー\" で解決する"
+    },
+    {
+      "id": "q01-12-log-done",
+      "title": "finally で、成功しても失敗しても log に \"done\" を足す"
+    },
+    {
+      "id": "q01-13-all-numbers",
+      "title": "Promise.all で、すべての値の配列を返す"
+    },
+    {
+      "id": "q01-14-sum-of-all",
+      "title": "Promise.all と then で、すべての値の合計を返す"
+    },
+    {
+      "id": "q01-15-pair-of",
+      "title": "Promise.all で、2つの値を [文字列, 数値] のタプルにして返す"
+    },
+    {
+      "id": "q01-16-fastest",
+      "title": "Promise.race で、いちばん早く解決した値を返す"
+    },
+    {
+      "id": "q01-17-settled-count",
+      "title": "Promise.allSettled で、成功した Promise の数を返す"
+    },
+    {
+      "id": "q01-18-fulfilled-values",
+      "title": "Promise.allSettled で、成功した値だけの配列を返す"
+    },
+    {
+      "id": "q01-19-rejected-messages",
+      "title": "Promise.allSettled で、失敗の理由の message の配列を返す"
+    },
+    {
+      "id": "q01-20-chain-steps",
+      "title": "start から始めて、steps の関数を前から順に then でつなぎ、最後の値を返す"
+    },
+    {
+      "id": "q01-promise",
+      "title": "Promise（応用問題）"
+    },
+    {
+      "id": "q02-01-get-age",
+      "title": "fetchUser で取得して、年齢を返す"
+    },
+    {
+      "id": "q02-02-get-name",
+      "title": "取得して、名前を返す"
+    },
+    {
+      "id": "q02-03-is-adult",
+      "title": "取得して、20歳以上なら true"
+    },
+    {
+      "id": "q02-04-greet-user",
+      "title": "取得して、\"こんにちは、山田さん\" の形のあいさつを返す"
+    },
+    {
+      "id": "q02-05-name-length",
+      "title": "async のアロー関数で書く"
+    },
+    {
+      "id": "q02-06-age-after",
+      "title": "取得して、years 年後の年齢を返す"
+    },
+    {
+      "id": "q02-07-sum-ages",
+      "title": "a と b のユーザーを、順番に await して取得し、年齢の合計を返す"
+    },
+    {
+      "id": "q02-08-sum-ages-at-once",
+      "title": "a と b のユーザーの取得を一度に始め、Promise.all と await で待って、年齢の合計を返す"
+    },
+    {
+      "id": "q02-09-names-in-order",
+      "title": "ids のユーザーを for...of と await で1人ずつ順番に取得し、名前の配列を返す"
+    },
+    {
+      "id": "q02-10-names-at-once",
+      "title": "ids のユーザーの取得を map で一度に始め、Promise.all で待って、名前の配列を返す"
+    },
+    {
+      "id": "q02-11-oldest-name",
+      "title": "ids のユーザーを同時に取得し、いちばん年上の人の名前を返す"
+    },
+    {
+      "id": "q02-12-average-age",
+      "title": "ids のユーザーを同時に取得し、年齢の平均を返す"
+    },
+    {
+      "id": "q02-13-safe-name",
+      "title": "try・catch で、取得できれば名前、失敗したら \"不明\" を返す"
+    },
+    {
+      "id": "q02-14-user-exists",
+      "title": "取得できれば true、失敗したら false を返す"
+    },
+    {
+      "id": "q02-15-count-found",
+      "title": "ids のユーザーを順番に取得し、取得できた人数を返す"
+    },
+    {
+      "id": "q02-16-first-adult",
+      "title": "ids のユーザーを順番に取得し、最初に見つかった20歳以上の人の名前を返す"
+    },
+    {
+      "id": "q02-17-wait-and-return",
+      "title": "wait を await で待ってから、value を返す"
+    },
+    {
+      "id": "q02-18-run-in-order",
+      "title": "tasksを前から1つずつ呼び、前の task が終わってから次を呼ぶ"
+    },
+    {
+      "id": "q02-19-run-at-once",
+      "title": "tasks をすべて一度に呼び、Promise.all で待って、結果の配列を返す"
+    },
+    {
+      "id": "q02-20-until-failure",
+      "title": "tasks を前から順番に呼び、失敗したらそこで止めて、それまでに成功した結果の配列を返す"
+    },
+    {
+      "id": "q02-async-await",
+      "title": "async と await（応用問題）"
+    },
+    {
+      "id": "q03-01-get-status",
+      "title": "url を fetch して、ステータスコードを返す"
+    },
+    {
+      "id": "q03-02-is-ok",
+      "title": "url を fetch して、res.ok を返す"
+    },
+    {
+      "id": "q03-03-get-text",
+      "title": "url を fetch して、本文を文字列で返す"
+    },
+    {
+      "id": "q03-04-get-json",
+      "title": "url を fetch して、本文を JSON として読んだ結果を返す"
+    },
+    {
+      "id": "q03-05-get-json-or-throw",
+      "title": "getJson と同じ"
+    },
+    {
+      "id": "q03-06-get-user",
+      "title": "`${API}/users/${id}` を取得し、isUser で確かめて User を返す"
+    },
+    {
+      "id": "q03-07-get-user-or-null",
+      "title": "`${API}/users/${id}` を取得する"
+    },
+    {
+      "id": "q03-08-get-users",
+      "title": "`${API}/users` を取得し、User の配列を返す"
+    },
+    {
+      "id": "q03-09-get-todo-titles",
+      "title": "`${API}/todos` を取得し、TODO のタイトルの配列を返す"
+    },
+    {
+      "id": "q03-10-count-done",
+      "title": "`${API}/todos` を取得し、done が true の TODO の数を返す"
+    },
+    {
+      "id": "q03-11-search-users",
+      "title": "`${API}/users?q=キーワード` を取得し、User の配列を返す"
+    },
+    {
+      "id": "q03-12-get-todos-page",
+      "title": "`${API}/todos?page=2&per_page=10` の形の URL で取得し、Todo の配列を返す"
+    },
+    {
+      "id": "q03-13-post-json",
+      "title": "url に body を JSON で POST し、ステータスコードを返す"
+    },
+    {
+      "id": "q03-14-create-todo",
+      "title": "`${API}/todos` に { title, done: false } を JSON で POST し、作られた Todo を返す"
+    },
+    {
+      "id": "q03-15-update-todo",
+      "title": "`${API}/todos/${id}` に { done } を JSON で送り、res.ok を返す"
+    },
+    {
+      "id": "q03-16-delete-todo",
+      "title": "`${API}/todos/${id}` を method \"DELETE\" で呼び、res.ok を返す"
+    },
+    {
+      "id": "q03-17-get-with-token",
+      "title": "url を、ヘッダー Authorization: \"Bearer トークン\" を付けて取得し、本文の文字列を返す"
+    },
+    {
+      "id": "q03-18-get-all-texts",
+      "title": "urls をすべて同時に取得し、本文の文字列の配列を返す"
+    },
+    {
+      "id": "q03-19-get-first-ok",
+      "title": "urls を前から順番に取得し、最初に ok だったものの本文の文字列を返す"
+    },
+    {
+      "id": "q03-20-get-json-safe",
+      "title": "url の JSON を返す"
+    },
+    {
+      "id": "q03-fetch",
+      "title": "fetch でAPIを呼ぶ（応用問題）"
+    },
+    {
+      "id": "q04-01-safe-run",
+      "title": "task を待ち、成功ならその値、失敗なら undefined を返す"
+    },
+    {
+      "id": "q04-02-run-or",
+      "title": "task を待ち、成功ならその値、失敗なら fallback を返す"
+    },
+    {
+      "id": "q04-03-error-text",
+      "title": "成功なら \"OK\"、Error で失敗したらその message、Error でないもので失敗したら \"不明なエラー\" を返す"
+    },
+    {
+      "id": "q04-04-to-result",
+      "title": "成功なら { ok: true, value }、失敗なら { ok: false, message } を返す"
+    },
+    {
+      "id": "q04-05-with-context",
+      "title": "失敗したら `${context}: ${元の message}` の Error を投げ直す"
+    },
+    {
+      "id": "q04-06-retry-once",
+      "title": "task を呼び、失敗したら1回だけやり直す"
+    },
+    {
+      "id": "q04-07-retry",
+      "title": "成功するまで、全部で attempts 回まで task を呼ぶ"
+    },
+    {
+      "id": "q04-08-attempts-needed",
+      "title": "成功するまで、全部で max 回まで task を呼び、成功までに呼んだ回数を返す"
+    },
+    {
+      "id": "q04-09-first-success",
+      "title": "tasks を前から順番に試し、最初に成功した値を返す"
+    },
+    {
+      "id": "q04-10-count-failures",
+      "title": "tasks をすべて同時に呼び、失敗した数を返す"
+    },
+    {
+      "id": "q04-11-with-cleanup",
+      "title": "task の結果を返す"
+    },
+    {
+      "id": "q04-12-with-timeout",
+      "title": "task が ms ミリ秒以内に終われば、その値を返す"
+    },
+    {
+      "id": "q04-13-parse-age",
+      "title": "taskを待ち、0 以上の整数に変換して返す"
+    },
+    {
+      "id": "q04-14-assert-ok",
+      "title": "taskを待ち、ok なら status を返す"
+    },
+    {
+      "id": "q04-15-log-errors",
+      "title": "tasks を前から順番に呼ぶ"
+    },
+    {
+      "id": "q04-16-failed-indexes",
+      "title": "tasks をすべて同時に呼び、失敗した task の位置の配列を返す"
+    },
+    {
+      "id": "q04-17-retry-with-delay",
+      "title": "retry と同じだが、失敗するたびに wait で ms ミリ秒待ってからやり直す"
+    },
+    {
+      "id": "q04-18-retry-if",
+      "title": "retry と同じだが、失敗したときに shouldRetry が false なら、やり直さずにその失敗をすぐ投げる"
+    },
+    {
+      "id": "q04-19-finally-log",
+      "title": "log に \"開始\" を足してから task を待つ"
+    },
+    {
+      "id": "q04-20-settle-all",
+      "title": "tasks をすべて同時に呼び、{ values: 成功した値の配列, errors: 失敗の message の配列 } を返す"
+    },
+    {
+      "id": "q04-async-errors",
+      "title": "非同期のエラー処理（応用問題）"
+    },
+    {
+      "id": "q05-01-user-with-posts",
+      "title": "getUser と getPosts を同時に呼び、{ user, posts } を返す"
+    },
+    {
+      "id": "q05-02-post-count",
+      "title": "ユーザーの投稿の数を返す"
+    },
+    {
+      "id": "q05-03-post-titles",
+      "title": "ユーザーの投稿のタイトルの配列を返す"
+    },
+    {
+      "id": "q05-04-names-of",
+      "title": "ids のユーザーを同時に取得し、名前の配列を返す"
+    },
+    {
+      "id": "q05-05-total-posts",
+      "title": "ids のユーザーの投稿を同時に取得し、投稿の数の合計を返す"
+    },
+    {
+      "id": "q05-06-loaded-users",
+      "title": "ids のユーザーを同時に取得し、取得できたユーザーだけの配列を返す"
+    },
+    {
+      "id": "q05-07-missing-ids",
+      "title": "ids のユーザーを同時に取得し、取得できなかった id の配列を返す"
+    },
+    {
+      "id": "q05-08-user-summary",
+      "title": "ユーザーと投稿を同時に取得し、\"山田\" の形の文字列を返す"
+    },
+    {
+      "id": "q05-09-comment-count",
+      "title": "投稿のコメントの数を返す"
+    },
+    {
+      "id": "q05-10-comments-of-user",
+      "title": "ユーザーの投稿を取得してから、それぞれの投稿のコメントを同時に取得し、コメントの text を1つの配列にまとめて返す"
+    },
+    {
+      "id": "q05-11-latest-post-title",
+      "title": "ユーザーの投稿のうち、id がいちばん大きいもののタイトルを返す"
+    },
+    {
+      "id": "q05-12-post-counts-by-id",
+      "title": "ids の投稿を同時に取得し、{ id: 投稿の数 } のオブジェクトを返す"
+    },
+    {
+      "id": "q05-13-profile-or-null",
+      "title": "userWithPosts と同じ { user, posts } を返す"
+    },
+    {
+      "id": "q05-14-dashboard",
+      "title": "ids のユーザーと投稿をすべて同時に取得し、ユーザーを取得できた人だけ { name, postCount } の配列にする"
+    },
+    {
+      "id": "q05-15-most-active",
+      "title": "ids のユーザーと投稿を同時に取得し、投稿がいちばん多い人の名前を返す"
+    },
+    {
+      "id": "q05-16-posts-with-author",
+      "title": "ids のユーザーと投稿を同時に取得し、すべての投稿を { title, author: 書いた人の名前 } の配列にする"
+    },
+    {
+      "id": "q05-17-search-posts",
+      "title": "ids の投稿を同時に取得し、タイトルに keyword を含む投稿のタイトルの配列を返す"
+    },
+    {
+      "id": "q05-18-comment-total",
+      "title": "ユーザーの投稿を取得してから、それぞれの投稿のコメントを同時に取得し、コメントの数の合計を返す"
+    },
+    {
+      "id": "q05-19-first-available-name",
+      "title": "ids のユーザーを順番に1人ずつ取得し、最初に取得できた人の名前を返す"
+    },
+    {
+      "id": "q05-20-load-in-batches",
+      "title": "ids を size 人ずつに区切り、区切りの中は同時に、区切りどうしは順番に取得して、名前の配列を返す"
+    },
+    {
+      "id": "q05-aggregate",
+      "title": "複数のAPIの結果をまとめる（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-asynchronous",

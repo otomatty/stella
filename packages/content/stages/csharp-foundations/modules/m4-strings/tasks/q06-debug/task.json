@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m4-strings/q06-debug",
+  "title": "文字列の誤りを直す",
+  "problems": [
+    {
+      "id": "r1-digits",
+      "title": "半角数字のみ"
+    },
+    {
+      "id": "r2-head",
+      "title": "先頭2文字"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-string-repair",
+  "skills": {
+    "uses": [
+      "csharp-string-count",
+      "csharp-string-slice"
+    ],
+    "assesses": [
+      "csharp-string-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

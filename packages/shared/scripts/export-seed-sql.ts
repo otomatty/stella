@@ -655,6 +655,11 @@ for (const [order, task] of content.tasks.entries()) {
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
   const privateHash = createHash("sha256").update(privateJson).digest("hex");
+  // 問題つきの課題は解答例が 1 問 1 ファイルで、まとめると D1 の 1 文 (100KB) を超える。
+  // 配布一式と同じく先頭だけを入れて、残りは長さが一致するときだけ足す。
+  const [privateHead = "", ...privateRest] = splitUtf8(privateJson, LITERAL_PART_BYTES);
+  const privateWhere = `task_id = ${strLit(d.id)}`;
+  const privateVersionWhere = `${privateWhere} and private_hash = ${strLit(privateHash)}`;
   // 配った版の定義と配布物は上書きしない。素材の版 (private_hash) だけは、この版を今の版として
   // 入れるたびに書き直す。前の版には「その版が今の版だった最後の素材」が残り、手元の版が古い
   // 受講者にその版のヒント・解答例・解説を出すのに使う (#36)。
@@ -693,12 +698,27 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `update tasks set ${versioned.map(([column, value]) => `${column} = ${value}`).join(", ")} where id = ${strLit(d.id)} and (${versioned.map(([column, value]) => `${column} is not ${value}`).join(" or ")});`,
   );
+  // 先頭だけを衝突時に書き戻すと、完成した行と毎回食い違って seed のたびに書き直す。
+  // 長さと先頭が完成形と同じときは触らない。途中までしか無い行と、内容が変わった行だけ先頭に戻して足し直す。
+  // 先頭が同じで全体の長さも同じ変更は検知できない (ponytail: ハッシュ列を足すまで)。
+  const privateBytesTotal = Buffer.byteLength(privateJson);
   lines.push(
-    `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) ${doUpdate("task_private", ["files"])};`,
+    `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateHead)}) on conflict (task_id) do update set files = excluded.files where length(cast(task_private.files as blob)) <> ${privateBytesTotal} or substr(task_private.files, 1, ${privateHead.length}) <> ${strLit(privateHead)};`,
   );
   lines.push(
-    `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(privateHash)}, ${strLit(privateJson)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
+    `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(privateHash)}, ${strLit(privateHead)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
   );
+  let privateBytes = Buffer.byteLength(privateHead);
+  for (const part of privateRest) {
+    const piece = strLit(part);
+    lines.push(
+      `update task_private set files = files || ${piece} where ${privateWhere} and length(cast(files as blob)) = ${privateBytes};`,
+    );
+    lines.push(
+      `update task_private_versions set files = files || ${piece} where ${privateVersionWhere} and length(cast(files as blob)) = ${privateBytes};`,
+    );
+    privateBytes += Buffer.byteLength(part);
+  }
   // 固定した開始点は bundle と分けて持ち、教材から外したら消す (古い版を配らない)。
   lines.push(
     task.fixedStart

@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m1-conditions/q09-debug",
+  "title": "条件の誤りを直す",
+  "problems": [
+    {
+      "id": "r1-fee",
+      "title": "入館料の境界"
+    },
+    {
+      "id": "r2-label",
+      "title": "整理札の上書き"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-condition-repair",
+  "skills": {
+    "uses": [
+      "csharp-if-else",
+      "csharp-and-or"
+    ],
+    "assesses": [
+      "csharp-condition-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m15-final/q01-spec-a",
+  "title": "仕様A 荷物コード",
+  "problems": [
+    {
+      "id": "check-parcel6",
+      "title": "仕様A 荷物コード"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-final-spec",
+  "skills": {
+    "uses": [
+      "csharp-final-spec"
+    ],
+    "assesses": [
+      "csharp-final-spec"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 75,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

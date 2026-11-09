@@ -9,7 +9,7 @@
     "lint": "biome ci .",
     "format": "biome format --write .",
     "dev:api": "bun --filter=@stella/api dev",
-    "build": "bun run --filter=@stella/web build && bun run --cwd apps/vscode build",
+    "build": "bun run --filter=@stella/web build && bun run --cwd apps/vscode build && bun run --cwd apps/cli build",
     "preview": "bun --filter=@stella/web preview",
     "preview:build": "bun run --filter=@stella/web build && bun run --filter=@stella/web preview",
     "typecheck": "bun --filter '@stella/*' typecheck && bun run --cwd apps/vscode typecheck",

@@ -1,0 +1,49 @@
+{
+  "id": "csharp-foundations/m11-functions/q07-check-b",
+  "title": "確認B 同じ長さの数字",
+  "problems": [
+    {
+      "id": "check-b-same-digits",
+      "title": "同じ長さの数字"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-neighbor-distance",
+  "skills": {
+    "uses": [
+      "csharp-char-bool",
+      "csharp-call-return"
+    ],
+    "assesses": [
+      "csharp-call-return"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

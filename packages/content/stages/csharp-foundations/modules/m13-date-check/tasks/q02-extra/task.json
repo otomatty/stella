@@ -1,0 +1,65 @@
+{
+  "id": "csharp-foundations/m13-date-check/q02-extra",
+  "title": "日付チェックの追加演習",
+  "problems": [
+    {
+      "id": "q01-import-log-timing",
+      "title": "削除ログのタイミングを変える"
+    },
+    {
+      "id": "q02-year-range",
+      "title": "年の範囲を足す"
+    },
+    {
+      "id": "q03-reimplement",
+      "title": "仕様から再実装する"
+    },
+    {
+      "id": "q04-check-time6",
+      "title": "6桁の時刻を検証する"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-date-change",
+  "skills": {
+    "uses": [
+      "csharp-date-check",
+      "csharp-date-change"
+    ],
+    "assesses": [
+      "csharp-date-change"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-mslearn-csharp-contains-20261108",
+    "SRC-mslearn-csharp-replace-20261108",
+    "SRC-mslearn-csharp-substring-20261106",
+    "SRC-mslearn-csharp-parse-20261106"
+  ],
+  "estimatedMinutes": 120,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

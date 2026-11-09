@@ -4402,6 +4402,431 @@
         "status": "draft",
         "scope": "draft: URL と読む節は講師が確認する。U08の見出し・段落・リストの受入条件を対象として確認する。"
       }
+    },
+    {
+      "id": "SRC-mslearn-csharp-for-20261104",
+      "title": "反復ステートメント - for、foreach、do、while",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/statements/iteration-statements",
+      "section": "for ステートメント",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-04",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-if-20261104",
+      "title": "if ステートメントと switch ステートメント - 実行するコード パスを選択します",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/statements/selection-statements",
+      "section": "if ステートメント",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-04",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-console-writeline-20261104",
+      "title": "Console.WriteLine メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.console.writeline",
+      "section": "Console.WriteLine メソッド",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-04",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-arithmetic-20261106",
+      "title": "算術演算子 (C# リファレンス)",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/operators/arithmetic-operators",
+      "section": "算術演算子",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-comparison-20261106",
+      "title": "比較演算子 (C# リファレンス)",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/operators/comparison-operators",
+      "section": "比較演算子",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-boolean-20261106",
+      "title": "ブール論理演算子 - AND、OR、NOT、XOR",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/operators/boolean-logical-operators",
+      "section": "ブール論理演算子",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-arrays-20261106",
+      "title": "配列",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/builtin-types/arrays",
+      "section": "単一配列",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-string-20261106",
+      "title": "組み込みの参照型 (C# リファレンス)",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/builtin-types/reference-types",
+      "section": "文字列型",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-char-20261106",
+      "title": "char (C# リファレンス)",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/builtin-types/char",
+      "section": "リテラル",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-substring-20261106",
+      "title": "String.Substring メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.string.substring",
+      "section": "Substring(Int32, Int32)",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-readline-20261106",
+      "title": "Console.ReadLine メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.console.readline",
+      "section": "Console.ReadLine メソッド",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-parse-20261106",
+      "title": "Int32.Parse メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.int32.parse",
+      "section": "Int32.Parse メソッド",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-split-20261106",
+      "title": "String.Split メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.string.split",
+      "section": "String.Split メソッド",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-length-20261106",
+      "title": "String.Length プロパティ",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.string.length",
+      "section": "String.Length プロパティ",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-indexer-20261106",
+      "title": "String.Chars インデクサー",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.string.chars",
+      "section": "Chars[Int32]",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-sort-20261106",
+      "title": "Array.Sort メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.array.sort",
+      "section": "Array.Sort メソッド",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-dictionary-20261106",
+      "title": "Dictionary<TKey,TValue> クラス",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2",
+      "section": "Dictionary<TKey,TValue> クラス",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-containskey-20261106",
+      "title": "Dictionary<TKey,TValue>.ContainsKey メソッド",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2.containskey",
+      "section": "ContainsKey(TKey) メソッド",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-dict-keys-20261106",
+      "title": "Dictionary<TKey,TValue>.Keys プロパティ",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2.keys",
+      "section": "Keys プロパティ",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-foreach-20261106",
+      "title": "foreach ステートメント",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/keywords/foreach-in",
+      "section": "foreach ステートメント",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-methods-20261106",
+      "title": "メソッドの概要",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/methods",
+      "section": "メソッドの概要",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-bool-20261106",
+      "title": "bool 型",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/builtin-types/bool",
+      "section": "bool 型",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-06",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-contains-20261108",
+      "title": "String.Contains Method",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.string.contains",
+      "section": "Contains(String)",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-08",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-replace-20261108",
+      "title": "String.Replace Method",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.string.replace",
+      "section": "Replace(String, String)",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-08",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-gregorian-leap-year-20261109",
+      "title": "GregorianCalendar.IsLeapYear Method",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.globalization.gregoriancalendar.isleapyear?view=net-10.0",
+      "section": "Remarks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-09",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

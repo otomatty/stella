@@ -17,6 +17,7 @@ describe("課題詳細の表示", () => {
       "本文です。",
     );
     expect(firstReadmeParagraph("~~~js\n```\nコード\n~~~\n\n本文")).toBe("本文");
+    expect(firstReadmeParagraph("`src/<id>.cs` に <b>書く</b>。")).toBe("src/<id>.cs に 書く。");
   });
   it("本文がなければ省略する", () => {
     for (const readme of [null, "", "# 見出し\n\n```\nコード\n```", "    コード\n"]) {

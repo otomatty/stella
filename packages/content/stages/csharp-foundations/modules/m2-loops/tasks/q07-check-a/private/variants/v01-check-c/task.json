@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m2-loops/v01-check-c",
+  "title": "確認C 割り切る個数",
+  "problems": [
+    {
+      "id": "check-c-count-divisors",
+      "title": "割り切る個数"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-loop-tally",
+  "skills": {
+    "uses": [
+      "csharp-for-aggregate"
+    ],
+    "assesses": [
+      "csharp-for-aggregate"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

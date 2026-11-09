@@ -645,7 +645,7 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
 
 // 実際の教材から seed の SQL を何度も作って SQLite に流すので、教材が増えるほど時間がかかる。
 // 既定の 5 秒では、教材を足しただけで落ちる (export-seed-sql-writes.test.ts と同じ上限にする)。
-const SEED_TIMEOUT = 60_000;
+const SEED_TIMEOUT = 120_000;
 
 describe("export-seed-sql (自動生成 PDF)", () => {
   /** PDF_MANIFEST を渡したときの資料の SQL だけを取り出す。 */

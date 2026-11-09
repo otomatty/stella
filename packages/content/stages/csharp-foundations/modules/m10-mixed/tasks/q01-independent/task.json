@@ -1,0 +1,85 @@
+{
+  "id": "csharp-foundations/m10-mixed/q01-independent",
+  "title": "処理を選んで組み合わせる",
+  "problems": [
+    {
+      "id": "s01-accepted",
+      "title": "受け付けた注文"
+    },
+    {
+      "id": "s02-pass-names",
+      "title": "入選者"
+    },
+    {
+      "id": "s03-winners",
+      "title": "同点の上位"
+    },
+    {
+      "id": "s04-max-col",
+      "title": "列を選ぶ"
+    },
+    {
+      "id": "s05-item-totals",
+      "title": "品目の増減"
+    },
+    {
+      "id": "s06-pair-sum",
+      "title": "二品の購入"
+    },
+    {
+      "id": "s07-streak",
+      "title": "連続した日数"
+    },
+    {
+      "id": "s08-diff-chars",
+      "title": "検査結果"
+    },
+    {
+      "id": "s09-min-balance",
+      "title": "残高と不足"
+    },
+    {
+      "id": "s10-days-to-reach",
+      "title": "貯まる日"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-mix-choice",
+  "skills": {
+    "uses": [
+      "csharp-mix-plan",
+      "csharp-mix-after",
+      "csharp-mix-all"
+    ],
+    "assesses": [
+      "csharp-mix-choice"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m7-state/q01-final-value",
+  "title": "操作後の値",
+  "problems": [
+    {
+      "id": "q01-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q02-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q03-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q04-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q05-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q06-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q07-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q08-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q09-final",
+      "title": "最後の値"
+    },
+    {
+      "id": "q10-final",
+      "title": "最後の値"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-state-apply",
+  "skills": {
+    "uses": [
+      "csharp-state-apply"
+    ],
+    "assesses": [
+      "csharp-state-apply"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

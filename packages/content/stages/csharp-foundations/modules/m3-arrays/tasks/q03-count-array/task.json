@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m3-arrays/q03-count-array",
+  "title": "条件を満たす個数",
+  "problems": [
+    {
+      "id": "q21-count-gte-k",
+      "title": "K以上の個数"
+    },
+    {
+      "id": "q22-count-gt-k",
+      "title": "Kより大きい個数"
+    },
+    {
+      "id": "q23-count-evens",
+      "title": "偶数の個数"
+    },
+    {
+      "id": "q24-count-odds",
+      "title": "奇数の個数"
+    },
+    {
+      "id": "q25-count-zeros",
+      "title": "0の個数"
+    },
+    {
+      "id": "q26-count-equal-k",
+      "title": "Kと等しい個数"
+    },
+    {
+      "id": "q27-count-negatives",
+      "title": "負の個数"
+    },
+    {
+      "id": "q28-count-multiples-of3",
+      "title": "3の倍数の個数"
+    },
+    {
+      "id": "q29-count-in-range",
+      "title": "範囲内の個数"
+    },
+    {
+      "id": "q30-count-positives",
+      "title": "正の個数"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-array-count",
+  "skills": {
+    "uses": [
+      "csharp-array-count"
+    ],
+    "assesses": [
+      "csharp-array-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

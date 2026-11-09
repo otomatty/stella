@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m4-strings/q02-count-chars",
+  "title": "1文字ずつ数える",
+  "problems": [
+    {
+      "id": "q11-count-digits",
+      "title": "半角数字の個数"
+    },
+    {
+      "id": "q12-count-char",
+      "title": "文字 c の個数"
+    },
+    {
+      "id": "q13-count-spaces",
+      "title": "空白の個数"
+    },
+    {
+      "id": "q14-count-upper",
+      "title": "大文字の個数"
+    },
+    {
+      "id": "q15-count-lower",
+      "title": "小文字の個数"
+    },
+    {
+      "id": "q16-is-all-digits",
+      "title": "全部数字か"
+    },
+    {
+      "id": "q17-contains-char",
+      "title": "文字 c を含むか"
+    },
+    {
+      "id": "q18-count-non-digits",
+      "title": "数字以外の個数"
+    },
+    {
+      "id": "q19-count-leading-digits",
+      "title": "先頭の数字"
+    },
+    {
+      "id": "q20-count-zeros",
+      "title": "0 の個数"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-string-count",
+  "skills": {
+    "uses": [
+      "csharp-string-count"
+    ],
+    "assesses": [
+      "csharp-string-count"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

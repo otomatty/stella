@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m6-short-problems@4",
+  "contentHash": "5b08db34913bfef1ce1e362aa6e2864abf4204a590a65e5caf91b6dcf6c61efb",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-combine/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-string-20261106",
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-indexer-20261106"
+      ],
+      "usedFor": "点数の人数、文字列の判定、隣の値の説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-combine/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-indexer-20261106"
+      ],
+      "usedFor": "隣の範囲、空の長さ、より大きい、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-combine/t1-count-scores/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-split-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "件数のあとで点数を読み、閾値と比べて人数を数える説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-combine/t2-judge-string/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-string-20261106",
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-if-20261104"
+      ],
+      "usedFor": "文字列を長さと文字で判定する説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-combine/t3-neighbors/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-indexer-20261106",
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "隣の値を i と i+1 だけで比べる説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-count-people/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。点数を読んで人数を数える Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-two-lines/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。2行の文字列を比べる Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-one-line/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。1行の文字列を判定する Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-neighbors/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。隣の値を比べる Q31〜Q40",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-connection/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。同じ読み方で未満の人数を数える接続練習",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。読み方と条件を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。絶対値の取り忘れと判定の上書きを直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。隣が変わった組を数える",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q09-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。大文字を含む文字列を数える",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q10-reach-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。残金、件数、末尾の文字を出す",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q11-reach-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。割引、正の合計、長さの一致を出す",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "plannedHours": 4,
+  "skills": {
+    "uses": ["csharp-date-check", "csharp-date-change", "csharp-date-days"],
+    "assesses": ["csharp-date-days", "csharp-date-days-change"]
+  },
+  "reuses": []
+}

@@ -9,7 +9,8 @@ import { unitContentHash } from "./check-source-references.js";
 import { SEED_INPUT_PATHS } from "../scripts/lib/content-fingerprint.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets, pdfFileName, pdfObjectKey, pdfSourceHash } from "./material-pdf.js";
-import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
+import { assertProblemFiles } from "./task-content.js";
+import { parseTaskDefinition, type TaskDefinition, toRuntimeManifest } from "./task-schema.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sample = join(content, "src/__fixtures__/format2-sample");
@@ -509,5 +510,59 @@ describe("format 2 の教材", () => {
     config.pdfByOs = "yes";
     writeFileSync(join(stage, "stage.json"), JSON.stringify(config));
     expect(() => buildContentManifest(join(root, "stages"))).toThrow(/pdfByOs/);
+  });
+});
+
+describe("問題のファイル一覧", () => {
+  function definition(patterns: string[]): TaskDefinition {
+    return {
+      id: "fixture/unit/task",
+      title: "問題",
+      kind: "basic",
+      pattern: "p",
+      skills: { uses: [], assesses: [] },
+      runner: "ts-test",
+      problems: [{ id: "q01", title: "問1" }],
+      environment: "ts-test-01",
+      submit: { files: ["src/**/*.ts"], explanation: false, debuggingRecord: false },
+      review: { rubric: [], escalateWhen: [] },
+      support: { hintLevels: 0, solutionUnlock: "never" },
+      sources: [],
+      estimatedMinutes: 1,
+      protected: patterns,
+      checks: { lint: true, format: true },
+    };
+  }
+  function tree(extra?: string): string {
+    const dir = mkdtempSync(join(tmpdir(), "stella-problem-files-"));
+    roots.push(dir);
+    for (const rel of [
+      "starter/src/q01.ts",
+      "starter/src/shared/lib.ts",
+      "tests/q01.test.ts",
+      "private/solution/src/q01.ts",
+      "private/solution/src/shared/lib.ts",
+      ...(extra ? [extra] : []),
+    ]) {
+      const path = join(dir, rel);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, "export {}\n");
+    }
+    return dir;
+  }
+  it("解答例も、問題のファイルと src/shared/ 以外を置かない", () => {
+    const dir = tree();
+    expect(() => assertProblemFiles(dir, definition(["src/shared/**"]))).not.toThrow();
+    expect(() => assertProblemFiles(dir, definition([]))).toThrow(
+      "共通ファイルは protected に入れてください: src/shared/lib.ts",
+    );
+    writeFileSync(join(dir, "private/solution/src/extra.ts"), "export {}\n");
+    expect(() => assertProblemFiles(dir, definition(["src/shared/**"]))).toThrow(
+      "private/solution/src に問題の一覧にないファイルがあります: src/extra.ts",
+    );
+    writeFileSync(join(dir, "starter/src/extra.ts"), "export {}\n");
+    expect(() => assertProblemFiles(dir, definition(["src/shared/**"]))).toThrow(
+      "starter/src に問題の一覧にないファイルがあります: src/extra.ts",
+    );
   });
 });

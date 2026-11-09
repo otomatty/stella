@@ -15,37 +15,691 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-abs-value",
+      "title": "絶対値を返す"
+    },
+    {
+      "id": "q01-02-max-of2",
+      "title": "大きい方を返す"
+    },
+    {
+      "id": "q01-03-pass-fail",
+      "title": "60点以上なら \"合格\"、それ未満は \"不合格\""
+    },
+    {
+      "id": "q01-04-bmi-label",
+      "title": "BMI が 18.5 未満なら \"やせ\"、25 未満なら \"普通\"、それ以上は \"肥満\""
+    },
+    {
+      "id": "q01-05-age-group",
+      "title": "18歳未満は \"子ども\"、65歳未満は \"大人\"、それ以上は \"シニア\""
+    },
+    {
+      "id": "q01-06-feeling",
+      "title": "気温が 15 未満なら \"寒い\"、28 以上なら \"暑い\"、それ以外は \"ちょうどよい\""
+    },
+    {
+      "id": "q01-07-sign-text",
+      "title": "正なら \"正\"、負なら \"負\"、0 なら \"ゼロ\""
+    },
+    {
+      "id": "q01-08-bus-fare",
+      "title": "バスの運賃を返す"
+    },
+    {
+      "id": "q01-09-discount-rate",
+      "title": "合計が 10000円以上なら 0.1、5000円以上なら 0.05、それ未満は 0 を返す"
+    },
+    {
+      "id": "q01-10-greeting-for",
+      "title": "5〜10時は \"おはよう\"、11〜17時は \"こんにちは\"、それ以外は \"こんばんは\""
+    },
+    {
+      "id": "q01-11-compare-text",
+      "title": "a が大きければ \"a のほうが大きい\"、b が大きければ \"b のほうが大きい\"、同じなら \"同じ\""
+    },
+    {
+      "id": "q01-12-quadrant",
+      "title": "座標 が第何象限かを返す"
+    },
+    {
+      "id": "q01-13-medal-by-time",
+      "title": "タイムが 60 未満なら \"金\"、90 未満なら \"銀\"、120 未満なら \"銅\"、それ以外は \"参加賞\""
+    },
+    {
+      "id": "q01-14-water-state",
+      "title": "水温が 0 以下なら \"氷\"、100 未満なら \"水\"、それ以上は \"水蒸気\""
+    },
+    {
+      "id": "q01-15-parking-fee",
+      "title": "駐車料金を返す"
+    },
+    {
+      "id": "q01-16-wind-level",
+      "title": "風速が 5 未満なら \"弱い\"、10 未満なら \"やや強い\"、それ以上は \"強い\""
+    },
+    {
+      "id": "q01-17-pick-longer",
+      "title": "長い方の文字列を返す"
+    },
+    {
+      "id": "q01-18-parity-label",
+      "title": "偶数なら \"偶数\"、奇数なら \"奇数\""
+    },
+    {
+      "id": "q01-19-taxi-fare",
+      "title": "22時〜翌5時前は運賃を 2割増しにする"
+    },
+    {
+      "id": "q01-20-stock-status",
+      "title": "在庫が 0 なら \"在庫なし\"、5 以下なら \"残りわずか\"、それ以外は \"在庫あり\""
+    },
+    {
+      "id": "q01-if-else",
+      "title": "if-else文（応用問題）"
+    },
+    {
+      "id": "q02-01-day-name",
+      "title": "0〜6 を \"日\"〜\"土\" にする"
+    },
+    {
+      "id": "q02-02-season-of-month",
+      "title": "月から季節を返す"
+    },
+    {
+      "id": "q02-03-calc",
+      "title": "op が \"+\"、\"-\"、\"*\"、\"/\" のどれかで、a と b を計算する"
+    },
+    {
+      "id": "q02-04-http-message",
+      "title": "200 は \"OK\"、201 は \"Created\"、404 は \"Not Found\"、500 は \"Internal Server Error\"、それ以外は \"Unknown\""
+    },
+    {
+      "id": "q02-05-plan-limit",
+      "title": "プラン \"free\"、\"pro\"、\"team\" の利用人数の上限を返す"
+    },
+    {
+      "id": "q02-06-color-hex",
+      "title": "\"red\"、\"green\"、\"blue\" を \"#ff0000\"、\"#00ff00\"、\"#0000ff\" にする"
+    },
+    {
+      "id": "q02-07-turn-left",
+      "title": "方角 \"N\"、\"E\"、\"S\"、\"W\" を、左に90度回った方角にする"
+    },
+    {
+      "id": "q02-08-roman-digit",
+      "title": "1〜5 をローマ数字 \"I\"〜\"V\" にする"
+    },
+    {
+      "id": "q02-09-grade-point",
+      "title": "成績 \"A\"、\"B\"、\"C\"、\"D\"、\"F\" を 4、3、2、1、0 にする"
+    },
+    {
+      "id": "q02-10-meters-per",
+      "title": "単位 \"mm\"、\"cm\"、\"m\"、\"km\" が何メートルかを返す"
+    },
+    {
+      "id": "q02-11-size-order",
+      "title": "サイズ \"S\"、\"M\"、\"L\"、\"XL\" を 1、2、3、4 にする"
+    },
+    {
+      "id": "q02-12-day-kind",
+      "title": "\"月\"〜\"金\" は \"平日\"、\"土\" と \"日\" は \"週末\"、それ以外は Error を投げる"
+    },
+    {
+      "id": "q02-13-quarter-of",
+      "title": "月が第何四半期かを返す"
+    },
+    {
+      "id": "q02-14-mood-emoji",
+      "title": "気分 \"happy\"、\"sad\"、\"angry\" を \"😊\"、\"😢\"、\"😠\" にする"
+    },
+    {
+      "id": "q02-15-file-kind",
+      "title": "拡張子 \"png\"、\"jpg\"、\"gif\" は \"画像\"、\"mp4\"、\"mov\" は \"動画\"、\"pdf\"、\"docx\" は \"文書\"、それ以外は \"その他\""
+    },
+    {
+      "id": "q02-16-letter-kind",
+      "title": "英小文字1文字が a、e、i、o、u なら \"母音\"、それ以外は \"子音\""
+    },
+    {
+      "id": "q02-17-signal-action",
+      "title": "信号 \"red\"、\"yellow\"、\"green\" を \"止まれ\"、\"注意\"、\"進め\" にする"
+    },
+    {
+      "id": "q02-18-key-name",
+      "title": "キーの番号 13 は \"Enter\"、27 は \"Escape\"、32 は \"Space\"、それ以外は \"Other\""
+    },
+    {
+      "id": "q02-19-element-of",
+      "title": "星座 \"牡羊\"、\"獅子\"、\"射手\" は \"火\"、\"牡牛\"、\"乙女\"、\"山羊\" は \"地\" を返す"
+    },
+    {
+      "id": "q02-20-priority-weight",
+      "title": "優先度 \"high\"、\"middle\"、\"low\" を 3、2、1 にする"
+    },
+    {
+      "id": "q02-switch",
+      "title": "switch文（応用問題）"
+    },
+    {
+      "id": "q03-01-sum-array",
+      "title": "合計を返す"
+    },
+    {
+      "id": "q03-02-count-matches",
+      "title": "target と同じ要素の数を返す"
+    },
+    {
+      "id": "q03-03-longest-word",
+      "title": "いちばん長い単語を返す"
+    },
+    {
+      "id": "q03-04-index-of-max",
+      "title": "最大値の番号を返す"
+    },
+    {
+      "id": "q03-05-product-of",
+      "title": "すべての要素を掛けた数を返す"
+    },
+    {
+      "id": "q03-06-reverse-array",
+      "title": "逆順にした新しい配列を返す"
+    },
+    {
+      "id": "q03-07-squares-up-to",
+      "title": "1〜n の2乗を並べた配列を返す"
+    },
+    {
+      "id": "q03-08-evens-up-to",
+      "title": "0 以上 n 以下の偶数を並べた配列を返す"
+    },
+    {
+      "id": "q03-09-join-with-dash",
+      "title": "要素を「-」でつないだ文字列を返す"
+    },
+    {
+      "id": "q03-10-count-upper",
+      "title": "英大文字の数を返す"
+    },
+    {
+      "id": "q03-11-positions-of",
+      "title": "char が出てくる位置を並べた配列を返す"
+    },
+    {
+      "id": "q03-12-digit-total",
+      "title": "文字列に含まれる数字の合計を返す"
+    },
+    {
+      "id": "q03-13-first-negative",
+      "title": "最初に出てくる負の数を返す"
+    },
+    {
+      "id": "q03-14-all-even",
+      "title": "すべて偶数なら true"
+    },
+    {
+      "id": "q03-15-running-total",
+      "title": "先頭からの累計を並べた配列を返す"
+    },
+    {
+      "id": "q03-16-zip-sum",
+      "title": "2つの配列の同じ番号どうしを足した配列を返す"
+    },
+    {
+      "id": "q03-17-flatten",
+      "title": "配列の配列を、1つの配列にする"
+    },
+    {
+      "id": "q03-18-count-in-range",
+      "title": "min 以上 max 以下の要素の数を返す"
+    },
+    {
+      "id": "q03-19-dedupe",
+      "title": "重複を除いた新しい配列を返す"
+    },
+    {
+      "id": "q03-20-stairs",
+      "title": "\"*\" を1個、2個…n 個並べた文字列の配列を返す"
+    },
+    {
+      "id": "q03-for-of",
+      "title": "for文と for-of文（応用問題）"
+    },
+    {
+      "id": "q04-01-count-digits",
+      "title": "1以上の整数の桁数を返す"
+    },
+    {
+      "id": "q04-02-halve-until-odd",
+      "title": "偶数のあいだ2で割り続け、奇数になった値を返す"
+    },
+    {
+      "id": "q04-03-power-of-two-at-least",
+      "title": "n 以上で最小の、2の累乗を返す"
+    },
+    {
+      "id": "q04-04-steps-to-zero",
+      "title": "0 になるまでの手順の数を返す"
+    },
+    {
+      "id": "q04-05-max-count-within",
+      "title": "1 + 2 + … + k が limit 以下になる、いちばん大きい k を返す"
+    },
+    {
+      "id": "q04-06-reverse-number",
+      "title": "0以上の整数の桁を逆に並べた数を返す"
+    },
+    {
+      "id": "q04-07-is-prime",
+      "title": "素数なら true"
+    },
+    {
+      "id": "q04-08-next-prime",
+      "title": "n より大きい、最小の素数を返す"
+    },
+    {
+      "id": "q04-09-lcm",
+      "title": "2つの正の整数の最小公倍数を返す"
+    },
+    {
+      "id": "q04-10-sum-skip-threes",
+      "title": "1〜n の合計を返す"
+    },
+    {
+      "id": "q04-11-first-index-over",
+      "title": "limit より大きい最初の要素の番号を返す"
+    },
+    {
+      "id": "q04-12-leading-zeros",
+      "title": "先頭に続く「0」の数を返す"
+    },
+    {
+      "id": "q04-13-trim-zeros",
+      "title": "先頭の「0」を取り除く"
+    },
+    {
+      "id": "q04-14-digital-root",
+      "title": "各桁を足すことを、1桁になるまで繰り返した値を返す"
+    },
+    {
+      "id": "q04-15-bit-length",
+      "title": "0以上の整数を2進数で書いたときの桁数を返す"
+    },
+    {
+      "id": "q04-16-repeat-to-length",
+      "title": "text をつなげていき、ちょうど length 文字にして返す"
+    },
+    {
+      "id": "q04-17-divisible-times",
+      "title": "n を d で割り切れなくなるまで割ったとき、割れた回数を返す"
+    },
+    {
+      "id": "q04-18-sum-positives",
+      "title": "正の数だけを合計する"
+    },
+    {
+      "id": "q04-19-first-repeated-char",
+      "title": "2回目に出てきた最初の文字を返す"
+    },
+    {
+      "id": "q04-20-digits-of",
+      "title": "0以上の整数の各桁を、上の桁から並べた配列を返す"
+    },
+    {
+      "id": "q04-while",
+      "title": "while文と break・continue（応用問題）"
+    },
+    {
+      "id": "q05-01-require-positive",
+      "title": "0 より大きければそのまま返す"
+    },
+    {
+      "id": "q05-02-divide",
+      "title": "a ÷ b を返す"
+    },
+    {
+      "id": "q05-03-parse-int-strict",
+      "title": "整数だけを表す文字列を数値にする"
+    },
+    {
+      "id": "q05-04-item-at",
+      "title": "index 番目の要素を返す"
+    },
+    {
+      "id": "q05-05-is-valid-json",
+      "title": "JSON として読めれば true"
+    },
+    {
+      "id": "q05-06-is-valid-url",
+      "title": "URL として読めれば true"
+    },
+    {
+      "id": "q05-07-host-of",
+      "title": "URL のホスト名を返す"
+    },
+    {
+      "id": "q05-08-safe-repeat",
+      "title": "text.repeat を返す"
+    },
+    {
+      "id": "q05-09-decode-or",
+      "title": "decodeURIComponent を返す"
+    },
+    {
+      "id": "q05-10-message-of",
+      "title": "catch で受け取った値から、メッセージを返す"
+    },
+    {
+      "id": "q05-11-error-name",
+      "title": "Error なら name、それ以外は \"Unknown\" を返す"
+    },
+    {
+      "id": "q05-12-to-big-int-or-null",
+      "title": "BigInt を返す"
+    },
+    {
+      "id": "q05-13-validate-username",
+      "title": "ユーザー名を確かめ、問題があれば Error を投げる"
+    },
+    {
+      "id": "q05-14-check-age",
+      "title": "0〜150 でなければ RangeErrorを投げる"
+    },
+    {
+      "id": "q05-15-is-range-error",
+      "title": "RangeError なら true"
+    },
+    {
+      "id": "q05-16-read-port",
+      "title": "JSON の文字列から portを取り出す"
+    },
+    {
+      "id": "q05-17-count-invalid-json",
+      "title": "JSON として読めない文字列の数を返す"
+    },
+    {
+      "id": "q05-18-load-settings",
+      "title": "JSON.parse の結果を返す"
+    },
+    {
+      "id": "q05-19-check-with-log",
+      "title": "JSON として読めれば true、読めなければ false を返す"
+    },
+    {
+      "id": "q05-20-require-text",
+      "title": "前後の空白を取り除いた文字列を返す"
+    },
+    {
+      "id": "q05-exception",
+      "title": "例外処理（応用問題）"
+    },
+    {
+      "id": "q06-01-is-text",
+      "title": "文字列なら true"
+    },
+    {
+      "id": "q06-02-length-of",
+      "title": "文字列か配列なら length、それ以外は 0"
+    },
+    {
+      "id": "q06-03-number-or-zero",
+      "title": "数値ならそのまま、それ以外は 0"
+    },
+    {
+      "id": "q06-04-kind-of",
+      "title": "typeof の結果を返す"
+    },
+    {
+      "id": "q06-05-to-text",
+      "title": "文字列はそのまま、数値と真偽値は String で文字列に、null は \"null\"、undefined は \"undefined\"、それ以外は \"[object]\""
+    },
+    {
+      "id": "q06-06-add-if-numbers",
+      "title": "2つとも数値なら足した数、そうでなければ null"
+    },
+    {
+      "id": "q06-07-is-date-value",
+      "title": "Date なら true"
+    },
+    {
+      "id": "q06-08-date-text",
+      "title": "Date なら「2026-12-01」、それ以外は \"日付ではありません\""
+    },
+    {
+      "id": "q06-09-count-strings",
+      "title": "文字列の要素の数を返す"
+    },
+    {
+      "id": "q06-10-only-numbers",
+      "title": "数値の要素だけを集めた配列を返す"
+    },
+    {
+      "id": "q06-11-first-text",
+      "title": "最初の文字列の要素を返す"
+    },
+    {
+      "id": "q06-12-has-name",
+      "title": "null でないオブジェクトで、name プロパティが文字列なら true"
+    },
+    {
+      "id": "q06-13-name-or-unknown",
+      "title": "name プロパティが文字列ならそれを、そうでなければ \"不明\" を返す"
+    },
+    {
+      "id": "q06-14-is-number-list",
+      "title": "配列で、すべての要素が数値なら true"
+    },
+    {
+      "id": "q06-15-to-bool",
+      "title": "真偽値ならそのまま、文字列 \"true\" なら true、それ以外は false"
+    },
+    {
+      "id": "q06-16-problem-text",
+      "title": "Error なら message、文字列ならそのまま、それ以外は \"エラー\""
+    },
+    {
+      "id": "q06-17-first-item-length",
+      "title": "配列で、最初の要素が文字列なら、その文字数を返す"
+    },
+    {
+      "id": "q06-18-port-of",
+      "title": "オブジェクトで port プロパティが数値ならそれを、そうでなければ 3000 を返す"
+    },
+    {
+      "id": "q06-19-is-plain-object",
+      "title": "null でも配列でもないオブジェクトなら true"
+    },
+    {
+      "id": "q06-20-json-number",
+      "title": "JSON.parse の結果が数値ならそれを、そうでなければ null を返す"
+    },
+    {
+      "id": "q06-unknown",
+      "title": "unknown型と型の絞り込み（応用問題）"
+    },
+    {
+      "id": "q07-01-fruit-color",
+      "title": "apple は \"赤\"、banana は \"黄\"、cherry は \"赤\" を返す"
+    },
+    {
+      "id": "q07-02-fruit-price",
+      "title": "apple は 150、banana は 100、cherry は 500 を返す"
+    },
+    {
+      "id": "q07-03-next-signal",
+      "title": "green → yellow → red → green の順に、次の色を返す"
+    },
+    {
+      "id": "q07-04-can-cross",
+      "title": "green なら true、それ以外は false"
+    },
+    {
+      "id": "q07-05-apply-op",
+      "title": "add は a + b、sub は a - b、mul は a × b を返す"
+    },
+    {
+      "id": "q07-06-op-symbol",
+      "title": "add は \"+\"、sub は \"-\"、mul は \"×\" を返す"
+    },
+    {
+      "id": "q07-07-shape-area",
+      "title": "面積を返す"
+    },
+    {
+      "id": "q07-08-shape-label",
+      "title": "「円」「正方形」を返す"
+    },
+    {
+      "id": "q07-09-level-value",
+      "title": "debug は 0、info は 1、warn は 2、error は 3 を返す"
+    },
+    {
+      "id": "q07-10-level-prefix",
+      "title": "\"[DEBUG]\"、\"[INFO]\"、\"[WARN]\"、\"[ERROR]\" を返す"
+    },
+    {
+      "id": "q07-11-should-notify",
+      "title": "warn と error なら true、debug と info なら false"
+    },
+    {
+      "id": "q07-12-fail",
+      "title": "message の Error を投げる関数"
+    },
+    {
+      "id": "q07-13-unreachable",
+      "title": "\"ここには来ないはずです\" の Error を投げる関数"
+    },
+    {
+      "id": "q07-14-to-fruit",
+      "title": "文字列が Fruit のどれかなら、それを返す"
+    },
+    {
+      "id": "q07-15-count-by-level",
+      "title": "ログの重要度ごとの数を { debug, info, warn, error } で返す"
+    },
+    {
+      "id": "q07-16-fruit-emoji",
+      "title": "apple は \"🍎\"、banana は \"🍌\"、cherry は \"🍒\" を返す"
+    },
+    {
+      "id": "q07-17-signal-seconds",
+      "title": "信号の長さを返す"
+    },
+    {
+      "id": "q07-18-op-name",
+      "title": "add は \"足し算\"、sub は \"引き算\"、mul は \"掛け算\" を返す"
+    },
+    {
+      "id": "q07-19-scale-shape",
+      "title": "大きさを k 倍した、新しい図形を返す"
+    },
+    {
+      "id": "q07-20-more-severe",
+      "title": "重要度の高い方を返す"
+    },
+    {
+      "id": "q07-never",
+      "title": "never型と網羅性のチェック（応用問題）"
+    },
+    {
+      "id": "q08-01-parse-key-value",
+      "title": "\"key=value\" を [key, value] にする"
+    },
+    {
+      "id": "q08-02-parse-number-list",
+      "title": "\"1,2,3\" を [1, 2, 3] にする"
+    },
+    {
+      "id": "q08-03-parse-yes-no",
+      "title": "\"true\"、\"yes\"、\"1\" は true、\"false\"、\"no\"、\"0\" は false にする"
+    },
+    {
+      "id": "q08-04-parse-clock",
+      "title": "\"09:30\" を、0時からの分にする"
+    },
+    {
+      "id": "q08-05-parse-date-parts",
+      "title": "\"2026-12-01\" を [2026, 12, 1] にする"
+    },
+    {
+      "id": "q08-06-parse-byte-size",
+      "title": "\"10KB\" をバイト数にする"
+    },
+    {
+      "id": "q08-07-parse-seconds",
+      "title": "\"90s\"、\"5m\"、\"2h\" を秒にする"
+    },
+    {
+      "id": "q08-08-parse-range",
+      "title": "\"3-7\" を [3, 7] にする"
+    },
+    {
+      "id": "q08-09-parse-hex-color",
+      "title": "\"#ff0000\" を [255, 0, 0] にする"
+    },
+    {
+      "id": "q08-10-parse-ratio",
+      "title": "\"50%\" を 0.5 にする"
+    },
+    {
+      "id": "q08-11-parse-query",
+      "title": "\"a=1&b=2\" を { a: \"1\", b: \"2\" } にする"
+    },
+    {
+      "id": "q08-12-parse-csv-line",
+      "title": "\"a, b ,c\" を、「,」で分けて前後の空白を取り除いた配列にする"
+    },
+    {
+      "id": "q08-13-parse-version",
+      "title": "\"1.2.3\" を [1, 2, 3] にする"
+    },
+    {
+      "id": "q08-14-compare-versions",
+      "title": "\"1.2.3\" の形の2つのバージョンを比べ、a が古ければ -1、同じなら 0、新しければ 1 を返す"
+    },
+    {
+      "id": "q08-15-parse-operator",
+      "title": "\"+\"、\"-\"、\"*\"、\"/\" ならそのまま返す"
+    },
+    {
+      "id": "q08-16-evaluate",
+      "title": "\"3 + 4\" のような「数 演算子 数」を計算する"
+    },
+    {
+      "id": "q08-17-command-name",
+      "title": "前後の空白を取り除き、最初の単語を小文字にして返す"
+    },
+    {
+      "id": "q08-18-command-args",
+      "title": "最初の単語より後ろの単語を、配列で返す"
+    },
+    {
+      "id": "q08-19-try-parse-int",
+      "title": "整数の文字列なら { ok: true, value }、そうでなければ { ok: false, error: \"整数ではありません: <text>\" } を返す"
+    },
+    {
+      "id": "q08-20-non-empty-lines",
+      "title": "改行で分け、前後の空白を取り除き、空の行を除いた配列を返す"
+    },
+    {
+      "id": "q08-command",
+      "title": "コマンドの解析（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-statements-if-else",

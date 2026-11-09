@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m7-state@4",
+  "contentHash": "773c467c140aa332034608e4205e1a3721139ec0af406d5de2dccdb3cefc9e02",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-state/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-csharp-readline-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "現在値の更新、条件つきの減算、while の説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-state/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "現在値を戻すと消える、買えないときは引かない、while の初期判定、という自作の知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-state/t1-running-value/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-arrays-20261106",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-if-20261104"
+      ],
+      "usedFor": "現在値を繰り返しの外に置く説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-state/t2-buy-if-can/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-for-20261104"
+      ],
+      "usedFor": "今の所持金以下のときだけ引く説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-state/t3-while-until/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-for-20261104",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-console-writeline-20261104"
+      ],
+      "usedFor": "while は条件が成り立つ間繰り返す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-final-value/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。増減を順に足して最後の値を出す Q01〜Q10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-buy-if-can/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。買えるときだけ引く Q11〜Q20",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-running-max/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。途中の最大と最後の値を出す Q21〜Q30",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-independent/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。状態の更新を自分で選ぶ S01〜S10",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-debug/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。足し方と停止条件を直す R1 と R2",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-check-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。適用後に初めて負になる操作",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の確認。0 が続いた最長",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

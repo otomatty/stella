@@ -22,6 +22,9 @@ const state = vi.hoisted(() => ({
   executeCommand: vi.fn(),
 }));
 
+const apiRequest = vi.hoisted(() => vi.fn(async () => ({})));
+vi.mock("./api.js", () => ({ apiRequest, apiSession: () => 1 }));
+
 vi.mock("vscode", () => ({
   StatusBarAlignment: { Left: 1 },
   window: {
@@ -115,6 +118,50 @@ describe("ステータスバーの課題のボタン", () => {
       arguments: [root],
     });
     expect(inTask()).toEqual(["setContext", "stella.inTask", true]);
+    expect(state.items[2]?.visible).toBe(false);
+  });
+
+  it("問題つきの課題は提出済みの件数を出す", async () => {
+    const problemRoot = path.join(workspace, "extra", "unit", "calc");
+    await mkdir(path.join(problemRoot, ".stella"), { recursive: true });
+    await writeFile(
+      path.join(problemRoot, ".stella", "task.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "extra/unit/calc",
+        title: "計算",
+        kind: "basic",
+        runner: "node-test",
+        problems: [
+          { id: "q01-add", title: "足す" },
+          { id: "q02-sub", title: "引く" },
+        ],
+        submit: { files: ["src/**/*.ts"] },
+        protected: [],
+        checks: { lint: false, format: false },
+      }),
+    );
+    await mkdir(path.join(problemRoot, "src"), { recursive: true });
+    await writeFile(path.join(problemRoot, "src", "q01-add.ts"), "export const add = 1;\n");
+    apiRequest.mockResolvedValue({
+      problems: [
+        {
+          id: "q01-add",
+          title: "足す",
+          status: "passed",
+          firstPassedAt: "2026-11-01T00:00:00.000Z",
+        },
+        { id: "q02-sub", title: "引く", status: "not-submitted", firstPassedAt: null },
+      ],
+      passedProblems: 1,
+      totalProblems: 2,
+      taskPassed: false,
+    });
+    state.activeFile = path.join(problemRoot, "src", "q01-add.ts");
+    registerTaskStatus(context);
+    await state.editorListener?.(editor(state.activeFile));
+    expect(state.items[2]?.visible).toBe(true);
+    expect(state.items[2]?.text).toBe("1/2 問");
   });
 
   it("パネルに移っても出したままにし、課題の外のファイルに移ったら隠す", async () => {

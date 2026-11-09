@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m11-functions/q06-check-a",
+  "title": "確認A 隣の距離",
+  "problems": [
+    {
+      "id": "check-a-total-distance",
+      "title": "隣の距離"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-neighbor-distance",
+  "skills": {
+    "uses": [
+      "csharp-call-return"
+    ],
+    "assesses": [
+      "csharp-call-return"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

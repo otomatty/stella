@@ -1,0 +1,56 @@
+{
+  "id": "csharp-foundations/m14-spec-change/q01-check-date-days",
+  "title": "月の日数とうるう年",
+  "problems": [
+    {
+      "id": "q01-check-date-days",
+      "title": "月の日数とうるう年"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-date-days",
+  "skills": {
+    "uses": [
+      "csharp-date-check",
+      "csharp-date-days"
+    ],
+    "assesses": [
+      "csharp-date-days"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mslearn-csharp-contains-20261108",
+    "SRC-mslearn-csharp-replace-20261108",
+    "SRC-mslearn-csharp-substring-20261106",
+    "SRC-mslearn-csharp-parse-20261106",
+    "SRC-mslearn-csharp-if-20261104",
+    "SRC-mslearn-csharp-arithmetic-20261106",
+    "SRC-mslearn-csharp-methods-20261106"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

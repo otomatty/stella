@@ -318,7 +318,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // 入れた拡張は本番へ、F5 の開発ホストとテストはローカルへつなぐ (ユーザー設定が優先)。
   setUrlDefaultsForMode(context.extensionMode);
   const auth = new AuthStore(context.secrets);
-  initApi(auth);
+  initApi(auth, () => stellaUrl("serverUrl"));
   // 別のウィンドウでの接続・切断も、このウィンドウの接続の切り替えとして扱う (#36)。
   context.subscriptions.push(auth.watchExternalChanges());
   const grader = initGraderHost(context.extensionUri);

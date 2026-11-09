@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m7-state/q07-check-b",
+  "title": "確認B 0の連続",
+  "problems": [
+    {
+      "id": "check-b-longest-zero",
+      "title": "0の連続"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-state-first-negative",
+  "skills": {
+    "uses": [
+      "csharp-state-max"
+    ],
+    "assesses": [
+      "csharp-state-max"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

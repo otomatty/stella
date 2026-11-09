@@ -1,0 +1,14 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["csharp-pairs-across", "csharp-pairs-same", "csharp-pairs-rows"],
+    "assesses": [
+      "csharp-pairs-across",
+      "csharp-pairs-same",
+      "csharp-pairs-rows",
+      "csharp-pairs-choice",
+      "csharp-pairs-repair"
+    ]
+  },
+  "reuses": []
+}

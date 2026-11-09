@@ -14,37 +14,691 @@
   },
   "runner": "ts-test",
   "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-to-id",
+      "title": "文字列か数値を受け取り、文字列にして返す"
+    },
+    {
+      "id": "q01-02-id-length",
+      "title": "文字列か数値を受け取り、文字列にしたときの文字数を返す"
+    },
+    {
+      "id": "q01-03-format-value",
+      "title": "数値なら小数第2位までの文字列、文字列ならそのまま返す"
+    },
+    {
+      "id": "q01-04-double-value",
+      "title": "数値なら2倍、文字列なら2回つなげたものを返す"
+    },
+    {
+      "id": "q01-05-is-number-value",
+      "title": "数値なら true"
+    },
+    {
+      "id": "q01-06-to-number-value",
+      "title": "数値ならそのまま、文字列なら Number で数値にして返す"
+    },
+    {
+      "id": "q01-07-type-label",
+      "title": "文字列なら \"文字列\"、数値なら \"数値\"、真偽値なら \"真偽値\" を返す"
+    },
+    {
+      "id": "q01-08-size-of",
+      "title": "文字列なら文字数、数値ならその数を返す"
+    },
+    {
+      "id": "q01-09-pad-value",
+      "title": "文字列か数値を、width 桁になるように前を0で埋めた文字列にする"
+    },
+    {
+      "id": "q01-10-score-text",
+      "title": "型 Scoreを定義して export し、scoreText を書く"
+    },
+    {
+      "id": "q01-11-price-text",
+      "title": "型 Priceを定義して export し、priceText を書く"
+    },
+    {
+      "id": "q01-12-answer-text",
+      "title": "型 Replyを定義して export し、answerText を書く"
+    },
+    {
+      "id": "q01-13-width-css",
+      "title": "型 Widthを定義して export し、widthCss を書く"
+    },
+    {
+      "id": "q01-14-is-within-limit",
+      "title": "型 Limitを定義して export し、isWithinLimit を書く"
+    },
+    {
+      "id": "q01-15-port-number",
+      "title": "型 Portを定義して export し、portNumber を書く"
+    },
+    {
+      "id": "q01-16-delay-ms",
+      "title": "型 Delayを定義して export し、delayMs を書く"
+    },
+    {
+      "id": "q01-17-level-value",
+      "title": "型 Levelを定義して export し、levelValue を書く"
+    },
+    {
+      "id": "q01-18-same-user",
+      "title": "型 UserIdを定義して export し、sameUser を書く"
+    },
+    {
+      "id": "q01-19-font-px",
+      "title": "型 FontSizeを定義して export し、fontPx を書く"
+    },
+    {
+      "id": "q01-20-temp-text",
+      "title": "型 Temperatureを定義して export し、tempText を書く"
+    },
+    {
+      "id": "q01-union-type-alias",
+      "title": "型エイリアスとユニオン型（応用問題）"
+    },
+    {
+      "id": "q02-01-turn-right",
+      "title": "右に90度回った向きを返す"
+    },
+    {
+      "id": "q02-02-parse-direction",
+      "title": "前後の空白を取り除いて小文字にし、Direction のどれかならそれを返す"
+    },
+    {
+      "id": "q02-03-is-vertical",
+      "title": "up か down なら true"
+    },
+    {
+      "id": "q02-04-arrow-of",
+      "title": "向きを矢印にする"
+    },
+    {
+      "id": "q02-05-next-weekday",
+      "title": "次の平日を返す"
+    },
+    {
+      "id": "q02-06-parse-weekday",
+      "title": "文字列の最初の1文字が Weekday のどれかならそれを返す"
+    },
+    {
+      "id": "q02-07-is-friday",
+      "title": "金なら true"
+    },
+    {
+      "id": "q02-08-plan-price",
+      "title": "月額料金を返す"
+    },
+    {
+      "id": "q02-09-upgrade",
+      "title": "1つ上のプランを返す"
+    },
+    {
+      "id": "q02-10-parse-plan",
+      "title": "小文字にして、Plan のどれかならそれを返す"
+    },
+    {
+      "id": "q02-11-flip-coin",
+      "title": "型 Coinを定義して export し、flipCoin を書く"
+    },
+    {
+      "id": "q02-12-parse-answer",
+      "title": "型 Answerを定義して export し、parseAnswer を書く"
+    },
+    {
+      "id": "q02-13-resolve-theme",
+      "title": "型 Themeを定義して export し、resolveTheme を書く"
+    },
+    {
+      "id": "q02-14-to-millimeters",
+      "title": "型 Unitを定義して export し、toMillimeters を書く"
+    },
+    {
+      "id": "q02-15-grade-from",
+      "title": "型 Gradeを定義して export し、gradeFrom を書く"
+    },
+    {
+      "id": "q02-16-rank-point",
+      "title": "型 Rankを定義して export し、rankPoint を書く"
+    },
+    {
+      "id": "q02-17-is-finished",
+      "title": "型 TaskStatusを定義して export し、isFinished を書く"
+    },
+    {
+      "id": "q02-18-can-go",
+      "title": "型 Signalを定義して export し、canGo を書く"
+    },
+    {
+      "id": "q02-19-hello",
+      "title": "型 Langを定義して export し、hello を書く"
+    },
+    {
+      "id": "q02-20-can-view",
+      "title": "型 Visibilityを定義して export し、canView を書く"
+    },
+    {
+      "id": "q02-literal-union",
+      "title": "リテラル型のユニオン（応用問題）"
+    },
+    {
+      "id": "q03-01-length-or-zero",
+      "title": "文字列か undefined を受け取り、文字数を返す"
+    },
+    {
+      "id": "q03-02-upper-or-empty",
+      "title": "文字列か null を受け取り、大文字にして返す"
+    },
+    {
+      "id": "q03-03-or-default",
+      "title": "数値か undefined を受け取り、undefined なら fallback を返す"
+    },
+    {
+      "id": "q03-04-name-or-guest",
+      "title": "名前か null を受け取り、null なら「ゲスト」を返す"
+    },
+    {
+      "id": "q03-05-first-letter",
+      "title": "文字列か undefined を受け取り、最初の1文字を text?.[0] で取り出して返す"
+    },
+    {
+      "id": "q03-06-city-of",
+      "title": "{ address?: { city } } の city を返す"
+    },
+    {
+      "id": "q03-07-city-or-unknown",
+      "title": "{ address?: { city } } の city を返す"
+    },
+    {
+      "id": "q03-08-empty-to-null",
+      "title": "空の文字列なら null、それ以外はそのまま返す"
+    },
+    {
+      "id": "q03-09-index-or-null",
+      "title": "target が何番目にあるかを返す"
+    },
+    {
+      "id": "q03-10-parse-or-null",
+      "title": "文字列を Number で数値にする"
+    },
+    {
+      "id": "q03-11-is-missing",
+      "title": "null か undefined なら true"
+    },
+    {
+      "id": "q03-12-count-present",
+      "title": "undefined でない要素の数を返す"
+    },
+    {
+      "id": "q03-13-sum-non-null",
+      "title": "null を飛ばして合計する"
+    },
+    {
+      "id": "q03-14-phone-text",
+      "title": "{ phone?: string | null } の phone を返す"
+    },
+    {
+      "id": "q03-15-manager-name",
+      "title": "{ manager: { name } | null } の manager の name を返す"
+    },
+    {
+      "id": "q03-16-null-to-undefined",
+      "title": "null なら undefined に変える"
+    },
+    {
+      "id": "q03-17-undefined-to-null",
+      "title": "undefined なら null に変える"
+    },
+    {
+      "id": "q03-18-both-present",
+      "title": "2つとも null でなければ true"
+    },
+    {
+      "id": "q03-19-join-present",
+      "title": "null でないものだけを半角スペースでつなぐ"
+    },
+    {
+      "id": "q03-20-last-login-text",
+      "title": "{ lastLoginAt: Date | null } を「2026-12-01」の形にする"
+    },
+    {
+      "id": "q03-null-undefined",
+      "title": "null と undefined（応用問題）"
+    },
+    {
+      "id": "q04-01-shape-area",
+      "title": "面積を返す"
+    },
+    {
+      "id": "q04-02-shape-name",
+      "title": "図形の名前を返す"
+    },
+    {
+      "id": "q04-03-shape-perimeter",
+      "title": "周りの長さを返す"
+    },
+    {
+      "id": "q04-04-is-round",
+      "title": "円なら true"
+    },
+    {
+      "id": "q04-05-scale-shape",
+      "title": "大きさを k 倍した、新しい図形を返す"
+    },
+    {
+      "id": "q04-06-payment-label",
+      "title": "支払い方法を表示する"
+    },
+    {
+      "id": "q04-07-needs-confirmation",
+      "title": "card か bank なら true"
+    },
+    {
+      "id": "q04-08-last-four",
+      "title": "card ならカード番号の末尾4桁、それ以外は undefined を返す"
+    },
+    {
+      "id": "q04-09-notice-text",
+      "title": "お知らせを表示する"
+    },
+    {
+      "id": "q04-10-is-serious",
+      "title": "error なら true"
+    },
+    {
+      "id": "q04-11-error-code",
+      "title": "error なら code、それ以外は undefined を返す"
+    },
+    {
+      "id": "q04-12-cry",
+      "title": "型 Animalを定義して export し、cry を書く"
+    },
+    {
+      "id": "q04-13-capacity",
+      "title": "型 Vehicleを定義して export し、capacity を書く"
+    },
+    {
+      "id": "q04-14-action-text",
+      "title": "型 UserActionを定義して export し、actionText を書く"
+    },
+    {
+      "id": "q04-15-media-info",
+      "title": "型 Mediaを定義して export し、mediaInfo を書く"
+    },
+    {
+      "id": "q04-16-response-text",
+      "title": "型 ApiResponseを定義して export し、responseText を書く"
+    },
+    {
+      "id": "q04-17-account-text",
+      "title": "型 Accountを定義して export し、accountText を書く"
+    },
+    {
+      "id": "q04-18-token-text",
+      "title": "型 Tokenを定義して export し、tokenText を書く"
+    },
+    {
+      "id": "q04-19-contact-text",
+      "title": "型 Contactを定義して export し、contactText を書く"
+    },
+    {
+      "id": "q04-20-to-celsius",
+      "title": "型 Readingを定義して export し、toCelsius を書く"
+    },
+    {
+      "id": "q04-discriminated-union",
+      "title": "判別可能なユニオン型（応用問題）"
+    },
+    {
+      "id": "q05-01-success",
+      "title": "value を持つ成功の Result を作る"
+    },
+    {
+      "id": "q05-02-failure",
+      "title": "error を持つ失敗の Result を作る"
+    },
+    {
+      "id": "q05-03-is-ok",
+      "title": "成功なら true"
+    },
+    {
+      "id": "q05-04-value-or",
+      "title": "成功なら value、失敗なら fallback を返す"
+    },
+    {
+      "id": "q05-05-error-or",
+      "title": "失敗なら error、成功なら fallback を返す"
+    },
+    {
+      "id": "q05-06-safe-divide",
+      "title": "a ÷ b を返す"
+    },
+    {
+      "id": "q05-07-safe-sqrt",
+      "title": "平方根を返す"
+    },
+    {
+      "id": "q05-08-parse-age",
+      "title": "文字列を年齢にする"
+    },
+    {
+      "id": "q05-09-double-result",
+      "title": "成功なら value を2倍にした成功、失敗ならそのまま返す"
+    },
+    {
+      "id": "q05-10-add-results",
+      "title": "両方成功なら value を足した成功"
+    },
+    {
+      "id": "q05-11-count-ok",
+      "title": "成功の数を返す"
+    },
+    {
+      "id": "q05-12-first-error",
+      "title": "最初に見つかった失敗の error を返す"
+    },
+    {
+      "id": "q05-13-sum-ok",
+      "title": "成功の value だけを合計する"
+    },
+    {
+      "id": "q05-14-result-text",
+      "title": "成功なら「成功: 3」、失敗なら「失敗: エラーの文」を返す"
+    },
+    {
+      "id": "q05-15-validate-price",
+      "title": "価格を確かめる"
+    },
+    {
+      "id": "q05-16-parse-percent",
+      "title": "「50%」の形の文字列を数値 50 にする"
+    },
+    {
+      "id": "q05-17-at-least",
+      "title": "成功で value が min 未満なら「<min>未満です」の失敗にする"
+    },
+    {
+      "id": "q05-18-all-ok",
+      "title": "すべて成功なら true"
+    },
+    {
+      "id": "q05-19-combine-all",
+      "title": "すべて成功なら value の合計の成功"
+    },
+    {
+      "id": "q05-20-or-else",
+      "title": "first が成功なら first、失敗なら second を返す"
+    },
+    {
+      "id": "q05-result",
+      "title": "成功と失敗を表す型（応用問題）"
+    },
+    {
+      "id": "q06-01-introduce",
+      "title": "「山田」を返す"
+    },
+    {
+      "id": "q06-02-make-person",
+      "title": "name と age から Named & Aged を作る"
+    },
+    {
+      "id": "q06-03-with-id",
+      "title": "Named に id を足した Named & Identified を返す"
+    },
+    {
+      "id": "q06-04-stamp",
+      "title": "Named に createdAt を足した Named & Timestamped を返す"
+    },
+    {
+      "id": "q06-05-price-tag",
+      "title": "「りんご 150円」を返す"
+    },
+    {
+      "id": "q06-06-is-cheap",
+      "title": "price が limit 以下なら true"
+    },
+    {
+      "id": "q06-07-make-item",
+      "title": "name と price から Named & Priced を作る"
+    },
+    {
+      "id": "q06-08-id-label",
+      "title": "「#3 山田」を返す"
+    },
+    {
+      "id": "q06-09-older-by-one",
+      "title": "age を1増やした、新しい Named & Aged を返す"
+    },
+    {
+      "id": "q06-10-created-date",
+      "title": "createdAt を「2026-12-01」の形にする"
+    },
+    {
+      "id": "q06-11-make-member",
+      "title": "name、age、id から Named & Aged & Identified を作る"
+    },
+    {
+      "id": "q06-12-total-of",
+      "title": "price の合計を返す"
+    },
+    {
+      "id": "q06-13-oldest-name",
+      "title": "いちばん年上の人の name を返す"
+    },
+    {
+      "id": "q06-14-product-text",
+      "title": "型 Product を Named & Priced & Identified として定義して export し、productText を書く"
+    },
+    {
+      "id": "q06-15-is-adult-admin",
+      "title": "型 Member を Named & Aged & { role: \"admin\" | \"member\" } として定義して export し、isAdultAdmin を書く"
+    },
+    {
+      "id": "q06-16-post-title",
+      "title": "型 Post を Identified & Timestamped & { title: string } として定義して export し、postTitle を書く"
+    },
+    {
+      "id": "q06-17-publish",
+      "title": "型 Draftと、型 Publishedを定義して export し、publish を書く"
+    },
+    {
+      "id": "q06-18-add-tag",
+      "title": "型 Tagged を Named & { tags: string[] } として定義して export し、addTag を書く"
+    },
+    {
+      "id": "q06-19-final-price",
+      "title": "型 Discounted を Priced & { discount: number } として定義して export し、finalPrice を書く"
+    },
+    {
+      "id": "q06-20-place",
+      "title": "型 Place を Named & { lat: number; lng: number } として定義して export し、place を書く"
+    },
+    {
+      "id": "q06-intersection",
+      "title": "インターセクション型（応用問題）"
+    },
+    {
+      "id": "q07-01-days",
+      "title": "定数 DAYS を [\"月\", \"火\", \"水\"] として宣言する"
+    },
+    {
+      "id": "q07-02-origin",
+      "title": "定数 ORIGIN を { x: 0, y: 0 } として宣言する"
+    },
+    {
+      "id": "q07-03-roles",
+      "title": "定数 ROLES を [\"admin\", \"editor\", \"viewer\"] として宣言する"
+    },
+    {
+      "id": "q07-04-http-status",
+      "title": "定数 HTTP_STATUS を { ok: 200, notFound: 404 } として宣言する"
+    },
+    {
+      "id": "q07-05-levels",
+      "title": "定数 LEVELS を [1, 2, 3] として宣言する"
+    },
+    {
+      "id": "q07-06-theme",
+      "title": "定数 THEME を { primary: \"#0066ff\", radius: 4 } として宣言する"
+    },
+    {
+      "id": "q07-07-flags",
+      "title": "定数 FLAGS を { beta: true, debug: false } として宣言する"
+    },
+    {
+      "id": "q07-08-entry",
+      "title": "定数 ENTRY を [\"key\", 1] として宣言する"
+    },
+    {
+      "id": "q07-09-is-status",
+      "title": "文字列が STATUSES のどれかなら true"
+    },
+    {
+      "id": "q07-10-status-index",
+      "title": "STATUSES の何番目かを返す"
+    },
+    {
+      "id": "q07-11-prev-status",
+      "title": "STATUSES の1つ前のステータスを返す"
+    },
+    {
+      "id": "q07-12-priority-point",
+      "title": "PRIORITY_POINTS から点数を返す"
+    },
+    {
+      "id": "q07-13-higher-priority",
+      "title": "点数の高い方の優先度を返す"
+    },
+    {
+      "id": "q07-14-month-name",
+      "title": "月から MONTH_NAMES の名前を返す"
+    },
+    {
+      "id": "q07-15-all-statuses",
+      "title": "STATUSES をコピーした、書き換えられる配列を返す"
+    },
+    {
+      "id": "q07-16-status-text",
+      "title": "定数 STATUS_TEXT を { todo: \"未着手\", doing: \"作業中\", done: \"完了\" } として as const で宣言して export し、statusText を書く"
+    },
+    {
+      "id": "q07-17-size-px",
+      "title": "定数 SIZE_PX を { S: 12, M: 16, L: 20 } として as const で宣言して export し、sizePx を書く"
+    },
+    {
+      "id": "q07-18-is-weekend-day",
+      "title": "定数 WEEKEND を [\"土\", \"日\"] として as const で宣言して export し、isWeekendDay を書く"
+    },
+    {
+      "id": "q07-19-count-by-status",
+      "title": "ステータスの配列から、{ todo, doing, done } それぞれの数を数える"
+    },
+    {
+      "id": "q07-20-next-month-name",
+      "title": "月の次の月の名前を MONTH_NAMES から返す"
+    },
+    {
+      "id": "q07-as-const",
+      "title": "as const（応用問題）"
+    },
+    {
+      "id": "q08-01-close-door",
+      "title": "開いているドアを閉める"
+    },
+    {
+      "id": "q08-02-open-door",
+      "title": "閉まっているドアを開ける"
+    },
+    {
+      "id": "q08-03-lock-door",
+      "title": "閉まっているドアに鍵 key をかける"
+    },
+    {
+      "id": "q08-04-unlock-door",
+      "title": "鍵のかかったドアを、同じ鍵 key なら開錠して closed にする"
+    },
+    {
+      "id": "q08-05-door-text",
+      "title": "ドアの状態を「開いている」「閉まっている」「鍵がかかっている」で返す"
+    },
+    {
+      "id": "q08-06-turn-on",
+      "title": "消えている照明を明るさ 100 で点ける"
+    },
+    {
+      "id": "q08-07-turn-off",
+      "title": "照明を消す"
+    },
+    {
+      "id": "q08-08-dim",
+      "title": "点いている照明の明るさを amount だけ下げる"
+    },
+    {
+      "id": "q08-09-light-text",
+      "title": "照明の状態を「消灯」か「点灯」で返す"
+    },
+    {
+      "id": "q08-10-start-timer",
+      "title": "タイマーを動かす"
+    },
+    {
+      "id": "q08-11-pause-timer",
+      "title": "動いているタイマーを止める"
+    },
+    {
+      "id": "q08-12-reset-timer",
+      "title": "どの状態からでも idle に戻す"
+    },
+    {
+      "id": "q08-13-elapsed-of",
+      "title": "経過時間を返す"
+    },
+    {
+      "id": "q08-14-assign-ticket",
+      "title": "open か assigned のチケットを、assignee の担当にする"
+    },
+    {
+      "id": "q08-15-close-ticket",
+      "title": "open か assigned のチケットを、resolution を付けて closed にする"
+    },
+    {
+      "id": "q08-16-reopen",
+      "title": "closed のチケットを open に戻す"
+    },
+    {
+      "id": "q08-17-assignee-of",
+      "title": "assigned なら担当者の名前、それ以外は undefined を返す"
+    },
+    {
+      "id": "q08-18-ticket-text",
+      "title": "「[未対応] タイトル」「[担当: 山田] タイトル」「[完了: 修正済み] タイトル」を返す"
+    },
+    {
+      "id": "q08-19-can-edit",
+      "title": "closed でなければ true"
+    },
+    {
+      "id": "q08-20-count-unfinished",
+      "title": "closed でないチケットの数を返す"
+    },
+    {
+      "id": "q08-order-status",
+      "title": "注文の状態遷移（総合問題）"
+    }
+  ],
   "submit": {
     "files": [
       "src/**/*.ts"
     ],
-    "explanation": true,
+    "explanation": false,
     "debuggingRecord": false
-  },
-  "review": {
-    "rules": [],
-    "rubric": [
-      {
-        "id": "no-hardcoded-answers",
-        "criterion": "テストの入力に合わせて期待値をそのまま返す分岐や表を書かず、問題文の規則を計算や処理で実装している",
-        "required": true
-      },
-      {
-        "id": "explanations",
-        "criterion": "問題文に『説明すること』がある応用問題で、そのすぐ下の // コメントに、なぜそう書くのかを自分の言葉で書いている",
-        "required": true
-      },
-      {
-        "id": "no-type-escape",
-        "criterion": "型の確認を通すために any・@ts-ignore・@ts-expect-error を使ったり、問題文が求めていない as で型を言い切ったりしていない (as const は除く)",
-        "required": true
-      }
-    ],
-    "escalateWhen": []
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-values-types-variables-type-alias",

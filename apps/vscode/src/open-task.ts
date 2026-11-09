@@ -13,7 +13,8 @@
  * 開いていれば、読み込み直さずにそのまま課題文を開く。
  *
  * 課題を開いた画面は 2 列: 左に編集するファイル (`submit.files` に当たるファイル)、右に
- * 課題文のパネル (先頭に「進め方」)。課題文の README.md はテキストとしては開かない
+ * 課題文のパネル (先頭に「進め方」)。問題つきの課題は、次の未提出の問題のファイルだけを
+ * 左に開く (全部提出済みなら 1 問目)。課題文の README.md はテキストとしては開かない
  * (同じ課題文がタブに 2 つ並ぶと、どれを読めばよいか分からなくなるため)。
  */
 
@@ -27,6 +28,7 @@ import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
 import { resolveFileInRoot } from "./runner/files.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
+import { fetchProblemResults, loadProblemStates, problemFileToOpen } from "./task-problems.js";
 import { readDistribution } from "./task-submission.js";
 import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
@@ -86,6 +88,12 @@ async function isPlainFile(file: string): Promise<boolean> {
 async function filesToOpen(taskRoot: string): Promise<string[]> {
   const loaded = await loadTask(taskRoot);
   if (!loaded.ok) return [];
+  if (loaded.manifest.problems?.length) {
+    const server = await fetchProblemResults(loaded.manifest.id).catch(() => undefined);
+    const states = await loadProblemStates(taskRoot, loaded.manifest, server);
+    const file = problemFileToOpen(states);
+    return file && opensAsText(file) ? [file] : [];
+  }
   const { files } = await resolveEditFiles(taskRoot, loaded.manifest);
   return files.filter(opensAsText).slice(0, OPEN_FILES_LIMIT);
 }
@@ -203,7 +211,7 @@ const CONFLICT_GUIDANCE: Record<TaskInstallConflict["reason"], string> = {
   occupied:
     "準備先のファイルを別の場所へ移すか、フォルダーの名前を変えてから、もう一度「VS Code で開く」を押してください。",
   updated:
-    "今の課題フォルダーは前の版のまま開いて、続きの作業と提出ができます。新しい版で始めるときは、課題フォルダーの名前を変えてから開き直してください。",
+    "今の課題フォルダーは前の版のまま開いて、続きの作業と提出ができます (問題つきの課題は、前の版のままでは提出できません)。新しい版で始めるときは、課題フォルダーの名前を変えてから開き直してください。",
   damaged:
     "足りないファイルは自動では戻しません。課題フォルダーの名前を変えてから開き直すと、新しく準備します。自分のファイルは名前を変えたフォルダーに残ります。",
 };

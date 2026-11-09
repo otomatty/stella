@@ -49,6 +49,12 @@ export interface PaceTask {
   minutes: number;
   status: TaskStatus;
   passedDate: string | null;
+  /**
+   * 問題つきの課題だけ。合格前は提出した問題の割合だけを完了時間にする。
+   * 無い課題は、合格するまで完了に数えない。
+   */
+  problemsTotal?: number;
+  problemsPassed?: number;
 }
 export interface PaceUnit {
   id: string;
@@ -273,7 +279,20 @@ function scheduleStages(
 }
 
 /**
+ * 合格前の問題つき課題で、提出済みの割合だけを完了分にする。問題が無ければ 0。
+ * 合格した課題は呼び出し側が予定時間をそのまま数えるので、ここでは足さない。
+ */
+function problemCredit(task: PaceTask): number {
+  const total = task.problemsTotal ?? 0;
+  if (total <= 0) return 0;
+  const passed = Math.min(total, Math.max(0, task.problemsPassed ?? 0));
+  if (passed === 0) return 0;
+  return (task.minutes * passed) / total;
+}
+
+/**
  * 予定日は永続化しない。合格・完了した項目の予定時間だけを進捗に数える。
+ * 問題つきの課題は、合格前でも提出した問題の割合だけを完了に数える。
  * 遅れた分を週の負担に上乗せせず、今日から残りを同じペースで引き直す。
  * 補習はこの入力の外。開始診断も確認A・Bの時間には適用しない。
  */
@@ -344,8 +363,11 @@ export function calculateLearningPace(input: {
           earned += task.minutes;
           continue;
         }
+        const credited = problemCredit(task);
+        earned += credited;
         if (task.kind === "assessment-b") {
-          blockedBMinutes += task.minutes;
+          const left = task.minutes - credited;
+          blockedBMinutes += left;
           const preceding = unit.tasks.filter(
             (a) => a.kind === "assessment-a" && a.pattern === task.pattern,
           );
@@ -358,7 +380,7 @@ export function calculateLearningPace(input: {
             const dueDate = addStudyDays(passedDate, 7);
             assessments.push({ taskId: task.id, stageId: stage.id, title: task.title, dueDate });
             delayed.push({
-              minutes: task.minutes,
+              minutes: left,
               releaseAt:
                 Math.max(
                   0,
@@ -368,11 +390,11 @@ export function calculateLearningPace(input: {
             });
           } else if (preceding.length) {
             // 完了・診断を差し引いた通常の学習が終わった時点から7日間待つ。
-            delayed.push({ minutes: task.minutes, releaseAt: null, showInWeek: true });
+            delayed.push({ minutes: left, releaseAt: null, showInWeek: true });
           } else {
             // 対応するAがない教材ではBの実施日を捏造しない。
             incomplete = true;
-            delayed.push({ minutes: task.minutes, releaseAt: 0, showInWeek: false });
+            delayed.push({ minutes: left, releaseAt: 0, showInWeek: false });
           }
         }
       }

@@ -46,7 +46,7 @@ import {
   formatSubmittedAt,
   refreshSubmission,
 } from "@/lib/submissions-store";
-import { isAiPassed } from "@/lib/review-queue";
+import { isAiPassed, passByLabel } from "@/lib/review-queue";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
@@ -267,6 +267,9 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
   // まだ誰も確定していない提出は「確定しなかったときだけ確定」にする (別の講師が先に確定して
   // いれば 409 でキューに戻す)。確定済みの提出の訂正は従来どおり上書きする。
   const aiPassedNow = isAiPassed(submission);
+  const testsLocked = submission.reviewSource === "tests";
+  // 問題の相談は合格にできない (課題の合格は全問の提出だけ。API も 409)。
+  const problemConsult = !testsLocked && Boolean(taskDetail?.localResult?.problemId);
   const wasAiConfirmed = Boolean(submission.taskId) && submission.aiReviewStatus === "confirmed";
   const proposal = taskDetail?.aiReview?.proposedVerdict ?? submission.aiProposedVerdict ?? null;
   const handleFinalize = async (v: ReviewVerdict) => {
@@ -365,7 +368,10 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
             AI下書き準備済
           </Badge>
         ) : null}
-        {aiPassedNow ? (
+        {passByLabel(submission) === "テストで確認" ? (
+          <Badge variant="success">テストで確認</Badge>
+        ) : null}
+        {testsLocked ? null : aiPassedNow ? (
           // AI が合格にした提出は、合否を付け直さず事後確認の 3 つの操作で扱う (#34)。
           <>
             <Badge variant="success">
@@ -379,7 +385,10 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
           </>
         ) : (
           <>
-            {submission.verdict === null && proposal ? (
+            {!problemConsult &&
+            submission.verdict === null &&
+            proposal &&
+            submission.reviewSource !== "tests" ? (
               <Badge variant={proposal === "pass" ? "success" : "warning"}>
                 AI の判定案: {proposal === "pass" ? "合格" : "再提出"}
               </Badge>
@@ -396,24 +405,33 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
               <ThumbsDown size={13} />
               {submission.verdict === null ? "再提出にする" : "再提出"}
             </Button>
-            <Button
-              type="button"
-              variant={
-                submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
-              }
-              onClick={() => handleFinalize("pass")}
-              disabled={finalizing || (!!submission.taskId && !taskDetail)}
-            >
-              <ThumbsUp size={13} />
-              {submission.verdict === null && proposal === "pass"
-                ? "判定案どおり合格"
-                : "合格として確定"}
-            </Button>
+            {problemConsult ? null : (
+              <Button
+                type="button"
+                variant={
+                  submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
+                }
+                onClick={() => handleFinalize("pass")}
+                disabled={finalizing || (!!submission.taskId && !taskDetail)}
+              >
+                <ThumbsUp size={13} />
+                {submission.verdict === null && proposal === "pass"
+                  ? "判定案どおり合格"
+                  : "合格として確定"}
+              </Button>
+            )}
           </>
         )}
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: "1fr 380px", minHeight: 0, flex: 1 }}>
+      <div
+        className="grid"
+        style={{
+          gridTemplateColumns: testsLocked ? "1fr" : "1fr 380px",
+          minHeight: 0,
+          flex: 1,
+        }}
+      >
         <div className="min-w-0 overflow-hidden flex flex-col">
           {submission.taskId ? (
             <div className="p-5 border-b border-border max-h-80 overflow-auto">
@@ -480,7 +498,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 </p>
               ))}
               <label className="block text-sm mt-3">
-                提出ファイル{" "}
+                {submission.reviewSource === "tests" ? "問題のファイル" : "提出ファイル"}{" "}
                 <select
                   value={selectedFile}
                   onChange={(e) => setSelectedFile(e.target.value)}
@@ -544,269 +562,278 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
           </div>
         </div>
 
-        <aside className="border-l border-border bg-card flex flex-col max-h-[calc(100vh-57px-64px)] overflow-hidden">
-          <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0 flex-1">
-            <TabsList className="border-b border-border flex px-0 gap-0 m-0">
+        {testsLocked ? null : (
+          <aside className="border-l border-border bg-card flex flex-col max-h-[calc(100vh-57px-64px)] overflow-hidden">
+            <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0 flex-1">
+              <TabsList className="border-b border-border flex px-0 gap-0 m-0">
+                {submission.gradingSummary ? (
+                  <TabTrigger value="grade" icon={<AlertTriangle />}>
+                    自動採点
+                  </TabTrigger>
+                ) : null}
+                {wasAiConfirmed ? (
+                  <TabTrigger value="check" icon={<CheckCheck />}>
+                    事後確認
+                  </TabTrigger>
+                ) : null}
+                <TabTrigger value="ai" icon={<Sparkles />} count={suggestions.length}>
+                  AI 下書き
+                </TabTrigger>
+                <TabTrigger value="rubric" icon={<Star />}>
+                  ルーブリック
+                </TabTrigger>
+                <TabTrigger value="comment" icon={<MessageCircle />}>
+                  総評
+                </TabTrigger>
+              </TabsList>
+
               {submission.gradingSummary ? (
-                <TabTrigger value="grade" icon={<AlertTriangle />}>
-                  自動採点
-                </TabTrigger>
+                <TabsContent
+                  value="grade"
+                  className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                >
+                  <GradeSummaryPanel summary={submission.gradingSummary} />
+                </TabsContent>
               ) : null}
+
               {wasAiConfirmed ? (
-                <TabTrigger value="check" icon={<CheckCheck />}>
-                  事後確認
-                </TabTrigger>
+                <TabsContent
+                  value="check"
+                  className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                >
+                  <PostCheckPanel
+                    submissionId={submission.id}
+                    aiPassed={aiPassedNow}
+                    checks={taskDetail?.checks}
+                    stageId={submission.stageId}
+                    pattern={submission.taskPattern}
+                    onChanged={reloadAfterCheck}
+                  />
+                </TabsContent>
               ) : null}
-              <TabTrigger value="ai" icon={<Sparkles />} count={suggestions.length}>
-                AI 下書き
-              </TabTrigger>
-              <TabTrigger value="rubric" icon={<Star />}>
-                ルーブリック
-              </TabTrigger>
-              <TabTrigger value="comment" icon={<MessageCircle />}>
-                総評
-              </TabTrigger>
-            </TabsList>
 
-            {submission.gradingSummary ? (
               <TabsContent
-                value="grade"
+                value="ai"
                 className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
               >
-                <GradeSummaryPanel summary={submission.gradingSummary} />
-              </TabsContent>
-            ) : null}
-
-            {wasAiConfirmed ? (
-              <TabsContent
-                value="check"
-                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
-              >
-                <PostCheckPanel
-                  submissionId={submission.id}
-                  aiPassed={aiPassedNow}
-                  checks={taskDetail?.checks}
-                  stageId={submission.stageId}
-                  pattern={submission.taskPattern}
-                  onChanged={reloadAfterCheck}
-                />
-              </TabsContent>
-            ) : null}
-
-            <TabsContent
-              value="ai"
-              className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
-            >
-              <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 mb-3.5 text-[12.5px] text-brand-ink">
-                <Sparkles size={15} className="shrink-0 mt-0.5" />
-                <div>
-                  <strong className="font-semibold">AIは下書きです。</strong>
-                  採用・却下・編集を行い、講師の判断で最終確定してください。完全自動化はしません。
-                </div>
-              </div>
-
-              {submission.taskId ? (
-                <AiReviewPanel
-                  status={taskDetail?.aiReviewStatus ?? submission.aiReviewStatus}
-                  review={taskDetail?.aiReview}
-                  onUseReply={(text) => {
-                    setNotes(text);
-                    setTab("comment");
-                  }}
-                  onUseFindings={(findings) => {
-                    // 所見を総評に入れて直し、再提出にする (07 §6.4 の 3)。
-                    const lines = findings.map(
-                      (f) =>
-                        `- ${f.file} ${f.startLine}${f.endLine !== f.startLine ? `〜${f.endLine}` : ""}行 (${FINDING_SEVERITY_LABELS[f.severity]}): ${f.comment}`,
-                    );
-                    setNotes((prev) =>
-                      [prev.trim(), ["直してほしいところ", ...lines].join("\n")]
-                        .filter(Boolean)
-                        .join("\n\n"),
-                    );
-                    setTab("comment");
-                  }}
-                />
-              ) : null}
-
-              {draftLoading && suggestions.length === 0 ? (
-                <div className="text-ink-3 text-[12.5px] flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" />
-                  AI 下書きを生成しています…
-                </div>
-              ) : null}
-
-              {suggestions.map((s) => (
-                <div
-                  key={s.id}
-                  className={cn(
-                    "border rounded-md p-3.5 mb-2.5 bg-card",
-                    s.adopted === true && "border-success bg-success-soft",
-                    s.adopted === false && "opacity-55",
-                    s.adopted === null && "border-border",
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1.5 text-[11.5px] font-semibold uppercase tracking-wider">
-                    <span
-                      className={cn("w-2 h-2 rounded-full inline-block", severityDot[s.severity])}
-                    />
-                    <span>{s.category}</span>
-                    <span className="font-mono bg-muted text-ink-2 px-1.5 py-px rounded-[3px] text-[11px] font-medium normal-case tracking-normal">
-                      Line {s.line}
-                    </span>
-                    <div className="flex-1" />
-                    {s.adopted === true ? <Badge variant="success">採用</Badge> : null}
-                    {s.adopted === false ? <Badge>却下</Badge> : null}
-                  </div>
-                  <div className="text-[12.5px] leading-relaxed text-ink-2 mb-2">{s.body}</div>
-                  <div className="flex gap-1.5">
-                    <Button
-                      size="sm"
-                      type="button"
-                      onClick={() => adopt(s.id)}
-                      disabled={s.adopted === true}
-                    >
-                      <Check size={11} />
-                      採用
-                    </Button>
-                    <Button
-                      size="sm"
-                      type="button"
-                      onClick={() => reject(s.id)}
-                      disabled={s.adopted === false}
-                    >
-                      <X size={11} />
-                      却下
-                    </Button>
-                    <Button size="sm" type="button" variant="ghost" disabled title="今後対応">
-                      <Edit size={11} />
-                      編集
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </TabsContent>
-
-            <TabsContent
-              value="rubric"
-              className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-xl font-semibold">
-                  {totalScore}
-                  <span className="text-xs text-ink-3">/{maxScore}</span>
-                </div>
-                <div className="flex-1" />
-                <div className="text-xl font-semibold text-brand">{pct}%</div>
-              </div>
-              <Progress value={pct} tone="brand" className="mb-4" />
-
-              {rubric.map((r) => (
-                <div
-                  key={r.id}
-                  className="grid items-center gap-3 py-2.5 border-b border-border last:border-b-0"
-                  style={{ gridTemplateColumns: "1fr auto" }}
-                >
+                <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 mb-3.5 text-[12.5px] text-brand-ink">
+                  <Sparkles size={15} className="shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[13px] font-medium">{r.name}</div>
-                    <div className="text-[11.5px] text-ink-3 mt-0.5">{r.desc}</div>
+                    <strong className="font-semibold">AIは下書きです。</strong>
+                    採用・却下・編集を行い、講師の判断で最終確定してください。完全自動化はしません。
                   </div>
-                  <div className="flex gap-1">
-                    {Array.from({ length: r.max }, (_, i) => i + 1).map((n) => (
-                      <button
-                        key={n}
+                </div>
+
+                {submission.taskId ? (
+                  <AiReviewPanel
+                    status={taskDetail?.aiReviewStatus ?? submission.aiReviewStatus}
+                    review={taskDetail?.aiReview}
+                    onUseReply={(text) => {
+                      setNotes(text);
+                      setTab("comment");
+                    }}
+                    onUseFindings={(findings) => {
+                      // 所見を総評に入れて直し、再提出にする (07 §6.4 の 3)。
+                      const lines = findings.map(
+                        (f) =>
+                          `- ${f.file} ${f.startLine}${f.endLine !== f.startLine ? `〜${f.endLine}` : ""}行 (${FINDING_SEVERITY_LABELS[f.severity]}): ${f.comment}`,
+                      );
+                      setNotes((prev) =>
+                        [prev.trim(), ["直してほしいところ", ...lines].join("\n")]
+                          .filter(Boolean)
+                          .join("\n\n"),
+                      );
+                      setTab("comment");
+                    }}
+                  />
+                ) : null}
+
+                {draftLoading && suggestions.length === 0 ? (
+                  <div className="text-ink-3 text-[12.5px] flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    AI 下書きを生成しています…
+                  </div>
+                ) : null}
+
+                {suggestions.map((s) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      "border rounded-md p-3.5 mb-2.5 bg-card",
+                      s.adopted === true && "border-success bg-success-soft",
+                      s.adopted === false && "opacity-55",
+                      s.adopted === null && "border-border",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5 text-[11.5px] font-semibold uppercase tracking-wider">
+                      <span
+                        className={cn("w-2 h-2 rounded-full inline-block", severityDot[s.severity])}
+                      />
+                      <span>{s.category}</span>
+                      <span className="font-mono bg-muted text-ink-2 px-1.5 py-px rounded-[3px] text-[11px] font-medium normal-case tracking-normal">
+                        Line {s.line}
+                      </span>
+                      <div className="flex-1" />
+                      {s.adopted === true ? <Badge variant="success">採用</Badge> : null}
+                      {s.adopted === false ? <Badge>却下</Badge> : null}
+                    </div>
+                    <div className="text-[12.5px] leading-relaxed text-ink-2 mb-2">{s.body}</div>
+                    <div className="flex gap-1.5">
+                      <Button
+                        size="sm"
                         type="button"
-                        onClick={() => setRubricScore(r.id, n)}
-                        className={cn(
-                          "w-[26px] h-[26px] rounded-[4px] grid place-items-center text-[11px] font-semibold",
-                          r.score === n
-                            ? "bg-brand text-white border border-brand"
-                            : "border border-border-2 text-ink-3 bg-card hover:border-brand hover:text-brand",
-                        )}
+                        onClick={() => adopt(s.id)}
+                        disabled={s.adopted === true}
                       >
-                        {n}
-                      </button>
-                    ))}
+                        <Check size={11} />
+                        採用
+                      </Button>
+                      <Button
+                        size="sm"
+                        type="button"
+                        onClick={() => reject(s.id)}
+                        disabled={s.adopted === false}
+                      >
+                        <X size={11} />
+                        却下
+                      </Button>
+                      <Button size="sm" type="button" variant="ghost" disabled title="今後対応">
+                        <Edit size={11} />
+                        編集
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+
+              <TabsContent
+                value="rubric"
+                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="text-xl font-semibold">
+                    {totalScore}
+                    <span className="text-xs text-ink-3">/{maxScore}</span>
+                  </div>
+                  <div className="flex-1" />
+                  <div className="text-xl font-semibold text-brand">{pct}%</div>
+                </div>
+                <Progress value={pct} tone="brand" className="mb-4" />
+
+                {rubric.map((r) => (
+                  <div
+                    key={r.id}
+                    className="grid items-center gap-3 py-2.5 border-b border-border last:border-b-0"
+                    style={{ gridTemplateColumns: "1fr auto" }}
+                  >
+                    <div>
+                      <div className="text-[13px] font-medium">{r.name}</div>
+                      <div className="text-[11.5px] text-ink-3 mt-0.5">{r.desc}</div>
+                    </div>
+                    <div className="flex gap-1">
+                      {Array.from({ length: r.max }, (_, i) => i + 1).map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setRubricScore(r.id, n)}
+                          className={cn(
+                            "w-[26px] h-[26px] rounded-[4px] grid place-items-center text-[11px] font-semibold",
+                            r.score === n
+                              ? "bg-brand text-white border border-brand"
+                              : "border border-border-2 text-ink-3 bg-card hover:border-brand hover:text-brand",
+                          )}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+
+              <TabsContent
+                value="comment"
+                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+              >
+                {!isBackendConfigured() ? null : aiPassedNow ? (
+                  <p className="text-[12px] text-ink-3 mb-3">
+                    AI が合格にした提出の総評は AI
+                    の返信です。コメントを足す・覆すときは「事後確認」から行ってください。
+                  </p>
+                ) : (
+                  <CommentTemplatePicker
+                    stageId={submission.stageId}
+                    pattern={submission.taskPattern}
+                    currentText={notes}
+                    onInsert={(body) =>
+                      setNotes((prev) => (prev.trim() ? `${prev}\n\n${body}` : body))
+                    }
+                  />
+                )}
+                <Label>総評コメント（受講者に通知されます）</Label>
+                <Textarea
+                  className="min-h-[160px] mb-3"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+
+                <Label>判定</Label>
+                {problemConsult ? (
+                  <p className="text-[12px] text-ink-3">
+                    問題の相談は合格にできません。返信は「再提出」で送ります。
+                  </p>
+                ) : null}
+                <div className="flex gap-2 mb-4">
+                  {problemConsult ? null : (
+                    <Button
+                      type="button"
+                      variant={verdict === "pass" ? "primary" : "default"}
+                      onClick={() => setVerdict("pass")}
+                    >
+                      <Check size={13} />
+                      合格
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant={verdict === "resubmit" ? "primary" : "default"}
+                    onClick={() => setVerdict("resubmit")}
+                  >
+                    再提出
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={verdict === "fail" ? "primary" : "default"}
+                    onClick={() => setVerdict("fail")}
+                  >
+                    不合格
+                  </Button>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="accent"
+                  className="w-full mb-3"
+                  onClick={() => verdict && handleFinalize(verdict)}
+                  disabled={
+                    !verdict || aiPassedNow || finalizing || (!!submission.taskId && !taskDetail)
+                  }
+                >
+                  採点を確定
+                </Button>
+
+                <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 text-[12.5px] text-brand-ink">
+                  <Info size={14} />
+                  <div>
+                    {isBackendConfigured()
+                      ? "採点を確定すると受講者に LMS 通知が送られます（メールは送信しません）。"
+                      : "採点を確定するとローカルに保存されます（デモ）。"}
                   </div>
                 </div>
-              ))}
-            </TabsContent>
-
-            <TabsContent
-              value="comment"
-              className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
-            >
-              {!isBackendConfigured() ? null : aiPassedNow ? (
-                <p className="text-[12px] text-ink-3 mb-3">
-                  AI が合格にした提出の総評は AI
-                  の返信です。コメントを足す・覆すときは「事後確認」から行ってください。
-                </p>
-              ) : (
-                <CommentTemplatePicker
-                  stageId={submission.stageId}
-                  pattern={submission.taskPattern}
-                  currentText={notes}
-                  onInsert={(body) =>
-                    setNotes((prev) => (prev.trim() ? `${prev}\n\n${body}` : body))
-                  }
-                />
-              )}
-              <Label>総評コメント（受講者に通知されます）</Label>
-              <Textarea
-                className="min-h-[160px] mb-3"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-
-              <Label>判定</Label>
-              <div className="flex gap-2 mb-4">
-                <Button
-                  type="button"
-                  variant={verdict === "pass" ? "primary" : "default"}
-                  onClick={() => setVerdict("pass")}
-                >
-                  <Check size={13} />
-                  合格
-                </Button>
-                <Button
-                  type="button"
-                  variant={verdict === "resubmit" ? "primary" : "default"}
-                  onClick={() => setVerdict("resubmit")}
-                >
-                  再提出
-                </Button>
-                <Button
-                  type="button"
-                  variant={verdict === "fail" ? "primary" : "default"}
-                  onClick={() => setVerdict("fail")}
-                >
-                  不合格
-                </Button>
-              </div>
-
-              <Button
-                type="button"
-                variant="accent"
-                className="w-full mb-3"
-                onClick={() => verdict && handleFinalize(verdict)}
-                disabled={
-                  !verdict || aiPassedNow || finalizing || (!!submission.taskId && !taskDetail)
-                }
-              >
-                採点を確定
-              </Button>
-
-              <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 text-[12.5px] text-brand-ink">
-                <Info size={14} />
-                <div>
-                  {isBackendConfigured()
-                    ? "採点を確定すると受講者に LMS 通知が送られます（メールは送信しません）。"
-                    : "採点を確定するとローカルに保存されます（デモ）。"}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </aside>
+              </TabsContent>
+            </Tabs>
+          </aside>
+        )}
       </div>
     </div>
   );

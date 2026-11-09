@@ -34,8 +34,14 @@ export interface TaskSummary {
   skills: { uses: string[]; assesses: string[] };
   estimatedMinutes: number;
   status: TaskStatus;
+  /** `support.aiChat: false` の課題だけ true。 */
+  aiChatDisabled?: boolean;
   /** 課題文のレッスン (`lessons.id`)。そのレッスンにも「VS Code で開く」を出す。 */
   lessonId: string | null;
+  /** 問題つきの課題だけ。今の版の問題数。 */
+  problems_total?: number;
+  /** 問題つきの課題だけ。提出済みの問題数。 */
+  problems_passed?: number;
 }
 /** 公開用の明示的なファイル一覧。private とレビュー用の素材はここに載せない。 */
 export interface TaskBundle {

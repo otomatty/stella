@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m3-arrays/q08-check-b",
+  "title": "確認B 最後に現れる位置",
+  "problems": [
+    {
+      "id": "check-b-last-index",
+      "title": "最後に現れる位置"
+    }
+  ],
+  "kind": "assessment-b",
+  "pattern": "csharp-array-below",
+  "skills": {
+    "uses": [
+      "csharp-array-scan"
+    ],
+    "assesses": [
+      "csharp-array-scan"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "csharp-foundations/m10-mixed/q02-debug",
+  "title": "境界と最大を直す",
+  "problems": [
+    {
+      "id": "r1-winners",
+      "title": "上位の人数"
+    },
+    {
+      "id": "r2-longest",
+      "title": "連続する1"
+    }
+  ],
+  "kind": "debug",
+  "pattern": "csharp-mix-repair",
+  "skills": {
+    "uses": [
+      "csharp-mix-all",
+      "csharp-mix-after"
+    ],
+    "assesses": [
+      "csharp-mix-repair"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

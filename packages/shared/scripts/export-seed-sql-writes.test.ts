@@ -140,8 +140,8 @@ function apply(db: DatabaseSync, sql: string): Record<string, number> {
   return writes;
 }
 
-/** 1 回の apply は全教材の seed (約 1 万文) を 1 文ずつ流すので 1〜2 秒かかる。負荷の高い CI でも落ちない上限。 */
-const SEED_TIMEOUT = 60_000;
+/** 1 回の apply は全教材の seed を 1 文ずつ流すので、教材の量に比例して時間がかかる。Windows や負荷の高い CI でも落ちない上限。 */
+const SEED_TIMEOUT = 120_000;
 
 const total = (writes: Record<string, number>) =>
   Object.values(writes).reduce((sum, rows) => sum + rows, 0);

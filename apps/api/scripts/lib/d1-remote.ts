@@ -12,7 +12,7 @@
 
 const API_BASE = "https://api.cloudflare.com/client/v4";
 
-/** wrangler local の db.batch() は ~128KB 超で SQLITE_TOOBIG。D1 の 100KB/query にも合わせる。 */
+/** D1 の 1 クエリは 100KB まで。 */
 export const MAX_CHUNK_BYTES = 100_000;
 
 /** ネットワーク断・429・5xx だけ再送する回数 (適用済みか不明なので SQL エラーは再送しない)。 */

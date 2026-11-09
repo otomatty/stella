@@ -5,8 +5,10 @@ import {
   isAiChecking,
   isAiPassed,
   needsHumanReview,
+  passByLabel,
   queueGroupOf,
   sortQueue,
+  testsPassedRows,
 } from "./review-queue";
 
 function submission(over: Partial<Submission> & { id: string }): Submission {
@@ -47,6 +49,22 @@ describe("人が見る提出", () => {
     expect(isAiPassed({ ...passed, verdict: "resubmit", reviewSource: "human" })).toBe(false);
     expect(isAiPassed({ ...passed, taskId: undefined })).toBe(false);
   });
+  it("テストで確定した提出は AI の合格に入れない", () => {
+    const byTests = submission({
+      id: "tests",
+      taskId: "t",
+      verdict: "pass",
+      reviewSource: "tests",
+    });
+    expect(isAiPassed(byTests)).toBe(false);
+    expect(passByLabel(byTests)).toBe("テストで確認");
+    expect(passByLabel(submission({ id: "ai", verdict: "pass", reviewSource: "ai" }))).toBe(
+      "AI で合格",
+    );
+    expect(passByLabel(submission({ id: "human", verdict: "pass", reviewSource: "human" }))).toBe(
+      null,
+    );
+  });
 });
 
 describe("キューの分け方と並べ方", () => {
@@ -73,5 +91,55 @@ describe("キューの分け方と並べ方", () => {
     expect(formatWaiting(0, 30 * 60_000)).toBe("1時間未満");
     expect(formatWaiting(0, 5 * 3_600_000)).toBe("5時間");
     expect(formatWaiting(0, 50 * 3_600_000)).toBe("2日");
+  });
+});
+
+describe("テストで合格した提出", () => {
+  const rows = [
+    submission({
+      id: "old",
+      studentId: "a",
+      reviewSource: "tests",
+      verdict: "pass",
+      status: "passed",
+      submittedAt: 1,
+    }),
+    submission({
+      id: "ai",
+      studentId: "a",
+      reviewSource: "ai",
+      verdict: "pass",
+      status: "passed",
+      submittedAt: 9,
+    }),
+    submission({
+      id: "new",
+      studentId: "b",
+      reviewSource: "tests",
+      verdict: "pass",
+      status: "passed",
+      submittedAt: 3,
+    }),
+    submission({
+      id: "mid",
+      studentId: "a",
+      reviewSource: "tests",
+      verdict: "pass",
+      status: "passed",
+      submittedAt: 2,
+    }),
+    submission({ id: "human", studentId: "a", reviewSource: "human", submittedAt: 4 }),
+    submission({ id: "none", studentId: "b", submittedAt: 5 }),
+  ];
+  const everyone = () => true;
+  it("reviewSource が tests の行だけを、新しい順に返す", () => {
+    expect(testsPassedRows(rows, everyone).map((s) => s.id)).toEqual(["new", "mid", "old"]);
+    expect(rows.map((s) => s.id)).toEqual(["old", "ai", "new", "mid", "human", "none"]);
+  });
+  it("担当の絞り込みは人のキューと同じ", () => {
+    const assigned = new Set(["a"]);
+    const inScope = (s: Submission) => s.studentId != null && assigned.has(s.studentId);
+    expect(testsPassedRows(rows, inScope).map((s) => s.id)).toEqual(["mid", "old"]);
+    expect(testsPassedRows(rows, () => false)).toEqual([]);
   });
 });

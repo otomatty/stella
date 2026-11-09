@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
@@ -28,6 +28,7 @@ import {
   submissionFiles,
   submissionReviews,
   submissions,
+  taskProblemResults,
   taskPrivate,
   taskPrivateVersions,
   taskProgress,
@@ -41,6 +42,7 @@ import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTask } from "./task-access.js";
+import { submitTaskProblem } from "./task-problem-submission.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
 import { hasRecordedSupport, isAssistedSubmission } from "./task-support.js";
@@ -89,7 +91,15 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   const definition = JSON.parse(revision.definition) as {
     submit: { explanation: boolean; debuggingRecord: boolean };
     skills: { assesses: string[] };
+    problems?: unknown[];
   };
+  // 問題つきの課題の提出は、説明欄の検査より先に分ける。相談と、problems の無い課題は今の経路。
+  if (
+    input.mode === "submit" &&
+    Array.isArray(definition.problems) &&
+    definition.problems.length > 0
+  )
+    return submitTaskProblem(db, caller, input, task, bundle);
   if (input.mode === "submit" && definition.submit.explanation && !input.explanation.trim())
     throw new ApiError("説明を記入してください", 400);
   if (
@@ -309,25 +319,59 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   }
 }
 
+function bytesToBase64(data: Uint8Array): string {
+  let binary = "";
+  for (const byte of data) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
 /** ファイルの読み出しは呼び出し側で提出の所有者を確認してから行う。 */
 export async function readSubmissionFiles(db: Db, env: Env, submissionId: string) {
   const rows = await db
     .select()
     .from(submissionFiles)
     .where(eq(submissionFiles.submissionId, submissionId));
+  // 問題つきの課題はファイルを R2 に置かず、受講者本人の task_problem_results に持つ。
+  if (rows.length === 0) {
+    const [submission] = await db
+      .select({ taskId: submissions.taskId, studentId: submissions.studentId })
+      .from(submissions)
+      .where(eq(submissions.id, submissionId))
+      .limit(1);
+    if (submission?.taskId && submission.studentId) {
+      const problems = await db
+        .select()
+        .from(taskProblemResults)
+        .where(
+          and(
+            eq(taskProblemResults.userId, submission.studentId),
+            eq(taskProblemResults.taskId, submission.taskId),
+          ),
+        )
+        .orderBy(asc(taskProblemResults.problemId));
+      return problems.map((problem) => {
+        const data = new TextEncoder().encode(problem.code);
+        return {
+          path: problem.path,
+          sha256: problem.sha256,
+          bytes: data.length,
+          content: bytesToBase64(data),
+          text: problem.code,
+        };
+      });
+    }
+  }
   if (!env.SUBMISSIONS_BUCKET) throw new ApiError("提出ファイルの保存先が未設定です", 503);
   return Promise.all(
     rows.map(async (f) => {
       const object = await env.SUBMISSIONS_BUCKET?.get(f.objectKey);
       if (!object) throw new ApiError("提出ファイルを読み出せませんでした", 503);
       const data = new Uint8Array(await object.arrayBuffer());
-      let binary = "";
-      for (const byte of data) binary += String.fromCharCode(byte);
       return {
         path: f.path,
         sha256: f.sha256,
         bytes: f.bytes,
-        content: btoa(binary),
+        content: bytesToBase64(data),
         text: new TextDecoder().decode(data),
       };
     }),
@@ -561,7 +605,7 @@ export async function reviewTaskSubmission(
   id: string,
   verdict: "pass" | "resubmit" | "fail",
   notes: string,
-  source: "human" | "ai" = "human",
+  source: "human" | "ai" | "tests" = "human",
   options: {
     aiReviewId?: string;
     waitMs?: number;
@@ -589,6 +633,14 @@ export async function reviewTaskSubmission(
   const review = async () => {
     const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
     if (!row?.taskId || !row.studentId) throw new ApiError("課題の提出が見つかりません", 404);
+    // テスト確定のやり直しは、合格済みの行を二重に確定しない (ロックを取り直したあと)。
+    if (source === "tests" && row.verdict === "pass") return row;
+    // 問題つきの課題の合格は全問の提出だけ。1 問の相談を合格にすると、残りが未提出でも課題全体が合格になる。
+    if (verdict === "pass" && source !== "tests" && row.taskSnapshot?.manifest.problems?.length)
+      throw new ApiError(
+        "問題つきの課題の相談は合格にできません。返信は再提出で送ってください",
+        409,
+      );
     const now = new Date();
     if (source === "ai") {
       try {
@@ -639,17 +691,25 @@ export async function reviewTaskSubmission(
               : {}),
         })
         .where(eq(submissions.id, id)),
-      db.insert(submissionReviews).values({
-        submissionId: id,
-        taskContentHash: row.taskContentHash,
-        source,
-        reviewerId: source === "human" ? caller.id : null,
-        verdict,
-        notes,
-        createdAt: now,
-      }),
       db.delete(skillEvidence).where(eq(skillEvidence.submissionId, id)),
     ];
+    // テスト確定は提出の review_source だけに残す。submission_reviews.source は ai と human
+    // のままなので、ここには行を書かない。人の訂正は source human の行を足す。
+    if (source !== "tests") {
+      statements.splice(
+        1,
+        0,
+        db.insert(submissionReviews).values({
+          submissionId: id,
+          taskContentHash: row.taskContentHash,
+          source,
+          reviewerId: source === "human" ? caller.id : null,
+          verdict,
+          notes,
+          createdAt: now,
+        }),
+      );
+    }
     if (source === "ai" && options.aiReviewId)
       statements.push(
         db
@@ -703,7 +763,7 @@ export async function reviewTaskSubmission(
       notice.title = `${row.assignmentTitle || "課題"} の合格が${verdict === "fail" ? "不合格" : "再提出"}に変わりました`;
       notice.body = `講師が確認し、AI の合格を取り消しました。${reason ? `理由: ${reason.slice(0, 300)}` : "フィードバックを確認してください。"}`;
     }
-    if (notice) statements.push(db.insert(notifications).values(notice));
+    if (notice && source !== "tests") statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {
       // 提出の申告に加え、この提出より前の AI チャット・相談などの記録も支援に数える (#38)。
       const assisted = await isAssistedSubmission(db, {

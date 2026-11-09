@@ -1,0 +1,14 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["csharp-state-apply", "csharp-state-buy", "csharp-state-max"],
+    "assesses": [
+      "csharp-state-apply",
+      "csharp-state-buy",
+      "csharp-state-max",
+      "csharp-state-choice",
+      "csharp-state-repair"
+    ]
+  },
+  "reuses": []
+}

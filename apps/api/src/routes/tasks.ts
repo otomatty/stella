@@ -1,5 +1,6 @@
 import { type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { countedProblemIds, readTaskDefinition } from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
   parsePublicTaskBundle,
@@ -8,14 +9,20 @@ import {
 } from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
-import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
+import {
+  parseHelpContentHash,
+  parseHelpOpenRequest,
+  taskAiChatEnabled,
+} from "@stella/shared/tasks/help";
 import type { Env } from "../env.js";
 import {
   sections,
   taskFixedStarts,
   taskFixedStartUses,
-  tasks,
+  taskProblemResults,
   taskProgress,
+  taskRevisions,
+  tasks,
 } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
@@ -69,15 +76,146 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
               ),
             );
     const progressByTaskId = new Map(progress.map((p) => [p.taskId, p]));
-    const result: TaskSummary[] = rows.map(({ contentHash, ...task }) => {
-      const p = progressByTaskId.get(task.id);
-      const status =
-        p && (p.contentHash === contentHash || ["passed", "ai-passed"].includes(p.status))
-          ? p.status
-          : "not-started";
-      return { ...task, kind: task.kind as TaskKind, status };
-    });
+    // 問題の件数は今の版の definition から。課題ごとの SQL にはしない。
+    const definitions =
+      rows.length === 0
+        ? []
+        : await db
+            .select({ id: tasks.id, definition: taskRevisions.definition })
+            .from(tasks)
+            .innerJoin(sections, eq(sections.id, tasks.sectionId))
+            .innerJoin(
+              taskRevisions,
+              and(
+                eq(taskRevisions.taskId, tasks.id),
+                eq(taskRevisions.contentHash, tasks.contentHash),
+              ),
+            )
+            .where(
+              and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)),
+            );
+    const problemTasks = new Map<string, { id: string }[]>();
+    const aiChatDisabledTaskIds = new Set<string>();
+    for (const row of definitions) {
+      const problems = readTaskDefinition(row.definition).problems;
+      if (problems) problemTasks.set(row.id, problems);
+      if (!taskAiChatEnabled(JSON.parse(row.definition))) aiChatDisabledTaskIds.add(row.id);
+    }
+    const resultsByTask = new Map<string, { problemId: string; contentHash: string }[]>();
+    if (problemTasks.size > 0) {
+      const results = await db
+        .select({
+          taskId: taskProblemResults.taskId,
+          problemId: taskProblemResults.problemId,
+          contentHash: taskProblemResults.contentHash,
+        })
+        .from(taskProblemResults)
+        .where(
+          and(
+            eq(taskProblemResults.userId, caller.id),
+            inArray(taskProblemResults.taskId, [...problemTasks.keys()]),
+          ),
+        );
+      for (const result of results) {
+        const saved = resultsByTask.get(result.taskId) ?? [];
+        saved.push(result);
+        resultsByTask.set(result.taskId, saved);
+      }
+    }
+    const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
+      rows.map(({ contentHash, ...task }) => {
+        const p = progressByTaskId.get(task.id);
+        const status =
+          p && (p.contentHash === contentHash || ["passed", "ai-passed"].includes(p.status))
+            ? p.status
+            : "not-started";
+        const base = {
+          ...task,
+          kind: task.kind as TaskKind,
+          status,
+          ...(aiChatDisabledTaskIds.has(task.id) ? { aiChatDisabled: true } : {}),
+        };
+        const problems = problemTasks.get(task.id);
+        if (!problems) return base;
+        const passed = countedProblemIds(
+          resultsByTask.get(task.id) ?? [],
+          contentHash,
+          p?.status === "passed" || p?.status === "ai-passed",
+        );
+        return {
+          ...base,
+          problems_total: problems.length,
+          problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
+        };
+      });
     return c.json({ tasks: result });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 問題つきの課題の、本人の問題の状態。一覧は今の版の problems。問題の無い課題は 404。
+ */
+tasksRoute.get("/api/tasks/problem-results", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const taskId = c.req.query("taskId") ?? "";
+    const [row] = await db
+      .select({
+        id: tasks.id,
+        stageId: sections.stageId,
+        variantOf: tasks.variantOf,
+        definition: taskRevisions.definition,
+        contentHash: tasks.contentHash,
+      })
+      .from(tasks)
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .innerJoin(
+        taskRevisions,
+        and(eq(taskRevisions.taskId, tasks.id), eq(taskRevisions.contentHash, tasks.contentHash)),
+      )
+      .where(and(eq(tasks.id, taskId), eq(tasks.active, true)))
+      .limit(1);
+    if (!row || !(await canAccessTask(db, caller, row)))
+      throw new ApiError("課題が見つかりません", 404);
+    const problems = readTaskDefinition(row.definition).problems;
+    if (!problems) throw new ApiError("課題が見つかりません", 404);
+    const saved = await db
+      .select({
+        problemId: taskProblemResults.problemId,
+        contentHash: taskProblemResults.contentHash,
+        firstPassedAt: taskProblemResults.firstPassedAt,
+      })
+      .from(taskProblemResults)
+      .where(and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, row.id)));
+    const [progress] = await db
+      .select({ status: taskProgress.status })
+      .from(taskProgress)
+      .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, row.id)))
+      .limit(1);
+    const taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
+    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed);
+    const byId = new Map(
+      saved
+        .filter((item) => passedIds.has(item.problemId))
+        .map((item) => [item.problemId, item.firstPassedAt]),
+    );
+    const passedProblems = problems.filter((problem) => passedIds.has(problem.id)).length;
+    return c.json({
+      problems: problems.map((problem) => {
+        const firstPassedAt = byId.get(problem.id);
+        return {
+          id: problem.id,
+          title: problem.title,
+          status: firstPassedAt ? "passed" : "not-submitted",
+          firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
+        };
+      }),
+      passedProblems,
+      totalProblems: problems.length,
+      taskPassed,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

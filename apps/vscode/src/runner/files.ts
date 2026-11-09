@@ -12,6 +12,7 @@ import { lstat, mkdir, open, readdir, realpath, rename, rm, writeFile } from "no
 import path from "node:path";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import { TASK_STATE_DIR } from "@stella/shared/tasks/manifest";
+import { isProblemId } from "@stella/shared/tasks/problems";
 import type { HashedFile } from "@stella/shared/tasks/run-result";
 import picomatch from "picomatch";
 
@@ -262,6 +263,45 @@ export async function writeStateFile(
     }
     return;
   }
+  const temp = path.join(dir, `.${name}.${randomUUID()}.tmp`);
+  await writeFile(temp, content, { flag: "wx" });
+  try {
+    await rename(temp, file);
+  } catch (error) {
+    await rm(temp, { force: true });
+    throw error;
+  }
+}
+
+/**
+ * 1 問の実行結果 (`.stella/problem-runs/<id>.json`) を書く。
+ * ID は検証済みのものだけ。リンクはたどらず、課題フォルダーの外には書かない。
+ */
+export async function writeProblemRun(
+  root: string,
+  problemId: string,
+  content: string,
+): Promise<void> {
+  if (!isProblemId(problemId)) throw new UnsafePathError("問題の ID が不正です");
+  const state = await ensureStateDir(root);
+  const dir = path.join(state, "problem-runs");
+  let info: Awaited<ReturnType<typeof lstat>> | undefined;
+  try {
+    info = await lstat(dir);
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT") throw error;
+  }
+  if (!info) {
+    await mkdir(dir);
+  } else if (!info.isDirectory()) {
+    throw new UnsafePathError("problem-runs がフォルダーではありません (リンクは使えません)");
+  }
+  const [realRoot, realDir] = await Promise.all([realpath(root), realpath(dir)]);
+  if (!isInside(realRoot, realDir)) {
+    throw new UnsafePathError("problem-runs が課題フォルダーの外を指しています");
+  }
+  const name = `${problemId}.json`;
+  const file = path.join(dir, name);
   const temp = path.join(dir, `.${name}.${randomUUID()}.tmp`);
   await writeFile(temp, content, { flag: "wx" });
   try {

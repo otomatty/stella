@@ -1,5 +1,13 @@
-import type { AuthStore } from "./auth.js";
-import { stellaUrl } from "./config.js";
+/**
+ * トークンの読み書き。VS Code の SecretStorage も、CLI の資格情報ファイルも、この形で渡す。
+ * このファイルは `vscode` を読まない (CLI が同じクライアントを束ねるため)。
+ */
+export interface ApiAuth {
+  currentSession(): number;
+  getToken(): Promise<string | null>;
+  getTokenInSession(expected: number): Promise<string | null>;
+  clear(): Promise<void>;
+}
 
 export class AuthExpiredError extends Error {
   readonly status = 401 as const;
@@ -10,10 +18,12 @@ export class AuthExpiredError extends Error {
   }
 }
 
-let authStore: AuthStore | undefined;
+let authStore: ApiAuth | undefined;
+let resolveServerUrl: (() => string) | undefined;
 
-export function initApi(store: AuthStore): void {
+export function initApi(store: ApiAuth, serverUrl: () => string): void {
   authStore = store;
+  resolveServerUrl = serverUrl;
 }
 
 /** 複数の API 呼び出しを、フォームを開いたときの接続にそろえる。 */
@@ -21,7 +31,7 @@ export function apiSession(): number | undefined {
   return authStore?.currentSession();
 }
 
-function requireAuthStore(): AuthStore {
+function requireAuthStore(): ApiAuth {
   if (!authStore) {
     throw new Error("AuthStore is not initialized");
   }
@@ -29,7 +39,8 @@ function requireAuthStore(): AuthStore {
 }
 
 function serverUrl(): string {
-  return stellaUrl("serverUrl");
+  if (!resolveServerUrl) throw new Error("API の接続先が設定されていません");
+  return resolveServerUrl().replace(/\/+$/, "");
 }
 
 function errorMessage(data: unknown, fallback: string): string {

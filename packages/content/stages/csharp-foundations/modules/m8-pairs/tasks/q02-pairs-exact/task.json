@@ -1,0 +1,83 @@
+{
+  "id": "csharp-foundations/m8-pairs/q02-pairs-exact",
+  "title": "同じ売り場から二つ",
+  "problems": [
+    {
+      "id": "q11-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q12-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q13-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q14-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q15-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q16-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q17-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q18-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q19-pairs",
+      "title": "ちょうどK"
+    },
+    {
+      "id": "q20-pairs",
+      "title": "ちょうどK"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-pairs-same",
+  "skills": {
+    "uses": [
+      "csharp-pairs-same"
+    ],
+    "assesses": [
+      "csharp-pairs-same"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 40,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

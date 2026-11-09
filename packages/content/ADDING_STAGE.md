@@ -76,6 +76,8 @@ modules/<unit>/
 
 `task.json` の必須項目は `id`（`<ステージ>/<単元>/<課題>`）・`title`・`kind`・`pattern`・`skills`・`runner`・`environment`・`submit`・`review`・`support`・`sources`・`estimatedMinutes` です。
 
+問題つきの課題は、同じ課題の中を 1 問 1 ファイルで確認・提出します。`problems` に `{ "id", "title" }` を 1 件以上書きます。`id` は英小文字・数字で始め、英小文字・数字・ハイフンだけです。課題の中で重複しません。書けるのは手順が vitest・typescript・dotnet の runner だけです。ファイルのパスは書きません。`id` から、vitest・typescript は `src/<id>.ts` と `tests/<id>.test.ts`、dotnet は `src/<id>.cs` と `tests/<id>.test.cs` になります。`review` は書かなくてよく、読み込み後は空のルーブリックになります。`submit.explanation` と `submit.debuggingRecord` は `false` でよいです。AI の一次レビューは通さず、問題が全部そろった提出を `review_source = 'tests'` で合格にします。合否は手元のテストが通ったという申告で、サーバーはコードを実行しません。
+
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
 - `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。
 - コーディング規則の正本は [coding-rules.md](coding-rules.md) (プログラム共通) と `stages/<slug>/coding-rules.md` (ステージの追加分) です。課題が指せるのは共通の規則と自分のステージの規則だけで、導入より前の課題では必須にできません。後のステージでも使う規則は共通の規則に書きます。書式は coding-rules.md の冒頭を参照してください。
@@ -91,6 +93,8 @@ modules/<unit>/
   どの種別でも `never` を選べ、取り組み中も合格後も解答例と解説を出さない（選考の課題など。拡張は解答例・解説の欄を出さない。確認B と同じ見え方）。ヒントを出さないなら `hintLevels` を 0 にする。
 
   `attempts` は `attempts-or-passed` の回数で、省略すると5回（`SOLUTION_UNLOCK_ATTEMPTS`）です。1回の挑戦は、手元の確認で失敗した1回（環境のエラーは数えない）と、提出1回（相談を含む）です。ほかの条件には書けません。
+
+  `aiChat: false` と書くと、その課題では Web の「AI に相談」を使えません (省略すると使えます)。
 - `hints.md`: ヒントの段を `## ヒント<番号> <題>` の見出しで分けます。番号は1から順に振り、段の数を `support.hintLevels` とそろえます。段の順は「方針 → 手がかりのコード」で、解答例は書きません（`private/solution/` が最後の段として出ます）。段の中では `###` 以下の見出しとコードブロックを使えます。最初の見出しより前に本文は置けません。ヒント0段の課題は空（かコメントだけ）にします。題は段を開いたときに見出しとして出ます（開く前は「ヒント2」のように番号だけ）。`content:check` が形と段の数を検査します。
 
   ````markdown
@@ -122,7 +126,7 @@ WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README
 
 ### 予備の類題 (コードの復習)
 
-コードの復習は、同じ問題を解き直させず、同じ実装パターンの別の問題 (類題) を時間を空けて出します (07 §7.2・§7.3)。パターンは `patterns.json` に `{ id, title }` で登録し、単元の基礎課題 (値・条件・境界・組合せ・利用場面を変えた同じパターンの問題群、03 §2) の `task.json` に同じ `pattern` を書きます。台帳に無いパターンと台帳の ID の重複は `content:check` が落とします。
+コードの復習は、同じ問題を解き直させず、同じ実装パターンの別の問題 (類題) を時間を空けて出します (07 §7.2・§7.3)。パターンは `patterns.json` に `{ id, title }` で登録し、単元の基礎課題 (値・条件・境界・組合せ・利用場面を変えた同じパターンの問題群、03 §2) の `task.json` に同じ `pattern` を書きます。台帳に無いパターンと台帳の ID の重複は `content:check` が落とします。確認 B の `pattern` を同じ単元の対応する確認 A と同じ値にしないと、A の合格から 7 学習日後に予定する処理と定着の判定が働きません。
 
 類題は、親にする課題の `private/variants/<類題>/` に 1 問 1 フォルダーで置きます。リポジトリは公開ですが、アプリは出題した受講者にだけ配ります。
 

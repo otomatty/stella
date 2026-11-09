@@ -1,10 +1,15 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunnerId } from "@stella/shared/tasks/runners";
 import { describe, expect, it } from "vitest";
 import { parseTscDiagnostics } from "./parsers.js";
 import { buildPlan } from "./plans.js";
 import type { ProcessOutcome } from "./process.js";
+import { runTask } from "./run-task.js";
 import { requiredPackages, tscOutcome } from "./steps.js";
 
 function textFixture(name: string): string {
@@ -162,4 +167,95 @@ describe("ts-test の手順", () => {
     ]);
     expect(requiredPackages(task("node-test", { lint: false, format: false }))).toEqual(["vitest"]);
   });
+});
+
+describe("問題を指定した型の確認", () => {
+  it("src/a.ts に型エラーがあっても、problem b の typecheck は通る", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "stella-ts-problem-"));
+    try {
+      const files: Record<string, string> = {
+        "package.json": JSON.stringify({ name: "task", private: true }),
+        "package-lock.json": "{}",
+        "tsconfig.json": JSON.stringify({
+          compilerOptions: {
+            target: "ES2022",
+            module: "ESNext",
+            moduleResolution: "Bundler",
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+          },
+          include: ["src/**/*.ts", "tests/**/*.ts"],
+        }),
+        "src/a.ts": 'export const value: number = "broken";\n',
+        "src/b.ts":
+          "export function add(left: number, right: number): number { return left + right; }\n",
+        "tests/a.test.ts":
+          'import { value } from "../src/a";\nexport const check: string = value;\n',
+        "tests/b.test.ts":
+          'import { add } from "../src/b";\nexport const check: number = add(1, 2);\n',
+        "node_modules/vitest/package.json": JSON.stringify({
+          name: "vitest",
+          version: "1.0.0",
+          bin: { vitest: "./cli.cjs" },
+        }),
+        "node_modules/vitest/cli.cjs": `
+const fs = require("node:fs");
+const out = process.argv.find((a) => a.startsWith("--outputFile=")).slice("--outputFile=".length);
+fs.writeFileSync(out, JSON.stringify({
+  success: true,
+  testResults: [{ name: "tests/b.test.ts", status: "passed", assertionResults: [
+    { ancestorTitles: [], title: "ok", status: "passed", failureMessages: [] }
+  ]}]
+}));
+`,
+      };
+      for (const [rel, content] of Object.entries(files)) {
+        const file = path.join(root, ...rel.split("/"));
+        await mkdir(path.dirname(file), { recursive: true });
+        await writeFile(file, content);
+      }
+      const tsPkg = fileURLToPath(new URL("../../node_modules/typescript", import.meta.url));
+      await symlink(
+        tsPkg,
+        path.join(root, "node_modules", "typescript"),
+        process.platform === "win32" ? "junction" : "dir",
+      );
+      expect(existsSync(path.join(tsPkg, "package.json")), tsPkg).toBe(true);
+      const npmCli = path.join(root, "npm-cli.cjs");
+      await writeFile(npmCli, "process.exit(0);\n");
+      const manifest: TaskManifest = {
+        ...task("ts-test", { lint: false, format: false }),
+        problems: [
+          { id: "a", title: "壊れている" },
+          { id: "b", title: "通る" },
+        ],
+      };
+      const toolchain = {
+        node: process.execPath,
+        npm: { file: process.execPath, prefixArgs: [npmCli] },
+      };
+      const whole = await runTask({ root, manifest, manifestSha256: "m", toolchain });
+      expect(whole.steps.find((step) => step.id === "typecheck")?.status).toBe("failed");
+      const focused = await runTask({
+        root,
+        manifest,
+        manifestSha256: "m",
+        toolchain,
+        problem: "b",
+      });
+      expect(focused.steps.find((step) => step.id === "typecheck")?.status).toBe("passed");
+      expect(focused.problemId).toBe("b");
+      const config = JSON.parse(
+        await readFile(path.join(root, ".stella", "tmp", "tsconfig.problem.json"), "utf8"),
+      );
+      expect(config).toEqual({
+        extends: "../../tsconfig.json",
+        include: [],
+        files: ["../../src/b.ts", "../../tests/b.test.ts"],
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

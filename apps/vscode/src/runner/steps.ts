@@ -4,7 +4,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, stat } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -71,6 +71,11 @@ export interface StepContext {
   dotnet: string | null;
   /** submit.files に当たったファイル (課題フォルダーからの相対パス)。 */
   submitFiles: readonly string[];
+  /**
+   * 指定した 1 問。ID は manifest の一覧と照合したものだけ。
+   * 無い実行は課題全体 (content:check を含む)。
+   */
+  problem?: { id: string; source: string; test: string };
   /** 道具の版を書き込む (環境診断が使う)。 */
   toolVersions: Partial<Record<EnvironmentTool, string>>;
   /** CI と公開の課題で、受講者が入力した実行・公開先の URL (拡張の入力欄から)。 */
@@ -323,11 +328,46 @@ export const depsStep: StepDefinition = {
 // ---------------------------------------------------------------
 
 /**
+ * 問題つきの課題を、問題を指定せずに実行している。受講者は 1 問ずつ確認するので、
+ * この実行は content:check だけが使う。提出 50 件の上限はここには当てない。
+ */
+function wholeProblemRun(ctx: StepContext): boolean {
+  return ctx.problem === undefined && (ctx.manifest.problems?.length ?? 0) > 0;
+}
+
+/**
+ * Windows の .cmd は引数が約 8191 文字を超えると起動できない。Node で直接起動していても、
+ * 受け取った文字列はコマンドにせず、長くなったらファイル一覧の代わりに `src` を渡す。
+ */
+const COMMAND_LINE_BUDGET = 7000;
+
+function argsFit(args: readonly string[]): boolean {
+  let length = 0;
+  for (const arg of args) length += arg.length + 1;
+  return length <= COMMAND_LINE_BUDGET;
+}
+
+/** lint・整形に渡すパス。問題の全体実行で引数が長すぎるときは src フォルダー。 */
+function toolPaths(ctx: StepContext, files: readonly string[]): string[] {
+  const args = files.map(asCliPath);
+  if (
+    wholeProblemRun(ctx) &&
+    !argsFit(args) &&
+    files.every((file) => file === "src" || file.startsWith("src/"))
+  ) {
+    return ["./src"];
+  }
+  return args;
+}
+
+/**
  * 提出の上限を超えていれば、道具に渡さず省略する。上限超えは最後の「提出するファイルの
  * 確認」が要修正として報告する。何百ものパスを渡すと Windows ではコマンドラインの長さを
  * 超えて起動できず、直し方の分からない環境のエラーになってしまう。
+ * 問題つきの課題の全体実行には当てない (wholeProblemRun)。
  */
 function tooManySubmitFiles(ctx: StepContext): StepOutcome | null {
+  if (wholeProblemRun(ctx)) return null;
   if (ctx.submitFiles.length <= LIMITS.submitFiles) return null;
   return {
     status: "skipped",
@@ -335,21 +375,29 @@ function tooManySubmitFiles(ctx: StepContext): StepOutcome | null {
   };
 }
 
+/** 問題の指定があるときは、その問題のソースだけを lint・整形する。 */
+function lintTargets(ctx: StepContext): readonly string[] {
+  return ctx.problem ? [ctx.problem.source] : ctx.submitFiles;
+}
+
 export const lintStep: StepDefinition = {
   id: "lint",
   label: "lint (ESLint)",
   async run(ctx) {
-    const tooMany = tooManySubmitFiles(ctx);
-    if (tooMany) return tooMany;
+    const targets = lintTargets(ctx);
+    if (!ctx.problem) {
+      const tooMany = tooManySubmitFiles(ctx);
+      if (tooMany) return tooMany;
+    }
     const bin = await packageBin(ctx, "eslint", "eslint", "ESLint");
     if (isOutcome(bin)) return bin;
-    const files = ctx.submitFiles.filter(isLintableFile);
+    const files = targets.filter(isLintableFile);
     if (files.length === 0)
       return { status: "skipped", summary: "lint の対象になるファイルがありません" };
     const output = await tmpFile(ctx.root, "eslint.json");
     const out = await ctx.exec({
       file: ctx.node as string,
-      args: [bin.file, "--format", "json", "--output-file", output, ...files.map(asCliPath)],
+      args: [bin.file, "--format", "json", "--output-file", output, ...toolPaths(ctx, files)],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.lint,
     });
@@ -367,15 +415,18 @@ export const formatStep: StepDefinition = {
   id: "format",
   label: "整形 (Prettier)",
   async run(ctx) {
-    const tooMany = tooManySubmitFiles(ctx);
-    if (tooMany) return tooMany;
+    const targets = lintTargets(ctx);
+    if (!ctx.problem) {
+      const tooMany = tooManySubmitFiles(ctx);
+      if (tooMany) return tooMany;
+    }
     const bin = await packageBin(ctx, "prettier", "prettier", "Prettier");
     if (isOutcome(bin)) return bin;
-    if (ctx.submitFiles.length === 0)
+    if (targets.length === 0)
       return { status: "skipped", summary: "整形の対象になるファイルがありません" };
     const out = await ctx.exec({
       file: ctx.node as string,
-      args: [bin.file, "--list-different", "--ignore-unknown", ...ctx.submitFiles.map(asCliPath)],
+      args: [bin.file, "--list-different", "--ignore-unknown", ...toolPaths(ctx, targets)],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.format,
     });
@@ -443,9 +494,28 @@ export const tscStep: StepDefinition = {
   async run(ctx) {
     const bin = await packageBin(ctx, "typescript", "tsc", "TypeScript");
     if (isOutcome(bin)) return bin;
+    let project = "tsconfig.json";
+    if (ctx.problem) {
+      const configFile = await tmpFile(ctx.root, "tsconfig.problem.json");
+      const up = (rel: string) => `../../${rel}`;
+      await writeFile(
+        configFile,
+        `${JSON.stringify(
+          {
+            extends: up("tsconfig.json"),
+            // extends は親の include を残す。files と足されて別の問題まで検査されるので、空で上書きする。
+            include: [],
+            files: [up(ctx.problem.source), up(ctx.problem.test)],
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      project = `${TASK_STATE_DIR}/tmp/tsconfig.problem.json`;
+    }
     const out = await ctx.exec({
       file: ctx.node as string,
-      args: [bin.file, "--noEmit", "-p", "tsconfig.json", "--pretty", "false", "--locale", "ja"],
+      args: [bin.file, "--noEmit", "-p", project, "--pretty", "false", "--locale", "ja"],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.typecheck,
     });
@@ -467,9 +537,12 @@ export const vitestStep: StepDefinition = {
     const bin = await packageBin(ctx, "vitest", "vitest", "Vitest");
     if (isOutcome(bin)) return bin;
     const output = await tmpFile(ctx.root, "vitest.json");
+    const args = [bin.file, "run"];
+    if (ctx.problem) args.push(asCliPath(ctx.problem.test));
+    args.push("--reporter=json", `--outputFile=${output}`);
     const out = await ctx.exec({
       file: ctx.node as string,
-      args: [bin.file, "run", "--reporter=json", `--outputFile=${output}`],
+      args,
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.test,
     });
@@ -841,11 +914,14 @@ export const dotnetBuildStep: StepDefinition = {
         "build",
         DOTNET_PROJECT_FILE,
         "--no-restore",
+        // 更新日時が古いファイルに置き換えると、出力が新しいと判断して CoreCompile を飛ばす。
+        "--no-incremental",
         "--nologo",
         "--disable-build-servers",
         "-nodeReuse:false",
         "-p:UseSharedCompilation=false",
         "-consoleLoggerParameters:NoSummary",
+        ...(ctx.problem ? [`-p:StellaProblem=${ctx.problem.id}`] : []),
       ],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.build,
@@ -937,6 +1013,7 @@ export const dotnetTestStep: StepDefinition = {
         "trx;LogFileName=results.trx",
         "--results-directory",
         resultsDir,
+        ...(ctx.problem ? [`-p:StellaProblem=${ctx.problem.id}`] : []),
       ],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.test,

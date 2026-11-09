@@ -138,5 +138,333 @@
   {
     "id": "local-server",
     "title": "ローカルサーバーで表示する"
+  },
+  {
+    "id": "csharp-for-sequence",
+    "title": "for で決まった順に値を出す"
+  },
+  {
+    "id": "csharp-for-fold",
+    "title": "for で合計・個数・積を求める"
+  },
+  {
+    "id": "csharp-compare-extremes",
+    "title": "比べて最大または最小を残す"
+  },
+  {
+    "id": "csharp-print-then-total",
+    "title": "値を出しながら合計する"
+  },
+  {
+    "id": "csharp-loop-choice",
+    "title": "問題文から繰り返しの処理を選ぶ"
+  },
+  {
+    "id": "csharp-loop-repair",
+    "title": "繰り返しの終端と初期値を直す"
+  },
+  {
+    "id": "csharp-loop-tally",
+    "title": "条件に合う値を繰り返しで集計する"
+  },
+  {
+    "id": "csharp-arithmetic",
+    "title": "計算して返す"
+  },
+  {
+    "id": "csharp-remainder-branch",
+    "title": "余りで2つに分ける"
+  },
+  {
+    "id": "csharp-compare-branch",
+    "title": "比較で2つに分ける"
+  },
+  {
+    "id": "csharp-multi-branch",
+    "title": "else if で段階に分ける"
+  },
+  {
+    "id": "csharp-two-compare",
+    "title": "2つの数を比べて返す"
+  },
+  {
+    "id": "csharp-logic-combine",
+    "title": "かつ・または・範囲で分ける"
+  },
+  {
+    "id": "csharp-hour-band",
+    "title": "時間帯を範囲で分ける"
+  },
+  {
+    "id": "csharp-condition-choice",
+    "title": "問題文から条件を選ぶ"
+  },
+  {
+    "id": "csharp-condition-repair",
+    "title": "条件の境界とつなぎを直す"
+  },
+  {
+    "id": "csharp-tiered-fee",
+    "title": "時間で料金を分ける"
+  },
+  {
+    "id": "csharp-array-scan",
+    "title": "配列を for で順に出す"
+  },
+  {
+    "id": "csharp-array-fold",
+    "title": "配列を for で集計する"
+  },
+  {
+    "id": "csharp-array-count",
+    "title": "条件を満たす要素を数える"
+  },
+  {
+    "id": "csharp-array-count-evens",
+    "title": "配列の偶数を数える"
+  },
+  {
+    "id": "csharp-array-choice",
+    "title": "問題文から配列の処理を選ぶ"
+  },
+  {
+    "id": "csharp-array-repair",
+    "title": "配列の初期値と足す対象を直す"
+  },
+  {
+    "id": "csharp-array-below",
+    "title": "基準未満の合計と件数を出す"
+  },
+  {
+    "id": "csharp-string-length",
+    "title": "文字列の長さと位置を読む"
+  },
+  {
+    "id": "csharp-string-count",
+    "title": "文字を for で数える"
+  },
+  {
+    "id": "csharp-string-slice",
+    "title": "Substring で切り出す"
+  },
+  {
+    "id": "csharp-string-eight-digits",
+    "title": "長さ 8 かつ全部数字"
+  },
+  {
+    "id": "csharp-string-choice",
+    "title": "問題文から文字列の処理を選ぶ"
+  },
+  {
+    "id": "csharp-string-repair",
+    "title": "長さを見る前の切り出しと途中の return を直す"
+  },
+  {
+    "id": "csharp-string-tail2",
+    "title": "検証してから末尾 2 文字を返す"
+  },
+  {
+    "id": "csharp-stdin-one",
+    "title": "1行から整数を1つ読む"
+  },
+  {
+    "id": "csharp-stdin-split",
+    "title": "1行を Split して整数にする"
+  },
+  {
+    "id": "csharp-stdin-count",
+    "title": "先頭の件数だけ値を見る"
+  },
+  {
+    "id": "csharp-stdin-lines",
+    "title": "続く行を読んで最大を出す"
+  },
+  {
+    "id": "csharp-stdin-choice",
+    "title": "問題文から標準入力の読み方を選ぶ"
+  },
+  {
+    "id": "csharp-stdin-repair",
+    "title": "読む回数と足し方を直す"
+  },
+  {
+    "id": "csharp-stdin-above",
+    "title": "閾値より大きい値を行から集計する"
+  },
+  {
+    "id": "csharp-combine-count",
+    "title": "点数を読んで条件で数える"
+  },
+  {
+    "id": "csharp-combine-two-strings",
+    "title": "2行の文字列を比べる"
+  },
+  {
+    "id": "csharp-combine-one-string",
+    "title": "1行の文字列を判定する"
+  },
+  {
+    "id": "csharp-combine-neighbors",
+    "title": "隣どうしを比べる"
+  },
+  {
+    "id": "csharp-combine-below",
+    "title": "同じ読み方で未満の人数を数える"
+  },
+  {
+    "id": "csharp-combine-choice",
+    "title": "読み方と条件を自分で選ぶ"
+  },
+  {
+    "id": "csharp-combine-repair",
+    "title": "絶対値と文字判定を直す"
+  },
+  {
+    "id": "csharp-combine-changed",
+    "title": "隣が変わった組を数える"
+  },
+  {
+    "id": "csharp-reach-change",
+    "title": "残金・件数・末尾の文字を出す"
+  },
+  {
+    "id": "csharp-state-apply",
+    "title": "増減を順に足して最後の値を出す"
+  },
+  {
+    "id": "csharp-state-buy",
+    "title": "買えるときだけ引く"
+  },
+  {
+    "id": "csharp-state-max",
+    "title": "途中の最大と最後の値を出す"
+  },
+  {
+    "id": "csharp-state-choice",
+    "title": "問題文から状態の更新を選ぶ"
+  },
+  {
+    "id": "csharp-state-repair",
+    "title": "足し方と停止条件を直す"
+  },
+  {
+    "id": "csharp-state-first-negative",
+    "title": "適用後に初めて負になる操作を出す"
+  },
+  {
+    "id": "csharp-pairs-across",
+    "title": "二つの列から1つずつ選んで数える"
+  },
+  {
+    "id": "csharp-pairs-same",
+    "title": "同じ列の合計がちょうどKの組を数える"
+  },
+  {
+    "id": "csharp-pairs-rows",
+    "title": "行ごとの奇数を数える"
+  },
+  {
+    "id": "csharp-pairs-choice",
+    "title": "組み合わせ方を自分で選ぶ"
+  },
+  {
+    "id": "csharp-pairs-repair",
+    "title": "内側の始め方を直す"
+  },
+  {
+    "id": "csharp-pairs-close",
+    "title": "差がD以下の組を数える"
+  },
+  {
+    "id": "csharp-sort-kth",
+    "title": "小さい順のK番目を求める"
+  },
+  {
+    "id": "csharp-count-mode",
+    "title": "0から9の最頻値を小さい方優先で求める"
+  },
+  {
+    "id": "csharp-count-names",
+    "title": "名前ごとの件数を求める"
+  },
+  {
+    "id": "csharp-count-choice",
+    "title": "ソートと集計の処理を自分で選ぶ"
+  },
+  {
+    "id": "csharp-count-repair",
+    "title": "添字と未登録の読み方を直す"
+  },
+  {
+    "id": "csharp-count-kinds",
+    "title": "2回以上の値の種類を数える"
+  },
+  {
+    "id": "csharp-mix-choice",
+    "title": "処理の組み合わせを自分で選ぶ"
+  },
+  {
+    "id": "csharp-mix-repair",
+    "title": "境界の比較と最大の残し方を直す"
+  },
+  {
+    "id": "csharp-mix-pairs",
+    "title": "予算以下の組の数と最大合計を求める"
+  },
+  {
+    "id": "csharp-mix-reach-a",
+    "title": "買えた残金と大きい組と名前の合計を求める"
+  },
+  {
+    "id": "csharp-return-bool",
+    "title": "条件そのものを bool で返す"
+  },
+  {
+    "id": "csharp-char-bool",
+    "title": "1文字を見て bool で返す"
+  },
+  {
+    "id": "csharp-return-value",
+    "title": "計算の結果を返す"
+  },
+  {
+    "id": "csharp-func-choice",
+    "title": "関数の組み合わせを自分で選ぶ"
+  },
+  {
+    "id": "csharp-func-repair",
+    "title": "戻り値の捨て方と画面出力を直す"
+  },
+  {
+    "id": "csharp-neighbor-distance",
+    "title": "隣との差の絶対値を合計する"
+  },
+  {
+    "id": "csharp-member-code",
+    "title": "空白の有無を残して会員コードを検証する"
+  },
+  {
+    "id": "csharp-member-change",
+    "title": "仕様の変更に合わせて検証の順番とログを変える"
+  },
+  {
+    "id": "csharp-date-check",
+    "title": "数字8桁を確かめてから日付を検証する"
+  },
+  {
+    "id": "csharp-date-change",
+    "title": "日付や時刻の条件に合わせて検証とログの順番を変える"
+  },
+  {
+    "id": "csharp-date-days",
+    "title": "月ごとの日数と簡略うるう年に合わせて日付を検証する"
+  },
+  {
+    "id": "csharp-date-days-change",
+    "title": "うるう年の条件と削除ログの変更を実装する"
+  },
+  {
+    "id": "csharp-final-spec",
+    "title": "短い仕様から検証の順番とログを決めて実装する"
   }
 ]

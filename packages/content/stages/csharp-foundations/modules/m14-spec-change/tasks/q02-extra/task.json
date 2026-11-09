@@ -1,0 +1,64 @@
+{
+  "id": "csharp-foundations/m14-spec-change/q02-extra",
+  "title": "日付の仕様変更の追加演習",
+  "problems": [
+    {
+      "id": "q01-calendar-leap",
+      "title": "暦の規則へ変更"
+    },
+    {
+      "id": "q02-reimplement",
+      "title": "仕様から再実装する"
+    },
+    {
+      "id": "q03-import-final-log",
+      "title": "Importの削除ログを変える"
+    }
+  ],
+  "kind": "independent",
+  "pattern": "csharp-date-days-change",
+  "skills": {
+    "uses": [
+      "csharp-date-days",
+      "csharp-date-days-change"
+    ],
+    "assesses": [
+      "csharp-date-days-change"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-mslearn-csharp-contains-20261108",
+    "SRC-mslearn-csharp-replace-20261108",
+    "SRC-mslearn-csharp-substring-20261106",
+    "SRC-mslearn-csharp-parse-20261106",
+    "SRC-mslearn-csharp-if-20261104",
+    "SRC-mslearn-csharp-arithmetic-20261106",
+    "SRC-mslearn-csharp-methods-20261106"
+  ],
+  "estimatedMinutes": 90,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

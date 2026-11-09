@@ -87,6 +87,15 @@ jobs:
         if: inputs.scope != 'code'
         run: bun run lint
 
+      # 通った課題の解答例・誤答の実行を飛ばす。鍵は実行ごとに違い、直前の保存を restore-keys で拾う。
+      - name: Cache task checks
+        if: inputs.scope != 'code'
+        uses: actions/cache@v6
+        with:
+          path: .task-check-cache
+          key: task-check-${{ github.run_id }}
+          restore-keys: task-check-
+
       - name: Content vocabulary check
         env:
           CONTENT_REFERENCES_SUMMARY: ${{ runner.temp }}/source-references-summary.md

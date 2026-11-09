@@ -1,7 +1,12 @@
 import type { TestCaseResult } from "@stella/shared/tasks/run-result";
 import { describe, expect, it } from "vitest";
 import type { ProcessOutcome } from "./process.js";
-import { dotnetBuildOutcome, dotnetTestOutcome } from "./steps.js";
+import {
+  dotnetBuildOutcome,
+  dotnetBuildStep,
+  dotnetTestOutcome,
+  type StepContext,
+} from "./steps.js";
 
 function outcome(overrides: Partial<ProcessOutcome> = {}): ProcessOutcome {
   return {
@@ -30,6 +35,24 @@ const ROOT = "C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\q01";
 const HOME = "C:\\Users\\山田 太郎";
 const NETSDK1064 =
   "C:\\Program Files\\dotnet\\sdk\\10.0.400\\Sdks\\Microsoft.NET.Sdk\\targets\\Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1064: パッケージ xunit.core、バージョン 2.9.3 が見つかりませんでした。NuGet の復元以降に削除された可能性があります。 [C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\q01\\Task.csproj]";
+
+describe("dotnetBuildStep", () => {
+  it("増分コンパイルを使わない", async () => {
+    let args: string[] = [];
+    const ctx = {
+      root: ROOT,
+      platform: "win32",
+      dotnet: "dotnet",
+      exec: async (spec: { args: string[] }) => {
+        args = spec.args;
+        return outcome();
+      },
+    } as unknown as StepContext;
+    const result = await dotnetBuildStep.run(ctx);
+    expect(result.status).toBe("passed");
+    expect(args).toContain("--no-incremental");
+  });
+});
 
 describe("dotnetBuildOutcome", () => {
   it("NETSDK1064 は依存パッケージのやり直し", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 import {
   hasVideo,
@@ -10,14 +11,17 @@ import {
 
 describe("教材動画の配信", () => {
   it("format 2 の slides を動画用に集め、配布 PDF の対象は変えない", () => {
+    const manifest = buildContentManifest();
     expect(
-      collectPdfTargets().some((t) => t.stageSlug === "dev-env-basics" && t.kind === "slides"),
+      collectPdfTargets(manifest).some(
+        (t) => t.stageSlug === "dev-env-basics" && t.kind === "slides",
+      ),
     ).toBe(false);
-    const topics = collectPdfTargets(undefined, { includeFormat2Slides: true });
+    const topics = collectPdfTargets(manifest, { includeFormat2Slides: true });
     expect(
       topics.find((t) => t.stageSlug === "dev-env-basics" && t.lessonId === "00-1-1")?.kind,
     ).toBe("slides");
-  });
+  }, 60_000);
   const keys = videoKeys("dev-env-basics", "0-1-1", "abc123");
   it("動画・字幕・表紙は同じハッシュで、旧版と別のキーを使う", () => {
     expect(keys).toEqual({

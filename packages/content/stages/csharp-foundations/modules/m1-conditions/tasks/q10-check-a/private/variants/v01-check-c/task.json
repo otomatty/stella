@@ -1,0 +1,48 @@
+{
+  "id": "csharp-foundations/m1-conditions/v01-check-c",
+  "title": "確認C 閾値で引く",
+  "problems": [
+    {
+      "id": "check-c-discount",
+      "title": "閾値で引く"
+    }
+  ],
+  "kind": "assessment-a",
+  "pattern": "csharp-tiered-fee",
+  "skills": {
+    "uses": [
+      "csharp-if-else"
+    ],
+    "assesses": [
+      "csharp-if-else"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 20,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

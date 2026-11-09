@@ -39,7 +39,7 @@ export function firstReadmeParagraph(readme: string | null): string | null {
   const text = lines
     .join(" ")
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]*>/g, "")
+    .replace(/(`[^`]*`)|<[^>]*>/g, "$1")
     .replace(/[`*_~]/g, "")
     .replace(/\\([\\`*_[\]{}()#+.!>-])/g, "$1")
     .trim();

@@ -215,6 +215,42 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect(JSON.stringify(body)).not.toMatch(/bundle|definition|PRIVATE|files/);
   });
 
+  it.each([undefined, { hintLevels: 0, solutionUnlock: "never" }])(
+    "課題一覧は support.aiChat が false の課題だけ無効を返す (有効側の support: %j)",
+    async (support) => {
+      await addEarlierTask();
+      const disabledDefinition = JSON.stringify({ ...DEFINITION, support: { aiChat: false } });
+      const enabledDefinition = JSON.stringify({ ...DEFINITION, support });
+      await db.batch([
+        db
+          .update(tasks)
+          .set({ definition: disabledDefinition })
+          .where(eq(tasks.id, fixture.input.taskId)),
+        db
+          .update(taskRevisions)
+          .set({ definition: disabledDefinition })
+          .where(eq(taskRevisions.taskId, fixture.input.taskId)),
+        db.update(tasks).set({ definition: enabledDefinition }).where(eq(tasks.id, EARLIER_ID)),
+        db
+          .update(taskRevisions)
+          .set({ definition: enabledDefinition })
+          .where(eq(taskRevisions.taskId, EARLIER_ID)),
+      ]);
+
+      const response = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+      expect(response.status, await response.clone().text()).toBe(200);
+      const body = await json<{ tasks: TaskSummary[] }>(response);
+      expect(body.tasks).toHaveLength(2);
+      expect(body.tasks.find((task) => task.id === fixture.input.taskId)).toHaveProperty(
+        "aiChatDisabled",
+        true,
+      );
+      expect(body.tasks.find((task) => task.id === EARLIER_ID)).not.toHaveProperty(
+        "aiChatDisabled",
+      );
+    },
+  );
+
   it("bundle に private/ が紛れ込んでいても配らない", async () => {
     await db
       .update(tasks)

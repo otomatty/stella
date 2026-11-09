@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m08-async@2",
-  "contentHash": "c1b8613ff31e4eb76deaa30e637c458f2f53172814a4abdd2c2d0e2801e290ee",
+  "unitId": "devlab-ts-prework/m08-async@4",
+  "contentHash": "65bf008da8691ee7b7b313f5b78274fe173940e0b32a46cb1ea22cfd895528d9",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -16,7 +16,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の非同期処理の範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/s02-extra/README.md",
@@ -28,7 +28,7 @@
       "usedFor": "教材独自の課題。サバイバルTypeScript の非同期処理の範囲の発展問題の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }
