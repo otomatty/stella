@@ -101,6 +101,11 @@ export interface RunResult {
    */
   problemId?: string;
   /**
+   * 1 問の実行で、その問題のファイルが相対 import している提出対象の別のファイル (間接の import も含む)。
+   * 確認のあとに変えたら確認し直しにする。無ければ省略 (問題を持たない課題の結果の形を変えないため)。
+   */
+  importedFiles?: HashedFile[];
+  /**
    * CI と公開 (`ci-deploy`) の課題で受講者が入力した実行・公開先の URL と、手元のコミット。
    * URL の形を確かめたときだけ持つ。コミットは読めたときだけ。ほかの runner では省略 (07 §5.5)。
    */

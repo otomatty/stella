@@ -235,6 +235,22 @@ async function prepareProblemInput(
       recorded[0]?.sha256 === hashed.sha256 &&
       recorded[0]?.bytes === hashed.bytes;
     if (!sameFile) throw new Error(RECHECK);
+    const recordedImports = result.importedFiles;
+    if (recordedImports) {
+      const imported = await hashFiles(
+        root,
+        recordedImports.map((file) => file.path),
+        LIMITS.fileBytes,
+      ).catch(() => {
+        throw new Error(RECHECK);
+      });
+      const sameImports = imported.every(
+        (file, index) =>
+          file.sha256 === recordedImports[index]?.sha256 &&
+          file.bytes === recordedImports[index]?.bytes,
+      );
+      if (!sameImports) throw new Error(RECHECK);
+    }
   }
   const listed = await listFiles(root);
   const protectedHashes = await hashFiles(

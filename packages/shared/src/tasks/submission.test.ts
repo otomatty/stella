@@ -5,6 +5,7 @@ import type { RunStepId, RunStepResult, StepStatus } from "./run-result.js";
 import {
   contentHash,
   decodeFile,
+  isRunResult,
   parseTaskSubmission,
   type TaskSubmissionInput,
   verifyTaskSubmission,
@@ -13,6 +14,33 @@ import {
 function step(id: RunStepId, status: StepStatus = "passed"): RunStepResult {
   return { id, status, label: id, durationMs: 0, summary: status };
 }
+
+describe("実行結果の形式", () => {
+  it("import 先のファイルの記録が正しいか、省略されていれば受け入れる", async () => {
+    const { input } = await submissionFixture();
+    const imported = { path: "src/price.ts", sha256: "a".repeat(64), bytes: 10 };
+    expect(isRunResult(input.localResult)).toBe(true);
+    expect(isRunResult({ ...input.localResult, importedFiles: undefined })).toBe(true);
+    expect(isRunResult({ ...input.localResult, importedFiles: [] })).toBe(true);
+    expect(isRunResult({ ...input.localResult, importedFiles: [imported] })).toBe(true);
+  });
+
+  it("import 先のファイルの記録が不正なら拒否する", async () => {
+    const { input } = await submissionFixture();
+    const imported = { path: "src/price.ts", sha256: "a".repeat(64), bytes: 10 };
+    for (const importedFiles of [
+      null,
+      {},
+      [null],
+      [{ ...imported, path: "../price.ts" }],
+      [{ ...imported, sha256: "invalid" }],
+      [{ ...imported, bytes: -1 }],
+      [imported, imported],
+    ]) {
+      expect(isRunResult({ ...input.localResult, importedFiles })).toBe(false);
+    }
+  });
+});
 
 describe("提出の機械照合", () => {
   it.each([

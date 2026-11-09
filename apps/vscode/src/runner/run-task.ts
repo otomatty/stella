@@ -147,11 +147,55 @@ function readProblem(error: unknown): string {
   return "ファイルを読めませんでした";
 }
 
+// ponytail: 正規表現なのでコメントの中の import も拾う。控えるファイルが増えるだけで、見落としにはならない。
+const RELATIVE_IMPORT =
+  /\b(?:import\s+(?:[^'";]*?\s+from\s*)?|export\s+[^'";]*?\s+from\s*|(?:import|require)\s*\(\s*)(["'])(\.{1,2}\/[^"'\r\n]+)\1/g;
+
+/** 問題から相対 import でたどれる提出対象のファイルを集める。 */
+export async function importedEditableFiles(
+  root: string,
+  source: string,
+  editable: readonly string[],
+): Promise<string[]> {
+  const allowed = new Set(editable);
+  const visited = new Set([source]);
+  const pending = [source];
+  for (const file of pending) {
+    let content: string;
+    try {
+      content = (await readFileInRoot(root, file, LIMITS.fileBytes)).toString("utf8");
+    } catch {
+      continue;
+    }
+    for (const match of content.matchAll(RELATIVE_IMPORT)) {
+      const specifier = match[2];
+      if (!specifier) continue;
+      const resolved = path.posix.join(path.posix.dirname(file), specifier);
+      const imported = [
+        resolved,
+        `${resolved}.ts`,
+        `${resolved}.tsx`,
+        resolved.replace(/\.js$/, ".ts"),
+        path.posix.join(resolved, "index.ts"),
+      ].find((candidate) => allowed.has(candidate));
+      if (!imported || visited.has(imported)) continue;
+      visited.add(imported);
+      pending.push(imported);
+    }
+  }
+  return [...visited].filter((file) => file !== source).sort();
+}
+
 async function collectFiles(
   root: string,
   manifest: TaskManifest,
   problemSource?: string,
-): Promise<{ step: RunStepResult; files: HashedFile[]; protected: HashedFile[] } | null> {
+): Promise<{
+  step: RunStepResult;
+  files: HashedFile[];
+  protected: HashedFile[];
+  imported: HashedFile[];
+} | null> {
   if (manifest.submit.files.length === 0 && manifest.protected.length === 0) return null;
   const started = Date.now();
   const base = { id: "files" as const, label: "提出するファイルの確認" };
@@ -167,6 +211,7 @@ async function collectFiles(
       step: { ...base, status: "error", summary, durationMs: Date.now() - started },
       files: [],
       protected: [],
+      imported: [],
     };
   }
   const submitAll = matchPatterns(listed, manifest.submit.files);
@@ -191,6 +236,7 @@ async function collectFiles(
   }
   let files: HashedFile[] = [];
   let protectedFiles: HashedFile[] = [];
+  let imported: HashedFile[] = [];
   try {
     const sizes = await checkSubmitSizes(root, submit.files);
     // 問題つきの課題を問題の指定なしで実行するのは content:check だけ。
@@ -208,10 +254,15 @@ async function collectFiles(
       (!sizes.tooMany || !countLimited) && !sizes.totalTooLarge && sizes.problems.length === 0;
     if (withinLimits) files = await hashFiles(root, submit.files, LIMITS.fileBytes);
     protectedFiles = await hashFiles(root, prot.files, LIMITS.protectedFileBytes);
+    if (problemSource && files.length > 0) {
+      const paths = await importedEditableFiles(root, problemSource, submitAll.files);
+      imported = await hashFiles(root, paths, LIMITS.fileBytes);
+    }
   } catch (error) {
     problems.push(readProblem(error));
     files = [];
     protectedFiles = [];
+    imported = [];
   }
   const step: RunStepResult = {
     ...base,
@@ -220,7 +271,7 @@ async function collectFiles(
     durationMs: Date.now() - started,
     ...(missing.length > 0 ? { files: missing } : {}),
   };
-  return { step, files, protected: protectedFiles };
+  return { step, files, protected: protectedFiles, imported };
 }
 
 /** 前提のうち、要修正 (failed) で終わった手順。無ければこの手順は実行してよい。 */
@@ -389,12 +440,14 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
 
   let files: HashedFile[] = [];
   let protectedFiles: HashedFile[] = [];
+  let imported: HashedFile[] = [];
   if (!options.signal?.aborted) {
     const collected = await collectFiles(root, manifest, selected.problem?.source);
     if (collected) {
       steps.push(collected.step);
       files = collected.files;
       protectedFiles = collected.protected;
+      imported = collected.imported;
     }
   }
 
@@ -413,6 +466,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     manifestSha256: options.manifestSha256,
     ...(ctx.outputs.ci ? { ci: ctx.outputs.ci } : {}),
     ...(selected.problem ? { problemId: selected.problem.id } : {}),
+    ...(imported.length > 0 ? { importedFiles: imported } : {}),
   };
 }
 

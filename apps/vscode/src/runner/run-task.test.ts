@@ -7,7 +7,14 @@ import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { canSubmit, type RunStepResult } from "@stella/shared/tasks/run-result";
 import { contentHash, verifyTaskSubmission } from "@stella/shared/tasks/submission";
 import { describe, expect, it } from "vitest";
-import { findTaskRoot, loadTask, runTask, saveRunResult, unmetNeed } from "./run-task.js";
+import {
+  findTaskRoot,
+  importedEditableFiles,
+  loadTask,
+  runTask,
+  saveRunResult,
+  unmetNeed,
+} from "./run-task.js";
 import { parsePorcelainZ, type StepDefinition } from "./steps.js";
 
 const execFileAsync = promisify(execFile);
@@ -138,6 +145,7 @@ describe("runTask (Vitest の手順)", () => {
     ]);
     expect(result.outcome).toBe("passed");
     expect(result).not.toHaveProperty("problemId");
+    expect(result).not.toHaveProperty("importedFiles");
     expect(result.toolVersions.node).toBe(process.version);
     expect(result.files.map((f) => f.path)).toEqual(["src/filter.js"]);
     expect(result.protected.map((f) => f.path)).toEqual(["tests/filter.test.js"]);
@@ -874,6 +882,90 @@ describe("unmetNeed", () => {
   });
 });
 
+describe("importedEditableFiles", () => {
+  it.each([
+    'import value from "./value";',
+    "import value from './value';",
+    'export { value } from "./value";',
+    "export { value } from './value';",
+    'import "./value";',
+    "import './value';",
+    'const value = import("./value");',
+    "const value = import('./value');",
+    'const value = require("./value");',
+    "const value = require('./value');",
+  ])("相対 import の書き方を拾う: %s", async (source) => {
+    const root = await makeTask({
+      "src/problem.ts": source,
+      "src/value.ts": "export const value = 1;\n",
+    });
+    expect(
+      await importedEditableFiles(root, "src/problem.ts", ["src/problem.ts", "src/value.ts"]),
+    ).toEqual(["src/value.ts"]);
+  });
+
+  it("間接の import をたどり、循環と重複を除いて提出対象だけを並べる", async () => {
+    const root = await makeTask({
+      "src/problem.ts": [
+        'import { value } from "./nested/value";',
+        'export { tax } from "./tax.js";',
+        'import "../tests/problem.test.ts";',
+        'import "./outside";',
+        'import "package-name";',
+      ].join("\n"),
+      "src/nested/value.ts": 'export { tax } from "../tax.js";\n',
+      "src/tax.ts": 'import "./problem";\nexport const tax = 1;\n',
+      "src/outside.ts": 'import "./unreachable";\n',
+      "src/unreachable.ts": "export {};\n",
+      "src/package-name.ts": "export {};\n",
+      "tests/problem.test.ts": "export {};\n",
+    });
+    expect(
+      await importedEditableFiles(root, "src/problem.ts", [
+        "src/tax.ts",
+        "src/problem.ts",
+        "src/package-name.ts",
+        "src/nested/value.ts",
+        "src/unreachable.ts",
+      ]),
+    ).toEqual(["src/nested/value.ts", "src/tax.ts"]);
+  });
+
+  it.each<[string, string[], string]>([
+    ["./value", ["src/value.tsx", "src/value.ts", "src/value"], "src/value"],
+    ["./value", ["src/value/index.ts", "src/value.tsx", "src/value.ts"], "src/value.ts"],
+    ["./value", ["src/value/index.ts", "src/value.tsx"], "src/value.tsx"],
+    ["./value.js", ["src/value.ts", "src/value.js.tsx", "src/value.js.ts"], "src/value.js.ts"],
+    ["./value.js", ["src/value.ts", "src/value.js.tsx"], "src/value.js.tsx"],
+    ["./value.js", ["src/value.js/index.ts", "src/value.ts"], "src/value.ts"],
+    ["./value", ["src/value/index.ts"], "src/value/index.ts"],
+  ])("%s の候補 %j は最初に一致する %s だけを使う", async (specifier, candidates, expected) => {
+    const root = await makeTask({
+      "src/problem.ts": `import "${specifier}";\n`,
+      ...Object.fromEntries(candidates.map((file) => [file, "export {};\n"])),
+    });
+    expect(
+      await importedEditableFiles(root, "src/problem.ts", ["src/problem.ts", ...candidates]),
+    ).toEqual([expected]);
+  });
+
+  it("import が無いファイルと C# の using は何も返さない", async () => {
+    const root = await makeTask({
+      "src/problem.ts": "export const value = 1;\n",
+      "src/problem.cs": "using System;\nclass Problem {}\n",
+      "src/System.ts": "export {};\n",
+    });
+    const editable = ["src/problem.ts", "src/problem.cs", "src/System.ts"];
+    expect(await importedEditableFiles(root, "src/problem.ts", editable)).toEqual([]);
+    expect(await importedEditableFiles(root, "src/problem.cs", editable)).toEqual([]);
+  });
+
+  it("読み取れないファイルは飛ばす", async () => {
+    const root = await makeTask({});
+    expect(await importedEditableFiles(root, "src/missing.ts", ["src/missing.ts"])).toEqual([]);
+  });
+});
+
 describe("runTask (問題)", () => {
   const problems = [
     { id: "a", title: "壊れている" },
@@ -964,6 +1056,7 @@ fs.writeFileSync(out, JSON.stringify({
       "./tests/b.test.ts",
     );
     expect(result.files.map((file) => file.path)).toEqual(["src/b.ts"]);
+    expect(result).not.toHaveProperty("importedFiles");
     expect(result.protected.map((file) => file.path).sort()).toEqual([
       "tests/a.test.ts",
       "tests/b.test.ts",
@@ -973,5 +1066,40 @@ fs.writeFileSync(out, JSON.stringify({
     const saved = JSON.parse(await readFile(savedPath, "utf8"));
     expect(saved.problemId).toBe("b");
     await expect(readFile(path.join(root, ".stella", "last-run.json"), "utf8")).rejects.toThrow();
+  });
+
+  it("問題の import 先はハッシュを別に控え、提出ファイルは 1 件のままにする", async () => {
+    const { root, npmCli } = await vitestTask(
+      "export const f = (v, k) => v.filter((x) => x >= k);\n",
+    );
+    const imported = {
+      "src/price.ts": 'export { tax } from "./tax.js";\n',
+      "src/tax.ts": "export const tax = 10;\n",
+    };
+    await makeFile(root, "src/filter.ts", 'export { tax } from "./price.js";\n');
+    await makeFile(root, "tests/filter.test.ts", "export {};\n");
+    for (const [file, content] of Object.entries(imported)) await makeFile(root, file, content);
+    const result = await runTask({
+      root,
+      manifest: manifest({
+        submit: { files: ["src/**/*.ts"] },
+        problems: [{ id: "filter", title: "選ぶ" }],
+      }),
+      manifestSha256: "m",
+      problem: "filter",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(result.outcome).toBe("passed");
+    expect(result.problemId).toBe("filter");
+    expect(result.files.map((file) => file.path)).toEqual(["src/filter.ts"]);
+    expect(result.importedFiles).toEqual(
+      await Promise.all(
+        Object.entries(imported).map(async ([file, content]) => ({
+          path: file,
+          sha256: await contentHash(Buffer.from(content)),
+          bytes: Buffer.byteLength(content),
+        })),
+      ),
+    );
   });
 });
