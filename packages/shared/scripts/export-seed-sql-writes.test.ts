@@ -405,3 +405,138 @@ describe("seed の書き込み行数", () => {
     SEED_TIMEOUT,
   );
 });
+
+describe("大きな非公開素材の seed", () => {
+  const taskId = "claude-developer-foundations/m0-exam-and-sources/q01-study-plan";
+  const privateFiles = { "hints.md": "あ".repeat(30_000) };
+  const changedFiles = { "hints.md": `${"あ".repeat(20_000)}い${"あ".repeat(9_999)}` };
+  const privateJson = JSON.stringify(privateFiles);
+  const changedJson = JSON.stringify(changedFiles);
+  const privateHash = createHash("sha256").update(privateJson).digest("hex");
+  let sql = "";
+  let changed = "";
+
+  beforeAll(async () => {
+    sql = await exportSql((manifest) => {
+      const task = manifest.tasks.find((t) => t.definition.id === taskId);
+      if (!task) throw new Error("変える課題が見つかりません");
+      task.privateFiles = privateFiles;
+    });
+    changed = await exportSql((manifest) => {
+      const task = manifest.tasks.find((t) => t.definition.id === taskId);
+      if (!task) throw new Error("変える課題が見つかりません");
+      task.privateFiles = changedFiles;
+    });
+  }, SEED_TIMEOUT);
+
+  it(
+    "同じ seed を流し直しても、今の素材と素材の版を含めて 1 行も書かない",
+    () => {
+      const db = migratedDb();
+      try {
+        expect(Buffer.byteLength(privateJson)).toBeGreaterThan(80_000);
+        apply(db, sql);
+        expect(db.prepare("select files from task_private where task_id = ?").get(taskId)).toEqual({
+          files: privateJson,
+        });
+        expect(
+          db
+            .prepare(
+              "select files from task_private_versions where task_id = ? and private_hash = ?",
+            )
+            .get(taskId, privateHash),
+        ).toEqual({ files: privateJson });
+        expect(apply(db, sql)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
+    "先頭 40KB と全体のバイト数が同じでも、その先の 1 文字の修正を今の素材に反映する",
+    () => {
+      const db = migratedDb();
+      try {
+        expect(Buffer.byteLength(changedJson)).toBe(Buffer.byteLength(privateJson));
+        expect(Buffer.from(changedJson).subarray(0, 40_000)).toEqual(
+          Buffer.from(privateJson).subarray(0, 40_000),
+        );
+        expect(changedJson).not.toBe(privateJson);
+        apply(db, sql);
+        apply(db, changed);
+        expect(db.prepare("select files from task_private where task_id = ?").get(taskId)).toEqual({
+          files: changedJson,
+        });
+        expect(apply(db, changed)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
+    "途中で止まった素材の版を完成させてから、今の素材を 1 文で差し替える",
+    () => {
+      const db = migratedDb();
+      try {
+        apply(db, sql);
+        const statements = splitSqlStatements(sql);
+        const firstAppend = statements.find(
+          (statement) =>
+            statement.startsWith("update task_private_versions set files = files ||") &&
+            statement.includes(`task_id = '${taskId}'`) &&
+            statement.includes(`private_hash = '${privateHash}'`),
+        );
+        const firstBytes = Number(
+          firstAppend?.match(/length\(cast\(files as blob\)\) = (\d+);?$/)?.[1],
+        );
+        expect(firstBytes).toBeGreaterThan(0);
+        expect(firstBytes).toBeLessThan(Buffer.byteLength(privateJson));
+        // 実際の先頭の断片だけが残った版と、差し替え前の素材を用意する。
+        const head = Buffer.from(privateJson).subarray(0, firstBytes).toString("utf8");
+        const oldJson = JSON.stringify({ "hints.md": "前の解答" });
+        db.prepare(
+          "update task_private_versions set files = ? where task_id = ? and private_hash = ?",
+        ).run(head, taskId, privateHash);
+        db.prepare("update task_private set files = ? where task_id = ?").run(oldJson, taskId);
+
+        let currentWrites = 0;
+        for (const statement of statements) {
+          const writes = apply(db, statement);
+          if (
+            !statement.includes(taskId) ||
+            !/^(?:insert into|update) task_private(?:_versions)?\b/.test(statement)
+          )
+            continue;
+          const version = db
+            .prepare(
+              "select files from task_private_versions where task_id = ? and private_hash = ?",
+            )
+            .get(taskId, privateHash) as { files: string };
+          const current = db
+            .prepare("select files from task_private where task_id = ?")
+            .get(taskId) as { files: string };
+          if (/^(?:insert into|update) task_private\b/.test(statement)) {
+            currentWrites += total(writes);
+            expect(version.files).toBe(privateJson);
+            expect(current.files).toBe(privateJson);
+          } else {
+            // 最後の断片を足した直後も、差し替えの文までは前の素材を読める。
+            expect(current.files).toBe(oldJson);
+          }
+        }
+        expect(currentWrites).toBe(1);
+        expect(db.prepare("select files from task_private where task_id = ?").get(taskId)).toEqual({
+          files: privateJson,
+        });
+        expect(apply(db, sql)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+});
