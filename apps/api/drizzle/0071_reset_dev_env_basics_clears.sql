@@ -4,6 +4,8 @@
 -- クリアできた。教材を作り直し、クリアの条件は全レッスンの完了と全課題 22 件
 -- (確認A dev-env-basics/u08-check-a/a01-check-a を含む) の合格になった。
 -- 本格運用の前なので、旧版の条件でクリアした受講者には新しい教材で学び直してもらう。
+-- 修了条件も 06 §9.5 の全レッスン完了・全課題合格にそろえ、
+-- 取り消したあとに課題の合格なしで再修了しないようにする。
 --
 -- クリアの正本は enrollments.status = 'completed' と、失効していない certificates である。
 -- 修了証は (user, stage) の一意索引があるので、revoke ではなく削除する
@@ -15,6 +17,10 @@
 -- lesson_progress、task_progress、知識問題の記録、stage_path_events、監査ログは触らない。
 -- 対象は tenant ses の slug dev-env-basics だけ。
 
+UPDATE `stages`
+SET `require_all_lessons` = 1, `require_assignment_pass` = 1
+WHERE `slug` = 'dev-env-basics' AND `tenant_id` = 'ses';
+--> statement-breakpoint
 DELETE FROM `certificates`
 WHERE `stage_id` IN (
   SELECT `id` FROM `stages` WHERE `slug` = 'dev-env-basics' AND `tenant_id` = 'ses'

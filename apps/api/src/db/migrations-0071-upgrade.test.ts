@@ -30,10 +30,11 @@ describe("0071: 旧版の dev-env-basics でクリアした受講者のクリア
         ('enroll-only', 'ses', 'student', '登録だけ', 1),
         ('expired', 'ses', 'student', '期限切れ', 1),
         ('other-tenant', 'other', 'student', '別テナント', 1);
-      insert into stages (id, tenant_id, slug, title, format, created_at, updated_at) values
-        ('stage-dev', 'ses', 'dev-env-basics', '入口', 2, 1, 1),
-        ('stage-html', 'ses', 'html-css-basics', 'HTML', 2, 1, 1),
-        ('stage-dev-other', 'other', 'dev-env-basics', '入口', 2, 1, 1);
+      insert into stages (id, tenant_id, slug, title, format, created_at, updated_at,
+        require_all_lessons, require_quiz_pass, require_assignment_pass, auto_issue_certificate) values
+        ('stage-dev', 'ses', 'dev-env-basics', '入口', 2, 1, 1, 0, 0, 0, 0),
+        ('stage-html', 'ses', 'html-css-basics', 'HTML', 2, 1, 1, 0, 1, 0, 1),
+        ('stage-dev-other', 'other', 'dev-env-basics', '入口', 2, 1, 1, 0, 0, 0, 0);
       insert into sections (id, stage_id, title, created_at) values
         ('unit-dev', 'stage-dev', '単元', 1);
       insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order",
@@ -88,6 +89,56 @@ describe("0071: 旧版の dev-env-basics でクリアした受講者のクリア
   afterEach(() => database.sqlite.close());
 
   const migrate = () => database.sqlite.exec(SQL);
+
+  it.each([
+    { quiz: 0, auto: 0 },
+    { quiz: 0, auto: 1 },
+    { quiz: 1, auto: 0 },
+    { quiz: 1, auto: 1 },
+  ])(
+    "全レッスン・全課題の合格を必須にし、クイズ=$quiz・自動発行=$auto は変えない",
+    ({ quiz, auto }) => {
+      database.sqlite
+        .prepare(
+          `update stages set require_quiz_pass = ?, auto_issue_certificate = ?
+         where id = 'stage-dev'`,
+        )
+        .run(quiz, auto);
+
+      migrate();
+
+      expect(
+        database.sqlite
+          .prepare(
+            `select require_all_lessons, require_quiz_pass,
+                  require_assignment_pass, auto_issue_certificate
+           from stages where id = 'stage-dev'`,
+          )
+          .get(),
+      ).toEqual({
+        require_all_lessons: 1,
+        require_quiz_pass: quiz,
+        require_assignment_pass: 1,
+        auto_issue_certificate: auto,
+      });
+    },
+  );
+
+  it("ほかのステージと別テナントの同名ステージの修了条件は変えない", () => {
+    const conditions = () =>
+      database.sqlite
+        .prepare(
+          `select id, require_all_lessons, require_quiz_pass,
+                  require_assignment_pass, auto_issue_certificate
+           from stages where id in ('stage-html', 'stage-dev-other') order by id`,
+        )
+        .all();
+    const before = conditions();
+
+    migrate();
+
+    expect(conditions()).toEqual(before);
+  });
 
   const enrollment = (userId: string) =>
     database.sqlite
