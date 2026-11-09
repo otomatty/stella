@@ -6,8 +6,8 @@
  *   bun run --filter=@stella/api db:seed:remote:content    # remote (教材のみ)
  *
  * remote は D1 HTTP API (`lib/d1-remote.ts`) に直列で流す。local だけ wrangler の
- * miniflare 実体に書く必要があるので `wrangler d1 execute --local` のまま。
- * SQL の中身・チャンク境界・適用順は両方で同じ (分割は lib 側の 1 か所)。
+ * miniflare 実体に書く必要があるので `wrangler d1 execute --local` のまま、全文を 1 回で流す。
+ * SQL の中身と適用順は両方で同じ (remote のチャンク分割は lib 側の 1 か所)。
  */
 
 import { execFileSync, execSync } from "node:child_process";
@@ -58,11 +58,15 @@ try {
   closeSync(fd);
 }
 
-const statements = splitSqlStatements(readFileSync(file, "utf8"));
+const sql = readFileSync(file, "utf8");
+const statements = splitSqlStatements(sql);
+// 1 文が D1 の上限を超えたら、本番に流す前に local でも落とす。
 const chunks = chunkStatements(statements, MAX_CHUNK_BYTES);
+// wrangler は起動だけで 1 回数秒かかる。local には 100KB/query の制限が無いので全文を 1 回で流す。
+const batches = remote ? chunks : [sql];
 const target = remote ? "remote" : "local";
 console.log(
-  `→ D1 (${target}) に seed を適用 (${statements.length} 文 / ${chunks.length} chunk` +
+  `→ D1 (${target}) に seed を適用 (${statements.length} 文 / ${batches.length} chunk` +
     `${viaWrangler ? ", wrangler" : ", HTTP API"})`,
 );
 const startedAt = Date.now();
@@ -70,9 +74,9 @@ const startedAt = Date.now();
 let written: RowsWritten | null = null;
 
 if (viaWrangler) {
-  for (let i = 0; i < chunks.length; i++) {
+  for (let i = 0; i < batches.length; i++) {
     const chunkFile = join(dir, `seed-${i}.sql`);
-    const chunk = chunks[i];
+    const chunk = batches[i];
     if (chunk === undefined) continue;
     writeFileSync(chunkFile, chunk, "utf8");
     execFileSync(
