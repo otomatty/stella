@@ -8,7 +8,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-same-digits",
+  "pattern": "csharp-neighbor-distance",
   "skills": {
     "uses": [
       "csharp-char-bool",
@@ -29,7 +29,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 20,

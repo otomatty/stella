@@ -8,7 +8,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-range-and-score",
+  "pattern": "csharp-tiered-fee",
   "skills": {
     "uses": [
       "csharp-and-or"
@@ -28,7 +28,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 20,

@@ -36,7 +36,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-object-oriented-class-abstract-class",

@@ -867,7 +867,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-functions-function-declaration",

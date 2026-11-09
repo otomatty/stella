@@ -8,7 +8,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-count-ksum",
+  "pattern": "csharp-count-kinds",
   "skills": {
     "uses": [
       "csharp-sort-kth"
@@ -28,7 +28,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 20,

@@ -701,7 +701,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [
     "SRC-typescriptbook-type-reuse-typeof-type-operator",

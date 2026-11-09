@@ -168,10 +168,6 @@
     "title": "条件に合う値を繰り返しで集計する"
   },
   {
-    "id": "csharp-countdown-total",
-    "title": "減らしながら累計を出す"
-  },
-  {
     "id": "csharp-arithmetic",
     "title": "計算して返す"
   },
@@ -212,10 +208,6 @@
     "title": "時間で料金を分ける"
   },
   {
-    "id": "csharp-range-and-score",
-    "title": "範囲と別の条件を重ねる"
-  },
-  {
     "id": "csharp-array-scan",
     "title": "配列を for で順に出す"
   },
@@ -242,10 +234,6 @@
   {
     "id": "csharp-array-below",
     "title": "基準未満の合計と件数を出す"
-  },
-  {
-    "id": "csharp-array-last-index",
-    "title": "最後に現れる位置を返す"
   },
   {
     "id": "csharp-string-length",
@@ -276,10 +264,6 @@
     "title": "検証してから末尾 2 文字を返す"
   },
   {
-    "id": "csharp-string-head-count",
-    "title": "先頭と同じ文字の個数"
-  },
-  {
     "id": "csharp-stdin-one",
     "title": "1行から整数を1つ読む"
   },
@@ -306,10 +290,6 @@
   {
     "id": "csharp-stdin-above",
     "title": "閾値より大きい値を行から集計する"
-  },
-  {
-    "id": "csharp-stdin-name-limit",
-    "title": "後から来た上限で名前を数える"
   },
   {
     "id": "csharp-combine-count",
@@ -344,16 +324,8 @@
     "title": "隣が変わった組を数える"
   },
   {
-    "id": "csharp-combine-upper",
-    "title": "大文字を含む文字列を数える"
-  },
-  {
     "id": "csharp-reach-change",
     "title": "残金・件数・末尾の文字を出す"
-  },
-  {
-    "id": "csharp-reach-pay",
-    "title": "割引・正の合計・長さの一致を出す"
   },
   {
     "id": "csharp-state-apply",
@@ -380,10 +352,6 @@
     "title": "適用後に初めて負になる操作を出す"
   },
   {
-    "id": "csharp-state-zero-run",
-    "title": "0 が続いた最長を出す"
-  },
-  {
     "id": "csharp-pairs-across",
     "title": "二つの列から1つずつ選んで数える"
   },
@@ -406,10 +374,6 @@
   {
     "id": "csharp-pairs-close",
     "title": "差がD以下の組を数える"
-  },
-  {
-    "id": "csharp-pairs-ones",
-    "title": "全要素が1の行を数える"
   },
   {
     "id": "csharp-sort-kth",
@@ -436,10 +400,6 @@
     "title": "2回以上の値の種類を数える"
   },
   {
-    "id": "csharp-count-ksum",
-    "title": "小さい順のK個を合計する"
-  },
-  {
     "id": "csharp-mix-choice",
     "title": "処理の組み合わせを自分で選ぶ"
   },
@@ -452,16 +412,8 @@
     "title": "予算以下の組の数と最大合計を求める"
   },
   {
-    "id": "csharp-mix-below",
-    "title": "基準未満の連続と総数を数える"
-  },
-  {
     "id": "csharp-mix-reach-a",
     "title": "買えた残金と大きい組と名前の合計を求める"
-  },
-  {
-    "id": "csharp-mix-reach-b",
-    "title": "増加の連続と行の差と順位の価格を求める"
   },
   {
     "id": "csharp-return-bool",
@@ -486,10 +438,6 @@
   {
     "id": "csharp-neighbor-distance",
     "title": "隣との差の絶対値を合計する"
-  },
-  {
-    "id": "csharp-same-digits",
-    "title": "同じ長さの数字かを返す"
   },
   {
     "id": "csharp-member-code",

@@ -26,7 +26,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "never"
+    "solutionUnlock": "never",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 15,

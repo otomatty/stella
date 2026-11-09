@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "csharp-foundations/m8-pairs@2",
-  "contentHash": "66e7d2480be312486250045c987191ff114f979fb3481e7380ff405456f905d5",
+  "unitId": "csharp-foundations/m8-pairs@4",
+  "contentHash": "04b3678d1ba09a9fc268becdec0933f211bbfd65676cd8434932a7f71fbe293e",
   "environmentRef": "dotnet-test-01@1",
   "uses": [
     {

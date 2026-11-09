@@ -8,7 +8,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-stdin-name-limit",
+  "pattern": "csharp-stdin-above",
   "skills": {
     "uses": [
       "csharp-stdin-one"
@@ -28,7 +28,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 20,

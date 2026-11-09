@@ -8,7 +8,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-array-last-index",
+  "pattern": "csharp-array-below",
   "skills": {
     "uses": [
       "csharp-array-scan"
@@ -28,7 +28,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 20,

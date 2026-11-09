@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m03-unions-and-more@2",
-  "contentHash": "b2a6edcce6fb6969b2c2e6400a0d5181d9ed5b8e265afc0d2ec359b070c6b415",
+  "unitId": "devlab-ts-prework/m03-unions-and-more@3",
+  "contentHash": "994afd931527476b647ffcc0870f3e989956aa9fa922f7bfdaef7a60a4c5146e",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

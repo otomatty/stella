@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m05-functions@3",
-  "contentHash": "3a943ebd0d9a0a9a3370a1efea053b4ad72b49336ac8223516c94bed75718ded",
+  "unitId": "devlab-ts-prework/m05-functions@4",
+  "contentHash": "81d8de1a9a42ec813981f1def998f17f83edd134eef4b7fa6a59a63f4105bd37",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

@@ -8,7 +8,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-mix-below",
+  "pattern": "csharp-mix-pairs",
   "skills": {
     "uses": [
       "csharp-mix-all"
@@ -28,7 +28,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 20,

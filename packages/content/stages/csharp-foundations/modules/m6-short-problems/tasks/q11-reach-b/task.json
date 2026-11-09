@@ -16,7 +16,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-reach-pay",
+  "pattern": "csharp-reach-change",
   "skills": {
     "uses": [
       "csharp-combine-count",
@@ -37,7 +37,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 60,

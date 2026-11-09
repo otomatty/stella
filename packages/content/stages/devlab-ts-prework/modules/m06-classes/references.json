@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m06-classes@3",
-  "contentHash": "1c6d9a727bacffeb503cd6f8f4fd496992d788b487019b1fbc51403bd34f99c6",
+  "unitId": "devlab-ts-prework/m06-classes@4",
+  "contentHash": "348553bb275b76d63e835ac48dc118e75a308121cd7139cbb6e0bd063e306279",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

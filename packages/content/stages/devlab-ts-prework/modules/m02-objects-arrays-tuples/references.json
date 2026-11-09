@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-prework/m02-objects-arrays-tuples@2",
-  "contentHash": "46805dc243184bf3b412c30c7dc7a4bb56a301e1e8d85a4a57ab2bc14c93a228",
+  "unitId": "devlab-ts-prework/m02-objects-arrays-tuples@3",
+  "contentHash": "23d6ccbedff97f4da3bf315d0581056e50adf3b46db86381f91477dad5d9de6a",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

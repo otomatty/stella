@@ -16,7 +16,7 @@
     }
   ],
   "kind": "assessment-b",
-  "pattern": "csharp-mix-reach-b",
+  "pattern": "csharp-mix-reach-a",
   "skills": {
     "uses": [
       "csharp-mix-plan",
@@ -38,7 +38,8 @@
   },
   "support": {
     "hintLevels": 0,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "passed",
+    "aiChat": false
   },
   "sources": [],
   "estimatedMinutes": 60,
