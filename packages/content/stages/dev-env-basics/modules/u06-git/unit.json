@@ -1,8 +1,0 @@
-{
-  "plannedHours": 5,
-  "skills": {
-    "uses": ["terminal-location", "file-save-reopen"],
-    "assesses": ["git-local-commit"]
-  },
-  "reuses": []
-}

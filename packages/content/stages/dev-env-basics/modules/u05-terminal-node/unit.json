@@ -1,8 +1,0 @@
-{
-  "plannedHours": 4,
-  "skills": {
-    "uses": ["open-learning-folder"],
-    "assesses": ["terminal-location", "node-npm-ready"]
-  },
-  "reuses": []
-}

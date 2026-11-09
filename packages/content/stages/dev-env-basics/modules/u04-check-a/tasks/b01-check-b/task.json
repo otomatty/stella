@@ -1,0 +1,113 @@
+{
+  "id": "dev-env-basics/u04-check-a/b01-check-b",
+  "title": "確認B: 1週間の予定のフォルダーを整える",
+  "kind": "assessment-b",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "open-learning-folder",
+      "preview-changes"
+    ],
+    "assesses": [
+      "stella-task-loop",
+      "file-save-reopen",
+      "html-document"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "index.html",
+      "monday.txt",
+      "week.txt"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      {
+        "id": "DEV-HTML-02",
+        "required": true
+      }
+    ],
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "index.html の h1 が1つだけあり、文字が「1週間の予定」で、ほかの要素を増やしたり消したりしていない",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "index.html と同じ課題フォルダーに monday.txt があり、「月曜日」と書いて保存されている",
+        "required": true
+      },
+      {
+        "id": "condition-3",
+        "criterion": "draft.txt が残っておらず、week.txt の本文が元の文「今週はファイルの操作を練習します」のままである",
+        "required": true
+      },
+      {
+        "id": "condition-4",
+        "criterion": "手元の確認を通して提出し、説明に作ったファイルの場所と困ったこと・試したこと（なければ「なし」）があり、提出ファイルと矛盾していない",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [
+    "SRC-dev-env-html-headings-20261107",
+    "SRC-dev-env-html-syntax-20261107",
+    "SRC-dev-env-explorer-20261107",
+    "SRC-dev-env-editing-20261107"
+  ],
+  "estimatedMinutes": 20,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "html-document",
+        "path": "index.html"
+      },
+      {
+        "type": "element-text",
+        "path": "index.html",
+        "tag": "h1",
+        "text": "1週間の予定",
+        "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "index.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
+      },
+      {
+        "type": "file-contains",
+        "path": "monday.txt",
+        "text": "月曜日"
+      },
+      {
+        "type": "file-contains",
+        "path": "week.txt",
+        "text": "今週はファイルの操作を練習します"
+      },
+      {
+        "type": "file-absent",
+        "path": "draft.txt"
+      }
+    ]
+  }
+}

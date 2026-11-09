@@ -1,5 +1,5 @@
 {
-  "plannedHours": 6,
+  "plannedHours": 1,
   "skills": {
     "uses": ["stella-task-loop"],
     "assesses": ["file-save-reopen", "open-learning-folder"]

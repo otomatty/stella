@@ -62,7 +62,7 @@ slugは既存の規約(`packages/content/ADDING_STAGE.md`)に従い、英小文�
 
 | slug | ステージ名 | 新設計の番号 | 時間 | 前提(`prerequisites`) | 線の親(`parent`) | 置き換える旧ステージ |
 | --- | --- | --- | ---: | --- | --- | --- |
-| `dev-env-basics` | 開発環境とWebの入口 | M01 | 35 | なし(新しい根) | — | it-basics |
+| `dev-env-basics` | 開発環境とWebの入口 | M01 | 4 | なし(新しい根) | — | it-basics |
 | `html-css-basics`(引継ぎ) | HTML/CSSとデザイン基礎 | M02 | 70 | dev-env-basics | dev-env-basics | html-css-basics, modern-css-basics, page-composition-basics |
 | `javascript-basics`(引継ぎ) | JavaScriptの値と制御 | M03 | 105 | dev-env-basics | dev-env-basics | javascript-basics(前半), typescript-basics(m1〜m2) |
 | `javascript-data-basics` | JavaScriptのデータ・関数・状態 | M04 | 70 | javascript-basics | javascript-basics | javascript-basics(配列・関数), typescript-basics(m3〜m4) |
@@ -110,7 +110,7 @@ it-basicsはスキルツリーの唯一の根であり、4つの島の表示条�
 | テスト | `manifest.test.ts`、`export-seed-sql.test.ts`、`islands.test.ts`がit-basicsを前提にしている | テストが落ちる |
 | 文書 | `AGENTS.md`、`packages/content/CLAUDE.md`(唯一の前提なしステージ・動画PoCの説明)、`helpContent.ts`の受講者向けヘルプ | 説明が古くなる |
 
-動画のPoCは、it-basicsだけが全トピックの台本(`narration.json`)を持っている。PoCを続けるなら、`dev-env-basics`の解説トピックに移す。
+旧it-basicsの台本は流用せず、`dev-env-basics`の12トピックに新しい台本(`narration.json`)を配置済みである。GitHub Secret `GEMINI_API_KEY` は未登録で、動画はまだ生成されていない。登録後はデプロイで生成する。
 
 ### 3.4 残すステージの前提の付け替え
 
@@ -146,17 +146,17 @@ Gitだけのステージは作らず、必要になるステージの単元に�
 
 | ステージ | Gitで扱うこと | ここに置く理由 |
 | --- | --- | --- |
-| `dev-env-basics` | init、add・commit、diff、log(ローカルだけ) | 06 U05 のとおり。変更を記録して説明する |
-| `html-css-basics`〜`react-ui-basics` | 単元ごとにcommitする習慣。修正演習で、壊した変更をrestoreで戻す | 新しい操作は足さず、反復で定着させる |
+| `dev-env-basics` | このステージでは扱わない | ローカルのinit・add・commit・diff・logは、Gitを最初に使うステージの冒頭で扱う。具体的なステージは執筆時(#41)に決める |
+| `html-css-basics`〜`react-ui-basics` | Git導入後は単元ごとにcommitする習慣。修正演習で、壊した変更をrestoreで戻す | M01でGitを習得済みとはしない。最初に使うステージの冒頭で導入・診断・ローカルの記録を扱い、その後に反復する。配置は執筆時(#41)に決める |
 | `ui-integration-basics` | clone、branch、merge、コンフリクトの解消、GitHubアカウント、push、自分のリポジトリでのPR | 提供された既存アプリへ部品を組み込む最初のステージ。変更をブランチに分け、既存機能を壊していないことを確かめてから取り込む流れが、そのまま単元の目的になる |
 | `design-quality-basics` | PRのレビューとレビューへの対応、commitの単位、ピアレビュー(§6.5) | 新設計のこのステージに「レビュー」の単元がある |
 | `deploy-ops-basics` | PRで動くCI、ブランチの保護、tag、revertによる切戻し | CIと切戻しの単元がある |
 | `code-reading-basics` | fork・clone、履歴の調査(log・blame・bisect)、最小の変更をPRで出す | 未知のプロジェクトへの変更と回帰テストを扱う |
 | `fullstack-capstone` | 一人でもブランチとPRで進め、PRとCIの記録を制作の証拠にする | 卒業判定の証拠(03 §9)になる |
 
-`ui-integration-basics`で増える時間は、Gitの単元1つ(4〜6時間)を見込む。ステージの70時間の中で調整し、プログラム全体の時間(1,260時間)は変えない。
+`ui-integration-basics`で増える時間は、Gitの単元1つ(4〜6時間)を見込む。ステージの70時間の中で調整し、プログラム全体の時間(1,229時間)は変えない。
 
-Gitだけのステージ(例:35時間)を`ui-integration-basics`の後に挟む案もある。ただし、全体が1,295時間になり、道具だけを切り出して教える形になるため勧めない。
+Gitだけのステージ(例:35時間)を`ui-integration-basics`の後に挟む案もある。ただし、全体が1,264時間になり、道具だけを切り出して教える形になるため勧めない。
 
 ## 4 教材の単位とファイル形式
 
@@ -248,7 +248,7 @@ packages/content/
 - 配布ファイルは`GET /api/tasks/bundle`が返すREADME・starter・tests・`.stella/task.json`だけ。`private/`とヒントは返さない。ヒント・解答例・解説は、解放条件を満たした受講者にだけ`/api/tasks/help`が返す(§8.1)。
 - 学習者のファイルは上書きしない。同じ名前のファイルがあれば止めて、準備先と衝突したファイルを表示する(04 §6)。
 - Webの課題文レッスン(seedが`tasks.lesson_id`で結ぶ)と「単元の課題」の「VS Code で開く」が、一回限りの接続コード付きで課題を開く。
-- `dev-env-basics`のGitの単元から、このフォルダーをGitで管理する。前の成果物を使う課題は、学習者自身のファイルを参照する。
+- Gitを最初に使うステージの冒頭から、このフォルダーをGitで管理する。具体的なステージは執筆時(#41)に決める。前の成果物を使う課題は、学習者自身のファイルを参照する。
 - 前の実装が壊れていて進めない場合は「固定した開始点」を配る。使ったことを記録する(01 §4)。
   - 教材は課題の`fixed-start/`に置く。starterの代わりに置く一式で、testsと`protected`のファイルは通常の配布と同じにする。この課題の解答例は置けない。確認A・Bには置けない。
   - 受講者が拡張のコマンドで求めたときだけ`POST /api/tasks/fixed-start`が渡し、受け取りを`task_fixed_start_uses`に記録する。元の課題フォルダーは変えず、隣の`<task>-fixed-start/`に準備する。
@@ -285,8 +285,8 @@ packages/content/
 | runnerId | 使うステージ | 手元での実行 |
 | --- | --- | --- |
 | `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
-| `env-diagnose` | dev-env-basics | Node・npm・Gitの版を、環境定義と照合する |
-| `git-record` | dev-env-basics | 固定の引数で git を呼び、学習フォルダーのリポジトリ・ローカルの名前とメール・コミット・無視の設定を確かめる |
+| `env-diagnose` | Node.js・Gitを初めて要するステージ(dev-env-basicsでは使わない) | Node・npm・Gitの版を、環境定義と照合する |
+| `git-record` | Gitを最初に使うステージ(dev-env-basicsでは使わない。配置は#41で決める) | 固定の引数で git を呼び、学習フォルダーのリポジトリ・ローカルの名前とメール・コミット・無視の設定を確かめる |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
 | `ts-test` | Extra ステージの TypeScript の課題 | TypeScript (tsc) + Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
@@ -319,7 +319,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - 手元のテストが全部通ったときだけ、「提出」を押せるようにする。通らないときは「講師に相談」(今の引継ぎ)だけを出す。
 - 提出・実行で読むのは、`submit`で宣言したファイルだけにする。今は作業フォルダーの全ファイルを再帰的に読むため、`node_modules`があると全部を読んでしまう。
 - 配布したテストと設定ファイルの内容ハッシュを、提出に添える。改変されていれば、機械の照合で人に回す(§6.3)。
-- Node導入前(`dev-env-basics`の前半)は、`static-preview`と手動確認だけで進められるようにする。
+- Node導入前(`dev-env-basics`全体を含む)は、`static-preview`と手動確認だけで進められるようにする。
 
 ### 5.4 サーバーで実行しないことの前提
 
@@ -854,7 +854,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 
 次に足すものは次のとおり。
 
-- `dev-env-basics`の本文(#41)で、OS別のブロックとOSごとの画像を使う。見本の単元にはまだ書いていない。
+- `dev-env-basics`の本文(#41)で、OS別のブロックとOSごとの画像を使う。現在の本文にはOS別のブロックを配置済みである。
 - 課題を配ったときに、課題文のパネルを開く(配布の流れ)。今は`README.md`をテキストのまま開く。
 
 ## 12 学習画面の置き場所(判断材料)
@@ -925,7 +925,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
    - `stella.serverUrl`の上書きの修正。
 2. **新形式と`dev-env-basics`:**
    - `format: 2`を足す(タスク・参照元・OS別ブロック・予定時間)。
-   - `dev-env-basics`を作る。`static-preview`と`env-diagnose`で動くので、本格的なrunnerがなくても試行できる。
+   - `dev-env-basics`を作る。`static-preview`で動き、Node.js・Gitの導入や環境診断は後続に置くので、本格的なrunnerがなくても試行できる。
 3. **提出とAIの一次レビュー:**
    - 共通とステージのコーディング規則の本文・ID、課題ごとの適用範囲を用意する。
    - ファイル提出、AIの一次レビュー(キュー・構造化出力・課題ごとのルーブリック)、人に回した提出のキュー、確信度のしきい値、スキルの証拠を作る。
@@ -960,4 +960,4 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 | 学習画面の比較手順 | §12.1。採用先は上表の未決事項に残す | 導入案内と比較用の画面、試行、採用先の判断 |
 | 旧TypeScript課題66問 | §3.2。今回は保持 | 退役と新形式への切り替え。課題の整理は別の作業 |
 
-18ステージは計1,260時間で、前提はすべて先行するステージを指し、`parent`は前提に含まれる。§3.4の付け替え後は、残す17ステージを含めた35ステージに未知の前提と循環がなく、線は最大2枝で収まる。既存42ステージのうち、退役19・slug引継ぎ6・そのまま残す17である。§1の「重なる24ステージ」と、別途削除する`it-basics`を合わせると、退役と引継ぎの対象は25ステージになる。
+18ステージは計1,229時間で、前提はすべて先行するステージを指し、`parent`は前提に含まれる。§3.4の付け替え後は、残す17ステージを含めた35ステージに未知の前提と循環がなく、線は最大2枝で収まる。既存42ステージのうち、退役19・slug引継ぎ6・そのまま残す17である。§1の「重なる24ステージ」と、別途削除する`it-basics`を合わせると、退役と引継ぎの対象は25ステージになる。

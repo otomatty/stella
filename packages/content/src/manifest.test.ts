@@ -22,13 +22,13 @@ describe("buildContentManifest", () => {
     expect(sample.title).toBe("Salesforce 開発 入門");
   });
 
-  it("標準18ステージの予定時間が教材から入り、合計1260時間になる", () => {
+  it("標準18ステージの予定時間が教材から入り、合計1229時間になる", () => {
     const program = stages.filter((stage) =>
       (LEARNING_PROGRAM_SLUGS as readonly string[]).includes(stage.id),
     );
     expect(program).toHaveLength(18);
     expect(program.every((stage) => (stage.duration ?? 0) > 0)).toBe(true);
-    expect(program.reduce((sum, stage) => sum + (stage.duration ?? 0), 0)).toBe(1260);
+    expect(program.reduce((sum, stage) => sum + (stage.duration ?? 0), 0)).toBe(1229);
   });
 
   it("旧形式でも予定時間をそのまま使い、未設定は空のまま、不正値は拒否する", () => {

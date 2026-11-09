@@ -3,24 +3,20 @@
   "title": "開発環境とWebの入口",
   "category": "基礎",
   "color": "slate",
-  "description": "【準備中】開発環境を整え、HTMLの変更をブラウザーで確認できるようになるためのステージです。",
+  "description": "【準備中】VS Code と STELLA 拡張を準備し、課題のファイルを編集・保存して、確認・提出できるようになるためのステージです。",
   "header": "開発環境とWebの入口",
   "tenantId": "ses",
   "prerequisites": [],
-  "plannedHours": 35,
+  "plannedHours": 4,
   "environment": "static-web-02",
   "pdfByOs": true,
-  "canDo": "開発環境を整え、HTMLの変更をブラウザーで確認できる",
+  "canDo": "VS Codeで課題を開き、ファイルを編集・保存して、確認・提出できる",
   "theme": "開発を始める力",
   "modules": {
-    "u00-start": "STELLAで学ぶ流れと事前確認",
+    "u00-start": "STELLAで学ぶ流れ",
     "u01-vscode-setup": "VS CodeとSTELLA拡張の準備",
     "u02-first-task": "はじめての課題を出す",
-    "u03-files": "画面とファイルの操作",
-    "u04-links": "ページを増やしてつなぐ",
-    "u05-terminal-node": "ターミナルとNode.js・npm",
-    "u06-git": "Gitで変更を残す",
-    "u07-local-server": "ローカルサーバーで開く",
-    "u08-check-a": "まとめと確認A"
+    "u03-files": "ファイルとフォルダーの操作",
+    "u04-check-a": "確認A"
   }
 }

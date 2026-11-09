@@ -1,8 +1,0 @@
-{
-  "plannedHours": 5,
-  "skills": {
-    "uses": ["file-save-reopen", "html-document"],
-    "assesses": ["relative-link", "preview-changes"]
-  },
-  "reuses": []
-}

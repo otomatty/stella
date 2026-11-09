@@ -102,7 +102,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログには台本のあるトピックはありません。台本を追加すると、main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の12トピックすべてに台本があります。GitHub Secret `GEMINI_API_KEY` は現在未登録で、動画はまだ生成されていません。登録すると、main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
@@ -148,7 +148,7 @@ python packages/content/scripts/diagram_export.py packages/content/stages/<slug>
 
 ## 現在の状態
 
-教材は `stages/<slug>/modules/` が正本です。新18ステージ・残す11ステージ・あとから足した2ステージの計31ステージがあります。`dev-env-basics` は #28 の format 2 の見本単元（旧 `m0-first-page`、現在は `u02-first-task`、3時間）と、公開の U00 `u00-start`・U01 `u01-vscode-setup` の草稿を持ち、ステージ全体の予定は35時間です。ほかの新17ステージは M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つステージも全体は準備中です。残すステージのうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えたステージです（説明から【準備中】を外した）。あとから足した `devlab-ts-prework`（開発ラボG の島の Extra）は選考の事前課題 第1部で、10 単元・19 課題を持ち、development-lab の ts-prework から変換したステージです。課題は章ごとに 1 つで、問題つきです（発展問題は別の任意の課題）。準備中は計23ステージです。
+教材は `stages/<slug>/modules/` が正本です。新18ステージ・残す11ステージ・あとから足した2ステージの計31ステージがあります。`dev-env-basics` は4時間・5単元（U00〜U04）・12トピック・課題5つの草稿を持ちます。公開の U00 `u00-start` は学習の流れ、U01 `u01-vscode-setup` は VS Code と STELLA 拡張の準備を扱います。U02 `u02-first-task` は編集・保存・表示と確認・提出、U03 `u03-files` はファイル作成・名前の変更、U04 `u04-check-a` はファイル操作の確認Aと後日の確認Bです。STELLAの網羅的な説明はせず、VS Code の主要な操作を優先します。相対リンク、ターミナル、Node.js・npm の準備と環境診断、Git のローカルの記録、ローカルサーバーは最初に使う後続ステージの冒頭で扱い、具体的な配置は執筆時（#41）に決めます。参照元と本文は講師の承認待ちで、AI は `approved` を付けません。ほかの新17ステージは M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つステージも全体は準備中です。残すステージのうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えたステージです（説明から【準備中】を外した）。あとから足した `devlab-ts-prework`（開発ラボG の島の Extra）は選考の事前課題 第1部で、10 単元・19 課題を持ち、development-lab の ts-prework から変換したステージです。課題は章ごとに 1 つで、問題つきです（発展問題は別の任意の課題）。準備中は計23ステージです。
 
 唯一の前提なしステージは `dev-env-basics` です。このステージには前提を追加しないでください。新18ステージの slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 
@@ -156,7 +156,7 @@ Basic = 新18ステージ、それ以外は Extra (`audience: granted`)。講師
 
 退役した19ステージと、2026-10 に退役した AI駆動開発の島の6ステージの教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
-新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、#41 で dev-env-basics の解説を執筆したあとに新しい台本を作り、動画配信の経路に載せます。
+新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の12トピックに新しい台本を配置済みです。`GEMINI_API_KEY` の登録後にデプロイで動画を生成・配信します。現在は未登録で、動画はまだ生成されていません。
 
 残す教材の本文は維持します。新しいステージと教材の追加手順は [ADDING_STAGE.md](ADDING_STAGE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 

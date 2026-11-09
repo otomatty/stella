@@ -1,8 +1,0 @@
-{
-  "plannedHours": 3,
-  "skills": {
-    "uses": ["terminal-location", "node-npm-ready"],
-    "assesses": ["local-server-run"]
-  },
-  "reuses": []
-}
