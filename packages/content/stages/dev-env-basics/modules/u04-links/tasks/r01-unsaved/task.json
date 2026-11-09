@@ -13,7 +13,7 @@
     ]
   },
   "runner": "static-preview",
-  "environment": "static-web-01",
+  "environment": "static-web-02",
   "submit": {
     "files": [
       "index.html"
@@ -26,6 +26,11 @@
       {
         "id": "condition-1",
         "criterion": "index.html の保存された h1 が「新着情報」になっている",
+        "required": true
+      },
+      {
+        "id": "browser-preview",
+        "criterion": "修正記録の「修正後に確かめたこと」に、ブラウザーで開いたファイルと、表示された見出しが書かれている",
         "required": true
       }
     ],

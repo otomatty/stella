@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u06-git@1",
-  "contentHash": "474b7c920fe4d61a4dd9ee8defed44aca72a29f2da513fc600dcb9ce874d751b",
-  "environmentRef": "static-web-01@1",
+  "unitId": "dev-env-basics/u06-git@4",
+  "contentHash": "94ecca45581621ae7401739f2c84aed073b2f8a4aecfc5d83049dfeec76a0549",
+  "environmentRef": "static-web-02@1",
   "uses": [
     {
       "contentId": "l1-why-git/t1-what-is-git/slides.md",

@@ -1,4 +1,4 @@
-import { openFirstSlides, show } from "../lib/scenario-navigation";
+import { openFirstTask, show } from "../lib/scenario-navigation";
 import { defineScenario } from "../lib/types";
 
 export default defineScenario({
@@ -6,16 +6,35 @@ export default defineScenario({
   order: 4,
   screen: "/stages/$stageId/lessons/$lessonId",
   title: "提出の結果を見る",
-  summary: "レッスンの提出履歴と、通知から結果を確認する場所を見ます。",
+  summary: "課題のレッスンの下でその課題の提出を開き、通知と結果の画面を確認します。",
   start: "/",
   user: "seed-learner",
+  seedSql: [
+    // 課題・課題文レッスン・受講者は seed の行を使い、提出直後の状態を用意する。
+    // AI のジョブは作らず、収録中も「AI が確認中」のままにする。
+    `INSERT INTO submissions (
+      id, tenant_id, student_id, lesson_id, task_id, task_content_hash,
+      task_kind, submission_mode, stage_title, section_title, assignment_title,
+      code, status, ai_review_status, submitted_at
+    )
+    SELECT 'tutorial-review-result-' || t.id, st.tenant_id, p.id, l.id, t.id,
+      t.content_hash, t.kind, 'submit', st.title, s.title, t.title,
+      '', 'pending', 'queued', unixepoch('now') * 1000
+    FROM tasks t
+    JOIN lessons l ON l.id = t.lesson_id
+    JOIN sections s ON s.id = l.section_id
+    JOIN stages st ON st.id = s.stage_id
+    JOIN profiles p ON p.tenant_id = st.tenant_id AND p.id = 'seed-learner'
+    WHERE st.tenant_id = 'ses' AND st.slug = 'dev-env-basics' AND st.format = 2
+      AND t.id = 'dev-env-basics/u02-first-task/q01-first-page';`,
+  ],
   async run(t) {
-    await openFirstSlides(t);
+    await openFirstTask(t);
     await t.caption("提出のあとも、Web で結果を確かめられます。", { hold: 5500 });
     await t.expect("[data-testid=lesson-screen]");
-    await t.caption("画面の下に「提出・添削を確認する」があります。", { hold: 5500 });
+    await t.caption("課題のレッスンの下に「提出・添削を確認する」があります。", { hold: 5500 });
     await show(t, "[data-testid=submissions-toggle]");
-    await t.caption("押すと、これまでの提出が開きます。", { hold: 5500 });
+    await t.caption("押すと、この課題の提出が開きます。", { hold: 5500 });
     await t.click("[data-testid=submissions-toggle]");
     await t.expect("[data-testid=submissions-history][open]");
     // 読み込み完了を待ってから、提出の有無で分ける。

@@ -6,54 +6,54 @@
       "summary": "ガイドと星から学習を始め、教材と課題の進め方を見ます。",
       "screen": "/",
       "order": 1,
-      "duration": 50.9,
+      "duration": 54.8,
       "video": "/tutorials/overview.mp4",
       "poster": "/tutorials/overview.jpg",
       "chapters": [
         {
-          "t": 3.7,
+          "t": 7.7,
           "title": "ホームのガイドが、はじめの一歩を案内します。"
         },
         {
-          "t": 7.1,
+          "t": 11.3,
           "title": "入口の星にマウスを載せると、内容が見えます。"
         },
         {
-          "t": 10.6,
+          "t": 15.1,
           "title": "ガイドの「最初のステージを始める」を押します。"
         },
         {
-          "t": 15,
+          "t": 19.7,
           "title": "最初のレッスンが開きました。"
         },
         {
-          "t": 17.7,
+          "t": 22.3,
           "title": "「次へ」を押すと、スライドが進みます。"
         },
         {
-          "t": 21.9,
+          "t": 26.5,
           "title": "目次の「まとめ」で、内容を読み返せます。"
         },
         {
-          "t": 26.2,
+          "t": 30.8,
           "title": "「知識問題」では、理解を確かめます。"
         },
         {
-          "t": 29.4,
+          "t": 34,
           "title": "課題文のレッスンも、Web で読めます。"
         },
         {
-          "t": 40.2,
+          "t": 44.1,
           "title": "課題は「VS Code で開く」から取り組みます。"
         },
         {
-          "t": 43.9,
+          "t": 47.8,
           "title": "ホームに戻ると、始めた星が進行中になります。"
         }
       ],
-      "recordedAt": "2026-11-07T06:53:56.654Z",
-      "sourceHash": "3cfeea18ca08ed02",
-      "narration": false,
+      "recordedAt": "2026-11-09T02:14:44.444Z",
+      "sourceHash": "61c50286ad8eb57c",
+      "narration": true,
       "theme": "light",
       "captions": "overview.vtt"
     },
@@ -63,46 +63,46 @@
       "summary": "スライド、まとめ、知識問題と目次の使い方を見ます。",
       "screen": "/stages/$stageId/lessons/$lessonId",
       "order": 2,
-      "duration": 54.3,
+      "duration": 57.9,
       "video": "/tutorials/lesson-screen.mp4",
       "poster": "/tutorials/lesson-screen.jpg",
       "chapters": [
         {
-          "t": 11.9,
+          "t": 15.4,
           "title": "レッスンでは、スライドで要点をつかみます。"
         },
         {
-          "t": 16.9,
+          "t": 20.4,
           "title": "「次へ」を押すと、次のページが見えます。"
         },
         {
-          "t": 21.9,
+          "t": 25.5,
           "title": "「完了にする」を押すと、読んだ記録が付きます。"
         },
         {
-          "t": 26.9,
+          "t": 30.5,
           "title": "目次の「まとめ」を押すと、本文を読めます。"
         },
         {
-          "t": 31.9,
+          "t": 35.5,
           "title": "目次の「知識問題」を押して、理解を確かめます。"
         },
         {
-          "t": 36.9,
+          "t": 40.5,
           "title": "選択肢を押すと、答えを選べます。"
         },
         {
-          "t": 41.9,
+          "t": 45.5,
           "title": "すべての問題に答えてから、採点します。"
         },
         {
-          "t": 46.9,
+          "t": 50.5,
           "title": "次のレッスンも、左の目次から開けます。"
         }
       ],
-      "recordedAt": "2026-11-07T06:55:11.410Z",
-      "sourceHash": "25ab866f867e30e3",
-      "narration": false,
+      "recordedAt": "2026-11-09T02:16:02.037Z",
+      "sourceHash": "4aacc3bda0291dc7",
+      "narration": true,
       "theme": "light",
       "captions": "lesson-screen.vtt"
     },
@@ -112,95 +112,95 @@
       "summary": "課題文と、VS Code に課題を開く入口を確認します。",
       "screen": "/stages/$stageId/lessons/$lessonId",
       "order": 3,
-      "duration": 58.3,
+      "duration": 62.7,
       "video": "/tutorials/open-in-vscode.mp4",
       "poster": "/tutorials/open-in-vscode.jpg",
       "chapters": [
         {
-          "t": 11.8,
+          "t": 16.2,
           "title": "課題文のレッスンを開きました。"
         },
         {
-          "t": 17.3,
+          "t": 21.7,
           "title": "まず、何を作るかと手順を読みましょう。"
         },
         {
-          "t": 22.8,
+          "t": 27.3,
           "title": "課題に取り組む場所は、パソコンの VS Code です。"
         },
         {
-          "t": 28.4,
+          "t": 32.8,
           "title": "「VS Code で開く」を押すと、起動します。"
         },
         {
-          "t": 33.9,
+          "t": 38.3,
           "title": "初回は、学習フォルダーを選びます。"
         },
         {
-          "t": 39.4,
+          "t": 43.8,
           "title": "自分の学習フォルダーを、信頼して開きます。"
         },
         {
-          "t": 44.9,
+          "t": 49.3,
           "title": "VS Code に課題文と編集するファイルが開きます。"
         },
         {
-          "t": 50.4,
+          "t": 54.8,
           "title": "スマートフォンでは、PC へ送るボタンになります。"
         }
       ],
-      "recordedAt": "2026-11-07T06:56:23.909Z",
-      "sourceHash": "f035f29edf90f238",
-      "narration": false,
+      "recordedAt": "2026-11-09T02:17:19.658Z",
+      "sourceHash": "486f1b207aba5c08",
+      "narration": true,
       "theme": "light",
       "captions": "open-in-vscode.vtt"
     },
     {
       "id": "review-result",
       "title": "提出の結果を見る",
-      "summary": "レッスンの提出履歴と、通知から結果を確認する場所を見ます。",
+      "summary": "課題のレッスンの下でその課題の提出を開き、通知と結果の画面を確認します。",
       "screen": "/stages/$stageId/lessons/$lessonId",
       "order": 4,
-      "duration": 57.9,
+      "duration": 64.6,
       "video": "/tutorials/review-result.mp4",
       "poster": "/tutorials/review-result.jpg",
       "chapters": [
         {
-          "t": 11.5,
+          "t": 18.1,
           "title": "提出のあとも、Web で結果を確かめられます。"
         },
         {
-          "t": 17,
-          "title": "画面の下に「提出・添削を確認する」があります。"
+          "t": 23.6,
+          "title": "課題のレッスンの下に「提出・添削を確認する」があります。"
         },
         {
-          "t": 22.5,
-          "title": "押すと、これまでの提出が開きます。"
+          "t": 29.1,
+          "title": "押すと、この課題の提出が開きます。"
         },
         {
-          "t": 28,
+          "t": 34.6,
           "title": "右上のベルを押すと、通知が開きます。"
         },
         {
-          "t": 33.5,
+          "t": 40.2,
           "title": "レビューが終わると、ここにも通知が届きます。"
         },
         {
-          "t": 39,
+          "t": 45.7,
           "title": "通知を閉じて、提出の一覧に戻ります。"
         },
         {
-          "t": 44.5,
+          "t": 51.2,
           "title": "提出を押すと、結果の画面が開きます。"
         },
         {
-          "t": 50,
+          "t": 56.7,
           "title": "確認中のときは、結果が届くのを待ちましょう。"
         }
       ],
-      "recordedAt": "2026-11-07T06:57:41.108Z",
-      "sourceHash": "256921dbaf530d50",
-      "narration": false,
+      "recordedAt": "2026-11-09T02:18:41.599Z",
+      "sourceHash": "2c5abc8c94785cea",
+      "narration": true,
       "theme": "light",
       "captions": "review-result.vtt"
     },
@@ -210,46 +210,46 @@
       "summary": "今日の復習で答えを選び、正誤と解説を確認します。",
       "screen": "/review",
       "order": 5,
-      "duration": 50.1,
+      "duration": 53,
       "video": "/tutorials/daily-review.mp4",
       "poster": "/tutorials/daily-review.jpg",
       "chapters": [
         {
-          "t": 3.7,
+          "t": 6.6,
           "title": "ホームのガイドから、今日の復習を始めます。"
         },
         {
-          "t": 9.2,
+          "t": 12.1,
           "title": "前に解いた知識問題が、もう一度出ます。"
         },
         {
-          "t": 14.7,
+          "t": 17.6,
           "title": "ここでは、試しに答えを一つ選んでみます。"
         },
         {
-          "t": 20.2,
+          "t": 23.1,
           "title": "回答する前なら、答えを選び直せます。"
         },
         {
-          "t": 25.7,
+          "t": 28.6,
           "title": "「回答する」を押すと、正誤が分かります。"
         },
         {
-          "t": 31.2,
+          "t": 34.1,
           "title": "解説を読んで、考え方を確かめましょう。"
         },
         {
-          "t": 36.7,
+          "t": 39.6,
           "title": "間違えた問題ほど、早くまた出てきます。"
         },
         {
-          "t": 42.2,
+          "t": 45.1,
           "title": "少しずつ振り返ると、覚えたことが残ります。"
         }
       ],
-      "recordedAt": "2026-11-07T06:58:45.728Z",
-      "sourceHash": "92dc5d7d67dbf5a7",
-      "narration": false,
+      "recordedAt": "2026-11-09T02:19:50.092Z",
+      "sourceHash": "a4172a259531656c",
+      "narration": true,
       "theme": "light",
       "captions": "daily-review.vtt"
     },
@@ -259,46 +259,46 @@
       "summary": "到達リスト、レッスンと課題の一覧、修了条件を確認します。",
       "screen": "/stages/$stageId",
       "order": 6,
-      "duration": 55.9,
+      "duration": 61.8,
       "video": "/tutorials/stage-progress.mp4",
       "poster": "/tutorials/stage-progress.jpg",
       "chapters": [
         {
-          "t": 9.4,
+          "t": 15.3,
           "title": "星の「レッスン一覧」から開いた画面です。"
         },
         {
-          "t": 14.9,
+          "t": 20.8,
           "title": "到達リストで、使い方の進み具合が分かります。"
         },
         {
-          "t": 20.4,
+          "t": 26.3,
           "title": "単元ごとに、レッスンが並んでいます。"
         },
         {
-          "t": 25.9,
+          "t": 31.8,
           "title": "読むレッスンを押すと、学習を始められます。"
         },
         {
-          "t": 31.4,
+          "t": 37.4,
           "title": "課題の一覧では、提出や確認の状態が分かります。"
         },
         {
-          "t": 36.9,
+          "t": 42.9,
           "title": "修了条件には、終える必要があることが出ます。"
         },
         {
-          "t": 42.4,
+          "t": 48.4,
           "title": "満たした条件には、緑のチェックが付きます。"
         },
         {
-          "t": 48,
+          "t": 53.9,
           "title": "レッスンと課題を終えると、星がクリアになります。"
         }
       ],
-      "recordedAt": "2026-11-07T06:59:55.046Z",
-      "sourceHash": "c3523fc9027530f7",
-      "narration": false,
+      "recordedAt": "2026-11-09T02:21:06.384Z",
+      "sourceHash": "97f9c552e41eddf5",
+      "narration": true,
       "theme": "light",
       "captions": "stage-progress.vtt"
     }

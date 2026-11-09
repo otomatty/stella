@@ -1,0 +1,67 @@
+{
+  "id": "dev-env-basics/u03-files/v02-handover-name",
+  "title": "引継ぎメモの名前を整える",
+  "kind": "basic",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "stella-task-loop"
+    ],
+    "assesses": [
+      "file-save-reopen"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "handover.txt"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "handover.txt に「返却した鍵は受付で保管します」が残っている",
+        "required": true
+      },
+      {
+        "id": "condition-2",
+        "criterion": "元の名前の draft.txt が残っていない",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-explorer-20261107",
+    "SRC-dev-env-files-20261107"
+  ],
+  "estimatedMinutes": 6,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "file-contains",
+        "path": "handover.txt",
+        "text": "返却した鍵は受付で保管します"
+      },
+      {
+        "type": "file-absent",
+        "path": "draft.txt"
+      }
+    ]
+  }
+}

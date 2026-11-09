@@ -1,0 +1,58 @@
+{
+  "id": "dev-env-basics/u03-files/v01-checklist-file",
+  "title": "見学の持ち物メモを作る",
+  "kind": "basic",
+  "pattern": "file-basics",
+  "skills": {
+    "uses": [
+      "stella-task-loop"
+    ],
+    "assesses": [
+      "file-save-reopen"
+    ]
+  },
+  "runner": "static-preview",
+  "environment": "static-web-02",
+  "submit": {
+    "files": [
+      "checklist.txt"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "condition-1",
+        "criterion": "課題フォルダー直下の checklist.txt に「見学には筆記用具を持参します」が保存されている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-dev-env-explorer-20261107",
+    "SRC-dev-env-editing-20261107"
+  ],
+  "estimatedMinutes": 6,
+  "protected": [
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "static": {
+    "checks": [
+      {
+        "type": "file-contains",
+        "path": "checklist.txt",
+        "text": "見学には筆記用具を持参します"
+      }
+    ]
+  }
+}

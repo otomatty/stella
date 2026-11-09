@@ -147,6 +147,8 @@ describe("テンプレートから類題を書き出す", () => {
     mkdirSync(join(root, "stages"));
     cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
       recursive: true,
+      // 必須の空フォルダーを残し、教材の類題・テンプレートの在庫は写さない。
+      filter: (source) => !["variants", "variant-templates"].includes(basename(dirname(source))),
     });
     for (const name of ["skills.json", "patterns.json", "environments", "sources"])
       cpSync(join(content, name), join(root, name), { recursive: true });

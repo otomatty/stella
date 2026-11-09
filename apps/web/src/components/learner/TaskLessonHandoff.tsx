@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
-import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
-import { apiFetch } from "@/lib/api-client";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
 
 /**
@@ -10,24 +7,8 @@ import { OpenInVscodeButton } from "./OpenInVscodeButton";
  * ボタンは接続コード付きの task URI を開くので、拡張が未接続でも 1 クリックで
  * 接続 → 課題の準備 → 課題文の表示まで進む。課題文でないレッスンでは何も出さない。
  */
-export function TaskLessonHandoff({ stageId, lessonId }: { stageId: string; lessonId: string }) {
+export function TaskLessonHandoff({ taskId }: { taskId: string | null }) {
   const handheld = useIsHandheld();
-  const [taskId, setTaskId] = useState<string | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    setTaskId(null);
-    apiFetch<{ tasks: TaskSummary[] }>(`/api/tasks/for-stage/${encodeURIComponent(stageId)}`, {
-      signal: controller.signal,
-    })
-      .then(({ tasks }) => {
-        if (!controller.signal.aborted)
-          setTaskId(tasks.find((task) => task.lessonId === lessonId)?.id ?? null);
-      })
-      .catch(() => {
-        // 課題を引けなくても課題文は読める。ボタンを出さないだけにする。
-      });
-    return () => controller.abort();
-  }, [stageId, lessonId]);
   if (!taskId) return null;
   return (
     <div
