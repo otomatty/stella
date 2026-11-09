@@ -122,11 +122,25 @@ function isRiff(bytes: Uint8Array): boolean {
 
 // ---------------------------------------------------------------- gemini
 
-/** interactions API の応答から音声 (base64) を拾う。SDK と REST で綴りが揺れても読めるように。 */
+/** interactions API の output_audio / outputAudio、または steps 内の content から音声 (base64) を拾う。
+ * steps 内に音声が複数あれば最後のものを使う。 */
 export function geminiAudioField(data: unknown): string | undefined {
   const top = data as Record<string, unknown> | null;
   const out = (top?.output_audio ?? top?.outputAudio) as Record<string, unknown> | undefined;
-  return typeof out?.data === "string" && out.data.length > 0 ? out.data : undefined;
+  if (typeof out?.data === "string" && out.data.length > 0) return out.data;
+  if (!Array.isArray(top?.steps)) return undefined;
+  let audio: string | undefined;
+  for (const step of top.steps) {
+    if (!step || typeof step !== "object" || Array.isArray(step)) continue;
+    if (!Array.isArray(step.content)) continue;
+    for (const content of step.content) {
+      if (!content || typeof content !== "object" || Array.isArray(content)) continue;
+      if (content.type === "audio" && typeof content.data === "string" && content.data.length > 0) {
+        audio = content.data;
+      }
+    }
+  }
+  return audio;
 }
 
 function geminiProvider(cfg: VoiceConfig): TtsProvider {
