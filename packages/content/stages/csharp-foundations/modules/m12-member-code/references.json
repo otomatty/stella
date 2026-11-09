@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m12-member-code@2",
+  "contentHash": "b81da365812fe3a99f2cf5c0b1ad483a2fe343da7de4d883f7ae21ca97331906",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-member-code/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-contains-20261108",
+        "SRC-mslearn-csharp-replace-20261108",
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-indexer-20261106",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-parse-20261106"
+      ],
+      "usedFor": "会員コードの仕様からログと戻り値を決める説明、空白の検知と削除、文字列の長さと半角数字の判定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-member-code/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-contains-20261108",
+        "SRC-mslearn-csharp-replace-20261108",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-parse-20261106"
+      ],
+      "usedFor": "ログと戻り値の区別、空白を消す前の判定、整数に変換せず桁数を確かめる知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-member-code/t1-expected-results/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "入力ごとに期待ログを順に並べ、期待戻り値を別の欄に記す説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-member-code/t2-detect-space/slides.md",
+      "sourceRefs": ["SRC-mslearn-csharp-contains-20261108", "SRC-mslearn-csharp-replace-20261108"],
+      "usedFor": "Containsで空白を調べてからReplaceの戻り値で取り除く説明と参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-member-code/t3-digit-characters/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-char-20261106",
+        "SRC-mslearn-csharp-indexer-20261106",
+        "SRC-mslearn-csharp-length-20261106",
+        "SRC-mslearn-csharp-parse-20261106"
+      ],
+      "usedFor": "整数化で先頭の0を失わず、文字列の長さと各文字で半角数字の桁数を確かめる説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-check-member8/README.md",
+      "sourceRefs": ["SRC-mslearn-csharp-contains-20261108", "SRC-mslearn-csharp-replace-20261108"],
+      "usedFor": "会員コード8桁の課題。空白の検知と削除、戻り値と順番どおりのログを確認する",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-extra/README.md",
+      "sourceRefs": ["SRC-mslearn-csharp-contains-20261108", "SRC-mslearn-csharp-replace-20261108"],
+      "usedFor": "会員コードの追加演習。失敗理由の分離、先頭条件、再実装、空白を受け付けない6桁版を確認する",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

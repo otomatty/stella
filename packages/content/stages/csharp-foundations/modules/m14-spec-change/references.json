@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m14-spec-change@2",
+  "contentHash": "fa4f1447f4c104ed6691cab46f231c20c34eba7367071f72e179ae3a3d6ab0c5",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-spec-change/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106",
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-gregorian-leap-year-20261109"
+      ],
+      "usedFor": "変更する行と残す行の整理、既存ケースの再実行、商品区分ごとの上限関数、簡略うるう年と暦を区別して期待値を決める説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-spec-change/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-gregorian-leap-year-20261109"
+      ],
+      "usedFor": "仕様変更後に再実行するケース、上限の比較、簡略うるう年の期待値を確かめる知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-spec-change/t1-change-lines/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "仕様の項目をコードの行に対応させ、変更後も前の全ケースを実行する説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-spec-change/t2-category-limit/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "商品区分を引数にして上限を返す関数と、上限ちょうどを含む範囲の比較",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-spec-change/t3-spec-expectations/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-gregorian-leap-year-20261109"
+      ],
+      "usedFor": "剰余の意味と箱詰めの参考例、簡略うるう年とグレゴリオ暦を区別する説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-check-date-days/README.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-contains-20261108",
+        "SRC-mslearn-csharp-replace-20261108",
+        "SRC-mslearn-csharp-substring-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "月ごとの日数と簡略うるう年を加え、既存ケースと月末境界の戻り値とログ順を確認する課題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-extra/README.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-contains-20261108",
+        "SRC-mslearn-csharp-replace-20261108",
+        "SRC-mslearn-csharp-substring-20261106",
+        "SRC-mslearn-csharp-parse-20261106",
+        "SRC-mslearn-csharp-if-20261104",
+        "SRC-mslearn-csharp-arithmetic-20261106",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "暦のうるう年への変更、仕様からの再実装、Importの削除ログを成功時に限る変更を確認する追加演習",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

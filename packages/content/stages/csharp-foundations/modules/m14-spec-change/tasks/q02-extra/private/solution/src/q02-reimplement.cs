@@ -1,0 +1,153 @@
+// Q02 仕様から再実装する
+//
+// 関数Q02Reimplementにstring strInputとstring strModeを渡す。戻り値は成功が空文字、失敗がErr。
+//
+// 前提
+//
+// 入力はnullではない文字列。空文字・数字以外も検証する。モードはCheckかImportのみ。
+// 空白は半角空白と全角空白。全位置から削除する。タブは削除しない。
+// 数字8桁とは、長さ8で、すべて半角0〜9であること。全角数字は不正。
+// 日付は先頭4桁が年、次2桁が月、最後2桁が日。月は01〜12、日は01からその月の日数までを確認する。
+// この問題でも年の範囲は見ない。00000101は成功するが、20260231は月の日数を超えるため失敗する。
+//
+// Check
+//
+// 1. 元の入力に空白があるなら「空白を検知しました」を出し、全空白を削除する。
+// 2. 数字8桁でなければ、元の空白があった場合は「入力値が正しくありません」、なかった場合は「入力値の桁数が正しくありません」を出しErrを返す。ここで日付の検証は行わない。
+// 3. 数字8桁なら日付を確認する。不正なら「日付が正しくありません」を出しErrを返す。正しければ空文字を返す。
+//
+// Import
+//
+// 1. 元の入力に空白があるなら全空白を削除する。検知ログは出さない。
+// 2. 数字8桁でなければ、元の空白があった場合は「入力値が正しくありません」、なかった場合は「入力値の桁数が正しくありません」を出しErrを返す。削除ログと日付ログは出さない。
+// 3. 数字8桁で、元の入力に空白があった場合は「空白を削除しました」を出す。
+// 4. 日付を確認する。不正なら「日付が正しくありません」を出しErrを返す。正しければ空文字を返す。
+//
+// Importの削除ログは数字8桁を確認した時点で出す。その後に日付で失敗しても、削除ログは取り消さない。ログは各1行、指定文以外は出さない。
+//
+// 変更後の日付の条件
+//
+// 元のCheckDate8に、月ごとの日数とうるう年の判定を加える。引数・戻り値・空白・数字・モードの仕様はそのまま使う。
+//
+// 月ごとの日数を考慮する（2月は28日。うるう年は次項）
+// うるう年は、西暦が 4 で割り切れれば2月29日まで可（100年・400年は見ない）
+// 20260231 は正しくない
+// 20240229 は正しい
+// 20230229 は正しくない
+//
+// 日付不正のログは「日付が正しくありません」のまま。
+//
+// この問題の変更点
+//
+// 元の仕様を自分で再実装し、そこへ簡略うるう年を含む変更を加える。以前のコードは閉じる。
+//
+// Substringで一部を切る書き方と、int.Parseで整数にする書き方は調べてよい。短い文字列や数字以外を、先に切り出し・変換して例外にしない。
+// 補助の関数を使う場合は、この問題のメソッドの中に書く。
+
+public static partial class Answers
+{
+    public static string Q02Reimplement(string strInput, string strMode)
+    {
+        bool IsDigitN(string s, int n)
+        {
+            if (s.Length != n)
+            {
+                return false;
+            }
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (s[i] < '0' || s[i] > '9')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        int DaysInMonth(int year, int month)
+        {
+            if (month == 2)
+            {
+                if (year % 4 == 0)
+                {
+                    return 29;
+                }
+                return 28;
+            }
+            if (month == 4 || month == 6 || month == 9 || month == 11)
+            {
+                return 30;
+            }
+            return 31;
+        }
+
+        bool IsDate8(string s)
+        {
+            int year = int.Parse(s.Substring(0, 4));
+            int month = int.Parse(s.Substring(4, 2));
+            int day = int.Parse(s.Substring(6, 2));
+            if (month < 1 || month > 12)
+            {
+                return false;
+            }
+            int maxDay = DaysInMonth(year, month);
+            if (day < 1 || day > maxDay)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        bool hasSpace = strInput.Contains(" ") || strInput.Contains("　");
+        string s = strInput.Replace(" ", "").Replace("　", "");
+
+        if (strMode == "Check")
+        {
+            if (hasSpace)
+            {
+                Console.WriteLine("空白を検知しました");
+            }
+            if (!IsDigitN(s, 8))
+            {
+                if (hasSpace)
+                {
+                    Console.WriteLine("入力値が正しくありません");
+                }
+                else
+                {
+                    Console.WriteLine("入力値の桁数が正しくありません");
+                }
+                return "Err";
+            }
+            if (!IsDate8(s))
+            {
+                Console.WriteLine("日付が正しくありません");
+                return "Err";
+            }
+            return "";
+        }
+
+        if (!IsDigitN(s, 8))
+        {
+            if (hasSpace)
+            {
+                Console.WriteLine("入力値が正しくありません");
+            }
+            else
+            {
+                Console.WriteLine("入力値の桁数が正しくありません");
+            }
+            return "Err";
+        }
+        if (hasSpace)
+        {
+            Console.WriteLine("空白を削除しました");
+        }
+        if (!IsDate8(s))
+        {
+            Console.WriteLine("日付が正しくありません");
+            return "Err";
+        }
+        return "";
+    }
+}

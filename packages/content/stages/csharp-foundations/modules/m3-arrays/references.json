@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "csharp-foundations/m3-arrays@1",
-  "contentHash": "7b60cbec63ae4f8ee4cdd8a6a3dd801c6a2eeaf60a6da4248f2e7d78a358b2a6",
+  "unitId": "csharp-foundations/m3-arrays@2",
+  "contentHash": "0632287991dfff019fb2ffc13a0cfdb7cd0a06f1f57c57f7e66d0e072e837487",
   "environmentRef": "dotnet-test-01@1",
   "uses": [
     {

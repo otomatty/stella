@@ -4,9 +4,9 @@ public class Q11IsDigitNTests
     public void Q11IsDigitN()
     {
         Assert.Equal(true, Answers.Q11IsDigitN("12345", 5));
-        Assert.Equal(false, Answers.Q11IsDigitN("12345", 13));
-        Assert.Equal(true, Answers.Q11IsDigitN("1234567890123", 13));
-        Assert.Equal(false, Answers.Q11IsDigitN("", 13));
+        Assert.Equal(false, Answers.Q11IsDigitN("12345", 8));
+        Assert.Equal(true, Answers.Q11IsDigitN("12345678", 8));
+        Assert.Equal(false, Answers.Q11IsDigitN("", 8));
         Assert.Equal(false, Answers.Q11IsDigitN("1234567a", 8));
     }
 }

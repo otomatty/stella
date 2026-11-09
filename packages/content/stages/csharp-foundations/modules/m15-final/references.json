@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "csharp-foundations/m15-final@1",
+  "contentHash": "97da807dffc3c53049d4a760a2e1319a2b035a26ba685ce8489e9d9f771b2f19",
+  "environmentRef": "dotnet-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-final-steps/doc.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106"
+      ],
+      "usedFor": "修了確認の進め方、実装前の期待結果の表と手順、予約人数を題材にした部品の分け方、仕様変更後の全ケースの再実行",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-final-steps/knowledge.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-comparison-20261106"
+      ],
+      "usedFor": "戻り値とログの区別、実装前の準備、仕様変更後に再実行するケースを確かめる知識問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-final-steps/t1-expected-results/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-console-writeline-20261104",
+        "SRC-mslearn-csharp-methods-20261106"
+      ],
+      "usedFor": "仕様の各分岐を入力・モード・期待ログ・期待戻り値の表にする説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-final-steps/t2-plan-first/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-methods-20261106",
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106"
+      ],
+      "usedFor": "実装前に手順と部品を決める説明と、予約人数が範囲内かを返す参考例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-final-steps/t3-recheck-cases/slides.md",
+      "sourceRefs": [
+        "SRC-mslearn-csharp-comparison-20261106",
+        "SRC-mslearn-csharp-boolean-20261106"
+      ],
+      "usedFor": "予約人数の上限変更を題材に、期待値を更新するケースと前の全ケースを確かめる説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-spec-a/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の修了確認。荷物コードの空白処理、数字6文字の検証、戻り値とログ",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-spec-a-change/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の修了確認。荷物コードの先頭条件を加え、既存ケースの戻り値とログも確かめる仕様変更",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-spec-b/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の修了確認。受付コードの空白処理、数字8文字と部署番号の検証、戻り値とログ順",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

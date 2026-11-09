@@ -3,14 +3,14 @@
   "title": "C# の基礎",
   "category": "C#",
   "color": "indigo",
-  "description": "条件で処理を分け、for で順番に値を出し、集計し、最大と最小を選べるようにするステージです。目標は、paiza の D〜C 相当の問題を自分で読み、実装して確認できることです。",
+  "description": "条件分岐・繰り返し・配列・文字列・標準入力から、状態の更新、二重ループ、ソートと集計、関数の組み合わせまでを順に練習し、最後に会員コードと日付の検証、仕様の変更、修了確認に取り組むステージです。目標は、paiza の D〜C 相当の問題と、入力の検証を含む短い仕様を自分で読み、実装して確認できることです。",
   "header": "C# の基礎",
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["dev-env-basics"],
-  "plannedHours": 54,
+  "plannedHours": 70,
   "environment": "dotnet-test-01",
-  "canDo": "paiza の D〜C 相当の問題を自分で読み、実装して確認できる",
+  "canDo": "paiza の D〜C 相当の問題と、入力の検証を含む短い仕様を自分で読み、実装して確認できる",
   "theme": "C# で仕様を実装する力",
   "modules": {
     "m0-orientation": "このステージの進め方",
@@ -24,6 +24,10 @@
     "m8-pairs": "二重ループ",
     "m9-sort-count": "ソートと集計",
     "m10-mixed": "処理を選んで組み合わせる",
-    "m11-functions": "関数の組み合わせ"
+    "m11-functions": "関数の組み合わせ",
+    "m12-member-code": "会員コード",
+    "m13-date-check": "日付チェック",
+    "m14-spec-change": "仕様変更",
+    "m15-final": "修了確認"
   }
 }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "csharp-foundations/m11-functions@1",
-  "contentHash": "2075766d7ddb369a186939b59bfc0fa0c18ab5377dab3fa2e2aa55ef3845beda",
+  "unitId": "csharp-foundations/m11-functions@3",
+  "contentHash": "c6a1c1c01e78b8116044ec965e9d3d087220d6e722c2626f40c5d99a3c78494a",
   "environmentRef": "dotnet-test-01@1",
   "uses": [
     {

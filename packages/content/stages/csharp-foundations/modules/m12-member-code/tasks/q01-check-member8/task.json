@@ -1,0 +1,51 @@
+{
+  "id": "csharp-foundations/m12-member-code/q01-check-member8",
+  "title": "会員コード8桁",
+  "problems": [
+    {
+      "id": "q01-check-member8",
+      "title": "会員コード8桁"
+    }
+  ],
+  "kind": "basic",
+  "pattern": "csharp-member-code",
+  "skills": {
+    "uses": [
+      "csharp-char-bool",
+      "csharp-member-code"
+    ],
+    "assesses": [
+      "csharp-member-code"
+    ]
+  },
+  "runner": "dotnet-test",
+  "environment": "dotnet-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.cs"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mslearn-csharp-contains-20261108",
+    "SRC-mslearn-csharp-replace-20261108"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  }
+}

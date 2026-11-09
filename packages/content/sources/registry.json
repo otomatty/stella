@@ -4776,6 +4776,57 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-mslearn-csharp-contains-20261108",
+      "title": "String.Contains Method",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.string.contains",
+      "section": "Contains(String)",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-08",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-csharp-replace-20261108",
+      "title": "String.Replace Method",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.string.replace",
+      "section": "Replace(String, String)",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-08",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mslearn-gregorian-leap-year-20261109",
+      "title": "GregorianCalendar.IsLeapYear Method",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.globalization.gregoriancalendar.isleapyear?view=net-10.0",
+      "section": "Remarks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-09",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

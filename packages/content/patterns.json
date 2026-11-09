@@ -490,5 +490,33 @@
   {
     "id": "csharp-same-digits",
     "title": "同じ長さの数字かを返す"
+  },
+  {
+    "id": "csharp-member-code",
+    "title": "空白の有無を残して会員コードを検証する"
+  },
+  {
+    "id": "csharp-member-change",
+    "title": "仕様の変更に合わせて検証の順番とログを変える"
+  },
+  {
+    "id": "csharp-date-check",
+    "title": "数字8桁を確かめてから日付を検証する"
+  },
+  {
+    "id": "csharp-date-change",
+    "title": "日付や時刻の条件に合わせて検証とログの順番を変える"
+  },
+  {
+    "id": "csharp-date-days",
+    "title": "月ごとの日数と簡略うるう年に合わせて日付を検証する"
+  },
+  {
+    "id": "csharp-date-days-change",
+    "title": "うるう年の条件と削除ログの変更を実装する"
+  },
+  {
+    "id": "csharp-final-spec",
+    "title": "短い仕様から検証の順番とログを決めて実装する"
   }
 ]

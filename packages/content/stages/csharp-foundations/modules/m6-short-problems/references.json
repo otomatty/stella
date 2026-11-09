@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "csharp-foundations/m6-short-problems@1",
-  "contentHash": "6e9a24b25f74d4cda309d97f1a0a927e4d879cd05121a95f9c2fb9995fb58fca",
+  "unitId": "csharp-foundations/m6-short-problems@2",
+  "contentHash": "d726ef5dac5a0dbeed2658818658124edee572754a5ecfb23882535c3f037f25",
   "environmentRef": "dotnet-test-01@1",
   "uses": [
     {

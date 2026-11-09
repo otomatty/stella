@@ -4,7 +4,7 @@
 // 引数: string s, int n
 // 戻り値: bool
 // 関数名: IsDigitN
-// 例: ("12345", 5) → true / ("12345", 13) → false / ("1234567890123", 13) → true / ("", 13) → false / ("1234567a", 8) → false
+// 例: ("12345", 5) → true / ("12345", 8) → false / ("12345678", 8) → true / ("", 8) → false / ("1234567a", 8) → false
 
 public static partial class Answers
 {
