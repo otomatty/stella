@@ -323,6 +323,41 @@ describe("担当講師の権限と開始診断", () => {
 });
 
 describe("進捗・確認B・通知", () => {
+  it.each(["not-started", "passed", "ai-passed"])(
+    "問題の完了時間は今の版だけを数える (前の版の課題の状態: %s)",
+    async (status) => {
+      sqlite.prepare("update tasks set definition=? where id='practice'").run(
+        JSON.stringify({
+          problems: [
+            { id: "q01-add", title: "足し算" },
+            { id: "q02-sub", title: "引き算" },
+          ],
+        }),
+      );
+      sqlite
+        .prepare(
+          "insert into task_progress (user_id, task_id, status, content_hash, updated_at) values ('learner', 'practice', ?, 'old-hash', 1)",
+        )
+        .run(status);
+      sqlite.exec(`
+        insert into task_problem_results (user_id, task_id, problem_id, content_hash, path, code, sha256, first_passed_at, updated_at)
+        values ('learner', 'practice', 'q01-add', 'old-hash', 'src/q01-add.ts', 'code', 'sha', 1, 1);
+      `);
+      expect((await loadLearningPace(getDb(env), learner)).completedMinutes).toBe(0);
+
+      sqlite.exec(`
+        insert into task_problem_results (user_id, task_id, problem_id, content_hash, path, code, sha256, first_passed_at, updated_at)
+        values ('learner', 'practice', 'q02-sub', 'hash', 'src/q02-sub.ts', 'code', 'sha', 1, 1);
+      `);
+      expect((await loadLearningPace(getDb(env), learner)).completedMinutes).toBe(30);
+
+      sqlite.exec(
+        "update task_problem_results set content_hash='hash' where task_id='practice' and problem_id='q01-add'",
+      );
+      expect((await loadLearningPace(getDb(env), learner)).completedMinutes).toBe(60);
+    },
+  );
+
   it("合格日はAI合格→講師確定で動かず、教材の版が変わった進捗は計算に入れない", async () => {
     sqlite
       .prepare(

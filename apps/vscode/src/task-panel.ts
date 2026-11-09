@@ -166,9 +166,13 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   // 課題の外からの環境診断は、課題を探さずにもう一度診断する。
   const retryCommand = input.standalone ? "stella.diagnoseEnvironment" : "stella.runTask";
   const commandArgs = input.root ? `?${encodeURIComponent(JSON.stringify([input.root]))}` : "";
+  const consultArgs =
+    input.root && result.problemId
+      ? `?${encodeURIComponent(JSON.stringify([input.root, result.problemId]))}`
+      : commandArgs;
   const action = canSubmit(result)
     ? `<a href="command:stella.submitTask${commandArgs}">提出</a>`
-    : `<a href="command:stella.consultTask${commandArgs}">講師に相談</a>`;
+    : `<a href="command:stella.consultTask${consultArgs}">講師に相談</a>`;
   const passedLine = result.problemId
     ? "この問題は通りました。提出すると次の問題を開きます。"
     : "手元の確認はすべて通りました。";

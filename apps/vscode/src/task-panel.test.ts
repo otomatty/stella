@@ -139,6 +139,20 @@ describe("buildTaskPanelHtml", () => {
     expect(html).not.toContain("修正記録");
   });
 
+  it("問題の失敗結果からの相談は、その問題の ID を渡す", () => {
+    const root = "/home/me/web-training/course/unit/q01";
+    const problemId = "q01-add";
+    const html = buildTaskPanelHtml({
+      kind: "result",
+      manifest,
+      result: result({ problemId }),
+      root,
+    });
+    expect(html).toContain(
+      `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">講師に相談`,
+    );
+  });
+
   it("全部通れば次の行動を案内する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",

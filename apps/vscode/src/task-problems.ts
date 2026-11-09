@@ -24,7 +24,7 @@ import {
   readFileInRoot,
 } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
-import { readDistribution, readRecordedSupport } from "./task-submission.js";
+import { readDistribution, readRecordedSupport, type SubmissionNotes } from "./task-submission.js";
 
 /** 未提出、手元の確認が合格、サーバーに提出済み。 */
 export type ProblemWorkStatus = "not-submitted" | "local-passed" | "submitted";
@@ -195,6 +195,24 @@ export async function prepareProblemSubmission(
   problemId: string,
   support: SupportEvent[],
 ): Promise<TaskSubmissionInput> {
+  return prepareProblemInput(root, problemId, "submit", { explanation: "", support });
+}
+
+/** 相談は、確認後に書き直したファイルと、その問題の実行結果を送る。 */
+export async function prepareProblemConsultation(
+  root: string,
+  problemId: string,
+  notes: SubmissionNotes,
+): Promise<TaskSubmissionInput> {
+  return prepareProblemInput(root, problemId, "consult", notes);
+}
+
+async function prepareProblemInput(
+  root: string,
+  problemId: string,
+  mode: "submit" | "consult",
+  notes: SubmissionNotes,
+): Promise<TaskSubmissionInput> {
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
   const { manifest } = loaded;
@@ -204,15 +222,20 @@ export async function prepareProblemSubmission(
   }
   const result = await readProblemRun(root, manifest.id, problemId);
   if (!result) throw new Error("この問題の実行結果がありません。先に確認してください");
-  if (!canSubmit(result)) throw new Error("手元の確認がすべて通ってから提出してください");
-  const hashed = await hashFile(root, source, LIMITS.fileBytes);
-  const recorded = result.files;
-  const sameFile =
-    recorded.length === 1 &&
-    recorded[0]?.path === hashed.path &&
-    recorded[0]?.sha256 === hashed.sha256 &&
-    recorded[0]?.bytes === hashed.bytes;
-  if (!sameFile) throw new Error(RECHECK);
+  if (mode === "submit" && !canSubmit(result))
+    throw new Error("手元の確認がすべて通ってから提出してください");
+  if (mode === "consult" && canSubmit(result))
+    throw new Error("手元の確認が通っています。「提出」を使ってください");
+  if (mode === "submit") {
+    const hashed = await hashFile(root, source, LIMITS.fileBytes);
+    const recorded = result.files;
+    const sameFile =
+      recorded.length === 1 &&
+      recorded[0]?.path === hashed.path &&
+      recorded[0]?.sha256 === hashed.sha256 &&
+      recorded[0]?.bytes === hashed.bytes;
+    if (!sameFile) throw new Error(RECHECK);
+  }
   const listed = await listFiles(root);
   const protectedHashes = await hashFiles(
     root,
@@ -225,7 +248,7 @@ export async function prepareProblemSubmission(
     protectedHashes.every((file) =>
       result.protected.some((item) => item.path === file.path && item.sha256 === file.sha256),
     );
-  if (!protectedSame) throw new Error(RECHECK);
+  if (mode === "submit" && !protectedSame) throw new Error(RECHECK);
   const receipt = await readDistribution(root);
   if (!receipt)
     throw new Error("配布した課題の記録がありません。LMS から配布した課題を開いてください");
@@ -238,13 +261,12 @@ export async function prepareProblemSubmission(
   return {
     taskId: manifest.id,
     contentHash: result.taskContentHash ?? receipt.contentHash,
-    mode: "submit",
+    mode,
     problemId,
     files: [{ path: source, content: Buffer.from(bytes).toString("base64") }],
     localResult: result,
     protected: protectedHashes,
-    explanation: "",
-    support,
+    ...notes,
   };
 }
 
@@ -259,4 +281,19 @@ export async function sendProblemSubmission(
     body,
     ...(session === undefined ? {} : { session }),
   });
+}
+
+export async function sendProblemConsultation(
+  root: string,
+  problemId: string,
+  notes: SubmissionNotes,
+  session?: number,
+): Promise<{ id: string; attempt: number }> {
+  const body = await prepareProblemConsultation(root, problemId, notes);
+  const response = await apiRequest<{ row: { id: string; attempt: number } }>("/api/submissions", {
+    method: "POST",
+    body,
+    ...(session === undefined ? {} : { session }),
+  });
+  return response.row;
 }

@@ -50,6 +50,8 @@ import {
   loadProblemStates,
   nextUnsubmittedProblem,
   problemCountLabel,
+  readProblemRun,
+  sendProblemConsultation,
   sendProblemSubmission,
   type ProblemState,
 } from "./task-problems.js";
@@ -373,6 +375,7 @@ let submitting = false;
 async function submitTaskCommand(
   mode: "submit" | "consult",
   requestedRoot?: string,
+  requestedProblem?: unknown,
 ): Promise<void> {
   if (submitting) return;
   submitting = true;
@@ -392,9 +395,22 @@ async function submitTaskCommand(
       await submitProblemTask(root, loaded.manifest);
       return;
     }
-    const result: unknown = JSON.parse(
-      new TextDecoder().decode(await readFileInRoot(root, ".stella/last-run.json", 1024 * 1024)),
-    );
+    let problem: ProblemState | undefined;
+    let result: unknown;
+    if (mode === "consult" && loaded.manifest.problems?.length) {
+      const server = await fetchProblemResults(loaded.manifest.id).catch(() => undefined);
+      const states = await loadProblemStates(root, loaded.manifest, server);
+      problem =
+        states.find((state) => state.id === requestedProblem) ??
+        chooseProblem(states, requestedProblemPath(root, undefined), loaded.manifest);
+      if (!problem) throw new Error("相談する問題がありません");
+      result = await readProblemRun(root, loaded.manifest.id, problem.id);
+      if (!result) throw new Error("先にこの問題を確認してください");
+    } else {
+      result = JSON.parse(
+        new TextDecoder().decode(await readFileInRoot(root, ".stella/last-run.json", 1024 * 1024)),
+      );
+    }
     if (!isRunResult(result) || result.taskId !== loaded.manifest.id)
       throw new Error("先にこの課題を確認してください");
     if (mode === "submit" && !canSubmit(result))
@@ -423,7 +439,7 @@ async function submitTaskCommand(
     showSubmissionForm(
       {
         key: root,
-        title: loaded.manifest.title,
+        title: problem ? `${loaded.manifest.title} (${problem.title})` : loaded.manifest.title,
         mode,
         debug: loaded.manifest.kind === "debug",
         initial: saved,
@@ -449,7 +465,8 @@ async function submitTaskCommand(
               at: new Date().toISOString(),
               detail: CONSULT_SUPPORT_DETAIL,
             });
-          await sendTaskSubmission(root, mode, notes, session);
+          if (problem) await sendProblemConsultation(root, problem.id, notes, session);
+          else await sendTaskSubmission(root, mode, notes, session);
           // 課題一覧の応答から作ったカタログにだけ ID がある。配布記録には含まれない。
           const lesson = getCachedCatalog()
             .flatMap((stage) => stage.sections.flatMap((section) => section.lessons))
@@ -630,8 +647,8 @@ export function registerTaskCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("stella.submitTask", (root?: string) =>
       submitTaskCommand("submit", root),
     ),
-    vscode.commands.registerCommand("stella.consultTask", (root?: string) =>
-      submitTaskCommand("consult", root),
+    vscode.commands.registerCommand("stella.consultTask", (root?: string, problemId?: unknown) =>
+      submitTaskCommand("consult", root, problemId),
     ),
     vscode.commands.registerCommand("stella.runTask", (root?: unknown) =>
       runTaskCommand(output, root),

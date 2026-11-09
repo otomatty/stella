@@ -31,6 +31,21 @@ export function isProblemSubmissionResult<T extends { id: string }>(
   return !("id" in value);
 }
 
+/**
+ * 合格に数える問題。今の版で提出したものだけ (前の版のテストは今の要件を確かめていない)。
+ * 合格済みの課題は教材が変わっても合格のままなので、今までの提出を数える。
+ * ponytail: 版が変わると全問出し直し。問題ごとのテストのハッシュを比べれば、変わった問題だけにできる。
+ */
+export function countedProblemIds(
+  rows: readonly { problemId: string; contentHash: string }[],
+  currentHash: string,
+  taskPassed: boolean,
+): Set<string> {
+  return new Set(
+    rows.filter((row) => taskPassed || row.contentHash === currentHash).map((row) => row.problemId),
+  );
+}
+
 export interface TaskDefinitionView {
   problems: { id: string; title: string }[] | null;
   assesses: string[];
@@ -91,6 +106,8 @@ export async function submitTaskProblem(
   bundle: TaskBundle,
 ): Promise<ProblemSubmissionResult> {
   if (!input.problemId) throw new ApiError("拡張を更新してください", 400);
+  if (input.contentHash !== task.contentHash)
+    throw new ApiError("教材が更新されています。課題を開き直してください", 409);
   const problemId = input.problemId;
   let verified: Awaited<ReturnType<typeof verifyTaskSubmission>>;
   try {
@@ -121,7 +138,10 @@ export async function submitTaskProblem(
     taskSubmissionLockId(caller.id, task.id),
     async () => {
       const saved = await db
-        .select({ problemId: taskProblemResults.problemId })
+        .select({
+          problemId: taskProblemResults.problemId,
+          contentHash: taskProblemResults.contentHash,
+        })
         .from(taskProblemResults)
         .where(
           and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, task.id)),
@@ -135,10 +155,6 @@ export async function submitTaskProblem(
         .limit(1);
       const defined = readTaskDefinition(current?.definition ?? "");
       const currentProblems = defined.problems ?? [];
-      const passedIds = new Set(saved.map((row) => row.problemId));
-      passedIds.add(problemId);
-      const passedProblems = currentProblems.filter((problem) => passedIds.has(problem.id)).length;
-      const totalProblems = currentProblems.length;
       const [progress] = await db
         .select({ status: taskProgress.status })
         .from(taskProgress)
@@ -159,6 +175,10 @@ export async function submitTaskProblem(
         progress?.status === "passed" ||
         progress?.status === "ai-passed" ||
         Boolean(passedSubmission);
+      const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed);
+      passedIds.add(problemId);
+      const passedProblems = currentProblems.filter((problem) => passedIds.has(problem.id)).length;
+      const totalProblems = currentProblems.length;
       const complete = totalProblems > 0 && passedProblems === totalProblems;
       let completionId: string | null = null;
       const writes: BatchItem<"sqlite">[] = [

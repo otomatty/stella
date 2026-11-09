@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -565,7 +565,10 @@ const problemTask = {
 };
 
 describe("問題つきの課題", () => {
-  async function problemRoot(source = "export const add = 1;\n"): Promise<string> {
+  async function problemRoot(
+    source = "export const add = 1;\n",
+    outcome: "passed" | "failed" = "passed",
+  ): Promise<string> {
     const root = await makeTask(problemTask, {
       "src/q01-add.ts": source,
       "src/q02-sub.ts": "export const sub = 1;\n",
@@ -577,13 +580,19 @@ describe("問題つきの課題", () => {
       schemaVersion: 1,
       taskId: problemTask.id,
       runner: "node-test",
-      outcome: "passed",
+      outcome,
       startedAt: "2026-11-06T00:00:00.000Z",
       durationMs: 10,
       platform: "win32",
       toolVersions: {},
       steps: [
-        { id: "test", label: "テスト", status: "passed", durationMs: 10, summary: "通りました" },
+        {
+          id: "test",
+          label: "テスト",
+          status: outcome,
+          durationMs: 10,
+          summary: outcome === "passed" ? "通りました" : "通りませんでした",
+        },
       ],
       files: [hashed],
       protected: [],
@@ -671,13 +680,102 @@ describe("問題つきの課題", () => {
   });
 
   it("相談は説明の入力のまま", async () => {
+    const root = await problemRoot(undefined, "failed");
+    apiRequest.mockResolvedValue({ row: { id: "consultation", attempt: 1 } });
+    await run("stella.consultTask", root);
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "計算 (足す)", mode: "consult" }),
+      expect.anything(),
+    );
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+      submit: (draft: { explanation: string }) => Promise<void>;
+    };
+    await actions.submit({ explanation: "足す処理のテストが通りません。" });
+    expect(apiRequest).toHaveBeenCalledWith("/api/submissions", {
+      method: "POST",
+      session: 1,
+      body: expect.objectContaining({
+        mode: "consult",
+        problemId: "q01-add",
+        files: [{ path: "src/q01-add.ts", content: expect.any(String) }],
+        localResult: expect.objectContaining({ outcome: "failed", problemId: "q01-add" }),
+        explanation: "足す処理のテストが通りません。",
+        support: [expect.objectContaining({ kind: "instructor" })],
+      }),
+    });
+    expect(vscodeMock.sendTaskSubmission).not.toHaveBeenCalled();
+    expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it("相談する問題が手元で合格していたら、提出を案内して入力欄を出さない", async () => {
     const root = await problemRoot();
     await run("stella.consultTask", root);
     expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
     expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
-      expect.stringContaining("last-run.json"),
+      "手元の確認が通っています。「提出」を使ってください",
     );
     expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
+  });
+
+  it("相談する問題の実行結果がなければ、その問題の確認を案内する", async () => {
+    const root = await problemRoot();
+    await unlink(path.join(root, ".stella", "problem-runs", "q01-add.json"));
+    await run("stella.consultTask", root);
+    expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith("先にこの問題を確認してください");
+    expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
+  });
+
+  it("相談する問題の引数を、開いている別の問題のファイルより優先する", async () => {
+    const root = await problemRoot(undefined, "failed");
+    state.activeFile = path.join(root, "src", "q02-sub.ts");
+    apiRequest.mockResolvedValue({ row: { id: "consultation", attempt: 1 } });
+    await run("stella.consultTask", root, "q01-add");
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "計算 (足す)", mode: "consult" }),
+      expect.anything(),
+    );
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+      submit: (draft: { explanation: string }) => Promise<void>;
+    };
+    await actions.submit({ explanation: "足す処理を相談します。" });
+    expect(apiRequest).toHaveBeenCalledWith(
+      "/api/submissions",
+      expect.objectContaining({ body: expect.objectContaining({ problemId: "q01-add" }) }),
+    );
+  });
+
+  it("古い last-run.json の合格は使わず、その問題の失敗した結果で相談する", async () => {
+    const root = await problemRoot(undefined, "failed");
+    const local = JSON.parse(
+      await readFile(path.join(root, ".stella", "problem-runs", "q01-add.json"), "utf8"),
+    );
+    await writeFile(
+      path.join(root, ".stella", "last-run.json"),
+      JSON.stringify({
+        ...local,
+        outcome: "passed",
+        problemId: undefined,
+        steps: [
+          { id: "test", label: "テスト", status: "passed", durationMs: 10, summary: "通りました" },
+        ],
+      }),
+    );
+    apiRequest.mockResolvedValue({ row: { id: "consultation", attempt: 1 } });
+    await run("stella.consultTask", root);
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "計算 (足す)", mode: "consult" }),
+      expect.anything(),
+    );
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+      submit: (draft: { explanation: string }) => Promise<void>;
+    };
+    await actions.submit({ explanation: "この問題の失敗を相談します。" });
+    expect(apiRequest).toHaveBeenCalledWith(
+      "/api/submissions",
+      expect.objectContaining({ body: expect.objectContaining({ localResult: local }) }),
+    );
+    expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
   });
 });
 

@@ -76,8 +76,13 @@ async function problemProgressOf(
             problemId: taskProblemResults.problemId,
           })
           .from(taskProblemResults)
+          .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
           .where(
-            and(eq(taskProblemResults.userId, userId), inArray(taskProblemResults.taskId, batch)),
+            and(
+              eq(taskProblemResults.userId, userId),
+              inArray(taskProblemResults.taskId, batch),
+              eq(taskProblemResults.contentHash, tasks.contentHash),
+            ),
           ),
       ),
     )

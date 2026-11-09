@@ -1,6 +1,6 @@
 import { type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
-import { readTaskDefinition } from "../lib/task-problem-submission.js";
+import { countedProblemIds, readTaskDefinition } from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
   parsePublicTaskBundle,
@@ -101,10 +101,14 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       if (problems) problemTasks.set(row.id, problems);
       if (!taskAiChatEnabled(JSON.parse(row.definition))) aiChatDisabledTaskIds.add(row.id);
     }
-    const passedByTask = new Map<string, Set<string>>();
+    const resultsByTask = new Map<string, { problemId: string; contentHash: string }[]>();
     if (problemTasks.size > 0) {
       const results = await db
-        .select({ taskId: taskProblemResults.taskId, problemId: taskProblemResults.problemId })
+        .select({
+          taskId: taskProblemResults.taskId,
+          problemId: taskProblemResults.problemId,
+          contentHash: taskProblemResults.contentHash,
+        })
         .from(taskProblemResults)
         .where(
           and(
@@ -113,9 +117,9 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           ),
         );
       for (const result of results) {
-        const ids = passedByTask.get(result.taskId) ?? new Set<string>();
-        ids.add(result.problemId);
-        passedByTask.set(result.taskId, ids);
+        const saved = resultsByTask.get(result.taskId) ?? [];
+        saved.push(result);
+        resultsByTask.set(result.taskId, saved);
       }
     }
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
@@ -133,11 +137,15 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         };
         const problems = problemTasks.get(task.id);
         if (!problems) return base;
-        const passed = passedByTask.get(task.id);
+        const passed = countedProblemIds(
+          resultsByTask.get(task.id) ?? [],
+          contentHash,
+          p?.status === "passed" || p?.status === "ai-passed",
+        );
         return {
           ...base,
           problems_total: problems.length,
-          problems_passed: problems.filter((problem) => passed?.has(problem.id)).length,
+          problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
       });
     return c.json({ tasks: result });
@@ -159,6 +167,7 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
         stageId: sections.stageId,
         variantOf: tasks.variantOf,
         definition: taskRevisions.definition,
+        contentHash: tasks.contentHash,
       })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
@@ -175,17 +184,24 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
     const saved = await db
       .select({
         problemId: taskProblemResults.problemId,
+        contentHash: taskProblemResults.contentHash,
         firstPassedAt: taskProblemResults.firstPassedAt,
       })
       .from(taskProblemResults)
       .where(and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, row.id)));
-    const byId = new Map(saved.map((item) => [item.problemId, item.firstPassedAt]));
     const [progress] = await db
       .select({ status: taskProgress.status })
       .from(taskProgress)
       .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, row.id)))
       .limit(1);
-    const passedProblems = problems.filter((problem) => byId.has(problem.id)).length;
+    const taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
+    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed);
+    const byId = new Map(
+      saved
+        .filter((item) => passedIds.has(item.problemId))
+        .map((item) => [item.problemId, item.firstPassedAt]),
+    );
+    const passedProblems = problems.filter((problem) => passedIds.has(problem.id)).length;
     return c.json({
       problems: problems.map((problem) => {
         const firstPassedAt = byId.get(problem.id);
@@ -198,7 +214,7 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
       }),
       passedProblems,
       totalProblems: problems.length,
-      taskPassed: progress?.status === "passed" || progress?.status === "ai-passed",
+      taskPassed,
     });
   } catch (err) {
     return errorResponse(c, err);

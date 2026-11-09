@@ -9,6 +9,7 @@ import {
   chooseProblem,
   loadProblemStates,
   nextUnsubmittedProblem,
+  prepareProblemConsultation,
   prepareProblemSubmission,
   problemCountLabel,
   problemFileToOpen,
@@ -16,6 +17,7 @@ import {
   problemWorkStatus,
   type ProblemState,
 } from "./task-problems.js";
+import type { SubmissionNotes } from "./task-submission.js";
 
 vi.mock("./api.js", () => ({ apiRequest: vi.fn(), apiSession: () => 1 }));
 
@@ -217,6 +219,68 @@ describe("問題の提出", () => {
       JSON.stringify(run),
     );
     await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow("すべて通って");
+  });
+});
+
+describe("問題の相談", () => {
+  const notes: SubmissionNotes = {
+    explanation: "足す処理を書き直しましたが、負数のテストが通りません。",
+    debuggingRecord: {
+      reproduction: "負数を渡す",
+      expected: "合計が返る",
+      cause: "まだ分かりません",
+      fix: "戻り値を見直しました",
+      regression: "負数のテストを確認しました",
+    },
+    support: [{ kind: "instructor", at: "2026-11-09T00:00:00.000Z" }],
+  };
+
+  it("確認後に変えたファイルと今の保護ファイルのハッシュを、失敗した問題の結果と送る", async () => {
+    const root = await makeRoot();
+    const run = await passedRun(root, "q01-add");
+    run.outcome = "failed";
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(run),
+    );
+    const changedSource = "export const add = 2;\n";
+    await writeFile(path.join(root, "src", "q01-add.ts"), changedSource);
+    await writeFile(path.join(root, "tests", "q01-add.test.ts"), "changed test");
+
+    const body = await prepareProblemConsultation(root, "q01-add", notes);
+    expect(body).toMatchObject({
+      taskId: manifest.id,
+      contentHash: run.taskContentHash,
+      mode: "consult",
+      problemId: "q01-add",
+      localResult: run,
+      ...notes,
+    });
+    expect(body.files).toEqual([
+      { path: "src/q01-add.ts", content: Buffer.from(changedSource).toString("base64") },
+    ]);
+    expect(body.protected).toEqual([await hashFile(root, "tests/q01-add.test.ts")]);
+    expect(body.protected).not.toEqual(run.protected);
+  });
+
+  it("手元の確認が通っていたら提出を案内する", async () => {
+    const root = await makeRoot();
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(await passedRun(root, "q01-add")),
+    );
+    await expect(prepareProblemConsultation(root, "q01-add", notes)).rejects.toThrow(
+      "手元の確認が通っています。「提出」を使ってください",
+    );
+  });
+
+  it("その問題の実行結果がなければ確認を案内する", async () => {
+    const root = await makeRoot();
+    await expect(prepareProblemConsultation(root, "q01-add", notes)).rejects.toThrow(
+      "この問題の実行結果がありません。先に確認してください",
+    );
   });
 });
 

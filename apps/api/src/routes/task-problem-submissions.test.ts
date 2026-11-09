@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 import {
   contentHash as hashBytes,
   type TaskSubmissionInput,
@@ -26,6 +27,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { countedProblemIds } from "../lib/task-problem-submission.js";
 import { reviewTaskSubmission } from "../lib/task-submission.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
@@ -38,6 +40,22 @@ const PROBLEMS = [
   { id: "q01-add", title: "足す" },
   { id: "q02-sub", title: "引く" },
 ];
+
+describe("合格に数える問題", () => {
+  const rows = [
+    { problemId: "q01-add", contentHash: "old" },
+    { problemId: "q02-sub", contentHash: CURRENT },
+    { problemId: "q02-sub", contentHash: CURRENT },
+  ] as const;
+
+  it("未合格の課題は今の版だけを数え、重複させない", () => {
+    expect(countedProblemIds(rows, CURRENT, false)).toEqual(new Set(["q02-sub"]));
+  });
+
+  it("合格済みの課題は前の版の結果も数える", () => {
+    expect(countedProblemIds(rows, CURRENT, true)).toEqual(new Set(["q01-add", "q02-sub"]));
+  });
+});
 
 describe("問題の提出", () => {
   let database: ReturnType<typeof sqliteD1>;
@@ -358,7 +376,7 @@ describe("問題の提出", () => {
     expect(await db.select().from(aiReviewJobs)).toEqual([]);
   });
 
-  it("受講していない課題は 404、知らない版は 409、古い版は受ける", async () => {
+  it("受講していない課題は 404、知らない版は 409、古い版も 409", async () => {
     const input = await problemInput(CURRENT, PROBLEMS, "q01-add");
     expect((await post(input, otherToken)).status).toBe(404);
     expect(
@@ -400,15 +418,13 @@ describe("問題の提出", () => {
     const response = await post(
       await problemInput(oldHash, oldProblems, "q03-old", "export const old = 1;\n"),
     );
-    expect(response.status, await response.clone().text()).toBe(201);
-    const body = await json<{ passedProblems: number; totalProblems: number; taskPassed: boolean }>(
-      response,
-    );
-    expect(body).toMatchObject({ passedProblems: 0, totalProblems: 2, taskPassed: false });
+    expect(response.status, await response.clone().text()).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: "教材が更新されています。課題を開き直してください",
+    });
     expect(await db.select().from(submissions)).toEqual([]);
-    expect(await db.select().from(taskProblemResults)).toMatchObject([
-      { problemId: "q03-old", contentHash: oldHash },
-    ]);
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+    expect(await db.select().from(taskProgress)).toEqual([]);
     const listed = await json<{ problems: { id: string }[]; passedProblems: number }>(
       await request(
         app(),
@@ -421,6 +437,141 @@ describe("問題の提出", () => {
     );
     expect(listed.problems.map((problem) => problem.id)).toEqual(["q01-add", "q02-sub"]);
     expect(listed.passedProblems).toBe(0);
+  });
+
+  it("前の版の結果は数えず、今の版で全問を提出してから課題を合格にする", async () => {
+    await db.insert(taskProblemResults).values({
+      userId: "learner",
+      taskId: TASK_ID,
+      problemId: "q01-add",
+      contentHash: "b".repeat(64),
+      path: "src/q01-add.ts",
+      code: "export const add = 1;\n",
+      sha256: "c".repeat(64),
+      attempts: 1,
+      firstPassedAt: new Date("2026-11-01T00:00:00Z"),
+      updatedAt: new Date("2026-11-01T00:00:00Z"),
+    });
+
+    const partial = await submitProblem("q02-sub");
+    expect(partial).toEqual({
+      problemId: "q02-sub",
+      passedProblems: 1,
+      totalProblems: 2,
+      taskPassed: false,
+    });
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect((await db.select().from(taskProgress))[0]?.status).toBe("local-passed");
+
+    const listed = await json<{
+      problems: { id: string; status: string; firstPassedAt: string | null }[];
+      passedProblems: number;
+      taskPassed: boolean;
+    }>(
+      await request(
+        app(),
+        env,
+        `/api/tasks/problem-results?taskId=${encodeURIComponent(TASK_ID)}`,
+        { token },
+      ),
+    );
+    expect(listed).toMatchObject({ passedProblems: 1, taskPassed: false });
+    expect(listed.problems.find((problem) => problem.id === "q01-add")).toMatchObject({
+      status: "not-submitted",
+      firstPassedAt: null,
+    });
+    expect(listed.problems.find((problem) => problem.id === "q02-sub")).toMatchObject({
+      status: "passed",
+      firstPassedAt: expect.any(String),
+    });
+    const stage = await json<{ tasks: Record<string, unknown>[] }>(
+      await request(app(), env, "/api/tasks/for-stage/stage", { token }),
+    );
+    expect(stage.tasks.find((task) => task.id === TASK_ID)).toMatchObject({
+      problems_total: 2,
+      problems_passed: 1,
+    });
+
+    expect(await submitProblem("q01-add")).toMatchObject({
+      passedProblems: 2,
+      taskPassed: true,
+    });
+    expect(await db.select().from(submissions)).toMatchObject([
+      { verdict: "pass", taskContentHash: CURRENT },
+    ]);
+  });
+
+  it("合格済みの課題は教材が更新されても問題の合格件数を保つ", async () => {
+    await submitProblem("q01-add");
+    await submitProblem("q02-sub");
+    const saved = await db.select().from(taskProblemResults);
+    const updatedHash = "d".repeat(64);
+    const updated = await problemBundle(updatedHash, PROBLEMS);
+    await db.batch([
+      db.insert(taskRevisions).values({
+        taskId: TASK_ID,
+        contentHash: updatedHash,
+        definition: JSON.stringify(updated.definition),
+        bundle: JSON.stringify(updated.bundle),
+      }),
+      db
+        .update(tasks)
+        .set({
+          contentHash: updatedHash,
+          definition: JSON.stringify(updated.definition),
+          bundle: JSON.stringify(updated.bundle),
+        })
+        .where(eq(tasks.id, TASK_ID)),
+    ]);
+    const listed = await json<{
+      problems: { id: string; status: string; firstPassedAt: string | null }[];
+      passedProblems: number;
+      taskPassed: boolean;
+    }>(
+      await request(
+        app(),
+        env,
+        `/api/tasks/problem-results?taskId=${encodeURIComponent(TASK_ID)}`,
+        { token },
+      ),
+    );
+    expect(listed).toMatchObject({ passedProblems: 2, taskPassed: true });
+    expect(listed.problems).toEqual(
+      PROBLEMS.map((problem) => ({
+        ...problem,
+        status: "passed",
+        firstPassedAt: saved
+          .find((row) => row.problemId === problem.id)
+          ?.firstPassedAt.toISOString(),
+      })),
+    );
+    const stage = await json<{ tasks: Record<string, unknown>[] }>(
+      await request(app(), env, "/api/tasks/for-stage/stage", { token }),
+    );
+    expect(stage.tasks.find((task) => task.id === TASK_ID)).toMatchObject({
+      status: "passed",
+      problems_total: 2,
+      problems_passed: 2,
+    });
+  });
+
+  it("問題の id を付けた相談は課題の提出として受け、問題の合格結果を作らない", async () => {
+    const consult = await problemInput(CURRENT, PROBLEMS, "q01-add");
+    consult.mode = "consult";
+    consult.explanation = "足し算のテストが通りません";
+    consult.localResult.outcome = "failed";
+    consult.localResult.steps = consult.localResult.steps.map((step) =>
+      step.id === "test" ? { ...step, status: "failed" } : step,
+    );
+    const response = await post(consult);
+    expect(response.status, await response.clone().text()).toBe(201);
+    expect(await response.json()).toMatchObject({
+      row: { id: expect.any(String), attempt: 1 },
+    });
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+    expect(await db.select().from(submissions)).toMatchObject([
+      { submissionMode: "consult", localResult: { problemId: "q01-add" } },
+    ]);
   });
 
   it("相談と、問題の無い課題は AI の待ち行列に積む", async () => {
