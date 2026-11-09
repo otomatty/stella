@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u04-links@6",
-  "contentHash": "cc1eca7e85dbc54661690a87f2474c0ec51ed7244248b216044e1482724bf605",
+  "unitId": "dev-env-basics/u04-links@7",
+  "contentHash": "97bbd5d5895a5c43ce933c68bc375d8b85e5dc28c6e3261bc0a9d9e574848ba8",
   "environmentRef": "static-web-02@1",
   "uses": [
     {

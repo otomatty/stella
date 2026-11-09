@@ -25,7 +25,7 @@
   "review": {
     "rules": [
       {
-        "id": "DEV-HTML-01",
+        "id": "DEV-HTML-02",
         "required": true
       }
     ],
@@ -70,6 +70,13 @@
         "tag": "h1",
         "text": "自己紹介",
         "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "pages/about.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
       }
     ]
   }

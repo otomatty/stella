@@ -26,7 +26,7 @@
   "review": {
     "rules": [
       {
-        "id": "DEV-HTML-01",
+        "id": "DEV-HTML-02",
         "required": true
       }
     ],
@@ -75,6 +75,13 @@
         "tag": "h1",
         "text": "学習予定",
         "match": "exact"
+      },
+      {
+        "type": "element-count",
+        "path": "plan/index.html",
+        "tag": "h1",
+        "min": 1,
+        "max": 1
       },
       {
         "type": "element-count",

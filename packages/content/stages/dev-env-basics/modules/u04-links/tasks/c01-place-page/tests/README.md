@@ -4,5 +4,6 @@
 
 - `pages/about.html` が HTML の文書の形になっている
 - `pages/about.html` の `h1` の文字が「自己紹介」と完全に一致する
+- `pages/about.html` の `h1` が 1 つだけある
 
 このフォルダーのファイルは編集しないでください。

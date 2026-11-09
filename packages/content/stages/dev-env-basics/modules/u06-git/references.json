@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u06-git@3",
-  "contentHash": "27c77928deeab789d6948a8ed07852d82f8baff4798dbd45ac00393f9fddf84f",
+  "unitId": "dev-env-basics/u06-git@4",
+  "contentHash": "94ecca45581621ae7401739f2c84aed073b2f8a4aecfc5d83049dfeec76a0549",
   "environmentRef": "static-web-02@1",
   "uses": [
     {
