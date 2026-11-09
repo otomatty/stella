@@ -378,7 +378,7 @@ describe("POST /api/skill-check/:stageId — 飛び級", () => {
   it("ロック星で合格すると解放され、スキルマップで unlocked になり視界も広がる", async () => {
     const before = await fetchMapStates();
     expect(before.get("id-d")?.state).toBe("locked");
-    expect(before.get("id-e")?.visibility).toBe("fog");
+    expect(before.get("id-e")).toBeUndefined();
 
     const check = await fetchCheck("id-d");
     const res = await post("/api/skill-check/id-d", {

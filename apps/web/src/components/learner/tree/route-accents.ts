@@ -31,6 +31,35 @@ export const ROUTE_ACCENTS = new Map<string, string>([
   ["開発ラボG の選考", "203 213 225"],
 ]);
 
+/** 白いアイコンを載せる塗り用のルート色。 */
+export const ROUTE_SOLIDS = new Map<string, string>([
+  ["フロントエンド", "2 132 199"],
+  ["Web の見た目と動き", "2 132 199"],
+  ["バックエンド", "5 150 105"],
+  ["サーバーとデータの基盤", "5 150 105"],
+  ["フルスタック", "225 29 72"],
+  ["Web アプリを作り、届ける力", "225 29 72"],
+  ["AWS資格", "217 119 6"],
+  ["資格で示すクラウド力", "217 119 6"],
+  ["情報処理資格", "124 58 237"],
+  ["資格で示す基礎力", "124 58 237"],
+  ["Anthropic認定資格", "192 38 211"],
+  ["資格で示すAI開発力", "192 38 211"],
+  ["DevOps", "234 88 12"],
+  ["開発と運用をつなぐ", "234 88 12"],
+  ["Python", "13 148 136"],
+  ["Python とテストの力", "13 148 136"],
+  ["C#", "79 70 229"],
+  ["Salesforce案件", "101 163 13"],
+  ["業務システムの開発", "101 163 13"],
+  ["開発ラボG", "100 116 139"],
+  ["開発ラボG の選考", "100 116 139"],
+]);
+
+export function routeSolidOf(sector: string): string | undefined {
+  return ROUTE_SOLIDS.get(sector);
+}
+
 export function routeAccentOf(sector: string): string | undefined {
   return ROUTE_ACCENTS.get(sector);
 }

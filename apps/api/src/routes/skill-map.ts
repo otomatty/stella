@@ -17,16 +17,17 @@
  * 実際に伏せるのは API の仕事。伏せる場所を画面側に委ねると、DevTools と
  * `curl` で全部読めてしまい、視界制限が演出でしかなくなる。したがって:
  *
- *   - `locked` の星は **到達説明 (`can_do`) を返さない**。ロック中に見せるのは
+ *   - `locked` の星は **到達説明 (`can_do`) を返さない**。1 歩先は `full` のまま名前を画面でぼかし、
+ *     開発者表示でなければアイコンも返さない。ロック中に見せるのは
  *     「何が要るか」(`lock_reasons`) だけ、という設計をここで確定させる
- *   - `fog` の星 (2 歩先) は **タイトル・カテゴリ・テーマ・前提線まで** (画面はタイトルを
+ *   - `fog` の星 (互換用。通常は返さない) は **タイトル・カテゴリ・テーマ・前提線まで** (画面はタイトルを
  *     ぼかして「予告」として見せる。前提線はリング = 深さの計算に要る)。slug・
  *     到達説明・**解放条件**・受講登録・Extra の印は返さない — URL を組める / 中身が分かる /
  *     個人の割当が読める情報は霧の向こうに出さない。テーマを持たないステージ
  *     (CMS で作った直後など) のテーマは `？？？` で埋める
- *   - `edge` の星 (3 歩先) は **線を引くためのトポロジだけ** (id・扇・親)。名前も
+ *   - `edge` の星 (2 歩先) は **線を引くためのトポロジだけ** (id・扇・親)。名前も
  *     テーマも返さない。画面は星を描かず、手前の星から伸びる線を薄くフェードさせる
- *   - `hidden` の星 (4 歩以上) は **配列から落とす**。id を返すだけでも「この先に星が
+ *   - `hidden` の星 (3 歩以上) は **配列から落とす**。id を返すだけでも「この先に星が
  *     n 個ある」という情報になる。`edge` の星が **自分の親として** 指してよいのは
  *     描かれる星だけ (幽霊どうしを結ぶと、どちらの端にも星の無い線が宙に浮く) —
  *     逆向き、描かれる星の親が幽霊、は残す (それが「その先へ続く」フェード線)
@@ -173,7 +174,7 @@ function appearancePayloads(
 /**
  * `locked` の星の解放条件を、**視界に応じて伏せた**表示名にする。
  *
- * 評価器は「誰に見せるか」を知らないので、まだ名前の出ていない (`full` でない) 前提の
+ * 評価器は「誰に見せるか」を知らないので、まだ名前の出ていない (`full` でない、または locked の) 前提の
  * タイトルをテーマ名 / 伏せ字へ落とすのはこちらの仕事。スキルマップの応答と自己開始の 400 文言が
  * 別々にこれを組み立てると、片方だけ緩んだときに手前の星の解放条件から霧の星の名前が
  * 読めてしまうので、1 か所に置いて両方から呼ぶ。
@@ -188,7 +189,8 @@ export function maskedLockReasons(
   const masked = (reason: SkillMapLockReason): boolean =>
     !revealDev &&
     reason.stageId !== undefined &&
-    (result.visibility.get(reason.stageId) ?? "hidden") !== "full";
+    ((result.visibility.get(reason.stageId) ?? "hidden") !== "full" ||
+      result.states.get(reason.stageId) === "locked");
   return (result.lockReasons.get(stageId) ?? []).map((reason: SkillMapLockReason) =>
     masked(reason)
       ? ((reason.stageId === undefined ? undefined : byId.get(reason.stageId)?.theme) ?? FOG_LABEL)
@@ -211,12 +213,16 @@ export const UNSELECTABLE_STAGE_MESSAGE = "受講登録のないステージは�
 /** アイコン読み出しの 404。存在しない / 霧 / 実体なしを区別しない。 */
 const STAGE_NOT_FOUND = "ステージが見つかりません";
 
-/** `full` で実ファイルがある星にだけ `has_icon` を付ける (形は正体を語る)。 */
+/** `full` で実ファイルがある星にだけ `has_icon` を付ける。locked は開発者表示だけ (形は正体を語る)。 */
 function hasIconPayload(
   iconPath: string | undefined,
   visibility: SkillMapVisibility,
+  state: SkillMapState,
+  revealDev = false,
 ): { has_icon?: true } {
-  return iconPath && visibility === "full" ? { has_icon: true } : {};
+  return iconPath && visibility === "full" && (revealDev || state !== "locked")
+    ? { has_icon: true }
+    : {};
 }
 
 /** 応答に載せる 1 つの星。視界に応じて欠ける項目がある。 */
@@ -357,7 +363,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     };
 
     /**
-     * 応答に載せる星の id。開発者表示ではすべて、通常は `hidden` (4 歩以上) を落とす。
+     * 応答に載せる星の id。開発者表示ではすべて、通常は `hidden` (3 歩以上) を落とす。
      * 段を知らない画面 (`ghostStars` が偽) には `edge` も配らない。
      *
      * **幽霊ノード (`edge`) はここでは落とさない。** 線は親の側からも子の側からも
@@ -390,7 +396,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     const payload: SkillMapStagePayload[] = source.stages.flatMap((stage) => {
       const state = result.states.get(stage.id) ?? "locked";
       const visibility = visibilityOf(stage.id);
-      // 4 歩以上先と、線を引けない幽霊は存在ごと出さない (上の `delivered` を参照)。
+      // 3 歩以上先と、線を引けない幽霊は存在ごと出さない (上の `delivered` を参照)。
       if (!delivered.has(stage.id)) return [];
       const base: SkillMapStagePayload = {
         id: stage.id,
@@ -411,7 +417,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
             ...(stage.theme ? { theme: stage.theme } : {}),
             enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
             ...parentIdOf(stage),
-            ...hasIconPayload(stage.iconPath, visibility),
+            ...hasIconPayload(stage.iconPath, visibility, state, true),
             ...(state === "locked"
               ? { lock_reasons: maskedLockReasons(source, result, stage.id, true) }
               : {}),
@@ -421,14 +427,14 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
         ];
       }
 
-      // 3 歩先: 線を引くためのトポロジだけ。名前もテーマも出さない (画面は星を描かず、
+      // 2 歩先: 線を引くためのトポロジだけ。名前もテーマも出さない (画面は星を描かず、
       // 手前の星から伸びる線を薄くフェードさせるだけ)。距離 1 以上は必ず locked なので、
       // 状態を載せても何も明かさない。
       if (!isStarVisible(visibility)) {
         return [{ ...base, category: stage.category, ...parentIdOf(stage) }];
       }
 
-      // 2 歩先 (霧): 名前とカテゴリと前提の線まで (画面は名前をぼかして「予告」)。
+      // 互換用の fog: 名前とカテゴリと前提の線まで (画面は名前をぼかして「予告」)。
       // slug・到達説明・解放条件・受講登録・アイコン・Extra の印はここで止める。
       if (visibility === "fog") {
         return [
@@ -442,7 +448,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
         ];
       }
 
-      // 0〜1 歩 (full): 名前・受講登録・アイコンまで。ロック星は解放条件、
+      // 0〜1 歩 (full): 名前・受講登録まで。ロック星は名前を画面でぼかし、アイコンを返さず解放条件を出す。
       // 開いている星は到達説明。
       return [
         {
@@ -453,7 +459,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           ...(stage.theme ? { theme: stage.theme } : {}),
           enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
           ...parentIdOf(stage),
-          ...hasIconPayload(stage.iconPath, visibility),
+          ...hasIconPayload(stage.iconPath, visibility, state),
           ...(state === "locked"
             ? { lock_reasons: maskedLockReasons(source, result, stage.id) }
             : {}),
@@ -575,7 +581,11 @@ skillMapRoute.get("/api/skill-map/stages/:id/icon", async (c) => {
 
     const result = evaluateSkillMapFor(source);
     const visibility = result.visibility.get(stage.id) ?? "hidden";
-    if (visibility !== "full" || !stage.iconPath) {
+    if (
+      visibility !== "full" ||
+      (!revealDev && result.states.get(stage.id) === "locked") ||
+      !stage.iconPath
+    ) {
       throw new ApiError(STAGE_NOT_FOUND, 404);
     }
 
@@ -618,7 +628,11 @@ skillMapRoute.get("/api/skill-map/icons", async (c) => {
 
     const candidates = source.stages.filter((stage) => {
       const visibility = result.visibility.get(stage.id) ?? "hidden";
-      return visibility === "full" && Boolean(stage.iconPath);
+      return (
+        visibility === "full" &&
+        (revealDev || result.states.get(stage.id) !== "locked") &&
+        Boolean(stage.iconPath)
+      );
     });
 
     const icons: Record<string, string> = {};
@@ -723,7 +737,7 @@ function buildStaffSkillMap(rows: readonly StaffSkillMapStageRow[]): {
       ...(stage.canDo ? { can_do: stage.canDo } : {}),
       ...(parentId !== undefined && acceptsParent(parentId) ? { parent_id: parentId } : {}),
       ...appearancePayloads(stage.slug, idBySlug, acceptsParent),
-      ...hasIconPayload(stage.iconPath, "full"),
+      ...hasIconPayload(stage.iconPath, "full", "unlocked"),
       ...(stage.audience === "granted" ? { audience: "granted" as const } : {}),
       status: row.status,
       granted_count: row.audience === "granted" ? row.grantedCount : 0,

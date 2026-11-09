@@ -13,8 +13,8 @@ const crowded = [
 ];
 
 describe("estimateStarLabelWidth", () => {
-  it("全角は10px、半角英数は6px、空白は3pxに余白4pxを足す", () => {
-    expect(estimateStarLabelWidth("星Aa1 ")).toBe(10 + 6 * 3 + 3 + 4);
+  it("全角は12px、半角英数は7px、空白は3.5pxに余白16pxを足す", () => {
+    expect(estimateStarLabelWidth("星Aa1 ")).toBe(12 + 7 * 3 + 3.5 + 16);
   });
 });
 
@@ -34,6 +34,15 @@ describe("placeStarLabels", () => {
 
   it("核に囲まれて置けない名前は隠す", () => {
     expect(placeStarLabels(crowded, 1).get("center")).toBe("hidden");
+  });
+
+  it("上側を禁止した星は、下側が塞がっていても上に置かない", () => {
+    const stars = [star("a", 0, 0)];
+    const obstacles = [{ x: -40, y: 16, w: 80, h: 24 }];
+    expect(placeStarLabels(stars, 1, obstacles).get("a")).toBe("above");
+    expect(placeStarLabels([{ ...stars[0], blockedSides: ["above"] }], 1, obstacles).get("a")).toBe(
+      "right",
+    );
   });
 
   it("見出しの障害物を避けて別の側に置く (障害物は拡縮しない画面座標)", () => {
@@ -72,7 +81,7 @@ describe("placeStarLabels", () => {
   });
 
   it("小さな札の高さも衝突判定に含める", () => {
-    const stars = [star("a", 0, 0), star("b", 0, 48, "短")];
+    const stars = [star("a", 0, 0), star("b", 0, 56, "短")];
     expect(placeStarLabels(stars, 1).get("a")).toBe("below");
     expect(placeStarLabels([{ ...stars[0], extraHeight: 12 }, stars[1]], 1).get("a")).toBe("above");
   });

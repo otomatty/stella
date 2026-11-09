@@ -90,8 +90,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@babel/parser": "^8.0.10",
-    "@babel/traverse": "^8.0.10",
+    "@babel/parser": "^8.1.0",
+    "@babel/traverse": "^8.1.0",
     "@babel/types": "^8.0.4",
     "@stella/content": "workspace:*",
     "picomatch": "^4"

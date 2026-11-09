@@ -2,26 +2,33 @@ import { describe, expect, it } from "vitest";
 
 import { revealsDevMap } from "@/lib/dev-mode";
 
-import { fogObscured, showsStar } from "./fog-display";
+import { nameObscured, showsStar } from "./fog-display";
 
-describe("fogObscured", () => {
+describe("nameObscured", () => {
+  it("full でもロックの星はぼかし、開発者表示では外す", () => {
+    expect(nameObscured({ visibility: "full", state: "locked" }, false)).toBe(true);
+    expect(nameObscured({ visibility: "full", state: "locked" }, true)).toBe(false);
+    for (const state of ["cleared", "active", "unlocked"] as const) {
+      expect(nameObscured({ visibility: "full", state }, false)).toBe(false);
+    }
+  });
   it("霧の星の名前はぼかす", () => {
-    expect(fogObscured("fog", false)).toBe(true);
+    expect(nameObscured({ visibility: "fog", state: "unlocked" }, false)).toBe(true);
   });
 
   it("霧より先の段もぼかす側に倒す (段が増えてもぼかし忘れが出ない)", () => {
-    expect(fogObscured("edge", false)).toBe(true);
-    expect(fogObscured("hidden", false)).toBe(true);
+    expect(nameObscured({ visibility: "edge", state: "unlocked" }, false)).toBe(true);
+    expect(nameObscured({ visibility: "hidden", state: "unlocked" }, false)).toBe(true);
   });
 
   it("開発者モードではどの段もぼかさない", () => {
-    expect(fogObscured("fog", true)).toBe(false);
-    expect(fogObscured("edge", true)).toBe(false);
+    expect(nameObscured({ visibility: "fog", state: "unlocked" }, true)).toBe(false);
+    expect(nameObscured({ visibility: "edge", state: "unlocked" }, true)).toBe(false);
   });
 
   it("名前まで見えている段 (full) はぼかさない", () => {
-    expect(fogObscured("full", false)).toBe(false);
-    expect(fogObscured("full", true)).toBe(false);
+    expect(nameObscured({ visibility: "full", state: "unlocked" }, false)).toBe(false);
+    expect(nameObscured({ visibility: "full", state: "unlocked" }, true)).toBe(false);
   });
 });
 
@@ -31,7 +38,7 @@ describe("showsStar", () => {
     expect(showsStar("fog", false)).toBe(true);
   });
 
-  it("3 歩先 (edge) は幽霊ノード — 星は描かず線の終点にしかならない", () => {
+  it("2 歩先 (edge) は幽霊ノード — 星は描かず線の終点にしかならない", () => {
     expect(showsStar("edge", false)).toBe(false);
   });
 
@@ -49,17 +56,25 @@ describe("本番 (サーバの dev_mode なし) では霧が外れない", () =>
   it("localStorage 未設定 (= 既定のオフ) なら霧はぼかしたまま", () => {
     const revealDev = revealsDevMap(false, undefined);
     expect(revealDev).toBe(false);
-    expect(fogObscured("fog", revealDev)).toBe(true);
+    expect(nameObscured({ visibility: "fog", state: "unlocked" }, revealDev)).toBe(true);
   });
 
   it("FAB をオンにしても、サーバが dev_mode を返さなければぼかしたまま", () => {
-    expect(fogObscured("fog", revealsDevMap(true, undefined))).toBe(true);
-    expect(fogObscured("fog", revealsDevMap(true, false))).toBe(true);
+    expect(
+      nameObscured({ visibility: "fog", state: "unlocked" }, revealsDevMap(true, undefined)),
+    ).toBe(true);
+    expect(nameObscured({ visibility: "fog", state: "unlocked" }, revealsDevMap(true, false))).toBe(
+      true,
+    );
   });
 
   it("サーバが dev_mode を返し、かつ FAB がオンのときだけ外れる", () => {
-    expect(fogObscured("fog", revealsDevMap(true, true))).toBe(false);
+    expect(nameObscured({ visibility: "fog", state: "unlocked" }, revealsDevMap(true, true))).toBe(
+      false,
+    );
     // サーバがオンでもローカルがオフなら外さない (FAB で明示的に入れる)。
-    expect(fogObscured("fog", revealsDevMap(false, true))).toBe(true);
+    expect(nameObscured({ visibility: "fog", state: "unlocked" }, revealsDevMap(false, true))).toBe(
+      true,
+    );
   });
 });

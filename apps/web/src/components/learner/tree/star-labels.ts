@@ -8,6 +8,7 @@ interface LabelStar {
   r: number;
   label: string;
   extraHeight?: number;
+  blockedSides?: StarLabelSide[];
 }
 
 interface Rect {
@@ -21,11 +22,11 @@ function overlaps(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-/** 名前札の画面上の幅を、文字種ごとの幅と余白 4px で見積もる。 */
+/** 名前札の画面上の幅を、文字種ごとの幅と余白 16px で見積もる。 */
 export function estimateStarLabelWidth(label: string): number {
   return Array.from(label).reduce(
-    (sum, char) => sum + (/\s/u.test(char) ? 3 : /[a-zA-Z0-9]/u.test(char) ? 6 : 10),
-    4,
+    (sum, char) => sum + (/\s/u.test(char) ? 3.5 : /[a-zA-Z0-9]/u.test(char) ? 7 : 12),
+    16,
   );
 }
 
@@ -51,9 +52,9 @@ export function placeStarLabels(
   const placed: Rect[] = [];
   const result = new Map<string, StarLabelSide>();
   for (const star of measured) {
-    const w = Math.min(90, star.estimate);
-    const h = Math.min(2, Math.ceil(star.estimate / 90)) * 12.5 + (star.extraHeight ?? 0);
-    const gap = star.r + 3;
+    const w = Math.min(140, star.estimate);
+    const h = Math.min(2, Math.ceil(star.estimate / 140)) * 17.5 + 4 + (star.extraHeight ?? 0);
+    const gap = star.r + 4;
     const candidates = [
       ["below", { x: star.x - w / 2, y: star.y + gap, w, h }],
       ["above", { x: star.x - w / 2, y: star.y - gap - h, w, h }],
@@ -62,6 +63,7 @@ export function placeStarLabels(
     ] as const;
     result.set(star.id, "hidden");
     for (const [side, rect] of candidates) {
+      if (star.blockedSides?.includes(side)) continue;
       if (
         cores.some((core) => overlaps(rect, core)) ||
         placed.some((label) => overlaps(rect, label)) ||
