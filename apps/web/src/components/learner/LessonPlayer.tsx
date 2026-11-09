@@ -40,6 +40,8 @@ import {
   useProgressReady,
   useStudyTime,
 } from "@/hooks/useLessonProgress";
+import { useStageTasks } from "@/hooks/useStageTasks";
+import { lessonSubmissionTarget } from "@/lib/lesson-submissions";
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
 import { downloadLessonMaterial } from "@/lib/cms-api";
@@ -100,6 +102,7 @@ export const LessonPlayer = ({
     () => allLessons.find((l) => l.id === initialLesson?.id)?.id ?? allLessons[0]?.id ?? "",
   );
   const [tab, setTab] = useState("content");
+  const stageTasks = useStageTasks(stage.id, stage.format === 2 && isBackendConfigured());
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -270,6 +273,13 @@ export const LessonPlayer = ({
   if (!lessonObj) {
     return <div className="p-10 text-sm text-ink-3">このステージにはレッスンがありません。</div>;
   }
+
+  const taskId = stageTasks?.find((task) => task.lessonId === lessonObj.id)?.id ?? null;
+  const submissionTarget = lessonSubmissionTarget({
+    format: stage.format,
+    lesson: lessonObj,
+    taskId,
+  });
 
   const isQuiz = lessonObj.type === "quiz";
   const isCode = lessonObj.type === "code";
@@ -446,9 +456,7 @@ export const LessonPlayer = ({
                       </span>
                     ) : null}
                   </div>
-                  {stage.format === 2 && isText ? (
-                    <TaskLessonHandoff stageId={stage.id} lessonId={lessonObj.id} />
-                  ) : null}
+                  {stage.format === 2 && isText ? <TaskLessonHandoff taskId={taskId} /> : null}
                 </div>
               </div>
 
@@ -545,7 +553,9 @@ export const LessonPlayer = ({
             isQuiz ? "pb-36 sm:pb-24" : "pb-24",
           )}
         >
-          <SubmissionHistory onOpenSubmission={onOpenSubmission} />
+          {submissionTarget ? (
+            <SubmissionHistory target={submissionTarget} onOpenSubmission={onOpenSubmission} />
+          ) : null}
           {showCompleteCallout ? (
             <LessonCompleteCallout
               neighbors={neighbors}
