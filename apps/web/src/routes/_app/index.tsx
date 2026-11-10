@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { LearnerHome } from "@/components/learner/LearnerHome";
-import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export const Route = createFileRoute("/_app/")({
@@ -18,17 +17,7 @@ export const Route = createFileRoute("/_app/")({
 
 function DashboardPage() {
   const s = useAppShell();
-  if (s.role === "instructor") {
-    return (
-      <InstructorDashboard
-        setPage={s.setPage}
-        onOpenReview={s.onOpenReview}
-        backendEnabled={s.backendEnabled}
-        currentUserId={s.currentUserId}
-      />
-    );
-  }
-  if (s.role === "admin") {
+  if (s.role !== "learner") {
     return <AdminDashboard backendEnabled={s.backendEnabled} />;
   }
   // 受講者のホームはスキルツリー + 「次にやること」(ステージ一覧と旧スキルツリー画面を集約)。

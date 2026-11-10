@@ -48,7 +48,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
   let objects: Map<string, Uint8Array>;
   const caller = {
     id: "teacher",
-    role: "instructor" as const,
+    role: "admin" as const,
     name: "講師",
     email: null,
   };
@@ -77,7 +77,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
         { id: "other", displayName: "他の受講者", role: "student" },
       ]),
       db.insert(stages).values({

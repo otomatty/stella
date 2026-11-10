@@ -284,7 +284,7 @@ export function getSubmission(id: string): Submission | undefined {
 
 /**
  * 保存・詳細の応答を、一覧から読んだ行に重ねる。応答に無い列 (一覧だけが返すキューの列 =
- * 人に回した理由・担当者など、#34) は前の値を残す。
+ * 人に回した理由など、#34) は前の値を残す。
  */
 function mergeRow(before: Submission | undefined, row: Submission): Submission {
   if (!before) return row;

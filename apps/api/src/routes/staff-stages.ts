@@ -32,7 +32,7 @@ import {
   tasks,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import { parsePrerequisites } from "../lib/skill-map-data.js";
 import { learnerOnly } from "../lib/learner-scope.js";
 
@@ -106,7 +106,7 @@ async function taskCounts(db: Db, filter: SQL) {
 staffStagesRoute.get("/api/staff/stages/:stageId/tasks", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const stageId = c.req.param("stageId");
     const [stage] = await db
       .select({ id: stages.id, tenantId: stages.tenantId, prerequisites: stages.prerequisites })
@@ -188,7 +188,7 @@ function definitionObject(value: unknown): Record<string, unknown> {
 staffStagesRoute.get("/api/staff/tasks/detail", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const taskId = c.req.query("taskId");
     if (!taskId) throw new ApiError("taskId が必要です", 400);
     const [row] = await db

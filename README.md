@@ -14,7 +14,7 @@ SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。�
 stella/
 ├── apps/
 │   ├── web/                  # @stella/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
-│   │   ├── src/              # Learner / Instructor / Admin UI
+│   │   ├── src/              # Learner / Admin UI
 │   │   └── vite-plugins/     # PDF アセット同期・CSP 生成など
 │   ├── api/                  # @stella/api — Hono API → Cloudflare Workers
 │   │   └── src/              # /api/chat, /api/healthz
@@ -81,7 +81,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    bun run smoke:d1        # テーブル確認
    ```
 
-   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` / `seed-learner2` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントの招待・ロール昇格は下記「初回ログインとロール昇格」を参照してください。
+   seed に含まれる `seed-admin` / `seed-learner` / `seed-learner2` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントの招待・ロール昇格は下記「初回ログインとロール昇格」を参照してください。
 
    受講登録まわりは 2 人の受講者で見分けます。`seed-learner` は全ステージに登録済みで、その行は **自己開始の履歴** の形（`assigned_by = seed-learner` / `required = 0` / 期限なし）です — Phase 3b で管理者からの割り当ては廃止したので、登録が生まれる道は受講者自身の「始める」だけになりました。`seed-learner2` は **受講登録が 0 件** で、「まだ何も始めていない人」の画面（ホームのプレースメント案内、スキルマップの推奨、受講状況の空表示）を確認するための固定ユーザーです。`bun run db:seed` を 2 回流しても、この 2 人の登録件数は変わりません（`seed-learner` は全ステージ、`seed-learner2` は 0 件のまま）:
 
@@ -182,7 +182,7 @@ wrangler d1 execute stella-db --local --command \
 
 #### ロール昇格（SQL）
 
-Admin / Instructor / プラットフォーム管理を検証するとき（`apps/api` で実行）:
+Admin / プラットフォーム管理を検証するとき（`apps/api` で実行）:
 
 ```bash
 cd apps/api
@@ -191,14 +191,12 @@ cd apps/api
 wrangler d1 execute stella-db --local --command \
   "update profiles set role='admin' where email='you@example.com'"
 
-# 講師
-wrangler d1 execute stella-db --local --command \
-  "update profiles set role='instructor' where email='you@example.com'"
-
 # プラットフォーム管理者（他の管理者から無効化・降格されない。招待 UI からは付与不可）
 wrangler d1 execute stella-db --local --command \
   "update profiles set role='platform_admin' where email='you@example.com'"
 ```
+
+ロールは `student` / `admin` / `platform_admin` の 3 つ、画面のロールは `learner` / `admin` の 2 つ。招待・ロール変更で選べるのは受講者と管理者。招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。
 
 昇格後はブラウザをリロードしてロールを反映させる。
 認可は `/api/me` の `profiles.role` を参照するため、ロール変更だけの再ログインは不要。
@@ -212,8 +210,7 @@ JWT の有効期限は **24 時間**。失効後は再ログインが必要（�
 - [ ] `curl -s http://127.0.0.1:8787/api/healthz` が `ok: true`（できれば `jwtConfigured` / `googleOAuthConfigured` も true）
 - [ ] 招待済み email で `http://localhost:5173` から Google ログインできる
 - [ ] Learner（UI 名; DB は `profiles.role='student'`）としてステージ一覧など D1（seed）由来のデータが見える
-- [ ] 上記コマンドで `instructor` に上げたあと、Tweaks なしで講師画面（添削キュー等）が D1 データを表示する
-- [ ] `admin` に上げたあと、Tweaks なしで管理画面（ユーザー / ステージ等）が D1 データを表示する
+- [ ] `admin` に上げたあと、Tweaks なしで管理画面（ユーザー / ステージ / レビュー等）が D1 データを表示する
 - [ ] 管理画面「レポート」で種別・期間を切り替えると D1 由来の明細が出て、CSV をダウンロードできる
 
 ### 認可・所属（#62）手動確認
@@ -235,7 +232,7 @@ bun run smoke:core   # ターミナル 2
 
 検証内容（45 ステップ）: ステージ作成 → 公開（draft は受講者に見えないことも確認）→
 **受講者による自己開始**（割当が無くても道に星が出て「次の一歩」の候補になること / 開始が冪等で
-期限も必須も付かないこと / 存在しない星は汎用文言の 400 / 講師も自分で開始できる / 退役した割当 API
+期限も必須も付かないこと / 存在しない星は汎用文言の 400 / 管理者も自分で開始できる / 退役した割当 API
 `POST /api/enrollments`・`/bulk`・プリセット適用が 410 を返すこと）→
 割当プリセットの定義（同名の 409 / 退役した名前の再利用 / 教材削除で空になったプリセットの自動退役）→
 レッスン進捗 → 課題提出 → VS Code からの引き継ぎ（同一課題の未添削提出が upsert され、
@@ -254,7 +251,7 @@ bun run smoke:core   # ターミナル 2
 
 UI を含めた確認。API レベルの検証は上記のスモークで代替できる。
 
-前提: `dev:api` + `dev`、Google ログイン、必要なら admin/instructor 昇格。
+前提: `dev:api` + `dev`、Google ログイン、必要なら admin 昇格。
 受講登録は **学習者が自分で作る**（Phase 3b で管理者の割当は廃止）。
 
 - [ ] Admin がステージを公開し、seed が登録した配布資料をダウンロードできる
@@ -270,7 +267,7 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 - [ ] 学習者が最後の修了条件を満たすと「ステージクリア！」ダイアログが出て、
       「スキルツリーを見る」で遷移した先に次の星が解放されている
       （修了証ページには自動発行済みの修了証が並び、「発行する」ボタンは無い）
-- [ ] 講師が ReviewQueue から添削確定でき、失敗時はエラートースト（成功時のみ「LMS通知」文言）
+- [ ] 管理者が ReviewQueue から添削確定でき、失敗時はエラートースト（成功時のみ「LMS通知」文言）
 - [ ] VS Code で採点が未クリアのとき「講師に引き継ぐ」が出て、押すと ReviewQueue に載る
       （レッスンは完了にならない / 何度押しても同じ 1 件が上書きされ attempt が増える）
 - [ ] ReviewEditor の「自動採点」タブに Lint / AST / 失敗テストが出る
@@ -289,8 +286,7 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 ロール別の画面一覧（参考）:
 
 - **受講者 (Learner)** — ダッシュボード / ステージ一覧 / レッスン視聴 / Q&A / 修了証
-- **講師 (Instructor)** — ダッシュボード / 添削キュー / AI下書き付き添削エディタ
-- **管理者 (Admin)** — KPIダッシュボード / ユーザー管理 / ステージ管理 / 監査ログ
+- **管理者 (Admin)** — KPIダッシュボード / レビュー / AI下書き付き添削エディタ / 成績台帳 / 発見教材 / ユーザー管理 / ステージ管理 / 監査ログ
 
 ### Cloudflare R2 (教材配信・アップロード)
 
@@ -328,8 +324,8 @@ API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/ad
 
 ### 講師添削 (Issue #8)
 
-受講者が `assignment` 型レッスンからコードを提出すると、 講師ロールの「添削待ち」キューに表示されます。
-実データ経路では Google ログイン後に `instructor`（または `admin`）へロール昇格したアカウントでキューを開く。
+受講者が `assignment` 型レッスンからコードを提出すると、 管理者の「添削待ち」キューに表示されます。
+実データ経路では Google ログイン後に `admin`（または `platform_admin`）へロール昇格したアカウントでキューを開く。
 AI 下書き (`POST /api/review-draft`) は API キー未設定時はルールベースのヒューリスティックにフォールバックする。
 
 - DB 永続化 (D1 設定時): `submissions` テーブル (`/api/submissions` 経由、 ログインが必要)
@@ -341,7 +337,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - デモ専用 (`VITE_SERVER_URL` 未設定): `localStorage` キー `lms_lesson_progress`
 - DB 永続化 (D1 設定時): `lesson_progress` テーブル (`/api/lesson-progress` 経由、 ログインが必要)。
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
-  講師 / 管理者はアプリ層の認可により進捗を read できます (可視化 UI は別 Issue)。
+  管理者はアプリ層の認可により進捗を read できます (可視化 UI は別 Issue)。
 
 ### 学習アクティビティ (Issue #73)
 
@@ -365,7 +361,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - 自動発行が許可されたステージは、 修了条件を満たした時点で**サーバが自動的に修了証を発行**し、
   受講登録を completed にします (レッスン完了の同期 / 小テスト合格 / 課題の合格確定がトリガ)。
   クリア時は画面にダイアログが出て、 スキルツリーで解放された次のステージへ誘導します。
-- 講師 / 管理者は **成績台帳** (サイドバー → 成績台帳) で受講者ごとの達成状況を確認し、
+- 管理者は **成績台帳** (サイドバー → 成績台帳) で受講者ごとの達成状況を確認し、
   基準達成者へ修了証を承認発行できます (講師承認ステージはこちらが唯一の発行経路)。
 - 受講者の **修了証** 一覧 (`/certificates`) は、発行済み・発行待ち・修了まであと少しを表示します。
   受講者の達成状況は `GET /api/certificates/completions` で一度に取得します (受講者による手動発行は廃止)。
@@ -418,7 +414,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 | **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
 | **P2** | コード演習統合 (VS Code 拡張 + AI チャット) | #4 |
 | **P3** | 講師添削ワークフロー (提出 → AI下書き → ルーブリック採点 → 確定) | #8 |
-| **P5** | 教材管理 — 講師・管理者がステージ・課題の詳細と配布資料を確認 (教材の編集はリポジトリ) | #10 |
+| **P5** | 教材管理 — 管理者がステージ・課題の詳細と配布資料を確認 (教材の編集はリポジトリ) | #10 |
 
 ## デプロイ
 

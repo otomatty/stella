@@ -28,7 +28,7 @@ import type { OsName } from "../markdown/os-blocks.js";
 // ---------------------------------------------------------------
 
 export type StageStatus = "draft" | "published" | "archived";
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
+export type ProfileRole = "student" | "admin" | "platform_admin";
 
 export type StageColor = "indigo" | "green" | "amber" | "slate";
 
@@ -279,7 +279,7 @@ export type EnrollmentStatus = "active" | "completed" | "expired";
 
 /**
  * 受講登録 (Issue #20)。 「誰がどのステージを、 いつまでに受講するか」 を表す。
- * 割当は instructor/admin が RLS 配下で行い、 受講者は自分の行のみ read 可能。
+ * 割当は管理者が RLS 配下で行い、 受講者は自分の行のみ read 可能。
  */
 export interface EnrollmentRow {
   id: string;
@@ -508,25 +508,6 @@ export interface Analytics {
   generated_at: string;
 }
 
-/** 講師ダッシュボードの受講者進捗サンプル 1 行。 */
-export interface InstructorStudentProgress {
-  user_id: string;
-  display_name: string;
-  initials: string | null;
-  stage_title: string;
-  progress_pct: number;
-  overdue: boolean;
-}
-
-/** get_instructor_overview RPC の戻り値。 */
-export interface InstructorOverview {
-  overdue_learners: number;
-  total_learners: number;
-  /** 呼び出した講師が担当する受講者の数 (#38)。`?assigned=mine` の有無によらない。 */
-  assigned_learners?: number;
-  students: InstructorStudentProgress[];
-}
-
 // ---------------------------------------------------------------
 // 通知・お知らせ (Issue #25)
 // ---------------------------------------------------------------
@@ -552,9 +533,9 @@ export type NotificationType =
   | "review_completed"
   | "assignment_due"
   | "learning_pace_delayed"
-  // つまずきの検知 (#38)。担当講師宛てで、payload に受講者・種類・課題を持つ。
+  // つまずきの検知 (#38)。staff 宛てで、payload に受講者・種類・課題を持つ。
   | "learner_stumble"
-  // 週次の育成メモから担当講師が送る一言 (#38)。受講者宛てで、本文は講師が書いた文だけ。
+  // 週次の育成メモから講師が送る一言 (#38)。受講者宛てで、本文は講師が書いた文だけ。
   | "mentor_message"
   // ステージの自動クリア (修了証の自動発行)。講師の合格確定が引き金のとき、開いた
   // ままの受講者セッションにはレスポンス経由のクリアイベントが届かないため、

@@ -3,15 +3,13 @@ import type { SearchResult } from "@stella/shared/search/types";
 import type { Role } from "@/data/types";
 
 export function isStaffProfileRole(role: ProfileRole | undefined): boolean {
-  return role === "instructor" || role === "admin" || role === "platform_admin";
+  return role === "admin" || role === "platform_admin";
 }
 
 export function mapProfileRole(role: ProfileRole): Role {
   switch (role) {
     case "student":
       return "learner";
-    case "instructor":
-      return "instructor";
     case "admin":
     case "platform_admin":
       return "admin";
@@ -24,8 +22,6 @@ export function mapProfileRole(role: ProfileRole): Role {
 
 export function staffHomeLabel(role: ProfileRole | undefined): string {
   switch (role) {
-    case "instructor":
-      return "講師画面に戻る";
     case "admin":
     case "platform_admin":
       return "管理画面に戻る";

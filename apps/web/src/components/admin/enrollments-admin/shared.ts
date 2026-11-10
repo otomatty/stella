@@ -25,7 +25,7 @@ export const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
 /**
  * 受講者リストの絞り込み軸。
  *
- * スタッフ (講師 / 管理者) も自分で受講を始められるので、 その状況もここから見る。
+ * 管理者も自分で受講を始められるので、 その状況もここから見る。
  */
 export type LearnerFilter = "student" | "staff";
 

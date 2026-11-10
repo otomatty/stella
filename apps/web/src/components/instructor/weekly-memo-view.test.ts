@@ -17,10 +17,8 @@ describe("memosForWeek", () => {
 });
 
 describe("weeklyMemoIntro", () => {
-  it("講師には担当の受講者、管理者には担当講師のいる受講者のメモだと書く (API が返す範囲と同じ)", () => {
-    expect(weeklyMemoIntro("assigned").scope).toContain("担当している受講者");
-    expect(weeklyMemoIntro("all").scope).toContain("担当講師のいる受講者");
-    expect(weeklyMemoIntro("all").scope).not.toContain("担当している");
-    expect(weeklyMemoIntro("all").empty).not.toBe(weeklyMemoIntro("assigned").empty);
+  it("受講者全員のメモだと書く (API が返す範囲と同じ)", () => {
+    expect(weeklyMemoIntro().scope).toContain("受講者");
+    expect(weeklyMemoIntro().empty).toContain("受講者");
   });
 });

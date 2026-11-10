@@ -10,9 +10,8 @@ export const Route = createFileRoute("/_app/reviews/$submissionId")({
 function ReviewEditorPage() {
   const s = useAppShell();
   const { submissionId } = Route.useParams();
-  // 管理者もレビューできる (#34)。API の権限 (講師・管理者) と同じ。
   return (
-    <RoleGuard allow={["instructor", "admin"]}>
+    <RoleGuard allow={["admin"]}>
       <ReviewEditor submissionId={submissionId} setPage={s.setPage} />
     </RoleGuard>
   );

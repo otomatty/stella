@@ -35,7 +35,6 @@ const apiDir = join(import.meta.dirname, "..");
 const BASE = (process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 
 const LEARNER_ID = process.env.SMOKE_LEARNER_ID ?? "seed-learner";
-const INSTRUCTOR_ID = process.env.SMOKE_INSTRUCTOR_ID ?? "seed-instructor";
 const ADMIN_ID = process.env.SMOKE_ADMIN_ID ?? "seed-admin";
 
 /** VS Code の「講師に引き継ぐ」 が添える採点失敗サマリの最小形 (Issue #9)。 */
@@ -161,7 +160,6 @@ async function main(): Promise<void> {
   }
 
   const admin = await mintToken(secret, ADMIN_ID);
-  const instructor = await mintToken(secret, INSTRUCTOR_ID);
   const learner = await mintToken(secret, LEARNER_ID);
 
   // 再実行しても衝突しないよう slug に実行時刻を混ぜる。
@@ -374,7 +372,7 @@ async function main(): Promise<void> {
   });
 
   await step("講師も自分で開始できる (受講者の画面で確かめるため)", async () => {
-    const res = await ok("POST", `/api/stages/${stageId}/start`, { token: instructor });
+    const res = await ok("POST", `/api/stages/${stageId}/start`, { token: admin });
     instructorEnrollmentId = res.enrollment.id;
     assert(instructorEnrollmentId, "enrollment.id が返らない");
     assert(res.created === true, "初回の開始が created:true にならない");
@@ -656,7 +654,7 @@ async function main(): Promise<void> {
   });
 
   await step("講師の添削キューに提出が現れる", async () => {
-    const res = await ok("GET", "/api/submissions", { token: instructor });
+    const res = await ok("GET", "/api/submissions", { token: admin });
     const mine = res.rows.filter(
       (r: { assignment_id: string | null }) => r.assignment_id === smokeAssignmentId,
     );
@@ -677,7 +675,7 @@ async function main(): Promise<void> {
 
   // Issue #9: 講師が開いている間に学習者が引き継ぎ直したら、 その添削は確定させない。
   await step("開いていた版が古くなった添削は 409", async () => {
-    const opened = await ok("GET", `/api/submissions/${submissionId}`, { token: instructor });
+    const opened = await ok("GET", `/api/submissions/${submissionId}`, { token: admin });
     const staleVersion = opened.row.submitted_at;
 
     // 学習者が同じ課題を引き継ぎ直す (= submitted_at が進む)。
@@ -696,26 +694,26 @@ async function main(): Promise<void> {
     });
 
     const stale = await call("PATCH", `/api/submissions/${submissionId}`, {
-      token: instructor,
+      token: admin,
       body: { expectedSubmittedAt: staleVersion, status: "passed", verdict: "pass" },
     });
     assert(stale.status === 409, `409 を期待したが ${stale.status}`);
 
     // 壊れた版指定が 409 に化けないこと (原因が分からなくなる)。
     const malformed = await call("PATCH", `/api/submissions/${submissionId}`, {
-      token: instructor,
+      token: admin,
       body: { expectedSubmittedAt: "not-a-date", status: "passed", verdict: "pass" },
     });
     assert(malformed.status === 400, `400 を期待したが ${malformed.status}`);
 
-    const current = await ok("GET", `/api/submissions/${submissionId}`, { token: instructor });
+    const current = await ok("GET", `/api/submissions/${submissionId}`, { token: admin });
     assert(current.row.status === "pending", "409 のはずが添削が確定してしまった");
     assert(current.row.code.includes("re-escalated"), "引き継ぎ直したコードが載っていない");
   });
 
   await step("講師が添削を確定する (合格)", async () => {
     const res = await ok("PATCH", `/api/submissions/${submissionId}`, {
-      token: instructor,
+      token: admin,
       body: {
         status: "passed",
         verdict: "pass",
@@ -770,7 +768,7 @@ async function main(): Promise<void> {
 
     // 後片付け: 新しい提出も確定して、 添削待ちキューに残さない。
     await ok("PATCH", `/api/submissions/${res.row.id}`, {
-      token: instructor,
+      token: admin,
       body: { status: "passed", verdict: "pass", reviewNotes: "[smoke] 再引き継ぎも合格" },
     });
   });
@@ -828,7 +826,7 @@ async function main(): Promise<void> {
 
     // staff の発行 (Gradebook) は残る。 既発行ならべき等に既存を返す。
     const again = await ok("POST", "/api/certificates/issue", {
-      token: instructor,
+      token: admin,
       body: { stageId, userId: LEARNER_ID },
     });
     assert(again.certificate.already_existed === true, "既発行なのに新規扱いになっている");
@@ -849,7 +847,7 @@ async function main(): Promise<void> {
     // 同じレッスンに合格提出が 2 件 (最初の提出と引き継ぎ直しの提出) あるため、
     // 片方を下げただけでは条件は崩れない = 修了証は残る。
     await ok("PATCH", `/api/submissions/${submissionId}`, {
-      token: instructor,
+      token: admin,
       body: { status: "resubmit", verdict: "resubmit", reviewNotes: "[smoke] 判定訂正 1" },
     });
     const still = await ok("GET", `/api/certificates/completion/${stageId}`, { token: learner });
@@ -857,7 +855,7 @@ async function main(): Promise<void> {
 
     // もう 1 件も下げると全条件が崩れる → 修了証の削除 + 登録の active 戻し。
     await ok("PATCH", `/api/submissions/${secondSubmissionId}`, {
-      token: instructor,
+      token: admin,
       body: { status: "resubmit", verdict: "resubmit", reviewNotes: "[smoke] 判定訂正 2" },
     });
     const gone = await ok("GET", `/api/certificates/completion/${stageId}`, { token: learner });
@@ -870,7 +868,7 @@ async function main(): Promise<void> {
 
   await step("再び合格にすると修了証が発行し直される", async () => {
     await ok("PATCH", `/api/submissions/${submissionId}`, {
-      token: instructor,
+      token: admin,
       body: { status: "passed", verdict: "pass", reviewNotes: "[smoke] 合格に戻す" },
     });
     const completion = await ok("GET", `/api/certificates/completion/${stageId}`, {

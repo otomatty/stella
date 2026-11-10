@@ -10,7 +10,7 @@ export const CHAT_TEST_JWT_SECRET = "chat-ai-gateway-test-secret";
 
 export const CHAT_TEST_PROFILES = {
   learner: { id: "seed-learner", role: "student" as const },
-  instructor: { id: "seed-instructor", role: "instructor" as const },
+  admin: { id: "seed-admin", role: "admin" as const },
 } as const;
 
 export async function mintChatTestToken(userId: string): Promise<string> {

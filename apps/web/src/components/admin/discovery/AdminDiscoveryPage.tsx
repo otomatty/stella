@@ -1,5 +1,5 @@
 /**
- * `/discovery` — 発見教材のレビュー画面 (Phase 4 / instructor + admin)。
+ * `/discovery` — 発見教材のレビュー画面 (Phase 4 / admin)。
  *
  * 流れは 1 本道:
  *

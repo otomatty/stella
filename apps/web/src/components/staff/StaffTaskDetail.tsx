@@ -44,7 +44,6 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
   const [data, setData] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [assignedOnly, setAssignedOnly] = useState(false);
   const pending = useRef<AbortController | null>(null);
   const load = useCallback(async () => {
     pending.current?.abort();
@@ -173,22 +172,9 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
             </TabsContent>
             <TabsContent value="submissions">
               <div className="space-y-4">
-                <label
-                  className="flex items-center gap-2 text-[13px]"
-                  htmlFor="staff-task-assigned"
-                >
-                  <input
-                    id="staff-task-assigned"
-                    type="checkbox"
-                    checked={assignedOnly}
-                    onChange={(event) => setAssignedOnly(event.target.checked)}
-                  />
-                  担当の受講者だけ
-                </label>
                 <TaskBoardPanel
                   embedded
                   taskId={taskId}
-                  assignedOnly={assignedOnly}
                   onOpen={(submissionId) =>
                     void navigate({ to: "/reviews/$submissionId", params: { submissionId } })
                   }

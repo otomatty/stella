@@ -21,10 +21,9 @@ beforeEach(() => {
     INSERT INTO profiles (id, tenant_id, role, display_name, created_at) VALUES
       ('learner', 'ses', 'student', '受講者', 1),
       ('other', 'ses', 'student', '他の受講者', 1),
-      ('teacher', 'ses', 'instructor', '担当', 1),
-      ('unassigned', 'ses', 'instructor', '担当外', 1),
+      ('teacher', 'ses', 'admin', '講師', 1),
+      ('other-teacher', 'ses', 'admin', '別の講師', 1),
       ('admin', 'ses', 'admin', '管理者', 1);
-    INSERT INTO learner_instructors (learner_id, instructor_id) VALUES ('learner', 'teacher');
     INSERT INTO stages (id, tenant_id, slug, title, created_at, updated_at) VALUES ('root', 'ses', 'dev-env-basics', '入口', 1, 1), ('other-stage', 'ses', 'other', '他', 1, 1);
     INSERT INTO sections (id, stage_id, title, "order", created_at) VALUES ('unit', 'root', '単元', 0, 1), ('other-unit', 'other-stage', '他', 0, 1);
     INSERT INTO lessons (id, section_id, title, type, "order", duration_label, created_at, updated_at) VALUES
@@ -66,7 +65,7 @@ describe("onboarding first steps", () => {
   });
   it.each([
     ["teacher", 200],
-    ["unassigned", 403],
+    ["other-teacher", 200],
     ["admin", 200],
     ["other", 403],
   ] as const)("%s の閲覧権限 (%s)", async (id, status) => {

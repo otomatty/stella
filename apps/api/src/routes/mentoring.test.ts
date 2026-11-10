@@ -1,5 +1,5 @@
 /**
- * 受講者の育成 (#38): 手元の確認の要約・担当での絞り込み・支援の記録・つまずきの検知。
+ * 受講者の育成 (#38): 手元の確認の要約・支援の記録・つまずきの検知。
  * 実 SQLite (全マイグレーション) に対して route と cron を通す。
  */
 
@@ -10,7 +10,6 @@ import { getDb } from "../db/client.js";
 import {
   aiReviews,
   enrollments,
-  learnerInstructors,
   notifications,
   profiles,
   sections,
@@ -37,7 +36,6 @@ import {
 import { reviewTaskSubmission } from "../lib/task-submission.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
-import { analyticsRoute } from "./analytics.js";
 import { chatRoute } from "./chat.js";
 import { submissionsRoute } from "./submissions.js";
 import { taskSupportRoute } from "./task-support.js";
@@ -68,22 +66,15 @@ beforeEach(async () => {
   database = sqliteD1();
   env = { DB: database.binding, AUTH_JWT_SECRET: SECRET, ANTHROPIC_API_KEY: "sk-test" } as Env;
   db = getDb(env);
-  app = mountTestApp(
-    env,
-    tasksRoute,
-    submissionsRoute,
-    analyticsRoute,
-    taskSupportRoute,
-    chatRoute,
-  ).app;
+  app = mountTestApp(env, tasksRoute, submissionsRoute, taskSupportRoute, chatRoute).app;
   const definition = JSON.stringify({ skills: { assesses: ["html"] } });
   await db.batch([
     db.insert(tenants).values([{ id: "ses", name: "SES" }]),
     db.insert(profiles).values([
       { id: "learner", displayName: "受講者", role: "student" },
       { id: "peer", displayName: "別の受講者", role: "student" },
-      { id: "teacher", displayName: "担当講師", role: "instructor" },
-      { id: "teacher2", displayName: "担当のない講師", role: "instructor" },
+      { id: "teacher", displayName: "担当講師", role: "admin" },
+      { id: "teacher2", displayName: "担当のない講師", role: "admin" },
     ]),
     db.insert(stages).values([
       { id: "stage", slug: "dev-env-basics", title: "開発環境", format: 2 },
@@ -128,7 +119,6 @@ beforeEach(async () => {
       status: "active",
       enrolledAt: new Date("2026-10-01T00:00:00Z"),
     }),
-    db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "teacher" }),
   ]);
   await db.update(stages).set({ status: "published" });
   streamChat.mockReset();
@@ -270,42 +260,17 @@ async function seedSubmissions() {
   ]);
 }
 
-describe("担当の受講者だけに絞る", () => {
-  it("添削キューは assigned=mine で担当の受講者の提出 (新旧とも) だけを返す", async () => {
+describe("staff は受講者全員の提出と進捗を見る", () => {
+  it("添削キューは講師が違っても同じ提出を返す", async () => {
     await seedSubmissions();
-    const ids = async (path: string, as: string) =>
-      (await json<{ rows: { id: string }[] }>(await get(path, as))).rows.map((r) => r.id).sort();
-    expect(await ids("/api/submissions", "teacher")).toEqual([
-      "legacy-learner",
-      "legacy-peer",
-      "task-learner",
-    ]);
-    expect(await ids("/api/submissions?assigned=mine", "teacher")).toEqual([
-      "legacy-learner",
-      "task-learner",
-    ]);
-    // 担当のない講師も、絞らなければこれまでどおり全件を見る。
-    expect(await ids("/api/submissions", "teacher2")).toHaveLength(3);
-    expect(await ids("/api/submissions?assigned=mine", "teacher2")).toEqual([]);
-    expect((await get("/api/submissions?assigned=all", "teacher")).status).toBe(400);
-    expect((await get("/api/submissions?assigned=mine", "learner")).status).toBe(403);
-  });
-
-  it("講師ダッシュボードは assigned=mine で担当の受講者だけを数え、担当の人数を返す", async () => {
-    await db.insert(enrollments).values({
-      userId: "peer",
-      stageId: "stage",
-      status: "active",
-    });
-    type Overview = { overview: { total_learners: number; assigned_learners: number } };
-    const all = await json<Overview>(await get("/api/analytics/instructor", "teacher"));
-    expect(all.overview).toMatchObject({ total_learners: 2, assigned_learners: 1 });
-    const mine = await json<Overview>(
-      await get("/api/analytics/instructor?assigned=mine", "teacher"),
-    );
-    expect(mine.overview).toMatchObject({ total_learners: 1, assigned_learners: 1 });
-    const none = await json<Overview>(await get("/api/analytics/instructor", "teacher2"));
-    expect(none.overview).toMatchObject({ total_learners: 2, assigned_learners: 0 });
+    const ids = async (as: string) =>
+      (await json<{ rows: { id: string }[] }>(await get("/api/submissions", as))).rows
+        .map((r) => r.id)
+        .sort();
+    const expected = ["legacy-learner", "legacy-peer", "task-learner"];
+    expect(await ids("teacher")).toEqual(expected);
+    expect(await ids("teacher2")).toEqual(expected);
+    expect((await get("/api/submissions", "learner")).status).toBe(403);
   });
 });
 
@@ -428,7 +393,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
 describe("支援の記録を習得の水準に反映する", () => {
   const caller = {
     id: "teacher",
-    role: "instructor" as const,
+    role: "admin" as const,
     name: "担当講師",
     email: null,
   };
@@ -577,12 +542,14 @@ describe("課題の AI チャット", () => {
 
 describe("つまずきの検知 (cron)", () => {
   const now = new Date("2026-10-14T03:00:00Z"); // 水曜 12:00 (日本時間)
-  const stumbles = () =>
+  const allStumbles = () =>
     db
       .select()
       .from(notifications)
       .where(eq(notifications.type, "learner_stumble"))
       .orderBy(notifications.id);
+  // 検知そのもののテストは、宛先のうち 1 人分で件数を見る。
+  const stumbles = async () => (await allStumbles()).filter((n) => n.userId === "teacher");
   const keepActive = (date = "2026-10-13") =>
     db.insert(studyActivity).values({ userId: "learner", date, watchedSec: 60 });
   async function streak(taskId: string, count: number, startedAt: Date) {
@@ -605,7 +572,18 @@ describe("つまずきの検知 (cron)", () => {
     expect(weekdaysBetween("2026-10-13", "2026-10-14")).toBe(0);
   });
 
-  it("同じ課題で 1 時間以上失敗が続くと担当講師に 1 度だけ知らせ、1 日 1 通にまとめる", async () => {
+  it("有効な staff 全員に 1 通ずつ届き、再実行しても増えない", async () => {
+    await keepActive();
+    await streak("practice", 5, new Date(now.getTime() - 2 * HOUR));
+    await notifyStumbles(db, now);
+    await notifyStumbles(db, now);
+    const sent = await allStumbles();
+    expect(sent.map((n) => n.userId).sort()).toEqual(["teacher", "teacher2"]);
+    expect(sent.every((n) => n.payload.signal === "local-failures")).toBe(true);
+    expect(new Set(sent.map((n) => n.id)).size).toBe(sent.length);
+  });
+
+  it("同じ課題で 1 時間以上失敗が続くと staff に 1 度だけ知らせ、1 日 1 通にまとめる", async () => {
     await keepActive();
     await streak("practice", 5, new Date(now.getTime() - 2 * HOUR));
     await streak("second", 6, new Date(now.getTime() - 30 * 60_000)); // まだ試行錯誤の途中
@@ -1076,23 +1054,25 @@ describe("つまずきの検知 (cron)", () => {
       expect(sent.map((n) => n.payload.task_ids)).toEqual([["practice"], ["second"]]);
     });
 
-    it("担当のない受講者には知らせない", async () => {
+    it("割り当てが無くても、有効な受講者がヒントを使い切れば知らせる", async () => {
       for (const level of [1, 2, 3])
         await open("practice", level, minutesAgo(30), { userId: "peer" });
       await notifyStumbles(db, now);
-      expect(await hintAlerts()).toEqual([]);
+      const sent = await allStumbles();
+      expect(sent.map((n) => n.userId).sort()).toEqual(["teacher", "teacher2"]);
+      expect(sent.every((n) => n.payload.learner_id === "peer")).toBe(true);
     });
   });
 
-  it("担当のない受講者と、無効な講師には知らせない", async () => {
+  it("無効な受講者と、無効な staff には知らせない", async () => {
     await keepActive("2026-10-01");
-    await db.delete(learnerInstructors);
+    await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "learner"));
     await notifyStumbles(db, now);
-    expect(await stumbles()).toEqual([]);
+    expect(await allStumbles()).toEqual([]);
 
-    await db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "teacher" });
-    await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
+    await db.update(profiles).set({ disabled: false }).where(eq(profiles.id, "learner"));
+    await db.update(profiles).set({ disabled: true }).where(eq(profiles.role, "admin"));
     await notifyStumbles(db, now);
-    expect(await stumbles()).toEqual([]);
+    expect(await allStumbles()).toEqual([]);
   });
 });

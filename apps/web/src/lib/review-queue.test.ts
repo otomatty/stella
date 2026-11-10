@@ -74,7 +74,6 @@ describe("キューの分け方と並べ方", () => {
       taskId: "t",
       submittedAt: 3,
       routeReasons: ["rubric-unmet"],
-      assigneeName: "佐藤",
     }),
     submission({ id: "legacy", submittedAt: 1 }),
     submission({ id: "consult", taskId: "t", submittedAt: 2, routeReasons: ["consult"] }),
@@ -82,10 +81,9 @@ describe("キューの分け方と並べ方", () => {
   it("人に回した理由で分類し、旧形式の提出は別にする", () => {
     expect(rows.map(queueGroupOf)).toEqual(["rule", "legacy", "consult"]);
   });
-  it("待ち時間・理由・担当者で並べる", () => {
+  it("待ち時間・理由で並べる", () => {
     expect(sortQueue(rows, "wait").map((s) => s.id)).toEqual(["legacy", "consult", "rule"]);
     expect(sortQueue(rows, "reason").map((s) => s.id)).toEqual(["consult", "rule", "legacy"]);
-    expect(sortQueue(rows, "assignee").map((s) => s.id)).toEqual(["rule", "legacy", "consult"]);
   });
   it("待ち時間を時間・日で出す", () => {
     expect(formatWaiting(0, 30 * 60_000)).toBe("1時間未満");
@@ -131,15 +129,8 @@ describe("テストで合格した提出", () => {
     submission({ id: "human", studentId: "a", reviewSource: "human", submittedAt: 4 }),
     submission({ id: "none", studentId: "b", submittedAt: 5 }),
   ];
-  const everyone = () => true;
   it("reviewSource が tests の行だけを、新しい順に返す", () => {
-    expect(testsPassedRows(rows, everyone).map((s) => s.id)).toEqual(["new", "mid", "old"]);
+    expect(testsPassedRows(rows).map((s) => s.id)).toEqual(["new", "mid", "old"]);
     expect(rows.map((s) => s.id)).toEqual(["old", "ai", "new", "mid", "human", "none"]);
-  });
-  it("担当の絞り込みは人のキューと同じ", () => {
-    const assigned = new Set(["a"]);
-    const inScope = (s: Submission) => s.studentId != null && assigned.has(s.studentId);
-    expect(testsPassedRows(rows, inScope).map((s) => s.id)).toEqual(["mid", "old"]);
-    expect(testsPassedRows(rows, () => false)).toEqual([]);
   });
 });

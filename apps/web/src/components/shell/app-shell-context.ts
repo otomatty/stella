@@ -43,7 +43,7 @@ export interface AppShellValue {
   onProfileUpdated: () => Promise<void>;
   /** 検索パレット→ステージ管理のハイライト対象。 seq は選び直し検出用の版番号。 */
   highlightStage: { id: string; seq: number } | null;
-  /** 講師・管理者が受講者画面へ切り替えて、そのステージの詳細を開く。 */
+  /** 管理者が受講者画面へ切り替えて、そのステージの詳細を開く。 */
   openStageAsLearner: (stageId: string) => void;
 }
 

@@ -3,7 +3,7 @@
  *
  * アプリ層認可 (旧 RLS の置き換え):
  *   - 受講者は自分の enrollment のみ read … GET /api/enrollments/mine
- *   - instructor/admin は read … 他ルートは requireRole
+ *   - admin / platform_admin は read … 他ルートは requireAdmin
  *
  * ## Phase 3b: 割当は退役した
  *
@@ -22,7 +22,7 @@ import { Hono } from "hono";
 import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
 import { enrollments } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, requireAdmin, ApiError } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { MAX_USER_IDS } from "../lib/enrollment-bulk.js";
 import { ENROLLMENT_SELECT } from "../lib/enrollment-write.js";
@@ -97,7 +97,7 @@ enrollmentsRoute.get("/api/enrollments/mine", async (c) => {
 enrollmentsRoute.get("/api/enrollments/summary", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     // 期限は日付として扱う (`due_at` は入力日の UTC 0 時)。 期限当日はまだ超過ではないので、
     // 「今日より前の日付」 を超過とする。 受講者ダッシュボードの 「本日まで」 と揃える。
     //
@@ -141,7 +141,7 @@ enrollmentsRoute.get("/api/enrollments/summary", async (c) => {
 enrollmentsRoute.get("/api/enrollments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const stageId = c.req.query("stageId");
     const userIds = (c.req.query("userIds") ?? c.req.query("userId") ?? "")
       .split(",")
@@ -209,7 +209,7 @@ async function requireEnrollment(
 enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
     const target = await requireEnrollment(db, id);
     const patch = (await c.req.json()) as {
@@ -253,7 +253,7 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
 enrollmentsRoute.delete("/api/enrollments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
     const target = await requireEnrollment(db, id);
     await db.delete(enrollments).where(eq(enrollments.id, id));

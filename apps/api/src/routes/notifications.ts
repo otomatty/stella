@@ -15,7 +15,7 @@ import { announcements, enrollments, notifications, profiles } from "../db/schem
 import {
   errorResponse,
   getCaller,
-  requireRole,
+  requireAdmin,
   ApiError,
   isStaffRole,
   requireReturning,
@@ -100,7 +100,7 @@ notificationsRoute.get("/api/announcements", async (c) => {
 notificationsRoute.post("/api/announcements", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const body = (await c.req.json()) as {
       stageId?: string | null;
       title: string;

@@ -22,7 +22,7 @@ describe("PATCH /api/submissions/:id のテスト確定", () => {
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
       ]),
       db.insert(submissions).values([
         {

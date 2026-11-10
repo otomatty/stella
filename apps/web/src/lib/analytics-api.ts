@@ -1,11 +1,11 @@
 /**
  * 分析ダッシュボードのデータアクセス層 (Issue #28 — Neon / Hono API)。
  *
- * 集計はサーバ側 (`/api/analytics/*`) で行い、 instructor/admin のみ実行できる。
+ * 集計はサーバ側 (`/api/analytics/*`) で行う。
  * URL `/api/analytics/tenant` は開いたままの古いタブが呼ぶので変えない。
  */
 
-import type { InstructorOverview, Analytics } from "@stella/shared/cms/types";
+import type { Analytics } from "@stella/shared/cms/types";
 
 import { apiFetch } from "./api-client";
 
@@ -13,14 +13,4 @@ import { apiFetch } from "./api-client";
 export async function getAnalytics(): Promise<Analytics | null> {
   const { analytics } = await apiFetch<{ analytics: Analytics | null }>("/api/analytics/tenant");
   return analytics ?? null;
-}
-
-/** 講師ダッシュボード用の未返信 / 遅延 / 受講者進捗を取得する。 `assignedOnly` で担当の受講者だけ。 */
-export async function getInstructorOverview(
-  assignedOnly = false,
-): Promise<InstructorOverview | null> {
-  const { overview } = await apiFetch<{ overview: InstructorOverview | null }>(
-    assignedOnly ? "/api/analytics/instructor?assigned=mine" : "/api/analytics/instructor",
-  );
-  return overview ?? null;
 }

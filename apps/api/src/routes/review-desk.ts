@@ -10,7 +10,7 @@
  * 課題 ID は `<ステージ>/<単元>/<課題>` とスラッシュを含むので、パスではなくクエリ・本文で受ける。
  *   GET/POST/PATCH/DELETE /api/review-templates  コメント集
  *
- * 人に回した提出のキューは、これまでどおり `GET /api/submissions` が理由・確信度・担当者を返す。
+ * 人に回した提出のキューは、これまでどおり `GET /api/submissions` が理由・確信度を返す。
  * 受講者向けの API は、人が確定する前の AI の所見を返さない (07 §6.3) — ここは staff だけが読む。
  */
 
@@ -18,7 +18,7 @@ import { CHECK_ACTIONS, type CheckAction } from "@stella/shared/review/review-de
 import { Hono } from "hono";
 import type { Env } from "../env.js";
 import { clientIp } from "../lib/audit.js";
-import { ApiError, type Caller, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { ApiError, type Caller, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import {
   checkAiPassedSubmission,
   createTemplate,
@@ -36,7 +36,7 @@ import {
 export const reviewDeskRoute = new Hono<{ Bindings: Env }>();
 
 function requireStaff(caller: Caller) {
-  requireRole(caller, "instructor", "admin", "platform_admin");
+  requireAdmin(caller);
 }
 
 async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<unknown> {
@@ -51,7 +51,7 @@ reviewDeskRoute.get("/api/review-desk/ai-passed", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireStaff(caller);
-    return c.json(await listAiPassed(db, caller, parseAiPassedFilters(c.req.query())));
+    return c.json(await listAiPassed(db, parseAiPassedFilters(c.req.query())));
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -101,10 +101,7 @@ reviewDeskRoute.get("/api/review-desk/task-board", async (c) => {
     requireStaff(caller);
     const taskId = c.req.query("taskId");
     if (!taskId) throw new ApiError("taskId を指定してください", 400);
-    const assigned = c.req.query("assigned");
-    if (assigned !== undefined && assigned !== "mine")
-      throw new ApiError("assigned には mine だけを指定できます", 400);
-    return c.json(await taskBoard(db, caller, taskId, assigned === "mine"));
+    return c.json(await taskBoard(db, taskId));
   } catch (err) {
     return errorResponse(c, err);
   }

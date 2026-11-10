@@ -23,7 +23,6 @@ function row(partial: Partial<StageRosterRow> & Pick<StageRosterRow, "id">): Sta
     display_name: partial.id,
     email: null,
     selectable: true,
-    instructor: null,
     assigned: false,
     exempted: false,
     unlocked_by_skill_check: false,
@@ -36,7 +35,6 @@ function row(partial: Partial<StageRosterRow> & Pick<StageRosterRow, "id">): Sta
 const openFilter: RosterLocalFilter = {
   q: "",
   status: "all",
-  instructor: "all",
   prereq: "all",
 };
 
@@ -179,7 +177,6 @@ describe("変更だけと免除タブ", () => {
       changesOnly: true,
       assignedScope: false,
       filter: { ...openFilter, q: "  ｋｅｎ " },
-      callerId: null,
     });
     expect(views.map((view) => view.id)).toEqual(["ken"]);
     expect(views[0]?.marks).toEqual(["追加"]);
@@ -211,34 +208,32 @@ describe("変更だけと免除タブ", () => {
       changesOnly: false,
       assignedScope: true,
       filter: { ...openFilter, status: "assigned", prereq: "not_done" },
-      callerId: "teacher-1",
     });
     expect(views.map((view) => view.id)).toEqual(["fresh", "kept"]);
     expect(views[0]?.assigned).toBe(true);
   });
 
-  it("自分の担当と免除の絞り込みは、いまの状態で手元の行に当てる", () => {
+  it("免除と前提の絞り込みは、いまの状態で手元の行に当てる", () => {
     const mine = row({
       id: "ada",
       display_name: "山田",
-      instructor: { id: "teacher-1", display_name: "講師" },
       prerequisite_status: "doing",
     });
     const other = row({
       id: "ken",
       display_name: "佐藤",
-      instructor: { id: "teacher-2", display_name: "別" },
+      prerequisite_status: "done",
     });
     let pending = setRosterAssigned(new Map(), mine, true);
     pending = setRosterExempted(pending, mine, true);
     pending = setRosterAssigned(pending, other, true);
+    pending = setRosterExempted(pending, other, true);
     const views = composeRosterRows({
       loaded: [],
       pending,
       changesOnly: true,
       assignedScope: true,
-      filter: { ...openFilter, status: "exempted", instructor: "mine", prereq: "not_done" },
-      callerId: "teacher-1",
+      filter: { ...openFilter, status: "exempted", prereq: "not_done" },
     });
     expect(views.map((view) => view.id)).toEqual(["ada"]);
     expect(views[0]?.marks).toEqual(["追加", "免除"]);
@@ -266,7 +261,6 @@ describe("保存の文言", () => {
 
 describe("stageGrantRoleLabel", () => {
   it.each([
-    ["instructor", "講師"],
     ["admin", "管理者"],
     ["platform_admin", "管理者"],
     ["student", null],

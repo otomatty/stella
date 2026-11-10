@@ -3,11 +3,13 @@
  *
  *   - `verifyToken` … セッション (Cookie / VS Code の Bearer) から利用者を決める
  *   - `getCaller`   … 利用者 + profiles から caller の role を解決
- *   - `requireRole` … caller が指定ロールのいずれかであることを保証
+ *   - `requireAdmin` … caller が staff (admin / platform_admin) であることを保証
  */
 
-import { eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Context } from "hono";
+
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
@@ -15,6 +17,8 @@ import { profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { verifyAccessToken } from "./auth-jwt.js";
 import { getAuth } from "./better-auth.js";
+
+export type { ProfileRole };
 
 export class ApiError extends Error {
   // 410 は「あった機能を廃止した」ぶんだけ (Phase 3b の割当 API)。404 だと呼び出し側が
@@ -35,8 +39,6 @@ export function requireReturning<T>(rows: readonly T[], what: string): T {
   }
   return row;
 }
-
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export interface Caller {
   id: string;
@@ -119,38 +121,37 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
   };
 }
 
-/** caller が指定ロールのいずれかでなければ 403 を投げる。 */
-export function requireRole(caller: Caller, ...roles: ProfileRole[]): void {
-  if (!roles.includes(caller.role)) {
-    throw new ApiError("権限がありません", 403);
-  }
-}
+/** staff のロール。通知の宛先なども、この一覧だけを使う。 */
+export const STAFF_ROLES = ["admin", "platform_admin"] as const satisfies readonly ProfileRole[];
 
 export function isStaffRole(role: ProfileRole): boolean {
-  return role === "instructor" || role === "admin" || role === "platform_admin";
+  return (STAFF_ROLES as readonly ProfileRole[]).includes(role);
 }
 
-/** 専用ステージ (`audience = granted`) の割当。講師・管理者のみ。 */
+/** 無効でない staff の id。id 順。0 人なら空。 */
+export async function loadActiveStaffIds(db: Db): Promise<string[]> {
+  const rows = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.disabled, false), inArray(profiles.role, [...STAFF_ROLES])))
+    .orderBy(asc(profiles.id));
+  return rows.map((row) => row.id);
+}
+
+/** 専用ステージ (`audience = granted`) の割当。管理者のみ。 */
 export function requireCanManageStageGrants(caller: Caller): void {
-  if (!isStaffRole(caller.role)) {
-    throw new ApiError("権限がありません", 403);
-  }
+  requireAdmin(caller);
 }
 
 /**
  * 腕試し (SkillCheck / 飛び級) を **受ける** 側になれるロール (Phase 3a)。
  *
- * 講師・管理者は、受講者の画面で教材 (課題文・ヒント・解答例を含む) を確かめるために
+ * 管理者は、受講者の画面で教材 (課題文・ヒント・解答例を含む) を確かめるために
  * 自分を受講登録する。条件は受講者と同じ (前提・霧・割り当ては評価器が決める)。
  * 自己開始・腕試し・発見教材は同じ顔ぶれにそろえる
  * (片方だけ開けると「受けられないのに始められる」がねじれる)。
  */
-export const SKILL_CHECK_ROLES: ProfileRole[] = [
-  "student",
-  "instructor",
-  "admin",
-  "platform_admin",
-];
+export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
 
 export function canTakeSkillCheck(role: ProfileRole): boolean {
   return SKILL_CHECK_ROLES.includes(role);
@@ -167,7 +168,7 @@ export function requireCanTakeSkillCheck(caller: Caller): void {
  * ステージの自己開始 (`POST /api/stages/:id/start`) の入口ガード (Phase 3b)。
  *
  * 顔ぶれは腕試しと同じ (`SKILL_CHECK_ROLES`) — 飛び級で開いた星の自己登録と自己開始は
- * 同じ「自分の学習を自分で始める」操作なので、片方だけ講師に開けると
+ * 同じ「自分の学習を自分で始める」操作なので、片方だけ開けると
  * 「受けられないのに始められる」がねじれる。
  */
 export function requireCanStartStage(caller: Caller): void {
@@ -176,8 +177,11 @@ export function requireCanStartStage(caller: Caller): void {
   }
 }
 
+/** staff (`STAFF_ROLES`) でなければ 403。管理者の仕事はここを通る。 */
 export function requireAdmin(caller: Caller): void {
-  requireRole(caller, "admin", "platform_admin");
+  if (!isStaffRole(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
 }
 
 /** ApiError を Hono レスポンスへ。 想定外エラーは 500 に丸める。 */

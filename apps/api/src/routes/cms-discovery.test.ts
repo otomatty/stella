@@ -49,8 +49,8 @@ vi.mock("../lib/audit.js", () => ({
 }));
 
 const BASE_CALLER = {
-  id: "seed-instructor",
-  role: "instructor" as ProfileRole,
+  id: "seed-admin",
+  role: "admin" as ProfileRole,
   name: "講師",
   email: null,
 };

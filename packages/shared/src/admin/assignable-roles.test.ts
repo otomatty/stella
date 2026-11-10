@@ -15,6 +15,15 @@ describe("profile roles", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("廃止した講師ロールはロールとしても割当先としても認めない", () => {
+    expect(isProfileRole("instructor")).toBe(false);
+    expect(isAssignableProfileRole("instructor")).toBe(false);
+    const result = validateInviteUsersRequest({
+      invites: [{ email: "t@example.com", displayName: "T", role: "instructor" }],
+    });
+    expect(result.ok).toBe(false);
+  });
+
   it("廃止した営業ロール (sales) はロールとしても割当先としても認めない", () => {
     expect(isProfileRole("sales")).toBe(false);
     expect(isAssignableProfileRole("sales")).toBe(false);

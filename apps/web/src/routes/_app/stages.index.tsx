@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_app/stages/")({
 
 function StagesPage() {
   return (
-    <RoleGuard allow={["learner", "instructor", "admin"]}>
+    <RoleGuard allow={["learner", "admin"]}>
       <StagesPageBody />
     </RoleGuard>
   );
@@ -23,7 +23,6 @@ function StagesPageBody() {
   }
   return (
     <StageManagementPage
-      role={s.role}
       backendEnabled={s.backendEnabled}
       currentUserId={s.currentUserId}
       highlightStage={s.highlightStage}

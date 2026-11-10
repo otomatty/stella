@@ -1,7 +1,7 @@
 /**
- * 分析ダッシュボード API (旧 get_tenant_analytics / get_instructor_overview RPC / Issue #28)。
+ * 分析ダッシュボード API (旧 get_tenant_analytics RPC / Issue #28)。
  *
- * 集計はサーバ側で行い、 instructor/admin のみ実行できる。 データは件数が
+ * 集計はサーバ側で行い、 admin / platform_admin のみ実行できる。 データは件数が
  * 限られるため、 取得後に JS で集計する (旧 SQL 集計と等価)。
  */
 
@@ -12,16 +12,13 @@ import {
   certificates,
   stages,
   enrollments,
-  learnerInstructors,
   lessonProgress,
-  lessons,
   profiles,
   quizAttempts,
   quizOptions,
   quizQuestions,
-  sections,
 } from "../db/schema.js";
-import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import { learnerOnly } from "../lib/learner-scope.js";
 import type { Env } from "../env.js";
 import type { QuizAnswer } from "@stella/shared/cms/types";
@@ -36,7 +33,7 @@ function round(n: number): number {
 analyticsRoute.get("/api/analytics/tenant", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -210,152 +207,3 @@ async function computeStumbles(
     .sort((a, b) => a.correct_pct - b.correct_pct || b.n - a.n)
     .slice(0, 8);
 }
-
-/**
- * 講師ダッシュボード用の遅延 / 受講者進捗。
- *
- * 母集合は既定で全体の enrollment。 `?assigned=mine` で、
- * 呼び出した講師が担当する受講者 (`learner_instructors`) だけに絞る (#38)。
- * `assigned_learners` は絞り込みの有無によらず、 呼び出した講師の担当の人数を返す。
- */
-analyticsRoute.get("/api/analytics/instructor", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const assigned = c.req.query("assigned");
-    if (assigned !== undefined && assigned !== "mine")
-      throw new ApiError("assigned には mine だけを指定できます", 400);
-    const now = new Date();
-
-    const mine = await db
-      .select({ id: learnerInstructors.learnerId })
-      .from(learnerInstructors)
-      .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-      .where(
-        and(
-          eq(learnerInstructors.instructorId, caller.id),
-          eq(profiles.disabled, false),
-          learnerOnly(profiles.id),
-        ),
-      );
-    const mineIds = new Set(mine.map((r) => r.id));
-
-    const allEnr = (
-      await db
-        .select({
-          userId: enrollments.userId,
-          stageId: enrollments.stageId,
-          status: enrollments.status,
-          dueAt: enrollments.dueAt,
-        })
-        .from(enrollments)
-        .where(learnerOnly(enrollments.userId))
-    ).filter((e) => !assigned || mineIds.has(e.userId));
-
-    const overdue = allEnr.filter(
-      (e) => e.status === "active" && e.dueAt != null && e.dueAt < now,
-    ).length;
-    const totalLearners = new Set(allEnr.map((e) => e.userId)).size;
-
-    // 期限が近い順に active enrollment 上位 6 件の進捗サンプル。
-    const active = allEnr
-      .filter((e) => e.status === "active")
-      .sort(
-        (a, b) =>
-          (a.dueAt?.getTime() ?? Number.POSITIVE_INFINITY) -
-          (b.dueAt?.getTime() ?? Number.POSITIVE_INFINITY),
-      )
-      .slice(0, 6);
-
-    // Neon HTTP は 1 クエリ = 1 ラウンドトリップのため、 受講者ごとのループ内クエリ (N+1)
-    // を避け、 stage / lesson / progress / profile をまとめて取得してから JS で突合する。
-    const sampleStageIds = [...new Set(active.map((e) => e.stageId))];
-    const sampleUserIds = [...new Set(active.map((e) => e.userId))];
-
-    const sampleStages =
-      sampleStageIds.length > 0
-        ? await db
-            .select({ id: stages.id, title: stages.title })
-            .from(stages)
-            .where(inArray(stages.id, sampleStageIds))
-        : [];
-    const stageTitleById = new Map(sampleStages.map((co) => [co.id, co.title]));
-
-    // 対象ステージ配下の全レッスンを stageId ごとにグルーピング。
-    const sampleLessons =
-      sampleStageIds.length > 0
-        ? await db
-            .select({ lessonId: lessons.id, stageId: sections.stageId })
-            .from(lessons)
-            .innerJoin(sections, eq(sections.id, lessons.sectionId))
-            .where(inArray(sections.stageId, sampleStageIds))
-        : [];
-    const lessonIdsByStage = new Map<string, string[]>();
-    for (const r of sampleLessons) {
-      const arr = lessonIdsByStage.get(r.stageId) ?? [];
-      arr.push(r.lessonId);
-      lessonIdsByStage.set(r.stageId, arr);
-    }
-
-    // 対象受講者の完了レッスンを userId ごとの集合に。
-    const sampleCompleted =
-      sampleUserIds.length > 0
-        ? await db
-            .select({ userId: lessonProgress.userId, lessonId: lessonProgress.lessonId })
-            .from(lessonProgress)
-            .where(
-              and(
-                inArray(lessonProgress.userId, sampleUserIds),
-                eq(lessonProgress.completed, true),
-              ),
-            )
-        : [];
-    const completedByUser = new Map<string, Set<string>>();
-    for (const r of sampleCompleted) {
-      const set = completedByUser.get(r.userId) ?? new Set<string>();
-      set.add(r.lessonId);
-      completedByUser.set(r.userId, set);
-    }
-
-    // 対象受講者の表示名 / イニシャル。
-    const sampleProfiles =
-      sampleUserIds.length > 0
-        ? await db
-            .select({
-              id: profiles.id,
-              displayName: profiles.displayName,
-              initials: profiles.initials,
-            })
-            .from(profiles)
-            .where(inArray(profiles.id, sampleUserIds))
-        : [];
-    const profileById = new Map(sampleProfiles.map((p) => [p.id, p]));
-
-    const students = active.map((e) => {
-      const lessonIds = lessonIdsByStage.get(e.stageId) ?? [];
-      const total = lessonIds.length;
-      const completed = completedByUser.get(e.userId) ?? new Set<string>();
-      const done = total === 0 ? 0 : lessonIds.filter((id) => completed.has(id)).length;
-      const prof = profileById.get(e.userId);
-      return {
-        user_id: e.userId,
-        display_name: prof?.displayName ?? "",
-        initials: prof?.initials ?? null,
-        stage_title: stageTitleById.get(e.stageId) ?? "",
-        progress_pct: total === 0 ? 0 : round((done * 100) / total),
-        overdue: e.dueAt != null && e.dueAt < now,
-      };
-    });
-
-    return c.json({
-      overview: {
-        overdue_learners: overdue,
-        total_learners: totalLearners,
-        assigned_learners: mineIds.size,
-        students,
-      },
-    });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});

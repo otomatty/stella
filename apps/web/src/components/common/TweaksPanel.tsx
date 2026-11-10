@@ -11,7 +11,6 @@ interface TweaksPanelProps {
 
 const ROLE_OPTIONS: Array<{ id: Role; label: string }> = [
   { id: "learner", label: "受講者" },
-  { id: "instructor", label: "講師" },
   { id: "admin", label: "管理者" },
 ];
 

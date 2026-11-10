@@ -23,7 +23,6 @@ function profile(
 function source(overrides: Partial<StageGrantLearnerSource> = {}): StageGrantLearnerSource {
   return {
     profiles: [],
-    instructorLinks: [],
     assignedIds: new Set(),
     staffUnlockIds: new Set(),
     skillCheckUnlockIds: new Set(),
@@ -39,7 +38,6 @@ function query(overrides: Partial<StageGrantLearnerQuery> = {}): StageGrantLearn
   return {
     q: "",
     status: "all",
-    instructor: { type: "all" },
     prereq: "all",
     offset: 0,
     limit: 50,
@@ -74,15 +72,6 @@ describe("parseStageGrantLearnerQuery", () => {
   it("prereq の not_done を受け付ける", () => {
     expect(parsedQuery({ prereq: "not_done" }).prereq).toBe("not_done");
   });
-
-  it("instructor は all / mine / none / id に分ける", () => {
-    expect(parsedQuery({ instructor: "mine" }).instructor).toEqual({ type: "mine" });
-    expect(parsedQuery({ instructor: "none" }).instructor).toEqual({ type: "none" });
-    expect(parsedQuery({ instructor: "teacher-2" }).instructor).toEqual({
-      type: "id",
-      id: "teacher-2",
-    });
-  });
 });
 
 describe("listStageGrantLearners", () => {
@@ -104,7 +93,6 @@ describe("listStageGrantLearners", () => {
         ...overrides,
       }),
       listQuery,
-      "teacher-1",
     );
   }
 
@@ -115,7 +103,7 @@ describe("listStageGrantLearners", () => {
     expect(listed({}, query({ q: "ＫＥＮ" })).learners.map((row) => row.id)).toEqual(["ken"]);
   });
 
-  it("割り当て・免除・担当・前提で絞り、件数は絞り込み前のまま", () => {
+  it("割り当て・免除・前提で絞り、件数は絞り込み前のまま", () => {
     const result = listed(
       {
         profiles: [
@@ -123,15 +111,10 @@ describe("listStageGrantLearners", () => {
           profile("ken", "い"),
           profile("sato", "う"),
           profile("old", "無効", "old@example.com", "student", true),
-          profile("staff", "講師", "teacher@example.com", "instructor", false),
+          profile("staff", "講師", "teacher@example.com", "admin", false),
         ],
         assignedIds: new Set(["ada", "ken", "old"]),
         staffUnlockIds: new Set(["ada"]),
-        instructorLinks: [
-          { learnerId: "ada", instructorId: "teacher-1" },
-          { learnerId: "ken", instructorId: "teacher-2" },
-          { learnerId: "sato", instructorId: "teacher-2" },
-        ],
         clearedByUser: new Map([["ada", new Set(["stage-pre-a", "stage-pre-b"])]]),
         enrolledByUser: new Map([["ken", new Set(["stage-pre-a"])]]),
       },
@@ -146,32 +129,10 @@ describe("listStageGrantLearners", () => {
           profiles: [profile("ada", "あ"), profile("ken", "い"), profile("sato", "う")],
           assignedIds: new Set(["ada", "ken"]),
           staffUnlockIds: new Set(["ada"]),
-          instructorLinks: [
-            { learnerId: "ada", instructorId: "teacher-1" },
-            { learnerId: "sato", instructorId: "teacher-2" },
-          ],
         },
         query({ status: "exempted" }),
       ).learners.map((row) => row.id),
     ).toEqual(["ada"]);
-    const base = {
-      profiles: [profile("ada", "あ"), profile("ken", "い"), profile("sato", "う")],
-      instructorLinks: [
-        { learnerId: "ada", instructorId: "teacher-1" },
-        { learnerId: "sato", instructorId: "teacher-2" },
-      ],
-    };
-    expect(
-      listed(base, query({ instructor: { type: "mine" } })).learners.map((row) => row.id),
-    ).toEqual(["ada"]);
-    expect(
-      listed(base, query({ instructor: { type: "none" } })).learners.map((row) => row.id),
-    ).toEqual(["ken"]);
-    expect(
-      listed(base, query({ instructor: { type: "id", id: "teacher-2" } })).learners.map(
-        (row) => row.id,
-      ),
-    ).toEqual(["sato"]);
   });
 
   it("前提の 3 状態と、前提が空なら全員クリア済み", () => {
@@ -204,7 +165,6 @@ describe("listStageGrantLearners", () => {
     const open = listStageGrantLearners(
       source({ profiles: [profile("ada", "山田"), profile("ken", "佐藤")] }),
       query({ prereq: "done" }),
-      "teacher-1",
     );
     expect(open.learners).toHaveLength(2);
     expect(
@@ -214,7 +174,6 @@ describe("listStageGrantLearners", () => {
       listStageGrantLearners(
         source({ profiles: [profile("ada", "山田")] }),
         query({ prereq: "none" }),
-        "teacher-1",
       ).total,
     ).toBe(0);
   });
@@ -233,7 +192,6 @@ describe("listStageGrantLearners", () => {
     const open = listStageGrantLearners(
       source({ profiles: [profile("ada", "山田"), profile("ken", "佐藤")] }),
       query({ prereq: "not_done" }),
-      "teacher-1",
     );
     expect(open.total).toBe(0);
   });
@@ -269,47 +227,35 @@ describe("listStageGrantLearners", () => {
       profile("c", "ん"),
       profile("d", "い"),
     ];
-    const first = listStageGrantLearners(source({ profiles }), query({ limit: 2 }), "teacher-1");
+    const first = listStageGrantLearners(source({ profiles }), query({ limit: 2 }));
     expect(first.learners.map((row) => row.id)).toEqual(["a", "b"]);
     expect(first.next_offset).toBe(2);
     expect(first.total).toBe(4);
-    const second = listStageGrantLearners(
-      source({ profiles }),
-      query({ limit: 2, offset: 2 }),
-      "teacher-1",
-    );
+    const second = listStageGrantLearners(source({ profiles }), query({ limit: 2, offset: 2 }));
     expect(second.learners.map((row) => row.id)).toEqual(["d", "c"]);
     expect(second.next_offset).toBeNull();
   });
 
-  it("担当講師は名前順で、無効でも割り当てが残る人は選べない", () => {
+  it("ロールの並びで出し、無効でも割り当てが残る人は選べない", () => {
     const result = listed({
       profiles: [
         profile("old", "無効", null, "student", true),
         profile("ada", "山田"),
-        profile("teacher-2", "講師B", null, "instructor", false),
-        profile("teacher-1", "講師A", null, "instructor", false),
+        profile("teacher-2", "講師B", null, "admin", false),
+        profile("teacher-1", "講師A", null, "admin", false),
         profile("admin", "管理者", null, "admin"),
         profile("platform", "運営", null, "platform_admin"),
-        profile("disabled-staff", "無効講師", null, "instructor", true),
+        profile("disabled-staff", "無効講師", null, "admin", true),
       ],
       assignedIds: new Set(["old"]),
-      instructorLinks: [
-        { learnerId: "ada", instructorId: "teacher-2" },
-        { learnerId: "old", instructorId: "teacher-1" },
-      ],
     });
     expect(result.learners.map((row) => [row.id, row.selectable, row.role])).toEqual([
       ["platform", true, "platform_admin"],
       ["admin", true, "admin"],
-      ["teacher-1", true, "instructor"],
-      ["teacher-2", true, "instructor"],
+      ["teacher-1", true, "admin"],
+      ["teacher-2", true, "admin"],
       ["ada", true, "student"],
       ["old", false, "student"],
-    ]);
-    expect(result.instructors).toEqual([
-      { id: "teacher-1", display_name: "講師A" },
-      { id: "teacher-2", display_name: "講師B" },
     ]);
   });
 });
@@ -322,7 +268,7 @@ describe("countStageGrantLearners", () => {
           profile("ada", "あ"),
           profile("ken", "い"),
           profile("old", "う", null, "student", true),
-          profile("teacher", "講師", null, "instructor"),
+          profile("teacher", "講師", null, "admin"),
           profile("admin", "管理者", null, "admin"),
           profile("platform", "運営", null, "platform_admin"),
           profile("disabled", "無効", null, "admin", true),

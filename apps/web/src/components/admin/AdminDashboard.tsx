@@ -54,7 +54,7 @@ function DashboardLive() {
   return (
     <>
       <PageHeader
-        title="KPIダッシュボード"
+        title="ダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
         actions={
           <Button onClick={() => void refetch()} disabled={loading}>
@@ -86,9 +86,9 @@ function DashboardLive() {
         <LiveContent analytics={analytics} />
       )}
 
-      {/* 週次の育成メモ (#38)。管理者には担当講師のいる受講者全員のメモが出る。 */}
+      {/* 週次の育成メモ (#38)。staff には受講者全員のメモが出る。 */}
       <div className="mt-6">
-        <WeeklyMemoPanel audience="all" />
+        <WeeklyMemoPanel />
       </div>
     </>
   );
@@ -379,7 +379,7 @@ function DashboardDemo() {
   return (
     <>
       <PageHeader
-        title="KPIダッシュボード"
+        title="ダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
         actions=<Button>
           <Calendar size={14} />

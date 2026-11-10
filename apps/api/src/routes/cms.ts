@@ -10,7 +10,7 @@
  *     受講者側に残す (draft を受講登録しても中身は見えない)。
  *   - sections/lessons/assignments の read は published か staff。
  *   - quizzes (CMS 編集) と listAssignments は staff のみ。
- *   - 書き込みはすべて instructor/admin。 子要素は親が存在することを確かめる。
+ *   - 書き込みはすべて admin / platform_admin。 子要素は親が存在することを確かめる。
  *
  * 返却形は旧 DB 行 (snake_case) に合わせ、 フロントのマッパー (@stella/shared/cms/types) を無変更に保つ。
  */
@@ -33,7 +33,7 @@ import {
 import {
   errorResponse,
   getCaller,
-  requireRole,
+  requireAdmin,
   ApiError,
   isStaffRole,
   requireReturning,
@@ -324,7 +324,7 @@ function normalizeInstructorName(value: unknown): string | null {
 cmsRoute.get("/api/cms/stages", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const rows = await db.select().from(stages).orderBy(desc(stages.updatedAt));
     return c.json({ rows: rows.map(stageToRow) });
   } catch (err) {
@@ -403,7 +403,7 @@ cmsRoute.get("/api/cms/courses/:id", stageDetailHandler("course"));
 cmsRoute.post("/api/cms/stages", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const input = (await c.req.json()) as Record<string, unknown> & { id?: string };
     const values = {
       slug: String(input.slug),
@@ -448,7 +448,7 @@ cmsRoute.post("/api/cms/stages", async (c) => {
 cmsRoute.patch("/api/cms/stages/:id/status", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
     const info = await stageAuditInfo(db, id);
     if (!info) throw new ApiError("対象が見つかりません", 404);
@@ -482,7 +482,7 @@ cmsRoute.patch("/api/cms/stages/:id/status", async (c) => {
 cmsRoute.delete("/api/cms/stages/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
     const info = await stageAuditInfo(db, id);
     if (!info) throw new ApiError("対象が見つかりません", 404);
@@ -548,7 +548,7 @@ cmsRoute.delete("/api/cms/stages/:id", async (c) => {
 cmsRoute.post("/api/cms/sections", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const input = (await c.req.json()) as {
       id?: string;
       stage_id: string;
@@ -582,7 +582,7 @@ cmsRoute.post("/api/cms/sections", async (c) => {
 cmsRoute.post("/api/cms/lessons", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const input = (await c.req.json()) as Record<string, unknown> & {
       id?: string;
       section_id: string;
@@ -659,7 +659,7 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
 cmsRoute.get("/api/cms/quiz/by-lesson/:lessonId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const lessonId = c.req.param("lessonId");
     await requireLesson(db, lessonId);
     const quizRows = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId)).limit(1);
@@ -701,7 +701,7 @@ cmsRoute.get("/api/cms/quiz/by-lesson/:lessonId", async (c) => {
 cmsRoute.post("/api/cms/quiz/ensure", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const { lessonId } = (await c.req.json()) as { lessonId: string };
     await requireLesson(db, lessonId);
     const existing = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId)).limit(1);
@@ -719,7 +719,7 @@ cmsRoute.post("/api/cms/quiz/ensure", async (c) => {
 cmsRoute.patch("/api/cms/quiz/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
     await requireQuiz(db, id);
     const p = (await c.req.json()) as Record<string, unknown>;
@@ -747,7 +747,7 @@ cmsRoute.patch("/api/cms/quiz/:id", async (c) => {
 cmsRoute.post("/api/cms/quiz-questions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const input = (await c.req.json()) as Record<string, unknown> & {
       id?: string;
       quiz_id: string;
@@ -786,7 +786,7 @@ cmsRoute.post("/api/cms/quiz-questions", async (c) => {
 cmsRoute.delete("/api/cms/quiz-questions/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     await requireQuestion(db, c.req.param("id"));
     await db.delete(quizQuestions).where(eq(quizQuestions.id, c.req.param("id")));
     return c.json({ ok: true });
@@ -798,7 +798,7 @@ cmsRoute.delete("/api/cms/quiz-questions/:id", async (c) => {
 cmsRoute.post("/api/cms/quiz-options", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const input = (await c.req.json()) as {
       id?: string;
       question_id: string;
@@ -834,7 +834,7 @@ cmsRoute.post("/api/cms/quiz-options", async (c) => {
 cmsRoute.delete("/api/cms/quiz-options/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     // option の親の設問が存在することを確かめる。
     const rows = await db
       .select({ questionId: quizOptions.questionId })
@@ -857,7 +857,7 @@ cmsRoute.delete("/api/cms/quiz-options/:id", async (c) => {
 cmsRoute.get("/api/cms/assignments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const rows = await db.select().from(assignments).orderBy(desc(assignments.updatedAt));
     return c.json({ rows: rows.map(assignmentToRow) });
   } catch (err) {

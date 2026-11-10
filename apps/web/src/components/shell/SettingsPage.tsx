@@ -35,7 +35,6 @@ const MAX_NAME_LENGTH = 50;
 
 const ROLE_LABELS: Record<string, string> = {
   student: "受講者",
-  instructor: "講師",
   admin: "管理者",
   platform_admin: "プラットフォーム管理者",
 };
@@ -69,10 +68,10 @@ export const SettingsPage = ({
         enabled={Boolean(backendEnabled && profile)}
         device={typeof navigator === "undefined" ? undefined : (navigator as DeviceNavigator)}
       />
-      {backendEnabled && profile && role !== "instructor" ? (
+      {backendEnabled && profile ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
-      {backendEnabled && role === "admin" ? <LearningPaceManager admin /> : null}
+      {backendEnabled && role === "admin" ? <LearningPaceManager /> : null}
     </div>
   </>
 );

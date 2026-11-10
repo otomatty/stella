@@ -42,16 +42,16 @@ describe("resolveUiRole", () => {
         backendEnabled: false,
         profileRole: undefined,
         uiRoleOverride: "learner",
-        demoRole: "instructor",
+        demoRole: "admin",
       }),
-    ).toEqual({ role: "instructor", canSwitchToLearner: false });
+    ).toEqual({ role: "admin", canSwitchToLearner: false });
   });
 });
 
 describe("staffHomeLabel", () => {
   it("names the screen the staff member returns to", () => {
     expect(staffHomeLabel("admin")).toBe("管理画面に戻る");
-    expect(staffHomeLabel("instructor")).toBe("講師画面に戻る");
+    expect(staffHomeLabel("platform_admin")).toBe("管理画面に戻る");
   });
 });
 

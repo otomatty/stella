@@ -4,7 +4,7 @@
  * 旧 BaaS 直アクセス (lesson_progress テーブル + upsert_lesson_progress RPC) を
  * Hono API (`/api/lesson-progress`) 経由に置き換えた。 認可はサーバ側 (アプリ層) で行う:
  *   - 受講者は自分の進捗のみ read/write
- *   - 講師 / 管理者は進捗を read (`/api/lesson-progress/tenant`。URL は開いたままの古いタブ用)
+ *   - 管理者は進捗を read (`/api/lesson-progress/tenant`。URL は開いたままの古いタブ用)
  *
  * `lesson-progress.ts` (フレームワーク非依存の localStorage ストア) から動的 import される。
  * バックエンド未設定時はそもそも呼ばれない。
@@ -99,8 +99,8 @@ export async function upsertProgressBatch(
 }
 
 /**
- * 講師 / 管理者向け: 進捗行を取得する (可視化のデータ経路)。
- * 認可はサーバ側で instructor/admin に限定される。
+ * 管理者向け: 進捗行を取得する (可視化のデータ経路)。
+ * 認可はサーバ側で admin / platform_admin に限定される。
  */
 export async function fetchAllLessonProgress(): Promise<
   Array<{ userId: string; lessonId: string; entry: LessonProgressEntry }>

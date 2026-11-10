@@ -27,7 +27,7 @@ import {
 import {
   errorResponse,
   getCaller,
-  requireRole,
+  requireAdmin,
   ApiError,
   isStaffRole,
   requireReturning,
@@ -346,7 +346,7 @@ certificatesRoute.get("/api/certificates/completion/:stageId", async (c) => {
 certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const stageId = c.req.param("stageId");
 
     const stageRows = await db.select().from(stages).where(eq(stages.id, stageId)).limit(1);
@@ -416,7 +416,7 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
 certificatesRoute.post("/api/certificates/issue", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const body = (await c.req.json()) as { stageId: string; userId: string };
     const { stageId, userId } = body;
     if (!stageId || !userId) throw new ApiError("stageId / userId が必要です", 400);

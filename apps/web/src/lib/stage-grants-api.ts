@@ -19,7 +19,6 @@ export interface StageGrantLearnerDetail {
   email: string | null;
   role?: string;
   selectable: boolean;
-  instructor: { id: string; display_name: string } | null;
   assigned: boolean;
   exempted: boolean;
   unlocked_by_skill_check: boolean;
@@ -36,7 +35,6 @@ export interface StageGrantLearnerPage {
     prerequisites: { id: string; slug: string; title: string }[];
   };
   counts: StageGrantLearnerCounts;
-  instructors: { id: string; display_name: string }[];
   total: number;
   next_offset: number | null;
   learners: StageGrantLearnerDetail[];
@@ -45,8 +43,6 @@ export interface StageGrantLearnerPage {
 export interface StageGrantLearnerQuery {
   q?: string;
   status?: "all" | "assigned" | "unassigned" | "exempted";
-  /** `all` / `mine` / `none` / 講師の profile id。 */
-  instructor?: string;
   prereq?: "all" | "done" | "doing" | "none" | "not_done";
   offset?: number;
   limit?: number;
@@ -69,7 +65,6 @@ function stageGrantLearnerQuery(params: StageGrantLearnerQuery): string {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
   if (params.status && params.status !== "all") search.set("status", params.status);
-  if (params.instructor && params.instructor !== "all") search.set("instructor", params.instructor);
   if (params.prereq && params.prereq !== "all") search.set("prereq", params.prereq);
   if (params.offset !== undefined) search.set("offset", String(params.offset));
   if (params.limit !== undefined) search.set("limit", String(params.limit));

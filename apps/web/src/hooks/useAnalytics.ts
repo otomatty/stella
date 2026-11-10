@@ -7,8 +7,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { InstructorOverview, Analytics } from "@stella/shared/cms/types";
-import { getInstructorOverview, getAnalytics } from "@/lib/analytics-api";
+import type { Analytics } from "@stella/shared/cms/types";
+import { getAnalytics } from "@/lib/analytics-api";
 
 interface UseAnalyticsResult {
   analytics: Analytics | null;
@@ -51,50 +51,4 @@ export function useAnalytics(enabled: boolean): UseAnalyticsResult {
   }, [refetch]);
 
   return { analytics, loading, error, refetch };
-}
-
-interface UseInstructorOverviewResult {
-  overview: InstructorOverview | null;
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
-
-/** 講師ダッシュボードの未返信 / 遅延 / 受講者進捗。 `assignedOnly` で担当の受講者だけ (#38)。 */
-export function useInstructorOverview(
-  enabled: boolean,
-  assignedOnly = false,
-): UseInstructorOverviewResult {
-  const [overview, setOverview] = useState<InstructorOverview | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const requestIdRef = useRef(0);
-
-  const refetch = useCallback(async () => {
-    const reqId = ++requestIdRef.current;
-    if (!enabled) {
-      setOverview(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getInstructorOverview(assignedOnly);
-      if (reqId !== requestIdRef.current) return;
-      setOverview(data);
-    } catch (err) {
-      if (reqId !== requestIdRef.current) return;
-      setError(err instanceof Error ? err.message : "fetch failed");
-    } finally {
-      if (reqId === requestIdRef.current) setLoading(false);
-    }
-  }, [enabled, assignedOnly]);
-
-  useEffect(() => {
-    void refetch();
-  }, [refetch]);
-
-  return { overview, loading, error, refetch };
 }

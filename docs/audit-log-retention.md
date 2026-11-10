@@ -60,7 +60,7 @@
 ## append-only (改ざん防止)
 
 - クライアントから `audit_logs` を直接書き換える経路はない。 読み取りは
-  `GET /api/audit-logs` のみ（`instructor` / `admin` / `platform_admin`）。
+  `GET /api/audit-logs` のみ（`admin` / `platform_admin`）。
 - INSERT はサーバ側 `recordAudit()` のみ。 actor はリクエスト本文ではなく
   `getCaller()` が解決した値を使うため、 一般ユーザーが自分の証跡を消す・捏造することはできない。
 - 物理 DELETE 用の公開 API は用意しない。 世代削除は運用ジョブ（下記）からのみ行う。

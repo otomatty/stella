@@ -509,7 +509,7 @@ describe("受験できるロール (SKILL_CHECK_ROLES)", () => {
   });
 
   it("講師は受講者と同じ腕試しを受けられる", async () => {
-    caller = { ...BASE_CALLER, id: "seed-instructor", role: "instructor" };
+    caller = { ...BASE_CALLER, id: "seed-admin", role: "admin" };
     const check = await fetchCheck("id-d");
     expect(check.supported).toBe(true);
     const res = await post("/api/skill-check/id-d", {

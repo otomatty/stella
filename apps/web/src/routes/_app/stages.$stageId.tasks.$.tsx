@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_app/stages/$stageId/tasks/$")({
 function StaffTaskDetailPage() {
   const { stageId, _splat } = Route.useParams();
   return (
-    <RoleGuard allow={["instructor", "admin"]}>
+    <RoleGuard allow={["admin"]}>
       <StaffTaskDetail key={`${stageId}/${_splat}`} stageId={stageId} taskId={_splat ?? ""} />
     </RoleGuard>
   );

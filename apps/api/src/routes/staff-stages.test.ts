@@ -47,7 +47,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
     await db.insert(profiles).values([
       { id: "student1", displayName: "受講者1", role: "student" },
       { id: "student2", displayName: "受講者2", role: "student" },
-      { id: "instructor", displayName: "講師", role: "instructor" },
+      { id: "staff", displayName: "講師", role: "admin" },
       { id: "admin", displayName: "管理者", role: "admin" },
       { id: "platform_admin", displayName: "運営", role: "platform_admin" },
     ]);
@@ -85,7 +85,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
   });
   afterEach(() => database.sqlite.close());
 
-  async function get(userId = "instructor", stageId = "stage") {
+  async function get(userId = "admin", stageId = "stage") {
     const { app } = mountTestApp(env, staffStagesRoute);
     const token = await signAccessToken("test-secret", userId, `${userId}@example.com`);
     return request(app, env, `http://localhost/api/staff/stages/${stageId}/tasks`, { token });
@@ -136,7 +136,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
       }),
     });
   }
-  async function getDetail(userId = "instructor", taskId: string | null = detailId) {
+  async function getDetail(userId = "admin", taskId: string | null = detailId) {
     const { app } = mountTestApp(env, staffStagesRoute);
     const token = await signAccessToken("test-secret", userId, `${userId}@example.com`);
     return request(
@@ -147,19 +147,19 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
     );
   }
   async function detail(taskId = detailId) {
-    const response = await getDetail("instructor", taskId);
+    const response = await getDetail("staff", taskId);
     expect(response.status).toBe(200);
     return json<StaffTaskDetail>(response);
   }
 
   it("詳細は受講者403・taskIdなし400・存在しない課題404", async () => {
     expect((await getDetail("student1")).status).toBe(403);
-    expect((await getDetail("instructor", null)).status).toBe(400);
-    expect((await getDetail("instructor", "")).status).toBe(400);
+    expect((await getDetail("staff", null)).status).toBe(400);
+    expect((await getDetail("staff", "")).status).toBe(400);
     expect((await getDetail()).status).toBe(404);
   });
 
-  it.each(["instructor", "admin", "platform_admin"])(
+  it.each(["admin", "platform_admin"])(
     "%s は詳細で課題文・観点・規則だけを本文で読める",
     async (role) => {
       await prepareDetail();
@@ -309,7 +309,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
     await db.insert(taskProgress).values([
       { userId: "student1", taskId: detailId, status: "passed", contentHash: "hash" },
       { userId: "student2", taskId: detailId, status: "instructor-pending", contentHash: "hash" },
-      ...["instructor", "admin", "platform_admin"].map((userId) => ({
+      ...["admin", "platform_admin"].map((userId) => ({
         userId,
         taskId: detailId,
         status: "passed" as const,
@@ -317,7 +317,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
       })),
     ]);
     await db.insert(taskLocalRuns).values(
-      ["student1", "instructor"].map((userId) => ({
+      ["student1", "staff"].map((userId) => ({
         userId,
         taskId: detailId,
         contentHash: "hash",
@@ -326,7 +326,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
         lastRunAt: new Date(),
       })),
     );
-    const helpRows = ["student1", "student2", "instructor", "admin", "platform_admin"].flatMap(
+    const helpRows = ["student1", "student2", "staff", "admin", "platform_admin"].flatMap(
       (userId) =>
         ["old", "new"].flatMap((contentHash) => [
           {
@@ -484,12 +484,12 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
 
   it("受講者は403、存在しないステージは404", async () => {
     expect((await get("student1")).status).toBe(403);
-    const response = await get("instructor", "missing");
+    const response = await get("staff", "missing");
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "ステージが見つかりません" });
   });
 
-  it.each(["instructor", "admin", "platform_admin"])(
+  it.each(["admin", "platform_admin"])(
     "%s は受講登録なしで未公開のステージを読める",
     async (role) => {
       expect((await get(role)).status).toBe(200);
@@ -545,11 +545,11 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
       await db.insert(taskProgress).values([
         { userId: "student1", taskId: "first", status: first, contentHash: "hash" },
         { userId: "student2", taskId: "first", status: second, contentHash: "hash" },
-        { userId: "instructor", taskId: "first", status: first, contentHash: "hash" },
+        { userId: "staff", taskId: "first", status: first, contentHash: "hash" },
         { userId: "student1", taskId: "second", status: "not-started", contentHash: "hash" },
       ]);
       await db.insert(taskLocalRuns).values(
-        ["student1", "instructor"].map((userId) => ({
+        ["student1", "staff"].map((userId) => ({
           userId,
           taskId: "first",
           contentHash: "hash",
@@ -566,7 +566,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
 
   it("手元の確認だけの受講者も開始に数え、講師の確認は数えない", async () => {
     await db.insert(taskLocalRuns).values(
-      ["student1", "student2", "instructor"].map((userId) => ({
+      ["student1", "student2", "staff"].map((userId) => ({
         userId,
         taskId: "first",
         contentHash: "hash",

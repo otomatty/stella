@@ -4,7 +4,7 @@
  * 認可 (旧 RLS):
  *   - 受講者は自分の提出のみ insert (student_id = caller)。
  *   - 受講者は mine / 本人の :id を select 可。
- *   - 講師 / 管理者は提出を一覧 / 更新。
+ *   - 管理者は提出を一覧 / 更新。
  * 添削確定 (reviewed_at が初めて設定) で受講者へ review_completed 通知を生成する。
  *
  * 返却形は旧 PostgREST 埋め込み (`profiles!student_id(...)`) に合わせ、
@@ -21,19 +21,11 @@ import { bodyLimit } from "hono/body-limit";
 import { and, desc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 
-import {
-  aiReviews,
-  learnerInstructors,
-  notifications,
-  profiles,
-  sections,
-  tasks,
-  submissions,
-} from "../db/schema.js";
+import { aiReviews, notifications, profiles, sections, tasks, submissions } from "../db/schema.js";
 import {
   errorResponse,
   getCaller,
-  requireRole,
+  requireAdmin,
   ApiError,
   isStaffRole,
   requireReturning,
@@ -166,7 +158,7 @@ function toRow(
 
 /**
  * staff の一覧だけに足す、キューの分け方と並べ方に使う列 (#34)。人に回した理由・確信度・判定案は
- * 最新の AI 一次レビューから、担当者は担当講師 (#38) から読む。
+ * 最新の AI 一次レビューから読む。
  */
 interface QueueColumns {
   routeReasons: RouteReason[] | null;
@@ -174,8 +166,6 @@ interface QueueColumns {
   aiProposedVerdict: string | null;
   machineMatched: number | null;
   machineCiStatus: string | null;
-  assigneeId: string | null;
-  assigneeName: string | null;
   stageId: string | null;
   taskPattern: string | null;
 }
@@ -196,8 +186,6 @@ function toQueueFields(s: SubmissionSummary, q: QueueColumns) {
     route_reasons: reasons,
     ai_confidence: q.aiConfidence,
     ai_proposed_verdict: q.aiProposedVerdict,
-    assignee_id: q.assigneeId,
-    assignee_name: q.assigneeName,
     stage_id: q.stageId,
     task_pattern: q.taskPattern,
   };
@@ -234,24 +222,19 @@ async function aiReviewReadyOf(db: Db, id: string): Promise<boolean> {
   return Boolean(hit);
 }
 
-const assignee = alias(profiles, "assignee");
 /** 提出の最新の AI 一次レビュー (外側の submissions は表名付きで指す)。 */
 const latestAi = alias(aiReviews, "latest_ai");
 const isLatestAi = sql`${latestAi.id} = (select r.id from ai_reviews r where r.submission_id = "submissions"."id" order by r.created_at desc limit 1)`;
 
 /**
  * staff: 提出物一覧 (新着順)。
- * `?assigned=mine` で、呼び出した講師が担当する受講者の提出 (新形式・旧形式とも) だけに絞る (#38)。
- * 省略時は全体。キューを理由で分け、待ち時間・担当者で並べるための列
- * (人に回した理由・確信度・判定案・担当講師) も返す (#34)。
+ * キューを理由で分け、待ち時間で並べるための列
+ * (人に回した理由・確信度・判定案) も返す (#34)。
  */
 submissionsRoute.get("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const assigned = c.req.query("assigned");
-    if (assigned !== undefined && assigned !== "mine")
-      throw new ApiError("assigned には mine だけを指定できます", 400);
+    requireAdmin(caller);
     const rows = await db
       .select({
         ...summaryColumns,
@@ -261,31 +244,14 @@ submissionsRoute.get("/api/submissions", async (c) => {
         aiProposedVerdict: latestAi.proposedVerdict,
         machineMatched: machineMatchedColumn,
         machineCiStatus: machineCiStatusColumn,
-        assigneeId: learnerInstructors.instructorId,
-        assigneeName: assignee.displayName,
         stageId: sections.stageId,
         taskPattern: tasks.pattern,
       })
       .from(submissions)
       .leftJoin(latestAi, isLatestAi)
-      .leftJoin(learnerInstructors, eq(learnerInstructors.learnerId, submissions.studentId))
-      .leftJoin(assignee, eq(assignee.id, learnerInstructors.instructorId))
       .leftJoin(tasks, eq(tasks.id, submissions.taskId))
       .leftJoin(sections, eq(sections.id, tasks.sectionId))
-      .where(
-        and(
-          learnerOrUnknown(submissions.studentId),
-          assigned
-            ? inArray(
-                submissions.studentId,
-                db
-                  .select({ id: learnerInstructors.learnerId })
-                  .from(learnerInstructors)
-                  .where(eq(learnerInstructors.instructorId, caller.id)),
-              )
-            : undefined,
-        ),
-      )
+      .where(learnerOrUnknown(submissions.studentId))
       .orderBy(desc(submissions.submittedAt));
 
     // 投稿者プロフィールを 1 クエリでまとめて引く (N+1 回避)。
@@ -652,7 +618,7 @@ function parseExpectedSubmittedAt(value: string | undefined): Date | undefined {
 submissionsRoute.patch("/api/submissions/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
 
     const current = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);

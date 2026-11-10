@@ -8,7 +8,7 @@
 
 import { useContext } from "react";
 import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import { Award, Book, Compass, Edit, HelpCircle, Home, Play, Users } from "@/lib/icons";
+import { Award, Book, Compass, HelpCircle, Home, Play, Users } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { StatusScreen, type StatusScreenLink } from "@/components/common/StatusScreen";
 import { AppShellContext } from "@/components/shell/app-shell-context";
@@ -17,20 +17,9 @@ import type { Role } from "@/data/types";
 /** ロール別の「ここから探せます」導線。 サイドバーの主要項目と揃える。 */
 export function linksForRole(role: Role, setPage: (page: string) => void): StatusScreenLink[] {
   switch (role) {
-    case "instructor":
-      return [
-        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
-        {
-          label: "レビュー",
-          description: "人に回した提出と AI の合格の確認",
-          icon: Edit,
-          onSelect: () => setPage("review-queue"),
-        },
-        { label: "担当受講者", icon: Users, onSelect: () => setPage("students") },
-      ];
     case "admin":
       return [
-        { label: "KPIダッシュボード", icon: Home, onSelect: () => setPage("dash") },
+        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
         { label: "ステージ管理", icon: Book, onSelect: () => setPage("stages") },
         { label: "ユーザー管理", icon: Users, onSelect: () => setPage("users") },
       ];

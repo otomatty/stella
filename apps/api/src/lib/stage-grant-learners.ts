@@ -2,7 +2,7 @@
  * Extra ステージの割り当て一覧を、Worker の中で絞り込む。
  *
  * ユーザー id を SQL の `inArray` に並べない (D1 は 1 文 100 バインド)。
- * 呼び出し側はステージ・前提の数個・担当の全件を渡し、検索・状態・並べ替え・
+ * 呼び出し側はステージ・前提の数個を渡し、検索・状態・並べ替え・
  * ページ分けはここだけで決める。
  */
 
@@ -13,19 +13,12 @@ export type StageGrantLearnerStatus = "all" | "assigned" | "unassigned" | "exemp
 export type StageGrantPrerequisiteFilter = "all" | "done" | "doing" | "none" | "not_done";
 export type StageGrantPrerequisiteStatus = "done" | "doing" | "none";
 
-export type StageGrantInstructorFilter =
-  | { type: "all" }
-  | { type: "mine" }
-  | { type: "none" }
-  | { type: "id"; id: string };
-
 const STATUSES = ["all", "assigned", "unassigned", "exempted"] as const;
 const PREREQS = ["all", "done", "doing", "none", "not_done"] as const;
 
 export interface StageGrantLearnerQuery {
   q: string;
   status: StageGrantLearnerStatus;
-  instructor: StageGrantInstructorFilter;
   prereq: StageGrantPrerequisiteFilter;
   offset: number;
   limit: number;
@@ -67,7 +60,6 @@ function oneOf<T extends string>(
 export function parseStageGrantLearnerQuery(raw: {
   q?: string;
   status?: string;
-  instructor?: string;
   prereq?: string;
   offset?: string;
   limit?: string;
@@ -76,21 +68,11 @@ export function parseStageGrantLearnerQuery(raw: {
   if (typeof status !== "string") return { ok: false, error: status.error };
   const prereq = oneOf(raw.prereq, PREREQS, "prereq");
   if (typeof prereq !== "string") return { ok: false, error: prereq.error };
-  const instructorText = raw.instructor?.trim() ?? "";
-  const instructor: StageGrantInstructorFilter =
-    instructorText === "" || instructorText === "all"
-      ? { type: "all" }
-      : instructorText === "mine"
-        ? { type: "mine" }
-        : instructorText === "none"
-          ? { type: "none" }
-          : { type: "id", id: instructorText };
   return {
     ok: true,
     value: {
       q: normalizeStageGrantSearch(raw.q ?? ""),
       status,
-      instructor,
       prereq,
       offset: clampPageNumber(raw.offset, 0, 0, Number.MAX_SAFE_INTEGER),
       limit: clampPageNumber(
@@ -113,7 +95,6 @@ export interface StageGrantLearnerProfile {
 
 export interface StageGrantLearnerSource {
   profiles: readonly StageGrantLearnerProfile[];
-  instructorLinks: readonly { learnerId: string; instructorId: string }[];
   assignedIds: ReadonlySet<string>;
   staffUnlockIds: ReadonlySet<string>;
   skillCheckUnlockIds: ReadonlySet<string>;
@@ -139,7 +120,6 @@ export interface StageGrantListedLearner {
   email: string | null;
   role: string;
   selectable: boolean;
-  instructor: { id: string; display_name: string } | null;
   assigned: boolean;
   exempted: boolean;
   unlocked_by_skill_check: boolean;
@@ -150,7 +130,6 @@ export interface StageGrantListedLearner {
 export interface StageGrantLearnerList {
   prerequisites: { id: string; slug: string; title: string }[];
   counts: StageGrantLearnerCounts;
-  instructors: { id: string; display_name: string }[];
   total: number;
   next_offset: number | null;
   learners: StageGrantListedLearner[];
@@ -248,36 +227,14 @@ function matchesPrerequisite(
   return status === filter;
 }
 
-function matchesInstructor(
-  instructorId: string | null,
-  filter: StageGrantInstructorFilter,
-  callerId: string,
-): boolean {
-  if (filter.type === "all") return true;
-  if (filter.type === "mine") return instructorId === callerId;
-  if (filter.type === "none") return instructorId === null;
-  return instructorId === filter.id;
-}
-
 export function listStageGrantLearners(
   source: StageGrantLearnerSource,
   query: StageGrantLearnerQuery,
-  callerId: string,
 ): StageGrantLearnerList {
-  const nameById = new Map(source.profiles.map((profile) => [profile.id, profile.display_name]));
-  const instructorByLearner = new Map<string, string>();
-  for (const link of source.instructorLinks) {
-    if (!instructorByLearner.has(link.learnerId)) {
-      instructorByLearner.set(link.learnerId, link.instructorId);
-    }
-  }
-
   const rows: StageGrantListedLearner[] = [];
   for (const profile of source.profiles) {
     const assigned = source.assignedIds.has(profile.id);
     if (!isStageGrantCandidate(profile, assigned)) continue;
-    const instructorId = instructorByLearner.get(profile.id) ?? null;
-    const instructorName = instructorId === null ? undefined : nameById.get(instructorId);
     const progress = prerequisiteView(
       source.prerequisiteSlugs,
       source.stagesBySlug,
@@ -290,10 +247,6 @@ export function listStageGrantLearners(
       email: profile.email,
       role: profile.role,
       selectable: isAssignableStageGrantProfile(profile),
-      instructor:
-        instructorId !== null && instructorName !== undefined
-          ? { id: instructorId, display_name: instructorName }
-          : null,
       assigned,
       exempted: source.staffUnlockIds.has(profile.id),
       unlocked_by_skill_check: source.skillCheckUnlockIds.has(profile.id),
@@ -320,24 +273,14 @@ export function listStageGrantLearners(
     if (query.status === "unassigned" && row.assigned) return false;
     if (query.status === "exempted" && !row.exempted) return false;
     if (!matchesPrerequisite(row.prerequisite_status, query.prereq)) return false;
-    const instructorId = row.instructor?.id ?? instructorByLearner.get(row.id) ?? null;
-    return matchesInstructor(instructorId, query.instructor, callerId);
+    return true;
   });
   matched.sort(compareJaThenId);
-
-  const instructors = [...new Set(source.instructorLinks.map((link) => link.instructorId))]
-    .flatMap((id) => {
-      const display_name = nameById.get(id);
-      if (display_name === undefined) return [];
-      return [{ id, display_name }];
-    })
-    .sort(compareJaThenId);
 
   const learners = matched.slice(query.offset, query.offset + query.limit);
   return {
     prerequisites: resolvedPrerequisites(source.prerequisiteSlugs, source.stagesBySlug),
     counts,
-    instructors,
     total: matched.length,
     next_offset: query.offset + query.limit < matched.length ? query.offset + query.limit : null,
     learners,

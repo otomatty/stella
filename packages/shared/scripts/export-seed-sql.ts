@@ -748,7 +748,6 @@ lines.push(
 if (!contentOnly) {
   // Minimal verification scenario (stable IDs for queue / list smoke checks)
   const SEED_ADMIN = "seed-admin";
-  const SEED_INSTRUCTOR = "seed-instructor";
   const SEED_LEARNER = "seed-learner";
   /**
    * 受講登録を **1 件も持たない** 受講者。
@@ -778,13 +777,6 @@ if (!contentOnly) {
       email: "seed-admin@example.local",
     },
     {
-      id: SEED_INSTRUCTOR,
-      role: "instructor",
-      name: "Seed Instructor",
-      initials: "SI",
-      email: "seed-instructor@example.local",
-    },
-    {
       id: SEED_LEARNER,
       role: "student",
       name: "Seed Learner",
@@ -811,8 +803,8 @@ if (!contentOnly) {
   // (`/api/quiz/for-lesson`) も資料もアクセス不可になり、 seed だけでは検証できない。
   //
   // 形は **自己開始の履歴** に揃える (Phase 3b): `assigned_by` は受講者自身、
-  // `required` は 0、 期限なし。 割当は退役したので `assigned_by='seed-instructor'` /
-  // `required=1` のままだと、 seed が 「もう作れないはずの割当」 を毎回作り直すことに
+  // `required` は 0、 期限なし。 割当は退役したので、担当者の id を `assigned_by` に
+  // 残した `required=1` のままだと、 seed が 「もう作れないはずの割当」 を毎回作り直すことに
   // なり、 受講状況の画面にも 「必須」 バッジという実在しない運用が並ぶ。
   // 登録が 0 件の状態を見たいときは `seed-learner2` を使う。
   //

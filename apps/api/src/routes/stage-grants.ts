@@ -30,7 +30,6 @@ import type { Db } from "../db/client.js";
 import {
   certificates,
   enrollments,
-  learnerInstructors,
   profiles,
   stageGrants,
   stageUnlocks,
@@ -598,7 +597,6 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
     const parsed = parseStageGrantLearnerQuery({
       q: c.req.query("q"),
       status: c.req.query("status"),
-      instructor: c.req.query("instructor"),
       prereq: c.req.query("prereq"),
       offset: c.req.query("offset"),
       limit: c.req.query("limit"),
@@ -607,7 +605,7 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
 
     const stage = await loadGrantStage(db, c.req.param("stageId"));
     const slugs = prerequisiteSlugsFromRow(stage);
-    const [profileRows, grantRows, unlockRows, links, stagesBySlug] = await Promise.all([
+    const [profileRows, grantRows, unlockRows, stagesBySlug] = await Promise.all([
       db
         .select({
           id: profiles.id,
@@ -625,12 +623,6 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
         .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
         .from(stageUnlocks)
         .where(eq(stageUnlocks.stageId, stage.id)),
-      db
-        .select({
-          learnerId: learnerInstructors.learnerId,
-          instructorId: learnerInstructors.instructorId,
-        })
-        .from(learnerInstructors),
       loadStagesBySlug(db, slugs),
     ]);
     const prereqIds = [
@@ -645,7 +637,6 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
     const listed = listStageGrantLearners(
       {
         profiles: profileRows,
-        instructorLinks: links,
         assignedIds: new Set(grantRows.map((row) => row.profileId)),
         staffUnlockIds: new Set(
           unlockRows.filter((row) => row.via === "staff").map((row) => row.userId),
@@ -659,7 +650,6 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
         enrolledByUser: progress.enrolled,
       },
       parsed.value,
-      caller.id,
     );
     return c.json({
       stage: {
@@ -670,7 +660,6 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
         prerequisites: listed.prerequisites,
       },
       counts: listed.counts,
-      instructors: listed.instructors,
       total: listed.total,
       next_offset: listed.next_offset,
       learners: listed.learners,

@@ -12,7 +12,7 @@ const students = new Map([
   ["ada", { role: "student", disabled: false }],
   ["ken", { role: "student", disabled: false }],
   ["old", { role: "student", disabled: true }],
-  ["teacher", { role: "instructor", disabled: false }],
+  ["teacher", { role: "admin", disabled: false }],
 ]);
 
 describe("parseStageGrantDiff", () => {

@@ -16,7 +16,7 @@ import {
   submissions,
   taskLocalRuns,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import { requirePaceLearner } from "../lib/learning-pace.js";
 import type { Env } from "../env.js";
 import type { Db } from "../db/client.js";
@@ -106,7 +106,7 @@ onboardingRoute.get("/api/onboarding/first-steps", async (c) => {
 onboardingRoute.get("/api/onboarding/first-steps/:userId", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const userId = c.req.param("userId");
     await requirePaceLearner(db, caller, userId);
     return c.json(await firstSteps(db, userId));

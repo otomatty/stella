@@ -17,7 +17,6 @@ import {
   Edit,
   FileText,
   GraduationCap,
-  Home,
   Play,
   Shield,
   Sparkles,
@@ -35,7 +34,6 @@ export type NavId =
   | "cert"
   | "review-queue"
   | "gradebook"
-  | "students"
   | "users"
   | "enrollments"
   | "report"
@@ -57,22 +55,14 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "cert", label: "修了証", icon: Award },
-    // 本棚は本人だけの棚。staff (講師・管理者) は受講者画面に切り替えて使うので、staff のナビには出さない。
+    // 本棚は本人だけの棚。管理者は受講者画面に切り替えて使うので、管理者のナビには出さない。
     { id: "library", label: "本棚", icon: Book },
   ],
-  instructor: [
-    { id: "dash", label: "ダッシュボード", icon: Home },
-    { id: "review-queue", label: "レビュー", icon: Edit },
-    { id: "gradebook", label: "成績台帳", icon: GraduationCap },
-    { id: "students", label: "担当受講者", icon: Users },
-    { id: "discovery", label: "発見教材", icon: Sparkles },
-    { id: "stages", label: "ステージ", icon: Book },
-  ],
   admin: [
-    { id: "dash", label: "KPIダッシュボード", icon: BarChart },
+    { id: "dash", label: "ダッシュボード", icon: BarChart },
     { id: "stages", label: "ステージ管理", icon: Book },
     { id: "discovery", label: "発見教材", icon: Sparkles },
-    // 人に回した提出・AI が合格にした提出の確認・見直しの数字 (#34)。管理者もレビューできる。
+    // 人に回した提出・AI が合格にした提出の確認・見直しの数字 (#34)。
     { id: "review-queue", label: "レビュー", icon: Edit },
     { id: "enrollments", label: "受講状況", icon: ClipboardList },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },

@@ -117,7 +117,7 @@ export function LearningPacePanel({
             </p>
             {pace.needsInstructor ? (
               <p className="text-sm text-ink-2">
-                目安との差が1週間を超えています。担当講師と週の時間や支援を相談できます。
+                目安との差が1週間を超えています。講師と週の時間や支援を相談できます。
               </p>
             ) : null}
             {!pace.settings.startDate ? (

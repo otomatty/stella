@@ -189,7 +189,7 @@ export const profiles = sqliteTable(
       .references(() => tenants.id, { onDelete: "cascade" })
       .$defaultFn(() => LEGACY_TENANT_ID),
     role: text("role", {
-      enum: ["student", "instructor", "admin", "platform_admin"],
+      enum: ["student", "admin", "platform_admin"],
     })
       .notNull()
       .default("student"),
@@ -323,20 +323,6 @@ export const contentUnits = sqliteTable("content_units", {
   reuses: json<string[]>("reuses", []),
   references: json<unknown[]>("references", []),
 });
-
-/** 担当講師との接点。予定日は保存せず、設定・確認の根拠だけを持つ。 */
-export const learnerInstructors = sqliteTable(
-  "learner_instructors",
-  {
-    learnerId: text("learner_id")
-      .primaryKey()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    instructorId: text("instructor_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-  },
-  (t) => ({ instructorIdx: index("learner_instructors_instructor_idx").on(t.instructorId) }),
-);
 
 export const learningPaceChanges = sqliteTable(
   "learning_pace_changes",

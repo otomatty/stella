@@ -53,7 +53,7 @@ describe("大量のレッスンと受講者の修了状況 (実 SQLite)", () => 
     const db = getDb(env);
     await db.insert(tenants).values({ id: "ses", name: "テスト" });
     await db.batch([
-      db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "instructor" }),
+      db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "admin" }),
       db.insert(stages).values({
         id: "big",
         slug: "big",

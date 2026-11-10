@@ -93,7 +93,7 @@ describe("問題の提出", () => {
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
         { id: "other", displayName: "他の受講者", role: "student" },
       ]),
       db.insert(stages).values({
@@ -314,7 +314,7 @@ describe("問題の提出", () => {
     if (!row) throw new Error("提出がありません");
     await reviewTaskSubmission(
       db,
-      { id: "teacher", role: "instructor", name: "講師", email: null },
+      { id: "teacher", role: "admin", name: "講師", email: null },
       row.id,
       "resubmit",
       "訂正",

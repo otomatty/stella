@@ -121,7 +121,7 @@ describe("GET /api/certificates/verify/:code", () => {
 });
 
 it("成績台帳は 100 人超 × 100 レッスン超でもバインド上限内で集計する", async () => {
-  await db.insert(profiles).values({ id: "staff", displayName: "講師", role: "instructor" });
+  await db.insert(profiles).values({ id: "staff", displayName: "講師", role: "admin" });
   const staffToken = await signAccessToken(SECRET, "staff", "staff@example.test");
   await db.insert(sections).values({ id: "section", stageId: "active", title: "単元" });
   for (let i = 0; i < 124; i++) {

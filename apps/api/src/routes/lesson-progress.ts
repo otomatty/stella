@@ -3,7 +3,7 @@
  *
  * 旧 RLS の置き換え (アプリ層認可):
  *   - 受講者は自分の進捗のみ read/write   … user_id = caller.id を強制
- *   - 講師 / 管理者は read               … requireRole
+ *   - 管理者は read                     … requireAdmin
  *
  * 端末間 Last-Write-Wins は upsert の setWhere (excluded.updated_at > 既存) で担保する
  * (旧 upsert_lesson_progress RPC と同じ意味論)。
@@ -15,7 +15,7 @@ import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import { normalizeProgressRows, type ProgressSyncInput } from "@stella/shared/study/progress-sync";
 
-import { getCaller, errorResponse, requireRole } from "../lib/authz.js";
+import { getCaller, errorResponse, requireAdmin } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";
 import { lessonProgress } from "../db/schema.js";
 import {
@@ -57,11 +57,11 @@ lessonProgressRoute.get("/api/lesson-progress", async (c) => {
   }
 });
 
-/** 講師 / 管理者: 進捗 (可視化のデータ経路)。 */
+/** 管理者: 進捗 (可視化のデータ経路)。 */
 lessonProgressRoute.get("/api/lesson-progress/tenant", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const rows = await db.select(SELECT).from(lessonProgress);
     return c.json({ rows });
   } catch (err) {

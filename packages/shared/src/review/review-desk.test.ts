@@ -46,18 +46,16 @@ describe("キューの並べ方", () => {
   const item = (over: Partial<QueueSortable> & { id: string }) => ({
     submittedAt: 0,
     group: "confidence" as const,
-    assigneeName: null,
     ...over,
   });
-  const a = item({ id: "a", submittedAt: 300, group: "consult", assigneeName: "佐藤" });
-  const b = item({ id: "b", submittedAt: 100, group: "rule", assigneeName: null });
-  const c = item({ id: "c", submittedAt: 200, group: "consult", assigneeName: "伊藤" });
+  const a = item({ id: "a", submittedAt: 300, group: "consult" });
+  const b = item({ id: "b", submittedAt: 100, group: "rule" });
+  const c = item({ id: "c", submittedAt: 200, group: "consult" });
   const order = (sort: Parameters<typeof compareQueueItems>[0]) =>
     [a, b, c].sort(compareQueueItems(sort)).map((x) => x.id);
   it("待ち時間は長い (提出が古い) 順", () => expect(order("wait")).toEqual(["b", "c", "a"]));
   it("理由は分類の順、同じ分類の中は待ち時間の長い順", () =>
     expect(order("reason")).toEqual(["c", "a", "b"]));
-  it("担当者は名前順で、担当なしは最後", () => expect(order("assignee")).toEqual(["c", "a", "b"]));
 });
 
 describe("AI が合格にした提出の一覧の並び", () => {

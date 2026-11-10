@@ -281,7 +281,7 @@ describe("POST /api/stages/:id/start", () => {
   });
 
   it("講師も受講者と同じく自分で始められる (受講者の画面で確かめるため)", async () => {
-    caller = { ...BASE_CALLER, role: "instructor" };
+    caller = { ...BASE_CALLER, role: "admin" };
     const res = await start("stage-a");
     expect(res.status).toBe(200);
     expect(startSelfEnrollment).toHaveBeenCalled();
@@ -312,11 +312,11 @@ describe("POST /api/stages/:id/staff-enroll", () => {
   }
 
   beforeEach(() => {
-    caller = { ...BASE_CALLER, role: "instructor" };
+    caller = { ...BASE_CALLER, role: "admin" };
     vi.mocked(loadStaffEnrollableStage).mockResolvedValue({ id: "stage-c", slug: "stage-c" });
   });
 
-  it.each(["instructor", "admin", "platform_admin"] as const)(
+  it.each(["admin", "platform_admin"] as const)(
     "%s は前提未完了・霧の星でも確認用に登録できる",
     async (role) => {
       caller = { ...BASE_CALLER, role };

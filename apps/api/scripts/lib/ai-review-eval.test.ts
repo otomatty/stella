@@ -106,7 +106,7 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
     try {
       await db.batch([
         db.insert(tenants).values({ id: "ses", name: "テスト" }),
-        db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "instructor" }),
+        db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "admin" }),
         db.insert(submissions).values(
           ["same-time", "checked", "unreviewed", "overturned"].map((id) => ({
             id,
@@ -184,7 +184,7 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
     try {
       await db.batch([
         db.insert(tenants).values({ id: "ses", name: "テスト" }),
-        db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "instructor" }),
+        db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "admin" }),
         db.insert(submissions).values({
           id: "same-time",
           stageTitle: "ステージ",

@@ -16,7 +16,7 @@ beforeEach(() => {
     INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES ('ses', 'SES', 0, 1, 0, 1, 1);
     INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES
       ('learner', 'ses', 'student', '受講者', 0, 'google', 1),
-      ('teacher', 'ses', 'instructor', '講師', 0, 'google', 1);
+      ('teacher', 'ses', 'admin', '講師', 0, 'google', 1);
     INSERT INTO stages (id, tenant_id, slug, title, status, created_at, updated_at) VALUES ('stage', 'ses', 'dev-env-basics', '開発環境', 'published', 1, 1);
     INSERT INTO sections (id, stage_id, title, "order", created_at) VALUES ('section', 'stage', '単元', 0, 1);
     INSERT INTO lessons (id, section_id, title, type, "order", created_at, updated_at) VALUES ('lesson', 'section', '0-1 まとめ', 'text', 0, 1, 1);

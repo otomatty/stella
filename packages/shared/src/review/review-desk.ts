@@ -71,32 +71,25 @@ export function reviewQueueGroup(input: {
   );
 }
 
-/** キューの並べ方。待ち時間 (長い順)・理由 (分類の順)・担当者 (名前順、担当なしは最後)。 */
-export const REVIEW_QUEUE_SORTS = ["wait", "reason", "assignee"] as const;
+/** キューの並べ方。待ち時間 (長い順)・理由 (分類の順)。 */
+export const REVIEW_QUEUE_SORTS = ["wait", "reason"] as const;
 export type ReviewQueueSort = (typeof REVIEW_QUEUE_SORTS)[number];
 export const REVIEW_QUEUE_SORT_LABELS: Record<ReviewQueueSort, string> = {
   wait: "待ち時間",
   reason: "理由",
-  assignee: "担当者",
 };
 
 export interface QueueSortable {
   submittedAt: number;
   group: ReviewQueueGroup;
-  assigneeName: string | null;
 }
 
-/** キューの比較関数。同じ理由・同じ担当者の中は、待ち時間の長い順にする。 */
+/** キューの比較関数。同じ理由の中は、待ち時間の長い順にする。 */
 export function compareQueueItems(sort: ReviewQueueSort) {
   return (a: QueueSortable, b: QueueSortable): number => {
     if (sort === "reason") {
       const diff = REVIEW_QUEUE_GROUPS.indexOf(a.group) - REVIEW_QUEUE_GROUPS.indexOf(b.group);
       if (diff !== 0) return diff;
-    }
-    if (sort === "assignee" && a.assigneeName !== b.assigneeName) {
-      if (a.assigneeName === null) return 1;
-      if (b.assigneeName === null) return -1;
-      return a.assigneeName.localeCompare(b.assigneeName, "ja");
     }
     return a.submittedAt - b.submittedAt;
   };
@@ -170,8 +163,6 @@ export interface AiPassedRow {
   verdict: "pass" | "resubmit" | "fail" | null;
   checkCount: number;
   lastCheck: { result: CheckResult; reviewerName: string | null; createdAt: string } | null;
-  assigneeId: string | null;
-  assigneeName: string | null;
 }
 
 /**

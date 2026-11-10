@@ -3,7 +3,7 @@
  *
  * 旧 BaaS 直アクセス (RLS 配下) を Hono API 経由に置き換えた。 認可はサーバ側:
  *   - 受講者は自分の enrollment のみ read (`/api/enrollments/mine`)
- *   - instructor/admin は read
+ *   - admin / platform_admin は read
  *
  * **登録を作る書き込みは持たない** (Phase 3b)。 登録が生まれるのは受講者の自己開始
  * (`lib/skill-map-api.ts` の `startStage`) だけで、 管理画面から割り当てることはできない。
