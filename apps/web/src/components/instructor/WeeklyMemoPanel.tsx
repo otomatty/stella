@@ -1,6 +1,6 @@
 /**
- * 週次の育成メモ (#38・07 §6.5)。担当講師が 5 分で読み、その場で一言の声掛けかペースの調整をする。
- * 講師ダッシュボード (今担当している受講者) と、管理者のダッシュボード (担当講師のいる全員) に置く。
+ * 週次の育成メモ (#38・07 §6.5)。staff が 5 分で読み、その場で一言の声掛けかペースの調整をする。
+ * 講師ダッシュボードと管理者のダッシュボードに置く。
  *
  * - メモは講師向け。受講者本人には見せない (API も講師・管理者にしか返さない)。
  * - 一言は講師が直してから送る。送るのは講師が書いた文だけ (受講者への通知)。
@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardActions, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { type MemoAudience, memosForWeek, weeklyMemoIntro } from "./weekly-memo-view";
+import { memosForWeek, weeklyMemoIntro } from "./weekly-memo-view";
 
 interface MemoList {
   week: string;
@@ -47,8 +47,8 @@ function formatAt(iso: string): string {
       });
 }
 
-export function WeeklyMemoPanel({ audience = "assigned" }: { audience?: MemoAudience }) {
-  const intro = weeklyMemoIntro(audience);
+export function WeeklyMemoPanel() {
+  const intro = weeklyMemoIntro();
   const [week, setWeek] = useState<string | null>(null);
   const [latest, setLatest] = useState<string | null>(null);
   const [data, setData] = useState<MemoList | null>(null);

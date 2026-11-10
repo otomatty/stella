@@ -15,12 +15,10 @@ export async function getAnalytics(): Promise<Analytics | null> {
   return analytics ?? null;
 }
 
-/** 講師ダッシュボード用の未返信 / 遅延 / 受講者進捗を取得する。 `assignedOnly` で担当の受講者だけ。 */
-export async function getInstructorOverview(
-  assignedOnly = false,
-): Promise<InstructorOverview | null> {
+/** 講師ダッシュボード用の未返信 / 遅延 / 受講者進捗を取得する。 */
+export async function getInstructorOverview(): Promise<InstructorOverview | null> {
   const { overview } = await apiFetch<{ overview: InstructorOverview | null }>(
-    assignedOnly ? "/api/analytics/instructor?assigned=mine" : "/api/analytics/instructor",
+    "/api/analytics/instructor",
   );
   return overview ?? null;
 }

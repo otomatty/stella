@@ -1,5 +1,5 @@
 /**
- * つまずきの検知 (#38・07 §6.5)。既存の15分の cron で、担当講師に知らせる。
+ * つまずきの検知 (#38・07 §6.5)。既存の15分の cron で、有効な staff 全員に知らせる。
  *
  * 見る合図は次の 5 つ。
  * - 同じ課題で手元の確認の失敗が続く (`task_local_runs`)
@@ -42,7 +42,6 @@ import { TASK_KINDS, type TaskKind } from "@stella/shared/tasks/manifest";
 import type { Db } from "../db/client.js";
 import {
   aiReviews,
-  learnerInstructors,
   notifications,
   profiles,
   submissions,
@@ -51,6 +50,7 @@ import {
   taskProgress,
   tasks,
 } from "../db/schema.js";
+import { loadActiveStaffIds } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 
 /** 同じ課題の同じ版で、続けて失敗した回数の下限。 */
@@ -92,24 +92,22 @@ export const LEARNER_ESCALATION_REASONS: readonly RouteReason[] = [
  */
 export const HINTS_EXHAUSTED_WINDOW_MS = 3 * 86_400_000;
 
-interface Pair {
+interface Learner {
   learnerId: string;
   learnerName: string;
-  instructorId: string;
   /** 最後に学習した日 (日本時間の YYYY-MM-DD)。記録がなければ空文字。 */
   lastActive: string;
   active: number;
 }
 
-/** 担当のある受講者と、最後に学習した日。担当は有効な講師だけ。 */
-async function assignedPairs(db: Db): Promise<Pair[]> {
-  const instructor = alias(profiles, "instructor");
-  const learner = learnerInstructors.learnerId;
+/** 有効な受講者と、最後に学習した日。検知は受講者ごとに 1 回。 */
+async function activeLearners(db: Db): Promise<Learner[]> {
+  // drizzle の sql 断片は profiles.id を "id" とだけ出すので、副問い合わせの中では表名を付ける。
+  const learner = sql`profiles.id`;
   return db
     .select({
       learnerId: profiles.id,
       learnerName: profiles.displayName,
-      instructorId: instructor.id,
       // 視聴・完了・手元の確認・提出・復習・受講開始のどれもない日を、学習の記録がない日とする。
       lastActive: sql<string>`max(
         coalesce((select max(date) from study_activity where user_id = ${learner} and (watched_sec > 0 or completed_lessons > 0)), ''),
@@ -120,18 +118,10 @@ async function assignedPairs(db: Db): Promise<Pair[]> {
       )`,
       active: sql<number>`exists (select 1 from enrollments where user_id = ${learner} and status = 'active')`,
     })
-    .from(learnerInstructors)
-    .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-    .innerJoin(
-      instructor,
-      and(
-        eq(instructor.id, learnerInstructors.instructorId),
-        eq(instructor.role, "instructor"),
-        eq(instructor.disabled, false),
-      ),
-    )
-    .where(eq(profiles.disabled, false))
-    .orderBy(asc(learnerInstructors.learnerId));
+    .from(profiles)
+    .where(and(eq(profiles.role, "student"), eq(profiles.disabled, false)))
+    .groupBy(profiles.id)
+    .orderBy(asc(profiles.id));
 }
 
 /** `from` の翌日から `to` の前日までの平日の数。`limit` まで数えたら止める。 */
@@ -163,8 +153,19 @@ const SIGNAL_ID_SEGMENT: Record<StumbleSignal, string> = {
 export const stumbleIdPrefix = (signal: StumbleSignal, learnerId: string) =>
   `stumble:${SIGNAL_ID_SEGMENT[signal]}:${learnerId}:`;
 
-const stumbleId = (signal: StumbleSignal, pair: Pair, key: string) =>
-  `${stumbleIdPrefix(signal, pair.learnerId)}${pair.instructorId}:${key}`;
+const stumbleId = (signal: StumbleSignal, learnerId: string, recipientId: string, key: string) =>
+  `${stumbleIdPrefix(signal, learnerId)}${recipientId}:${key}`;
+
+/**
+ * 通知 ID から宛先を除いた出来事の鍵。宛先が複数でも、同じ出来事は 1 回だけ数える。
+ * 形は `stumble:<種類>:<受講者>:<宛先>:<鍵>`。
+ */
+export function stumbleEventKey(id: string, signal: StumbleSignal, learnerId: string): string {
+  const prefix = stumbleIdPrefix(signal, learnerId);
+  const rest = id.startsWith(prefix) ? id.slice(prefix.length) : id;
+  const split = rest.indexOf(":");
+  return split === -1 ? rest : rest.slice(split + 1);
+}
 
 /** 受講者 1 人・種類 1 つのつまずきの通知を、主キーの範囲で引く条件 (接頭辞の次の文字の手前まで)。 */
 export function stumbleIdRange(signal: StumbleSignal, learnerId: string) {
@@ -195,7 +196,13 @@ async function insertOnce(db: Db, values: typeof notifications.$inferInsert): Pr
   return inserted.length > 0;
 }
 
-async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, today: string) {
+async function notifyLocalFailures(
+  db: Db,
+  learners: Map<string, Learner>,
+  staffIds: string[],
+  now: Date,
+  today: string,
+) {
   const rows = await db
     .select({
       learnerId: taskLocalRuns.userId,
@@ -214,37 +221,48 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
       ),
     )
     .orderBy(asc(taskLocalRuns.userId), asc(taskLocalRuns.streakStartedAt));
-  const byLearner = new Map<string, { pair: Pair; rows: typeof rows }>();
+  const byLearner = new Map<string, { learner: Learner; rows: typeof rows }>();
   for (const row of rows) {
-    const pair = pairs.get(row.learnerId);
-    if (!pair) continue;
-    const entry = byLearner.get(row.learnerId) ?? { pair, rows: [] };
+    const learner = learners.get(row.learnerId);
+    if (!learner) continue;
+    const entry = byLearner.get(row.learnerId) ?? { learner, rows: [] };
     entry.rows.push(row);
     byLearner.set(row.learnerId, entry);
   }
-  // 1 日 1 通まで。今日すでに送っていれば、残りの課題は翌日に回す (連続が続いていれば)。
+  // 1 日 1 通まで (宛先ごと)。今日すでに送った宛先は飛ばし、残りの課題は翌日に回す。
   const sent = await sentIds(
     db,
-    [...byLearner.values()].map(({ pair }) => stumbleId("local-failures", pair, today)),
+    [...byLearner.values()].flatMap(({ learner }) =>
+      staffIds.map((staffId) => stumbleId("local-failures", learner.learnerId, staffId, today)),
+    ),
   );
-  for (const { pair, rows: list } of byLearner.values()) {
+  for (const { learner, rows: list } of byLearner.values()) {
     const [first] = list;
-    const id = stumbleId("local-failures", pair, today);
-    if (!first || sent.has(id)) continue;
+    if (!first) continue;
+    const pending = staffIds.filter(
+      (staffId) => !sent.has(stumbleId("local-failures", learner.learnerId, staffId, today)),
+    );
+    // 今日の分が全宛先に届いていれば、あとから条件を満たした課題には印を付けず翌日に回す。
+    if (pending.length === 0) continue;
     try {
       const rest = list.length - 1;
-      const inserted = await insertOnce(db, {
-        id,
-        userId: pair.instructorId,
-        type: "learner_stumble",
-        title: `${pair.learnerName}さんが同じ課題でつまずいています`,
-        body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、講師への相談を勧めてください。`,
-        payload: {
-          learner_id: pair.learnerId,
-          signal: "local-failures",
-          task_ids: list.map((r) => r.taskId),
-        },
-      });
+      let inserted = false;
+      for (const staffId of pending) {
+        const id = stumbleId("local-failures", learner.learnerId, staffId, today);
+        const ok = await insertOnce(db, {
+          id,
+          userId: staffId,
+          type: "learner_stumble",
+          title: `${learner.learnerName}さんが同じ課題でつまずいています`,
+          body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、講師への相談を勧めてください。`,
+          payload: {
+            learner_id: learner.learnerId,
+            signal: "local-failures",
+            task_ids: list.map((r) => r.taskId),
+          },
+        });
+        if (ok) inserted = true;
+      }
       if (!inserted) continue;
       // 連続の始まりで照合する。知らせる間に合格して数え直した連続には印を付けない。
       const [head, ...tail] = list.flatMap((r) =>
@@ -255,7 +273,7 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
                 .set({ streakAlertedAt: now })
                 .where(
                   and(
-                    eq(taskLocalRuns.userId, pair.learnerId),
+                    eq(taskLocalRuns.userId, learner.learnerId),
                     eq(taskLocalRuns.taskId, r.taskId),
                     eq(taskLocalRuns.streakStartedAt, r.startedAt),
                   ),
@@ -267,48 +285,61 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
     } catch (e) {
       console.error(
         "[cron] stumble notification failed",
-        { learnerId: pair.learnerId, signal: "local" },
+        { learnerId: learner.learnerId, signal: "local" },
         e,
       );
     }
   }
 }
 
-async function notifyIdle(db: Db, pairs: Pair[], today: string) {
-  const idle = pairs.filter(
-    (p) =>
-      p.active &&
-      p.lastActive &&
-      weekdaysBetween(p.lastActive, today, IDLE_WEEKDAYS) >= IDLE_WEEKDAYS,
+async function notifyIdle(db: Db, learners: Learner[], staffIds: string[], today: string) {
+  const idle = learners.filter(
+    (learner) =>
+      learner.active &&
+      learner.lastActive &&
+      weekdaysBetween(learner.lastActive, today, IDLE_WEEKDAYS) >= IDLE_WEEKDAYS,
   );
-  // 止まった期間ごとに 1 通。学習を再開して再び止まれば、最後の日が変わるので新しい通知になる。
+  // 止まった期間ごとに、宛先 1 通。学習を再開して再び止まれば、最後の日が変わるので新しい通知になる。
   const sent = await sentIds(
     db,
-    idle.map((p) => stumbleId("idle", p, p.lastActive)),
+    idle.flatMap((learner) =>
+      staffIds.map((staffId) => stumbleId("idle", learner.learnerId, staffId, learner.lastActive)),
+    ),
   );
-  for (const pair of idle) {
-    const id = stumbleId("idle", pair, pair.lastActive);
-    if (sent.has(id)) continue;
+  for (const learner of idle) {
     try {
-      await insertOnce(db, {
-        id,
-        userId: pair.instructorId,
-        type: "learner_stumble",
-        title: `${pair.learnerName}さんの学習が止まっています`,
-        body: `最後の学習の記録は${pair.lastActive}で、平日${IDLE_WEEKDAYS}日以上記録がありません。声を掛けるか、ペースを相談してください。`,
-        payload: { learner_id: pair.learnerId, signal: "idle", last_active: pair.lastActive },
-      });
+      for (const staffId of staffIds) {
+        const id = stumbleId("idle", learner.learnerId, staffId, learner.lastActive);
+        if (sent.has(id)) continue;
+        await insertOnce(db, {
+          id,
+          userId: staffId,
+          type: "learner_stumble",
+          title: `${learner.learnerName}さんの学習が止まっています`,
+          body: `最後の学習の記録は${learner.lastActive}で、平日${IDLE_WEEKDAYS}日以上記録がありません。声を掛けるか、ペースを相談してください。`,
+          payload: {
+            learner_id: learner.learnerId,
+            signal: "idle",
+            last_active: learner.lastActive,
+          },
+        });
+      }
     } catch (e) {
       console.error(
         "[cron] stumble notification failed",
-        { learnerId: pair.learnerId, signal: "idle" },
+        { learnerId: learner.learnerId, signal: "idle" },
         e,
       );
     }
   }
 }
 
-async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
+async function notifyAssessmentB(
+  db: Db,
+  learners: Map<string, Learner>,
+  staffIds: string[],
+  now: Date,
+) {
   const later = alias(submissions, "later");
   const rows = await db
     .select({
@@ -344,33 +375,38 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
       ),
     );
   const candidates = rows.flatMap((row) => {
-    const pair = row.learnerId ? pairs.get(row.learnerId) : undefined;
-    return pair ? [{ row, pair, id: stumbleId("assessment-b", pair, row.id) }] : [];
+    const learner = row.learnerId ? learners.get(row.learnerId) : undefined;
+    return learner ? [{ row, learner }] : [];
   });
   const sent = await sentIds(
     db,
-    candidates.map((c) => c.id),
+    candidates.flatMap(({ row, learner }) =>
+      staffIds.map((staffId) => stumbleId("assessment-b", learner.learnerId, staffId, row.id)),
+    ),
   );
-  for (const { row, pair, id } of candidates) {
-    if (sent.has(id)) continue;
+  for (const { row, learner } of candidates) {
     try {
-      await insertOnce(db, {
-        id,
-        userId: pair.instructorId,
-        type: "learner_stumble",
-        title: `${pair.learnerName}さんが確認Bで${row.verdict === "fail" ? "不合格" : "再提出"}になりました`,
-        body: `「${row.title}」の定着を確認できませんでした。補習の小問題と、翌日以降の未見の問題で確かめてください。`,
-        payload: {
-          learner_id: pair.learnerId,
-          signal: "assessment-b",
-          task_id: row.taskId,
-          submission_id: row.id,
-        },
-      });
+      for (const staffId of staffIds) {
+        const id = stumbleId("assessment-b", learner.learnerId, staffId, row.id);
+        if (sent.has(id)) continue;
+        await insertOnce(db, {
+          id,
+          userId: staffId,
+          type: "learner_stumble",
+          title: `${learner.learnerName}さんが確認Bで${row.verdict === "fail" ? "不合格" : "再提出"}になりました`,
+          body: `「${row.title}」の定着を確認できませんでした。補習の小問題と、翌日以降の未見の問題で確かめてください。`,
+          payload: {
+            learner_id: learner.learnerId,
+            signal: "assessment-b",
+            task_id: row.taskId,
+            submission_id: row.id,
+          },
+        });
+      }
     } catch (e) {
       console.error(
         "[cron] stumble notification failed",
-        { learnerId: pair.learnerId, signal: "assessment-b" },
+        { learnerId: learner.learnerId, signal: "assessment-b" },
         e,
       );
     }
@@ -383,7 +419,7 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
  * `REVIEW_ESCALATION_STREAK` 件以上続いていれば知らせる。
  *
  * 続きごとに 1 度。続きの境目は、受講者が最後に AI で確定した提出 (提出の順。30 日より前でも引く)
- * で決める。その境目より後の提出を含む知らせを、この講師にすでに送っていれば送らない (知らせに
+ * で決める。その境目より後の提出を含む知らせを、この宛先にすでに送っていれば送らない (知らせに
  * 続きの最後の提出の日時を残しておき、境目と比べる)。続きの最初の提出で ID を決めると、続きが
  * 30 日の期間を超えたときに最初の提出が期間から落ち、同じ続きを知らせ直してしまう。続きが伸びても
  * 知らせ直さず、AI で合格して切れたあとの新しい続きは改めて知らせる。
@@ -393,7 +429,12 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
  * (`applied_at`) で見る。前の提出の判定が遅れて当たり、そこで続きがそろうこともあるので、続きの中で
  * 最後に当たった判定を起点にする (最新の提出の判定の時刻で見ると、そろった続きを取りこぼす)。
  */
-async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Date) {
+async function notifyReviewEscalations(
+  db: Db,
+  learnersById: Map<string, Learner>,
+  staffIds: string[],
+  now: Date,
+) {
   const applied = and(
     eq(aiReviews.disposition, "applied"),
     eq(submissions.submissionMode, "submit"),
@@ -411,11 +452,11 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       ),
     );
   const learners = recent.flatMap((r) => {
-    const pair = r.learnerId ? pairs.get(r.learnerId) : undefined;
-    return pair ? [pair] : [];
+    const learner = r.learnerId ? learnersById.get(r.learnerId) : undefined;
+    return learner ? [learner] : [];
   });
   const candidates: {
-    pair: Pair;
+    learner: Learner;
     /** 続きの境目 (最後に AI で確定した提出の日時、ミリ秒)。無ければ 0。 */
     segmentStart: number;
     streak: {
@@ -515,13 +556,13 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       list.push(row);
       byLearner.set(row.learnerId, list);
     }
-    for (const pair of part) {
+    for (const learner of part) {
       // 新しい順。AI で確定した提出で続きが切れる。AI や教材の都合だけで回った提出は飛ばす。
       // 判定待ちの提出より前 (提出の順) には進まない。
-      const stopAt = waiting.get(pair.learnerId) ?? Number.NEGATIVE_INFINITY;
+      const stopAt = waiting.get(learner.learnerId) ?? Number.NEGATIVE_INFINITY;
       const streak: typeof rows = [];
       const seen = new Set<string>();
-      for (const row of byLearner.get(pair.learnerId) ?? []) {
+      for (const row of byLearner.get(learner.learnerId) ?? []) {
         if (row.submittedAt.getTime() <= stopAt) break;
         if (seen.has(row.submissionId)) continue;
         seen.add(row.submissionId);
@@ -536,54 +577,56 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       )
         continue;
       candidates.push({
-        pair,
-        segmentStart: cuts.get(pair.learnerId) ?? 0,
+        learner,
+        segmentStart: cuts.get(learner.learnerId) ?? 0,
         streak: streak.reverse(),
       });
     }
   }
-  for (const { pair, segmentStart, streak } of candidates) {
+  for (const { learner, segmentStart, streak } of candidates) {
     const latest = streak[streak.length - 1];
     if (!latest) continue;
+    const reasons = LEARNER_ESCALATION_REASONS.filter((r) =>
+      streak.some((s) => s.reasons.includes(r)),
+    ).map((r) => ROUTE_REASON_LABELS[r]);
     try {
-      // 同じ続き (境目より後の提出) をこの講師にすでに知らせていれば送らない。
-      const [already] = await db
-        .select({ one: sql`1` })
-        .from(notifications)
-        .where(
-          and(
-            stumbleIdRange("review-escalations", pair.learnerId),
-            eq(notifications.type, "learner_stumble"),
-            eq(notifications.userId, pair.instructorId),
-            sql`json_extract(${notifications.payload}, '$.last_submitted_at') > ${segmentStart}`,
-          ),
-        )
-        .limit(1);
-      if (already) continue;
-      const reasons = LEARNER_ESCALATION_REASONS.filter((r) =>
-        streak.some((s) => s.reasons.includes(r)),
-      ).map((r) => ROUTE_REASON_LABELS[r]);
-      // ID は続きの最後の提出で決める (同時に動いた cron の二重の挿入を主キーで防ぐ)。
-      const id = stumbleId("review-escalations", pair, latest.submissionId);
-      await insertOnce(db, {
-        id,
-        userId: pair.instructorId,
-        type: "learner_stumble",
-        title: `${pair.learnerName}さんの提出が続けて講師の確認に回っています`,
-        body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
-        payload: {
-          learner_id: pair.learnerId,
-          signal: "review-escalations",
-          submission_ids: streak.map((s) => s.submissionId),
-          task_ids: [...new Set(streak.flatMap((s) => (s.taskId ? [s.taskId] : [])))],
-          // 続きの最後の提出の日時。次の cron が、同じ続きを知らせたかを境目と比べて決める。
-          last_submitted_at: latest.submittedAt.getTime(),
-        },
-      });
+      for (const staffId of staffIds) {
+        // 同じ続き (境目より後の提出) をこの宛先にすでに知らせていれば送らない。
+        const [already] = await db
+          .select({ one: sql`1` })
+          .from(notifications)
+          .where(
+            and(
+              stumbleIdRange("review-escalations", learner.learnerId),
+              eq(notifications.type, "learner_stumble"),
+              eq(notifications.userId, staffId),
+              sql`json_extract(${notifications.payload}, '$.last_submitted_at') > ${segmentStart}`,
+            ),
+          )
+          .limit(1);
+        if (already) continue;
+        // ID は続きの最後の提出で決める (同時に動いた cron の二重の挿入を主キーで防ぐ)。
+        const id = stumbleId("review-escalations", learner.learnerId, staffId, latest.submissionId);
+        await insertOnce(db, {
+          id,
+          userId: staffId,
+          type: "learner_stumble",
+          title: `${learner.learnerName}さんの提出が続けて講師の確認に回っています`,
+          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
+          payload: {
+            learner_id: learner.learnerId,
+            signal: "review-escalations",
+            submission_ids: streak.map((s) => s.submissionId),
+            task_ids: [...new Set(streak.flatMap((s) => (s.taskId ? [s.taskId] : [])))],
+            // 続きの最後の提出の日時。次の cron が、同じ続きを知らせたかを境目と比べて決める。
+            last_submitted_at: latest.submittedAt.getTime(),
+          },
+        });
+      }
     } catch (e) {
       console.error(
         "[cron] stumble notification failed",
-        { learnerId: pair.learnerId, signal: "review-escalations" },
+        { learnerId: learner.learnerId, signal: "review-escalations" },
         e,
       );
     }
@@ -625,10 +668,16 @@ interface HintsExhausted {
  *   手元の失敗の合図が見る)。合格後に開いた段 (`after_pass`) は数えず、今は合格している課題も除く。
  * - 最後の段に届いた時刻が `HINTS_EXHAUSTED_WINDOW_MS` の中の課題だけを知らせる (導入時に過去の
  *   記録をまとめて送らないため)。
- * - 手元の失敗と同じく、受講者 1 人につき 1 日 1 通にまとめる。同じ受講者・課題は、期間の中に
- *   その講師へ送った知らせ (`task_ids`) に入っていれば送らない。今日すでに送っていれば、残りは翌日に回す。
+ * - 手元の失敗と同じく、受講者 1 人につき宛先ごとに 1 日 1 通にまとめる。同じ受講者・課題は、期間の中に
+ *   その宛先へ送った知らせ (`task_ids`) に入っていれば送らない。今日すでに送っていれば、残りは翌日に回す。
  */
-async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date, today: string) {
+async function notifyHintsExhausted(
+  db: Db,
+  learners: Map<string, Learner>,
+  staffIds: string[],
+  now: Date,
+  today: string,
+) {
   const windowStart = new Date(now.getTime() - HINTS_EXHAUSTED_WINDOW_MS);
   // 直近に合格前のヒントを開いた受講者・課題 (開いた時刻の索引で引き、表を全部読まない)。
   const recent = db
@@ -685,18 +734,18 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
     )
     .groupBy(recent.userId, recent.taskId, opens.level);
 
-  // 受講者・課題ごとに段をまとめる。担当のある受講者の記録だけ。
-  const byTask = new Map<string, { pair: Pair; rows: typeof rows }>();
+  // 受講者・課題ごとに段をまとめる。有効な受講者の記録だけ。
+  const byTask = new Map<string, { learner: Learner; rows: typeof rows }>();
   for (const row of rows) {
-    const pair = pairs.get(row.learnerId);
-    if (!pair) continue;
+    const learner = learners.get(row.learnerId);
+    if (!learner) continue;
     const key = `${row.learnerId}\n${row.taskId}`;
-    const entry = byTask.get(key) ?? { pair, rows: [] };
+    const entry = byTask.get(key) ?? { learner, rows: [] };
     entry.rows.push(row);
     byTask.set(key, entry);
   }
-  const byLearner = new Map<string, { pair: Pair; list: HintsExhausted[] }>();
-  for (const { pair, rows: levels } of byTask.values()) {
+  const byLearner = new Map<string, { learner: Learner; list: HintsExhausted[] }>();
+  for (const { learner, rows: levels } of byTask.values()) {
     const [head] = levels;
     if (!head || !(TASK_KINDS as readonly string[]).includes(head.kind)) continue;
     const kind = head.kind as TaskKind;
@@ -707,7 +756,7 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
       ...levels.filter((r) => r.level >= last).map((r) => Number(r.firstOpenedAt)),
     );
     if (!Number.isFinite(reachedAt) || reachedAt < windowStart.getTime()) continue;
-    const entry = byLearner.get(pair.learnerId) ?? { pair, list: [] };
+    const entry = byLearner.get(learner.learnerId) ?? { learner, list: [] };
     entry.list.push({
       taskId: head.taskId,
       title: head.title,
@@ -717,86 +766,91 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
         TASK_HELP_POLICIES[kind].solutionUnlocks.includes("after-hints"),
       reachedAt,
     });
-    byLearner.set(pair.learnerId, entry);
+    byLearner.set(learner.learnerId, entry);
   }
   if (byLearner.size === 0) return;
 
-  // 期間の中にこの講師へ送った知らせ。ID の末尾は送った日なので、期間の始まりの日より前は引かない
-  // (期間の中に届いた課題を知らせるのは、届いた日以降)。
+  // 期間の中に送った知らせ。ID の末尾は送った日なので、期間の始まりの日より前は数えない
+  // (期間の中に届いた課題を知らせるのは、届いた日以降)。宛先ごとに、その宛先へ送った課題だけを除く。
   const fromDate = toStudyDate(windowStart);
-  const notified = new Set<string>();
+  const notifiedByStaff = new Map<string, Set<string>>();
   const sentIdSet = new Set<string>();
   for (const part of chunk([...byLearner.values()], Math.floor((D1_MAX_BOUND_PARAMS - 10) / 2))) {
     const sent = await db
-      .select({ id: notifications.id, payload: notifications.payload })
+      .select({
+        id: notifications.id,
+        userId: notifications.userId,
+        payload: notifications.payload,
+      })
       .from(notifications)
       .where(
         and(
           eq(notifications.type, "learner_stumble"),
-          or(
-            ...part.map(({ pair }) => {
-              const base = `${stumbleIdPrefix("hints-exhausted", pair.learnerId)}${pair.instructorId}`;
-              return and(
-                gte(notifications.id, `${base}:${fromDate}`),
-                lt(notifications.id, `${base};`),
-              );
-            }),
-          ),
+          or(...part.map(({ learner }) => stumbleIdRange("hints-exhausted", learner.learnerId))),
         ),
       );
     for (const row of sent) {
+      const date = row.id.slice(-10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < fromDate) continue;
       const learnerId = row.payload.learner_id;
       const taskIds = row.payload.task_ids;
       if (typeof learnerId !== "string" || !Array.isArray(taskIds)) continue;
+      const notified = notifiedByStaff.get(row.userId) ?? new Set<string>();
       for (const taskId of taskIds) notified.add(`${learnerId}\n${taskId}`);
+      notifiedByStaff.set(row.userId, notified);
       sentIdSet.add(row.id);
     }
   }
-  for (const { pair, list } of byLearner.values()) {
-    const id = stumbleId("hints-exhausted", pair, today);
-    // 1 日 1 通まで。今日すでに送っていれば、残りの課題は翌日に回す (期間の中にあれば)。
-    if (sentIdSet.has(id)) continue;
-    const fresh = list
-      .filter((e) => !notified.has(`${pair.learnerId}\n${e.taskId}`))
-      .sort((a, b) => a.reachedAt - b.reachedAt);
-    const [first] = fresh;
-    if (!first) continue;
-    try {
-      const rest = fresh.length - 1;
-      await insertOnce(db, {
-        id,
-        userId: pair.instructorId,
-        type: "learner_stumble",
-        title: `${pair.learnerName}さんがヒントを最後まで開きました`,
-        body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、講師への相談を勧めてください。`,
-        payload: {
-          learner_id: pair.learnerId,
-          signal: "hints-exhausted",
-          task_ids: fresh.map((e) => e.taskId),
-        },
-      });
-    } catch (e) {
-      console.error(
-        "[cron] stumble notification failed",
-        { learnerId: pair.learnerId, signal: "hints-exhausted" },
-        e,
-      );
+  for (const { learner, list } of byLearner.values()) {
+    for (const staffId of staffIds) {
+      const id = stumbleId("hints-exhausted", learner.learnerId, staffId, today);
+      // 1 日 1 通まで。今日すでに送っていれば、残りの課題は翌日に回す (期間の中にあれば)。
+      if (sentIdSet.has(id)) continue;
+      const notified = notifiedByStaff.get(staffId);
+      const fresh = list
+        .filter((e) => !notified?.has(`${learner.learnerId}\n${e.taskId}`))
+        .sort((a, b) => a.reachedAt - b.reachedAt);
+      const [first] = fresh;
+      if (!first) continue;
+      try {
+        const rest = fresh.length - 1;
+        await insertOnce(db, {
+          id,
+          userId: staffId,
+          type: "learner_stumble",
+          title: `${learner.learnerName}さんがヒントを最後まで開きました`,
+          body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、講師への相談を勧めてください。`,
+          payload: {
+            learner_id: learner.learnerId,
+            signal: "hints-exhausted",
+            task_ids: fresh.map((e) => e.taskId),
+          },
+        });
+      } catch (e) {
+        console.error(
+          "[cron] stumble notification failed",
+          { learnerId: learner.learnerId, signal: "hints-exhausted" },
+          e,
+        );
+      }
     }
   }
 }
 
 /** 15分の cron から呼ぶ。1 つの合図が失敗しても、ほかの合図は続ける。 */
 export async function notifyStumbles(db: Db, now = new Date()) {
-  const list = await assignedPairs(db);
+  const staffIds = await loadActiveStaffIds(db);
+  if (staffIds.length === 0) return;
+  const list = await activeLearners(db);
   if (list.length === 0) return;
-  const pairs = new Map(list.map((p) => [p.learnerId, p]));
+  const learners = new Map(list.map((learner) => [learner.learnerId, learner]));
   const today = toStudyDate(now);
   const results = await Promise.allSettled([
-    notifyLocalFailures(db, pairs, now, today),
-    notifyIdle(db, list, today),
-    notifyAssessmentB(db, pairs, now),
-    notifyReviewEscalations(db, pairs, now),
-    notifyHintsExhausted(db, pairs, now, today),
+    notifyLocalFailures(db, learners, staffIds, now, today),
+    notifyIdle(db, list, staffIds, today),
+    notifyAssessmentB(db, learners, staffIds, now),
+    notifyReviewEscalations(db, learners, staffIds, now),
+    notifyHintsExhausted(db, learners, staffIds, now, today),
   ]);
   for (const r of results)
     if (r.status === "rejected") console.error("[cron] stumble detection failed", r.reason);

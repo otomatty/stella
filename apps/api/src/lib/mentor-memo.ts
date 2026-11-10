@@ -1,7 +1,7 @@
 /**
  * 週次の育成メモ (#38・07 §6.5)。担当講師が 5 分で読み、一言の声掛けかペースの調整をする。
  *
- * 1. 積む: 15分の cron が、担当のいる受講者ごとに前の週 (月曜〜日曜、日本時間) の行を積む。
+ * 1. 積む: 15分の cron が、有効な受講者ごとに前の週 (月曜〜日曜、日本時間) の行を積む。
  *    受講者・週で一意なので、何度積んでも 1 枚 (`enqueueWeeklyMemos`)。
  * 2. 書く: 同じ cron が数件ずつリースを取り、材料を集めて AI に書かせる (`processMentorMemoQueue`)。
  *    材料は数字と課題・スキル・評価項目の名前だけで、受講者の名前・メール・コードは渡さない。
@@ -39,12 +39,10 @@ import {
   type SupportRecordKind,
 } from "@stella/shared/tasks/support-record";
 import { and, asc, desc, eq, exists, gte, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
 import type { Db } from "../db/client.js";
 import {
   aiReviews,
   enrollments,
-  learnerInstructors,
   mentorMemos,
   notifications,
   profiles,
@@ -68,7 +66,7 @@ import type { Caller } from "./authz.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
 import { loadLearningPace } from "./learning-pace.js";
 import { buildMentorMemoPrompt, MENTOR_MEMO_PROMPT_VERSION } from "./mentor-memo-prompt.js";
-import { stumbleIdRange } from "./stumble-alerts.js";
+import { stumbleEventKey, stumbleIdRange } from "./stumble-alerts.js";
 
 /** 1 回の cron で書くメモの数。AI の一次レビューと AI の呼び出し・D1 のクエリを分け合う。 */
 export const MEMOS_PER_RUN = 5;
@@ -121,28 +119,19 @@ export async function enqueueWeeklyMemos(db: Db, now = new Date()): Promise<numb
 }
 
 /**
- * 担当のいる受講者ごとに、1 つの週のメモを積む。担当は有効な講師だけ。
+ * 有効な受講者ごとに、1 つの週のメモを積む。
  * その週の終わりまでに受講を始めていた受講者だけを積む (受講中の登録か、その週以降に修了した登録がある)。
  * 既に積んだ受講者は先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 async function enqueueWeek(db: Db, weekStart: string, now: Date): Promise<number> {
   const weekBegin = new Date(studyDateStartMs(weekStart));
   const weekEnd = new Date(studyDateStartMs(addStudyDays(weekStart, 7)));
-  const instructor = alias(profiles, "instructor");
   const learners = await db
     .select({ id: profiles.id })
-    .from(learnerInstructors)
-    .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-    .innerJoin(
-      instructor,
-      and(
-        eq(instructor.id, learnerInstructors.instructorId),
-        eq(instructor.role, "instructor"),
-        eq(instructor.disabled, false),
-      ),
-    )
+    .from(profiles)
     .where(
       and(
+        eq(profiles.role, "student"),
         eq(profiles.disabled, false),
         notExists(
           db
@@ -471,9 +460,14 @@ export async function collectMemoMaterial(
   }
 
   const stumbleCounts: Partial<Record<StumbleSignal, number>> = {};
+  const seenStumbles = new Set<string>();
   for (const n of stumbles)
     if (n.signal && (STUMBLE_SIGNALS as readonly string[]).includes(n.signal)) {
       const signal = n.signal as StumbleSignal;
+      // 宛先が複数でも、同じ出来事 (ID から宛先を除いた鍵) は 1 回だけ数える。
+      const event = `${signal}:${stumbleEventKey(n.id, signal, learner.id)}`;
+      if (seenStumbles.has(event)) continue;
+      seenStumbles.add(event);
       stumbleCounts[signal] = (stumbleCounts[signal] ?? 0) + 1;
     }
 

@@ -64,7 +64,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "dash", label: "ダッシュボード", icon: Home },
     { id: "review-queue", label: "レビュー", icon: Edit },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
-    { id: "students", label: "担当受講者", icon: Users },
+    { id: "students", label: "受講者", icon: Users },
     { id: "discovery", label: "発見教材", icon: Sparkles },
     { id: "stages", label: "ステージ", icon: Book },
   ],

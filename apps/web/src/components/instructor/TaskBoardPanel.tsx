@@ -32,7 +32,6 @@ import { cn } from "@/lib/utils";
 
 interface TaskBoardPanelBaseProps {
   taskId: string;
-  assignedOnly: boolean;
   onOpen: (submissionId: string) => void;
   /** 発見教材の画面へ (下書きはそこで作る)。 */
   onOpenDiscovery: () => void;
@@ -52,7 +51,6 @@ const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格
 export function TaskBoardPanel({
   embedded = false,
   taskId,
-  assignedOnly,
   onOpen,
   onClose,
   onOpenDiscovery,
@@ -67,7 +65,7 @@ export function TaskBoardPanel({
     const controller = new AbortController();
     setBoard(null);
     setError(null);
-    fetchTaskBoard(taskId, assignedOnly, controller.signal)
+    fetchTaskBoard(taskId, controller.signal)
       .then((data) => {
         if (controller.signal.aborted) return;
         setBoard(data);
@@ -78,7 +76,7 @@ export function TaskBoardPanel({
           setError(err instanceof Error ? err.message : "提出を読み込めませんでした");
       });
     return () => controller.abort();
-  }, [taskId, assignedOnly]);
+  }, [taskId]);
 
   const postSupplement = async () => {
     if (!board || !title.trim() || !body.trim()) return;

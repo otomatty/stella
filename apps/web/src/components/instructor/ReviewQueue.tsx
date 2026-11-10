@@ -8,7 +8,6 @@ import {
   type ReviewQueueGroup,
   type ReviewQueueSort,
 } from "@stella/shared/review/review-desk";
-import type { Submission } from "@stella/shared/review/types";
 import {
   BarChart,
   CheckCheck,
@@ -35,7 +34,6 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { useRefreshSubmissionsOnOpen, useSubmissions } from "@/hooks/useSubmissions";
-import { useAssignedScope } from "@/hooks/useAssignedScope";
 import { hasAiDraft } from "@/lib/ai-draft";
 import {
   formatWaiting,
@@ -46,7 +44,6 @@ import {
   testsPassedRows,
 } from "@/lib/review-queue";
 import type { AvatarTone } from "@/data/types";
-import { AssignedScopeToggle } from "./AssignedScopeToggle";
 import { AiPassedList } from "./AiPassedList";
 import { ReviewMetricsPanel } from "./ReviewMetricsPanel";
 import { TaskBoardPanel } from "./TaskBoardPanel";
@@ -55,7 +52,6 @@ import { VariantStockPanel } from "./VariantStockPanel";
 interface ReviewQueueProps {
   setPage: (p: string) => void;
   onOpenReview: (submissionId: string) => void;
-  currentUserId?: string | null;
   backendEnabled?: boolean;
 }
 
@@ -64,7 +60,7 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
 /**
  * 講師のレビュー画面 (#34、07 §6.4)。講師と管理者が使う。
  *
- * - 人に回した提出: 人に回した理由で分け、待ち時間・理由・担当者で並べる。行から開いて 1 回の
+ * - 人に回した提出: 人に回した理由で分け、待ち時間・理由で並べる。行から開いて 1 回の
  *   操作で確定する。同じ課題の提出を並べて見て、共通のつまずきを全体への補足・発見教材に回す。
  * - AI が合格にした提出: いつでも確認できる (確認済み・コメント・覆す)。
  * - テストで合格した提出: 受け取った提出から、テストで確定した行を新しい順に読む。判定は変えない。
@@ -74,31 +70,23 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
 export const ReviewQueue = ({
   setPage,
   onOpenReview,
-  currentUserId = null,
   backendEnabled = false,
 }: ReviewQueueProps) => {
   const { submissions } = useSubmissions();
   // 開いたときに取り直す (ほかの講師の確定・AI の結果を反映する)。
   useRefreshSubmissionsOnOpen(backendEnabled);
-  const scope = useAssignedScope(currentUserId, backendEnabled);
   const [tab, setTab] = useState("queue");
   const [group, setGroup] = useState<GroupFilter>("all");
   const [sort, setSort] = useState<ReviewQueueSort>("wait");
   const [boardTaskId, setBoardTaskId] = useState<string | null>(null);
 
-  const { pending, others, aiChecking, testsPassed } = useMemo(() => {
-    const inScope = (s: Submission) =>
-      !scope.assignedOnly || (s.studentId != null && scope.assignedIds.has(s.studentId));
-    const all = submissions.filter(needsHumanReview);
-    // 担当だけに絞っても、ほかの受講者の提出が残っていることは件数で見えるようにする。
-    const mine = all.filter(inScope);
+  const { pending, aiChecking, testsPassed } = useMemo(() => {
     return {
-      pending: mine,
-      others: all.length - mine.length,
-      aiChecking: submissions.filter((s) => isAiChecking(s) && inScope(s)),
-      testsPassed: testsPassedRows(submissions, inScope),
+      pending: submissions.filter(needsHumanReview),
+      aiChecking: submissions.filter((s) => isAiChecking(s)),
+      testsPassed: testsPassedRows(submissions),
     };
-  }, [submissions, scope.assignedOnly, scope.assignedIds]);
+  }, [submissions]);
   const aiReadyCount = pending.filter(hasAiDraft).length;
   const counts = useMemo(() => {
     const map = new Map<ReviewQueueGroup, number>();
@@ -123,7 +111,6 @@ export const ReviewQueue = ({
     return (
       <TaskBoardPanel
         taskId={boardTaskId}
-        assignedOnly={scope.assignedOnly}
         onOpen={open}
         onClose={() => setBoardTaskId(null)}
         onOpenDiscovery={() => setPage("discovery")}
@@ -135,8 +122,7 @@ export const ReviewQueue = ({
     <>
       <PageHeader
         title="レビュー"
-        sub={`人に回した提出 ${pending.length}件 · うちAI下書き準備済 ${aiReadyCount}件${scope.assignedOnly && others > 0 ? ` · ほかの受講者 ${others}件` : ""}`}
-        actions={<AssignedScopeToggle scope={scope} />}
+        sub={`人に回した提出 ${pending.length}件 · うちAI下書き準備済 ${aiReadyCount}件`}
       />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -212,14 +198,13 @@ export const ReviewQueue = ({
                   <TableHead>理由</TableHead>
                   <TableHead>AI</TableHead>
                   <TableHead>待ち時間</TableHead>
-                  <TableHead>担当</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-ink-3 py-10">
+                    <TableCell colSpan={6} className="text-center text-ink-3 py-10">
                       人のレビューを待っている提出はありません
                     </TableCell>
                   </TableRow>
@@ -281,7 +266,6 @@ export const ReviewQueue = ({
                         )}
                       </TableCell>
                       <TableCell className="text-ink-3">{formatWaiting(r.submittedAt)}</TableCell>
-                      <TableCell className="text-ink-3">{r.assigneeName ?? "-"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {r.taskId ? (
@@ -313,11 +297,7 @@ export const ReviewQueue = ({
         {backendEnabled ? (
           <>
             <TabsContent value="ai-passed">
-              <AiPassedList
-                submissions={submissions}
-                assignedOnly={scope.assignedOnly}
-                onOpen={open}
-              />
+              <AiPassedList submissions={submissions} onOpen={open} />
             </TabsContent>
             <TabsContent value="tests-passed">
               <Card className="overflow-hidden">

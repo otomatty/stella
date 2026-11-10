@@ -6,7 +6,7 @@
  *   - `requireRole` … caller が指定ロールのいずれかであることを保証
  */
 
-import { eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Context } from "hono";
 
 import type { Db } from "../db/client.js";
@@ -126,8 +126,25 @@ export function requireRole(caller: Caller, ...roles: ProfileRole[]): void {
   }
 }
 
+/** staff のロール。通知の宛先なども、この一覧だけを使う。 */
+export const STAFF_ROLES = [
+  "instructor",
+  "admin",
+  "platform_admin",
+] as const satisfies readonly ProfileRole[];
+
 export function isStaffRole(role: ProfileRole): boolean {
-  return role === "instructor" || role === "admin" || role === "platform_admin";
+  return (STAFF_ROLES as readonly ProfileRole[]).includes(role);
+}
+
+/** 無効でない staff の id。id 順。0 人なら空。 */
+export async function loadActiveStaffIds(db: Db): Promise<string[]> {
+  const rows = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.disabled, false), inArray(profiles.role, [...STAFF_ROLES])))
+    .orderBy(asc(profiles.id));
+  return rows.map((row) => row.id);
 }
 
 /** 専用ステージ (`audience = granted`) の割当。講師・管理者のみ。 */

@@ -12,7 +12,6 @@ import {
   certificates,
   stages,
   enrollments,
-  learnerInstructors,
   lessonProgress,
   lessons,
   profiles,
@@ -21,7 +20,7 @@ import {
   quizQuestions,
   sections,
 } from "../db/schema.js";
-import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
 import { learnerOnly } from "../lib/learner-scope.js";
 import type { Env } from "../env.js";
 import type { QuizAnswer } from "@stella/shared/cms/types";
@@ -212,45 +211,23 @@ async function computeStumbles(
 }
 
 /**
- * 講師ダッシュボード用の遅延 / 受講者進捗。
- *
- * 母集合は既定で全体の enrollment。 `?assigned=mine` で、
- * 呼び出した講師が担当する受講者 (`learner_instructors`) だけに絞る (#38)。
- * `assigned_learners` は絞り込みの有無によらず、 呼び出した講師の担当の人数を返す。
+ * 講師ダッシュボード用の遅延 / 受講者進捗。母集合は受講者の enrollment 全体。
  */
 analyticsRoute.get("/api/analytics/instructor", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const assigned = c.req.query("assigned");
-    if (assigned !== undefined && assigned !== "mine")
-      throw new ApiError("assigned には mine だけを指定できます", 400);
     const now = new Date();
 
-    const mine = await db
-      .select({ id: learnerInstructors.learnerId })
-      .from(learnerInstructors)
-      .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-      .where(
-        and(
-          eq(learnerInstructors.instructorId, caller.id),
-          eq(profiles.disabled, false),
-          learnerOnly(profiles.id),
-        ),
-      );
-    const mineIds = new Set(mine.map((r) => r.id));
-
-    const allEnr = (
-      await db
-        .select({
-          userId: enrollments.userId,
-          stageId: enrollments.stageId,
-          status: enrollments.status,
-          dueAt: enrollments.dueAt,
-        })
-        .from(enrollments)
-        .where(learnerOnly(enrollments.userId))
-    ).filter((e) => !assigned || mineIds.has(e.userId));
+    const allEnr = await db
+      .select({
+        userId: enrollments.userId,
+        stageId: enrollments.stageId,
+        status: enrollments.status,
+        dueAt: enrollments.dueAt,
+      })
+      .from(enrollments)
+      .where(learnerOnly(enrollments.userId));
 
     const overdue = allEnr.filter(
       (e) => e.status === "active" && e.dueAt != null && e.dueAt < now,
@@ -351,7 +328,6 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
       overview: {
         overdue_learners: overdue,
         total_learners: totalLearners,
-        assigned_learners: mineIds.size,
         students,
       },
     });

@@ -89,8 +89,6 @@ interface SubmissionRow {
   route_reasons?: Submission["routeReasons"];
   ai_confidence?: Submission["aiConfidence"];
   ai_proposed_verdict?: Submission["aiProposedVerdict"];
-  assignee_id?: string | null;
-  assignee_name?: string | null;
   stage_id?: string | null;
   task_pattern?: string | null;
   checks?: Submission["checks"];
@@ -155,8 +153,6 @@ function rowToSubmission(row: SubmissionRow): Submission {
     routeReasons: row.route_reasons,
     aiConfidence: row.ai_confidence,
     aiProposedVerdict: row.ai_proposed_verdict,
-    assigneeId: row.assignee_id,
-    assigneeName: row.assignee_name,
     stageId: row.stage_id,
     taskPattern: row.task_pattern,
     checks: row.checks,

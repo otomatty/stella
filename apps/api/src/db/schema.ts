@@ -324,20 +324,6 @@ export const contentUnits = sqliteTable("content_units", {
   references: json<unknown[]>("references", []),
 });
 
-/** 担当講師との接点。予定日は保存せず、設定・確認の根拠だけを持つ。 */
-export const learnerInstructors = sqliteTable(
-  "learner_instructors",
-  {
-    learnerId: text("learner_id")
-      .primaryKey()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    instructorId: text("instructor_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-  },
-  (t) => ({ instructorIdx: index("learner_instructors_instructor_idx").on(t.instructorId) }),
-);
-
 export const learningPaceChanges = sqliteTable(
   "learning_pace_changes",
   {

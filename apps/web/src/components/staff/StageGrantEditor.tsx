@@ -28,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
-import { getSession } from "@/lib/auth-client";
 import { Check, Circle, Dot, Search, X } from "@/lib/icons";
 import {
   listStageGrantLearners,
@@ -92,11 +91,9 @@ export function StageGrantEditor({
   const [queryText, setQueryText] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [status, setStatus] = useState<PcStatus>("all");
-  const [instructor, setInstructor] = useState("all");
   const [prereq, setPrereq] = useState<PcPrereq>("all");
   const [changesOnly, setChangesOnly] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("assign");
-  const [mine, setMine] = useState(false);
   const [assignStatus, setAssignStatus] = useState<AssignStatus>("all");
   const [prereqDone, setPrereqDone] = useState(false);
   const [exemptedOnly, setExemptedOnly] = useState(false);
@@ -131,11 +128,9 @@ export function StageGrantEditor({
       setQueryText("");
       setDebouncedQ("");
       setStatus("all");
-      setInstructor("all");
       setPrereq("all");
       setChangesOnly(false);
       setMobileTab("assign");
-      setMine(false);
       setAssignStatus("all");
       setPrereqDone(false);
       setExemptedOnly(false);
@@ -163,7 +158,6 @@ export function StageGrantEditor({
       return {
         q: debouncedQ,
         status: exemptedOnly ? "exempted" : "assigned",
-        instructor: "all",
         prereq: notDone ? "not_done" : "all",
       };
     }
@@ -171,18 +165,15 @@ export function StageGrantEditor({
       return {
         q: debouncedQ,
         status: assignStatus,
-        instructor: mine ? "mine" : "all",
         prereq: prereqDone ? "done" : "all",
       };
     }
-    return { q: debouncedQ, status, instructor, prereq };
+    return { q: debouncedQ, status, prereq };
   }, [
     assignStatus,
     debouncedQ,
     exemptedOnly,
-    instructor,
     isMobile,
-    mine,
     mobileTab,
     notDone,
     prereq,
@@ -226,7 +217,6 @@ export function StageGrantEditor({
     return () => ac.abort();
   }, [activeFilter, changesOnly, epoch, open, reloadTick, stageId]);
 
-  const callerId = getSession()?.user.id ?? null;
   const assignedScope = isMobile && mobileTab === "exempt";
   const views = useMemo(
     () =>
@@ -236,9 +226,8 @@ export function StageGrantEditor({
         changesOnly,
         assignedScope,
         filter: activeFilter,
-        callerId,
       }),
-    [activeFilter, assignedScope, callerId, changesOnly, learners, pending],
+    [activeFilter, assignedScope, changesOnly, learners, pending],
   );
   const baselines = useMemo(() => views.map((view) => view.baseline), [views]);
   const assignment = useMemo(
@@ -393,8 +382,6 @@ export function StageGrantEditor({
             {...shellProps}
             tab={mobileTab}
             onTab={setMobileTab}
-            mine={mine}
-            onMine={() => setMine((value) => !value)}
             assignStatus={assignStatus}
             onAssignStatus={(next) => setAssignStatus((value) => (value === next ? "all" : next))}
             prereqDone={prereqDone}
@@ -427,11 +414,8 @@ export function StageGrantEditor({
           {...shellProps}
           changedLearnerCount={changedLearnerCount}
           prerequisiteTitles={prerequisiteTitles}
-          instructors={page?.instructors ?? []}
           status={status}
           onStatus={setStatus}
-          instructor={instructor}
-          onInstructor={setInstructor}
           prereq={prereq}
           onPrereq={setPrereq}
           changesOnly={changesOnly}
@@ -676,15 +660,13 @@ function SaveButton({
 }
 
 function learnerSubtitle(view: StageRosterView): string {
-  const instructor = view.baseline.instructor?.display_name ?? "未設定";
-  return `担当 ${instructor} · 前提 ${prerequisiteStatusLabel(view.baseline.prerequisite_status)}`;
+  return `前提 ${prerequisiteStatusLabel(view.baseline.prerequisite_status)}`;
 }
 
 function PcRoster({
   stageLabel,
   counts,
   prerequisiteTitles,
-  instructors,
   views,
   showSkeleton,
   showError,
@@ -696,12 +678,10 @@ function PcRoster({
   saving,
   queryText,
   status,
-  instructor,
   prereq,
   assignment,
   onQueryText,
   onStatus,
-  onInstructor,
   onPrereq,
   onChangesOnly,
   onRetry,
@@ -716,7 +696,6 @@ function PcRoster({
   stageLabel: string;
   counts: StageGrantLearnerCounts | null;
   prerequisiteTitles: string[];
-  instructors: { id: string; display_name: string }[];
   views: StageRosterView[];
   showSkeleton: boolean;
   showError: boolean;
@@ -728,12 +707,10 @@ function PcRoster({
   saving: boolean;
   queryText: string;
   status: PcStatus;
-  instructor: string;
   prereq: PcPrereq;
   assignment: { checked: boolean; disabled: boolean; visibleCount: number };
   onQueryText: (value: string) => void;
   onStatus: (status: PcStatus) => void;
-  onInstructor: (instructor: string) => void;
   onPrereq: (prereq: PcPrereq) => void;
   onChangesOnly: (value: boolean) => void;
   onRetry: () => void;
@@ -769,27 +746,6 @@ function PcRoster({
       <div className="flex shrink-0 flex-col gap-2 border-b px-6 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <SearchField value={queryText} onChange={onQueryText} />
-          <label
-            className="flex items-center gap-1.5 text-[12px] text-ink-3"
-            htmlFor="stage-grant-instructor"
-          >
-            担当講師
-            <select
-              id="stage-grant-instructor"
-              value={instructor}
-              onChange={(event) => onInstructor(event.target.value)}
-              className="h-9 rounded-sm border border-input bg-card px-2 text-[13px] text-foreground"
-            >
-              <option value="all">すべて</option>
-              <option value="mine">自分の担当</option>
-              {instructors.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.display_name}
-                </option>
-              ))}
-              <option value="none">未設定</option>
-            </select>
-          </label>
           {prerequisiteTitles.length > 0 ? (
             <label
               className="flex items-center gap-1.5 text-[12px] text-ink-3"
@@ -863,7 +819,6 @@ function PcRoster({
                   />
                 </TableHead>
                 <TableHead className={HEAD_CELL}>ユーザー</TableHead>
-                <TableHead className={HEAD_CELL}>担当講師</TableHead>
                 <TableHead className={HEAD_CELL}>前提</TableHead>
                 <TableHead className={HEAD_CELL}>前提の免除</TableHead>
               </TableRow>
@@ -900,7 +855,6 @@ function PcRoster({
                         <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
                       ) : null}
                     </TableCell>
-                    <TableCell>{view.baseline.instructor?.display_name ?? "未設定"}</TableCell>
                     <TableCell>
                       <PrerequisiteMark status={view.baseline.prerequisite_status} />
                     </TableCell>
@@ -980,7 +934,6 @@ function MobileRoster({
   saving,
   queryText,
   tab,
-  mine,
   assignStatus,
   prereqDone,
   exemptedOnly,
@@ -990,7 +943,6 @@ function MobileRoster({
   allAssigned,
   onQueryText,
   onTab,
-  onMine,
   onAssignStatus,
   onPrereqDone,
   onExemptedOnly,
@@ -1016,7 +968,6 @@ function MobileRoster({
   saving: boolean;
   queryText: string;
   tab: MobileTab;
-  mine: boolean;
   assignStatus: AssignStatus;
   prereqDone: boolean;
   exemptedOnly: boolean;
@@ -1026,7 +977,6 @@ function MobileRoster({
   allAssigned: boolean;
   onQueryText: (value: string) => void;
   onTab: (tab: MobileTab) => void;
-  onMine: () => void;
   onAssignStatus: (status: "assigned" | "unassigned") => void;
   onPrereqDone: () => void;
   onExemptedOnly: () => void;
@@ -1087,9 +1037,6 @@ function MobileRoster({
         <div className="flex gap-2 overflow-x-auto pb-1">
           {tab === "assign" ? (
             <>
-              <FilterChip pressed={mine} onClick={onMine}>
-                自分の担当
-              </FilterChip>
               <FilterChip
                 pressed={assignStatus === "unassigned"}
                 onClick={() => onAssignStatus("unassigned")}

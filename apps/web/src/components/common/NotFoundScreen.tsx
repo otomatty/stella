@@ -26,7 +26,7 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
           icon: Edit,
           onSelect: () => setPage("review-queue"),
         },
-        { label: "担当受講者", icon: Users, onSelect: () => setPage("students") },
+        { label: "受講者", icon: Users, onSelect: () => setPage("students") },
       ];
     case "admin":
       return [

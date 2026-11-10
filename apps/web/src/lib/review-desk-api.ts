@@ -25,7 +25,6 @@ export interface AiPassedQuery {
   from?: string;
   to?: string;
   state?: AiPassedState;
-  assignedOnly?: boolean;
 }
 
 function queryString(params: Record<string, string | undefined>): string {
@@ -40,9 +39,16 @@ export async function fetchAiPassed(
   query: AiPassedQuery,
   signal?: AbortSignal,
 ): Promise<{ rows: AiPassedRow[]; truncated: boolean }> {
-  const { assignedOnly, ...rest } = query;
   return apiFetch(
-    `/api/review-desk/ai-passed${queryString({ ...rest, assigned: assignedOnly ? "mine" : undefined })}`,
+    `/api/review-desk/ai-passed${queryString({
+      stageId: query.stageId,
+      taskId: query.taskId,
+      learnerId: query.learnerId,
+      confidence: query.confidence,
+      from: query.from,
+      to: query.to,
+      state: query.state,
+    })}`,
     signal ? { signal } : {},
   );
 }
@@ -64,9 +70,9 @@ export async function fetchReviewMetrics(days: number, signal?: AbortSignal) {
   return apiFetch<ReviewMetrics>(`/api/review-desk/metrics?days=${days}`, signal ? { signal } : {});
 }
 
-export async function fetchTaskBoard(taskId: string, assignedOnly: boolean, signal?: AbortSignal) {
+export async function fetchTaskBoard(taskId: string, signal?: AbortSignal) {
   return apiFetch<TaskBoard>(
-    `/api/review-desk/task-board${queryString({ taskId, assigned: assignedOnly ? "mine" : undefined })}`,
+    `/api/review-desk/task-board${queryString({ taskId })}`,
     signal ? { signal } : {},
   );
 }

@@ -7,7 +7,11 @@ import { addStudyDays } from "@stella/shared/study/activity";
 import { learningPaceRoute } from "./learning-pace.js";
 import { meRoute } from "./me.js";
 import { getDb } from "../db/client.js";
-import { loadLearningPace, notifyPaceDelays } from "../lib/learning-pace.js";
+import {
+  loadLearningPace,
+  notifyPaceDelays,
+  PACE_DELAY_LEARNERS_PER_RUN,
+} from "../lib/learning-pace.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import type { Env } from "../env.js";
 import { mountTestApp, request, json } from "../testing/route-harness.js";
@@ -216,11 +220,10 @@ describe("学習ペースのプロフィールと開始日", () => {
   });
 });
 
-describe("担当講師の権限と開始診断", () => {
+describe("学習ペースの権限と開始診断", () => {
   it.each([null, [], "invalid"])("オブジェクトでない入力を400で返す: %s", async (body) => {
     for (const [path, method] of [
       ["/api/learning-pace/learner", "PATCH"],
-      ["/api/learning-pace/learner/instructor", "PUT"],
       ["/api/learning-pace/learner/diagnostics", "PUT"],
     ]) {
       expect((await write(path, body, "admin", method)).status).toBe(400);
@@ -235,60 +238,36 @@ describe("担当講師の権限と開始診断", () => {
       ).toBe(400);
     }
   });
-  it("認証が必要で、受講者と担当外の講師には公開しない", async () => {
+  it("認証が必要で、受講者は他人のペースを読めない", async () => {
     expect((await request(app, env, "/api/learning-pace")).status).toBe(401);
     expect((await get("/api/learning-pace?userId=outsider", "admin")).status).toBe(200);
     expect((await get("/api/learning-pace?userId=missing", "admin")).status).toBe(404);
-    expect((await get("/api/learning-pace?userId=learner", "teacher")).status).toBe(403);
+    expect((await get("/api/learning-pace?userId=learner", "teacher")).status).toBe(200);
+    expect((await get("/api/learning-pace?userId=learner", "outsider")).status).toBe(403);
     expect((await get("/api/learning-pace/learners")).status).toBe(403);
-    expect(
-      (
-        await write(
-          "/api/learning-pace/learner/instructor",
-          { instructor_id: "teacher" },
-          "learner",
-          "PUT",
-        )
-      ).status,
-    ).toBe(403);
   });
-  it("管理者が担当を設定すると、その講師だけ編集できる", async () => {
-    expect(
-      (
-        await write(
-          "/api/learning-pace/learner/instructor",
-          { instructor_id: "nobody" },
-          "admin",
-          "PUT",
-        )
-      ).status,
-    ).toBe(404);
-    expect(
-      (
-        await write(
-          "/api/learning-pace/learner/instructor",
-          { instructor_id: "teacher" },
-          "admin",
-          "PUT",
-        )
-      ).status,
-    ).toBe(200);
+  it("staff はだれでも受講者のペースを変えられ、一覧は有効な受講者全員", async () => {
     expect(
       (await write("/api/learning-pace/learner", { weekly_hours: 40 }, "teacher", "PATCH")).status,
     ).toBe(200);
     expect(
       (await write("/api/learning-pace/learner", { weekly_hours: 10 }, "unassigned", "PATCH"))
         .status,
-    ).toBe(403);
-    expect(
+    ).toBe(200);
+    const listed = async (as: string) =>
       (
-        await json<{ learners: { id: string }[] }>(
-          await get("/api/learning-pace/learners", "teacher"),
+        await json<{ learners: { id: string; instructorId?: string }[] }>(
+          await get("/api/learning-pace/learners", as),
         )
-      ).learners.map((l) => l.id),
-    ).toEqual(["learner"]);
+      ).learners;
+    const teacher = await listed("teacher");
+    const admin = await listed("admin");
+    expect(teacher.map((l) => l.id).sort()).toEqual(["learner", "outsider"]);
+    expect(admin.map((l) => l.id).sort()).toEqual(teacher.map((l) => l.id).sort());
+    expect(teacher.every((l) => l.instructorId === undefined)).toBe(true);
+    expect(JSON.stringify(teacher)).not.toContain("instructor");
   });
-  it("診断は根拠付きの担当講師・管理者の記録だけ。A・Bは削らない", async () => {
+  it("診断は根拠付きの staff の記録だけ。A・Bは削らない", async () => {
     const path = "/api/learning-pace/learner/diagnostics";
     expect(
       (await write(path, { skill_id: "html", evidence: "自己申告" }, "learner", "PUT")).status,
@@ -387,10 +366,11 @@ describe("進捗・確認B・通知", () => {
     expect(text).not.toContain("javascript-data-basics");
     expect(JSON.parse(text).pace.totalMinutes).toBe(105 * 60);
   });
-  it("1週超の差だけ担当へ通知し、同じ週のcron再実行で重複しない", async () => {
-    sqlite.exec(
-      "insert into learner_instructors values ('learner', 'teacher'); update profiles set learning_start_date='2026-10-05' where id='learner'",
-    );
+  it("1週超の差だけ staff 全員へ通知し、同じ週のcron再実行で重複しない", async () => {
+    sqlite.exec(`
+      update profiles set learning_start_date='2026-10-05' where id='learner';
+      insert into enrollments (id, user_id, stage_id, tenant_id, status, enrolled_at) values ('enr-learner', 'learner', 'root', 'ses', 'active', 1);
+    `);
     await notifyPaceDelays(getDb(env), "2026-10-12");
     expect(sqlite.prepare("select count(*) as n from notifications").get()?.n).toBe(0);
     // 1ステージ35時間では期待時間が飽和するため、先のステージも計算に加える。
@@ -399,10 +379,11 @@ describe("進捗・確認B・通知", () => {
     );
     await notifyPaceDelays(getDb(env), "2026-10-13");
     await notifyPaceDelays(getDb(env), "2026-10-13");
-    expect(sqlite.prepare("select user_id, type from notifications").all()).toEqual([
-      { user_id: "teacher", type: "learning_pace_delayed" },
-    ]);
-    expect(sqlite.prepare("select due_at from enrollments").all()).toEqual([]);
+    const staff = ["admin", "foreign-teacher", "teacher", "unassigned"];
+    expect(
+      sqlite.prepare("select user_id, type from notifications order by user_id").all(),
+    ).toEqual(staff.map((user_id) => ({ user_id, type: "learning_pace_delayed" })));
+    expect(sqlite.prepare("select due_at from enrollments").all()).toEqual([{ due_at: null }]);
   });
   it("1人の計算が失敗しても後続へ通知し、今週通知済みの組は計算し直さない", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {
@@ -412,8 +393,10 @@ describe("進捗・確認B・通知", () => {
       // a-broken は先に処理される。通知の挿入だけが失敗しても、次の受講者へ進む。
       sqlite.exec(`
         insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) values ('a-broken', 'ses', 'student', '計算できない受講者', 0, 'google', 1);
-        insert into learner_instructors values ('a-broken', 'foreign-teacher'), ('learner', 'teacher');
         update profiles set learning_start_date='2026-10-05' where id in ('learner', 'a-broken');
+        insert into enrollments (id, user_id, stage_id, tenant_id, status, enrolled_at) values
+          ('enr-broken', 'a-broken', 'root', 'ses', 'active', 1),
+          ('enr-learner', 'learner', 'root', 'ses', 'active', 1);
         insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次のステージ','published',1,35,'catalog',1,1);
       `);
       const db = getDb(env);
@@ -429,28 +412,138 @@ describe("進捗・確認B・通知", () => {
       }) as typeof db.insert;
       const notified = () =>
         sqlite.prepare("select id, user_id from notifications order by id").all();
+      const staff = ["admin", "foreign-teacher", "teacher", "unassigned"];
       await notifyPaceDelays(db, "2026-10-13");
-      expect(notified()).toEqual([{ id: "pace:learner:teacher:2026-10-12", user_id: "teacher" }]);
+      expect(notified()).toEqual(
+        staff.map((userId) => ({
+          id: `pace:learner:${userId}:2026-10-12`,
+          user_id: userId,
+        })),
+      );
       expect(error).toHaveBeenCalledTimes(1);
       expect(error.mock.calls[0]?.[1]).toEqual({ learnerId: "a-broken" });
-      // 同じ週 (日曜まで) は通知済みの組を飛ばす。挿入まで進まないので例外にならない。
+      // 同じ週は、全宛先に通知済みの受講者を計算し直さない。
       sqlite.exec(
-        "insert into notifications (id, user_id, tenant_id, type, created_at) values ('pace:a-broken:foreign-teacher:2026-10-12', 'foreign-teacher', 'ses', 'learning_pace_delayed', 1)",
+        staff
+          .map(
+            (userId) =>
+              `insert into notifications (id, user_id, tenant_id, type, created_at) values ('pace:a-broken:${userId}:2026-10-12', '${userId}', 'ses', 'learning_pace_delayed', 1)`,
+          )
+          .join(";"),
       );
       error.mockClear();
       await notifyPaceDelays(db, "2026-10-18");
       expect(error).not.toHaveBeenCalled();
-      expect(notified()).toHaveLength(2);
-      // 翌週は改めて計算する。
+      expect(notified()).toHaveLength(staff.length * 2);
+      // 翌週は改めて計算する。a-broken の挿入はまた失敗し、learner だけ届く。
       await notifyPaceDelays(db, "2026-10-19");
       expect(error).toHaveBeenCalledTimes(1);
       expect(notified()).toEqual([
-        { id: "pace:a-broken:foreign-teacher:2026-10-12", user_id: "foreign-teacher" },
-        { id: "pace:learner:teacher:2026-10-12", user_id: "teacher" },
-        { id: "pace:learner:teacher:2026-10-19", user_id: "teacher" },
+        ...staff.map((userId) => ({
+          id: `pace:a-broken:${userId}:2026-10-12`,
+          user_id: userId,
+        })),
+        ...staff.flatMap((userId) => [
+          { id: `pace:learner:${userId}:2026-10-12`, user_id: userId },
+          { id: `pace:learner:${userId}:2026-10-19`, user_id: userId },
+        ]),
       ]);
     } finally {
       error.mockRestore();
+    }
+  });
+
+  it("1回の起動では計画を20人までしか計算しない", async () => {
+    const count = PACE_DELAY_LEARNERS_PER_RUN + 1;
+    const ids = Array.from({ length: count }, (_, i) => `s${String(i).padStart(2, "0")}`);
+    sqlite.exec(`
+      insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at)
+        values ('later','ses','html-css-basics','次のステージ','published',1,35,'catalog',1,1);
+      ${ids
+        .map(
+          (id) => `
+        insert into profiles (id, tenant_id, role, display_name, disabled, name_source, learning_start_date, created_at)
+          values ('${id}', 'ses', 'student', '受講者${id}', 0, 'google', '2026-10-05', 1);
+        insert into enrollments (id, user_id, stage_id, tenant_id, status, enrolled_at)
+          values ('enr-${id}', '${id}', 'root', 'ses', 'active', 1);`,
+        )
+        .join("\n")}
+    `);
+    const db = getDb(env);
+    const learnersOf = () =>
+      sqlite
+        .prepare(
+          "select distinct substr(id, 6, instr(substr(id, 6), ':') - 1) as learner from notifications order by learner",
+        )
+        .all()
+        .map((row) => (row as { learner: string }).learner);
+    const start = new Date(0);
+    await notifyPaceDelays(db, "2026-10-13", start);
+    expect(learnersOf()).toEqual(ids.slice(0, PACE_DELAY_LEARNERS_PER_RUN));
+    await notifyPaceDelays(db, "2026-10-13", new Date(start.getTime() + 15 * 60_000));
+    expect(learnersOf()).toEqual(ids);
+    expect(sqlite.prepare("select count(*) as n from notifications").get()?.n).toBe(count * 4);
+    expect(
+      sqlite
+        .prepare("select count(*) as n from notifications where id like 'pace:outsider:%'")
+        .get()?.n,
+    ).toBe(0);
+  });
+
+  it("続く15分の枠で計算する受講者は重ならない。21人なら2回の起動で全員を計算する", async () => {
+    const count = PACE_DELAY_LEARNERS_PER_RUN + 1;
+    const ids = Array.from({ length: count }, (_, i) => `s${String(i).padStart(2, "0")}`);
+    sqlite.exec(
+      ids
+        .map(
+          (id) => `
+        insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at)
+          values ('${id}', 'ses', 'student', '受講者${id}', 0, 'google', 1);
+        insert into enrollments (id, user_id, stage_id, tenant_id, status, enrolled_at)
+          values ('enr-${id}', '${id}', 'root', 'ses', 'active', 1);`,
+        )
+        .join("\n"),
+    );
+    // 開始日が無いので遅れの通知は出ない。計算対象からは外れず、枠の開始位置だけが誰を計算するかを決める。
+    const idSet = new Set(ids);
+    const calculated: string[] = [];
+    let last = "";
+    const note = (values: readonly unknown[]) => {
+      for (const value of values) {
+        if (typeof value === "string" && idSet.has(value) && value !== last) {
+          calculated.push(value);
+          last = value;
+        }
+      }
+    };
+    const binding = env.DB;
+    const originalPrepare = binding.prepare.bind(binding);
+    binding.prepare = (sql: string) => {
+      const query = originalPrepare(sql);
+      const originalBind = query.bind.bind(query);
+      query.bind = ((...values: Parameters<typeof query.bind>) => {
+        note(values);
+        return originalBind(...values);
+      }) as typeof query.bind;
+      return query;
+    };
+    const take = async (now: Date) => {
+      calculated.length = 0;
+      last = "";
+      await notifyPaceDelays(getDb(env), "2026-10-13", now);
+      return [...calculated];
+    };
+    try {
+      const start = new Date(0);
+      const first = await take(start);
+      const second = await take(new Date(start.getTime() + 15 * 60_000));
+      expect(first).toEqual(ids.slice(0, PACE_DELAY_LEARNERS_PER_RUN));
+      expect(second).toEqual(ids.slice(PACE_DELAY_LEARNERS_PER_RUN));
+      expect(first.filter((id) => second.includes(id))).toEqual([]);
+      expect([...first, ...second]).toEqual(ids);
+      expect(sqlite.prepare("select count(*) as n from notifications").get()?.n).toBe(0);
+    } finally {
+      binding.prepare = originalPrepare;
     }
   });
 });

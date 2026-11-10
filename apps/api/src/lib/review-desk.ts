@@ -7,8 +7,7 @@
  * - 同じ課題の提出を並べて見るための集計と、共通のつまずきの発見教材への回送。
  * - コメント集 (パターンごとのよくある違反と定型コメント)。
  *
- * 担当の絞り込み (`assigned`) は #38 と同じく表示の絞り込みで、権限ではない
- * (担当のいない受講者の提出を取り残さない)。ロールの確認はルート側。
+ * ロールの確認はルート側。
  */
 
 import {
@@ -47,7 +46,6 @@ import type { Db } from "../db/client.js";
 import {
   aiReviews,
   codingRules,
-  learnerInstructors,
   notifications,
   profiles,
   reviewCommentTemplates,
@@ -65,7 +63,6 @@ import { withResourceLock } from "./resource-lock.js";
 import { reclaimAutoCertificatesIfUnmet } from "./stage-auto-complete.js";
 import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js";
 
-const assignee = alias(profiles, "assignee");
 const reviewer = alias(profiles, "reviewer");
 
 /**
@@ -85,14 +82,6 @@ export const machineMatchedColumn = sql<
 export const machineCiStatusColumn = sql<
   string | null
 >`case when json_valid(${submissions.machineCheck}) then json_extract(${submissions.machineCheck}, '$.ci.status') end`;
-
-/** 呼び出した講師が担当する受講者だけに絞る条件 (#38 の `assigned=mine` と同じ)。 */
-function assignedTo(caller: Caller) {
-  return inArray(
-    submissions.studentId,
-    sql`(select ${learnerInstructors.learnerId} from ${learnerInstructors} where ${learnerInstructors.instructorId} = ${caller.id})`,
-  );
-}
 
 /** 課題のステージ (ステージ)。無い id は null。 */
 async function taskStage(db: Db, taskId: string) {
@@ -307,7 +296,6 @@ export interface AiPassedFilters {
   from?: string;
   to?: string;
   state: AiPassedState;
-  assignedOnly: boolean;
   limit: number;
 }
 
@@ -315,13 +303,11 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** 一覧の絞り込みを検証する。 */
 export function parseAiPassedFilters(query: Record<string, string | undefined>): AiPassedFilters {
-  const { stageId, taskId, learnerId, confidence, from, to, state, assigned, limit } = query;
+  const { stageId, taskId, learnerId, confidence, from, to, state, limit } = query;
   if (confidence !== undefined && confidence !== "high" && confidence !== "medium")
     throw new ApiError("confidence には high か medium を指定してください", 400);
   if (state !== undefined && state !== "unchecked" && state !== "checked" && state !== "all")
     throw new ApiError("state には unchecked・checked・all を指定してください", 400);
-  if (assigned !== undefined && assigned !== "mine")
-    throw new ApiError("assigned には mine だけを指定できます", 400);
   for (const date of [from, to])
     if (date !== undefined && !DATE.test(date))
       throw new ApiError("from・to は YYYY-MM-DD で指定してください", 400);
@@ -336,7 +322,6 @@ export function parseAiPassedFilters(query: Record<string, string | undefined>):
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
     state: state ?? "all",
-    assignedOnly: assigned === "mine",
     limit: size,
   };
 }
@@ -354,7 +339,6 @@ const lastCheck = (column: "result" | "created_at") =>
  */
 export async function listAiPassed(
   db: Db,
-  caller: Caller,
   filters: AiPassedFilters,
 ): Promise<{ rows: AiPassedRow[]; truncated: boolean }> {
   const conditions: (SQL | undefined)[] = [
@@ -373,7 +357,6 @@ export async function listAiPassed(
       : filters.state === "checked"
         ? sql`exists (select 1 from submission_checks c where c.submission_id = "submissions"."id")`
         : undefined,
-    filters.assignedOnly ? assignedTo(caller) : undefined,
   ];
   const rows = await db
     .select({
@@ -395,8 +378,6 @@ export async function listAiPassed(
       lastReviewer: sql<
         string | null
       >`(select p.display_name from submission_checks c left join profiles p on p.id = c.reviewer_id where c.submission_id = "submissions"."id" order by c.created_at desc limit 1)`,
-      assigneeId: learnerInstructors.instructorId,
-      assigneeName: assignee.displayName,
     })
     .from(submissions)
     .innerJoin(
@@ -411,8 +392,6 @@ export async function listAiPassed(
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .leftJoin(profiles, eq(profiles.id, submissions.studentId))
-    .leftJoin(learnerInstructors, eq(learnerInstructors.learnerId, submissions.studentId))
-    .leftJoin(assignee, eq(assignee.id, learnerInstructors.instructorId))
     .where(and(...conditions))
     .orderBy(
       sql`case ${aiReviews.confidence} when 'medium' then 0 else 1 end`,
@@ -444,8 +423,6 @@ export async function listAiPassed(
               createdAt: new Date(Number(r.lastAt)).toISOString(),
             }
           : null,
-      assigneeId: r.assigneeId,
-      assigneeName: r.assigneeName,
     })),
   };
 }
@@ -712,12 +689,7 @@ const TASK_BOARD_LIMIT = 200;
  * staff: 同じ課題の、受講者ごとの最新の提出と AI のルーブリックの結果。項目ごとに「満たさない」を
  * 数え、共通のつまずきを見つけられるようにする。提出ファイルは各提出の詳細で読む。
  */
-export async function taskBoard(
-  db: Db,
-  caller: Caller,
-  taskId: string,
-  assignedOnly: boolean,
-): Promise<TaskBoard> {
+export async function taskBoard(db: Db, taskId: string): Promise<TaskBoard> {
   const task = await taskStage(db, taskId);
   if (!task) throw new ApiError("課題が見つかりません", 404);
   const items = await rubricItemsOf(db, task.definition);
@@ -751,7 +723,6 @@ export async function taskBoard(
         learnerOrUnknown(submissions.studentId),
         eq(submissions.taskId, taskId),
         sql`${submissions.attempt} = (select max(m.attempt) from submissions m where m.student_id = "submissions"."student_id" and m.task_id = "submissions"."task_id")`,
-        assignedOnly ? assignedTo(caller) : undefined,
       ),
     )
     .orderBy(desc(submissions.submittedAt))

@@ -72,7 +72,7 @@ export const SettingsPage = ({
       {backendEnabled && profile && role !== "instructor" ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
-      {backendEnabled && role === "admin" ? <LearningPaceManager admin /> : null}
+      {backendEnabled && role === "admin" ? <LearningPaceManager /> : null}
     </div>
   </>
 );

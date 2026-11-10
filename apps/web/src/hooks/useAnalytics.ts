@@ -60,11 +60,8 @@ interface UseInstructorOverviewResult {
   refetch: () => Promise<void>;
 }
 
-/** 講師ダッシュボードの未返信 / 遅延 / 受講者進捗。 `assignedOnly` で担当の受講者だけ (#38)。 */
-export function useInstructorOverview(
-  enabled: boolean,
-  assignedOnly = false,
-): UseInstructorOverviewResult {
+/** 講師ダッシュボードの未返信 / 遅延 / 受講者進捗。 */
+export function useInstructorOverview(enabled: boolean): UseInstructorOverviewResult {
   const [overview, setOverview] = useState<InstructorOverview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +78,7 @@ export function useInstructorOverview(
     setLoading(true);
     setError(null);
     try {
-      const data = await getInstructorOverview(assignedOnly);
+      const data = await getInstructorOverview();
       if (reqId !== requestIdRef.current) return;
       setOverview(data);
     } catch (err) {
@@ -90,7 +87,7 @@ export function useInstructorOverview(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [enabled, assignedOnly]);
+  }, [enabled]);
 
   useEffect(() => {
     void refetch();

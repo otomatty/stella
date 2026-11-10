@@ -18,7 +18,6 @@ const page = {
     prerequisites: [],
   },
   counts: { learners: 1, assigned: 1, unassigned: 0, exempted: 0 },
-  instructors: [],
   total: 1,
   next_offset: 50,
   learners: [],
@@ -34,7 +33,6 @@ describe("listStageGrantLearners", () => {
         {
           q: "山田",
           status: "assigned",
-          instructor: "mine",
           prereq: "doing",
           offset: 50,
           limit: 25,
@@ -45,7 +43,6 @@ describe("listStageGrantLearners", () => {
     const params = new URLSearchParams({
       q: "山田",
       status: "assigned",
-      instructor: "mine",
       prereq: "doing",
       offset: "50",
       limit: "25",

@@ -24,7 +24,6 @@ function DashboardPage() {
         setPage={s.setPage}
         onOpenReview={s.onOpenReview}
         backendEnabled={s.backendEnabled}
-        currentUserId={s.currentUserId}
       />
     );
   }

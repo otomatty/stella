@@ -15,7 +15,6 @@ function ReviewQueuePage() {
       <ReviewQueue
         setPage={s.setPage}
         onOpenReview={s.onOpenReview}
-        currentUserId={s.currentUserId}
         backendEnabled={s.backendEnabled}
       />
     </RoleGuard>

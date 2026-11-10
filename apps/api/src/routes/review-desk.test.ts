@@ -16,7 +16,6 @@ import {
   codingRules,
   discoveryRequests,
   enrollments,
-  learnerInstructors,
   lessonProgress,
   lessons,
   notifications,
@@ -138,7 +137,6 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
         { userId: "learner", stageId: "stage", status: "active" },
         { userId: "learner2", stageId: "stage", status: "active" },
       ]),
-      db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "teacher" }),
       db.insert(skills).values({ id: "html", title: "HTML" }),
       db.insert(codingRules).values({
         id: "CR-SCOPE-01",
@@ -209,7 +207,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     (await json<{ row: Record<string, unknown> }>(await call(`/api/submissions/${id}`, as))).row;
 
   describe("人に回した提出のキュー", () => {
-    it("一覧に人に回した理由・確信度・判定案・担当者・ステージとパターンを載せる", async () => {
+    it("一覧に人に回した理由・確信度・判定案・ステージとパターンを載せる", async () => {
       complete.mockResolvedValue(answer(aiOutput({ confidence: "low" })));
       const escalated = await submit();
       await runAi();
@@ -223,16 +221,14 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
         route_reasons: ["low-confidence"],
         ai_confidence: "low",
         ai_proposed_verdict: "pass",
-        assignee_id: "teacher",
-        assignee_name: "講師",
         stage_id: "stage",
         task_pattern: "html-page",
       });
       expect(rows.find((r) => r.id === consulted)).toMatchObject({
         route_reasons: ["consult"],
         ai_confidence: null,
-        assignee_id: null,
       });
+      expect(rows.every((r) => !("assignee_id" in r) && !("assignee_name" in r))).toBe(true);
       // 管理者もキューを読める (画面の入口と同じロール)。
       expect((await call("/api/submissions", "boss")).status).toBe(200);
     });
@@ -418,7 +414,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect(progress?.passedAt?.getTime()).toBe(later.getTime());
     });
 
-    it("一覧は確信度が中を先に、未確認・ステージ・確信度・受講者・日付・担当で絞り込める", async () => {
+    it("一覧は確信度が中を先に、未確認・ステージ・確信度・受講者・日付で絞り込める", async () => {
       const high = await aiPassed("learner", "high");
       const medium = await aiPassed("learner2", "medium");
       const list = async (query = "", as = "teacher") => {
@@ -447,7 +443,6 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       expect((await list("?learnerId=learner2")).map((r) => r.submissionId)).toEqual([medium]);
       expect((await list("?stageId=stage")).length).toBe(2);
       expect(await list("?from=2999-01-01")).toEqual([]);
-      expect((await list("?assigned=mine")).map((r) => r.submissionId)).toEqual([high]);
       expect((await list("", "boss")).length).toBe(2);
       // 受講者は読めない。
       expect((await call("/api/review-desk/ai-passed", "learner")).status).toBe(403);
@@ -495,17 +490,12 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     await db
       .insert(submissions)
       .values({ id: "unknown", studentId: null, code: "", stageTitle: "", assignmentTitle: "" });
-    await db.insert(learnerInstructors).values({ learnerId: "learner2", instructorId: "teacher" });
     for (const role of ["instructor", "admin"] as const) {
       await db.update(profiles).set({ role }).where(eq(profiles.id, "learner2"));
       const queue = await json<{ rows: { id: string }[] }>(
         await call("/api/submissions", "teacher"),
       );
       expect(queue.rows.map((r) => r.id).sort()).toEqual([kept, "unknown"].sort());
-      const assigned = await json<{ rows: { id: string }[] }>(
-        await call("/api/submissions?assigned=mine", "teacher"),
-      );
-      expect(assigned.rows.map((r) => r.id)).toEqual([kept]);
       const passed = await json<{ rows: { submissionId: string }[] }>(
         await call("/api/review-desk/ai-passed", "teacher"),
       );
@@ -715,6 +705,10 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       });
       expect(loaded.submissions).toHaveLength(2);
       expect(loaded.submissions.find((s) => s.studentId === "learner")?.submissionId).toBe(latest);
+      const asBoss = await json<TaskBoard>(await board("", "boss"));
+      expect(asBoss.submissions.map((s) => s.studentId).sort()).toEqual(
+        loaded.submissions.map((s) => s.studentId).sort(),
+      );
       expect(loaded.items).toEqual([
         expect.objectContaining({
           id: "CR-SCOPE-01",
@@ -723,9 +717,6 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
         }),
         expect.objectContaining({ id: "heading", unmet: 2 }),
       ]);
-      const mine = await json<TaskBoard>(await board("&assigned=mine"));
-      expect(mine.submissions.map((s) => s.studentId)).toEqual(["learner"]);
-
       const route = (rubricId: string, as = "teacher") =>
         post("/api/review-desk/task-board/discovery", as, {
           taskId: fixture.input.taskId,

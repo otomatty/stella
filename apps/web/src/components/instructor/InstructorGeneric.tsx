@@ -17,7 +17,7 @@ import type { InstructorStudentProgress } from "@stella/shared/cms/types";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
 
 const titles: Record<string, string> = {
-  students: "担当受講者",
+  students: "受講者",
   qa: "Q&A 未返信",
 };
 
@@ -112,7 +112,7 @@ function StudentsTable({
   }>;
 }) {
   if (rows.length === 0) {
-    return <Card className="p-12 text-center text-sm text-ink-3">担当受講者がいません。</Card>;
+    return <Card className="p-12 text-center text-sm text-ink-3">受講者がいません。</Card>;
   }
 
   return (

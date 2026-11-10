@@ -25,7 +25,6 @@ import { fetchAiPassed } from "@/lib/review-desk-api";
 interface AiPassedListProps {
   /** 絞り込みの選択肢 (ステージ・課題・受講者) を作るのに使う提出。 */
   submissions: Submission[];
-  assignedOnly: boolean;
   onOpen: (submissionId: string) => void;
 }
 
@@ -40,7 +39,7 @@ function formatDate(iso: string | null): string {
  * AI が合格にした提出の事後確認の一覧 (#34、07 §6.4 の 6)。期間は限らない。
  * ステージ・課題・受講者・確信度・日付で絞り込め、既定では確信度が「中」を先に並べる。
  */
-export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedListProps) {
+export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
   const [state, setState] = useState<AiPassedState>("unchecked");
   const [stageId, setStageId] = useState("");
   const [taskId, setTaskId] = useState("");
@@ -80,7 +79,6 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
     fetchAiPassed(
       {
         state,
-        assignedOnly,
         ...(stageId ? { stageId } : {}),
         ...(taskId ? { taskId } : {}),
         ...(learnerId ? { learnerId } : {}),
@@ -98,7 +96,7 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
           setError(err instanceof Error ? err.message : "一覧を読み込めませんでした");
       });
     return () => controller.abort();
-  }, [state, stageId, taskId, learnerId, confidence, from, to, assignedOnly]);
+  }, [state, stageId, taskId, learnerId, confidence, from, to]);
 
   return (
     <>
@@ -194,20 +192,19 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
               <TableHead>課題</TableHead>
               <TableHead>AI 合格日</TableHead>
               <TableHead>確認</TableHead>
-              <TableHead>担当</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {result === null ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-ink-3 py-10">
+                <TableCell colSpan={6} className="text-center text-ink-3 py-10">
                   読み込んでいます…
                 </TableCell>
               </TableRow>
             ) : result.rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-ink-3 py-10">
+                <TableCell colSpan={6} className="text-center text-ink-3 py-10">
                   条件に合う AI の合格はありません
                 </TableCell>
               </TableRow>
@@ -241,7 +238,6 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
                       <span className="text-ink-3 text-[11.5px]">未確認</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-ink-3">{r.assigneeName ?? "-"}</TableCell>
                   <TableCell>
                     <ChevronRight size={14} className="text-ink-4" />
                   </TableCell>

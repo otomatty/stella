@@ -4,7 +4,7 @@
  * - 人が見る提出 (`needsHumanReview`): 判定前で、AI が確認中でも新しい提出に置き換えたものでもない。
  *   サイドバーの件数・ダッシュボード・キューの見出しは、どれもこれで数える。
  * - AI が確認中の提出は人のキューに数えず、別に並べる (人が先に確定もできる)。
- * - 人に回した理由で分け (`reviewQueueGroup`)、待ち時間・理由・担当者で並べる。
+ * - 人に回した理由で分け (`reviewQueueGroup`)、待ち時間・理由で並べる。
  */
 
 import {
@@ -37,16 +37,10 @@ export function isAiPassed(s: Pick<Submission, "verdict" | "reviewSource" | "tas
   return Boolean(s.taskId) && s.verdict === "pass" && s.reviewSource === "ai";
 }
 
-/**
- * テストで合格した提出。担当の絞り込みを当て、新しい順に並べる。元の配列は変えない。
- * `inScope` は人のキューと同じ (担当だけなら、その受講者の提出だけ)。
- */
-export function testsPassedRows(
-  rows: readonly Submission[],
-  inScope: (row: Submission) => boolean,
-): Submission[] {
+/** テストで合格した提出。新しい順に並べる。元の配列は変えない。 */
+export function testsPassedRows(rows: readonly Submission[]): Submission[] {
   return rows
-    .filter((row) => row.reviewSource === "tests" && inScope(row))
+    .filter((row) => row.reviewSource === "tests")
     .sort((a, b) => b.submittedAt - a.submittedAt);
 }
 
@@ -73,7 +67,6 @@ export function sortQueue(rows: Submission[], sort: ReviewQueueSort): Submission
       key: {
         submittedAt: s.submittedAt,
         group: queueGroupOf(s),
-        assigneeName: s.assigneeName ?? null,
       },
     }))
     .sort((a, b) => compare(a.key, b.key))

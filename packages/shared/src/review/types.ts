@@ -72,7 +72,7 @@ export interface RubricCriterion {
 
 export interface Submission {
   id: string;
-  /** 担当の受講者だけに絞るときに使う (#38)。デモの提出は持たない。 */
+  /** 提出した受講者。デモの提出は持たない。 */
   studentId?: string | null;
   studentName: string;
   studentInitials: string;
@@ -120,9 +120,6 @@ export interface Submission {
   /** staff 向け (一覧): 最新の AI 一次レビューの確信度と判定案。 */
   aiConfidence?: import("./ai-review.js").Confidence | null;
   aiProposedVerdict?: "pass" | "resubmit" | null;
-  /** staff 向け (一覧): 受講者の担当講師 (#38)。担当者で並べるのに使う。 */
-  assigneeId?: string | null;
-  assigneeName?: string | null;
   /** staff 向け (一覧): 課題のステージとパターン (コメント集の当てはめ・同じ課題をまとめて見る)。 */
   stageId?: string | null;
   taskPattern?: string | null;

@@ -11,15 +11,13 @@ import { TaskSupportSummary } from "@/components/learner/TaskSupportSummary";
 import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 
 interface Learners {
-  learners: { id: string; name: string; instructorId: string | null }[];
-  instructors: { id: string; name: string }[];
+  learners: { id: string; name: string }[];
 }
-export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
+export function LearningPaceManager() {
   const [data, setData] = useState<Learners | null>(null);
   const [selected, setSelected] = useState("");
   const firstSteps = useFirstSteps(selected, Boolean(selected));
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [revision, setRevision] = useState(0);
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -38,20 +36,6 @@ export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
-  const assign = async (instructorId: string) => {
-    setSaving(true);
-    try {
-      await apiFetch(`/api/learning-pace/${encodeURIComponent(selected)}/instructor`, {
-        method: "PUT",
-        body: { instructor_id: instructorId || null },
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "担当を保存できませんでした");
-    } finally {
-      setSaving(false);
-    }
-  };
   return (
     <Card className="mb-5">
       <CardHeader>
@@ -63,7 +47,7 @@ export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
             {error}
           </p>
         ) : null}
-        <Label htmlFor="pace-learner">{admin ? "受講者" : "担当している受講者"}</Label>
+        <Label htmlFor="pace-learner">受講者</Label>
         <select
           id="pace-learner"
           className="w-full border border-border rounded-md bg-background p-2 text-sm"
@@ -78,31 +62,10 @@ export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
           ))}
         </select>
         {data && !data.learners.length ? (
-          <p className="text-sm text-ink-3">
-            担当する受講者がいません。管理者が設定画面から担当講師を登録できます。
-          </p>
+          <p className="text-sm text-ink-3">受講者がいません。</p>
         ) : null}
         {selected ? (
           <>
-            {admin ? (
-              <div className="space-y-1">
-                <Label htmlFor="pace-instructor">担当講師</Label>
-                <select
-                  id="pace-instructor"
-                  disabled={saving}
-                  className="w-full border border-border rounded-md bg-background p-2 text-sm"
-                  value={data?.learners.find((l) => l.id === selected)?.instructorId ?? ""}
-                  onChange={(e) => void assign(e.target.value)}
-                >
-                  <option value="">未設定</option>
-                  {data?.instructors.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
             {firstSteps?.stage_started ? <FirstStepsCard data={firstSteps} compact /> : null}
             <LearningPacePanel key={`${selected}:${revision}`} userId={selected} />
             <TaskSupportPanel key={`support-${selected}`} userId={selected} />

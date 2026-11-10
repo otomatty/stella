@@ -11,7 +11,6 @@ export interface StageRosterRow {
   email: string | null;
   role?: string;
   selectable: boolean;
-  instructor: { id: string; display_name: string } | null;
   assigned: boolean;
   exempted: boolean;
   unlocked_by_skill_check: boolean;
@@ -59,8 +58,6 @@ export interface StageRosterDiff {
 export interface RosterLocalFilter {
   q: string;
   status: "all" | "assigned" | "unassigned" | "exempted";
-  /** `all` / `mine` / `none` / 講師の id。 */
-  instructor: string;
   prereq: "all" | "done" | "doing" | "none" | "not_done";
 }
 
@@ -292,7 +289,6 @@ function matchesLocal(
   row: StageRosterRow,
   view: { assigned: boolean; exempted: boolean },
   filter: RosterLocalFilter,
-  callerId: string | null,
 ): boolean {
   if (!matchesQuery(row, filter.q)) return false;
   if (filter.status === "assigned" && !view.assigned) return false;
@@ -303,10 +299,7 @@ function matchesLocal(
   } else if (filter.prereq !== "all" && row.prerequisite_status !== filter.prereq) {
     return false;
   }
-  if (filter.instructor === "all") return true;
-  if (filter.instructor === "none") return row.instructor === null;
-  if (filter.instructor === "mine") return callerId !== null && row.instructor?.id === callerId;
-  return row.instructor?.id === filter.instructor;
+  return true;
 }
 
 function viewOf(baseline: StageRosterRow, pending: StageRosterPending): StageRosterView {
@@ -341,9 +334,8 @@ export function composeRosterRows(args: {
   changesOnly: boolean;
   assignedScope: boolean;
   filter: RosterLocalFilter;
-  callerId: string | null;
 }): StageRosterView[] {
-  const { loaded, pending, changesOnly, assignedScope, filter, callerId } = args;
+  const { loaded, pending, changesOnly, assignedScope, filter } = args;
 
   if (changesOnly) {
     const fresh: StageRosterView[] = [];
@@ -351,7 +343,7 @@ export function composeRosterRows(args: {
     for (const entry of pending.values()) {
       const view = viewOf(entry.row, pending);
       if (assignedScope && !view.assigned) continue;
-      if (!matchesLocal(entry.row, view, filter, callerId)) continue;
+      if (!matchesLocal(entry.row, view, filter)) continue;
       if (assignedScope && !entry.row.assigned) fresh.push(view);
       else rest.push(view);
     }
@@ -366,7 +358,7 @@ export function composeRosterRows(args: {
     for (const entry of pending.values()) {
       const view = viewOf(entry.row, pending);
       if (entry.row.assigned || !view.assigned) continue;
-      if (!matchesLocal(entry.row, view, filter, callerId)) continue;
+      if (!matchesLocal(entry.row, view, filter)) continue;
       fresh.push(view);
     }
     fresh.sort(compareViews);

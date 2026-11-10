@@ -10,7 +10,6 @@ import { getDb } from "../db/client.js";
 import {
   aiReviews,
   enrollments,
-  learnerInstructors,
   mentorMemos,
   notifications,
   profiles,
@@ -33,6 +32,7 @@ import type { Env } from "../env.js";
 import { completeJsonSchema } from "../lib/anthropic-complete.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import {
+  collectMemoMaterial,
   enqueueWeeklyMemos,
   MAX_MEMO_ATTEMPTS,
   memoWeekOf,
@@ -97,7 +97,7 @@ beforeEach(async () => {
         email: "taro@example.test",
         role: "student",
       },
-      { id: "peer", displayName: "担当のない受講者", role: "student" },
+      { id: "peer", displayName: "無効な受講者", role: "student", disabled: true },
       { id: "late", displayName: "今週から始めた受講者", role: "student" },
       { id: "teacher", displayName: "担当講師", role: "instructor" },
       { id: "teacher2", displayName: "別の講師", role: "instructor" },
@@ -143,10 +143,6 @@ beforeEach(async () => {
         status: "active",
         enrolledAt: new Date("2026-10-13T00:00:00Z"),
       },
-    ]),
-    db.insert(learnerInstructors).values([
-      { learnerId: "learner", instructorId: "teacher" },
-      { learnerId: "late", instructorId: "teacher" },
     ]),
   ]);
   await db.update(stages).set({ status: "published" }).where(eq(stages.id, "stage"));
@@ -317,13 +313,19 @@ async function seedWeek() {
 const memoRows = () => db.select().from(mentorMemos);
 
 describe("週次の育成メモを積む (cron)", () => {
-  it("前の週を、担当のいる・週の終わりまでに始めていた受講者にだけ 1 枚積む", async () => {
+  it("前の週を、週の終わりまでに始めていた有効な受講者にだけ積む", async () => {
     expect(memoWeekOf("2026-10-14")).toBe(WEEK);
     expect(memoWeekOf("2026-10-12")).toBe(WEEK);
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
     expect(await enqueueWeeklyMemos(db, new Date(NOW.getTime() + 15 * MIN))).toBe(0);
     const rows = await memoRows();
     expect(rows).toMatchObject([{ learnerId: "learner", weekStart: WEEK, state: "queued" }]);
+  });
+
+  it("割り当ての有無にかかわらず、有効な受講者には積む", async () => {
+    await db.update(profiles).set({ disabled: false }).where(eq(profiles.id, "peer"));
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(2);
+    expect((await memoRows()).map((row) => row.learnerId).sort()).toEqual(["learner", "peer"]);
   });
 
   it("週の途中で修了した受講者にも積む。週より前に修了した受講者には積まない", async () => {
@@ -376,11 +378,11 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
   });
 
-  it("担当が無効な講師、または講師でない人なら積まない", async () => {
+  it("staff が無効でも受講者には積み、無効な受講者には積まない", async () => {
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
-    expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
-    await db.delete(learnerInstructors);
-    await db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "peer" });
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
+    await db.delete(mentorMemos);
+    await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "learner"));
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
   });
 
@@ -849,9 +851,43 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
       .select()
       .from(notifications)
       .where(eq(notifications.type, "learner_stumble"));
-    expect(sent.map((n) => n.payload.signal)).toEqual([signal]);
+    expect(sent.map((n) => n.userId).sort()).toEqual(["admin", "teacher", "teacher2"]);
+    expect(new Set(sent.map((n) => n.payload.signal))).toEqual(new Set([signal]));
     await runMentorMemoCron(env, db, () => NOW.getTime());
     expect((await memoRows())[0]?.material?.stumbles).toEqual({ [signal]: 1 });
+  });
+
+  it("同じ受講者・同じ種類・同じ鍵のつまずきを staff 2 人に知らせても、材料では 1 回と数える", async () => {
+    const key = "2026-10-06";
+    const at = new Date("2026-10-06T00:00:00Z");
+    await db.insert(notifications).values([
+      {
+        id: `stumble:idle:learner:teacher:${key}`,
+        userId: "teacher",
+        type: "learner_stumble",
+        payload: { learner_id: "learner", signal: "idle" },
+        createdAt: at,
+      },
+      {
+        id: `stumble:idle:learner:teacher2:${key}`,
+        userId: "teacher2",
+        type: "learner_stumble",
+        payload: { learner_id: "learner", signal: "idle" },
+        createdAt: at,
+      },
+    ]);
+    const sent = await db
+      .select({ userId: notifications.userId })
+      .from(notifications)
+      .where(eq(notifications.type, "learner_stumble"));
+    expect(sent.map((row) => row.userId).sort()).toEqual(["teacher", "teacher2"]);
+    const material = await collectMemoMaterial(
+      db,
+      { id: "learner", role: "student", name: "山田 太郎", email: "taro@example.test" },
+      WEEK,
+      NOW,
+    );
+    expect(material.stumbles).toEqual({ idle: 1 });
   });
 });
 
@@ -867,7 +903,7 @@ describe("講師の画面 (GET /api/mentor-memos)", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("担当講師は自分の受講者のメモを読み、既定は前の週", async () => {
+  it("staff は受講者のメモを読み、既定は前の週", async () => {
     const res = await list("teacher");
     expect(res.status).toBe(200);
     const body = await json<List>(res);
@@ -882,13 +918,11 @@ describe("講師の画面 (GET /api/mentor-memos)", () => {
     expect(other.memos).toEqual([]);
   });
 
-  it("担当外の講師には見えず、受講者本人は読めない。管理者は全員を読む", async () => {
-    expect((await json<List>(await list("teacher2"))).memos).toEqual([]);
+  it("別の講師も同じメモを読み、受講者本人は読めない", async () => {
+    const teacher = await json<List>(await list("teacher"));
+    expect((await json<List>(await list("teacher2"))).memos).toEqual(teacher.memos);
     expect((await list("learner")).status).toBe(403);
-    expect((await json<List>(await list("admin"))).memos).toHaveLength(1);
-    // 担当を外れたら読めなくなる。
-    await db.delete(learnerInstructors).where(eq(learnerInstructors.learnerId, "learner"));
-    expect((await json<List>(await list("teacher"))).memos).toEqual([]);
+    expect((await json<List>(await list("admin"))).memos).toEqual(teacher.memos);
   });
 
   it("週は月曜の日付だけを受け付ける", async () => {
@@ -931,7 +965,7 @@ describe("講師の対応 (POST /api/mentor-memos/:id/actions)", () => {
     expect(JSON.stringify(sent)).not.toContain("関数名");
   });
 
-  it("管理者も一言を送れる (担当講師のいる受講者のメモ)", async () => {
+  it("管理者も一言を送れる", async () => {
     const res = await act({ kind: "message", message: "管理者からの声掛けです。" }, "admin");
     expect(res.status, await res.clone().text()).toBe(200);
     expect(await learnerNotifications()).toMatchObject([
@@ -959,14 +993,15 @@ describe("講師の対応 (POST /api/mentor-memos/:id/actions)", () => {
     expect(await learnerNotifications()).toEqual([]);
   });
 
-  it("担当外と受講者は対応できず、空の一言と知らない対応は 400", async () => {
-    expect((await act({ kind: "message", message: "x" }, "teacher2")).status).toBe(404);
+  it("受講者は対応できず、空の一言と知らない対応は 400。別の講師は対応できる", async () => {
     expect((await act({ kind: "message", message: "x" }, "learner")).status).toBe(403);
     expect((await act({ kind: "message", message: "  " })).status).toBe(400);
     expect((await act({ kind: "message", message: "あ".repeat(501) })).status).toBe(400);
     expect((await act({ kind: "call" })).status).toBe(400);
-    expect(await learnerNotifications()).toEqual([]);
-    expect((await memoRows())[0]?.actions).toEqual([]);
+    expect((await act({ kind: "message", message: "別の講師からです。" }, "teacher2")).status).toBe(
+      200,
+    );
+    expect(await learnerNotifications()).toMatchObject([{ body: "別の講師からです。" }]);
   });
 
   it("作成中のメモには対応できない", async () => {

@@ -51,7 +51,7 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   assignment_due: { icon: Bell, tone: "text-warning", label: "課題期限" },
   learning_pace_delayed: { icon: Bell, tone: "text-warning", label: "学習ペース" },
   learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
-  mentor_message: { icon: Send, tone: "text-brand", label: "担当講師から" },
+  mentor_message: { icon: Send, tone: "text-brand", label: "講師から" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージクリア" },
 };
 

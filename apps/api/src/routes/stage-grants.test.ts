@@ -84,8 +84,6 @@ const unlockInserted: {
   via: string;
   conflictTarget: unknown;
 }[] = [];
-const instructorLinks: { learnerId: string; instructorId: string }[] = [];
-
 type InsertRow = {
   stageId: string;
   profileId?: string;
@@ -296,9 +294,6 @@ const mockDb = {
     }
     if (table === "certificates") {
       return selectWhereOnly(async (where) => readCertificateRows(where));
-    }
-    if (keys.includes("learnerId")) {
-      return selectWhereOnly(async () => instructorLinks.map((row) => ({ ...row })));
     }
     if (keys.includes("userId")) {
       return selectWhereOnly(unlockSelect);
@@ -1300,7 +1295,6 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     );
     enrollmentRows.length = 0;
     certificateRows.length = 0;
-    instructorLinks.length = 0;
     vi.mocked(recordAudit).mockClear();
   });
 
@@ -1386,7 +1380,7 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     expect(nameBody.learners.map((row) => row.id)).toEqual(["ken"]);
   });
 
-  it("割り当て・免除・担当・前提で絞り、counts は絞り込み前の人数", async () => {
+  it("割り当て・免除・前提で絞り、counts は絞り込み前の人数", async () => {
     caller = { ...caller, id: "teacher-1", name: "講師A" };
     learnerSelect.mockResolvedValue([
       person("ada", "あ"),
@@ -1402,10 +1396,6 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
       { profileId: "old" },
     ]);
     unlockRows.push({ stageId: "stage-granted-1", userId: "ada", via: "staff" });
-    instructorLinks.push(
-      { learnerId: "ada", instructorId: "teacher-1" },
-      { learnerId: "sato", instructorId: "teacher-2" },
-    );
     enrollmentRows.push(
       { userId: "ada", stageId: "stage-pre-a", status: "completed" },
       { userId: "ada", stageId: "stage-pre-b", status: "completed" },
@@ -1421,7 +1411,6 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     expect(res.status).toBe(200);
     const body = await json<{
       counts: { learners: number; assigned: number; unassigned: number; exempted: number };
-      instructors: { id: string; display_name: string }[];
       total: number;
       learners: { id: string }[];
       stage: { prerequisites: { slug: string; title: string }[] };
@@ -1429,42 +1418,12 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     expect(body.counts).toEqual({ learners: 6, assigned: 3, unassigned: 3, exempted: 1 });
     expect(body.total).toBe(3);
     expect(body.learners.map((row) => row.id)).toEqual(["sato", "teacher-1", "teacher-2"]);
-    expect(body.instructors).toEqual([
-      { id: "teacher-1", display_name: "講師A" },
-      { id: "teacher-2", display_name: "講師B" },
-    ]);
+    expect(body).not.toHaveProperty("instructors");
     expect(body.stage.prerequisites).toEqual([
       { id: "stage-pre-a", slug: "pre-a", title: "前提A" },
       { id: "stage-pre-b", slug: "pre-b", title: "前提B" },
     ]);
 
-    const mine = await request(
-      app,
-      env,
-      "/api/stage-grants/stage-granted-1/learners?instructor=mine",
-      { token: "t" },
-    );
-    expect(
-      (await json<{ learners: { id: string }[] }>(mine)).learners.map((row) => row.id),
-    ).toEqual(["ada"]);
-    const none = await request(
-      app,
-      env,
-      "/api/stage-grants/stage-granted-1/learners?instructor=none",
-      { token: "t" },
-    );
-    expect(
-      (await json<{ learners: { id: string }[] }>(none)).learners.map((row) => row.id),
-    ).toEqual(["ken", "teacher-1", "teacher-2", "old"]);
-    const byTeacher = await request(
-      app,
-      env,
-      "/api/stage-grants/stage-granted-1/learners?instructor=teacher-2",
-      { token: "t" },
-    );
-    expect(
-      (await json<{ learners: { id: string }[] }>(byTeacher)).learners.map((row) => row.id),
-    ).toEqual(["sato"]);
     const doing = await request(
       app,
       env,
