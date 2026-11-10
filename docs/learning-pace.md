@@ -16,21 +16,20 @@ Issue #40。`docs/curriculum/07-stella-adoption-redesign.md` §10 の実装。
 
 コードの復習の類題 (#39、`tasks.variant_of` のある課題) は予定に入れない。課題・確認B・単元の時間のどれにも数えず、合格も進んだ予定時間にしない。類題の「約1週間後 (=確認B)」は、そのパターンに通常の確認B (類題でない `assessment-b`) があれば出さず、ここで予定する確認Bに任せる (二重に出さない)。通常の確認Bが無いパターンだけ、1週間後の類題が確認Bの代わりになる。出す時期は `docs/curriculum/07-stella-adoption-redesign.md` §7.3。
 
-担当講師との最小の連携として `learner_instructors` を持つ。管理者は設定の「受講者の学習ペース」から同じテナントの講師を設定でき、講師のダッシュボードには担当受講者だけが並ぶ。本人と担当講師・同じテナントの管理者が週の時間・開始日を変更できる。担当講師・管理者は開始診断の根拠付きでスキルを確認済みにできる。練習の評価スキルをすべて確認できた場合、その練習時間を計画から除く。確認A・Bと解説時間は除かない。診断を取り消すと再計算される。
+受講者ごとの担当は持たない。本人と管理者が週の時間・開始日を変更でき、管理者はだれでも他者のペース・診断を参照・編集できる。管理者は開始診断の根拠付きでスキルを確認済みにできる。練習の評価スキルをすべて確認できた場合、その練習時間を計画から除く。確認A・Bと解説時間は除かない。診断を取り消すと再計算される。
 
-既存の15分cronで進捗差を確認する。差が週の時間を超えた受講者の担当講師へ通知し、受講者・担当講師・週ごとに1通にする。今週すでに通知した組は計画を計算し直さずに飛ばし、1人の計算・通知が失敗しても他の受講者の確認を続ける。担当がない場合は他の講師へ広く通知しない。目標日は受講登録の `due_at` へ書き込まず、期限切れやアクセス制限を発生させない。
+既存の15分cronで、受講中の登録がある有効な受講者の進捗差を確認する。計算は1回のcronで20人まで (`PACE_DELAY_LEARNERS_PER_RUN`)。差が週の時間を超えたら、有効な管理者 (`admin` / `platform_admin`) 全員へ `learning_pace_delayed` を通知し、受講者・宛先・週ごとに1通にする。宛先全員へ今週すでに通知した受講者は計画を計算し直さずに飛ばし、1人の計算・通知が失敗しても他の受講者の確認を続ける。目標日は受講登録の `due_at` へ書き込まず、期限切れやアクセス制限を発生させない。
 
-週次の育成メモ (#38) は、生成した日のこの計算 (目安との差・週の時間・`needsInstructor`) を材料の1つに使う。担当講師はメモからこの画面の「ペースを変更する」を開いて週の時間・開始日を直し、その対応がメモに残る。メモとその他のつまずき検知は `docs/curriculum/07-stella-adoption-redesign.md` §6.5.1。
+週次の育成メモ (#38) は、生成した日のこの計算 (目安との差・週の時間・`needsInstructor`) を材料の1つに使う。管理者はメモからこの画面の「ペースを変更する」を開いて週の時間・開始日を直し、その対応がメモに残る。メモとその他のつまずき検知は `docs/curriculum/07-stella-adoption-redesign.md` §6.5.1。
 
 API:
 
 - `GET /api/learning-pace`: 本人の計画。既存のスキルツリーの霧を守り、`full` のステージの名前・ID・単元だけを返す。全体の予定時間と目標日は集計値で返す。
 - `POST /api/me`: `weekly_hours` / `learning_start_date` の部分更新。既存の `display_name` 更新も利用可能。
-- `GET /api/learning-pace?userId=...`: 担当講師・同じテナントの管理者向けの計画。
-- `GET /api/learning-pace/learners`: 講師は担当受講者だけ、管理者は同じテナントの受講者・講師一覧。
-- `PATCH /api/learning-pace/:userId`: 本人・担当講師・管理者による設定更新。
-- `PUT /api/learning-pace/:userId/instructor`: 管理者による担当登録。`instructor_id: null` で解除。
-- `GET` / `PUT /api/learning-pace/:userId/diagnostics`: 担当講師・管理者による診断の参照・登録 (`skill_id`, `evidence`)。
+- `GET /api/learning-pace?userId=...`: 管理者向けの計画。
+- `GET /api/learning-pace/learners`: 管理者向けの有効な受講者一覧。
+- `PATCH /api/learning-pace/:userId`: 本人・管理者による設定更新。
+- `GET` / `PUT /api/learning-pace/:userId/diagnostics`: 管理者による診断の参照・登録 (`skill_id`, `evidence`)。
 - `DELETE /api/learning-pace/:userId/diagnostics/:skillId`: 診断の取り消し。
 
 マイグレーションは `0044_learning_pace.sql`。既存の初回受講日・合格日を引き継ぐ。計算の境界、日付、権限、実SQLiteの移行・トリガー・通知は `pace.test.ts` と `learning-pace.test.ts` で検証する。
