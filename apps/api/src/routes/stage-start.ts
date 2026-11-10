@@ -46,7 +46,7 @@ import {
   errorResponse,
   getCaller,
   requireCanStartStage,
-  requireRole,
+  requireAdmin,
 } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { startSelfEnrollment } from "../lib/enrollment-write.js";
@@ -60,7 +60,7 @@ export const stageStartRoute = new Hono<{ Bindings: Env }>();
 stageStartRoute.post("/api/stages/:id/staff-enroll", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const stageId = c.req.param("id");
     const stage = await loadStaffEnrollableStage(db, stageId);
     if (!stage) throw new ApiError("ステージが見つかりません", 404);

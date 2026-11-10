@@ -161,7 +161,7 @@ function material(
     unlockCondition: "stage_active_or_cleared",
     requestId: null,
     createdAt: new Date("2026-08-20T00:00:00.000Z"),
-    reviewedBy: "seed-instructor",
+    reviewedBy: "seed-admin",
     reviewedAt: new Date("2026-08-21T00:00:00.000Z"),
     ...overrides,
   };
@@ -427,7 +427,7 @@ describe("受験できるロール (腕試しと同じ顔ぶれ)", () => {
   });
 
   it("講師は受講者と同じ発見教材を受けられる", async () => {
-    caller = { ...BASE_CALLER, id: "seed-instructor", role: "instructor" };
+    caller = { ...BASE_CALLER, id: "seed-admin", role: "admin" };
     const paper = await fetchPaper("m-active");
     expect(
       (await post("/api/discovery/m-active", { answers: correctAnswers(paper.questions) })).status,

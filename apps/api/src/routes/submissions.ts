@@ -4,7 +4,7 @@
  * 認可 (旧 RLS):
  *   - 受講者は自分の提出のみ insert (student_id = caller)。
  *   - 受講者は mine / 本人の :id を select 可。
- *   - 講師 / 管理者は提出を一覧 / 更新。
+ *   - 管理者は提出を一覧 / 更新。
  * 添削確定 (reviewed_at が初めて設定) で受講者へ review_completed 通知を生成する。
  *
  * 返却形は旧 PostgREST 埋め込み (`profiles!student_id(...)`) に合わせ、
@@ -25,7 +25,7 @@ import { aiReviews, notifications, profiles, sections, tasks, submissions } from
 import {
   errorResponse,
   getCaller,
-  requireRole,
+  requireAdmin,
   ApiError,
   isStaffRole,
   requireReturning,
@@ -234,7 +234,7 @@ const isLatestAi = sql`${latestAi.id} = (select r.id from ai_reviews r where r.s
 submissionsRoute.get("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const rows = await db
       .select({
         ...summaryColumns,
@@ -618,7 +618,7 @@ function parseExpectedSubmittedAt(value: string | undefined): Date | undefined {
 submissionsRoute.patch("/api/submissions/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const id = c.req.param("id");
 
     const current = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);

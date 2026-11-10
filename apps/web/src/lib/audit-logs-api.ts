@@ -1,7 +1,7 @@
 /**
  * 監査ログのデータアクセス層 (Issue #27 — Neon / Hono API)。
  *
- * 読み取り専用。 認可はサーバ側で instructor/admin のみ。 記録は管理 API 側。
+ * 読み取り専用。 認可はサーバ側で admin / platform_admin のみ。 記録は管理 API 側。
  */
 
 import { apiFetch } from "./api-client";

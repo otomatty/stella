@@ -121,7 +121,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者A", role: "student" },
         { id: "learner2", displayName: "受講者B", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
         { id: "boss", displayName: "管理者", role: "admin" },
       ]),
       db.insert(stages).values({
@@ -490,7 +490,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     await db
       .insert(submissions)
       .values({ id: "unknown", studentId: null, code: "", stageTitle: "", assignmentTitle: "" });
-    for (const role of ["instructor", "admin"] as const) {
+    for (const role of ["admin"] as const) {
       await db.update(profiles).set({ role }).where(eq(profiles.id, "learner2"));
       const queue = await json<{ rows: { id: string }[] }>(
         await call("/api/submissions", "teacher"),

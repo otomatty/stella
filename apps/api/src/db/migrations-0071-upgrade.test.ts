@@ -55,7 +55,7 @@ describe("0071: 旧版の dev-env-basics でクリアした受講者のクリア
       insert into certificates
         (id, tenant_id, user_id, stage_id, cert_code, issued_by, issued_at, recipient_name,
           stage_title, tenant_name, revoked) values
-        ('cert-old', 'ses', 'old-clear', 'stage-dev', 'CODE-OLD', 'instructor', ${COMPLETED_AT},
+        ('cert-old', 'ses', 'old-clear', 'stage-dev', 'CODE-OLD', 'issuer', ${COMPLETED_AT},
           '旧クリア', '入口', 'テスト', 0),
         ('cert-a', 'ses', 'check-a', 'stage-dev', 'CODE-A', null, ${COMPLETED_AT},
           '確認A', '入口', 'テスト', 0),

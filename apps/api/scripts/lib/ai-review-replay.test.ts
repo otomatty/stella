@@ -290,7 +290,7 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
           email: STUDENT_EMAIL,
           role: "student",
         },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
       ]),
       db.insert(stages).values({
         id: "stage",

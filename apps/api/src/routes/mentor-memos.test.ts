@@ -99,8 +99,8 @@ beforeEach(async () => {
       },
       { id: "peer", displayName: "無効な受講者", role: "student", disabled: true },
       { id: "late", displayName: "今週から始めた受講者", role: "student" },
-      { id: "teacher", displayName: "担当講師", role: "instructor" },
-      { id: "teacher2", displayName: "別の講師", role: "instructor" },
+      { id: "teacher", displayName: "担当講師", role: "admin" },
+      { id: "teacher2", displayName: "別の講師", role: "admin" },
       { id: "admin", displayName: "管理者", role: "admin" },
     ]),
     db.insert(stages).values({

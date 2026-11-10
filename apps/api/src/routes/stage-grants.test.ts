@@ -42,12 +42,12 @@ vi.mock("../lib/stage-audience.js", async (importOriginal) => {
 
 let caller: {
   id: string;
-  role: "instructor" | "student" | "admin";
+  role: "student" | "admin";
   name: string;
   email: null;
 } = {
-  id: "seed-instructor",
-  role: "instructor" as const,
+  id: "seed-admin",
+  role: "admin" as const,
   name: "講師",
   email: null,
 };
@@ -339,8 +339,8 @@ const { app } = mountTestApp(env, stageGrantsRoute);
 describe("GET /api/stage-grants", () => {
   beforeEach(() => {
     caller = {
-      id: "seed-instructor",
-      role: "instructor",
+      id: "seed-admin",
+      role: "admin",
       name: "講師",
       email: null,
     };
@@ -378,7 +378,7 @@ describe("GET /api/stage-grants", () => {
     expect(body.stages[0]?.slug).toBe("custom-basics");
   });
 
-  it.each(["instructor", "admin", "platform_admin"])("古い GET でも %s を選べる", async (role) => {
+  it.each(["admin", "platform_admin"])("古い GET でも %s を選べる", async (role) => {
     learnerSelect.mockResolvedValue([person("staff", "スタッフ", role)]);
     const res = await request(app, env, "/api/stage-grants", { token: "t" });
     expect(res.status).toBe(200);
@@ -545,8 +545,8 @@ describe("GET /api/stage-grants", () => {
 describe("PUT /api/stage-grants/:stageId", () => {
   beforeEach(() => {
     caller = {
-      id: "seed-instructor",
-      role: "instructor",
+      id: "seed-admin",
+      role: "admin",
       name: "講師",
       email: null,
     };
@@ -578,24 +578,21 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(recordAudit).toHaveBeenCalled();
   });
 
-  it.each(["instructor", "admin", "platform_admin"])(
-    "PUT でも %s を割り当てて免除できる",
-    async (role) => {
-      profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
-      const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
-        token: "t",
-        method: "PUT",
-        body: JSON.stringify({ profile_ids: ["teacher"], unlocked_profile_ids: ["teacher"] }),
-      });
-      expect(res.status).toBe(200);
-      expect(writtenRows()).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ stageId: "stage-granted-1", profileId: "teacher" }),
-          expect.objectContaining({ stageId: "stage-granted-1", userId: "teacher", via: "staff" }),
-        ]),
-      );
-    },
-  );
+  it.each(["admin", "platform_admin"])("PUT でも %s を割り当てて免除できる", async (role) => {
+    profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({ profile_ids: ["teacher"], unlocked_profile_ids: ["teacher"] }),
+    });
+    expect(res.status).toBe(200);
+    expect(writtenRows()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ stageId: "stage-granted-1", profileId: "teacher" }),
+        expect.objectContaining({ stageId: "stage-granted-1", userId: "teacher", via: "staff" }),
+      ]),
+    );
+  });
 
   it("既に grant がある無効受講者は残せる", async () => {
     grantSelect.mockResolvedValue([{ profileId: "disabled-learner" }]);
@@ -1276,7 +1273,7 @@ const grantedStage = {
 
 describe("GET /api/stage-grants/:stageId/learners", () => {
   beforeEach(() => {
-    caller = { id: "seed-instructor", role: "instructor", name: "講師", email: null };
+    caller = { id: "seed-admin", role: "admin", name: "講師", email: null };
     stageLookup.mockClear();
     stageLookup.mockResolvedValue([{ ...grantedStage, prerequisites: '["pre-a","pre-b"]' }]);
     grantSelect.mockReset();
@@ -1338,7 +1335,7 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     expect(prereq.status).toBe(400);
   });
 
-  it.each(["instructor", "admin", "platform_admin"])(
+  it.each(["admin", "platform_admin"])(
     "/learners は %s の role と selectable を返す",
     async (role) => {
       learnerSelect.mockResolvedValue([person("staff", "スタッフ", role)]);
@@ -1387,8 +1384,8 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
       person("ken", "い"),
       person("sato", "う"),
       person("old", "無効", "student", true),
-      person("teacher-1", "講師A", "instructor"),
-      person("teacher-2", "講師B", "instructor"),
+      person("teacher-1", "講師A", "admin"),
+      person("teacher-2", "講師B", "admin"),
     ]);
     grantSelect.mockResolvedValue([
       { profileId: "ada" },
@@ -1571,7 +1568,7 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
 
 describe("PATCH /api/stage-grants/:stageId", () => {
   beforeEach(() => {
-    caller = { id: "seed-instructor", role: "instructor", name: "講師", email: null };
+    caller = { id: "seed-admin", role: "admin", name: "講師", email: null };
     stageLookup.mockClear();
     stageLookup.mockResolvedValue([{ ...grantedStage }]);
     grantSelect.mockReset();
@@ -1632,7 +1629,7 @@ describe("PATCH /api/stage-grants/:stageId", () => {
     profileLookup.mockResolvedValue([
       { id: "seed-learner", role: "student", disabled: false },
       { id: "old", role: "student", disabled: true },
-      { id: "teacher", role: "instructor", disabled: false },
+      { id: "teacher", role: "admin", disabled: false },
     ]);
     for (const id of ["missing", "old"]) {
       const res = await patch({ add: [id] });
@@ -1658,37 +1655,31 @@ describe("PATCH /api/stage-grants/:stageId", () => {
     expect(recordAudit).not.toHaveBeenCalled();
   });
 
-  it.each(["instructor", "admin", "platform_admin"])(
-    "PATCH で %s を追加・免除できる",
-    async (role) => {
-      profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
-      const res = await patch({ add: ["teacher"], exempt: ["teacher"] });
-      expect(res.status).toBe(200);
-      expect(
-        (await json<{ counts: { learners: number; assigned: number; exempted: number } }>(res))
-          .counts,
-      ).toEqual({ learners: 1, assigned: 1, unassigned: 0, exempted: 1 });
-      expect(writtenRows()).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ stageId: "stage-granted-1", profileId: "teacher" }),
-          expect.objectContaining({ stageId: "stage-granted-1", userId: "teacher", via: "staff" }),
-        ]),
-      );
-    },
-  );
-
-  it.each(["instructor", "admin", "platform_admin"])(
-    "PATCH で割当済みの %s を免除できる",
-    async (role) => {
-      profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
-      grantSelect.mockResolvedValue([{ profileId: "teacher" }]);
-      const res = await patch({ exempt: ["teacher"] });
-      expect(res.status).toBe(200);
-      expect(writtenRows()).toEqual([
+  it.each(["admin", "platform_admin"])("PATCH で %s を追加・免除できる", async (role) => {
+    profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
+    const res = await patch({ add: ["teacher"], exempt: ["teacher"] });
+    expect(res.status).toBe(200);
+    expect(
+      (await json<{ counts: { learners: number; assigned: number; exempted: number } }>(res))
+        .counts,
+    ).toEqual({ learners: 1, assigned: 1, unassigned: 0, exempted: 1 });
+    expect(writtenRows()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ stageId: "stage-granted-1", profileId: "teacher" }),
         expect.objectContaining({ stageId: "stage-granted-1", userId: "teacher", via: "staff" }),
-      ]);
-    },
-  );
+      ]),
+    );
+  });
+
+  it.each(["admin", "platform_admin"])("PATCH で割当済みの %s を免除できる", async (role) => {
+    profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
+    grantSelect.mockResolvedValue([{ profileId: "teacher" }]);
+    const res = await patch({ exempt: ["teacher"] });
+    expect(res.status).toBe(200);
+    expect(writtenRows()).toEqual([
+      expect.objectContaining({ stageId: "stage-granted-1", userId: "teacher", via: "staff" }),
+    ]);
+  });
 
   it("新しい受講者を割り当て、監査ログを残す", async () => {
     const res = await patch({ add: ["seed-learner"] });
@@ -1708,12 +1699,12 @@ describe("PATCH /api/stage-grants/:stageId", () => {
       expect.objectContaining({
         stageId: "stage-granted-1",
         profileId: "seed-learner",
-        grantedBy: "seed-instructor",
+        grantedBy: "seed-admin",
       }),
     ]);
     expect(recordAudit).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ id: "seed-instructor" }),
+      expect.objectContaining({ id: "seed-admin" }),
       expect.objectContaining({
         action: "stage_grants_update",
         targetType: "stage",
@@ -1929,7 +1920,7 @@ describe("stage grant writes stay within D1 bind limits", () => {
     const db = dummyDb();
     const statements = planStageGrantWriteStatements(db, {
       stageId: "stage-granted-1",
-      grantedBy: "seed-instructor",
+      grantedBy: "seed-admin",
       grantRows: [
         ...ids.map((profileId) => ({ stageId: "stage-granted-1", profileId })),
         ...ids.map((profileId) => ({ stageId: "ancestor", profileId })),

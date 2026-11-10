@@ -10,7 +10,7 @@
 
 import { Hono } from "hono";
 import type { Env } from "../env.js";
-import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import { loadTodayVariant, loadVariantStock } from "../lib/variant-reviews.js";
 
 export const variantReviewsRoute = new Hono<{ Bindings: Env }>();
@@ -27,7 +27,7 @@ variantReviewsRoute.get("/api/variant-reviews/today", async (c) => {
 variantReviewsRoute.get("/api/variant-reviews/stock", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     return c.json({ patterns: await loadVariantStock(db) });
   } catch (err) {
     return errorResponse(c, err);

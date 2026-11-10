@@ -18,7 +18,7 @@ import { CHECK_ACTIONS, type CheckAction } from "@stella/shared/review/review-de
 import { Hono } from "hono";
 import type { Env } from "../env.js";
 import { clientIp } from "../lib/audit.js";
-import { ApiError, type Caller, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { ApiError, type Caller, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import {
   checkAiPassedSubmission,
   createTemplate,
@@ -36,7 +36,7 @@ import {
 export const reviewDeskRoute = new Hono<{ Bindings: Env }>();
 
 function requireStaff(caller: Caller) {
-  requireRole(caller, "instructor", "admin", "platform_admin");
+  requireAdmin(caller);
 }
 
 async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<unknown> {

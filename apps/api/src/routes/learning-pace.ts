@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { and, eq, isNull } from "drizzle-orm";
 import { parsePaceSettings } from "@stella/shared/study/pace";
 import { learningDiagnostics, profiles, tasks, sections, stages } from "../db/schema.js";
-import { ApiError, errorResponse, getCaller, requireRole, STAFF_ROLES } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import {
   loadLearningPace,
   paceProfileUpdate,
@@ -30,7 +30,7 @@ learningPaceRoute.get("/api/learning-pace", async (c) => {
 learningPaceRoute.get("/api/learning-pace/learners", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, ...STAFF_ROLES);
+    requireAdmin(caller);
     const learners = await db
       .select({
         id: profiles.id,
@@ -69,7 +69,7 @@ learningPaceRoute.patch("/api/learning-pace/:userId", async (c) => {
 learningPaceRoute.get("/api/learning-pace/:userId/diagnostics", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, ...STAFF_ROLES);
+    requireAdmin(caller);
     const userId = c.req.param("userId");
     await requirePaceLearner(db, caller, userId);
     const rows = await db
@@ -99,7 +99,7 @@ learningPaceRoute.get("/api/learning-pace/:userId/diagnostics", async (c) => {
 learningPaceRoute.put("/api/learning-pace/:userId/diagnostics", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, ...STAFF_ROLES);
+    requireAdmin(caller);
     const userId = c.req.param("userId");
     await requirePaceLearner(db, caller, userId);
     const body = (await c.req.json().catch(() => null)) as {
@@ -154,7 +154,7 @@ learningPaceRoute.put("/api/learning-pace/:userId/diagnostics", async (c) => {
 learningPaceRoute.delete("/api/learning-pace/:userId/diagnostics/:skillId", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, ...STAFF_ROLES);
+    requireAdmin(caller);
     const userId = c.req.param("userId");
     await requirePaceLearner(db, caller, userId);
     await db

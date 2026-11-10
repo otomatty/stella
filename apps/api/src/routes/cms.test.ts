@@ -141,10 +141,7 @@ const request = (path: string, init: RequestInit = {}) => {
   );
 };
 
-const asRole = (
-  role: ProfileRole,
-  id = role === "student" ? "seed-learner" : "seed-instructor",
-) => {
+const asRole = (role: ProfileRole, id = role === "student" ? "seed-learner" : "seed-admin") => {
   state.callerRole = role;
   state.callerId = id;
 };
@@ -167,7 +164,7 @@ describe("GET /api/cms/stages (カタログの秘匿)", () => {
 
   it("staff には全ステージを返す (draft も含む)", async () => {
     state.stages.push(stageFixture({ id: "stage-draft", status: "draft" }));
-    asRole("instructor");
+    asRole("admin");
     const res = await request("/api/cms/stages");
     expect(res.status).toBe(200);
     const body = (await res.json()) as { rows: { id: string }[] };
@@ -208,7 +205,7 @@ describe("GET /api/cms/stages/:id (受講登録のある受講者だけ)", () =>
   });
 
   it("staff は受講登録が無くても引ける", async () => {
-    asRole("instructor");
+    asRole("admin");
     const res = await request("/api/cms/stages/stage-html");
     expect(res.status).toBe(200);
   });

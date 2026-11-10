@@ -43,7 +43,7 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
     (typeof CHAT_TEST_PROFILES)[keyof typeof CHAT_TEST_PROFILES]
   > = {
     "seed-learner": CHAT_TEST_PROFILES.learner,
-    "seed-instructor": CHAT_TEST_PROFILES.instructor,
+    "seed-admin": CHAT_TEST_PROFILES.admin,
   };
 
   return {

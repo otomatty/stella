@@ -33,7 +33,7 @@ import {
   lessons,
   sections,
 } from "../db/schema.js";
-import { errorResponse, getCaller, isStaffRole, requireRole, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, isStaffRole, requireAdmin, ApiError } from "../lib/authz.js";
 import { auditLogInsert, clientIp } from "../lib/audit.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
@@ -207,7 +207,7 @@ materialsRoute.get("/api/materials", async (c) => {
 materialsRoute.patch("/api/materials/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const body: unknown = await c.req.json().catch(() => null);
     if (
       !body ||
@@ -259,7 +259,7 @@ materialsRoute.patch("/api/materials/:id", async (c) => {
 materialsRoute.get("/api/materials/:id/versions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
 
     const rows = await db
       .select()
@@ -302,7 +302,7 @@ materialsRoute.get("/api/materials/:id/versions", async (c) => {
 materialsRoute.get("/api/materials/:id/versions/:version/download", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const bucket = requireBucket(c.env);
 
     const rows = await db

@@ -4,7 +4,7 @@
  * Topbar の検索ボックスから呼ばれ、 ステージとレッスンをまとめて引く。
  *
  * アプリ層認可 (materials.ts と同基準):
- *   - staff (instructor / admin / platform_admin) … 全ステージ
+ *   - staff (admin / platform_admin) … 全ステージ
  *   - student … published かつ閲覧可能な enrollment (active / completed) のステージのみ
  *
  * ユーザー (profiles) は検索対象に含めない。 受講者一覧はロールによって遷移先が

@@ -21,8 +21,8 @@ beforeEach(() => {
     INSERT INTO profiles (id, tenant_id, role, display_name, created_at) VALUES
       ('learner', 'ses', 'student', '受講者', 1),
       ('other', 'ses', 'student', '他の受講者', 1),
-      ('teacher', 'ses', 'instructor', '講師', 1),
-      ('other-teacher', 'ses', 'instructor', '別の講師', 1),
+      ('teacher', 'ses', 'admin', '講師', 1),
+      ('other-teacher', 'ses', 'admin', '別の講師', 1),
       ('admin', 'ses', 'admin', '管理者', 1);
     INSERT INTO stages (id, tenant_id, slug, title, created_at, updated_at) VALUES ('root', 'ses', 'dev-env-basics', '入口', 1, 1), ('other-stage', 'ses', 'other', '他', 1, 1);
     INSERT INTO sections (id, stage_id, title, "order", created_at) VALUES ('unit', 'root', '単元', 0, 1), ('other-unit', 'other-stage', '他', 0, 1);

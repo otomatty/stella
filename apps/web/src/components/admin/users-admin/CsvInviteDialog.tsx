@@ -84,7 +84,7 @@ export function CsvInviteDialog({ open, onOpenChange, onInvited }: CsvInviteDial
           </DialogTitle>
           <DialogDescription>
             形式: <code>email, 表示名, ロール</code> (1 行 1 名 / ヘッダ行は自動スキップ)。 ロールは
-            受講者 / 講師 / 管理者。
+            受講者 / 管理者。
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 px-6 py-2">
@@ -106,7 +106,7 @@ export function CsvInviteDialog({ open, onOpenChange, onInvited }: CsvInviteDial
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={
-              "email,表示名,ロール\nhanako@example.com,山田 花子,講師\ntaro@example.com,田中 太郎,受講者"
+              "email,表示名,ロール\nhanako@example.com,山田 花子,管理者\ntaro@example.com,田中 太郎,受講者"
             }
             className="h-40 w-full rounded-sm border border-input bg-card px-3 py-2 text-[12.5px] font-mono resize-y outline-none focus:border-brand"
           />

@@ -175,7 +175,7 @@ export async function fetchSubmissionById(id: string): Promise<Submission> {
   return rowToSubmission(row);
 }
 
-/** staff: 提出物一覧 (新着順)。 認可はサーバ側 (instructor/admin)。 */
+/** staff: 提出物一覧 (新着順)。 認可はサーバ側 (admin / platform_admin)。 */
 export async function fetchSubmissions(): Promise<Submission[]> {
   const { rows } = await apiFetch<{ rows: SubmissionRow[] }>("/api/submissions");
   return (rows ?? []).map(rowToSubmission);

@@ -205,7 +205,7 @@ describe("GET /api/stage-queue/mine", () => {
 
   it("staff も見えるのは自分のキューだけ (他人のキューを覗く口は無い)", async () => {
     await request("/api/stage-queue/mine", { method: "POST", body: json({ stageId: "stage-a" }) });
-    caller = { ...caller, id: "seed-instructor", role: "instructor" };
+    caller = { ...caller, id: "seed-admin", role: "admin" };
     expect(await queueIds()).toEqual([]);
   });
 });

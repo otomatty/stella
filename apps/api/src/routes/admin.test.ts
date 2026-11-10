@@ -70,6 +70,28 @@ describe("ユーザー管理", () => {
     expect(JSON.stringify(body)).not.toContain("別のテナント");
   });
 
+  it("廃止した講師ロールは招待も変更も受け付けない", async () => {
+    const invite = await request(app, env, "/api/admin/users/invite", {
+      method: "POST",
+      token: await token(),
+      body: JSON.stringify({
+        invites: [{ email: "new@example.test", displayName: "新規", role: "instructor" }],
+      }),
+    });
+    expect(invite.status).toBe(400);
+
+    const change = await request(app, env, "/api/admin/users/role", {
+      method: "POST",
+      token: await token(),
+      body: JSON.stringify({ userId: "taken", role: "instructor" }),
+    });
+    expect(change.status).toBe(400);
+    const row = db.sqlite.prepare("select role from profiles where id = ?").get("taken") as {
+      role: string;
+    };
+    expect(row).toEqual({ role: "student" });
+  });
+
   it("存在しないユーザーは 404", async () => {
     const res = await request(app, env, "/api/admin/users/disable", {
       method: "POST",
@@ -121,7 +143,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
       (id, tenant_id, role, display_name, email, disabled, created_at)
      VALUES (?, ?, ?, ?, ?, 0, 1)`;
     run(profile, ADMIN, "ses", "admin", "管理者", "admin@example.com");
-    run(profile, INSTRUCTOR, "ses", "instructor", "講師", "instructor@example.com");
+    run(profile, INSTRUCTOR, "ses", "admin", "講師", "staff@example.com");
     run(profile, PLATFORM, "ses", "platform_admin", "基盤", "platform@example.com");
     run(profile, LEARNER, "ses", "student", "受講者太郎", "Learner@Example.com");
     run(profile, OTHER, "ses", "student", "別の受講者", "other@example.com");
@@ -466,7 +488,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
 
   it("受講者以外は削除できない", async () => {
     await expectRejected(
-      { userId: INSTRUCTOR, confirmEmail: "instructor@example.com" },
+      { userId: INSTRUCTOR, confirmEmail: "staff@example.com" },
       400,
       "削除できるのは受講者だけです",
     );

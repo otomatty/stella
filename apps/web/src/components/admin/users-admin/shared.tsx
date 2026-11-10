@@ -8,7 +8,6 @@ import type { ProfileRole } from "@stella/shared/cms/types";
 
 export const ROLE_LABEL: Record<ProfileRole, string> = {
   student: "受講者",
-  instructor: "講師",
   admin: "管理者",
   platform_admin: "プラットフォーム管理",
 };
@@ -22,11 +21,6 @@ export function toneFromId(id: string): AvatarTone {
 }
 
 export function RoleBadge({ role }: { role: ProfileRole }) {
-  const variant =
-    role === "instructor"
-      ? "accent"
-      : role === "admin" || role === "platform_admin"
-        ? "solid"
-        : undefined;
+  const variant = role === "admin" || role === "platform_admin" ? "solid" : undefined;
   return <Badge variant={variant}>{ROLE_LABEL[role]}</Badge>;
 }

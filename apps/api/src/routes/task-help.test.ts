@@ -194,11 +194,11 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     });
 
   describe("講師・管理者の教材確認", () => {
-    const staff = async (role: "instructor" | "admin" | "platform_admin" = "instructor") => {
+    const staff = async (role: "admin" | "platform_admin" = "admin") => {
       await db.update(profiles).set({ role }).where(eq(profiles.id, "learner"));
     };
 
-    it.each(["instructor", "admin", "platform_admin"] as const)(
+    it.each(["admin", "platform_admin"] as const)(
       "%s は全素材を条件なしで開け、記録せず、その応答だけに本文を返す",
       async (role) => {
         await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });

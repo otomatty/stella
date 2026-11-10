@@ -28,7 +28,7 @@ import type { OsName } from "../markdown/os-blocks.js";
 // ---------------------------------------------------------------
 
 export type StageStatus = "draft" | "published" | "archived";
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
+export type ProfileRole = "student" | "admin" | "platform_admin";
 
 export type StageColor = "indigo" | "green" | "amber" | "slate";
 
@@ -279,7 +279,7 @@ export type EnrollmentStatus = "active" | "completed" | "expired";
 
 /**
  * 受講登録 (Issue #20)。 「誰がどのステージを、 いつまでに受講するか」 を表す。
- * 割当は instructor/admin が RLS 配下で行い、 受講者は自分の行のみ read 可能。
+ * 割当は管理者が RLS 配下で行い、 受講者は自分の行のみ read 可能。
  */
 export interface EnrollmentRow {
   id: string;
@@ -506,23 +506,6 @@ export interface Analytics {
   stumbles: AnalyticsStumble[];
   status_breakdown: { active: number; completed: number; expired: number };
   generated_at: string;
-}
-
-/** 講師ダッシュボードの受講者進捗サンプル 1 行。 */
-export interface InstructorStudentProgress {
-  user_id: string;
-  display_name: string;
-  initials: string | null;
-  stage_title: string;
-  progress_pct: number;
-  overdue: boolean;
-}
-
-/** get_instructor_overview RPC の戻り値。 */
-export interface InstructorOverview {
-  overdue_learners: number;
-  total_learners: number;
-  students: InstructorStudentProgress[];
 }
 
 // ---------------------------------------------------------------

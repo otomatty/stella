@@ -189,7 +189,7 @@ export const profiles = sqliteTable(
       .references(() => tenants.id, { onDelete: "cascade" })
       .$defaultFn(() => LEGACY_TENANT_ID),
     role: text("role", {
-      enum: ["student", "instructor", "admin", "platform_admin"],
+      enum: ["student", "admin", "platform_admin"],
     })
       .notNull()
       .default("student"),

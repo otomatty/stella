@@ -39,7 +39,7 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
     (typeof CHAT_TEST_PROFILES)[keyof typeof CHAT_TEST_PROFILES]
   > = {
     "seed-learner": CHAT_TEST_PROFILES.learner,
-    "seed-instructor": CHAT_TEST_PROFILES.instructor,
+    "seed-admin": CHAT_TEST_PROFILES.admin,
   };
 
   return {
@@ -95,7 +95,7 @@ describe("POST /api/review-draft provider switch (#204)", () => {
   it("returns JSON (not SSE) via Anthropic when CHAT_PROVIDER is unset", async () => {
     const env = createChatTestEnv();
     const app = createTestApp(env);
-    const token = await mintChatTestToken("seed-instructor");
+    const token = await mintChatTestToken("seed-admin");
 
     const res = await postReviewDraft(app, env, token);
     expect(res.status).toBe(200);
@@ -115,7 +115,7 @@ describe("POST /api/review-draft provider switch (#204)", () => {
       ...GATEWAY_ENV_VARS,
     } as Partial<Env>);
     const app = createTestApp(env);
-    const token = await mintChatTestToken("seed-instructor");
+    const token = await mintChatTestToken("seed-admin");
 
     const res = await postReviewDraft(app, env, token);
     expect(res.status).toBe(200);
@@ -135,7 +135,7 @@ describe("POST /api/review-draft provider switch (#204)", () => {
       CHAT_MODEL: "grok-4.6",
     } as Partial<Env>);
     const app = createTestApp(env);
-    const token = await mintChatTestToken("seed-instructor");
+    const token = await mintChatTestToken("seed-admin");
 
     const res = await postReviewDraft(app, env, token);
     expect(res.status).toBe(503);

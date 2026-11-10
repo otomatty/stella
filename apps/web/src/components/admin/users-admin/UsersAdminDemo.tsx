@@ -28,7 +28,7 @@ const DEMO_USERS: Array<{
 }> = [
   { n: "田中 翔太", c: "c1", e: "tanaka@example.com", r: "student" },
   { n: "佐藤 美咲", c: "c2", e: "sato.m@example.com", r: "student" },
-  { n: "堀江メンター", c: "c3", e: "horie@ursal.co.jp", r: "instructor" },
+  { n: "堀江 健", c: "c3", e: "horie@ursal.co.jp", r: "admin" },
   { n: "鈴木 健一", c: "c4", e: "suzuki@example.com", r: "student" },
   { n: "中村 理恵", c: "c6", e: "nakamura@ursal.co.jp", r: "admin" },
 ];

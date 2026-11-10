@@ -80,7 +80,6 @@ function UsersAdminLive({
   const counts = useMemo(() => {
     const c: Record<ProfileRole, number> = {
       student: 0,
-      instructor: 0,
       admin: 0,
       platform_admin: 0,
     };
@@ -188,12 +187,6 @@ function UsersAdminLive({
             onClick={() => setRoleFilter("student")}
             label={`受講者 ${counts.student}`}
             variant="info"
-          />
-          <FilterChip
-            active={roleFilter === "instructor"}
-            onClick={() => setRoleFilter("instructor")}
-            label={`講師 ${counts.instructor}`}
-            variant="accent"
           />
           <FilterChip
             active={roleFilter === "admin"}

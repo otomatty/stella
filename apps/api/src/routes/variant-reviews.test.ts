@@ -63,7 +63,7 @@ const caller = (id: string): Caller => ({
   name: id,
   email: null,
 });
-const teacher: Caller = { ...caller("teacher"), role: "instructor" };
+const teacher: Caller = { ...caller("teacher"), role: "admin" };
 
 describe("類題の出題 (#39)", () => {
   let database: ReturnType<typeof sqliteD1>;
@@ -175,7 +175,7 @@ describe("類題の出題 (#39)", () => {
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者", role: "student" },
         { id: "learner2", displayName: "受講者2", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
         { id: "outsider", displayName: "未受講の受講者", role: "student" },
       ]),
       db.insert(skills).values({ id: "html", title: "HTML" }),
@@ -375,7 +375,7 @@ describe("類題の出題 (#39)", () => {
       await recordPass("learner2", issued?.taskId ?? "", noonOf(day), i === 0);
     }
     await loadTodayVariant(db, caller("learner2"), noonOf("2026-10-04"));
-    for (const role of ["instructor", "admin"] as const) {
+    for (const role of ["admin"] as const) {
       await db.update(profiles).set({ role }).where(eq(profiles.id, "learner2"));
       const { patterns } = await json<{ patterns: VariantStockSummary[] }>(
         await get("/api/variant-reviews/stock", "teacher"),

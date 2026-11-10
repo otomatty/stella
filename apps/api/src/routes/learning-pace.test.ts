@@ -77,11 +77,11 @@ function seed(sqlite: DatabaseSync) {
     INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES ('ses', 'SES', 0, 1, 0, 1, 1);
     INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES
       ('learner', 'ses', 'student', '受講者', 0, 'google', 1),
-      ('teacher', 'ses', 'instructor', '担当講師', 0, 'google', 1),
-      ('unassigned', 'ses', 'instructor', '別の講師', 0, 'google', 1),
+      ('teacher', 'ses', 'admin', '担当講師', 0, 'google', 1),
+      ('unassigned', 'ses', 'admin', '別の講師', 0, 'google', 1),
       ('admin', 'ses', 'admin', '管理者', 0, 'google', 1),
       ('outsider', 'ses', 'student', '別の受講者', 0, 'google', 1),
-      ('foreign-teacher', 'ses', 'instructor', 'もう一人の講師', 0, 'google', 1);
+      ('foreign-teacher', 'ses', 'admin', 'もう一人の講師', 0, 'google', 1);
     INSERT INTO stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) VALUES
       ('root', 'ses', 'dev-env-basics', '開発環境', 'published', 2, 35, 'catalog', 1, 1);
     INSERT INTO sections (id, stage_id, title, "order", created_at) VALUES ('unit', 'root', '最初のページ', 0, 1);
@@ -265,7 +265,6 @@ describe("学習ペースの権限と開始診断", () => {
     expect(teacher.map((l) => l.id).sort()).toEqual(["learner", "outsider"]);
     expect(admin.map((l) => l.id).sort()).toEqual(teacher.map((l) => l.id).sort());
     expect(teacher.every((l) => l.instructorId === undefined)).toBe(true);
-    expect(JSON.stringify(teacher)).not.toContain("instructor");
   });
   it("診断は根拠付きの staff の記録だけ。A・Bは削らない", async () => {
     const path = "/api/learning-pace/learner/diagnostics";

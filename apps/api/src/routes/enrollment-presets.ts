@@ -10,7 +10,7 @@
  *
  * アプリ層認可:
  *   - 定義 (作成 / 更新 / 削除) は admin 以上。 受講登録の運用ルールそのものだから
- *   - 参照は staff (instructor 以上)
+ *   - 参照は staff (admin / platform_admin)
  *
  * 設計の要点は `@stella/shared/enrollment/preset` のヘッダを参照。 期限は絶対日付ではなく
  * 基準日からのオフセットで持つ。
@@ -23,7 +23,13 @@ import { type PresetItemInput, validatePresetInput } from "@stella/shared/enroll
 
 import { stages, enrollmentPresetItems, enrollmentPresets } from "../db/schema.js";
 import type { Db } from "../db/client.js";
-import { ApiError, errorResponse, getCaller, requireRole, requireReturning } from "../lib/authz.js";
+import {
+  ApiError,
+  errorResponse,
+  getCaller,
+  requireAdmin,
+  requireReturning,
+} from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Caller } from "../lib/authz.js";
 import type { Env } from "../env.js";
@@ -51,12 +57,12 @@ const ITEM_SELECT = {
 
 /** プリセットの定義を触れるのは admin 以上。 */
 function requirePresetEditor(caller: Caller): void {
-  requireRole(caller, "admin", "platform_admin");
+  requireAdmin(caller);
 }
 
 /** 参照は受講状況を読める範囲 (staff) と揃える。 */
 function requirePresetUser(caller: Caller): void {
-  requireRole(caller, "instructor", "admin", "platform_admin");
+  requireAdmin(caller);
 }
 
 /** 対象プリセットを id で読む。無ければ 404。 */

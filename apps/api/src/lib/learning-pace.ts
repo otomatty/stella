@@ -123,8 +123,6 @@ export async function requirePaceLearner(db: Db, caller: Caller, userId: string)
     .where(eq(profiles.id, userId))
     .limit(1);
   if (!learner || learner.disabled) throw new ApiError("受講者が見つかりません", 404);
-  if (!["student", "admin", "platform_admin"].includes(learner.role))
-    throw new ApiError("学習の対象ではありません", 400);
   if (caller.id !== userId && !isStaffRole(caller.role)) {
     throw new ApiError("権限がありません", 403);
   }

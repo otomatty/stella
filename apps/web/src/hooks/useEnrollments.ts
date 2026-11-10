@@ -1,5 +1,5 @@
 /**
- * staff (instructor/admin) 向けの enrollment 取得 Hook (Issue #20)。
+ * staff (admin / platform_admin) 向けの enrollment 取得 Hook (Issue #20)。
  *
  * - `useStageEnrollments` … ステージ単位 (成績台帳などステージを軸にする画面向け)
  * - `useUsersEnrollments` … 選択中の受講者ぶん (受講登録画面は受講生を軸に選ぶ)

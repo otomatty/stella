@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  filterSearchResultsForLearner,
-  mapProfileRole,
-  resolveUiRole,
-  staffHomeLabel,
-} from "./ui-role.js";
+import { filterSearchResultsForLearner, resolveUiRole, staffHomeLabel } from "./ui-role.js";
 
 describe("resolveUiRole", () => {
   it("uses the profile role when backend is on and there is no override", () => {
@@ -50,19 +45,6 @@ describe("resolveUiRole", () => {
         demoRole: "admin",
       }),
     ).toEqual({ role: "admin", canSwitchToLearner: false });
-  });
-
-  it("maps an instructor profile onto the admin screen", () => {
-    expect(mapProfileRole("instructor")).toBe("admin");
-    expect(
-      resolveUiRole({
-        backendEnabled: true,
-        profileRole: "instructor",
-        uiRoleOverride: null,
-        demoRole: "learner",
-      }),
-    ).toEqual({ role: "admin", canSwitchToLearner: true });
-    expect(staffHomeLabel("instructor")).toBe("管理画面に戻る");
   });
 });
 

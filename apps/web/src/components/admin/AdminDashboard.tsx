@@ -54,7 +54,7 @@ function DashboardLive() {
   return (
     <>
       <PageHeader
-        title="KPIダッシュボード"
+        title="ダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
         actions={
           <Button onClick={() => void refetch()} disabled={loading}>
@@ -379,7 +379,7 @@ function DashboardDemo() {
   return (
     <>
       <PageHeader
-        title="KPIダッシュボード"
+        title="ダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
         actions=<Button>
           <Calendar size={14} />

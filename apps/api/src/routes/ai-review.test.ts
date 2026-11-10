@@ -159,7 +159,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
       ]),
       db.insert(stages).values({
         id: "stage",
@@ -1060,7 +1060,7 @@ describe("旧形式の提出も、確定前の下書きは受講者に返さな�
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
         { id: "learner", displayName: "受講者", role: "student" },
-        { id: "teacher", displayName: "講師", role: "instructor" },
+        { id: "teacher", displayName: "講師", role: "admin" },
       ]),
     ]);
     const token = await signAccessToken("test-secret", "learner", "l@example.com");

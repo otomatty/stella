@@ -261,7 +261,6 @@ describe("保存の文言", () => {
 
 describe("stageGrantRoleLabel", () => {
   it.each([
-    ["instructor", "講師"],
     ["admin", "管理者"],
     ["platform_admin", "管理者"],
     ["student", null],

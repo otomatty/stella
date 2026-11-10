@@ -1,15 +1,15 @@
 /**
  * 監査ログ API (旧 audit_logs 直 SELECT + RLS の置き換え / Issue #27)。
  *
- * 読み取り専用。 旧 RLS は「instructor/admin のみ SELECT、 append-only」。
- * アプリ層で requireRole(instructor, admin) を行う。 記録は管理 API 側で行う。
+ * 読み取り専用。 旧 RLS は「admin / platform_admin のみ SELECT、 append-only」。
+ * アプリ層で requireAdmin を行う。 記録は管理 API 側で行う。
  */
 
 import { Hono } from "hono";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 
 import { auditLogs } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import type { Env } from "../env.js";
 
 export const auditLogsRoute = new Hono<{ Bindings: Env }>();
@@ -33,7 +33,7 @@ const MAX_LIMIT = 1000;
 auditLogsRoute.get("/api/audit-logs", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
 
     const q = c.req.query();
     const conds = [

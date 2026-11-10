@@ -117,7 +117,7 @@ function EnrollmentsLive() {
     () => profiles.filter((p) => p.role === "student" && !p.disabled),
     [profiles],
   );
-  // スタッフ (講師 / 管理者) も自分で受講を始められるので、 状況を見る対象に残す。
+  // 管理者も自分で受講を始められるので、 状況を見る対象に残す。
   const staff = useMemo(
     () => profiles.filter((p) => p.role !== "student" && !p.disabled),
     [profiles],

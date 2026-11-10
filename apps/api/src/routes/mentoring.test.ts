@@ -36,7 +36,6 @@ import {
 import { reviewTaskSubmission } from "../lib/task-submission.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
-import { analyticsRoute } from "./analytics.js";
 import { chatRoute } from "./chat.js";
 import { submissionsRoute } from "./submissions.js";
 import { taskSupportRoute } from "./task-support.js";
@@ -67,22 +66,15 @@ beforeEach(async () => {
   database = sqliteD1();
   env = { DB: database.binding, AUTH_JWT_SECRET: SECRET, ANTHROPIC_API_KEY: "sk-test" } as Env;
   db = getDb(env);
-  app = mountTestApp(
-    env,
-    tasksRoute,
-    submissionsRoute,
-    analyticsRoute,
-    taskSupportRoute,
-    chatRoute,
-  ).app;
+  app = mountTestApp(env, tasksRoute, submissionsRoute, taskSupportRoute, chatRoute).app;
   const definition = JSON.stringify({ skills: { assesses: ["html"] } });
   await db.batch([
     db.insert(tenants).values([{ id: "ses", name: "SES" }]),
     db.insert(profiles).values([
       { id: "learner", displayName: "受講者", role: "student" },
       { id: "peer", displayName: "別の受講者", role: "student" },
-      { id: "teacher", displayName: "担当講師", role: "instructor" },
-      { id: "teacher2", displayName: "担当のない講師", role: "instructor" },
+      { id: "teacher", displayName: "担当講師", role: "admin" },
+      { id: "teacher2", displayName: "担当のない講師", role: "admin" },
     ]),
     db.insert(stages).values([
       { id: "stage", slug: "dev-env-basics", title: "開発環境", format: 2 },
@@ -280,20 +272,6 @@ describe("staff は受講者全員の提出と進捗を見る", () => {
     expect(await ids("teacher2")).toEqual(expected);
     expect((await get("/api/submissions", "learner")).status).toBe(403);
   });
-
-  it("講師ダッシュボードは講師が違っても同じ受講者数を返す", async () => {
-    await db.insert(enrollments).values({
-      userId: "peer",
-      stageId: "stage",
-      status: "active",
-    });
-    type Overview = { overview: { total_learners: number } };
-    const teacher = await json<Overview>(await get("/api/analytics/instructor", "teacher"));
-    const other = await json<Overview>(await get("/api/analytics/instructor", "teacher2"));
-    expect(teacher.overview.total_learners).toBe(2);
-    expect(other.overview).toEqual(teacher.overview);
-    expect(teacher.overview).not.toHaveProperty("assigned_learners");
-  });
 });
 
 describe("支援の記録 (GET /api/task-support)", () => {
@@ -415,7 +393,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
 describe("支援の記録を習得の水準に反映する", () => {
   const caller = {
     id: "teacher",
-    role: "instructor" as const,
+    role: "admin" as const,
     name: "担当講師",
     email: null,
   };
@@ -1093,7 +1071,7 @@ describe("つまずきの検知 (cron)", () => {
     expect(await allStumbles()).toEqual([]);
 
     await db.update(profiles).set({ disabled: false }).where(eq(profiles.id, "learner"));
-    await db.update(profiles).set({ disabled: true }).where(eq(profiles.role, "instructor"));
+    await db.update(profiles).set({ disabled: true }).where(eq(profiles.role, "admin"));
     await notifyStumbles(db, now);
     expect(await allStumbles()).toEqual([]);
   });

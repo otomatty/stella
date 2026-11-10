@@ -1311,7 +1311,7 @@ async function fetchStaffStages(): Promise<Map<string, StaffSkillMapStagePayload
 
 describe("GET /api/skill-map/staff", () => {
   beforeEach(() => {
-    CALLER.role = "instructor";
+    CALLER.role = "admin";
     vi.mocked(loadStaffSkillMapRows).mockResolvedValue(staffBoardRows());
   });
 
@@ -1327,7 +1327,7 @@ describe("GET /api/skill-map/staff", () => {
     const denied = (await student.json()) as { error: string };
     expect(denied.error).toBe("権限がありません");
 
-    for (const role of ["instructor", "admin", "platform_admin"] as const) {
+    for (const role of ["admin", "platform_admin"] as const) {
       CALLER.role = role;
       const res = await staffGet("/api/skill-map/staff");
       expect(res.status).toBe(200);
@@ -1391,7 +1391,7 @@ describe("GET /api/skill-map/staff/icons", () => {
   const svgOf = (slug: string) => `<svg xmlns="http://www.w3.org/2000/svg" id="${slug}"/>`;
 
   beforeEach(() => {
-    CALLER.role = "instructor";
+    CALLER.role = "admin";
     vi.mocked(loadStaffSkillMapRows).mockResolvedValue(staffBoardRows());
   });
 

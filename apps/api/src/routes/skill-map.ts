@@ -66,7 +66,7 @@ import {
   toStudyDate,
 } from "@stella/shared/study/activity";
 
-import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";
 import {
   loadApprovedDiscoverySummaries,
@@ -759,7 +759,7 @@ function buildStaffSkillMap(rows: readonly StaffSkillMapStageRow[]): {
 skillMapRoute.get("/api/skill-map/staff", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
     const { stages, cycles } = buildStaffSkillMap(await loadStaffSkillMapRows(db));
     if (cycles.length > 0) {
       console.error("[skill-map] 前提が循環しています", JSON.stringify(cycles));
@@ -778,7 +778,7 @@ skillMapRoute.get("/api/skill-map/staff", async (c) => {
 skillMapRoute.get("/api/skill-map/staff/icons", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireAdmin(caller);
 
     const bucket = c.env.MATERIALS_BUCKET;
     if (!bucket) {

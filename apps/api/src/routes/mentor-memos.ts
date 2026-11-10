@@ -19,7 +19,7 @@ import { Hono } from "hono";
 import type { Db } from "../db/client.js";
 import { mentorMemos, notifications, profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { ApiError, errorResponse, getCaller, requireRole, STAFF_ROLES } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.js";
 import { isMemoAction, memoWeekOf, mentorMemoView } from "../lib/mentor-memo.js";
 
 export const mentorMemosRoute = new Hono<{ Bindings: Env }>();
@@ -38,7 +38,7 @@ async function loadMemo(db: Db, id: string) {
 mentorMemosRoute.get("/api/mentor-memos", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, ...STAFF_ROLES);
+    requireAdmin(caller);
     const week = c.req.query("week") || memoWeekOf(toStudyDate(new Date()));
     if (!isStudyDate(week) || studyWeekStart(week) !== week)
       throw new ApiError("週は月曜の日付 (YYYY-MM-DD) で指定してください", 400);
@@ -61,7 +61,7 @@ mentorMemosRoute.get("/api/mentor-memos", async (c) => {
 mentorMemosRoute.post("/api/mentor-memos/:id/actions", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireRole(caller, ...STAFF_ROLES);
+    requireAdmin(caller);
     const { memo } = await loadMemo(db, c.req.param("id"));
     const body = (await c.req.json().catch(() => null)) as {
       kind?: unknown;
