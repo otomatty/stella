@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/gradebook")({
 function GradebookPage() {
   const s = useAppShell();
   return (
-    <RoleGuard allow={["instructor", "admin"]}>
+    <RoleGuard allow={["admin"]}>
       <Gradebook stages={s.stages} />
     </RoleGuard>
   );

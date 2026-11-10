@@ -9,9 +9,8 @@ export const Route = createFileRoute("/_app/review-queue")({
 
 function ReviewQueuePage() {
   const s = useAppShell();
-  // 管理者もレビューできる (#34)。API の権限 (講師・管理者) と同じ。
   return (
-    <RoleGuard allow={["instructor", "admin"]}>
+    <RoleGuard allow={["admin"]}>
       <ReviewQueue
         setPage={s.setPage}
         onOpenReview={s.onOpenReview}

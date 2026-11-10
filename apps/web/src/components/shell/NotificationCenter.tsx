@@ -2,7 +2,7 @@
  * 通知センター (Issue #25)。
  *
  * Topbar のベルアイコンに紐づくドロップダウン。 自分宛の通知を一覧し、 未読バッジを出し、
- * クリックで既読化する。 講師/管理者にはお知らせ作成フォームを併設する。
+ * クリックで既読化する。 管理者にはお知らせ作成フォームを併設する。
  *
  * 通知データ・既読化は useNotifications から渡される (App でロールに応じて有効化)。
  * バックエンド未設定時は通知が空のため、 ベルはバッジ無しで描画される。
@@ -84,7 +84,7 @@ export const NotificationCenter = ({
 }: NotificationCenterProps) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const isStaff = role === "instructor" || role === "admin";
+  const isStaff = role === "admin";
 
   // 外側クリック / Escape で閉じる。
   useEffect(() => {
@@ -239,7 +239,7 @@ interface AnnouncementComposerProps {
   onCreated: () => void;
 }
 
-/** 講師/管理者向けのお知らせ作成フォーム (通知センター内蔵)。 */
+/** 管理者向けのお知らせ作成フォーム (通知センター内蔵)。 */
 const AnnouncementComposer = ({ stages, onCreated }: AnnouncementComposerProps) => {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");

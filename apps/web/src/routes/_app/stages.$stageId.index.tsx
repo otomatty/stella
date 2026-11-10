@@ -19,7 +19,7 @@ function StageDetailPage() {
   const { stageId } = Route.useParams();
   const target = s.stages.find((c) => c.id === stageId);
   return (
-    <RoleGuard allow={["learner", "instructor", "admin"]}>
+    <RoleGuard allow={["learner", "admin"]}>
       {s.role !== "learner" ? (
         <StaffStageDetail key={stageId} stageId={stageId} />
       ) : target ? (

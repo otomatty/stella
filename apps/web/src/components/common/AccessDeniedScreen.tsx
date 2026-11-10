@@ -14,7 +14,6 @@ import type { Role } from "@/data/types";
 
 const ROLE_LABELS: Record<Role, string> = {
   learner: "受講者",
-  instructor: "講師",
   admin: "管理者",
 };
 

@@ -1,5 +1,5 @@
 /**
- * 講師・管理者のステージ管理。受講者のホームと同じスキルツリーの盤面に、
+ * 管理者のステージ管理。受講者のホームと同じスキルツリーの盤面に、
  * 公開状態と Extra の割当を載せる。
  */
 
@@ -48,7 +48,6 @@ function noop() {
 }
 
 interface StageManagementPageProps {
-  role: "admin" | "instructor";
   backendEnabled: boolean;
   currentUserId: string | null;
   highlightStage: { id: string; seq: number } | null;
@@ -56,13 +55,12 @@ interface StageManagementPageProps {
 }
 
 export function StageManagementPage({
-  role,
   backendEnabled,
   currentUserId,
   highlightStage,
   onOpenAsLearner,
 }: StageManagementPageProps) {
-  const title = stageManagementTitle(role);
+  const title = stageManagementTitle();
   const treeRef = useRef<SkillTreeHandle | null>(null);
   const focusedHighlight = useRef<number | null>(null);
   const pendingScrollId = useRef<string | null>(null);

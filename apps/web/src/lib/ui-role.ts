@@ -10,8 +10,8 @@ export function mapProfileRole(role: ProfileRole): Role {
   switch (role) {
     case "student":
       return "learner";
+    // 2b で profiles.role から instructor を外すまでの写し。画面では管理者として扱う。
     case "instructor":
-      return "instructor";
     case "admin":
     case "platform_admin":
       return "admin";
@@ -25,7 +25,6 @@ export function mapProfileRole(role: ProfileRole): Role {
 export function staffHomeLabel(role: ProfileRole | undefined): string {
   switch (role) {
     case "instructor":
-      return "講師画面に戻る";
     case "admin":
     case "platform_admin":
       return "管理画面に戻る";

@@ -78,6 +78,11 @@ const DEFAULTS = {
   showAIBot: true,
 };
 
+/** デモ用 localStorage の旧ロールは、今の画面ロールに無い値を受講者へ戻す。 */
+function readSavedRole(role: unknown): Role {
+  return role === "admin" ? "admin" : DEFAULTS.role;
+}
+
 function loadSaved(): PersistedState | null {
   if (typeof window === "undefined") return null;
   try {
@@ -98,8 +103,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   // 衝突し、 共通パディングが外れてしまう。
   "daily-review": "/review",
   gradebook: "/gradebook",
-  students: "/students",
-  // 発見教材は staff 共有ページ (講師も承認する)。 `/admin/*` の下には置かない。
+  // 発見教材は成績台帳と同じく `/admin/*` の外に残す。
   discovery: "/discovery",
   library: "/library",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
@@ -164,7 +168,7 @@ export function AppShell() {
     if (saved === "tenant-select") return "app";
     return "login";
   });
-  const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
+  const [role, setRole] = useState<Role>(() => readSavedRole(loadSaved()?.role));
   const [uiRoleOverride, setUiRoleOverride] = useState<Role | null>(
     () => loadSaved()?.uiRoleOverride ?? null,
   );
@@ -218,7 +222,7 @@ export function AppShell() {
     return CURRENT_USER;
   }, [backendEnabled, profile, session]);
 
-  // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 instructor/admin は
+  // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 管理者は
   // 公開ステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
   // 受講者画面で確かめたい staff は、ステージ管理の「受講者の画面で確かめる」で自分を受講登録する (前提・割り当てを問わない)。
@@ -241,9 +245,7 @@ export function AppShell() {
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
   const pendingReviewCount = usePendingReviewCount();
   // 人の件数・AI の状態はほかの講師や AI の非同期の結果で変わるので、staff のあいだは取り直す (#34)。
-  useSubmissionsAutoRefresh(
-    backendEnabled && (effectiveRole === "instructor" || effectiveRole === "admin"),
-  );
+  useSubmissionsAutoRefresh(backendEnabled && effectiveRole === "admin");
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
   const myCertificates = useMyCertificates(session?.user.id ?? null, effectiveRole === "learner");
   const sidebarCounts =
@@ -253,11 +255,9 @@ export function AppShell() {
             ? myCertificates.certificates.length
             : stages.filter((c) => c.completed).length,
         }
-      : effectiveRole === "instructor" || effectiveRole === "admin"
-        ? {
-            "review-queue": pendingReviewCount,
-          }
-        : undefined;
+      : {
+          "review-queue": pendingReviewCount,
+        };
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
   const notifications = useNotifications(session?.user.id ?? null, true);
@@ -439,8 +439,7 @@ export function AppShell() {
       });
       return;
     }
-    // instructor / admin: ステージ管理の盤面へ。 admin はそのステージの編集画面を直接開き、
-    // instructor はその星へ寄せる。
+    // 管理者はステージ管理の盤面へ寄せる。
     setHighlightStage((prev) => ({
       id: result.stage_id,
       seq: (prev?.seq ?? 0) + 1,
@@ -550,7 +549,7 @@ export function AppShell() {
     }
   }
 
-  // 受講者のホームと、講師・管理者のステージ管理はスキルツリーの盤面そのもの
+  // 受講者のホームと、管理者のステージ管理はスキルツリーの盤面そのもの
   // (Card も余白も持たない)。
   const isFlush =
     page === "lesson" ||

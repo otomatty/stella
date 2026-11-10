@@ -69,7 +69,7 @@ export const SettingsPage = ({
         enabled={Boolean(backendEnabled && profile)}
         device={typeof navigator === "undefined" ? undefined : (navigator as DeviceNavigator)}
       />
-      {backendEnabled && profile && role !== "instructor" ? (
+      {backendEnabled && profile ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
       {backendEnabled && role === "admin" ? <LearningPaceManager /> : null}

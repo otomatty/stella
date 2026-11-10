@@ -184,8 +184,7 @@ describe("表示文言", () => {
     expect(stageStatusLabel("archived")).toBe("アーカイブ");
     expect(stageAudienceLabel(undefined)).toBe("Basic");
     expect(stageAudienceLabel("granted")).toBe("Extra");
-    expect(stageManagementTitle("admin")).toBe("ステージ管理");
-    expect(stageManagementTitle("instructor")).toBe("ステージ");
+    expect(stageManagementTitle()).toBe("ステージ管理");
     expect(offBoardNote(stage({ id: "a", status: "archived" }))).toBe(
       "アーカイブのため、盤面には載せていません",
     );

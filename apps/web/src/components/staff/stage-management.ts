@@ -1,5 +1,5 @@
 /**
- * 講師・管理者のステージ管理で、盤面に載せる星とカードに出す星を分ける。
+ * 管理者のステージ管理で、盤面に載せる星とカードに出す星を分ける。
  *
  * 盤面は受講者と同じ `layoutRadialSkillTree`。アーカイブは最初から外す。
  * カテゴリも親も無い下書き (新規作成直後) を一緒に渡すと、レイアウトは仮の扇
@@ -74,8 +74,8 @@ export function offBoardNote(stage: StaffSkillMapStageNode): string {
   return "カテゴリも親も無いため、盤面には載せていません";
 }
 
-export function stageManagementTitle(role: "admin" | "instructor"): string {
-  return role === "admin" ? "ステージ管理" : "ステージ";
+export function stageManagementTitle(): string {
+  return "ステージ管理";
 }
 
 /**

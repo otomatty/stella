@@ -10,7 +10,7 @@ describe("linksForRole", () => {
 
   it("does not offer the retired interview-prep page to any role", () => {
     const setPage = vi.fn();
-    for (const role of ["learner", "instructor", "admin"] as const) {
+    for (const role of ["learner", "admin"] as const) {
       const labels = linksForRole(role, setPage).map((link) => link.label);
       expect(labels).not.toContain("面談対策");
     }
