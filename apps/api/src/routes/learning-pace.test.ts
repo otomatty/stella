@@ -489,62 +489,74 @@ describe("進捗・確認B・通知", () => {
     ).toBe(0);
   });
 
-  it("続く15分の枠で計算する受講者は重ならない。21人なら2回の起動で全員を計算する", async () => {
-    const count = PACE_DELAY_LEARNERS_PER_RUN + 1;
-    const ids = Array.from({ length: count }, (_, i) => `s${String(i).padStart(2, "0")}`);
-    sqlite.exec(
-      ids
-        .map(
-          (id) => `
+  it.each([
+    { count: 21, startPage: 0 },
+    { count: 21, startPage: 1 },
+    { count: 41, startPage: 0 },
+    { count: 41, startPage: 1 },
+    { count: 41, startPage: 2 },
+  ])(
+    "$count人を開始ページ$startPageから続く15分の枠で重複なく全員計算する",
+    async ({ count, startPage }) => {
+      const ids = Array.from({ length: count }, (_, i) => `s${String(i).padStart(2, "0")}`);
+      sqlite.exec(
+        ids
+          .map(
+            (id) => `
         insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at)
           values ('${id}', 'ses', 'student', '受講者${id}', 0, 'google', 1);
         insert into enrollments (id, user_id, stage_id, tenant_id, status, enrolled_at)
           values ('enr-${id}', '${id}', 'root', 'ses', 'active', 1);`,
-        )
-        .join("\n"),
-    );
-    // 開始日が無いので遅れの通知は出ない。計算対象からは外れず、枠の開始位置だけが誰を計算するかを決める。
-    const idSet = new Set(ids);
-    const calculated: string[] = [];
-    let last = "";
-    const note = (values: readonly unknown[]) => {
-      for (const value of values) {
-        if (typeof value === "string" && idSet.has(value) && value !== last) {
-          calculated.push(value);
-          last = value;
+          )
+          .join("\n"),
+      );
+      // 開始日が無いので遅れの通知は出ない。計算対象からは外れず、枠のページ番号だけが誰を計算するかを決める。
+      const idSet = new Set(ids);
+      const calculated: string[] = [];
+      let last = "";
+      const note = (values: readonly unknown[]) => {
+        for (const value of values) {
+          if (typeof value === "string" && idSet.has(value) && value !== last) {
+            calculated.push(value);
+            last = value;
+          }
         }
+      };
+      const binding = env.DB;
+      const originalPrepare = binding.prepare.bind(binding);
+      binding.prepare = (sql: string) => {
+        const query = originalPrepare(sql);
+        const originalBind = query.bind.bind(query);
+        query.bind = ((...values: Parameters<typeof query.bind>) => {
+          note(values);
+          return originalBind(...values);
+        }) as typeof query.bind;
+        return query;
+      };
+      const take = async (now: Date) => {
+        calculated.length = 0;
+        last = "";
+        await notifyPaceDelays(getDb(env), "2026-10-13", now);
+        return [...calculated];
+      };
+      try {
+        const pages = Math.ceil(count / PACE_DELAY_LEARNERS_PER_RUN);
+        // 枠番号の剰余を明示し、最後のページから先頭へ戻る巡回も検証する。
+        const startSlot = pages * 100 + startPage;
+        const all: string[] = [];
+        for (let offset = 0; offset < pages; offset++) {
+          const batch = await take(new Date((startSlot + offset) * 15 * 60_000));
+          expect(batch.length).toBeLessThanOrEqual(PACE_DELAY_LEARNERS_PER_RUN);
+          expect(batch.filter((id) => all.includes(id))).toEqual([]);
+          all.push(...batch);
+        }
+        expect(all.sort()).toEqual(ids);
+        expect(sqlite.prepare("select count(*) as n from notifications").get()?.n).toBe(0);
+      } finally {
+        binding.prepare = originalPrepare;
       }
-    };
-    const binding = env.DB;
-    const originalPrepare = binding.prepare.bind(binding);
-    binding.prepare = (sql: string) => {
-      const query = originalPrepare(sql);
-      const originalBind = query.bind.bind(query);
-      query.bind = ((...values: Parameters<typeof query.bind>) => {
-        note(values);
-        return originalBind(...values);
-      }) as typeof query.bind;
-      return query;
-    };
-    const take = async (now: Date) => {
-      calculated.length = 0;
-      last = "";
-      await notifyPaceDelays(getDb(env), "2026-10-13", now);
-      return [...calculated];
-    };
-    try {
-      const start = new Date(0);
-      const first = await take(start);
-      const second = await take(new Date(start.getTime() + 15 * 60_000));
-      expect(first).toEqual(ids.slice(0, PACE_DELAY_LEARNERS_PER_RUN));
-      expect(second).toEqual(ids.slice(PACE_DELAY_LEARNERS_PER_RUN));
-      expect(first.filter((id) => second.includes(id))).toEqual([]);
-      expect([...first, ...second]).toEqual(ids);
-      expect(sqlite.prepare("select count(*) as n from notifications").get()?.n).toBe(0);
-    } finally {
-      binding.prepare = originalPrepare;
-    }
-  });
+    },
+  );
 });
 
 describe("0044のアップグレード", () => {

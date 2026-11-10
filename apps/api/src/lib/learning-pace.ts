@@ -309,8 +309,8 @@ const NOTIFICATION_IDS_PER_QUERY = D1_MAX_BOUND_PARAMS - 10;
  *
  * 計算するのは、受講中の登録があり、今週の通知がまだ全宛先にそろっていない受講者だけ。
  * 1 回の起動では `PACE_DELAY_LEARNERS_PER_RUN` 人まで (1人あたり約10クエリ。cron は同じ起動の
- * 他の処理と D1 のクエリ上限を分け合う)。それより多いときは、15分の枠の番号で開始位置をずらして
- * 順に回す。1人の計算は1回で、結果を宛先ごとに入れる。1人が失敗しても後続の受講者は続ける。
+ * 他の処理と D1 のクエリ上限を分け合う)。対象を上限人数ずつのページに分け、15分の枠ごとに
+ * 次のページへ進む。1人の計算は1回で、結果を宛先ごとに入れる。1人が失敗しても後続の受講者は続ける。
  */
 export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date()), now = new Date()) {
   const staffIds = await loadActiveStaffIds(db);
@@ -354,15 +354,14 @@ export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date()), 
   }
   const pending = learners.filter((learner) => idsFor(learner.id).some((id) => !notified.has(id)));
   if (pending.length === 0) return;
-  // 枠ごとに 1 人ではなく、1 回で計算する人数ぶん進める。1 人ずつだと同じ顔ぶれを計算し続ける。
+  // 対象が変わらなければ、ページ数ぶんの連続する枠で全員を重複なく計算する。
   const slot = Math.floor(now.getTime() / PACE_DELAY_SLOT_MS);
-  const start = (slot * PACE_DELAY_LEARNERS_PER_RUN) % pending.length;
-  // 上限以下なら開始位置にかかわらずその回で全員を計算する。上回るときは先頭へ戻して埋めない
-  // (戻すと、次の枠が直前の枠と重なる)。
-  const batch =
-    pending.length <= PACE_DELAY_LEARNERS_PER_RUN
-      ? [...pending.slice(start), ...pending.slice(0, start)]
-      : pending.slice(start, start + PACE_DELAY_LEARNERS_PER_RUN);
+  const pages = Math.ceil(pending.length / PACE_DELAY_LEARNERS_PER_RUN);
+  const page = slot % pages;
+  const batch = pending.slice(
+    page * PACE_DELAY_LEARNERS_PER_RUN,
+    (page + 1) * PACE_DELAY_LEARNERS_PER_RUN,
+  );
   for (const learner of batch) {
     try {
       const pace = await loadLearningPace(db, learner as Caller, today);
