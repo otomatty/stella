@@ -128,6 +128,7 @@ export function loadVideoVoice(providerOverride?: TtsProviderName): VoiceConfig 
 
 interface VideoTopic extends NarrationTopic {
   narration: NarrationFile;
+  source: ReturnType<typeof selectVideoSource>;
   /** lessons.markdown と同じ本文 (ノート除去済み・画像は R2 キー)。 */
   markdown: string;
   assets: Map<string, string>;
@@ -141,16 +142,32 @@ function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: st
   );
   const topics: VideoTopic[] = [];
   const invalid: string[] = [];
-  // ponytail: 収録版も narration.json のあるトピックだけが対象。広げるときは台本の検査と対象の列挙を一緒に見直す。
+  // ponytail: 収録版も narration.json が必須で、無ければエラー。台本なしを許可するなら検査と対象の列挙を一緒に見直す。
   for (const topic of collectNarrationTopics(selectors)) {
     const label = `${topic.stageSlug}/${topic.id}`;
     if (topic.parseError !== undefined) invalid.push(`${label}: ${topic.parseError}`);
+    let source: ReturnType<typeof selectVideoSource>;
+    try {
+      source = selectVideoSource(
+        Object.fromEntries(
+          SCREEN_VIDEO_FILES.map((name) => {
+            const file = join(topic.topicDir, name);
+            return [name, existsSync(file) ? readFileSync(file) : undefined];
+          }),
+        ),
+        existsSync(topic.narrationFile),
+      );
+    } catch (error) {
+      invalid.push(`${label}: ${(error as Error).message}`);
+      continue;
+    }
     if (!topic.narration) continue;
     const target = slidesTargets.get(label);
     if (!target) throw new Error(`manifest に ${label} がありません`);
     topics.push({
       ...topic,
       narration: topic.narration,
+      source,
       courseTitle: target.courseTitle,
       markdown: target.source,
       assets: new Map(target.assets.map((a) => [a.key, a.file])),
@@ -605,19 +622,7 @@ export async function buildVideos(
   }[] = [];
   for (const topic of topics) {
     const label = `${topic.stageSlug}/${topic.id}`;
-    let source: ReturnType<typeof selectVideoSource>;
-    try {
-      source = selectVideoSource(
-        Object.fromEntries(
-          SCREEN_VIDEO_FILES.map((name) => {
-            const file = join(topic.topicDir, name);
-            return [name, existsSync(file) ? readFileSync(file) : undefined];
-          }),
-        ),
-      );
-    } catch (error) {
-      throw new Error(`${label}: ${(error as Error).message}`);
-    }
+    const source = topic.source;
     const issues = validateTopic(topic, topic.narration);
     for (const issue of issues) console.log(formatIssue(label, issue));
     if (issues.some((i) => i.level === "error")) {

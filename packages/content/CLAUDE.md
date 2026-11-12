@@ -116,7 +116,8 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - 収録済みの動画は、トピックの `slides.md`・`narration.json` と同じ場所に `screen.mp4`・`screen.vtt`・`screen.jpg` をそろえてコミットします。Git LFS は使いません。
 - 3ファイルがあれば収録版を優先し、TTS とスライド撮影を省きます。一部だけあると `narration:check` と動画生成がエラーになります。
 - 収録版は3ファイルの中身から配信ハッシュを作り、`dist/video/` へのコピー後は既存の `video:sync`・seed で配信します。
-- 字幕は `screen.vtt` で渡し、動画には焼き込みません。収録版にも `narration.json` が必要です。
+- 字幕は `screen.vtt` で渡し、動画には焼き込みません。収録版にも `narration.json` が必要で、無ければ `narration:check` と動画生成がエラーになります。
+- `screen.*` を足す・撮り直すと単元の内容指紋が変わるので、`references.json` の版と `contentHash` を更新します。
 
 ## 絶対に守るルール
 

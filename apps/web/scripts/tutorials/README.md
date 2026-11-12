@@ -233,6 +233,7 @@ bun run tutorials:vscode -- --save
 台本の `topic` は `packages/content/stages` から見たトピックの相対パスで、保存先には `slides.md` が必要です。`task` は取り組む課題の `<ステージ>/<単元>/<課題>`、`others` は学習フォルダーに一緒に置く課題です。`open` は起動時に開くファイルで、既定は `index.html`、`null` なら開きません。`prepare` で起動前にファイルを用意し、`setup` で録画前の画面を整えます。どの台本でも、右に課題文のパネルを開いてから録画します。
 
 出力は `os.tmpdir()/stella-tutorials/vscode/out/<id>.mp4`・`<id>.jpg`・`<id>.vtt` です。`--save` では、成功した動画を `packages/content/stages/<topic>/screen.mp4`・`screen.vtt`・`screen.jpg` にもコピーします。この 3 ファイルを教材の正本としてコミットすると、既存の教材動画の生成・同期・seed の経路で配信されます。収録コマンド自体はアップロードしません。
+`--save` で `screen.*` を足す・撮り直すと単元の内容指紋が変わるので、`references.json` の版と `contentHash` を更新します。
 
 操作の字幕帯は動画に焼き込まず、チャプターから VTT に書き出します。レッスン画面では字幕トラックとして表示されます。タイトルカード・カーソル・クリックの波紋・押したキー・光る枠は動画に残ります。
 
