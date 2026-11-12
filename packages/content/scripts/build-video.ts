@@ -19,13 +19,22 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { type Browser, chromium } from "playwright";
 
 import { collectPdfTargets } from "../src/material-pdf.js";
+import { SCREEN_VIDEO_FILES, selectVideoSource } from "../src/material-video.js";
 import {
   estimateSpeechSeconds,
   formatIssue,
@@ -132,6 +141,7 @@ function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: st
   );
   const topics: VideoTopic[] = [];
   const invalid: string[] = [];
+  // ponytail: 収録版も narration.json のあるトピックだけが対象。広げるときは台本の検査と対象の列挙を一緒に見直す。
   for (const topic of collectNarrationTopics(selectors)) {
     const label = `${topic.stageSlug}/${topic.id}`;
     if (topic.parseError !== undefined) invalid.push(`${label}: ${topic.parseError}`);
@@ -436,6 +446,54 @@ async function buildTopic(
   return report;
 }
 
+async function copyRecordedTopic(
+  topic: VideoTopic,
+  sourceHash: string,
+  warnings: string[],
+  outDir: string,
+): Promise<TopicReport> {
+  const videoFile = join(topic.topicDir, "screen.mp4");
+  const durationSec = await probeDuration(videoFile);
+  if (!Number.isFinite(durationSec) || durationSec <= 0) {
+    throw new Error("収録済み動画の長さを読み取れません");
+  }
+  const loudness = await measureLoudness(videoFile);
+  const topicOut = resolve(outDir, topic.stageSlug, topic.id);
+  if (!topicOut.startsWith(`${resolve(outDir)}${sep}`)) {
+    throw new Error("動画の出力先が出力フォルダーの外にあります");
+  }
+  rmSync(topicOut, { recursive: true, force: true });
+  mkdirSync(topicOut, { recursive: true });
+  for (const [source, destination] of [
+    ["screen.mp4", "video.mp4"],
+    ["screen.vtt", "captions.vtt"],
+    ["screen.jpg", "poster.jpg"],
+  ]) {
+    copyFileSync(join(topic.topicDir, source), join(topicOut, destination));
+  }
+  const report: TopicReport = {
+    stageSlug: topic.stageSlug,
+    id: topic.id,
+    title: topic.title,
+    sourceHash,
+    generatorVersion: VIDEO_GENERATOR_VERSION,
+    voice: "recorded",
+    durationSec,
+    probedDurationSec: Math.round(durationSec * 1000) / 1000,
+    slides: [],
+    cues: (readFileSync(join(topicOut, "captions.vtt"), "utf8").match(/ --> /g) ?? []).length,
+    speechChars: 0,
+    charsPerSec: 0,
+    loudness,
+    bytes: { video: statSync(join(topicOut, "video.mp4")).size },
+    timingsMs: { audio: 0, render: 0, encode: 0 },
+    warnings,
+    anomalies: [],
+  };
+  writeFileSync(join(topicOut, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+  return report;
+}
+
 // ---------------------------------------------------------------- 一覧ページ
 
 function indexHtml(reports: TopicReport[], outDir: string): string {
@@ -444,9 +502,11 @@ function indexHtml(reports: TopicReport[], outDir: string): string {
   const cards = reports
     .map((r) => {
       const base = `${r.stageSlug}/${r.id}`;
-      const timeline = JSON.parse(readFileSync(join(outDir, base, "timeline.json"), "utf8")) as {
-        cues: { slide: number; start: number; text: string; speech: string }[];
-      };
+      const recorded = r.voice === "recorded";
+      const timeline: { cues: { slide: number; start: number; text: string; speech: string }[] } =
+        recorded
+          ? { cues: [] }
+          : JSON.parse(readFileSync(join(outDir, base, "timeline.json"), "utf8"));
       const rows = timeline.cues
         .map(
           (c) =>
@@ -463,15 +523,15 @@ function indexHtml(reports: TopicReport[], outDir: string): string {
 <video controls preload="metadata" poster="${base}/poster.jpg">
   <source src="${base}/video.mp4" type="video/mp4">
   <track kind="captions" srclang="ja" label="日本語" src="${base}/captions.vtt" default>
-  <track kind="chapters" srclang="ja" src="${base}/chapters.vtt">
+  ${recorded ? "" : `<track kind="chapters" srclang="ja" src="${base}/chapters.vtt">`}
 </video>
-<p class="meta">長さ ${fmt(r.durationSec)} ・ 字幕 ${r.cues} ・ ${r.charsPerSec} 字/秒 ・ ${r.loudness.integratedLufs} LUFS ・ ${(r.bytes.video / 1024 / 1024).toFixed(1)} MB ・ ${escapeHtml(r.voice)}${
+<p class="meta">長さ ${fmt(r.durationSec)} ・ 字幕 ${r.cues}${recorded ? "" : ` ・ ${r.charsPerSec} 字/秒`} ・ ${r.loudness.integratedLufs} LUFS ・ ${(r.bytes.video / 1024 / 1024).toFixed(1)} MB ・ ${escapeHtml(r.voice)}${
         r.bytes.captionedPreview
           ? ` ・ <a href="${base}/preview-captioned.mp4">字幕焼き込み版</a>`
           : ""
       }</p>
 ${notes ? `<ul class="notes">${notes}</ul>` : ""}
-<details><summary>台本 (${r.cues} 字幕)</summary><table><thead><tr><th>時刻</th><th>枚</th><th>字幕</th></tr></thead><tbody>${rows}</tbody></table></details>
+${recorded ? "" : `<details><summary>台本 (${r.cues} 字幕)</summary><table><thead><tr><th>時刻</th><th>枚</th><th>字幕</th></tr></thead><tbody>${rows}</tbody></table></details>`}
 </section>`;
     })
     .join("\n");
@@ -495,7 +555,8 @@ ${cards}
 }
 
 /** 1 トピックの出力一式。どれかが欠けていれば作り直す。 */
-function outputFiles(captioned: boolean): string[] {
+function outputFiles(captioned: boolean, recorded: boolean): string[] {
+  if (recorded) return ["video.mp4", "captions.vtt", "poster.jpg", "report.json"];
   const base = [
     "video.mp4",
     "captions.vtt",
@@ -535,41 +596,65 @@ export async function buildVideos(
   const failures: string[] = [...invalid];
 
   // 台本の検証 (エラーのあるトピックは作らない)
-  const plans: { topic: VideoTopic; cues: CuePlan[]; warnings: string[] }[] = [];
+  const plans: {
+    topic: VideoTopic;
+    cues: CuePlan[];
+    warnings: string[];
+    recorded: boolean;
+    sourceHash: string;
+  }[] = [];
   for (const topic of topics) {
     const label = `${topic.stageSlug}/${topic.id}`;
+    let source: ReturnType<typeof selectVideoSource>;
+    try {
+      source = selectVideoSource(
+        Object.fromEntries(
+          SCREEN_VIDEO_FILES.map((name) => {
+            const file = join(topic.topicDir, name);
+            return [name, existsSync(file) ? readFileSync(file) : undefined];
+          }),
+        ),
+      );
+    } catch (error) {
+      throw new Error(`${label}: ${(error as Error).message}`);
+    }
     const issues = validateTopic(topic, topic.narration);
     for (const issue of issues) console.log(formatIssue(label, issue));
     if (issues.some((i) => i.level === "error")) {
       failures.push(`${label}: 台本の検証エラー`);
       continue;
     }
-    const cues: CuePlan[] = topic.narration.slides.flatMap((s, i) =>
-      s.cues.map((c, j) => {
-        const speech = speechOf(c, topic.readings);
-        return {
-          slide: i,
-          index: j,
-          text: c.text,
-          speech,
-          hash: cueHash(provider.identity, speech),
-        };
-      }),
-    );
+    const cues: CuePlan[] =
+      source.kind === "recorded"
+        ? []
+        : topic.narration.slides.flatMap((s, i) =>
+            s.cues.map((c, j) => {
+              const speech = speechOf(c, topic.readings);
+              return {
+                slide: i,
+                index: j,
+                text: c.text,
+                speech,
+                hash: cueHash(provider.identity, speech),
+              };
+            }),
+          );
     plans.push({
       topic,
       cues,
+      recorded: source.kind === "recorded",
+      sourceHash: source.kind === "recorded" ? source.sourceHash : sourceHashOf(topic, cues, voice),
       warnings: issues.filter((i) => i.level === "warning").map((i) => formatIssue("", i).slice(2)),
     });
   }
 
   const skipped = new Set<string>();
-  const pending = plans.filter(({ topic, cues }) => {
+  const pending = plans.filter(({ topic, recorded, sourceHash }) => {
     if (
       skip({
         stageSlug: topic.stageSlug,
         id: topic.id,
-        sourceHash: sourceHashOf(topic, cues, voice),
+        sourceHash,
       })
     ) {
       skipped.add(`${topic.stageSlug}/${topic.id}`);
@@ -578,9 +663,9 @@ export async function buildVideos(
     if (force) return true;
     const topicOut = join(outDir, topic.stageSlug, topic.id);
     // 1 つでも欠けていれば作り直す (途中で止まった回や、一部だけ消された出力を補う)。
-    if (outputFiles(captioned).some((f) => !existsSync(join(topicOut, f)))) return true;
+    if (outputFiles(captioned, recorded).some((f) => !existsSync(join(topicOut, f)))) return true;
     const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
-    return report.sourceHash !== sourceHashOf(topic, cues, voice);
+    return report.sourceHash !== sourceHash;
   });
   console.log(
     `video: ${plans.length} topics with narration (generate ${pending.length}, up to date ${plans.length - pending.length}) — ${provider.identity}`,
@@ -622,24 +707,33 @@ export async function buildVideos(
   });
 
   const reports: TopicReport[] = [];
-  if (buildable.length > 0) {
+  for (const { topic, sourceHash, warnings } of buildable.filter((p) => p.recorded)) {
+    const label = `${topic.stageSlug}/${topic.id}`;
+    try {
+      const report = await copyRecordedTopic(topic, sourceHash, warnings, outDir);
+      reports.push(report);
+      console.log(`  ✓ ${label} ${report.durationSec.toFixed(1)}s (収録済み動画をコピー)`);
+    } catch (e) {
+      failures.push(`${label}: ${(e as Error).message.split("\n")[0]}`);
+      console.warn(`  ✗ ${label}: ${(e as Error).message}`);
+    }
+  }
+  const generated = buildable.filter((p) => !p.recorded);
+  if (generated.length > 0) {
     const executablePath = existsSync("/opt/pw-browsers/chromium")
       ? "/opt/pw-browsers/chromium"
       : undefined;
     const browser = await chromium.launch(executablePath ? { executablePath } : {});
     try {
-      await mapPool(buildable, concurrency, async ({ topic, cues, warnings }) => {
+      await mapPool(generated, concurrency, async ({ topic, cues, warnings, sourceHash }) => {
         const label = `${topic.stageSlug}/${topic.id}`;
         try {
-          const report = await buildTopic(
-            topic,
-            cues,
-            sourceHashOf(topic, cues, voice),
-            provider,
-            browser,
-            warnings,
-            { outDir, cacheDir, captioned, keepWork },
-          );
+          const report = await buildTopic(topic, cues, sourceHash, provider, browser, warnings, {
+            outDir,
+            cacheDir,
+            captioned,
+            keepWork,
+          });
           reports.push(report);
           console.log(
             `  ✓ ${label} ${report.durationSec.toFixed(1)}s (audio ${report.timingsMs.audio}ms / render ${report.timingsMs.render}ms / encode ${report.timingsMs.encode}ms)`,
@@ -676,10 +770,8 @@ export async function buildVideos(
   }
   return allReports.filter((r) =>
     plans.some(
-      ({ topic, cues }) =>
-        topic.stageSlug === r.stageSlug &&
-        topic.id === r.id &&
-        sourceHashOf(topic, cues, voice) === r.sourceHash,
+      ({ topic, sourceHash }) =>
+        topic.stageSlug === r.stageSlug && topic.id === r.id && sourceHash === r.sourceHash,
     ),
   );
 }

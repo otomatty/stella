@@ -208,3 +208,32 @@ bun run tutorials -- --speed 0.8        # 操作の速さ。既定は 1。0.8 �
 ```
 
 テーマはシナリオの `theme` → `--theme` → `light` の順で決まり、収録したテーマは `manifest.json` の各動画の `theme` に残します。
+
+## VS Code の操作動画
+
+Windows だけに対応しています。Bun、PATH 上の `ffmpeg`、インストール済みの VS Code が必要です。VS Code は `VSCODE_EXECUTABLE`、未設定なら `%LOCALAPPDATA%/Programs/Microsoft VS Code/Code.exe` を使います。日本語の言語パックが専用プロファイルに無いときは自動で入れるため、初回はネットワーク接続が必要です。
+
+リポジトリのルートから、STELLA 拡張をビルドして収録します。
+
+```powershell
+bun run --cwd apps/vscode build
+bun run tutorials:vscode -- --no-narration
+```
+
+`vscode/scenarios/` の台本をファイル名順に収録します。現在は「編集して保存する」(`edit-save`)、「課題を確認する」(`run-check`)、「新しいファイルを作る」(`new-file`)、「ファイルの名前を変える」(`rename`)、「保存先を確かめる」(`where-saved`) の 5 本です。id の一部を並べると、そのどれかを含む台本だけ収録します。
+
+```powershell
+bun run tutorials:vscode -- run-check new-file
+bun run tutorials:vscode -- --no-narration rename
+bun run tutorials:vscode -- --save
+```
+
+オプションは `--no-narration`、調査用のフレーム画像を残す `--keep-frames`、教材へコピーする `--save` です。ナレーションを付ける場合は `GEMINI_API_KEY` を設定し、`--no-narration` を外します。`--save` と `--no-narration` は同時に指定できません。上記のナレーション用環境変数と `os.tmpdir()/stella-tutorials/_narration` のキャッシュを共用します。
+
+台本の `topic` は `packages/content/stages` から見たトピックの相対パスで、保存先には `slides.md` が必要です。`task` は取り組む課題の `<ステージ>/<単元>/<課題>`、`others` は学習フォルダーに一緒に置く課題です。`open` は起動時に開くファイルで、既定は `index.html`、`null` なら開きません。`prepare` で起動前にファイルを用意し、`setup` で録画前の画面を整えます。どの台本でも、右に課題文のパネルを開いてから録画します。
+
+出力は `os.tmpdir()/stella-tutorials/vscode/out/<id>.mp4`・`<id>.jpg`・`<id>.vtt` です。`--save` では、成功した動画を `packages/content/stages/<topic>/screen.mp4`・`screen.vtt`・`screen.jpg` にもコピーします。この 3 ファイルを教材の正本としてコミットすると、既存の教材動画の生成・同期・seed の経路で配信されます。収録コマンド自体はアップロードしません。
+
+操作の字幕帯は動画に焼き込まず、チャプターから VTT に書き出します。レッスン画面では字幕トラックとして表示されます。タイトルカード・カーソル・クリックの波紋・押したキー・光る枠は動画に残ります。
+
+プロファイルは `os.tmpdir()/stella-tutorials/vscode/profile/{user-data,exts}` に保存して再利用し、毎回エクスプローラーの開閉状態を初期化します。普段の VS Code の設定や拡張には触れません。

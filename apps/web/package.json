@@ -11,6 +11,7 @@
     "deploy": "bunx wrangler deploy && bunx wrangler deploy --config wrangler.legacy.toml",
     "typecheck": "tsc -b --noEmit",
     "tutorials": "bun scripts/tutorials/run.ts",
+    "tutorials:vscode": "bun scripts/tutorials/vscode/run.ts",
     "tutorials:check": "bun scripts/tutorials/check.ts"
   },
   "dependencies": {

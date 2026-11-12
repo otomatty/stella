@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -107,12 +107,13 @@ function topicDirsOf(dir: string): string[] {
 export function matchesSelectors(topicDir: string, selectors: string[]): boolean {
   if (selectors.length === 0) return true;
   return selectors.some((s) => {
-    const abs = s.includes("/")
-      ? existsSync(resolve(s))
-        ? resolve(s)
-        : resolve(contentRoot, s)
-      : join(stagesRoot, s);
-    return topicDir === abs || topicDir.startsWith(`${abs}/`);
+    const abs =
+      isAbsolute(s) || s.includes("/") || s.includes(sep)
+        ? existsSync(resolve(s))
+          ? resolve(s)
+          : resolve(contentRoot, s)
+        : join(stagesRoot, s);
+    return topicDir === abs || topicDir.startsWith(`${abs}${sep}`);
   });
 }
 
