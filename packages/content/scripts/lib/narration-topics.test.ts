@@ -3,7 +3,34 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { loadGlobalReadings, loadReadings } from "./narration-topics.js";
+import {
+  contentRoot,
+  loadGlobalReadings,
+  loadReadings,
+  matchesSelectors,
+} from "./narration-topics.js";
+
+describe("matchesSelectors", () => {
+  const lesson = ["stages", "dev-env-basics", "modules", "u02-first-task", "l1-first-task"];
+  const topic = [...lesson, "t1-edit-save"];
+  const topicDir = join(contentRoot, ...topic);
+
+  it.each([
+    ["ステージ名", "dev-env-basics"],
+    ["スラッシュ区切りの相対パス", topic.join("/")],
+    ["OS の区切りの相対パス", join(...topic)],
+    ["絶対パス", topicDir],
+    ["親フォルダーの絶対パス", join(contentRoot, ...lesson)],
+  ])("%s でトピックを選べる", (_label, selector) => {
+    expect(matchesSelectors(topicDir, [selector])).toBe(true);
+  });
+
+  it("名前の前半だけが同じ別のフォルダーには一致しない", () => {
+    expect(matchesSelectors(topicDir, ["dev-env"])).toBe(false);
+    expect(matchesSelectors(topicDir, [[...lesson, "t1-edit"].join("/")])).toBe(false);
+    expect(matchesSelectors(topicDir, [join(contentRoot, ...lesson, "t1-edit")])).toBe(false);
+  });
+});
 
 describe("loadReadings", () => {
   let dir: string;

@@ -3,24 +3,36 @@
  *
  *   bun run --filter=@stella/content narration:check [stages/<slug> ...]
  *
- * 台本の無いトピックは対象外 (段階導入。設計書の ① 台本 → 検証)。
+ * 全トピックの収録ファイルを検査し、収録済み動画には台本を必須とする。
+ * 台本の内容は narration.json のあるトピックだけ検査する (段階導入)。
  * エラーがあれば exit 1、警告は表示だけ。
  */
 
-import { relative } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 
+import { SCREEN_VIDEO_FILES, selectVideoSource } from "../src/material-video.js";
 import { formatIssue } from "../src/narration.js";
 import { collectNarrationTopics, contentRoot, validateTopic } from "./lib/narration-topics.js";
 
 const selectors = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const topics = collectNarrationTopics(selectors).filter(
-  (t) => t.narration !== undefined || t.parseError !== undefined,
-);
+const topics = collectNarrationTopics(selectors);
 
 let errors = 0;
 let warnings = 0;
 for (const topic of topics) {
   const label = `${topic.stageSlug}/${topic.id}`;
+  try {
+    const files: Partial<Record<(typeof SCREEN_VIDEO_FILES)[number], Uint8Array>> = {};
+    for (const name of SCREEN_VIDEO_FILES) {
+      const file = join(topic.topicDir, name);
+      if (existsSync(file)) files[name] = readFileSync(file);
+    }
+    selectVideoSource(files, existsSync(topic.narrationFile));
+  } catch (error) {
+    console.log(`✗ ${label}: ${(error as Error).message}`);
+    errors++;
+  }
   if (topic.parseError !== undefined) {
     console.log(`✗ ${label}: ${topic.parseError} (${relative(contentRoot, topic.narrationFile)})`);
     errors++;

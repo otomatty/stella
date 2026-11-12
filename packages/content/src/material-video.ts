@@ -1,6 +1,28 @@
 /** 配信する3ファイルは同じ内容ハッシュを共有する。旧版は台帳に残す。 */
 import { createHash } from "node:crypto";
 
+export const SCREEN_VIDEO_FILES = ["screen.mp4", "screen.vtt", "screen.jpg"] as const;
+
+export function selectVideoSource(
+  files: Partial<Record<(typeof SCREEN_VIDEO_FILES)[number], Uint8Array>>,
+  hasNarration: boolean,
+): { kind: "generated" } | { kind: "recorded"; sourceHash: string } {
+  const missing = SCREEN_VIDEO_FILES.filter((name) => files[name] === undefined);
+  if (missing.length === SCREEN_VIDEO_FILES.length) return { kind: "generated" };
+  const errors: string[] = [];
+  if (!hasNarration) errors.push("収録済みの動画には narration.json が必要です");
+  if (missing.length > 0) {
+    errors.push(`収録済み動画の3ファイルをそろえてください。不足: ${missing.join(", ")}`);
+  }
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  const hash = createHash("sha256").update("stella-screen-video-v1\0");
+  for (const name of SCREEN_VIDEO_FILES) {
+    const contents = files[name] as Uint8Array;
+    hash.update(`${name}:${contents.byteLength}:`).update(contents);
+  }
+  return { kind: "recorded", sourceHash: hash.digest("hex").slice(0, 32) };
+}
+
 export interface VideoManifestEntry {
   video: string;
   captions: string;
