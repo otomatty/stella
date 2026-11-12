@@ -132,7 +132,7 @@ describe("withRetry", () => {
     ).rejects.toThrow("400");
   });
 
-  it("最大 5 回待ったら諦める", async () => {
+  it("最大 7 回待ったら諦める", async () => {
     const sleep = vi.fn(async (_ms: number) => undefined);
     await expect(
       withRetry(
@@ -143,7 +143,7 @@ describe("withRetry", () => {
         sleep,
       ),
     ).rejects.toThrow("503");
-    expect(sleep).toHaveBeenCalledTimes(5);
+    expect(sleep).toHaveBeenCalledTimes(7);
   });
 });
 
