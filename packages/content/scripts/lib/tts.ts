@@ -57,7 +57,8 @@ export interface TtsProvider {
 /** 再試行してよい失敗 (回数制限・一時的な障害・通信)。 */
 export class RetryableError extends Error {}
 
-const BACKOFF_SEC = [1, 2, 4, 8, 16];
+// 1 分あたりの回数制限が切り替わるまで待てるようにする。
+const BACKOFF_SEC = [1, 2, 4, 8, 16, 32, 64];
 
 export async function withRetry<T>(
   label: string,
