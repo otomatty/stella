@@ -16,6 +16,7 @@ import { collectNarrationTexts, muxNarration, Narrator, titleNarration } from ".
 import { overlayScript } from "../lib/overlay";
 import { ScreenRecorder } from "../lib/recorder";
 import { closeNotifications, webviewBody, type Scenario, type TaskContext } from "./helpers";
+import { saveRecording } from "./save-recording";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../../../../..");
@@ -386,9 +387,7 @@ async function main() {
     }
     await record(s, executable, narrator, args.includes("--keep-frames"));
     if (s.topicDir) {
-      for (const ext of ["mp4", "vtt", "jpg"]) {
-        await cp(path.join(OUT, `${s.id}.${ext}`), path.join(s.topicDir, `screen.${ext}`));
-      }
+      await saveRecording(OUT, s.id, s.topicDir);
       console.log(`[tutorials:vscode] 教材に保存しました: ${s.topicDir}`);
     }
   }
