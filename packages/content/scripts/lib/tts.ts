@@ -150,7 +150,8 @@ function geminiProvider(cfg: VoiceConfig): TtsProvider {
   const style = cfg.style ?? "";
   return {
     identity: `gemini/${model}/${voice}/${style}`,
-    concurrency: 4,
+    // ponytail: 1 分におよそ 12 回の制限がある間は 1 つずつ合成する。上限が上がったら同時実行数を増やす。
+    concurrency: 1,
     nondeterministic: true,
     async synthesize(speech) {
       const key = requireEnv(
