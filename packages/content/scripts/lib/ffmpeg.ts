@@ -80,6 +80,24 @@ export async function decodeTrimmedPcm(file: string): Promise<Int16Array> {
   return new Int16Array(stdout.buffer, stdout.byteOffset, Math.floor(stdout.length / 2));
 }
 
+/** 無音を残した 48kHz mono 16bit の PCM にする。 */
+export async function decodePcm(file: string): Promise<Int16Array> {
+  const { stdout } = await ffmpeg([
+    "-loglevel",
+    "error",
+    "-i",
+    file,
+    "-ac",
+    "1",
+    "-ar",
+    String(AUDIO_RATE),
+    "-f",
+    "s16le",
+    "pipe:1",
+  ]);
+  return new Int16Array(stdout.buffer, stdout.byteOffset, Math.floor(stdout.length / 2));
+}
+
 /** 字幕ごとの PCM を開始時刻 (秒) に置き、全体の長さの 1 本の WAV にする (サンプル単位で正確)。 */
 export function writeNarrationWav(
   file: string,

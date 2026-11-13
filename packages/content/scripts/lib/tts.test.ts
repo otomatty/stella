@@ -10,7 +10,9 @@ import {
   geminiAudioField,
   grokAudioField,
   mapPool,
+  parseQuotaError,
   pcmToWav,
+  QuotaExhaustedError,
   RetryableError,
   synthesizeCached,
   type TtsProvider,
@@ -106,7 +108,128 @@ describe("pcmToWav", () => {
   });
 });
 
+describe("parseQuotaError", () => {
+  const quotaBody = (quotaId: string, quotaMetric = "", retryDelay = "39s") =>
+    JSON.stringify({
+      error: {
+        code: 429,
+        message: "You exceeded your current quota",
+        status: "RESOURCE_EXHAUSTED",
+        details: [
+          {
+            "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+            violations: [{ quotaId, quotaMetric, quotaValue: "100" }],
+          },
+          { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay },
+        ],
+      },
+    });
+
+  it("日次上限の ID・値と再試行までの秒数を拾う", () => {
+    expect(parseQuotaError(quotaBody("GenerateRequestsPerDayPerProjectPerModel"))).toEqual({
+      daily: true,
+      retryAfterSec: 39,
+      description: "GenerateRequestsPerDayPerProjectPerModel=100",
+    });
+  });
+
+  it("分あたりの上限を日次上限にしない", () => {
+    expect(parseQuotaError(quotaBody("GenerateRequestsPerMinutePerProjectPerModel"))).toEqual({
+      daily: false,
+      retryAfterSec: 39,
+      description: "GenerateRequestsPerMinutePerProjectPerModel=100",
+    });
+  });
+
+  it("日次上限はどれかの violation の ID または metric で、大文字小文字を問わず判定する", () => {
+    for (const violation of [
+      { quotaId: "generateRequestsPERDAY" },
+      { quotaMetric: "generativelanguage.googleapis.com/generate_requests_PER_DAY" },
+    ]) {
+      const body = JSON.stringify({
+        error: {
+          details: [
+            {
+              "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+              violations: [{ quotaId: "PerMinute", quotaValue: "10" }, violation],
+            },
+          ],
+        },
+      });
+      expect(parseQuotaError(body).daily).toBe(true);
+    }
+  });
+
+  it("retryDelay の小数秒を読み、不正な値や未指定は undefined にする", () => {
+    expect(parseQuotaError(quotaBody("PerMinute", "", "1.5s")).retryAfterSec).toBe(1.5);
+    for (const retryDelay of ["", "39", "-1s", "NaNs", "Infinitys"]) {
+      expect(parseQuotaError(quotaBody("PerMinute", "", retryDelay)).retryAfterSec).toBeUndefined();
+    }
+    expect(parseQuotaError('{"error":{"message":"quota"}}')).toEqual({
+      daily: false,
+      description: "quota",
+    });
+  });
+
+  it("quotaId が無ければ message の先頭 200 文字を説明にする", () => {
+    expect(parseQuotaError(JSON.stringify({ error: { message: "a".repeat(300) } }))).toEqual({
+      daily: false,
+      description: "a".repeat(200),
+    });
+  });
+
+  it("JSON でない本文や不正な形でも例外を投げず本文の先頭 200 文字を返す", () => {
+    for (const body of [
+      "not JSON".repeat(50),
+      "null",
+      "[]",
+      '{"error":null}',
+      '{"error":{"details":[null,{}, {"violations":123}]}}',
+    ]) {
+      expect(parseQuotaError(body)).toMatchObject({
+        daily: false,
+        description: body.slice(0, 200),
+      });
+    }
+  });
+});
+
 describe("withRetry", () => {
+  it("指定された待機秒数とバックオフの大きい方を使い、120 秒を上限にする", async () => {
+    const sleep = vi.fn(async (_ms: number) => undefined);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    let calls = 0;
+    try {
+      await withRetry(
+        "t",
+        async () => {
+          const delay = [39, 1.5, 300][calls++];
+          if (delay !== undefined) throw new RetryableError("429 (quota)", delay);
+        },
+        sleep,
+      );
+      expect(sleep.mock.calls.map((c) => c[0])).toEqual([39000, 2000, 120000]);
+      expect(warn.mock.calls.map((c) => c[0])).toEqual([
+        "  t: 429 (quota) — 39 秒後に再試行",
+        "  t: 429 (quota) — 2 秒後に再試行",
+        "  t: 429 (quota) — 120 秒後に再試行",
+      ]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("日次上限は再試行も待機もしない", async () => {
+    const error = new QuotaExhaustedError("1 日の上限");
+    const fn = vi.fn(async () => {
+      throw error;
+    });
+    const sleep = vi.fn(async (_ms: number) => undefined);
+    await expect(withRetry("t", fn, sleep)).rejects.toBe(error);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
   it("回数制限・一時障害は待って再試行し、それ以外はすぐ投げる", async () => {
     const sleep = vi.fn(async (_ms: number) => undefined);
     let calls = 0;
@@ -153,6 +276,91 @@ describe("gemini プロバイダ", () => {
     vi.unstubAllEnvs();
   });
 
+  it("日次上限に達したインスタンスは以降通信せず失敗し、別インスタンスには影響しない", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "secret-key");
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      Response.json(
+        {
+          error: {
+            details: [
+              {
+                "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                violations: [{ quotaId: "GenerateRequestsPerDay", quotaValue: "100" }],
+              },
+            ],
+          },
+        },
+        { status: 429 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const p = createTtsProvider({ provider: "gemini" });
+    await expect(p.synthesize("最初の文")).rejects.toThrow(QuotaExhaustedError);
+    await expect(p.synthesize("次の文")).rejects.toThrow(
+      "gemini: HTTP 429 1 日の上限に達しました (GenerateRequestsPerDay=100)",
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ output_audio: { data: Buffer.from([1, 2]).toString("base64") } }),
+    );
+    await createTtsProvider({ provider: "gemini" }).synthesize("別の文");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("400 のエラーでは本文をメッセージに含める", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "k");
+    const response = new Response("private error body", { status: 400 });
+    const text = vi.spyOn(response, "text");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+    await expect(createTtsProvider({ provider: "gemini" }).synthesize("文")).rejects.toThrow(
+      "gemini: HTTP 400 private error body",
+    );
+    expect(text).toHaveBeenCalledTimes(1);
+  });
+
+  it("分あたりの上限では説明をログに出し、retryDelay を待って再試行する", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "secret-key");
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: {
+              details: [
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  violations: [{ quotaId: "GenerateRequestsPerMinute", quotaValue: "10" }],
+                },
+                { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "1.5s" },
+              ],
+            },
+          },
+          { status: 429 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ output_audio: { data: Buffer.from([1, 2]).toString("base64") } }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const result = createTtsProvider({ provider: "gemini" }).synthesize("文");
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      await result;
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        "  gemini: gemini: HTTP 429 (GenerateRequestsPerMinute=10) — 1.5 秒後に再試行",
+      );
+    } finally {
+      vi.useRealTimers();
+      warn.mockRestore();
+    }
+  });
+
   it("鍵が無ければ代わりの手段を案内して落ちる", async () => {
     vi.stubEnv("GEMINI_API_KEY", "");
     const p = createTtsProvider({ provider: "gemini" });
@@ -189,6 +397,7 @@ describe("synthesizeCached", () => {
         ext: "wav" as const,
       }));
       const p: TtsProvider = {
+        unit: "cue",
         identity: "t/1",
         concurrency: 1,
         nondeterministic: true,
@@ -219,6 +428,7 @@ describe("synthesizeCached", () => {
         return { bytes: new Uint8Array([1]), ext: "wav" as const };
       });
       const p: TtsProvider = {
+        unit: "cue",
         identity: "t/2",
         concurrency: 4,
         nondeterministic: true,
@@ -261,6 +471,7 @@ describe("synthesizeCached", () => {
         }
       });
       const p: TtsProvider = {
+        unit: "cue",
         identity: "t/3",
         concurrency: 1,
         nondeterministic: true,
@@ -302,4 +513,11 @@ describe("mapPool", () => {
     expect(out).toEqual([10, 20, 30, 40, 50]);
     expect(peak).toBe(2);
   });
+});
+
+it("プロバイダごとの合成単位", () => {
+  expect(createTtsProvider({ provider: "gemini" }).unit).toBe("topic");
+  for (const provider of ["grok", "openjtalk", "fake"] as const) {
+    expect(createTtsProvider({ provider }).unit).toBe("cue");
+  }
 });

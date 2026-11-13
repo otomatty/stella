@@ -41,7 +41,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
   const manifest: VideoManifest = {};
   const pending: VideoPlan[] = [];
   const seen = new Set<string>();
-  const reports = await buildVideos(
+  const { reports, failures } = await buildVideos(
     args.filter((arg) => arg !== "--remote"),
     (plan) => {
       if (seen.has(plan.id)) throw new Error(`レッスン ID が重複しています: ${plan.id}`);
@@ -60,7 +60,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
     const report = reports.find(
       (r) => r.stageSlug === plan.stageSlug && r.id === plan.id && r.sourceHash === plan.sourceHash,
     );
-    if (!report) throw new Error(`生成結果がありません: ${plan.stageSlug}/${plan.id}`);
+    if (!report) continue;
     const keys = videoKeys(plan.stageSlug, plan.id, plan.sourceHash);
     const base = join(contentRoot, "dist/video", plan.stageSlug, plan.id);
     const files = [
@@ -82,6 +82,11 @@ export async function uploadVideos(args: string[]): Promise<void> {
   mkdirSync(dirname(manifestFile), { recursive: true });
   writeFileSync(manifestFile, serializeVideoManifest(manifest));
   console.log(`✓ video manifest: ${Object.keys(manifest).length} 件`);
+  if (failures.length > 0) {
+    console.error(`作れなかった動画: ${failures.length} 件 (前の版を残します)`);
+    for (const failure of failures) console.error(`  ${failure}`);
+    process.exitCode = 1;
+  }
 }
 
 if (import.meta.main) await uploadVideos(process.argv.slice(2));

@@ -59,9 +59,9 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 
 このステップは `CLOUDFLARE_API_TOKEN` に **Workers R2 Storage: Edit** 権限を要求する。権限が無いとここで落ち、seed 以降は動かない（D1 が存在しない画像を指すことはない）。
 
-教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。
+教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。動画が一部失敗してもデプロイは続け、できた動画は公開する。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直す。
 
-`narration.json` のあるトピックだけを対象に、スライド・台本・読み辞書・スライド CSS・TTS の provider / モデル / 声 / 速さを内容ハッシュへ含める。公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。台帳はキーの SHA-256 とサイズ・長さだけを保持し、旧版は消さない。`dist/video-manifest.json` (`VIDEO_MANIFEST`) を seed に渡し、`lessons.video_path` を更新する。manifest を渡さない seed は動画を保持し、台本が消えたトピックは参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
+`narration.json` のあるトピックだけを対象に、スライド・台本・読み辞書・スライド CSS・TTS の provider / モデル / 声 / 速さを内容ハッシュへ含める。公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。台帳はキーの SHA-256 とサイズ・長さだけを保持し、旧版は消さない。`dist/video-manifest.json` (`VIDEO_MANIFEST`) を seed に渡し、`lessons.video_path` を更新する。manifest に載らないトピックや manifest を渡さない seed は既存の動画を保持し、台本が消えたトピックは参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
 
 手元は ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意し、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。R2 の認証とバケットは PDF と共通。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。動画再生から完了は記録しない。
 
@@ -160,6 +160,7 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
 - **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api のデプロイは済んでいる。web とヘルスチェックは動かない）。
 - **教材画像 upload 失敗**: 画像か R2 認証 (API トークンの R2 権限) を直して再 push（seed 以降は動かない）。
+- **教材動画が一部失敗**: できた動画は R2 と manifest に載せて公開し、失敗したトピックは前の版を残す。migrate・api・seed・web のデプロイは続けるが、指紋は記録しない。次のデプロイで失敗したトピックを作り直す (成功分は台帳で生成を省く)。Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。
 - **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / 動画 / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`

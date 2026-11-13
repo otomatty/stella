@@ -107,8 +107,11 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
+      # 動画は任意で、失敗しても前の版を残せる。アプリのデプロイを巻き込まない。
       - name: Generate & upload lesson videos to R2 (remote)
+        id: video
         if: steps.content.outputs.changed == 'true'
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -119,8 +122,15 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y ffmpeg
             fi
-            bun run --filter=@stella/content video:sync --remote --tts gemini
-            echo "VIDEO_MANIFEST=${{ github.workspace }}/packages/content/dist/video-manifest.json" >> "$GITHUB_ENV"
+            status=0
+            bun run --filter=@stella/content video:sync --remote --tts gemini || status=$?
+            if [ -f packages/content/dist/video-manifest.json ]; then
+              echo "VIDEO_MANIFEST=${{ github.workspace }}/packages/content/dist/video-manifest.json" >> "$GITHUB_ENV"
+            fi
+            if [ "$status" -ne 0 ]; then
+              echo "::warning title=教材動画::一部の動画を作れませんでした。前の版の動画を残してデプロイを続けます。教材の指紋を記録しないので、次のデプロイで作り直します"
+              exit "$status"
+            fi
           fi
 
       # migrate / api / web は教材が変わっていなくても毎回。 migration が
@@ -165,14 +175,16 @@ jobs:
         env:
           PDF_MANIFEST: ${{ github.workspace }}/packages/content/dist/pdf-manifest.json
 
-      # 指紋の記録は R2・PDF・seed が全部通ってから。 途中で落ちた回は記録されない
+      # 指紋の記録は R2・PDF・動画・seed が全部通ってから。 途中で落ちた回は記録されない
       # ので、 次の push が (教材が変わっていなくても) もう一度フルで流す。
+      # continue-on-error の動画 step は失敗時に outcome が failure、conclusion が success になる。
+      # 動画の失敗で指紋を記録しないよう outcome を見る。
       #
-      # ここだけ continue-on-error。 記録に失敗しても本番の状態は正しく、 起きるのは
+      # 記録も continue-on-error。 記録に失敗しても本番の状態は正しく、 起きるのは
       # 「次のデプロイが教材パイプラインをもう一度流す」だけ。 それで web のデプロイを
       # 止める方が損。
       - name: Record course content fingerprint
-        if: steps.content.outputs.changed == 'true'
+        if: steps.content.outputs.changed == 'true' && steps.video.outcome != 'failure'
         continue-on-error: true
         run: bun run content:state:save:remote
         env:
