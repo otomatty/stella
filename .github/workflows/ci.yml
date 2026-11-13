@@ -51,8 +51,11 @@ jobs:
 
       # C# の課題 (dotnet-test) のテンプレートと見本を、本物の .NET SDK で動かして確かめる
       # (templates.test.ts・samples.test.ts。CI で dotnet が見つからないとテストが落ちる)。
+      # 実行環境に入っている新しい SDK を使わないよう、別の場所に 10 系だけを入れる。
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           dotnet-version: 10.0.x
 
