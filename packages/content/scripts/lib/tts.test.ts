@@ -243,6 +243,46 @@ describe("synthesizeCached", () => {
     }
   });
 
+  it("別々の文でも同時実行数を守り、失敗しても残りの合成を続ける", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tts-cache-"));
+    try {
+      let running = 0;
+      let peak = 0;
+      const failure = new Error("合成に失敗しました");
+      const synthesize = vi.fn(async (speech: string) => {
+        running++;
+        peak = Math.max(peak, running);
+        try {
+          await new Promise((r) => setTimeout(r, 5));
+          if (speech === "最初の文") throw failure;
+          return { bytes: new Uint8Array([1]), ext: "wav" as const };
+        } finally {
+          running--;
+        }
+      });
+      const p: TtsProvider = {
+        identity: "t/3",
+        concurrency: 1,
+        nondeterministic: true,
+        synthesize,
+      };
+      const results = await Promise.allSettled(
+        ["最初の文", "次の文", "最後の文"].map((speech) => synthesizeCached(p, speech, dir)),
+      );
+      expect(results.map((result) => result.status)).toEqual([
+        "rejected",
+        "fulfilled",
+        "fulfilled",
+      ]);
+      expect(results[0]).toEqual({ status: "rejected", reason: failure });
+      expect(synthesize).toHaveBeenCalledTimes(3);
+      expect(peak).toBe(1);
+      expect(running).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("声が変わればキーも変わる", () => {
     expect(cueHash("gemini/a", "文")).not.toBe(cueHash("gemini/b", "文"));
   });
