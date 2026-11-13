@@ -150,7 +150,8 @@ function geminiProvider(cfg: VoiceConfig): TtsProvider {
   const style = cfg.style ?? "";
   return {
     identity: `gemini/${model}/${voice}/${style}`,
-    concurrency: 4,
+    // ponytail: 1 分におよそ 12 回の制限がある間は 1 つずつ合成する。上限が上がったら同時実行数を増やす。
+    concurrency: 1,
     nondeterministic: true,
     async synthesize(speech) {
       const key = requireEnv(
@@ -350,6 +351,32 @@ export function synthesizeCached(
   return job;
 }
 
+const synthesisSlots = new WeakMap<TtsProvider, { running: number; waiters: (() => void)[] }>();
+
+// 呼び出し元が並列でも、プロバイダの同時実行数の上限を超えないようにする。
+async function synthesizeLimited(provider: TtsProvider, speech: string): Promise<TtsAudio> {
+  let slots = synthesisSlots.get(provider);
+  if (!slots) {
+    slots = { running: 0, waiters: [] };
+    synthesisSlots.set(provider, slots);
+  }
+  const limit = Number.isFinite(provider.concurrency)
+    ? Math.max(1, Math.floor(provider.concurrency))
+    : 1;
+  if (slots.running >= limit) {
+    await new Promise<void>((resolve) => slots.waiters.push(resolve));
+  } else {
+    slots.running++;
+  }
+  try {
+    return await provider.synthesize(speech);
+  } finally {
+    const next = slots.waiters.shift();
+    if (next) next();
+    else slots.running--;
+  }
+}
+
 async function synthesizeUncached(
   provider: TtsProvider,
   speech: string,
@@ -363,7 +390,7 @@ async function synthesizeUncached(
       return { file, cached: true };
     }
   }
-  const audio = await provider.synthesize(speech);
+  const audio = await synthesizeLimited(provider, speech);
   if (audio.bytes.length === 0) throw new Error("TTS の結果が空でした");
   mkdirSync(cacheDir, { recursive: true });
   const file = join(cacheDir, `${hash}.${audio.ext}`);
