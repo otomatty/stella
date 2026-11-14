@@ -98,7 +98,7 @@ export function buildContextUserMessage(
   // 含まれる最長のバッククォート連長 + 1 (最低 3) でフェンスを構成する。
   const longestBacktickRun = (userCode.match(/`+/g) ?? [])
     .map((m) => m.length)
-    .reduce((a, b) => (a > b ? a : b), 0);
+    .reduce((a, b) => Math.max(a, b), 0);
   const fenceTicks = "`".repeat(Math.max(3, longestBacktickRun + 1));
   sections.push(fenceTicks + fenceLang);
   sections.push(userCode.trimEnd());

@@ -120,5 +120,5 @@ export function nextSubmissionAttempt(
 function normalizeAttempt(value: number | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 1;
   const floored = Math.floor(value);
-  return floored < 1 ? 1 : floored;
+  return Math.max(floored, 1);
 }

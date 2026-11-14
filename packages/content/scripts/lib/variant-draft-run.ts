@@ -447,7 +447,11 @@ export async function runDraftGroup(
     log?: (line: string) => void;
   },
 ): Promise<DraftOutcome> {
-  const log = options.log ?? (() => {});
+  const log =
+    options.log ??
+    (() => {
+      // 既定ではログを出さない
+    });
   const request = draftRequest(target, group, options.guide);
   const output = options.first ?? (await model.complete(request));
   const parent = parentOf(target.taskDir);

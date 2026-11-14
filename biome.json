@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.5/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "includes": [
@@ -26,7 +26,9 @@
       "!apps/vscode/samples",
       "!**/apps/vscode/samples",
       "!**/apps/web/src/routeTree.gen.ts",
-      "!**/apps/web/public/pdf.worker.min.mjs"
+      "!**/apps/web/public/pdf.worker.min.mjs",
+      "!docs/curriculum/**/*.html",
+      "!**/docs/curriculum/**/*.html"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "off" } } },
