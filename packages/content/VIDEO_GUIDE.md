@@ -4,11 +4,12 @@
 
 ## 何を映すか
 
-**実際の画面で見せられるものは、実際の画面で見せます。**
+**主役は、実際に画面を操作している動画です。** 操作の流れを、そのまま見せます。
 
 | 場面の種類 (`kind`) | 映すもの | 使うところ |
 | --- | --- | --- |
-| `view` + `shot:` | STELLA の Web・VS Code の実際の画面の静止画。見せたい場所を囲む・寄る・札を付ける・押す | 要点の説明 (ほとんどの場面) |
+| `view` + `clip:` | STELLA の Webアプリ・VS Code を実際に操作している動画 | 要点の説明 (ほとんどの場面) |
+| `view` + `shot:` | 実際の画面の静止画。囲む・寄る・札を付ける・押す | 操作のクリップがまだ無いとき・動かない画面を見せるときの代わり |
 | `view` + `art:` | イラスト 1 枚 | つかみ (受講者の状況を絵にする) |
 | `board` | 概念図。ノードにイラストを付ける | 全体の関係を 1 枚で見せるとき (主にまとめ) |
 
@@ -23,7 +24,7 @@
    - `stuck`: 初学者がつまずく点。この動画が要る理由
    - `points`: 伝えること。**3 つまで**。1 つは 1 文
    - `leaveOut`: あえて言わないこと。仕組みの詳細・アプリの内部の話・例外の扱い・その動画の要点に要らない画面の部品は、まずここに入れる
-2. **素材を決める。** `points` ごとに、どの画面のどこを見せるかを決めます。使える画面は `packages/content/shots/` にあります。無ければ撮ります (下の「素材を作る」)。
+2. **素材を決める。** `points` ごとに、どの画面のどこを見せるかを決めます。使える操作は `packages/content/clips/`、静止画は `packages/content/shots/` にあります。無ければ撮ります (下の「素材を作る」)。
 3. **場面 (`scenes`) に分け、最後に読み上げの文 (`say`) を書く。**
 
 `points` に書いていないことは、正しくても動画に入れません。手順の細部は `doc.md` と操作の収録 (`screen.mp4`) に任せます。
@@ -36,28 +37,35 @@
 | 要点 | `point` | `points` の 1 つを、実際の画面で説明する。`point` に番号を書く |
 | まとめ | `recap` | 全体を 1 枚で見せて、`points` を言い直す。新しいことを足さない |
 
-- 動画 1 本は 3〜6 場面、合計 60〜120 秒
+- 動画 1 本は 3〜6 場面、合計 **90〜180 秒**。急がないでください。文と文の間・操作の終わりの間は自動で入ります
 
 ## 画面の場面 (`view`) のルール
 
+- 場面の `image` に `"clip:web/read-lesson#open-lesson"` と書くと、mark の最初のコマを止めて出します
+- 操作を進める文には `"clip": "web/read-lesson#open-lesson"` と書きます (`clip:` は付けない)。**1 文 = 1 操作 (mark 1 つ)**。mark はクリップの JSON にある開始秒と終了秒の組です
+- `speed` は 0.5〜3、既定は 1。`"speed": 1.5` なら 1.5 倍速です。同じ文に `image` と `clip` は書けません
+- 文より操作が長ければ、そのぶん動画が待ちます。操作が終わったら最後のコマで止まり、次の文もそのコマを引き継ぎます
+- `spot`・`zoom`・`label`・`click` の領域はクリップの `regions` を使います。再生中に寄る・囲むこともできます
+- Webアプリ ↔ VS Code の切り替えは、窓が入れ替わる 0.9 秒のつなぎが自動で入ります。同じアプリどうし・イラストとの切り替えは 0.4 秒のクロスフェードです
+
 - 画面の文字は動画では小さくなります。**見せたい場所には必ず寄る (`zoom`) か、囲む (`spot`)**。画面全体を映したまま話し続けない
 - 1 文で見せる場所は 1 つ。次の文で次の場所へ移る
-- 押す場所は `click` で見せる (カーソルが動いて押す)。押したあとの画面は、次の文で `image` を切り替えて見せる
+- 静止画で押す場所は `click` で見せる (カーソルが動いて押す)。押したあとの画面は、次の文で `image` を切り替えて見せる
 - 札 (`label`) は 12 字まで。画面に書いてある言葉を繰り返さず、「ここで書く」のように意味を足すときだけ使う
 - 画面は実際に撮ったものだけを使う。画面を描き直した絵や、加工した画面は使わない
-- 窓の枠の色と札 (Web = 青、VS Code = 紫) は自動で付きます
+- 窓の枠の色と札 (Webアプリ = 青、VS Code = 紫) は自動で付きます
 
 ## 概念図 (`board`) とイラストのルール
 
 - ノードは 6 個まで、矢印は 8 本まで、囲みは 3 個まで
 - ノードにはイラスト (`art`) を付ける。小さなアイコン (`icon`) だけのノードは、イラストを用意できないときの代わりです
 - ラベルはノード 10 字・囲み 12 字・矢印 6 字まで。画面で受講者が目にする言葉に合わせる
-- 囲みの `tone` (`blue` / `violet`) で場所を色分けする。画面の場面の窓の色とそろえる (Web = `blue`、VS Code = `violet`)
+- 囲みの `tone` (`blue` / `violet`) で場所を色分けする。画面の場面の窓の色とそろえる (Webアプリ = `blue`、VS Code = `violet`)
 - イラストに文字・ロゴは入れない。絵柄は `narration/art-style.md` でそろえる
 
 ## 読み上げ 1 文 (`beats`) のルール
 
-- **1 文ごとに絵が変わること。** 画面の場面は 切り替える (`image`)・囲む (`spot`)・寄る (`zoom`)・札 (`label`)・押す (`click`)、概念図は 出す (`show`)・目立たせる (`focus` / `pulse`)・印 (`mark`)・たどる (`travel`)・寄る (`zoom`) のどれかを必ず書く。絵が変わらない文は、要らない文です
+- **1 文ごとに絵が変わること。** 画面の場面は 操作する (`clip`)・切り替える (`image`)・囲む (`spot`)・寄る (`zoom`)・札 (`label`)・押す (`click`)、概念図は 出す (`show`)・目立たせる (`focus` / `pulse`)・印 (`mark`)・たどる (`travel`)・寄る (`zoom`) のどれかを必ず書く。絵が変わらない文は、要らない文です
 - 1 文は 40 字まで。です・ます調の話し言葉。画面のボタンの名前は「」で引用してよい。ほかの括弧・記号 (「→」「/」「…」) は使わない
 - 1 場面は 1〜5 文
 - 見れば分かることを言葉で繰り返さない。絵が出るのに合わせて、その意味を言う
@@ -67,10 +75,13 @@
 ## 素材を作る
 
 ```bash
+# Webアプリの操作: ローカルで STELLA を起動してクリップを撮る
+bun run --filter=@stella/web tutorials:clips
+
 # VS Code の画面: 操作の収録 (screen.mp4) からコマを取り出す。定義は shots/frames.json
 bun run --filter=@stella/content video:shots
 
-# Web の画面: ローカルで STELLA を起動して撮る。定義は apps/web/scripts/tutorials/shots/*.ts
+# Webアプリの静止画: ローカルで STELLA を起動して撮る。定義は apps/web/scripts/tutorials/shots/*.ts
 bun run --filter=@stella/web tutorials:shots
 
 # イラスト: video.json の art の prompt から Gemini で作る
@@ -79,8 +90,11 @@ bun run --filter=@stella/content video:art -- <トピックのパス> --only rea
 bun run --filter=@stella/content video:art -- <トピックのパス> --only write --ref read   # 絵柄の手本を指定する (既存の画像・作成対象と別の名前)
 ```
 
+- クリップは `packages/content/clips/<組>/<名前>.json` に書きます。`video` は `packages/content` からの相対パス、`width`・`height` は 1600×1000、`fps` は 30、`duration` は秒数、`marks` は `{ "open": [開始秒, 終了秒] }`、`regions` はピクセルの `[x, y, 幅, 高さ]` です。`source` に収録元を残します
+- 既存の収録の区間を使うときは、`video` に元の `screen.mp4` のパスを指定し、`marks` に使う区間を書きます。動画をコピーする必要はありません
+- VS Code の新しい操作は **Windows の手元で撮ります**。撮り方と未撮影の操作は [手元での収録の手引き](../../docs/video-local-recording.md) を参照してください
 - ショットは `packages/content/shots/<組>/<名前>.png` と同名の `.json` (領域 `regions`)。絵コンテからは `shot:web/task` のように指す
-- 領域は、Web の画面はセレクタから自動で決まります。収録のコマは `frames.json` にピクセルで書きます
+- 領域は、Webアプリの画面はセレクタから自動で決まります。収録のコマは `frames.json` にピクセルで書きます
 - イラストはトピックの `assets/art/<名前>.png`。絵コンテからは `art:<名前>` で指す。イラストの領域は `art` の `regions` に割合 (0〜1) で書きます
 - 作ったイラストは必ず目で確かめます。文字・ロゴ・不自然な手や顔があれば作り直します
 - 画面が変わったら撮り直します。素材を足す・作り直すと単元の内容指紋が変わるので、`references.json` を更新します
@@ -111,7 +125,10 @@ bun run --filter=@stella/content video:check                                   #
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --stills      # 文ごとの静止画 (API を呼ばない)
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts fake    # 仮の音で動画まで
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini  # 本番の音声
+bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --tts-model gemini-3.8-flash-lite-tts  # 別の音声モデル
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --refresh-audio hook,check  # 指定した場面の音声を作り直す
 ```
 
 静止画の一覧で、囲みの位置・寄ったときに文字が読めるか・札のはみ出しを見てから音声を作ります。
+
+1 日の上限に達したら、`--tts-model` で別のモデルを指定して書き出せます。環境変数 `VIDEO_TTS_MODEL` でも指定でき、`--tts-model` が優先します。公開する版は、上書き指定を外して `narration/voice.json` のモデルで作り直してください。

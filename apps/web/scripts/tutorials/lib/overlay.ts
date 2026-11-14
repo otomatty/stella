@@ -3,7 +3,7 @@
 // アプリの DOM や CSS と干渉しないよう、Shadow DOM の中に描画する。
 // この関数は文字列化してブラウザ側で実行されるため、外部の変数を参照してはいけない。
 
-export function overlayScript(opts: { accent: string }) {
+export function overlayScript(opts: { accent: string; clip?: boolean }) {
   const w = window as unknown as Record<string, unknown>;
   if (w.__tutor) return;
   const accent = opts.accent;
@@ -54,7 +54,8 @@ export function overlayScript(opts: { accent: string }) {
     document.documentElement.appendChild(host);
     root = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
-    style.textContent = css;
+    style.textContent =
+      css + (opts.clip ? ".caption, .title, .keys { display: none !important; }" : "");
     root.appendChild(style);
     layer = document.createElement("div");
     layer.lang = "ja";
@@ -109,6 +110,17 @@ export function overlayScript(opts: { accent: string }) {
   document.addEventListener("mouseup", () => cursor?.classList.remove("down"), true);
 
   w.__tutor = {
+    pretendClick(x: number, y: number) {
+      mount();
+      const r = document.createElement("div");
+      r.className = "ripple";
+      r.style.left = `${x}px`;
+      r.style.top = `${y}px`;
+      layer.appendChild(r);
+      cursor.classList.add("down");
+      setTimeout(() => cursor.classList.remove("down"), 90);
+      setTimeout(() => r.remove(), 700);
+    },
     keys(parts: string[]) {
       mount();
       keys.innerHTML = "";
@@ -185,6 +197,7 @@ export function overlayScript(opts: { accent: string }) {
 }
 
 export interface TutorialOverlay {
+  pretendClick?(x: number, y: number): void;
   title(badge: string, heading: string, sub: string): void;
   hideTitle(): void;
   caption(text: string, step: number | null): void;

@@ -272,3 +272,22 @@ export default defineShots({
 `t` は既存の `Director` です。移動・クリック・`expect` を使えます。表示 API は無表示になります。`shot` の id は英小文字・数字・ハイフンの `組/名前`、領域はセレクタの最初の要素です。要素をスクロールしてから全領域が同じ画面内に収まることを検査します。本文など大きい領域だけ、`clipRegions: ["doc"]` のように名前を指定すると見えている範囲に切り詰められます。要素がない・領域が画面外の場合は保存せず失敗します。
 
 出力は `packages/content/shots/<組>/<名前>.png` と同名の `.json` です。JSON は定義ファイルを示す `source`、画像の `width`・`height`、画像ピクセルでの `regions`（`[x, y, 幅, 高さ]`）を持ちます。同じ id は実行時に上書きします。生成した PNG と JSON をコミット対象に含めてください。
+
+## 教材動画に使う操作のクリップを撮る
+
+字幕・タイトルカード・押したキー・読み上げを付けず、カーソルとクリックの波紋を映します。Gemini は呼びません。Bun・Playwright Chromium・ffmpeg・ffprobe が必要です。Web は既存の収録と同じ専用 D1 の写し・ローカル API を使い、light テーマで撮ります。
+
+```bash
+bun run --filter=@stella/web tutorials:clips
+bun run --filter=@stella/web tutorials:clips -- read-lesson open-task
+bun run --filter=@stella/web tutorials:clips -- --skip-build
+bun run --filter=@stella/web tutorials:clips -- --url http://127.0.0.1:5173
+```
+
+`--url` は既存の Web / API を使い、ビルド・起動・初期化・seedSql の適用を省きます。開発用 JWT を送れるローカル API 向けの Web を指定します。`AUTH_JWT_SECRET` は通常の収録と共通です。
+
+定義は `clips/*.ts` の `defineClip({ id, user?, seedSql?, regions, run })`。`regions` は最後の画面のセレクタで、最初の要素の全体が画面内にある必要があります。`t.mark("名前", async () => { … })` で動画の先頭からの開始・終了秒を残します。名前は英小文字・数字・ハイフンで、重複はエラーです。結果を見せるため、区間の終わりに `t.wait(1000)` 程度の間を入れます。mark の外の操作も録画されます。`t.pretendClick(selector)` はカーソルと波紋だけを出し、ボタンを押しません。`t.expect` の失敗時は出力しません。
+
+出力は `packages/content/clips/<組>/<名前>.mp4` と `.json`。動画は音声なしの H.264 / yuv420p / 1600×1000 / 固定 30fps / faststart です。JSON に定義の `source`、content からの相対パス `video`、`width`・`height`・ffprobe で確認した `duration`・`fps`・`marks`・動画ピクセルの `regions` を保存します。既存のチュートリアルやトピックの `screen.*` は更新しません。
+
+Windows の VS Code では台本に `clip: "vscode/submit"` と任意の `regions: { button: [x, y, w, h] }` を付け、`tutorials:vscode -- --clip submit` で撮ります。`--clip` がない実行は clip 付き台本を除外します。`--save` との併用はできません。強調 (`t.highlight`) は映ります。詳しい手元での手順は [video-local-recording.md](../../../../docs/video-local-recording.md) にあります。

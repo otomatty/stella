@@ -1,0 +1,15 @@
+{
+  "source": "apps/web/scripts/tutorials/clips/task.ts",
+  "video": "clips/web/open-task.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 10.77,
+  "marks": {
+    "press-open": [6.9, 10.71]
+  },
+  "regions": {
+    "handoff": [475, 226, 1000, 122],
+    "open": [1270, 266, 184, 41]
+  }
+}

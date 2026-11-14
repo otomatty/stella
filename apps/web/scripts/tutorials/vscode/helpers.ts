@@ -8,6 +8,10 @@ export interface TaskContext {
 
 export interface Scenario {
   id: string;
+  /** 教材動画の素材として撮るときの出力 id。 */
+  clip?: string;
+  /** 動画 (1600×1000) のピクセルで指定する領域。 */
+  regions?: Record<string, [number, number, number, number]>;
   title: string;
   summary: string;
   /** 動画を置くトピック (packages/content/stages からの相対パス) */

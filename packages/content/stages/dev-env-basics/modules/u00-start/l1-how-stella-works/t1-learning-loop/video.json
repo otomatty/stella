@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "brief": {
-    "goal": "「読むのは Web、書くのは VS Code」と「書く、確認する、提出する、結果を読む」の順番を言える。",
+    "goal": "「読むのは Webアプリ、書くのは VS Code」と「書く、確認する、提出する、結果を読む」の順番を言える。",
     "stuck": "画面が 2 つあり、どちらで何をするのか迷う。確認で直すところが出ると、失敗だと感じてしまう。",
     "points": [
-      "読むのは Web、課題を書くのは VS Code。",
+      "読むのは Webアプリ、課題を書くのは VS Code。",
       "書いたら確認する。直すところが出たら、直してもう一度確認する。",
-      "確認が通ったら提出し、Web で結果を読む。"
+      "確認が通ったら提出し、Webアプリで結果を読む。"
     ],
     "leaveOut": [
       "レッスンと知識問題の細かい定義",
@@ -47,7 +47,7 @@
       "zones": [
         {
           "id": "web-read",
-          "label": "Web",
+          "label": "Webアプリ",
           "icon": "browser",
           "tone": "blue",
           "cells": [1, 1, 1, 1]
@@ -61,7 +61,7 @@
         },
         {
           "id": "web-result",
-          "label": "Web",
+          "label": "Webアプリ",
           "icon": "browser",
           "tone": "blue",
           "cells": [5, 1, 1, 1]
@@ -139,11 +139,11 @@
       "image": "art:two-screens",
       "beats": [
         {
-          "say": "STELLA の学習では、Web と VS Code の 2 つを使います。",
+          "say": "STELLA の学習では、Webアプリと VS Code の 2 つを使います。",
           "label": [
             {
               "at": "web",
-              "text": "Web"
+              "text": "Webアプリ"
             },
             {
               "at": "vscode",
@@ -157,7 +157,7 @@
           "label": [
             {
               "at": "web",
-              "text": "Web"
+              "text": "Webアプリ"
             },
             {
               "at": "vscode",
@@ -173,21 +173,26 @@
       "role": "point",
       "point": 1,
       "title": "読む場所と、書く場所",
-      "image": "shot:web/lesson-slides",
+      "image": "clip:web/read-lesson#open-lesson",
       "beats": [
         {
-          "say": "Web は、読む場所です。",
-          "spot": ["slides"]
+          "say": "Webアプリは、読む場所です。",
+          "clip": "web/read-lesson#open-lesson"
         },
         {
-          "say": "課題は、Web から VS Code で開きます。",
-          "image": "shot:web/task",
-          "zoom": "handoff",
-          "click": "open"
+          "say": "レッスンを開いて、スライドを読み進めます。",
+          "clip": "web/read-lesson#next-slide"
+        },
+        {
+          "say": "課題を始めるときは、「VS Code で開く」を押します。",
+          "clip": "web/open-task#press-open"
+        },
+        {
+          "say": "VS Code に切り替わり、課題が開きます。",
+          "clip": "vscode/run-check#opened"
         },
         {
           "say": "VS Code は、課題を書く場所です。",
-          "image": "shot:vscode/task-open",
           "spot": ["editor"]
         }
       ]
@@ -198,30 +203,45 @@
       "role": "point",
       "point": 2,
       "title": "書いたら、確認する",
-      "image": "shot:vscode/task-open",
+      "image": "clip:vscode/run-check#press-check",
       "beats": [
         {
           "say": "書いたら、「課題を確認する」を押します。",
-          "zoom": "guide-check",
-          "click": "check-button"
+          "clip": "vscode/run-check#press-check"
         },
         {
-          "say": "直すところがあると、結果に出ます。",
-          "image": "shot:vscode/check-fail",
-          "zoom": "result",
-          "spot": ["headline", "fail-item"]
+          "say": "直すところがあれば、ここに表示されます。",
+          "clip": "vscode/run-check#fail",
+          "zoom": "result"
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "直して、もう一度",
+      "image": "clip:vscode/run-check#fix",
+      "beats": [
+        {
+          "say": "コードを直します。",
+          "clip": "vscode/run-check#fix",
+          "zoom": "code"
         },
         {
-          "say": "直して保存し、もう一度確認します。",
-          "image": "shot:vscode/check-fixed",
-          "zoom": "code-line",
-          "spot": ["code-line"]
+          "say": "直したら、保存します。",
+          "clip": "vscode/run-check#save",
+          "zoom": "all"
+        },
+        {
+          "say": "もう一度、確認します。",
+          "clip": "vscode/run-check#recheck"
         },
         {
           "say": "すべて通ったら、確認は終わりです。",
-          "image": "shot:vscode/check-pass",
-          "zoom": "result",
-          "spot": ["headline", "result"]
+          "clip": "vscode/run-check#pass",
+          "zoom": "result"
         }
       ]
     },
@@ -236,14 +256,12 @@
         {
           "say": "確認が通ったら、提出します。",
           "zoom": "result",
-          "click": "submit",
-          "spot": ["submit"]
+          "spot": ["submit"],
+          "click": "submit"
         },
         {
-          "say": "Web で結果を読みます。",
-          "image": "shot:web/submissions",
-          "spot": ["submissions"],
-          "zoom": "submissions"
+          "say": "Webアプリに戻って、結果を読みます。",
+          "clip": "web/read-result#open-submissions"
         }
       ]
     },
@@ -254,11 +272,11 @@
       "board": "loop",
       "beats": [
         {
-          "say": "読むのは Web、書くのは VS Code です。",
+          "say": "読むのは Webアプリ、書くのは VS Code です。",
           "show": ["web-read", "vscode", "read", "write", "read-write"]
         },
         {
-          "say": "書いたら確認し、通ったら提出して、Web で結果を読みます。",
+          "say": "書いたら確認して、通ったら提出し、Webアプリで結果を読みます。",
           "show": [
             "write-check",
             "check",
@@ -286,6 +304,6 @@
   ],
   "polish": {
     "model": "gemini-4-argon",
-    "sayHash": "8cfdd115e44bb8ff45097ad8d9ba9df5e69a4a4c8a46f3a0536f497ffd4ba57b"
+    "sayHash": "fc22199ac4e70863a7994ef4aab0a4c70ea6bbf88c3487e07624d361a0df158b"
   }
 }

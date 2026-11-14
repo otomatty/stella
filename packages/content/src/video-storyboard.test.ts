@@ -49,10 +49,14 @@ describe("絵コンテ", () => {
         resolve(stages, ".."),
         dirname(resolve(stages, file)),
         json,
+        { allowMissingClips: true },
       );
       expect(
         parseStoryboard(json, context).issues.filter(
-          (i) => i.level === "error" && !i.message.startsWith("ショットがありません:"),
+          (i) =>
+            i.level === "error" &&
+            !i.message.startsWith("ショットがありません:") &&
+            !i.message.startsWith("クリップがありません:"),
         ),
         file,
       ).toEqual([]);
@@ -453,7 +457,7 @@ describe("絵コンテ", () => {
       true,
     );
   });
-  it("短い時間は警告、180秒超はエラー", () => {
+  it("短い時間は警告、300秒超はエラー", () => {
     const s = fresh();
     for (const scene of s.scenes) for (const b of scene.beats) b.speech = "あ";
     expect(

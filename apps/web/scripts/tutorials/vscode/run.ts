@@ -10,6 +10,9 @@ import {
   parseTaskDefinition,
   toRuntimeManifest,
 } from "../../../../../packages/content/src/task-schema";
+import { writeClip } from "../lib/clip-output";
+import { clipMetadata } from "../lib/clips";
+import { recordingOptions, selectsScenario } from "./options";
 import { chaptersToVtt } from "../lib/captions";
 import { Director, PARK } from "../lib/director";
 import { collectNarrationTexts, muxNarration, Narrator, titleNarration } from "../lib/narration";
@@ -170,7 +173,7 @@ async function prepareWindow(page: Page, s: Scenario, ctx: TaskContext, openFile
   await closeNotifications(page);
   await page.keyboard.press("Escape");
   await page.evaluate(
-    `var __name = (f) => f; (${overlayScript.toString()})(${JSON.stringify({ accent: "#6470e8" })});`,
+    `var __name = (f) => f; (${overlayScript.toString()})(${JSON.stringify({ accent: "#6470e8", clip: Boolean(s.clip) })});`,
   );
   await page.evaluate(() => {
     const root = document.getElementById("__tutor_host")?.shadowRoot;
@@ -188,6 +191,7 @@ async function record(
   executable: string,
   narrator: Narrator | null,
   keepFrames: boolean,
+  source: string,
 ) {
   const { workDir, trainingRoot, taskRoot } = await prepareTask(s);
   const openFile = path.resolve(taskRoot, s.open === null ? "README.md" : (s.open ?? "index.html"));
@@ -202,7 +206,7 @@ async function record(
   const poster = path.join(workDir, `${s.id}.jpg`);
   await rm(errorImage, { force: true });
   // 前回の成功動画を今回の結果と取り違えないよう、撮り直す出力だけを消す。
-  for (const ext of ["mp4", "jpg", "vtt"])
+  for (const ext of s.clip ? [] : ["mp4", "jpg", "vtt"])
     await rm(path.join(OUT, `${s.id}.${ext}`), { force: true });
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -250,13 +254,13 @@ async function record(
     if (!page) throw new Error("VS Code のウィンドウを開けませんでした");
     await prepareWindow(page, s, { taskRoot, trainingRoot }, openFile);
     recorder = new ScreenRecorder(page, path.join(workDir, "frames"));
-    const t = new Director(page, recorder, { narrator });
+    const t = new Director(page, recorder, { narrator, clip: Boolean(s.clip) });
     t.setMouse(PARK.x, PARK.y);
-    t.posterFile = poster;
+    if (!s.clip) t.posterFile = poster;
     console.log(`[tutorials:vscode] 収録中: ${s.title}`);
     await recorder.start();
     try {
-      await t.title("操作ガイド", s.title, s.summary);
+      if (!s.clip) await t.title("操作ガイド", s.title, s.summary);
       await s.run(t, { taskRoot, trainingRoot, page });
       await t.finish();
       await t.hideCaption();
@@ -264,7 +268,21 @@ async function record(
     } finally {
       await recorder.stop();
     }
-    const duration = await recorder.encode(video, t.posterTaken ? null : poster, { width: 1600 });
+    const duration = await recorder.encode(video, s.clip || t.posterTaken ? null : poster, {
+      width: 1600,
+    });
+    if (s.clip) {
+      await writeClip(
+        path.join(ROOT, "packages/content/clips"),
+        video,
+        s.clip,
+        source,
+        t.marks,
+        s.regions ?? {},
+      );
+      console.log(`[tutorials:vscode] クリップを保存しました: ${s.clip}`);
+      return;
+    }
     if (t.narrationCues.length) {
       await muxNarration({ video, cues: t.narrationCues, duration, workDir: recorder.workDirPath });
     }
@@ -296,7 +314,7 @@ async function record(
       });
     }
     await rm(video, { force: true });
-    for (const ext of ["mp4", "jpg", "vtt"])
+    for (const ext of s.clip ? [] : ["mp4", "jpg", "vtt"])
       await rm(path.join(OUT, `${s.id}.${ext}`), { force: true });
     throw error;
   } finally {
@@ -309,32 +327,16 @@ async function record(
 }
 
 async function main() {
-  const args = process.argv.slice(2).filter((arg) => arg !== "--");
-  if (
-    args.some(
-      (arg) =>
-        arg.startsWith("--") &&
-        arg !== "--no-narration" &&
-        arg !== "--keep-frames" &&
-        arg !== "--save",
-    )
-  ) {
-    throw new Error("使えるオプションは --no-narration、--keep-frames、--save だけです");
-  }
-  const save = args.includes("--save");
-  if (save && args.includes("--no-narration")) {
-    throw new Error(
-      "--save と --no-narration は同時に指定できません。教材には音声付きの動画を保存します",
-    );
-  }
-  const filters = args.filter((arg) => !arg.startsWith("--"));
+  const options = recordingOptions(process.argv.slice(2));
+  const { save } = options;
   const dir = path.join(HERE, "scenarios");
   const scenarios: (Scenario & { file: string; topicDir: string | null })[] = [];
   for (const file of (await readdir(dir)).filter((name) => /\.tsx?$/.test(name)).sort()) {
     const { default: s } = (await import(pathToFileURL(path.join(dir, file)).href)) as {
       default: Scenario;
     };
-    if (!filters.length || filters.some((filter) => s.id.includes(filter))) {
+    if (selectsScenario(s, options)) {
+      if (s.clip) clipMetadata(s.clip, "", 1, 30, {}, s.regions ?? {});
       scenarios.push({
         ...s,
         file: path.join(dir, file),
@@ -365,10 +367,8 @@ async function main() {
   if (!existsSync(path.join(EXTENSION, "dist", "extension.js"))) {
     throw new Error("STELLA 拡張が見つかりません。apps/vscode で bun run build を実行してください");
   }
-  const narrator = args.includes("--no-narration")
-    ? null
-    : Narrator.fromEnv(path.join(TEMP, "_narration"));
-  if (!args.includes("--no-narration") && !narrator) {
+  const narrator = options.noNarration ? null : Narrator.fromEnv(path.join(TEMP, "_narration"));
+  if (!options.noNarration && !narrator) {
     throw new Error(
       "GEMINI_API_KEY が設定されていません。ナレーションなしで撮るときは --no-narration を付けてください",
     );
@@ -385,7 +385,13 @@ async function main() {
         ],
       ]);
     }
-    await record(s, executable, narrator, args.includes("--keep-frames"));
+    await record(
+      s,
+      executable,
+      narrator,
+      options.keepFrames,
+      path.relative(ROOT, s.file).split(path.sep).join("/"),
+    );
     if (s.topicDir) {
       await saveRecording(OUT, s.id, s.topicDir);
       console.log(`[tutorials:vscode] 教材に保存しました: ${s.topicDir}`);

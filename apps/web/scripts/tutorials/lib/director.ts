@@ -1,5 +1,6 @@
 import type { Locator, Page } from "playwright";
 import { titleNarration, type NarrationClip, type Narrator } from "./narration";
+import { ClipMarks } from "./clips";
 import type { ScreenRecorder } from "./recorder";
 
 // シナリオから使う操作 API。人が操作しているように見えるよう、
@@ -45,14 +46,27 @@ export class Director {
   private captionMin = 0;
   private speed: number;
   private narrator: Narrator | null;
+  private clipMode: boolean;
+  private clipMarks: ClipMarks;
+  get marks() {
+    return this.clipMarks.marks;
+  }
+  async mark(name: string, fn: () => Promise<void>) {
+    await this.clipMarks.mark(name, fn);
+  }
 
   constructor(
     public page: Page,
     private recorder: ScreenRecorder | null,
-    opts: { speed?: number; narrator?: Narrator | null } = {},
+    opts: { speed?: number; narrator?: Narrator | null; clip?: boolean } = {},
   ) {
     this.speed = opts.speed ?? 1;
-    this.narrator = opts.narrator ?? null;
+    this.clipMode = opts.clip ?? false;
+    this.narrator = this.clipMode ? null : (opts.narrator ?? null);
+    this.clipMarks = new ClipMarks(() => {
+      if (!this.recorder) throw new Error("mark には録画が必要です");
+      return this.recorder.elapsed();
+    });
   }
 
   setMouse(x: number, y: number) {
@@ -80,6 +94,7 @@ export class Director {
 
   /** 冒頭のタイトルカード。ナレーションがあれば、読み終わるまで出す */
   async title(badge: string, heading: string, sub: string, ms = 3200) {
+    if (this.clipMode) return;
     const clip = await this.takeNarration(titleNarration(heading, sub));
     await this.page.evaluate(([b, h, s]) => window.__tutor.title(b, h, s), [badge, heading, sub]);
     if (clip) this.narrationCues.push({ t: this.recorder?.elapsed() ?? 0, clip });
@@ -96,6 +111,7 @@ export class Director {
    * say があれば、画面の文字ではなくそちらを読み上げる。
    */
   async caption(text: string, opts: { hold?: number; chapter?: boolean; say?: string } = {}) {
+    if (this.clipMode) return;
     await this.settle();
     const clip = await this.takeNarration(opts.say ?? text);
     if (opts.chapter !== false) {
@@ -260,6 +276,14 @@ export class Director {
     await this.wait(opts.pause ?? 800);
   }
 
+  /** 実際のクリックイベントを発火せず、収録用の波紋だけを出す。 */
+  async pretendClick(target: Target) {
+    await this.moveTo(target);
+    await this.wait(420);
+    await this.page.evaluate(({ x, y }) => window.__tutor.pretendClick?.(x, y), this.mouse);
+    await this.wait(90);
+  }
+
   async hover(target: Target, ms = 800) {
     await this.moveTo(target);
     await this.wait(ms);
@@ -285,7 +309,7 @@ export class Director {
       if (i < seq.length - 1) labels.push("→");
     });
     if (opts.label) labels.splice(0, labels.length, ...opts.label);
-    if (opts.show !== false) {
+    if (!this.clipMode && opts.show !== false) {
       await this.page.evaluate((parts) => window.__tutor.keys(parts), labels);
       await this.wait(550);
     }

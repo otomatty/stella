@@ -1,14 +1,16 @@
 import type { Box } from "./scene-layout.js";
-import type { SceneTimeline } from "./scene-timeline.js";
+import { viewTransition, type SceneTimeline } from "./scene-timeline.js";
 import type { ViewSceneState, ViewState } from "./video-storyboard.js";
 import type { ShotRegion } from "./video-shots.js";
 
 export const SHOT_GROUPS: Record<string, { label: string; color: string }> = {
-  web: { label: "Web", color: "#2563EB" },
+  web: { label: "Webアプリ", color: "#2563EB" },
   vscode: { label: "VS Code", color: "#8330C7" },
 };
 export interface ViewImage {
   url: string;
+  /** mark を30fpsで取り出したコマ。最後は区間の終端より前のコマ。 */
+  frames?: string[];
   width: number;
   height: number;
   /** 画像ピクセル。art の割合も読み込み時に変換する。 */
@@ -21,7 +23,7 @@ export interface ViewFrameInput {
   previous?: ViewState;
 }
 /** DOM や時計に依存しないカメラ・クロスフェード・カーソルの計算。 */
-export function viewFrame(input: ViewFrameInput, time: number) {
+export function viewFrame(input: ViewFrameInput, time: number, transition = viewTransition) {
   const { state, timing, images } = input;
   const clamp = (n: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, n));
   const smooth = (n: number) => {
@@ -31,7 +33,7 @@ export function viewFrame(input: ViewFrameInput, time: number) {
   const mix = (a: number, b: number, t: number) => a + (b - a) * t;
   const base = (image: string): Box => {
     const img = images[image];
-    const top = image.startsWith("shot:") ? 170 : 130;
+    const top = !image.startsWith("art:") ? 170 : 130;
     const height = 950 - top;
     const s = Math.min(1800 / img.width, height / img.height);
     const w = img.width * s,
@@ -151,15 +153,55 @@ export function viewFrame(input: ViewFrameInput, time: number) {
     prior && prior.image !== current.image
       ? { image: prior.image, box: base(prior.image), camera: camera(prior) }
       : undefined;
-  const fade = old ? clamp((time - fadeStart) / 0.4) : 1;
-  return { image: current.image, box: b, camera: cam, old, fade, spots, labels, opacity, cursor };
+  const seconds = transition(old?.image, current.image);
+  const fade = old ? clamp((time - fadeStart) / seconds) : 1;
+  const switching = seconds === 1;
+  const transitionTime = time - fadeStart;
+  const motion = (incoming: boolean) => {
+    const t = smooth(fade);
+    return {
+      scale: incoming ? mix(0.9, 1, t) : mix(1, 0.9, t),
+      x: incoming ? 1920 * 0.3 * (1 - t) : -1920 * 0.06 * t,
+    };
+  };
+  const imageUrl = (s: ViewState, progress?: number) => {
+    const img = images[s.image];
+    if (!img.frames?.length) return img.url;
+    const index =
+      progress === undefined
+        ? s.lastFrame
+          ? img.frames.length - 1
+          : 0
+        : Math.min(img.frames.length - 1, Math.max(0, Math.floor(progress + 1e-7)));
+    return img.frames[index];
+  };
+  const playback = k >= 0 ? timing.beats[k].clip : undefined;
+  const progress = playback ? (time - playback.start) * playback.speed * 30 : undefined;
+  return {
+    image: current.image,
+    url: imageUrl(current, progress),
+    box: b,
+    camera: cam,
+    old: old && { ...old, url: imageUrl(prior as ViewState) },
+    fade,
+    incomingOpacity: switching ? smooth(transitionTime / 0.2) : fade,
+    oldOpacity: switching ? 1 - smooth((transitionTime - 0.7) / 0.3) : 1,
+    oldDim: switching ? smooth(fade) : 0,
+    switching,
+    motion: switching ? motion(true) : { scale: 1, x: 0 },
+    oldMotion: switching ? motion(false) : { scale: 1, x: 0 },
+    spots,
+    labels,
+    opacity,
+    cursor,
+  };
 }
 export function viewBusyRanges(timing: SceneTimeline): [number, number][] {
   return [
-    [0, 0.4],
+    [0, 1],
     ...timing.beats.flatMap((b): [number, number][] => [
-      [b.start, b.start + 1.2],
-      [b.end, b.end + 0.01],
+      [b.start, Math.max(b.start + 1.2, b.clip?.end ?? 0)],
+      [b.end, b.end + 1 / 30],
     ]),
   ];
 }

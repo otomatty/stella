@@ -1,3 +1,4 @@
+import { viewTransition } from "../../src/scene-timeline.js";
 import {
   viewBusyRanges,
   viewFrame,
@@ -12,6 +13,7 @@ function runtime(
   frame: typeof viewFrame,
   busy: typeof viewBusyRanges,
   groups: typeof SHOT_GROUPS,
+  transition: typeof viewTransition,
 ) {
   const win = window as unknown as ScenePageWindow;
   const safe = (s: string) =>
@@ -24,14 +26,23 @@ function runtime(
   const surface = element("surface");
   let overflows: string[] = [];
   win.__busyRanges = busy(data.timing);
-  win.__setTime = (time) => {
-    const f = frame(data, time),
+  win.__setTime = async (time) => {
+    const f = frame(data, time, transition),
       b = f.box;
-    const imageLayer = (id: string, box: typeof b, cam: typeof f.camera, opacity: number) => {
-      const group = id.startsWith("shot:") ? groups[id.slice(5).split("/")[0]] : undefined;
-      const shot = id.startsWith("shot:");
+    const imageLayer = (
+      id: string,
+      url: string,
+      box: typeof b,
+      cam: typeof f.camera,
+      opacity: number,
+      motion: typeof f.motion,
+      dim = 0,
+      shadow = false,
+    ) => {
+      const group = !id.startsWith("art:") ? groups[id.slice(5).split("/")[0]] : undefined;
+      const shot = !id.startsWith("art:");
       const clip = `clip-${id.replace(/[^a-z0-9-]/g, "-")}`;
-      return `<g opacity="${opacity}"><defs><clipPath id="${clip}"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16"/></clipPath></defs><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16" fill="white" style="filter:drop-shadow(0px 5px 10px #00000012)"/><g clip-path="url(#${clip})"><image href="${safe(data.images[id].url)}" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" transform="translate(${cam.x} ${cam.y}) scale(${cam.scale})"/></g>${shot ? `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16" fill="none" stroke="${group?.color ?? "#DDDDE2"}" stroke-width="3"/>` : ""}${group ? `<rect x="${box.x}" y="${box.y - 42}" width="${group.label.length * 25 + 32}" height="42" rx="8" fill="${group.color}"/><text x="${box.x + 16}" y="${box.y - 9}" font-size="28" fill="white">${group.label}</text>` : ""}</g>`;
+      return `<g opacity="${opacity}" ${shadow ? 'style="filter:drop-shadow(0px 12px 24px #00000020)"' : ""} transform="translate(${960 + motion.x} 540) scale(${motion.scale}) translate(-960 -540)"><defs><clipPath id="${clip}"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16"/></clipPath></defs><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16" fill="white" style="filter:drop-shadow(0px 5px 10px #00000012)"/><g clip-path="url(#${clip})"><foreignObject x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" transform="translate(${cam.x} ${cam.y}) scale(${cam.scale})"><img src="${safe(url)}" style="display:block;width:100%;height:100%"/></foreignObject></g>${shot ? `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16" fill="none" stroke="${group?.color ?? "#DDDDE2"}" stroke-width="3"/>` : ""}${dim ? `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="16" fill="rgba(14,14,16,0.25)" opacity="${dim}"/>` : ""}${group ? `<rect x="${box.x}" y="${box.y - 42}" width="${group.label.length * 25 + 32}" height="42" rx="8" fill="${group.color}"/><text x="${box.x + 16}" y="${box.y - 9}" font-size="28" fill="white">${group.label}</text>` : ""}</g>`;
     };
     const rect = (r: typeof b, extra: string) =>
       `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" ${extra}/>`;
@@ -48,7 +59,7 @@ function runtime(
     const cursor = c
       ? `<g transform="translate(${c.x} ${c.y})">${c.ripple >= 0 ? `<circle r="${8 + c.ripple * 45}" fill="none" stroke="#E62F9A" stroke-width="4" opacity="${1 - c.ripple}"/>` : ""}<path d="M0 0L3 40L14 29L23 44L31 40L22 25L38 24Z" fill="#0E0E10" stroke="white" stroke-width="3" stroke-linejoin="round"/></g>`
       : "";
-    surface.innerHTML = `${f.old ? imageLayer(f.old.image, f.old.box, f.old.camera, 1 - f.fade) : ""}${imageLayer(f.image, b, f.camera, f.fade)}<defs><clipPath id="overlay-clip">${rect(b, "")}</clipPath></defs>${spots}${labels}${cursor}`;
+    surface.innerHTML = `${f.old && f.fade < 1 ? imageLayer(f.old.image, f.old.url, f.old.box, f.old.camera, f.oldOpacity, f.oldMotion, f.oldDim) : ""}${imageLayer(f.image, f.url, b, f.camera, f.incomingOpacity, f.motion, 0, f.switching)}<defs><clipPath id="overlay-clip">${rect(b, "")}</clipPath></defs>${spots}${labels}${cursor}`;
     const fade = Math.max(0, Math.min(1, time / 0.4));
     element("heading").style.opacity = String(fade);
     element("previous-heading").style.opacity = String(1 - fade);
@@ -65,6 +76,10 @@ function runtime(
           other.y < l.y + l.h
         )
           overflows.push(`札が重なっています: ${other.text} / ${l.text}`);
+    }
+    if (surface.querySelectorAll) {
+      await Promise.all([...surface.querySelectorAll("img")].map((img) => img.decode()));
+      surface.getBoundingClientRect();
     }
   };
   win.__overflows = () => [...overflows];
@@ -90,5 +105,5 @@ export function viewHtml(input: SceneHtmlInput): string {
     .map((img) => `<img hidden src="${safe(img.url)}">`)
     .join(
       "",
-    )}<header><div id="previous-heading">${heading(input.previous)}</div><div id="heading">${heading(input.scene)}</div><div class="dots">${Array.from({ length: input.total }, (_, i) => `<i class="dot ${i === input.index ? "active" : ""}"></i>`).join("")}</div></header><svg id="surface" viewBox="0 0 1920 1080"></svg><div id="white"></div><script>(${runtime.toString()})(${data}, ${viewFrame.toString()}, ${viewBusyRanges.toString()}, ${JSON.stringify(SHOT_GROUPS)});</script></html>`;
+    )}<header><div id="previous-heading">${heading(input.previous)}</div><div id="heading">${heading(input.scene)}</div><div class="dots">${Array.from({ length: input.total }, (_, i) => `<i class="dot ${i === input.index ? "active" : ""}"></i>`).join("")}</div></header><svg id="surface" viewBox="0 0 1920 1080"></svg><div id="white"></div><script>(${runtime.toString()})(${data}, ${viewFrame.toString()}, ${viewBusyRanges.toString()}, ${JSON.stringify(SHOT_GROUPS)}, ${viewTransition.toString()});</script></html>`;
 }

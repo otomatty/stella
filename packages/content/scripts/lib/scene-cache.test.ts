@@ -107,3 +107,21 @@ describe("場面キャッシュ", () => {
     expect(sceneCacheHash(p)).toBe(a);
   });
 });
+
+it("抽出コマの作業フォルダーだけが違ってもキャッシュを再利用する", () => {
+  const a = {
+    ...plan(),
+    assetRoot: "file:///tmp/work-one",
+    html: '<img src="file:///tmp/work-one/clips/web/read/open/000001.jpg">',
+    assets: { "clip:web/read#open": "content-hash" },
+  };
+  const b = {
+    ...a,
+    assetRoot: "file:///tmp/work-two",
+    html: a.html.replaceAll("work-one", "work-two"),
+  };
+  expect(sceneCacheHash(a)).toBe(sceneCacheHash(b));
+  expect(sceneCacheHash({ ...b, assets: { "clip:web/read#open": "new-content-hash" } })).not.toBe(
+    sceneCacheHash(a),
+  );
+});

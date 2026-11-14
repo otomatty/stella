@@ -260,8 +260,8 @@ describe("view の時刻による描画", () => {
     expect(viewFrame(input, timing.beats[0].end).spots).toEqual([]);
     expect(viewFrame(input, timing.beats[0].end).cursor).toBeUndefined();
     const change = timing.beats[1].start;
-    expect(viewFrame(input, change + 0.2).fade).toBeCloseTo(0.5);
-    expect(viewFrame(input, change + 0.4).fade).toBeCloseTo(1);
+    expect(viewFrame(input, change + 0.5).fade).toBeCloseTo(0.5);
+    expect(viewFrame(input, change + 1).fade).toBeCloseTo(1);
     expect(viewFrame(input, change).old?.image).toBe("shot:web/one");
     expect(viewFrame(input, change).camera.scale).toBe(1);
   });
@@ -308,7 +308,11 @@ describe("view の時刻による描画", () => {
     expect(JSON.stringify([...elements])).toBe(snap);
     expect(elements.get("surface")?.innerHTML).toContain('stroke-width="4"');
     expect(html).not.toMatch(/requestAnimationFrame|Date\.now|https?:\/\//);
-    expect(viewBusyRanges(timing).some(([a, b]) => a <= 0.5 && b >= 1.7)).toBe(true);
+    expect(
+      viewBusyRanges(timing).some(
+        ([a, b]) => a <= timing.beats[0].start && b >= timing.beats[0].start + 1.2,
+      ),
+    ).toBe(true);
     expect(window.__overflows()).toEqual([]);
     state.beats[0].after.label = [
       { at: "top", text: "あ".repeat(50) },
@@ -336,10 +340,10 @@ describe("view の時刻による描画", () => {
     };
     expect(layoutBoard(b).nodes.a.h).toBeGreaterThanOrEqual(450);
     const request = JSON.parse(buildPolishRequest(fresh(), "ガイド").user);
-    expect(request.labels).toEqual(expect.arrayContaining(["Web", "VS Code", "ここで書く"]));
+    expect(request.labels).toEqual(expect.arrayContaining(["Webアプリ", "VS Code", "ここで書く"]));
     expect(request.scenes[1].lines[0].picture).toEqual(
       expect.arrayContaining([
-        "画面: Web の画面 (web/one)",
+        "画面: Webアプリ の画面 (web/one)",
         "囲む: top",
         "寄る: top",
         "札: ここで書く",
@@ -375,4 +379,236 @@ it("新しいまとめのイラストと矢印をセルに配置できる", () =
   );
   const html = sceneHtml({ scene, state, board, timing, index: 4, total: 5, images });
   for (const node of board.nodes) expect(html).toContain(`href="file:///tmp/${node.art}.png"`);
+});
+
+const clipContext: StoryboardContext = {
+  ...context,
+  clips: {
+    "web/action": {
+      video: "fixture.mp4",
+      width: 1200,
+      height: 800,
+      fps: 30,
+      duration: 20,
+      marks: { open: [2, 10], next: [10, 12] },
+      regions: { top: [100, 100, 100, 100] },
+    },
+  },
+};
+function clipSetup() {
+  const sb = fresh(),
+    scene = sb.scenes[1] as ViewScene;
+  scene.image = "clip:web/action#open";
+  scene.beats = [
+    { say: "操作します。", clip: "web/action#open", speed: 2, zoom: "top" },
+    { say: "結果です。", spot: ["top"], label: [{ at: "top", text: "結果" }] },
+  ];
+  const state = storyboardStates(sb)[1] as ViewSceneState;
+  const timing = sceneTimelines(sb.scenes, [[1], [1, 2], [1]], clipContext.clips)[1];
+  const clipImages = {
+    ...images,
+    "clip:web/action#open": {
+      ...images["shot:web/one"],
+      frames: Array.from({ length: 240 }, (_, i) => `file:///tmp/frame-${i}.jpg`),
+    },
+  };
+  return { sb, scene, state, timing, input: { state, timing, images: clipImages } };
+}
+describe("操作のクリップ", () => {
+  it("参照・mark・speed・排他指定・区間の境界を検査する", () => {
+    expect(parseStoryboard(clipSetup().sb, clipContext).storyboard).toBeDefined();
+    for (const effect of [
+      { clip: "clip:web/action#open" },
+      { clip: "../action#open" },
+      { clip: 3 },
+      { clip: "web/missing#open" },
+      { clip: "web/action#missing" },
+      { image: "shot:web/one" },
+      { speed: 0.49 },
+      { speed: 3.01 },
+      { speed: NaN },
+    ]) {
+      const { sb, scene } = clipSetup();
+      Object.assign(scene.beats[0], effect);
+      expect(parseStoryboard(sb, clipContext).storyboard, JSON.stringify(effect)).toBeUndefined();
+    }
+    for (const range of [
+      [2, 2],
+      [10, 2],
+      [-1, 10],
+      [2, 20.01],
+      [2, Infinity],
+    ]) {
+      const ctx = structuredClone(clipContext);
+      if (!ctx.clips) throw new Error("fixture");
+      ctx.clips["web/action"].marks.open = range as [number, number];
+      expect(
+        parseStoryboard(clipSetup().sb, ctx).issues.some((i) => i.message.includes("区間が不正")),
+      ).toBe(true);
+    }
+    for (const speed of [0.5, 1, 3]) {
+      const { sb, scene } = clipSetup();
+      scene.beats[0].speed = speed;
+      expect(parseStoryboard(sb, clipContext).storyboard).toBeDefined();
+    }
+  });
+  it("静止した最初のコマ・倍速再生・最後のコマの継承は時刻だけで決まる", () => {
+    const { input, timing } = clipSetup(),
+      beat = timing.beats[0];
+    expect(viewFrame(input, 0).url).toBe("file:///tmp/frame-0.jpg");
+    expect(viewFrame(input, beat.start + 1).url).toBe("file:///tmp/frame-60.jpg");
+    expect(viewFrame(input, beat.end - 1 / 30).url).toBe("file:///tmp/frame-239.jpg");
+    const frozen = viewFrame(input, timing.beats[1].start + 0.8);
+    expect(frozen.url).toBe("file:///tmp/frame-239.jpg");
+    expect(frozen.spots).toHaveLength(1);
+    expect(frozen.labels[0].text).toBe("結果");
+    expect(frozen.camera.scale).toBe(2.4);
+    expect(viewFrame(input, beat.start + 1).url).toBe("file:///tmp/frame-60.jpg");
+    const playback = beat.clip;
+    if (!playback) throw new Error("playback is missing");
+    expect(viewBusyRanges(timing).some(([a, b]) => a <= playback.start && b >= playback.end)).toBe(
+      true,
+    );
+  });
+  it("WebアプリとVS Codeの窓は札と一緒に動き、同じ組とartはフェードする", () => {
+    const { input, timing } = setup(),
+      start = timing.beats[1].start;
+    const first = viewFrame(input, start),
+      mid = viewFrame(input, start + 0.5),
+      last = viewFrame(input, start + 1);
+    expect(first.motion).toEqual({ scale: 0.9, x: 576 });
+    expect(first.incomingOpacity).toBe(0);
+    expect(viewFrame(input, start + 0.1).incomingOpacity).toBeCloseTo(0.5);
+    expect(viewFrame(input, start + 0.2).incomingOpacity).toBeCloseTo(1);
+    expect(mid.incomingOpacity).toBe(1);
+    expect(mid.oldOpacity).toBe(1);
+    expect(mid.oldDim).toBeCloseTo(0.5);
+    expect(viewFrame(input, start + 0.7).oldOpacity).toBeCloseTo(1);
+    expect(viewFrame(input, start + 0.85).oldOpacity).toBeCloseTo(0.5);
+    expect(last.oldOpacity).toBeCloseTo(0);
+    expect(last.oldMotion.x).toBeCloseTo(-115.2);
+    expect(mid.motion.scale).toBeCloseTo(0.95);
+    expect(mid.oldMotion.x).toBeCloseTo(-57.6);
+    expect(last.motion).toEqual({ scale: 1, x: 0 });
+    expect(last.oldMotion.scale).toBe(0.9);
+    const opening = viewFrame({ ...input, previous: input.state.end }, 0.5);
+    expect(opening.fade).toBe(0.5);
+    expect(opening.incomingOpacity).toBe(1);
+    expect(opening.oldOpacity).toBe(1);
+    expect(opening.motion.scale).toBeCloseTo(0.95);
+    input.state.beats[1].after.image = "art:art";
+    expect(viewFrame(input, start + 0.2).fade).toBeCloseTo(0.5);
+    expect(viewFrame(input, start + 0.2).motion).toEqual({ scale: 1, x: 0 });
+    input.state.beats[1].after.image = "shot:web/other";
+    input.images["shot:web/other"] = input.images["shot:web/one"];
+    expect(viewFrame(input, start + 0.2).fade).toBeCloseTo(0.5);
+  });
+  it("HTMLのPromiseは表示するimgのデコードまで待ち、エラーも返す", async () => {
+    const { sb, state, timing, input } = clipSetup();
+    const html = sceneHtml({
+      board: { cols: 1, rows: 1, nodes: [] },
+      scene: sb.scenes[1],
+      state,
+      timing,
+      index: 1,
+      total: 3,
+      images: input.images,
+    });
+    let finish: () => void = () => {
+      throw new Error("decode has not started");
+    };
+    let decoding = Promise.resolve();
+    const elements = new Map();
+    const document = {
+      getElementById: (id: string) => {
+        if (!elements.has(id))
+          elements.set(id, {
+            innerHTML: "",
+            style: {},
+            querySelectorAll: () => [{ decode: () => decoding }],
+            getBoundingClientRect: () => ({}),
+          });
+        return elements.get(id);
+      },
+    };
+    const window = {} as ScenePageWindow;
+    runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", { window, document });
+    decoding = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    let resolved = false;
+    const pending = window.__setTime(timing.beats[0].start + 1).then(() => {
+      resolved = true;
+    });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+    expect(elements.get("surface").innerHTML).toContain('src="file:///tmp/frame-60.jpg"');
+    finish();
+    await pending;
+    expect(resolved).toBe(true);
+    decoding = Promise.reject(new Error("decode failed"));
+    await expect(window.__setTime(1)).rejects.toThrow("decode failed");
+  });
+  it("校正に操作とWebアプリの札を渡す", () => {
+    const request = JSON.parse(buildPolishRequest(clipSetup().sb, "ガイド").user);
+    expect(request.labels).toContain("Webアプリ");
+    expect(request.scenes[1].lines[0].picture).toContain(
+      "操作の動画: Webアプリ (web/action の open)",
+    );
+  });
+});
+
+it("推定時間はクリップを含めて80〜200秒、300秒を超えたらエラー", () => {
+  for (const [duration, level] of [
+    [60, "warning"],
+    [90, undefined],
+    [210, "warning"],
+    [300, "error"],
+  ] as const) {
+    const { sb, scene } = clipSetup();
+    scene.beats = [{ say: "操作します。", clip: "web/action#open" }];
+    const ctx = structuredClone(clipContext);
+    if (!ctx.clips) throw new Error("fixture");
+    ctx.clips["web/action"].duration = duration;
+    ctx.clips["web/action"].marks.open = [0, duration];
+    const issue = parseStoryboard(sb, ctx).issues.find((i) => i.message.includes("推定時間"));
+    expect(issue?.level, String(duration)).toBe(level);
+  }
+});
+
+it("同じ組のフェードは不透明な旧画面の上に重ね、終わったら旧画面を外す", () => {
+  const { sb, state, timing, input } = setup();
+  state.beats[1].after.image = "shot:web/other";
+  input.images = {
+    ...input.images,
+    "shot:web/other": { ...input.images["shot:web/one"], url: "file:///tmp/other.png" },
+  };
+  const html = sceneHtml({
+    board: { cols: 1, rows: 1, nodes: [] },
+    scene: sb.scenes[1],
+    state,
+    timing,
+    index: 1,
+    total: 3,
+    images: input.images,
+  });
+  const elements = new Map<string, { innerHTML: string; style: Record<string, string> }>();
+  const document = {
+    getElementById: (id: string) => {
+      if (!elements.has(id)) elements.set(id, { innerHTML: "", style: {} });
+      return elements.get(id);
+    },
+  };
+  const window = {} as ScenePageWindow;
+  runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", { window, document });
+  const start = timing.beats[1].start;
+  window.__setTime(start + 0.2);
+  const surface = elements.get("surface")?.innerHTML ?? "";
+  expect(surface).toMatch(/^<g opacity="1"/);
+  expect(viewFrame(input, start + 0.2).incomingOpacity).toBeCloseTo(0.5);
+  expect(surface.indexOf('src="file:///tmp/web/one.png"')).toBeLessThan(
+    surface.indexOf('src="file:///tmp/other.png"'),
+  );
+  window.__setTime(start + 0.4 + 1e-9);
+  expect(elements.get("surface")?.innerHTML).not.toContain('src="file:///tmp/web/one.png"');
 });

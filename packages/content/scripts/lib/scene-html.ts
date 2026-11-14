@@ -54,7 +54,7 @@ interface RenderData extends BoardHtmlInput {
   layout: BoardLayout;
 }
 export interface ScenePageWindow extends Window {
-  __setTime: (seconds: number) => void;
+  __setTime: (seconds: number) => Promise<void>;
   __busyRanges: [number, number][];
   __overflows: () => string[];
 }
@@ -146,7 +146,7 @@ function runtime(data: RenderData, interpolate: typeof travelPoint) {
       .filter((_, i) => scene.beats[i].focus?.length)
       .map((t) => [t.end, t.end + 0.2] as [number, number]),
   ];
-  win.__setTime = (time: number) => {
+  win.__setTime = async (time: number) => {
     let k = -1;
     for (let i = 0; i < timing.beats.length; i++) if (timing.beats[i].start <= time) k = i;
     const beat = k >= 0 ? scene.beats[k] : undefined,

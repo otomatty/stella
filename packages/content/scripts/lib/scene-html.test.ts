@@ -250,10 +250,10 @@ describe("場面HTMLの時刻による描画", () => {
     p.window.__setTime(0);
     expect(p.elements.get("white")?.style.opacity).toBe("1");
     expect(p.elements.get("element-web")?.attrs.opacity).toBe("0");
-    p.window.__setTime(0.75);
+    p.window.__setTime(p.timing.beats[0].start + 0.25);
     expect(Number(p.elements.get("element-web")?.attrs.opacity)).toBeGreaterThan(0);
     expect(Number(p.elements.get("element-web")?.attrs.opacity)).toBeLessThan(1);
-    p.window.__setTime(1.2);
+    p.window.__setTime(p.timing.beats[0].start + 0.7);
     expect(p.elements.get("element-web")?.attrs.opacity).toBe("1");
   });
   it("travelの全文区間とfocusを戻す区間はbusyに含む", () => {

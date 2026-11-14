@@ -13,6 +13,7 @@
     "tutorials": "bun scripts/tutorials/run.ts",
     "tutorials:vscode": "bun scripts/tutorials/vscode/run.ts",
     "tutorials:check": "bun scripts/tutorials/check.ts",
+    "tutorials:clips": "bun scripts/tutorials/clips.ts",
     "tutorials:shots": "bun scripts/tutorials/shots.ts"
   },
   "dependencies": {

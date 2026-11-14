@@ -2,6 +2,7 @@
 import { parseVideoArt, type VideoArt } from "./video-art.js";
 import { SHOT_ID, type ShotRegion } from "./video-shots.js";
 import { estimateSpeechSeconds } from "./narration.js";
+import { sceneTimelines } from "./scene-timeline.js";
 
 export const VIDEO_ICONS = {
   browser: "panels-top-left",
@@ -79,10 +80,25 @@ export interface BoardScene {
   reset?: boolean;
   beats: Beat[];
 }
+export interface ClipInfo {
+  video: string;
+  width: number;
+  height: number;
+  fps: number;
+  duration: number;
+  marks: Record<string, [number, number]>;
+  regions: Record<string, ShotRegion>;
+}
+export function clipReference(ref: string) {
+  const match = /^([a-z0-9-]+\/[a-z0-9-]+)#([a-z0-9-]+)$/.exec(ref);
+  return match ? { id: match[1], mark: match[2] } : undefined;
+}
 export interface ViewBeat {
   say: string;
   speech?: string;
   image?: string;
+  clip?: string;
+  speed?: number;
   spot?: string[];
   zoom?: string;
   label?: { at: string; text: string }[];
@@ -99,6 +115,7 @@ export interface ViewScene {
 }
 export type Scene = BoardScene | ViewScene;
 export interface StoryboardContext {
+  clips?: Record<string, ClipInfo>;
   shots: Record<string, { width: number; height: number; regions: Record<string, ShotRegion> }>;
   artFiles: Set<string>;
 }
@@ -161,6 +178,8 @@ export function expandFocus(board: Board, ids: string[]): string[] {
   return [...result];
 }
 export interface ViewState {
+  /** 再生後は最後のコマを次の文・場面にも引き継ぐ。 */
+  lastFrame?: boolean;
   image: string;
   spot: string[];
   zoom: string;
@@ -185,9 +204,11 @@ export function storyboardStates(storyboard: VideoStoryboard): (SceneState | Vie
       let current = start;
       const beats = scene.beats.map((beat) => {
         const before = structuredClone(current);
-        const changed = beat.image !== undefined && beat.image !== current.image;
+        const image = beat.clip ? `clip:${beat.clip}` : (beat.image ?? current.image);
+        const changed = image !== current.image;
         current = {
-          image: beat.image ?? current.image,
+          image,
+          ...(beat.clip || (!changed && current.lastFrame) ? { lastFrame: true } : {}),
           zoom: beat.zoom ?? (changed ? "all" : current.zoom),
           spot: beat.spot ?? [],
           label: beat.label ?? [],
@@ -368,6 +389,22 @@ export function parseStoryboard(
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
       if (s.kind === "view") {
         if (beat.image !== undefined) str(beat.image, `${q}.image`);
+        if (beat.clip !== undefined) {
+          str(beat.clip, `${q}.clip`);
+          if (typeof beat.clip === "string" && !clipReference(beat.clip))
+            error(`${q}.clip`, "クリップは 組/名前#mark にしてください");
+          if (beat.image !== undefined) error(q, "image と clip は同じ文に書けません");
+        }
+        if (
+          beat.speed !== undefined &&
+          (typeof beat.speed !== "number" ||
+            !Number.isFinite(beat.speed) ||
+            beat.speed < 0.5 ||
+            beat.speed > 3)
+        )
+          error(`${q}.speed`, "speed は0.5〜3にしてください");
+        if (beat.speed !== undefined && beat.clip === undefined)
+          error(`${q}.speed`, "speed は clip と一緒に指定してください");
         if (beat.zoom !== undefined) str(beat.zoom, `${q}.zoom`);
         if (beat.click !== undefined) str(beat.click, `${q}.click`);
         if (beat.spot !== undefined)
@@ -544,19 +581,16 @@ export function parseStoryboard(
       path: `scenes[${last}]`,
       message: "まとめの終わりで全ノードが出ていません",
     });
-  const seconds = sb.scenes.reduce(
-    (n, s, i) =>
-      n +
-      0.5 +
-      (i === last ? 1.5 : 0.7) +
-      s.beats.reduce((t, b) => t + estimateSpeechSeconds(b.speech ?? b.say) + 0.35, 0),
-    0,
-  );
-  if (seconds < 50 || seconds > 130)
+  const seconds = sceneTimelines(
+    sb.scenes,
+    sb.scenes.map((s) => s.beats.map((b) => estimateSpeechSeconds(b.speech ?? b.say))),
+    context?.clips,
+  ).reduce((n, s) => n + s.duration, 0);
+  if (seconds < 80 || seconds > 200)
     issues.push({
-      level: seconds > 180 ? "error" : "warning",
+      level: seconds > 300 ? "error" : "warning",
       path: "scenes",
-      message: `推定時間${seconds.toFixed(1)}秒は50〜130秒の範囲外です`,
+      message: `推定時間${seconds.toFixed(1)}秒は80〜200秒の範囲外です`,
     });
   return { storyboard: issues.some((i) => i.level === "error") ? undefined : sb, issues };
 }
@@ -585,6 +619,31 @@ function validateView(
 ) {
   const error = (path: string, message: string) => issues.push({ level: "error", path, message });
   const imageInfo = (image: string, path: string): Record<string, ShotRegion> | undefined => {
+    if (image.startsWith("clip:")) {
+      const ref = clipReference(image.slice(5));
+      if (!ref) {
+        error(path, "クリップは clip:組/名前#mark にしてください");
+        return undefined;
+      }
+      if (!context) return undefined;
+      const clip = context.clips?.[ref.id];
+      if (!clip) {
+        error(path, `クリップがありません: ${ref.id}`);
+        return undefined;
+      }
+      const mark = clip.marks[ref.mark];
+      if (!mark) error(path, `mark がありません: ${image}`);
+      else if (
+        !Array.isArray(mark) ||
+        mark.length !== 2 ||
+        !mark.every(Number.isFinite) ||
+        mark[0] < 0 ||
+        mark[0] >= mark[1] ||
+        mark[1] > clip.duration
+      )
+        error(path, `mark の区間が不正です: ${image}`);
+      return clip.regions;
+    }
     if (image.startsWith("shot:") && SHOT_ID.test(image.slice(5))) {
       if (!context) return undefined;
       const shot = context.shots[image.slice(5)];
@@ -602,7 +661,7 @@ function validateView(
         });
       return sb.art?.[name]?.regions ?? {};
     }
-    error(path, "画像は shot:組/名前 か art:名前 にしてください");
+    error(path, "画像は clip:組/名前#mark・shot:組/名前・art:名前 にしてください");
     return undefined;
   };
   let image = scene.image,
@@ -611,13 +670,17 @@ function validateView(
   const previous = sb.scenes[index - 1];
   const previousImage =
     previous?.kind === "view"
-      ? previous.beats.reduce((img, beat) => beat.image ?? img, previous.image)
+      ? previous.beats.reduce(
+          (img, beat) => (beat.clip ? `clip:${beat.clip}` : (beat.image ?? img)),
+          previous.image,
+        )
       : undefined;
   scene.beats.forEach((beat, j) => {
     const p = `scenes[${index}].beats[${j}]`;
-    const changed = beat.image !== undefined && beat.image !== image;
-    if (beat.image !== undefined) {
-      image = beat.image;
+    const nextImage = beat.clip ? `clip:${beat.clip}` : beat.image;
+    const changed = nextImage !== undefined && nextImage !== image;
+    if (nextImage !== undefined) {
+      image = nextImage;
       regions = imageInfo(image, `${p}.image`);
       if (changed) zoom = "all";
     }
@@ -633,6 +696,7 @@ function validateView(
     }
     const change =
       changed ||
+      beat.clip !== undefined ||
       (beat.spot?.length ?? 0) > 0 ||
       (beat.label?.length ?? 0) > 0 ||
       beat.click !== undefined ||

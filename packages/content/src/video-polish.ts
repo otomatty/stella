@@ -91,8 +91,11 @@ function allLabels(sb: VideoStoryboard): string[] {
       ),
       ...sb.scenes.flatMap((s) =>
         s.kind === "view"
-          ? [s.image, ...s.beats.flatMap((b) => (b.image ? [b.image] : []))].flatMap((img) => {
-              const group = img.startsWith("shot:")
+          ? [
+              s.image,
+              ...s.beats.flatMap((b) => (b.clip ? [`clip:${b.clip}`] : b.image ? [b.image] : [])),
+            ].flatMap((img) => {
+              const group = !img.startsWith("art:")
                 ? SHOT_GROUPS[img.slice(5).split("/")[0]]
                 : undefined;
               return group ? [group.label] : [];
@@ -103,9 +106,14 @@ function allLabels(sb: VideoStoryboard): string[] {
   ];
 }
 function viewPicture(image: string, beat: ViewBeat): string[] {
-  const group = image.startsWith("shot:") ? SHOT_GROUPS[image.slice(5).split("/")[0]] : undefined;
+  const group = !image.startsWith("art:") ? SHOT_GROUPS[image.slice(5).split("/")[0]] : undefined;
   return [
     `画面: ${group ? `${group.label} の画面 (${image.slice(5)})` : image}`,
+    ...(beat.clip
+      ? [
+          `操作の動画: ${group?.label ?? image.slice(5).split("/")[0]} (${beat.clip.split("#")[0]} の ${beat.clip.split("#")[1]})`,
+        ]
+      : []),
     ...(beat.spot?.length ? [`囲む: ${beat.spot.join("、")}`] : []),
     ...(beat.zoom ? [`寄る: ${beat.zoom}`] : []),
     ...(beat.label?.length ? [`札: ${beat.label.map((l) => l.text).join("、")}`] : []),

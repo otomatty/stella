@@ -1,4 +1,4 @@
-import { storyboardAssets } from "./lib/storyboard-assets.js";
+import { storyboardAssets, extractClipFrames } from "./lib/storyboard-assets.js";
 /** 場面ごとの動画。既存のスライド動画の生成・配信には接続しない。 */
 import {
   copyFileSync,
@@ -38,6 +38,7 @@ import { sceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.
 import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
 import {
   createTtsProvider,
+  QuotaExhaustedError,
   mapPool,
   synthesizeCached,
   type TtsProvider,
@@ -51,6 +52,7 @@ export function argumentsOf(args: string[]) {
   const refreshAudio: string[] = [];
   let stills = false,
     tts: TtsProviderName | undefined,
+    ttsModel = process.env.VIDEO_TTS_MODEL?.trim() || undefined,
     out = join(contentRoot, "dist/video");
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -66,6 +68,11 @@ export function argumentsOf(args: string[]) {
       if (!["gemini", "openjtalk", "fake"].includes(name))
         throw new Error("--tts は gemini・openjtalk・fake から選んでください");
       tts = name as TtsProviderName;
+    } else if (a === "--tts-model") {
+      const value = args[++i];
+      if (!value?.trim() || value.startsWith("--"))
+        throw new Error("--tts-model に音声モデルのIDを指定してください");
+      ttsModel = value.trim();
     } else if (a === "--out") {
       if (!args[i + 1] || args[i + 1].startsWith("--"))
         throw new Error("--out にフォルダーを指定してください");
@@ -75,7 +82,7 @@ export function argumentsOf(args: string[]) {
   }
   if (stills && refreshAudio.length)
     throw new Error("--refresh-audio と --stills は同時に指定できません");
-  return { selectors, stills, tts, out, refreshAudio: [...new Set(refreshAudio)] };
+  return { selectors, stills, tts, ttsModel, out, refreshAudio: [...new Set(refreshAudio)] };
 }
 export async function sceneAudio(
   scene: Scene,
@@ -147,6 +154,7 @@ async function build(
     deviceScaleFactor: 1,
   });
   try {
+    await extractClipFrames(contentRoot, work, assets);
     const page = await context.newPage();
     await page.route(
       (url) => url.protocol !== "file:",
@@ -159,12 +167,17 @@ async function build(
         estimateSpeechSeconds(speechOf({ text: b.say, speech: b.speech }, topic.readings)),
       ),
     );
-    let timelines = sceneTimelines(storyboard.scenes, estimates);
+    let timelines = sceneTimelines(storyboard.scenes, estimates, assets.context.clips);
     const sceneAssets = (i: number) => {
       const scene = storyboard.scenes[i];
       const refs = new Set(
         scene.kind === "view"
-          ? [scene.image, ...scene.beats.flatMap((b) => (b.image ? [b.image] : []))]
+          ? [
+              scene.image,
+              ...scene.beats.flatMap((b) =>
+                b.clip ? [`clip:${b.clip}`] : b.image ? [b.image] : [],
+              ),
+            ]
           : boards[scene.board].nodes.flatMap((n) => (n.art ? [`art:${n.art}`] : [])),
       );
       const previous = states[i - 1];
@@ -206,9 +219,9 @@ async function build(
       ];
       for (const time of samples)
         overflows.push(
-          ...(await page.evaluate((t) => {
+          ...(await page.evaluate(async (t) => {
             const win = window as unknown as ScenePageWindow;
-            win.__setTime(t);
+            await win.__setTime(t);
             return win.__overflows();
           }, time)),
         );
@@ -274,6 +287,7 @@ async function build(
     timelines = sceneTimelines(
       storyboard.scenes,
       pcms.map((ps) => ps.map((p) => p.length / AUDIO_RATE)),
+      assets.context.clips,
     );
     const clips: string[] = [],
       reports: unknown[] = [];
@@ -289,6 +303,7 @@ async function build(
         scene,
         timing: { ...timing, start: 0 },
         html,
+        assetRoot: pathToFileURL(work).href,
         voice: provider.identity,
         audio: pcms[i],
         code: {
@@ -352,6 +367,7 @@ async function build(
     const duration = timelines.reduce((n, t) => n + t.duration, 0);
     const report = {
       generatorVersion: GENERATOR_VERSION,
+      ttsIdentity: provider.identity,
       durationSec: duration,
       probedDurationSec: await probeDuration(video),
       scenes: reports,
@@ -414,7 +430,11 @@ export async function buildSceneVideos(args: string[]) {
       Record<TtsProviderName, Omit<VoiceConfig, "provider">>
     >;
     const name = options.tts ?? voiceFile.provider;
-    provider = createTtsProvider({ provider: name, ...voiceFile[name] });
+    provider = createTtsProvider({
+      provider: name,
+      ...voiceFile[name],
+      ...(options.ttsModel ? { model: options.ttsModel } : {}),
+    });
   }
   const browser = await chromium.launch(
     existsSync("/opt/pw-browsers/chromium") ? { executablePath: "/opt/pw-browsers/chromium" } : {},
@@ -424,8 +444,14 @@ export async function buildSceneVideos(args: string[]) {
       try {
         await build(browser, options, topic, provider);
       } catch (e) {
-        console.error(`${topic.stageSlug}/${topic.id}: ${(e as Error).message}`);
         process.exitCode = 1;
+        if (e instanceof QuotaExhaustedError) {
+          console.error(
+            `${topic.stageSlug}/${topic.id}: ${provider?.identity}: ${e.message}。--tts-model <別のモデル> で別のモデルを使えます`,
+          );
+          return;
+        }
+        console.error(`${topic.stageSlug}/${topic.id}: ${(e as Error).message}`);
       }
   } finally {
     await browser.close();

@@ -16,6 +16,17 @@ vi.mock("./lib/ffmpeg.js", async (original) => ({
   ...(await original<typeof import("./lib/ffmpeg.js")>()),
   decodePcm: vi.fn(),
   decodeTrimmedPcm: vi.fn(),
+  encodeNarration: vi.fn(),
+  measureLoudness: vi.fn(async () => ({ integrated: -16 })),
+  probeDuration: vi.fn(async () => 10),
+  toPosterJpeg: vi.fn(async (_source: string, out: string) => writeFileSync(out, "poster")),
+}));
+vi.mock("./lib/scene-encode.js", () => ({
+  encodeScene: vi.fn(async (_page: unknown, _duration: number, _audio: string, out: string) => {
+    writeFileSync(out, "clip");
+    return 1;
+  }),
+  runFfmpeg: vi.fn(async (args: string[]) => writeFileSync(args[args.length - 1], "video")),
 }));
 vi.mock("./lib/narration-topics.js", async (original) => ({
   ...(await original<typeof import("./lib/narration-topics.js")>()),
@@ -29,8 +40,8 @@ vi.mock("../src/narration-split.js", async (original) => ({
 import { chromium } from "playwright";
 import { argumentsOf, buildSceneVideos, sceneAudio } from "./build-scene-video.js";
 import { AUDIO_RATE, decodePcm, decodeTrimmedPcm } from "./lib/ffmpeg.js";
-import { collectNarrationTopics } from "./lib/narration-topics.js";
-import { createTtsProvider, synthesizeCached } from "./lib/tts.js";
+import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
+import { createTtsProvider, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
 const videoFile = new URL("../src/__fixtures__/board-video.json", import.meta.url);
 const sample = JSON.parse(readFileSync(videoFile, "utf8")) as BoardStoryboard;
 const scene = sample.scenes[0];
@@ -45,7 +56,10 @@ const provider = (unit: "topic" | "cue"): TtsProvider => ({
   nondeterministic: false,
   synthesize: vi.fn(),
 });
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.unstubAllEnvs();
+});
 describe("場面音声の作り直し", () => {
   it("複数の場面idを読み、空の指定とstillsとの併用を拒む", () => {
     expect(
@@ -211,4 +225,178 @@ describe("はみ出しがある場合の書き出し", () => {
         }
       },
     );
+});
+
+describe("音声モデルと日次上限", () => {
+  it("環境変数より引数を優先し、モデル名の無い引数を拒む", () => {
+    vi.stubEnv("VIDEO_TTS_MODEL", "");
+    expect(argumentsOf(["stage"]).ttsModel).toBeUndefined();
+    vi.stubEnv("VIDEO_TTS_MODEL", "env-model");
+    expect(argumentsOf(["stage"]).ttsModel).toBe("env-model");
+    expect(argumentsOf(["stage", "--tts-model", "cli-model"]).ttsModel).toBe("cli-model");
+    expect(argumentsOf(["--stills", "--tts-model", "cli-model"])).toMatchObject({
+      stills: true,
+      ttsModel: "cli-model",
+    });
+    for (const args of [
+      ["--tts-model"],
+      ["--tts-model", "--tts"],
+      ["--tts-model", ""],
+      ["--tts-model", " "],
+    ])
+      expect(() => argumentsOf(args)).toThrow("--tts-model");
+  });
+
+  function fixture() {
+    const root = mkdtempSync(join(tmpdir(), "stella-scene-tts-"));
+    const storyboard: BoardStoryboard = {
+      schema: 1,
+      brief: { goal: "説明できる。", stuck: "迷う。", points: ["読む。"], leaveOut: ["内部"] },
+      boards: {
+        main: {
+          cols: 1,
+          rows: 1,
+          nodes: [{ id: "read", label: "読む", icon: "read", at: [1, 1] }],
+        },
+      },
+      scenes: [
+        {
+          id: "hook",
+          role: "hook",
+          title: "つかみ",
+          board: "main",
+          beats: [{ say: "読みます。", show: ["read"] }],
+        },
+        {
+          id: "point",
+          role: "point",
+          point: 1,
+          title: "要点",
+          board: "main",
+          beats: [{ say: "読みます。", pulse: ["read"] }],
+        },
+        {
+          id: "recap",
+          role: "recap",
+          title: "まとめ",
+          board: "main",
+          beats: [{ say: "読みます。", pulse: ["read"] }],
+        },
+      ],
+    };
+    writeFileSync(join(root, "video.json"), JSON.stringify(storyboard));
+    const topics = ["first", "second"].map(
+      (id) =>
+        ({ topicDir: root, stageSlug: "fixture", id, readings: {} }) as ReturnType<
+          typeof collectNarrationTopics
+        >[number],
+    );
+    vi.mocked(collectNarrationTopics).mockReturnValue(topics);
+    const page = {
+      route: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      goto: vi.fn(),
+      evaluate: vi.fn(async (callback: unknown) =>
+        String(callback).includes("__overflows") ? [] : undefined,
+      ),
+      screenshot: vi.fn(async ({ path }: { path: string }) => writeFileSync(path, "poster")),
+    };
+    const context = { newPage: vi.fn(async () => page), close: vi.fn() };
+    const browser = { newContext: vi.fn(async () => context), close: vi.fn() };
+    vi.mocked(chromium.launch).mockResolvedValue(
+      browser as unknown as Awaited<ReturnType<typeof chromium.launch>>,
+    );
+    return { root, browser, context, topics, storyboard };
+  }
+
+  it.each([undefined, "env-model", "cli-model"])(
+    "選んだモデル %s を使い、声・話し方は保つ。上限では後続の場面・トピックを試さない",
+    async (model) => {
+      const { root, browser, context } = fixture();
+      const exitCode = process.exitCode;
+      const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        vi.stubEnv("VIDEO_TTS_MODEL", model === "env-model" ? model : "");
+        const voiceFile = JSON.parse(
+          readFileSync(join(contentRoot, "narration/voice.json"), "utf8"),
+        );
+        const config = { provider: "gemini", ...voiceFile.gemini, ...(model ? { model } : {}) };
+        const identity = `gemini/${config.model}/${config.voice}/${config.style}`;
+        vi.mocked(createTtsProvider).mockReturnValue({ ...provider("topic"), identity });
+        vi.mocked(synthesizeCached).mockRejectedValueOnce(
+          new QuotaExhaustedError("HTTP 429 1 日の上限"),
+        );
+        await buildSceneVideos([
+          "fixture",
+          "--tts",
+          "gemini",
+          "--out",
+          join(root, "out"),
+          ...(model === "cli-model" ? ["--tts-model", model] : []),
+        ]);
+        expect(createTtsProvider).toHaveBeenCalledExactlyOnceWith(config);
+        expect(synthesizeCached).toHaveBeenCalledTimes(1);
+        expect(decodePcm).not.toHaveBeenCalled();
+        expect(browser.newContext).toHaveBeenCalledTimes(1);
+        expect(context.close).toHaveBeenCalledOnce();
+        expect(browser.close).toHaveBeenCalledOnce();
+        expect(process.exitCode).toBe(1);
+        expect(error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`${config.model}/`));
+        expect(error).toHaveBeenCalledWith(
+          expect.stringContaining("--tts-model <別のモデル> で別のモデルを使えます"),
+        );
+      } finally {
+        process.exitCode = exitCode;
+        error.mockRestore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("stills ではモデルの指定があっても音声プロバイダを作らない", async () => {
+    const { root } = fixture();
+    try {
+      await buildSceneVideos([
+        "fixture",
+        "--stills",
+        "--tts-model",
+        "ignored",
+        "--out",
+        join(root, "out"),
+      ]);
+      expect(createTtsProvider).not.toHaveBeenCalled();
+      expect(synthesizeCached).not.toHaveBeenCalled();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("report.json に実際に使ったモデルと声のidentityを記録する", async () => {
+    const { root, topics, storyboard } = fixture();
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    try {
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      vi.mocked(createTtsProvider).mockReturnValue({
+        ...provider("topic"),
+        identity: "gemini/alternate-model/Charon/style",
+      });
+      let index = 0;
+      vi.mocked(decodePcm).mockImplementation(async () => pcmFor(storyboard.scenes[index++]));
+      await buildSceneVideos([
+        "fixture",
+        "--tts",
+        "gemini",
+        "--tts-model",
+        "alternate-model",
+        "--out",
+        join(root, "out"),
+      ]);
+      const report = JSON.parse(readFileSync(join(root, "out/fixture/first/report.json"), "utf8"));
+      expect(report.ttsIdentity).toBe("gemini/alternate-model/Charon/style");
+    } finally {
+      info.mockRestore();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
