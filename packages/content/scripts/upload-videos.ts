@@ -72,7 +72,13 @@ export async function uploadVideos(args: string[]): Promise<void> {
       },
       { key: keys.poster, file: join(base, "poster.jpg"), contentType: "image/jpeg" },
     ];
-    await putAll(r2, files, 3);
+    try {
+      await putAll(r2, files, 3, { exitOnFailure: false });
+    } catch (error) {
+      const message = (error instanceof Error ? error.message : String(error)).split("\n")[0];
+      failures.push(`${plan.stageSlug}/${plan.id}: R2 へのアップロードに失敗しました (${message})`);
+      continue;
+    }
     for (const f of files) state.objects[videoKeyHash(f.key)] = statSync(f.file).size;
     state.durations[videoKeyHash(keys.video)] = report.durationSec;
     if (manifest[plan.id]) throw new Error(`レッスン ID が重複しています: ${plan.id}`);

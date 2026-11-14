@@ -40,6 +40,20 @@ describe("splitNarration", () => {
     expect(result.segments[0].end / rate).toBeCloseTo(3.1, 2);
   });
 
+  it("期待位置に近い短い無音を除き、0.3 秒の無音の中点を選ぶ", () => {
+    const result = splitNarration(audio(4.9, -0.2, 1, -0.3, 3.6), rate, [5, 5]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.segments[0].end / rate).toBeCloseTo(6.25, 2);
+  });
+
+  it("0.2 秒と 0.3 秒の無音では、0.3 秒の無音の中点を選ぶ", () => {
+    const result = splitNarration(audio(2, -0.2, 0.4, -0.3, 2), rate, [2.1, 2.8]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.segments[0].end / rate).toBeCloseTo(2.75, 2);
+  });
+
   it("候補が足りないとき、足りない切れ目を示す", () => {
     expect(splitNarration(audio(1, -1, 1), rate, [1, 1, 1])).toMatchObject({
       ok: false,
@@ -47,10 +61,10 @@ describe("splitNarration", () => {
     });
   });
 
-  it("選んだ無音が minBoundarySec 未満なら、その切れ目を示す", () => {
+  it("minBoundarySec 未満の無音は候補にしない", () => {
     expect(splitNarration(audio(1, -0.2, 1), rate, [1, 1])).toMatchObject({
       ok: false,
-      reason: expect.stringContaining("切れ目 1"),
+      reason: expect.stringContaining("切れ目 1: 無音候補が足りません"),
     });
     expect(splitNarration(audio(1, -0.2, 1), rate, [1, 1], { minBoundarySec: 0.2 }).ok).toBe(true);
   });

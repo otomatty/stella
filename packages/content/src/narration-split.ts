@@ -51,7 +51,10 @@ export function splitNarration(
     const start = i * frameSize;
     while (i < last && !voiced[i]) i++;
     const end = i * frameSize;
-    if (end - start >= (options.minSilenceSec ?? 0.15) * sampleRate) {
+    if (
+      end - start >=
+      Math.max(options.minSilenceSec ?? 0.15, options.minBoundarySec ?? 0.25) * sampleRate
+    ) {
       candidates.push({ start, end });
     }
   }
@@ -96,14 +99,6 @@ export function splitNarration(
   for (let k = count - 1; k >= 0; k--) {
     chosen[k] = candidates[index];
     index = parents[k][index];
-  }
-  for (let k = 0; k < chosen.length; k++) {
-    if (chosen[k].end - chosen[k].start < (options.minBoundarySec ?? 0.25) * sampleRate) {
-      return {
-        ok: false,
-        reason: `切れ目 ${k + 1}: 無音が短すぎます (${((chosen[k].end - chosen[k].start) / sampleRate).toFixed(2)} 秒)`,
-      };
-    }
   }
   const boundaries = [0, ...chosen.map((c) => Math.floor((c.start + c.end) / 2)), pcm.length];
   return {
