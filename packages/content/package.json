@@ -13,7 +13,7 @@
     "materials": "node scripts/build.mjs",
     "thumbnails": "python3 scripts/build_thumbnails.py",
     "check": "node scripts/check_vocab.mjs",
-    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts && bun run scripts/generate-variants.ts --check && bun run scripts/check-tasks.ts && bun run scripts/check-references.ts ${CONTENT_REFERENCES_SUMMARY:+--summary \"$CONTENT_REFERENCES_SUMMARY\"} && bun run scripts/check-os-blocks.ts && bun run scripts/check-tutorial-blocks.ts",
+    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts && bun run scripts/check-video.ts && bun run scripts/generate-variants.ts --check && bun run scripts/check-tasks.ts && bun run scripts/check-references.ts ${CONTENT_REFERENCES_SUMMARY:+--summary \"$CONTENT_REFERENCES_SUMMARY\"} && bun run scripts/check-os-blocks.ts && bun run scripts/check-tutorial-blocks.ts",
     "check:graph": "bun run scripts/check-graph.ts",
     "check:os": "bun run scripts/check-os-blocks.ts",
     "pdf": "bun run scripts/build-pdf.ts",
@@ -35,7 +35,10 @@
     "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts",
     "hash:unit": "bun run scripts/unit-hash.ts",
     "variants:generate": "bun run scripts/generate-variants.ts",
-    "variants:draft": "bun run scripts/draft-variants.ts"
+    "variants:draft": "bun run scripts/draft-variants.ts",
+    "video:scenes": "bun run scripts/build-scene-video.ts",
+    "video:polish": "bun run scripts/polish-video.ts",
+    "video:check": "bun run scripts/check-video.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
@@ -52,6 +55,7 @@
     "remark-rehype": "^11.1.2",
     "typescript": "^7.0.2",
     "unified": "^11.0.5",
-    "unist-util-visit": "^5.2.0"
+    "unist-util-visit": "^5.2.0",
+    "lucide-static": "0.468.0"
   }
 }

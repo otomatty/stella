@@ -102,6 +102,8 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
+**新方式 (試作中):** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとの動く図解をつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。書き方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。いまは `dev-env-basics` の `00-1-1` だけが `video.json` を持ち、デプロイの動画生成 (`video:sync`) にはまだつないでいません。以下はスライドを映す現行の方式の説明です。
+
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 
 トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の12トピックすべてに台本があります。GitHub Secret `GEMINI_API_KEY` は登録済みで、CI で動画を生成しています。main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
