@@ -43,7 +43,7 @@ export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
   const fenceLang = fenceLanguage(req.language);
   const longestBacktickRun = (req.code.match(/`+/g) ?? [])
     .map((m) => m.length)
-    .reduce((a, b) => (a > b ? a : b), 0);
+    .reduce((a, b) => Math.max(a, b), 0);
   const fenceTicks = "`".repeat(Math.max(3, longestBacktickRun + 1));
   return [
     `<review_context>`,

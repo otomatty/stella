@@ -36,6 +36,7 @@ env:
 `);
     expect([...names.variables]).toEqual(["URL"]);
     expect([...names.secrets]).toEqual(["TOKEN"]);
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub Actions の式をそのまま渡すテスト
     expect(() => workflowSettingNames('env: { A: "${{ secrets[inputs.name] }}" }')).toThrow(
       /literal/,
     );

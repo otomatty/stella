@@ -145,7 +145,11 @@ function docker(args: string[]) {
 /**
  * Docker が使えるかを確かめ、イメージを用意し、固定ランナーを束ねる。下書きを頼む (費用がかかる) 前に呼ぶ。
  */
-export function prepareSandbox(log: (line: string) => void = () => {}): SandboxConfig {
+export function prepareSandbox(
+  log: (line: string) => void = () => {
+    // 既定ではログを出さない
+  },
+): SandboxConfig {
   const image = process.env.VARIANT_DRAFT_SANDBOX_IMAGE ?? DEFAULT_SANDBOX_IMAGE;
   const version = docker(["version", "--format", "{{.Server.Version}}"]);
   if (version.error || version.status !== 0)

@@ -170,7 +170,7 @@ export const LessonPlayer = ({
   const activeSectionIndex = useMemo(() => {
     if (!lessonObj) return 0;
     const idx = sections.findIndex((s) => s.lessons.some((l) => l.id === lessonObj.id));
-    return idx >= 0 ? idx : 0;
+    return Math.max(idx, 0);
   }, [sections, lessonObj]);
 
   const activeSection = sections[activeSectionIndex] ?? sections[0];

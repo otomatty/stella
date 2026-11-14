@@ -152,7 +152,7 @@ describe("seed の書き込み行数", () => {
     async () => {
       const db = migratedDb();
       const file = join(pdfDir, "video-manifest.json");
-      let path = `lesson-video/ses/${COURSE}/${LESSON}/hash.mp4`;
+      const path = `lesson-video/ses/${COURSE}/${LESSON}/hash.mp4`;
       writeFileSync(
         file,
         JSON.stringify({

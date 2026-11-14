@@ -341,7 +341,7 @@ export function publicReferences(
     );
 }
 function markdownText(value: string): string {
-  return value.replace(/[\\`*_{}\[\]<>]/g, "\\$&").replace(/[\r\n]+/g, " ");
+  return value.replace(/[\\`*_{}[\]<>]/g, "\\$&").replace(/[\r\n]+/g, " ");
 }
 /**
  * 帰属表示の文言と、その根拠 (原作者・再利用範囲・利用条件・条件の確認日)。条件の URL は
