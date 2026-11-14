@@ -136,18 +136,29 @@ interface VideoTopic extends NarrationTopic {
   assets: Map<string, string>;
 }
 
-function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: string[] } {
+export interface VideoFailure {
+  stageSlug: string;
+  id: string;
+  reason: string;
+}
+
+export const formatVideoFailure = (failure: VideoFailure): string =>
+  `${failure.stageSlug}/${failure.id}: ${failure.reason}`;
+
+function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: VideoFailure[] } {
   const slidesTargets = new Map(
     collectPdfTargets(undefined, { includeFormat2Slides: true })
       .filter((t) => t.kind === "slides")
       .map((t) => [`${t.stageSlug}/${t.lessonId}`, t]),
   );
   const topics: VideoTopic[] = [];
-  const invalid: string[] = [];
+  const invalid: VideoFailure[] = [];
   // ponytail: 収録版も narration.json が必須で、無ければエラー。台本なしを許可するなら検査と対象の列挙を一緒に見直す。
   for (const topic of collectNarrationTopics(selectors)) {
     const label = `${topic.stageSlug}/${topic.id}`;
-    if (topic.parseError !== undefined) invalid.push(`${label}: ${topic.parseError}`);
+    if (topic.parseError !== undefined) {
+      invalid.push({ stageSlug: topic.stageSlug, id: topic.id, reason: topic.parseError });
+    }
     let source: ReturnType<typeof selectVideoSource>;
     try {
       source = selectVideoSource(
@@ -160,7 +171,7 @@ function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: st
         existsSync(topic.narrationFile),
       );
     } catch (error) {
-      invalid.push(`${label}: ${(error as Error).message}`);
+      invalid.push({ stageSlug: topic.stageSlug, id: topic.id, reason: (error as Error).message });
       continue;
     }
     if (!topic.narration) continue;
@@ -634,7 +645,7 @@ function outputFiles(captioned: boolean, recorded: boolean): string[] {
 export async function buildVideos(
   args: string[] = [],
   skip: (plan: VideoPlan) => boolean = () => false,
-): Promise<{ reports: TopicReport[]; failures: string[] }> {
+): Promise<{ reports: TopicReport[]; failures: VideoFailure[] }> {
   function argValue(name: string): string | null {
     const i = args.indexOf(name);
     return i !== -1 && args[i + 1] ? args[i + 1] : null;
@@ -653,7 +664,7 @@ export async function buildVideos(
   const voice = loadVideoVoice(argValue("--tts") as TtsProviderName | undefined);
   const provider = createTtsProvider(voice);
   const { topics, invalid } = collectTopics(selectors);
-  const failures: string[] = [...invalid];
+  const failures: VideoFailure[] = [...invalid];
 
   // 台本の検証 (エラーのあるトピックは作らない)
   const plans: {
@@ -669,7 +680,7 @@ export async function buildVideos(
     const issues = validateTopic(topic, topic.narration);
     for (const issue of issues) console.log(formatIssue(label, issue));
     if (issues.some((i) => i.level === "error")) {
-      failures.push(`${label}: 台本の検証エラー`);
+      failures.push({ stageSlug: topic.stageSlug, id: topic.id, reason: "台本の検証エラー" });
       continue;
     }
     const cues: CuePlan[] =
@@ -749,7 +760,11 @@ export async function buildVideos(
       if (errors.has(hash)) {
         failed.add(plan);
         const label = `${plan.topic.stageSlug}/${plan.topic.id}`;
-        failures.push(`${label}: 読み上げに失敗しました (${errors.get(hash)})`);
+        failures.push({
+          stageSlug: plan.topic.stageSlug,
+          id: plan.topic.id,
+          reason: `読み上げに失敗しました (${errors.get(hash)})`,
+        });
         console.warn(`  ✗ ${label}: 読み上げに失敗したので作りません`);
       } else {
         for (const cue of plan.cues) cue.file = files.get(hash);
@@ -788,9 +803,11 @@ export async function buildVideos(
       const failed = cues.find((c) => ttsErrors.has(c.hash));
       if (!failed) return true;
       const label = `${topic.stageSlug}/${topic.id}`;
-      failures.push(
-        `${label}: 読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
-      );
+      failures.push({
+        stageSlug: topic.stageSlug,
+        id: topic.id,
+        reason: `読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
+      });
       console.warn(`  ✗ ${label}: 読み上げに失敗した字幕があるので作りません`);
       return false;
     });
@@ -804,7 +821,11 @@ export async function buildVideos(
       reports.push(report);
       console.log(`  ✓ ${label} ${report.durationSec.toFixed(1)}s (収録済み動画をコピー)`);
     } catch (e) {
-      failures.push(`${label}: ${(e as Error).message.split("\n")[0]}`);
+      failures.push({
+        stageSlug: topic.stageSlug,
+        id: topic.id,
+        reason: (e as Error).message.split("\n")[0],
+      });
       console.warn(`  ✗ ${label}: ${(e as Error).message}`);
     }
   }
@@ -829,7 +850,11 @@ export async function buildVideos(
             `  ✓ ${label} ${report.durationSec.toFixed(1)}s (audio ${report.timingsMs.audio}ms / render ${report.timingsMs.render}ms / encode ${report.timingsMs.encode}ms)`,
           );
         } catch (e) {
-          failures.push(`${label}: ${(e as Error).message.split("\n")[0]}`);
+          failures.push({
+            stageSlug: topic.stageSlug,
+            id: topic.id,
+            reason: (e as Error).message.split("\n")[0],
+          });
           console.warn(`  ✗ ${label}: ${(e as Error).message}`);
         }
       });
@@ -848,14 +873,16 @@ export async function buildVideos(
   writeFileSync(join(outDir, "index.html"), indexHtml(allReports, outDir));
   writeFileSync(
     join(outDir, "summary.json"),
-    `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length, failures }, null, 2)}\n`,
+    `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length, failures: failures.map(formatVideoFailure) }, null, 2)}\n`,
   );
   console.log(
     `✓ ${relative(process.cwd(), join(outDir, "index.html"))} (${allReports.length} videos)`,
   );
 
   if (failures.length > 0) {
-    console.error(`✗ ${failures.length} topics failed:\n  ${failures.join("\n  ")}`);
+    console.error(
+      `✗ ${failures.length} topics failed:\n  ${failures.map(formatVideoFailure).join("\n  ")}`,
+    );
   }
   return {
     reports: allReports.filter((r) =>

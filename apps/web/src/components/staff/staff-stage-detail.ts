@@ -1,4 +1,9 @@
-import type { LessonType, StageWithChildren, StageMaterialRow } from "@stella/shared/cms/types";
+import type {
+  LessonRow,
+  LessonType,
+  StageWithChildren,
+  StageMaterialRow,
+} from "@stella/shared/cms/types";
 import type { SOLUTION_UNLOCK_ATTEMPTS } from "@stella/shared/tasks/help";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import type { StaffStageTask } from "@stella/shared/tasks/staff-stage";
@@ -95,4 +100,43 @@ export function groupStageMaterials(materials: readonly StageMaterialRow[]) {
     lesson.materials.push(material);
   }
   return sections;
+}
+
+export function lessonVideoStatus(
+  lesson: Pick<LessonRow, "type" | "video_path" | "video_issue">,
+): "published" | "stale" | "missing" | "none" {
+  if (lesson.type !== "slides") return "none";
+  if (lesson.video_path) return lesson.video_issue ? "stale" : "published";
+  return lesson.video_issue ? "missing" : "none";
+}
+
+export function summarizeStageVideos(stage: StageWithChildren) {
+  const summary = {
+    total: 0,
+    published: 0,
+    attention: 0,
+    firstAttentionLessonId: null as string | null,
+  };
+  for (const { lessons } of groupStageSections(stage, [])) {
+    for (const lesson of lessons) {
+      const status = lessonVideoStatus(lesson);
+      if (status === "none") continue;
+      summary.total++;
+      if (status === "published") summary.published++;
+      else {
+        summary.attention++;
+        summary.firstAttentionLessonId ??= lesson.id;
+      }
+    }
+  }
+  return summary;
+}
+
+export function adjacentStageLessons(stage: StageWithChildren, lessonId: string) {
+  const lessons = groupStageSections(stage, []).flatMap((section) => section.lessons);
+  const index = lessons.findIndex((lesson) => lesson.id === lessonId);
+  return {
+    previous: index > 0 ? (lessons[index - 1] ?? null) : null,
+    next: index >= 0 ? (lessons[index + 1] ?? null) : null,
+  };
 }

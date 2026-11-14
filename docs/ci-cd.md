@@ -59,7 +59,7 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 
 このステップは `CLOUDFLARE_API_TOKEN` に **Workers R2 Storage: Edit** 権限を要求する。権限が無いとここで落ち、seed 以降は動かない（D1 が存在しない画像を指すことはない）。
 
-教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。動画が一部失敗してもデプロイは続け、できた動画は公開する。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直す。
+教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。動画が一部失敗してもデプロイは続け、できた動画は公開する。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直す。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れる (管理者の画面に出す)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のまま。
 
 `narration.json` のあるトピックだけを対象に、スライド・台本・読み辞書・スライド CSS・TTS の provider / モデル / 声 / 速さを内容ハッシュへ含める。公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。台帳はキーの SHA-256 とサイズ・長さだけを保持し、旧版は消さない。`dist/video-manifest.json` (`VIDEO_MANIFEST`) を seed に渡し、`lessons.video_path` を更新する。manifest に載らないトピックや manifest を渡さない seed は既存の動画を保持し、台本が消えたトピックは参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
 

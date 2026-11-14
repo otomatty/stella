@@ -210,6 +210,78 @@ describe("seed の書き込み行数", () => {
     SEED_TIMEOUT,
   );
 
+  it(
+    "動画の成功で理由を消し、失敗は動画を残して理由だけ書き、未実行と別ステージは保持する",
+    async () => {
+      const db = migratedDb();
+      const file = join(pdfDir, "video-issue-manifest.json");
+      const id = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
+      const path = `lesson-video/ses/${COURSE}/${LESSON}/new.mp4`;
+      const mutate =
+        (hasNarration: boolean, type: "slides" | "text" = "slides") =>
+        (manifest: Manifest) => {
+          const lesson = manifest.stages
+            .find((s) => s.id === COURSE)
+            ?.sections?.flatMap((s) => s.lessons)
+            .find((l) => l.id === LESSON);
+          if (!lesson) throw new Error("lesson missing");
+          lesson.hasNarration = hasNarration;
+          lesson.type = type;
+        };
+      const current = () =>
+        db.prepare("select video_path, video_issue from lessons where id = ?").get(id);
+      try {
+        writeFileSync(
+          file,
+          JSON.stringify({ [LESSON]: { stageSlug: COURSE, error: "読み上げの失敗 '理由'" } }),
+        );
+        const failed = await exportSql(mutate(true), file);
+        apply(db, failed);
+        expect(current()).toEqual({ video_path: null, video_issue: "読み上げの失敗 '理由'" });
+        expect(apply(db, failed)).toEqual({});
+        db.prepare(
+          "update lessons set video_path = 'old.mp4', video_issue = '前の理由' where id = ?",
+        ).run(id);
+        expect(total(apply(db, failed))).toBe(1);
+        expect(current()).toEqual({ video_path: "old.mp4", video_issue: "読み上げの失敗 '理由'" });
+        expect(apply(db, failed)).toEqual({});
+        expect(apply(db, await exportSql(mutate(true)))).toEqual({});
+        for (const entry of [
+          undefined,
+          { stageSlug: "another-stage", error: "別の理由" },
+          { video: "lesson-video/ses/another-stage/other/hash.mp4" },
+        ]) {
+          writeFileSync(file, JSON.stringify(entry ? { [LESSON]: entry } : {}));
+          expect(apply(db, await exportSql(mutate(true), file))).toEqual({});
+          expect(current()).toEqual({
+            video_path: "old.mp4",
+            video_issue: "読み上げの失敗 '理由'",
+          });
+        }
+        writeFileSync(
+          file,
+          JSON.stringify({
+            [LESSON]: { video: path, captions: "c.vtt", poster: "p.jpg", durationSec: 30 },
+          }),
+        );
+        const succeeded = await exportSql(mutate(true), file);
+        expect(total(apply(db, succeeded))).toBe(1);
+        expect(current()).toEqual({ video_path: path, video_issue: null });
+        expect(apply(db, succeeded)).toEqual({});
+        for (const change of [mutate(false), mutate(true, "text")]) {
+          db.prepare("update lessons set video_issue = '古い理由' where id = ?").run(id);
+          const cleared = await exportSql(change, file);
+          expect(total(apply(db, cleared))).toBe(1);
+          expect(current()).toEqual({ video_path: null, video_issue: null });
+          expect(apply(db, cleared)).toEqual({});
+        }
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
   let sql = "";
   let changed = "";
   let revised = "";

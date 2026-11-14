@@ -804,6 +804,8 @@ export const lessons = sqliteTable(
     order: integer("order").notNull().default(0),
     durationLabel: text("duration_label"),
     videoPath: text("video_path"),
+    /** seed が教材動画の manifest から書く。作れなかった理由。null は問題なし。CMS は書かない。 */
+    videoIssue: text("video_issue"),
     pdfPath: text("pdf_path"),
     markdown: text("markdown"),
     assignmentId: text("assignment_id"),

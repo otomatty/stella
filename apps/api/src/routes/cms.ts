@@ -379,7 +379,12 @@ function stageDetailHandler(key: "stage" | "course") {
           [key]: stageToRow(stage),
           sections: sectionRows.map((s) => ({
             section: sectionToRow(s),
-            lessons: lessonRows.filter((l) => l.sectionId === s.id).map(lessonToRow),
+            lessons: lessonRows
+              .filter((l) => l.sectionId === s.id)
+              .map((l) => ({
+                ...lessonToRow(l),
+                ...(isStaffRole(caller.role) ? { video_issue: l.videoIssue } : {}),
+              })),
           })),
         },
       });
