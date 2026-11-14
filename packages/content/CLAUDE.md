@@ -102,7 +102,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
-**新方式 (試作中):** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。いまは `dev-env-basics` の `00-1-1` だけが `video.json` を持ち、デプロイの動画生成 (`video:sync`) にはまだつないでいません。以下はスライドを映す現行の方式の説明です。
+**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。以下は旧方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 
@@ -116,7 +116,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。旧版は削除しません
 - `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
 - CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です
-- Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分けます。429 で 1 日の上限に当たったらすぐ止めます。
+- Gemini は新方式では場面ごと、スライド版ではトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分けます。429 で 1 日の上限に当たったらすぐ止めます。
 - 動画が一部失敗してもデプロイは続け、できた動画は公開し、失敗したトピックは前の版を残します。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直します (成功分は台帳で生成を省きます)。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れます (管理者の画面に出します)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のままです。
 - レッスンは「動画」を既定とし「スライド」へ切り替えられます。字幕は既定でオン。動画の視聴でスライドの完了判定は変えません。公開単元の slides は `/start` でも再生でき、進捗は記録しません
 - 収録済みの動画は、トピックの `slides.md`・`narration.json` と同じ場所に `screen.mp4`・`screen.vtt`・`screen.jpg` をそろえてコミットします。Git LFS は使いません。

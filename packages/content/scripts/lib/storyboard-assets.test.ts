@@ -174,3 +174,24 @@ it("クリップのJSONと動画の内容をハッシュし、欠けた動画と
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+it("公開生成では使わない素材の不足・不正で他のトピックを止めない", () => {
+  const root = mkdtempSync(join(tmpdir(), "stella-unrelated-assets-"));
+  try {
+    mkdirSync(join(root, "clips/web"), { recursive: true });
+    mkdirSync(join(root, "shots/web"), { recursive: true });
+    writeFileSync(join(root, "clips/web/unrelated.json"), "not json");
+    writeFileSync(join(root, "shots/web/unrelated.json"), "not json");
+    writeFileSync(join(root, "shots/web/unrelated.png"), png);
+    const result = storyboardAssets(
+      root,
+      root,
+      { scenes: [], boards: {} },
+      { onlyReferenced: true },
+    );
+    expect(result.hashes).toEqual({});
+    expect(result.context.clips).toEqual({});
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { storyboardAssets, extractClipFrames } from "./lib/storyboard-assets.js";
-/** 場面ごとの動画。既存のスライド動画の生成・配信には接続しない。 */
+/** 場面ごとの動画。CLI とデプロイの動画生成で共用する。 */
 import {
   copyFileSync,
   existsSync,
@@ -33,7 +34,7 @@ import {
   writeNarrationWav,
 } from "./lib/ffmpeg.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
-import { sceneCacheHash } from "./lib/scene-cache.js";
+import { sceneCacheHash, sceneVideoSourceHash, touchVideoCacheFile } from "./lib/scene-cache.js";
 import { sceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.js";
 import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
 import {
@@ -46,7 +47,8 @@ import {
   type VoiceConfig,
 } from "./lib/tts.js";
 
-const GENERATOR_VERSION = 1;
+export const SCENE_GENERATOR_VERSION = 1;
+const GENERATOR_VERSION = SCENE_GENERATOR_VERSION;
 export function argumentsOf(args: string[]) {
   const selectors: string[] = [];
   const refreshAudio: string[] = [];
@@ -84,6 +86,26 @@ export function argumentsOf(args: string[]) {
     throw new Error("--refresh-audio と --stills は同時に指定できません");
   return { selectors, stills, tts, ttsModel, out, refreshAudio: [...new Set(refreshAudio)] };
 }
+/** 壊れた復元音声は捨てて再合成する。合成そのもののエラーは呼び出し元へ返す。 */
+async function cachedScenePcm(
+  provider: TtsProvider,
+  speech: string,
+  cache: string,
+  refresh: boolean,
+  decode: (file: string) => Promise<Int16Array>,
+): Promise<Int16Array> {
+  const result = await synthesizeCached(provider, speech, cache, refresh);
+  try {
+    const pcm = await decode(result.file);
+    if (!pcm.length) throw new Error("音声キャッシュが空です");
+    touchVideoCacheFile(result.file);
+    return pcm;
+  } catch (error) {
+    if (!result.cached) throw error;
+    rmSync(result.file, { force: true });
+    return cachedScenePcm(provider, speech, cache, true, decode);
+  }
+}
 export async function sceneAudio(
   scene: Scene,
   readings: Record<string, string>,
@@ -97,8 +119,13 @@ export async function sceneAudio(
     const speech = speeches.join("\n\n");
     let problems: string[] = [];
     for (let attempt = 0; attempt < 2; attempt++) {
-      const { file } = await synthesizeCached(provider, speech, cache, refresh || attempt === 1);
-      const pcm = await decodePcm(file),
+      const pcm = await cachedScenePcm(
+          provider,
+          speech,
+          cache,
+          refresh || attempt === 1,
+          decodePcm,
+        ),
         split = splitNarration(pcm, AUDIO_RATE, weights);
       if (!split.ok) {
         problems = [split.reason];
@@ -114,28 +141,81 @@ export async function sceneAudio(
     throw new Error(`${scene.id}: 音声の分割・長さの検査に失敗しました: ${problems.join(" / ")}`);
   }
   return mapPool(speeches, provider.concurrency, async (speech, i) => {
-    let pcm = await decodeTrimmedPcm(
-      (await synthesizeCached(provider, speech, cache, refresh)).file,
-    );
+    let pcm = await cachedScenePcm(provider, speech, cache, refresh, decodeTrimmedPcm);
     const abnormal = () => {
       const ratio = pcm.length / AUDIO_RATE / weights[i];
       return ratio < 0.4 || ratio > 2;
     };
     if (abnormal() && provider.nondeterministic)
-      pcm = await decodeTrimmedPcm((await synthesizeCached(provider, speech, cache, true)).file);
+      pcm = await cachedScenePcm(provider, speech, cache, true, decodeTrimmedPcm);
     if (abnormal()) throw new Error(`${scene.id}: 文${i + 1}の音声の長さが推定と合いません`);
     return pcm;
   });
 }
-async function build(
+
+function sceneGenerationCode(): Record<string, string> {
+  const files = [
+    "./build-scene-video.ts",
+    "./lib/scene-cache.ts",
+    "./lib/scene-html.ts",
+    "./lib/scene-view-html.ts",
+    "./lib/scene-encode.ts",
+    "./lib/storyboard-assets.ts",
+    "./lib/ffmpeg.ts",
+    "../src/scene-layout.ts",
+    "../src/scene-timeline.ts",
+    "../src/scene-view.ts",
+    "../src/video-storyboard.ts",
+    "../src/video-art.ts",
+    "../src/video-shots.ts",
+    "../src/narration.ts",
+    "../src/narration-split.ts",
+  ];
+  return {
+    ...Object.fromEntries(
+      files.map((file) => [file, readFileSync(new URL(file, import.meta.url), "utf8")]),
+    ),
+    // フォントの実体も含める。インストール先の絶対パスは含めない。
+    font: sceneFontCss.replace(
+      /url\(([^)]+)\)/g,
+      (_match, url: string) =>
+        `url(${createHash("sha256")
+          .update(readFileSync(new URL(url)))
+          .digest("hex")})`,
+    ),
+  };
+}
+
+/** 素材の検査と配信ハッシュは、ブラウザも音声合成も使わない。 */
+export function planSceneTopic(
+  topic: ReturnType<typeof collectNarrationTopics>[number],
+  voice: string,
+) {
+  const json = JSON.parse(readFileSync(join(topic.topicDir, "video.json"), "utf8"));
+  const assets = storyboardAssets(contentRoot, topic.topicDir, json, { onlyReferenced: true });
+  const { storyboard, issues } = parseStoryboard(json, assets.context);
+  if (!storyboard || issues.some((i) => i.message.includes("イラストがまだありません")))
+    throw new Error(issues.map((i) => `${i.path}: ${i.message}`).join(" / "));
+  return sceneVideoSourceHash({
+    version: SCENE_GENERATOR_VERSION,
+    storyboard,
+    readings: topic.readings,
+    voice,
+    assets: assets.hashes,
+    code: sceneGenerationCode(),
+  });
+}
+
+export async function buildSceneTopic(
   browser: Browser,
   options: ReturnType<typeof argumentsOf>,
   topic: ReturnType<typeof collectNarrationTopics>[number],
   provider: TtsProvider | undefined,
+  onlyReferenced = false,
 ) {
   const file = join(topic.topicDir, "video.json");
   const json = JSON.parse(readFileSync(file, "utf8"));
-  const assets = storyboardAssets(contentRoot, topic.topicDir, json);
+  const assets = storyboardAssets(contentRoot, topic.topicDir, json, { onlyReferenced });
   const { storyboard, issues } = parseStoryboard(json, assets.context);
   for (const issue of issues)
     console.info(`${issue.level}: ${topic.stageSlug}/${topic.id}:${issue.path}: ${issue.message}`);
@@ -306,15 +386,21 @@ async function build(
         assetRoot: pathToFileURL(work).href,
         voice: provider.identity,
         audio: pcms[i],
-        code: {
-          renderer: readFileSync(new URL("./lib/scene-html.ts", import.meta.url), "utf8"),
-          layout: readFileSync(new URL("../src/scene-layout.ts", import.meta.url), "utf8"),
-          encoder: readFileSync(new URL("./lib/scene-encode.ts", import.meta.url), "utf8"),
-        },
+        code: sceneGenerationCode(),
       });
       const destination = join(cache, sourceHash),
         clip = join(destination, "clip.mp4");
-      const hit = existsSync(clip) && existsSync(join(destination, "poster.png"));
+      let hit = existsSync(clip) && existsSync(join(destination, "poster.png"));
+      if (hit) {
+        try {
+          hit =
+            (await probeDuration(clip)) > 0 &&
+            readFileSync(join(destination, "poster.png")).subarray(0, 8).toString("hex") ===
+              "89504e470d0a1a0a";
+        } catch {
+          hit = false;
+        }
+      }
       if (!hit) {
         const wav = join(work, `audio-${i}.wav`),
           audio = join(work, `audio-${i}.m4a`);
@@ -337,6 +423,8 @@ async function build(
         copyFileSync(poster, join(destination, "poster.png"));
         console.info(`${topic.id}/${scene.id}: 作成 (${shots}枚撮影)`);
       } else console.info(`${topic.id}/${scene.id}: cache hit`);
+      touchVideoCacheFile(clip);
+      touchVideoCacheFile(join(destination, "poster.png"));
       clips.push(clip);
       reports.push({
         id: scene.id,
@@ -380,6 +468,7 @@ async function build(
     writeFileSync(join(out, "captions.vtt"), sceneVtt(timelines));
     writeFileSync(join(out, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
     console.info(`${topic.stageSlug}/${topic.id}: ${duration.toFixed(2)}秒`);
+    return report;
   } finally {
     await context.close();
     rmSync(work, { recursive: true, force: true });
@@ -442,7 +531,7 @@ export async function buildSceneVideos(args: string[]) {
   try {
     for (const topic of topics)
       try {
-        await build(browser, options, topic, provider);
+        await buildSceneTopic(browser, options, topic, provider);
       } catch (e) {
         process.exitCode = 1;
         if (e instanceof QuotaExhaustedError) {

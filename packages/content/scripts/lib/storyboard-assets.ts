@@ -48,7 +48,7 @@ export function storyboardAssets(
   root: string,
   topic: string,
   json: unknown,
-  options: { allowMissingClips?: boolean } = {},
+  options: { allowMissingClips?: boolean; onlyReferenced?: boolean } = {},
 ) {
   const context: StoryboardContext = { shots: {}, clips: {}, artFiles: new Set() };
   const images: Record<string, ViewImage> = {};
@@ -75,6 +75,11 @@ export function storyboardAssets(
   for (const file of globSync("**/*.json", { cwd: join(root, "clips") })) {
     const id = file.replace(/\\/g, "/").slice(0, -5);
     if (!SHOT_ID.test(id)) continue;
+    if (
+      options.onlyReferenced &&
+      ![...refs].some((ref) => ref.startsWith("clip:") && clipReference(ref.slice(5))?.id === id)
+    )
+      continue;
     const bytes = readFileSync(join(root, "clips", file));
     const meta: unknown = JSON.parse(bytes.toString());
     if (
@@ -122,6 +127,7 @@ export function storyboardAssets(
   for (const file of globSync("**/*.json", { cwd: shotsRoot })) {
     const id = file.replace(/\\/g, "/").slice(0, -5);
     if (!SHOT_ID.test(id)) continue;
+    if (options.onlyReferenced && !refs.has(`shot:${id}`)) continue;
     const png = join(shotsRoot, `${id}.png`);
     if (!existsSync(png)) continue;
     const bytes = readFileSync(join(shotsRoot, file));

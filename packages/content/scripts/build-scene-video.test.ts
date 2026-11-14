@@ -400,3 +400,15 @@ describe("音声モデルと日次上限", () => {
     }
   });
 });
+
+it("復元した音声キャッシュが壊れていれば、再合成して続ける", async () => {
+  const singleBeat = { ...scene, beats: [scene.beats[0]] };
+  vi.mocked(synthesizeCached)
+    .mockResolvedValueOnce({ file: "/tmp/stella-corrupt-audio-fixture.wav", cached: true })
+    .mockResolvedValueOnce({ file: "fixture.wav", cached: false });
+  vi.mocked(decodePcm)
+    .mockRejectedValueOnce(new Error("invalid cached audio"))
+    .mockResolvedValueOnce(pcmFor(singleBeat));
+  await sceneAudio(singleBeat, {}, provider("topic"), "/tmp/fixture-cache");
+  expect(vi.mocked(synthesizeCached).mock.calls.map((call) => call[3])).toEqual([false, true]);
+});

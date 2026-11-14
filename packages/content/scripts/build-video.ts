@@ -4,7 +4,7 @@
  *   bun run --filter=@stella/content video -- stages/it-basics --tts openjtalk
  *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake --captioned
  *
- * 対象は `narration.json` を持つトピックだけ。トピックごとに:
+ * `video.json` があれば場面方式を使う。無ければ `narration.json` を持つトピックが対象。トピックごとに:
  *   ② 読み上げ   Gemini はトピックごと、他は字幕ごとに TTS (dist/video-cache/tts にキャッシュ)
  *   ③ 同期       無音を削った音声の長さから timeline を決める
  *   ④ 描画       アプリと同じ slides-skin.css のスライドを Playwright で 1920x1080 に撮る
@@ -18,6 +18,8 @@
  * 配信は upload-videos.ts がこの生成処理を呼び、R2 と seed 用 manifest に登録する。
  */
 
+import { buildSceneTopic, planSceneTopic } from "./build-scene-video.js";
+import { touchVideoCacheFile } from "./lib/scene-cache.js";
 import { createHash } from "node:crypto";
 import {
   copyFileSync,
@@ -75,6 +77,7 @@ import {
 } from "./lib/narration-topics.js";
 import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml } from "./lib/slide-html.js";
 import {
+  QuotaExhaustedError,
   createTtsProvider,
   cueHash,
   mapPool,
@@ -155,6 +158,7 @@ function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: Vi
   const invalid: VideoFailure[] = [];
   // ponytail: 収録版も narration.json が必須で、無ければエラー。台本なしを許可するなら検査と対象の列挙を一緒に見直す。
   for (const topic of collectNarrationTopics(selectors)) {
+    if (existsSync(join(topic.topicDir, "video.json"))) continue;
     const label = `${topic.stageSlug}/${topic.id}`;
     if (topic.parseError !== undefined) {
       invalid.push({ stageSlug: topic.stageSlug, id: topic.id, reason: topic.parseError });
@@ -201,6 +205,7 @@ interface CuePlan {
 }
 
 interface TopicReport {
+  scenes?: unknown[];
   stageSlug: string;
   id: string;
   title: string;
@@ -573,7 +578,7 @@ function indexHtml(reports: TopicReport[], outDir: string): string {
   const cards = reports
     .map((r) => {
       const base = `${r.stageSlug}/${r.id}`;
-      const recorded = r.voice === "recorded";
+      const recorded = r.voice === "recorded" || r.scenes !== undefined;
       const timeline: { cues: { slide: number; start: number; text: string; speech: string }[] } =
         recorded
           ? { cues: [] }
@@ -641,6 +646,17 @@ function outputFiles(captioned: boolean, recorded: boolean): string[] {
 
 // ---------------------------------------------------------------- main
 
+/** 公開する動画は台帳と同じ voice.json の設定を使う。 */
+export function validatePublishedVideoVoice(args: string[]): void {
+  if (
+    args.some((arg) => arg === "--tts-model" || arg.startsWith("--tts-model=")) ||
+    process.env.VIDEO_TTS_MODEL?.trim()
+  )
+    throw new Error(
+      "video:sync / video では --tts-model・VIDEO_TTS_MODEL は使えません。narration/voice.json を使います",
+    );
+}
+
 /** CLI と配信が共用する。skip は R2 に出力一式がある場合だけ true を返す。 */
 export async function buildVideos(
   args: string[] = [],
@@ -660,6 +676,8 @@ export async function buildVideos(
   const selectors = args.filter(
     (a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(args[i - 1] ?? ""),
   );
+
+  validatePublishedVideoVoice(args);
 
   const voice = loadVideoVoice(argValue("--tts") as TtsProviderName | undefined);
   const provider = createTtsProvider(voice);
@@ -708,7 +726,30 @@ export async function buildVideos(
     });
   }
 
+  const scenePlans: { topic: NarrationTopic; sourceHash: string }[] = [];
+  for (const topic of collectNarrationTopics(selectors).filter((t) =>
+    existsSync(join(t.topicDir, "video.json")),
+  )) {
+    try {
+      scenePlans.push({ topic, sourceHash: planSceneTopic(topic, provider.identity) });
+    } catch (error) {
+      failures.push({ stageSlug: topic.stageSlug, id: topic.id, reason: (error as Error).message });
+    }
+  }
   const skipped = new Set<string>();
+  const pendingScenes = scenePlans.filter(({ topic, sourceHash }) => {
+    if (skip({ stageSlug: topic.stageSlug, id: topic.id, sourceHash })) {
+      skipped.add(`${topic.stageSlug}/${topic.id}`);
+      return false;
+    }
+    const base = join(outDir, topic.stageSlug, topic.id);
+    if (force || outputFiles(false, true).some((f) => !existsSync(join(base, f)))) return true;
+    try {
+      return JSON.parse(readFileSync(join(base, "report.json"), "utf8")).sourceHash !== sourceHash;
+    } catch {
+      return true;
+    }
+  });
   const pending = plans.filter(({ topic, recorded, sourceHash }) => {
     if (
       skip({
@@ -732,119 +773,200 @@ export async function buildVideos(
   );
   console.log(`  ${await ffmpegVersion()}`);
 
-  // ② 読み上げ。同じ読み上げ文はプロバイダの合成単位ごとに 1 回だけ合成する。
-  const ttsStart = Date.now();
-  let ttsMs: number;
-  let buildable: typeof pending;
-  if (provider.unit === "topic") {
-    const generated = pending.filter((p) => !p.recorded);
-    const entries = generated.map((plan) => {
-      const speech = plan.cues.map((c) => c.speech).join("\n\n");
-      return { plan, speech, hash: cueHash(provider.identity, speech) };
-    });
-    const unique = [...new Map(entries.map(({ hash, speech }) => [hash, speech])).entries()];
-    const files = new Map<string, string>();
-    const errors = new Map<string, string>();
-    let synthesized = 0;
-    await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
-      try {
-        const res = await synthesizeCached(provider, speech, cacheDir);
-        files.set(hash, res.file);
-        if (!res.cached) synthesized++;
-      } catch (e) {
-        errors.set(hash, (e as Error).message.split("\n")[0]);
-      }
-    });
-    const failed = new Set<(typeof pending)[number]>();
-    for (const { plan, hash } of entries) {
-      if (errors.has(hash)) {
-        failed.add(plan);
-        const label = `${plan.topic.stageSlug}/${plan.topic.id}`;
-        failures.push({
-          stageSlug: plan.topic.stageSlug,
-          id: plan.topic.id,
-          reason: `読み上げに失敗しました (${errors.get(hash)})`,
-        });
-        console.warn(`  ✗ ${label}: 読み上げに失敗したので作りません`);
-      } else {
-        for (const cue of plan.cues) cue.file = files.get(hash);
-      }
+  let browser: Browser | undefined;
+  const getBrowser = async () =>
+    (browser ??= await chromium.launch(
+      existsSync("/opt/pw-browsers/chromium")
+        ? { executablePath: "/opt/pw-browsers/chromium" }
+        : {},
+    ));
+  let quota: QuotaExhaustedError | undefined;
+  // 同じ provider を両方式で使い、日次上限の後は合成要求を送らない。
+  const synthesize = provider.synthesize.bind(provider);
+  provider.synthesize = async (speech) => {
+    if (quota) throw quota;
+    try {
+      return await synthesize(speech);
+    } catch (error) {
+      if (error instanceof QuotaExhaustedError) quota = error;
+      throw error;
     }
-    ttsMs = Date.now() - ttsStart;
-    const cueCount = generated.reduce((n, p) => n + p.cues.length, 0);
-    console.log(
-      `  TTS: ${generated.length} topics / ${cueCount} cues (${synthesized} synthesized, ${failed.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
-    );
-    buildable = pending.filter((p) => !failed.has(p));
-  } else {
-    // ② 読み上げ (全トピックの字幕をまとめて並列に)。同じ読み上げ文は 1 回だけ合成する。
-    // 失敗はトピック単位で数える — 1 つの字幕が再試行しても通らなくても、
-    // 他のトピックの動画は作る。
-    const allCues = pending.flatMap((p) => p.cues);
-    const unique = [...new Map(allCues.map((c) => [c.hash, c.speech])).entries()];
-    let synthesized = 0;
-    const files = new Map<string, string>();
-    const ttsErrors = new Map<string, string>();
-    await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
-      try {
-        const res = await synthesizeCached(provider, speech, cacheDir);
-        files.set(hash, res.file);
-        if (!res.cached) synthesized++;
-      } catch (e) {
-        ttsErrors.set(hash, (e as Error).message.split("\n")[0]);
-      }
-    });
-    for (const cue of allCues) cue.file = files.get(cue.hash);
-    ttsMs = Date.now() - ttsStart;
-    console.log(
-      `  TTS: ${allCues.length} cues / ${unique.length} unique (${synthesized} synthesized, ${ttsErrors.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
-    );
-    buildable = pending.filter(({ topic, cues }) => {
-      const failed = cues.find((c) => ttsErrors.has(c.hash));
-      if (!failed) return true;
-      const label = `${topic.stageSlug}/${topic.id}`;
-      failures.push({
-        stageSlug: topic.stageSlug,
-        id: topic.id,
-        reason: `読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
-      });
-      console.warn(`  ✗ ${label}: 読み上げに失敗した字幕があるので作りません`);
-      return false;
-    });
-  }
-
+  };
+  const sceneReports: TopicReport[] = [];
   const reports: TopicReport[] = [];
-  for (const { topic, sourceHash, warnings } of buildable.filter((p) => p.recorded)) {
-    const label = `${topic.stageSlug}/${topic.id}`;
-    try {
-      const report = await copyRecordedTopic(topic, sourceHash, warnings, outDir);
-      reports.push(report);
-      console.log(`  ✓ ${label} ${report.durationSec.toFixed(1)}s (収録済み動画をコピー)`);
-    } catch (e) {
-      failures.push({
-        stageSlug: topic.stageSlug,
-        id: topic.id,
-        reason: (e as Error).message.split("\n")[0],
-      });
-      console.warn(`  ✗ ${label}: ${(e as Error).message}`);
+  let ttsMs = 0;
+  try {
+    for (const { topic, sourceHash } of pendingScenes) {
+      try {
+        if (quota) throw quota;
+        const result = await buildSceneTopic(
+          await getBrowser(),
+          {
+            selectors,
+            stills: false,
+            tts: voice.provider,
+            ttsModel: undefined,
+            out: outDir,
+            refreshAudio: [],
+          },
+          topic,
+          provider,
+          true,
+        );
+        if (!result) throw new Error("場面の動画がありません");
+        const report: TopicReport = {
+          ...result,
+          stageSlug: topic.stageSlug,
+          id: topic.id,
+          title: topic.title,
+          sourceHash,
+          voice: provider.identity,
+          slides: [],
+          cues: 0,
+          speechChars: 0,
+          charsPerSec: 0,
+          bytes: { video: statSync(join(outDir, topic.stageSlug, topic.id, "video.mp4")).size },
+          timingsMs: { audio: 0, render: 0, encode: 0 },
+          warnings: result.warnings.map((i) => i.message),
+          anomalies: [],
+        };
+        writeFileSync(
+          join(outDir, topic.stageSlug, topic.id, "report.json"),
+          JSON.stringify(report, null, 2),
+        );
+        sceneReports.push(report);
+      } catch (error) {
+        if (error instanceof QuotaExhaustedError) quota = error;
+        failures.push({
+          stageSlug: topic.stageSlug,
+          id: topic.id,
+          reason: (error as Error).message,
+        });
+      }
     }
-  }
-  const generated = buildable.filter((p) => !p.recorded);
-  if (generated.length > 0) {
-    const executablePath = existsSync("/opt/pw-browsers/chromium")
-      ? "/opt/pw-browsers/chromium"
-      : undefined;
-    const browser = await chromium.launch(executablePath ? { executablePath } : {});
-    try {
+
+    // ② 読み上げ。同じ読み上げ文はプロバイダの合成単位ごとに 1 回だけ合成する。
+    const ttsStart = Date.now();
+
+    let buildable: typeof pending;
+    if (provider.unit === "topic") {
+      const generated = pending.filter((p) => !p.recorded);
+      const entries = generated.map((plan) => {
+        const speech = plan.cues.map((c) => c.speech).join("\n\n");
+        return { plan, speech, hash: cueHash(provider.identity, speech) };
+      });
+      const unique = [...new Map(entries.map(({ hash, speech }) => [hash, speech])).entries()];
+      const files = new Map<string, string>();
+      const errors = new Map<string, string>();
+      let synthesized = 0;
+      await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
+        try {
+          if (quota) throw quota;
+          const res = await synthesizeCached(provider, speech, cacheDir);
+          touchVideoCacheFile(res.file);
+          files.set(hash, res.file);
+          if (!res.cached) synthesized++;
+        } catch (e) {
+          if (e instanceof QuotaExhaustedError) quota = e;
+          errors.set(hash, (e as Error).message.split("\n")[0]);
+        }
+      });
+      const failed = new Set<(typeof pending)[number]>();
+      for (const { plan, hash } of entries) {
+        if (errors.has(hash)) {
+          failed.add(plan);
+          const label = `${plan.topic.stageSlug}/${plan.topic.id}`;
+          failures.push({
+            stageSlug: plan.topic.stageSlug,
+            id: plan.topic.id,
+            reason: `読み上げに失敗しました (${errors.get(hash)})`,
+          });
+          console.warn(`  ✗ ${label}: 読み上げに失敗したので作りません`);
+        } else {
+          for (const cue of plan.cues) cue.file = files.get(hash);
+        }
+      }
+      ttsMs = Date.now() - ttsStart;
+      const cueCount = generated.reduce((n, p) => n + p.cues.length, 0);
+      console.log(
+        `  TTS: ${generated.length} topics / ${cueCount} cues (${synthesized} synthesized, ${failed.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
+      );
+      buildable = pending.filter((p) => !failed.has(p));
+    } else {
+      // ② 読み上げ (全トピックの字幕をまとめて並列に)。同じ読み上げ文は 1 回だけ合成する。
+      // 失敗はトピック単位で数える — 1 つの字幕が再試行しても通らなくても、
+      // 他のトピックの動画は作る。
+      const allCues = pending.flatMap((p) => p.cues);
+      const unique = [...new Map(allCues.map((c) => [c.hash, c.speech])).entries()];
+      let synthesized = 0;
+      const files = new Map<string, string>();
+      const ttsErrors = new Map<string, string>();
+      await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
+        try {
+          if (quota) throw quota;
+          const res = await synthesizeCached(provider, speech, cacheDir);
+          touchVideoCacheFile(res.file);
+          files.set(hash, res.file);
+          if (!res.cached) synthesized++;
+        } catch (e) {
+          if (e instanceof QuotaExhaustedError) quota = e;
+          ttsErrors.set(hash, (e as Error).message.split("\n")[0]);
+        }
+      });
+      for (const cue of allCues) cue.file = files.get(cue.hash);
+      ttsMs = Date.now() - ttsStart;
+      console.log(
+        `  TTS: ${allCues.length} cues / ${unique.length} unique (${synthesized} synthesized, ${ttsErrors.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
+      );
+      buildable = pending.filter(({ topic, cues }) => {
+        const failed = cues.find((c) => ttsErrors.has(c.hash));
+        if (!failed) return true;
+        const label = `${topic.stageSlug}/${topic.id}`;
+        failures.push({
+          stageSlug: topic.stageSlug,
+          id: topic.id,
+          reason: `読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
+        });
+        console.warn(`  ✗ ${label}: 読み上げに失敗した字幕があるので作りません`);
+        return false;
+      });
+    }
+
+    for (const { topic, sourceHash, warnings } of buildable.filter((p) => p.recorded)) {
+      const label = `${topic.stageSlug}/${topic.id}`;
+      try {
+        const report = await copyRecordedTopic(topic, sourceHash, warnings, outDir);
+        reports.push(report);
+        console.log(`  ✓ ${label} ${report.durationSec.toFixed(1)}s (収録済み動画をコピー)`);
+      } catch (e) {
+        failures.push({
+          stageSlug: topic.stageSlug,
+          id: topic.id,
+          reason: (e as Error).message.split("\n")[0],
+        });
+        console.warn(`  ✗ ${label}: ${(e as Error).message}`);
+      }
+    }
+    const generated = buildable.filter((p) => !p.recorded);
+    if (generated.length > 0) {
+      const sharedBrowser = await getBrowser();
       await mapPool(generated, concurrency, async ({ topic, cues, warnings, sourceHash }) => {
         const label = `${topic.stageSlug}/${topic.id}`;
         try {
-          const report = await buildTopic(topic, cues, sourceHash, provider, browser, warnings, {
-            outDir,
-            cacheDir,
-            captioned,
-            keepWork,
-          });
+          const report = await buildTopic(
+            topic,
+            cues,
+            sourceHash,
+            provider,
+            sharedBrowser,
+            warnings,
+            {
+              outDir,
+              cacheDir,
+              captioned,
+              keepWork,
+            },
+          );
           reports.push(report);
           console.log(
             `  ✓ ${label} ${report.durationSec.toFixed(1)}s (audio ${report.timingsMs.audio}ms / render ${report.timingsMs.render}ms / encode ${report.timingsMs.encode}ms)`,
@@ -858,22 +980,38 @@ export async function buildVideos(
           console.warn(`  ✗ ${label}: ${(e as Error).message}`);
         }
       });
-    } finally {
-      await browser.close();
     }
+  } finally {
+    await browser?.close();
   }
 
   // 一覧は出力済みの全トピックで作り直す (今回作らなかった最新分も載せる)
-  const allReports = plans
+  const legacyReports = plans
     .filter(({ topic }) => !skipped.has(`${topic.stageSlug}/${topic.id}`))
     .map(({ topic }) => join(outDir, topic.stageSlug, topic.id, "report.json"))
     .filter((f) => existsSync(f))
     .map((f) => JSON.parse(readFileSync(f, "utf8")) as TopicReport);
+  const allSceneReports = scenePlans
+    .filter(({ topic }) => !skipped.has(`${topic.stageSlug}/${topic.id}`))
+    .flatMap(({ topic }) => {
+      try {
+        const report = JSON.parse(
+          readFileSync(join(outDir, topic.stageSlug, topic.id, "report.json"), "utf8"),
+        ) as TopicReport;
+        // video:scenes 単独の確認用 report や壊れた出力は配信の成功扱いにしない。
+        return report.sourceHash && report.voice && report.bytes && report.stageSlug && report.id
+          ? [report]
+          : [];
+      } catch {
+        return [];
+      }
+    });
+  const allReports = [...legacyReports, ...allSceneReports];
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), indexHtml(allReports, outDir));
   writeFileSync(
     join(outDir, "summary.json"),
-    `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length, failures: failures.map(formatVideoFailure) }, null, 2)}\n`,
+    `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length + sceneReports.length, failures: failures.map(formatVideoFailure) }, null, 2)}\n`,
   );
   console.log(
     `✓ ${relative(process.cwd(), join(outDir, "index.html"))} (${allReports.length} videos)`,
@@ -886,7 +1024,7 @@ export async function buildVideos(
   }
   return {
     reports: allReports.filter((r) =>
-      plans.some(
+      [...plans, ...scenePlans].some(
         ({ topic, sourceHash }) =>
           topic.stageSlug === r.stageSlug && topic.id === r.id && sourceHash === r.sourceHash,
       ),

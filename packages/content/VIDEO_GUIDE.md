@@ -132,3 +132,14 @@ bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts g
 静止画の一覧で、囲みの位置・寄ったときに文字が読めるか・札のはみ出しを見てから音声を作ります。
 
 1 日の上限に達したら、`--tts-model` で別のモデルを指定して書き出せます。環境変数 `VIDEO_TTS_MODEL` でも指定でき、`--tts-model` が優先します。公開する版は、上書き指定を外して `narration/voice.json` のモデルで作り直してください。
+
+## 公開のされ方
+
+`main` に入ると、デプロイの `video:sync` が `video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。
+
+手元で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
+
+```bash
+bun run --filter=@stella/content video:sync dev-env-basics --tts fake
+VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed
+```

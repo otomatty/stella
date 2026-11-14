@@ -107,6 +107,16 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
+      # 場面ごとの音声と映像は内容ハッシュで再利用する。毎回新しいキーで保存し、
+      # 次のデプロイは直近のキャッシュを復元する。30日使わないファイルは sync が消す。
+      - name: Cache lesson video scenes and audio
+        if: steps.content.outputs.changed == 'true'
+        uses: actions/cache@v6
+        with:
+          path: packages/content/dist/video-cache
+          key: video-cache-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: video-cache-${{ runner.os }}-
+
       # 動画は任意で、失敗しても前の版を残せる。アプリのデプロイを巻き込まない。
       - name: Generate & upload lesson videos to R2 (remote)
         id: video
