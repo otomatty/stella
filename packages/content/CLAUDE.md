@@ -102,6 +102,8 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
+管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
+
 トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の12トピックすべてに台本があります。GitHub Secret `GEMINI_API_KEY` は登録済みで、CI で動画を生成しています。main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
@@ -113,7 +115,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
 - CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です
 - Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分けます。429 で 1 日の上限に当たったらすぐ止めます。
-- 動画が一部失敗してもデプロイは続け、できた動画は公開し、失敗したトピックは前の版を残します。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直します (成功分は台帳で生成を省きます)。
+- 動画が一部失敗してもデプロイは続け、できた動画は公開し、失敗したトピックは前の版を残します。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直します (成功分は台帳で生成を省きます)。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れます (管理者の画面に出します)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のままです。
 - レッスンは「動画」を既定とし「スライド」へ切り替えられます。字幕は既定でオン。動画の視聴でスライドの完了判定は変えません。公開単元の slides は `/start` でも再生でき、進捗は記録しません
 - 収録済みの動画は、トピックの `slides.md`・`narration.json` と同じ場所に `screen.mp4`・`screen.vtt`・`screen.jpg` をそろえてコミットします。Git LFS は使いません。
 - 3ファイルがあれば収録版を優先し、TTS とスライド撮影を省きます。一部だけあると `narration:check` と動画生成がエラーになります。

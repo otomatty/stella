@@ -2,10 +2,11 @@
 import { mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildVideos, loadVideoVoice, type VideoPlan } from "./build-video.js";
+import { buildVideos, formatVideoFailure, loadVideoVoice, type VideoPlan } from "./build-video.js";
 import { createR2Client, putAll } from "./lib/r2.js";
 import {
   hasVideo,
+  mergeVideoFailure,
   serializeVideoManifest,
   videoKeyHash,
   videoKeys,
@@ -76,7 +77,11 @@ export async function uploadVideos(args: string[]): Promise<void> {
       await putAll(r2, files, 3, { exitOnFailure: false });
     } catch (error) {
       const message = (error instanceof Error ? error.message : String(error)).split("\n")[0];
-      failures.push(`${plan.stageSlug}/${plan.id}: R2 へのアップロードに失敗しました (${message})`);
+      failures.push({
+        stageSlug: plan.stageSlug,
+        id: plan.id,
+        reason: `R2 へのアップロードに失敗しました (${message})`,
+      });
       continue;
     }
     for (const f of files) state.objects[videoKeyHash(f.key)] = statSync(f.file).size;
@@ -84,13 +89,17 @@ export async function uploadVideos(args: string[]): Promise<void> {
     if (manifest[plan.id]) throw new Error(`レッスン ID が重複しています: ${plan.id}`);
     manifest[plan.id] = { ...keys, durationSec: report.durationSec };
   }
+  const successCount = Object.keys(manifest).length;
+  for (const failure of failures) {
+    manifest[failure.id] = mergeVideoFailure(manifest[failure.id], failure);
+  }
   await r2.put(STATE_KEY, new TextEncoder().encode(JSON.stringify(state)), "application/json");
   mkdirSync(dirname(manifestFile), { recursive: true });
   writeFileSync(manifestFile, serializeVideoManifest(manifest));
-  console.log(`✓ video manifest: ${Object.keys(manifest).length} 件`);
+  console.log(`✓ video manifest: 成功 ${successCount} 件 / 失敗 ${failures.length} 件`);
   if (failures.length > 0) {
     console.error(`作れなかった動画: ${failures.length} 件 (前の版を残します)`);
-    for (const failure of failures) console.error(`  ${failure}`);
+    for (const failure of failures) console.error(`  ${formatVideoFailure(failure)}`);
     process.exitCode = 1;
   }
 }

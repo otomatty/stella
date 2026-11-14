@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../env.js";
 import type { ProfileRole } from "../lib/authz.js";
+import { request as routeRequest } from "../testing/route-harness.js";
 import { cmsRoute } from "./cms.js";
 
 vi.mock("../lib/audit.js", () => ({
@@ -47,6 +48,7 @@ const state = {
   requestedStageId: "",
   callerRole: "student" as ProfileRole,
   callerId: "seed-learner",
+  videoIssue: null as string | null,
   updated: [] as Record<string, unknown>[],
 };
 
@@ -67,7 +69,9 @@ function resolveSelect(table: string, shape: Record<string, unknown> | undefined
       ? [{ id: "e1" }]
       : [];
   }
-  // sections / lessons は今回の関心事ではないので空で返す (詳細は器だけ確かめる)。
+  if (table === "sections") return [{ id: "section-1", stageId: state.requestedStageId }];
+  if (table === "lessons")
+    return [{ id: "lesson-1", sectionId: "section-1", videoIssue: state.videoIssue }];
   return [];
 }
 
@@ -134,11 +138,7 @@ const request = (path: string, init: RequestInit = {}) => {
     const parts = path.split("/").filter(Boolean);
     state.requestedStageId = parts[parts.length - 2] ?? "";
   }
-  return app.request(
-    path,
-    { ...init, headers: { Authorization: "Bearer test", ...(init.headers ?? {}) } },
-    env,
-  );
+  return routeRequest(app, env, path, { token: "test", ...init });
 };
 
 const asRole = (role: ProfileRole, id = role === "student" ? "seed-learner" : "seed-admin") => {
@@ -153,6 +153,7 @@ beforeEach(() => {
   ];
   state.enrollments = new Set();
   state.updated = [];
+  state.videoIssue = null;
   asRole("student");
 });
 
@@ -178,6 +179,25 @@ describe("GET /api/cms/stages (カタログの秘匿)", () => {
 });
 
 describe("GET /api/cms/stages/:id (受講登録のある受講者だけ)", () => {
+  it.each(["admin", "platform_admin", "student"] as const)(
+    "%s には管理者のときだけ video_issue を返す (null も明示する)",
+    async (role) => {
+      asRole(role);
+      state.enrollments.add(`${state.callerId}:stage-html`);
+      for (const issue of ["読み上げに失敗しました", null]) {
+        state.videoIssue = issue;
+        const res = await request("/api/cms/stages/stage-html");
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as {
+          stage: { sections: { lessons: Record<string, unknown>[] }[] };
+        };
+        const lesson = body.stage.sections[0]?.lessons[0];
+        if (role === "student") expect(lesson).not.toHaveProperty("video_issue");
+        else expect(lesson).toHaveProperty("video_issue", issue);
+      }
+    },
+  );
+
   it("未受講の受講者は 403", async () => {
     const res = await request("/api/cms/stages/stage-html");
     expect(res.status).toBe(403);

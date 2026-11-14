@@ -107,6 +107,8 @@ export interface LessonRow {
   order: number;
   duration_label: string | null;
   video_path: string | null;
+  /** 管理者にだけ返す。 */
+  video_issue?: string | null;
   pdf_path: string | null;
   markdown: string | null;
   assignment_id: string | null;

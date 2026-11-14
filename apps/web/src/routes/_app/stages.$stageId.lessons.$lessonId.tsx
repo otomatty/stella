@@ -6,6 +6,7 @@ import {
   LessonNotFoundNotice,
 } from "@/components/shell/AppShell";
 import { RoleGuard } from "@/components/shell/RoleGuard";
+import { StaffLessonView } from "@/components/staff/StaffLessonView";
 import { LessonPlayer } from "@/components/learner/LessonPlayer";
 
 export const Route = createFileRoute("/_app/stages/$stageId/lessons/$lessonId")({
@@ -21,8 +22,10 @@ function LessonPage() {
   const lessonExists =
     target?.sections?.some((sec) => sec.lessons.some((l) => l.id === lessonId)) ?? false;
   return (
-    <RoleGuard allow={["learner"]}>
-      {target && !lessonExists ? (
+    <RoleGuard allow={["learner", "admin"]}>
+      {s.role !== "learner" ? (
+        <StaffLessonView key={`${stageId}:${lessonId}`} stageId={stageId} lessonId={lessonId} />
+      ) : target && !lessonExists ? (
         <LessonNotFoundNotice setPage={s.setPage} />
       ) : target ? (
         <LessonPlayer

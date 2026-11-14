@@ -35,10 +35,13 @@ import { fetchStageGradebook } from "@/lib/certificates-api";
 import { toast } from "sonner";
 import { getStaffSkillMap, type StaffSkillMapStageNode } from "@/lib/skill-map-api";
 import { fetchStaffStageTasks } from "@/lib/staff-stage-api";
+import { VideoStatusBadge } from "./VideoStatusBadge";
 import { StaffEnrollButton } from "./StaffEnrollButton";
 import { StageGrantEditor } from "./StageGrantEditor";
 import { stageAudienceLabel, stageStatusLabel } from "./stage-management";
 import {
+  lessonVideoStatus,
+  summarizeStageVideos,
   filterStaffStageTasks,
   groupStageSections,
   groupStageMaterials,
@@ -110,6 +113,8 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
     return () => pending.current?.abort();
   }, [load]);
 
+  const [attentionTarget, setAttentionTarget] = useState<string | null>(null);
+  const videos = data ? summarizeStageVideos(data.content) : null;
   const sections = data ? groupStageSections(data.content, data.tasks) : [];
   const stage = data?.content.stage;
   const node = data?.node;
@@ -186,6 +191,24 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
                 {data.tasks.filter((task) => task.variantCount > 0).length} / {data.tasks.length}
               </strong>
             </span>
+            {videos && videos.total > 0 ? (
+              <span className="flex items-center gap-2">
+                <span>
+                  動画 <strong>{videos.published}</strong> / {videos.total} 本が最新
+                </span>
+                {videos.attention > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttentionTarget(videos.firstAttentionLessonId);
+                      void navigate({ search: { tab: "outline" } });
+                    }}
+                  >
+                    <Badge variant="warning">要確認 {videos.attention}</Badge>
+                  </button>
+                ) : null}
+              </span>
+            ) : null}
           </Card>
           <Tabs
             value={tab}
@@ -203,7 +226,12 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
               <TasksTab sections={sections} slug={stage.slug} stageId={stageId} />
             </TabsContent>
             <TabsContent value="outline">
-              <OutlineTab sections={sections} stageId={stageId} />
+              <OutlineTab
+                sections={sections}
+                stageId={stageId}
+                focusLessonId={attentionTarget}
+                onFocused={() => setAttentionTarget(null)}
+              />
             </TabsContent>
             <TabsContent value="learners" forceMount hidden={tab !== "learners"}>
               {visited.stageId === stageId && visited.learners ? (
@@ -404,7 +432,27 @@ function TasksTab({
   );
 }
 
-function OutlineTab({ sections, stageId }: { sections: StaffStageSection[]; stageId: string }) {
+function OutlineTab({
+  sections,
+  stageId,
+  focusLessonId,
+  onFocused,
+}: {
+  sections: StaffStageSection[];
+  stageId: string;
+  focusLessonId: string | null;
+  onFocused: () => void;
+}) {
+  useEffect(() => {
+    if (!focusLessonId) return;
+    const row = document.getElementById(`lesson-${focusLessonId}`);
+    if (!row) return;
+    const unit = row.closest("details");
+    if (unit) unit.open = true;
+    row.scrollIntoView({ block: "center" });
+    row.querySelector<HTMLAnchorElement>("a")?.focus({ preventScroll: true });
+    onFocused();
+  }, [focusLessonId, onFocused]);
   return (
     <div className="space-y-4">
       {sections.map((section) => (
@@ -419,9 +467,20 @@ function OutlineTab({ sections, stageId }: { sections: StaffStageSection[]; stag
             </summary>
             <ul className="divide-y divide-border border-t border-border text-[13px]">
               {section.lessons.map((lesson) => (
-                <li key={lesson.id} className="flex flex-wrap items-center gap-2 px-4 py-3">
+                <li
+                  key={lesson.id}
+                  id={`lesson-${lesson.id}`}
+                  className="flex flex-wrap items-center gap-2 px-4 py-3"
+                >
                   <Badge>{LESSON_TYPE_LABELS[lesson.type]}</Badge>
-                  <span className="min-w-0 break-words">{lesson.title}</span>
+                  <VideoStatusBadge status={lessonVideoStatus(lesson)} />
+                  <Link
+                    to="/stages/$stageId/lessons/$lessonId"
+                    params={{ stageId, lessonId: lesson.id }}
+                    className="min-w-0 break-words font-medium text-brand hover:underline"
+                  >
+                    {lesson.title}
+                  </Link>
                 </li>
               ))}
               {section.tasks.map((task) => (

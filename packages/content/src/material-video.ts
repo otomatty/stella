@@ -29,7 +29,30 @@ export interface VideoManifestEntry {
   poster: string;
   durationSec: number;
 }
-export type VideoManifest = Record<string, VideoManifestEntry>;
+export interface VideoManifestFailure {
+  stageSlug: string;
+  error: string;
+}
+export type VideoManifest = Record<string, VideoManifestEntry | VideoManifestFailure>;
+
+/** 管理者に出す理由は先頭の 1 行、最大 200 文字 (省略記号を含む)。 */
+export function summarizeVideoError(reason: string): string {
+  const chars = Array.from(reason.split(/\r\n|\r|\n/)[0]);
+  return chars.length > 200 ? `${chars.slice(0, 199).join("")}…` : chars.join("");
+}
+
+/** 同じトピックの失敗は最初の理由を残し、成功や別ステージとの ID 衝突は拒否する。 */
+export function mergeVideoFailure(
+  existing: VideoManifest[string] | undefined,
+  failure: { stageSlug: string; id: string; reason: string },
+): VideoManifestFailure {
+  if (existing) {
+    if ("error" in existing && existing.stageSlug === failure.stageSlug) return existing;
+    throw new Error(`レッスン ID が重複しています: ${failure.id}`);
+  }
+  return { stageSlug: failure.stageSlug, error: summarizeVideoError(failure.reason) };
+}
+
 export interface VideoState {
   version: 1;
   objects: Record<string, number>;

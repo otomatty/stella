@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 
 import { buildContentManifest, listCodingRuleScopes } from "@stella/content";
 import type { QuizSeed } from "@stella/content";
+import type { VideoManifest } from "../../content/src/material-video.js";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
@@ -168,7 +169,7 @@ const emittedAssignments = new Set<string>();
 /** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
 // VIDEO_MANIFEST は seed-d1.ts の process.env 経由で受け取る。
-const videoManifest: Record<string, { video: string }> | null = process.env.VIDEO_MANIFEST
+const videoManifest: VideoManifest | null = process.env.VIDEO_MANIFEST
   ? JSON.parse(readFileSync(process.env.VIDEO_MANIFEST, "utf8"))
   : null;
 
@@ -378,17 +379,24 @@ function emitLesson(
   const id = lessonUuid(tenantId, stageId, lesson.id);
   // 台本を削除したら解除。manifest が無い／対象外なら既存値を保持する。
   // トピック ID はステージ間で重なり得るので、絞り込んだ sync の別ステージを使わない。
-  const manifestVideo = videoManifest?.[lesson.id]?.video;
+  const videoEntry = videoManifest?.[lesson.id];
+  const manifestVideo = videoEntry && "video" in videoEntry ? videoEntry.video : undefined;
+  const videoFailure =
+    videoEntry && "error" in videoEntry && videoEntry.stageSlug === stageId
+      ? videoEntry
+      : undefined;
   const ownedVideo = manifestVideo?.startsWith(`lesson-video/${tenantId}/${stageId}/${lesson.id}/`)
     ? manifestVideo
     : undefined;
   const preserveVideo = lesson.type === "slides" && lesson.hasNarration && !ownedVideo;
+  const preserveVideoIssue = preserveVideo && !videoFailure;
+  const videoIssue = preserveVideo && videoFailure ? videoFailure.error : null;
   const videoPath =
     lesson.type === "slides" ? (lesson.hasNarration ? ownedVideo : undefined) : lesson.videoPath;
   lines.push(
     [
-      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, created_at, updated_at" : ""})`,
-      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${nowExpr()}, ${nowExpr()}` : ""}`,
+      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, video_issue, created_at, updated_at" : ""})`,
+      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${videoIssue === null ? "null" : strLit(videoIssue)}, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("sections")} s`,
       `where s.id = '${sectionUuid}'`,
       `on conflict (id) ${doUpdate(
@@ -405,7 +413,7 @@ function emitLesson(
           "assignment_id",
           "total_pages",
           "total_sec",
-          ...(isSqlite ? ["public"] : []),
+          ...(isSqlite ? ["public", ...(preserveVideoIssue ? [] : ["video_issue"])] : []),
         ],
         isSqlite ? { touch: "updated_at" } : {},
       )};`,

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { StageWithChildren, StageMaterialRow } from "@stella/shared/cms/types";
+import type { LessonRow, StageWithChildren, StageMaterialRow } from "@stella/shared/cms/types";
 import type { StaffStageTask } from "@stella/shared/tasks/staff-stage";
 import { SOLUTION_UNLOCK_ATTEMPTS } from "@stella/shared/tasks/help";
 import {
+  adjacentStageLessons,
+  lessonVideoStatus,
+  summarizeStageVideos,
   filterStaffStageTasks,
   groupStageSections,
   groupStageMaterials,
@@ -166,5 +169,112 @@ describe("ステージの前提と配布資料", () => {
     ]);
     expect(groups[1]?.lessons[0]?.materials).toEqual([rows[3]]);
     expect(rows.map((m) => m.id)).toEqual(["a", "b", "c", "d"]);
+  });
+});
+
+describe("教材動画とレッスンの並び", () => {
+  it.each([
+    ["text", "video.mp4", "失敗", "none"],
+    ["slides", "video.mp4", null, "published"],
+    ["slides", "video.mp4", "失敗", "stale"],
+    ["slides", null, "失敗", "missing"],
+    ["slides", null, null, "none"],
+  ] as const)("%s / %s / %s は %s", (type, video_path, video_issue, expected) => {
+    expect(lessonVideoStatus({ type, video_path, video_issue })).toBe(expected);
+  });
+  it("理由の省略も問題なしとして扱う", () => {
+    expect(lessonVideoStatus({ type: "slides", video_path: "video.mp4" })).toBe("published");
+    expect(lessonVideoStatus({ type: "slides", video_path: null })).toBe("none");
+  });
+  const lesson = (
+    id: string,
+    order: number,
+    video_path: string | null,
+    video_issue: string | null,
+  ): LessonRow => ({
+    id,
+    order,
+    video_path,
+    video_issue,
+    section_id: "s1",
+    title: id,
+    type: "slides",
+    duration_label: null,
+    pdf_path: null,
+    markdown: null,
+    assignment_id: null,
+    total_pages: null,
+    total_sec: null,
+    created_at: "",
+    updated_at: "",
+  });
+  const first = lesson("first", 1, "video.mp4", null);
+  const stale = lesson("stale", 2, "old.mp4", "失敗");
+  const missing = lesson("missing", 3, null, "失敗");
+  const last = lesson("last", 1, null, "失敗");
+  const stage: StageWithChildren = {
+    stage: {
+      id: "stage",
+      slug: "stage",
+      title: "Stage",
+      category: null,
+      color: null,
+      duration_hours: null,
+      description: null,
+      status: "published",
+      created_by: null,
+      created_at: "",
+      updated_at: "",
+    },
+    sections: [
+      {
+        section: { id: "s2", stage_id: "stage", title: "Second", order: 2, created_at: "" },
+        lessons: [last],
+      },
+      {
+        section: { id: "s1", stage_id: "stage", title: "First", order: 1, created_at: "" },
+        lessons: [
+          missing,
+          stale,
+          first,
+          lesson("no-script", 4, null, null),
+          { ...lesson("text", 5, "video.mp4", "失敗"), type: "text" },
+        ],
+      },
+    ],
+  };
+  it("単元・レッスンの順で最初の要確認を選び、対象だけを集計する", () => {
+    const before = structuredClone(stage);
+    expect(summarizeStageVideos(stage)).toEqual({
+      total: 4,
+      published: 1,
+      attention: 3,
+      firstAttentionLessonId: "stale",
+    });
+    expect(stage).toEqual(before);
+    expect(summarizeStageVideos({ ...stage, sections: [] })).toEqual({
+      total: 0,
+      published: 0,
+      attention: 0,
+      firstAttentionLessonId: null,
+    });
+    const section = stage.sections[0];
+    if (!section) throw new Error("単元がありません");
+    expect(
+      summarizeStageVideos({ ...stage, sections: [{ ...section, lessons: [first] }] }),
+    ).toEqual({ total: 1, published: 1, attention: 0, firstAttentionLessonId: null });
+  });
+  it("単元をまたいで前後を求め、先頭・末尾・不在は null にする", () => {
+    const before = structuredClone(stage);
+    expect(adjacentStageLessons(stage, "first")).toEqual({ previous: null, next: stale });
+    expect(adjacentStageLessons(stage, "stale")).toEqual({ previous: first, next: missing });
+    expect(adjacentStageLessons(stage, "text").next).toEqual(last);
+    expect(adjacentStageLessons(stage, "last").next).toBeNull();
+    expect(adjacentStageLessons(stage, "absent")).toEqual({ previous: null, next: null });
+    expect(adjacentStageLessons({ ...stage, sections: [] }, "first")).toEqual({
+      previous: null,
+      next: null,
+    });
+    expect(stage).toEqual(before);
   });
 });
