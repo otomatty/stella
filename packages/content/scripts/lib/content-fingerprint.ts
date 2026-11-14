@@ -47,6 +47,7 @@ export const SEED_INPUT_PATHS = [
   "packages/content/src/material-pdf.ts",
   "packages/content/src/material-video.ts",
   "packages/content/src/narration.ts",
+  "packages/content/src/narration-split.ts",
   "packages/content/src/video-timeline.ts",
   "packages/content/src/natural-order.mjs",
   "packages/content/src/parse-knowledge.ts",

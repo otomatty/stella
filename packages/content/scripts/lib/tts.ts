@@ -1,5 +1,5 @@
 /**
- * 教材動画の読み上げ (設計書の ② 読み上げ)。字幕 1 つにつき 1 回呼ぶ。
+ * 教材動画の読み上げ (設計書の ② 読み上げ)。プロバイダの単位 (字幕 / トピック) ごとに呼ぶ。
  *
  * プロバイダ:
  * - gemini    … Gemini 3.8 Flash TTS (既定。参考設計書と同じ interactions API)。GEMINI_API_KEY
@@ -11,7 +11,7 @@
  * - fake      … 推定長の小さな音 (鍵も Python も要らない。描画・同期・配信の確認用)
  *
  * 生の出力をローカルにキャッシュする (キー = プロバイダの識別子 + 読み上げ文)。
- * 字幕を 1 つ直すと呼び直すのはその字幕だけで、他の字幕は前と同じ音声のまま。
+ * 読み上げ文を直すと、その合成単位の音声だけを作り直す。
  */
 
 import { spawn } from "node:child_process";
@@ -43,6 +43,7 @@ export interface TtsAudio {
 }
 
 export interface TtsProvider {
+  readonly unit: "cue" | "topic";
   /** キャッシュキーに入る識別子。声・モデル・style が変われば変わる (= 全字幕を作り直す)。 */
   readonly identity: string;
   /** 同時に投げてよい数。 */
@@ -55,7 +56,76 @@ export interface TtsProvider {
 // ---------------------------------------------------------------- 共通
 
 /** 再試行してよい失敗 (回数制限・一時的な障害・通信)。 */
-export class RetryableError extends Error {}
+export class RetryableError extends Error {
+  constructor(
+    message: string,
+    readonly retryAfterSec?: number,
+  ) {
+    super(message);
+  }
+}
+
+/** 日次上限に達したため再試行できない失敗。 */
+export class QuotaExhaustedError extends Error {}
+
+/** Google API の割り当てエラーから、再試行の判断とログに必要な情報だけを拾う。 */
+export function parseQuotaError(body: string): {
+  daily: boolean;
+  retryAfterSec?: number;
+  description: string;
+} {
+  const fallback = { daily: false, description: body.slice(0, 200) };
+  const record = (value: unknown): Record<string, unknown> | undefined =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : undefined;
+  let data: unknown;
+  try {
+    data = JSON.parse(body);
+  } catch {
+    return fallback;
+  }
+  const error = record(record(data)?.error);
+  if (!error) return fallback;
+  let daily = false;
+  let retryAfterSec: number | undefined;
+  const quotas: string[] = [];
+  for (const item of Array.isArray(error.details) ? error.details : []) {
+    const detail = record(item);
+    if (detail?.["@type"] === "type.googleapis.com/google.rpc.QuotaFailure") {
+      for (const item of Array.isArray(detail.violations) ? detail.violations : []) {
+        const violation = record(item);
+        const id = typeof violation?.quotaId === "string" ? violation.quotaId : "";
+        const metric = typeof violation?.quotaMetric === "string" ? violation.quotaMetric : "";
+        daily ||= /perday/i.test(id) || /per_day/i.test(metric);
+        if (id) {
+          const value = violation?.quotaValue;
+          quotas.push(
+            typeof value === "string" || typeof value === "number" ? `${id}=${value}` : id,
+          );
+        }
+      }
+    }
+    if (
+      detail?.["@type"] === "type.googleapis.com/google.rpc.RetryInfo" &&
+      typeof detail.retryDelay === "string" &&
+      /^\d+(?:\.\d+)?s$/.test(detail.retryDelay)
+    ) {
+      const seconds = Number(detail.retryDelay.slice(0, -1));
+      if (Number.isFinite(seconds)) retryAfterSec = seconds;
+    }
+  }
+  return {
+    daily,
+    retryAfterSec,
+    description:
+      quotas.length > 0
+        ? quotas.join(", ")
+        : typeof error.message === "string"
+          ? error.message.slice(0, 200)
+          : fallback.description,
+  };
+}
 
 // 1 分あたりの回数制限が切り替わるまで待てるようにする。
 const BACKOFF_SEC = [1, 2, 4, 8, 16, 32, 64];
@@ -70,8 +140,9 @@ export async function withRetry<T>(
       return await fn();
     } catch (e) {
       if (!(e instanceof RetryableError) || attempt >= BACKOFF_SEC.length) throw e;
-      console.warn(`  ${label}: ${e.message} — ${BACKOFF_SEC[attempt]} 秒後に再試行`);
-      await sleep(BACKOFF_SEC[attempt] * 1000);
+      const waitSec = Math.min(120, Math.max(BACKOFF_SEC[attempt], e.retryAfterSec ?? 0));
+      console.warn(`  ${label}: ${e.message} — ${waitSec} 秒後に再試行`);
+      await sleep(waitSec * 1000);
     }
   }
 }
@@ -83,7 +154,16 @@ async function checkedFetch(label: string, url: string, init: RequestInit): Prom
   } catch (e) {
     throw new RetryableError(`${label}: 通信に失敗しました (${(e as Error).message})`);
   }
-  if (res.status === 429 || res.status >= 500) {
+  if (res.status === 429) {
+    const quota = parseQuotaError(await res.text());
+    if (quota.daily) {
+      throw new QuotaExhaustedError(
+        `${label}: HTTP 429 1 日の上限に達しました (${quota.description})`,
+      );
+    }
+    throw new RetryableError(`${label}: HTTP 429 (${quota.description})`, quota.retryAfterSec);
+  }
+  if (res.status >= 500) {
     throw new RetryableError(`${label}: HTTP ${res.status}`);
   }
   if (!res.ok) {
@@ -148,12 +228,15 @@ function geminiProvider(cfg: VoiceConfig): TtsProvider {
   const model = cfg.model ?? "gemini-3.8-flash-tts";
   const voice = cfg.voice ?? "Charon";
   const style = cfg.style ?? "";
+  let quotaExhausted: QuotaExhaustedError | undefined;
   return {
+    unit: "topic",
     identity: `gemini/${model}/${voice}/${style}`,
     // ponytail: 1 分におよそ 12 回の制限がある間は 1 つずつ合成する。上限が上がったら同時実行数を増やす。
     concurrency: 1,
     nondeterministic: true,
     async synthesize(speech) {
+      if (quotaExhausted) throw quotaExhausted;
       const key = requireEnv(
         "GEMINI_API_KEY",
         "鍵なしで試すときは --tts openjtalk か --tts fake を付けてください",
@@ -180,7 +263,10 @@ function geminiProvider(cfg: VoiceConfig): TtsProvider {
             generation_config: { speech_config: [{ voice }] },
           }),
         }),
-      );
+      ).catch((error: unknown) => {
+        if (error instanceof QuotaExhaustedError) quotaExhausted = error;
+        throw error;
+      });
       const audio = geminiAudioField(await res.json());
       if (!audio) throw new Error("gemini: 応答に音声がありません");
       const bytes = new Uint8Array(Buffer.from(audio, "base64"));
@@ -209,6 +295,7 @@ function grokProvider(cfg: VoiceConfig): TtsProvider {
   const voice = cfg.voice ?? "eve";
   const lang = cfg.lang ?? "ja";
   return {
+    unit: "cue",
     identity: `grok/${model}/${voice}/${lang}`,
     concurrency: 4,
     nondeterministic: true,
@@ -245,6 +332,7 @@ function openjtalkProvider(cfg: VoiceConfig): TtsProvider {
   const speed = cfg.speed ?? 1.1;
   const script = join(here, "..", "tts", "openjtalk_tts.py");
   return {
+    unit: "cue",
     identity: `openjtalk/${speed}`,
     concurrency: 4,
     nondeterministic: false,
@@ -280,6 +368,7 @@ function openjtalkProvider(cfg: VoiceConfig): TtsProvider {
 
 function fakeProvider(): TtsProvider {
   return {
+    unit: "cue",
     identity: "fake/1",
     concurrency: 8,
     nondeterministic: false,

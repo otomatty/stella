@@ -150,6 +150,7 @@ export async function putAll(
   client: R2Client,
   entries: Array<{ key: string; file: string; contentType: string }>,
   concurrency: number,
+  options?: { exitOnFailure?: boolean },
 ): Promise<void> {
   const failures: string[] = [];
   let next = 0;
@@ -190,6 +191,7 @@ export async function putAll(
     console.error(
       `\nR2 へのアップロードが ${failures.length} 件失敗しました:\n${failures.join("\n")}`,
     );
-    process.exit(1);
+    if (options?.exitOnFailure !== false) process.exit(1);
+    throw new Error(`R2 へのアップロードが ${failures.length} 件失敗しました`);
   }
 }

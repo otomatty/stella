@@ -3,7 +3,7 @@
   "gemini": {
     "model": "gemini-3.8-flash-tts",
     "voice": "Charon",
-    "style": "落ち着いた研修講師として、はっきり、ややゆっくり"
+    "style": "落ち着いた研修講師として、はっきり、ややゆっくり。段落と段落の間は 1 秒ほど間を空ける"
   },
   "grok": {
     "model": "xai/grok-tts",

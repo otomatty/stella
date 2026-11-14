@@ -5,7 +5,7 @@
  *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake --captioned
  *
  * 対象は `narration.json` を持つトピックだけ。トピックごとに:
- *   ② 読み上げ   字幕ごとに TTS (dist/video-cache/tts にキャッシュ)
+ *   ② 読み上げ   Gemini はトピックごと、他は字幕ごとに TTS (dist/video-cache/tts にキャッシュ)
  *   ③ 同期       無音を削った音声の長さから timeline を決める
  *   ④ 描画       アプリと同じ slides-skin.css のスライドを Playwright で 1920x1080 に撮る
  *   ⑤ 書き出し   ffmpeg で video.mp4 (字幕は焼き込まない) + captions.vtt + poster.jpg
@@ -42,6 +42,7 @@ import {
   slideHeading,
   speechOf,
 } from "../src/narration.js";
+import { splitNarration, trimSilence } from "../src/narration-split.js";
 import { splitSlides } from "../src/split-slides.js";
 import {
   buildTimeline,
@@ -55,6 +56,7 @@ import {
 import {
   AUDIO_RATE,
   concatAndMux,
+  decodePcm,
   decodeTrimmedPcm,
   encodeNarration,
   encodeStill,
@@ -208,7 +210,12 @@ interface TopicReport {
   anomalies: string[];
 }
 
-function sourceHashOf(topic: VideoTopic, cues: CuePlan[], voice: VoiceConfig): string {
+function sourceHashOf(
+  topic: VideoTopic,
+  cues: CuePlan[],
+  voice: VoiceConfig,
+  provider: TtsProvider,
+): string {
   const h = createHash("sha256");
   h.update(
     JSON.stringify({
@@ -219,6 +226,7 @@ function sourceHashOf(topic: VideoTopic, cues: CuePlan[], voice: VoiceConfig): s
       narration: topic.narration,
       readings: topic.readings,
       voice,
+      ttsUnit: provider.unit,
       css: readFileSync(
         resolve(contentRoot, "../../apps/web/src/components/learner/slides-skin.css"),
         "utf8",
@@ -339,24 +347,59 @@ async function buildTopic(
 
   // ③ 同期: 無音を削った音声の長さを測る。
   let t0 = Date.now();
-  const pcms = await mapPool(cues, 4, async (cue) => {
-    let pcm = await decodeTrimmedPcm(cue.file ?? "");
-    const estimate = estimateSpeechSeconds(cue.speech);
-    let ratio = pcm.length / AUDIO_RATE / estimate;
-    if ((ratio < AUDIO_RATIO_MIN || ratio > AUDIO_RATIO_MAX) && provider.nondeterministic) {
-      const redo = await synthesizeCached(provider, cue.speech, cacheDir, true);
-      pcm = await decodeTrimmedPcm(redo.file);
-      ratio = pcm.length / AUDIO_RATE / estimate;
+  let pcms: Int16Array[];
+  if (provider.unit === "topic") {
+    const speech = cues.map((c) => c.speech).join("\n\n");
+    const weights = cues.map((c) => estimateSpeechSeconds(c.speech));
+    let file = cues[0]?.file ?? "";
+    pcms = [];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const pcm = await decodePcm(file);
+      const split = splitNarration(pcm, AUDIO_RATE, weights);
+      const problems: string[] = [];
+      if (!split.ok) {
+        problems.push(split.reason);
+      } else {
+        pcms = split.segments.map(({ start, end }) =>
+          trimSilence(pcm.subarray(start, end), AUDIO_RATE),
+        );
+        for (let k = 0; k < cues.length; k++) {
+          const seconds = pcms[k].length / AUDIO_RATE;
+          const ratio = seconds / weights[k];
+          if (ratio < AUDIO_RATIO_MIN || ratio > AUDIO_RATIO_MAX) {
+            const cue = cues[k];
+            problems.push(
+              `slide ${cue.slide + 1} cue ${cue.index + 1}: 音声 ${seconds.toFixed(2)} 秒 / 推定 ${weights[k].toFixed(2)} 秒`,
+            );
+          }
+        }
+      }
+      if (problems.length === 0) break;
+      if (attempt === 1) {
+        throw new Error(`${label}: 音声の分割・長さの検査に失敗しました — ${problems.join(" / ")}`);
+      }
+      file = (await synthesizeCached(provider, speech, cacheDir, true)).file;
     }
-    if (ratio < AUDIO_RATIO_MIN || ratio > AUDIO_RATIO_MAX) {
-      anomalies.push(
-        `slide ${cue.slide + 1} cue ${cue.index + 1}: 音声 ${(pcm.length / AUDIO_RATE).toFixed(2)} 秒 / 推定 ${estimate.toFixed(2)} 秒`,
-      );
+  } else {
+    pcms = await mapPool(cues, 4, async (cue) => {
+      let pcm = await decodeTrimmedPcm(cue.file ?? "");
+      const estimate = estimateSpeechSeconds(cue.speech);
+      let ratio = pcm.length / AUDIO_RATE / estimate;
+      if ((ratio < AUDIO_RATIO_MIN || ratio > AUDIO_RATIO_MAX) && provider.nondeterministic) {
+        const redo = await synthesizeCached(provider, cue.speech, cacheDir, true);
+        pcm = await decodeTrimmedPcm(redo.file);
+        ratio = pcm.length / AUDIO_RATE / estimate;
+      }
+      if (ratio < AUDIO_RATIO_MIN || ratio > AUDIO_RATIO_MAX) {
+        anomalies.push(
+          `slide ${cue.slide + 1} cue ${cue.index + 1}: 音声 ${(pcm.length / AUDIO_RATE).toFixed(2)} 秒 / 推定 ${estimate.toFixed(2)} 秒`,
+        );
+      }
+      return pcm;
+    });
+    if (anomalies.length > 0 && provider.nondeterministic) {
+      throw new Error(`${label}: 音声の長さが異常です — ${anomalies.join(" / ")}`);
     }
-    return pcm;
-  });
-  if (anomalies.length > 0 && provider.nondeterministic) {
-    throw new Error(`${label}: 音声の長さが異常です — ${anomalies.join(" / ")}`);
   }
   const headings = slidesHeadings(topic);
   const timeline: Timeline = buildTimeline(
@@ -591,7 +634,7 @@ function outputFiles(captioned: boolean, recorded: boolean): string[] {
 export async function buildVideos(
   args: string[] = [],
   skip: (plan: VideoPlan) => boolean = () => false,
-): Promise<TopicReport[]> {
+): Promise<{ reports: TopicReport[]; failures: string[] }> {
   function argValue(name: string): string | null {
     const i = args.indexOf(name);
     return i !== -1 && args[i + 1] ? args[i + 1] : null;
@@ -648,7 +691,8 @@ export async function buildVideos(
       topic,
       cues,
       recorded: source.kind === "recorded",
-      sourceHash: source.kind === "recorded" ? source.sourceHash : sourceHashOf(topic, cues, voice),
+      sourceHash:
+        source.kind === "recorded" ? source.sourceHash : sourceHashOf(topic, cues, voice, provider),
       warnings: issues.filter((i) => i.level === "warning").map((i) => formatIssue("", i).slice(2)),
     });
   }
@@ -677,39 +721,80 @@ export async function buildVideos(
   );
   console.log(`  ${await ffmpegVersion()}`);
 
-  // ② 読み上げ (全トピックの字幕をまとめて並列に)。同じ読み上げ文は 1 回だけ合成する。
-  // 失敗はトピック単位で数える — 1 つの字幕が再試行しても通らなくても、
-  // 他のトピックの動画は作る。
-  const allCues = pending.flatMap((p) => p.cues);
-  const unique = [...new Map(allCues.map((c) => [c.hash, c.speech])).entries()];
+  // ② 読み上げ。同じ読み上げ文はプロバイダの合成単位ごとに 1 回だけ合成する。
   const ttsStart = Date.now();
-  let synthesized = 0;
-  const files = new Map<string, string>();
-  const ttsErrors = new Map<string, string>();
-  await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
-    try {
-      const res = await synthesizeCached(provider, speech, cacheDir);
-      files.set(hash, res.file);
-      if (!res.cached) synthesized++;
-    } catch (e) {
-      ttsErrors.set(hash, (e as Error).message.split("\n")[0]);
+  let ttsMs: number;
+  let buildable: typeof pending;
+  if (provider.unit === "topic") {
+    const generated = pending.filter((p) => !p.recorded);
+    const entries = generated.map((plan) => {
+      const speech = plan.cues.map((c) => c.speech).join("\n\n");
+      return { plan, speech, hash: cueHash(provider.identity, speech) };
+    });
+    const unique = [...new Map(entries.map(({ hash, speech }) => [hash, speech])).entries()];
+    const files = new Map<string, string>();
+    const errors = new Map<string, string>();
+    let synthesized = 0;
+    await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
+      try {
+        const res = await synthesizeCached(provider, speech, cacheDir);
+        files.set(hash, res.file);
+        if (!res.cached) synthesized++;
+      } catch (e) {
+        errors.set(hash, (e as Error).message.split("\n")[0]);
+      }
+    });
+    const failed = new Set<(typeof pending)[number]>();
+    for (const { plan, hash } of entries) {
+      if (errors.has(hash)) {
+        failed.add(plan);
+        const label = `${plan.topic.stageSlug}/${plan.topic.id}`;
+        failures.push(`${label}: 読み上げに失敗しました (${errors.get(hash)})`);
+        console.warn(`  ✗ ${label}: 読み上げに失敗したので作りません`);
+      } else {
+        for (const cue of plan.cues) cue.file = files.get(hash);
+      }
     }
-  });
-  for (const cue of allCues) cue.file = files.get(cue.hash);
-  const ttsMs = Date.now() - ttsStart;
-  console.log(
-    `  TTS: ${allCues.length} cues / ${unique.length} unique (${synthesized} synthesized, ${ttsErrors.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
-  );
-  const buildable = pending.filter(({ topic, cues }) => {
-    const failed = cues.find((c) => ttsErrors.has(c.hash));
-    if (!failed) return true;
-    const label = `${topic.stageSlug}/${topic.id}`;
-    failures.push(
-      `${label}: 読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
+    ttsMs = Date.now() - ttsStart;
+    const cueCount = generated.reduce((n, p) => n + p.cues.length, 0);
+    console.log(
+      `  TTS: ${generated.length} topics / ${cueCount} cues (${synthesized} synthesized, ${failed.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
     );
-    console.warn(`  ✗ ${label}: 読み上げに失敗した字幕があるので作りません`);
-    return false;
-  });
+    buildable = pending.filter((p) => !failed.has(p));
+  } else {
+    // ② 読み上げ (全トピックの字幕をまとめて並列に)。同じ読み上げ文は 1 回だけ合成する。
+    // 失敗はトピック単位で数える — 1 つの字幕が再試行しても通らなくても、
+    // 他のトピックの動画は作る。
+    const allCues = pending.flatMap((p) => p.cues);
+    const unique = [...new Map(allCues.map((c) => [c.hash, c.speech])).entries()];
+    let synthesized = 0;
+    const files = new Map<string, string>();
+    const ttsErrors = new Map<string, string>();
+    await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
+      try {
+        const res = await synthesizeCached(provider, speech, cacheDir);
+        files.set(hash, res.file);
+        if (!res.cached) synthesized++;
+      } catch (e) {
+        ttsErrors.set(hash, (e as Error).message.split("\n")[0]);
+      }
+    });
+    for (const cue of allCues) cue.file = files.get(cue.hash);
+    ttsMs = Date.now() - ttsStart;
+    console.log(
+      `  TTS: ${allCues.length} cues / ${unique.length} unique (${synthesized} synthesized, ${ttsErrors.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
+    );
+    buildable = pending.filter(({ topic, cues }) => {
+      const failed = cues.find((c) => ttsErrors.has(c.hash));
+      if (!failed) return true;
+      const label = `${topic.stageSlug}/${topic.id}`;
+      failures.push(
+        `${label}: 読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
+      );
+      console.warn(`  ✗ ${label}: 読み上げに失敗した字幕があるので作りません`);
+      return false;
+    });
+  }
 
   const reports: TopicReport[] = [];
   for (const { topic, sourceHash, warnings } of buildable.filter((p) => p.recorded)) {
@@ -771,14 +856,19 @@ export async function buildVideos(
 
   if (failures.length > 0) {
     console.error(`✗ ${failures.length} topics failed:\n  ${failures.join("\n  ")}`);
-    throw new Error(`${failures.length} topics failed`);
   }
-  return allReports.filter((r) =>
-    plans.some(
-      ({ topic, sourceHash }) =>
-        topic.stageSlug === r.stageSlug && topic.id === r.id && sourceHash === r.sourceHash,
+  return {
+    reports: allReports.filter((r) =>
+      plans.some(
+        ({ topic, sourceHash }) =>
+          topic.stageSlug === r.stageSlug && topic.id === r.id && sourceHash === r.sourceHash,
+      ),
     ),
-  );
+    failures,
+  };
 }
 
-if (import.meta.main) await buildVideos(process.argv.slice(2));
+if (import.meta.main) {
+  const { failures } = await buildVideos(process.argv.slice(2));
+  if (failures.length > 0) process.exitCode = 1;
+}
