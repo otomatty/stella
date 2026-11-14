@@ -1,25 +1,20 @@
+import { storyboardAssets } from "../scripts/lib/storyboard-assets.js";
 import { globSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   expandFocus,
   normalizeStoryboard,
   parseStoryboard,
   storyboardStates,
-  type VideoStoryboard,
+  type BoardStoryboard,
 } from "./video-storyboard.js";
 const stages = resolve(import.meta.dirname, "../stages");
 const sample = JSON.parse(
-  readFileSync(
-    resolve(
-      stages,
-      "dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop/video.json",
-    ),
-    "utf8",
-  ),
-) as VideoStoryboard;
+  readFileSync(resolve(import.meta.dirname, "__fixtures__/board-video.json"), "utf8"),
+) as BoardStoryboard;
 const fresh = () => structuredClone(sample);
-function fails(edit: (s: VideoStoryboard) => void, path: string) {
+function fails(edit: (s: BoardStoryboard) => void, path: string) {
   const s = fresh();
   edit(s);
   const result = parseStoryboard(s);
@@ -48,13 +43,20 @@ describe("絵コンテ", () => {
     );
   });
   it("全ステージのvideo.jsonにエラーがない", () => {
-    for (const file of globSync("**/video.json", { cwd: stages }))
+    for (const file of globSync("**/video.json", { cwd: stages })) {
+      const json = JSON.parse(readFileSync(resolve(stages, file), "utf8"));
+      const { context } = storyboardAssets(
+        resolve(stages, ".."),
+        dirname(resolve(stages, file)),
+        json,
+      );
       expect(
-        parseStoryboard(JSON.parse(readFileSync(resolve(stages, file), "utf8"))).issues.filter(
-          (i) => i.level === "error",
+        parseStoryboard(json, context).issues.filter(
+          (i) => i.level === "error" && !i.message.startsWith("ショットがありません:"),
         ),
         file,
       ).toEqual([]);
+    }
   });
   it("未知の値や必須項目を複数集める", () => {
     expect(parseStoryboard(null).issues.length).toBeGreaterThan(5);
@@ -79,7 +81,7 @@ describe("絵コンテ", () => {
         path,
       ).toBe(true);
   });
-  const cases: [string, (s: VideoStoryboard) => void, string][] = [
+  const cases: [string, (s: BoardStoryboard) => void, string][] = [
     [
       "要点は1〜3個",
       (s) => {

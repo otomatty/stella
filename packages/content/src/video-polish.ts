@@ -1,7 +1,11 @@
+import { SHOT_GROUPS } from "./scene-view.js";
 /** 台本校正の要求・応答・採否。ファイルや通信には依存しない。 */
 import { createHash } from "node:crypto";
 import {
   parseStoryboard,
+  storyboardStates,
+  type ViewBeat,
+  type ViewSceneState,
   type Beat,
   type Board,
   type Issue,
@@ -78,6 +82,36 @@ function labelsOf(board: Board): string[] {
     el.label ? [el.label] : [],
   );
 }
+function allLabels(sb: VideoStoryboard): string[] {
+  return [
+    ...new Set([
+      ...Object.values(sb.boards ?? {}).flatMap(labelsOf),
+      ...sb.scenes.flatMap((s) =>
+        s.kind === "view" ? s.beats.flatMap((b) => b.label?.map((l) => l.text) ?? []) : [],
+      ),
+      ...sb.scenes.flatMap((s) =>
+        s.kind === "view"
+          ? [s.image, ...s.beats.flatMap((b) => (b.image ? [b.image] : []))].flatMap((img) => {
+              const group = img.startsWith("shot:")
+                ? SHOT_GROUPS[img.slice(5).split("/")[0]]
+                : undefined;
+              return group ? [group.label] : [];
+            })
+          : [],
+      ),
+    ]),
+  ];
+}
+function viewPicture(image: string, beat: ViewBeat): string[] {
+  const group = image.startsWith("shot:") ? SHOT_GROUPS[image.slice(5).split("/")[0]] : undefined;
+  return [
+    `画面: ${group ? `${group.label} の画面 (${image.slice(5)})` : image}`,
+    ...(beat.spot?.length ? [`囲む: ${beat.spot.join("、")}`] : []),
+    ...(beat.zoom ? [`寄る: ${beat.zoom}`] : []),
+    ...(beat.label?.length ? [`札: ${beat.label.map((l) => l.text).join("、")}`] : []),
+    ...(beat.click ? [`押す: ${beat.click}`] : []),
+  ];
+}
 function pictureOf(board: Board, beat: Beat): string[] {
   const nodeLabel = (id: string) => board.nodes.find((n) => n.id === id)?.label ?? "不明なノード";
   const linkLabel = (id: string) => {
@@ -121,21 +155,26 @@ repeats-picture: 絵を見れば分かることの繰り返し
 off-point: 学習設計 brief.points に無い話
 
 意味を変えず、事実や数字を足さないでください。画面のラベルと同じ言葉は言い換えないでください。
-1文40字まで、です・ます調の話し言葉にし、括弧や記号を使わず、文末に句点か疑問符を1つ置いてください。
+1文40字まで、です・ます調の話し言葉にし、ボタンの名前の「」以外の括弧や記号を使わず、文末に句点か疑問符を1つ置いてください。
 直す必要のない文はそのまま keep にしてください。全部を書き換えないでください。
 全IDについて1件ずつ lines を返してください。rewrite のときは rewrite に言い換えの全文を必ず入れ、cut は削除の提案にしてください。
 kinds は上記6種類から選び、reason は日本語にしてください。summary は全体の講評を2〜3文で、missing は points のうち伝わっていないもの、offPoint は points に無いのに話していることを挙げてください。`;
+  const states = storyboardStates(storyboard);
+  const boards = storyboard.boards ?? {};
   const user = JSON.stringify(
     {
       brief: storyboard.brief,
-      labels: [...new Set(Object.values(storyboard.boards).flatMap(labelsOf))],
-      scenes: storyboard.scenes.map((scene) => ({
+      labels: allLabels(storyboard),
+      scenes: storyboard.scenes.map((scene, si) => ({
         role: scene.role,
         title: scene.title,
         lines: scene.beats.map((beat, i) => ({
           id: `${scene.id}#${i + 1}`,
           say: beat.say,
-          picture: pictureOf(storyboard.boards[scene.board], beat),
+          picture:
+            scene.kind === "view"
+              ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
+              : pictureOf(boards[scene.board], beat as Beat),
         })),
       })),
     },
@@ -218,7 +257,7 @@ export function judgeRewrites(
     storyboard.brief.stuck,
     ...storyboard.brief.points,
     ...storyboard.brief.leaveOut,
-    ...Object.values(storyboard.boards).flatMap(labelsOf),
+    ...allLabels(storyboard),
   ];
   const tokens = (s: string, regex: RegExp) => s.match(regex) ?? [];
   return linesOf(storyboard).map(({ id, beat, sceneIndex, beatIndex }) => {

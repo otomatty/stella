@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { estimateSpeechSeconds } from "../src/narration.js";
-import type { Scene, VideoStoryboard } from "../src/video-storyboard.js";
+import type { Scene, BoardStoryboard } from "../src/video-storyboard.js";
 import type { TtsProvider } from "./lib/tts.js";
 
 vi.mock("playwright", () => ({ chromium: { launch: vi.fn() } }));
@@ -29,11 +31,8 @@ import { argumentsOf, buildSceneVideos, sceneAudio } from "./build-scene-video.j
 import { AUDIO_RATE, decodePcm, decodeTrimmedPcm } from "./lib/ffmpeg.js";
 import { collectNarrationTopics } from "./lib/narration-topics.js";
 import { createTtsProvider, synthesizeCached } from "./lib/tts.js";
-const videoFile = new URL(
-  "../stages/dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop/video.json",
-  import.meta.url,
-);
-const sample = JSON.parse(readFileSync(videoFile, "utf8")) as VideoStoryboard;
+const videoFile = new URL("../src/__fixtures__/board-video.json", import.meta.url);
+const sample = JSON.parse(readFileSync(videoFile, "utf8")) as BoardStoryboard;
 const scene = sample.scenes[0];
 const pcmFor = (scene: Scene) =>
   new Int16Array(
@@ -123,4 +122,93 @@ describe("場面音声の作り直し", () => {
     await sceneAudio(singleBeat, {}, provider("topic"), "/tmp/fixture-cache");
     expect(vi.mocked(synthesizeCached).mock.calls[0][3]).toBe(false);
   });
+});
+
+describe("素材不足の書き出し", () => {
+  it("stills も art が無ければ Chromium と TTS の前に止める", async () => {
+    const topicDir = mkdtempSync(join(tmpdir(), "stella-missing-art-"));
+    try {
+      const sb = structuredClone(sample);
+      sb.art = { read: { prompt: "Learner" } };
+      sb.boards.main.nodes[0].art = "read";
+      writeFileSync(join(topicDir, "video.json"), JSON.stringify(sb));
+      vi.mocked(collectNarrationTopics).mockReturnValue([
+        { topicDir, stageSlug: "fixture", id: "fixture", readings: {} } as ReturnType<
+          typeof collectNarrationTopics
+        >[number],
+      ]);
+      await expect(buildSceneVideos(["fixture", "--stills"])).rejects.toThrow(
+        "イラストがまだありません",
+      );
+      expect(chromium.launch).not.toHaveBeenCalled();
+      expect(createTtsProvider).not.toHaveBeenCalled();
+      expect(synthesizeCached).not.toHaveBeenCalled();
+    } finally {
+      rmSync(topicDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("はみ出しがある場合の書き出し", () => {
+  for (const stills of [true, false])
+    it(
+      stills ? "静止画と一覧をすべて書いた後にエラーを返す" : "動画は画像や音声を作る前に止める",
+      async () => {
+        const topicDir = mkdtempSync(join(tmpdir(), "stella-overflow-"));
+        const exitCode = process.exitCode;
+        const events: string[] = [];
+        const report = vi.spyOn(console, "error").mockImplementation((message) => {
+          events.push(String(message));
+        });
+        try {
+          writeFileSync(join(topicDir, "video.json"), JSON.stringify(sample));
+          vi.mocked(collectNarrationTopics).mockReturnValue([
+            { topicDir, stageSlug: "fixture", id: "fixture", readings: {} } as ReturnType<
+              typeof collectNarrationTopics
+            >[number],
+          ]);
+          const screenshot = vi.fn(async ({ path }: { path: string }) => {
+            writeFileSync(path, "fixture");
+            events.push(path);
+          });
+          const page = {
+            route: vi.fn(),
+            on: vi.fn(),
+            off: vi.fn(),
+            goto: vi.fn(),
+            screenshot,
+            evaluate: vi.fn(async (callback: unknown) =>
+              String(callback).includes("__overflows") ? ["読む", "書く"] : undefined,
+            ),
+          };
+          const browser = {
+            newContext: vi.fn(async () => ({ newPage: vi.fn(async () => page), close: vi.fn() })),
+            close: vi.fn(),
+          };
+          vi.mocked(chromium.launch).mockResolvedValue(
+            browser as unknown as Awaited<ReturnType<typeof chromium.launch>>,
+          );
+          await buildSceneVideos([
+            "fixture",
+            "--out",
+            join(topicDir, "out"),
+            ...(stills ? ["--stills"] : ["--tts", "fake"]),
+          ]);
+          expect(process.exitCode).toBe(1);
+          expect(report).toHaveBeenCalledWith(expect.stringContaining("文字のはみ出し"));
+          expect(synthesizeCached).not.toHaveBeenCalled();
+          if (stills) {
+            const count = sample.scenes.reduce((n, scene) => n + scene.beats.length, 0);
+            expect(screenshot).toHaveBeenCalledTimes(count + 1);
+            expect(events.at(-2)).toContain("contact-sheet.png");
+            expect(events.at(-1)).toContain("文字のはみ出し");
+            for (const scene of sample.scenes) expect(events.at(-1)).toContain(`${scene.id}: 読む`);
+          } else expect(screenshot).not.toHaveBeenCalled();
+        } finally {
+          process.exitCode = exitCode;
+          report.mockRestore();
+          rmSync(topicDir, { recursive: true, force: true });
+        }
+      },
+    );
 });

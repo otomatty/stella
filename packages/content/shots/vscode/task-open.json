@@ -1,0 +1,14 @@
+{
+  "source": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4@12",
+  "width": 1600,
+  "height": 1000,
+  "regions": {
+    "explorer": [62, 48, 372, 912],
+    "editor": [440, 84, 578, 876],
+    "code": [476, 112, 490, 304],
+    "panel": [1022, 84, 568, 876],
+    "status-check": [146, 968, 126, 30],
+    "guide-check": [1070, 572, 470, 176],
+    "check-button": [1108, 605, 140, 30]
+  }
+}

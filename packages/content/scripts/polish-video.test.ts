@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sayHash, type PolishResponse } from "../src/video-polish.js";
-import type { VideoStoryboard } from "../src/video-storyboard.js";
+import type { BoardStoryboard } from "../src/video-storyboard.js";
 
 const fixture = vi.hoisted(() => ({
   root: "",
@@ -24,18 +24,12 @@ vi.mock("./lib/narration-topics.js", () => ({
 import { polishVideo } from "./polish-video.js";
 
 const sample = JSON.parse(
-  readFileSync(
-    new URL(
-      "../stages/dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop/video.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-) as VideoStoryboard;
+  readFileSync(new URL("../src/__fixtures__/board-video.json", import.meta.url), "utf8"),
+) as BoardStoryboard;
 const root = mkdtempSync(join(tmpdir(), "stella-polish-test-"));
 const video = join(root, "topic/video.json"),
   report = join(root, "dist/video-polish/fixture/topic.json");
-const readVideo = () => JSON.parse(readFileSync(video, "utf8")) as VideoStoryboard;
+const readVideo = () => JSON.parse(readFileSync(video, "utf8")) as BoardStoryboard;
 const readReport = () => JSON.parse(readFileSync(report, "utf8"));
 let response: PolishResponse;
 let fetchMock: ReturnType<typeof vi.fn>;

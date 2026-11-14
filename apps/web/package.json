@@ -12,7 +12,8 @@
     "typecheck": "tsc -b --noEmit",
     "tutorials": "bun scripts/tutorials/run.ts",
     "tutorials:vscode": "bun scripts/tutorials/vscode/run.ts",
-    "tutorials:check": "bun scripts/tutorials/check.ts"
+    "tutorials:check": "bun scripts/tutorials/check.ts",
+    "tutorials:shots": "bun scripts/tutorials/shots.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

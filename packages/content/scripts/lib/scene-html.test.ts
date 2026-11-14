@@ -2,17 +2,11 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { sceneTimelines } from "../../src/scene-timeline.js";
-import { storyboardStates, type VideoStoryboard } from "../../src/video-storyboard.js";
+import { storyboardStates, type BoardStoryboard } from "../../src/video-storyboard.js";
 import { sceneHtml, type ScenePageWindow } from "./scene-html.js";
 const sample = JSON.parse(
-  readFileSync(
-    new URL(
-      "../../stages/dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop/video.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-) as VideoStoryboard;
+  readFileSync(new URL("../../src/__fixtures__/board-video.json", import.meta.url), "utf8"),
+) as BoardStoryboard;
 function page(index: number, sb = sample) {
   const states = storyboardStates(sb),
     timelines = sceneTimelines(
@@ -279,4 +273,28 @@ describe("場面HTMLの時刻による描画", () => {
     expect(html).not.toMatch(/requestAnimationFrame|setInterval|Date\.now|transition:/);
     expect(html).toContain("file://");
   });
+});
+
+it("イラストの上端からラベルの72px枠の上までを画像に使う", () => {
+  const sb = structuredClone(sample);
+  sb.art = { read: { prompt: "Learner" } };
+  sb.boards.main.nodes[0].art = "read";
+  const html = page(0, sb).html;
+  const node = /<g id="element-read">([\s\S]*?)<g class="mark">/.exec(html)?.[1] ?? "";
+  const image = /<image [^>]*y="([\d.]+)"[^>]*height="([\d.]+)"/.exec(node);
+  const box = JSON.parse(/data-fit='([^']+)'/.exec(node)?.[1] ?? "{}");
+  expect(box.h).toBe(72);
+  expect(Number(image?.[1]) + Number(image?.[2])).toBe(box.y);
+  const cardY = Number(/<rect [^>]*y="([\d.]+)"/.exec(node)?.[1]);
+  expect(Number(image?.[1]) - cardY).toBe(8);
+});
+
+it("1行のノードとリンクのラベル枠は文字サイズの1.5倍以上ある", () => {
+  const { html } = page(4);
+  for (const match of html.matchAll(
+    /<text data-fit='([^']+)'[^>]*font-size="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g,
+  )) {
+    if ((match[3].match(/<tspan/g) ?? []).length !== 1) continue;
+    expect(JSON.parse(match[1]).h).toBeGreaterThanOrEqual(Number(match[2]) * 1.5);
+  }
 });

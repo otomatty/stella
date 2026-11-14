@@ -5,13 +5,15 @@ import {
   normalizeStoryboard,
   type Board,
   type BoardState,
+  type ViewState,
   type Scene,
 } from "../../src/video-storyboard.js";
-export interface SceneCacheInput {
+export interface SceneCacheInput<S extends Scene = Scene, T = BoardState | ViewState> {
   version: number;
   board: Board;
-  start: BoardState;
-  scene: Scene;
+  start: T;
+  assets?: Record<string, string>;
+  scene: S;
   timing: SceneTimeline;
   /** 場面内の時刻だけを含む HTML。全体の開始時刻は描画に使わない。 */
   html: string;

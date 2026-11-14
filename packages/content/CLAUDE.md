@@ -102,7 +102,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
-**新方式 (試作中):** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとの動く図解をつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。書き方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。いまは `dev-env-basics` の `00-1-1` だけが `video.json` を持ち、デプロイの動画生成 (`video:sync`) にはまだつないでいません。以下はスライドを映す現行の方式の説明です。
+**新方式 (試作中):** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際の画面の静止画 (`packages/content/shots/`) を主役にし、概念図にはイラスト (`assets/art/`) を付けます。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。いまは `dev-env-basics` の `00-1-1` だけが `video.json` を持ち、デプロイの動画生成 (`video:sync`) にはまだつないでいません。以下はスライドを映す現行の方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 

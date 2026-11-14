@@ -1,17 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { layoutBoard, segmentHits, travelPoint, linkPath } from "./scene-layout.js";
-import type { Board, VideoStoryboard } from "./video-storyboard.js";
+import type { Board, BoardStoryboard } from "./video-storyboard.js";
 const board = (
   JSON.parse(
-    readFileSync(
-      new URL(
-        "../stages/dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop/video.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  ) as VideoStoryboard
+    readFileSync(new URL("./__fixtures__/board-video.json", import.meta.url), "utf8"),
+  ) as BoardStoryboard
 ).boards.main;
 describe("図解の配置", () => {
   it("試作の全矢印がノードを突き抜けず、直交経路になる", () => {
@@ -105,4 +99,52 @@ describe("図解の配置", () => {
     expect(travelPoint(paths, 0.5)).toEqual({ x: 10, y: 10 });
     expect(travelPoint(paths, 1)).toEqual({ x: 10, y: 30 });
   });
+});
+
+describe("同じ行の下を回る矢印", () => {
+  for (const art of [true, false])
+    it(`${art ? "イラスト" : "アイコン"}のカードから56px離し、下辺の中央へ入る`, () => {
+      const board: Board = {
+        cols: 5,
+        rows: 1,
+        zones: [{ id: "vscode", label: "VS Code", cells: [2, 1, 3, 1] }],
+        nodes: [
+          {
+            id: "write",
+            label: "書く",
+            ...(art ? { art: "write" } : { icon: "write" as const }),
+            at: [2, 1],
+          },
+          {
+            id: "check",
+            label: "確認する",
+            ...(art ? { art: "check" } : { icon: "check" as const }),
+            at: [3, 1],
+          },
+        ],
+        links: [{ id: "back", from: "check", to: "write", label: "直す", route: "under" }],
+      };
+      const layout = layoutBoard(board),
+        link = layout.links.back;
+      const zone = layout.zones.vscode;
+      const before = layoutBoard({ ...board, links: [] });
+      expect(layout.zones).toEqual(before.zones);
+      if (art) expect(layout.nodes.check.h).toBeLessThan(before.nodes.check.h);
+      const source = layout.nodes.check,
+        target = layout.nodes.write;
+      expect(link.points).toEqual([
+        { x: source.x + source.w / 2, y: source.y + source.h },
+        { x: source.x + source.w / 2, y: link.label.y },
+        { x: target.x + target.w / 2, y: link.label.y },
+        { x: target.x + target.w / 2, y: target.y + target.h },
+      ]);
+      for (const box of Object.values(layout.nodes)) {
+        expect(link.label.y - (box.y + box.h)).toBeGreaterThanOrEqual(56);
+        // 札の半高28pxと、通路上のtravelの半径27pxがカードに重ならない。
+        expect(link.label.y - 28).toBeGreaterThan(box.y + box.h);
+        expect(link.label.y - 27).toBeGreaterThan(box.y + box.h);
+      }
+      expect(link.label.y + 28).toBeLessThan(zone.y + zone.h);
+      expect(link.label.y + 27).toBeLessThan(zone.y + zone.h);
+    });
 });

@@ -10,16 +10,10 @@ import {
   type PolishLine,
   type PolishResponse,
 } from "./video-polish.js";
-import { parseStoryboard, type VideoStoryboard } from "./video-storyboard.js";
+import { parseStoryboard, type BoardStoryboard } from "./video-storyboard.js";
 const sample = JSON.parse(
-  readFileSync(
-    new URL(
-      "../stages/dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop/video.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-) as VideoStoryboard;
+  readFileSync(new URL("./__fixtures__/board-video.json", import.meta.url), "utf8"),
+) as BoardStoryboard;
 const fresh = () => structuredClone(sample);
 function responseFor(sb = sample): PolishResponse {
   return {

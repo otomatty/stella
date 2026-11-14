@@ -129,12 +129,26 @@ export function layoutBoard(board: Board): BoardLayout {
     ch = 700 / board.rows;
   const nodes = Object.fromEntries(
     board.nodes.map((n) => {
-      const w = Math.min(360, cw - 80),
-        h = Math.min(210, ch - 70);
-      return [
-        n.id,
-        { x: 90 + (n.at[0] - 0.5) * cw - w / 2, y: 210 + (n.at[1] - 0.5) * ch + 24 - h / 2, w, h },
-      ];
+      const w = Math.min(n.art ? 600 : 360, cw - (n.art ? 36 : 80));
+      let h = Math.min(n.art ? (board.rows === 1 ? 470 : 300) : 210, ch - 100);
+      const centerY = 210 + (n.at[1] - 0.5) * ch + 24;
+      const underRow = (board.links ?? []).some((l) => {
+        const from = board.nodes.find((node) => node.id === l.from);
+        const to = board.nodes.find((node) => node.id === l.to);
+        return l.route === "under" && from?.at[1] === n.at[1] && to?.at[1] === n.at[1];
+      });
+      if (underRow) {
+        const rowBottom = Math.min(
+          930,
+          ...(board.zones ?? [])
+            .filter((z) => n.at[1] >= z.cells[1] && n.at[1] < z.cells[1] + z.cells[3])
+            .map((z) => 210 + (z.cells[1] - 1 + z.cells[3]) * ch - 12),
+        );
+        // 通路まで56px、札(半高28px)・travel(半径27px)を含む下側の余白を32px確保する。
+        h = Math.min(h, 2 * (rowBottom - centerY - 56 - 32));
+        if (h <= 0) throw new Error("下を回る矢印の余地がありません");
+      }
+      return [n.id, { x: 90 + (n.at[0] - 0.5) * cw - w / 2, y: centerY - h / 2, w, h }];
     }),
   );
   const zones = Object.fromEntries(
@@ -181,12 +195,13 @@ export function layoutBoard(board: Board): BoardLayout {
     let cost = Infinity;
     const via =
       link.route === "under"
-        ? Math.max(a.y + a.h, b.y + b.h) + 32
+        ? Math.max(a.y + a.h, b.y + b.h) + 56
         : link.route === "over"
           ? Math.min(a.y, b.y) - 32
           : undefined;
-    for (const from of ports(a))
-      for (const to of ports(b)) {
+    const sameRowUnder = link.route === "under" && a.y + a.h / 2 === b.y + b.h / 2;
+    for (const from of sameRowUnder ? ports(a).slice(3) : ports(a))
+      for (const to of sameRowUnder ? ports(b).slice(3) : ports(b)) {
         try {
           const start = edge(from, a),
             end = edge(to, b);

@@ -1,0 +1,48 @@
+[
+  {
+    "id": "vscode/task-open",
+    "video": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4",
+    "at": 12,
+    "regions": {
+      "explorer": [62, 48, 372, 912],
+      "editor": [440, 84, 578, 876],
+      "code": [476, 112, 490, 304],
+      "panel": [1022, 84, 568, 876],
+      "status-check": [146, 968, 126, 30],
+      "guide-check": [1070, 572, 470, 176],
+      "check-button": [1108, 605, 140, 30]
+    }
+  },
+  {
+    "id": "vscode/check-fail",
+    "video": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4",
+    "at": 31,
+    "regions": {
+      "code": [476, 112, 490, 304],
+      "headline": [1040, 222, 204, 30],
+      "result": [1046, 268, 520, 292],
+      "status-check": [146, 968, 126, 30],
+      "fail-item": [1066, 350, 490, 142]
+    }
+  },
+  {
+    "id": "vscode/check-fixed",
+    "video": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4",
+    "at": 60,
+    "regions": {
+      "code-line": [534, 304, 290, 30],
+      "result": [1046, 268, 520, 292],
+      "status-check": [146, 968, 126, 30]
+    }
+  },
+  {
+    "id": "vscode/check-pass",
+    "video": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4",
+    "at": 88,
+    "regions": {
+      "headline": [1040, 222, 160, 30],
+      "result": [1046, 268, 520, 272],
+      "submit": [1040, 596, 48, 28]
+    }
+  }
+]

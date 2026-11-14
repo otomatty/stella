@@ -1,4 +1,6 @@
 /** 絵コンテの契約・状態遷移。I/O と描画に依存しない。 */
+import { parseVideoArt, type VideoArt } from "./video-art.js";
+import { SHOT_ID, type ShotRegion } from "./video-shots.js";
 import { estimateSpeechSeconds } from "./narration.js";
 
 export const VIDEO_ICONS = {
@@ -36,7 +38,8 @@ export interface Zone {
 export interface Node {
   id: string;
   label: string;
-  icon: IconName;
+  icon?: IconName;
+  art?: string;
   at: [number, number];
 }
 export interface Link {
@@ -66,7 +69,8 @@ export interface Beat {
   travel?: { along: string[]; icon?: IconName };
   zoom?: string[] | "all";
 }
-export interface Scene {
+export interface BoardScene {
+  kind?: "board";
   id: string;
   role: "hook" | "point" | "recap";
   point?: number;
@@ -75,13 +79,41 @@ export interface Scene {
   reset?: boolean;
   beats: Beat[];
 }
+export interface ViewBeat {
+  say: string;
+  speech?: string;
+  image?: string;
+  spot?: string[];
+  zoom?: string;
+  label?: { at: string; text: string }[];
+  click?: string;
+}
+export interface ViewScene {
+  kind: "view";
+  id: string;
+  role: "hook" | "point" | "recap";
+  point?: number;
+  title: string;
+  image: string;
+  beats: ViewBeat[];
+}
+export type Scene = BoardScene | ViewScene;
+export interface StoryboardContext {
+  shots: Record<string, { width: number; height: number; regions: Record<string, ShotRegion> }>;
+  artFiles: Set<string>;
+}
 export interface VideoStoryboard {
   schema: 1;
   polish?: { model: string; sayHash: string };
   brief: { goal: string; stuck: string; points: string[]; leaveOut: string[] };
-  boards: Record<string, Board>;
+  art?: Record<string, Omit<VideoArt, "aspect"> & { aspect?: VideoArt["aspect"] }>;
+  boards?: Record<string, Board>;
   scenes: Scene[];
 }
+export type BoardStoryboard = Omit<VideoStoryboard, "boards" | "scenes"> & {
+  boards: Record<string, Board>;
+  scenes: BoardScene[];
+};
 export interface Issue {
   level: "error" | "warning";
   path: string;
@@ -99,6 +131,7 @@ export interface BeatState {
   pulse: string[];
 }
 export interface SceneState {
+  kind?: "board";
   start: BoardState;
   beats: BeatState[];
   end: BoardState;
@@ -127,12 +160,47 @@ export function expandFocus(board: Board, ids: string[]): string[] {
   }
   return [...result];
 }
-export function storyboardStates(storyboard: VideoStoryboard): SceneState[] {
-  const states: SceneState[] = [];
-  for (const [i, scene] of storyboard.scenes.entries()) {
+export interface ViewState {
+  image: string;
+  spot: string[];
+  zoom: string;
+  label: { at: string; text: string }[];
+  click?: string;
+}
+export interface ViewSceneState {
+  kind: "view";
+  start: ViewState;
+  beats: { before: ViewState; after: ViewState }[];
+  end: ViewState;
+}
+export function storyboardStates(storyboard: BoardStoryboard): SceneState[];
+export function storyboardStates(storyboard: VideoStoryboard): (SceneState | ViewSceneState)[];
+export function storyboardStates(storyboard: VideoStoryboard): (SceneState | ViewSceneState)[] {
+  const states: (SceneState | ViewSceneState)[] = [];
+  const boards = storyboard.boards ?? {};
+  let lastBoard: { name: string; end: BoardState } | undefined;
+  for (const scene of storyboard.scenes) {
+    if (scene.kind === "view") {
+      const start: ViewState = { image: scene.image, spot: [], zoom: "all", label: [] };
+      let current = start;
+      const beats = scene.beats.map((beat) => {
+        const before = structuredClone(current);
+        const changed = beat.image !== undefined && beat.image !== current.image;
+        current = {
+          image: beat.image ?? current.image,
+          zoom: beat.zoom ?? (changed ? "all" : current.zoom),
+          spot: beat.spot ?? [],
+          label: beat.label ?? [],
+          ...(beat.click ? { click: beat.click } : {}),
+        };
+        return { before, after: structuredClone(current) };
+      });
+      states.push({ kind: "view", start, beats, end: structuredClone(current) });
+      continue;
+    }
     const start =
-      i > 0 && storyboard.scenes[i - 1].board === scene.board && !scene.reset
-        ? cloneState(states[i - 1].end)
+      lastBoard?.name === scene.board && !scene.reset
+        ? cloneState(lastBoard.end)
         : emptyBoardState();
     let current = cloneState(start);
     const beats = scene.beats.map((beat) => {
@@ -147,10 +215,11 @@ export function storyboardStates(storyboard: VideoStoryboard): SceneState[] {
       return {
         before,
         after: cloneState(current),
-        focus: expandFocus(storyboard.boards[scene.board], beat.focus ?? []),
+        focus: expandFocus(boards[scene.board], beat.focus ?? []),
         pulse: beat.pulse ?? [],
       };
     });
+    lastBoard = { name: scene.board, end: cloneState(current) };
     states.push({ start, beats, end: cloneState(current) });
   }
   return states;
@@ -158,7 +227,10 @@ export function storyboardStates(storyboard: VideoStoryboard): SceneState[] {
 
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; issues: Issue[] } {
+export function parseStoryboard(
+  json: unknown,
+  context?: StoryboardContext,
+): { storyboard?: VideoStoryboard; issues: Issue[] } {
   const issues: Issue[] = [];
   let usable = true;
   const error = (path: string, message: string) => issues.push({ level: "error", path, message });
@@ -208,8 +280,14 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
     arr(brief[key], `brief.${key}`, 1, key === "points" ? 3 : Infinity).forEach((v, i) => {
       str(v, `brief.${key}[${i}]`);
     });
-  const boards = obj(root.boards, "boards");
-  if (!Object.keys(boards).length) error("boards", "図解を1つ以上置いてください");
+  try {
+    parseVideoArt(root.art);
+  } catch (e) {
+    error("art", (e as Error).message);
+    usable = false;
+  }
+  const art = record(root.art) ? root.art : {};
+  const boards = root.boards === undefined ? {} : obj(root.boards, "boards");
   for (const [name, value] of Object.entries(boards)) {
     str(name, "boardsの名前");
     const p = `boards.${name}`,
@@ -229,7 +307,19 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
         str(el.id, `${q}.id`);
         if (kind !== "links" || el.label !== undefined)
           str(el.label, `${q}.label`, kind === "zones" ? 12 : kind === "nodes" ? 10 : 6);
-        if (kind === "nodes" || el.icon !== undefined) icon(el.icon, `${q}.icon`);
+        if ((kind === "nodes" && el.art === undefined) || el.icon !== undefined)
+          icon(el.icon, `${q}.icon`);
+        if (kind === "nodes" && el.art !== undefined) {
+          str(el.art, `${q}.art`);
+          if (typeof el.art !== "string" || !Object.hasOwn(art, el.art))
+            error(`${q}.art`, "存在しないイラストです");
+          else if (context && !context.artFiles.has(el.art))
+            issues.push({
+              level: "warning",
+              path: `${q}.art`,
+              message: "イラストがまだありません。video:art を実行してください",
+            });
+        }
         if (kind === "nodes") tuple(el.at, `${q}.at`, 2);
         if (kind === "zones") {
           tuple(el.cells, `${q}.cells`, 4);
@@ -253,7 +343,10 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
       s = obj(value, p);
     str(s.id, `${p}.id`);
     str(s.title, `${p}.title`, 16);
-    str(s.board, `${p}.board`);
+    if (s.kind !== undefined && s.kind !== "board" && s.kind !== "view")
+      error(`${p}.kind`, "board・viewから選んでください");
+    if (s.kind === "view") str(s.image, `${p}.image`);
+    else str(s.board, `${p}.board`);
     if (typeof s.role !== "string" || !["hook", "point", "recap"].includes(s.role))
       error(`${p}.role`, "hook・point・recapから選んでください");
     if (s.role === "point")
@@ -268,11 +361,27 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
       if (
         typeof beat.say === "string" &&
         (!/^[^。?？]*[。?？]$/.test(beat.say) ||
-          /[\r\n()[\]{}（）「」『』【】<>*_`#~|→/…\\]/u.test(beat.say) ||
+          /[\r\n()[\]{}（）『』【】<>*_`#~|→/…\\]/u.test(beat.say) ||
           /^\s*(?:[-+>]|\d+[.)])\s/u.test(beat.say))
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
+      if (s.kind === "view") {
+        if (beat.image !== undefined) str(beat.image, `${q}.image`);
+        if (beat.zoom !== undefined) str(beat.zoom, `${q}.zoom`);
+        if (beat.click !== undefined) str(beat.click, `${q}.click`);
+        if (beat.spot !== undefined)
+          arr(beat.spot, `${q}.spot`, 1, 32).forEach((id, k) => {
+            str(id, `${q}.spot[${k}]`);
+          });
+        if (beat.label !== undefined)
+          arr(beat.label, `${q}.label`, 1, 32).forEach((value, k) => {
+            const l = obj(value, `${q}.label[${k}]`);
+            str(l.at, `${q}.label[${k}].at`);
+            str(l.text, `${q}.label[${k}].text`, 12);
+          });
+        return;
+      }
       for (const key of ["show", "hide", "focus", "pulse", "unmark", "zoom"]) {
         if (beat[key] === undefined || (key === "zoom" && beat[key] === "all")) continue;
         arr(beat[key], `${q}.${key}`, 1, 32).forEach((id, k) => {
@@ -300,6 +409,7 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
   });
   if (!usable) return { issues };
   const sb = json as VideoStoryboard;
+  const typedBoards = sb.boards ?? {};
   const unique = (ids: string[], p: string) => {
     const seen = new Set<string>();
     for (const id of ids) {
@@ -311,7 +421,7 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
     sb.scenes.map((s) => s.id),
     "scenes",
   );
-  for (const [name, b] of Object.entries(sb.boards)) {
+  for (const [name, b] of Object.entries(sb.boards ?? {})) {
     const p = `boards.${name}`;
     unique(
       [...(b.zones ?? []), ...b.nodes, ...(b.links ?? [])].map((e) => e.id),
@@ -346,11 +456,15 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
     const expected = i === 0 ? "hook" : i === sb.scenes.length - 1 ? "recap" : "point";
     if (s.role !== expected) error(`${p}.role`, `${expected}の場面にしてください`);
     if (s.point !== undefined) pointNumbers.push(s.point);
-    if (!Object.hasOwn(sb.boards, s.board)) {
+    if (s.kind === "view") {
+      validateView(s, i, sb, context, issues);
+      return;
+    }
+    if (!Object.hasOwn(sb.boards ?? {}, s.board)) {
       error(`${p}.board`, "存在しない図解です");
       return;
     }
-    const b = sb.boards[s.board];
+    const b = typedBoards[s.board];
     const ids = new Set([...(b.zones ?? []), ...b.nodes, ...(b.links ?? [])].map((e) => e.id));
     s.beats.forEach((beat, j) => {
       const q = `${p}.beats[${j}]`;
@@ -382,16 +496,18 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
     error("scenes", "要点の番号は昇順にしてください");
   // 参照の誤りがあっても、ほかの場面の空振り・時間の指摘まで集める。
   const analysisBoards: Record<string, Board> = Object.fromEntries([
-    ...Object.entries(sb.boards),
+    ...Object.entries(sb.boards ?? {}),
     ...sb.scenes
-      .filter((s) => !Object.hasOwn(sb.boards, s.board))
+      .filter((s): s is BoardScene => s.kind !== "view" && !Object.hasOwn(sb.boards ?? {}, s.board))
       .map((s) => [s.board, { cols: 1, rows: 1, nodes: [] } satisfies Board]),
   ]);
   const states = storyboardStates({ ...sb, boards: analysisBoards });
   sb.scenes.forEach((s, i) => {
+    if (s.kind === "view") return;
+    const sceneState = states[i] as SceneState;
     s.beats.forEach((b, j) => {
       const q = `scenes[${i}].beats[${j}]`,
-        state = states[i].beats[j];
+        state = sceneState.beats[j];
       const visible = new Set(state.after.visible);
       const change =
         (b.show ?? []).some((id) => !state.before.visible.includes(id) && visible.has(id)) ||
@@ -415,10 +531,12 @@ export function parseStoryboard(json: unknown): { storyboard?: VideoStoryboard; 
     });
   });
   const last = sb.scenes.length - 1;
+  const finalScene = sb.scenes[last];
   if (
     last >= 0 &&
-    analysisBoards[sb.scenes[last].board].nodes.some(
-      (n) => !states[last].end.visible.includes(n.id),
+    finalScene.kind !== "view" &&
+    analysisBoards[finalScene.board].nodes.some(
+      (n) => !(states[last] as SceneState).end.visible.includes(n.id),
     )
   )
     issues.push({
@@ -456,4 +574,71 @@ export function normalizeStoryboard(value: unknown): string {
           )
         : v;
   return JSON.stringify(canonical(value));
+}
+
+function validateView(
+  scene: ViewScene,
+  index: number,
+  sb: VideoStoryboard,
+  context: StoryboardContext | undefined,
+  issues: Issue[],
+) {
+  const error = (path: string, message: string) => issues.push({ level: "error", path, message });
+  const imageInfo = (image: string, path: string): Record<string, ShotRegion> | undefined => {
+    if (image.startsWith("shot:") && SHOT_ID.test(image.slice(5))) {
+      if (!context) return undefined;
+      const shot = context.shots[image.slice(5)];
+      if (!shot) error(path, `ショットがありません: ${image}`);
+      return shot?.regions;
+    }
+    if (image.startsWith("art:") && /^[a-z0-9-]+$/.test(image.slice(4))) {
+      const name = image.slice(4);
+      if (!Object.hasOwn(sb.art ?? {}, name)) error(path, `存在しないイラストです: ${name}`);
+      else if (context && !context.artFiles.has(name))
+        issues.push({
+          level: "warning",
+          path,
+          message: "イラストがまだありません。video:art を実行してください",
+        });
+      return sb.art?.[name]?.regions ?? {};
+    }
+    error(path, "画像は shot:組/名前 か art:名前 にしてください");
+    return undefined;
+  };
+  let image = scene.image,
+    zoom = "all";
+  let regions = imageInfo(image, `scenes[${index}].image`);
+  const previous = sb.scenes[index - 1];
+  const previousImage =
+    previous?.kind === "view"
+      ? previous.beats.reduce((img, beat) => beat.image ?? img, previous.image)
+      : undefined;
+  scene.beats.forEach((beat, j) => {
+    const p = `scenes[${index}].beats[${j}]`;
+    const changed = beat.image !== undefined && beat.image !== image;
+    if (beat.image !== undefined) {
+      image = beat.image;
+      regions = imageInfo(image, `${p}.image`);
+      if (changed) zoom = "all";
+    }
+    for (const [key, names] of [
+      ["spot", beat.spot ?? []],
+      ["zoom", beat.zoom && beat.zoom !== "all" ? [beat.zoom] : []],
+      ["label", beat.label?.map((l) => l.at) ?? []],
+      ["click", beat.click ? [beat.click] : []],
+    ] as const) {
+      for (const name of names)
+        if (regions && !Object.hasOwn(regions, name))
+          error(`${p}.${key}`, `存在しない領域「${name}」です`);
+    }
+    const change =
+      changed ||
+      (beat.spot?.length ?? 0) > 0 ||
+      (beat.label?.length ?? 0) > 0 ||
+      beat.click !== undefined ||
+      (beat.zoom !== undefined && beat.zoom !== zoom) ||
+      (j === 0 && scene.image !== previousImage);
+    if (!change) error(p, "絵が変わる動きを指定してください（空振りです）");
+    zoom = beat.zoom ?? zoom;
+  });
 }

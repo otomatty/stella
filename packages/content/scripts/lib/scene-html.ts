@@ -1,3 +1,5 @@
+import { viewHtml } from "./scene-view-html.js";
+import type { ViewImage } from "../../src/scene-view.js";
 /** 時刻から全属性を再計算する場面。時計・CSS transition・外部通信を使わない。 */
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -16,6 +18,8 @@ import {
   type Board,
   type IconName,
   type Scene,
+  type BoardScene,
+  type ViewSceneState,
   type SceneState,
 } from "../../src/video-storyboard.js";
 
@@ -33,14 +37,20 @@ export const sceneFontCss = readFileSync(fontFile, "utf8").replace(
 );
 export interface SceneHtmlInput {
   board: Board;
+  images?: Record<string, ViewImage>;
+  previousView?: ViewSceneState;
   scene: Scene;
-  state: SceneState;
+  state: SceneState | ViewSceneState;
   timing: SceneTimeline;
   index: number;
   total: number;
   previous?: Scene;
 }
-interface RenderData extends SceneHtmlInput {
+interface BoardHtmlInput extends Omit<SceneHtmlInput, "scene" | "state"> {
+  scene: BoardScene;
+  state: SceneState;
+}
+interface RenderData extends BoardHtmlInput {
   layout: BoardLayout;
 }
 export interface ScenePageWindow extends Window {
@@ -329,6 +339,10 @@ function mark(): string {
   return `<g class="mark">${(["check", "cross", "question", "redo"] as const).map((kind, i) => `<g data-kind="${kind}"><circle r="28" fill="${["#16A34A", "#E5342B", "#5C5C66", "#E62F9A"][i]}" stroke="white" stroke-width="3"/><g fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${symbols[kind]}</g></g>`).join("")}</g>`;
 }
 export function sceneHtml(input: SceneHtmlInput): string {
+  if (input.scene.kind === "view") return viewHtml(input);
+  return boardHtml(input as BoardHtmlInput);
+}
+function boardHtml(input: BoardHtmlInput): string {
   const toneColor = (tone?: "blue" | "violet") =>
     tone === "blue" ? "#2563EB" : tone === "violet" ? "#8330C7" : undefined;
   const layout = layoutBoard(input.board);
@@ -350,7 +364,7 @@ export function sceneHtml(input: SceneHtmlInput): string {
           n.at[1] >= z.cells[1] &&
           n.at[1] < z.cells[1] + z.cells[3],
       );
-      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${iconSvg(n.icon, b.x + (b.w - size) / 2, b.y + 14, size)}</g>${label(n.label, { x: b.x + 6, y: b.y + size + 16, w: b.w - 12, h: b.h - size - 20 })}${mark()}</g>`;
+      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${b.y + 8}" width="${b.w - 16}" height="${b.h - 88}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", b.x + (b.w - size) / 2, b.y + 14, size)}</g>${label(n.label, { x: b.x + 6, y: n.art ? b.y + b.h - 80 : b.y + size + 16, w: b.w - 12, h: n.art ? 72 : b.h - size - 20 })}${mark()}</g>`;
     })
     .join("");
   const links = (input.board.links ?? [])
@@ -367,7 +381,11 @@ export function sceneHtml(input: SceneHtmlInput): string {
   const data = JSON.stringify({ ...renderInput, layout }).replace(/</g, "\\u003c");
   return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
   *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}header{height:130px;background:white;border-bottom:2px solid #DDDDE2;display:flex;align-items:center;padding:0 72px;font-size:48px}header span{font-size:30px;color:#5C5C66;margin-right:24px}#heading,#previous-heading{position:absolute;left:72px;top:30px;height:72px;white-space:nowrap}.dots{margin-left:auto;display:flex;gap:18px}.dot{width:16px;height:16px;border-radius:50%;background:#DDDDE2}.dot.active{background:#E62F9A}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:170px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;background:white;pointer-events:none}
-  </style><header><div id="previous-heading">${heading(input.previous)}</div><div id="heading">${heading(input.scene)}</div><div class="dots">${Array.from({ length: input.total }, (_, i) => `<i class="dot ${i === input.index ? "active" : ""}"></i>`).join("")}</div></header><svg id="diagram" viewBox="0 170 1920 760"><defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/></filter>${["arrow", "arrow-accent"].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9Z" fill="${i ? "#E62F9A" : "#5C5C66"}"/></marker>`).join("")}</defs>${zones}${links}${nodes}<g id="traveler" style="color:white"><circle r="27" fill="#E62F9A"/>${Object.keys(
+  </style>${Object.values(input.images ?? {})
+    .map((img) => `<img hidden src="${escapeHtml(img.url)}">`)
+    .join(
+      "",
+    )}<header><div id="previous-heading">${heading(input.previous)}</div><div id="heading">${heading(input.scene)}</div><div class="dots">${Array.from({ length: input.total }, (_, i) => `<i class="dot ${i === input.index ? "active" : ""}"></i>`).join("")}</div></header><svg id="diagram" viewBox="0 170 1920 760"><defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/></filter>${["arrow", "arrow-accent"].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9Z" fill="${i ? "#E62F9A" : "#5C5C66"}"/></marker>`).join("")}</defs>${zones}${links}${nodes}<g id="traveler" style="color:white"><circle r="27" fill="#E62F9A"/>${Object.keys(
     VIDEO_ICONS,
   )
     .map((name) => `<g data-icon="${name}">${iconSvg(name as IconName, -18, -18, 36)}</g>`)

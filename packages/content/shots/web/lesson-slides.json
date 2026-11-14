@@ -1,0 +1,8 @@
+{
+  "source": "apps/web/scripts/tutorials/shots/lesson.ts",
+  "width": 2560,
+  "height": 1600,
+  "regions": {
+    "slides": [760, 492, 1600, 901]
+  }
+}

@@ -1,6 +1,7 @@
+import type { BoardScene, BoardState } from "../../src/video-storyboard.js";
 import { describe, expect, it } from "vitest";
 import { sceneCacheHash, type SceneCacheInput } from "./scene-cache.js";
-const plan = (): SceneCacheInput => ({
+const plan = (): SceneCacheInput<BoardScene, BoardState> => ({
   version: 1,
   board: { cols: 1, rows: 1, nodes: [{ id: "a", label: "ファイル", icon: "file", at: [1, 1] }] },
   start: { visible: [], marks: {}, zoom: "all" },
@@ -24,7 +25,7 @@ describe("場面キャッシュ", () => {
     b.timing.start = 42;
     expect(sceneCacheHash(a)).toBe(sceneCacheHash(b));
   });
-  const edits: [string, (p: SceneCacheInput) => void][] = [
+  const edits: [string, (p: SceneCacheInput<BoardScene, BoardState>) => void][] = [
     [
       "生成の版",
       (p) => {

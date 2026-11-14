@@ -1,3 +1,4 @@
+import { storyboardAssets } from "./lib/storyboard-assets.js";
 /** 場面ごとの動画。既存のスライド動画の生成・配信には接続しない。 */
 import {
   copyFileSync,
@@ -15,7 +16,12 @@ import { chromium, type Browser } from "playwright";
 import { estimateSpeechSeconds, speechOf } from "../src/narration.js";
 import { splitNarration, trimSilence } from "../src/narration-split.js";
 import { sceneTimelines, sceneVtt } from "../src/scene-timeline.js";
-import { parseStoryboard, storyboardStates, type Scene } from "../src/video-storyboard.js";
+import {
+  parseStoryboard,
+  storyboardStates,
+  type Scene,
+  type ViewSceneState,
+} from "../src/video-storyboard.js";
 import {
   AUDIO_RATE,
   decodePcm,
@@ -121,11 +127,16 @@ async function build(
   provider: TtsProvider | undefined,
 ) {
   const file = join(topic.topicDir, "video.json");
-  const { storyboard, issues } = parseStoryboard(JSON.parse(readFileSync(file, "utf8")));
+  const json = JSON.parse(readFileSync(file, "utf8"));
+  const assets = storyboardAssets(contentRoot, topic.topicDir, json);
+  const { storyboard, issues } = parseStoryboard(json, assets.context);
   for (const issue of issues)
     console.info(`${issue.level}: ${topic.stageSlug}/${topic.id}:${issue.path}: ${issue.message}`);
   if (!storyboard) throw new Error("絵コンテの検査エラーがあります");
+  if (issues.some((i) => i.message.includes("イラストがまだありません")))
+    throw new Error("イラストがまだありません。video:art を実行してください");
   if (!/^[\w-]+$/.test(topic.id)) throw new Error("トピックIDは英数字とハイフンにしてください");
+  const boards = storyboard.boards ?? {};
   const out = join(options.out, topic.stageSlug, topic.id),
     cache = join(contentRoot, "dist/video-cache/scenes");
   mkdirSync(out, { recursive: true });
@@ -149,12 +160,30 @@ async function build(
       ),
     );
     let timelines = sceneTimelines(storyboard.scenes, estimates);
+    const sceneAssets = (i: number) => {
+      const scene = storyboard.scenes[i];
+      const refs = new Set(
+        scene.kind === "view"
+          ? [scene.image, ...scene.beats.flatMap((b) => (b.image ? [b.image] : []))]
+          : boards[scene.board].nodes.flatMap((n) => (n.art ? [`art:${n.art}`] : [])),
+      );
+      const previous = states[i - 1];
+      if (scene.kind === "view" && previous?.kind === "view") refs.add(previous.end.image);
+      return {
+        images: Object.fromEntries(Object.entries(assets.images).filter(([id]) => refs.has(id))),
+        hashes: Object.fromEntries(Object.entries(assets.hashes).filter(([id]) => refs.has(id))),
+      };
+    };
+    const stillOverflows = new Set<string>();
     const load = async (i: number) => {
       const scene = storyboard.scenes[i];
       const html = sceneHtml({
-        board: storyboard.boards[scene.board],
+        board: scene.kind === "view" ? { cols: 1, rows: 1, nodes: [] } : boards[scene.board],
         scene,
         state: states[i],
+        images: sceneAssets(i).images,
+        previousView:
+          states[i - 1]?.kind === "view" ? (states[i - 1] as ViewSceneState) : undefined,
         timing: { ...timelines[i], start: 0 },
         index: i,
         total: storyboard.scenes.length,
@@ -167,12 +196,30 @@ async function build(
       page.on("pageerror", listener);
       await page.goto(pathToFileURL(htmlFile).href, { waitUntil: "load" });
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
-      const overflows = await page.evaluate(() =>
-        (window as unknown as ScenePageWindow).__overflows(),
-      );
+      await page.evaluate(() => Promise.all([...document.images].map((image) => image.decode())));
+      const overflows: string[] = [];
+      const samples = [
+        0,
+        ...timelines[i].beats.flatMap((b) =>
+          [b.start + 0.15, b.start + 0.4, b.start + 0.8, b.end - 1 / 30].filter((t) => t < b.end),
+        ),
+      ];
+      for (const time of samples)
+        overflows.push(
+          ...(await page.evaluate((t) => {
+            const win = window as unknown as ScenePageWindow;
+            win.__setTime(t);
+            return win.__overflows();
+          }, time)),
+        );
+      await page.evaluate(() => (window as unknown as ScenePageWindow).__setTime(0));
       page.off("pageerror", listener);
       if (errors.length) throw new Error(errors.join(" / "));
-      if (overflows.length) throw new Error(`文字のはみ出し: ${overflows.join(" / ")}`);
+      if (overflows.length) {
+        if (!options.stills)
+          throw new Error(`文字のはみ出し: ${[...new Set(overflows)].join(" / ")}`);
+        for (const message of overflows) stillOverflows.add(`${scene.id}: ${message}`);
+      }
       return html;
     };
     for (let i = 0; i < storyboard.scenes.length; i++) await load(i);
@@ -185,7 +232,10 @@ async function build(
         for (let j = 0; j < timelines[i].beats.length; j++) {
           const beat = timelines[i].beats[j],
             scene = storyboard.scenes[i];
-          await page.evaluate((t) => (window as unknown as ScenePageWindow).__setTime(t), beat.end);
+          await page.evaluate(
+            (t) => (window as unknown as ScenePageWindow).__setTime(t),
+            beat.end - 1 / 30,
+          );
           const name = `scene-${i + 1}-beat-${j + 1}.png`;
           await page.screenshot({ path: join(dir, name) });
           frames.push({
@@ -205,6 +255,8 @@ async function build(
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       await page.screenshot({ path: join(dir, "contact-sheet.png"), fullPage: true });
       console.info(`${topic.stageSlug}/${topic.id}: 静止画 ${frames.length}枚 + 一覧画像`);
+      if (stillOverflows.size)
+        throw new Error(`文字のはみ出し:\n${[...stillOverflows].join("\n")}`);
       return;
     }
     if (!provider) throw new Error("音声プロバイダーがありません");
@@ -231,8 +283,9 @@ async function build(
         timing = timelines[i];
       const sourceHash = sceneCacheHash({
         version: GENERATOR_VERSION,
-        board: storyboard.boards[scene.board],
+        board: scene.kind === "view" ? { cols: 1, rows: 1, nodes: [] } : boards[scene.board],
         start: states[i].start,
+        assets: sceneAssets(i).hashes,
         scene,
         timing: { ...timing, start: 0 },
         html,
@@ -338,6 +391,19 @@ export async function buildSceneVideos(args: string[]) {
   if (!topics.length) {
     console.info("video.json のあるトピックはありません");
     return;
+  }
+  // 素材がない場合は Chromium や TTS を準備する前に止める。
+  for (const topic of topics) {
+    const json = JSON.parse(readFileSync(join(topic.topicDir, "video.json"), "utf8"));
+    const assets = storyboardAssets(contentRoot, topic.topicDir, json);
+    const result = parseStoryboard(json, assets.context);
+    if (
+      !result.storyboard ||
+      result.issues.some((i) => i.message.includes("イラストがまだありません"))
+    )
+      throw new Error(
+        `${topic.stageSlug}/${topic.id}: ${result.issues.map((i) => `${i.level}: ${i.path}: ${i.message}`).join("\n")}`,
+      );
   }
   // stills では provider を作らず、鍵を参照する処理も呼ばない。
   let provider: TtsProvider | undefined;

@@ -2,86 +2,107 @@
   "schema": 1,
   "brief": {
     "goal": "「読むのは Web、書くのは VS Code」と「書く、確認する、提出する、結果を読む」の順番を言える。",
-    "stuck": "画面が 2 つあり、どちらで何をするのか迷う。提出したら終わりだと思い、直しが返ると失敗だと感じてしまう。",
+    "stuck": "画面が 2 つあり、どちらで何をするのか迷う。確認で直すところが出ると、失敗だと感じてしまう。",
     "points": [
       "読むのは Web、課題を書くのは VS Code。",
-      "書いたら、確認してから提出し、結果を読む。",
-      "直すところが返ってきたら、直してもう一度提出する。それが普通の進め方。"
+      "書いたら確認する。直すところが出たら、直してもう一度確認する。",
+      "確認が通ったら提出し、Web で結果を読む。"
     ],
     "leaveOut": [
       "レッスンと知識問題の細かい定義",
       "提出を AI と講師のどちらが見るか",
-      "ボタンの名前と位置",
-      "VS Code の入れ方"
+      "VS Code の入れ方",
+      "課題文のパネルの細かい読み方"
     ]
   },
+  "art": {
+    "two-screens": {
+      "prompt": "The learner sits at a wide desk seen from the front, with two separate monitors side by side. The left monitor shows a blue web browser window with abstract page blocks. The right monitor shows a violet code editor window with a dark screen and abstract colored code lines. The learner looks slightly puzzled, one hand on the chin, glancing between the two screens. Wide composition.",
+      "aspect": "16:9",
+      "regions": {
+        "web": [0.147, 0.279, 0.253, 0.375],
+        "vscode": [0.6, 0.279, 0.256, 0.375]
+      }
+    },
+    "read": {
+      "prompt": "The learner reads a lesson on a blue web browser window on a laptop. The screen shows abstract blue blocks like a slide. Blue is the dominant color."
+    },
+    "write": {
+      "prompt": "The learner types on a keyboard in front of a violet code editor window with a dark screen showing abstract colored code lines. Violet is the dominant color."
+    },
+    "check": {
+      "prompt": "A violet code editor window with a dark screen, and in front of it a large white checklist card where two items have green check marks. A magnifying glass hovers over the card. No person."
+    },
+    "submit": {
+      "prompt": "The learner presses a key and a magenta paper plane carrying a small document flies out of a violet code editor window toward the upper right. Violet is the dominant color."
+    },
+    "result": {
+      "prompt": "The learner smiles at a blue web browser window showing a review card with a green check mark badge and abstract grey comment lines. Blue is the dominant color."
+    }
+  },
   "boards": {
-    "main": {
-      "cols": 4,
-      "rows": 2,
+    "loop": {
+      "cols": 5,
+      "rows": 1,
       "zones": [
         {
-          "id": "web",
+          "id": "web-read",
           "label": "Web",
           "icon": "browser",
           "tone": "blue",
-          "cells": [1, 1, 1, 2]
+          "cells": [1, 1, 1, 1]
         },
         {
           "id": "vscode",
           "label": "VS Code",
           "icon": "editor",
           "tone": "violet",
-          "cells": [2, 1, 3, 2]
+          "cells": [2, 1, 3, 1]
+        },
+        {
+          "id": "web-result",
+          "label": "Web",
+          "icon": "browser",
+          "tone": "blue",
+          "cells": [5, 1, 1, 1]
         }
       ],
       "nodes": [
         {
           "id": "read",
           "label": "読む",
-          "icon": "read",
+          "art": "read",
           "at": [1, 1]
-        },
-        {
-          "id": "quiz",
-          "label": "知識問題",
-          "icon": "quiz",
-          "at": [1, 2]
         },
         {
           "id": "write",
           "label": "書く",
-          "icon": "write",
+          "art": "write",
           "at": [2, 1]
         },
         {
           "id": "check",
           "label": "確認する",
-          "icon": "check",
+          "art": "check",
           "at": [3, 1]
         },
         {
           "id": "submit",
           "label": "提出する",
-          "icon": "send",
+          "art": "submit",
           "at": [4, 1]
         },
         {
           "id": "result",
           "label": "結果を読む",
-          "icon": "result",
-          "at": [4, 2]
+          "art": "result",
+          "at": [5, 1]
         }
       ],
       "links": [
         {
-          "id": "read-quiz",
+          "id": "read-write",
           "from": "read",
-          "to": "quiz"
-        },
-        {
-          "id": "quiz-write",
-          "from": "quiz",
           "to": "write"
         },
         {
@@ -100,10 +121,11 @@
           "to": "result"
         },
         {
-          "id": "result-write",
-          "from": "result",
+          "id": "check-write",
+          "from": "check",
           "to": "write",
-          "label": "直す"
+          "label": "直す",
+          "route": "under"
         }
       ]
     }
@@ -111,25 +133,35 @@
   "scenes": [
     {
       "id": "hook",
+      "kind": "view",
       "role": "hook",
       "title": "どこで、何をする?",
-      "board": "main",
+      "image": "art:two-screens",
       "beats": [
         {
           "say": "STELLA の学習では、Web と VS Code の 2 つを使います。",
-          "show": ["web", "vscode"],
-          "zoom": "all"
+          "label": [
+            {
+              "at": "web",
+              "text": "Web"
+            },
+            {
+              "at": "vscode",
+              "text": "VS Code"
+            }
+          ]
         },
         {
           "say": "どちらで何をするのでしょうか?",
-          "mark": [
+          "spot": ["web", "vscode"],
+          "label": [
             {
-              "on": "web",
-              "kind": "question"
+              "at": "web",
+              "text": "Web"
             },
             {
-              "on": "vscode",
-              "kind": "question"
+              "at": "vscode",
+              "text": "VS Code"
             }
           ]
         }
@@ -137,111 +169,81 @@
     },
     {
       "id": "places",
+      "kind": "view",
       "role": "point",
       "point": 1,
       "title": "読む場所と、書く場所",
-      "board": "main",
+      "image": "shot:web/lesson-slides",
       "beats": [
         {
           "say": "Web は、読む場所です。",
-          "show": ["read"],
-          "focus": ["web"],
-          "unmark": ["web"]
+          "spot": ["slides"]
         },
         {
-          "say": "読んだら、知識問題を解きます。",
-          "show": ["read-quiz", "quiz"],
-          "focus": ["web"]
+          "say": "課題は、Web から VS Code で開きます。",
+          "image": "shot:web/task",
+          "zoom": "handoff",
+          "click": "open"
         },
         {
-          "say": "VS Code は、書く場所です。",
-          "show": ["write"],
-          "focus": ["vscode"],
-          "unmark": ["vscode"]
-        },
-        {
-          "say": "知識問題のあとは、ここで課題を書きます。",
-          "show": ["quiz-write"],
-          "travel": {
-            "along": ["quiz-write"],
-            "icon": "file"
-          }
+          "say": "VS Code は、課題を書く場所です。",
+          "image": "shot:vscode/task-open",
+          "spot": ["editor"]
         }
       ]
     },
     {
-      "id": "order",
+      "id": "check",
+      "kind": "view",
       "role": "point",
       "point": 2,
-      "title": "書いたあとの順番",
-      "board": "main",
+      "title": "書いたら、確認する",
+      "image": "shot:vscode/task-open",
       "beats": [
         {
-          "say": "書いたら、すぐには提出しません。",
-          "zoom": ["write", "check", "submit"],
-          "pulse": ["write"]
+          "say": "書いたら、「課題を確認する」を押します。",
+          "zoom": "guide-check",
+          "click": "check-button"
         },
         {
-          "say": "まず、手元で確認します。",
-          "show": ["write-check", "check"]
+          "say": "直すところがあると、結果に出ます。",
+          "image": "shot:vscode/check-fail",
+          "zoom": "result",
+          "spot": ["headline", "fail-item"]
         },
         {
-          "say": "確認が通ったら、提出します。",
-          "mark": [
-            {
-              "on": "check",
-              "kind": "check"
-            }
-          ],
-          "show": ["check-submit", "submit"]
+          "say": "直して保存し、もう一度確認します。",
+          "image": "shot:vscode/check-fixed",
+          "zoom": "code-line",
+          "spot": ["code-line"]
         },
         {
-          "say": "しばらくしたら、結果を読みます。",
-          "show": ["submit-result", "result"],
-          "zoom": ["vscode"]
+          "say": "すべて通ったら、確認は終わりです。",
+          "image": "shot:vscode/check-pass",
+          "zoom": "result",
+          "spot": ["headline", "result"]
         }
       ]
     },
     {
-      "id": "retry",
+      "id": "submit",
+      "kind": "view",
       "role": "point",
       "point": 3,
-      "title": "直しが返ってきたら",
-      "board": "main",
+      "title": "通ったら、提出する",
+      "image": "shot:vscode/check-pass",
       "beats": [
         {
-          "say": "結果に、直すところが書かれていることがあります。",
-          "focus": ["result"],
-          "mark": [
-            {
-              "on": "result",
-              "kind": "redo"
-            }
-          ]
+          "say": "確認が通ったら、提出します。",
+          "zoom": "result",
+          "click": "submit",
+          "spot": ["submit"]
         },
         {
-          "say": "そのときは、直して、もう一度確認して提出します。",
-          "show": ["result-write"],
-          "travel": {
-            "along": ["result-write", "write-check", "check-submit"],
-            "icon": "file"
-          }
-        },
-        {
-          "say": "一度で通らなくても、大丈夫です。",
-          "travel": {
-            "along": ["submit-result"],
-            "icon": "file"
-          }
-        },
-        {
-          "say": "直してもう一度提出するのが、普通の進め方です。",
-          "mark": [
-            {
-              "on": "result",
-              "kind": "check"
-            }
-          ]
+          "say": "Web で結果を読みます。",
+          "image": "shot:web/submissions",
+          "spot": ["submissions"],
+          "zoom": "submissions"
         }
       ]
     },
@@ -249,33 +251,41 @@
       "id": "recap",
       "role": "recap",
       "title": "この繰り返しで進む",
-      "board": "main",
+      "board": "loop",
       "beats": [
         {
           "say": "読むのは Web、書くのは VS Code です。",
-          "zoom": "all",
-          "pulse": ["web", "vscode"]
+          "show": ["web-read", "vscode", "read", "write", "read-write"]
         },
         {
-          "say": "書いたら、確認して、提出して、結果を読みます。",
+          "say": "書いたら確認し、通ったら提出して、Web で結果を読みます。",
+          "show": [
+            "write-check",
+            "check",
+            "check-submit",
+            "submit",
+            "web-result",
+            "submit-result",
+            "result"
+          ],
           "travel": {
             "along": ["write-check", "check-submit", "submit-result"],
             "icon": "file"
           }
         },
         {
-          "say": "直すところがあれば直して、繰り返します。",
+          "say": "直すところがあれば、直してもう一度確認します。",
+          "show": ["check-write"],
           "travel": {
-            "along": ["result-write"],
+            "along": ["check-write"],
             "icon": "repeat"
-          },
-          "pulse": ["write"]
+          }
         }
       ]
     }
   ],
   "polish": {
     "model": "gemini-4-argon",
-    "sayHash": "9ca2f8e529e12f88e922ecadba65fe1b2590f99b37eed71df7a202e18d6bc5aa"
+    "sayHash": "8cfdd115e44bb8ff45097ad8d9ba9df5e69a4a4c8a46f3a0536f497ffd4ba57b"
   }
 }

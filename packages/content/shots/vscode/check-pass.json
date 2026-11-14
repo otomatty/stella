@@ -1,0 +1,10 @@
+{
+  "source": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4@88",
+  "width": 1600,
+  "height": 1000,
+  "regions": {
+    "headline": [1040, 222, 160, 30],
+    "result": [1046, 268, 520, 272],
+    "submit": [1040, 596, 48, 28]
+  }
+}

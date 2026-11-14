@@ -238,3 +238,37 @@ bun run tutorials:vscode -- --save
 操作の字幕帯は動画に焼き込まず、チャプターから VTT に書き出します。レッスン画面では字幕トラックとして表示されます。タイトルカード・カーソル・クリックの波紋・押したキー・光る枠は動画に残ります。
 
 プロファイルは `os.tmpdir()/stella-tutorials/vscode/profile/{user-data,exts}` に保存して再利用し、毎回エクスプローラーの開閉状態を初期化します。普段の VS Code の設定や拡張には触れません。
+
+## 動画の素材にする静止画を撮る
+
+字幕・カーソル・クリックの波紋・タイトルを重ねず、明るいテーマの Web 画面を PNG にします。1280×800、deviceScaleFactor 2 で撮るため、画像は 2560×1600 ピクセルです。動画の収録結果は更新しません。
+
+```bash
+bun run --filter=@stella/web tutorials:shots
+bun run --filter=@stella/web tutorials:shots -- lesson task
+bun run --filter=@stella/web tutorials:shots -- --skip-build
+bun run --filter=@stella/web tutorials:shots -- --url http://127.0.0.1:5173
+```
+
+通常は動画と同じ専用 D1 の写し・ローカル API・ビルドを使います。Bun と Playwright Chromium が必要です。`--url` はビルド・サーバー起動・データ初期化を省き、`seedSql` も適用しません。開発用 JWT を送れるローカル API 向けの Web を指定してください。`AUTH_JWT_SECRET` は動画収録と同じ設定です。
+
+`shots/*.ts` の 1 ファイルが 1 組の定義です。`defineShots` に `id`（部分一致の絞り込み用）・任意の `user`（既定 `seed-learner`）・任意の `seedSql` と `run` を渡します。各組の前に D1 を復元します。
+
+```ts
+import { openFirstSlides } from "../lib/scenario-navigation";
+import { defineShots } from "../lib/shots";
+
+export default defineShots({
+  id: "example",
+  async run(t, shot) {
+    await openFirstSlides(t);
+    await shot("web/example", {
+      regions: { slides: "[data-testid=lesson-slides]" },
+    });
+  },
+});
+```
+
+`t` は既存の `Director` です。移動・クリック・`expect` を使えます。表示 API は無表示になります。`shot` の id は英小文字・数字・ハイフンの `組/名前`、領域はセレクタの最初の要素です。要素をスクロールしてから全領域が同じ画面内に収まることを検査します。本文など大きい領域だけ、`clipRegions: ["doc"]` のように名前を指定すると見えている範囲に切り詰められます。要素がない・領域が画面外の場合は保存せず失敗します。
+
+出力は `packages/content/shots/<組>/<名前>.png` と同名の `.json` です。JSON は定義ファイルを示す `source`、画像の `width`・`height`、画像ピクセルでの `regions`（`[x, y, 幅, 高さ]`）を持ちます。同じ id は実行時に上書きします。生成した PNG と JSON をコミット対象に含めてください。
