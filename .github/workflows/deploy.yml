@@ -142,6 +142,10 @@ jobs:
       - name: Prepare private library storage
         run: bun run apps/api/scripts/prepare-library-storage.ts
 
+      # 動画・字幕・表紙を crossOrigin で読むため、教材の変更にかかわらず毎回 CORS を設定する。
+      - name: Allow the web to load course materials (R2 CORS)
+        run: bun run apps/api/scripts/prepare-materials-cors.ts
+
       # ログイン (Better Auth) の署名鍵。無いと API がログインを受け付けないので API のデプロイの前に揃える。
       - name: Sync login signing secret to the API
         working-directory: apps/api
