@@ -158,3 +158,27 @@ describe("案内の読み込み結果", () => {
     expect(guidedStagesLoadResult({ stages: [stage] })).toEqual({ stages: [stage], error: null });
   });
 });
+
+describe("前提の名前を一部伏せた案内", () => {
+  it.each([
+    [["架空の基礎"], false, "『架空の基礎』を終えると始められます"],
+    [["架空の基礎", "架空の準備"], false, "『架空の基礎』・『架空の準備』を終えると始められます"],
+    [["架空の基礎"], true, "『架空の基礎』と、ほかの条件がそろうと始められます"],
+    [
+      ["架空の基礎", "架空の準備"],
+      true,
+      "『架空の基礎』・『架空の準備』と、ほかの条件がそろうと始められます",
+    ],
+    [[], true, "開始の条件がそろうと始められます"],
+    [[], false, "開始の条件がそろうと始められます"],
+    [["架空の基礎"], undefined, "『架空の基礎』を終えると始められます"],
+  ] as const)("名前 %j・伏せた前提 %s", (names, withheld, expected) => {
+    const input = {
+      ...stage,
+      status: "locked" as const,
+      prerequisite_titles: [...names],
+      prerequisites_withheld: withheld,
+    };
+    expect(guidedStageCard(input).prerequisite).toBe(expected);
+  });
+});

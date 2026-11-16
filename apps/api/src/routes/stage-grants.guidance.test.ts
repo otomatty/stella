@@ -511,3 +511,35 @@ it("霧で名前を返さない遠い前提は、案内の前提名にも載せ�
   expect(map.skill_map.stages.find((node) => node.id === "far")?.title).toBeUndefined();
   expect(await mine()).toMatchObject({ stages: [{ status: "locked", prerequisite_titles: [] }] });
 });
+
+it.each([false, true])(
+  "複数の前提の名前を一部伏せたときは、存在だけを知らせる (伏せる=%s)",
+  async (withheld) => {
+    await grant();
+    await db.insert(stages).values({
+      id: "second-prerequisite",
+      slug: "sample-second-prerequisite",
+      title: "架空の別の前提",
+      status: "published",
+      category: withheld ? "AWS資格" : null,
+    });
+    await db
+      .update(stages)
+      .set({
+        prerequisites: '["sample-basic","sample-second-prerequisite"]',
+        parent: "sample-basic",
+      })
+      .where(eq(stages.id, "extra"));
+    const response = await mine();
+    expect(response.stages).toHaveLength(1);
+    expect(response.stages[0]).toMatchObject({
+      status: "locked",
+      prerequisite_titles: withheld ? ["架空の入口"] : ["架空の入口", "架空の別の前提"],
+      prerequisites_withheld: withheld,
+    });
+    if (withheld) {
+      expect(JSON.stringify(response)).not.toContain("架空の別の前提");
+      expect(response.stages[0]).not.toHaveProperty("prerequisites_withheld_count");
+    }
+  },
+);

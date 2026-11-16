@@ -123,18 +123,15 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
         const enrolled = source.enrolledStageIds?.has(id) ?? false;
         const available = visibleIds.has(id) && evaluated.states.get(id) === "unlocked";
         const p = progress.get(id);
+        const reasons = enrolled || available ? [] : (evaluated.lockReasons.get(id) ?? []);
+        const namedReasons = reasons.filter(
+          (reason) => reason.stageId !== undefined && isLockReasonNameVisible(ordinaryMap, reason),
+        );
         return {
           ...grant,
           status: enrolled ? "in-progress" : available ? "available" : "locked",
-          prerequisite_titles:
-            enrolled || available
-              ? []
-              : (evaluated.lockReasons.get(id) ?? [])
-                  .filter(
-                    (reason) =>
-                      reason.stageId !== undefined && isLockReasonNameVisible(ordinaryMap, reason),
-                  )
-                  .map((reason) => reason.label),
+          prerequisite_titles: namedReasons.map((reason) => reason.label),
+          prerequisites_withheld: namedReasons.length < reasons.length,
           progress:
             p && p.problems > 0
               ? { unit: "problems", passed: p.passedProblems, total: p.problems }

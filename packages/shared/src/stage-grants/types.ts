@@ -20,6 +20,8 @@ export interface GuidedStage extends StageGrantGuidance {
   title: string;
   status: "available" | "in-progress" | "locked";
   prerequisite_titles: string[];
+  /** 名前を伏せた前提があるか。名前・件数は返さない。旧APIでの省略は false と扱う。 */
+  prerequisites_withheld?: boolean;
   progress: { unit: "problems" | "tasks"; passed: number; total: number };
 }
 

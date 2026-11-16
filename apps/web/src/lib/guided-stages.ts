@@ -39,7 +39,7 @@ export function guidedStageCard(stage: GuidedStage) {
       stage.status !== "locked"
         ? null
         : stage.prerequisite_titles.length
-          ? `${stage.prerequisite_titles.map((title) => `『${title}』`).join("・")}を終えると始められます`
+          ? `${stage.prerequisite_titles.map((title) => `『${title}』`).join("・")}${stage.prerequisites_withheld ? "と、ほかの条件がそろうと始められます" : "を終えると始められます"}`
           : "開始の条件がそろうと始められます",
     progress: `${stage.progress.passed}/${stage.progress.total} ${stage.progress.unit === "problems" ? "問" : "課題"}`,
     percent:
