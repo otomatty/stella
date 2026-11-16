@@ -1,0 +1,14 @@
+{
+  "source": "apps/web/scripts/tutorials/clips/result.ts",
+  "video": "clips/web/read-result.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 11.57,
+  "marks": {
+    "open-submissions": [7.09, 11.5]
+  },
+  "regions": {
+    "submissions": [475, 602, 1000, 139]
+  }
+}

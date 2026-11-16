@@ -1,0 +1,8 @@
+{
+  "source": "apps/web/scripts/tutorials/shots/lesson.ts",
+  "width": 2560,
+  "height": 1600,
+  "regions": {
+    "question": [760, 564, 1600, 519]
+  }
+}

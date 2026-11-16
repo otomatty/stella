@@ -59,13 +59,17 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 
 このステップは `CLOUDFLARE_API_TOKEN` に **Workers R2 Storage: Edit** 権限を要求する。権限が無いとここで落ち、seed 以降は動かない（D1 が存在しない画像を指すことはない）。
 
-教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。動画が一部失敗してもデプロイは続け、できた動画は公開する。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直す。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れる (管理者の画面に出す)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のまま。
+教材動画は PDF sync のあとに `bun run --filter=@stella/content video:sync --remote --tts gemini` で生成・配信する。GitHub Repository Secret `GEMINI_API_KEY` は任意で、無ければ「キーが無いので動画を作りません」と出して動画だけを飛ばす (API Worker に同期する Secret ではない)。キーをあとから登録した場合は教材の変更または `bun run content:state:reset:remote` で再実行する。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。Gemini は新方式では場面ごと、スライド版ではトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。動画が一部失敗してもデプロイは続け、できた動画は公開する。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直す。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れる (管理者の画面に出す)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のまま。
 
 `narration.json` のあるトピックだけを対象に、スライド・台本・読み辞書・スライド CSS・TTS の provider / モデル / 声 / 速さを内容ハッシュへ含める。公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。台帳はキーの SHA-256 とサイズ・長さだけを保持し、旧版は消さない。`dist/video-manifest.json` (`VIDEO_MANIFEST`) を seed に渡し、`lessons.video_path` を更新する。manifest に載らないトピックや manifest を渡さない seed は既存の動画を保持し、台本が消えたトピックは参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
 
 デプロイは毎回、教材の公開バケット `stella-materials-public` に CORS (本番の Web とローカルの 5173 から GET/HEAD) を設定する。無いと動画・字幕・表紙をブラウザーが読み込まない。
 
 手元は ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意し、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。R2 の認証とバケットは PDF と共通。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。動画再生から完了は記録しない。
+
+動画の方式はトピックごとに `video.json` → 収録版 (`screen.*`) → スライド版 (`narration.json`) の順で選ぶ。新方式は音声合成・ブラウザ起動の前に内容ハッシュを計算し、台帳に動画・字幕・ポスターがあれば生成を省く。ハッシュは正規化した `boards`・`scenes`・イラストの領域、実際の読み上げ文 (読み辞書適用後)、音声のモデル・声・話し方、間の定数、使うショット・クリップ・イラストの中身、描画・配置・時刻・書き出しのコードとフォントを含む。`brief`・`polish`・イラストの `prompt` は含めない。公開用の `video:sync` は `--tts-model`・`VIDEO_TTS_MODEL` を受け付けず、`narration/voice.json` のモデルを使う。
+
+新方式の Gemini 合成は場面ごとに 1 回 (分割の検査で失敗した場合は再試行) で、場面の音声と映像は `dist/video-cache` に内容ハッシュで置く。CI は `actions/cache` でデプロイをまたいで復元・保存する。キャッシュが無い・壊れている場合は作り直す。`video:sync` の終了時に使用したファイルの更新時刻を更新し、今回使わず最終更新から30日を超えたクリップ・音声を削除する。
 
 seed は SQL を D1 の 100KB/query に収まるチャンクへ割って**直列に**適用する（FK 順と upsert 順があるので並列にしないこと）。remote は 1 プロセスから D1 の HTTP API (`/query`) を叩く（`apps/api/scripts/lib/d1-remote.ts`）。チャンクごとに `bunx wrangler d1 execute` を起こしていた頃は、D1 上の実行時間が合計 4 秒なのに壁時計が 8 分半で、差はすべて CLI の起動と通信だった。途中で落ちたら何チャンク目かを出して失敗させる（「成功したことにしない」）。HTTP 側で問題が出たときは `cd apps/api && bun run scripts/seed-d1.ts --remote --content-only --wrangler` で旧経路（チャンクごとに `wrangler d1 execute`）に戻せる。local (`--local`) は miniflare の実体に書く必要があるので wrangler のままで、チャンクに割らず全文を 1 回で流す（起動だけで 1 回 3〜4 秒かかるので、チャンクごとに起こすと 20 分を超える）。
 
@@ -162,7 +166,7 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
 - **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api のデプロイは済んでいる。web とヘルスチェックは動かない）。
 - **教材画像 upload 失敗**: 画像か R2 認証 (API トークンの R2 権限) を直して再 push（seed 以降は動かない）。
-- **教材動画が一部失敗**: できた動画は R2 と manifest に載せて公開し、失敗したトピックは前の版を残す。migrate・api・seed・web のデプロイは続けるが、指紋は記録しない。次のデプロイで失敗したトピックを作り直す (成功分は台帳で生成を省く)。Gemini はトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。
+- **教材動画が一部失敗**: できた動画は R2 と manifest に載せて公開し、失敗したトピックは前の版を残す。migrate・api・seed・web のデプロイは続けるが、指紋は記録しない。次のデプロイで失敗したトピックを作り直す (成功分は台帳で生成を省く)。Gemini は新方式では場面ごと、スライド版ではトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分ける。429 で 1 日の上限に当たったらすぐ止める。
 - **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / 動画 / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`

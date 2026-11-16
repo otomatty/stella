@@ -1,0 +1,8 @@
+{
+  "source": "apps/web/scripts/tutorials/shots/submissions.ts",
+  "width": 2560,
+  "height": 1600,
+  "regions": {
+    "submissions": [760, 964, 1600, 221]
+  }
+}

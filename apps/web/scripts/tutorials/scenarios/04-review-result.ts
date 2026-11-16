@@ -1,3 +1,4 @@
+import { REVIEW_RESULT_SEED_SQL } from "../lib/review-result-seed";
 import { openFirstTask, show } from "../lib/scenario-navigation";
 import { defineScenario } from "../lib/types";
 
@@ -9,25 +10,7 @@ export default defineScenario({
   summary: "課題のレッスンの下でその課題の提出を開き、通知と結果の画面を確認します。",
   start: "/",
   user: "seed-learner",
-  seedSql: [
-    // 課題・課題文レッスン・受講者は seed の行を使い、提出直後の状態を用意する。
-    // AI のジョブは作らず、収録中も「AI が確認中」のままにする。
-    `INSERT INTO submissions (
-      id, tenant_id, student_id, lesson_id, task_id, task_content_hash,
-      task_kind, submission_mode, stage_title, section_title, assignment_title,
-      code, status, ai_review_status, submitted_at
-    )
-    SELECT 'tutorial-review-result-' || t.id, st.tenant_id, p.id, l.id, t.id,
-      t.content_hash, t.kind, 'submit', st.title, s.title, t.title,
-      '', 'pending', 'queued', unixepoch('now') * 1000
-    FROM tasks t
-    JOIN lessons l ON l.id = t.lesson_id
-    JOIN sections s ON s.id = l.section_id
-    JOIN stages st ON st.id = s.stage_id
-    JOIN profiles p ON p.tenant_id = st.tenant_id AND p.id = 'seed-learner'
-    WHERE st.tenant_id = 'ses' AND st.slug = 'dev-env-basics' AND st.format = 2
-      AND t.id = 'dev-env-basics/u02-first-task/q01-first-page';`,
-  ],
+  seedSql: REVIEW_RESULT_SEED_SQL,
   async run(t) {
     await openFirstTask(t);
     await t.caption("提出のあとも、Web で結果を確かめられます。", { hold: 5500 });

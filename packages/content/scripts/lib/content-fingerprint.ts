@@ -29,6 +29,21 @@ import { createHash } from "node:crypto";
  * migration は、新しい列を seed が埋める形があるので教材が同じでも流す。
  */
 export const SEED_INPUT_PATHS = [
+  // 新方式の素材と実行時の生成依存 (執筆用コマンドは含めない)。
+  "packages/content/shots",
+  "packages/content/clips",
+  "packages/content/scripts/build-scene-video.ts",
+  "packages/content/scripts/lib/scene-cache.ts",
+  "packages/content/scripts/lib/scene-encode.ts",
+  "packages/content/scripts/lib/scene-html.ts",
+  "packages/content/scripts/lib/scene-view-html.ts",
+  "packages/content/scripts/lib/storyboard-assets.ts",
+  "packages/content/src/scene-layout.ts",
+  "packages/content/src/scene-timeline.ts",
+  "packages/content/src/scene-view.ts",
+  "packages/content/src/video-art.ts",
+  "packages/content/src/video-shots.ts",
+  "packages/content/src/video-storyboard.ts",
   // 教材の正本と、生成コードがパスで読む台帳。
   "packages/content/stages",
   "packages/content/coding-rules.md",

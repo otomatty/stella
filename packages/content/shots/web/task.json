@@ -1,0 +1,10 @@
+{
+  "source": "apps/web/scripts/tutorials/shots/task.ts",
+  "width": 2560,
+  "height": 1600,
+  "regions": {
+    "handoff": [760, 362, 1600, 194],
+    "open": [2032, 427, 294, 65],
+    "doc": [760, 725, 1600, 875]
+  }
+}

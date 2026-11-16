@@ -1,0 +1,253 @@
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { BoardScene, BoardState } from "../../src/video-storyboard.js";
+import { describe, expect, it } from "vitest";
+import {
+  beginVideoCacheRun,
+  pruneVideoCache,
+  touchVideoCacheFile,
+  sceneVideoSourceHash,
+  shouldPruneVideoCache,
+  sceneCacheHash,
+  type SceneCacheInput,
+} from "./scene-cache.js";
+const plan = (): SceneCacheInput<BoardScene, BoardState> => ({
+  version: 1,
+  board: { cols: 1, rows: 1, nodes: [{ id: "a", label: "ファイル", icon: "file", at: [1, 1] }] },
+  start: { visible: [], marks: {}, zoom: "all" },
+  scene: {
+    id: "a",
+    role: "hook",
+    title: "ファイル",
+    board: "main",
+    beats: [{ say: "ファイルです。", show: ["a"] }],
+  },
+  timing: { start: 12, duration: 3, beats: [{ start: 0.5, end: 2, say: "ファイルです。" }] },
+  html: "<svg></svg>",
+  voice: "fake/1",
+  audio: [new Int16Array([1, 2, 3])],
+  code: { renderer: "v1", encoder: "v1" },
+});
+describe("場面キャッシュ", () => {
+  it("前の場面が伸びても、変更のない場面を再生成しない", () => {
+    const a = plan(),
+      b = plan();
+    b.timing.start = 42;
+    expect(sceneCacheHash(a)).toBe(sceneCacheHash(b));
+  });
+  const edits: [string, (p: SceneCacheInput<BoardScene, BoardState>) => void][] = [
+    [
+      "生成の版",
+      (p) => {
+        p.version++;
+      },
+    ],
+    [
+      "図解",
+      (p) => {
+        p.board.nodes[0].label = "別の図";
+      },
+    ],
+    [
+      "引き継ぐ可視状態",
+      (p) => {
+        p.start.visible = ["a"];
+      },
+    ],
+    [
+      "引き継ぐ印",
+      (p) => {
+        p.start.marks.a = "check";
+      },
+    ],
+    [
+      "引き継ぐカメラ",
+      (p) => {
+        p.start.zoom = ["a"];
+      },
+    ],
+    [
+      "文",
+      (p) => {
+        p.scene.beats[0].say = "別の文です。";
+      },
+    ],
+    [
+      "動き",
+      (p) => {
+        p.scene.beats[0].pulse = ["a"];
+      },
+    ],
+    [
+      "声",
+      (p) => {
+        p.voice = "fake/2";
+      },
+    ],
+    [
+      "音声",
+      (p) => {
+        p.audio[0][1] = 4;
+      },
+    ],
+    [
+      "描画コード",
+      (p) => {
+        p.code.renderer = "v2";
+      },
+    ],
+    [
+      "SVGや書体",
+      (p) => {
+        p.html = "<svg>changed</svg>";
+      },
+    ],
+  ];
+  for (const [name, edit] of edits)
+    it(`${name}が変わった場面を作り直す`, () => {
+      const p = plan(),
+        before = sceneCacheHash(p);
+      edit(p);
+      expect(sceneCacheHash(p)).not.toBe(before);
+    });
+  it("PCMの部分配列は対象のバイトだけをハッシュする", () => {
+    const p = plan(),
+      a = sceneCacheHash(p);
+    p.audio = [new Int16Array([99, 1, 2, 3, 99]).subarray(1, 4)];
+    expect(sceneCacheHash(p)).toBe(a);
+  });
+});
+
+it("抽出コマの作業フォルダーだけが違ってもキャッシュを再利用する", () => {
+  const a = {
+    ...plan(),
+    assetRoot: "file:///tmp/work-one",
+    html: '<img src="file:///tmp/work-one/clips/web/read/open/000001.jpg">',
+    assets: { "clip:web/read#open": "content-hash" },
+  };
+  const b = {
+    ...a,
+    assetRoot: "file:///tmp/work-two",
+    html: a.html.replaceAll("work-one", "work-two"),
+  };
+  expect(sceneCacheHash(a)).toBe(sceneCacheHash(b));
+  expect(sceneCacheHash({ ...b, assets: { "clip:web/read#open": "new-content-hash" } })).not.toBe(
+    sceneCacheHash(a),
+  );
+});
+
+describe("配信前の新方式ハッシュ", () => {
+  const input = () => ({
+    version: 1,
+    storyboard: {
+      schema: 1 as const,
+      brief: { goal: "説明する", stuck: "迷う", points: ["読む"], leaveOut: [] },
+      boards: { main: plan().board },
+      scenes: [plan().scene],
+      art: {
+        learner: {
+          prompt: "learner",
+          regions: { face: [0, 0, 1, 1] as [number, number, number, number] },
+        },
+      },
+    },
+    readings: { ファイル: "ふぁいる", 未使用: "みしよう" },
+    voice: "gemini/model-one/voice/style",
+    assets: {
+      "shot:web/read": "png-and-json-sha256",
+      "clip:web/read#open": "json-and-video-sha256",
+    },
+    code: { renderer: "v1" },
+  });
+  it("文・使う読み・素材の中身・音声モデル・領域・描画が変わると変わる", () => {
+    const edits = [
+      (p: ReturnType<typeof input>) => {
+        p.storyboard.scenes[0].beats[0].say = "別の文です。";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.readings.ファイル = "べつのよみ";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.assets["shot:web/read"] = "changed";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.assets["clip:web/read#open"] = "changed";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.voice = "gemini/model-two/voice/style";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.storyboard.art.learner.regions.face[0] = 0.1;
+      },
+      (p: ReturnType<typeof input>) => {
+        p.code.renderer = "v2";
+      },
+    ];
+    for (const edit of edits) {
+      const p = input();
+      const before = sceneVideoSourceHash(p);
+      edit(p);
+      expect(sceneVideoSourceHash(p)).not.toBe(before);
+    }
+  });
+  it("brief・polish・prompt・未使用の読みだけの変更では変わらない", () => {
+    const p = input(),
+      before = sceneVideoSourceHash(p);
+    p.storyboard.brief.goal = "書き直した設計";
+    p.storyboard.art.learner.prompt = "new illustration prompt";
+    p.readings.未使用 = "べつ";
+    expect(
+      sceneVideoSourceHash({ ...p, storyboard: { ...p.storyboard, polish: {} } } as typeof p),
+    ).toBe(before);
+  });
+  it("オブジェクトのキー順では変わらない", () => {
+    const p = input();
+    expect(
+      sceneVideoSourceHash({
+        ...p,
+        assets: Object.fromEntries(Object.entries(p.assets).reverse()),
+      }),
+    ).toBe(sceneVideoSourceHash(p));
+  });
+});
+
+it("今回使ったものと30日以内のキャッシュを残し、それより古い未使用分だけ消す", () => {
+  const now = 40 * 86400000;
+  expect(shouldPruneVideoCache(true, 0, now)).toBe(false);
+  expect(shouldPruneVideoCache(false, now - 30 * 86400000, now)).toBe(false);
+  expect(shouldPruneVideoCache(false, now - 30 * 86400000 - 1, now)).toBe(true);
+  expect(shouldPruneVideoCache(false, now + 1, now)).toBe(false);
+});
+
+it("使用した場面・音声は時刻を更新し、古い未使用ファイルだけを実際に削除する", () => {
+  const root = mkdtempSync(join(tmpdir(), "stella-cache-prune-"));
+  try {
+    beginVideoCacheRun();
+    const used = join(root, "tts", "used.wav"),
+      stale = join(root, "scenes", "hash", "clip.mp4"),
+      recent = join(root, "tts", "recent.mp3");
+    mkdirSync(join(root, "tts"), { recursive: true });
+    mkdirSync(join(root, "scenes", "hash"), { recursive: true });
+    const old = new Date(Date.now() - 31 * 86400000);
+    for (const file of [used, stale, recent]) writeFileSync(file, "cache");
+    for (const file of [used, stale]) utimesSync(file, old, old);
+    touchVideoCacheFile(used);
+    pruneVideoCache(root);
+    expect(existsSync(used)).toBe(true);
+    expect(statSync(used).mtimeMs).toBeGreaterThan(old.getTime());
+    expect(existsSync(stale)).toBe(false);
+    expect(existsSync(recent)).toBe(true);
+    pruneVideoCache(join(root, "absent"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

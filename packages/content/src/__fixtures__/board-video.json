@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "「読むのは Web、書くのは VS Code」と「書く、確認する、提出する、結果を読む」の順番を言える。",
+    "stuck": "画面が 2 つあり、どちらで何をするのか迷う。提出したら終わりだと思い、直しが返ると失敗だと感じてしまう。",
+    "points": [
+      "読むのは Web、課題を書くのは VS Code。",
+      "書いたら、確認してから提出し、結果を読む。",
+      "直すところが返ってきたら、直してもう一度提出する。それが普通の進め方。"
+    ],
+    "leaveOut": [
+      "レッスンと知識問題の細かい定義",
+      "提出を AI と講師のどちらが見るか",
+      "ボタンの名前と位置",
+      "VS Code の入れ方"
+    ]
+  },
+  "boards": {
+    "main": {
+      "cols": 4,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "web",
+          "label": "Web",
+          "icon": "browser",
+          "tone": "blue",
+          "cells": [1, 1, 1, 2]
+        },
+        {
+          "id": "vscode",
+          "label": "VS Code",
+          "icon": "editor",
+          "tone": "violet",
+          "cells": [2, 1, 3, 2]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読む",
+          "icon": "read",
+          "at": [1, 1]
+        },
+        {
+          "id": "quiz",
+          "label": "知識問題",
+          "icon": "quiz",
+          "at": [1, 2]
+        },
+        {
+          "id": "write",
+          "label": "書く",
+          "icon": "write",
+          "at": [2, 1]
+        },
+        {
+          "id": "check",
+          "label": "確認する",
+          "icon": "check",
+          "at": [3, 1]
+        },
+        {
+          "id": "submit",
+          "label": "提出する",
+          "icon": "send",
+          "at": [4, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果を読む",
+          "icon": "result",
+          "at": [4, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-quiz",
+          "from": "read",
+          "to": "quiz"
+        },
+        {
+          "id": "quiz-write",
+          "from": "quiz",
+          "to": "write"
+        },
+        {
+          "id": "write-check",
+          "from": "write",
+          "to": "check"
+        },
+        {
+          "id": "check-submit",
+          "from": "check",
+          "to": "submit"
+        },
+        {
+          "id": "submit-result",
+          "from": "submit",
+          "to": "result"
+        },
+        {
+          "id": "result-write",
+          "from": "result",
+          "to": "write",
+          "label": "直す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "role": "hook",
+      "title": "どこで、何をする?",
+      "board": "main",
+      "beats": [
+        {
+          "say": "STELLA の学習では、Web と VS Code の 2 つを使います。",
+          "show": ["web", "vscode"],
+          "zoom": "all"
+        },
+        {
+          "say": "どちらで何をするのでしょうか?",
+          "mark": [
+            {
+              "on": "web",
+              "kind": "question"
+            },
+            {
+              "on": "vscode",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "places",
+      "role": "point",
+      "point": 1,
+      "title": "読む場所と、書く場所",
+      "board": "main",
+      "beats": [
+        {
+          "say": "Web は、読む場所です。",
+          "show": ["read"],
+          "focus": ["web"],
+          "unmark": ["web"]
+        },
+        {
+          "say": "読んだら、知識問題を解きます。",
+          "show": ["read-quiz", "quiz"],
+          "focus": ["web"]
+        },
+        {
+          "say": "VS Code は、書く場所です。",
+          "show": ["write"],
+          "focus": ["vscode"],
+          "unmark": ["vscode"]
+        },
+        {
+          "say": "知識問題のあとは、ここで課題を書きます。",
+          "show": ["quiz-write"],
+          "travel": {
+            "along": ["quiz-write"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "role": "point",
+      "point": 2,
+      "title": "書いたあとの順番",
+      "board": "main",
+      "beats": [
+        {
+          "say": "書いたら、すぐには提出しません。",
+          "zoom": ["write", "check", "submit"],
+          "pulse": ["write"]
+        },
+        {
+          "say": "まず、手元で確認します。",
+          "show": ["write-check", "check"]
+        },
+        {
+          "say": "確認が通ったら、提出します。",
+          "mark": [
+            {
+              "on": "check",
+              "kind": "check"
+            }
+          ],
+          "show": ["check-submit", "submit"]
+        },
+        {
+          "say": "しばらくしたら、結果を読みます。",
+          "show": ["submit-result", "result"],
+          "zoom": ["vscode"]
+        }
+      ]
+    },
+    {
+      "id": "retry",
+      "role": "point",
+      "point": 3,
+      "title": "直しが返ってきたら",
+      "board": "main",
+      "beats": [
+        {
+          "say": "結果に、直すところが書かれていることがあります。",
+          "focus": ["result"],
+          "mark": [
+            {
+              "on": "result",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "そのときは、直して、もう一度確認して提出します。",
+          "show": ["result-write"],
+          "travel": {
+            "along": ["result-write", "write-check", "check-submit"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "一度で通らなくても、大丈夫です。",
+          "travel": {
+            "along": ["submit-result"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "直してもう一度提出するのが、普通の進め方です。",
+          "mark": [
+            {
+              "on": "result",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "role": "recap",
+      "title": "この繰り返しで進む",
+      "board": "main",
+      "beats": [
+        {
+          "say": "読むのは Web、書くのは VS Code です。",
+          "zoom": "all",
+          "pulse": ["web", "vscode"]
+        },
+        {
+          "say": "書いたら、確認して、提出して、結果を読みます。",
+          "travel": {
+            "along": ["write-check", "check-submit", "submit-result"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "直すところがあれば直して、繰り返します。",
+          "travel": {
+            "along": ["result-write"],
+            "icon": "repeat"
+          },
+          "pulse": ["write"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "9ca2f8e529e12f88e922ecadba65fe1b2590f99b37eed71df7a202e18d6bc5aa"
+  }
+}

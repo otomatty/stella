@@ -23,12 +23,14 @@ let warnings = 0;
 for (const topic of topics) {
   const label = `${topic.stageSlug}/${topic.id}`;
   try {
-    const files: Partial<Record<(typeof SCREEN_VIDEO_FILES)[number], Uint8Array>> = {};
-    for (const name of SCREEN_VIDEO_FILES) {
-      const file = join(topic.topicDir, name);
-      if (existsSync(file)) files[name] = readFileSync(file);
+    if (!existsSync(join(topic.topicDir, "video.json"))) {
+      const files: Partial<Record<(typeof SCREEN_VIDEO_FILES)[number], Uint8Array>> = {};
+      for (const name of SCREEN_VIDEO_FILES) {
+        const file = join(topic.topicDir, name);
+        if (existsSync(file)) files[name] = readFileSync(file);
+      }
+      selectVideoSource(files, existsSync(topic.narrationFile));
     }
-    selectVideoSource(files, existsSync(topic.narrationFile));
   } catch (error) {
     console.log(`✗ ${label}: ${(error as Error).message}`);
     errors++;

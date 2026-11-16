@@ -1,0 +1,12 @@
+{
+  "source": "stages/dev-env-basics/modules/u02-first-task/l1-first-task/t3-run-check/screen.mp4@31",
+  "width": 1600,
+  "height": 1000,
+  "regions": {
+    "code": [476, 112, 490, 304],
+    "headline": [1040, 222, 204, 30],
+    "result": [1046, 268, 520, 292],
+    "status-check": [146, 968, 126, 30],
+    "fail-item": [1066, 350, 490, 142]
+  }
+}

@@ -1,0 +1,309 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "「読むのは Webアプリ、書くのは VS Code」と「書く、確認する、提出する、結果を読む」の順番を言える。",
+    "stuck": "画面が 2 つあり、どちらで何をするのか迷う。確認で直すところが出ると、失敗だと感じてしまう。",
+    "points": [
+      "読むのは Webアプリ、課題を書くのは VS Code。",
+      "書いたら確認する。直すところが出たら、直してもう一度確認する。",
+      "確認が通ったら提出し、Webアプリで結果を読む。"
+    ],
+    "leaveOut": [
+      "レッスンと知識問題の細かい定義",
+      "提出を AI と講師のどちらが見るか",
+      "VS Code の入れ方",
+      "課題文のパネルの細かい読み方"
+    ]
+  },
+  "art": {
+    "two-screens": {
+      "prompt": "The learner sits at a wide desk seen from the front, with two separate monitors side by side. The left monitor shows a blue web browser window with abstract page blocks. The right monitor shows a violet code editor window with a dark screen and abstract colored code lines. The learner looks slightly puzzled, one hand on the chin, glancing between the two screens. Wide composition.",
+      "aspect": "16:9",
+      "regions": {
+        "web": [0.147, 0.279, 0.253, 0.375],
+        "vscode": [0.6, 0.279, 0.256, 0.375]
+      }
+    },
+    "read": {
+      "prompt": "The learner reads a lesson on a blue web browser window on a laptop. The screen shows abstract blue blocks like a slide. Blue is the dominant color."
+    },
+    "write": {
+      "prompt": "The learner types on a keyboard in front of a violet code editor window with a dark screen showing abstract colored code lines. Violet is the dominant color."
+    },
+    "check": {
+      "prompt": "A violet code editor window with a dark screen, and in front of it a large white checklist card where two items have green check marks. A magnifying glass hovers over the card. No person."
+    },
+    "submit": {
+      "prompt": "The learner presses a key and a magenta paper plane carrying a small document flies out of a violet code editor window toward the upper right. Violet is the dominant color."
+    },
+    "result": {
+      "prompt": "The learner smiles at a blue web browser window showing a review card with a green check mark badge and abstract grey comment lines. Blue is the dominant color."
+    }
+  },
+  "boards": {
+    "loop": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "web-read",
+          "label": "Webアプリ",
+          "icon": "browser",
+          "tone": "blue",
+          "cells": [1, 1, 1, 1]
+        },
+        {
+          "id": "vscode",
+          "label": "VS Code",
+          "icon": "editor",
+          "tone": "violet",
+          "cells": [2, 1, 3, 1]
+        },
+        {
+          "id": "web-result",
+          "label": "Webアプリ",
+          "icon": "browser",
+          "tone": "blue",
+          "cells": [5, 1, 1, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読む",
+          "art": "read",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "書く",
+          "art": "write",
+          "at": [2, 1]
+        },
+        {
+          "id": "check",
+          "label": "確認する",
+          "art": "check",
+          "at": [3, 1]
+        },
+        {
+          "id": "submit",
+          "label": "提出する",
+          "art": "submit",
+          "at": [4, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果を読む",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-write",
+          "from": "read",
+          "to": "write"
+        },
+        {
+          "id": "write-check",
+          "from": "write",
+          "to": "check"
+        },
+        {
+          "id": "check-submit",
+          "from": "check",
+          "to": "submit"
+        },
+        {
+          "id": "submit-result",
+          "from": "submit",
+          "to": "result"
+        },
+        {
+          "id": "check-write",
+          "from": "check",
+          "to": "write",
+          "label": "直す",
+          "route": "under"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "view",
+      "role": "hook",
+      "title": "どこで、何をする?",
+      "image": "art:two-screens",
+      "beats": [
+        {
+          "say": "STELLA の学習では、Webアプリと VS Code の 2 つを使います。",
+          "label": [
+            {
+              "at": "web",
+              "text": "Webアプリ"
+            },
+            {
+              "at": "vscode",
+              "text": "VS Code"
+            }
+          ]
+        },
+        {
+          "say": "どちらで何をするのでしょうか?",
+          "spot": ["web", "vscode"],
+          "label": [
+            {
+              "at": "web",
+              "text": "Webアプリ"
+            },
+            {
+              "at": "vscode",
+              "text": "VS Code"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "places",
+      "kind": "view",
+      "role": "point",
+      "point": 1,
+      "title": "読む場所と、書く場所",
+      "image": "clip:web/read-lesson#open-lesson",
+      "beats": [
+        {
+          "say": "Webアプリは、読む場所です。",
+          "clip": "web/read-lesson#open-lesson"
+        },
+        {
+          "say": "レッスンを開いて、スライドを読み進めます。",
+          "clip": "web/read-lesson#next-slide"
+        },
+        {
+          "say": "課題を始めるときは、「VS Code で開く」を押します。",
+          "clip": "web/open-task#press-open"
+        },
+        {
+          "say": "VS Code に切り替わり、課題が開きます。",
+          "clip": "vscode/run-check#opened"
+        },
+        {
+          "say": "VS Code は、課題を書く場所です。",
+          "spot": ["editor"]
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "書いたら、確認する",
+      "image": "clip:vscode/run-check#press-check",
+      "beats": [
+        {
+          "say": "書いたら、「課題を確認する」を押します。",
+          "clip": "vscode/run-check#press-check"
+        },
+        {
+          "say": "直すところがあれば、ここに表示されます。",
+          "clip": "vscode/run-check#fail",
+          "zoom": "result"
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "直して、もう一度",
+      "image": "clip:vscode/run-check#fix",
+      "beats": [
+        {
+          "say": "コードを直します。",
+          "clip": "vscode/run-check#fix",
+          "zoom": "code"
+        },
+        {
+          "say": "直したら、保存します。",
+          "clip": "vscode/run-check#save",
+          "zoom": "all"
+        },
+        {
+          "say": "もう一度、確認します。",
+          "clip": "vscode/run-check#recheck"
+        },
+        {
+          "say": "すべて通ったら、確認は終わりです。",
+          "clip": "vscode/run-check#pass",
+          "zoom": "result"
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "kind": "view",
+      "role": "point",
+      "point": 3,
+      "title": "通ったら、提出する",
+      "image": "shot:vscode/check-pass",
+      "beats": [
+        {
+          "say": "確認が通ったら、提出します。",
+          "zoom": "result",
+          "spot": ["submit"],
+          "click": "submit"
+        },
+        {
+          "say": "Webアプリに戻って、結果を読みます。",
+          "clip": "web/read-result#open-submissions"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "role": "recap",
+      "title": "この繰り返しで進む",
+      "board": "loop",
+      "beats": [
+        {
+          "say": "読むのは Webアプリ、書くのは VS Code です。",
+          "show": ["web-read", "vscode", "read", "write", "read-write"]
+        },
+        {
+          "say": "書いたら確認して、通ったら提出し、Webアプリで結果を読みます。",
+          "show": [
+            "write-check",
+            "check",
+            "check-submit",
+            "submit",
+            "web-result",
+            "submit-result",
+            "result"
+          ],
+          "travel": {
+            "along": ["write-check", "check-submit", "submit-result"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "直すところがあれば、直してもう一度確認します。",
+          "show": ["check-write"],
+          "travel": {
+            "along": ["check-write"],
+            "icon": "repeat"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "fc22199ac4e70863a7994ef4aab0a4c70ea6bbf88c3487e07624d361a0df158b"
+  }
+}
