@@ -1153,3 +1153,55 @@ describe("参照元の公開ゲートと表示", () => {
     expect(() => readSourceRefs("---\nsourceRefs: unknown\n---\n本文")).toThrow("インライン配列");
   });
 });
+
+it("共通の素材の変更はそれを参照する video.json の単元だけの指紋を変える", () => {
+  const { root } = fixture();
+  const unit = join(root, "stages/dev-env-basics/modules/m0-first-page");
+  const other = join(root, "stages/dev-env-basics/modules/other");
+  cpSync(unit, other, { recursive: true });
+  const topic = join(unit, "l1-save-and-preview/t1-saved-html");
+  mkdirSync(join(root, "shots/web"), { recursive: true });
+  mkdirSync(join(root, "clips/web"), { recursive: true });
+  mkdirSync(join(root, "stages/recording"), { recursive: true });
+  const shot = join(root, "shots/web/read");
+  writeFileSync(`${shot}.json`, JSON.stringify({ width: 1, height: 1, regions: {} }));
+  writeFileSync(`${shot}.png`, "pixels");
+  const clip = join(root, "clips/web/read.json");
+  writeFileSync(
+    clip,
+    JSON.stringify({
+      video: "stages/recording/screen.mp4",
+      width: 1,
+      height: 1,
+      fps: 30,
+      duration: 2,
+      marks: { open: [0, 1] },
+      regions: {},
+    }),
+  );
+  const recording = join(root, "stages/recording/screen.mp4");
+  writeFileSync(recording, "video");
+  writeFileSync(
+    join(topic, "video.json"),
+    JSON.stringify({
+      scenes: [{ kind: "view", image: "shot:web/read", beats: [{ clip: "web/read#open" }] }],
+    }),
+  );
+  const untouched = unitContentHash(other);
+  let previous = unitContentHash(unit);
+  for (const file of [`${shot}.png`, `${shot}.json`, clip, recording]) {
+    const bytes = readFileSync(file);
+    writeFileSync(
+      file,
+      Buffer.concat([bytes, Buffer.from(file.endsWith(".json") ? " " : "changed")]),
+    );
+    const next = unitContentHash(unit);
+    expect(next, file).not.toBe(previous);
+    expect(unitContentHash(other)).toBe(untouched);
+    previous = next;
+  }
+  writeFileSync(join(root, "shots/web/unused.json"), "broken unused definition");
+  writeFileSync(join(root, "clips/web/unused.json"), "broken unused definition");
+  expect(unitContentHash(unit)).toBe(previous);
+  expect(unitContentHash(other)).toBe(untouched);
+});

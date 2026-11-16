@@ -185,6 +185,7 @@ function sceneGenerationCode(): Record<string, string> {
     "./lib/scene-encode.ts",
     "./lib/storyboard-assets.ts",
     "./lib/ffmpeg.ts",
+    "../src/storyboard-assets.ts",
     "../src/scene-layout.ts",
     "../src/scene-timeline.ts",
     "../src/scene-sfx.ts",
@@ -216,7 +217,10 @@ export function planSceneTopic(
   voice: string,
 ) {
   const json = JSON.parse(readFileSync(join(topic.topicDir, "video.json"), "utf8"));
-  const assets = storyboardAssets(contentRoot, topic.topicDir, json, { onlyReferenced: true });
+  const assets = storyboardAssets(contentRoot, topic.topicDir, json, {
+    onlyReferenced: true,
+    freshVideoHashes: true,
+  });
   const { storyboard, issues } = parseStoryboard(json, assets.context);
   if (!storyboard || issues.some((i) => i.message.includes("イラストがまだありません")))
     throw new Error(issues.map((i) => `${i.path}: ${i.message}`).join(" / "));

@@ -130,7 +130,7 @@ it("クリップのJSONと動画の内容をハッシュし、欠けた動画と
     mkdirSync(join(root, "clips/web"), { recursive: true });
     const definition = {
       source: "fixture",
-      video: "one.mp4",
+      video: "clips/one.mp4",
       width: 1600,
       height: 1000,
       fps: 30,
@@ -149,25 +149,25 @@ it("クリップのJSONと動画の内容をハッシュし、欠けた動画と
       "クリップの動画がありません: web/action",
     );
     expect(storyboardAssets(root, root, sb, { allowMissingClips: true }).context.clips).toEqual({});
-    writeFileSync(join(root, "one.mp4"), "aaaa");
-    writeFileSync(join(root, "two.mp4"), "bbbb");
-    for (const file of ["one.mp4", "two.mp4"]) utimesSync(join(root, file), 100, 100);
-    expect(videoContentHash(join(root, "one.mp4"))).not.toBe(
-      videoContentHash(join(root, "two.mp4")),
+    writeFileSync(join(root, "clips/one.mp4"), "aaaa");
+    writeFileSync(join(root, "clips/two.mp4"), "bbbb");
+    for (const file of ["one.mp4", "two.mp4"]) utimesSync(join(root, "clips", file), 100, 100);
+    expect(videoContentHash(join(root, "clips/one.mp4"))).not.toBe(
+      videoContentHash(join(root, "clips/two.mp4")),
     );
     const first = storyboardAssets(root, root, sb);
     expect(first.images["clip:web/action#open"].regions).toEqual(definition.regions);
     expect(first.context.clips?.["web/action"].marks.open).toEqual([2, 4]);
     writeFileSync(json, JSON.stringify({ ...definition, source: "changed" }));
     expect(storyboardAssets(root, root, sb).hashes).not.toEqual(first.hashes);
-    writeFileSync(json, JSON.stringify({ ...definition, video: "two.mp4" }));
+    writeFileSync(json, JSON.stringify({ ...definition, video: "clips/two.mp4" }));
     expect(storyboardAssets(root, root, sb).hashes).not.toEqual(first.hashes);
     // 一つのプロセスでは同じ動画を読み直さない。
-    const memoized = videoContentHash(join(root, "one.mp4"));
-    rmSync(join(root, "one.mp4"));
-    expect(videoContentHash(join(root, "one.mp4"))).toBe(memoized);
+    const memoized = videoContentHash(join(root, "clips/one.mp4"));
+    rmSync(join(root, "clips/one.mp4"));
+    expect(videoContentHash(join(root, "clips/one.mp4"))).toBe(memoized);
     for (const marks of [{ open: [4, 4] }, { open: [2, 11] }]) {
-      writeFileSync(json, JSON.stringify({ ...definition, video: "two.mp4", marks }));
+      writeFileSync(json, JSON.stringify({ ...definition, video: "clips/two.mp4", marks }));
       expect(() => storyboardAssets(root, root, sb)).toThrow(
         "クリップの定義が不正です: web/action",
       );
@@ -195,5 +195,23 @@ it("公開生成では使わない素材の不足・不正で他のトピック�
     expect(result.context.clips).toEqual({});
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+it("Windows と POSIX のパスで content 外・変更検知の対象外を拒む", async () => {
+  const { posix, win32 } = await import("node:path");
+  const { clipVideoPath } = await import("../../src/storyboard-assets.js");
+  for (const path of [posix, win32]) {
+    const root = path.resolve("content");
+    for (const input of [
+      "../outside.mp4",
+      path.join("..", "outside.mp4"),
+      path.resolve("outside.mp4"),
+    ])
+      expect(() => clipVideoPath(root, input, "fixture", path)).toThrow("content 内");
+    for (const input of ["other/screen.mp4", "shots/screen.mp4", "clips/../other.mp4"])
+      expect(() => clipVideoPath(root, input, "fixture", path)).toThrow("stages/");
+    for (const input of ["stages/other/screen.mp4", "clips/web/action.mp4"])
+      expect(clipVideoPath(root, input, "fixture", path)).toBe(path.resolve(root, input));
   }
 });

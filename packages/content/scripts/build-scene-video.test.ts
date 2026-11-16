@@ -625,3 +625,23 @@ it("復元した音声キャッシュが壊れていれば、再合成して続�
   await sceneAudio(singleBeat, {}, provider("topic"), "/tmp/fixture-cache");
   expect(vi.mocked(synthesizeCached).mock.calls.map((call) => call[3])).toEqual([false, true]);
 });
+
+for (const unit of ["topic", "cue"] as const)
+  it(`refresh 指定後に長さが異常なら ${unit} の provider を本当に2回呼ぶ`, async () => {
+    const root = mkdtempSync(join(tmpdir(), "stella-refresh-retry-"));
+    const original = await vi.importActual<typeof import("./lib/tts.js")>("./lib/tts.js");
+    const mocked = vi.mocked(synthesizeCached).getMockImplementation();
+    try {
+      vi.mocked(synthesizeCached).mockImplementation(original.synthesizeCached);
+      const single = { ...scene, beats: [scene.beats[0]] };
+      const decode = unit === "topic" ? vi.mocked(decodePcm) : vi.mocked(decodeTrimmedPcm);
+      decode.mockResolvedValueOnce(new Int16Array(10)).mockResolvedValueOnce(pcmFor(single));
+      const synthesize = vi.fn(async () => ({ bytes: new Uint8Array([1]), ext: "wav" as const }));
+      const tts = { ...provider(unit), nondeterministic: true, synthesize };
+      await sceneAudio(single, {}, tts, root, true);
+      expect(synthesize).toHaveBeenCalledTimes(2);
+    } finally {
+      if (mocked) vi.mocked(synthesizeCached).mockImplementation(mocked);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });

@@ -423,7 +423,8 @@ function boardHtml(input: BoardHtmlInput): string {
   const nodes = input.board.nodes
     .map((n) => {
       const b = layout.nodes[n.id],
-        size = b.h < 160 ? 40 : 76;
+        size = b.h < 160 ? 40 : 76,
+        compact = b.h < 100;
       const zone = input.board.zones?.find(
         (z) =>
           n.at[0] >= z.cells[0] &&
@@ -431,7 +432,7 @@ function boardHtml(input: BoardHtmlInput): string {
           n.at[1] >= z.cells[1] &&
           n.at[1] < z.cells[1] + z.cells[3],
       );
-      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${b.y + 8}" width="${b.w - 16}" height="${b.h - 88}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", b.x + (b.w - size) / 2, b.y + 14, size)}</g>${label(n.label, { x: b.x + 6, y: n.art ? b.y + b.h - 80 : b.y + size + 16, w: b.w - 12, h: n.art ? 72 : b.h - size - 20 })}${mark()}</g>`;
+      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${compact ? b.y + (b.h - size) / 2 : b.y + 8}" width="${compact ? size : b.w - 16}" height="${compact ? size : b.h - 88}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", compact ? b.x + 8 : b.x + (b.w - size) / 2, compact ? b.y + (b.h - size) / 2 : b.y + 14, size)}</g>${label(n.label, compact ? { x: b.x + size + 16, y: b.y + 6, w: b.w - size - 24, h: b.h - 12 } : { x: b.x + 6, y: n.art ? b.y + b.h - 80 : b.y + size + 16, w: b.w - 12, h: n.art ? 72 : b.h - size - 20 })}${mark()}</g>`;
     })
     .join("");
   const links = (input.board.links ?? [])
