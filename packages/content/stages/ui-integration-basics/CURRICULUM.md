@@ -13,10 +13,18 @@
 
 ## 予定している内容
 
-- 既存機能との連携
+- 既存コードの調査
+- 入力フォームとAPI
+- 編集
+- 削除確認
+- 検索・並び替え・ページ切替
+- 権限による表示
+- 非同期の結果と画面更新
 - 統合テスト
-- E2Eテスト
-- Gitの共同作業
+
+[単元の一覧: 01 §3 M10 UIと既存機能の連携](../../../../docs/curriculum/01-content-split-and-learning-order.md#m10-uiと既存機能の連携)
+
+Gitの単元(clone・branch・merge・コンフリクトの解消・GitHub・push・PR、4〜6時間)を追加する([07 §3.5](../../../../docs/curriculum/07-stella-adoption-redesign.md#35-gitの共同作業の置き場所))。
 
 ## 執筆時の扱い
 

@@ -2,7 +2,7 @@
   "title": "SQLとデータベース",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】SQLでデータを読み書きし、関係と制約を設計できるようになるための講座です。",
+  "description": "【準備中】SQLでデータを読み書きし、関係と制約を設計できるようになるためのステージです。",
   "header": "SQLとデータベース",
   "tenantId": "ses",
   "plannedHours": 70,
@@ -10,7 +10,7 @@
   "canDo": "SQLでデータを読み書きし、関係と制約を設計できる",
   "theme": "サーバーとデータの基盤",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. このステージについて"
   },
   "parent": "node-api-basics"
 }

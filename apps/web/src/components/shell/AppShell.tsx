@@ -105,7 +105,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   gradebook: "/gradebook",
   // 発見教材は成績台帳と同じく `/admin/*` の外に残す。
   discovery: "/discovery",
-  library: "/library",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
   integrations: "/admin/integrations",

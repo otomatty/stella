@@ -21,16 +21,11 @@
     "database": {
       "binding": "DB",
       "name": "stella-db"
-    },
-    "libraryBucket": {
-      "apiBinding": "LIBRARY_BUCKET",
-      "name": "stella-library-private"
     }
   },
   "health": {
     "ok": true,
     "authConfigured": true,
-    "libraryEnabled": true,
     "aiReviewConfigured": true,
     "devModeAvailable": false
   }

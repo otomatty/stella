@@ -89,14 +89,6 @@ env:
     expect(() => validateDeploymentConfig(workflow, all)).toThrow(/database/);
   });
 
-  it("rejects a library bucket binding that points at another bucket", () => {
-    const all = configs();
-    const bucket = api(all).r2_buckets?.find((entry) => entry.binding === "LIBRARY_BUCKET");
-    if (!bucket) throw new Error("missing fixture bucket");
-    bucket.bucket_name = "wrong";
-    expect(() => validateDeploymentConfig(workflow, all)).toThrow(/bucket/);
-  });
-
   it("rejects duplicate DB bindings and anything left of the retired narrator", () => {
     const all = configs();
     const db = api(all).d1_databases?.find((entry) => entry.binding === "DB");

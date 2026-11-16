@@ -6,7 +6,6 @@ import { Hono } from "hono";
 
 import { authConfigured } from "../lib/better-auth.js";
 import { aiReviewConfigured } from "../lib/ai-review-provider.js";
-import { libraryRuntimeStatus } from "../lib/library-capabilities.js";
 import { isDevMode } from "../lib/skill-map-data.js";
 import type { Env } from "../env.js";
 
@@ -27,7 +26,5 @@ healthzRoute.get("/api/healthz", async (c) => {
     devModeAvailable: isDevMode(c.env),
     /** AI 一次レビューに必要な鍵と、Gateway 使用時のアカウント設定があるか。 */
     aiReviewConfigured: aiReviewConfigured(c.env),
-    /** 本棚が使えるか (フラグと非公開 R2 の束ね)。 */
-    ...libraryRuntimeStatus(c.env),
   });
 });

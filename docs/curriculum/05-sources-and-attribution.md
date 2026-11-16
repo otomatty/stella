@@ -84,7 +84,7 @@ HTMLの標準要素で実装できる入力やボタンから始める。複雑�
 | 公開環境・運用 | 採用するホスティング・クラウドの公式Docs | ビルド、環境変数、秘密情報、ログ、監視、バックアップ、復旧。採用先が決まった時点で登録する |
 | VS Code拡張・WebView | [VS Code公式Webview API](https://code.visualstudio.com/api/extension-guides/webview) | LXP側の教材表示、通信、状態復元、CSP、ローカル資源、拡張の役割 |
 
-ExpressとHonoは、APIの考え方を比較する資料として扱える。すべての課題を両方で二重に実装する計画にはしない。主教材の実装を一つに決め、M17で別の実装へ移す際に共通点と差分を確かめる。
+APIの主教材はExpressとする(2026-11-16決定)。Honoの資料は開発ラボGの事前課題(Extraステージ)とM17の比較で使う。すべての課題を両方で二重に実装する計画にはしない。M17で別の実装へ移す際に共通点と差分を確かめる。
 
 ORM、入力検証、認証、状態管理等の追加パッケージは、実際に採用するものだけ公式資料を登録する。教材の採用技術が増えるたびに、この一覧と単元の参照元を更新する。
 
@@ -122,7 +122,7 @@ OS、メモリ、プロセス、ファイル、文字コードは、実際に扱
 | M08 Reactの基礎と状態 | React Learn・Reference | 自分の実装で誰が状態を持つかを説明する |
 | M09 ReactのUI部品とデザイン規則 | React、WAI、デザインシステム、Storybook | 部品の仕様・状態・操作の参照を結び付ける |
 | M10 UIと既存機能の連携 | React、通信の資料、Testing Library、Playwright | 保存・失敗・再表示を既存のAPI契約と照合する |
-| M11 Node.jsとAPI | Node.js、npm、主教材のExpressまたはHono | API、Middleware、実行環境の対象版を確認する |
+| M11 Node.jsとAPI | Node.js、npm、主教材のExpress | API、Middleware、実行環境の対象版を確認する |
 | M12 SQLとデータベース | PostgreSQL公式Docs、確認済みの基礎書 | 制約・トランザクションの節を根拠に仕様を説明する |
 | M13 認証・認可・セキュリティ | OWASP、採用認証ライブラリ、フレームワーク公式Docs | 利用者と権限のチェック箇所を確認する |
 | M14 Next.jsとWebアプリ構成 | 採用版のNext.js App Router Docs、React | サーバ・クライアントの境界と版の差を調べる |

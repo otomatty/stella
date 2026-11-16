@@ -84,9 +84,6 @@
     "./markdown/tutorial-blocks": "./src/markdown/tutorial-blocks.ts",
     "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
     "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
-    "./library/types": "./src/library/types.ts",
-    "./library/book-package": "./src/library/book-package.ts",
-    "./library/schemas": "./src/library/schemas.ts",
     "./integrations/types": "./src/integrations/types.ts"
   },
   "scripts": {

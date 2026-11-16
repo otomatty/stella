@@ -1,5 +1,5 @@
 /**
- * Grok non-streaming completion via AI Gateway Unified Billing REST (Issue #204).
+ * Grok non-streaming completion via AI Gateway Unified Billing REST (Issue #3).
  */
 
 import type { ChatRole } from "@stella/shared/ai/types";

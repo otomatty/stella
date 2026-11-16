@@ -13,7 +13,7 @@ sourceRefs: [SRC-claude-four-certs-20261031, SRC-anthropic-services-track-202610
 
 > **Developer: Foundations は、Claude でアプリを作るエンジニアの資格です。**
 
-Claude の認定試験は4つあり、役割ごとに対象が分かれています。この講座が扱うのは Claude Certified Developer: Foundations です。公式の発表は、Claude でアプリを作るエンジニア向けの資格で、Claude API・ツール使用・エージェント開発の訓練を含むと説明しています。
+Claude の認定試験は4つあり、役割ごとに対象が分かれています。このステージが扱うのは Claude Certified Developer: Foundations です。公式の発表は、Claude でアプリを作るエンジニア向けの資格で、Claude API・ツール使用・エージェント開発の訓練を含むと説明しています。
 
 Claude API は、アプリから Claude を呼び出すための仕組みです。ツール使用は、Claude がアプリの処理(検索や計算など)を呼び出せるようにする仕組みです。エージェントは、手順を自分で考えながら作業を進める仕組みです。
 
@@ -33,7 +33,7 @@ Claude Partner Network は、Claude を顧客に届ける組織のための仕�
 
 監督つき試験とは、試験官が見ている状態で受ける試験のことです。試験は Pearson が実施し、始める前に本人確認をします。合格すると、Credly のデジタルバッジ(合格をネット上で示せる証明)が届きます。
 
-受け方・受験料・再受験などの条件は変わることがあります。この講座には変わりやすい数字を書きません。申し込むときに、Pearson と Partner Academy の案内で確かめます。
+受け方・受験料・再受験などの条件は変わることがあります。このステージには変わりやすい数字を書きません。申し込むときに、Pearson と Partner Academy の案内で確かめます。
 
 ## もっと知りたい人へ
 

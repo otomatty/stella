@@ -9,7 +9,7 @@ header: "Claude Developer資格対策"
 ---
 <!-- _class: lead -->
 # Developer 資格が測るもの
-<!-- ノート: Claude の認定試験のうち、この講座が対象にする資格を確かめます。 -->
+<!-- ノート: Claude の認定試験のうち、このステージが対象にする資格を確かめます。 -->
 ---
 # どの資格を受けるか
 Claude の認定試験は4つあります。
@@ -35,4 +35,4 @@ Developer: Foundations は、Claude でアプリを作るエンジニアの資�
 <!-- _class: summary -->
 # まとめ
 Developer: Foundations は、Claude でアプリを作るエンジニアの資格です。
-<!-- ノート: この講座は Developer: Foundations だけを対象にします。 -->
+<!-- ノート: このステージは Developer: Foundations だけを対象にします。 -->

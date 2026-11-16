@@ -9,13 +9,13 @@ import { integrationGroupFilter } from "../lib/integrations.js";
  *   POST /api/admin/users/invite   招待 (Google ログイン)
  *   POST /api/admin/users/role     ロール変更
  *   POST /api/admin/users/disable  無効化 / 復帰 (getCaller の disabled ゲートで即時有効)
- *   POST /api/admin/users/delete   受講者の削除 (提出・本棚の R2・認証まで)
+ *   POST /api/admin/users/delete   受講者の削除 (提出・認証まで)
  *
  * 無効化は profiles.disabled を立てるだけで、 API 経由の全アクセスが getCaller の
  * disabled チェックで遮断される。
  *
  * 受講者の削除は、外部キーの無い提出・接続・問い合わせと、受講者の id を含む通知、
- * プロフィール、auth_users を 1 つの batch で消す。本棚のファイルは library_r2_purges に積む。
+ * プロフィール、auth_users を 1 つの batch で消す。
  */
 
 import { isAssignableProfileRole, validateInviteUsersRequest } from "@stella/shared/admin/types";
@@ -28,8 +28,6 @@ import {
   auditLogs,
   authUsers,
   authVscodeLinks,
-  libraryBooks,
-  libraryR2Purges,
   notifications,
   profiles,
   submissions,
@@ -255,24 +253,11 @@ adminRoute.post("/api/admin/users/delete", async (c) => {
     const submissionCount = (
       await db.select({ value: count() }).from(submissions).where(eq(submissions.studentId, userId))
     )[0];
-    const bookCount = (
-      await db.select({ value: count() }).from(libraryBooks).where(eq(libraryBooks.ownerId, userId))
-    )[0];
     const deleted = {
       submissions: Number(submissionCount?.value ?? 0),
-      library_books: Number(bookCount?.value ?? 0),
     };
-    const now = Date.now();
-    // 接頭辞は bookPrefix(bookId) と同じ `library/<tenant>/<book>/` (保存済みの tenant_id の値を使う)。
     // audit_logs.metadata は NOT NULL (既定 '{}') なので、空オブジェクトにしてメールなどを外す。
     await db.batch([
-      db
-        .insert(libraryR2Purges)
-        .select(
-          sql`SELECT 'library/' || tenant_id || '/' || id || '/', ${now}
-              FROM library_books WHERE owner_id = ${userId}`,
-        )
-        .onConflictDoNothing(),
       db.delete(submissions).where(eq(submissions.studentId, userId)),
       db.delete(authVscodeLinks).where(eq(authVscodeLinks.userId, userId)),
       db.delete(supportInquiries).where(eq(supportInquiries.userId, userId)),

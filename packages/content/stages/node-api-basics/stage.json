@@ -2,7 +2,7 @@
   "title": "Node.jsとAPI",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】Node.jsでAPIを実装し、入力と応答をテストできるようになるための講座です。",
+  "description": "【準備中】Node.jsでAPIを実装し、入力と応答をテストできるようになるためのステージです。",
   "header": "Node.jsとAPI",
   "tenantId": "ses",
   "plannedHours": 70,
@@ -10,7 +10,7 @@
   "canDo": "Node.jsでAPIを実装し、入力と応答をテストできる",
   "theme": "サーバーとデータの基盤",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. このステージについて"
   },
   "parent": "http-async-basics"
 }

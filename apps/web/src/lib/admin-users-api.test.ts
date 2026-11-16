@@ -13,12 +13,11 @@ describe("deleteUser", () => {
   it("POST /api/admin/users/delete に userId と confirmEmail を送り、deleted を返す", async () => {
     apiFetch.mockResolvedValueOnce({
       ok: true,
-      deleted: { submissions: 2, library_books: 1 },
+      deleted: { submissions: 2 },
     });
 
     await expect(deleteUser("user-1", "Learner@Example.com")).resolves.toEqual({
       submissions: 2,
-      library_books: 1,
     });
     expect(apiFetch).toHaveBeenCalledWith("/api/admin/users/delete", {
       method: "POST",

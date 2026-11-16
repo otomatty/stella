@@ -13,7 +13,7 @@ sourceRefs: [SRC-claude-docs-ts-sdk-20261031, SRC-claude-docs-api-key-20261031, 
 
 > **API は公式の SDK から呼び、一時的なエラーの送り直しを SDK に任せます。**
 
-SDK は、API を呼ぶための公式のライブラリーです。言語ごとに用意されていて、リクエストの組み立てと通信、送り直しを引き受けます。この講座では TypeScript の SDK を例にします。
+SDK は、API を呼ぶための公式のライブラリーです。言語ごとに用意されていて、リクエストの組み立てと通信、送り直しを引き受けます。このステージでは TypeScript の SDK を例にします。
 
 ```js
 import Anthropic from "@anthropic-ai/sdk";
@@ -35,7 +35,7 @@ API キーは、API を使う権限を示す秘密の文字列です。コード
 const client = new Anthropic(); // SDK が環境変数から読む
 ```
 
-`new Anthropic({ apiKey: "sk-ant-..." })` のように、キーをそのまま書かないでください。漏れたキーは、すぐに無効にして作り直します。この講座の課題は、API キーなしで解ける形にしてあります。
+`new Anthropic({ apiKey: "sk-ant-..." })` のように、キーをそのまま書かないでください。漏れたキーは、すぐに無効にして作り直します。このステージの課題は、API キーなしで解ける形にしてあります。
 
 ## 1-2-3 モデルを ID で指す
 

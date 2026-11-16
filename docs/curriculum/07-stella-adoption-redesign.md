@@ -110,7 +110,7 @@ it-basicsはスキルツリーの唯一の根であり、4つの島の表示条�
 | テスト | `manifest.test.ts`、`export-seed-sql.test.ts`、`islands.test.ts`がit-basicsを前提にしている | テストが落ちる |
 | 文書 | `AGENTS.md`、`packages/content/CLAUDE.md`(唯一の前提なしステージ・動画PoCの説明)、`helpContent.ts`の受講者向けヘルプ | 説明が古くなる |
 
-旧it-basicsの台本は流用せず、`dev-env-basics`の12トピックに新しい台本(`narration.json`)を配置済みである。GitHub Secret `GEMINI_API_KEY` は未登録で、動画はまだ生成されていない。登録後はデプロイで生成する。
+旧it-basicsの台本は流用せず、`dev-env-basics`の12トピックに新しい台本(`narration.json`)を配置済みである。GitHub Secret `GEMINI_API_KEY` は登録済みで、mainへのpushでデプロイの `video:sync` が動画を作る。`dev-env-basics` は収録版5トピック、00-1-1は新方式 (`video.json`)、残りはスライド版を使う。生成・公開R2へのアップロード・seed・レッスン画面の配信まで通る(`packages/content/CLAUDE.md` の教材動画の記述に従う)。
 
 ### 3.4 残すステージの前提の付け替え
 
@@ -146,8 +146,9 @@ Gitだけのステージは作らず、必要になるステージの単元に�
 
 | ステージ | Gitで扱うこと | ここに置く理由 |
 | --- | --- | --- |
-| `dev-env-basics` | このステージでは扱わない | ローカルのinit・add・commit・diff・logは、Gitを最初に使うステージの冒頭で扱う。具体的なステージは執筆時(#41)に決める |
-| `html-css-basics`〜`react-ui-basics` | Git導入後は単元ごとにcommitする習慣。修正演習で、壊した変更をrestoreで戻す | M01でGitを習得済みとはしない。最初に使うステージの冒頭で導入・診断・ローカルの記録を扱い、その後に反復する。配置は執筆時(#41)に決める |
+| `dev-env-basics` | このステージでは扱わない | ローカルのinit・add・commit・diff・logは、`javascript-basics` の冒頭で扱う |
+| `html-css-basics` | このステージでは扱わない | `static-preview` だけで確認し、Node.js・Gitを要さない。先に進めた人はそのあいだGitの記録がない |
+| `javascript-basics`〜`react-ui-basics` | 冒頭でGitを導入し、単元ごとにcommitする習慣を始める。修正演習で、壊した変更をrestoreで戻す | M01でGitを習得済みとはしない。`javascript-basics` の冒頭で導入・診断(`diagnose-git-01`)・ローカルの記録(`git-record`)を扱い、その後に反復する(2026-11-16、オーナー決定、#219の案A) |
 | `ui-integration-basics` | clone、branch、merge、コンフリクトの解消、GitHubアカウント、push、自分のリポジトリでのPR | 提供された既存アプリへ部品を組み込む最初のステージ。変更をブランチに分け、既存機能を壊していないことを確かめてから取り込む流れが、そのまま単元の目的になる |
 | `design-quality-basics` | PRのレビューとレビューへの対応、commitの単位、ピアレビュー(§6.5) | 新設計のこのステージに「レビュー」の単元がある |
 | `deploy-ops-basics` | PRで動くCI、ブランチの保護、tag、revertによる切戻し | CIと切戻しの単元がある |
@@ -248,7 +249,7 @@ packages/content/
 - 配布ファイルは`GET /api/tasks/bundle`が返すREADME・starter・tests・`.stella/task.json`だけ。`private/`とヒントは返さない。ヒント・解答例・解説は、解放条件を満たした受講者にだけ`/api/tasks/help`が返す(§8.1)。
 - 学習者のファイルは上書きしない。同じ名前のファイルがあれば止めて、準備先と衝突したファイルを表示する(04 §6)。
 - Webの課題文レッスン(seedが`tasks.lesson_id`で結ぶ)と「単元の課題」の「VS Code で開く」が、一回限りの接続コード付きで課題を開く。
-- Gitを最初に使うステージの冒頭から、このフォルダーをGitで管理する。具体的なステージは執筆時(#41)に決める。前の成果物を使う課題は、学習者自身のファイルを参照する。
+- `javascript-basics` の冒頭から、このフォルダーをGitで管理し、単元ごとにcommitする習慣を始める。`html-css-basics` ではGitを使わない。前の成果物を使う課題は、学習者自身のファイルを参照する。
 - 前の実装が壊れていて進めない場合は「固定した開始点」を配る。使ったことを記録する(01 §4)。
   - 教材は課題の`fixed-start/`に置く。starterの代わりに置く一式で、testsと`protected`のファイルは通常の配布と同じにする。この課題の解答例は置けない。確認A・Bには置けない。
   - 受講者が拡張のコマンドで求めたときだけ`POST /api/tasks/fixed-start`が渡し、受け取りを`task_fixed_start_uses`に記録する。元の課題フォルダーは変えず、隣の`<task>-fixed-start/`に準備する。
@@ -285,20 +286,22 @@ packages/content/
 | runnerId | 使うステージ | 手元での実行 |
 | --- | --- | --- |
 | `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
-| `env-diagnose` | Node.js・Gitを初めて要するステージ(dev-env-basicsでは使わない) | Node・npm・Gitの版を、環境定義と照合する |
-| `git-record` | Gitを最初に使うステージ(dev-env-basicsでは使わない。配置は#41で決める) | 固定の引数で git を呼び、学習フォルダーのリポジトリ・ローカルの名前とメール・コミット・無視の設定を確かめる |
+| `env-diagnose` | javascript-basics | Node・npm・Gitの版を、環境定義と照合する |
+| `git-record` | javascript-basics | 固定の引数で git を呼び、学習フォルダーのリポジトリ・ローカルの名前とメール・コミット・無視の設定を確かめる |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
 | `ts-test` | Extra ステージの TypeScript の課題 | TypeScript (tsc) + Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
 | `http-mock` | http-async-basics | 疑似応答と提供API |
 | `react-test` / `storybook` | react-basics, react-ui-basics, ui-integration-basics | Vitest + Testing Library、Storybookの状態見本 |
 | `e2e` | ui-integration-basics, nextjs-basics, deploy-ops-basics | Playwright |
-| `api-test` | node-api-basics, auth-basics | APIテスト(Express/Hono) |
+| `api-test` | node-api-basics, auth-basics | APIテスト(Express) |
 | `db` | sql-basics, auth-basics | PostgreSQL(PGlite。決定、下記) |
 | `next-app` | nextjs-basics | `next build`と、`next start`で開いた画面のPlaywright |
-| `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える(§5.5、実装済み) |
+| `ci-deploy` | deploy-ops-basics, fullstack-capstone | GitHub Actions・公開先。CIの結果を提出に添える(§5.5、実装済み) |
 | `dotnet-test` | csharp-foundations | .NET SDK 10・xUnit。手元でビルドとテストを動かす |
 | `quickjs`(旧) | fe-kamoku-b | 今のまま |
+
+2026-11-16のオーナー決定(#220のrunnerの案A)により、`design-quality-basics`・`code-reading-basics`・`fullstack-capstone` に新しいrunnerは作らない。前2つは題材の言語の既存runner(`node-test`・`react-test`・`e2e`など)とテストで確かめ、レビュー・説明・ADRはAIの一次レビューと人で判定する。`fullstack-capstone` は `ci-deploy` を主にし、PRとCIの記録を証拠にする。
 
 runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。Node.jsは22.13以上の22系と24系に限る。道具の多くが奇数版(23)に対応しないため、環境の要件に使える版の一覧(`majors`)を足し、環境診断は23を「この版は使えません」とする。
 
@@ -307,8 +310,8 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
   - 1つで約0.8GBのメモリを使い、作るのに2〜3秒かかる。テンプレートは空のDBを1回作って`clone()`(約0.5秒)で複製し、テストのファイルを1つずつ実行する。
   - コンテナは、Dockerを学ぶ`deploy-ops-basics`で学習の対象として扱う。
 - **static-preview: ローカルサーバーと画面幅別のスクリーンショットは入れない。** static-previewは、Node.jsを入れる前でも、信頼していないフォルダーでも動くよう、拡張の中でファイルを読むだけにしている。
-  - ローカルサーバーは、06のU06で受講者が自分で起動・停止すること自体が学習内容である。U06の「ローカルサーバー用スターター」は教材の配布物として作る。
-  - 画面幅の確認にはブラウザーが要る。画面幅を扱う課題(html-css-basicsの画面幅の単元など、Node.jsを入れた後)は`e2e`のrunnerを使う。テンプレートに、幅375・768・1280pxで横にはみ出さないことをPlaywrightで確かめる例を入れた。
+  - ローカルサーバーは、`http-async-basics` の冒頭で受講者が自分で起動・停止し、fetchでローカルのJSONを読むために使う。「ローカルサーバー用スターター」は同ステージの教材の配布物として作る。
+  - 画面幅の確認にはブラウザーが要る。`html-css-basics` は `static-preview` だけを使い、受講者がブラウザーで画面幅を変えて確認する。Node.jsを導入した後のステージで画面幅を自動検査する課題は `e2e` のrunnerを使う。テンプレートに、幅375・768・1280pxで横にはみ出さないことをPlaywrightで確かめる例を入れた。
   - スクリーンショットを提出に添えてレビューに使うかは、提出に画像を載せる仕組みと合わせて、AIの一次レビューのあとに決める。
 
 ### 5.3 拡張に求めること
@@ -343,7 +346,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。TypeScriptの`ts-test`のテンプレートと見本も足した。
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
   - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
-  - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。
+  - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。2026-11-16にAPIの主教材をExpressと決めたため(#220の案A)、テンプレートは#224(バックエンド3ステージ)でExpressに作り直し、それまではHonoのままとする。作り直しでは、ポートを開かずに試せる今の利点、特にWindowsのファイアウォールの確認が出ないことを保てるかを、supertestが127.0.0.1のその場限りのポートで動く方式などで確かめる。
 - **Windows・macOS:** npmの解決(`npm-cli.js`をNode.jsで直接起動)、PATHの探索(`.exe`・`.com`だけ)、時間切れ・中断での停止(`taskkill /T /F`)、長いパスと日本語のパスを、OSを差し替えた単体テストで確かめた。実機での確認は残っている。確認項目は`apps/vscode/samples/README.md`。
 
 - **課題の配布(#31):** APIから課題を受け取り、学習フォルダーへ配る(§4.4)。`apps/vscode/src/open-task.ts`・`task-distribution.ts`・`training-folder.ts`。
@@ -928,7 +931,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
    - 共通とステージのコーディング規則の本文・ID、課題ごとの適用範囲を用意する。
    - ファイル提出、AIの一次レビュー(キュー・構造化出力・課題ごとのルーブリック)、人に回した提出のキュー、確信度のしきい値、スキルの証拠を作る。
    - `node-test`・`dom-test`を作る。
-   - 00 §6 の代表単元(JavaScriptの条件抽出、HTML・DOMの入力とエラー)で、基礎から確認Bまで一巡させる。
+   - 00 §6 の代表単元(JavaScriptの条件抽出、HTML・DOMの入力とエラー)で、基礎から確認Bまで一巡させる。最初の代表単元にReactは入れず、量産の途中でM08を書くときに同じ確かめ方を当てる(2026-11-16決定、#226)。
 4. **育成と復習:**
    - 管理者全員による支援、週次の育成メモ、つまずきの検知(担当は持たない、2026-11)。
    - 類題の在庫と出題、AIの判定の校正。

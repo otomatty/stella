@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@2",
-  "contentHash": "10470a75f067651fa4f9e2fa1db7429169f39c808773b1cfa38ca18cf3815a01",
+  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@3",
+  "contentHash": "680f8c5dc2ee28046e950ecec1bd9f0327d99848eb91bba5cbc31e09f3a307f7",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

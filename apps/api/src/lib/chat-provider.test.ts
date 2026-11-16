@@ -1,5 +1,5 @@
 /**
- * Issue #204 — chat provider switch layer (TDD; module not implemented yet).
+ * Issue #3 — chat provider switch layer (TDD; module not implemented yet).
  */
 
 import { describe, expect, it } from "vitest";

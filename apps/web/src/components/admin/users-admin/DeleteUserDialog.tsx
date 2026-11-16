@@ -20,8 +20,8 @@ import { Label } from "@/components/ui/label";
 import { deleteUser, type AdminProfileRow } from "@/lib/admin-users-api";
 
 const DELETE_USER_DESCRIPTION =
-  "提出・AI のレビュー・学習の記録・本棚の本・ログインの情報を消します。元に戻せません。" +
-  "提出のファイルは 24 時間以内に、本棚のファイルは 10 分ほどで消えます。";
+  "提出・AI のレビュー・学習の記録・ログインの情報を消します。元に戻せません。" +
+  "提出のファイルは 24 時間以内に消えます。";
 
 interface DeleteUserDialogProps {
   profile: AdminProfileRow | null;
@@ -67,7 +67,7 @@ export function DeleteUserDialog({
     setSubmitting(true);
     try {
       const deleted = await deleteUser(profile.id, confirmEmail);
-      const summary = `提出 ${deleted.submissions} 件・本 ${deleted.library_books} 冊`;
+      const summary = `提出 ${deleted.submissions} 件`;
       toast.success(`${profile.display_name} を削除しました (${summary})`);
       close();
       await onDeleted(profile.id);

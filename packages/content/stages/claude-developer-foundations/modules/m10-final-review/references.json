@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m10-final-review@2",
-  "contentHash": "c872e14b7aee7402ffc026f5f96acb8875fdf650f442b8df1fc2357b756bfeee",
+  "unitId": "claude-developer-foundations/m10-final-review@3",
+  "contentHash": "5119dee6c6d31208fb187571d6bba1e081cdebf51d75999935f9b28fa8ab5a26",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

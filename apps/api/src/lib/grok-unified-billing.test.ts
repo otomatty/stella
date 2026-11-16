@@ -1,5 +1,5 @@
 /**
- * Issue #204 — Grok Unified Billing REST (TDD).
+ * Issue #3 — Grok Unified Billing REST (TDD).
  */
 
 import { describe, expect, it, vi } from "vitest";

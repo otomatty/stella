@@ -2,7 +2,7 @@
   "title": "JavaScriptの値と制御",
   "category": "フロントエンド",
   "color": "indigo",
-  "description": "【準備中】値と条件を整理し、JavaScriptで処理の流れを書けるようになるための講座です。",
+  "description": "【準備中】値と条件を整理し、JavaScriptで処理の流れを書けるようになるためのステージです。",
   "header": "JavaScriptの値と制御",
   "tenantId": "ses",
   "plannedHours": 105,
@@ -10,7 +10,7 @@
   "canDo": "値と条件を整理し、JavaScriptで処理の流れを書ける",
   "theme": "Web の見た目と動き",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. このステージについて"
   },
   "parent": "dev-env-basics"
 }

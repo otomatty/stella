@@ -105,5 +105,433 @@
     "ui-components-basics/m0-orientation": "c3591e5b00f1b714fdcc43a66a00df6e2f57e5037e76b32ea98e43aa8f8baf50",
     "ui-integration-basics/m0-orientation": "2004cd97988f0956b276faa853678ea5899933b1047c384b1b0485d63447a837"
   },
-  "exemptions": []
+  "exemptions": [
+    {
+      "unitId": "auth-basics/m0-orientation",
+      "contentHash": "e5049980eadb906ca8569f49152c1394993d784b82ea7cf201a9098531a04120",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m0-exam-map",
+      "contentHash": "6e8f8747481710d008645e087f8a7e3aa84494bfd2bb5511ab3dd1ef25cffc6e",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m1-economics-principles",
+      "contentHash": "fd8dd8f3cd5ecda8d9e6b66d21972e7510ec7e79e94880fbf39ccf91b6cb81e9",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m10-mock-exam",
+      "contentHash": "5dec4d7e439d52e2da6223613157309eb330d197730f618f6a961bf2cee2ca48",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m11-final-review",
+      "contentHash": "da7c01e5d6d9e42095a82737ba9c3f3fbba0aa776baa75cfb1ea22d377696deb",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m2-infra-deploy",
+      "contentHash": "9a281d7e1d9c198dcf9fc45fcf15967f84b7ca44c2135426e71a036c6491b923",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m3-compute",
+      "contentHash": "b591778f68e0a3a562905928663933b3c2c84f9f58fe992d4bcf6052aff6e2b3",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m4-network",
+      "contentHash": "ed071fbe4da6e4ed257e53863dbd2f0d3a79e115c77bc2771bc9a34917d4de2a",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m5-storage-db",
+      "contentHash": "805733b996a5d862cbf9aee032ae638fad4eb086575515cbbdfa76d2d2d62b0d",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m6-analytics-ai",
+      "contentHash": "62a7f7bd24d66806b4a0a9ccb4558c5506c24f9dd414b7f7bbe6e77dc93bb08a",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m7-security",
+      "contentHash": "42746833cf48bfbb3a6d1035cc7027ca1408c7651e94e8797d2740187ed1011f",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m8-monitoring-migration",
+      "contentHash": "2aebad10ca5c2cc5fe986ca85a7cb336eaf70c605d85dc09b8265275c84da4f6",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "aws-clf-c02-basics/m9-pricing-support",
+      "contentHash": "06fc7b563242164c920b904624258e7489e937a109220bd7d5e975073f427b68",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "code-reading-basics/m0-orientation",
+      "contentHash": "e7cb62a45473f4a457857d802b0f7c67bda86e9aab8064fcacecf15a29df1c69",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "deploy-ops-basics/m0-orientation",
+      "contentHash": "36fe9d4fc236735e2e358018cf277e67ab5649e506cbdc53e06098439c850f50",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "design-quality-basics/m0-orientation",
+      "contentHash": "d0f7c447806aabfbdc5ec6424cf44bf4ab66e09082d6daeba607f24e1f9926fd",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "devops-basics/m0-orientation",
+      "contentHash": "1d241c165c4ac1ecf3b6937b58f62e737bb9fa22d8640e11e9b71812ea743836",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "dom-basics/m0-orientation",
+      "contentHash": "43cfcba3cdcffb8bc60f7f6432a65519b4836e2669032e174a5b3a155773b7f1",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m1-foundations",
+      "contentHash": "c2ca31a3e0abe128ccb21dd0fa8f02da7fad81c6530961abdffc5e0065a66660",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m10-mock-exam",
+      "contentHash": "7e4525ccf819ad5d11c1c6e97a7e63758dc5cd3a78671d859ba635a8a3a9ef8a",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m2-computer-systems",
+      "contentHash": "6724ed1a13e348eebb42c4e644c2e293e1de2eef739fee55b693dcc9681abade",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m3-tech-elements",
+      "contentHash": "7b14718f697914a8c71a6357edb755a641d3366cc8eb1079a39ddd87be752827",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m4-development",
+      "contentHash": "72591cdee29b5fc9397ac784d6a38ab653e10bbadf7df21229b3cfcc5182cee5",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m5-project-management",
+      "contentHash": "1b0b15fe78801a1bd2cb150531a8b7e57a61943d31224656ffe84964bbb5266a",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m6-service-management",
+      "contentHash": "af30e616a982519d46bf684f9e89937c72f7627330893bd0f71b6b12828aaf14",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m7-system-strategy",
+      "contentHash": "61e99ca941ebefc2944f3a12cdbc512dc92d17719500d588e2b0f48deb295dbd",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m8-business-strategy",
+      "contentHash": "91295f36ed8b50231ca03114c92c0a6c1a8344c95263753b1e6a13c4455fa10a",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-a/m9-corporate-legal",
+      "contentHash": "1f51f85c091098e4d0d19f1d85bce971fdb09d8805b46228325d6576c1c94771",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-b/m1-pseudo",
+      "contentHash": "f7916c426cfa8dc48c7c1e550a2b99b9d323e327b5ff2621ed22084f09468c10",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-b/m2-algo-basics",
+      "contentHash": "0a9803b2e6c4ce5fcebda2ca81ccf220a0fb091db3eaeb80d63ea9aa0843101b",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-b/m3-algo-advanced",
+      "contentHash": "2b8b6488e618cba53e47c3f051a498250c2f93c05d7252879802203a94ed67a5",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-b/m4-security",
+      "contentHash": "ce493cc32d0de17aeb695b9448ed98fac0c5e77ce602792e71d7b8a897f8c9b9",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fe-kamoku-b/m5-mock",
+      "contentHash": "1b68b1021adf190a8d6d7630d45cc45956fc1af88c94d40a56c3dec8894ea431",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "fullstack-capstone/m0-orientation",
+      "contentHash": "e9130d411ef7e175cc2773919ac8c05a1ec42f22f120b84f1012df77d64a81b3",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "html-css-basics/m0-orientation",
+      "contentHash": "5fbb868f6648f83a7f214380656c77eeae62ca63276a3c3f9c742468e5096761",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "http-async-basics/m0-orientation",
+      "contentHash": "8e78a6d7da9c6c31e3f37ec63fd57e5892b7609b1550be10cc4988015ae697cf",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "javascript-basics/m0-orientation",
+      "contentHash": "971579465f49195700ffd33c62b822ec9ed2ec39c5ccf1a571c73ec512df15e5",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "javascript-data-basics/m0-orientation",
+      "contentHash": "2640961864aa5956d28b2b6640f5ee2f9a4120c76f1b1aa0c3d04cf2b1ded915",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "kubernetes-basics/m0-orientation",
+      "contentHash": "7aa3392f22c390aa57e1ec08ea4299b8fbaa86982fe383480ed10021dc1f628a",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "networking-ops-basics/m0-orientation",
+      "contentHash": "a66d0ddd98e098405b6948af0f4a96119dad62d62688faccf58dcb52d9aa0d3e",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "nextjs-basics/m0-orientation",
+      "contentHash": "86d405840290be26fd024e7ea34a795fbbe3aefb601a9af8c217352b9df8edc6",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "node-api-basics/m0-orientation",
+      "contentHash": "ca47785ffe7fac5cb83f964ed83cfd71bc89100f29d2d58542cdec94688689b8",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "python-basics/m0-orientation",
+      "contentHash": "eaaa245f429286608899c4d5d4045874ca52fd453ddb74e46ee09c8619b51aa1",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "python-testing-ci-basics/m0-orientation",
+      "contentHash": "4e755c42594697fa7b465792a1bdef460f876b0268673565b31e317e91ca6238",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "python-testing-ci-basics/m1-pytest",
+      "contentHash": "15017f79e25fe6ca88f248e951024a289f2164c710b749479c0084e2b2c219dd",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "python-testing-ci-basics/m3-ci",
+      "contentHash": "42067e8a76b9fb4e1f543726e5fa7f59609a758f615a4ade497bac3a0bb9de26",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "python-testing-ci-basics/m6-static-checks",
+      "contentHash": "2e5e144c9be9ee3505a8484389a18cb87bb3e63968e418eaf8648055373d4ce6",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "react-basics/m0-orientation",
+      "contentHash": "80caddf4e3ead49c879b03912cee550a3b4786e58eb9fdf4a35c644d1897164d",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "react-ui-basics/m0-orientation",
+      "contentHash": "04a1069f1857dae54692a8dd4a2e68f41e2bd9457c5398291f126af6ce98aa39",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "salesforce-dev-basics/m0-orientation",
+      "contentHash": "816ebd16519a31f2e6188ea40deea3b7915c2595b039519433e3d015997d29d9",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "salesforce-dev-basics/m4-apex",
+      "contentHash": "16082fcc658752b4fc8002bba4250c6babe55070333949bbf2016c76d354f863",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "salesforce-dev-basics/m5-test-release",
+      "contentHash": "243fc7b8afb0101854340df6b9443954c827f6563611ebd8df1c0a86ae8ec412",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "salesforce-dev-basics/m6-ui-automation",
+      "contentHash": "2beba30388da9f1b91e218983493cfdc9a074da90fa761913d1a0d65b238e7eb",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "sql-basics/m0-orientation",
+      "contentHash": "21d2cc01f5d793eb0fbf0abaa7ce3cc3f643933022ee796517f8e262bcd6090c",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "terraform-basics/m0-orientation",
+      "contentHash": "8b5b89cba8cd0df6a583deb8ede816de5debf130335379b25ea0261dc383be84",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "test-design-basics/m1-foundations",
+      "contentHash": "790bbbc23664e25b895ab7bbc181dafd45eed7562e939996f520d04e1eb88354",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "test-design-basics/m2-levels-types",
+      "contentHash": "bde6463e43e003eeb7ad968d9b2503b7d6c45fd49c0e53941ae2f58f566b7ac6",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "test-design-basics/m5-strategy-reporting",
+      "contentHash": "e0b975548c49e6d205d899d15f3a9f485f6b45b20cd7363dd77e0e0fe24af9f2",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "test-design-basics/m6-capstone",
+      "contentHash": "13fb594d7b56524352b338a4cde1669ede0330e9440094f9212ebd86f5eeef85",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "ui-components-basics/m0-orientation",
+      "contentHash": "e3a50d58e08c6eb49a9dd3dac7b4ad8fedc9749bc7d0e59b9f7df713dc55cccb",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    },
+    {
+      "unitId": "ui-integration-basics/m0-orientation",
+      "contentHash": "998021214d29e8b53c927c9456a804e357b2681c5473612ce063396cea53ffaa",
+      "reason": "教材の「講座」を「ステージ」に直した表記だけの変更 (otomatty/stella#228)",
+      "reviewer": "otomatty",
+      "reviewedAt": "2026-11-16"
+    }
+  ]
 }

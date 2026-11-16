@@ -13,10 +13,18 @@ HTTP通信と非同期処理を、型とエラーを確かめながら実装で�
 
 ## 予定している内容
 
-- HTTPのリクエストと応答
-- 非同期処理
-- 通信中と失敗の表示
-- TypeScriptの型
+- HTTP契約
+- JSON
+- Promiseとasync/await
+- fetch
+- 待機・成功・失敗
+- 応答競合
+- 型と絞り込み
+- 外部データの実行時検証
+
+[単元の一覧: 01 §3 M07 HTTP 非同期 TypeScript](../../../../docs/curriculum/01-content-split-and-learning-order.md#m07-http-非同期-typescript)
+
+冒頭でローカルサーバーの起動・停止を扱い、fetchでローカルのJSONを読む課題で `local-server-run` を評価する。
 
 ## 執筆時の扱い
 

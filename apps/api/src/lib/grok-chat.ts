@@ -1,5 +1,5 @@
 /**
- * Grok chat via Cloudflare AI Gateway Unified Billing REST (Issue #204).
+ * Grok chat via Cloudflare AI Gateway Unified Billing REST (Issue #3).
  */
 
 import type { ChatRole, ChatStreamEvent } from "@stella/shared/ai/types";

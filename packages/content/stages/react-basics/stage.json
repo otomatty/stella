@@ -2,7 +2,7 @@
   "title": "Reactの基礎と状態",
   "category": "フロントエンド",
   "color": "indigo",
-  "description": "【準備中】Reactのコンポーネントと状態で、対話的な画面を作れるようになるための講座です。",
+  "description": "【準備中】Reactのコンポーネントと状態で、対話的な画面を作れるようになるためのステージです。",
   "header": "Reactの基礎と状態",
   "tenantId": "ses",
   "plannedHours": 70,
@@ -10,7 +10,7 @@
   "canDo": "Reactのコンポーネントと状態で、対話的な画面を作れる",
   "theme": "Web の見た目と動き",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. このステージについて"
   },
   "parent": "http-async-basics"
 }

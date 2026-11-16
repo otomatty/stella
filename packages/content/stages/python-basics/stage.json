@@ -10,6 +10,6 @@
   "canDo": "Python でスクリプトを書き、標準ライブラリでファイルとデータを扱える",
   "theme": "Python とテストの力",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. このステージについて"
   }
 }

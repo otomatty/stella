@@ -20,7 +20,7 @@ INVITE_REDIRECT_URL = "https://stella.saedgewell.workers.dev"
 # ${BETTER_AUTH_URL}/api/auth/callback/google。BETTER_AUTH_SECRET は deploy が secret に入れる。
 BETTER_AUTH_URL = "https://stella.saedgewell.workers.dev"
 
-# --- AI Gateway (Issue #204) ---
+# --- AI Gateway (Issue #3) ---
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。
 CLOUDFLARE_ACCOUNT_ID = "175c04a4465bcc9815b21176a852f0c0"
 # 未設定なら Anthropic 直叩き。Grok / Workers AI Unified Billing には必須。
@@ -82,12 +82,6 @@ bucket_name = "stella-materials-public"
 [[r2_buckets]]
 binding = "SUBMISSIONS_BUCKET"
 bucket_name = "stella-submissions"
-
-# 本棚の本 (本人だけが読む)。公開ドメイン・r2.dev は付けない。
-[[r2_buckets]]
-binding = "LIBRARY_BUCKET"
-bucket_name = "stella-library-private"
-
 
 # 外部連携: IP ではなくクライアント ID ごとに制限する。
 [[unsafe.bindings]]

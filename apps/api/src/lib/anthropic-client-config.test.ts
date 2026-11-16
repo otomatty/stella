@@ -1,5 +1,5 @@
 /**
- * Issue #204 — Anthropic client routes through AI Gateway when configured (TDD).
+ * Issue #3 — Anthropic client routes through AI Gateway when configured (TDD).
  */
 
 import { describe, expect, it, vi } from "vitest";

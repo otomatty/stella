@@ -1,6 +1,6 @@
 ---
 name: stella-course
-description: "STELLA のステージ・課題・知識問題を作るスキル。format 2 のステージを新しく書く、単元や課題を足す・直す、既存の研修教材 (Markdown の問題集、PDF、コード) を STELLA の課題に移す・分割する、課題 (task.json、README、starter、tests、解答例、誤答、ヒント、類題) を足す・直す、C# の課題を作る、特定の受講者向けの Extra ステージを作る、といった依頼で使う。本棚に入れる本の zip は stella-book を使う。このスキルはステージと課題の方。"
+description: "STELLA のステージ・課題・知識問題を作るスキル。format 2 のステージを新しく書く、単元や課題を足す・直す、既存の研修教材 (Markdown の問題集、PDF、コード) を STELLA の課題に移す・分割する、課題 (task.json、README、starter、tests、解答例、誤答、ヒント、類題) を足す・直す、C# の課題を作る、特定の受講者向けの Extra ステージを作る、といった依頼で使う。"
 ---
 
 # STELLA のステージと課題 (format 2) を作る
@@ -109,7 +109,7 @@ scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題
 - 人に見せたくない内容を、図解、サムネイル、課題文の画像に入れない。
 - 検査を通すために tests や protected を弱めない。
 - slug とステージ名に個人名を入れない。
-- 既存のスキル `stella-book` と `diagram-design` の手順を、ステージの作業で書き換えない。
+- 既存のスキル `diagram-design` の手順を、ステージの作業で書き換えない。
 - 参照元 (`sources/registry.json` の `review`・単元の `references.json` の `reviewStatus`) を `approved` にしない。Claude が書くのは `draft` まで。講師が資料と本文の対応を確かめてから承認する (SOURCE_GUIDE.md の 5。AI の調査・照合を講師の承認として記録しない)。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約に出る。AIは `approved` を付けず、講師が後から確かめて承認する。
 
 ## よくある誤り

@@ -35,4 +35,4 @@ const client = new Anthropic({ apiKey: "sk-ant-..." }); // キーを直書きし
 <!-- _class: summary -->
 # まとめ
 API キーはコードに書かず、環境変数 ANTHROPIC_API_KEY から SDK に読ませます。
-<!-- ノート: この講座の課題は API キーなしで解けます。 -->
+<!-- ノート: このステージの課題は API キーなしで解けます。 -->
