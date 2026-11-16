@@ -127,7 +127,12 @@ function toSummaryRow(
         : [],
     rubric: revealDrafts || decided ? s.rubric : [],
     grading_summary: parseGradingSummary(s.gradingSummary),
-    review_notes: revealDrafts || decided ? s.reviewNotes : "",
+    review_notes:
+      !revealDrafts && s.reviewSource === "manual"
+        ? ""
+        : revealDrafts || decided
+          ? s.reviewNotes
+          : "",
     verdict: s.verdict,
     review_source: s.reviewSource,
     ai_review_status: s.aiReviewStatus,
@@ -566,6 +571,23 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     }
     // AI の所見は staff には判定の理由・下書きまで返す。受講者には AI で確定した提出の
     // 返信と所見だけを返し、人に回した提出・判定前の提出の AI の所見は返さない (07 §6.3)。
+    if (row.reviewSource === "manual") {
+      const [taskStage] =
+        isStaff && row.taskId
+          ? await db
+              .select({ stageId: sections.stageId })
+              .from(tasks)
+              .innerJoin(sections, eq(sections.id, tasks.sectionId))
+              .where(eq(tasks.id, row.taskId))
+              .limit(1)
+          : [];
+      return c.json({
+        row: {
+          ...toRow(row, await profileFor(db, row.studentId), isStaff),
+          ...(isStaff ? { stage_id: taskStage?.stageId ?? null } : {}),
+        },
+      });
+    }
     const aiReview = row.taskId && isStaff ? await latestAiReview(db, row.id) : null;
     const detail = toRow(row, await profileFor(db, row.studentId), isStaff, aiReview !== null);
     if (row.taskId) {
@@ -666,10 +688,15 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     }
     // テストで確定した合格を再提出に戻すと、受講者は全問提出済みで先へ進めない。
     if (
-      before.reviewSource === "tests" &&
+      (before.reviewSource === "tests" || before.reviewSource === "manual") &&
       (patch.verdict !== undefined || patch.status !== undefined)
     ) {
-      throw new ApiError("テストで確認した提出の判定は変えられません", 409);
+      throw new ApiError(
+        before.reviewSource === "manual"
+          ? "手で済みにした課題は専用の取消し操作で戻してください"
+          : "テストで確認した提出の判定は変えられません",
+        409,
+      );
     }
 
     const set: Partial<SubmissionSelect> = {};

@@ -6,13 +6,19 @@ import {
 } from "@stella/shared/tasks/submission";
 import { parseTaskManifest, type TaskManifest } from "@stella/shared/tasks/manifest";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
+import type { GradebookEntry, StageCompletion } from "@stella/shared/cms/types";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
 import {
   aiReviewJobs,
+  auditLogs,
+  certificates,
+  contentUnits,
+  lessons,
   enrollments,
   notifications,
   profiles,
+  resourceLocks,
   sections,
   skillEvidence,
   skills,
@@ -27,12 +33,24 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { countedProblemIds } from "../lib/task-problem-submission.js";
+import * as stageAutoComplete from "../lib/stage-auto-complete.js";
+import { countedProblemIds, submitTaskProblem } from "../lib/task-problem-submission.js";
 import { reviewTaskSubmission } from "../lib/task-submission.js";
+import * as taskSubmission from "../lib/task-submission.js";
+import * as problemSubmission from "../lib/task-problem-submission.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { submissionsRoute } from "./submissions.js";
+import { taskManualCompletionRoute } from "./task-manual-completion.js";
+import { collectMemoMaterial } from "../lib/mentor-memo.js";
+import { loadLearningPace } from "../lib/learning-pace.js";
+import { readSubmissionFiles } from "../lib/task-submission.js";
+import { taskCompletionCounts, manualCompletionCounts } from "../lib/task-completion.js";
+import { readManualCompletion } from "../lib/task-manual-completion.js";
+import { taskSubmissionLockId } from "../lib/task-submission.js";
 import { tasksRoute } from "./tasks.js";
+import { certificatesRoute } from "./certificates.js";
+import { reviewDeskRoute } from "./review-desk.js";
 
 const TASK_ID = "csharp-foundations/u01/calc";
 const CURRENT = "a".repeat(64);
@@ -162,7 +180,14 @@ describe("問題の提出", () => {
   afterEach(() => database.sqlite.close());
 
   function app() {
-    return mountTestApp(env, submissionsRoute, tasksRoute).app;
+    return mountTestApp(
+      env,
+      submissionsRoute,
+      tasksRoute,
+      taskManualCompletionRoute,
+      certificatesRoute,
+      reviewDeskRoute,
+    ).app;
   }
   async function post(body: unknown, as = token) {
     return request(app(), env, "/api/submissions", {
@@ -181,6 +206,1008 @@ describe("問題の提出", () => {
       taskPassed: boolean;
     }>(response);
   }
+
+  async function manual(
+    problemIds?: string[],
+    revoke = false,
+    taskId = TASK_ID,
+    as = instructorToken,
+    reason = "別の学習環境で確認済み",
+  ) {
+    return request(app(), env, `/api/task-manual-completion${revoke ? "/revoke" : ""}`, {
+      method: "POST",
+      token: as,
+      body: JSON.stringify({
+        userId: "learner",
+        stageId: "stage",
+        items: [{ taskId, ...(problemIds ? { problemIds } : {}) }],
+        reason,
+      }),
+    });
+  }
+
+  it.each([false, true])(
+    "全問manualのあと本人が全問を解くと、合格を途切れさせずtestsと本人の合格日に置き換える (修了証あり=%s)",
+    async (withCertificate) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        const importedAt = new Date("2026-11-02T03:00:00Z");
+        const solvedAt = new Date("2026-11-10T03:00:00Z");
+        vi.setSystemTime(importedAt);
+        if (withCertificate) {
+          await db.insert(lessons).values({
+            id: "replacement-lesson",
+            sectionId: "unit",
+            title: "架空の課題文",
+            type: "text",
+          });
+          await db
+            .update(stages)
+            .set({ requireAllLessons: false, requireQuizPass: false, autoIssueCertificate: true })
+            .where(eq(stages.id, "stage"));
+          await manual(undefined, false, plain.input.taskId);
+        }
+        await manual();
+        const beforeCertificates = await db.select().from(certificates);
+        expect(beforeCertificates).toHaveLength(withCertificate ? 1 : 0);
+        const observations: { status: unknown; passes: unknown }[] = [];
+        const batch = database.binding.batch.bind(database.binding);
+        database.binding.batch = async <T>(statements: D1PreparedStatement[]) => {
+          const result = await batch<T>(statements);
+          observations.push(
+            database.sqlite
+              .prepare(
+                "select status, (select count(*) from submissions where task_id = ? and verdict = 'pass') as passes from task_progress where task_id = ?",
+              )
+              .get(TASK_ID, TASK_ID) as { status: unknown; passes: unknown },
+          );
+          return result;
+        };
+        vi.setSystemTime(solvedAt);
+        // 修了後の書き込みを許すかは既存の認可の責務。ここでは確定処理の原子性を直接検証する。
+        const replay = async (problemId: string) =>
+          withCertificate
+            ? submitTaskProblem(
+                db,
+                { id: "learner", role: "student", name: "架空の受講者", email: null },
+                await problemInput(CURRENT, PROBLEMS, problemId),
+                {
+                  id: TASK_ID,
+                  stageTitle: "架空のステージ",
+                  sectionTitle: "架空の単元",
+                  contentHash: CURRENT,
+                  stageSlug: "csharp-foundations",
+                  privateFiles: null,
+                },
+                (await problemBundle(CURRENT, PROBLEMS)).bundle,
+              )
+            : submitProblem(problemId);
+        await replay("q01-add");
+        expect(
+          (await db.select().from(submissions)).filter((r) => r.taskId === TASK_ID),
+        ).toMatchObject([{ reviewSource: "manual", verdict: "pass" }]);
+        expect(await db.select().from(skillEvidence)).toEqual([]);
+        await replay("q02-sub");
+        const passes = (await db.select().from(submissions)).filter((r) => r.taskId === TASK_ID);
+        expect(passes).toMatchObject([
+          { reviewSource: "tests", verdict: "pass", reviewedAt: solvedAt },
+        ]);
+        expect(passes).toHaveLength(1);
+        expect(await db.select().from(skillEvidence)).toMatchObject([
+          { submissionId: passes[0].id, skillId: "calc" },
+        ]);
+        expect(
+          (await db.select().from(taskProgress)).find((r) => r.taskId === TASK_ID),
+        ).toMatchObject({ status: "passed", passedAt: solvedAt });
+        expect(observations.length).toBeGreaterThan(0);
+        expect(observations.every((r) => r.status === "passed" && r.passes === 1)).toBe(true);
+        expect(await db.select().from(certificates)).toEqual(beforeCertificates);
+        expect((await db.select().from(enrollments))[0].status).toBe(
+          withCertificate ? "completed" : "active",
+        );
+        vi.setSystemTime(new Date("2026-11-11T03:00:00Z"));
+        await replay("q01-add");
+        expect(
+          (await db.select().from(taskProgress)).find((r) => r.taskId === TASK_ID)?.passedAt,
+        ).toEqual(solvedAt);
+        const view = await readManualCompletion(db, "learner", "stage");
+        expect(view.units.flatMap((u) => u.tasks).find((t) => t.id === TASK_ID)).toMatchObject({
+          reviewSource: "tests",
+          manualReason: null,
+        });
+        expect(
+          (await manualCompletionCounts(db, "stage", ["learner"])).get("learner"),
+        ).toMatchObject({ manual_tasks: withCertificate ? 1 : 0, manual_problems: 0 });
+        expect((await manual(undefined, true)).status).toBe(409);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("manual合格の取消しで本人の問題の相談のレビュー待ちを消さない", async () => {
+    await submitProblem("q01-add");
+    await manual(["q02-sub"]);
+    const consult = await problemInput(CURRENT, PROBLEMS, "q02-sub");
+    consult.mode = "consult";
+    consult.explanation = "架空の問題について相談します";
+    consult.localResult.outcome = "failed";
+    const response = await post(consult);
+    expect(response.status).toBe(201);
+    const { row } = await json<{ row: { id: string } }>(response);
+    expect((await manual(["q02-sub"], true)).status).toBe(200);
+    expect(await db.select().from(submissions)).toMatchObject([
+      { id: row.id, verdict: null, submissionMode: "consult" },
+    ]);
+    expect((await db.select().from(taskProgress))[0]).toMatchObject({
+      status: "instructor-pending",
+      passedAt: null,
+    });
+  });
+
+  it.each(["human", "ai"] as const)(
+    "問題なしのmanual合格を本人の%s合格と合格日に置き換え、ペースと育成メモに数える",
+    async (source) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        const importedAt = new Date("2026-11-02T03:00:00Z");
+        const solvedAt = new Date("2026-11-10T03:00:00Z");
+        vi.setSystemTime(importedAt);
+        await db
+          .insert(contentUnits)
+          .values({ sectionId: "unit", plannedHours: 1, skills: { uses: [], assesses: [] } });
+        await db.update(stages).set({ slug: "dev-env-basics" }).where(eq(stages.id, "stage"));
+        await db
+          .update(tasks)
+          .set({ kind: "assessment-a", pattern: "page" })
+          .where(eq(tasks.id, plain.input.taskId));
+        await db
+          .update(tasks)
+          .set({ kind: "assessment-b", pattern: "page" })
+          .where(eq(tasks.id, TASK_ID));
+        await manual(undefined, false, plain.input.taskId);
+        const learner = {
+          id: "learner",
+          role: "student" as const,
+          name: "架空の受講者",
+          email: null,
+        };
+        expect((await loadLearningPace(db, learner, "2026-11-16")).assessments).toEqual([]);
+        expect(
+          (await collectMemoMaterial(db, learner, "2026-11-02", new Date("2026-11-09T03:00:00Z")))
+            .passedTaskCount,
+        ).toBe(0);
+        vi.setSystemTime(solvedAt);
+        const response = await post(plain.input);
+        expect(response.status).toBe(201);
+        const { row } = await json<{ row: { id: string } }>(response);
+        await reviewTaskSubmission(
+          db,
+          { id: "teacher", role: "admin", name: "架空の管理者", email: null },
+          row.id,
+          "pass",
+          "確認済み",
+          source,
+        );
+        expect(
+          (await db.select().from(taskProgress)).find((r) => r.taskId === plain.input.taskId),
+        ).toMatchObject({ status: source === "ai" ? "ai-passed" : "passed", passedAt: solvedAt });
+        expect(
+          (await db.select().from(submissions)).filter((r) => r.taskId === plain.input.taskId),
+        ).toMatchObject([{ id: row.id, reviewSource: source }]);
+        expect(
+          (await db.select().from(submissions)).filter((r) => r.reviewSource === "manual"),
+        ).toEqual([]);
+        expect((await loadLearningPace(db, learner, "2026-11-16")).assessments).toMatchObject([
+          { dueDate: "2026-11-17" },
+        ]);
+        expect(
+          (await collectMemoMaterial(db, learner, "2026-11-09", new Date("2026-11-16T03:00:00Z")))
+            .passedTaskCount,
+        ).toBe(1);
+        expect((await manualCompletionCounts(db, "stage", ["learner"])).get("learner")).toEqual({
+          manual_tasks: 0,
+          manual_problems: 0,
+        });
+        const view = await readManualCompletion(db, "learner", "stage");
+        expect(
+          view.units.flatMap((u) => u.tasks).find((t) => t.id === plain.input.taskId),
+        ).toMatchObject({ reviewSource: source, manualReason: null });
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it.each(["human", "ai", "tests", null] as const)(
+    "旧データにmanualと本人の合格(%s)が混在しても、ペースと育成メモは本人の合格を数える",
+    async (source) => {
+      const at = new Date("2026-11-10T03:00:00Z");
+      await db
+        .insert(contentUnits)
+        .values({ sectionId: "unit", plannedHours: 1, skills: { uses: [], assesses: [] } });
+      await db.update(stages).set({ slug: "dev-env-basics" }).where(eq(stages.id, "stage"));
+      await db
+        .update(tasks)
+        .set({ kind: "assessment-a", pattern: "page" })
+        .where(eq(tasks.id, plain.input.taskId));
+      await db
+        .update(tasks)
+        .set({ kind: "assessment-b", pattern: "page" })
+        .where(eq(tasks.id, TASK_ID));
+      await manual(undefined, false, plain.input.taskId);
+      await db.insert(submissions).values({
+        studentId: "learner",
+        taskId: plain.input.taskId,
+        taskContentHash: plain.bundle.contentHash,
+        stageTitle: "架空のステージ",
+        assignmentTitle: "架空の課題",
+        code: "",
+        verdict: "pass",
+        reviewSource: source,
+        attempt: 2,
+        submittedAt: at,
+        reviewedAt: at,
+      });
+      await db
+        .update(taskProgress)
+        .set({ passedAt: at })
+        .where(eq(taskProgress.taskId, plain.input.taskId));
+      const learner = {
+        id: "learner",
+        role: "student" as const,
+        name: "架空の受講者",
+        email: null,
+      };
+      expect((await loadLearningPace(db, learner, "2026-11-16")).assessments).toMatchObject([
+        { dueDate: "2026-11-17" },
+      ]);
+      expect(
+        (await collectMemoMaterial(db, learner, "2026-11-09", new Date("2026-11-16T03:00:00Z")))
+          .passedTaskCount,
+      ).toBe(1);
+    },
+  );
+
+  it.each([false, true])(
+    "途中のロック競合でも保存した分のステージと修了証を付け直す（取り消し=%s）",
+    async (revoke) => {
+      await db
+        .insert(lessons)
+        .values({ id: "partial-lesson", sectionId: "unit", title: "架空の課題文", type: "text" });
+      await db
+        .update(stages)
+        .set({ requireAllLessons: false, requireQuizPass: false, autoIssueCertificate: true })
+        .where(eq(stages.id, "stage"));
+      await manual(undefined, false, plain.input.taskId);
+      if (revoke) await manual();
+      expect((await db.select().from(certificates)).length).toBe(revoke ? 1 : 0);
+      await db.insert(resourceLocks).values({
+        id: taskSubmissionLockId("learner", plain.input.taskId),
+        holder: "another-request",
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      const response = await request(
+        app(),
+        env,
+        `/api/task-manual-completion${revoke ? "/revoke" : ""}`,
+        {
+          method: "POST",
+          token: instructorToken,
+          body: JSON.stringify({
+            userId: "learner",
+            stageId: "stage",
+            items: [{ taskId: TASK_ID }, { taskId: plain.input.taskId }],
+            reason: "架空の学習の引き継ぎ",
+          }),
+        },
+      );
+      expect(response.status).toBe(409);
+      expect(await response.text()).toContain("一部は保存済みです");
+      expect(
+        (await db.select().from(submissions)).filter((r) => r.taskId === TASK_ID),
+      ).toHaveLength(revoke ? 0 : 1);
+      expect(
+        (await db.select().from(submissions)).filter((r) => r.taskId === plain.input.taskId),
+      ).toHaveLength(1);
+      expect((await db.select().from(enrollments))[0].status).toBe(revoke ? "active" : "completed");
+      expect(await db.select().from(certificates)).toHaveLength(revoke ? 0 : 1);
+    },
+  );
+
+  it.each([false, true])(
+    "途中停止後の付け直しが失敗しても元の409を返す（取り消し=%s）",
+    async (revoke) => {
+      if (revoke) {
+        await manual();
+        await manual(undefined, false, plain.input.taskId);
+      }
+      await db.insert(resourceLocks).values({
+        id: taskSubmissionLockId("learner", plain.input.taskId),
+        holder: "another-request",
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      const reconcile = vi
+        .spyOn(
+          stageAutoComplete,
+          revoke ? "reclaimAutoCertificatesIfUnmet" : "autoCompleteStagesIfMet",
+        )
+        .mockRejectedValueOnce(new Error("架空の付け直しエラー"));
+      const logged = vi.spyOn(console, "error").mockImplementation(() => {
+        /* 意図した付け直しの失敗ログを抑える。 */
+      });
+      try {
+        const response = await request(
+          app(),
+          env,
+          `/api/task-manual-completion${revoke ? "/revoke" : ""}`,
+          {
+            method: "POST",
+            token: instructorToken,
+            body: JSON.stringify({
+              userId: "learner",
+              stageId: "stage",
+              items: [{ taskId: TASK_ID }, { taskId: plain.input.taskId }],
+              reason: "架空の学習の引き継ぎ",
+            }),
+          },
+        );
+        expect(response.status).toBe(409);
+        expect(await response.text()).toContain("一部は保存済みです");
+        expect(reconcile).toHaveBeenCalledOnce();
+      } finally {
+        reconcile.mockRestore();
+        logged.mockRestore();
+      }
+    },
+  );
+
+  async function replaceProblems(problems: { id: string; title: string }[]) {
+    const hash = "e".repeat(64);
+    const built = await problemBundle(hash, problems);
+    await db.batch([
+      db.insert(taskRevisions).values({
+        taskId: TASK_ID,
+        contentHash: hash,
+        definition: JSON.stringify(built.definition),
+        bundle: JSON.stringify(built.bundle),
+      }),
+      db
+        .update(tasks)
+        .set({
+          contentHash: hash,
+          definition: JSON.stringify(built.definition),
+          bundle: JSON.stringify(built.bundle),
+        })
+        .where(eq(tasks.id, TASK_ID)),
+    ]);
+  }
+
+  it("問題IDが全て入れ替わったmanual合格を、課題単位で取り消せる", async () => {
+    await manual();
+    await replaceProblems([
+      { id: "q11", title: "架空の新問1" },
+      { id: "q12", title: "架空の新問2" },
+    ]);
+    const response = await manual(undefined, true);
+    expect(response.status).toBe(200);
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect(await db.select().from(taskProgress)).toEqual([]);
+  });
+
+  it("読み取りは現行版に無いmanualの数を返し、現行のmanualやtestsは混ぜない", async () => {
+    await manual();
+    await replaceProblems([
+      { id: "q01-add", title: "架空の残る問" },
+      { id: "q11", title: "架空の新問" },
+    ]);
+    const view = await json<import("@stella/shared/tasks/manual-completion").ManualCompletionView>(
+      await request(app(), env, "/api/task-manual-completion?userId=learner&stageId=stage", {
+        token: instructorToken,
+      }),
+    );
+    expect(view.units.flatMap((u) => u.tasks).find((t) => t.id === TASK_ID)).toMatchObject({
+      obsoleteManualProblems: 1,
+    });
+    expect(
+      view.units.flatMap((u) => u.tasks).find((t) => t.id === plain.input.taskId),
+    ).toMatchObject({ obsoleteManualProblems: 0 });
+  });
+
+  it("本人が合格した課題でも、現行版に無いmanualだけは課題単位で消せる", async () => {
+    await manual(["q01-add"]);
+    await submitProblem("q02-sub");
+    await replaceProblems([
+      { id: "q02-sub", title: "架空の本人の問" },
+      { id: "q11", title: "架空の新問" },
+    ]);
+    const progress = await db.select().from(taskProgress);
+    const passes = await db.select().from(submissions);
+    const evidence = await db.select().from(skillEvidence);
+    const response = await manual(undefined, true);
+    expect(response.status).toBe(200);
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      { problemId: "q02-sub", source: "tests" },
+    ]);
+    expect(await db.select().from(taskProblemResults)).toHaveLength(1);
+    expect(await db.select().from(taskProgress)).toEqual(progress);
+    expect(await db.select().from(submissions)).toEqual(passes);
+    expect(await db.select().from(skillEvidence)).toEqual(evidence);
+  });
+
+  it("管理者以外は読み取り・済みにする・取消しがすべて403", async () => {
+    expect(
+      (
+        await request(app(), env, "/api/task-manual-completion?userId=learner&stageId=stage", {
+          token,
+        })
+      ).status,
+    ).toBe(403);
+    expect((await manual(undefined, false, TASK_ID, token)).status).toBe(403);
+    expect((await manual(undefined, true, TASK_ID, token)).status).toBe(403);
+  });
+
+  it("理由と対象を検証し、不正な指定では書き込まない", async () => {
+    expect((await manual(undefined, false, TASK_ID, instructorToken, "  ")).status).toBe(400);
+    expect(
+      (await manual(undefined, false, TASK_ID, instructorToken, "a".repeat(1001))).status,
+    ).toBe(400);
+    expect((await manual(undefined, false, "missing")).status).toBe(400);
+    expect((await manual(["missing"])).status).toBe(400);
+    expect((await manual(["q01-add"], false, plain.input.taskId)).status).toBe(400);
+    await db.update(tasks).set({ variantOf: TASK_ID }).where(eq(tasks.id, plain.input.taskId));
+    expect((await manual(undefined, false, plain.input.taskId)).status).toBe(400);
+    // 存在しない利用者も、無効な利用者と同じく対象外。
+    const missing = await request(app(), env, "/api/task-manual-completion", {
+      method: "POST",
+      token: instructorToken,
+      body: JSON.stringify({
+        userId: "missing",
+        stageId: "stage",
+        items: [{ taskId: TASK_ID }],
+        reason: "確認済み",
+      }),
+    });
+    expect(missing.status).toBe(400);
+    const invalidItems = await request(app(), env, "/api/task-manual-completion", {
+      method: "POST",
+      token: instructorToken,
+      body: JSON.stringify({
+        userId: "learner",
+        stageId: "stage",
+        items: [{ taskId: TASK_ID }, { taskId: "missing" }],
+        reason: "確認済み",
+      }),
+    });
+    expect(invalidItems.status).toBe(400);
+    await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "learner"));
+    expect((await manual()).status).toBe(400);
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+  });
+
+  it.each([
+    [19, 1],
+    [105, 2],
+  ])(
+    "%i課題の読み取りは課題IDのまとまりごとに3種類を取得する",
+    async (taskCount, expectedQueries) => {
+      const [template] = await db.select().from(tasks).where(eq(tasks.id, TASK_ID));
+      for (let index = 2; index < taskCount; index++) {
+        await db.insert(tasks).values({ ...template, id: `task-${index}`, order: index });
+      }
+      await manual(["q01-add"]);
+      await submitProblem("q02-sub");
+      const prepare = vi.spyOn(database.binding, "prepare");
+      try {
+        const view = await readManualCompletion(db, "learner", "stage");
+        expect(view.units[0].tasks).toHaveLength(taskCount);
+        expect(view.units[0].tasks.find((task) => task.id === TASK_ID)).toMatchObject({
+          status: "passed",
+          reviewSource: "tests",
+          problems: [
+            { id: "q01-add", source: "manual" },
+            { id: "q02-sub", source: "tests" },
+          ],
+        });
+        for (const table of ["task_progress", "submissions", "task_problem_results"]) {
+          expect(
+            prepare.mock.calls.filter(([sql]) => sql.includes(`from "${table}"`)),
+          ).toHaveLength(expectedQueries);
+        }
+      } finally {
+        prepare.mockRestore();
+      }
+    },
+  );
+
+  it("済みに数えない古い版の問題は、いまの版のmanualに置き換えられる", async () => {
+    await submitProblem("q01-add", "export const previous = 1;\n");
+    await db
+      .update(taskProblemResults)
+      .set({ contentHash: "old" })
+      .where(eq(taskProblemResults.taskId, TASK_ID));
+    const before = await readManualCompletion(db, "learner", "stage");
+    expect(before.units[0].tasks[0].problems[0].status).toBe("not-submitted");
+    expect(await (await manual(["q01-add"])).json()).toEqual({
+      inserted: 1,
+      skipped: 0,
+      passedTaskIds: [],
+    });
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      {
+        problemId: "q01-add",
+        contentHash: CURRENT,
+        source: "manual",
+        code: "",
+        sha256: "",
+        path: "src/q01-add.ts",
+        manualReason: "別の学習環境で確認済み",
+        manualBy: "teacher",
+        manualAt: expect.any(Date),
+      },
+    ]);
+    const after = await readManualCompletion(db, "learner", "stage");
+    expect(after.units[0].tasks[0].problems[0]).toMatchObject({
+      status: "passed",
+      source: "manual",
+    });
+    const [audit] = await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "task_manual_complete"));
+    expect(audit.metadata).toEqual({
+      user_id: "learner",
+      stage_id: "stage",
+      task_ids: [TASK_ID],
+      problem_count: 1,
+      reason: "別の学習環境で確認済み",
+    });
+  });
+
+  it.each([false, true])(
+    "ロックが取れないとき、一部保存済みかどうかを案内する（保存済み=%s）",
+    async (partial) => {
+      await db.insert(resourceLocks).values({
+        id: taskSubmissionLockId("learner", partial ? plain.input.taskId : TASK_ID),
+        holder: "another-request",
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      const response = await request(app(), env, "/api/task-manual-completion", {
+        method: "POST",
+        token: instructorToken,
+        body: JSON.stringify({
+          userId: "learner",
+          stageId: "stage",
+          items: [{ taskId: TASK_ID }, { taskId: plain.input.taskId }],
+          reason: "別の学習環境で確認済み",
+        }),
+      });
+      expect(response.status).toBe(409);
+      expect(await response.text()).toContain(
+        partial
+          ? "一部は保存済みです。一覧を読み込み直してから、残りをもう一度操作してください"
+          : "別の提出・レビューを保存中です。もう一度操作してください",
+      );
+      expect(await db.select().from(taskProblemResults)).toHaveLength(partial ? 2 : 0);
+    },
+  );
+
+  it("一部だけ手で済みにすると、コードを返さずstatus passedと出所を返す", async () => {
+    const response = await manual(["q01-add"]);
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await response.json()).toEqual({ inserted: 1, skipped: 0, passedTaskIds: [] });
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      {
+        source: "manual",
+        manualReason: "別の学習環境で確認済み",
+        manualBy: "teacher",
+        code: "",
+        sha256: "",
+        path: "src/q01-add.ts",
+        contentHash: CURRENT,
+      },
+    ]);
+    const result = await json<{ problems: Record<string, unknown>[] }>(
+      await request(app(), env, `/api/tasks/problem-results?taskId=${TASK_ID}`, { token }),
+    );
+    expect(result.problems).toMatchObject([
+      { status: "passed", source: "manual" },
+      { status: "not-submitted", source: null },
+    ]);
+    const admin = await json<{ units: { tasks: { problems: Record<string, unknown>[] }[] }[] }>(
+      await request(app(), env, "/api/task-manual-completion?userId=learner&stageId=stage", {
+        token: instructorToken,
+      }),
+    );
+    expect(admin.units[0].tasks[0].problems[0]).toMatchObject({
+      manualByName: "講師",
+      manualReason: "別の学習環境で確認済み",
+      manualAt: expect.any(String),
+    });
+    expect(JSON.stringify(admin)).not.toContain('"code"');
+    expect((await manual(["q01-add"])).status).toBe(200);
+    expect(await db.select().from(taskProblemResults)).toHaveLength(1);
+  });
+
+  it("全問の手動完了は課題に数えるが証拠・AI・レビュー待ちを作らず、ファイルも返さない", async () => {
+    const response = await manual();
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await response.json()).toEqual({ inserted: 2, skipped: 0, passedTaskIds: [TASK_ID] });
+    const [row] = await db.select().from(submissions);
+    expect(row).toMatchObject({
+      reviewSource: "manual",
+      verdict: "pass",
+      reviewerId: "teacher",
+      reviewNotes: "別の学習環境で確認済み",
+      aiReviewStatus: null,
+    });
+    expect(await db.select().from(skillEvidence)).toEqual([]);
+    expect(await db.select().from(submissionReviews)).toEqual([]);
+    expect(await db.select().from(aiReviewJobs)).toEqual([]);
+    expect((await taskCompletionCounts(db, "stage", ["learner"])).passed.get("learner")).toEqual(
+      new Set([TASK_ID]),
+    );
+    expect((await manualCompletionCounts(db, "stage", ["learner"])).get("learner")).toEqual({
+      manual_tasks: 1,
+      manual_problems: 2,
+    });
+    expect(await readSubmissionFiles(db, env, row.id)).toEqual([]);
+    const listed = await json<{ tasks: Record<string, unknown>[] }>(
+      await request(app(), env, "/api/tasks/for-stage/stage", { token }),
+    );
+    expect(listed.tasks.find((task) => task.id === TASK_ID)).toMatchObject({
+      problems_manual: 2,
+      manual_passed: true,
+      status: "passed",
+    });
+    const board = await request(app(), env, `/api/review-desk/task-board?taskId=${TASK_ID}`, {
+      token: instructorToken,
+    });
+    expect(board.status, await board.clone().text()).toBe(200);
+    expect(await board.json()).toMatchObject({
+      submissions: [{ reviewSource: "manual", verdict: "pass" }],
+    });
+    const gradebook = await request(app(), env, "/api/certificates/gradebook/stage", {
+      token: instructorToken,
+    });
+    expect(gradebook.status, await gradebook.clone().text()).toBe(200);
+    const gradebookBody = await json<{ gradebook: { rows: GradebookEntry[] } }>(gradebook);
+    expect(gradebookBody).toMatchObject({
+      gradebook: {
+        rows: [
+          {
+            manual_tasks: 1,
+            manual_problems: 2,
+            completion: { passed_assignments: 1 },
+          },
+        ],
+      },
+    });
+    const completion = gradebookBody.gradebook.rows[0].completion;
+    expect(completion).not.toHaveProperty("manual_tasks");
+    expect(completion).not.toHaveProperty("manual_problems");
+    for (const url of ["/api/certificates/completion/stage", "/api/certificates/completions"]) {
+      const learnerCompletion = await request(app(), env, url, { token });
+      expect(learnerCompletion.status).toBe(200);
+      const body = await json<{ completion?: StageCompletion; completions?: StageCompletion[] }>(
+        learnerCompletion,
+      );
+      const row = body.completion ?? body.completions?.[0];
+      expect(row).toMatchObject({ passed_assignments: 1 });
+      expect(row).not.toHaveProperty("manual_tasks");
+      expect(row).not.toHaveProperty("manual_problems");
+    }
+    const listedSubmissions = await request(app(), env, "/api/submissions", {
+      token: instructorToken,
+    });
+    expect(listedSubmissions.status).toBe(200);
+    expect(await listedSubmissions.json()).toMatchObject({
+      rows: [{ review_source: "manual", verdict: "pass" }],
+    });
+    const staffDetail = await request(app(), env, `/api/submissions/${row.id}`, {
+      token: instructorToken,
+    });
+    expect(await staffDetail.json()).toMatchObject({
+      row: { review_source: "manual", review_notes: "別の学習環境で確認済み", stage_id: "stage" },
+    });
+    const mine = await request(app(), env, "/api/submissions/mine", { token });
+    expect(await mine.json()).toMatchObject({
+      rows: [{ review_source: "manual", review_notes: "" }],
+    });
+    const detail = await request(app(), env, `/api/submissions/${row.id}`, { token });
+    expect(detail.status, await detail.clone().text()).toBe(200);
+    expect(await detail.json()).toMatchObject({
+      row: { review_source: "manual", review_notes: "" },
+    });
+  });
+
+  /** 保存のロックを離したところでテスト確定だけを止め、競合の窓を再現する。 */
+  async function pendingProblemCompletion() {
+    expect((await manual(["q01-add"])).status).toBe(200);
+    const finalize = vi
+      .spyOn(taskSubmission, "reviewTaskSubmission")
+      .mockImplementationOnce(async () => {
+        const [pending] = await db.select().from(submissions);
+        return pending;
+      });
+    try {
+      await submitProblem("q02-sub");
+      expect(finalize).toHaveBeenCalledTimes(1);
+      const [pending] = await db.select().from(submissions);
+      expect(pending).toMatchObject({
+        verdict: null,
+        submissionMode: "submit",
+        aiReviewStatus: null,
+      });
+      return pending.id;
+    } finally {
+      finalize.mockRestore();
+    }
+  }
+
+  const learnerCaller = {
+    id: "learner",
+    role: "student" as const,
+    name: "架空の受講者",
+    email: null,
+  };
+
+  it("最後の問題の保存と確定の間にmanualを取り消しても、合格・証拠・確認待ちを残さない", async () => {
+    const pendingId = await pendingProblemCompletion();
+    expect((await manual(["q01-add"], true)).status).toBe(200);
+    // 取り消し自体で、全問がそろったときの未確定の提出を捨てる。
+    expect(await db.select().from(submissions)).toEqual([]);
+    await expect(
+      reviewTaskSubmission(db, learnerCaller, pendingId, "pass", "", "tests"),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(await db.select().from(skillEvidence)).toEqual([]);
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      { problemId: "q02-sub", source: "tests" },
+    ]);
+    expect((await db.select().from(taskProgress))[0]).toMatchObject({
+      status: "local-passed",
+      passedAt: null,
+    });
+  });
+
+  it("テスト確定もロック内で問題を数え直し、欠けていれば未確定の提出を捨てる", async () => {
+    const pendingId = await pendingProblemCompletion();
+    // 古い取り消し処理が先に動いた場合にも、確定側だけで誤合格を防ぐ。
+    await db.delete(taskProblemResults).where(eq(taskProblemResults.problemId, "q01-add"));
+    await expect(
+      reviewTaskSubmission(db, learnerCaller, pendingId, "pass", "", "tests"),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect(await db.select().from(skillEvidence)).toEqual([]);
+    expect((await db.select().from(taskProgress))[0]).toMatchObject({
+      status: "local-passed",
+      passedAt: null,
+    });
+  });
+
+  it("手で済みの集計は課題ごとに一度だけ定義を読み、問題の問い合わせには全文を載せない", async () => {
+    const problems = Array.from({ length: 168 }, (_, index) => ({
+      id: `q${index}`,
+      title: `架空の問題${index}`,
+    }));
+    const built = await problemBundle(CURRENT, problems);
+    await db
+      .update(tasks)
+      .set({ definition: JSON.stringify(built.definition), bundle: JSON.stringify(built.bundle) })
+      .where(eq(tasks.id, TASK_ID));
+    expect((await manual()).status).toBe(200);
+    // 合格済みの課題では旧版の現行IDも数える。未合格なら旧版・廃止したIDは数えない。
+    await db
+      .update(taskProblemResults)
+      .set({ contentHash: "old" })
+      .where(eq(taskProblemResults.problemId, "q0"));
+    const [template] = await db.select().from(taskProblemResults);
+    await db.insert(taskProblemResults).values([
+      { ...template, userId: "other", problemId: "q0", contentHash: CURRENT },
+      { ...template, userId: "other", problemId: "q1", contentHash: "old" },
+      { ...template, userId: "other", problemId: "removed", contentHash: CURRENT },
+      { ...template, userId: "learner", problemId: "removed", contentHash: CURRENT },
+    ]);
+    const parse = vi.spyOn(problemSubmission, "readTaskDefinition");
+    const prepare = vi.spyOn(database.binding, "prepare");
+    try {
+      // 利用者を分割しても同じ定義を解析し直さない。
+      const counts = await manualCompletionCounts(db, "stage", [
+        "learner",
+        "other",
+        ...Array.from({ length: 50 }, (_, i) => `sample-${i}`),
+      ]);
+      expect(counts.get("learner")).toEqual({ manual_tasks: 1, manual_problems: 168 });
+      expect(counts.get("other")).toEqual({ manual_tasks: 0, manual_problems: 1 });
+      expect(parse).toHaveBeenCalledTimes(2); // 問題つき1課題と、問題なし1課題。
+      const problemQueries = prepare.mock.calls
+        .map(([query]) => query)
+        .filter((query) => query.includes('from "task_problem_results"'));
+      expect(problemQueries.length).toBeGreaterThan(0);
+      expect(problemQueries.every((query) => !query.includes('"definition"'))).toBe(true);
+    } finally {
+      parse.mockRestore();
+      prepare.mockRestore();
+    }
+  });
+
+  it("残りを本人が解けばtestsで合格し、問題ごとの出所は残る。tests合格内のmanualは取消せない", async () => {
+    await manual(["q01-add"]);
+    expect(await submitProblem("q02-sub")).toMatchObject({ taskPassed: true });
+    const [row] = await db.select().from(submissions);
+    expect(row.reviewSource).toBe("tests");
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      { source: "manual" },
+      { source: "tests" },
+    ]);
+    expect(await db.select().from(skillEvidence)).toHaveLength(1);
+    const files = await readSubmissionFiles(db, env, row.id);
+    expect(files.map((file) => file.path)).toEqual(["src/q02-sub.ts"]);
+    const response = await manual(["q01-add"], true);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      deleted: 0,
+      blocked: [{ taskId: TASK_ID, reason: expect.stringContaining("本人の提出") }],
+    });
+    expect(await db.select().from(taskProblemResults)).toHaveLength(2);
+  });
+
+  it("手で済みの問題を本人が解くとtestsになり、管理者はテスト済みのコードを上書きできない", async () => {
+    await manual(["q01-add"]);
+    await submitProblem("q01-add", "export const mine = 7;\n");
+    const [row] = await db.select().from(taskProblemResults);
+    expect(row).toMatchObject({
+      source: "tests",
+      manualReason: null,
+      manualBy: null,
+      manualAt: null,
+      code: "export const mine = 7;\n",
+    });
+    expect(row.sha256).not.toBe("");
+    expect(await (await manual(["q01-add"])).json()).toMatchObject({ inserted: 0, skipped: 1 });
+    expect((await db.select().from(taskProblemResults))[0]).toEqual(row);
+  });
+
+  it("取消しはmanualだけを消し、manual合格と合格日を戻す", async () => {
+    await submitProblem("q01-add");
+    await manual(["q02-sub"]);
+    expect((await db.select().from(taskProgress))[0]).toMatchObject({
+      status: "passed",
+      passedAt: expect.any(Date),
+    });
+    // 問題を明示した取り消しは、テスト済みを blocked として返す。
+    const response = await manual(["q01-add", "q02-sub"], true);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      deleted: 1,
+      blocked: [{ problemId: "q01-add" }],
+    });
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      { problemId: "q01-add", source: "tests" },
+    ]);
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect(await db.select().from(taskProgress)).toMatchObject([
+      {
+        taskId: TASK_ID,
+        userId: "learner",
+        status: "local-passed",
+        contentHash: CURRENT,
+        passedAt: null,
+      },
+    ]);
+  });
+
+  it("問題のない課題も済みにして取り消せる。受講開始前でも進捗を保存できる", async () => {
+    await db.delete(enrollments);
+    const response = await manual(undefined, false, plain.input.taskId);
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await response.json()).toMatchObject({
+      inserted: 1,
+      passedTaskIds: [plain.input.taskId],
+    });
+    expect((await manual(undefined, false, plain.input.taskId)).status).toBe(200);
+    expect(await db.select().from(submissions)).toHaveLength(1);
+    await db.insert(enrollments).values({ userId: "learner", stageId: "stage", status: "active" });
+    expect((await taskCompletionCounts(db, "stage", ["learner"])).passed.get("learner")).toEqual(
+      new Set([plain.input.taskId]),
+    );
+    expect((await manual(undefined, true, plain.input.taskId)).status).toBe(200);
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect(await db.select().from(taskProgress)).toEqual([]);
+  });
+
+  it("1300問を100バインド以内の文で保存・取消しし、監査に問題IDを列挙しない", async () => {
+    const problems = Array.from({ length: 1300 }, (_, index) => ({
+      id: `q${index}`,
+      title: `問題${index}`,
+    }));
+    const built = await problemBundle(CURRENT, problems);
+    await db
+      .update(tasks)
+      .set({ definition: JSON.stringify(built.definition), bundle: JSON.stringify(built.bundle) })
+      .where(eq(tasks.id, TASK_ID));
+    const response = await manual();
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await response.json()).toMatchObject({ inserted: 1300, passedTaskIds: [TASK_ID] });
+    expect(await db.select().from(taskProblemResults)).toHaveLength(1300);
+    const [audit] = await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "task_manual_complete"));
+    expect(audit.metadata).toMatchObject({
+      user_id: "learner",
+      stage_id: "stage",
+      task_ids: [TASK_ID],
+      problem_count: 1300,
+      reason: "別の学習環境で確認済み",
+    });
+    expect(JSON.stringify(audit.metadata)).not.toContain("q1299");
+    expect(await (await manual(undefined, true)).json()).toEqual({ deleted: 1300, blocked: [] });
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+    expect(await db.select().from(taskProgress)).toEqual([]);
+    expect(
+      await db.select().from(auditLogs).where(eq(auditLogs.action, "task_manual_revoke")),
+    ).toHaveLength(1);
+  });
+
+  it("ステージ完了と自動修了証を、手で済みの取消しで戻す", async () => {
+    await db
+      .insert(lessons)
+      .values({ id: "lesson", sectionId: "unit", title: "課題文", type: "text" });
+    await db
+      .update(stages)
+      .set({
+        requireAllLessons: false,
+        requireQuizPass: false,
+        requireAssignmentPass: true,
+        autoIssueCertificate: true,
+      })
+      .where(eq(stages.id, "stage"));
+    await manual(undefined, false, plain.input.taskId);
+    await manual();
+    expect((await db.select().from(enrollments))[0].status).toBe("completed");
+    expect(await db.select().from(certificates)).toHaveLength(1);
+    expect((await manual(["q01-add"], true)).status).toBe(200);
+    expect((await db.select().from(enrollments))[0].status).toBe("active");
+    expect(await db.select().from(certificates)).toEqual([]);
+  });
+
+  it("学習ペースの進捗には含め、日ごとの活動と週の合格件数には含めない", async () => {
+    await db
+      .insert(contentUnits)
+      .values({ sectionId: "unit", plannedHours: 1, skills: { uses: [], assesses: [] } });
+    await db.update(stages).set({ slug: "dev-env-basics" }).where(eq(stages.id, "stage"));
+    await manual();
+    const learner = { id: "learner", role: "student" as const, name: "架空の受講者", email: null };
+    const pace = await loadLearningPace(db, learner, "2026-11-16");
+    expect(pace.completedMinutes).toBe(20);
+    await db.update(tasks).set({ kind: "assessment-a" }).where(eq(tasks.id, TASK_ID));
+    await db
+      .update(tasks)
+      .set({ kind: "assessment-b", pattern: "calc" })
+      .where(eq(tasks.id, plain.input.taskId));
+    const importedAssessment = await loadLearningPace(db, learner, "2026-11-16");
+    expect(importedAssessment.assessments).toEqual([]);
+    const [row] = await db.select().from(submissions);
+    // 週内の合格・提出として置いた手動行も、その日の取り組みとしては数えない。
+    const at = new Date("2026-11-10T03:00:00Z");
+    await db
+      .update(submissions)
+      .set({ submittedAt: at, reviewedAt: at })
+      .where(eq(submissions.id, row.id));
+    await db.update(taskProgress).set({ passedAt: at }).where(eq(taskProgress.taskId, TASK_ID));
+    const material = await collectMemoMaterial(
+      db,
+      learner,
+      "2026-11-09",
+      new Date("2026-11-16T03:00:00Z"),
+    );
+    expect(material.activity.activeDays).toBe(0);
+    expect(material.activity.submissions).toBe(0);
+    expect(material.passedTaskCount).toBe(0);
+  });
 
   it("問題が揃うまで課題の提出を作らず、最後の問題でテスト確定する", async () => {
     const first = await submitProblem("q01-add", "export const add = 1;\n");
@@ -540,6 +1567,7 @@ describe("問題の提出", () => {
       PROBLEMS.map((problem) => ({
         ...problem,
         status: "passed",
+        source: "tests",
         firstPassedAt: saved
           .find((row) => row.problemId === problem.id)
           ?.firstPassedAt.toISOString(),

@@ -34,6 +34,8 @@ export interface TaskSummary {
   skills: { uses: string[]; assesses: string[] };
   estimatedMinutes: number;
   status: TaskStatus;
+  /** 管理者が手で合格にした課題なら true。 */
+  manual_passed?: boolean;
   /** `support.aiChat: false` の課題だけ true。 */
   aiChatDisabled?: boolean;
   /** 課題文のレッスン (`lessons.id`)。そのレッスンにも「VS Code で開く」を出す。 */
@@ -42,6 +44,8 @@ export interface TaskSummary {
   problems_total?: number;
   /** 問題つきの課題だけ。提出済みの問題数。 */
   problems_passed?: number;
+  /** 済みに数える問題のうち、管理者が手で済みにした数。 */
+  problems_manual?: number;
 }
 /** 公開用の明示的なファイル一覧。private とレビュー用の素材はここに載せない。 */
 export interface TaskBundle {

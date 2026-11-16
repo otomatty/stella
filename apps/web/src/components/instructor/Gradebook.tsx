@@ -1,3 +1,4 @@
+import { gradebookCsv, gradebookTaskLabel } from "@/lib/gradebook";
 /**
  * 講師/管理者向け成績台帳 (gradebook) (Issue #26)。
  *
@@ -16,17 +17,10 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Stage } from "@/data/types";
-import type { StageGradebook, EnrollmentStatus, GradebookEntry } from "@stella/shared/cms/types";
+import type { StageGradebook, GradebookEntry } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchStageGradebook, issueCertificate } from "@/lib/certificates-api";
-import { downloadCsv, toCsv } from "@/lib/csv";
-
-/** enrollment ステータスを日本語の表示語にする。 */
-const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
-  active: "受講中",
-  completed: "完了",
-  expired: "期限切れ",
-};
+import { downloadCsv } from "@/lib/csv";
 
 interface GradebookProps {
   stages: Stage[];
@@ -74,44 +68,9 @@ export const Gradebook = ({ stages }: GradebookProps) => {
 
   const onExport = () => {
     if (!data || data.rows.length === 0) return;
-    const headers = [
-      "受講者",
-      "メール",
-      "受講状態",
-      "期限",
-      "登録日",
-      "レッスン完了",
-      "レッスン総数",
-      "小テスト合格",
-      "小テスト総数",
-      "課題合格",
-      "課題総数",
-      "達成",
-      "修了証",
-      "認定番号",
-    ];
-    const rows = data.rows.map((r) => {
-      const c = r.completion;
-      return [
-        r.display_name,
-        r.email ?? "",
-        ENROLLMENT_STATUS_LABEL[r.enrollment_status] ?? r.enrollment_status,
-        r.due_at ? r.due_at.slice(0, 10) : "",
-        r.enrolled_at ? r.enrolled_at.slice(0, 10) : "",
-        c?.completed_lessons ?? "",
-        c?.total_lessons ?? "",
-        c?.passed_quizzes ?? "",
-        c?.total_quizzes ?? "",
-        c?.passed_assignments ?? "",
-        c?.total_assignments ?? "",
-        c?.met ? "達成" : "未達成",
-        c?.has_certificate ? "発行済み" : "",
-        c?.cert_code ?? "",
-      ];
-    });
     const stamp = new Date().toISOString().slice(0, 10);
     const safeTitle = data.stage_title.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40);
-    downloadCsv(`gradebook-${safeTitle}-${stamp}.csv`, toCsv(headers, rows));
+    downloadCsv(`gradebook-${safeTitle}-${stamp}.csv`, gradebookCsv(data));
     toast.success("成績台帳を出力しました");
   };
 
@@ -148,7 +107,7 @@ export const Gradebook = ({ stages }: GradebookProps) => {
                 </option>
               ))}
             </select>
-            <Button onClick={onExport} disabled={!data || data.rows.length === 0}>
+            <Button type="button" onClick={onExport} disabled={!data || data.rows.length === 0}>
               <Download size={14} />
               CSV出力
             </Button>
@@ -219,9 +178,7 @@ function GradebookTable({
                 <td className="px-3 py-2.5 font-mono text-ink-2">
                   {c ? `${c.passed_quizzes}/${c.total_quizzes}` : "—"}
                 </td>
-                <td className="px-3 py-2.5 font-mono text-ink-2">
-                  {c ? `${c.passed_assignments}/${c.total_assignments}` : "—"}
-                </td>
+                <td className="px-3 py-2.5 font-mono text-ink-2">{gradebookTaskLabel(row)}</td>
                 <td className="px-3 py-2.5">
                   {hasCert ? (
                     <Badge variant="success">発行済み</Badge>
@@ -237,6 +194,7 @@ function GradebookTable({
                 <td className="px-4 py-2.5 text-right">
                   {!hasCert && met ? (
                     <Button
+                      type="button"
                       size="sm"
                       variant="accent"
                       disabled={issuingUser === row.user_id}

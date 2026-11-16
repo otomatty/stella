@@ -1,6 +1,7 @@
 import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { sections, tasks, taskProgress } from "../db/schema.js";
+import { readTaskDefinition } from "./task-problem-submission.js";
+import { sections, tasks, taskProgress, submissions, taskProblemResults } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
 
 /**
@@ -78,6 +79,83 @@ export async function taskCountsForUser(
     for (const row of passed) {
       const entry = out.get(row.stageId);
       if (entry) entry.passed = row.passed;
+    }
+  }
+  return out;
+}
+
+/** 進捗として数えている現行の問題と、残っている手動合格の数。日々の活動とは区別する。 */
+export async function manualCompletionCounts(db: Db, stageId: string, userIds: string[]) {
+  const out = new Map<string, { manual_tasks: number; manual_problems: number }>();
+  if (userIds.length === 0) return out;
+  // 大きな定義を問題の行に繰り返し載せず、利用者の分割より前に課題ごとに一度だけ解析する。
+  const stageTasks = await db
+    .select({ id: tasks.id, hash: tasks.contentHash, definition: tasks.definition })
+    .from(tasks)
+    .innerJoin(sections, eq(sections.id, tasks.sectionId))
+    .where(and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)));
+  const currentByTask = new Map(
+    stageTasks.map((task) => [
+      task.id,
+      {
+        hash: task.hash,
+        problemIds: new Set(readTaskDefinition(task.definition).problems?.map((p) => p.id) ?? []),
+      },
+    ]),
+  );
+  for (const users of chunk(userIds, 50)) {
+    const rows = await db
+      .select({ userId: submissions.studentId, taskId: submissions.taskId })
+      .from(submissions)
+      .innerJoin(tasks, eq(tasks.id, submissions.taskId))
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .where(
+        and(
+          eq(sections.stageId, stageId),
+          eq(tasks.active, true),
+          isNull(tasks.variantOf),
+          inArray(submissions.studentId, users),
+          eq(submissions.verdict, "pass"),
+          eq(submissions.reviewSource, "manual"),
+        ),
+      );
+    for (const userId of users)
+      out.set(userId, {
+        manual_tasks: new Set(rows.filter((row) => row.userId === userId).map((row) => row.taskId))
+          .size,
+        manual_problems: 0,
+      });
+    const problems = await db
+      .select({
+        userId: taskProblemResults.userId,
+        taskId: taskProblemResults.taskId,
+        problemId: taskProblemResults.problemId,
+        hash: taskProblemResults.contentHash,
+        status: taskProgress.status,
+      })
+      .from(taskProblemResults)
+      .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .leftJoin(
+        taskProgress,
+        and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, taskProblemResults.userId)),
+      )
+      .where(
+        and(
+          eq(sections.stageId, stageId),
+          eq(tasks.active, true),
+          isNull(tasks.variantOf),
+          inArray(taskProblemResults.userId, users),
+          eq(taskProblemResults.source, "manual"),
+        ),
+      );
+    for (const row of problems) {
+      const current = currentByTask.get(row.taskId);
+      if (!current?.problemIds.has(row.problemId)) continue;
+      if (row.hash !== current.hash && row.status !== "passed" && row.status !== "ai-passed")
+        continue;
+      const entry = out.get(row.userId);
+      if (entry) entry.manual_problems++;
     }
   }
   return out;

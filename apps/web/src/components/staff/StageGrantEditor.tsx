@@ -1,3 +1,4 @@
+import { manualCompletionUrl } from "@/lib/manual-completion";
 /**
  * Extra ステージ 1 件の割り当て。
  * 検索・絞り込み・50 人ずつ。保存は差分だけを送る。
@@ -349,6 +350,7 @@ export function StageGrantEditor({
   );
 
   const shellProps = {
+    completionStageId: stageId,
     stageLabel,
     counts,
     views,
@@ -664,6 +666,7 @@ function learnerSubtitle(view: StageRosterView): string {
 }
 
 function PcRoster({
+  completionStageId,
   stageLabel,
   counts,
   prerequisiteTitles,
@@ -693,6 +696,7 @@ function PcRoster({
   onClose,
   listFooter,
 }: {
+  completionStageId: string | null;
   stageLabel: string;
   counts: StageGrantLearnerCounts | null;
   prerequisiteTitles: string[];
@@ -851,6 +855,17 @@ function PcRoster({
                         ) : null}
                         <ChangeMarks marks={view.marks} />
                       </div>
+                      {view.baseline.assigned &&
+                      completionStageId &&
+                      !saving &&
+                      changeCount === 0 ? (
+                        <a
+                          className="block text-sm text-brand underline"
+                          href={manualCompletionUrl(completionStageId, view.id)}
+                        >
+                          手で済みにする
+                        </a>
+                      ) : null}
                       {view.baseline.email ? (
                         <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
                       ) : null}
@@ -922,6 +937,7 @@ function FilterChip({
 }
 
 function MobileRoster({
+  completionStageId,
   stageLabel,
   counts,
   views,
@@ -956,6 +972,7 @@ function MobileRoster({
   onClose,
   listFooter,
 }: {
+  completionStageId: string | null;
   stageLabel: string;
   counts: StageGrantLearnerCounts | null;
   views: StageRosterView[];
@@ -1140,6 +1157,14 @@ function MobileRoster({
                     <ExemptionField view={view} saving={saving} tall onExempted={onExempted} />
                   </div>
                 )}
+                {view.baseline.assigned && completionStageId && !saving && changeCount === 0 ? (
+                  <a
+                    className="block px-4 pb-3 text-sm text-brand underline"
+                    href={manualCompletionUrl(completionStageId, view.id)}
+                  >
+                    手で済みにする
+                  </a>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -26,6 +26,7 @@ import { Route as AppReviewQueueRouteImport } from './routes/_app/review-queue'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppSkillTreeRouteImport } from './routes/_app/skill-tree'
 import { Route as AppStageGrantsRouteImport } from './routes/_app/stage-grants'
+import { Route as AppTaskManualCompletionRouteImport } from './routes/_app/task-manual-completion'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as StartIndexRouteImport } from './routes/start.index'
@@ -134,6 +135,11 @@ const AppSkillTreeRoute = AppSkillTreeRouteImport.update({
 const AppStageGrantsRoute = AppStageGrantsRouteImport.update({
   id: '/stage-grants',
   path: '/stage-grants',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTaskManualCompletionRoute = AppTaskManualCompletionRouteImport.update({
+  id: '/task-manual-completion',
+  path: '/task-manual-completion',
   getParentRoute: () => AppRoute,
 } as any)
 const AppUsersRoute = AppUsersRouteImport.update({
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/skill-tree': typeof AppSkillTreeRoute
   '/stage-grants': typeof AppStageGrantsRoute
+  '/task-manual-completion': typeof AppTaskManualCompletionRoute
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/start/$lessonId': typeof StartLessonIdRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/skill-tree': typeof AppSkillTreeRoute
   '/stage-grants': typeof AppStageGrantsRoute
+  '/task-manual-completion': typeof AppTaskManualCompletionRoute
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/start/$lessonId': typeof StartLessonIdRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/skill-tree': typeof AppSkillTreeRoute
   '/_app/stage-grants': typeof AppStageGrantsRoute
+  '/_app/task-manual-completion': typeof AppTaskManualCompletionRoute
   '/_app/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/start/$lessonId': typeof StartLessonIdRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/skill-tree'
     | '/stage-grants'
+    | '/task-manual-completion'
     | '/users'
     | '/auth/callback'
     | '/start/$lessonId'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/skill-tree'
     | '/stage-grants'
+    | '/task-manual-completion'
     | '/users'
     | '/auth/callback'
     | '/start/$lessonId'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/skill-tree'
     | '/_app/stage-grants'
+    | '/_app/task-manual-completion'
     | '/_app/users'
     | '/auth/callback'
     | '/start/$lessonId'
@@ -657,6 +669,13 @@ declare module '@tanstack/react-router' {
       path: '/stage-grants'
       fullPath: '/stage-grants'
       preLoaderRoute: typeof AppStageGrantsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/task-manual-completion': {
+      id: '/_app/task-manual-completion'
+      path: '/task-manual-completion'
+      fullPath: '/task-manual-completion'
+      preLoaderRoute: typeof AppTaskManualCompletionRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/users': {
@@ -874,6 +893,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppSkillTreeRoute: typeof AppSkillTreeRoute
   AppStageGrantsRoute: typeof AppStageGrantsRoute
+  AppTaskManualCompletionRoute: typeof AppTaskManualCompletionRoute
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCertificatesCertIdRoute: typeof AppCertificatesCertIdRoute
@@ -907,6 +927,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppSkillTreeRoute: AppSkillTreeRoute,
   AppStageGrantsRoute: AppStageGrantsRoute,
+  AppTaskManualCompletionRoute: AppTaskManualCompletionRoute,
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
   AppCertificatesCertIdRoute: AppCertificatesCertIdRoute,

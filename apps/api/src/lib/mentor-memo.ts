@@ -40,6 +40,7 @@ import {
 } from "@stella/shared/tasks/support-record";
 import { and, asc, desc, eq, exists, gte, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
+import { hasOnlyManualTaskPass } from "./task-pass-source.js";
 import {
   aiReviews,
   enrollments,
@@ -179,6 +180,7 @@ async function enqueueWeek(db: Db, weekStart: string, now: Date): Promise<number
                           .where(
                             and(
                               eq(submissions.studentId, profiles.id),
+                              sql`(${submissions.reviewSource} is null or ${submissions.reviewSource} <> 'manual')`,
                               gte(submissions.submittedAt, weekBegin),
                               lt(submissions.submittedAt, weekEnd),
                             ),
@@ -316,7 +318,13 @@ export async function collectMemoMaterial(
         supportLog: submissions.supportLog,
       })
       .from(submissions)
-      .where(and(eq(submissions.studentId, learner.id), gte(submissions.submittedAt, from))),
+      .where(
+        and(
+          eq(submissions.studentId, learner.id),
+          sql`(${submissions.reviewSource} is null or ${submissions.reviewSource} <> 'manual')`,
+          gte(submissions.submittedAt, from),
+        ),
+      ),
     db
       .select({ title: tasks.title, kind: tasks.kind })
       .from(taskProgress)
@@ -324,6 +332,7 @@ export async function collectMemoMaterial(
       .where(
         and(
           eq(taskProgress.userId, learner.id),
+          sql`not ${hasOnlyManualTaskPass(taskProgress.userId, taskProgress.taskId)}`,
           gte(taskProgress.passedAt, from),
           lt(taskProgress.passedAt, to),
         ),

@@ -42,7 +42,11 @@ import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTask } from "./task-access.js";
-import { submitTaskProblem } from "./task-problem-submission.js";
+import {
+  countedProblemIds,
+  readTaskDefinition,
+  submitTaskProblem,
+} from "./task-problem-submission.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
 import { hasRecordedSupport, isAssistedSubmission } from "./task-support.js";
@@ -346,6 +350,7 @@ export async function readSubmissionFiles(db: Db, env: Env, submissionId: string
           and(
             eq(taskProblemResults.userId, submission.studentId),
             eq(taskProblemResults.taskId, submission.taskId),
+            eq(taskProblemResults.source, "tests"),
           ),
         )
         .orderBy(asc(taskProblemResults.problemId));
@@ -463,7 +468,11 @@ async function assertAiApplicable(
  * 課題の進捗を、提出の記録から付け直す文。合格がある限り教材更新・再提出では取り消さない。
  * 合格が無ければ最新試行の状態を使う。AI の確認待ちだけが「AI が確認中」(submitted) になる。
  */
-function recomputeTaskProgress(db: Db, row: { studentId: string; taskId: string }, now: Date) {
+export function recomputeTaskProgress(
+  db: Db,
+  row: { studentId: string; taskId: string },
+  now: Date,
+) {
   return db
     .insert(taskProgress)
     .select(
@@ -572,7 +581,7 @@ async function appliedAiReview(db: Db, submissionId: string, outcome: "confirmed
  * 取り消した合格から数えられてしまう。残っている合格 (同じ版) の最初の合格の記録から付け直し、
  * 合格が残っていなければ消す。合格の記録が無い古い行は今の値を残す。
  */
-function resetPassedAt(db: Db, row: { studentId: string; taskId: string }) {
+export function resetPassedAt(db: Db, row: { studentId: string; taskId: string }) {
   const firstRemainingPass = sql`(select min(r.created_at) from submission_reviews r
     join submissions s on s.id = r.submission_id
     where s.student_id = ${row.studentId}
@@ -642,6 +651,76 @@ export async function reviewTaskSubmission(
         409,
       );
     const now = new Date();
+    if (source === "tests" && verdict === "pass") {
+      // 保存から確定までに manual が取り消されることがあるため、同じ課題のロック内で再確認する。
+      const [current] = await db
+        .select({ hash: tasks.contentHash, definition: tasks.definition })
+        .from(tasks)
+        .where(eq(tasks.id, row.taskId))
+        .limit(1);
+      const problems = readTaskDefinition(current?.definition ?? "").problems;
+      if (problems || row.taskSnapshot?.manifest.problems?.length) {
+        const saved = await db
+          .select({
+            problemId: taskProblemResults.problemId,
+            contentHash: taskProblemResults.contentHash,
+            source: taskProblemResults.source,
+          })
+          .from(taskProblemResults)
+          .where(
+            and(
+              eq(taskProblemResults.userId, row.studentId),
+              eq(taskProblemResults.taskId, row.taskId),
+            ),
+          );
+        const [progress] = await db
+          .select({ status: taskProgress.status })
+          .from(taskProgress)
+          .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId)))
+          .limit(1);
+        const counted = countedProblemIds(
+          saved,
+          current?.hash ?? "",
+          progress?.status === "passed" || progress?.status === "ai-passed",
+        );
+        if (!problems?.every((problem) => counted.has(problem.id))) {
+          // 確認中の表示や人の一覧に取り残さず、残っている提出・問題の結果から状態を付け直す。
+          const scope = { studentId: row.studentId, taskId: row.taskId };
+          const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
+            db.delete(submissions).where(eq(submissions.id, row.id)),
+            db
+              .delete(taskProgress)
+              .where(
+                and(
+                  eq(taskProgress.userId, row.studentId),
+                  eq(taskProgress.taskId, row.taskId),
+                  sql`not exists (select 1 from submissions where student_id = ${row.studentId} and task_id = ${row.taskId})`,
+                ),
+              ),
+            recomputeTaskProgress(db, scope, now),
+          ];
+          if (saved.some((problem) => problem.source === "tests"))
+            statements.push(
+              db
+                .insert(taskProgress)
+                .values({
+                  userId: row.studentId,
+                  taskId: row.taskId,
+                  contentHash: current?.hash ?? row.taskContentHash ?? "",
+                  status: "local-passed",
+                  updatedAt: now,
+                })
+                .onConflictDoNothing({ target: [taskProgress.userId, taskProgress.taskId] }),
+            );
+          statements.push(resetPassedAt(db, scope));
+          await db.batch(statements);
+          throw new ApiError(
+            "問題の結果が変わっています。残りの問題を確認して提出してください",
+            409,
+          );
+        }
+      }
+    }
     if (source === "ai") {
       try {
         if (verdict !== "pass") throw new AiReviewNotApplicable();
@@ -671,6 +750,21 @@ export async function reviewTaskSubmission(
       source === "human" && row.verdict === null && row.aiReviewStatus === "escalated"
         ? await appliedAiReview(db, id, "escalated")
         : null;
+    const priorPasses =
+      verdict === "pass"
+        ? await db
+            .select({ source: submissions.reviewSource })
+            .from(submissions)
+            .where(
+              and(
+                eq(submissions.studentId, row.studentId),
+                eq(submissions.taskId, row.taskId),
+                eq(submissions.verdict, "pass"),
+              ),
+            )
+        : [];
+    const replacesManualPass =
+      priorPasses.length > 0 && priorPasses.every((pass) => pass.source === "manual");
     const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
       db
         .update(submissions)
@@ -806,9 +900,32 @@ export async function reviewTaskSubmission(
         );
       }
     }
+    if (verdict === "pass") {
+      // 本人の合格への置き換えは、確定・証拠・進捗と同じ batch で行う。
+      statements.push(
+        db
+          .delete(submissions)
+          .where(
+            and(
+              eq(submissions.studentId, row.studentId),
+              eq(submissions.taskId, row.taskId),
+              eq(submissions.verdict, "pass"),
+              eq(submissions.reviewSource, "manual"),
+            ),
+          ),
+      );
+    }
     statements.push(
       recomputeTaskProgress(db, { studentId: row.studentId, taskId: row.taskId }, now),
     );
+    // 0044 のトリガーは初回日を保持するので、manual だけから本人の合格へ移るときだけ付け直す。
+    if (replacesManualPass)
+      statements.push(
+        db
+          .update(taskProgress)
+          .set({ passedAt: now })
+          .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId))),
+      );
     // 進捗を付け直した後に置く (トリガーが残した覆した合格の日付を上書きする)。
     if (overturned)
       statements.push(resetPassedAt(db, { studentId: row.studentId, taskId: row.taskId }));

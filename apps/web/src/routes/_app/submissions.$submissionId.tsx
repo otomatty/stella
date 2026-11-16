@@ -14,6 +14,7 @@ function SubmissionResultPage() {
   );
   return (
     <ReviewResultView
+      staff={s.role === "admin"}
       submissionId={submissionId}
       setPage={s.setPage}
       {...(s.role === "learner"

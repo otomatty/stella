@@ -1,3 +1,4 @@
+import { manualCompletionUrl } from "@/lib/manual-completion";
 import { useEffect, useState } from "react";
 import { AI_REVIEW_STATUS_LABELS, FINDING_SEVERITY_LABELS } from "@stella/shared/review/ai-review";
 import type { Submission } from "@stella/shared/review/types";
@@ -11,6 +12,7 @@ import { isBackendConfigured } from "@/lib/backend";
 import { passByLabel } from "@/lib/review-queue";
 
 interface ReviewResultViewProps {
+  staff?: boolean;
   submissionId: string;
   setPage: (page: string) => void;
   /**
@@ -31,6 +33,7 @@ const verdictMeta = {
 export function ReviewResultView({
   submissionId,
   setPage,
+  staff = false,
   back = { page: "dash", label: "ホームに戻る" },
   initial = null,
 }: ReviewResultViewProps) {
@@ -85,6 +88,39 @@ export function ReviewResultView({
       </div>
     );
   }
+
+  if (submission.reviewSource === "manual")
+    return (
+      <div className="mx-auto max-w-5xl space-y-4">
+        <button
+          type="button"
+          className="text-sm text-brand underline"
+          onClick={() => setPage(back.page)}
+        >
+          {back.label}
+        </button>
+        <h1 className="text-2xl font-semibold">{submission.assignmentTitle}</h1>
+        <p className="text-sm text-ink-3">
+          {submission.stageTitle} · {formatSubmittedAt(submission.submittedAt)}
+        </p>
+        <p>{staff ? "管理者が手で済みにしました" : "管理者が済みにしました（引き継ぎ）"}</p>
+        {staff ? (
+          <>
+            <p className="whitespace-pre-wrap break-words text-sm">
+              理由: {submission.reviewNotes}
+            </p>
+            {submission.stageId && submission.studentId ? (
+              <a
+                className="text-brand underline"
+                href={manualCompletionUrl(submission.stageId, submission.studentId)}
+              >
+                手で済みを取り消す画面を開く
+              </a>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    );
 
   const meta = submission.verdict ? verdictMeta[submission.verdict] : null;
   // サーバーは講師が採用した指摘だけを返す。古い応答に備えて画面でも採用済みだけに絞る。

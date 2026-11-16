@@ -140,6 +140,7 @@ export async function submitTaskProblem(
       const saved = await db
         .select({
           problemId: taskProblemResults.problemId,
+          source: taskProblemResults.source,
           contentHash: taskProblemResults.contentHash,
         })
         .from(taskProblemResults)
@@ -160,8 +161,8 @@ export async function submitTaskProblem(
         .from(taskProgress)
         .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, task.id)))
         .limit(1);
-      const [passedSubmission] = await db
-        .select({ id: submissions.id })
+      const passedSubmissions = await db
+        .select({ id: submissions.id, reviewSource: submissions.reviewSource })
         .from(submissions)
         .where(
           and(
@@ -169,12 +170,11 @@ export async function submitTaskProblem(
             eq(submissions.taskId, task.id),
             eq(submissions.verdict, "pass"),
           ),
-        )
-        .limit(1);
+        );
       const taskAlreadyPassed =
         progress?.status === "passed" ||
         progress?.status === "ai-passed" ||
-        Boolean(passedSubmission);
+        passedSubmissions.length > 0;
       const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed);
       passedIds.add(problemId);
       const passedProblems = currentProblems.filter((problem) => passedIds.has(problem.id)).length;
@@ -208,6 +208,11 @@ export async function submitTaskProblem(
               code,
               sha256: file.sha256,
               updatedAt: now,
+              source: "tests",
+              manualReason: null,
+              manualBy: null,
+              manualAt: null,
+              firstPassedAt: sql`case when ${taskProblemResults.source} = 'manual' then ${now.getTime()} else ${taskProblemResults.firstPassedAt} end`,
               attempts: sql`${taskProblemResults.attempts} + 1`,
             },
           }),
@@ -230,7 +235,20 @@ export async function submitTaskProblem(
             setWhere: sql`${taskProgress.status} not in ('passed', 'ai-passed')`,
           }),
       ];
-      if (complete && !taskAlreadyPassed) {
+      const replacesManualPass =
+        passedSubmissions.length > 0 &&
+        passedSubmissions.every((row) => row.reviewSource === "manual") &&
+        currentProblems.every(
+          (problem) =>
+            problem.id === problemId ||
+            saved.some(
+              (row) =>
+                row.problemId === problem.id &&
+                row.source === "tests" &&
+                row.contentHash === task.contentHash,
+            ),
+        );
+      if (complete && (!taskAlreadyPassed || replacesManualPass)) {
         const [pending] = await db
           .select({ id: submissions.id })
           .from(submissions)

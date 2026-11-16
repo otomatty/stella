@@ -1,5 +1,5 @@
 import { type Handler, Hono } from "hono";
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { countedProblemIds, readTaskDefinition } from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
@@ -50,6 +50,10 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         estimatedMinutes: tasks.estimatedMinutes,
         lessonId: tasks.lessonId,
         contentHash: tasks.contentHash,
+        manual_passed:
+          sql<boolean>`exists (select 1 from submissions where student_id = ${caller.id} and task_id = ${tasks.id} and verdict = 'pass' and review_source = 'manual')`.mapWith(
+            Boolean,
+          ),
       })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
@@ -101,13 +105,17 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       if (problems) problemTasks.set(row.id, problems);
       if (!taskAiChatEnabled(JSON.parse(row.definition))) aiChatDisabledTaskIds.add(row.id);
     }
-    const resultsByTask = new Map<string, { problemId: string; contentHash: string }[]>();
+    const resultsByTask = new Map<
+      string,
+      { problemId: string; contentHash: string; source?: string }[]
+    >();
     if (problemTasks.size > 0) {
       const results = await db
         .select({
           taskId: taskProblemResults.taskId,
           problemId: taskProblemResults.problemId,
           contentHash: taskProblemResults.contentHash,
+          source: taskProblemResults.source,
         })
         .from(taskProblemResults)
         .where(
@@ -144,6 +152,12 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         );
         return {
           ...base,
+          problems_manual: (resultsByTask.get(task.id) ?? []).filter(
+            (row) =>
+              row.source === "manual" &&
+              passed.has(row.problemId) &&
+              problems.some((p) => p.id === row.problemId),
+          ).length,
           problems_total: problems.length,
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
@@ -186,6 +200,7 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
         problemId: taskProblemResults.problemId,
         contentHash: taskProblemResults.contentHash,
         firstPassedAt: taskProblemResults.firstPassedAt,
+        source: taskProblemResults.source,
       })
       .from(taskProblemResults)
       .where(and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, row.id)));
@@ -210,6 +225,9 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
           title: problem.title,
           status: firstPassedAt ? "passed" : "not-submitted",
           firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
+          source: firstPassedAt
+            ? (saved.find((row) => row.problemId === problem.id)?.source ?? "tests")
+            : null,
         };
       }),
       passedProblems,
