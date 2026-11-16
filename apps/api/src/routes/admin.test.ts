@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { bookPrefix } from "../lib/library-store.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { adminRoute } from "./admin.js";
@@ -108,9 +107,6 @@ const INSTRUCTOR = "44444444-4444-4444-8444-444444444444";
 const PLATFORM = "66666666-6666-4666-8666-666666666666";
 const LEARNER = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
-const BOOK_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
-const BOOK_B = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
-const BOOK_OTHER = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1";
 const SUB_A = "sub-learner-a";
 const SUB_B = "sub-learner-b";
 const SUB_OTHER = "sub-other";
@@ -219,19 +215,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     run(evidence, "ev-learner", LEARNER, SUB_A);
     run(evidence, "ev-other", OTHER, SUB_OTHER);
 
-    const book = `INSERT INTO library_books
-      (id, tenant_id, owner_id, package_id, title, authors, created_at, updated_at)
-     VALUES (?, 'ses', ?, ?, '本', '[]', 1, 1)`;
-    run(book, BOOK_A, LEARNER, "pkg-a");
-    run(book, BOOK_B, LEARNER, "pkg-b");
-    run(book, BOOK_OTHER, OTHER, "pkg-other");
-    const bookFile = `INSERT INTO library_files (
-      id, tenant_id, book_id, content_key, kind, content_type, size, r2_key,
-      created_at, updated_at
-    ) VALUES (?, 'ses', ?, 'cover', 'cover', 'image/webp', 1, ?, 1, 1)`;
-    run(bookFile, "file-a", BOOK_A, `library/ses/${BOOK_A}/files/file-a`);
-    run(bookFile, "file-other", BOOK_OTHER, `library/ses/${BOOK_OTHER}/files/file-other`);
-
     const note = `INSERT INTO notifications
       (id, user_id, tenant_id, type, title, payload, created_at)
      VALUES (?, ?, 'ses', 'learner_stumble', ?, ?, 1)`;
@@ -316,10 +299,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expect(countRows("SELECT count(*) AS n FROM submissions WHERE student_id = ?", LEARNER)).toBe(
       2,
     );
-    expect(countRows("SELECT count(*) AS n FROM library_books WHERE owner_id = ?", LEARNER)).toBe(
-      2,
-    );
-    expect(countRows("SELECT count(*) AS n FROM library_r2_purges")).toBe(0);
     expect(countRows("SELECT count(*) AS n FROM audit_logs WHERE action = 'user_delete'")).toBe(0);
     expect(countRows("SELECT count(*) AS n FROM profiles WHERE id = ?", OTHER)).toBe(1);
     expect(countRows("SELECT count(*) AS n FROM submissions WHERE student_id = ?", OTHER)).toBe(1);
@@ -332,8 +311,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expectNotDeleted();
   }
 
-  it("受講者を消すと提出・本棚・接続・認証が消え、監査の個人情報だけ外れる", async () => {
-    const before = Date.now();
+  it("受講者を消すと提出・接続・認証が消え、監査の個人情報だけ外れる", async () => {
     const res = await remove({
       userId: LEARNER,
       confirmEmail: "  learner@example.com ",
@@ -341,7 +319,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expect(res.status).toBe(200);
     expect(await json(res)).toEqual({
       ok: true,
-      deleted: { submissions: 2, library_books: 2 },
+      deleted: { submissions: 2 },
     });
 
     expect(countRows("SELECT count(*) AS n FROM profiles WHERE id = ?", LEARNER)).toBe(0);
@@ -372,10 +350,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expect(countRows("SELECT count(*) AS n FROM skill_evidence WHERE user_id = ?", LEARNER)).toBe(
       0,
     );
-    expect(countRows("SELECT count(*) AS n FROM library_books WHERE owner_id = ?", LEARNER)).toBe(
-      0,
-    );
-    expect(countRows("SELECT count(*) AS n FROM library_files WHERE book_id = ?", BOOK_A)).toBe(0);
     expect(
       countRows("SELECT count(*) AS n FROM auth_vscode_links WHERE user_id = ?", LEARNER),
     ).toBe(0);
@@ -386,14 +360,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expect(countRows("SELECT count(*) AS n FROM notifications WHERE id = ?", "note-payload")).toBe(
       0,
     );
-
-    const purges = database.sqlite
-      .prepare("SELECT prefix, created_at FROM library_r2_purges ORDER BY prefix")
-      .all() as { prefix: string; created_at: number }[];
-    expect(purges.map((row) => row.prefix)).toEqual(
-      [bookPrefix(BOOK_A), bookPrefix(BOOK_B)].sort(),
-    );
-    for (const row of purges) expect(row.created_at).toBeGreaterThanOrEqual(before);
 
     const keptTitle = database.sqlite
       .prepare("SELECT title, payload FROM notifications WHERE id = 'note-title'")
@@ -433,7 +399,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expect(logged.actor_name).toBe("管理者");
     expect(logged.target_type).toBe("user");
     expect(logged.target_id).toBe(LEARNER);
-    expect(JSON.parse(logged.metadata)).toEqual({ submissions: 2, library_books: 2 });
+    expect(JSON.parse(logged.metadata)).toEqual({ submissions: 2 });
     expect(logged.metadata).not.toContain("Learner@Example.com");
     expect(logged.metadata).not.toContain("受講者太郎");
     expect(logged.actor_name).not.toContain("受講者太郎");
@@ -447,8 +413,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
       countRows("SELECT count(*) AS n FROM submission_files WHERE submission_id = ?", SUB_OTHER),
     ).toBe(1);
     expect(countRows("SELECT count(*) AS n FROM skill_evidence WHERE id = ?", "ev-other")).toBe(1);
-    expect(countRows("SELECT count(*) AS n FROM library_books WHERE id = ?", BOOK_OTHER)).toBe(1);
-    expect(countRows("SELECT count(*) AS n FROM library_files WHERE id = ?", "file-other")).toBe(1);
     expect(
       countRows("SELECT count(*) AS n FROM auth_vscode_links WHERE id = ?", "link-other"),
     ).toBe(1);

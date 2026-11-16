@@ -85,7 +85,7 @@ describe("buildContentSecurityPolicy", () => {
   it("API が未設定 (デモ) なら外部の宛先を足さない", () => {
     const demo = directives(buildContentSecurityPolicy({ inlineScripts: [] }));
     expect(demo.get("connect-src")).toEqual(["'self'"]);
-    expect(demo.get("media-src")).toEqual(["'self'", "blob:"]);
+    expect(demo.get("media-src")).toEqual(["'self'"]);
   });
 
   it("API と教材が同じオリジンでも重ねて書かない", () => {

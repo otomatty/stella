@@ -24,8 +24,6 @@ import { cmsDiscoveryRoute } from "./routes/cms-discovery.js";
 import { discoveryRoute } from "./routes/discovery.js";
 import { healthzRoute } from "./routes/healthz.js";
 import { lessonProgressRoute } from "./routes/lesson-progress.js";
-import { libraryRoute } from "./routes/library.js";
-import { runLibraryPurge } from "./lib/library-purge.js";
 import { materialsRoute } from "./routes/materials.js";
 import { meRoute } from "./routes/me.js";
 import { onboardingRoute } from "./routes/onboarding.js";
@@ -66,15 +64,7 @@ app.use("/api/*", async (c, next) => {
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     // 画面が付ける独自ヘッダはここに挙げないと **全ての API 呼び出しが CORS で落ちる**
     // (プリフライトの Access-Control-Allow-Headers に載らないため)。増やしたら必ず足す。
-    allowHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Range",
-      DEV_MODE_HEADER,
-      LEGACY_DEV_MODE_HEADER,
-    ],
-    // 本棚の音声・動画の部分取得 (ローカル開発の別オリジン)。本番は同じオリジンなので要らない。
-    exposeHeaders: ["Content-Range", "Accept-Ranges", "Content-Length", "ETag"],
+    allowHeaders: ["Content-Type", "Authorization", DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER],
   });
   return corsMiddleware(c, next);
 });
@@ -118,7 +108,6 @@ app.route("/", supportRoute);
 app.route("/", publicContentRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
-app.route("/", libraryRoute);
 app.route("/", r2MaintenanceRoute);
 app.route("/", searchRoute);
 
@@ -150,12 +139,6 @@ export default {
     ctx.waitUntil(
       runMentorMemoCron(env, getDb(env)).catch((e) => {
         console.error("[cron] mentor memo failed", e);
-      }),
-    );
-    // 本棚の片付け (止まった取り込み・削除した本と古い版のファイル)。
-    ctx.waitUntil(
-      runLibraryPurge(env).catch((e) => {
-        console.error("[cron] library purge failed", e);
       }),
     );
   },

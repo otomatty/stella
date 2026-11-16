@@ -7,7 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → narrator の退役 (PDF 処理の Worker と Workflows を Cloudflare の API で消す。無ければ何もしない) |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 → 未掲載の版だけ Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -131,10 +131,6 @@ Cloudflare にだけキーが入っていても、次の deploy に備えて Git
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
 
 `workerSecrets` は機能に必要な Worker 側の Secret 名を記す。
-本棚の PDF 処理 (narrator の OCR・読み上げ生成) は 2026-11 に退役した。`stella-narrator` と、その Secret `GEMINI_API_KEY` は
-`deploy.yml` の退役の step が Web のデプロイと本番の確認の後に消す (Worker がもう無ければ何もしない)。`wrangler delete` は
-Workers Sites の KV も確かめに行き、KV の権限が無いデプロイ用トークンでは止まるので、Cloudflare の API を直接呼ぶ。
-この step が失敗しても、アプリのデプロイは済んでいる。
 
 ## Phase C の初回切替とデプロイ前処理
 
@@ -160,7 +156,7 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → 動画 → migrate → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check → narrator の退役 の順で進む。画像・PDF・動画・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → 動画 → migrate → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check の順で進む。画像・PDF・動画・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
@@ -184,16 +180,13 @@ CI の `verify` は `bun run deploy:config:check` で、`deploy.yml` が読む V
 GitHub 上で設定が削除されたことまではこの検査で分からない。実際の未登録は `deploy:prepare` がリモート処理前に止める。
 すべての `wrangler.*` のアカウントと環境ごとの上書き、API のランタイム用アカウントを `accountId` と照合し、
 デプロイではさらに `CLOUDFLARE_ACCOUNT_ID` と照合する。
-API の D1 は正本の binding 名・DB 名を使い、ID を持つこと、本棚の R2 は `LIBRARY_BUCKET` で非公開バケットを指すことを検査する。
-退役した narrator の設定 (`apps/narrator/wrangler.jsonc`) や API の `NARRATOR` binding が残っていれば失敗する。
+API の D1 は正本の binding 名・DB 名を使い、ID を持つことを検査する。
 
 最後の web デプロイ直後に `bun run deploy:health:check` が受講者用 Web の `/api/healthz` (Web の Worker 経由で API) を取り、
-正本の `health` の真偽値と照合する。ログイン (Better Auth と Google)・本棚 (フラグと非公開 R2)・AI 一次レビューは有効、
+正本の `health` の真偽値と照合する。ログイン (Better Auth と Google)・AI 一次レビューは有効、
 開発者モードは無効が本番の期待値。欠けた項目や文字列の `"true"` も失敗する。
 設定の反映待ちは最大8回、リクエストは1回5秒、間隔は2秒。最後まで食い違えば Actions を失敗にする。
-ヘルスチェックは設定の有無だけを返し、キー・設定値・本の内容は返さない。AI も呼び出さない。
-
-本棚の機能を意図して無効にする PR では、フラグと `health` の期待値を同じ PR で変更する。
+ヘルスチェックは設定の有無だけを返し、キー・設定値は返さない。AI も呼び出さない。
 
 ## 設定検査が失敗したときの復旧
 
@@ -213,15 +206,11 @@ bunx wrangler rollback <web-version-id> --config apps/web/wrangler.toml
 データの復旧は [インフラ移行手順](stella-infrastructure-migration.md) と
 [Cloudflare のロールバック仕様](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/) を確認する。
 
-本棚を閉じる場合は API の `[vars]` に `LIBRARY_ENABLED = "0"` を加え、`health.libraryEnabled` を `false` にする。
-その PR も CI と本番のヘルスチェックを通す。保管済みの本と記録は残る。
-緊急に Cloudflare 側でフラグを変更した場合も、次の deploy で戻らないよう Git 側と期待値に同じ変更を入れる。
-
 ## 検査の内訳（`verify` ジョブ）
 
 | 検査 | コマンド | 見ているもの |
 |------|---------|-------------|
-| 設定 | `bun run deploy:config:check` | デプロイの設定名、全 Wrangler のアカウント、API の D1 と本棚の R2 の binding |
+| 設定 | `bun run deploy:config:check` | デプロイの設定名、全 Wrangler のアカウント、API の D1 の binding |
 | 型 | `bun run typecheck` | 6 ワークスペースの `tsc --noEmit`。strict + `noUnusedLocals` / `noUnusedParameters` など。**テストと scripts も対象**（`exclude` を持つ tsconfig は無い） |
 | テスト | `bun run test:coverage` | Vitest 127 ファイル / 1534 件（`packages/**` と `apps/**/src`・`apps/**/scripts` の `*.test.ts`）。カバレッジは**閾値なし**で数字をジョブサマリに出すだけ |
 | lint | `bun run lint` | `biome ci .`（lint + フォーマットの両方）。`noExplicitAny` / `noNonNullAssertion` / `noConsole` / a11y などを error |

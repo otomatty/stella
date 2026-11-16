@@ -44,9 +44,9 @@ export async function setUserDisabled(userId: string, disabled: boolean): Promis
 export async function deleteUser(
   userId: string,
   confirmEmail: string,
-): Promise<{ submissions: number; library_books: number }> {
+): Promise<{ submissions: number }> {
   const { deleted } = await apiFetch<{
-    deleted: { submissions: number; library_books: number };
+    deleted: { submissions: number };
   }>("/api/admin/users/delete", {
     method: "POST",
     body: { userId, confirmEmail },

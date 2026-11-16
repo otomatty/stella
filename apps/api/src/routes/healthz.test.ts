@@ -13,7 +13,6 @@ function configured(overrides: Partial<Env> = {}): Env {
     BETTER_AUTH_URL: "https://web.example.test",
     ANTHROPIC_API_KEY: "private-anthropic-value",
     ALLOWED_ORIGINS: "https://example.test",
-    LIBRARY_BUCKET: {} as R2Bucket,
     ...overrides,
   } as Env;
 }
@@ -32,7 +31,6 @@ describe("configuration health", () => {
     expect(body).toMatchObject({
       ok: true,
       authConfigured: true,
-      libraryEnabled: true,
       aiReviewConfigured: true,
       devModeAvailable: false,
     });
@@ -68,15 +66,4 @@ describe("configuration health", () => {
       "private-",
     );
   });
-
-  it.each([{ LIBRARY_ENABLED: "0" }, { LIBRARY_ENABLED: "false" }, { LIBRARY_BUCKET: undefined }])(
-    "reports the library as unavailable when its configuration is missing: %j",
-    async (overrides) => {
-      const body = await (await health(configured(overrides))).json();
-      expect(body).toMatchObject({ libraryEnabled: false });
-      expect(healthMismatches(body, deployment.health)).toEqual([
-        "libraryEnabled: expected true, got false",
-      ]);
-    },
-  );
 });

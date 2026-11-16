@@ -94,12 +94,11 @@ export function validateDeploymentConfig(
 
   const api = configs["apps/api/wrangler.toml"];
   if (!api) throw new Error("API Wrangler configuration is required");
-  // The PDF processing Worker (narrator) was retired in 2026-11; no other Worker may bind
-  // the library bucket or call a processing service any more.
+  // The PDF processing Worker (narrator) was retired in 2026-11.
   if (configs["apps/narrator/wrangler.jsonc"])
     throw new Error("apps/narrator was retired; remove its Wrangler configuration");
   resolveReviewProvider(reviewDeploymentEnv(api));
-  const { database, libraryBucket } = deployment.resources;
+  const { database } = deployment.resources;
   function single<T extends { binding: string }>(entries: T[] | undefined, binding: string): T {
     const matches = entries?.filter((entry) => entry.binding === binding) ?? [];
     if (matches.length !== 1) throw new Error(`Expected exactly one ${binding} binding`);
@@ -108,9 +107,6 @@ export function validateDeploymentConfig(
   const apiDb = single(api.d1_databases, database.binding);
   if (apiDb.database_name !== database.name || !apiDb.database_id)
     throw new Error("API DB binding must use the deployment database name and an ID");
-  const apiBucket = single(api.r2_buckets, libraryBucket.apiBinding);
-  if (apiBucket.bucket_name !== libraryBucket.name)
-    throw new Error("API library R2 binding must use the deployment bucket name");
   if (api.services?.some((entry) => entry.binding === "NARRATOR"))
     throw new Error("API must not bind the retired NARRATOR service");
 }

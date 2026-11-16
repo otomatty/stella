@@ -34,7 +34,6 @@
     "@radix-ui/react-tooltip": "^1.4.1",
     "@stella/shared": "workspace:*",
     "@tanstack/react-router": "^1.170.46",
-    "@zip.js/zip.js": "2.24.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "highlight.js": "^11.12.0",

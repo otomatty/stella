@@ -38,16 +38,12 @@ describe("navForRole", () => {
     expect(navForRole("admin").find((item) => item.id === "stages")?.label).toBe("ステージ管理");
   });
 
-  it("本棚は受講者にだけ出す (管理者は受講者画面に切り替えて使う)", () => {
-    expect(ids("learner")).toContain("library");
-    expect(ids("admin")).not.toContain("library");
-  });
-
   it("廃止した画面はどのロールにも出さない", () => {
     for (const role of ["learner", "admin"] as const) {
       for (const retired of [
         "assignments",
         "records",
+        "library",
         "interview-prep",
         "hall-of-fame",
         "hall-of-fame-admin",

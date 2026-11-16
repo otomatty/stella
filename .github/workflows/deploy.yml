@@ -148,10 +148,6 @@ jobs:
       - name: Apply D1 migrations (remote)
         run: bun run db:migrate:remote
 
-      # Fixed private bucket only; stop deployment if any public domain is enabled.
-      - name: Prepare private library storage
-        run: bun run apps/api/scripts/prepare-library-storage.ts
-
       # 動画・字幕・表紙を crossOrigin で読むため、教材の変更にかかわらず毎回 CORS を設定する。
       - name: Allow the web to load course materials (R2 CORS)
         run: bun run apps/api/scripts/prepare-materials-cors.ts
@@ -214,36 +210,3 @@ jobs:
       # Web の中継が最新版になった直後に、秘密値を含まない状態だけを照合する。
       - name: Verify production configuration
         run: bun run deploy:health:check
-
-      # PDF 処理の退役 (2026-11)。本棚は利用者が作った zip を取り込む形に変わり、
-      # OCR・読み上げを作る Worker は要らなくなった。API はもう NARRATOR を束ねていない。
-      # Worker (その secret GEMINI_API_KEY・cron ごと) と、それが定義した Workflows を消す。
-      # wrangler delete は Workers Sites の KV も確かめに行き、KV の権限が無いトークンでは
-      # 認証エラーで止まるので、Cloudflare の API を直接呼ぶ。もう無ければ (404) 成功とする。
-      # 1 つが失敗 (通信エラーを含む) しても残りは試し、最後に失敗として知らせる。ログには
-      # 応答の本文を出さず、Cloudflare のエラーコードと文だけを出す。
-      # Web のデプロイと本番の確認の後に置き、ここが失敗してもアプリのデプロイは止めない。
-      # 本番の stella-narrator と Workflows が無くなったら、この step は消してよい。
-      - name: Retire narrator Worker (PDF processing)
-        run: |
-          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}"
-          body="$RUNNER_TEMP/retire.json"
-          failed=0
-          remove() {
-            : > "$body"
-            status=$(curl -sS -o "$body" -w '%{http_code}' -X DELETE "$2" \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}") || status="000"
-            case "$status" in
-              200) echo "Deleted $1." ;;
-              404) echo "$1 is already gone." ;;
-              *)
-                errors=$(jq -c '[.errors[]? | {code, message}]' "$body" 2>/dev/null || echo "[]")
-                echo "::error::Could not delete $1 (HTTP $status): $errors"
-                failed=1
-                ;;
-            esac
-          }
-          remove "workflow stella-library-book" "$api/workflows/stella-library-book"
-          remove "workflow stella-library-audio" "$api/workflows/stella-library-audio"
-          remove "stella-narrator" "$api/workers/scripts/stella-narrator?force=true"
-          exit "$failed"

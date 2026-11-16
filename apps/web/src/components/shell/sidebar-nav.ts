@@ -27,7 +27,6 @@ import type { Role } from "@/data/types";
 type LucideIcon = ComponentType<LucideProps>;
 
 export type NavId =
-  | "library"
   | "dash"
   | "stages"
   | "lesson"
@@ -55,8 +54,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "cert", label: "修了証", icon: Award },
-    // 本棚は本人だけの棚。管理者は受講者画面に切り替えて使うので、管理者のナビには出さない。
-    { id: "library", label: "本棚", icon: Book },
   ],
   admin: [
     { id: "dash", label: "ダッシュボード", icon: BarChart },

@@ -2166,15 +2166,6 @@ export const APP_TABLES = [
   "certificates",
   "audit_logs",
   "support_inquiries",
-  "library_books",
-  "library_files",
-  "library_revision_files",
-  "library_chapters",
-  "library_shelf_entries",
-  "library_reader_states",
-  "library_r2_purges",
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;
-
-export * from "./library-schema.js";

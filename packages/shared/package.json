@@ -83,10 +83,7 @@
     "./tasks/source-reference": "./src/tasks/source-reference.ts",
     "./markdown/tutorial-blocks": "./src/markdown/tutorial-blocks.ts",
     "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
-    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
-    "./library/types": "./src/library/types.ts",
-    "./library/book-package": "./src/library/book-package.ts",
-    "./library/schemas": "./src/library/schemas.ts"
+    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -3,8 +3,6 @@
  */
 
 export interface Env {
-  LIBRARY_ENABLED?: string;
-  LIBRARY_BUCKET?: R2Bucket;
   ANTHROPIC_API_KEY: string;
   ANTHROPIC_MODEL?: string;
   OPENAI_API_KEY?: string;
