@@ -40,6 +40,7 @@ import {
 } from "@stella/shared/tasks/support-record";
 import { and, asc, desc, eq, exists, gte, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
+import { hasOnlyManualTaskPass } from "./task-pass-source.js";
 import {
   aiReviews,
   enrollments,
@@ -331,7 +332,7 @@ export async function collectMemoMaterial(
       .where(
         and(
           eq(taskProgress.userId, learner.id),
-          sql`not exists (select 1 from submissions s where s.student_id = ${taskProgress.userId} and s.task_id = ${taskProgress.taskId} and s.verdict = 'pass' and s.review_source = 'manual')`,
+          sql`not ${hasOnlyManualTaskPass(taskProgress.userId, taskProgress.taskId)}`,
           gte(taskProgress.passedAt, from),
           lt(taskProgress.passedAt, to),
         ),

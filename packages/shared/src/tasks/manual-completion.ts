@@ -2,7 +2,7 @@
 export type CompletionReviewSource = "ai" | "human" | "tests" | "manual";
 export interface ManualCompletionItem {
   taskId: string;
-  /** 省略すると今の版の全問。問題のない課題では省略する。 */
+  /** 省略すると、済みにする側は今の版の全問、取り消し側は課題全体 (旧問題の manual も含む)。 */
   problemIds?: string[];
 }
 export interface ManualCompletionRequest {
@@ -33,6 +33,8 @@ export interface ManualCompletionView {
       status: string;
       reviewSource: CompletionReviewSource | null;
       manualReason: string | null;
+      /** 現行版から消えた問題の manual の行数。進捗の件数には含めない。 */
+      obsoleteManualProblems: number;
       problems: {
         id: string;
         title: string;

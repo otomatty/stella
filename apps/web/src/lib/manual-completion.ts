@@ -14,20 +14,36 @@ export function eligibleTargets(
   tasks: readonly CompletionTask[],
   mode: CompletionMode,
 ): CompletionTarget[] {
-  return tasks.flatMap((task) =>
-    task.problems.length
-      ? task.problems
-          .filter((p) => (mode === "complete" ? p.status !== "passed" : p.source === "manual"))
-          .map((p) => ({ taskId: task.id, problemId: p.id }))
-      : (
-            mode === "complete"
-              ? !task.reviewSource && !["passed", "ai-passed"].includes(task.status)
-              : task.reviewSource === "manual"
-          )
-        ? [{ taskId: task.id }]
-        : [],
-  );
+  return tasks.flatMap((task) => {
+    const problems = task.problems.filter((p) =>
+      mode === "complete" ? p.status !== "passed" : p.source === "manual",
+    );
+    if (task.problems.length && problems.length)
+      return problems.map((p) => ({ taskId: task.id, problemId: p.id }));
+    const allowed =
+      mode === "complete"
+        ? task.problems.length === 0 &&
+          !task.reviewSource &&
+          !["passed", "ai-passed"].includes(task.status)
+        : task.reviewSource === "manual" || task.obsoleteManualProblems > 0;
+    return allowed ? [{ taskId: task.id }] : [];
+  });
 }
+/** 課題・単元の「全部を選ぶ」には課題単位の印も付け、一部の問題の選択と区別する。 */
+export function taskSelectionTargets(
+  tasks: readonly CompletionTask[],
+  mode: CompletionMode,
+): CompletionTarget[] {
+  return tasks.flatMap((task) => {
+    const targets = eligibleTargets([task], mode);
+    return mode === "revoke" &&
+      targets.length > 0 &&
+      targets.every((target) => target.problemId !== undefined)
+      ? [...targets, { taskId: task.id }]
+      : targets;
+  });
+}
+
 export function selectionState(targets: CompletionTarget[], selected: ReadonlySet<string>) {
   const count = targets.filter((t) => selected.has(targetKey(t))).length;
   return {
@@ -43,8 +59,10 @@ export function toggleTargets(
   const next = new Set(selected);
   const remove = selectionState(targets, selected).checked;
   for (const t of targets) {
-    if (remove) next.delete(targetKey(t));
-    else next.add(targetKey(t));
+    if (remove) {
+      next.delete(targetKey(t));
+      if (t.problemId) next.delete(targetKey({ taskId: t.taskId }));
+    } else next.add(targetKey(t));
   }
   return next;
 }
@@ -62,6 +80,15 @@ export function selectedItems(
     };
     if (target.problemId) item.problemIds?.push(target.problemId);
     grouped.set(target.taskId, item);
+  }
+  for (const task of tasks) {
+    const item = grouped.get(task.id);
+    if (mode !== "revoke" || !item?.problemIds) continue;
+    const targets = eligibleTargets([task], mode);
+    const all = targets.every((target) => selected.has(targetKey(target)));
+    if (all && selected.has(targetKey({ taskId: task.id }))) {
+      grouped.set(task.id, { taskId: task.id });
+    }
   }
   return [...grouped.values()];
 }
@@ -159,7 +186,7 @@ export function manualReasonSummary(task: CompletionTask) {
   const reason =
     reasons.size === 1
       ? [...reasons][0]
-      : !task.problems.length && task.reviewSource === "manual"
+      : task.reviewSource === "manual"
         ? task.manualReason
         : null;
   return { mixed, reason: mixed ? null : reason };

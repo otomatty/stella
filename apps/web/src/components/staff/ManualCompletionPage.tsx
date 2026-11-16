@@ -22,6 +22,7 @@ import {
   manualReasonSummary,
   completionSourceLabel,
   eligibleTargets,
+  taskSelectionTargets,
   selectedItems,
   selectionState,
   sendCompletionBatches,
@@ -80,7 +81,7 @@ function TaskRow({
     <div className="rounded-md border border-border bg-card p-3">
       <div className="flex items-center gap-3">
         <Selection
-          targets={eligibleTargets([task], mode)}
+          targets={taskSelectionTargets([task], mode)}
           selected={selected}
           onToggle={onToggle}
           label={`${task.title}をすべて選ぶ`}
@@ -99,6 +100,11 @@ function TaskRow({
         {task.problems.length ? ` · ${counts.passed}/${counts.total} 問` : ""}
         {counts.manual > 0 ? `・手で済み ${counts.manual}` : ""}
       </p>
+      {task.obsoleteManualProblems > 0 ? (
+        <p className="text-sm text-ink-3">
+          いまの版に無い問題の手で済みが {task.obsoleteManualProblems} 件あります
+        </p>
+      ) : null}
       {reasons.mixed || reasons.reason ? (
         <p className="whitespace-pre-wrap break-words text-sm text-ink-3">
           {reasons.mixed ? "理由が複数あります" : `理由: ${reasons.reason}`}
@@ -171,7 +177,7 @@ function UnitRow({
     <section className="rounded-lg border border-border p-3 sm:p-4">
       <div className="flex items-center gap-3">
         <Selection
-          targets={eligibleTargets(unit.tasks, mode)}
+          targets={taskSelectionTargets(unit.tasks, mode)}
           selected={selected}
           onToggle={onToggle}
           label={`${unit.title}をすべて選ぶ`}
@@ -249,6 +255,9 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
   const tasks = data?.units.flatMap((u) => u.tasks) ?? [];
   const problems = tasks.flatMap((t) => t.problems);
   const items = selectedItems(tasks, mode, selected);
+  const selectionCount = eligibleTargets(tasks, mode).filter((target) =>
+    selected.has(targetKey(target)),
+  ).length;
   const toggle = (targets: CompletionTarget[]) =>
     setSelected((prev) => toggleTargets(targets, prev));
   const send = async () => {
@@ -362,7 +371,7 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
             </select>
           </label>
           <p className="text-sm">
-            {selected.size} 件を選択（{items.length} 課題）
+            {selectionCount} 件を選択（{items.length} 課題）
           </p>
           <Button
             type="button"
@@ -400,9 +409,9 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
               {mode === "complete" ? "選んだ分を済みにする" : "手で済みを取り消す"}
             </DialogTitle>
             <DialogDescription>
-              {selected.size} 件（{items.length} 課題）を操作します。
+              {selectionCount} 件（{items.length} 課題）を操作します。
               {mode === "revoke"
-                ? "課題の合格が戻り、修了証が取り消されることがあります。本人の提出やレビューで合格した課題では取り消せません。"
+                ? "課題の合格が戻り、修了証が取り消されることがあります。本人の提出やレビューで合格した課題では、いまの版に無い問題の手で済みだけを取り消せます。"
                 : "理由を入力してください（必須・1,000文字まで）。"}
             </DialogDescription>
           </DialogHeader>
