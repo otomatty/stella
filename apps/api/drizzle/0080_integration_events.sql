@@ -2,7 +2,8 @@
 -- 既存の更新と同じトランザクションで、いずれかの連携グループにいる人だけ記録する。
 -- 後から参加した人の過去分は取り込まない。更新トリガーも出来事の変更時だけ記録する。
 CREATE TABLE integration_events (
-  id text PRIMARY KEY NOT NULL,
+  seq integer PRIMARY KEY AUTOINCREMENT,
+  id text NOT NULL UNIQUE,
   type text NOT NULL,
   occurred_at integer NOT NULL,
   user_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,

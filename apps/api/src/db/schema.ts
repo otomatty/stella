@@ -2248,7 +2248,8 @@ export const integrationGroupStages = sqliteTable(
 export const integrationEvents = sqliteTable(
   "integration_events",
   {
-    id: text("id").primaryKey(),
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    id: text("id").notNull().unique(),
     type: text("type").notNull(),
     occurredAt: ts("occurred_at").notNull(),
     userId: text("user_id")

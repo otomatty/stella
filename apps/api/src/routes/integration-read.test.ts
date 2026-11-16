@@ -462,7 +462,7 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     ).rejects.toThrow();
     expect(await events()).toEqual(initial);
   });
-  it("出来事は日時順、問題をまとめ、出し直しも返す。再取得と更新後もIDが安定", async () => {
+  it("出来事は保存順、問題をまとめ、出し直しも返す。再取得と更新後もIDが安定", async () => {
     const before = await events();
     expect(before.events.map((e) => e.type).sort()).toEqual(
       [
@@ -473,8 +473,15 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
         "problems_passed",
       ].sort(),
     );
+    expect(before.events.map((e) => e.type)).toEqual([
+      "stage_cleared",
+      "stage_started",
+      "task_passed",
+      "problems_passed",
+      "problems_passed",
+    ]);
     expect(before.events.map((e) => e.occurredAt)).toEqual(
-      before.events.map((e) => e.occurredAt).sort(),
+      [T2, T0, T2, T1, T2].map((time) => new Date(time).toISOString()),
     );
     expect(before.events.filter((e) => e.type === "problems_passed").map((e) => e.count)).toEqual([
       1, 2,
@@ -500,6 +507,100 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     expect(await events(`?after=${before.next}`)).toEqual(after);
     for (const forbidden of ["PRIVATE", "outside", '"other"', "study_activity"])
       expect(JSON.stringify(after)).not.toContain(forbidden);
+  });
+  it("位置を受け取ったあとに、起きた日時が前の出来事を保存しても続きを取得できる", async () => {
+    const before = await events();
+    const db = getDb(env);
+    await db.insert(taskProblemResults).values({
+      userId: "inside",
+      taskId: "task-stage",
+      problemId: "late",
+      contentHash: "current",
+      path: "PRIVATE",
+      code: "PRIVATE",
+      sha256: "hash",
+      firstPassedAt: new Date(T0 - 1000),
+      updatedAt: new Date(T0 - 1000),
+    });
+    const next = await events(`?after=${before.next}`);
+    expect(next.events).toHaveLength(1);
+    expect(next.events[0]).toMatchObject({
+      type: "problems_passed",
+      occurredAt: new Date(T0 - 1000).toISOString(),
+      count: 1,
+    });
+    expect(next.next).not.toBe(before.next);
+    expect(await events(`?after=${before.next}`)).toEqual(next);
+  });
+  it("同じ課題・同じ日時でも、問題の集約は位置より後に保存した合格だけに区切る", async () => {
+    const db = getDb(env);
+    const add = async (problemId: string) =>
+      db.insert(taskProblemResults).values({
+        userId: "inside",
+        taskId: "task-stage",
+        problemId,
+        contentHash: "current",
+        path: "PRIVATE",
+        code: "PRIVATE",
+        sha256: "hash",
+        firstPassedAt: new Date(T1),
+        updatedAt: new Date(T1),
+      });
+    await add("batch-before");
+    const before = await events();
+    await add("batch-after-1");
+    await add("batch-after-2");
+    const next = await events(`?after=${before.next}`);
+    expect(next.events).toHaveLength(1);
+    expect(next.events[0]).toMatchObject({
+      type: "problems_passed",
+      occurredAt: new Date(T1).toISOString(),
+      count: 2,
+    });
+    expect(before.events.map((e) => e.id)).not.toContain(next.events[0]?.id);
+    expect(await events(`?after=${before.next}`)).toEqual(next);
+    expect((await events(`?after=${next.next}`)).events).toEqual([]);
+  });
+  it("問題の合格がページ境界をまたぐときも、間のできごとをまたいで集約せず取りこぼさない", async () => {
+    const initial = await events();
+    const db = getDb(env);
+    const add = async (problemId: string) =>
+      db.insert(taskProblemResults).values({
+        userId: "inside",
+        taskId: "task-stage",
+        problemId,
+        contentHash: "current",
+        path: "PRIVATE",
+        code: "PRIVATE",
+        sha256: "hash",
+        firstPassedAt: new Date(T1),
+        updatedAt: new Date(T1),
+      });
+    await add("edge-before");
+    for (let i = 0; i < 499; i++)
+      await db.insert(submissions).values({
+        id: `boundary-${i}`,
+        studentId: "inside",
+        taskId: "task-stage",
+        stageTitle: "stage",
+        assignmentTitle: "fixture",
+        code: "PRIVATE",
+        verdict: "pass",
+        reviewSource: "human",
+        reviewedAt: new Date(T2),
+      });
+    await add("edge-after");
+    const first = await events(`?after=${initial.next}`);
+    expect(first.events).toHaveLength(500);
+    expect(first.hasMore).toBe(true);
+    expect(first.events[0]).toMatchObject({ type: "problems_passed", count: 1 });
+    const second = await events(`?after=${first.next}`);
+    expect(second.events).toHaveLength(1);
+    expect(second.events[0]).toMatchObject({ type: "problems_passed", count: 1 });
+    expect(second.hasMore).toBe(false);
+    expect(new Set([...first.events, ...second.events].map((e) => e.id)).size).toBe(501);
+    expect(await events(`?after=${initial.next}`)).toEqual(first);
+    expect(await events(`?after=${first.next}`)).toEqual(second);
   });
   it("未所属の人の INSERT・UPDATE では、どの出来事も書き込まない", async () => {
     const before = await events();
@@ -618,7 +719,7 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
         .get()?.n,
     ).toBe(1);
   });
-  it("200人・500件でページング。大人数でも100バインドを超えない。同時刻の安定IDで続く", async () => {
+  it("200人・500件でページング。大人数でも100バインドを超えない。同時刻も保存順で続く", async () => {
     const db = getDb(env);
     for (let i = 0; i < 201; i++) {
       const id = `fixture-${String(i).padStart(3, "0")}`;
@@ -658,6 +759,14 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     expect(await events(`?after=${e1.next}`)).toEqual(e2);
     expect((await read(`progress?stage=other&cursor=${p1.next}`)).status).toBe(400);
   });
+  it.each([
+    ["events-v1", "group", T2, "old-id"],
+    ["events-v2", "group", -1],
+    ["events-v2", "group", 1.5],
+    ["events-v2", "group", Number.MAX_SAFE_INTEGER + 1],
+  ])("旧形式や不正な保存番号の位置を拒否する (%j)", async (...position) => {
+    expect((await read(`events?after=${encodePosition(position)}`)).status).toBe(400);
+  });
   it("scope無しは403、他の所有者は404。不正な位置は400で監査・no-storeを保つ", async () => {
     const db = getDb(env);
     sqlite.sqlite.exec("update integration_clients set scopes='[]'");
@@ -677,7 +786,7 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     for (const path of [
       "progress?cursor=bad",
       "events?after=bad",
-      `events?after=${encodePosition(["events-v1", "other-group", 1, "id"])}`,
+      `events?after=${encodePosition(["events-v2", "other-group", 1])}`,
     ])
       expect((await read(path)).status).toBe(400);
     expect(

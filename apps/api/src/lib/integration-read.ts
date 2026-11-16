@@ -124,7 +124,7 @@ export async function readIntegrationProgress(
         ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at,'task_passed' type from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
         : sql`select user_id,task_id,id,source,reviewed_at,type from (
             select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,
-              row_number() over (partition by e.user_id,e.task_id order by e.occurred_at desc,e.rowid desc) position
+              row_number() over (partition by e.user_id,e.task_id order by e.occurred_at desc,e.seq desc) position
             from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
             where e.type in ('task_passed','task_returned') and e.occurred_at <= ${at}
           ) where position=1`,
@@ -133,8 +133,8 @@ export async function readIntegrationProgress(
       at === null
         ? sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id`
         : sql`select user_id,task_id,problemId,contentHash,source,firstPassedAt from (
-            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.rowid sequence,
-              row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.rowid desc) position
+            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,
+              row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
             from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
             where e.type='problem_passed' and e.occurred_at <= ${at}
               and exists (select 1 from task_problem_results r where r.user_id=e.user_id and r.task_id=e.task_id and r.problem_id=e.problem_id)
@@ -245,29 +245,27 @@ export async function readIntegrationProgress(
   };
 }
 
-/** UNION の前に人・ステージを制限。日時と衝突しない複合IDで keyset pagination する。 */
+/** 保存順で続きを読む。問題は位置以後の連続した同じ課題・日時の範囲だけでまとめる。 */
 export async function readIntegrationEvents(db: Db, groupId: string, after?: string) {
-  let time = -1,
-    id = "";
+  let sequence = 0;
   if (after !== undefined) {
     const p = decodePosition(after);
     if (
       !Array.isArray(p) ||
-      p.length !== 4 ||
-      p[0] !== "events-v1" ||
+      p.length !== 3 ||
+      p[0] !== "events-v2" ||
       p[1] !== groupId ||
       !Number.isSafeInteger(p[2]) ||
-      p[2] < 0 ||
-      typeof p[3] !== "string"
+      p[2] < 0
     )
       throw new ApiError("Invalid cursor", 400);
-    time = p[2];
-    id = p[3];
+    sequence = p[2];
   }
   const rows = await db.all<{
     id: string;
     type: IntegrationEvent["type"];
     time: number;
+    seq: number;
     user_id: string;
     external_id: string | null;
     slug: string;
@@ -283,16 +281,19 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     members as (select m.profile_id,m.external_id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student'),
     scope as (select s.id,s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
     scoped as (select e.*,m.external_id,s.slug from integration_events e join members m on m.profile_id=e.user_id join scope s on s.id=e.stage_id
-      left join tasks t on t.id=e.task_id where e.task_id is null or (t.active=1 and t.variant_of is null)),
+      left join tasks t on t.id=e.task_id where e.seq > ${sequence} and (e.task_id is null or (t.active=1 and t.variant_of is null))),
+    keyed as (select *,case when type='problem_passed' then json_array(user_id,task_id,occurred_at) else json_array('event',seq) end group_key from scoped),
+    marked as (select *,case when group_key=lag(group_key) over (order by seq) then 0 else 1 end group_start from keyed),
+    numbered as (select *,sum(group_start) over (order by seq) group_number from marked),
     events as (
-      select id,type,occurred_at time,user_id,external_id,slug,task_id,source,null count,submission_id from scoped where type <> 'problem_passed'
+      select id,type,occurred_at time,seq,user_id,external_id,slug,task_id,source,null count,submission_id from numbered where type <> 'problem_passed'
       union all
-      select json_array('problems',user_id,task_id,occurred_at),'problems_passed',occurred_at,user_id,external_id,slug,task_id,null,count(distinct problem_id),null from scoped where type='problem_passed' group by user_id,task_id,occurred_at
+      select json_array('problems',user_id,task_id,occurred_at,min(seq),max(seq)),'problems_passed',occurred_at,max(seq),user_id,external_id,slug,task_id,null,count(distinct problem_id),null from numbered where type='problem_passed' group by group_number,user_id,task_id,occurred_at
     ),
-    page as (select * from events where time > ${time} or (time=${time} and id > ${id}) order by time,id limit 501)
+    page as (select * from events order by seq limit 501)
     select page.*, t.definition,t.content_hash,tp.status,
       coalesce((select json_group_array(json_object('problemId',r.problem_id,'contentHash',r.content_hash,'source',r.source,'firstPassedAt',r.first_passed_at)) from task_problem_results r where r.user_id=page.user_id and r.task_id=page.task_id),'[]') problems
-    from page left join tasks t on t.id=page.task_id left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id order by page.time,page.id`);
+    from page left join tasks t on t.id=page.task_id left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id order by page.seq`);
   const page = rows.slice(0, 500);
   const events: IntegrationEvent[] = page.map((r) => ({
     id: r.id,
@@ -321,7 +322,7 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
   const last = page[page.length - 1];
   return {
     events,
-    next: last ? encodePosition(["events-v1", groupId, last.time, last.id]) : (after ?? null),
+    next: last ? encodePosition(["events-v2", groupId, last.seq]) : (after ?? null),
     hasMore: rows.length > 500,
   };
 }

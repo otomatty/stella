@@ -133,8 +133,38 @@ it.each([true, false])(
       expect(
         JSON.stringify(fixture.sqlite.prepare("select * from integration_events").all()),
       ).not.toContain("PRIVATE");
+      const sequences = fixture.sqlite
+        .prepare("select seq from integration_events order by seq")
+        .all()
+        .map((r) => Number(r.seq));
+      expect(
+        sequences.every(
+          (seq, index) => seq > 0 && (index === 0 || seq > Number(sequences[index - 1])),
+        ),
+      ).toBe(true);
+      if (hasGroup) {
+        expect(() =>
+          fixture.sqlite.exec(
+            "insert into integration_events(id,type,occurred_at,user_id,stage_id) select id,type,occurred_at,user_id,stage_id from integration_events limit 1",
+          ),
+        ).toThrow();
+      }
       fixture.sqlite.exec("delete from profiles where id='fixture-user'");
       expect(fixture.sqlite.prepare("select count(*) n from integration_events").get()?.n).toBe(0);
+      if (hasGroup) {
+        await db
+          .insert(profiles)
+          .values({ id: "next-user", email: "next@example.test", displayName: "fixture" });
+        await db
+          .insert(integrationGroupMembers)
+          .values({ groupId: "group", profileId: "next-user" });
+        await db
+          .insert(enrollments)
+          .values({ userId: "next-user", stageId: "fixture-stage", enrolledAt: new Date(1000) });
+        expect(
+          Number(fixture.sqlite.prepare("select seq from integration_events").get()?.seq),
+        ).toBeGreaterThan(Math.max(...sequences));
+      }
       expect(fixture.sqlite.prepare("pragma foreign_key_check").all()).toEqual([]);
     } finally {
       fixture.sqlite.close();
