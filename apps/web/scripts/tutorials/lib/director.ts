@@ -309,7 +309,7 @@ export class Director {
       if (i < seq.length - 1) labels.push("→");
     });
     if (opts.label) labels.splice(0, labels.length, ...opts.label);
-    if (!this.clipMode && opts.show !== false) {
+    if (opts.show !== false) {
       await this.page.evaluate((parts) => window.__tutor.keys(parts), labels);
       await this.wait(550);
     }

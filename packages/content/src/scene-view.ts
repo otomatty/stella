@@ -3,9 +3,9 @@ import { viewTransition, type SceneTimeline } from "./scene-timeline.js";
 import type { ViewSceneState, ViewState } from "./video-storyboard.js";
 import type { ShotRegion } from "./video-shots.js";
 
-export const SHOT_GROUPS: Record<string, { label: string; color: string }> = {
-  web: { label: "Webアプリ", color: "#2563EB" },
-  vscode: { label: "VS Code", color: "#8330C7" },
+export const SHOT_GROUPS: Record<string, { label: string; chromeHeight: number }> = {
+  web: { label: "Webアプリ", chromeHeight: 80 },
+  vscode: { label: "VS Code", chromeHeight: 0 },
 };
 export interface ViewImage {
   url: string;
@@ -23,7 +23,12 @@ export interface ViewFrameInput {
   previous?: ViewState;
 }
 /** DOM や時計に依存しないカメラ・クロスフェード・カーソルの計算。 */
-export function viewFrame(input: ViewFrameInput, time: number, transition = viewTransition) {
+export function viewFrame(
+  input: ViewFrameInput,
+  time: number,
+  transition = viewTransition,
+  groups = SHOT_GROUPS,
+) {
   const { state, timing, images } = input;
   const clamp = (n: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, n));
   const smooth = (n: number) => {
@@ -33,8 +38,11 @@ export function viewFrame(input: ViewFrameInput, time: number, transition = view
   const mix = (a: number, b: number, t: number) => a + (b - a) * t;
   const base = (image: string): Box => {
     const img = images[image];
-    const top = !image.startsWith("art:") ? 170 : 130;
-    const height = 950 - top;
+    // box は中身の座標。ブラウザーの2段はこの上に、表示座標で固定して置く。
+    const top =
+      24 +
+      (image.startsWith("art:") ? 0 : (groups[image.slice(5).split("/")[0]]?.chromeHeight ?? 0));
+    const height = 990 - top;
     const s = Math.min(1800 / img.width, height / img.height);
     const w = img.width * s,
       h = img.height * s;
@@ -107,7 +115,7 @@ export function viewFrame(input: ViewFrameInput, time: number, transition = view
     h: r.h * cam.scale,
   });
   const at = (name: string) => project(region(current.image, name));
-  const active = k >= 0 && time < timing.beats[k].end;
+  const active = k >= 0 && time < (timing.beats[k + 1]?.start ?? timing.duration);
   const elapsed = k < 0 ? 0 : time - timing.beats[k].start;
   const opacity = clamp(elapsed / 0.3);
   const spots = active
@@ -199,9 +207,12 @@ export function viewFrame(input: ViewFrameInput, time: number, transition = view
 export function viewBusyRanges(timing: SceneTimeline): [number, number][] {
   return [
     [0, 1],
+    [2.6, 3.0],
     ...timing.beats.flatMap((b): [number, number][] => [
       [b.start, Math.max(b.start + 1.2, b.clip?.end ?? 0)],
-      [b.end, b.end + 1 / 30],
+      // 境界がフレームの間でも、字幕が出る・消える最初のコマを必ず撮る。
+      [b.speechStart ?? b.start, (b.speechStart ?? b.start) + 1 / 30],
+      [b.speechEnd ?? b.end, (b.speechEnd ?? b.end) + 1 / 30],
     ]),
   ];
 }

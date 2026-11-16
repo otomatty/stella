@@ -10,6 +10,9 @@ import { spawn } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
 export const AUDIO_RATE = 48_000;
+// 再生機器が完全な無音で出力を止めるのを防ぐ。16bitで±60の一様乱数は約-60 dBFS RMS。
+const SCENE_NOISE_AMPLITUDE = 60 / 32768;
+const SCENE_NOISE_SEED = 20261116;
 /**
  * 映像はスライドの静止画の切り替えだけなので 10fps で足りる。PoC の実測で 30fps より
  * 符号化が約 3 倍速く、ファイルも約半分 (26 秒の区間: 30fps 8.4 秒 / 10fps 3.1 秒)。
@@ -139,19 +142,50 @@ export interface Loudness {
  * 低い -3 dBTP で掛ける — AAC に変換するとピークが 0.5〜1 dB ほど上がるため
  * (PoC で -1.5 指定のまま変換すると -0.84〜-1.38 dBTP になった)。
  */
-export async function encodeNarration(wav: string, m4a: string): Promise<void> {
-  const m = await measureLoudnessRaw(wav);
-  const filter =
-    "loudnorm=I=-16:TP=-3:LRA=11" +
-    `:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}` +
-    `:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
+export async function encodeNarration(
+  wav: string,
+  m4a: string,
+  options: { preventSilence?: boolean; normalize?: boolean; sfxWav?: string } = {},
+): Promise<void> {
+  // 無音の素材は測定値が -inf になるため、必要なら正規化を省く。
+  let filter = "anull";
+  if (options.normalize !== false) {
+    const m = await measureLoudnessRaw(wav);
+    filter =
+      "loudnorm=I=-16:TP=-3:LRA=11" +
+      `:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}` +
+      `:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
+  }
+  const filters = [`[0:a]${filter},aresample=${AUDIO_RATE}[voice]`];
+  const inputs = ["[voice]"];
+  // ノイズと効果音は正規化後に足し、元の声の音量に引きずられないようにする。
+  if (options.preventSilence) {
+    filters.push(
+      `anoisesrc=r=${AUDIO_RATE}:a=${SCENE_NOISE_AMPLITUDE}:s=${SCENE_NOISE_SEED}:c=white[noise]`,
+    );
+    inputs.push("[noise]");
+  }
+  if (options.sfxWav) {
+    filters.push(`[1:a]aresample=${AUDIO_RATE}[sfx]`);
+    inputs.push("[sfx]");
+  }
   await ffmpeg([
     "-loglevel",
     "error",
     "-i",
     wav,
-    "-af",
-    filter,
+    ...(options.sfxWav ? ["-i", options.sfxWav] : []),
+    ...(inputs.length > 1
+      ? [
+          "-filter_complex",
+          [
+            ...filters,
+            `${inputs.join("")}amix=inputs=${inputs.length}:duration=first:normalize=0[out]`,
+          ].join(";"),
+          "-map",
+          "[out]",
+        ]
+      : ["-af", filter]),
     "-ar",
     String(AUDIO_RATE),
     "-ac",

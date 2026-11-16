@@ -25,6 +25,11 @@ function fails(edit: (s: BoardStoryboard) => void, path: string) {
   ).toBe(true);
 }
 describe("絵コンテ", () => {
+  it.each(["title", "summary"])("自動の場面と同じid (%s) を絵コンテに書かせない", (id) => {
+    fails((s) => {
+      s.scenes[0].id = id;
+    }, "scenes[0].id");
+  });
   it("試作は本文を変えずに検査を通る", () => {
     expect(parseStoryboard(sample).storyboard).toEqual(sample);
   });

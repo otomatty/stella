@@ -56,7 +56,7 @@ export default {
       { text: /^\s*<h1>はじめてのページ<\/h1>\s*$/ },
     );
 
-    await t.caption("直したら、保存します。", { hold: 8000 });
+    await t.caption("直したら、Ctrl + S で保存します。", { hold: 8000 });
     await saveFile(t);
     await t.expect('.tabs-container .tab.dirty[aria-label^="index.html"]', { count: 0 });
 

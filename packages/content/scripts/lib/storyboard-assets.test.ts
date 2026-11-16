@@ -57,7 +57,9 @@ describe("絵コンテのローカル素材", () => {
         timing: { start: 0, duration: 3, beats: [] },
         html: "html",
         voice: "fake",
+        speeches: ["見ます。"],
         audio: [],
+        sfx: [],
         code: {},
         assets: first.hashes,
       };

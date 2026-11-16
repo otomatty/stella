@@ -135,7 +135,7 @@ export class ScreenRecorder {
       "-i",
       listFile,
       "-vf",
-      `fps=30,scale=${opts.width}:-2:flags=lanczos,format=yuv420p`,
+      `fps=30,scale=${opts.width}:-2:flags=lanczos:out_range=tv,format=yuv420p`,
       "-c:v",
       "libx264",
       "-preset",

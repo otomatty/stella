@@ -363,6 +363,8 @@ export function parseStoryboard(
     const p = `scenes[${i}]`,
       s = obj(value, p);
     str(s.id, `${p}.id`);
+    if (s.id === "title") error(`${p}.id`, "title は自動で入るタイトルの場面に使うidです");
+    if (s.id === "summary") error(`${p}.id`, "summary は自動で入るまとめの場面に使うidです");
     str(s.title, `${p}.title`, 16);
     if (s.kind !== undefined && s.kind !== "board" && s.kind !== "view")
       error(`${p}.kind`, "board・viewから選んでください");

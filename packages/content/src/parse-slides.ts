@@ -10,6 +10,7 @@ import { splitSlides } from "./split-slides.js";
 export interface SlidesFrontMatter {
   id: string;
   title: string;
+  header?: string;
   takeaway: string;
   introduces: string[];
   requires: string[];
@@ -34,7 +35,10 @@ function parseList(value: string): string[] {
   return inner.split(",").map((s) => unquote(s));
 }
 
-export function parseSlides(source: string): SlidesFrontMatter {
+export function parseSlides(
+  source: string,
+  options: { allowMissingTakeaway?: boolean } = {},
+): SlidesFrontMatter {
   const normalized = source.replace(/\r\n/g, "\n");
   const match = /^---\n([\s\S]*?)\n---\n/.exec(normalized);
   if (!match) throw new Error("slides.md に front-matter がありません");
@@ -46,7 +50,7 @@ export function parseSlides(source: string): SlidesFrontMatter {
     if (kv) fields.set(kv[1], kv[2]);
   }
 
-  const required = ["id", "title", "takeaway"];
+  const required = options.allowMissingTakeaway ? ["id", "title"] : ["id", "title", "takeaway"];
   for (const key of required) {
     if (!fields.has(key)) throw new Error(`front-matter に ${key} がありません`);
   }
@@ -56,6 +60,7 @@ export function parseSlides(source: string): SlidesFrontMatter {
     ...(sourceRefs === undefined ? {} : { sourceRefs }),
     id: unquote(fields.get("id") ?? ""),
     title: unquote(fields.get("title") ?? ""),
+    ...(fields.has("header") ? { header: unquote(fields.get("header") ?? "") } : {}),
     takeaway: unquote(fields.get("takeaway") ?? ""),
     introduces: parseList(fields.get("introduces") ?? "[]"),
     requires: parseList(fields.get("requires") ?? "[]"),

@@ -54,7 +54,7 @@ export default {
       text: "今日から学習を始めました",
     });
 
-    await t.caption("「ファイル」から「保存」を選びます。", { hold: 9000 });
+    await t.caption("Ctrl + S（Mac は ⌘ + S）で保存します。", { hold: 9000 });
     await saveFile(t);
     await t.expect('.tabs-container .tab.dirty[aria-label^="note.txt"]', { count: 0 });
 

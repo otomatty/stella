@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BoardScene, BoardState } from "../../src/video-storyboard.js";
+import { sceneSpeeches, sceneVideoSequence } from "../../src/scene-timeline.js";
 import { describe, expect, it } from "vitest";
 import {
   beginVideoCacheRun,
@@ -34,10 +35,44 @@ const plan = (): SceneCacheInput<BoardScene, BoardState> => ({
   timing: { start: 12, duration: 3, beats: [{ start: 0.5, end: 2, say: "ファイルです。" }] },
   html: "<svg></svg>",
   voice: "fake/1",
+  speeches: ["ファイルです。"],
   audio: [new Int16Array([1, 2, 3])],
+  sfx: [],
   code: { renderer: "v1", encoder: "v1" },
 });
 describe("場面キャッシュ", () => {
+  it("効果音の時刻・音の種類・合成コードが変われば作り直す", () => {
+    const input: SceneCacheInput = { ...plan(), sfx: [{ kind: "switch", at: 1 }] };
+    const hash = sceneCacheHash(input);
+    expect(sceneCacheHash({ ...input, sfx: [{ kind: "switch", at: 2 }] })).not.toBe(hash);
+    expect(sceneCacheHash({ ...input, sfx: [{ kind: "title", at: 1 }] })).not.toBe(hash);
+    expect(
+      sceneCacheHash({ ...input, code: { ...input.code, "../src/scene-sfx.ts": "new timbre" } }),
+    ).not.toBe(hash);
+  });
+  it.each([0, 1])("文字場面%sの読み・音声・声の変更でキャッシュを変える", (i) => {
+    const { scene, timing } = sceneVideoSequence([], [], { title: "STELLA", takeaway: "VS Code" })[
+      i
+    ];
+    const input: SceneCacheInput = {
+      ...plan(),
+      board: undefined,
+      start: undefined,
+      scene,
+      timing,
+      speeches: sceneSpeeches(scene, {}),
+    };
+    const before = sceneCacheHash(input);
+    expect(
+      sceneCacheHash({
+        ...input,
+        speeches: sceneSpeeches(scene, { STELLA: "ステラ", "VS Code": "ブイエスコード" }),
+      }),
+    ).not.toBe(before);
+    expect(sceneCacheHash({ ...input, audio: [new Int16Array([4, 5, 6])] })).not.toBe(before);
+    expect(sceneCacheHash({ ...input, voice: "other-voice" })).not.toBe(before);
+    expect(sceneCacheHash({ ...input, timing: { ...timing, start: 99 } })).toBe(before);
+  });
   it("前の場面が伸びても、変更のない場面を再生成しない", () => {
     const a = plan(),
       b = plan();
@@ -91,6 +126,12 @@ describe("場面キャッシュ", () => {
       "声",
       (p) => {
         p.voice = "fake/2";
+      },
+    ],
+    [
+      "辞書を適用した読み",
+      (p) => {
+        p.speeches = ["ふぁいるです。"];
       },
     ],
     [
@@ -148,6 +189,9 @@ it("抽出コマの作業フォルダーだけが違ってもキャッシュを�
 describe("配信前の新方式ハッシュ", () => {
   const input = () => ({
     version: 1,
+    title: "STELLAで学ぶ流れ",
+    header: "開発環境とWebの入口",
+    takeaway: "Webで読み、VS Codeで書きます。",
     storyboard: {
       schema: 1 as const,
       brief: { goal: "説明する", stuck: "迷う", points: ["読む"], leaveOut: [] },
@@ -170,6 +214,15 @@ describe("配信前の新方式ハッシュ", () => {
   });
   it("文・使う読み・素材の中身・音声モデル・領域・描画が変わると変わる", () => {
     const edits = [
+      (p: ReturnType<typeof input>) => {
+        p.title = "新しいタイトル";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.header = "新しい見出し";
+      },
+      (p: ReturnType<typeof input>) => {
+        p.takeaway = "書いて、確かめて、提出します。";
+      },
       (p: ReturnType<typeof input>) => {
         p.storyboard.scenes[0].beats[0].say = "別の文です。";
       },
@@ -209,6 +262,22 @@ describe("配信前の新方式ハッシュ", () => {
       sceneVideoSourceHash({ ...p, storyboard: { ...p.storyboard, polish: {} } } as typeof p),
     ).toBe(before);
   });
+  it.each(["STELLA", "VS Code"])(
+    "文字場面だけにある%sの読みを直しても配信ハッシュが変わる",
+    (word) => {
+      const p = input();
+      const before = sceneVideoSourceHash(p);
+      expect(
+        sceneVideoSourceHash({ ...p, readings: { ...p.readings, [word]: "別の読み" } }),
+      ).not.toBe(before);
+    },
+  );
+  it("headerだけにある語の読みは配信ハッシュに影響しない", () => {
+    const p = input();
+    expect(sceneVideoSourceHash({ ...p, readings: { ...p.readings, 開発環境: "別の読み" } })).toBe(
+      sceneVideoSourceHash(p),
+    );
+  });
   it("オブジェクトのキー順では変わらない", () => {
     const p = input();
     expect(
@@ -217,6 +286,16 @@ describe("配信前の新方式ハッシュ", () => {
         assets: Object.fromEntries(Object.entries(p.assets).reverse()),
       }),
     ).toBe(sceneVideoSourceHash(p));
+  });
+  it("効果音の生成コードも配信ハッシュに含める", () => {
+    const p = input();
+    const code = { ...p.code, "../src/scene-sfx.ts": "original timbre and cue timing" };
+    expect(sceneVideoSourceHash({ ...p, code })).not.toBe(
+      sceneVideoSourceHash({
+        ...p,
+        code: { ...code, "../src/scene-sfx.ts": "changed timbre or timing" },
+      }),
+    );
   });
 });
 

@@ -54,8 +54,7 @@ export function overlayScript(opts: { accent: string; clip?: boolean }) {
     document.documentElement.appendChild(host);
     root = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
-    style.textContent =
-      css + (opts.clip ? ".caption, .title, .keys { display: none !important; }" : "");
+    style.textContent = css + (opts.clip ? ".caption, .title { display: none !important; }" : "");
     root.appendChild(style);
     layer = document.createElement("div");
     layer.lang = "ja";

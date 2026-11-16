@@ -1,11 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { explorerRow, rightClick, type Scenario } from "../helpers";
+import { explorerRow, type Scenario } from "../helpers";
 
 export default {
   id: "rename",
   title: "ファイルの名前を変える",
-  summary: "「名前の変更」で名前を変え、拡張子で種類を確かめます。",
+  summary: "ファイルを選び、F2 キー（Mac は Enter キー）で名前を変え、拡張子を確かめます。",
   topic: "dev-env-basics/modules/u03-files/l1-files-and-folders/t2-rename",
   task: "dev-env-basics/u03-files/q03-rename",
   others: [
@@ -27,14 +27,11 @@ export default {
     await t.expect(memo);
     await t.highlight(memo, 3000);
 
-    await t.caption("一覧の memo.txt を右クリックします。", {
+    await t.caption("名前を変えるファイルを選び、F2 キー（Mac は Enter キー）を押します。", {
       hold: 8000,
-      say: "一覧のメモ ドット テキストを右クリックします。",
     });
-    await rightClick(t, memo);
-
-    await t.caption("「名前の変更」を選びます。", { hold: 8000 });
-    await t.click(page.locator(".monaco-menu .action-label").filter({ hasText: /^名前の変更/ }));
+    await t.click(memo);
+    await t.press("F2");
     await t.expect(input);
 
     await t.caption("名前の前半を plan に変えます。拡張子の .txt は残します。", {

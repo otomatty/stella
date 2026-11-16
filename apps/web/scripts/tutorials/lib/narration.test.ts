@@ -16,6 +16,15 @@ describe("字幕の読み替え", () => {
     ["→", "右矢印キー"],
     ["Sen Sentry STELLAR", "Sen Sentry STELLAR"],
     ["⌘K（Ctrl+K）のパレットから", "コマンド K、または コントロール プラス Kのパレットから"],
+    [
+      "Ctrl + S（Mac は ⌘ + S）で保存します。",
+      "コントロール プラス S、Mac では コマンド プラス Sで保存します。",
+    ],
+    [
+      "F2 キー（Mac は Enter キー）を押します。",
+      "エフツー キー、Mac では エンター キーを押します。",
+    ],
+    ["F2 F20 AF2 Enter Enterprise", "エフツー F20 AF2 エンター Enterprise"],
     ["⇧ ⌥ G → I J / K / キー", "シフト オプション G のあとに I J と K スラッシュキー"],
     [
       "↓ ↑ ← ★ × @ ? を押す Esc",
