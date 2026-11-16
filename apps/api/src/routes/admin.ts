@@ -1,3 +1,4 @@
+import { integrationGroupFilter } from "../lib/integrations.js";
 /**
  * 管理 API (ユーザー管理)。
  *
@@ -79,7 +80,11 @@ function rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(
 adminRoute.get("/api/admin/users", async (c) => {
   try {
     const { db } = await requireAdminCtx(c);
-    const rows = await db.select().from(profiles).orderBy(asc(profiles.createdAt));
+    const rows = await db
+      .select()
+      .from(profiles)
+      .where(integrationGroupFilter(profiles.id, c.req.query("groupId")))
+      .orderBy(asc(profiles.createdAt));
     return c.json({
       rows: rows.map((r) => ({
         id: r.id,

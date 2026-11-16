@@ -88,3 +88,10 @@ bucket_name = "stella-submissions"
 binding = "LIBRARY_BUCKET"
 bucket_name = "stella-library-private"
 
+
+# 外部連携: IP ではなくクライアント ID ごとに制限する。
+[[unsafe.bindings]]
+name = "INTEGRATION_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1005"
+simple = { limit = 120, period = 60 }

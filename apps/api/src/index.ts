@@ -57,6 +57,9 @@ import { studyActivityRoute } from "./routes/study-activity.js";
 import { submissionsRoute } from "./routes/submissions.js";
 import { supportRoute } from "./routes/support.js";
 
+import { integrationsRoute } from "./routes/integrations.js";
+import { adminIntegrationsRoute } from "./routes/admin-integrations.js";
+
 const app = new Hono<{ Bindings: Env }>();
 
 app.use("/api/*", async (c, next) => {
@@ -79,6 +82,8 @@ app.use("/api/*", async (c, next) => {
   return corsMiddleware(c, next);
 });
 
+app.route("/", integrationsRoute);
+app.route("/", adminIntegrationsRoute);
 app.route("/", healthzRoute);
 app.route("/", authRoute);
 app.route("/", chatRoute);

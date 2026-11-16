@@ -14,7 +14,7 @@ interface UseProfilesResult {
 }
 
 /** `enabled` が false のあいだは取らない (ログイン前・権限の無い画面)。 */
-export function useProfiles(enabled = true): UseProfilesResult {
+export function useProfiles(enabled = true, groupId?: string): UseProfilesResult {
   const [profiles, setProfiles] = useState<AdminProfileRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export function useProfiles(enabled = true): UseProfilesResult {
     setLoading(true);
     setError(null);
     try {
-      const rows = await listProfiles();
+      const rows = await listProfiles(groupId);
       if (reqId !== requestIdRef.current) return;
       setProfiles(rows);
     } catch (err) {
@@ -40,7 +40,7 @@ export function useProfiles(enabled = true): UseProfilesResult {
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, groupId]);
 
   useEffect(() => {
     void refetch();

@@ -86,7 +86,8 @@
     "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
     "./library/types": "./src/library/types.ts",
     "./library/book-package": "./src/library/book-package.ts",
-    "./library/schemas": "./src/library/schemas.ts"
+    "./library/schemas": "./src/library/schemas.ts",
+    "./integrations/types": "./src/integrations/types.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

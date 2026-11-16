@@ -13,7 +13,7 @@ import type { Context } from "hono";
 import type { Env } from "../env.js";
 
 /** リバースプロキシ / Cloudflare 越しの実クライアント IP を取り出す。 取れなければ null。 */
-function clientIp(c: Context<{ Bindings: Env }>): string | null {
+function clientIp(c: Pick<Context<{ Bindings: Env }>, "env" | "req" | "json">): string | null {
   return (
     c.req.header("cf-connecting-ip") ??
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -26,13 +26,14 @@ function clientIp(c: Context<{ Bindings: Env }>): string | null {
  * リミッタ未設定 (ローカル / テスト) や判定失敗時はリクエストを通す (fail-open: 可用性優先)。
  */
 async function enforce(
-  c: Context<{ Bindings: Env }>,
+  c: Pick<Context<{ Bindings: Env }>, "env" | "req" | "json">,
   limiter: RateLimit | undefined,
+  clientKey?: string,
 ): Promise<Response | null> {
   if (!limiter) return null;
 
   // IP が取れない場合は共有キーに落とす (制限なしにはしない)。
-  const key = clientIp(c) ?? "unknown";
+  const key = clientKey ?? clientIp(c) ?? "unknown";
   try {
     const { success } = await limiter.limit({ key });
     if (!success) {
@@ -67,4 +68,12 @@ export function enforcePublicContentRateLimit(
 /** VS Code の接続コードの交換 (公開・認証前) 用のレート制限。 コードの総当たりを防ぐ。 */
 export function enforceAuthLinkRateLimit(c: Context<{ Bindings: Env }>): Promise<Response | null> {
   return enforce(c, c.env.AUTH_LINK_RATE_LIMITER);
+}
+
+/** 連携クライアントごとの制限。未設定・障害時の扱いは既存 API と同じ。 */
+export function enforceIntegrationRateLimit(
+  c: Pick<Context<{ Bindings: Env }>, "env" | "req" | "json">,
+  clientId: string,
+) {
+  return enforce(c, c.env.INTEGRATION_RATE_LIMITER, clientId);
 }

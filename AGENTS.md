@@ -88,6 +88,8 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 ### Key caveats
 
+- **外部連携 (#204)**: `/api/integrations/v1/*` は Cookie・セッションを見ず、連携トークンの SHA-256 ハッシュで認証する。管理画面 `/admin/integrations` と管理 API は `platform_admin` のみ。後続ルートは `lib/integrations.ts` の認証・scope・所有グループ/メンバーの確認を通し、範囲外は404。トークンは発行・再発行のときだけ返し、DB・ログに平文を残さない。グループはクライアント所有、受講者の削除でメンバー行も CASCADE。staff の一覧の `groupId` は既存の受講者範囲に追加する。仕様・判断は `docs/integrations.md`。
+
 - **案内されたステージ (#201)**: 案内元・期限・文は受講登録と別に `stage_grants` の `source_name` / `due_at` / `message` に持つ。ホームは `GET /api/stage-grants/mine` を専用の枠へ出し、通常の「次にやること」はスキルマップの `unguided_next_stage_ids` / `has_unguided_enrollment` で組む (古い API は従来項目)。割り当ては初回の Basic の名指しの判定に数えず、案内されたステージだけを始めても最初の研修の案内を残す。枠の開始は `POST /api/stages/:id/start` のみ、開く操作もフォーカスを変えない。本人が選んだフォーカスは従来どおり扱う。管理者は割り当て画面の「案内の内容」から `PATCH /api/stage-grants/:stageId/guidance` で全員へ保存・消去。未保存の割り当てがある間は案内を操作できず、入力した日付は日本時間23:59:59として送る。
 
 - **課題・問題を手で済みにする (#200)**: 管理者がステージ管理の受講者一覧・割り当て済みの行から `/task-manual-completion?userId=…&stageId=…` を開き、理由を添えて過去の学習を引き継ぐ。`task_problem_results.source = 'manual'` に理由・操作者・日時を残し、全問がそろうと `submissions.review_source = 'manual'` の合格を作る。ステージの進捗・修了証には数え、スキルの根拠・その日に解いた活動には数えない。本人があとから全問を解く・合格すると、課題の合格も本人のものに置き換わる（manual の合格の提出は削除し、合格日は本人が合格した日になる）。受講者には「引き継ぎ」と出し、理由は返さない。取り消せるのは manual だけで、本人の提出・レビューで合格した課題の中では取り消せない。`GET/POST /api/task-manual-completion`・`POST /api/task-manual-completion/revoke`。Web は課題3つずつ順に送り、取り消しの409も部分成功を反映して再取得する。取り消しで課題の合格・修了証が戻ることがある。

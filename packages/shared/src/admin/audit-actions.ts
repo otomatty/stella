@@ -10,6 +10,10 @@
  */
 
 const LABELS = {
+  integration_request: "連携 API の呼び出し",
+  integration_client_create: "連携クライアントの作成",
+  integration_client_update: "連携クライアントの変更",
+  integration_token_rotate: "連携トークンの再発行",
   // 認証
   login: "ログイン",
   // ユーザー管理 (#22)
