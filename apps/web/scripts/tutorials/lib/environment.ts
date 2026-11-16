@@ -190,15 +190,28 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
   // child.kill は bun だけを止める。残った wrangler と workerd が D1 の写しを掴んだままになる。
   if (process.platform === "win32") {
     const pid = child.pid;
-    await new Promise<void>((resolve) => {
+    const result = await new Promise<string>((resolve) => {
       const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], {
         stdio: "ignore",
         windowsHide: true,
       });
-      killer.on("error", () => resolve());
-      killer.on("exit", () => resolve());
+      killer.on("error", (error) => resolve(error.message));
+      killer.on("exit", (code) => resolve(`終了コード ${code}`));
     });
-    await exited;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        exited,
+        new Promise<void>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`API のプロセスを止められませんでした (taskkill: ${result})`)),
+            10_000,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
     return;
   }
   const kill = (signal: NodeJS.Signals) => {

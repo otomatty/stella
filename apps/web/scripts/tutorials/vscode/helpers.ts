@@ -1,4 +1,4 @@
-import type { Locator, Page } from "playwright";
+import type { Frame, Locator, Page } from "playwright";
 import type { Director } from "../lib/director";
 
 export interface TaskContext {
@@ -95,11 +95,29 @@ export async function webviewWith(page: Page, selector: string, timeout: number)
     for (const frame of page.frames()) {
       // 本体のタブ名が WebView の見出しより先に当たる。
       if (frame === workbench || frame.isDetached()) continue;
-      const found = await frame
-        .locator(selector)
-        .count()
-        .catch(() => 0);
-      if (found > 0) return frame.locator("body");
+      try {
+        const found = await frame.locator(selector).filter({ visible: true }).count();
+        if (!found) continue;
+        let visible = true;
+        for (
+          let current: Frame | null = frame;
+          current?.parentFrame();
+          current = current.parentFrame()
+        ) {
+          const iframe = await current.frameElement();
+          try {
+            if (!(await iframe.isVisible())) {
+              visible = false;
+              break;
+            }
+          } finally {
+            await iframe.dispose();
+          }
+        }
+        if (visible) return frame.locator("body");
+      } catch {
+        /* 切り離されたフレームは次の候補へ */
+      }
     }
     if (Date.now() >= deadline) throw new Error(`WebView が見つかりません: ${selector}`);
     await page.waitForTimeout(200);
