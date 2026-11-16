@@ -424,25 +424,27 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       }
     }
 
-    const savedGuidance = await loadStageGuidance(db, stageId);
     const inheritedRows = await inheritGrantGuidance(db, [
       ...newlyAdded.map((profileId) => ({ stageId, profileId })),
       ...ancestorInserts,
     ]);
-    const deleteOp = db.delete(stageGrants).where(eq(stageGrants.stageId, stageId));
+    // 残る人の案内・割り当て日時・操作者には触れない。案内の並行更新も書き戻さない。
+    const deleteOp = db
+      .delete(stageGrants)
+      .where(
+        profileIds.length > 0
+          ? and(eq(stageGrants.stageId, stageId), notInArray(stageGrants.profileId, profileIds))
+          : eq(stageGrants.stageId, stageId),
+      );
     const valuesFor = (row: { stageId: string; profileId: string }) => ({
       stageId: row.stageId,
       profileId: row.profileId,
       grantedBy: caller.id,
-      ...(row.stageId === stageId && existingGrantIds.has(row.profileId)
-        ? guidanceValues(
-            guidanceOf(savedGuidance.find((saved) => saved.profileId === row.profileId)),
-          )
-        : inheritedRows.find(
-            (saved) => saved.stageId === row.stageId && saved.profileId === row.profileId,
-          )),
+      ...inheritedRows.find(
+        (saved) => saved.stageId === row.stageId && saved.profileId === row.profileId,
+      ),
     });
-    const stageInserts = profileIds.map((profileId) =>
+    const stageInserts = newlyAdded.map((profileId) =>
       db.insert(stageGrants).values(valuesFor({ stageId, profileId })),
     );
     const ancestorOps = ancestorInserts.map((row) =>

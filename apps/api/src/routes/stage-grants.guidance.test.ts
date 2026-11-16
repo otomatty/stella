@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import type { GuidedStagesResponse } from "@stella/shared/stage-grants/types";
 import { getDb } from "../db/client.js";
@@ -427,4 +427,87 @@ it("公開外のExtraの受講登録も、通常の道の集約に混ぜない",
   expect(body.skill_map.has_enrollment).toBe(true);
   expect(body.skill_map.has_unguided_enrollment).toBe(false);
   expect(await mine()).toEqual({ stages: [] });
+});
+
+it("PUTの読み取り後に案内が更新されても、残る人の案内と割り当ての記録を保持する", async () => {
+  await grant();
+  await grant("other");
+  await db
+    .update(stageGrants)
+    .set({ grantedBy: "other", grantedAt: new Date("2020-01-01T00:00:00Z") });
+  expect((await update({ all: true, ...guidance })).status).toBe(200);
+  const [before] = await db.select().from(stageGrants).where(eq(stageGrants.profileId, "learner"));
+  const next = {
+    source_name: "架空の新しい案内元",
+    due_at: "2027-01-01T14:59:59.000Z",
+    message: "架空の更新後の文",
+  };
+  const originalBatch = database.binding.batch.bind(database.binding);
+  const batch = vi.spyOn(database.binding, "batch").mockImplementationOnce(async (statements) => {
+    // PUTが読み取った後、書き込む直前に別リクエストの案内更新を完了させる。
+    expect((await update({ all: true, ...next })).status).toBe(200);
+    return originalBatch(statements);
+  });
+  try {
+    expect(
+      (await call("/api/stage-grants/extra", "PUT", { profile_ids: ["learner", "new"] })).status,
+    ).toBe(200);
+    const rows = await db.select().from(stageGrants);
+    const retained = rows.find((row) => row.profileId === "learner");
+    expect
+      .soft(retained)
+      .toMatchObject({ sourceName: next.source_name, dueAt: next.due_at, message: next.message });
+    expect.soft(retained?.grantedAt).toEqual(before.grantedAt);
+    expect.soft(retained?.grantedBy).toBe(before.grantedBy);
+    expect(rows.map((row) => row.profileId).sort()).toEqual(["learner", "new"]);
+  } finally {
+    batch.mockRestore();
+  }
+});
+
+it.each([false, true])(
+  "案内の前提名は通常のスキルツリーと同じ範囲だけ返す (島で伏せる=%s)",
+  async (hidden) => {
+    await grant();
+    if (hidden) await db.update(stages).set({ category: "AWS資格" }).where(eq(stages.id, "basic"));
+    const response = await call("/api/skill-map/mine?tiers=7", "GET", undefined, learner);
+    expect(response.status).toBe(200);
+    const map = await json<{
+      skill_map: { stages: { id: string; title?: string; lock_reasons?: string[] }[] };
+    }>(response);
+    const titles = map.skill_map.stages.flatMap((node) => [
+      node.title,
+      ...(node.lock_reasons ?? []),
+    ]);
+    expect(titles.includes("架空の入口")).toBe(!hidden);
+    expect(await mine()).toMatchObject({
+      stages: [{ status: "locked", prerequisite_titles: hidden ? [] : ["架空の入口"] }],
+    });
+  },
+);
+
+it("霧で名前を返さない遠い前提は、案内の前提名にも載せない", async () => {
+  await grant();
+  await db.insert(stages).values([
+    {
+      id: "middle",
+      slug: "sample-middle",
+      title: "架空の中継",
+      status: "published",
+      prerequisites: '["sample-basic"]',
+    },
+    {
+      id: "far",
+      slug: "sample-far",
+      title: "架空の遠い前提",
+      status: "published",
+      prerequisites: '["sample-middle"]',
+    },
+  ]);
+  await db.update(stages).set({ prerequisites: '["sample-far"]' }).where(eq(stages.id, "extra"));
+  const map = await json<{ skill_map: { stages: { id: string; title?: string }[] } }>(
+    await call("/api/skill-map/mine?tiers=7", "GET", undefined, learner),
+  );
+  expect(map.skill_map.stages.find((node) => node.id === "far")?.title).toBeUndefined();
+  expect(await mine()).toMatchObject({ stages: [{ status: "locked", prerequisite_titles: [] }] });
 });

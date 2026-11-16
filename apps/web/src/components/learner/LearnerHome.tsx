@@ -237,6 +237,8 @@ export const LearnerHome = ({
       // マップが届く前 (`null`) は「始めている」側に倒す — 初回の案内が一瞬だけ出て
       // 消える瞬きを避ける。
       hasEnrollment: skillMap.map ? hasEnrollment : true,
+      hasAnyEnrollment:
+        skillMap.map?.has_enrollment ?? nodes.some((node) => node.enrolled === true),
       hasVisibleExtra: ordinaryGuide.hasVisibleExtra,
       activeWithoutLesson: Boolean(activeStage && !activeStage.completed && !nextLesson),
       startableStageIds: ordinaryGuide.startableStageIds,

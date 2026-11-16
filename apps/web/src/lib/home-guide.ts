@@ -46,8 +46,10 @@ export interface HomeGuide {
 
 export interface HomeGuideInput {
   plan: TodayPlan;
-  /** 受講登録が 1 件でもあるか (サーバの集約フラグ)。 */
+  /** 通常の道の判定用。割り当てのないステージの受講登録があるか。 */
   hasEnrollment: boolean;
+  /** 準備案内用。割り当ても含めた全受講登録。省略時は従来どおり hasEnrollment。 */
+  hasAnyEnrollment?: boolean;
   /** 古い API の互換判定。新しい応答では割り当てを別枠へ分けるため false。 */
   hasVisibleExtra: boolean;
   /** 進行中のステージがあり、未修了なのに開けるレッスンが残っていない。 */
@@ -107,7 +109,11 @@ export function buildHomeGuide(input: HomeGuideInput): HomeGuide {
     }
   }
 
-  if (input.hasEnrollment && input.connectedVscode === false && input.firstStageStarted === false) {
+  if (
+    (input.hasAnyEnrollment ?? input.hasEnrollment) &&
+    input.connectedVscode === false &&
+    input.firstStageStarted === false
+  ) {
     // 今日の先頭を保ち、「そのあと」の先頭へ。他の手順も無ければ案内を先頭にする。
     steps.splice(Math.min(1, steps.length), 0, { kind: "setup-vscode" });
   }

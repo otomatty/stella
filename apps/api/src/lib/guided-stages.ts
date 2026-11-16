@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
 import { filterIslandStages } from "@stella/shared/skill-map/islands";
 import type { GuidedStagesResponse } from "@stella/shared/stage-grants/types";
+import { evaluateSkillMapFor, isLockReasonNameVisible } from "../routes/skill-map.js";
 import type { Db } from "../db/client.js";
 import {
   sections,
@@ -42,6 +43,9 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     clearedStageIds: source.clearedStageIds,
     unlockedStageIds: source.unlockedStageIds,
   });
+  // 状態の評価は全割り当てで行うが、名前の公開は普段のツリーの視界にそろえる。
+  const ordinarySource = await loadSkillMapSource(db, caller);
+  const ordinaryMap = evaluateSkillMapFor(ordinarySource);
   const taskRows = await db
     .select({
       stageId: sections.stageId,
@@ -125,7 +129,12 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
           prerequisite_titles:
             enrolled || available
               ? []
-              : (evaluated.lockReasons.get(id) ?? []).map((reason) => reason.label),
+              : (evaluated.lockReasons.get(id) ?? [])
+                  .filter(
+                    (reason) =>
+                      reason.stageId !== undefined && isLockReasonNameVisible(ordinaryMap, reason),
+                  )
+                  .map((reason) => reason.label),
           progress:
             p && p.problems > 0
               ? { unit: "problems", passed: p.passedProblems, total: p.problems }
