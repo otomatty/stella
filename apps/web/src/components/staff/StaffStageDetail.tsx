@@ -1,4 +1,3 @@
-import { manualCompletionUrl } from "@/lib/manual-completion";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type {
@@ -573,13 +572,14 @@ function LearnersTab({ stageId }: { stageId: string }) {
                   <TableRow key={row.user_id}>
                     <TableCell>
                       <div className="font-medium">{row.display_name}</div>
-                      <a
-                        href={manualCompletionUrl(stageId, row.user_id)}
-                        className="text-sm text-brand underline"
+                      <div className="text-xs text-ink-3">{row.email}</div>
+                      <Link
+                        to="/task-manual-completion"
+                        search={{ stageId, userId: row.user_id }}
+                        className="inline-flex min-h-11 items-center text-xs text-brand underline"
                       >
                         手で済みにする
-                      </a>
-                      <div className="text-xs text-ink-3">{row.email}</div>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       {

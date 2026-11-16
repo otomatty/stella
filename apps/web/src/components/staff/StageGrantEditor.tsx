@@ -1,6 +1,6 @@
 import { guidanceDate } from "@/lib/guided-stages";
 import { StageGrantGuidanceEditor } from "./StageGrantGuidanceEditor";
-import { manualCompletionUrl } from "@/lib/manual-completion";
+import { Link } from "@tanstack/react-router";
 /**
  * Extra ステージ 1 件の割り当て。
  * 検索・絞り込み・50 人ずつ。保存は差分だけを送る。
@@ -376,7 +376,7 @@ export function StageGrantEditor({
     guidanceEditor:
       stageId && page?.guidance_summary ? (
         <StageGrantGuidanceEditor
-          key={`${epoch}:${stageId}:${JSON.stringify(page.guidance_summary)}`}
+          key={`${epoch}:${stageId}`}
           stageId={stageId}
           summary={page.guidance_summary}
           count={page.counts.assigned}
@@ -885,20 +885,21 @@ function PcRoster({
                         ) : null}
                         <ChangeMarks marks={view.marks} />
                       </div>
+                      {view.baseline.email ? (
+                        <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
+                      ) : null}
+                      <GuidanceDue row={view.baseline} />
                       {view.baseline.assigned &&
                       completionStageId &&
                       !saving &&
                       changeCount === 0 ? (
-                        <a
-                          className="block text-sm text-brand underline"
-                          href={manualCompletionUrl(completionStageId, view.id)}
+                        <Link
+                          className="inline-flex min-h-11 items-center text-xs text-brand underline"
+                          to="/task-manual-completion"
+                          search={{ stageId: completionStageId, userId: view.id }}
                         >
                           手で済みにする
-                        </a>
-                      ) : null}
-                      <GuidanceDue row={view.baseline} />
-                      {view.baseline.email ? (
-                        <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
+                        </Link>
                       ) : null}
                     </TableCell>
                     <TableCell>
@@ -1195,12 +1196,13 @@ function MobileRoster({
                   <GuidanceDue row={view.baseline} />
                 </div>
                 {view.baseline.assigned && completionStageId && !saving && changeCount === 0 ? (
-                  <a
-                    className="block px-4 pb-3 text-sm text-brand underline"
-                    href={manualCompletionUrl(completionStageId, view.id)}
+                  <Link
+                    className="inline-flex min-h-11 items-center px-4 text-xs text-brand underline"
+                    to="/task-manual-completion"
+                    search={{ stageId: completionStageId, userId: view.id }}
                   >
                     手で済みにする
-                  </a>
+                  </Link>
                 ) : null}
               </li>
             ))}

@@ -73,3 +73,10 @@ export function guidancePayload(fields: GuidanceFields): StageGrantGuidance {
     message: fields.message.trim() || null,
   };
 }
+
+/** 畳んだ帯では、ステージ名の先頭にある案内元を重ねない。 */
+export function guidedStageLineTitle(stage: Pick<GuidedStage, "title" | "source_name">): string {
+  return stage.source_name && !stage.title.startsWith(stage.source_name)
+    ? `${stage.source_name}・${stage.title}`
+    : stage.title;
+}

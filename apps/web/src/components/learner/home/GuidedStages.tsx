@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { GuidedStage } from "@stella/shared/stage-grants/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { guidedDeadline, guidedStageCard } from "@/lib/guided-stages";
+import { guidedDeadline, guidedStageCard, guidedStageLineTitle } from "@/lib/guided-stages";
 import { cn } from "@/lib/utils";
 
 export function GuidedStageCard({
@@ -105,8 +105,7 @@ export function GuidedStageLines({
             title={stage.title}
           >
             <span className="min-w-0 flex-1 truncate font-medium">
-              {stage.source_name ? `${stage.source_name}・` : ""}
-              {stage.title}
+              {guidedStageLineTitle(stage)}
             </span>
             <span
               className={cn(

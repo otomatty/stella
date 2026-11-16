@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { GuidedStage } from "@stella/shared/stage-grants/types";
-import { guidancePayload, guidedDeadline, guidedStageCard } from "./guided-stages";
+import {
+  guidancePayload,
+  guidedDeadline,
+  guidedStageCard,
+  guidedStageLineTitle,
+} from "./guided-stages";
 
 const stage: GuidedStage = {
   stage_id: "sample-stage",
@@ -119,5 +124,18 @@ describe("管理者の案内入力", () => {
         message: "あ".repeat(500),
       }).due_at,
     ).toBe("2028-02-29T14:59:59.000Z");
+  });
+});
+
+describe("畳んだ案内の行の名前", () => {
+  it.each([
+    ["架空の研修室", "架空の研修室 事前課題 第1部", "架空の研修室 事前課題 第1部"],
+    ["架空の研修室", "事前課題", "架空の研修室・事前課題"],
+    ["架空の研修室", "準備：架空の研修室の課題", "架空の研修室・準備：架空の研修室の課題"],
+    ["架空の研修室", "架空の研修室", "架空の研修室"],
+    [null, "事前課題", "事前課題"],
+    ["", "事前課題", "事前課題"],
+  ])("案内元 %s・名前 %s → %s", (source_name, title, expected) => {
+    expect(guidedStageLineTitle({ source_name, title })).toBe(expected);
   });
 });
