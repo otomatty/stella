@@ -1,0 +1,916 @@
+<section class="sec" id="c07-q04">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q04 Pick と Omit</h2>
+    <p>もとの型から、プロパティの一部だけを持つ型を作る問題を 20 問解きます。<code>Pick&lt;T, "a" | "b"&gt;</code> は、<code>T</code> から指定したプロパティだけを取り出した型です。<code>Omit&lt;T, "a" | "b"&gt;</code> は、<code>T</code> から指定したプロパティを除いた型です。型 <code>User</code> と <code>Article</code> は、ファイルにもう書いてあります。型を作る問題では、プロパティを手で書き並べずに、<code>Pick</code> か <code>Omit</code> で作ります。関数を書く問題では、引数と戻り値に型注釈を付けます。<code>Omit</code> した型を返す関数では、除いたプロパティを、返すオブジェクトに入れません。テストは、余分なプロパティが残っていないことも確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q04-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">型 UserName を、User から name だけを取り出して作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>Pick&lt;T, "a" | "b"&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 UserName を書く</code></pre>
+      <p><code>User</code> から <code>name</code> だけを取り出した型 <code>UserName</code> を作ります。<code>{ name: string }</code> と手で書かずに、<code>Pick</code> を使います。テストがこの型を読むので、<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserName</code> の型</dt><dd class="r"><code>{ name: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Pick&lt;T, "a" | "b"&gt;</code><h4>指定したプロパティだけを取り出した型を作る</h4></div>
+      <p><code>Pick</code> は、もとの型から、指定したプロパティだけを取り出した型を作ります。07章 q03 の <code>Partial</code> と同じく、<code>&lt; &gt;</code> の中に型を渡して使う組み込みの型です。このような型を、ユーティリティ型と呼びます。<code>Pick</code> の <code>&lt; &gt;</code> には 2 つ書きます。1 つめはもとにする型、2 つめは取り出すプロパティ名です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の型 Product を作る。code は文字列、name は文字列、price は数値、stock は数値
+type Product = { code: string; name: string; price: number; stock: number };
+// ProductName という型を作る。Product から name だけを取り出した型。ほかのファイルから使えるようにする
+export type ProductName = Pick&lt;Product, "name"&gt;;
+// ラベル label を作り、型を ProductName にして、name が "ノート" のオブジェクトを入れる
+const label: ProductName = { name: "ノート" };
+// 結果: label は { name: "ノート" }</code></pre>
+      </div>
+      <p>2 つ以上のプロパティを取り出すときは、プロパティ名を <code>|</code> でつなぎます。リテラル型のユニオン型（01章 q07 問1）と同じ書き方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// PriceTag という型を作る。Product から name と price を取り出した型。ほかのファイルから使えるようにする
+export type PriceTag = Pick&lt;Product, "name" | "price"&gt;;
+// 値札 tag を作り、型を PriceTag にして、name が "ノート"、price が 120 のオブジェクトを入れる
+const tag: PriceTag = { name: "ノート", price: 120 };
+// 結果: tag は { name: "ノート", price: 120 }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>Pick</span>&lt;<span class="seg"><i>2</i>Product</span>, <span class="seg"><i>3</i>"name" | "price"</span>&gt;</pre>
+        <ol>
+          <li><span>プロパティを取り出すユーティリティ型です。</span></li>
+          <li><span>もとにする型です。</span></li>
+          <li><span>取り出すプロパティ名です。<code>"name"</code> のように文字列で書き、2 つ以上なら <code>|</code> でつなぎます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>Pick&lt;Product, "name"&gt;</code></dt><dd class="r"><code>{ name: string }</code></dd><dd class="c">と同じ型</dd></div>
+        <div><dt><code>Pick&lt;Product, "name" | "price"&gt;</code></dt><dd class="r"><code>{ name: string; price: number }</code></dd><dd class="c">と同じ型</dd></div>
+        <div><dt><code>Pick&lt;Product, "nmae"&gt;</code></dt><dd class="r">型のエラー</dd><dd class="c">Product に nmae はない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>2 つめに書けるのは、もとの型にあるプロパティ名だけです。<code>keyof Product</code>（07章 q02）に入る名前と同じです。<code>"nmae"</code> のように打ち間違えると、型の確認でエラーになります。</p>
+      <p class="memo"><b>よくある疑問</b><code>{ name: string }</code> と手で書いても、同じ型になります。テストも同じ型として扱います。<code>Pick</code> で作っておくと、<code>Product</code> の <code>name</code> の型を直したときに、<code>ProductName</code> も一緒に変わります。この番号では、手で書き並べずに <code>Pick</code> を使います。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/utility-types/pick">サバイバルTypeScript「Pick&lt;T, Keys&gt;」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// UserName という型を作る。User から name だけを取り出した型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 1 つめのサンプルの <code>ProductName</code> の行と同じ形です。もとにする型が <code>User</code> になります。<code>User</code> の定義の下に書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q04-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">型 UserContact を、User から name と email を取り出して作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 UserContact を書く</code></pre>
+      <p><code>User</code> から <code>name</code> と <code>email</code> の 2 つを取り出した型 <code>UserContact</code> を作ります。<code>Pick</code> を使い、<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserContact</code> の型</dt><dd class="r"><code>{ name: string; email: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// UserContact という型を作る。User から name と email を取り出した型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>PriceTag</code> の行と同じ形です。2 つのプロパティ名を <code>|</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q04-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">型 SafeUser を、User から password を除いて作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>Omit&lt;T, "a" | "b"&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 SafeUser を書く</code></pre>
+      <p><code>User</code> から <code>password</code> だけを除いた型 <code>SafeUser</code> を作ります。残る 4 つのプロパティを並べずに、<code>Omit</code> を使います。<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>SafeUser</code> の型</dt><dd class="r"><code>{ id: number; name: string; email: string; age: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Omit&lt;T, "a" | "b"&gt;</code><h4>指定したプロパティを除いた型を作る</h4></div>
+      <p><code>Omit</code> は <code>Pick</code> の反対です。もとの型から、指定したプロパティを除いた型を作ります。<code>&lt; &gt;</code> の中の書き方は <code>Pick</code> と同じで、1 つめがもとにする型、2 つめが除くプロパティ名です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の型 Product を作る。code は文字列、name は文字列、price は数値、stock は数値
+type Product = { code: string; name: string; price: number; stock: number };
+// ListedProduct という型を作る。Product から stock を除いた型。ほかのファイルから使えるようにする
+export type ListedProduct = Omit&lt;Product, "stock"&gt;;
+// 一覧の行 row を作り、型を ListedProduct にして、code が "A-01"、name が "ノート"、price が 120 のオブジェクトを入れる
+const row: ListedProduct = { code: "A-01", name: "ノート", price: 120 };
+// 結果: row は { code: "A-01", name: "ノート", price: 120 }</code></pre>
+      </div>
+      <p>2 つ以上のプロパティを除くときも、<code>|</code> でつなぎます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// NameAndPrice という型を作る。Product から code と stock を除いた型。ほかのファイルから使えるようにする
+export type NameAndPrice = Omit&lt;Product, "code" | "stock"&gt;;
+// 結果: NameAndPrice は { name: string; price: number } と同じ型</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Omit&lt;Product, "stock"&gt;</code></dt><dd class="r"><code>{ code: string; name: string; price: number }</code></dd><dd class="c">と同じ型</dd></div>
+        <div><dt><code>Omit&lt;Product, "code" | "stock"&gt;</code></dt><dd class="r"><code>{ name: string; price: number }</code></dd><dd class="c">と同じ型</dd></div>
+      </dl>
+      <p>同じ型を、<code>Pick</code> でも <code>Omit</code> でも作れます。残すプロパティが少ないときは <code>Pick</code>、除くプロパティが少ないときは <code>Omit</code> を使うと、短く書けます。</p>
+      <div class="cmp">
+        <div>
+          <h5>Pick で残すものを書く</h5>
+          <pre><code class="language-typescript">type ListedProduct = Pick&lt;Product, "code" | "name" | "price"&gt;;</code></pre>
+          <div class="verdict ok">○ 3 つ並べる</div>
+        </div>
+        <div>
+          <h5>Omit で除くものを書く</h5>
+          <pre><code class="language-typescript">type ListedProduct = Omit&lt;Product, "stock"&gt;;</code></pre>
+          <div class="verdict ok">○ 1 つで済む。同じ型になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>Omit</code> は、もとの型にない名前を書いても、型のエラーになりません。<code>Omit&lt;Product, "stok"&gt;</code> のように打ち間違えると、何も除かれずに <code>Product</code> と同じ型になります。<code>Pick</code> より間違いに気づきにくいので、名前をよく確かめます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/utility-types/omit">サバイバルTypeScript「Omit&lt;T, Keys&gt;」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// SafeUser という型を作る。User から password を除いた型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 の 1 つめのサンプルの <code>ListedProduct</code> の行と同じ形です。もとにする型が <code>User</code>、除くプロパティ名が <code>"password"</code> になります。名前を打ち間違えても型のエラーにならず、テストで失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q04-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">型 NewUser を、User から id を除いて作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 NewUser を書く</code></pre>
+      <p>新しく登録する利用者の型 <code>NewUser</code> を作ります。番号 <code>id</code> は登録するときに決まるので、<code>User</code> から <code>id</code> を除きます。<code>Omit</code> を使い、<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>NewUser</code> の型</dt><dd class="r"><code>{ name: string; email: string; password: string; age: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// NewUser という型を作る。User から id を除いた型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形で、除くプロパティ名が <code>"id"</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q04-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">型 ArticleSummary を、Article から id と title を取り出して作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+// ここに型 ArticleSummary を書く</code></pre>
+      <p>記事の型 <code>Article</code> から、<code>id</code> と <code>title</code> だけを取り出した型 <code>ArticleSummary</code> を作ります。記事の一覧に出す、短い形の型です。<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ArticleSummary</code> の型</dt><dd class="r"><code>{ id: number; title: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// ArticleSummary という型を作る。Article から id と title を取り出した型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、もとにする型が <code>Article</code>、取り出すプロパティ名が <code>"id"</code> と <code>"title"</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q04-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">型 ArticleDraft を、Article から id と publishedAt を除いて作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+// ここに型 ArticleDraft を書く</code></pre>
+      <p>記事の下書きの型 <code>ArticleDraft</code> を作ります。下書きには、まだ番号 <code>id</code> と公開日時 <code>publishedAt</code> がありません。<code>Article</code> からこの 2 つを除きます。<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ArticleDraft</code> の型</dt><dd class="r"><code>{ title: string; body: string; author: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// ArticleDraft という型を作る。Article から id と publishedAt を除いた型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 の 2 つめのサンプルの <code>NameAndPrice</code> の行と同じ形です。除く 2 つのプロパティ名を <code>|</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q04-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">User から { name, email } を取り出して返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Pick</code> の型のオブジェクトを返す <code>{ a: x.a, b: x.b }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+export function toContact() {}</code></pre>
+      <p>利用者 <code>User</code> を 1 つ受け取り、<code>name</code> と <code>email</code> だけを持つオブジェクトを返します。戻り値の型は <code>Pick&lt;User, "name" | "email"&gt;</code> と書きます。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toContact(user)</code></dt><dd class="r"><code>{ name: "山田", email: "y@example.com" }</code></dd><dd class="c">ほかのプロパティはない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code>、戻り値が <code>Pick&lt;User, "name" | "email"&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ name: product.name, … }</code><h4>Pick の型で返すときは、新しいオブジェクトを作る</h4></div>
+      <p>戻り値の型を <code>Pick</code> にしても、値のプロパティは減りません。型は、値を変えないからです。必要なプロパティだけを持つ新しいオブジェクトを作って返します。02章 q03 問9 と同じ考え方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 toPriceTag を作る。Product の product を受け取り、Product から name と price を取り出した型のオブジェクトを返す
+function toPriceTag(product: Product): Pick&lt;Product, "name" | "price"&gt; {
+  // name が product の name、price が product の price のオブジェクトを返す
+  return { name: product.name, price: product.price };
+}
+// 結果: toPriceTag({ code: "A-01", name: "ノート", price: 120, stock: 8 }) は { name: "ノート", price: 120 }</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>受け取ったものをそのまま返す</h5>
+          <pre><code class="language-typescript">return product;</code></pre>
+          <div class="verdict ng">✕ 型の確認は通りますが、code と stock も残ります</div>
+        </div>
+        <div>
+          <h5>新しいオブジェクトを作る</h5>
+          <pre><code class="language-typescript">return { name: product.name, price: product.price };</code></pre>
+          <div class="verdict ok">○ name と price だけを持ちます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>{ ...product }</code> と広げて返しても、型の確認は通ります。ただ、<code>code</code> と <code>stock</code> も写されるので、テストで失敗します。<code>{ name: product.name, price: product.price, stock: product.stock }</code> のように、<code>{ }</code> の中に余分なプロパティを書いたときだけ、型の確認でエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toContact を作る。User の user を受け取り、User から name と email を取り出した型のオブジェクトを返す
+export function toContact() {
+  // name が user の name、email が user の email のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>toPriceTag</code> と同じ形です。かっこの中は <code>user: User</code>、戻り値の型は <code>: Pick&lt;User, "name" | "email"&gt;</code> になります。<code>user</code> をそのまま返すと、<code>id</code> や <code>password</code> も残るのでテストが通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q04-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">User から password を除いたオブジェクトを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+export function toSafeUser() {}</code></pre>
+      <p>利用者 <code>User</code> を 1 つ受け取り、<code>password</code> を除いたオブジェクトを返します。画面に出したり、ほかの人に渡したりしてよい形です。戻り値の型は <code>Omit&lt;User, "password"&gt;</code> と書きます。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toSafeUser(user)</code></dt><dd class="r"><code>{ id: 1, name: "山田", email: "y@example.com", age: 30 }</code></dd><dd class="c">password はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code>、戻り値が <code>Omit&lt;User, "password"&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toSafeUser を作る。User の user を受け取り、User から password を除いた型のオブジェクトを返す
+export function toSafeUser() {
+  // id が user の id、name が user の name、email が user の email、age が user の age のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。戻り値の型は <code>: Omit&lt;User, "password"&gt;</code> になります。<code>Omit</code> の型を付けても、値から <code>password</code> は消えません。残す 4 つのプロパティを、1 つずつ書いた新しいオブジェクトを返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q04-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">Article から { id, title } を取り出して返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+export function toSummary() {}</code></pre>
+      <p>記事 <code>Article</code> を 1 つ受け取り、<code>id</code> と <code>title</code> だけを持つオブジェクトを返します。</p>
+      <p>テストの <code>article</code> は <code>{ id: 1, title: "はじめまして", body: "本文", author: "山田", publishedAt: new Date(0) }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toSummary(article)</code></dt><dd class="r"><code>{ id: 1, title: "はじめまして" }</code></dd><dd class="c">ほかのプロパティはない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Article</code>、戻り値が <code>Pick&lt;Article, "id" | "title"&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toSummary を作る。Article の article を受け取り、Article から id と title を取り出した型のオブジェクトを返す
+export function toSummary() {
+  // id が article の id、title が article の title のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形で、型が <code>Article</code>、取り出すプロパティが <code>id</code> と <code>title</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q04-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">Omit&lt;User, "id"&gt; と id から User を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+export function createUser() {}</code></pre>
+      <p>番号のない利用者 <code>input</code> と、番号 <code>id</code>（数値）をこの順に受け取ります。<code>input</code> のプロパティに <code>id</code> を足した <code>User</code> を返します。1 つめの引数の型は <code>Omit&lt;User, "id"&gt;</code>、戻り値の型は <code>User</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>createUser({ name: "山田", email: "y@example.com", password: "x", age: 30 }, 7)</code></dt><dd class="r"><code>{ id: 7, name: "山田", email: "y@example.com", password: "x", age: 30 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Omit&lt;User, "id"&gt;</code> と <code>number</code>、戻り値が <code>User</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 createUser を作る。User から id を除いた型の input と、数値 id を受け取り、User を返す
+export function createUser() {
+  // input を広げて、id を id にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>03章 q06 問3 のサンプルの <code>withStock</code> と同じ形です。「User から id を除いた型」は <code>Omit&lt;User, "id"&gt;</code> です。引数の名前を <code>id</code> にすると、省略記法で <code>{ ...input, id }</code> と書けます。<code>input</code> には <code>id</code> 以外のプロパティがそろっているので、足すと <code>User</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q04-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">下書き Omit&lt;Article, "id" | "publishedAt"&gt; に id と publishedAt を足して Article を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+export function publish() {}</code></pre>
+      <p>記事の下書き、番号（数値）、公開日時（<code>Date</code>）をこの順に受け取ります。下書きに <code>id</code> と <code>publishedAt</code> を足した <code>Article</code> を返します。1 つめの引数の型は <code>Omit&lt;Article, "id" | "publishedAt"&gt;</code> です。</p>
+      <p>テストの <code>at</code> は <code>new Date("2026-12-01T09:00:00Z")</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>publish({ title: "t", body: "b", author: "a" }, 1, at)</code></dt><dd class="r"><code>{ id: 1, title: "t", body: "b", author: "a", publishedAt: at }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Omit&lt;Article, "id" | "publishedAt"&gt;</code>・<code>number</code>・<code>Date</code>、戻り値が <code>Article</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 publish を作る。Article から id と publishedAt を除いた型の draft と、数値 id と、Date の at を受け取り、Article を返す
+export function publish() {
+  // draft を広げて、id を id、publishedAt を at にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 と同じ形で、足すプロパティが 2 つになります。<code>publishedAt</code> は引数の名前と違うので、省略記法を使わずに <code>publishedAt: at</code> と書きます。<code>Date</code> の型は 03章 q03 問20 で出ています。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q04-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">Article の配列を Pick&lt;Article, "id" | "title"&gt; の配列にする</span>
+      <span class="q-new">新しく出てくる書き方：アロー関数でオブジェクトを返す <code>(p) =&gt; ({ … })</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+export function summaries() {}</code></pre>
+      <p>記事の配列を受け取り、どの記事も <code>id</code> と <code>title</code> だけにした新しい配列を返します。引数は読み取り専用の配列 <code>readonly Article[]</code>、戻り値は <code>Pick&lt;Article, "id" | "title"&gt;[]</code> です。</p>
+      <p>テストの <code>articles</code> は、<code>id</code> が 1 で <code>title</code> が <code>"a"</code> の記事と、<code>id</code> が 2 で <code>title</code> が <code>"b"</code> の記事の 2 つです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>summaries(articles)</code></dt><dd class="r"><code>[{ id: 1, title: "a" }, { id: 2, title: "b" }]</code></dd><dd class="c">body・author・publishedAt はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Article[]</code>、戻り値が <code>Pick&lt;Article, "id" | "title"&gt;[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(p) =&gt; ({ … })</code><h4>アロー関数でオブジェクトを返す</h4></div>
+      <p>アロー関数（01章 q01 問20）の <code>=&gt;</code> の後ろに <code>{</code> を書くと、関数の本体の始まりとして読まれます。式だけの本体でオブジェクトを返すときは、オブジェクトを <code>( )</code> で囲みます。<code>.map()</code>（02章 q04 問5）で、要素をオブジェクトに変えるときによく使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の配列 products を作る。型は Product の配列。2 つの商品を入れる
+const products: Product[] = [
+  { code: "A-01", name: "ノート", price: 120, stock: 8 },
+  { code: "B-02", name: "ペン", price: 80, stock: 0 },
+];
+// tags を作り、products の要素を 1 つずつ p として、name が p の name、price が p の price のオブジェクトに変えた新しい配列を入れる
+const tags = products.map((p) =&gt; ({ name: p.name, price: p.price }));
+// 結果: tags は [{ name: "ノート", price: 120 }, { name: "ペン", price: 80 }]</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>( ) で囲まない</h5>
+          <pre><code class="language-typescript">products.map((p) =&gt; { name: p.name })</code></pre>
+          <div class="verdict ng">✕ { } が本体と読まれ、何も返しません。結果は [undefined, undefined] です</div>
+        </div>
+        <div>
+          <h5>( ) で囲む</h5>
+          <pre><code class="language-typescript">products.map((p) =&gt; ({ name: p.name }))</code></pre>
+          <div class="verdict ok">○ オブジェクトが返ります</div>
+        </div>
+      </div>
+      <p>戻り値の型を <code>Pick&lt;Product, "name"&gt;[]</code> にした関数の中で、囲まないほうを返すと、型の確認でエラーになります。<code>{ }</code> の本体で書いて、中で <code>return</code> してもかまいません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// tags2 を作り、products の要素を 1 つずつ p として、次のオブジェクトに変えた新しい配列を入れる
+const tags2 = products.map((p) =&gt; {
+  // name が p の name、price が p の price のオブジェクトを返す
+  return { name: p.name, price: p.price };
+});
+// 結果: tags2 は tags と同じ</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 summaries を作る。読み取り専用の Article の配列 articles を受け取り、Article から id と title を取り出した型の配列を返す
+export function summaries() {
+  // articles の要素を 1 つずつ a として、id が a の id、title が a の title のオブジェクトに変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 のサンプルの <code>tags</code> の行と同じ形です。引数は <code>readonly Article[]</code>（02章 q04 問1）、戻り値の型は <code>Pick&lt;Article, "id" | "title"&gt;[]</code> と、後ろに <code>[]</code> を付けます。<code>.map()</code> は新しい配列を返すので、<code>readonly</code> の配列から作っても、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q04-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">User の配列から、password を除いた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+export function safeUsers() {}</code></pre>
+      <p>利用者の配列を受け取り、どの利用者からも <code>password</code> を除いた新しい配列を返します。引数は <code>readonly User[]</code>、戻り値は <code>Omit&lt;User, "password"&gt;[]</code> です。</p>
+      <p>テストの <code>users</code> は <code>[{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 30 }]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>safeUsers(users)</code></dt><dd class="r"><code>[{ id: 1, name: "山田", email: "y@example.com", age: 30 }]</code></dd><dd class="c">password はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly User[]</code>、戻り値が <code>Omit&lt;User, "password"&gt;[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 safeUsers を作る。読み取り専用の User の配列 users を受け取り、User から password を除いた型の配列を返す
+export function safeUsers() {
+  // users の要素を 1 つずつ u として、id が u の id、name が u の name、email が u の email、age が u の age のオブジェクトに変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じ形です。オブジェクトの中身は問8 と同じで、4 つのプロパティを書きます。オブジェクトを <code>( )</code> で囲みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q04-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">型 UserPatch を、User の name、email、age だけを、どれも省略できるようにして作る</span>
+      <span class="q-new">新しく出てくる書き方：ユーティリティ型を重ねる <code>Partial&lt;Pick&lt;T, "a" | "b"&gt;&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 UserPatch と関数 patchUser を書く</code></pre>
+      <p>ファイルには、型も関数も書いてありません。次の 2 つを自分で書き、どちらも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>UserPatch</code>：利用者を書き換えるときの変更をまとめた型です。<code>User</code> の <code>name</code>・<code>email</code>・<code>age</code> だけを持ち、どれも省略できます。<code>Partial</code>（07章 q03）と <code>Pick</code> を組み合わせて作ります。</li>
+        <li><code>patchUser(user, patch)</code>：<code>user</code> を <code>patch</code> の値で上書きした、新しい <code>User</code> を返します。</li>
+      </ol>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserPatch</code> の型</dt><dd class="r"><code>{ name?: string; email?: string; age?: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>patchUser(user, { age: 31 })</code></dt><dd class="r"><code>{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 31 }</code></dd><dd class="c">age だけが変わる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>patchUser</code> は引数が <code>User</code> と <code>UserPatch</code>、戻り値が <code>User</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Partial&lt;Pick&lt;T, "a" | "b"&gt;&gt;</code><h4>ユーティリティ型を重ねる</h4></div>
+      <p>ユーティリティ型の <code>&lt; &gt;</code> の中には、別のユーティリティ型も書けます。内側から順に読みます。下のサンプルでは、先に <code>Pick</code> で <code>price</code> と <code>stock</code> だけを取り出します。その型を <code>Partial</code> に渡して、どのプロパティも省略できるようにします。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の型 Product を作る。code は文字列、name は文字列、price は数値、stock は数値
+type Product = { code: string; name: string; price: number; stock: number };
+// StockPatch という型を作る。Product の price と stock だけを、どれも省略できるようにした型。ほかのファイルから使えるようにする
+export type StockPatch = Partial&lt;Pick&lt;Product, "price" | "stock"&gt;&gt;;
+// 変更 patch を作り、型を StockPatch にして、stock が 5 のオブジェクトを入れる
+const patch: StockPatch = { stock: 5 };
+// 結果: patch は { stock: 5 }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>2</i>Partial</span>&lt;<span class="seg"><i>1</i>Pick&lt;Product, "price" | "stock"&gt;</span>&gt;</pre>
+        <ol>
+          <li><span>内側から先に読みます。<code>Product</code> から <code>price</code> と <code>stock</code> だけを取り出し、<code>{ price: number; stock: number }</code> になります。</span></li>
+          <li><span>1 でできた型を <code>Partial</code> に渡します。どちらも省略できる <code>{ price?: number; stock?: number }</code> になります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>{}</code> を <code>StockPatch</code> に</dt><dd class="r">入れられる</dd><dd class="c">どちらも省略できる</dd></div>
+        <div><dt><code>{ stock: 5 }</code> を <code>StockPatch</code> に</dt><dd class="r">入れられる</dd><dd class="c"></dd></div>
+        <div><dt><code>{ code: "A-01" }</code> を <code>StockPatch</code> に</dt><dd class="r">型のエラー</dd><dd class="c">code は取り出していない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>順番を入れかえた <code>Pick&lt;Partial&lt;Product&gt;, "price" | "stock"&gt;</code> も、同じ型になります。先に全部を省略できるようにしてから、2 つを取り出すからです。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// UserPatch という型を作る。User の name と email と age だけを、どれも省略できるようにした型。ほかのファイルから使えるようにする
+
+// 関数 patchUser を作る。User の user と UserPatch の patch を受け取り、User を返す
+export function patchUser() {
+  // user に patch を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は、問14 のサンプルの <code>StockPatch</code> の行と同じ形で、取り出すプロパティ名が 3 つになります。関数の中身は、02章 q03 問10 の「重ねる」と同じ <code>{ ...user, ...patch }</code> です。後ろの <code>patch</code> にあるプロパティだけが上書きされます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q04-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">型 AuthorInfo を Pick&lt;Article, "author"&gt; &amp; { articleCount: number } として作り、authorInfo でその人の記事の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+// ここに型 AuthorInfo と関数 authorInfo を書く</code></pre>
+      <p>次の 2 つを自分で書き、どちらも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>AuthorInfo</code>：<code>Pick&lt;Article, "author"&gt;</code> と <code>{ articleCount: number }</code> を <code>&amp;</code> でつないだ型です。</li>
+        <li><code>authorInfo(articles, author)</code>：記事の配列と、書いた人の名前（文字列）を受け取ります。その人の名前と、その人が書いた記事の数を持つオブジェクトを返します。</li>
+      </ol>
+      <p>テストの <code>articles</code> は 3 つの記事で、<code>author</code> は順に <code>"山田"</code>、<code>"佐藤"</code>、<code>"山田"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>authorInfo(articles, "山田")</code></dt><dd class="r"><code>{ author: "山田", articleCount: 2 }</code></dd><dd class="c">山田さんの記事は 2 つ</dd></div>
+          <div><dt><code>AuthorInfo</code> の型</dt><dd class="r"><code>{ author: string } &amp; { articleCount: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>authorInfo</code> は引数が <code>readonly Article[]</code> と <code>string</code>、戻り値が <code>AuthorInfo</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// AuthorInfo という型を作る。Article から author を取り出した型と、articleCount が数値の型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 authorInfo を作る。読み取り専用の Article の配列 articles と文字列 author を受け取り、AuthorInfo を返す
+export function authorInfo() {
+  // count を作り、articles の要素を 1 つずつ a として、a の author が author と等しいものだけを集めた新しい配列の、要素の数を入れる
+  // author と、articleCount が count のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「合わせた型」は、インターセクション型の <code>&amp;</code> です（03章 q06 問1）。型は、問題文の <code>Pick&lt;Article, "author"&gt; &amp; { articleCount: number }</code> をそのまま書きます。<code>count</code> の行は、<code>.filter()</code>（02章 q04 問7）の結果に <code>.length</code> を付けます。最後の行は、<code>author</code> を省略記法で書き、<code>articleCount: count</code> と並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q04-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">id の User を探し、Pick&lt;User, "name" | "email"&gt; を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+export function findContact() {}</code></pre>
+      <p>利用者の配列と番号（数値）を受け取ります。番号 <code>id</code> が一致する利用者を探し、その <code>name</code> と <code>email</code> だけを持つオブジェクトを返します。見つからなければ <code>undefined</code> を返します。</p>
+      <p>テストの <code>users</code> は <code>[{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 30 }]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>findContact(users, 1)</code></dt><dd class="r"><code>{ name: "山田", email: "y@example.com" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>findContact(users, 2)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">id が 2 の人はいない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly User[]</code> と <code>number</code>、戻り値が <code>Pick&lt;User, "name" | "email"&gt; | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findContact を作る。読み取り専用の User の配列 users と数値 id を受け取り、User から name と email を取り出した型のオブジェクトか undefined を返す
+export function findContact() {
+  // user を作り、users の要素を 1 つずつ u として、u の id が id と等しい最初のもの（なければ undefined）を入れる
+  // もし user が undefined と等しいなら
+  //   undefined を返す
+  // name が user の name、email が user の email のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>探すのは <code>.find()</code> です（05章 q10 問18）。戻り値の型は、<code>Pick&lt;User, "name" | "email"&gt;</code> と <code>undefined</code> を <code>|</code> でつなぎます（02章 q04 問4）。<code>undefined</code> のときを先に返しておくと、そのあとの <code>user</code> は <code>User</code> として扱えます。最後の行は問7 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q04-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">型 Credentials を Pick&lt;User, "email" | "password"&gt; として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 Credentials と関数 login を書く</code></pre>
+      <p>ログインの処理を書きます。次の 2 つを自分で書き、どちらも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>Credentials</code>：ログインのときに入力するものの型です。<code>User</code> から <code>email</code> と <code>password</code> を取り出して作ります。</li>
+        <li><code>login(users, credentials)</code>：<code>email</code> と <code>password</code> の両方が一致する利用者を探します。見つかったら、その利用者から <code>password</code> を除いたオブジェクトを返します。見つからなければ <code>undefined</code> を返します。</li>
+      </ol>
+      <p>テストの <code>users</code> は <code>[{ id: 1, name: "山田", email: "y@example.com", password: "x", age: 30 }]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>login(users, { email: "y@example.com", password: "x" })</code></dt><dd class="r"><code>{ id: 1, name: "山田", email: "y@example.com", age: 30 }</code></dd><dd class="c">password はない</dd></div>
+          <div><dt><code>login(users, { email: "y@example.com", password: "ng" })</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">password が違う</dd></div>
+          <div><dt><code>Credentials</code> の型</dt><dd class="r"><code>{ email: string; password: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>login</code> は引数が <code>readonly User[]</code> と <code>Credentials</code>、戻り値が <code>Omit&lt;User, "password"&gt; | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Credentials という型を作る。User から email と password を取り出した型。ほかのファイルから使えるようにする
+
+// 関数 login を作る。読み取り専用の User の配列 users と Credentials の credentials を受け取り、User から password を除いた型のオブジェクトか undefined を返す
+export function login() {
+  // user を作り、users の要素を 1 つずつ u として、u の email が credentials の email と等しい、かつ u の password が credentials の password と等しい最初のもの（なければ undefined）を入れる
+  // もし user が undefined と等しいなら
+  //   undefined を返す
+  // id が user の id、name が user の name、email が user の email、age が user の age のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問2 と同じ形です。関数は問16 と同じ形で、<code>.find()</code> の条件を <code>&amp;&amp;</code> でつなぎます（01章 q02 問16）。最後の行は問8 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q04-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">型 PublicArticle を、Article から body を除いて作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+// ここに型 PublicArticle と関数 toPublicArticle を書く</code></pre>
+      <p>次の 2 つを自分で書き、どちらも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>PublicArticle</code>：<code>Article</code> から本文 <code>body</code> を除いた型です。</li>
+        <li><code>toPublicArticle(article)</code>：記事を 1 つ受け取り、<code>body</code> を除いたオブジェクトを返します。</li>
+      </ol>
+      <p>テストの <code>at</code> は <code>new Date(0)</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toPublicArticle({ id: 1, title: "a", body: "x", author: "山田", publishedAt: at })</code></dt><dd class="r"><code>{ id: 1, title: "a", author: "山田", publishedAt: at }</code></dd><dd class="c">body はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toPublicArticle</code> は引数が <code>Article</code>、戻り値が <code>PublicArticle</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// PublicArticle という型を作る。Article から body を除いた型。ほかのファイルから使えるようにする
+
+// 関数 toPublicArticle を作る。Article の article を受け取り、PublicArticle を返す
+export function toPublicArticle() {
+  // id が article の id、title が article の title、author が article の author、publishedAt が article の publishedAt のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問3 と同じ形です。関数は問8 と同じ形で、<code>body</code> 以外の 4 つのプロパティを書きます。1 行が長くなったら、プロパティごとに改行してもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q04-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">型 Teaser を Pick&lt;Article, "title"&gt; &amp; { excerpt: string } として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Article = {
+  id: number;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: Date;
+};
+
+// ここに型 Teaser と関数 toTeaser を書く</code></pre>
+      <p>記事の予告に出す、題と書き出しの型と関数を書きます。どちらも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>Teaser</code>：<code>Pick&lt;Article, "title"&gt;</code> と <code>{ excerpt: string }</code> を <code>&amp;</code> でつないだ型です。</li>
+        <li><code>toTeaser(article)</code>：記事を 1 つ受け取り、<code>title</code> と <code>excerpt</code> を持つオブジェクトを返します。<code>excerpt</code> は本文 <code>body</code> の先頭 10 文字です。本文が 10 文字を超えるときは、後ろに <code>"…"</code>（3 点リーダー 1 文字）を付けます。10 文字以下なら、本文をそのまま使います。</li>
+      </ol>
+      <p>テストの <code>base</code> は、<code>title</code> が <code>"入門"</code>、<code>body</code> が <code>"TypeScriptを始めよう"</code>（15 文字）の記事です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toTeaser(base)</code></dt><dd class="r"><code>{ title: "入門", excerpt: "TypeScript…" }</code></dd><dd class="c">先頭 10 文字に … を付ける</dd></div>
+          <div><dt><code>toTeaser({ ...base, body: "短い" }).excerpt</code></dt><dd class="r"><code>"短い"</code></dd><dd class="c">10 文字以下はそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toTeaser</code> は引数が <code>Article</code>、戻り値が <code>Teaser</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Teaser という型を作る。Article から title を取り出した型と、excerpt が文字列の型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 toTeaser を作る。Article の article を受け取り、Teaser を返す
+export function toTeaser() {
+  // excerpt を作り、article の body の文字数が 10 より大きいなら、article の body の 0 文字目から 10 文字目の前までを取り出したものの後ろに "…" をつなげた文字列、そうでなければ article の body を入れる
+  // title が article の title と、excerpt のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問15 と同じ形です。<code>excerpt</code> の行は条件演算子 <code>? :</code>（01章 q01 問12）で書きます。文字数は <code>.length</code>、取り出すのは <code>.slice(0, 10)</code>、つなげるのはテンプレートリテラルです。最後の行は、<code>title: article.title</code> と、省略記法の <code>excerpt</code> を並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q04-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">型 UserRow を Pick&lt;User, "id" | "name" | "age"&gt; として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; password: string; age: number };
+
+// ここに型 UserRow と関数 toRows を書く</code></pre>
+      <p>利用者を表に並べるための型と関数を書きます。どちらも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>UserRow</code>：表の 1 行の型です。<code>User</code> から <code>id</code>・<code>name</code>・<code>age</code> を取り出して作ります。</li>
+        <li><code>toRows(users)</code>：利用者の配列を受け取り、どの利用者も <code>UserRow</code> の形にした配列を、<code>id</code> の小さい順に並べて返します。元の <code>users</code> は書き換えません。</li>
+      </ol>
+      <p>テストの <code>users</code> は、<code>id</code> が 2 の佐藤さん（41 歳）、<code>id</code> が 1 の山田さん（30 歳）の順に並んでいます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toRows(users)</code></dt><dd class="r"><code>[{ id: 1, name: "山田", age: 30 }, { id: 2, name: "佐藤", age: 41 }]</code></dd><dd class="c">id の小さい順。email と password はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toRows</code> は引数が <code>readonly User[]</code>、戻り値が <code>UserRow[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// UserRow という型を作る。User から id と name と age を取り出した型。ほかのファイルから使えるようにする
+
+// 関数 toRows を作る。読み取り専用の User の配列 users を受け取り、UserRow の配列を返す
+export function toRows() {
+  // rows を作り、users の要素を 1 つずつ u として、id が u の id、name が u の name、age が u の age のオブジェクトに変えた新しい配列を入れる
+  // rows を、id の小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問2 と同じ形で、取り出すプロパティ名が 3 つになります。<code>rows</code> の行は問12 と同じ形です。並べるのは <code>.sort()</code> で、<code>(a, b) =&gt; a.id - b.id</code> と書きます（02章 q05 の応用）。<code>rows</code> は <code>.map()</code> で作った新しい配列なので、そのまま <code>.sort()</code> しても <code>users</code> は変わりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c07-q04-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">Pick と Omit（応用問題）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  createdAt: Date;
+};
+
+export type PublicUser = unknown;
+export type UserSummary = unknown;
+export type NewUser = unknown;
+export type UserUpdate = unknown;
+
+export function toPublic() {}
+
+export function toSummary() {}
+
+export function createUser() {}
+
+export function applyUpdate() {}</code></pre>
+      <p>ドリルの <code>User</code> とは少し違い、<code>age</code> の代わりに登録日時 <code>createdAt</code>（<code>Date</code>）を持ちます。4 つの型の <code>unknown</code> を書き換え、4 つの関数を書きます。関数の引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>PublicUser</code>：<code>User</code> から <code>password</code> を除いた型です（<code>Omit</code>）。<code>toPublic(user)</code> は <code>PublicUser</code> を返します。返すオブジェクトに <code>password</code> を入れません。</li>
+        <li><code>UserSummary</code>：<code>User</code> から <code>id</code> と <code>name</code> だけを取り出した型です（<code>Pick</code>）。<code>toSummary(user)</code> は <code>UserSummary</code> を返します。</li>
+        <li><code>NewUser</code>：<code>User</code> から <code>id</code> と <code>createdAt</code> を除いた型です。<code>createUser(input, id, createdAt)</code> は、<code>NewUser</code> に <code>id</code> と <code>createdAt</code> を足した <code>User</code> を返します。</li>
+        <li><code>UserUpdate</code>：<code>User</code> の <code>name</code> と <code>email</code> だけを、どちらも省略できるようにした型です（<code>Partial</code> と <code>Pick</code>）。<code>applyUpdate(user, update)</code> は、<code>user</code> を <code>update</code> で上書きした新しい <code>User</code> を返します。</li>
+      </ol>
+      <p>テストの <code>user()</code> は <code>{ id: 1, name: "山田", email: "y@example.com", password: "secret", createdAt }</code> を返します。<code>createdAt</code> は <code>new Date("2026-12-01T09:00:00Z")</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>PublicUser</code> の型</dt><dd class="r"><code>Omit&lt;User, "password"&gt;</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>UserSummary</code> の型</dt><dd class="r"><code>Pick&lt;User, "id" | "name"&gt;</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>NewUser</code> の型</dt><dd class="r"><code>{ name: string; email: string; password: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>UserUpdate</code> の型</dt><dd class="r"><code>{ name?: string; email?: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>toPublic(user())</code></dt><dd class="r"><code>{ id: 1, name: "山田", email: "y@example.com", createdAt }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>"password" in toPublic(user())</code></dt><dd class="r"><code>false</code></dd><dd class="c">password を入れていない</dd></div>
+          <div><dt><code>toSummary(user())</code></dt><dd class="r"><code>{ id: 1, name: "山田" }</code></dd><dd class="c">ほかのプロパティはない</dd></div>
+          <div><dt><code>createUser({ name: "山田", email: "y@example.com", password: "secret" }, 1, createdAt)</code></dt><dd class="r"><code>user()</code> と同じ</dd><dd class="c"></dd></div>
+          <div><dt><code>applyUpdate(user(), { email: "new@example.com" })</code></dt><dd class="r"><code>user()</code> の <code>email</code> だけが <code>"new@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>applyUpdate(user(), {})</code></dt><dd class="r"><code>user()</code> と同じ</dd><dd class="c">何も変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toPublic</code> と <code>toSummary</code> は引数が <code>User</code>、戻り値がそれぞれ <code>PublicUser</code> と <code>UserSummary</code> であることも確かめます。<code>createUser</code> は引数が <code>NewUser</code>・<code>number</code>・<code>Date</code>、<code>applyUpdate</code> は引数が <code>User</code> と <code>UserUpdate</code> で、どちらも戻り値が <code>User</code> であることを確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// PublicUser という型を作る。User から password を除いた型。ほかのファイルから使えるようにする
+export type PublicUser = unknown;
+// UserSummary という型を作る。User から id と name を取り出した型。ほかのファイルから使えるようにする
+export type UserSummary = unknown;
+// NewUser という型を作る。User から id と createdAt を除いた型。ほかのファイルから使えるようにする
+export type NewUser = unknown;
+// UserUpdate という型を作る。User の name と email だけを、どちらも省略できるようにした型。ほかのファイルから使えるようにする
+export type UserUpdate = unknown;
+
+// 関数 toPublic を作る。User の user を受け取り、PublicUser を返す
+export function toPublic() {
+  // id が user の id、name が user の name、email が user の email、createdAt が user の createdAt のオブジェクトを返す
+}
+
+// 関数 toSummary を作る。User の user を受け取り、UserSummary を返す
+export function toSummary() {
+  // id が user の id、name が user の name のオブジェクトを返す
+}
+
+// 関数 createUser を作る。NewUser の input と、数値 id と、Date の createdAt を受け取り、User を返す
+export function createUser() {
+  // input を広げて、id を id、createdAt を createdAt にしたものを返す
+}
+
+// 関数 applyUpdate を作る。User の user と UserUpdate の update を受け取り、User を返す
+export function applyUpdate() {
+  // user に update を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>4 つの型は、<code>=</code> の右の <code>unknown</code> を書き換えます。<code>PublicUser</code> は問3、<code>UserSummary</code> は問2、<code>NewUser</code> は問6、<code>UserUpdate</code> は問14 と同じ形です。<code>toPublic</code> は問8、<code>toSummary</code> は問7 と同じ形で、どちらも必要なプロパティだけを書いた新しいオブジェクトを返します。<code>createUser</code> は問11 と同じ形で、引数の名前を <code>id</code> と <code>createdAt</code> にすれば、どちらも省略記法で書けます。<code>applyUpdate</code> は問14 の <code>patchUser</code> と同じ形です。</p></details>
+    </div>
+  </section>
+</section>

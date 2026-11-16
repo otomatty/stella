@@ -1,0 +1,803 @@
+<section class="sec" id="c01-q05">
+  <div class="sec-h">
+    <span class="eyebrow">01章 値・型・変数</span>
+    <h2>q05 string型</h2>
+    <p>文字列を扱う関数を 20 個書きます。この番号から、関数の引数と戻り値の型注釈も自分で書きます。文字列には、文字数を数える、一部を取り出す、探す、置き換えるといったメソッドがあります。文字列を組み立てるときは、<code>+</code> を使わずにテンプレートリテラルで書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c01-q05-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">文字数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lengthOf() {}</code></pre>
+      <p>文字列の文字数を返します。引数は文字列（<code>string</code>）1 つ、戻り値は数値（<code>number</code>）です。引数の名前と型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lengthOf("Agora")</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lengthOf("")</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の文字列は 0 文字</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function lengthOf(text: string): number {
+  // text の文字数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字数は <code>.length</code> です（q02 問13）。<code>.length</code> にはかっこを付けません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c01-q05-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">英字を大文字にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toUpper() {}</code></pre>
+      <p>文字列の英字を大文字にして返します。数字はそのままです。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toUpper("abc")</code></dt><dd class="r"><code>"ABC"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toUpper("Type1")</code></dt><dd class="r"><code>"TYPE1"</code></dd><dd class="c">数字は変わらない</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function toUpper(text: string): string {
+  // text の英字を大文字にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>大文字にするのは <code>.toUpperCase()</code> です（q02 問18）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c01-q05-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">最初の 3 文字を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstThree() {}</code></pre>
+      <p>文字列の先頭から 3 文字を取り出して返します。3 文字より短いときは、あるだけを返します。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstThree("TypeScript")</code></dt><dd class="r"><code>"Typ"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>firstThree("ab")</code></dt><dd class="r"><code>"ab"</code></dd><dd class="c">2 文字しかない</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function firstThree(text: string): string {
+  // text の 0 文字目から 3 文字目の前までを取り出して返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>一部を取り出すのは <code>.slice(始まり, 終わり)</code> です（q02 問10）。終わりの位置の文字は含みません。文字数が足りなくても、エラーにならずにあるだけを返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c01-q05-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">最後の 1 文字を返す</span>
+      <span class="q-new">新しく出てくる書き方：マイナスの数 <code>-3</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lastChar() {}</code></pre>
+      <p>文字列の最後の 1 文字を返します。空の文字列なら、空の文字列を返します。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastChar("hello")</code></dt><dd class="r"><code>"o"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lastChar("")</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">-3</code><h4>マイナスの数と、後ろから数える位置</h4></div>
+      <p>数の前に <code>-</code> を付けると、マイナスの数になります。<code>.slice()</code> にマイナスの数を渡すと、後ろから数えた位置になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"ABC-123" を入れる
+const code = "ABC-123";
+// 番号 num を作り、code の後ろから 3 文字を取り出したものを入れる
+const num = code.slice(-3);
+// 結果: num は "123"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"ABC-123".slice(-3)</code></dt><dd class="r"><code>"123"</code></dd><dd class="c">後ろから 3 文字</dd></div>
+        <div><dt><code>"ABC-123".slice(-2)</code></dt><dd class="r"><code>"23"</code></dd><dd class="c">後ろから 2 文字</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>"ABC-123".slice(-3)</code> の <code>-3</code> は引き算ではありません。「後ろから 3 文字目」を表す数です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function lastChar(text: string): string {
+  // text の後ろから 1 文字を取り出して返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>num</code> の行と同じ形で、取り出す文字数だけが違います。<code>.slice()</code> は、空の文字列に使っても空の文字列を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c01-q05-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">text に word が含まれていれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasWord() {}</code></pre>
+      <p>文字列 <code>text</code> の中に、文字列 <code>word</code> が含まれていれば <code>true</code>、なければ <code>false</code> を返します。引数は文字列 2 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasWord("I like TypeScript", "Type")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasWord("I like TypeScript", "Java")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function hasWord(text: string, word: string): boolean {
+  // text に word が含まれるか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「含まれるか」は <code>.includes()</code> です（q01 問16）。結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c01-q05-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">「#」で始まっていれば true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.startsWith()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isHashtag() {}</code></pre>
+      <p>文字列が <code>"#"</code> で始まっていれば <code>true</code> を返します。途中や最後に <code>"#"</code> があっても、先頭でなければ <code>false</code> です。引数は文字列 1 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isHashtag("#agora")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isHashtag("agora#")</code></dt><dd class="r"><code>false</code></dd><dd class="c"># が最後にある</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.startsWith()</code><h4>決まった文字で始まるかを調べる</h4></div>
+      <p>文字列が、かっこの中の文字列で始まっていれば <code>true</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文番号 orderId を作り、"ORD-2025-001" を入れる
+const orderId = "ORD-2025-001";
+// isOrder を作り、orderId が "ORD-" で始まるか（true か false）を入れる
+const isOrder = orderId.startsWith("ORD-");
+// 結果: isOrder は true</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"東京都港区".startsWith("東京")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        <div><dt><code>"東京都港区".startsWith("港区")</code></dt><dd class="r"><code>false</code></dd><dd class="c">含まれていても、先頭でなければ false</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isHashtag(text: string): boolean {
+  // text が "#" で始まるか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>isOrder</code> の行と同じ形です。調べる文字列が <code>"#"</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c01-q05-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">ファイル名が「.png」で終わっていれば true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.endsWith()</code> <code>.toLowerCase()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPng() {}</code></pre>
+      <p>ファイル名が <code>".png"</code> で終わっていれば <code>true</code> を返します。大文字の <code>".PNG"</code> で終わっていても <code>true</code> です。引数は文字列 1 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPng("photo.png")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPng("photo.PNG")</code></dt><dd class="r"><code>true</code></dd><dd class="c">大文字でも true</dd></div>
+          <div><dt><code>isPng("photo.jpg")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.endsWith()</code><h4>決まった文字で終わるかを調べる</h4></div>
+      <p><code>.startsWith()</code> の反対で、最後が同じかを調べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// メールアドレス email を作り、"sato@example.co.jp" を入れる
+const email = "sato@example.co.jp";
+// isJapan を作り、email が ".jp" で終わるか（true か false）を入れる
+const isJapan = email.endsWith(".jp");
+// 結果: isJapan は true</code></pre>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.toLowerCase()</code><h4>英字を小文字にする</h4></div>
+      <p><code>.toUpperCase()</code>（q02 問18）の反対です。英字だけが変わり、数字や記号はそのままです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 部署コード dept を作り、"Sales-01" を小文字にしたものを入れる
+const dept = "Sales-01".toLowerCase();
+// 結果: dept は "sales-01"</code></pre>
+      </div>
+      <p>メソッドの結果に、続けてメソッドを呼べます。左から順に実行されます。</p>
+      <dl class="eg">
+        <div><dt><code>"abc".toUpperCase().includes("B")</code></dt><dd class="r"><code>true</code></dd><dd class="c">先に "ABC" になり、そこから "B" を探す</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isPng(fileName: string): boolean {
+  // fileName を小文字にしたものが ".png" で終わるか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>先に小文字にしてから調べると、<code>".PNG"</code> も <code>".png"</code> と同じに扱えます。<code>.toLowerCase()</code> の結果に、続けて <code>.endsWith()</code> を呼びます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c01-q05-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">番号を 4 桁になるように前を 0 で埋める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function padId() {}</code></pre>
+      <p>番号（数値）を受け取り、4 桁の文字列にして返します。足りない桁は前に <code>0</code> を付けます。引数は数値（<code>number</code>）1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>padId(7)</code></dt><dd class="r"><code>"0007"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>padId(1234)</code></dt><dd class="r"><code>"1234"</code></dd><dd class="c">もう 4 桁</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function padId(id: number): string {
+  // id を文字列にして前を "0" で埋め、4 文字にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>q01 問20 のヒントの <code>pad</code> と同じ形で、文字数だけが違います。文字列にするのは <code>String()</code>、前を埋めるのは <code>.padStart()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c01-q05-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">前後の空白を取り除き、英字を小文字にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>.trim()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function normalize() {}</code></pre>
+      <p>文字列の前と後ろにある空白を取り除きます。そのうえで、英字を小文字にして返します。入力欄に入った文字を、比べやすい形にそろえるときに使う処理です。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>normalize("  Hello ")</code></dt><dd class="r"><code>"hello"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>normalize("ABC")</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c">空白がなくても小文字にする</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.trim()</code><h4>前後の空白を取り除く</h4></div>
+      <p>先頭と最後にある空白を取り除いた文字列を返します。間にある空白は残ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 入力 input を作り、"  sato@example.com  " を入れる
+const input = "  sato@example.com  ";
+// email を作り、input の前後の空白を取り除いたものを入れる
+const email = input.trim();
+// 結果: email は "sato@example.com"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"  東京 都  ".trim()</code></dt><dd class="r"><code>"東京 都"</code></dd><dd class="c">間の空白は残る</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>文字列のメソッドは、元の文字列を変えません。<code>input.trim();</code> と書くだけでは <code>input</code> は空白つきのままです。結果を変数に入れるか、そのまま返します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function normalize(text: string): string {
+  // text の前後の空白を取り除き、小文字にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.trim()</code> の結果に、続けて <code>.toLowerCase()</code> を呼びます。問7 のヒントと同じく、メソッドを左から順につなげます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c01-q05-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">半角スペースをすべて「_」に置き換える</span>
+      <span class="q-new">新しく出てくる書き方：<code>.replaceAll()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function snakeSpaces() {}</code></pre>
+      <p>文字列の中の半角スペース <code>" "</code> を、すべて <code>"_"</code> に置き換えて返します。スペースがなければ、そのまま返します。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>snakeSpaces("a b c")</code></dt><dd class="r"><code>"a_b_c"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>snakeSpaces("abc")</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c">スペースがない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.replaceAll()</code><h4>すべて置き換える</h4></div>
+      <p>1 つ目の文字列を、すべて 2 つ目の文字列に置き換えた文字列を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 電話番号 phone を作り、"03-1234-5678" を入れる
+const phone = "03-1234-5678";
+// digits を作り、phone の "-" をすべて "" に置き換えたものを入れる
+const digits = phone.replaceAll("-", "");
+// 結果: digits は "0312345678"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>phone</span>.replaceAll(<span class="seg"><i>2</i>"-"</span>, <span class="seg"><i>3</i>""</span>)</pre>
+        <ol>
+          <li><span>置き換える前の文字列です。</span></li>
+          <li><span>探す文字列です。</span></li>
+          <li><span>代わりに入れる文字列です。<code>""</code> なら、取り除くことになります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>"a,b,c".replaceAll(",", " / ")</code></dt><dd class="r"><code>"a / b / c"</code></dd><dd class="c"></dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function snakeSpaces(text: string): string {
+  // text の " " をすべて "_" に置き換えたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のサンプルの <code>digits</code> の行と同じ形です。探す文字列が <code>" "</code>、代わりに入れる文字列が <code>"_"</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c01-q05-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">「@」が何文字目にあるかを返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.indexOf()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function atPosition() {}</code></pre>
+      <p>メールアドレスの中で、<code>"@"</code> が何文字目にあるかを返します。位置は 0 から数えます。<code>"@"</code> がなければ <code>-1</code> を返します。引数は文字列 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>atPosition("taro@example.com")</code></dt><dd class="r"><code>4</code></dd><dd class="c">t が 0、a が 1、r が 2、o が 3、@ が 4</dd></div>
+          <div><dt><code>atPosition("example.com")</code></dt><dd class="r"><code>-1</code></dd><dd class="c">@ がない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.indexOf()</code><h4>文字列が何番目にあるかを調べる</h4></div>
+      <p>かっこの中の文字列が最初に見つかった位置を返します。位置は 0 から数えます。見つからないときは <code>-1</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"SKU-0042" を入れる
+const code = "SKU-0042";
+// 位置 pos を作り、code の中で "-" がある位置（0 から数える）を入れる
+const pos = code.indexOf("-");
+// 結果: pos は 3</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="chars" role="img" aria-label="SKU-0042 の各文字の位置。S が 0、- が 3">
+          <span class="ch"><b>S</b>0</span>
+          <span class="ch"><b>K</b>1</span>
+          <span class="ch"><b>U</b>2</span>
+          <span class="ch"><b>-</b>3</span>
+          <span class="ch"><b>0</b>4</span>
+          <span class="ch"><b>0</b>5</span>
+          <span class="ch"><b>4</b>6</span>
+          <span class="ch"><b>2</b>7</span>
+        </div>
+        <figcaption>文字の下の数が位置です。先頭は 0 です。<code>"-"</code> は 3 の位置にあります。</figcaption>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>"SKU-0042".indexOf("0")</code></dt><dd class="r"><code>4</code></dd><dd class="c">2 つあるときは、最初の位置</dd></div>
+        <div><dt><code>"SKU-0042".indexOf("#")</code></dt><dd class="r"><code>-1</code></dd><dd class="c">見つからない</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function atPosition(email: string): number {
+  // email の中で "@" がある位置（0 から数える）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>pos</code> の行と同じ形です。<code>.indexOf()</code> は見つからないときに <code>-1</code> を返すので、そのまま返せば「なければ -1」も満たします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c01-q05-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">最初の 1 文字だけを大文字にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function capitalize() {}</code></pre>
+      <p>先頭の 1 文字だけを大文字にして、残りはそのまま返します。空の文字列なら、空の文字列を返します。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>capitalize("hello")</code></dt><dd class="r"><code>"Hello"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>capitalize("a")</code></dt><dd class="r"><code>"A"</code></dd><dd class="c">1 文字だけ</dd></div>
+          <div><dt><code>capitalize("")</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function capitalize(text: string): string {
+  // 先頭 head を作り、text の 0 文字目から 1 文字目の前までを取り出して大文字にしたものを入れる
+  // 残り rest を作り、text の 1 文字目から後ろを取り出したものを入れる
+  // head と rest を埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.slice(0, 1)</code> は先頭の 1 文字、<code>.slice(1)</code> は 1 文字目から最後までです。空の文字列でも <code>.slice()</code> は空の文字列を返します。<code>text[0]</code> を使うと、型の確認で「<code>undefined</code> かもしれない」というエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c01-q05-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">text の前後に mark を付ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function surround() {}</code></pre>
+      <p>文字列 <code>text</code> の前と後ろに、文字列 <code>mark</code> を付けて返します。<code>mark</code> が空の文字列なら、<code>text</code> のままです。引数は文字列 2 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>surround("注意", "**")</code></dt><dd class="r"><code>"**注意**"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>surround("x", "")</code></dt><dd class="r"><code>"x"</code></dd><dd class="c">mark が空</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function surround(text: string, mark: string): string {
+  // mark、text、mark を埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「埋め込んだ文字列」はテンプレートリテラルで作ります（q01 問3）。<code>${ }</code> を 3 つ並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c01-q05-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">前から読んでも後ろから読んでも同じなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPalindrome() {}</code></pre>
+      <p>文字列を逆の順番に並べ替えても元と同じなら <code>true</code> を返します。このような文字列を回文と呼びます。日本語でも同じです。引数は文字列 1 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPalindrome("level")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPalindrome("しんぶんし")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPalindrome("agora")</code></dt><dd class="r"><code>false</code></dd><dd class="c">逆にすると "aroga"</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isPalindrome(text: string): boolean {
+  // 逆順 reversed を入れ直せる変数として作り、空の文字列を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   c の後ろに reversed をつなげた文字列を、reversed に入れ直す
+  // text と reversed が等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>逆順を作る部分は、q01 問10 と同じ形です。「等しいか」は <code>===</code> で、結果がそのまま <code>true</code> か <code>false</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c01-q05-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">電話番号の真ん中の 4 桁を「****」にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function maskPhone() {}</code></pre>
+      <p><code>"090-1234-5678"</code> の形の電話番号を受け取ります。真ん中の 4 桁を <code>"****"</code> に変えて返します。電話番号はいつもこの形（3 桁・4 桁・4 桁を <code>-</code> でつないだもの）です。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <figure class="fig">
+        <div class="chars" role="img" aria-label="090-1234-5678 の各文字の位置。真ん中の 4 桁は 4 から 7">
+          <span class="ch"><b>0</b>0</span>
+          <span class="ch"><b>9</b>1</span>
+          <span class="ch"><b>0</b>2</span>
+          <span class="ch"><b>-</b>3</span>
+          <span class="ch"><b>1</b>4</span>
+          <span class="ch"><b>2</b>5</span>
+          <span class="ch"><b>3</b>6</span>
+          <span class="ch"><b>4</b>7</span>
+          <span class="ch"><b>-</b>8</span>
+          <span class="ch"><b>5</b>9</span>
+          <span class="ch"><b>6</b>10</span>
+          <span class="ch"><b>7</b>11</span>
+          <span class="ch"><b>8</b>12</span>
+        </div>
+        <figcaption>文字の下の数が位置です。真ん中の 4 桁は、位置 4 から 7 にあります。</figcaption>
+      </figure>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>maskPhone("090-1234-5678")</code></dt><dd class="r"><code>"090-****-5678"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>maskPhone("080-0000-1111")</code></dt><dd class="r"><code>"080-****-1111"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function maskPhone(phone: string): string {
+  // phone の 0 文字目から 4 文字目の前まで、"****"、8 文字目から後ろを埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「0 文字目から 4 文字目の前まで」は <code>.slice(0, 4)</code>、「8 文字目から後ろ」は <code>.slice(8)</code> です。それぞれを、テンプレートリテラルの <code>${ }</code> に入れます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c01-q05-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">ファイル名の拡張子を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.lastIndexOf()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function extension() {}</code></pre>
+      <p>ファイル名の拡張子を返します。拡張子は、最後の <code>"."</code> より後ろの部分です。<code>"."</code> がなければ空の文字列を返します。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>extension("photo.jpeg")</code></dt><dd class="r"><code>"jpeg"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>extension("archive.tar.gz")</code></dt><dd class="r"><code>"gz"</code></dd><dd class="c">最後の "." より後ろ</dd></div>
+          <div><dt><code>extension("README")</code></dt><dd class="r"><code>""</code></dd><dd class="c">"." がない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.lastIndexOf()</code><h4>最後に見つかった位置を調べる</h4></div>
+      <p><code>.indexOf()</code>（問11）は最初に見つかった位置、<code>.lastIndexOf()</code> は最後に見つかった位置を返します。見つからないときは、どちらも <code>-1</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 住所 address を作り、"東京都港区1-2-3" を入れる
+const address = "東京都港区1-2-3";
+// 位置 last を作り、address の中で最後の "-" がある位置を入れる
+const last = address.lastIndexOf("-");
+// 結果: last は 8</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"東京都港区1-2-3".indexOf("-")</code></dt><dd class="r"><code>6</code></dd><dd class="c">最初の "-"</dd></div>
+        <div><dt><code>"東京都港区1-2-3".lastIndexOf("-")</code></dt><dd class="r"><code>8</code></dd><dd class="c">最後の "-"</dd></div>
+        <div><dt><code>"東京都港区1-2-3".lastIndexOf("#")</code></dt><dd class="r"><code>-1</code></dd><dd class="c">見つからない</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function extension(fileName: string): string {
+  // 位置 dot を作り、fileName の中で最後の "." がある位置を入れる
+  // dot が -1 と等しいなら空の文字列、そうでなければ fileName の dot + 1 文字目から後ろを取り出したものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問16 のサンプルの <code>last</code> の行と同じ形です。2 行目は条件演算子 <code>? :</code>（q01 問12）で書きます。<code>"."</code> の 1 つ後ろから取り出すので、<code>.slice()</code> には <code>dot + 1</code> を渡します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c01-q05-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">時と分を「09:05」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function clockText() {}</code></pre>
+      <p>時と分の数値を受け取り、<code>"09:05"</code> の形の文字列にして返します。どちらも 2 桁で、1 桁のときは前に 0 を付けます。引数は数値 2 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>clockText(9, 5)</code></dt><dd class="r"><code>"09:05"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>clockText(23, 59)</code></dt><dd class="r"><code>"23:59"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function clockText(hour: number, minute: number): string {
+  // 時 h を作り、hour を文字列にして前を "0" で埋め、2 文字にしたものを入れる
+  // 分 m を作り、minute を文字列にして前を "0" で埋め、2 文字にしたものを入れる
+  // h と m を ":" でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目と 2 行目は、問8 と同じく <code>String()</code> と <code>.padStart()</code> です。最後の行はテンプレートリテラルで作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c01-q05-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">英字の母音を取り除く</span>
+      <span class="q-new">新しく出てくる書き方：<code>.replace()</code> 正規表現 <code>/…/g</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function removeVowels() {}</code></pre>
+      <p>英字の文字列から、母音（a、e、i、o、u）をすべて取り除いて返します。<code>.replaceAll()</code> を 5 回使うか、正規表現 <code>/[aeiou]/g</code> と <code>.replace()</code> を使います。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>removeVowels("typescript")</code></dt><dd class="r"><code>"typscrpt"</code></dd><dd class="c">e と i を取り除く</dd></div>
+          <div><dt><code>removeVowels("aeiou")</code></dt><dd class="r"><code>""</code></dd><dd class="c">全部が母音</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.replace()</code><code class="tok">/[0-9]/g</code><h4>置き換える、正規表現で探す</h4></div>
+      <p><code>.replace()</code> に文字列を渡すと、最初に見つかった 1 つだけを置き換えます。正規表現を渡すと、決まった種類の文字をまとめて探して置き換えられます。</p>
+      <p>正規表現は 09章の発展問題でくわしく扱います。ここでは、この形をまねて書ければ十分です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"A-1-B-2" を入れる
+const code = "A-1-B-2";
+// first を作り、code の最初の "-" だけを "" に置き換えたものを入れる
+const first = code.replace("-", "");
+// noDigits を作り、code の中の数字をすべて "" に置き換えたものを入れる
+const noDigits = code.replace(/[0-9]/g, "");
+// 結果: first は "A1-B-2"、noDigits は "A--B-"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>code.replace(<span class="seg"><i>1</i>/[0-9]/</span><span class="seg"><i>2</i>g</span>, <span class="seg"><i>3</i>""</span>)</pre>
+        <ol>
+          <li><span><code>/</code> と <code>/</code> で囲んだものが正規表現です。<code>[ ]</code> は「この中のどれか 1 文字」で、<code>[0-9]</code> は数字 1 文字です。</span></li>
+          <li><span><code>g</code> を付けると、1 つ目だけでなく、見つかったものをすべて置き換えます。</span></li>
+          <li><span>代わりに入れる文字列です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>"A-1-B-2".replace("-", "")</code></dt><dd class="r"><code>"A1-B-2"</code></dd><dd class="c">最初の 1 つだけ</dd></div>
+        <div><dt><code>"A-1-B-2".replace(/[0-9]/g, "")</code></dt><dd class="r"><code>"A--B-"</code></dd><dd class="c">数字をすべて</dd></div>
+      </dl>
+      <p class="more">09章 発展問題 e02（正規表現）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function removeVowels(text: string): string {
+  // text の中の母音（a、e、i、o、u）をすべて "" に置き換えたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問18 のサンプルの <code>noDigits</code> の行と同じ形です。<code>[ ]</code> の中を、数字から母音の 5 文字に変えます。<code>.replaceAll()</code> を 5 回続けて呼んでもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c01-q05-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">index 番目の文字を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.charAt()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function charAtOrEmpty() {}</code></pre>
+      <p>文字列の <code>index</code> 番目（0 から数える）の文字を返します。文字列より後ろの位置なら、空の文字列を返します。<code>.charAt()</code> を使います。引数は文字列と数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>charAtOrEmpty("abc", 1)</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">a が 0、b が 1</dd></div>
+          <div><dt><code>charAtOrEmpty("abc", 5)</code></dt><dd class="r"><code>""</code></dd><dd class="c">5 番目はない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.charAt()</code><h4>決まった位置の 1 文字を取り出す</h4></div>
+      <p>かっこの中の位置にある 1 文字を返します。位置は 0 から数えます。その位置に文字がないときは、空の文字列 <code>""</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 部屋番号 room を作り、"B203" を入れる
+const room = "B203";
+// 建物 building を作り、room の 0 番目の文字を入れる
+const building = room.charAt(0);
+// 結果: building は "B"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"B203".charAt(1)</code></dt><dd class="r"><code>"2"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>"B203".charAt(9)</code></dt><dd class="r"><code>""</code></dd><dd class="c">文字がない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>q03 の添字 <code>room[0]</code> とほぼ同じです。違いは、文字がない位置のときです。添字は <code>undefined</code> になり、<code>.charAt()</code> は空の文字列になります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function charAtOrEmpty(text: string, index: number): string {
+  // text の index 番目の文字を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問19 のサンプルの <code>building</code> の行と同じ形です。<code>.charAt()</code> は文字がない位置で空の文字列を返すので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c01-q05-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">大文字と小文字の違いを無視して比べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sameIgnoringCase() {}</code></pre>
+      <p>2 つの文字列を比べます。大文字と小文字の違いだけなら、同じとみなして <code>true</code> を返します。引数は文字列 2 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sameIgnoringCase("Agora", "AGORA")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sameIgnoringCase("Agora", "Agola")</code></dt><dd class="r"><code>false</code></dd><dd class="c">r と l が違う</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function sameIgnoringCase(a: string, b: string): boolean {
+  // a を小文字にしたものと、b を小文字にしたものが等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>両方を <code>.toLowerCase()</code>（問7）でそろえてから、<code>===</code> で比べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c01-q05-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">URL の形・文字数の切りつめ・メールアドレスを隠す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function slugify() {}
+
+export function truncate() {}
+
+export function maskEmail() {}</code></pre>
+      <p>3 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>slugify</code>：タイトルを URL に使える形にします。前後の空白を取り除き、英字を小文字にします。間の空白は、いくつ続いていてもハイフン 1 つにします。空白の並びは正規表現 <code>/\s+/g</code> で表せます（<code>\s</code> は空白 1 文字、<code>+</code> は 1 つ以上続くこと）。</li>
+        <li><code>truncate</code>：<code>text</code> が <code>max</code> 文字以下なら、そのまま返します。<code>max</code> 文字を超えるなら、末尾を <code>"…"</code> にして、全体がちょうど <code>max</code> 文字になるように切ります。<code>max</code> が 1 より小さいときは <code>Error</code> を投げます。</li>
+        <li><code>maskEmail</code>：メールアドレスの <code>"@"</code> より前を、先頭の 1 文字と <code>"***"</code> に置き換えます。<code>"@"</code> がないときと、<code>"@"</code> より前が空のときは <code>Error</code> を投げます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>slugify("Hello World")</code></dt><dd class="r"><code>"hello-world"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>slugify("  Hello TypeScript   World ")</code></dt><dd class="r"><code>"hello-typescript-world"</code></dd><dd class="c">空白が続いてもハイフン 1 つ</dd></div>
+          <div><dt><code>slugify("agora")</code></dt><dd class="r"><code>"agora"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>truncate("TypeScript入門", 6)</code></dt><dd class="r"><code>"TypeS…"</code></dd><dd class="c">5 文字と "…" で 6 文字</dd></div>
+          <div><dt><code>truncate("abcdefg", 6)</code></dt><dd class="r"><code>"abcde…"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>truncate("短い文", 10)</code></dt><dd class="r"><code>"短い文"</code></dd><dd class="c">max 以下はそのまま</dd></div>
+          <div><dt><code>truncate("abcdef", 6)</code></dt><dd class="r"><code>"abcdef"</code></dd><dd class="c">ちょうど max 文字もそのまま</dd></div>
+          <div><dt><code>truncate("abc", 0)</code></dt><dd class="r"><code>Error</code></dd><dd class="c">Error を投げる</dd></div>
+          <div><dt><code>maskEmail("taro@example.com")</code></dt><dd class="r"><code>"t***@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>maskEmail("a@b.jp")</code></dt><dd class="r"><code>"a***@b.jp"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>maskEmail("example.com")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">"@" がない</dd></div>
+          <div><dt><code>maskEmail("@example.com")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">"@" より前が空</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function slugify(title: string): string {
+  // title の前後の空白を取り除き、小文字にし、空白の並びをすべて "-" に置き換えたものを返す
+}
+
+export function truncate(text: string, max: number): string {
+  // もし max が 1 より小さいなら
+  //   Error を投げる
+  // もし text の文字数が max 以下なら
+  //   text を返す
+  // text の 0 文字目から max - 1 文字目の前までと、"…" を埋め込んだ文字列を返す
+}
+
+export function maskEmail(email: string): string {
+  // 位置 at を作り、email の中で "@" がある位置を入れる
+  // もし at が 0 以下なら
+  //   Error を投げる
+  // email の先頭 1 文字、"***"、at 文字目から後ろを埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>slugify</code> は、<code>.trim()</code>・<code>.toLowerCase()</code>・<code>.replace(/\s+/g, "-")</code> を左から順につなげます。<code>truncate</code> の「Error を投げる」は <code>throw new Error("…")</code> です（q04）。<code>"…"</code> も 1 文字なので、残す文字数は <code>max - 1</code> です。<code>maskEmail</code> の <code>at</code> は、<code>"@"</code> がなければ <code>-1</code>、先頭にあれば <code>0</code> になります。どちらも「0 以下」で見分けられます。</p></details>
+    </div>
+  </section>
+</section>

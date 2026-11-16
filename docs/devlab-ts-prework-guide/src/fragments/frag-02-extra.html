@@ -1,0 +1,216 @@
+<section class="sec" id="c02-extra">
+  <div class="sec-h">
+    <span class="eyebrow">02章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。e01 には「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c02-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">入れ子のオブジェクトと readonly</span>
+      <span class="q-new">新しく出てくる書き方：入れ子のオブジェクトの <code>readonly</code>、入れ子のオブジェクトをスプレッド構文で作り直す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Config = unknown;
+
+export function addOrigin() {}
+
+export function setMaxUsers() {}</code></pre>
+      <p>アプリの設定を表す型 <code>Config</code> と、設定を変えた新しい <code>Config</code> を返す関数を 2 つ書きます。関数の引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>Config</code>：次の 3 つのプロパティを持つ型です。どのプロパティも、中まで読み取り専用にします。
+          <code>name</code> は文字列です。<code>allowedOrigins</code> は文字列の配列で、配列そのものも読み取り専用です。<code>limits</code> は <code>maxUsers</code>（数値）と <code>maxRooms</code>（数値）を持つオブジェクトで、中のプロパティも読み取り専用です。</li>
+        <li><code>addOrigin(config, origin)</code>：<code>allowedOrigins</code> の最後に <code>origin</code> を加えた、新しい <code>Config</code> を返します。<code>origin</code> がもう含まれているときは、受け取った <code>config</code> をそのまま返します。</li>
+        <li><code>setMaxUsers(config, maxUsers)</code>：<code>limits.maxUsers</code> だけを変えた、新しい <code>Config</code> を返します。中の <code>limits</code> も、スプレッド構文で作り直します。</li>
+      </ol>
+      <p>説明すること：<code>const</code> で宣言した変数と、<code>readonly</code> のプロパティは、それぞれ何を変えられなくするのか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の <code>config</code> を使います。</p>
+        <pre><code class="language-typescript">{ name: "agora", allowedOrigins: ["https://example.com"], limits: { maxUsers: 50, maxRooms: 5 } }</code></pre>
+        <dl class="eg">
+          <div><dt><code>addOrigin(config, "https://example.org").allowedOrigins</code></dt><dd class="r"><code>["https://example.com", "https://example.org"]</code></dd><dd class="c">最後に加わる</dd></div>
+          <div><dt><code>addOrigin(config, "https://example.com")</code></dt><dd class="r"><code>config</code></dd><dd class="c">もう含まれているので、受け取ったオブジェクトそのもの</dd></div>
+          <div><dt><code>setMaxUsers(config, 100)</code></dt><dd class="r"><code>{ name: "agora", allowedOrigins: ["https://example.com"], limits: { maxUsers: 100, maxRooms: 5 } }</code></dd><dd class="c">maxUsers だけが変わる</dd></div>
+        </dl>
+        <ul>
+          <li>どちらの関数も、呼んだあとで元の <code>config</code> が変わっていないことを確かめます。</li>
+          <li><code>setMaxUsers</code> が返す <code>limits</code> が、元の <code>config.limits</code> とは別のオブジェクトであることを確かめます。</li>
+          <li><code>config.allowedOrigins</code> を <code>string[]</code> の変数に入れる行と、<code>config.limits.maxUsers</code> に値を入れる行が、型のエラーになることを確かめます。テストのファイルでは、この 2 行に <code>@ts-expect-error</code>（次の行が型のエラーになるはず、という印）が付いています。<code>Config</code> が中まで読み取り専用になっていないと、エラーが起きないので、型の確認で「Unused '@ts-expect-error' directive」というエラーになります。</li>
+        </ul>
+        <p class="memo"><b>型</b><code>Config</code> が上の 3 つのプロパティをすべて読み取り専用で持つことを確かめます。<code>addOrigin</code> は引数が <code>Config</code> と <code>string</code>、<code>setMaxUsers</code> は引数が <code>Config</code> と <code>number</code> で、どちらも戻り値が <code>Config</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">readonly</code><h4>入れ子のオブジェクトと readonly</h4></div>
+      <p><code>readonly</code>（02章 q02 問7）は、付けたプロパティそのものにだけ効きます。プロパティの値がオブジェクトのとき、その中のプロパティまでは読み取り専用になりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Shop を作る。name は読み取り専用の文字列、hours は読み取り専用の { open: 数値; close: 数値 }
+type Shop = { readonly name: string; readonly hours: { open: number; close: number } };
+// 店舗 shop を Shop として作り、{ name: "渋谷店", hours: { open: 10, close: 20 } } を入れる
+const shop: Shop = { name: "渋谷店", hours: { open: 10, close: 20 } };
+// shop の hours の close に 22 を入れる
+shop.hours.close = 22;
+// 結果: エラーにならず、shop.hours.close は 22 になる</code></pre>
+      </div>
+      <p>中まで読み取り専用にするには、中のオブジェクトの型のプロパティにも <code>readonly</code> を付けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Shop を作る。すべて読み取り専用。name は文字列、hours は { open: 数値; close: 数値 }
+type Shop = {
+  readonly name: string;
+  readonly hours: { readonly open: number; readonly close: number };
+};</code></pre>
+      </div>
+      <p>配列も同じです。<code>readonly tags: string[]</code> では、<code>tags</code> に別の配列を入れることはできませんが、<code>.push()</code> で中身は変えられます。配列そのものも読み取り専用にするには、<code>readonly string[]</code>（02章 q04 問1）にします。</p>
+      <dl class="eg">
+        <div><dt><code>shop.hours = { open: 9, close: 21 }</code></dt><dd class="r">型のエラー</dd><dd class="c">hours に readonly がある</dd></div>
+        <div><dt><code>shop.hours.close = 22</code></dt><dd class="r">型のエラー</dd><dd class="c">中の close にも readonly を付けたとき</dd></div>
+        <div><dt><code>shop.tags.push("駅前")</code></dt><dd class="r">型のエラー</dd><dd class="c">tags が readonly string[] のとき</dd></div>
+        <div><dt><code>const list: string[] = shop.tags;</code></dt><dd class="r">型のエラー</dd><dd class="c">読み取り専用の配列は、書き換えられる配列の変数に入れられない</dd></div>
+      </dl>
+      <p class="more">サバイバルTypeScript「readonly と const の違い」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">{ ...a, b: { ...a.b } }</code><h4>入れ子のオブジェクトをスプレッド構文で作り直す</h4></div>
+      <p>オブジェクトのスプレッド構文（02章 q02 問8）が写すのは、1 段目のプロパティだけです。中のオブジェクトは写されず、元と同じオブジェクトを指したままになります。中のプロパティを変えた新しいオブジェクトを作るときは、中のオブジェクトもスプレッド構文で作り直します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Shop を作る。すべて読み取り専用。name は文字列、hours は { open: 数値; close: 数値 }
+type Shop = {
+  readonly name: string;
+  readonly hours: { readonly open: number; readonly close: number };
+};
+// 店舗 shop を Shop として作り、{ name: "渋谷店", hours: { open: 10, close: 20 } } を入れる
+const shop: Shop = { name: "渋谷店", hours: { open: 10, close: 20 } };
+// lateShop を Shop として作り、shop を広げて、hours を「shop.hours を広げて、close を 22 にしたもの」にしたものを入れる
+const lateShop: Shop = { ...shop, hours: { ...shop.hours, close: 22 } };
+// 結果: lateShop.hours.close は 22、shop.hours.close は 20 のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>{ <span class="seg"><i>1</i>...shop</span>, hours: <span class="seg"><i>2</i>{ ...shop.hours, close: 22 }</span> }</pre>
+        <ol>
+          <li><span><code>shop</code> の 1 段目のプロパティ（<code>name</code> と <code>hours</code>）を写します。</span></li>
+          <li><span><code>hours</code> を、新しく作ったオブジェクトで上書きします。<code>shop.hours</code> を写してから、<code>close</code> だけを変えます。</span></li>
+        </ol>
+      </figure>
+      <p>オブジェクトどうしを <code>===</code> で比べると、同じオブジェクトかどうかが分かります（02章 q03 問11）。</p>
+      <dl class="eg">
+        <div><dt><code>lateShop.hours === shop.hours</code></dt><dd class="r"><code>false</code></dd><dd class="c">中も作り直したので、別のオブジェクト</dd></div>
+        <div><dt><code>{ ...shop }.hours === shop.hours</code></dt><dd class="r"><code>true</code></dd><dd class="c">1 段目だけを写すと、中は同じオブジェクトのまま</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Config という型を作る。すべて読み取り専用。name は文字列、allowedOrigins は読み取り専用の文字列の配列、limits は { maxUsers: 数値; maxRooms: 数値 }。ほかのファイルから使えるようにする
+export type Config = unknown;
+
+// 関数 addOrigin を作る。Config の config と文字列 origin を受け取り、Config を返す
+export function addOrigin() {
+  // もし config の allowedOrigins に origin が含まれるなら
+  //   config を返す
+  // config を広げて、allowedOrigins を「config.allowedOrigins の要素すべてと、origin を、この順に並べた新しい配列」にしたものを返す
+}
+
+// 関数 setMaxUsers を作る。Config の config と数値 maxUsers を受け取り、Config を返す
+export function setMaxUsers() {
+  // config を広げて、limits を「config.limits を広げて、maxUsers を maxUsers にしたもの」にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Config</code> は、e01 の 1 つ目の項目の 2 つ目のサンプル（中まで読み取り専用の <code>Shop</code>）と同じ形で、<code>allowedOrigins</code> には <code>readonly string[]</code> を使います。「含まれるなら」は <code>.includes()</code> です（02章 q04 問9）。読み取り専用の配列には <code>.push()</code> が使えないので、新しい配列は <code>[...config.allowedOrigins, origin]</code> のように作ります（02章 q05 問1）。<code>setMaxUsers</code> は、2 つ目の項目のサンプルの <code>lateShop</code> の行と同じ形です。<code>maxUsers: maxUsers</code> は、省略記法で <code>maxUsers</code> とだけ書きます（02章 q01 問3）。説明することは、ファイルの下に「<code>const</code> の変数に別の値を入れ直す行」と「<code>readonly</code> のプロパティに値を入れる行」を書いて、型の確認のエラーを見比べてから考えます。試した行は、提出する前に消します。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c02-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">オブジェクトをループする</span>
+      <span class="q-new">新しく出てくる書き方：配列の分割代入で要素を飛ばす <code>[, b]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Scores = { [name: string]: number };
+
+export function totalScore() {}
+
+export function topScorer() {}
+
+export function passedNames() {}</code></pre>
+      <p>名前と得点の組を表す型 <code>Scores</code> は、もう書いてあります。キーが名前、値が得点のインデックス型です（02章 q08 問1）。この型の値を受け取る関数を 3 つ書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>totalScore(scores)</code>：得点の合計を返します。</li>
+        <li><code>topScorer(scores)</code>：最高得点の人の名前を返します。同点なら、先に出てきた人です。<code>scores</code> が空なら <code>undefined</code> を返します。</li>
+        <li><code>passedNames(scores, border)</code>：<code>border</code> 点以上の人の名前を、出てきた順に配列で返します。</li>
+      </ol>
+      <p>ファイルのヒントにあるとおり、<code>Object.keys</code>、<code>Object.values</code>、<code>Object.entries</code> を使います（02章 q08）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の <code>scores</code> を使います。</p>
+        <pre><code class="language-typescript">{ 山田: 72, 佐藤: 91, 鈴木: 58, 高橋: 91 }</code></pre>
+        <dl class="eg">
+          <div><dt><code>totalScore(scores)</code></dt><dd class="r"><code>312</code></dd><dd class="c">72 + 91 + 58 + 91</dd></div>
+          <div><dt><code>totalScore({})</code></dt><dd class="r"><code>0</code></dd><dd class="c">空なら 0</dd></div>
+          <div><dt><code>topScorer(scores)</code></dt><dd class="r"><code>"佐藤"</code></dd><dd class="c">佐藤と高橋が 91 点で同点。先に出てくる佐藤</dd></div>
+          <div><dt><code>topScorer({})</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空</dd></div>
+          <div><dt><code>passedNames(scores, 70)</code></dt><dd class="r"><code>["山田", "佐藤", "高橋"]</code></dd><dd class="c">出てきた順</dd></div>
+          <div><dt><code>passedNames(scores, 100)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">だれもいない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>totalScore</code> は引数が <code>Scores</code>、戻り値が <code>number</code> です。<code>topScorer</code> は引数が <code>Scores</code>、戻り値が <code>string | undefined</code> です。<code>passedNames</code> は引数が <code>Scores</code> と <code>number</code>、戻り値が <code>string[]</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[, b]</code><h4>配列の分割代入で、要素を飛ばす</h4></div>
+      <p>配列の分割代入（02章 q06 問2）で、変数の名前を書かずに <code>,</code> だけを書くと、その位置の要素を飛ばせます。使わない要素のために、変数を作らずに済みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 order を [文字列, 数値, 数値] のタプルとして作り、["ORD-001", 3, 4500] を入れる
+const order: [string, number, number] = ["ORD-001", 3, 4500];
+// order の 0 番目は飛ばし、1 番目を quantity、2 番目を total として取り出す
+const [, quantity, total] = order;
+// 結果: quantity は 3、total は 4500</code></pre>
+      </div>
+      <p><code>Object.entries()</code> の <code>[キー, 値]</code> の組を、<code>.filter()</code> や <code>.map()</code> に渡す関数の引数の位置で取り出すときにも使えます（02章 q06 問9）。値だけを使うなら <code>[, count]</code>、キーだけを使うなら <code>[code]</code> と書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Stock を作る。キーは自由な文字列で、値は数値
+type Stock = { [code: string]: number };
+// 在庫 stock を Stock として作り、{ A01: 5, B02: 0, C03: 0 } を入れる
+const stock: Stock = { A01: 5, B02: 0, C03: 0 };
+// soldOut を作り、stock のキーと値の組を並べた配列から、値が 0 のものだけを残し、それぞれキーだけにした新しい配列を入れる
+const soldOut = Object.entries(stock)
+  .filter(([, count]) =&gt; count === 0)
+  .map(([code]) =&gt; code);
+// 結果: soldOut は ["B02", "C03"]</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>Object.entries()</code> は、キーが名前のような文字列なら、オブジェクトに書いた順に組を返します。そのため「出てきた順」は、<code>Object.entries()</code> の順に見ていけば守れます。</p>
+      <p class="more">サバイバルTypeScript「オブジェクトをループする方法」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 totalScore を作る。Scores の scores を受け取り、数値を返す
+export function totalScore() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // scores の値を並べた配列から 1 つずつ score に取り出してくり返す
+  //   total に score を足す
+  // total を返す
+}
+
+// 関数 topScorer を作る。Scores の scores を受け取り、文字列か undefined を返す
+export function topScorer() {
+  // 名前 top を、文字列か undefined を入れ直せる変数として作る
+  // 最高点 best を入れ直せる変数として作り、-Infinity を入れる
+  // scores のキーと値の組を 1 つずつ [name, score] に取り出してくり返す
+  //   もし score が best より大きいなら
+  //     top に name を入れ直す
+  //     best に score を入れ直す
+  // top を返す
+}
+
+// 関数 passedNames を作る。Scores の scores と数値 border を受け取り、文字列の配列を返す
+export function passedNames() {
+  // scores のキーと値の組を並べた配列から、値が border 以上のものだけを残し、それぞれキーだけにした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>totalScore</code> の「scores の値を並べた配列から 1 つずつ取り出してくり返す」は、<code>Object.values(scores)</code>（02章 q08 問5）を <code>for-of</code> で回します。<code>topScorer</code> は 02章 q08 問10 と同じ形です。<code>top</code> は <code>let top: string | undefined;</code> と書くと、最初は <code>undefined</code> が入ります。同点なら先に出てきた人なので、比べるのは「より大きい」の <code>&gt;</code> です。<code>&gt;=</code> にすると、同点の後の人に入れ替わってしまいます。<code>passedNames</code> は、e02 の 2 つ目のサンプルの <code>soldOut</code> と同じ形で、残す条件が「<code>border</code> 以上」になります。</p></details>
+    </div>
+  </section>
+</section>

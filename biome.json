@@ -28,7 +28,9 @@
       "!**/apps/web/src/routeTree.gen.ts",
       "!**/apps/web/public/pdf.worker.min.mjs",
       "!docs/curriculum/**/*.html",
-      "!**/docs/curriculum/**/*.html"
+      "!**/docs/curriculum/**/*.html",
+      "!docs/devlab-ts-prework-guide/**/*.html",
+      "!**/docs/devlab-ts-prework-guide/**/*.html"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "off" } } },
@@ -116,6 +118,7 @@
         "**/apps/web/scripts/tutorials/**",
         "**/packages/content/scripts/**",
         "**/packages/shared/scripts/**",
+        "**/docs/devlab-ts-prework-guide/scripts/**",
         "**/.claude/skills/*/scripts/**"
       ],
       "linter": {

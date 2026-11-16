@@ -1,0 +1,1325 @@
+<section class="sec" id="c09-q05">
+  <div class="sec-h">
+    <span class="eyebrow">09章 組み込みの API とモジュール</span>
+    <h2>q05 import と export</h2>
+    <p>1 つのプログラムを、いくつかのファイルに分けて書きます。分けたファイルどうしは、<code>export</code>（ほかのファイルに渡す）と <code>import</code>（ほかのファイルから受け取る）でつなぎます。<code>src/shared/q05-modules.lib.ts</code> には、定数・型・関数が用意してあります。このファイルは書き換えません。export の問題では、テストが自分のファイルから import して確かめます。import の問題では、<code>shared/q05-modules.lib</code> から import して使います。import の文は、ファイルの先頭でなくても、その問題のコメントの下に書いてかまいません。★総合問題では、1 つのファイルにまとめて書かれたコードを、3 つのファイルに分けます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c09-q05-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">関数 double を名前付き export にする</span>
+      <span class="q-new">新しく出てくる書き方：モジュール（ファイルを分けて、<code>export</code> と <code>import</code> でつなぐ）、名前付き export</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">function double(n: number): number {
+  return n * 2;
+}</code></pre>
+      <p>下の関数 <code>double</code> は、いまはこのファイルの中でしか使えません。<code>function</code> の前に <code>export</code> を付けて、ほかのファイルから使えるようにします。関数の中身は変えません。テストは、このファイルから <code>double</code> を import して確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>double(4)</code></dt><dd class="r"><code>8</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export と import</code><h4>ファイルどうしをつなぐ（モジュール）</h4></div>
+      <p>TypeScript では、<code>export</code> や <code>import</code> を使う 1 つ 1 つのファイルをモジュールと呼びます。ファイルの中で作った関数や定数は、そのままではそのファイルの中でしか使えません。ほかのファイルに渡したいものには、前に <code>export</code> を付けます。受け取る側のファイルでは、<code>import</code> の文で名前とファイルの場所を書いて読み込みます。</p>
+      <p><code>export function</code> は 00章から書いてきました。<code>import { sum } from "./q04-array-type"</code> は、02章 q08 の総合問題でまねて書きました。この番号では、この 2 つのしくみを中心に学びます。</p>
+      <p>次のサンプルは、送料を計算するファイル <code>shipping.ts</code> と、それを使う注文のファイル <code>order.ts</code> の 2 つに分かれています。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shipping.ts</span>
+        <pre><code class="language-typescript">// 送料が無料になる金額 FREE_LINE を作り、5000 を入れる
+const FREE_LINE = 5000;
+
+// 関数 shippingFee を作る。数値の total を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function shippingFee(total: number): number {
+  // total が FREE_LINE 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= FREE_LINE ? 0 : 500;
+}</code></pre>
+        <span class="cap">サンプル：src/order.ts</span>
+        <pre><code class="language-typescript">// shipping.ts の shippingFee を、このファイルで使えるようにする
+import { shippingFee } from "./shipping";
+
+// 送料 fee を作り、3000 を shippingFee に渡した結果を入れる
+const fee = shippingFee(3000);
+// 結果: fee は 500</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 252" role="img" aria-label="shipping.ts の中には FREE_LINE と shippingFee がある。export を付けた shippingFee だけが order.ts に渡り、order.ts は import { shippingFee } from &quot;./shipping&quot; で受け取る。export のない FREE_LINE は shipping.ts の中だけで使える">
+            <text class="s" x="16" y="22">src/shipping.ts（渡す側）</text>
+            <rect class="box" x="16" y="32" width="568" height="76" rx="8"/>
+            <text class="m s" x="32" y="62">const FREE_LINE = 5000;</text>
+            <text class="s" x="568" y="62" text-anchor="end">export なし。このファイルの中だけ</text>
+            <text class="m a" x="32" y="92">export function shippingFee(…)</text>
+            <text class="s" x="568" y="92" text-anchor="end">export あり。ほかのファイルに渡せる</text>
+            <path class="ln-a" d="M120 108 V146"/>
+            <polygon class="hd-a" points="114,146 120,158 126,146"/>
+            <text class="a" x="136" y="138">shippingFee だけが渡る</text>
+            <text class="s" x="16" y="182">src/order.ts（使う側）</text>
+            <rect class="box-a" x="16" y="192" width="568" height="52" rx="8"/>
+            <text class="m" x="32" y="224">import { shippingFee } from "./shipping";</text>
+          </svg>
+        </div>
+        <figcaption><code>export</code> を付けた <code>shippingFee</code> だけが、<code>order.ts</code> に渡ります。<code>FREE_LINE</code> には <code>export</code> がないので、<code>shipping.ts</code> の中だけで使えます。<code>shippingFee</code> の中では、同じファイルの <code>FREE_LINE</code> をそのまま使えます。</figcaption>
+      </figure>
+      <p><code>export function shippingFee</code> のように、名前を付けて渡す export を名前付き export と呼びます。import する側は、<code>{ }</code> の中に同じ名前を書きます。<code>from</code> の後ろの <code>"./shipping"</code> は、読み込むファイルの場所です。<code>./</code> は「このファイルと同じフォルダー」という意味で、最後の <code>.ts</code> は付けません。</p>
+      <div class="cmp">
+        <div>
+          <h5>export していない名前を import する</h5>
+          <pre><code class="language-typescript">import { FREE_LINE } from "./shipping";</code></pre>
+          <div class="verdict ng">✕ エラーになります</div>
+        </div>
+        <div>
+          <h5>export した名前を import する</h5>
+          <pre><code class="language-typescript">import { shippingFee } from "./shipping";</code></pre>
+          <div class="verdict ok">○ 使えるようになります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>export していない名前を import すると、<code>Module '"./shipping"' declares 'FREE_LINE' locally, but it is not exported.</code>（<code>FREE_LINE</code> はファイルの中にあるが、export されていない）というエラーになります。このエラーが出たら、渡す側のファイルに <code>export</code> を付け忘れていないかを確かめます。</p>
+      <p>この番号の問題のファイルも、同じようにつながっています。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 412" role="img" aria-label="用意されたファイル src/shared/q05-modules.lib.ts が定数や関数を export する。自分で書く src/q05-06-with-tax.ts などは、import の問題でそこから import し、自分の関数を export する。テストの tests/q05-06-with-tax.test.ts は、自分のファイルから import して確かめる">
+            <text class="s" x="16" y="22">src/shared/q05-modules.lib.ts（用意されたファイル。書き換えない）</text>
+            <rect class="box" x="16" y="32" width="568" height="76" rx="8"/>
+            <text class="m" x="32" y="62">export const SITE_NAME = "サンプル商店";</text>
+            <text class="m" x="32" y="92">export function priceWithTax(…)</text>
+            <text class="s" x="568" y="92" text-anchor="end">ほかにも定数・型・関数がある</text>
+            <path class="ln-a" d="M120 108 V146"/>
+            <polygon class="hd-a" points="114,146 120,158 126,146"/>
+            <text class="a" x="136" y="138">import の問題（問6 など）で受け取る</text>
+            <text class="s" x="16" y="182">src/q05-06-with-tax.ts など（自分で書くファイル）</text>
+            <rect class="box-a" x="16" y="192" width="568" height="76" rx="8"/>
+            <text class="m" x="32" y="222">import { … } from "./shared/q05-modules.lib";</text>
+            <text class="m" x="32" y="252">export function withTax(…)</text>
+            <path class="ln-a" d="M120 268 V306"/>
+            <polygon class="hd-a" points="114,306 120,318 126,306"/>
+            <text class="a" x="136" y="298">テストが受け取って確かめる</text>
+            <text class="s" x="16" y="342">tests/q05-06-with-tax.test.ts（テスト。書き換えない）</text>
+            <rect class="box" x="16" y="352" width="568" height="52" rx="8"/>
+            <text class="m" x="32" y="384">import { withTax } from "../src/q05-06-with-tax";</text>
+          </svg>
+        </div>
+        <figcaption>import の問題では、自分のファイルが <code>shared/q05-modules.lib.ts</code> から import します。どの問題でも、テストは自分のファイルから import して確かめます。だから、テストが使う名前は必ず export します。テストの <code>"../src/q05-06-with-tax"</code> の <code>../</code> は、1 つ上のフォルダーという意味です（問6 でくわしく見ます）。</figcaption>
+      </figure>
+      <p class="more"><a href="https://typescriptbook.jp/reference/import-export-require">サバイバルTypeScript「import と export」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 double を作る。数値の n を受け取り、数値を返す。ほかのファイルから使えるようにする
+function double(n: number): number {
+  // （中身は、そのまま残す）
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「ほかのファイルから使えるようにする」は <code>export</code> です。問1 のサンプルの <code>shippingFee</code> と同じく、<code>function</code> の前に付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c09-q05-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">定数 MAX_ITEMS を export する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">const MAX_ITEMS = 10;</code></pre>
+      <p>定数 <code>MAX_ITEMS</code> を、ほかのファイルから使えるようにします。値の <code>10</code> は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>MAX_ITEMS</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 1 回に入れられる数の上限 MAX_ITEMS を作り、10 を入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q03 問1 の <code>MAX_ORDER</code> のサンプルと同じ形です。<code>const</code> の前に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c09-q05-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">型 Point を export する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">type Point = { x: number; y: number };</code></pre>
+      <p>型 <code>Point</code> を、ほかのファイルから使えるようにします。型も、関数や定数と同じく export できます。テストは <code>import { type Point } from "../src/q05-03-point"</code> の形で読み込みます（この書き方は問10 で見ます）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Point</code></dt><dd class="r"><code>{ x: number; y: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 型 Point を作る。x は数値、y は数値。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q01 の応用で書いた <code>export type</code> の形です。<code>type</code> の前に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c09-q05-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">add と sub を、最後の 1 行でまとめて export する</span>
+      <span class="q-new">新しく出てくる書き方：<code>export { a, b }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">function add(a: number, b: number): number {
+  return a + b;
+}
+
+function sub(a: number, b: number): number {
+  return a - b;
+}
+
+// ここに export { … } を書く</code></pre>
+      <p>2 つの関数 <code>add</code> と <code>sub</code> を、ファイルの最後に書く 1 行で、まとめて export します。<code>function</code> の前には <code>export</code> を付けません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add(1, 2)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sub(5, 3)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export { a, b }</code><h4>あとから、まとめて export する</h4></div>
+      <p>先に作った関数や定数の名前を、<code>export { }</code> の中に <code>,</code> で区切って並べると、まとめて export できます。前に <code>export</code> を付けたときと同じ、名前付き export になります。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/fee.ts</span>
+        <pre><code class="language-typescript">// 送料が無料になる金額 FREE_LINE を作り、5000 を入れる
+const FREE_LINE = 5000;
+
+// 関数 shippingFee を作る。数値の total を受け取り、数値を返す
+function shippingFee(total: number): number {
+  // total が FREE_LINE 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= FREE_LINE ? 0 : 500;
+}
+
+// FREE_LINE と shippingFee を、まとめてほかのファイルから使えるようにする
+export { FREE_LINE, shippingFee };</code></pre>
+        <span class="cap">サンプル：src/cart.ts</span>
+        <pre><code class="language-typescript">// fee.ts の FREE_LINE と shippingFee を、このファイルで使えるようにする
+import { FREE_LINE, shippingFee } from "./fee";
+
+// 無料まであと left を作り、FREE_LINE から 3000 を引いた数を入れる
+const left = FREE_LINE - 3000;
+// 送料 fee を作り、3000 を shippingFee に渡した結果を入れる
+const fee = shippingFee(3000);
+// 結果: left は 2000、fee は 500</code></pre>
+      </div>
+      <p>import する側も、<code>{ }</code> の中に <code>,</code> で区切って並べると、いくつもの名前を 1 行で import できます。</p>
+      <p class="memo"><b>コツ</b>export をファイルの最後にまとめておくと、このファイルが何をほかのファイルに渡しているかが、1 か所を見るだけで分かります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// （関数 add と sub は、そのまま残す）
+
+// add と sub を、まとめてほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>fee.ts</code> の最後の行と同じ形です。<code>{ }</code> の中に、<code>add</code> と <code>sub</code> を <code>,</code> で区切って書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c09-q05-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">internalSquare を square という名前で export する</span>
+      <span class="q-new">新しく出てくる書き方：<code>export { a as b }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">function internalSquare(n: number): number {
+  return n * n;
+}
+
+// ここに export { … as square } を書く</code></pre>
+      <p>関数 <code>internalSquare</code> を、<code>square</code> という名前で export します。関数を作るところの名前は <code>internalSquare</code> のまま変えません。テストは <code>square</code> という名前で import します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>square(3)</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export { a as b }</code><h4>名前を変えて export する</h4></div>
+      <p><code>export { }</code> の中で <code>as</code> を使うと、ほかのファイルに渡すときの名前を変えられます。ファイルの中では中身が分かる長い名前を使い、外には短い名前で渡す、といったときに使います。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/member.ts</span>
+        <pre><code class="language-typescript">// 関数 calcRank を作る。数値の points を受け取り、文字列を返す
+function calcRank(points: number): string {
+  // points が 1000 以上なら "ゴールド"、そうでなければ "一般" を返す
+  return points &gt;= 1000 ? "ゴールド" : "一般";
+}
+
+// calcRank を、rankOf という名前でほかのファイルから使えるようにする
+export { calcRank as rankOf };</code></pre>
+        <span class="cap">サンプル：src/mypage.ts</span>
+        <pre><code class="language-typescript">// member.ts の rankOf を、このファイルで使えるようにする
+import { rankOf } from "./member";
+
+// 会員ランク rank を作り、1200 を rankOf に渡した結果を入れる
+const rank = rankOf(1200);
+// 結果: rank は "ゴールド"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>export { <span class="seg"><i>1</i>calcRank</span> as <span class="seg"><i>2</i>rankOf</span> };</pre>
+        <ol>
+          <li><span>このファイルの中での名前です。先に作った関数の名前を書きます。</span></li>
+          <li><span>ほかのファイルから見える名前です。import する側は、この名前を書きます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある間違い</b>ほかのファイルからは、元の名前の <code>calcRank</code> では import できません。<code>import { calcRank } from "./member";</code> と書くと、<code>Module '"./member"' declares 'calcRank' locally, but it is exported as 'rankOf'.</code>（<code>rankOf</code> という名前で export されている）というエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// （関数 internalSquare は、そのまま残す）
+
+// internalSquare を、square という名前でほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 のサンプルの <code>member.ts</code> の最後の行と同じ形です。<code>as</code> の左が <code>internalSquare</code>、右が <code>square</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c09-q05-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">priceWithTax を import して、税込みの金額を返す</span>
+      <span class="q-new">新しく出てくる書き方：フォルダーの中のファイルを指す <code>"./shared/…"</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withTax() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の <code>priceWithTax</code> を import します。それを使って、税込みの金額を返す <code>withTax(price)</code> を書きます。引数は数値 1 つ、戻り値は数値です。</p>
+      <p>import するファイルの中身は、次のとおりです。問7 から後の import の問題も、このファイルから import します。</p>
+      <div class="lbl-block">
+        <span class="lbl">用意されたファイル：src/shared/q05-modules.lib.ts</span>
+        <pre><code class="language-typescript">// 09-q05 のドリルで import するためのファイルです。書き換えないでください
+
+export const SITE_NAME = "サンプル商店";
+export const TAX_RATE = 0.1;
+
+export type Product = { name: string; price: number };
+
+export const products: readonly Product[] = [
+  { name: "りんご", price: 120 },
+  { name: "みかん", price: 80 },
+  { name: "ぶどう", price: 450 },
+];
+
+export function priceWithTax(price: number): number {
+  return Math.round(price * (1 + TAX_RATE));
+}
+
+export function formatYen(amount: number): string {
+  return `${amount.toLocaleString("ja-JP")}円`;
+}
+
+export default function greet(name: string): string {
+  return `ようこそ、${name}さん`;
+}</code></pre>
+      </div>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withTax(100)</code></dt><dd class="r"><code>110</code></dd><dd class="c"></dd></div>
+          <div><dt><code>withTax(980)</code></dt><dd class="r"><code>1078</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">"./shared/q05-modules.lib"</code><h4>フォルダーの中のファイルを指す</h4></div>
+      <p><code>from</code> の後ろには、読み込むファイルの場所を、このファイルから見た道順で書きます。同じフォルダーの中にある、別のフォルダーのファイルを読むときは、<code>./</code> のあとにフォルダーの名前と <code>/</code> を続けます。名前付き import の書き方は、02章 q08 の総合問題と同じです。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shared/stock.lib.ts</span>
+        <pre><code class="language-typescript">// 関数 isInStock を作る。数値の stock を受け取り、true か false を返す。ほかのファイルから使えるようにする
+export function isInStock(stock: number): boolean {
+  // stock が 0 より大きいかどうか（true か false）を返す
+  return stock &gt; 0;
+}</code></pre>
+        <span class="cap">サンプル：src/item-page.ts</span>
+        <pre><code class="language-typescript">// shared/stock.lib.ts の isInStock を、このファイルで使えるようにする
+import { isInStock } from "./shared/stock.lib";
+
+// 在庫の表示 label を作り、3 を isInStock に渡した結果が true なら "在庫あり"、そうでなければ "在庫なし" を入れる
+const label = isInStock(3) ? "在庫あり" : "在庫なし";
+// 結果: label は "在庫あり"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>import { isInStock } from "<span class="seg"><i>1</i>./</span><span class="seg"><i>2</i>shared/</span><span class="seg"><i>3</i>stock.lib</span>";</pre>
+        <ol>
+          <li><span>このファイルと同じフォルダー（<code>src</code>）から始めます。</span></li>
+          <li><span>その中の <code>shared</code> フォルダーに入ります。</span></li>
+          <li><span>ファイルの名前です。最後の <code>.ts</code> は付けません。<code>.lib</code> は名前の一部なので、そのまま書きます。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>書き方</th><th>意味</th><th>この番号での例</th></tr></thead>
+          <tbody>
+            <tr><td><code>./</code></td><td>このファイルと同じフォルダー</td><td><code>"./q04-error"</code>（総合 3）</td></tr>
+            <tr><td><code>./shared/</code></td><td>同じフォルダーの中の <code>shared</code> フォルダー</td><td><code>"./shared/q05-modules.lib"</code></td></tr>
+            <tr><td><code>../</code></td><td>1 つ上のフォルダー</td><td>テストの <code>"../src/q05-06-with-tax"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある疑問</b>import の文は、ファイルのどこに書いても、ファイルを読み込むときにいちばん先に実行されます。この番号では、問題のコメントの下に書いてかまいません。ふだんのコードでは、ファイルの先頭にまとめて書くことが多いです。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の priceWithTax を、このファイルで使えるようにする
+
+// 関数 withTax を作る。数値の price を受け取り、数値を返す
+export function withTax() {
+  // price を priceWithTax に渡した結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問6 のサンプルの <code>item-page.ts</code> の import の行と同じ形です。場所は <code>"./shared/q05-modules.lib"</code> です。関数の中は、<code>priceWithTax</code> を呼んだ結果をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c09-q05-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">formatYen を yen という名前で import して使う</span>
+      <span class="q-new">新しく出てくる書き方：<code>import { a as b }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function priceLabel() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の <code>formatYen</code> を、<code>yen</code> という名前で import します。<code>yen</code> を使って、金額を「1,200円」の形にした文字列を返す <code>priceLabel(price)</code> を書きます。引数は数値 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceLabel(1200)</code></dt><dd class="r"><code>"1,200円"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">import { a as b }</code><h4>名前を変えて import する</h4></div>
+      <p>import の <code>{ }</code> の中で <code>as</code> を使うと、このファイルの中で使う名前を変えられます。このファイルにもう同じ名前があるときや、短い名前で使いたいときに使います。問5 の <code>export { a as b }</code> と同じ <code>as</code> です。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shipping.ts</span>
+        <pre><code class="language-typescript">// 関数 shippingFee を作る。数値の total を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function shippingFee(total: number): number {
+  // total が 5000 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= 5000 ? 0 : 500;
+}</code></pre>
+        <span class="cap">サンプル：src/receipt.ts</span>
+        <pre><code class="language-typescript">// shipping.ts の shippingFee を、fee という名前でこのファイルで使えるようにする
+import { shippingFee as fee } from "./shipping";
+
+// 送料 cost を作り、6000 を fee に渡した結果を入れる
+const cost = fee(6000);
+// 結果: cost は 0</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>import { <span class="seg"><i>1</i>shippingFee</span> as <span class="seg"><i>2</i>fee</span> } from "./shipping";</pre>
+        <ol>
+          <li><span>相手のファイルが export している名前です。</span></li>
+          <li><span>このファイルの中で使う名前です。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある間違い</b>名前を変えたら、このファイルでは元の名前は使えません。<code>receipt.ts</code> で <code>shippingFee(6000)</code> と書くと、<code>Cannot find name 'shippingFee'.</code>（<code>shippingFee</code> という名前が見つからない）というエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の formatYen を、yen という名前でこのファイルで使えるようにする
+
+// 関数 priceLabel を作る。数値の price を受け取り、文字列を返す
+export function priceLabel() {
+  // price を yen に渡した結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問7 のサンプルの <code>receipt.ts</code> の import の行と同じ形です。<code>as</code> の左が <code>formatYen</code>、右が <code>yen</code> です。場所は問6 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c09-q05-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">デフォルト export の greet を import して使う</span>
+      <span class="q-new">新しく出てくる書き方：デフォルト export と、それを読む <code>import 名前 from</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function welcome() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の最後の関数 <code>greet</code> は、デフォルト export になっています。これを import します。<code>greet(name)</code> の結果の後ろに「！」を付けて返す <code>welcome(name)</code> を書きます。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>welcome("山田")</code></dt><dd class="r"><code>"ようこそ、山田さん！"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">import 名前 from "…"</code><h4>デフォルト export を import する</h4></div>
+      <p><code>export default</code> を付けて渡すものを、デフォルト export と呼びます。1 つのファイルに 1 つだけ置ける、そのファイルの代表の export です。デフォルト export を import するときは、<code>{ }</code> を付けません。名前は、import する側が自由に決めます。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/coupon.ts</span>
+        <pre><code class="language-typescript">// 関数 couponCode を作る。数値の percent を受け取り、文字列を返す。このファイルのデフォルト export にする
+export default function couponCode(percent: number): string {
+  // percent を埋め込んだ「OFF◯」の文字列を返す
+  return `OFF${percent}`;
+}</code></pre>
+        <span class="cap">サンプル：src/checkout.ts</span>
+        <pre><code class="language-typescript">// coupon.ts のデフォルト export を、makeCoupon という名前でこのファイルで使えるようにする
+import makeCoupon from "./coupon";
+
+// クーポン code を作り、20 を makeCoupon に渡した結果を入れる
+const code = makeCoupon(20);
+// 結果: code は "OFF20"</code></pre>
+      </div>
+      <p><code>coupon.ts</code> の中の名前は <code>couponCode</code> ですが、<code>checkout.ts</code> では <code>makeCoupon</code> という名前で使っています。<code>export default</code> の書き方は、問16 でくわしく見ます。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>{ }</code> を付ける</h5>
+          <pre><code class="language-typescript">import { couponCode } from "./coupon";</code></pre>
+          <div class="verdict ng">✕ 名前付き export を探して、エラーになります</div>
+        </div>
+        <div>
+          <h5><code>{ }</code> を付けない</h5>
+          <pre><code class="language-typescript">import makeCoupon from "./coupon";</code></pre>
+          <div class="verdict ok">○ デフォルト export を読み込みます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>{ }</code> を付けると、<code>Module '"./coupon"' has no exported member 'couponCode'. Did you mean to use 'import couponCode from "./coupon"' instead?</code>（その名前の export はない。<code>{ }</code> なしで書くつもりではないか）というエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts のデフォルト export を、greet という名前でこのファイルで使えるようにする
+
+// 関数 welcome を作る。文字列の name を受け取り、文字列を返す
+export function welcome() {
+  // name を greet に渡した結果の後ろに "！" をつなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問8 のサンプルの <code>checkout.ts</code> の import の行と同じ形で、<code>{ }</code> を付けません。文字列は、<code>greet(name)</code> の結果をテンプレートリテラル（01章 q01 問3）に埋め込み、後ろに <code>！</code> を続けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c09-q05-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">export をすべて shop として import し、ページの題を作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>import * as</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function siteTitle() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の export を、すべて <code>shop</code> という名前のまとまりとして import します。<code>shop.SITE_NAME</code> を使って、ページの名前の後ろに「 | サンプル商店」を付けた文字列を返す <code>siteTitle(page)</code> を書きます。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>siteTitle("商品一覧")</code></dt><dd class="r"><code>"商品一覧 | サンプル商店"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">import * as 名前</code><h4>export をまとめて、1 つの名前で import する</h4></div>
+      <p><code>*</code> は「export しているものすべて」という意味です。<code>as</code> の後ろの名前が、まとまりの名前になります。中のものは、オブジェクトのプロパティと同じく、<code>まとまり.名前</code> で使います。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shipping.ts</span>
+        <pre><code class="language-typescript">// 送料が無料になる金額 FREE_LINE を作り、5000 を入れる。ほかのファイルから使えるようにする
+export const FREE_LINE = 5000;
+
+// 関数 shippingFee を作る。数値の total を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function shippingFee(total: number): number {
+  // total が FREE_LINE 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= FREE_LINE ? 0 : 500;
+}</code></pre>
+        <span class="cap">サンプル：src/guide.ts</span>
+        <pre><code class="language-typescript">// shipping.ts の export をすべて、shipping という名前のまとまりとしてこのファイルで使えるようにする
+import * as shipping from "./shipping";
+
+// 案内 notice を作り、shipping の FREE_LINE を埋め込んだ「◯円以上で送料無料」の文字列を入れる
+const notice = `${shipping.FREE_LINE}円以上で送料無料`;
+// 送料 fee を作り、3000 を shipping の shippingFee に渡した結果を入れる
+const fee = shipping.shippingFee(3000);
+// 結果: notice は "5000円以上で送料無料"、fee は 500</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>import <span class="seg c"><i>1</i>*</span> as <span class="seg"><i>2</i>shipping</span> from "./shipping";</pre>
+        <ol>
+          <li><span>相手のファイルが export しているもの、すべてです。</span></li>
+          <li><span>まとまりの名前です。このファイルの中では、<code>shipping.FREE_LINE</code> や <code>shipping.shippingFee</code> のように使います。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>コツ</b>どのファイルから来たものかが、<code>shipping.</code> の部分で分かります。同じファイルから、たくさんのものを使うときに便利です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の export をすべて、shop という名前のまとまりとしてこのファイルで使えるようにする
+
+// 関数 siteTitle を作る。文字列の page を受け取り、文字列を返す
+export function siteTitle() {
+  // page と shop の SITE_NAME を埋め込んだ「◯ | ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問9 のサンプルの <code>guide.ts</code> の import の行と同じ形です。文字列は、サンプルの <code>notice</code> と同じく、テンプレートリテラルで組み立てます。<code>|</code> の前と後ろには、半角スペースが 1 つずつ入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c09-q05-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">型 Product を import type で読み、いちばん安い商品を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>import type</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function cheapest() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の型 <code>Product</code> を、<code>import type</code> で import します。商品の配列を受け取り、値段（<code>price</code>）がいちばん安い商品を返す <code>cheapest(items)</code> を書きます。いちばん安い商品が 2 つ以上あるときは、先に出てくるほうを返します。配列が空なら <code>undefined</code> を返します。引数の型は <code>readonly Product[]</code>、戻り値の型は <code>Product | undefined</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の 3 つの商品を使います。</p>
+        <pre><code class="language-typescript">[
+  { name: "a", price: 300 },
+  { name: "b", price: 100 },
+  { name: "c", price: 100 },
+]</code></pre>
+        <dl class="eg">
+          <div><dt><code>cheapest(3 つの商品)</code> の <code>name</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">b と c は同じ値段。先に出てくる b</dd></div>
+          <div><dt><code>cheapest([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly { name: string; price: number }[]</code>、戻り値が <code>{ name: string; price: number } | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">import type { A }</code><h4>型だけを import する</h4></div>
+      <p>型は、TypeScript が型を確かめるときにだけ使い、プログラムを実行するときには消えます。<code>import type</code> と書くと、型だけを読み込むことがはっきりします。読み込んだ型は、型注釈に書けます。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/product.ts</span>
+        <pre><code class="language-typescript">// 型 Item を作る。name は文字列、price は数値。ほかのファイルから使えるようにする
+export type Item = { name: string; price: number };</code></pre>
+        <span class="cap">サンプル：src/sale.ts</span>
+        <pre><code class="language-typescript">// product.ts の型 Item を、型としてだけこのファイルで使えるようにする
+import type { Item } from "./product";
+
+// 関数 halfPrice を作る。Item の item を受け取り、Item を返す
+function halfPrice(item: Item): Item {
+  // item を広げて、price を item.price の半分にしたものを返す
+  return { ...item, price: item.price / 2 };
+}
+// 結果: halfPrice({ name: "ノート", price: 300 }) は { name: "ノート", price: 150 }</code></pre>
+      </div>
+      <p>問3 のテストにある <code>import { type Point } from "…"</code> のように、<code>{ }</code> の中の名前の前に <code>type</code> を付ける書き方もあります。意味は同じで、型だけを読み込みます。値と型を 1 行で一緒に import するときに使えます。</p>
+      <p class="memo"><b>よくある間違い</b><code>import type</code> で読み込んだ名前は、値としては使えません。定数を <code>import type</code> で読み込んで使うと、<code>'FREE_LINE' cannot be used as a value because it was imported using 'import type'.</code>（import type で読み込んだので、値として使えない）というエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の型 Product を、型としてだけこのファイルで使えるようにする
+
+// 関数 cheapest を作る。読み取り専用の Product の配列 items を受け取り、Product か undefined を返す
+export function cheapest() {
+  // いちばん安い商品 result を入れ直せる変数として作り、undefined を入れる。型は Product か undefined
+  // items から 1 つずつ item に取り出してくり返す
+    // もし result が undefined か、item の price が result の price より小さいなら
+      // result に item を入れ直す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問10 のサンプルの <code>sale.ts</code> の import の行と同じ形です。<code>result</code> は <code>let result: Product | undefined = undefined;</code> と書けます。「◯ か ◯」は <code>||</code> で、<code>result === undefined || …</code> の順に書きます。<code>||</code> は左が <code>false</code> のときだけ右を調べるので、右では <code>result</code> が <code>undefined</code> でないと分かり、<code>result.price</code> を読めます。「より小さい」は <code>&lt;</code> です。<code>&lt;=</code> にすると、同じ値段の後の商品に入れ替わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c09-q05-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">formatYen を、このファイルからそのまま export する</span>
+      <span class="q-new">新しく出てくる書き方：再エクスポート <code>export { a } from</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに re-export を書く</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の <code>formatYen</code> を、このファイルからそのまま export します。ほかのファイルの export を、自分のファイルから渡し直すことを、再エクスポート（re-export）と呼びます。関数を新しく作ってはいけません。テストは、このファイルから import した <code>formatYen</code> が、<code>shared/q05-modules.lib.ts</code> の <code>formatYen</code> と同じ関数かを確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>このファイルの <code>formatYen</code></dt><dd class="r"><code>shared/q05-modules.lib.ts</code> の <code>formatYen</code></dd><dd class="c">同じ関数そのもの</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export { a } from "…"</code><h4>ほかのファイルの export を受け渡す（再エクスポート）</h4></div>
+      <p><code>export { }</code> の後ろに <code>from</code> とファイルの場所を書くと、そのファイルの export を、このファイルの export として渡し直せます。いくつものファイルに分かれたものを、1 つのファイルから受け取れるようにする「窓口」を作るときに使います。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shipping.ts（問7 と同じ）</span>
+        <pre><code class="language-typescript">// 関数 shippingFee を作る。数値の total を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function shippingFee(total: number): number {
+  // total が 5000 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= 5000 ? 0 : 500;
+}</code></pre>
+        <span class="cap">サンプル：src/shop.ts</span>
+        <pre><code class="language-typescript">// shipping.ts の shippingFee を、このファイルからそのまま受け渡す
+export { shippingFee } from "./shipping";</code></pre>
+        <span class="cap">サンプル：src/order.ts</span>
+        <pre><code class="language-typescript">// shop.ts の shippingFee を、このファイルで使えるようにする
+import { shippingFee } from "./shop";
+
+// 送料 fee を作り、8000 を shippingFee に渡した結果を入れる
+const fee = shippingFee(8000);
+// 結果: fee は 0</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 336" role="img" aria-label="shipping.ts が export した shippingFee を、shop.ts が export { shippingFee } from &quot;./shipping&quot; で受け渡す。order.ts は import { shippingFee } from &quot;./shop&quot; で、shop.ts から同じ shippingFee を受け取る">
+            <text class="s" x="16" y="22">src/shipping.ts</text>
+            <rect class="box" x="16" y="32" width="568" height="48" rx="8"/>
+            <text class="m" x="32" y="62">export function shippingFee(…)</text>
+            <path class="ln-a" d="M120 80 V112"/>
+            <polygon class="hd-a" points="114,112 120,124 126,112"/>
+            <text class="a" x="136" y="106">shippingFee が渡る</text>
+            <text class="s" x="16" y="146">src/shop.ts（窓口。受け渡すだけ）</text>
+            <rect class="box-a" x="16" y="156" width="568" height="48" rx="8"/>
+            <text class="m" x="32" y="186">export { shippingFee } from "./shipping";</text>
+            <path class="ln-a" d="M120 204 V236"/>
+            <polygon class="hd-a" points="114,236 120,248 126,236"/>
+            <text class="a" x="136" y="230">同じ shippingFee が渡る</text>
+            <text class="s" x="16" y="270">src/order.ts</text>
+            <rect class="box" x="16" y="280" width="568" height="48" rx="8"/>
+            <text class="m" x="32" y="310">import { shippingFee } from "./shop";</text>
+          </svg>
+        </div>
+        <figcaption><code>order.ts</code> は、<code>shop.ts</code> から import します。<code>shop.ts</code> は受け渡すだけなので、<code>order.ts</code> が受け取るのは <code>shipping.ts</code> の <code>shippingFee</code> そのものです。</figcaption>
+      </figure>
+      <p class="memo"><b>よくある間違い</b>再エクスポートは、受け渡すだけです。<code>shop.ts</code> の中で <code>shippingFee</code> を呼ぶと、<code>Cannot find name 'shippingFee'.</code> というエラーになります。自分のファイルでも使いたいときは、別に import の文を書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の formatYen を、このファイルからそのまま受け渡す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>shop.ts</code> と同じ 1 行です。場所は問6 と同じ <code>"./shared/q05-modules.lib"</code> です。import してから関数で包むと、別の関数になるので、テストに通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c09-q05-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">priceWithTax を taxed という名前で再エクスポートする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに re-export を書く</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の <code>priceWithTax</code> を、<code>taxed</code> という名前で再エクスポートします。テストは、<code>taxed</code> が <code>priceWithTax</code> と同じ関数かも確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>taxed</code></dt><dd class="r"><code>shared/q05-modules.lib.ts</code> の <code>priceWithTax</code></dd><dd class="c">同じ関数そのもの</dd></div>
+          <div><dt><code>taxed(200)</code></dt><dd class="r"><code>220</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の priceWithTax を、taxed という名前でこのファイルから受け渡す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 の再エクスポートの <code>{ }</code> の中に、問5 の <code>as</code> を書きます。<code>as</code> の左が <code>priceWithTax</code>、右が <code>taxed</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c09-q05-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">デフォルト export を greetUser という名前で再エクスポートする</span>
+      <span class="q-new">新しく出てくる書き方：<code>export { default as b } from</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに re-export を書く</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> のデフォルト export（関数 <code>greet</code>）を、<code>greetUser</code> という名前で再エクスポートします。テストは、<code>greetUser</code> の関数の名前（<code>name</code>）が <code>"greet"</code> のままかも確かめます。受け渡すだけなら、関数は <code>greet</code> そのものなので、名前も <code>"greet"</code> のままです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetUser.name</code></dt><dd class="r"><code>"greet"</code></dd><dd class="c">関数 greet そのもの</dd></div>
+          <div><dt><code>greetUser("佐藤")</code></dt><dd class="r"><code>"ようこそ、佐藤さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export { default as b } from "…"</code><h4>デフォルト export に名前を付けて受け渡す</h4></div>
+      <p>デフォルト export は、ファイルの中では <code>default</code> という名前で export されています。この <code>default</code> を <code>as</code> で別の名前に変えると、名前付き export として受け渡せます。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/coupon.ts（問8 と同じ）</span>
+        <pre><code class="language-typescript">// 関数 couponCode を作る。数値の percent を受け取り、文字列を返す。このファイルのデフォルト export にする
+export default function couponCode(percent: number): string {
+  // percent を埋め込んだ「OFF◯」の文字列を返す
+  return `OFF${percent}`;
+}</code></pre>
+        <span class="cap">サンプル：src/shop.ts</span>
+        <pre><code class="language-typescript">// coupon.ts のデフォルト export を、couponCode という名前でこのファイルから受け渡す
+export { default as couponCode } from "./coupon";</code></pre>
+        <span class="cap">サンプル：src/checkout.ts</span>
+        <pre><code class="language-typescript">// shop.ts の couponCode を、このファイルで使えるようにする
+import { couponCode } from "./shop";
+
+// クーポン code を作り、10 を couponCode に渡した結果を入れる
+const code = couponCode(10);
+// 結果: code は "OFF10"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>export { <span class="seg"><i>1</i>default</span> as <span class="seg"><i>2</i>couponCode</span> } from <span class="seg"><i>3</i>"./coupon"</span>;</pre>
+        <ol>
+          <li><span><code>coupon.ts</code> のデフォルト export です。</span></li>
+          <li><span>このファイルから渡すときの名前です。受け取る側は、<code>{ couponCode }</code> と名前付き export として import します。</span></li>
+          <li><span>受け渡す元のファイルです。</span></li>
+        </ol>
+      </figure>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts のデフォルト export を、greetUser という名前でこのファイルから受け渡す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>shop.ts</code> と同じ形です。<code>as</code> の右が <code>greetUser</code>、場所は <code>"./shared/q05-modules.lib"</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c09-q05-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">型 Product を、型として再エクスポートする</span>
+      <span class="q-new">新しく出てくる書き方：<code>export type { A } from</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに re-export を書く</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の型 <code>Product</code> を、型として再エクスポートします。テストは <code>import { type Product } from "../src/q05-14-product"</code> で読み込み、型が同じかを確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Product</code></dt><dd class="r"><code>{ name: string; price: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export type { A } from "…"</code><h4>型を受け渡す</h4></div>
+      <p>再エクスポートの <code>export</code> の後ろに <code>type</code> を付けると、型だけを受け渡すことがはっきりします。問10 の <code>import type</code> の、受け渡す版です。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/product.ts（問10 と同じ）</span>
+        <pre><code class="language-typescript">// 型 Item を作る。name は文字列、price は数値。ほかのファイルから使えるようにする
+export type Item = { name: string; price: number };</code></pre>
+        <span class="cap">サンプル：src/shop.ts</span>
+        <pre><code class="language-typescript">// product.ts の型 Item を、型としてこのファイルから受け渡す
+export type { Item } from "./product";</code></pre>
+        <span class="cap">サンプル：src/sale.ts</span>
+        <pre><code class="language-typescript">// shop.ts の型 Item を、型としてだけこのファイルで使えるようにする
+import type { Item } from "./shop";
+
+// 商品 notebook を作り、名前が "ノート"、値段が 300 の Item を入れる
+const notebook: Item = { name: "ノート", price: 300 };
+// 結果: notebook は Item 型の { name: "ノート", price: 300 }</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の型 Product を、型としてこのファイルから受け渡す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 のサンプルの <code>shop.ts</code> と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c09-q05-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">export をすべて library というまとまりで再エクスポートする</span>
+      <span class="q-new">新しく出てくる書き方：<code>export * as 名前 from</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに re-export を書く</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の export をすべて、<code>library</code> という名前のまとまりとして再エクスポートします。テストは <code>import { library } from "../src/q05-15-library"</code> で読み込み、<code>library.SITE_NAME</code> と <code>library.priceWithTax</code> を確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>library.SITE_NAME</code></dt><dd class="r"><code>"サンプル商店"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>library.priceWithTax</code></dt><dd class="r"><code>shared/q05-modules.lib.ts</code> の <code>priceWithTax</code></dd><dd class="c">同じ関数そのもの</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export * as 名前 from "…"</code><h4>export をまとめて、1 つの名前で受け渡す</h4></div>
+      <p>問9 の <code>import * as</code> と同じまとまりを作り、このファイルから名前付き export として渡します。受け取る側は、<code>{ }</code> の中にまとまりの名前を書いて import し、<code>まとまり.名前</code> で使います。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shipping.ts（問9 と同じ）</span>
+        <pre><code class="language-typescript">// 送料が無料になる金額 FREE_LINE を作り、5000 を入れる。ほかのファイルから使えるようにする
+export const FREE_LINE = 5000;
+
+// 関数 shippingFee を作る。数値の total を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function shippingFee(total: number): number {
+  // total が FREE_LINE 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= FREE_LINE ? 0 : 500;
+}</code></pre>
+        <span class="cap">サンプル：src/shop.ts</span>
+        <pre><code class="language-typescript">// shipping.ts の export をすべて、shipping という名前のまとまりとしてこのファイルから受け渡す
+export * as shipping from "./shipping";</code></pre>
+        <span class="cap">サンプル：src/guide.ts</span>
+        <pre><code class="language-typescript">// shop.ts の shipping を、このファイルで使えるようにする
+import { shipping } from "./shop";
+
+// 送料 fee を作り、3000 を shipping の shippingFee に渡した結果を入れる
+const fee = shipping.shippingFee(3000);
+// 結果: fee は 500</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の export をすべて、library という名前のまとまりとしてこのファイルから受け渡す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問15 のサンプルの <code>shop.ts</code> と同じ形です。<code>as</code> の後ろが <code>library</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c09-q05-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">関数 farewell をデフォルト export にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>export default</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">function farewell(name: string): string {
+  return `さようなら、${name}さん`;
+}
+
+// ここで farewell をデフォルト export する</code></pre>
+      <p>関数 <code>farewell</code> を、このファイルのデフォルト export にします。関数の中身は変えません。テストは <code>{ }</code> を付けずに、<code>import farewell from "../src/q05-16-farewell"</code> で読み込みます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>farewell("山田")</code></dt><dd class="r"><code>"さようなら、山田さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export default</code><h4>このファイルのデフォルト export にする</h4></div>
+      <p><code>export default</code> の後ろに、先に作った関数の名前を書くと、その関数がデフォルト export になります。デフォルト export は、1 つのファイルに 1 つだけです。2 つ書くとエラーになります。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/receipt.ts</span>
+        <pre><code class="language-typescript">// 関数 receiptTitle を作る。文字列の shop を受け取り、文字列を返す
+function receiptTitle(shop: string): string {
+  // shop の後ろに「 領収書」をつなげた文字列を返す
+  return `${shop} 領収書`;
+}
+
+// receiptTitle を、このファイルのデフォルト export にする
+export default receiptTitle;</code></pre>
+        <span class="cap">サンプル：src/print.ts</span>
+        <pre><code class="language-typescript">// receipt.ts のデフォルト export を、receiptTitle という名前でこのファイルで使えるようにする
+import receiptTitle from "./receipt";
+
+// 見出し title を作り、"本店" を receiptTitle に渡した結果を入れる
+const title = receiptTitle("本店");
+// 結果: title は "本店 領収書"</code></pre>
+      </div>
+      <p>関数を作るところに、直接 <code>export default</code> を付ける書き方もあります。問8 のサンプルの <code>coupon.ts</code> と、<code>shared/q05-modules.lib.ts</code> の <code>greet</code> がこの形です。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/coupon.ts（問8 と同じ）</span>
+        <pre><code class="language-typescript">// 関数 couponCode を作る。数値の percent を受け取り、文字列を返す。このファイルのデフォルト export にする
+export default function couponCode(percent: number): string {
+  // percent を埋め込んだ「OFF◯」の文字列を返す
+  return `OFF${percent}`;
+}</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// （関数 farewell は、そのまま残す）
+
+// farewell を、このファイルのデフォルト export にする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問16 のサンプルの <code>receipt.ts</code> の最後の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c09-q05-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">半分を返すアロー関数 half を export する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに half を書く</code></pre>
+      <p>数値 <code>n</code> を受け取り、その半分を返すアロー関数を作ります。<code>export const half = …</code> の形で、定数 <code>half</code> に入れて export します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>half(5)</code></dt><dd class="r"><code>2.5</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 half を作る。数値の n を受け取り、数値を返す。ほかのファイルから使えるようにする
+export const half = () =&gt; {
+  // n を 2 で割った数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q01 問15 の <code>triple</code> と同じ形です。かっこの中に引数を、かっこの後ろ（<code>=&gt;</code> の前）に <code>: number</code> を書きます。中身が <code>return</code> の 1 行だけなので、<code>{ }</code> と <code>return</code> を省いて、<code>=&gt;</code> の右に式だけを書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c09-q05-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">店の名前と商品の名前をつないだ文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function catalog() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の <code>SITE_NAME</code> と <code>products</code> を import します。店の名前の後ろに「: 」を付け、商品の名前を「、」でつないだ文字列を返す <code>catalog()</code> を書きます。引数はありません。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>catalog()</code></dt><dd class="r"><code>"サンプル商店: りんご、みかん、ぶどう"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の SITE_NAME と products を、このファイルで使えるようにする
+
+// 関数 catalog を作る。引数は受け取らず、文字列を返す
+export function catalog() {
+  // names を作り、products のそれぞれを名前にした配列の要素を "、" でつないだ文字列を入れる
+  // SITE_NAME と names を埋め込んだ「◯: ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>import の行は、問4 のサンプルの <code>cart.ts</code> のように、2 つの名前を <code>,</code> で区切って並べます。商品の名前の配列は <code>.map()</code>（02章 q04 問5）で作り、つなぐのは <code>.join()</code>（02章 q04 問11）です。<code>:</code> の後ろには、半角スペースが 1 つ入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c09-q05-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">消費税率を「消費税 10%」の形で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function taxLabel() {}</code></pre>
+      <p><code>shared/q05-modules.lib.ts</code> の <code>TAX_RATE</code> を import します。「消費税 10%」の形の文字列を返す <code>taxLabel()</code> を書きます。<code>TAX_RATE</code> に 100 を掛け、<code>Math.round</code> で整数にしてから埋め込みます。引数はありません。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>taxLabel()</code></dt><dd class="r"><code>"消費税 10%"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// shared/q05-modules.lib.ts の TAX_RATE を、このファイルで使えるようにする
+
+// 関数 taxLabel を作る。引数は受け取らず、文字列を返す
+export function taxLabel() {
+  // TAX_RATE に 100 を掛けて四捨五入した数を埋め込んだ「消費税 ◯%」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>import の行は問6 と同じ形です。四捨五入は <code>Math.round()</code>（01章 q01 問13）です。小数の掛け算は、<code>0.07 * 100</code> が <code>7.000000000000001</code> になるように、少しずれることがあります。<code>Math.round()</code> で整数にしておけば、税率が変わってもずれが出ません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c09-q05-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">クラス Stack を export する</span>
+      <span class="q-new">新しく出てくる書き方：getter <code>get 名前()</code>（スターターのコードにある）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">class Stack {
+  private items: number[] = [];
+
+  push(n: number): void {
+    this.items.push(n);
+  }
+
+  pop(): number | undefined {
+    return this.items.pop();
+  }
+
+  get size(): number {
+    return this.items.length;
+  }
+}</code></pre>
+      <p>クラス <code>Stack</code> を、ほかのファイルから使えるようにします。クラスの中身は変えません。テストは <code>Stack</code> を import し、<code>new Stack()</code> で作って確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p><code>stack.push(1)</code>、<code>stack.push(2)</code> の順に入れたあとで、次のようになります。</p>
+        <dl class="eg">
+          <div><dt><code>stack.pop()</code></dt><dd class="r"><code>2</code></dd><dd class="c">最後に入れたものが出てくる</dd></div>
+          <div><dt>そのあとの <code>stack.size</code></dt><dd class="r"><code>1</code></dd><dd class="c">2 を取り出したので、残りは 1 つ</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">get 名前()</code><h4>かっこを付けずに読めるメソッド（getter）</h4></div>
+      <p>メソッドの前に <code>get</code> を付けたものを、getter と呼びます。getter は、かっこを付けずに、プロパティのように読めます。読むたびに中身が実行され、返した値が読んだ結果になります。<code>Stack</code> の <code>size</code> も getter で、<code>stack.size</code> と書くと、いま入っている数が返ります。この問題では書き換えないので、読めれば十分です。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/cart.ts</span>
+        <pre><code class="language-typescript">// クラス Cart を作る。ほかのファイルから使えるようにする
+export class Cart {
+  // 商品名の配列 items を、クラスの外から見えないプロパティとして作り、空の配列を入れる
+  private items: string[] = [];
+
+  // メソッド add を作る。文字列の name を受け取り、何も返さない
+  add(name: string): void {
+    // items の最後に name を足す
+    this.items.push(name);
+  }
+
+  // 読むためのプロパティ count を作る。数値を返す
+  get count(): number {
+    // items の要素の数を返す
+    return this.items.length;
+  }
+}</code></pre>
+        <span class="cap">サンプル：src/shop.ts</span>
+        <pre><code class="language-typescript">// cart.ts の Cart を、このファイルで使えるようにする
+import { Cart } from "./cart";
+
+// カート cart を作り、新しい Cart を入れる
+const cart = new Cart();
+// cart に "ノート" を足す
+cart.add("ノート");
+// 個数 count を作り、cart の count を入れる。かっこは付けない
+const count = cart.count;
+// 結果: count は 1</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>getter にかっこを付けて <code>cart.count()</code> と書くと、<code>This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?</code>（get のアクセサーなので呼べない。かっこなしで使うつもりではないか）というエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Stack を作る。ほかのファイルから使えるようにする
+class Stack {
+  // （中身は、そのまま残す）
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>06章 q01 で出た <code>export class</code> の形です。問20 のサンプルの <code>Cart</code> と同じく、<code>class</code> の前に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 1 -->
+  <section class="q" id="c09-q05-a">
+    <header class="q-h">
+      <span class="q-n">総合 1</span><span class="q-t">価格のファイル q05-modules-price.ts に分ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export {};</code></pre>
+      <p>★総合問題は 4 問で、1 つの作業です。<code>src/q05-modules.ts</code> には、ネットショップのカートの計算が 1 つのファイルにまとめて書いてあります。これを 3 つのファイルに分け、<code>q05-modules.ts</code> には再エクスポートだけを残します。関数の中身は変えずに、置き場所だけを変えます（総合 3 で足す確かめは別です）。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>ファイル</th><th>中身</th></tr></thead>
+          <tbody>
+            <tr><td><code>src/q05-modules-price.ts</code></td><td><code>TAX_RATE</code> と <code>priceWithTax</code> を名前付き export（総合 1）</td></tr>
+            <tr><td><code>src/q05-modules-format.ts</code></td><td><code>formatYen</code> をデフォルト export（総合 2）</td></tr>
+            <tr><td><code>src/q05-modules-cart.ts</code></td><td><code>CartItem</code>、<code>addItem</code>、<code>cartTotal</code>、<code>cartSummary</code>。<code>./q05-modules-price</code>、<code>./q05-modules-format</code>、<code>./q04-error</code> から import（総合 3）</td></tr>
+            <tr><td><code>src/q05-modules.ts</code></td><td>上の 3 つのファイルの再エクスポートだけ（総合 4）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lbl-block">
+        <span class="lbl">移す元：src/q05-modules.ts のコード</span>
+        <pre><code class="language-typescript">import { ValidationError } from "./q04-error";
+
+export const TAX_RATE = 0.1;
+
+export type CartItem = { name: string; price: number; quantity: number };
+
+export function priceWithTax(price: number): number {
+  return Math.round(price * (1 + TAX_RATE));
+}
+
+export default function formatYen(amount: number): string {
+  return `${amount.toLocaleString("ja-JP")}円`;
+}
+
+// 同じ名前の商品があれば数を足し、なければ末尾に足した新しい配列を返す
+export function addItem(items: readonly CartItem[], item: CartItem): CartItem[] {
+  if (!items.some((i) =&gt; i.name === item.name)) {
+    return [...items, item];
+  }
+  return items.map((i) =&gt;
+    i.name === item.name ? { ...i, quantity: i.quantity + item.quantity } : i,
+  );
+}
+
+// 税込みの合計金額
+export function cartTotal(items: readonly CartItem[]): number {
+  return items.reduce((sum, i) =&gt; sum + priceWithTax(i.price) * i.quantity, 0);
+}
+
+// "2種類 合計880円" の形の文字列
+export function cartSummary(items: readonly CartItem[]): string {
+  return `${items.length}種類 合計${formatYen(cartTotal(items))}`;
+}</code></pre>
+      </div>
+      <p>総合 1 では、<code>TAX_RATE</code> と <code>priceWithTax</code> を <code>q05-modules-price.ts</code> に移し、名前付き export にします。ファイルにはじめからある <code>export {};</code> は、中身がまだないファイルを、モジュールとして扱わせるための仮の行です。コードを移したら、消してかまいません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>TAX_RATE</code></dt><dd class="r"><code>0.1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priceWithTax(100)</code></dt><dd class="r"><code>110</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 消費税率 TAX_RATE を作り、0.1 を入れる。ほかのファイルから使えるようにする
+
+// 関数 priceWithTax を作る。数値の price を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function priceWithTax(price: number): number {
+  // （中身は、q05-modules.ts のまま移す）
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>q05-modules.ts</code> の <code>TAX_RATE</code> と <code>priceWithTax</code> を、<code>export</code> ごと切り取って、このファイルに貼り付けます。<code>priceWithTax</code> の中で使う <code>TAX_RATE</code> は同じファイルにあるので、import は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 2 -->
+  <section class="q" id="c09-q05-b">
+    <header class="q-h">
+      <span class="q-n">総合 2</span><span class="q-t">金額の表示のファイル q05-modules-format.ts に分ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export {};</code></pre>
+      <p><code>formatYen</code> を <code>q05-modules-format.ts</code> に移し、デフォルト export にします。<code>q05-modules.ts</code> でも <code>export default</code> が付いているので、そのまま移せます。テストは <code>import formatYen from "../src/q05-modules-format"</code> で読み込みます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>formatYen(1234)</code></dt><dd class="r"><code>"1,234円"</code></dd><dd class="c">デフォルト export を読み込んで呼ぶ</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 formatYen を作る。数値の amount を受け取り、文字列を返す。このファイルのデフォルト export にする
+export default function formatYen(amount: number): string {
+  // （中身は、q05-modules.ts のまま移す）
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問16 の 2 つ目のサンプル（<code>coupon.ts</code>）と同じく、関数を作るところに <code>export default</code> を付ける形です。<code>q05-modules.ts</code> の <code>formatYen</code> を、<code>export default</code> ごと切り取って貼り付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 3 -->
+  <section class="q" id="c09-q05-c">
+    <header class="q-h">
+      <span class="q-n">総合 3</span><span class="q-t">カートのファイル q05-modules-cart.ts に分け、数量の確かめを足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export {};</code></pre>
+      <p>型 <code>CartItem</code> と、<code>addItem</code>・<code>cartTotal</code>・<code>cartSummary</code> を <code>q05-modules-cart.ts</code> に移し、名前付き export にします。</p>
+      <ol>
+        <li><code>cartTotal</code> は <code>priceWithTax</code> を、<code>cartSummary</code> は <code>formatYen</code> を使います。総合 1 の <code>q05-modules-price.ts</code> から <code>priceWithTax</code>（名前付き export）を、総合 2 の <code>q05-modules-format.ts</code> から <code>formatYen</code>（デフォルト export）を import します。</li>
+        <li><code>addItem</code> に、元のコードにない確かめを足します。<code>item.quantity</code> が 1 以上の整数でなければ、<code>new ValidationError("quantity", "数量は1以上の整数にしてください")</code> を投げます。<code>ValidationError</code> は <code>"./q04-error"</code> から import します。</li>
+      </ol>
+      <p><code>ValidationError</code> は、09章 q04 の総合問題（<code>q04-error.ts</code>）で作ったクラスです。q04 が解けていないと、この問題のテストも通りません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の 2 つの商品が入ったカートを使います。</p>
+        <pre><code class="language-typescript">[
+  { name: "りんご", price: 100, quantity: 3 },
+  { name: "みかん", price: 250, quantity: 2 },
+]</code></pre>
+        <dl class="eg">
+          <div><dt><code>addItem(2 つの商品, { name: "ぶどう", price: 500, quantity: 1 })</code> の長さ</dt><dd class="r"><code>3</code></dd><dd class="c">ない商品なので末尾に足す</dd></div>
+          <div><dt><code>addItem(2 つの商品, { name: "りんご", price: 100, quantity: 2 })</code> の 0 番目の <code>quantity</code></dt><dd class="r"><code>5</code></dd><dd class="c">同じ名前なので数を足す</dd></div>
+          <div><dt>呼んだあとの元の配列の 0 番目の <code>quantity</code></dt><dd class="r"><code>3</code></dd><dd class="c">元の配列は変えない</dd></div>
+          <div><dt><code>quantity</code> が <code>0</code> の商品を <code>addItem</code> に渡す</dt><dd class="r"><code>ValidationError</code> を投げる</dd><dd class="c"></dd></div>
+          <div><dt><code>quantity</code> が <code>1.5</code> の商品を <code>addItem</code> に渡す</dt><dd class="r"><code>"数量は1以上の整数にしてください"</code> というメッセージのエラーを投げる</dd><dd class="c">整数でない</dd></div>
+          <div><dt><code>cartTotal(2 つの商品)</code></dt><dd class="r"><code>880</code></dd><dd class="c">税込み 110 円 × 3 と 275 円 × 2</dd></div>
+          <div><dt><code>cartSummary(2 つの商品)</code></dt><dd class="r"><code>"2種類 合計880円"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// q05-modules-price.ts の priceWithTax を、このファイルで使えるようにする
+// q05-modules-format.ts のデフォルト export を、formatYen という名前でこのファイルで使えるようにする
+// q04-error.ts の ValidationError を、このファイルで使えるようにする
+
+// （型 CartItem と、addItem・cartTotal・cartSummary を、export ごと q05-modules.ts から移す）
+
+// addItem の中の先頭に、次の確かめを足す
+  // もし item.quantity が整数でないか、1 より小さいなら
+    // "quantity" と "数量は1以上の整数にしてください" を渡した ValidationError を投げる</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問6、2 行目は問8 と同じ形です。どのファイルも同じ <code>src</code> フォルダーにあるので、場所は <code>"./q05-modules-price"</code> のように <code>./</code> から書きます。3 行目は、<code>q05-modules.ts</code> の先頭にある import の行を、そのまま移します。整数かどうかは <code>Number.isInteger()</code>、「〜でない」は <code>!</code> です（どちらも 01章 q04 の応用）。「〜か」は <code>||</code>（01章 q01 問15）で書けます。エラーを投げるのは <code>throw new</code>（01章 q04 問8）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 4 -->
+  <section class="q" id="c09-q05-d">
+    <header class="q-h">
+      <span class="q-n">総合 4</span><span class="q-t">q05-modules.ts を再エクスポートだけにする</span>
+      <span class="q-new">新しく出てくる書き方：<code>export * from</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// このファイル（q05-modules.ts）には、次の3つの re-export だけを書く（関数や型の定義は残さない）
+//   - q05-modules-cart.ts の export をすべて re-export する（export * from …）
+//   - q05-modules-price.ts の TAX_RATE と priceWithTax を re-export する
+//   - q05-modules-format.ts のデフォルト export を、formatYen という名前で re-export する
+//
+// テスト（q05-modules.test.ts）は、それぞれのファイルから import して確かめます。
+//
+// 説明すること（答えは、この下に // のコメントで書く）
+// - 名前付き export とデフォルト export の違い。自分ならどちらを使うか、その理由</code></pre>
+      <p>総合 1〜3 でコードを移したら、<code>q05-modules.ts</code> から関数や型の定義と、先頭の import の行を消します。残すのは、上のコメントにある 3 つの再エクスポートだけです。テストは、<code>import * as shop from "../src/q05-modules"</code> で読み込んで確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shop.addItem</code>・<code>shop.cartTotal</code>・<code>shop.cartSummary</code></dt><dd class="r"><code>q05-modules-cart.ts</code> のもの</dd><dd class="c">同じ関数そのもの</dd></div>
+          <div><dt><code>shop.TAX_RATE</code>・<code>shop.priceWithTax</code></dt><dd class="r"><code>q05-modules-price.ts</code> のもの</dd><dd class="c">同じ値・同じ関数</dd></div>
+          <div><dt><code>shop.formatYen</code></dt><dd class="r"><code>q05-modules-format.ts</code> のデフォルト export</dd><dd class="c">同じ関数そのもの</dd></div>
+          <div><dt><code>Object.keys(shop)</code> を並べ替えたもの</dt><dd class="r"><code>["TAX_RATE", "addItem", "cartSummary", "cartTotal", "formatYen", "priceWithTax"]</code></dd><dd class="c">ほかの名前が残っていない</dd></div>
+          <div><dt>型 <code>shop.CartItem</code></dt><dd class="r"><code>q05-modules-cart.ts</code> の <code>CartItem</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+        <p class="memo"><b>よくある疑問</b>型 <code>CartItem</code> は、実行するときには消えるので、<code>Object.keys(shop)</code> には出てきません。型が受け渡されているかは、最後の型の確認で確かめます。</p>
+      </div>
+      <p>「説明すること」の答えは、コードを書き終えてから、自分の言葉でコメントに書きます。考える手がかりとして、<code>q05-modules-format.ts</code> の <code>formatYen</code> を名前付き export に変えてみて、どのファイルのどの import を直す必要が出るかを見てみましょう。試したら、元に戻します。</p>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export * from "…"</code><h4>export をすべて受け渡す</h4></div>
+      <p><code>export * from</code> と書くと、そのファイルの名前付き export を、すべて同じ名前のまま受け渡します。型も一緒に受け渡されます。問15 の <code>export * as 名前 from</code> は 1 つのまとまりにして渡しますが、こちらはまとまりにせず、1 つずつの名前のまま渡します。</p>
+      <div class="sample">
+        <span class="cap">サンプル：src/shipping.ts（問9 と同じ）</span>
+        <pre><code class="language-typescript">// 送料が無料になる金額 FREE_LINE を作り、5000 を入れる。ほかのファイルから使えるようにする
+export const FREE_LINE = 5000;
+
+// 関数 shippingFee を作る。数値の total を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function shippingFee(total: number): number {
+  // total が FREE_LINE 以上なら 0、そうでなければ 500 を返す
+  return total &gt;= FREE_LINE ? 0 : 500;
+}</code></pre>
+        <span class="cap">サンプル：src/shop.ts</span>
+        <pre><code class="language-typescript">// shipping.ts の export をすべて、このファイルから受け渡す
+export * from "./shipping";</code></pre>
+        <span class="cap">サンプル：src/order.ts</span>
+        <pre><code class="language-typescript">// shop.ts の FREE_LINE と shippingFee を、このファイルで使えるようにする
+import { FREE_LINE, shippingFee } from "./shop";
+
+// 無料まであと left を作り、FREE_LINE から 4000 を引いた数を入れる
+const left = FREE_LINE - 4000;
+// 送料 fee を作り、4000 を shippingFee に渡した結果を入れる
+const fee = shippingFee(4000);
+// 結果: left は 1000、fee は 500</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>export * from</code> が受け渡すのは、名前付き export だけです。デフォルト export は受け渡されません。デフォルト export も渡したいときは、問13 の <code>export { default as … } from</code> を別に書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// q05-modules-cart.ts の export をすべて、このファイルから受け渡す
+// q05-modules-price.ts の TAX_RATE と priceWithTax を、このファイルから受け渡す
+// q05-modules-format.ts のデフォルト export を、formatYen という名前でこのファイルから受け渡す
+
+// 説明すること（答えは、この下に // のコメントで書く）
+// - 名前付き export とデフォルト export の違い。自分ならどちらを使うか、その理由</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は総合 4 のサンプルの <code>shop.ts</code>、2 行目は問11 の形で名前を 2 つ並べたもの、3 行目は問13 と同じ形です。型 <code>CartItem</code> は、1 行目で一緒に受け渡されます。</p></details>
+    </div>
+  </section>
+</section>

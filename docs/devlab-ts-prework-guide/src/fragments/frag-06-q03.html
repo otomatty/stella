@@ -1,0 +1,724 @@
+<section class="sec" id="c06-q03">
+  <div class="sec-h">
+    <span class="eyebrow">06章 クラス</span>
+    <h2>q03 インターフェース</h2>
+    <p>インターフェースを書きます。インターフェースは、オブジェクトが持つプロパティとメソッドの形に名前を付けたものです。クラスが形を満たすことは <code>implements</code> で示します。インターフェースは、オブジェクトや関数の引数の型にも使えます。ドリル 1 問（1 つのファイルに 20 問）を確認して提出してから、応用に進みます。インターフェースは <code>export</code> します。引数と戻り値には型注釈を付けます。応用には「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+  </div>
+
+  <!-- ドリル -->
+  <section class="q" id="c06-q03-1">
+    <header class="q-h">
+      <span class="q-n">ドリル</span><span class="q-t">20 問のインターフェースを書く</span>
+      <span class="q-new">新しく出てくる書き方：<code>interface</code>、<code>export interface</code>、メソッドの形 <code>m(): T;</code>、<code>implements</code>、<code>public</code>、インターフェースの <code>extends</code>、オブジェクトのメソッド記法</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問1 interface Named（name: string）と、それを実装する class Cat(name) を書く。Cat の meow() は "ミケ: ニャー" を返す
+//     例: new Cat("ミケ").meow() → "ミケ: ニャー"
+// ここに Named と Cat を書く
+
+// …（問20 まで、同じ形で続きます）</code></pre>
+      <p>1 つのファイルに、20 問ぶんのインターフェースと、それを使うクラスや関数を書きます。ファイルには <code>// ここに Named と Cat を書く</code> のようなコメントだけがあり、コードは何も書いてありません。コメントの下に、インターフェースから順に書きます。</p>
+      <p>インターフェースは <code>interface Named { name: string }</code> のように書き、<code>export</code> を付けます。テストはインターフェースも読み込むので、<code>export</code> がないと失敗します。クラスがインターフェースの形を満たすことは、<code>class Cat implements Named { … }</code> で示します。インターフェースは、クラスのほかに、オブジェクトや関数の引数の型にも使えます。引数と戻り値には型注釈を付けます。</p>
+      <h4>問1 Named と Cat：名前を持つ形と、それを満たす猫</h4>
+      <pre><code class="language-typescript">// ここに Named と Cat を書く</code></pre>
+      <p>インターフェース <code>Named</code> は、<code>name</code>（文字列）を持つ形です。クラス <code>Cat</code> は <code>Named</code> を実装し（<code>implements Named</code>）、名前 <code>name</code> を受け取ります。<code>meow()</code> は <code>"ミケ: ニャー"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const cat: Named = new Cat("ミケ");</code> の <code>cat.name</code></dt><dd class="r"><code>"ミケ"</code></dd><dd class="c">Cat を Named の変数に入れられる</dd></div>
+          <div><dt><code>new Cat("ミケ").meow()</code></dt><dd class="r"><code>"ミケ: ニャー"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Named</code> が <code>{ name: string }</code> と同じ形であることも確かめます。</p>
+      </div>
+      <h4>問2 HasArea と Square：面積を出せる形</h4>
+      <pre><code class="language-typescript">// ここに HasArea と Square を書く</code></pre>
+      <p>インターフェース <code>HasArea</code> は、メソッド <code>area()</code>（何も受け取らず数値を返す）を持つ形です。クラス <code>Square</code> は <code>HasArea</code> を実装し、1 辺の長さ <code>size</code> を受け取ります。<code>area()</code> は面積を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const shape: HasArea = new Square(3);</code> の <code>shape.area()</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+      <h4>問3 Greeting と JapaneseGreeting：あいさつの形</h4>
+      <pre><code class="language-typescript">// ここに Greeting と JapaneseGreeting を書く</code></pre>
+      <p>インターフェース <code>Greeting</code> は、メソッド <code>greet(name: string): string</code> を持つ形です。クラス <code>JapaneseGreeting</code> は <code>Greeting</code> を実装します。constructor はありません。<code>greet</code> は <code>"こんにちは、山田さん"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const g: Greeting = new JapaneseGreeting();</code> の <code>g.greet("山田")</code></dt><dd class="r"><code>"こんにちは、山田さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+      <h4>問4 Figure と describeShape：図形を説明する関数</h4>
+      <pre><code class="language-typescript">// ここに Figure と describeShape を書く</code></pre>
+      <p>インターフェース <code>Figure</code> は、<code>name</code>（文字列）と <code>area()</code>（何も受け取らず数値を返すメソッド）を持つ形です。関数 <code>describeShape(figure)</code> は、<code>"正方形（面積 9）"</code> の形の文字列を返します。インターフェースは、関数の引数の型にも使えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>describeShape({ name: "正方形", area: () =&gt; 9 })</code></dt><dd class="r"><code>"正方形（面積 9）"</code></dd><dd class="c">オブジェクトリテラルを渡す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Figure</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+      <h4>問5 Priced と totalPrice：価格の合計</h4>
+      <pre><code class="language-typescript">// ここに Priced と totalPrice を書く</code></pre>
+      <p>インターフェース <code>Priced</code> は、<code>price</code>（数値）を持つ形です。関数 <code>totalPrice(items)</code> は、読み取り専用の <code>Priced</code> の配列を受け取り、価格の合計を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>totalPrice([{ price: 100 }, { price: 50 }])</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Priced[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+      <h4>問6 Instrument と楽器のクラス 2 つ、全部を鳴らす関数</h4>
+      <pre><code class="language-typescript">// ここに Instrument、Bell、Drum、playAll を書く</code></pre>
+      <p>インターフェース <code>Instrument</code> は、メソッド <code>play()</code>（何も受け取らず文字列を返す）を持つ形です。クラス <code>Bell</code> と <code>Drum</code> は、どちらも <code>Instrument</code> を実装します。<code>Bell</code> の <code>play()</code> は <code>"チリン"</code>、<code>Drum</code> は <code>"ドン"</code> を返します。関数 <code>playAll(instruments)</code> は、読み取り専用の <code>Instrument</code> の配列を受け取り、それぞれを <code>play()</code> した結果を並べた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>playAll([new Bell(), new Drum()])</code></dt><dd class="r"><code>["チリン", "ドン"]</code></dd><dd class="c">違うクラスを 1 つの配列に入れられる</dd></div>
+          <div><dt><code>const instrument: Instrument = new Drum();</code> の <code>instrument.play()</code></dt><dd class="r"><code>"ドン"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>playAll</code> の引数が <code>readonly Instrument[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+      <h4>問7 FixedPoint と origin：読み取り専用の点</h4>
+      <pre><code class="language-typescript">// ここに FixedPoint と origin を書く</code></pre>
+      <p>インターフェース <code>FixedPoint</code> は、<code>x</code> と <code>y</code>（どちらも読み取り専用の数値）を持つ形です。関数 <code>origin()</code> は、何も受け取らず、<code>{ x: 0, y: 0 }</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>origin()</code></dt><dd class="r"><code>{ x: 0, y: 0 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>origin().x = 1;</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">読み取り専用</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>FixedPoint</code> が <code>{ readonly x: number; readonly y: number }</code> と同じ形、<code>origin</code> が何も受け取らず <code>FixedPoint</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問8 Animal と Dog：形を広げる</h4>
+      <pre><code class="language-typescript">// ここに Animal、Dog、dogLabel を書く</code></pre>
+      <p>インターフェース <code>Animal</code> は、<code>name</code>（文字列）を持つ形です。インターフェース <code>Dog</code> は <code>Animal</code> を広げ（<code>extends Animal</code>）、<code>breed</code>（犬種、文字列）を足します。関数 <code>dogLabel(dog)</code> は <code>"ポチ（柴）"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dogLabel({ name: "ポチ", breed: "柴" })</code></dt><dd class="r"><code>"ポチ（柴）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Dog</code> の値を、<code>Animal</code> の変数に入れる</dt><dd class="r">入れられる</dd><dd class="c">Dog は Animal の形も満たす</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Dog</code> が <code>{ name: string; breed: string }</code> と同じ形、<code>dogLabel</code> の引数が <code>Dog</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+      <h4>問9 Logger と MemoryLogger：メッセージを貯める</h4>
+      <pre><code class="language-typescript">// ここに Logger と MemoryLogger を書く</code></pre>
+      <p>インターフェース <code>Logger</code> は、メソッド <code>log(message: string): void</code> を持つ形です。クラス <code>MemoryLogger</code> は <code>Logger</code> を実装します。受け取ったメッセージを、フィールド <code>lines</code>（文字列の配列、初期値は <code>[]</code>）に貯めます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>log("a")</code>、<code>log("b")</code> の後の <code>lines</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+      <h4>問10 KeyValueStore と MemoryStore：キーと値を覚える</h4>
+      <pre><code class="language-typescript">// ここに KeyValueStore と MemoryStore を書く</code></pre>
+      <p>インターフェース <code>KeyValueStore</code> は、メソッドを 2 つ持つ形です。<code>get(key: string): string | undefined</code> と <code>set(key: string, value: string): void</code> です。クラス <code>MemoryStore</code> は <code>KeyValueStore</code> を実装します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>set("a", "1")</code> の後の <code>get("a")</code></dt><dd class="r"><code>"1"</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>get("b")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">入れていないキー</dd></div>
+        </dl>
+      </div>
+      <h4>問11 Vehicle と乗り物のクラス 2 つ</h4>
+      <pre><code class="language-typescript">// ここに Vehicle、Bike、Car を書く</code></pre>
+      <p>インターフェース <code>Vehicle</code> は、<code>wheels</code>（車輪の数、数値）と <code>move()</code>（何も受け取らず文字列を返すメソッド）を持つ形です。クラス <code>Bike</code> と <code>Car</code> は、どちらも <code>Vehicle</code> を実装します。constructor はありません。<code>Bike</code> は <code>wheels</code> が 2 で <code>move()</code> が <code>"スイスイ"</code>、<code>Car</code> は <code>wheels</code> が 4 で <code>move()</code> が <code>"ブーン"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>[new Bike(), new Car()]</code> のそれぞれの <code>wheels</code></dt><dd class="r"><code>[2, 4]</code></dd><dd class="c"></dd></div>
+          <div><dt>それぞれの <code>move()</code></dt><dd class="r"><code>["スイスイ", "ブーン"]</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+      <h4>問12 Validator と MinLength：文字数が足りるか</h4>
+      <pre><code class="language-typescript">// ここに Validator と MinLength を書く</code></pre>
+      <p>インターフェース <code>Validator</code> は、メソッド <code>validate(value: string): boolean</code> を持つ形です。クラス <code>MinLength</code> は <code>Validator</code> を実装し、いちばん少ない文字数 <code>min</code> を受け取ります。<code>validate</code> は、文字数が <code>min</code> 以上なら <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const v: Validator = new MinLength(3);</code> の <code>v.validate("ab")</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 文字</dd></div>
+          <div><dt><code>v.validate("abc")</code></dt><dd class="r"><code>true</code></dd><dd class="c">3 文字</dd></div>
+        </dl>
+      </div>
+      <h4>問13 Clock と FixedClock：時計を差し替えられる関数</h4>
+      <pre><code class="language-typescript">// ここに Clock、FixedClock、elapsedSince を書く</code></pre>
+      <p>インターフェース <code>Clock</code> は、メソッド <code>now()</code>（何も受け取らず数値を返す）を持つ形です。クラス <code>FixedClock</code> は <code>Clock</code> を実装し、時刻 <code>time</code> を受け取ります。<code>now()</code> は、いつも <code>time</code> を返します。関数 <code>elapsedSince(clock, start)</code> は、<code>clock.now() - start</code>（経った時間）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>elapsedSince(new FixedClock(1500), 1000)</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>elapsedSince({ now: () =&gt; 10 }, 4)</code></dt><dd class="r"><code>6</code></dd><dd class="c">クラスでなくても、形が合えば渡せる</dd></div>
+        </dl>
+      </div>
+      <h4>問14 PriceFormatter と YenFormatter：金額の表示</h4>
+      <pre><code class="language-typescript">// ここに PriceFormatter と YenFormatter を書く</code></pre>
+      <p>インターフェース <code>PriceFormatter</code> は、メソッド <code>format(n: number): string</code> を持つ形です。クラス <code>YenFormatter</code> は <code>PriceFormatter</code> を実装します。constructor はありません。<code>format</code> は <code>"1,200円"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const f: PriceFormatter = new YenFormatter();</code> の <code>f.format(1200)</code></dt><dd class="r"><code>"1,200円"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+      <h4>問15 TallyLike と makeTally：クラスを使わずに数え役を作る</h4>
+      <pre><code class="language-typescript">// ここに TallyLike と makeTally を書く</code></pre>
+      <p>インターフェース <code>TallyLike</code> は、<code>count</code>（数値）と <code>increment()</code>（何も受け取らず何も返さないメソッド）を持つ形です。関数 <code>makeTally()</code> は、<code>TallyLike</code> の形のオブジェクトを、クラスを使わずにオブジェクトリテラルで作って返します。<code>count</code> の初期値は 0 で、<code>increment()</code> は <code>count</code> を 1 増やします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeTally()</code> の結果で <code>increment()</code> を 2 回呼んだ後の <code>count</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>makeTally</code> が何も受け取らず <code>TallyLike</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問16 Point2D と Point3D：3 次元の点の長さ</h4>
+      <pre><code class="language-typescript">// ここに Point2D、Point3D、length3d を書く</code></pre>
+      <p>インターフェース <code>Point2D</code> は、<code>x</code> と <code>y</code>（どちらも数値）を持つ形です。インターフェース <code>Point3D</code> は <code>Point2D</code> を広げ、<code>z</code>（数値）を足します。関数 <code>length3d(p)</code> は、原点からの距離を返します。距離は <code>Math.hypot(x, y, z)</code> で求めます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>length3d({ x: 1, y: 2, z: 2 })</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Point3D</code> の値を、<code>Point2D</code> の変数に入れる</dt><dd class="r">入れられる</dd><dd class="c">Point3D は Point2D の形も満たす</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>length3d</code> の引数が <code>Point3D</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+      <h4>問17 LogEntry と latestEntry：いちばん新しい記録</h4>
+      <pre><code class="language-typescript">// ここに LogEntry と latestEntry を書く</code></pre>
+      <p>インターフェース <code>LogEntry</code> は、<code>message</code>（文字列）と <code>at</code>（時刻、数値）を持つ形です。関数 <code>latestEntry(entries)</code> は、読み取り専用の <code>LogEntry</code> の配列を受け取り、<code>at</code> がいちばん大きいものを返します。空なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>latestEntry([{ message: "a", at: 1 }, { message: "b", at: 3 }])</code></dt><dd class="r"><code>{ message: "b", at: 3 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>latestEntry([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly LogEntry[]</code>、戻り値が <code>LogEntry | undefined</code> であることも確かめます。</p>
+      </div>
+      <h4>問18 Repository と ArrayRepository：番号で探す</h4>
+      <pre><code class="language-typescript">// ここに Repository と ArrayRepository を書く</code></pre>
+      <p>インターフェース <code>Repository</code> は、メソッド <code>findById(id: number): string | undefined</code> を持つ形です。クラス <code>ArrayRepository</code> は <code>Repository</code> を実装し、文字列の読み取り専用の配列 <code>items</code> を受け取ります。<code>findById(id)</code> は、1 から数えた <code>id</code> 番目の要素を返します。なければ <code>undefined</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const repo: Repository = new ArrayRepository(["a", "b"]);</code> の <code>repo.findById(2)</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">1 から数えて 2 番目</dd></div>
+          <div><dt><code>repo.findById(3)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">ない番号</dd></div>
+        </dl>
+      </div>
+      <h4>問19 Discount と割引のクラス 2 つ、順に当てはめる関数</h4>
+      <pre><code class="language-typescript">// ここに Discount、PercentOff、AmountOff、applyDiscounts を書く</code></pre>
+      <p>インターフェース <code>Discount</code> は、メソッド <code>apply(price: number): number</code> を持つ形です。どちらも <code>Discount</code> を実装するクラスを 2 つ書きます。<code>PercentOff(rate)</code> は <code>rate</code> パーセント引きで、1 円未満は切り捨てます。<code>AmountOff(amount)</code> は <code>amount</code> 円引きで、0 より小さくはしません。関数 <code>applyDiscounts(price, discounts)</code> は、割引を前から順に当てはめた価格を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>applyDiscounts(1000, [new PercentOff(10), new AmountOff(100)])</code></dt><dd class="r"><code>800</code></dd><dd class="c">1000 → 900 → 800</dd></div>
+          <div><dt><code>applyDiscounts(50, [new AmountOff(100)])</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 より小さくしない</dd></div>
+          <div><dt><code>applyDiscounts(1000, [])</code></dt><dd class="r"><code>1000</code></dd><dd class="c">割引がなければそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>applyDiscounts</code> の引数が数値と <code>readonly Discount[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+      <h4>問20 Serializable と JsonUser：JSON の文字列にする</h4>
+      <pre><code class="language-typescript">// ここに Serializable と JsonUser を書く</code></pre>
+      <p>インターフェース <code>Serializable</code> は、メソッド <code>serialize(): string</code> を持つ形です。クラス <code>JsonUser</code> は <code>Serializable</code> を実装し、名前 <code>name</code> と年齢 <code>age</code> を受け取ります。<code>serialize()</code> は、<code>JSON.stringify({ name, age })</code> の結果を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>const s: Serializable = new JsonUser("山田", 30);</code> の <code>s.serialize()</code></dt><dd class="r"><code>'{"name":"山田","age":30}'</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export interface Product { … }</code><h4>インターフェース（オブジェクトの形に名前を付ける）</h4></div>
+      <p><code>interface 名前 { … }</code> と書くと、オブジェクトの形に名前を付けられます。これをインターフェースと呼びます。<code>{ }</code> の中には、プロパティの名前と型を <code>;</code> で区切って並べます。型エイリアス <code>type Item = { … };</code>（02章 q01 応用）とよく似ていますが、<code>=</code> がなく、最後の <code>}</code> の後ろに <code>;</code> も付けません。前に <code>export</code> を付けると、ほかのファイルから使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Product というインターフェースを作る。name は文字列、price は数値。ほかのファイルから使えるようにする
+export interface Product {
+  name: string;
+  price: number;
+}
+
+// 関数 priceTag を作る。Product の product を受け取り、文字列を返す
+function priceTag(product: Product): string {
+  // product の name と product の price を埋め込んだ「◯：◯円」の文字列を返す
+  return `${product.name}：${product.price}円`;
+}
+
+// 札 tag を作り、priceTag に、name が "ノート"、price が 150 のオブジェクトを渡して呼んだ結果を入れる
+const tag = priceTag({ name: "ノート", price: 150 });
+// 結果: tag は "ノート：150円"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>export</span> <span class="seg"><i>2</i>interface</span> <span class="seg"><i>3</i>Product</span> {
+  <span class="seg"><i>4</i>name: string;</span>
+  price: number;
+}</pre>
+        <ol>
+          <li><span>ほかのファイルから使えるようにします。テストはこのインターフェースを読み込みます。</span></li>
+          <li><span>インターフェースを作る、という印です。</span></li>
+          <li><span>インターフェースの名前です。大文字で始めます。</span></li>
+          <li><span>プロパティの名前と型です。1 行に 1 つずつ書き、<code>;</code> で終えます。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>型エイリアス（02章 q01 応用）</h5>
+          <pre><code class="language-typescript">type Product = {
+  name: string;
+  price: number;
+};</code></pre>
+        </div>
+        <div>
+          <h5>インターフェース</h5>
+          <pre><code class="language-typescript">interface Product {
+  name: string;
+  price: number;
+}</code></pre>
+        </div>
+      </div>
+      <p>形が合っていれば、クラスで作ったインスタンスでも、オブジェクトリテラルでも、インターフェースの型として扱えます。名前を付けて「このインターフェースです」と言わなくてもかまいません。問4 と問13 のテストは、オブジェクトリテラルを渡します。</p>
+      <p class="memo"><b>テストの読み方</b>テストには <code>import { type Named, Cat } from …</code> のように、<code>type</code> を付けた読み込みがあります。<code>type</code> は「型として読み込む」という印です。インターフェースは型なので、こう書いて読み込みます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/interface">サバイバルTypeScript「インターフェース」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">fee(weight: number): number;</code><h4>メソッドの形を書く</h4></div>
+      <p>インターフェースには、メソッドの形も書けます。<code>名前(引数): 戻り値の型;</code> と書きます。クラスのメソッドから、<code>{ … }</code> の中身を取って <code>;</code> にした形です。「このインターフェースのものは、この形のメソッドを必ず持つ」という約束になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Shipping というインターフェースを作る。fee は、数値の weight を受け取り数値を返すメソッド。ほかのファイルから使えるようにする
+export interface Shipping {
+  fee(weight: number): number;
+}
+
+// 宅配便 courier を作り、型を Shipping にして、fee が weight × 2 + 300 を返すアロー関数のオブジェクトを入れる
+const courier: Shipping = { fee: (weight) =&gt; weight * 2 + 300 };
+// 送料 cost を作り、courier の fee に 100 を渡して呼んだ結果を入れる
+const cost = courier.fee(100);
+// 結果: cost は 500</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>fee</span><span class="seg"><i>2</i>(weight: number)</span><span class="seg"><i>3</i>: number</span><span class="seg c"><i>4</i>;</span></pre>
+        <ol>
+          <li><span>メソッドの名前です。</span></li>
+          <li><span>引数の名前と型です。受け取るものがなければ <code>()</code> だけを書きます。</span></li>
+          <li><span>戻り値の型です。何も返さないなら <code>void</code> です。</span></li>
+          <li><span>中身は書かず、<code>;</code> で終えます。中身は、クラスやオブジェクトのほうで書きます。</span></li>
+        </ol>
+      </figure>
+      <p>オブジェクトリテラルでこの形を満たすときは、サンプルの <code>courier</code> のように、プロパティにアロー関数（01章 q01 問20）を入れて書けます。型が <code>Shipping</code> と決まっているので、アロー関数の <code>weight</code> には型注釈が要りません。</p>
+            <dl class="eg">
+        <div><dt><code>courier.fee(100)</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+        <div><dt><code>courier.fee(0)</code></dt><dd class="r"><code>300</code></dd><dd class="c"></dd></div>
+      </dl>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">class Notebook implements Printable</code><h4>クラスがインターフェースの形を満たす（implements）</h4></div>
+      <p>クラスの名前の後ろに <code>implements インターフェースの名前</code> と書くと、「このクラスはインターフェースの形を満たす」と宣言できます。これを、インターフェースを実装すると言います。インターフェースにあるプロパティやメソッドが 1 つでも足りないと、型の確認でエラーになります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Printable というインターフェースを作る。print は、何も受け取らず文字列を返すメソッド。ほかのファイルから使えるようにする
+export interface Printable {
+  print(): string;
+}
+
+// クラス Notebook を作る。Printable の形を満たす。ほかのファイルから使えるようにする
+export class Notebook implements Printable {
+  // 文字列のフィールド title を作る
+  title: string;
+
+  // constructor を作る。文字列の title を受け取る
+  constructor(title: string) {
+    // 自分の title に title を入れる
+    this.title = title;
+  }
+
+  // メソッド print を作る。何も受け取らず、文字列を返す
+  print(): string {
+    // 自分の title を埋め込んだ「印刷: ◯」の文字列を返す
+    return `印刷: ${this.title}`;
+  }
+}
+
+// 書類 doc を作り、型を Printable にして、Notebook に "議事録" を渡して new で作ったインスタンスを入れる
+const doc: Printable = new Notebook("議事録");
+// 結果: doc.print() は "印刷: 議事録"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>export class <span class="seg"><i>1</i>Notebook</span> <span class="seg"><i>2</i>implements</span> <span class="seg"><i>3</i>Printable</span> {</pre>
+        <ol>
+          <li><span>クラスの名前です。</span></li>
+          <li><span>「形を満たす」という印です。</span></li>
+          <li><span>満たすインターフェースの名前です。先に書いておきます。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>print を書き忘れる</h5>
+          <pre><code class="language-typescript">class Notebook implements Printable {
+  title = "";
+}</code></pre>
+          <div class="verdict ng">✕ <code>Class 'Notebook' incorrectly implements interface 'Printable'.</code> のエラーになります</div>
+        </div>
+        <div>
+          <h5>print を書く</h5>
+          <pre><code class="language-typescript">class Notebook implements Printable {
+  title = "";
+  print(): string {
+    return this.title;
+  }
+}</code></pre>
+          <div class="verdict ok">○ 形を満たしています</div>
+        </div>
+      </div>
+      <p>実装したクラスのインスタンスは、インターフェースの型の変数に入れられます。違うクラスでも、同じインターフェースを実装していれば、1 つの配列にまとめて同じように扱えます（問6、問11、問19）。</p>
+      <p class="memo"><b>よくある疑問</b><code>implements</code> を書かなくても、形が合っていればインターフェースの型として扱えます。それでも書くのは、足りないものがあったときに、クラスを書いたその場でエラーが出て気づけるからです。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/interface/implementing-interfaces">サバイバルTypeScript「インターフェースを実装する」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">constructor(public label: string) {}</code><h4>public（どこからでも読み書きできる）</h4></div>
+      <p><code>public</code> は、どこからでも読めて、書き換えもできる、という印です。何も付けないフィールドと同じ意味です。それでも書くのは、constructor の引数をフィールドにするとき（q02 の 1 つ目の項目）です。何か印を付けないと引数はフィールドにならないので、制限のないフィールドにしたいときに <code>public</code> を付けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Labeled というインターフェースを作る。label は文字列。ほかのファイルから使えるようにする
+export interface Labeled {
+  label: string;
+}
+
+// クラス Shelf を作る。Labeled の形を満たす。ほかのファイルから使えるようにする
+export class Shelf implements Labeled {
+  // constructor を作る。文字列の label を受け取り、どこからでも使えるフィールド label にする
+  constructor(public label: string) {}
+}
+
+// 棚 shelf を作り、Shelf に "A-3" を渡して new で作ったインスタンスを入れる
+const shelf = new Shelf("A-3");
+// shelf の label に "B-1" を入れ直す
+shelf.label = "B-1";
+// 結果: shelf.label は "B-1"</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>インターフェースにある <code>label</code> を、クラスで <code>private label</code> にすると、外から読めなくなり、形を満たせません。型の確認で <code>Property 'label' is private in type 'Shelf' but not in type 'Labeled'.</code> というエラーになります。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/access-modifiers">サバイバルTypeScript「アクセス修飾子」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">interface DigitalProduct extends Goods</code><h4>インターフェースを広げる（extends）</h4></div>
+      <p><code>interface 新しい名前 extends 元の名前 { … }</code> と書くと、元のインターフェースのプロパティを受け継ぎ、<code>{ }</code> の中のものを足した、新しいインターフェースになります。q02 で出たクラスの <code>extends</code> と同じ考え方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Goods というインターフェースを作る。name は文字列。ほかのファイルから使えるようにする
+export interface Goods {
+  name: string;
+}
+
+// DigitalProduct というインターフェースを作る。Goods を広げ、sizeMb は数値。ほかのファイルから使えるようにする
+export interface DigitalProduct extends Goods {
+  sizeMb: number;
+}
+
+// 電子書籍 ebook を作り、型を DigitalProduct にして、name が "入門書"、sizeMb が 12 のオブジェクトを入れる
+const ebook: DigitalProduct = { name: "入門書", sizeMb: 12 };
+// 商品 goods を作り、型を Goods にして、ebook を入れる
+const goods: Goods = ebook;
+// 結果: goods.name は "入門書"</code></pre>
+      </div>
+            <dl class="eg">
+        <div><dt><code>DigitalProduct</code> の形</dt><dd class="r"><code>{ name: string; sizeMb: number }</code></dd><dd class="c">受け継いだ name と、足した sizeMb</dd></div>
+        <div><dt><code>DigitalProduct</code> の値を <code>Goods</code> の変数に入れる</dt><dd class="r">入れられる</dd><dd class="c">Goods に要る name を持っている</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>DigitalProduct</code> の中に <code>name: string;</code> をもう一度書く必要はありません。足したいものだけを書きます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/interface/interface-inheritance">サバイバルTypeScript「インターフェースの継承」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">add(n: number): void { … },</code><h4>オブジェクトのメソッド記法</h4></div>
+      <p>オブジェクトリテラルの中にも、クラスと同じ形でメソッドを書けます。<code>add: (n) =&gt; { … }</code> のようにアロー関数を入れる代わりに、<code>add(n) { … }</code> と書く書き方です。クラスと違い、オブジェクトリテラルなので、プロパティとプロパティの間には <code>,</code> を付けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Meter というインターフェースを作る。value は数値、add は数値の n を受け取り何も返さないメソッド。ほかのファイルから使えるようにする
+export interface Meter {
+  value: number;
+  add(n: number): void;
+}
+
+// 関数 makeMeter を作る。何も受け取らず、Meter を返す
+function makeMeter(): Meter {
+  // 次のオブジェクトを返す
+  return {
+    // value は 0
+    value: 0,
+    // メソッド add を作る。数値の n を受け取り、何も返さない
+    add(n: number): void {
+      // 自分の value に n を足す
+      this.value += n;
+    },
+  };
+}
+
+// 水道メーター water を作り、makeMeter を呼んだ結果を入れる
+const water = makeMeter();
+// water の add に 3 を渡して呼ぶ
+water.add(3);
+// 結果: water.value は 3</code></pre>
+      </div>
+      <p>メソッド記法で書いたメソッドの中の <code>this</code> は、クラスのときと同じく、メソッドを呼んだオブジェクトです。<code>water.add(3)</code> なら <code>this</code> は <code>water</code> です。戻り値の型が <code>Meter</code> と決まっているので、<code>this</code> も <code>Meter</code> として扱われます。</p>
+      <p class="memo"><b>よくある間違い</b>メソッドの後ろの <code>,</code> を忘れたり、クラスと同じつもりで <code>;</code> を付けたりすると、型の確認でエラーになります。オブジェクトリテラルの中は、いつも <code>,</code> で区切ります。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/object">サバイバルTypeScript「オブジェクト」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>問1 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Named というインターフェースを作る。name は文字列。ほかのファイルから使えるようにする
+
+// クラス Cat を作る。Named の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。文字列の name を受け取り、どこからでも使えるフィールド name にする
+//   メソッド meow を作る。何も受け取らず、文字列を返す
+//     自分の name を埋め込んだ「◯: ニャー」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>問1 ヒント 2<span>コードへの直し方</span></summary><p><code>Named</code> は 1 つ目の項目のサンプルの <code>Product</code> と同じ形で、プロパティが 1 つです。<code>Cat</code> は <code>implements</code> の項目のサンプルの <code>Notebook</code>、constructor は <code>public</code> の項目のサンプルと同じ形です。<code>name</code> を <code>private</code> にすると、<code>Named</code> の形を満たせません。</p></details>
+      <details class="hint"><summary>問2 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// HasArea というインターフェースを作る。area は、何も受け取らず数値を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス Square を作る。HasArea の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。数値の size を受け取り、外から読めず、入れ直せないフィールド size にする
+//   メソッド area を作る。何も受け取らず、数値を返す
+//     自分の size × 自分の size を返す</code></pre></details>
+      <details class="hint"><summary>問2 ヒント 2<span>コードへの直し方</span></summary><p>メソッドの形は <code>area(): number;</code> と書きます（メソッドの形の項目）。<code>size</code> は <code>HasArea</code> にないので、<code>private</code> にしてかまいません。インターフェースにないものを、クラスに足すこともできます。</p></details>
+      <details class="hint"><summary>問3 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Greeting というインターフェースを作る。greet は、文字列の name を受け取り文字列を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス JapaneseGreeting を作る。Greeting の形を満たす。ほかのファイルから使えるようにする
+//   メソッド greet を作る。文字列の name を受け取り、文字列を返す
+//     name を埋め込んだ「こんにちは、◯さん」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>問3 ヒント 2<span>コードへの直し方</span></summary><p>インターフェースのメソッドの形は <code>greet(name: string): string;</code> です。クラスのほうにも、同じ引数と戻り値の型注釈を書きます。フィールドがないので、constructor は書きません。</p></details>
+      <details class="hint"><summary>問4 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Figure というインターフェースを作る。name は文字列、area は何も受け取らず数値を返すメソッド。ほかのファイルから使えるようにする
+
+// 関数 describeShape を作る。Figure の figure を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   figure の name と、figure の area を呼んだ結果を埋め込んだ「◯（面積 ◯）」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>問4 ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、1 つ目の項目のサンプルの <code>Product</code> に、メソッドの形を 1 行足した形です。<code>area</code> はメソッドなので、値を出すには <code>figure.area()</code> とかっこを付けて呼びます。テストは、オブジェクトリテラルを渡します。形が合っていれば、そのまま渡せます。</p></details>
+      <details class="hint"><summary>問5 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Priced というインターフェースを作る。price は数値。ほかのファイルから使えるようにする
+
+// 関数 totalPrice を作る。Priced の読み取り専用の配列 items を受け取り、数値を返す。ほかのファイルから使えるようにする
+//   合計 total を入れ直せる変数として作り、0 を入れる
+//   items から 1 つずつ item に取り出してくり返す
+//     total に item の price を足す
+//   total を返す</code></pre></details>
+      <details class="hint"><summary>問5 ヒント 2<span>コードへの直し方</span></summary><p>引数の型は <code>readonly Priced[]</code> です（02章 q04 問1）。合計の計算は q01 のドリルの問14（<code>Cart</code> の <code>total</code>）と同じ形です。</p></details>
+      <details class="hint"><summary>問6 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Instrument というインターフェースを作る。play は、何も受け取らず文字列を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス Bell を作る。Instrument の形を満たす。ほかのファイルから使えるようにする
+//   メソッド play を作る。何も受け取らず、文字列を返す
+//     "チリン" を返す
+
+// クラス Drum を作る。Instrument の形を満たす。ほかのファイルから使えるようにする
+//   メソッド play を作る。何も受け取らず、文字列を返す
+//     "ドン" を返す
+
+// 関数 playAll を作る。Instrument の読み取り専用の配列 instruments を受け取り、文字列の配列を返す。ほかのファイルから使えるようにする
+//   instruments の要素を 1 つずつ、play を呼んだ結果に変えた配列を返す</code></pre></details>
+      <details class="hint"><summary>問6 ヒント 2<span>コードへの直し方</span></summary><p><code>Bell</code> と <code>Drum</code> は問3 と同じ形です。「1 つずつ変えた配列」は <code>.map()</code> です（02章 q04 問5）。<code>.map((instrument) =&gt; instrument.play())</code> のように、渡す関数の中でメソッドを呼びます。配列の要素の型が <code>Instrument</code> なので、どちらのクラスでも <code>play()</code> を呼べます。</p></details>
+      <details class="hint"><summary>問7 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// FixedPoint というインターフェースを作る。x は読み取り専用の数値、y は読み取り専用の数値。ほかのファイルから使えるようにする
+
+// 関数 origin を作る。何も受け取らず、FixedPoint を返す。ほかのファイルから使えるようにする
+//   x が 0、y が 0 のオブジェクトを返す</code></pre></details>
+      <details class="hint"><summary>問7 ヒント 2<span>コードへの直し方</span></summary><p>インターフェースのプロパティにも、<code>readonly</code> を付けられます。書き方は、型エイリアスの <code>readonly</code> プロパティ（02章 q02 問7）と同じです。</p></details>
+      <details class="hint"><summary>問8 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Animal というインターフェースを作る。name は文字列。ほかのファイルから使えるようにする
+
+// Dog というインターフェースを作る。Animal を広げ、breed は文字列。ほかのファイルから使えるようにする
+
+// 関数 dogLabel を作る。Dog の dog を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   dog の name と dog の breed を埋め込んだ「◯（◯）」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>問8 ヒント 2<span>コードへの直し方</span></summary><p><code>Dog</code> は、インターフェースを広げる項目のサンプルの <code>DigitalProduct</code> と同じ形です。<code>Dog</code> の中には <code>breed</code> だけを書きます。<code>name</code> は <code>Animal</code> から受け継ぎます。</p></details>
+      <details class="hint"><summary>問9 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Logger というインターフェースを作る。log は、文字列の message を受け取り何も返さないメソッド。ほかのファイルから使えるようにする
+
+// クラス MemoryLogger を作る。Logger の形を満たす。ほかのファイルから使えるようにする
+//   文字列の配列のフィールド lines を作り、空の配列を入れる
+//   メソッド log を作る。文字列の message を受け取り、何も返さない
+//     自分の lines の最後に message を足す</code></pre></details>
+      <details class="hint"><summary>問9 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは q01 のドリルの問10 と同じ形です。テストが <code>lines</code> を外から読むので、<code>private</code> は付けません。</p></details>
+      <details class="hint"><summary>問10 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// KeyValueStore というインターフェースを作る。get は、文字列の key を受け取り文字列か undefined を返すメソッド、set は、文字列の key と文字列の value を受け取り何も返さないメソッド。ほかのファイルから使えるようにする
+
+// クラス MemoryStore を作る。KeyValueStore の形を満たす。ほかのファイルから使えるようにする
+//   キーが文字列で値が文字列のオブジェクトの、外から読めないフィールド data を作り、空のオブジェクトを入れる
+//   メソッド get を作る。文字列の key を受け取り、文字列か undefined を返す
+//     自分の data の key の値を返す
+//   メソッド set を作る。文字列の key と文字列の value を受け取り、何も返さない
+//     自分の data の key に value を入れる</code></pre></details>
+      <details class="hint"><summary>問10 ヒント 2<span>コードへの直し方</span></summary><p>インターフェースには、メソッドの形を 1 行ずつ 2 つ書きます。クラスの中身は q02 のドリルの問14（<code>NumberCache</code>）と同じ形で、値の型が文字列になります。</p></details>
+      <details class="hint"><summary>問11 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Vehicle というインターフェースを作る。wheels は数値、move は何も受け取らず文字列を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス Bike を作る。Vehicle の形を満たす。ほかのファイルから使えるようにする
+//   数値のフィールド wheels を作り、2 を入れる
+//   メソッド move を作る。何も受け取らず、文字列を返す
+//     "スイスイ" を返す
+
+// クラス Car を作る。Vehicle の形を満たす。ほかのファイルから使えるようにする
+//   数値のフィールド wheels を作り、4 を入れる
+//   メソッド move を作る。何も受け取らず、文字列を返す
+//     "ブーン" を返す</code></pre></details>
+      <details class="hint"><summary>問11 ヒント 2<span>コードへの直し方</span></summary><p>インターフェースのプロパティは、クラスではフィールドで満たします。<code>wheels = 2;</code> のように初期値を書くと、型は <code>number</code> になります（q01 のフィールドの初期値の項目）。</p></details>
+      <details class="hint"><summary>問12 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Validator というインターフェースを作る。validate は、文字列の value を受け取り true か false を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス MinLength を作る。Validator の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。数値の min を受け取り、外から読めず、入れ直せないフィールド min にする
+//   メソッド validate を作る。文字列の value を受け取り、true か false を返す
+//     value の文字数が自分の min 以上かどうか（true か false）を返す</code></pre></details>
+      <details class="hint"><summary>問12 ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。文字数は <code>value.length</code> です。</p></details>
+      <details class="hint"><summary>問13 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Clock というインターフェースを作る。now は、何も受け取らず数値を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス FixedClock を作る。Clock の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。数値の time を受け取り、外から読めず、入れ直せないフィールド time にする
+//   メソッド now を作る。何も受け取らず、数値を返す
+//     自分の time を返す
+
+// 関数 elapsedSince を作る。Clock の clock と数値の start を受け取り、数値を返す。ほかのファイルから使えるようにする
+//   clock の now を呼んだ結果 − start を返す</code></pre></details>
+      <details class="hint"><summary>問13 ヒント 2<span>コードへの直し方</span></summary><p><code>elapsedSince</code> の引数の型を <code>FixedClock</code> にすると、2 つ目のテストのオブジェクトが渡せません。型は <code>Clock</code> にします。こうしておくと、テストでは決まった時刻の時計、本番では本当の時計、と差し替えられます。</p></details>
+      <details class="hint"><summary>問14 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// PriceFormatter というインターフェースを作る。format は、数値の n を受け取り文字列を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス YenFormatter を作る。PriceFormatter の形を満たす。ほかのファイルから使えるようにする
+//   メソッド format を作る。数値の n を受け取り、文字列を返す
+//     n を 3 桁ごとのカンマ区切りにした文字列の後ろに "円" をつなげて返す</code></pre></details>
+      <details class="hint"><summary>問14 ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形です。カンマ区切りは <code>.toLocaleString()</code> です（01章 q02 問12）。</p></details>
+      <details class="hint"><summary>問15 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// TallyLike というインターフェースを作る。count は数値、increment は何も受け取らず何も返さないメソッド。ほかのファイルから使えるようにする
+
+// 関数 makeTally を作る。何も受け取らず、TallyLike を返す。ほかのファイルから使えるようにする
+//   次のオブジェクトを返す
+//     count は 0
+//     メソッド increment を作る。何も受け取らず、何も返さない
+//       自分の count を 1 増やす</code></pre></details>
+      <details class="hint"><summary>問15 ヒント 2<span>コードへの直し方</span></summary><p>オブジェクトのメソッド記法の項目のサンプルの <code>makeMeter</code> と同じ形です。<code>count: 0,</code> の後ろに <code>increment() { … }</code> を書きます。戻り値の型が <code>TallyLike</code> なので、メソッドの中の <code>this</code> も <code>TallyLike</code> として扱われます。</p></details>
+      <details class="hint"><summary>問16 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Point2D というインターフェースを作る。x は数値、y は数値。ほかのファイルから使えるようにする
+
+// Point3D というインターフェースを作る。Point2D を広げ、z は数値。ほかのファイルから使えるようにする
+
+// 関数 length3d を作る。Point3D の p を受け取り、数値を返す。ほかのファイルから使えるようにする
+//   p の x と p の y と p の z から、斜めの長さを求めて返す</code></pre></details>
+      <details class="hint"><summary>問16 ヒント 2<span>コードへの直し方</span></summary><p>問8 と同じ形です。<code>Math.hypot()</code>（01章 q04 問17）には、数をいくつでも渡せます。</p></details>
+      <details class="hint"><summary>問17 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// LogEntry というインターフェースを作る。message は文字列、at は数値。ほかのファイルから使えるようにする
+
+// 関数 latestEntry を作る。LogEntry の読み取り専用の配列 entries を受け取り、LogEntry か undefined を返す。ほかのファイルから使えるようにする
+//   いちばん新しい記録 latest を、LogEntry か undefined を入れ直せる変数として作る
+//   entries から 1 つずつ entry に取り出してくり返す
+//     もし latest が undefined と等しい、または entry の at が latest の at より大きいなら
+//       latest に entry を入れ直す
+//   latest を返す</code></pre></details>
+      <details class="hint"><summary>問17 ヒント 2<span>コードへの直し方</span></summary><p>「◯ か undefined を入れ直せる変数」は <code>let latest: LogEntry | undefined;</code> です。値を入れずに作ると、最初は <code>undefined</code> が入ります（02章 発展問題 e02）。<code>||</code> の右は、左が <code>false</code>（<code>latest</code> が <code>undefined</code> でない）のときだけ調べます。そのため、右の <code>latest.at</code> はエラーになりません。</p></details>
+      <details class="hint"><summary>問18 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Repository というインターフェースを作る。findById は、数値の id を受け取り文字列か undefined を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス ArrayRepository を作る。Repository の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。文字列の読み取り専用の配列 items を受け取り、外から読めず、入れ直せないフィールド items にする
+//   メソッド findById を作る。数値の id を受け取り、文字列か undefined を返す
+//     自分の items の id − 1 番目の要素を返す</code></pre></details>
+      <details class="hint"><summary>問18 ヒント 2<span>コードへの直し方</span></summary><p>配列の番号は 0 から数えるので、1 から数えた <code>id</code> は <code>id - 1</code> 番目です。constructor は問12 と同じ形で、型が <code>readonly string[]</code> になります。</p></details>
+      <details class="hint"><summary>問19 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Discount というインターフェースを作る。apply は、数値の price を受け取り数値を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス PercentOff を作る。Discount の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。数値の rate を受け取り、外から読めず、入れ直せないフィールド rate にする
+//   メソッド apply を作る。数値の price を受け取り、数値を返す
+//     price × (100 − 自分の rate) ÷ 100 を切り捨てた数を返す
+
+// クラス AmountOff を作る。Discount の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。数値の amount を受け取り、外から読めず、入れ直せないフィールド amount にする
+//   メソッド apply を作る。数値の price を受け取り、数値を返す
+//     price − 自分の amount と 0 の大きい方を返す
+
+// 関数 applyDiscounts を作る。数値の price と、Discount の読み取り専用の配列 discounts を受け取り、数値を返す。ほかのファイルから使えるようにする
+//   結果 result を入れ直せる変数として作り、price を入れる
+//   discounts から 1 つずつ discount に取り出してくり返す
+//     result に、discount の apply に result を渡して呼んだ結果を入れ直す
+//   result を返す</code></pre></details>
+      <details class="hint"><summary>問19 ヒント 2<span>コードへの直し方</span></summary><p>2 つのクラスは問12 と同じ形です。「◯ と 0 の大きい方」は <code>Math.max()</code> です（01章 q04 問9）。<code>applyDiscounts</code> は、前の割引の結果を次の割引に渡すので、入れ直せる <code>let</code> の変数を使います。<code>no-param-reassign</code> の規則があるので、引数の <code>price</code> には入れ直しません。</p></details>
+      <details class="hint"><summary>問20 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Serializable というインターフェースを作る。serialize は、何も受け取らず文字列を返すメソッド。ほかのファイルから使えるようにする
+
+// クラス JsonUser を作る。Serializable の形を満たす。ほかのファイルから使えるようにする
+//   constructor を作る。文字列の name を受け取り、入れ直せないフィールド name にする。数値の age を受け取り、入れ直せないフィールド age にする
+//   メソッド serialize を作る。何も受け取らず、文字列を返す
+//     name が自分の name、age が自分の age のオブジェクトを JSON の文字列にしたものを返す</code></pre></details>
+      <details class="hint"><summary>問20 ヒント 2<span>コードへの直し方</span></summary><p>JSON の文字列にするのは <code>JSON.stringify()</code> です（04章 q07 問1）。メソッドの中では、<code>{ name: this.name, age: this.age }</code> のように <code>this.</code> を付けて書きます。フィールドを読むので、<code>{ name, age }</code> の省略記法は使えません。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c06-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">図形のインターフェース Shape と、それを使うクラス・関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape = unknown;
+
+export class Circle {}
+
+export class Rectangle {}
+
+export function totalArea() {}
+
+export function largest() {}</code></pre>
+      <p>図形のインターフェースと、それを実装するクラス 2 つ、図形の配列を受け取る関数 2 つを書きます。</p>
+      <ol>
+        <li><code>Shape</code>：図形のインターフェースです。<code>name</code>（図形の名前、読み取り専用の文字列）、<code>area()</code>（面積を返すメソッド）、<code>perimeter()</code>（周りの長さを返すメソッド）を持ちます。ファイルには仮の <code>export type Shape = unknown;</code> があるので、書き換えます。</li>
+        <li><code>Circle</code>：<code>Shape</code> を実装します（<code>implements Shape</code>）。constructor で半径 <code>radius</code> を受け取ります。<code>name</code> は <code>"円"</code> です。周りの長さは円周（2 × 円周率 × 半径）です。</li>
+        <li><code>Rectangle</code>：<code>Shape</code> を実装します。constructor で <code>width</code> と <code>height</code> を受け取ります。<code>name</code> は <code>"長方形"</code> です。周りの長さは（幅 + 高さ）× 2 です。</li>
+        <li><code>totalArea(shapes)</code>：面積の合計を返します。引数は <code>readonly Shape[]</code> です。</li>
+        <li><code>largest(shapes)</code>：面積がいちばん大きい図形を返します。同じ面積なら、先にあるほうを返します。空なら <code>undefined</code> を返します。</li>
+      </ol>
+      <p>「説明すること」もあります。<code>interface</code> と <code>type</code> のどちらで書いても同じことができる場面で、どちらを選ぶか、その理由を、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Shape</code> の値 <code>{ name: "正方形", area: () =&gt; 4, perimeter: () =&gt; 8 }</code> の <code>area()</code></dt><dd class="r"><code>4</code></dd><dd class="c">オブジェクトリテラルでも Shape になる</dd></div>
+          <div><dt>その値の <code>name</code> に <code>"四角"</code> を入れる</dt><dd class="r">型の確認でエラー</dd><dd class="c">name は読み取り専用</dd></div>
+          <div><dt><code>[new Circle(1), new Rectangle(2, 3)]</code> のそれぞれの <code>name</code></dt><dd class="r"><code>["円", "長方形"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Circle(2).area()</code></dt><dd class="r"><code>12.566…</code></dd><dd class="c">4 × Math.PI とほぼ同じなら合格</dd></div>
+          <div><dt><code>new Circle(2).perimeter()</code></dt><dd class="r"><code>12.566…</code></dd><dd class="c">4 × Math.PI とほぼ同じなら合格</dd></div>
+          <div><dt><code>new Rectangle(2, 3).area()</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Rectangle(2, 3).perimeter()</code></dt><dd class="r"><code>10</code></dd><dd class="c">(2 + 3) × 2</dd></div>
+          <div><dt><code>totalArea([new Rectangle(2, 3), new Rectangle(1, 1)])</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>totalArea([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>largest([small, big])</code>（<code>small</code> は <code>new Rectangle(1, 1)</code>、<code>big</code> は <code>new Circle(2)</code>）</dt><dd class="r"><code>big</code></dd><dd class="c">渡したインスタンスそのもの</dd></div>
+          <div><dt><code>largest([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Circle</code> の constructor の引数が数値 1 つ、<code>Rectangle</code> が数値 2 つであることも確かめます。<code>totalArea</code> は引数が <code>readonly Shape[]</code>、戻り値が <code>number</code>、<code>largest</code> は引数が <code>readonly Shape[]</code>、戻り値が <code>Shape | undefined</code> であることを確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Shape というインターフェースを作る。name は読み取り専用の文字列、area は何も受け取らず数値を返すメソッド、perimeter は何も受け取らず数値を返すメソッド。ほかのファイルから使えるようにする
+export type Shape = unknown;
+
+// クラス Circle を作る。Shape の形を満たす。ほかのファイルから使えるようにする
+export class Circle {
+  // 入れ直せないフィールド name を作り、"円" を入れる
+
+  // constructor を作る。数値の radius を受け取り、外から読めず、入れ直せないフィールド radius にする
+
+  // メソッド area を作る。何も受け取らず、数値を返す
+  //   円周率 × 自分の radius × 自分の radius を返す
+
+  // メソッド perimeter を作る。何も受け取らず、数値を返す
+  //   2 × 円周率 × 自分の radius を返す
+}
+
+// クラス Rectangle を作る。Shape の形を満たす。ほかのファイルから使えるようにする
+export class Rectangle {
+  // 入れ直せないフィールド name を作り、"長方形" を入れる
+
+  // constructor を作る。数値の width と数値の height を受け取り、どちらも外から読めず、入れ直せないフィールドにする
+
+  // メソッド area を作る。何も受け取らず、数値を返す
+  //   自分の width × 自分の height を返す
+
+  // メソッド perimeter を作る。何も受け取らず、数値を返す
+  //   (自分の width + 自分の height) × 2 を返す
+}
+
+// 関数 totalArea を作る。Shape の読み取り専用の配列 shapes を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function totalArea() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // shapes から 1 つずつ shape に取り出してくり返す
+  //   total に、shape の area を呼んだ結果を足す
+  // total を返す
+}
+
+// 関数 largest を作る。Shape の読み取り専用の配列 shapes を受け取り、Shape か undefined を返す。ほかのファイルから使えるようにする
+export function largest() {
+  // いちばん大きい図形 best を、Shape か undefined を入れ直せる変数として作る
+  // shapes から 1 つずつ shape に取り出してくり返す
+  //   もし best が undefined と等しい、または shape の area を呼んだ結果が best の area を呼んだ結果より大きいなら
+  //     best に shape を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>export type Shape = unknown;</code> の行は、<code>export interface Shape {</code> … <code>}</code> に書き換えます。中身は、問4 の <code>Figure</code> に、<code>name</code> の <code>readonly</code>（問7）と <code>perimeter</code> の行を足した形です。クラスの <code>name</code> は <code>readonly name = "円";</code> と書きます。クラスの <code>area</code> と <code>perimeter</code> は、q01 のドリルの問3（<code>Circle</code>）と問2（<code>Rect</code>）と同じ計算です。<code>totalArea</code> はドリルの問5、<code>largest</code> はドリルの問17 と同じ形です。「より大きい」で比べると、同じ面積のときは先の図形が残ります。説明することは、<code>Shape</code> を <code>type Shape = { … };</code> の形でも書いてみて、テストと型の確認がどうなるかを試してから考えます。教材の「interfaceとtypeの違い」も読みます。試したら、提出する形に戻します。</p></details>
+    </div>
+  </section>
+</section>

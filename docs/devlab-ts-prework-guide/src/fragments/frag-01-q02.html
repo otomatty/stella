@@ -1,0 +1,775 @@
+<section class="sec" id="c01-q02">
+  <div class="sec-h">
+    <span class="eyebrow">01章 値・型・変数</span>
+    <h2>q02 型注釈</h2>
+    <p>q01 では、引数と戻り値の型が最初から書いてありました。q02 のファイルには <code>export function subtract() {}</code> のように、関数の名前だけが書いてあります。引数の名前と型、戻り値の型は自分で書きます。引数の数と順番は、問題の例のとおりにします。テストは、返す値に加えて型も確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c01-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">a から b を引いた数を返す</span>
+      <span class="q-new">新しく出てくる書き方：引数と戻り値の型注釈を書く</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function subtract() {}</code></pre>
+      <p>2 つの数を受け取り、1 つめから 2 つめを引いた数を返します。かっこの中の引数と、かっこの後ろの戻り値の型を書き足します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>subtract(5, 3)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>subtract(0, 7)</code></dt><dd class="r"><code>-7</code></dd><dd class="c">マイナスになることもある</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(名前: 型): 型</code><h4>引数と戻り値の型注釈を書く</h4></div>
+      <p>引数は <code>名前: 型</code> の形で、<code>,</code> で区切って並べます。戻り値の型は、かっこの後ろに <code>: 型</code> と書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 shippingLabel を作る。文字列 city と数値 days を受け取り、文字列を返す
+function shippingLabel(city: string, days: number): string {
+  // city と days を埋め込んだ「◯まで◯日」の文字列を返す
+  return `${city}まで${days}日`;
+}
+// 結果: shippingLabel("大阪", 2) は "大阪まで2日"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function shippingLabel(<span class="seg"><i>1</i>city: string</span>, <span class="seg"><i>2</i>days: number</span>)<span class="seg"><i>3</i>: string</span> {</pre>
+        <ol>
+          <li><span>1 つめの引数です。名前が <code>city</code>、型が <code>string</code> です。</span></li>
+          <li><span>2 つめの引数です。<code>,</code> で区切って続けます。</span></li>
+          <li><span>戻り値の型です。かっこの後ろに書きます。</span></li>
+        </ol>
+      </figure>
+      <p><code>true</code> か <code>false</code> を返す関数は、戻り値の型を <code>boolean</code> にします。比べた結果は <code>true</code> か <code>false</code> なので、そのまま返せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 isFreeShipping を作る。数値 total を受け取り、true か false を返す
+function isFreeShipping(total: number): boolean {
+  // total が 5000 以上かどうか（true か false）を返す
+  return total &gt;= 5000;
+}
+// 結果: isFreeShipping(6000) は true、isFreeShipping(3000) は false</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>型を書かない</h5>
+          <pre><code class="language-typescript">function shippingLabel(city, days) {
+  return `${city}まで${days}日`;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>型を書く</h5>
+          <pre><code class="language-typescript">function shippingLabel(city: string, days: number): string {
+  return `${city}まで${days}日`;
+}</code></pre>
+          <div class="verdict ok">○ 引数と戻り値の型が決まります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>引数の名前は自由に決めてかまいません。テストが確かめるのは、引数の数・順番・型と、戻り値の型です。中身が分かる名前にしましょう。</p>
+      <p class="more">サバイバルTypeScript「型注釈」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 subtract を作る。数値 a と数値 b を受け取り、数値を返す
+export function subtract() {
+  // a から b を引いた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の「◯ を受け取り」はかっこの中の引数に、「数値を返す」はかっこの後ろの <code>: number</code> になります。問1 のサンプルの <code>shippingLabel</code> と同じ形です。「引く」は <code>-</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c01-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">名前の後ろに「さん」を付ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function honorific() {}</code></pre>
+      <p>名前を 1 つ受け取り、後ろに「さん」を付けた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>honorific("山田")</code></dt><dd class="r"><code>"山田さん"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>honorific("Taro")</code></dt><dd class="r"><code>"Taroさん"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 honorific を作る。文字列 name を受け取り、文字列を返す
+export function honorific() {
+  // name の後ろに "さん" をつなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「文字列 name を受け取り」は <code>name: string</code>、「文字列を返す」は <code>: string</code> です。つなげた文字列は、テンプレートリテラル（q01 の問3）で作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c01-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">18 歳以上なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isAdult() {}</code></pre>
+      <p>年齢を受け取り、18 歳以上なら <code>true</code>、そうでなければ <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isAdult(18)</code></dt><dd class="r"><code>true</code></dd><dd class="c">ちょうど 18 歳も含む</dd></div>
+          <div><dt><code>isAdult(17)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isAdult を作る。数値 age を受け取り、true か false を返す
+export function isAdult() {
+  // age が 18 以上かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>isFreeShipping</code> と同じ形です。「true か false を返す」は <code>: boolean</code>、「以上」は <code>&gt;=</code> です。比べた結果をそのまま返すので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c01-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">text を times 回つなげた文字列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.repeat()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function repeatText() {}</code></pre>
+      <p>文字列と回数を受け取り、その文字列を回数だけ並べた文字列を返します。0 回なら空の文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>repeatText("ab", 3)</code></dt><dd class="r"><code>"ababab"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>repeatText("x", 0)</code></dt><dd class="r"><code>""</code></dd><dd class="c">0 回なら空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.repeat()</code><h4>文字列を決めた回数つなげる</h4></div>
+      <p>文字列のメソッドです（メソッドは q01 の問16 で出ました）。かっこの中に回数を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 評価 rating を作り、"★" を 4 回つなげた文字列を入れる
+const rating = "★".repeat(4);
+// 結果: rating は "★★★★"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"ab".repeat(2)</code></dt><dd class="r"><code>"abab"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>"ab".repeat(0)</code></dt><dd class="r"><code>""</code></dd><dd class="c">0 回なら空の文字列です。</dd></div>
+      </dl>
+      <p class="more">01章 q05（string型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 repeatText を作る。文字列 text と数値 times を受け取り、文字列を返す
+export function repeatText() {
+  // text を times 回つなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ を ◯ 回つなげた文字列」は <code>.repeat()</code> です。問4 のサンプルの <code>rating</code> の行と同じ形です。q01 のように <code>for</code> 文で書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c01-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">長方形の面積を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rectangleArea() {}</code></pre>
+      <p>横の長さと縦の長さを受け取り、長方形の面積（横 × 縦）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rectangleArea(3, 4)</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+          <div><dt><code>rectangleArea(10, 0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rectangleArea を作る。数値 width と数値 height を受け取り、数値を返す
+export function rectangleArea() {
+  // width と height を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>掛け算は <code>*</code> です。引数の名前は自由ですが、<code>width</code> と <code>height</code> のように中身が分かる名前にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c01-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">姓と名を半角スペースでつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fullName() {}</code></pre>
+      <p>姓と名を受け取り、間に半角スペースを 1 つ入れてつないだ文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fullName("山田", "太郎")</code></dt><dd class="r"><code>"山田 太郎"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fullName を作る。文字列 lastName と文字列 firstName を受け取り、文字列を返す
+export function fullName() {
+  // lastName と firstName を半角スペースでつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>テンプレートリテラルの中に、2 つの <code>${ }</code> を並べ、その間に半角スペースを書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c01-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">摂氏を華氏に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function celsiusToFahrenheit() {}</code></pre>
+      <p>摂氏の温度を受け取り、華氏の温度を返します。式は「華氏 = 摂氏 × 9 ÷ 5 + 32」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>celsiusToFahrenheit(100)</code></dt><dd class="r"><code>212</code></dd><dd class="c">水が沸騰する温度</dd></div>
+          <div><dt><code>celsiusToFahrenheit(0)</code></dt><dd class="r"><code>32</code></dd><dd class="c">水が凍る温度</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 celsiusToFahrenheit を作る。数値 celsius を受け取り、数値を返す
+export function celsiusToFahrenheit() {
+  // celsius × 9 ÷ 5 + 32 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>× は <code>*</code>、÷ は <code>/</code> です。掛け算と割り算は足し算より先に計算されるので、そのまま並べれば式のとおりになります。整形（Prettier）は、<code>*</code> と <code>/</code> が並ぶところにかっこを付けた形を求めます。保存して整形すると、<code>(celsius * 9) / 5 + 32</code> の形になります。計算の結果は同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c01-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">偶数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isEven() {}</code></pre>
+      <p>整数を受け取り、偶数なら <code>true</code>、奇数なら <code>false</code> を返します。0 は偶数です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isEven(4)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isEven(7)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isEven(0)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isEven を作る。数値 n を受け取り、true か false を返す
+export function isEven() {
+  // n を 2 で割った余りが 0 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「割った余り」は <code>%</code>、「等しい」は <code>===</code> です。q01 の問12 で出た「3 で割った余りが 0」と同じ形の式を、そのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c01-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">時刻によってあいさつを変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greet() {}</code></pre>
+      <p>名前と時刻（何時か）を受け取ります。12 時より前なら「おはよう、◯◯さん」、12 時以降なら「こんにちは、◯◯さん」を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greet("山田", 9)</code></dt><dd class="r"><code>"おはよう、山田さん"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>greet("佐藤", 12)</code></dt><dd class="r"><code>"こんにちは、佐藤さん"</code></dd><dd class="c">ちょうど 12 時は「こんにちは」</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greet を作る。文字列 name と数値 hour を受け取り、文字列を返す
+export function greet() {
+  // もし hour が 12 より小さいなら
+  //   name を埋め込んだ「おはよう、◯さん」を返す
+  // name を埋め込んだ「こんにちは、◯さん」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>return</code> を実行すると、その場で関数が終わります。<code>if</code> の中で返したときは、後ろの行は実行されません。そのため、最後の行は <code>if</code> の外にそのまま書けます。「より小さい」は <code>&lt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c01-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">名前の最初の 1 文字を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.slice()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function initial() {}</code></pre>
+      <p>名前を受け取り、先頭の 1 文字だけを文字列で返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>initial("Taro")</code></dt><dd class="r"><code>"T"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>initial("山田")</code></dt><dd class="r"><code>"山"</code></dd><dd class="c">日本語も 1 文字</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.slice(始め, 終わり)</code><h4>文字列の一部を取り出す</h4></div>
+      <p>文字列の何番目から何番目の前までを取り出すかを、数で指定します。文字の番号は 0 から数えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"TKY-0012" を入れる
+const code = "TKY-0012";
+// 地域 area を作り、code の 0 番目から 3 番目の前までを取り出した文字列を入れる
+const area = code.slice(0, 3);
+// 結果: area は "TKY"</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="chars" role="img" aria-label="TKY-0012 の各文字に 0 から 7 の番号が付く">
+          <span class="ch"><b>T</b>0</span>
+          <span class="ch"><b>K</b>1</span>
+          <span class="ch"><b>Y</b>2</span>
+          <span class="ch"><b>-</b>3</span>
+          <span class="ch"><b>0</b>4</span>
+          <span class="ch"><b>0</b>5</span>
+          <span class="ch"><b>1</b>6</span>
+          <span class="ch"><b>2</b>7</span>
+        </div>
+        <figcaption><code>slice(0, 3)</code> は 0・1・2 番目の 3 文字です。3 番目の <code>-</code> は入りません。</figcaption>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>"TKY-0012".slice(4)</code></dt><dd class="r"><code>"0012"</code></dd><dd class="c">終わりを省くと、最後まで取り出します。</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>2 つめの数は「終わりの文字の番号」ではなく、「その番号の前まで」です。</p>
+      <p class="more">01章 q05（string型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 initial を作る。文字列 name を受け取り、文字列を返す
+export function initial() {
+  // name の 0 番目から 1 番目の前までを取り出した文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のサンプルの <code>area</code> の行と同じ形で、数だけが違います。「0 番目から 1 番目の前まで」は、先頭の 1 文字です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c01-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">percentOff パーセント引きの価格を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function discountPrice() {}</code></pre>
+      <p>価格と割引率（パーセント）を受け取り、割り引いたあとの価格を返します。1 円未満は切り捨てます。1000 円の 15% 引きは、1000 円の 85% で 850 円です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>discountPrice(1000, 15)</code></dt><dd class="r"><code>850</code></dd><dd class="c"></dd></div>
+          <div><dt><code>discountPrice(999, 10)</code></dt><dd class="r"><code>899</code></dd><dd class="c">899.1 円を切り捨て</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 discountPrice を作る。数値 price と数値 percentOff を受け取り、数値を返す
+export function discountPrice() {
+  // price × (100 - percentOff) ÷ 100 を切り捨てた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「100 - percentOff」を先に計算するために、かっこで囲みます。切り捨ては <code>Math.floor()</code>（q01 の問1）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c01-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">金額を 3 桁ごとのカンマ区切りにし、「円」を付ける</span>
+      <span class="q-new">新しく出てくる書き方：<code>.toLocaleString()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function formatYen() {}</code></pre>
+      <p>金額を受け取り、3 桁ごとに <code>,</code> を入れて、最後に「円」を付けた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>formatYen(1234)</code></dt><dd class="r"><code>"1,234円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>formatYen(1000000)</code></dt><dd class="r"><code>"1,000,000円"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.toLocaleString("ja-JP")</code><h4>数値を 3 桁ごとのカンマ区切りの文字列にする</h4></div>
+      <p>数値のメソッドです。結果は文字列になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 売上 sales を作り、2500000 を入れる
+const sales = 2500000;
+// 表示 text を作り、sales を 3 桁ごとのカンマ区切りにした文字列を入れる
+const text = sales.toLocaleString("ja-JP");
+// 結果: text は "2,500,000"</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>"ja-JP"</code> は「日本の書き方で」という指定です。付けないと、動かすパソコンの設定によって区切り方が変わることがあります。</p>
+      <p class="more">01章 q04（number型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 formatYen を作る。数値 amount を受け取り、文字列を返す
+export function formatYen() {
+  // amount を 3 桁ごとのカンマ区切りにした文字列の後ろに "円" をつなげて返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「3 桁ごとのカンマ区切りにした文字列」は、問12 のサンプルの <code>text</code> の行と同じ形です。メソッドはテンプレートリテラルの <code>${ }</code> の中でも呼べます（q01 の問20）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c01-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">text の文字数が length より多ければ true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.length</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isLongerThan() {}</code></pre>
+      <p>文字列と数を受け取り、文字列の文字数がその数より多ければ <code>true</code> を返します。同じなら <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isLongerThan("hello", 3)</code></dt><dd class="r"><code>true</code></dd><dd class="c">5 文字は 3 より多い</dd></div>
+          <div><dt><code>isLongerThan("hi", 2)</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 文字は 2 と同じ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.length</code><h4>文字列の文字数</h4></div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// パスワード password を作り、"abc123" を入れる
+const password = "abc123";
+// 文字数 size を作り、password の文字数を入れる
+const size = password.length;
+// 結果: size は 6</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"山田".length</code></dt><dd class="r"><code>2</code></dd><dd class="c">日本語も 1 文字を 1 と数えます。</dd></div>
+        <div><dt><code>"".length</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>.length</code> はメソッドではないので、<code>( )</code> を付けません。<code>password.length()</code> は型の確認でエラーになります。</p>
+      <p class="more">01章 q05（string型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isLongerThan を作る。文字列 text と数値 length を受け取り、true か false を返す
+export function isLongerThan() {
+  // text の文字数が length より大きいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「text の文字数」は <code>text.length</code>、「より大きい」は <code>&gt;</code> です。引数の名前 <code>length</code> と、文字数の <code>.length</code> は別のものです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c01-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">半分の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function half() {}</code></pre>
+      <p>数を受け取り、その半分の数を返します。小数になっても切り捨てません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>half(7)</code></dt><dd class="r"><code>3.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>half(-4)</code></dt><dd class="r"><code>-2</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 half を作る。数値 n を受け取り、数値を返す
+export function half() {
+  // n ÷ 2 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>÷ は <code>/</code> です。割り切れないときは小数になります（q01 の問2）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c01-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">ラベルの後ろに件数を「（◯件）」の形で付ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function labelWithCount() {}</code></pre>
+      <p>ラベルの文字列と件数を受け取り、「ラベル（◯件）」の形の文字列を返します。かっこは全角です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>labelWithCount("メッセージ", 3)</code></dt><dd class="r"><code>"メッセージ（3件）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>labelWithCount("通知", 0)</code></dt><dd class="r"><code>"通知（0件）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 labelWithCount を作る。文字列 label と数値 count を受け取り、文字列を返す
+export function labelWithCount() {
+  // label と count を埋め込んだ「◯（◯件）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>q01 の問3 と同じく、テンプレートリテラルで作ります。数値の <code>count</code> は、埋め込むと文字に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c01-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">value が min 以上 max 以下なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>&amp;&amp;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isBetween() {}</code></pre>
+      <p>3 つの数 <code>value</code>、<code>min</code>、<code>max</code> をこの順に受け取ります。<code>value</code> が <code>min</code> 以上、<code>max</code> 以下の範囲にあれば <code>true</code> を返します。範囲の両はしも含みます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isBetween(5, 1, 10)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isBetween(10, 1, 10)</code></dt><dd class="r"><code>true</code></dd><dd class="c">ちょうど max も含む</dd></div>
+          <div><dt><code>isBetween(11, 1, 10)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> 3 つ、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">&amp;&amp;</code><h4>両方が true なら true</h4></div>
+      <p>「かつ」です。2 つの条件をつなぎます。「または」の <code>||</code>（q01 の問15）と対になる書き方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 canShip を作る。数値 stock と true か false の isPaid を受け取り、true か false を返す
+function canShip(stock: number, isPaid: boolean): boolean {
+  // stock が 0 より大きい、かつ isPaid が true かどうかを返す
+  return stock &gt; 0 &amp;&amp; isPaid;
+}
+// 結果: canShip(3, true) は true、canShip(0, true) は false</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>stock &gt; 0</th><th>isPaid</th><th>stock &gt; 0 &amp;&amp; isPaid</th></tr></thead>
+          <tbody>
+            <tr><td>true</td><td>true</td><td>true</td></tr>
+            <tr><td>true</td><td>false</td><td>false</td></tr>
+            <tr><td>false</td><td>true</td><td>false</td></tr>
+            <tr><td>false</td><td>false</td><td>false</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある間違い</b>算数の「1 ≦ x ≦ 10」のように、<code>1 &lt;= x &lt;= 10</code> とは書けません。型の確認でエラーになります。比べる式を 2 つ書いて、<code>&amp;&amp;</code> でつなぎます。</p>
+      <p class="more">01章 q06（boolean型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isBetween を作る。数値 value と数値 min と数値 max を受け取り、true か false を返す
+export function isBetween() {
+  // value が min 以上、かつ value が max 以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code>、「以上」は <code>&gt;=</code>、「以下」は <code>&lt;=</code> です。問16 のサンプルの <code>canShip</code> と同じく、比べる式を 2 つ <code>&amp;&amp;</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c01-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">秒を分に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function secondsToMinutes() {}</code></pre>
+      <p>秒数を受け取り、何分かを返します。1 分に満たない分は切り捨てます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>secondsToMinutes(150)</code></dt><dd class="r"><code>2</code></dd><dd class="c">2 分 30 秒の 30 秒を切り捨て</dd></div>
+          <div><dt><code>secondsToMinutes(59)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 secondsToMinutes を作る。数値 seconds を受け取り、数値を返す
+export function secondsToMinutes() {
+  // seconds ÷ 60 を切り捨てた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>q01 の問3 の「時間」を求める行と同じ形です。切り捨ては <code>Math.floor()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c01-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">英字を大文字にして、最後に「!」を付ける</span>
+      <span class="q-new">新しく出てくる書き方：<code>.toUpperCase()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function shout() {}</code></pre>
+      <p>英字の文字列を受け取り、すべて大文字にして、最後に <code>!</code> を付けた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shout("hello")</code></dt><dd class="r"><code>"HELLO!"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shout("Agora")</code></dt><dd class="r"><code>"AGORA!"</code></dd><dd class="c">大文字はそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.toUpperCase()</code><h4>英字を大文字にする</h4></div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"abc-12" を入れる
+const code = "abc-12";
+// upper を作り、code を大文字にした文字列を入れる
+const upper = code.toUpperCase();
+// 結果: upper は "ABC-12"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"Tokyo".toUpperCase()</code></dt><dd class="r"><code>"TOKYO"</code></dd><dd class="c"></dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>英字以外（数字、記号、日本語）は変わりません。もとの文字列も変わらず、大文字にした新しい文字列が返ってきます。小文字にする <code>.toLowerCase()</code> は 01章 q05 で出ます。</p>
+      <p class="more">01章 q05（string型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 shout を作る。文字列 text を受け取り、文字列を返す
+export function shout() {
+  // text を大文字にした文字列の後ろに "!" をつなげて返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「大文字にした文字列」は、問18 のサンプルの <code>upper</code> の行と同じ <code>.toUpperCase()</code> です。テンプレートリテラルの <code>${ }</code> の中で呼べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c01-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">18 歳以上で、免許を持っていれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function canDrive() {}</code></pre>
+      <p>年齢と、免許を持っているか（<code>true</code> か <code>false</code>）を受け取ります。18 歳以上で、しかも免許を持っているときだけ <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>canDrive(20, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canDrive(20, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c">免許がない</dd></div>
+          <div><dt><code>canDrive(17, true)</code></dt><dd class="r"><code>false</code></dd><dd class="c">18 歳より下</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>boolean</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 canDrive を作る。数値 age と true か false の hasLicense を受け取り、true か false を返す
+export function canDrive() {
+  // age が 18 以上、かつ hasLicense が true かどうかを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問16 のサンプルの <code>canShip</code> と同じ形です。「true か false の hasLicense」は <code>hasLicense: boolean</code> です。「hasLicense が true」は <code>hasLicense</code> とだけ書きます（q01 の問15）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c01-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">char を width 個並べた文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function line() {}</code></pre>
+      <p>1 文字と個数を受け取り、その文字を個数だけ並べた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>line("=", 5)</code></dt><dd class="r"><code>"====="</code></dd><dd class="c"></dd></div>
+          <div><dt><code>line("-", 1)</code></dt><dd class="r"><code>"-"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 line を作る。文字列 char と数値 width を受け取り、文字列を返す
+export function line() {
+  // char を width 回つなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じく <code>.repeat()</code> を使います。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c01-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">金額の表示と、メンバーの紹介文を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function formatPrice() {}
+
+export function describeMember() {}</code></pre>
+      <p>2 つの関数を書きます。引数と戻り値には、すべて型注釈を付けます。</p>
+      <ol>
+        <li><code>formatPrice(price, unit)</code>：金額を 3 桁ごとに <code>,</code> で区切り、後ろに単位を付けた文字列を返す</li>
+        <li><code>describeMember(name, age, isLeader)</code>：名前と年齢から「佐藤（28歳）」の形の紹介文を返す。リーダーなら「佐藤（28歳・リーダー）」にする</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>formatPrice(1200, "円")</code></dt><dd class="r"><code>"1,200円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>formatPrice(1234567, "円")</code></dt><dd class="r"><code>"1,234,567円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>formatPrice(500, "ドル")</code></dt><dd class="r"><code>"500ドル"</code></dd><dd class="c">単位は引数で変わる</dd></div>
+          <div><dt><code>formatPrice(0, "円")</code></dt><dd class="r"><code>"0円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeMember("佐藤", 28, true)</code></dt><dd class="r"><code>"佐藤（28歳・リーダー）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeMember("鈴木", 31, false)</code></dt><dd class="r"><code>"鈴木（31歳）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>formatPrice</code> は引数が <code>number</code> と <code>string</code>、<code>describeMember</code> は引数が <code>string</code>・<code>number</code>・<code>boolean</code> であることも確かめます。戻り値はどちらも <code>string</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 formatPrice を作る。数値 price と文字列 unit を受け取り、文字列を返す
+export function formatPrice() {
+  // price を 3 桁ごとのカンマ区切りにした文字列の後ろに unit をつなげて返す
+}
+
+// 関数 describeMember を作る。文字列 name と数値 age と true か false の isLeader を受け取り、文字列を返す
+export function describeMember() {
+  // もし isLeader が true なら
+  //   name と age を埋め込んだ「◯（◯歳・リーダー）」を返す
+  // name と age を埋め込んだ「◯（◯歳）」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>formatPrice</code> は問12 と同じ形で、「円」の代わりに <code>unit</code> を埋め込みます。<code>describeMember</code> は問9 と同じく、<code>if</code> の中で <code>return</code> します。「isLeader が true」は <code>isLeader</code> とだけ書きます。</p></details>
+    </div>
+  </section>
+</section>

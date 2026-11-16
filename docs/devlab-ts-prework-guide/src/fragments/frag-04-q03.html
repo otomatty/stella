@@ -1,0 +1,1007 @@
+<section class="sec" id="c04-q03">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q03 for文と for-of文</h2>
+    <p>配列や文字列を 1 つずつ見る関数を 20 個書きます。くり返しには <code>for</code> 文か <code>for-of</code> 文を使います。<code>map</code> や <code>filter</code> などの配列のメソッド（02章 q04）は使いません。要素を順に見るだけなら <code>for-of</code> が書きやすいです。番号（その要素が何番目か。0 から数える）も要るなら、<code>for</code> 文が書きやすいです。引数と戻り値の型注釈は自分で書きます。引数の配列は、<code>readonly number[]</code> のような読み取り専用の配列にします。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>for</code> と <code>for-of</code> の使い分け</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumArray() {}</code></pre>
+      <p>数値の配列を受け取り、要素をすべて足した合計を返します。空の配列なら 0 を返します。計算は 02章 q04 問1 と同じです。この番号では、<code>for</code> と <code>for-of</code> のどちらで書くかを自分で選びます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumArray([1, 2, 3])</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumArray([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">for-of</code><code class="tok">for ( ; ; )</code><code class="tok">.entries()</code><h4>for と for-of を使い分ける</h4></div>
+      <p>01章 q01 では、<code>for</code> 文（問5）と <code>for-of</code> 文（問9）を、まねて書きました。この番号では、2 つを使い分けます。決め手は、くり返しの中で番号を使うかどうかです。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>くり返しの中で使うもの</th><th>書き方</th><th>使う場面</th></tr></thead>
+          <tbody>
+            <tr><td>要素だけ</td><td><code>for (const stock of stocks)</code></td><td>合計する、数える、条件に合う要素を探す</td></tr>
+            <tr><td>番号</td><td><code>for (let i = 0; i &lt; stocks.length; i++)</code></td><td>位置を集める、後ろから見る、2 つの配列を同じ番号で見る、決まった回数くり返す</td></tr>
+            <tr><td>番号と要素の両方</td><td><code>for (const [i, stock] of stocks.entries())</code></td><td>番号付きの一覧を作る、先頭の要素だけ別に扱う</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>要素だけを使うときは、<code>for-of</code> で書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 countSoldOut を作る。読み取り専用の数値の配列 stocks を受け取り、数値を返す
+function countSoldOut(stocks: readonly number[]): number {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  let count = 0;
+  // stocks から 1 つずつ stock に取り出してくり返す
+  for (const stock of stocks) {
+    // もし stock が 0 と等しいなら
+    if (stock === 0) {
+      // count を 1 増やす
+      count++;
+    }
+  }
+  // count を返す
+  return count;
+}
+// 結果: countSoldOut([12, 0, 5, 0]) は 2</code></pre>
+      </div>
+      <p>同じことを <code>for</code> 文で書くこともできます。ただ、この課題の設定ではエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>for</code> 文で書く</h5>
+          <pre><code class="language-typescript">for (let i = 0; i &lt; stocks.length; i++) {
+  if (stocks[i] === 0) {
+    count++;
+  }
+}</code></pre>
+          <div class="verdict ng">✕ lint で、for-of に書き直すように言われます</div>
+        </div>
+        <div>
+          <h5><code>for-of</code> で書く</h5>
+          <pre><code class="language-typescript">for (const stock of stocks) {
+  if (stock === 0) {
+    count++;
+  }
+}</code></pre>
+          <div class="verdict ok">○ 番号の変数が要らず、短く書けます</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b>番号の <code>i</code> を、<code>stocks[i]</code> と取り出すためだけに使う <code>for</code> 文は、lint でエラーになります（<code>prefer-for-of</code>）。<code>for-of</code> に書き直します。</p>
+      <p class="memo"><b>なぜ</b><code>for</code> 文で <code>stocks[i]</code> と取り出すと、型は <code>number | undefined</code> になります（02章 q04 問3）。<code>for-of</code> で取り出した <code>stock</code> は <code>number</code> のままなので、そのまま計算に使えます。</p>
+      <p>番号を使う <code>for</code> 文は問4 で、<code>.entries()</code> は問9 で、くわしく見ます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/statements/for-of">サバイバルTypeScript「for-of文」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumArray を作る。読み取り専用の数値の配列 numbers を受け取り、数値を返す
+export function sumArray() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   total に n を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問1 の <code>sumAll</code> と同じ形です。くり返しの中で使うのは要素だけなので、<code>for-of</code> で書きます。「total に n を足す」は <code>+=</code> です（01章 q01 問5）。空の配列では 1 回もくり返さないので、0 のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">target と同じ要素の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countMatches() {}</code></pre>
+      <p>文字列の配列 <code>items</code> と、文字列 <code>target</code> を受け取ります。<code>items</code> の中に、<code>target</code> と同じ要素がいくつあるかを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countMatches(["a", "b", "a"], "a")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countMatches([], "a")</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countMatches を作る。読み取り専用の文字列の配列 items と文字列 target を受け取り、数値を返す
+export function countMatches() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし item が target と等しいなら
+  //     count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>countSoldOut</code> と同じ形です。比べる相手が、<code>0</code> から <code>target</code> に変わります。01章 q01 問9 の <code>countChar</code> とも同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">いちばん長い単語を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function longestWord() {}</code></pre>
+      <p>単語の配列を受け取り、いちばん長い単語を返します。同じ長さの単語があるときは、先に出てきたほうを返します。空の配列なら、空の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>longestWord(["a", "abc", "ab"])</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>longestWord(["ab", "cd"])</code></dt><dd class="r"><code>"ab"</code></dd><dd class="c">同じ長さなら、先に出てきたほう</dd></div>
+          <div><dt><code>longestWord([])</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 longestWord を作る。読み取り専用の文字列の配列 words を受け取り、文字列を返す
+export function longestWord() {
+  // いちばん長い単語 longest を入れ直せる変数として作り、空の文字列を入れる
+  // words から 1 つずつ word に取り出してくり返す
+  //   もし word の文字数が longest の文字数より大きいなら
+  //     longest に word を入れ直す
+  // longest を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q08 問10 のサンプルの <code>cheapest</code> と同じく、条件に合うたびに入れ直す形です。文字数は <code>.length</code> です。「より大きい」は <code>&gt;</code> です。<code>&gt;=</code> にすると、同じ長さのときに後の単語で入れ直されてしまいます。空の文字列から始めるので、空の配列ではそのまま <code>""</code> が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">最大値の番号を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>for</code> 文の中で <code>stocks[i]</code> を取り出す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function indexOfMax() {}</code></pre>
+      <p>数値の配列を受け取り、いちばん大きい数が何番目にあるか（0 から数える）を返します。いちばん大きい数が 2 つ以上あるときは、先のほうの番号です。空の配列なら <code>-1</code> を返します。返すのが番号なので、<code>for</code> 文で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>indexOfMax([3, 9, 2])</code></dt><dd class="r"><code>1</code></dd><dd class="c">9 は 1 番目</dd></div>
+          <div><dt><code>indexOfMax([5, 5])</code></dt><dd class="r"><code>0</code></dd><dd class="c">同じなら、先のほう</dd></div>
+          <div><dt><code>indexOfMax([])</code></dt><dd class="r"><code>-1</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">stocks[i]</code><h4>for 文の中で、i 番目の要素を取り出す</h4></div>
+      <p>番号が要るときは、<code>for</code> 文で <code>i</code> を 0 から、配列の要素の数より小さい間 1 ずつ増やします。<code>i</code> 番目の要素は、<code>stocks[i]</code> で取り出します（02章 q04 問3）。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 refillShelves を作る。読み取り専用の数値の配列 stocks を受け取り、数値の配列を返す
+function refillShelves(stocks: readonly number[]): number[] {
+  // 棚の番号 shelves を数値の配列として作り、空の配列を入れる
+  const shelves: number[] = [];
+  // i を 0 から、stocks の要素の数より小さい間 1 ずつ増やしながらくり返す
+  for (let i = 0; i &lt; stocks.length; i++) {
+    // 在庫 stock を作り、stocks の i 番目の要素を入れる
+    const stock = stocks[i];
+    // もし stock が undefined でなく、5 より小さいなら
+    if (stock !== undefined &amp;&amp; stock &lt; 5) {
+      // shelves の最後に i を付け足す
+      shelves.push(i);
+    }
+  }
+  // shelves を返す
+  return shelves;
+}
+// 結果: refillShelves([12, 3, 8, 0]) は [1, 3]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>for (<span class="seg"><i>1</i>let i = 0</span>; <span class="seg"><i>2</i>i &lt; stocks.length</span>; <span class="seg"><i>3</i>i++</span>) {</pre>
+        <ol>
+          <li><span>先頭の番号 0 から始めます。</span></li>
+          <li><span>番号は 0 から数えるので、最後の番号は「要素の数 − 1」です。<code>&lt;=</code> にすると、要素のない番号まで回ってしまいます。</span></li>
+          <li><span>1 ずつ増やします。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>i</th><th>i &lt; 4</th><th>stock</th><th>stock &lt; 5</th><th>shelves</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>true</td><td>12</td><td>false</td><td>[]</td></tr>
+            <tr><td>1</td><td>true</td><td>3</td><td>true</td><td>[1]</td></tr>
+            <tr><td>2</td><td>true</td><td>8</td><td>false</td><td>[1]</td></tr>
+            <tr><td>3</td><td>true</td><td>0</td><td>true</td><td>[1, 3]</td></tr>
+            <tr><td>4</td><td>false</td><td></td><td></td><td class="j">終わり</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>stocks[i]</code> の型は <code>number | undefined</code> です。<code>&lt;</code> や <code>&gt;</code> で比べる前に、<code>undefined</code> でないことを確かめます。</p>
+      <div class="cmp">
+        <div>
+          <h5>確かめない</h5>
+          <pre><code class="language-typescript">const stock = stocks[i];
+if (stock &lt; 5) {
+  shelves.push(i);
+}</code></pre>
+          <div class="verdict ng">✕ 「stock は undefined かもしれない」という型のエラーになります</div>
+        </div>
+        <div>
+          <h5>確かめる</h5>
+          <pre><code class="language-typescript">const stock = stocks[i];
+if (stock !== undefined &amp;&amp; stock &lt; 5) {
+  shelves.push(i);
+}</code></pre>
+          <div class="verdict ok">○ <code>&amp;&amp;</code> の右では、stock を number として比べられます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>i &lt; stocks.length</code> の間だけ回すので、実際には <code>undefined</code> になりません。それでも、この課題の設定では、<code>[ ]</code> で取り出した要素の型にいつも <code>undefined</code> が含まれます（02章 q04 問3）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 indexOfMax を作る。読み取り専用の数値の配列 numbers を受け取り、数値を返す
+export function indexOfMax() {
+  // 番号 best を入れ直せる変数として作り、-1 を入れる
+  // いちばん大きい数 max を入れ直せる変数として作り、-Infinity を入れる
+  // i を 0 から、numbers の要素の数より小さい間 1 ずつ増やしながらくり返す
+  //   n を作り、numbers の i 番目の要素を入れる
+  //   もし n が undefined でなく、max より大きいなら
+  //     max に n を入れ直す
+  //     best に i を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しと <code>n</code> の取り出し方は、問4 のサンプルの <code>refillShelves</code> と同じ形です。<code>-Infinity</code>（02章 q08 問10）から始めると、最初の数で必ず入れ直されます。同じ数のときに入れ直さないように、<code>&gt;</code> を使います。空の配列では 1 回もくり返さないので、<code>-1</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">すべての要素を掛けた数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function productOf() {}</code></pre>
+      <p>数値の配列を受け取り、すべての要素を掛けた数を返します。空の配列なら 1 を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>productOf([2, 3, 4])</code></dt><dd class="r"><code>24</code></dd><dd class="c">2 × 3 × 4</dd></div>
+          <div><dt><code>productOf([])</code></dt><dd class="r"><code>1</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 productOf を作る。読み取り専用の数値の配列 numbers を受け取り、数値を返す
+export function productOf() {
+  // 結果 result を入れ直せる変数として作り、1 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   result に n を掛ける
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q01 問6 の <code>factorial</code> と同じく、1 から始めて <code>*=</code> で掛けていきます。0 から始めると、何を掛けても 0 のままです。使うのは要素だけなので、<code>for-of</code> で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">逆順にした新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function reverseArray() {}</code></pre>
+      <p>文字列の配列を受け取り、要素を逆の順に並べた新しい配列を返します。<code>for</code> 文で後ろから回し、<code>push</code> で付け足して作ります。<code>.reverse()</code>（02章 q05）は使いません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>reverseArray(["a", "b", "c"])</code></dt><dd class="r"><code>["c", "b", "a"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>reverseArray([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 reverseArray を作る。読み取り専用の文字列の配列 items を受け取り、文字列の配列を返す
+export function reverseArray() {
+  // 結果 result を文字列の配列として作り、空の配列を入れる
+  // i を（items の要素の数 − 1）から 0 まで 1 ずつ減らしながらくり返す
+  //   item を作り、items の i 番目の要素を入れる
+  //   もし item が undefined でないなら
+  //     result の最後に item を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>減らしながらくり返すのは、01章 q01 問7 の <code>i--</code> と同じ形です。最後の番号は <code>items.length - 1</code> です（02章 q04 問4）。「0 まで」なので、条件は <code>i &gt;= 0</code> です。<code>item</code> の取り出し方は、問4 のサンプルと同じです。<code>result</code> には文字列しか付け足せないので、<code>undefined</code> でないと確かめてから付け足します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">1〜n の 2 乗を並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function squaresUpTo() {}</code></pre>
+      <p>数 <code>n</code> を受け取ります。1 から <code>n</code> までのそれぞれの数を 2 乗して（同じ数を 2 回掛けて）、順に並べた配列を返します。<code>n</code> が 0 なら空の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>squaresUpTo(4)</code></dt><dd class="r"><code>[1, 4, 9, 16]</code></dd><dd class="c">1×1、2×2、3×3、4×4</dd></div>
+          <div><dt><code>squaresUpTo(0)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">並べる数がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 squaresUpTo を作る。数値の n を受け取り、数値の配列を返す
+export function squaresUpTo() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // i を 1 から n まで 1 ずつ増やしながらくり返す
+  //   result の最後に、i に i を掛けた数を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問17 のサンプルの <code>seatLabels</code> と同じ形です。番号の <code>i</code> そのものを計算に使うので、<code>for</code> 文で書きます。<code>i * i</code> の代わりに <code>i ** 2</code>（01章 q04）と書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">0 以上 n 以下の偶数を並べた配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>for</code> 文で 1 以外の幅で増やす <code>day += 3</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function evensUpTo() {}</code></pre>
+      <p>数 <code>n</code> を受け取り、0 以上 <code>n</code> 以下の偶数を、小さい順に並べた配列を返します。<code>for</code> 文で 2 ずつ増やして作ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>evensUpTo(7)</code></dt><dd class="r"><code>[0, 2, 4, 6]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>evensUpTo(0)</code></dt><dd class="r"><code>[0]</code></dd><dd class="c">0 も偶数</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">day += 3</code><h4>1 以外の幅で増やす</h4></div>
+      <p><code>for</code> 文のかっこの 3 つめには、中身を 1 回終えるたびに実行する式を書きます（01章 q01 問5）。<code>i++</code> の代わりに <code>+=</code> を書くと、好きな幅で増やせます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 点検日 days を数値の配列として作り、空の配列を入れる
+const days: number[] = [];
+// day を 1 から 10 まで 3 ずつ増やしながらくり返す
+for (let day = 1; day &lt;= 10; day += 3) {
+  // days の最後に day を付け足す
+  days.push(day);
+}
+// 結果: days は [1, 4, 7, 10]</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>day</th><th>day &lt;= 10</th><th>days</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>true</td><td>[1]</td></tr>
+            <tr><td>4</td><td>true</td><td>[1, 4]</td></tr>
+            <tr><td>7</td><td>true</td><td>[1, 4, 7]</td></tr>
+            <tr><td>10</td><td>true</td><td>[1, 4, 7, 10]</td></tr>
+            <tr><td>13</td><td>false</td><td class="j">終わり</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 evensUpTo を作る。数値の n を受け取り、数値の配列を返す
+export function evensUpTo() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // i を 0 から n まで 2 ずつ増やしながらくり返す
+  //   result の最後に i を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>days</code> と同じ形で、始まりが 0、幅が 2 になります。0 から 2 ずつ増やすと、偶数だけを順に通ります。「n まで」なので、条件は <code>i &lt;= n</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">要素を「-」でつないだ文字列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.entries()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function joinWithDash() {}</code></pre>
+      <p>文字列の配列を受け取り、要素を <code>"-"</code> でつないだ 1 つの文字列を返します。<code>.join()</code>（02章 q04 問11）は使いません。要素が 1 つなら、その要素だけです。空の配列なら、空の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>joinWithDash(["a", "b", "c"])</code></dt><dd class="r"><code>"a-b-c"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>joinWithDash(["a"])</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">"-" は付かない</dd></div>
+          <div><dt><code>joinWithDash([])</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.entries()</code><h4>番号と要素を組にして取り出す</h4></div>
+      <p>配列の <code>.entries()</code> を使うと、<code>[番号, 要素]</code> の組を順に取り出せます。<code>for-of</code> で取り出すときに、配列の分割代入（02章 q06 問2）で <code>[i, name]</code> と書くと、番号と要素を別々の変数で受け取れます。02章 q08 問10 の <code>Object.entries()</code> と、書き方が似ています。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品名の配列 names を作り、"ノート" と "ペン" と "のり" を入れる
+const names = ["ノート", "ペン", "のり"];
+// 一覧 list を入れ直せる変数として作り、空の文字列を入れる
+let list = "";
+// names の番号と要素の組を 1 つずつ [i, name] に取り出してくり返す
+for (const [i, name] of names.entries()) {
+  // list の後ろに、i に 1 を足した数と "."、name と " " をつなげる
+  list += `${i + 1}.${name} `;
+}
+// 結果: list は "1.ノート 2.ペン 3.のり "</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>for (const <span class="seg"><i>1</i>[i, name]</span> of <span class="seg"><i>2</i>names.entries()</span>) {</pre>
+        <ol>
+          <li><span>組を分割代入で受け取ります。1 つめに番号（0 から）、2 つめに要素が入ります。</span></li>
+          <li><span><code>names</code> の番号と要素の組を、順に取り出せるものです。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>回</th><th>i</th><th>name</th><th>list</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>0</td><td>"ノート"</td><td>"1.ノート "</td></tr>
+            <tr><td>2</td><td>1</td><td>"ペン"</td><td>"1.ノート 2.ペン "</td></tr>
+            <tr><td>3</td><td>2</td><td>"のり"</td><td>"1.ノート 2.ペン 3.のり "</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>なぜ</b><code>for</code> 文で <code>names[i]</code> と取り出すと、型は <code>string | undefined</code> になります（問4）。<code>.entries()</code> で受け取った <code>name</code> は <code>string</code> のままです。番号と要素の両方を使うときは、この書き方が便利です。</p>
+      <p class="memo"><b>よくある間違い</b>組の中の順番は決まっていて、1 つめがいつも番号です。<code>[name, i]</code> と書くと、<code>name</code> に番号が入ってしまいます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 joinWithDash を作る。読み取り専用の文字列の配列 items を受け取り、文字列を返す
+export function joinWithDash() {
+  // 結果 result を入れ直せる変数として作り、空の文字列を入れる
+  // items の番号と要素の組を 1 つずつ [i, item] に取り出してくり返す
+  //   result の後ろに、i が 0 と等しいなら item、そうでなければ "-" と item をつなげた文字列をつなげる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは、問9 のサンプルと同じ形です。<code>"-"</code> を付けるのは 2 つめの要素からで、先頭（番号が 0）の要素には付けません。「〜なら ◯、そうでなければ ◯」は条件演算子 <code>? :</code>（01章 q01 問12）です。<code>"-"</code> と <code>item</code> をつなげた文字列は、テンプレートリテラルで作ります。<code>result</code> の後ろにつなげるのは <code>+=</code> です（01章 q01 問7）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">英大文字の数を返す</span>
+      <span class="q-new">新しく出てくる書き方：文字列どうしを <code>&gt;=</code> と <code>&lt;=</code> で比べる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countUpper() {}</code></pre>
+      <p>文字列を受け取り、その中に英大文字（A〜Z）がいくつあるかを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countUpper("TypeScript")</code></dt><dd class="r"><code>2</code></dd><dd class="c">T と S</dd></div>
+          <div><dt><code>countUpper("abc")</code></dt><dd class="r"><code>0</code></dd><dd class="c">英大文字がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">c &gt;= "A"</code><h4>文字を大小で比べる</h4></div>
+      <p><code>&gt;=</code> や <code>&lt;=</code> は、文字列どうしにも使えます。文字には決まった順番があり、その順番で比べます。英大文字は <code>"A"</code> から <code>"Z"</code> まで、数字は <code>"0"</code> から <code>"9"</code> まで、順に並んでいます。英小文字は、英大文字より後ろにあります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 isFirstHalf を作る。文字列 initial を受け取り、true か false を返す
+function isFirstHalf(initial: string): boolean {
+  // initial が "A" 以上で、"M" 以下か（true か false）を返す
+  return initial &gt;= "A" &amp;&amp; initial &lt;= "M";
+}
+// 結果: isFirstHalf("G") は true、isFirstHalf("S") は false、isFirstHalf("g") は false</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"G" &gt;= "A"</code></dt><dd class="r"><code>true</code></dd><dd class="c">G は A より後ろ</dd></div>
+        <div><dt><code>"g" &lt;= "Z"</code></dt><dd class="r"><code>false</code></dd><dd class="c">英小文字は、英大文字より後ろ</dd></div>
+        <div><dt><code>"5" &gt;= "0" &amp;&amp; "5" &lt;= "9"</code></dt><dd class="r"><code>true</code></dd><dd class="c">数字も同じ形で調べられる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>正規表現の <code>/[A-Z]/.test(c)</code>（01章 q06）でも、英大文字かどうかを調べられます。どちらで書いてもかまいません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countUpper を作る。文字列 text を受け取り、数値を返す
+export function countUpper() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   もし c が "A" 以上で、"Z" 以下なら
+  //     count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>条件は、問10 のサンプルの <code>isFirstHalf</code> と同じ形で、終わりが <code>"M"</code> から <code>"Z"</code> に変わります。「〜で、〜」は <code>&amp;&amp;</code> です（01章 q02 問16）。文字列から 1 文字ずつ取り出すのは <code>for-of</code> です（01章 q01 問9）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">char が出てくる位置を並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function positionsOf() {}</code></pre>
+      <p>文字列 <code>text</code> と、1 文字の文字列 <code>char</code> を受け取ります。<code>text</code> の中で <code>char</code> が出てくる位置（0 から数える）を、順に並べた配列を返します。1 つもなければ空の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>positionsOf("banana", "a")</code></dt><dd class="r"><code>[1, 3, 5]</code></dd><dd class="c">b が 0、a が 1、n が 2…</dd></div>
+          <div><dt><code>positionsOf("banana", "z")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">1 つもない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 positionsOf を作る。文字列 text と文字列 char を受け取り、数値の配列を返す
+export function positionsOf() {
+  // 位置 result を数値の配列として作り、空の配列を入れる
+  // i を 0 から、text の文字数より小さい間 1 ずつ増やしながらくり返す
+  //   もし text の i 番目の文字が char と等しいなら
+  //     result の最後に i を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>refillShelves</code> と同じ形です。返すのが位置なので、<code>for</code> 文で書きます。文字列も配列と同じく、<code>text[i]</code> で <code>i</code> 番目の文字を取り出せます（01章 q03 問20）。<code>text[i]</code> の型は <code>string | undefined</code> です。ただ、<code>===</code> で比べるだけなら、先に <code>undefined</code> を確かめなくてもエラーになりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">文字列に含まれる数字の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function digitTotal() {}</code></pre>
+      <p>文字列を受け取ります。その中の数字（0〜9）を 1 文字ずつ数として足した合計を返します。数字がなければ 0 です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>digitTotal("a1b2c3")</code></dt><dd class="r"><code>6</code></dd><dd class="c">1 + 2 + 3</dd></div>
+          <div><dt><code>digitTotal("abc")</code></dt><dd class="r"><code>0</code></dd><dd class="c">数字がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 digitTotal を作る。文字列 text を受け取り、数値を返す
+export function digitTotal() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   もし c が "0" 以上で、"9" 以下なら
+  //     total に、c を数にしたものを足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>条件は問10 と同じ形で、範囲が <code>"0"</code> から <code>"9"</code> になります。<code>c</code> は文字列なので、そのままでは数の <code>total</code> に足せません。<code>Number()</code>（01章 q08）で数にしてから足します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">最初に出てくる負の数を返す</span>
+      <span class="q-new">新しく出てくる書き方：くり返しの途中で <code>return</code> する</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstNegative() {}</code></pre>
+      <p>数値の配列を受け取り、先頭から見て最初に出てくる負の数（0 より小さい数）を返します。見つかったら、その場でくり返しを終えます。負の数がなければ <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstNegative([3, -1, -5])</code></dt><dd class="r"><code>-1</code></dd><dd class="c">-5 より先に -1 が出てくる</dd></div>
+          <div><dt><code>firstNegative([1, 2])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">負の数がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">for (…) { return …; }</code><h4>くり返しの途中で返す</h4></div>
+      <p><code>return</code> を実行すると、関数はそこで終わります（01章 q07 問2）。くり返しの中で <code>return</code> すると、残りの要素は見ずに、くり返しごと関数が終わります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 reservationLabel を作る。読み取り専用の文字列の配列 names と文字列 guest を受け取り、文字列を返す
+function reservationLabel(names: readonly string[], guest: string): string {
+  // names から 1 つずつ name に取り出してくり返す
+  for (const name of names) {
+    // もし name が guest と等しいなら
+    if (name === guest) {
+      // "予約あり" を返す（ここで関数が終わり、くり返しも終わる）
+      return "予約あり";
+    }
+  }
+  // "予約なし" を返す
+  return "予約なし";
+}
+// 結果: reservationLabel(["佐藤", "鈴木", "田中"], "鈴木") は "予約あり"、reservationLabel(["佐藤"], "田中") は "予約なし"</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>回</th><th>name</th><th>name === "鈴木"</th><th>すること</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>"佐藤"</td><td>false</td><td>次の要素へ</td></tr>
+            <tr><td>2</td><td>"鈴木"</td><td>true</td><td class="j">"予約あり" を返して終わり</td></tr>
+            <tr><td>3</td><td>"田中"</td><td></td><td>見ない</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>最後の <code>return "予約なし";</code> まで来るのは、くり返しの中で一度も返さなかったときだけです。</p>
+      <p class="memo"><b>よくある間違い</b><code>return "予約なし";</code> を <code>for</code> の <code>{ }</code> の中に書くと、1 つめの要素を見ただけで返してしまいます。「なかった」と言えるのは、全部を見終わったあとです。</p>
+      <p class="memo"><b>よくある疑問</b>関数は終えずに、くり返しだけを途中で抜ける書き方もあります。<code>break</code> と言い、q04 で学びます。</p>
+      <p class="more">04章 q04（while文と break・continue）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstNegative を作る。読み取り専用の数値の配列 numbers を受け取り、数値か undefined を返す
+export function firstNegative() {
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし n が 0 より小さいなら
+  //     n を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>reservationLabel</code> と同じ形です。返すのは、見つけた要素の <code>n</code> です。戻り値の型の「数値か undefined」は <code>number | undefined</code> です（02章 q04 問4）。最後の <code>return undefined;</code> は、くり返しの外に書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">すべて偶数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function allEven() {}</code></pre>
+      <p>数値の配列を受け取り、すべての要素が偶数なら <code>true</code> を返します。奇数が見つかったら、その時点で <code>false</code> を返します。空の配列なら <code>true</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>allEven([2, 4, 6])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>allEven([2, 4, 5])</code></dt><dd class="r"><code>false</code></dd><dd class="c">5 が奇数</dd></div>
+          <div><dt><code>allEven([])</code></dt><dd class="r"><code>true</code></dd><dd class="c">奇数が 1 つもない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 allEven を作る。読み取り専用の数値の配列 numbers を受け取り、true か false を返す
+export function allEven() {
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし n を 2 で割った余りが 0 でないなら
+  //     false を返す
+  // true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じく、くり返しの途中で返す形です。「2 で割った余り」は <code>%</code>、「でない」は <code>!==</code> です（01章 q01 問17）。全部を見終わっても返していなければ、奇数はなかったので <code>true</code> を返します。空の配列では 1 回もくり返さずに、<code>true</code> が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">先頭からの累計を並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function runningTotal() {}</code></pre>
+      <p>数値の配列を受け取ります。先頭からその要素までの合計（累計）を、順に並べた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>runningTotal([1, 2, 3])</code></dt><dd class="r"><code>[1, 3, 6]</code></dd><dd class="c">1、1 + 2、1 + 2 + 3</dd></div>
+          <div><dt><code>runningTotal([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 runningTotal を作る。読み取り専用の数値の配列 numbers を受け取り、数値の配列を返す
+export function runningTotal() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // 累計 total を入れ直せる変数として作り、0 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   total に n を足す
+  //   result の最後に total を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じように <code>total</code> に足していき、足すたびに、そのときの <code>total</code> を <code>result</code> に付け足します。番号は使わないので、<code>for-of</code> で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">2 つの配列の同じ番号どうしを足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function zipSum() {}</code></pre>
+      <p>数値の配列 <code>a</code> と <code>b</code> を受け取ります。同じ番号の要素どうしを足した数を、順に並べた配列を返します。長さが違うときは、短いほうに合わせます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>zipSum([1, 2, 3], [10, 20])</code></dt><dd class="r"><code>[11, 22]</code></dd><dd class="c">3 は相手がないので使わない</dd></div>
+          <div><dt><code>zipSum([], [1])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">短いほうが空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>readonly number[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 zipSum を作る。読み取り専用の数値の配列 a と、読み取り専用の数値の配列 b を受け取り、数値の配列を返す
+export function zipSum() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // 長さ length を作り、a の要素の数と b の要素の数の小さいほうを入れる
+  // i を 0 から、length より小さい間 1 ずつ増やしながらくり返す
+  //   result の最後に、a の i 番目の要素（undefined なら 0）と b の i 番目の要素（undefined なら 0）を足した数を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つの配列を同じ番号で見るので、<code>for</code> 文で書きます。小さいほうは <code>Math.min()</code>（01章 q04 問9）で求めます。<code>a[i]</code> の型は <code>number | undefined</code> なので、<code>?? 0</code>（02章 q04 問3）で数にしてから足します。<code>(a[i] ?? 0) + (b[i] ?? 0)</code> のようにかっこを付けて、<code>??</code> を先に計算します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">配列の配列を 1 つの配列にする</span>
+      <span class="q-new">新しく出てくる書き方：配列の配列の型 <code>readonly (readonly number[])[]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function flatten() {}</code></pre>
+      <p>配列の配列（要素が配列になっている配列）を受け取ります。中の要素を順に 1 つの配列に並べて返します。<code>for-of</code> を 2 重にして書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>flatten([[1, 2], [3], []])</code></dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c">空の配列 [] からは何も足さない</dd></div>
+          <div><dt><code>flatten([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (readonly number[])[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">readonly (readonly string[])[]</code><h4>配列の配列の型</h4></div>
+      <p>要素が配列になっている配列の型は、要素の型の後ろに <code>[]</code> を付けます。文字列の配列の配列なら <code>string[][]</code> です。外側と内側の両方を読み取り専用にするときは、内側の型をかっこで囲みます。</p>
+      <p><code>for-of</code> の中に、もう 1 つ <code>for-of</code> を書けます。外側で 1 列ずつ取り出し、内側でその列の座席を 1 つずつ取り出します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 countEmptySeats を作る。座席表 rows（読み取り専用の文字列の配列の、読み取り専用の配列）を受け取り、数値を返す
+function countEmptySeats(rows: readonly (readonly string[])[]): number {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  let count = 0;
+  // rows から 1 つずつ row に取り出してくり返す
+  for (const row of rows) {
+    // row から 1 つずつ seat に取り出してくり返す
+    for (const seat of row) {
+      // もし seat が "空" と等しいなら
+      if (seat === "空") {
+        // count を 1 増やす
+        count++;
+      }
+    }
+  }
+  // count を返す
+  return count;
+}
+// 結果: countEmptySeats([["空", "済", "空"], ["済"], []]) は 2</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>rows: <span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>(readonly string[])</span><span class="seg c"><i>3</i>[]</span></pre>
+        <ol>
+          <li><span>外側の配列を読み取り専用にします。</span></li>
+          <li><span>要素の型です。1 列ぶんの、読み取り専用の文字列の配列です。</span></li>
+          <li><span>「2 を要素にした配列」という印です。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>かっこを付けない</h5>
+          <pre><code class="language-typescript">function addSeat(rows: readonly string[][]): void {
+  for (const row of rows) {
+    row.push("空");
+  }
+}</code></pre>
+          <div class="verdict ng">✕ 内側の配列は読み取り専用にならず、push してもエラーになりません</div>
+        </div>
+        <div>
+          <h5>かっこを付ける</h5>
+          <pre><code class="language-typescript">function addSeat(rows: readonly (readonly string[])[]): void {
+  for (const row of rows) {
+    row.push("空");
+  }
+}</code></pre>
+          <div class="verdict ok">○ push した行が型のエラーになり、気づけます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>かっこを付けずに <code>readonly number[][]</code> と書くと、テストの型の確認が通りません。テストは、内側も読み取り専用の <code>readonly (readonly number[])[]</code> であることを確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 flatten を作る。読み取り専用の数値の配列の、読み取り専用の配列 nested を受け取り、数値の配列を返す
+export function flatten() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // nested から 1 つずつ inner に取り出してくり返す
+  //   inner から 1 つずつ n に取り出してくり返す
+  //     result の最後に n を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、問17 のサンプルの <code>rows</code> の <code>string</code> を <code>number</code> に変えたものです。2 重のくり返しも、サンプルの <code>countEmptySeats</code> と同じ形です。内側で取り出した <code>n</code> を、そのまま <code>result</code> に付け足します。中身が空の配列 <code>[]</code> では、内側のくり返しは 1 回も実行されません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">min 以上 max 以下の要素の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countInRange() {}</code></pre>
+      <p>数値の配列と、2 つの数 <code>min</code> と <code>max</code> を受け取ります。<code>min</code> 以上 <code>max</code> 以下の要素がいくつあるかを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countInRange([1, 5, 10, 15], 5, 10)</code></dt><dd class="r"><code>2</code></dd><dd class="c">5 と 10。両端も含む</dd></div>
+          <div><dt><code>countInRange([], 0, 1)</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countInRange を作る。読み取り専用の数値の配列 numbers と数値の min と数値の max を受け取り、数値を返す
+export function countInRange() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし n が min 以上で、max 以下なら
+  //     count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>条件は、問10 のサンプルの <code>isFirstHalf</code> と同じ形で、比べる相手が数になります。「以上」は <code>&gt;=</code>、「以下」は <code>&lt;=</code> で、どちらも同じ値を含みます（01章 q01 問5、問7）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">重複を除いた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dedupe() {}</code></pre>
+      <p>文字列の配列を受け取ります。同じ要素の 2 回目からを除いた、新しい配列を返します。並びは、最初に出てきた順のままです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dedupe(["a", "b", "a", "c", "b"])</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">2 回目の "a" と "b" を除く</dd></div>
+          <div><dt><code>dedupe([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dedupe を作る。読み取り専用の文字列の配列 items を受け取り、文字列の配列を返す
+export function dedupe() {
+  // 結果 result を文字列の配列として作り、空の配列を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし result に item が含まれないなら
+  //     result の最後に item を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「result に item が含まれるか」は、配列の <code>.includes()</code> です（02章 q04 問9）。「含まれないなら」は、前に <code>!</code> を付けます（01章 q04）。いま作っている <code>result</code> を見て確かめるので、2 回目に出てきた要素は付け足されません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">「*」を 1 個から n 個まで並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function stairs() {}</code></pre>
+      <p>数 <code>n</code> を受け取ります。<code>"*"</code> を 1 個、2 個…<code>n</code> 個つなげた文字列を、順に並べた配列を返します。<code>n</code> が 0 なら空の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>stairs(3)</code></dt><dd class="r"><code>["*", "**", "***"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>stairs(0)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">並べるものがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 stairs を作る。数値の n を受け取り、文字列の配列を返す
+export function stairs() {
+  // 結果 result を文字列の配列として作り、空の配列を入れる
+  // i を 1 から n まで 1 ずつ増やしながらくり返す
+  //   result の最後に、"*" を i 回つなげた文字列を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。「<code>"*"</code> を i 回つなげた文字列」は <code>.repeat()</code> で作ります（01章 q02 問4）。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c04-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">区切る・最初の重複を見つける・九九の段</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function chunk() {}
+
+export function findFirstDuplicate() {}
+
+export function multiplicationTable() {}</code></pre>
+      <p>3 つの関数を、<code>for</code> 文か <code>for-of</code> 文で書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>chunk</code>：数値の配列 <code>items</code> を <code>size</code> 個ずつに区切り、区切ったそれぞれの配列を並べた配列を返します。最後の区切りは、<code>size</code> 個より少なくてもかまいません。<code>size</code> が 1 より小さいときは <code>Error</code> を投げます。引数は <code>readonly number[]</code> と <code>number</code>、戻り値は数値の配列の配列 <code>number[][]</code>（問17）です。</li>
+        <li><code>findFirstDuplicate</code>：文字列の配列を先頭から見ていき、前に出てきたものと同じ要素（2 回目に出てきた要素）が最初に見つかったら、その要素を返します。重複がなければ <code>undefined</code> です。引数は <code>readonly string[]</code>、戻り値は <code>string | undefined</code> です。</li>
+        <li><code>multiplicationTable</code>：数 <code>n</code> を受け取り、<code>n</code> の段の九九を <code>"3 × 1 = 3"</code> の形で、1 から 9 まで順に並べた配列を返します。<code>×</code> は掛け算の記号の文字で、キーボードの <code>*</code> とは別の文字です。引数は <code>number</code>、戻り値は <code>string[]</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>chunk([1, 2, 3, 4, 5], 2)</code></dt><dd class="r"><code>[[1, 2], [3, 4], [5]]</code></dd><dd class="c">最後は 1 個</dd></div>
+          <div><dt><code>chunk([1, 2, 3], 3)</code></dt><dd class="r"><code>[[1, 2, 3]]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>chunk([], 2)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>chunk([1], 0)</code></dt><dd class="r"><code>Error</code></dd><dd class="c">Error を投げる</dd></div>
+          <div><dt><code>findFirstDuplicate(["a", "b", "c", "b", "a"])</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">"b" の 2 回目が、"a" の 2 回目より先</dd></div>
+          <div><dt><code>findFirstDuplicate(["x", "x"])</code></dt><dd class="r"><code>"x"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>findFirstDuplicate(["a", "b"])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">重複がない</dd></div>
+          <div><dt><code>findFirstDuplicate([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>multiplicationTable(3)</code></dt><dd class="r">要素が 9 個の配列</dd><dd class="c"></dd></div>
+          <div><dt><code>multiplicationTable(3)[0]</code></dt><dd class="r"><code>"3 × 1 = 3"</code></dd><dd class="c">先頭</dd></div>
+          <div><dt><code>multiplicationTable(3)[8]</code></dt><dd class="r"><code>"3 × 9 = 27"</code></dd><dd class="c">最後</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>3 つの関数の引数と戻り値が、上に書いた型であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 chunk を作る。読み取り専用の数値の配列 items と数値の size を受け取り、数値の配列の配列を返す
+export function chunk() {
+  // もし size が 1 より小さいなら
+  //   "size は 1 以上にしてください" というメッセージのエラーを投げる
+  // 結果 result を数値の配列の配列として作り、空の配列を入れる
+  // i を 0 から、items の要素の数より小さい間 size ずつ増やしながらくり返す
+  //   result の最後に、items の i 番目から i + size 番目の前までを取り出した新しい配列を付け足す
+  // result を返す
+}
+
+// 関数 findFirstDuplicate を作る。読み取り専用の文字列の配列 items を受け取り、文字列か undefined を返す
+export function findFirstDuplicate() {
+  // 見た要素 seen を文字列の配列として作り、空の配列を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし seen に item が含まれるなら
+  //     item を返す
+  //   seen の最後に item を付け足す
+  // undefined を返す
+}
+
+// 関数 multiplicationTable を作る。数値の n を受け取り、文字列の配列を返す
+export function multiplicationTable() {
+  // 行 lines を文字列の配列として作り、空の配列を入れる
+  // i を 1 から 9 まで 1 ずつ増やしながらくり返す
+  //   lines の最後に、n と " × " と i と " = " と、n に i を掛けた数を埋め込んだ文字列を付け足す
+  // lines を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>chunk</code> のくり返しは、問8 のサンプルと同じく幅を変える <code>for</code> 文です。取り出すのは配列の <code>.slice()</code> です（02章 q05 問3）。終わりの位置が要素の数を超えても、エラーにならずにあるだけを返します。エラーは <code>throw new Error("…")</code> です（01章 q04 問8）。<code>findFirstDuplicate</code> は問13 と同じく、見つかったらその場で返す形です。まだ見ていない要素は <code>seen</code> に付け足して、次へ進みます。<code>multiplicationTable</code> は問7 と同じ形で、文字列はテンプレートリテラルで作ります。</p></details>
+    </div>
+  </section>
+</section>

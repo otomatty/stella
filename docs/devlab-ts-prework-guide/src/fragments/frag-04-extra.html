@@ -1,0 +1,253 @@
+<section class="sec" id="c04-extra">
+  <div class="sec-h">
+    <span class="eyebrow">04章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。e01 には「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。引数と戻り値には型注釈を付けます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c04-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">ラベル付き break</span>
+      <span class="q-new">新しく出てくる書き方：ラベル <code>outer:</code>、ラベル付き break <code>break outer;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function findPair() {}
+
+export function findInGrid() {}</code></pre>
+      <p>2 重のくり返しを途中で抜けたいとき、<code>break</code> だけでは内側のくり返ししか抜けられません。外側のくり返しにラベル（名前）を付けると、外側まで一度に抜けられます。次の 2 つの関数を、ラベル付き break を使って書きます。</p>
+      <ol>
+        <li><code>findPair(numbers, target)</code>：足すと <code>target</code> になる 2 つの要素を探し、その番号の組 <code>[i, j]</code> を返します。<code>i</code> は <code>j</code> より小さい番号です。組がいくつかあるときは、最初に見つかった組を返します。なければ <code>undefined</code> を返します。引数の配列は <code>readonly number[]</code>、戻り値は <code>[number, number] | undefined</code> です。</li>
+        <li><code>findInGrid(grid, value)</code>：2 次元の配列（配列の中に配列が並んだもの）から <code>value</code> を探し、最初に見つかった位置 <code>[行, 列]</code> を返します。なければ <code>undefined</code> を返します。引数の <code>grid</code> は <code>readonly (readonly number[])[]</code> です。中の配列も外の配列も、読み取り専用という意味です。</li>
+      </ol>
+      <p>説明すること：ラベル付き break を使わずに書くなら、どう書くか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>findPair([1, 4, 6, 3], 7)</code></dt><dd class="r"><code>[0, 2]</code></dd><dd class="c">1 + 6。後ろの 4 + 3 より先に見つかる</dd></div>
+          <div><dt><code>findPair([5, 5], 10)</code></dt><dd class="r"><code>[0, 1]</code></dd><dd class="c">同じ値でも、番号の違う 2 つ</dd></div>
+          <div><dt><code>findPair([1, 2], 10)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">組がない</dd></div>
+          <div><dt><code>findPair([], 0)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>findInGrid([[1, 2], [3, 4]], 3)</code></dt><dd class="r"><code>[1, 0]</code></dd><dd class="c">行の番号が 1、列の番号が 0。どちらも 0 から数える</dd></div>
+          <div><dt><code>findInGrid([[7, 7]], 7)</code></dt><dd class="r"><code>[0, 0]</code></dd><dd class="c">2 つあっても、最初の位置</dd></div>
+          <div><dt><code>findInGrid([[1, 2]], 9)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>findPair</code> は引数が <code>readonly number[]</code> と <code>number</code>、<code>findInGrid</code> は引数が <code>readonly (readonly number[])[]</code> と <code>number</code> です。どちらも戻り値が <code>[number, number] | undefined</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">outer: for (…)</code><h4>くり返しにラベルを付ける</h4></div>
+      <p>くり返しの文の前に <code>名前:</code> と書くと、そのくり返しに名前を付けられます。この名前をラベルと呼びます。ラベルは、次の項目の <code>break 名前;</code> で、どのくり返しを抜けるかを指すために使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 買い物かご carts を作り、[[1200, 800], [0, 500], [700]] を入れる
+const carts: number[][] = [[1200, 800], [0, 500], [700]];
+// 合計 total を入れ直せる変数として作り、0 を入れる
+let total = 0;
+// carts から 1 つずつ cart に取り出してくり返す。このくり返しに outer という名前を付ける
+outer: for (const cart of carts) {
+  // cart から 1 つずつ price に取り出してくり返す
+  for (const price of cart) {
+    // もし price が 0 と等しいなら
+    if (price === 0) {
+      // outer のくり返しを抜ける
+      break outer;
+    }
+    // total に price を足す
+    total += price;
+  }
+}
+// 結果: total は 2000</code></pre>
+      </div>
+      <p>このサンプルでは、値段が 0 の商品を、おかしなデータとして扱います。0 が出たら、その先は 1 つも足さずに集計をやめます。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>outer</span><span class="seg c"><i>2</i>:</span> <span class="seg"><i>3</i>for (const cart of carts)</span> {</pre>
+        <ol>
+          <li><span>ラベルの名前です。変数と同じように、好きな名前を付けられます。外側のくり返しには <code>outer</code>（外側）がよく使われます。</span></li>
+          <li><span>名前とくり返しの文の区切りです。<code>:</code> を書きます。</span></li>
+          <li><span>名前を付けるくり返しです。<code>for</code>・<code>for-of</code>・<code>while</code> のどれにも付けられます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>決まり</b>ラベルを付けただけで <code>break 名前;</code> で使わないと、ESLint がエラーにします（<code>no-unused-labels</code>）。使わないラベルは書きません。</p>
+      <p class="more"><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/label">MDN「ラベル付き文」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">break outer;</code><h4>ラベル付き break で、外側のくり返しまで抜ける</h4></div>
+      <p><code>break</code>（04章 q04 問11）は、いちばん内側のくり返しだけを抜けます。<code>break</code> の後ろにラベルを書くと、そのラベルを付けたくり返しまで、まとめて抜けます。</p>
+      <p>1 つ目の項目のサンプルを、ラベルのない <code>break</code> で書くと、次のようになります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 買い物かご carts を作り、[[1200, 800], [0, 500], [700]] を入れる
+const carts: number[][] = [[1200, 800], [0, 500], [700]];
+// 合計 total を入れ直せる変数として作り、0 を入れる
+let total = 0;
+// carts から 1 つずつ cart に取り出してくり返す
+for (const cart of carts) {
+  // cart から 1 つずつ price に取り出してくり返す
+  for (const price of cart) {
+    // もし price が 0 と等しいなら
+    if (price === 0) {
+      // 内側のくり返しを抜ける
+      break;
+    }
+    // total に price を足す
+    total += price;
+  }
+}
+// 結果: total は 2700</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>break;</h5>
+          <pre><code class="language-typescript">// 内側のくり返しを抜ける
+break;</code></pre>
+          <div class="verdict ng">✕ 内側だけを抜けて、次のかごに進みます。700 も足されて 2700 になります</div>
+        </div>
+        <div>
+          <h5>break outer;</h5>
+          <pre><code class="language-typescript">// outer のくり返しを抜ける
+break outer;</code></pre>
+          <div class="verdict ok">○ 外側のくり返しまで抜けます。0 の前までの 2000 で止まります</div>
+        </div>
+      </div>
+      <p>見ていく値の順に、何が起きるかを並べました。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>price</th><th>break; のとき</th><th>break outer; のとき</th></tr></thead>
+          <tbody>
+            <tr><td>1200</td><td>足す（total は 1200）</td><td>足す（total は 1200）</td></tr>
+            <tr><td>800</td><td>足す（total は 2000）</td><td>足す（total は 2000）</td></tr>
+            <tr><td>0</td><td>内側を抜けて、次のかごへ</td><td>外側まで抜けて、くり返しが終わる</td></tr>
+            <tr><td>500</td><td>見ない</td><td>見ない</td></tr>
+            <tr><td>700</td><td>足す（total は 2700）</td><td>見ない</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>コツ</b>探し物を見つけたところで抜けるときは、見つけた値を外側の変数に入れてから <code>break 名前;</code> を書きます。くり返しを抜けたあとで、その変数を返します。</p>
+      <p class="more"><a href="https://jsprimer.net/basic/loop/">JavaScript Primer「ループと反復処理」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findPair を作る。数値の読み取り専用の配列 numbers と数値 target を受け取り、数値と数値を並べたタプルか undefined を返す
+export function findPair() {
+  // 見つけた組 found を、数値と数値を並べたタプルか undefined を入れ直せる変数として作る
+  // i を 0 から、numbers の長さより小さい間 1 ずつ増やしながらくり返す。このくり返しに outer という名前を付ける
+  //   j を i + 1 から、numbers の長さより小さい間 1 ずつ増やしながらくり返す
+  //     もし numbers の i 番目の要素（undefined なら 0）と numbers の j 番目の要素（undefined なら 0）を足した数が target と等しいなら
+  //       found に i、j の順に並べたタプルを入れ直す
+  //       outer のくり返しを抜ける
+  // found を返す
+}
+
+// 関数 findInGrid を作る。数値の読み取り専用の配列を並べた読み取り専用の配列 grid と数値 value を受け取り、数値と数値を並べたタプルか undefined を返す
+export function findInGrid() {
+  // 見つけた位置 found を、数値と数値を並べたタプルか undefined を入れ直せる変数として作る
+  // grid の番号と要素の組を 1 つずつ [row, cells] に取り出してくり返す。このくり返しに outer という名前を付ける
+  //   cells の番号と要素の組を 1 つずつ [col, cell] に取り出してくり返す
+  //     もし cell が value と等しいなら
+  //       found に row、col の順に並べたタプルを入れ直す
+  //       outer のくり返しを抜ける
+  // found を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>どちらも、2 つ目の項目のコツと同じ形です。「見つけた組 found を、◯ か undefined を入れ直せる変数として作る」は <code>let found: [number, number] | undefined;</code> です。値を入れずに作ると、最初は <code>undefined</code> が入ります（02章 発展問題 e02）。<code>findPair</code> の <code>j</code> は <code>i + 1</code> から始めるので、<code>for (;;)</code> で番号を数えます（01章 q01 問5）。<code>numbers[i]</code> の型は <code>number | undefined</code> になるので（02章 q04 問3）、<code>numbers[i] ?? 0</code> のように <code>??</code> で 0 にしてから足します。<code>findInGrid</code> の「番号と要素の組」は <code>.entries()</code> です（04章 q03 問9）。<code>for (const [row, cells] of grid.entries())</code> と書くと、要素が <code>undefined</code> にならずに取り出せます。説明することは、ラベルを使わない書き方を実際に書いて、テストが通るかを確かめてから書きます。試したあとは、ラベル付き break の書き方に戻してから提出します。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c04-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">finally</span>
+      <span class="q-new">新しく出てくる書き方：<code>try-catch</code> の入れ子と、内側の <code>catch</code> で投げたエラーを外側の <code>catch</code> で受け取る流れ</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function processAll() {}</code></pre>
+      <p><code>try-catch</code> に <code>finally</code> を付けると、エラーが起きても起きなくても、最後に必ず実行される処理を書けます（04章 q05 問19）。開いたファイルを必ず閉じる、のような「後片付け」に使います。</p>
+      <p><code>processAll(inputs)</code> を書きます。引数は文字列の読み取り専用の配列 <code>readonly string[]</code> です。1 つずつ <code>JSON.parse</code> で読み、読んだ結果が数値なら合計に足します。</p>
+      <ul>
+        <li>読めたけれど数値でなければ、<code>"数値ではありません: &lt;input&gt;"</code> というメッセージのエラーを投げます。それを <code>catch</code> で受け取り、その <code>message</code> を <code>errors</code> に足します。</li>
+        <li>JSON として読めなければ、<code>"読めません: &lt;input&gt;"</code> を <code>errors</code> に足します。</li>
+        <li>読めても読めなくても、<code>finally</code> で <code>log</code> に <code>"done: &lt;input&gt;"</code> を足します。</li>
+      </ul>
+      <p><code>&lt;input&gt;</code> のところには、読もうとした文字列がそのまま入ります。戻り値は <code>{ total: number; errors: string[]; log: string[] }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>processAll(["1", "x", '"a"', "2"])</code></dt><dd class="r"><code>{ total: 3, errors: ["読めません: x", '数値ではありません: "a"'], log: ["done: 1", "done: x", 'done: "a"', "done: 2"] }</code></dd><dd class="c"><code>"x"</code> は JSON として読めない。<code>'"a"'</code> は読めるが、文字列の <code>"a"</code> になる</dd></div>
+          <div><dt><code>processAll([])</code></dt><dd class="r"><code>{ total: 0, errors: [], log: [] }</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>{ total: number; errors: string[]; log: string[] }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">try { try { … } catch { throw … } } catch (error) { … }</code><h4>try-catch を入れ子にする</h4></div>
+      <p><code>try</code> の <code>{ }</code> の中に、もう 1 つ <code>try-catch</code> を書けます。内側の <code>catch</code> でエラーを投げると（04章 q05 問16）、そのエラーは外側の <code>catch</code> に届きます。エラーの種類ごとにメッセージを決めてから、外側の 1 か所でまとめて受け取れます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 記録 log を作り、空の文字列の配列を入れる
+const log: string[] = [];
+// 次の中を試す
+try {
+  // 次の中を試す
+  try {
+    // "x" を JSON として読む
+    JSON.parse("x");
+  } catch {
+    // 読めなかったら、"在庫を読めません" というメッセージのエラーを投げる
+    throw new Error("在庫を読めません");
+  }
+} catch (error) {
+  // もし error が Error なら
+  if (error instanceof Error) {
+    // log の後ろに error の message をつなげる
+    log.push(error.message);
+  }
+} finally {
+  // 最後に必ず、log の後ろに "確認しました" をつなげる
+  log.push("確認しました");
+}
+// 結果: log は ["在庫を読めません", "確認しました"]</code></pre>
+      </div>
+      <p>動く順に並べました。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>順番</th><th>動く場所</th><th>すること</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>内側の try</td><td>JSON.parse("x") がエラーを投げる</td></tr>
+            <tr><td>2</td><td>内側の catch</td><td>"在庫を読めません" のエラーを投げる</td></tr>
+            <tr><td>3</td><td>外側の catch</td><td>error.message を log の後ろにつなげる</td></tr>
+            <tr><td>4</td><td>finally</td><td>"確認しました" を log の後ろにつなげる</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>外側の <code>try</code> の中で投げたエラーも、同じ外側の <code>catch</code> に届きます。内側の <code>try-catch</code> の後ろに <code>throw</code> を書いても、行き先は同じです。</p>
+      <p class="memo"><b>よくある疑問</b><code>finally</code> は、外側の <code>catch</code> が終わったあとに動きます。エラーが起きなかったときは、<code>try</code> の <code>{ }</code> が終わったあとに動きます。どちらの道を通っても、<code>finally</code> は 1 回だけ動きます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/statements/exception">サバイバルTypeScript「例外処理」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 processAll を作る。文字列の読み取り専用の配列 inputs を受け取り、{ total: 数値; errors: 文字列の配列; log: 文字列の配列 } を返す
+export function processAll() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // エラー errors を作り、空の文字列の配列を入れる
+  // 記録 log を作り、空の文字列の配列を入れる
+  // inputs から 1 つずつ input に取り出してくり返す
+  //   次の { } の中を試す
+  //     値 value を、型を unknown にして、入れ直せる変数として作る
+  //     次の { } の中を試す
+  //       value に、input を JSON として読んだ結果を入れ直す
+  //     読めなかったら、「読めません: ◯」というメッセージのエラーを投げる（◯ は input）
+  //     もし value の型が数値でないなら
+  //       「数値ではありません: ◯」というメッセージのエラーを投げる（◯ は input）
+  //     total に value を足す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     もし error が Error なら
+  //       errors の後ろに error の message をつなげる
+  //   最後に必ず、log の後ろに「done: ◯」の文字列をつなげる（◯ は input）
+  // total と errors と log を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しの中身は、e02 の項目のサンプルと同じ形です。「例外が投げられたら、投げられたものを error で受け取る」は外側の <code>catch (error)</code>、「最後に必ず」は <code>finally</code> です。「値 value を、型を unknown にして、入れ直せる変数として作る」は <code>let value: unknown;</code> です。内側の <code>try</code> の <code>{ }</code> の中で <code>const</code> を作ると、<code>{ }</code> の外で使えません。そのため、先に外で作っておきます。「読めなかったら」の行は内側の <code>catch</code> で、<code>JSON.parse</code> のエラーを「読めません」のエラーに投げ直します。「value の型が数値でないなら」は <code>typeof value !== "number"</code> です（04章 q06）。この <code>if</code> を通ったあとは、<code>value</code> が <code>number</code> に絞り込まれるので、<code>total</code> に足せます。どちらのエラーも外側の <code>catch</code> に届くので、<code>errors</code> に足すのは 1 か所で済みます。最後の行は、省略記法の <code>{ total, errors, log }</code> で書きます（02章 q01 問3）。</p></details>
+    </div>
+  </section>
+</section>

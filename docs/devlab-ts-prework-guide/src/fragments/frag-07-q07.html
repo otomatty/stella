@@ -1,0 +1,829 @@
+<section class="sec" id="c07-q07">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q07 型引数の制約</h2>
+    <p>型引数（07章 q06）を使った関数を 20 個書きます。この番号では、型引数に「制約」を付けます。制約は、型引数に渡せる型を限る書き方です。<code>&lt;T extends { length: number }&gt;</code> は「length を持つ型だけ」、<code>&lt;K extends keyof T&gt;</code> は「T のプロパティ名だけ」、<code>&lt;T extends object&gt;</code> は「オブジェクトだけ」に限ります。制約を付けると、関数の中でその型のプロパティを使えるようになります。<code>any</code> や <code>unknown</code> は使いません。テストは、制約に合わない呼び出しが型のエラーになることも確かめます。制約の要らない問題もあります。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q07-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">obj の key のプロパティを返す</span>
+      <span class="q-new">新しく出てくる書き方：型引数の制約 <code>T extends 型</code>、<code>K extends keyof T</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getProp() {}</code></pre>
+      <p>オブジェクト <code>obj</code> と、プロパティ名 <code>key</code> を受け取ります。<code>obj</code> の <code>key</code> のプロパティの値を返します。<code>key</code> に渡せるのは、<code>obj</code> が持つプロパティ名だけにします。<code>obj</code> の型を <code>T</code>、<code>key</code> の型を <code>K</code> とすると、戻り値の型は <code>T[K]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の <code>user</code> を使います。</p>
+        <pre><code class="language-typescript">const user = { name: "山田", age: 30 };</code></pre>
+        <dl class="eg">
+          <div><dt><code>getProp(user, "age")</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt><code>getProp(user, "email")</code></dt><dd class="r">型のエラー</dd><dd class="c">email は user のプロパティではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>getProp(user, "age")</code> の戻り値の型が <code>number</code>、<code>getProp(user, "name")</code> の戻り値の型が <code>string</code> であることも確かめます。</p>
+        <p class="memo"><b>印</b>テストの <code>getProp(user, "email")</code> の行には、<code>@ts-expect-error</code>（次の行が型のエラーになるはず、という印）が付いています。制約がないとエラーが起きないので、型の確認で「Unused '@ts-expect-error' directive」というエラーになります。この番号のほかの問題も同じです。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">T extends 型</code><h4>型引数に渡せる型を限る（制約）</h4></div>
+      <p>07章 q06 の <code>&lt;T&gt;</code> には、どんな型でも渡せます。そのため関数の中では、<code>T</code> の値がどんなプロパティを持つか分かりません。<code>&lt;T extends { price: number }&gt;</code> と書くと、<code>T</code> に渡せるのは「<code>price</code>（数値）を持つ型」だけになります。これを型引数の制約といいます。制約を付けると、関数の中で <code>item.price</code> を使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Item を作る。name は文字列、price は数値
+type Item = { name: string; price: number };
+// 関数 cheapItems を作る。型変数 T（price（数値）を持つ型に限る）を使い、読み取り専用の T の配列 items と数値 limit を受け取り、T の配列を返す
+function cheapItems&lt;T extends { price: number }&gt;(items: readonly T[], limit: number): T[] {
+  // items の要素を 1 つずつ item として、item の price が limit 以下のものだけを集めた新しい配列を返す
+  return items.filter((item) =&gt; item.price &lt;= limit);
+}
+// 商品の一覧 items を Item の配列として作り、ノートと万年筆を入れる
+const items: Item[] = [
+  { name: "ノート", price: 180 },
+  { name: "万年筆", price: 3200 },
+];
+// cheap を作り、cheapItems に items と 500 を渡して呼んだ結果を入れる
+const cheap = cheapItems(items, 500);
+// 結果: cheap は [{ name: "ノート", price: 180 }]。型は Item[]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function cheapItems&lt;<span class="seg"><i>1</i>T</span> <span class="seg"><i>2</i>extends</span> <span class="seg"><i>3</i>{ price: number }</span>&gt;(items: readonly T[], limit: number): T[]</pre>
+        <ol>
+          <li><span>型引数の名前です。07章 q06 と同じです。</span></li>
+          <li><span>「この型に当てはまるものに限る」という印です。</span></li>
+          <li><span><code>T</code> に渡せる型の条件です。<code>price</code>（数値）を持っていれば、ほかのプロパティを持っていてもかまいません（02章 q07 問1 の構造的型付け）。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>制約を付けない</h5>
+          <pre><code class="language-typescript">function cheapItems&lt;T&gt;(items: readonly T[], limit: number): T[] {
+  return items.filter((item) =&gt; item.price &lt;= limit);
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。<code>T</code> が <code>price</code> を持つか分からないからです（Property 'price' does not exist on type 'T'）</div>
+        </div>
+        <div>
+          <h5>制約を付ける</h5>
+          <pre><code class="language-typescript">function cheapItems&lt;T extends { price: number }&gt;(items: readonly T[], limit: number): T[] {
+  return items.filter((item) =&gt; item.price &lt;= limit);
+}</code></pre>
+          <div class="verdict ok">○ <code>T</code> は必ず <code>price</code> を持つので、<code>item.price</code> を使えます</div>
+        </div>
+      </div>
+      <p>制約の型を、そのまま引数の型に書いても、<code>item.price</code> は使えます。ただし、戻り値の型が変わります。</p>
+      <div class="cmp">
+        <div>
+          <h5>引数に型を直接書く</h5>
+          <pre><code class="language-typescript">function cheapItems(items: readonly { price: number }[], limit: number): { price: number }[] {
+  return items.filter((item) =&gt; item.price &lt;= limit);
+}</code></pre>
+          <div class="verdict ng">✕ 戻り値の型が <code>{ price: number }[]</code> になり、<code>name</code> が型から消えます。<code>cheapItems(items, 500)[0]?.name</code> は型のエラーです</div>
+        </div>
+        <div>
+          <h5>型引数に制約を付ける</h5>
+          <pre><code class="language-typescript">function cheapItems&lt;T extends { price: number }&gt;(items: readonly T[], limit: number): T[] {
+  return items.filter((item) =&gt; item.price &lt;= limit);
+}</code></pre>
+          <div class="verdict ok">○ <code>T</code> には渡した配列の要素の型（<code>Item</code>）が入るので、戻り値の型は <code>Item[]</code> のままです</div>
+        </div>
+      </div>
+      <dl class="eg">
+        <div><dt><code>cheapItems(items, 500)</code></dt><dd class="r"><code>[{ name: "ノート", price: 180 }]</code></dd><dd class="c">型は Item[]</dd></div>
+        <div><dt><code>cheapItems([{ name: "ノート" }], 500)</code></dt><dd class="r">型のエラー</dd><dd class="c">price を持たない</dd></div>
+      </dl>
+      <p class="memo"><b>決まり</b><code>extends</code> の後ろには、どんな型でも書けます。この番号では、<code>{ length: number }</code>、<code>keyof T</code>、<code>object</code>、<code>string | number</code>、<code>string</code> が出てきます。</p>
+      <p class="more">サバイバルTypeScript「型引数の制約」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">K extends keyof T</code><h4>T のプロパティ名だけに限る</h4></div>
+      <p><code>keyof T</code> は、<code>T</code> のプロパティ名を並べたユニオン型です（07章 q02）。<code>&lt;K extends keyof T&gt;</code> と書くと、<code>K</code> に渡せるのは <code>T</code> のプロパティ名だけになります。型引数を 2 つ並べるときは、07章 q06 の <code>&lt;A, B&gt;</code> と同じく <code>,</code> で区切ります。後ろの型引数の制約には、前の型引数 <code>T</code> を使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Order を作る。id は数値、status は文字列、total は数値
+type Order = { id: number; status: string; total: number };
+// 関数 beforeAfter を作る。型変数 T と、型変数 K（T のプロパティ名に限る）を使い、T の before と T の after と K の key を受け取り、T[K] と T[K] を並べたタプルを返す
+function beforeAfter&lt;T, K extends keyof T&gt;(before: T, after: T, key: K): [T[K], T[K]] {
+  // before の key の値、after の key の値の順に並べたタプルを返す
+  return [before[key], after[key]];
+}
+// 変更前の注文 oldOrder を Order として作り、{ id: 1, status: "受付", total: 3000 } を入れる
+const oldOrder: Order = { id: 1, status: "受付", total: 3000 };
+// 変更後の注文 newOrder を Order として作り、{ id: 1, status: "発送済み", total: 3000 } を入れる
+const newOrder: Order = { id: 1, status: "発送済み", total: 3000 };
+// statuses を作り、beforeAfter に oldOrder と newOrder と "status" を渡して呼んだ結果を入れる
+const statuses = beforeAfter(oldOrder, newOrder, "status");
+// 結果: statuses は ["受付", "発送済み"]。型は [string, string]</code></pre>
+      </div>
+      <p><code>T</code> と <code>K</code> には、呼び出したときに渡した値の型が入ります。<code>T[K]</code> は、<code>T</code> の <code>K</code> のプロパティの型です（インデックスアクセス型、03章 q07 問10）。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>呼び出し</th><th>T</th><th>K</th><th>T[K]</th></tr></thead>
+          <tbody>
+            <tr><td><code>beforeAfter(oldOrder, newOrder, "status")</code></td><td><code>Order</code></td><td><code>"status"</code></td><td><code>string</code></td></tr>
+            <tr><td><code>beforeAfter(oldOrder, newOrder, "total")</code></td><td><code>Order</code></td><td><code>"total"</code></td><td><code>number</code></td></tr>
+            <tr><td><code>beforeAfter(oldOrder, newOrder, "memo")</code></td><td><code>Order</code></td><td class="j">型のエラー</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>07章 q02 問7 では、<code>key</code> の型を <code>keyof User</code> にして、戻り値を <code>string | number</code> にしました。型引数 <code>K</code> を使うと、どのプロパティ名を渡したかが型に残ります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>keyof Order</code> で受け取る</h5>
+          <pre><code class="language-typescript">function orderValue(target: Order, key: keyof Order): string | number {
+  return target[key];
+}</code></pre>
+          <div class="verdict ng">✕ <code>orderValue(oldOrder, "total")</code> の型は <code>string | number</code> です。数値だと分かっていても、数値として使えません</div>
+        </div>
+        <div>
+          <h5>型引数 <code>K</code> で受け取る</h5>
+          <pre><code class="language-typescript">function orderValueOf&lt;K extends keyof Order&gt;(target: Order, key: K): Order[K] {
+  return target[key];
+}</code></pre>
+          <div class="verdict ok">○ <code>orderValueOf(oldOrder, "total")</code> の型は <code>number</code> です</div>
+        </div>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>制約を付けない</h5>
+          <pre><code class="language-typescript">function beforeAfter&lt;T, K&gt;(before: T, after: T, key: K): [T[K], T[K]] {
+  return [before[key], after[key]];
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。<code>K</code> が <code>T</code> のプロパティ名か分からないからです（Type 'K' cannot be used to index type 'T'）</div>
+        </div>
+        <div>
+          <h5>制約を付ける</h5>
+          <pre><code class="language-typescript">function beforeAfter&lt;T, K extends keyof T&gt;(before: T, after: T, key: K): [T[K], T[K]] {
+  return [before[key], after[key]];
+}</code></pre>
+          <div class="verdict ok">○ <code>before[key]</code> が使え、ないプロパティ名を渡すと型のエラーになります</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 getProp を作る。型変数 T と、型変数 K（T のプロパティ名に限る）を使い、T の obj と K の key を受け取り、T[K] を返す
+export function getProp() {
+  // obj の key の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問1 の 2 つ目のサンプルの <code>beforeAfter</code> と同じ形です。「型変数 T と、型変数 K（T のプロパティ名に限る）」は <code>&lt;T, K extends keyof T&gt;</code>、「T[K] を返す」は戻り値の型の <code>: T[K]</code> です。「obj の key の値」は、02章 q08 問1 と同じく <code>obj[key]</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q07-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">length がいちばん短いものを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function shortest() {}</code></pre>
+      <p>配列 <code>items</code> を受け取り、<code>length</code> がいちばん小さい要素を返します。同じ <code>length</code> の要素が複数あれば、前にある方を返します。配列が空なら <code>undefined</code> を返します。要素の型 <code>T</code> は、<code>length</code>（数値）を持つ型に限ります。文字列も配列も <code>length</code> を持ちます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shortest(["abc", "a", "ab"])</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shortest([[1, 2], [3]])</code></dt><dd class="r"><code>[3]</code></dd><dd class="c">配列の配列でもよい</dd></div>
+          <div><dt><code>shortest([1, 2])</code></dt><dd class="r">型のエラー</dd><dd class="c">数値には length がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>words</code> が <code>string[]</code> のとき、<code>shortest(words)</code> の戻り値の型が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 shortest を作る。型変数 T（length（数値）を持つ型に限る）を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+export function shortest() {
+  // いちばん短いもの best を入れ直せる変数として作り、undefined を入れる。型は T か undefined
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし best が undefined か、item の length が best の length より小さいなら
+  //     best に item を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問1 の 1 つ目のサンプルの <code>cheapItems</code> と同じ形で、制約が <code>{ length: number }</code> になります。中身は 05章 q10 問3 の <code>bestStudent</code> と同じ手順です。<code>best</code> は <code>let best: T | undefined;</code> と書くと、最初は <code>undefined</code> が入ります。同じ長さなら前の要素を残すので、比べるのは「より小さい」の <code>&lt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q07-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">length が長い方を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function longer() {}</code></pre>
+      <p>2 つの値 <code>a</code> と <code>b</code> を受け取り、<code>length</code> が大きい方を返します。同じなら <code>a</code> を返します。<code>a</code> と <code>b</code> は同じ型 <code>T</code> で、<code>T</code> は <code>length</code>（数値）を持つ型に限ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>longer(nums, [3])</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c">nums は number[] の [1, 2]</dd></div>
+          <div><dt><code>longer("ab", "cde")</code></dt><dd class="r"><code>"cde"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>longer(nums, nums)</code> の戻り値の型が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 longer を作る。型変数 T（length（数値）を持つ型に限る）を使い、T の a と T の b を受け取り、T を返す
+export function longer() {
+  // もし b の length が a の length より大きいなら b、そうでなければ a を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問2 と同じ制約です。「もし ◯ なら b、そうでなければ a」は条件演算子 <code>? :</code> で 1 行にできます（01章 q01 問12）。同じ長さなら <code>a</code> を返すので、比べるのは「より大きい」の <code>&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q07-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">それぞれの要素の key の値を並べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pluckAll() {}</code></pre>
+      <p>オブジェクトの配列 <code>items</code> と、プロパティ名 <code>key</code> を受け取ります。それぞれの要素の <code>key</code> の値を、同じ順に並べた新しい配列を返します。<code>key</code> は要素のプロパティ名に限ります。要素の型を <code>T</code>、<code>key</code> の型を <code>K</code> とすると、戻り値の型は <code>T[K][]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>users</code> に <code>[{ name: "山田", age: 30 }]</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>pluckAll(users, "name")</code></dt><dd class="r"><code>["山田"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>pluckAll(users, "age")</code> の戻り値の型が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pluckAll を作る。型変数 T と、型変数 K（T のプロパティ名に限る）を使い、読み取り専用の T の配列 items と K の key を受け取り、T[K] の配列を返す
+export function pluckAll() {
+  // items の要素を 1 つずつ item として、item の key の値に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型引数は問1 と同じです。「T[K] の配列」は、<code>number[]</code> と同じく型の後ろに <code>[]</code> を付けて <code>T[K][]</code> と書きます。中の行は <code>.map()</code> です（02章 q04 問5）。コールバックの中で <code>item[key]</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q07-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">2 つのオブジェクトを合わせる</span>
+      <span class="q-new">新しく出てくる書き方：<code>T extends object</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mergeObjects() {}</code></pre>
+      <p>2 つのオブジェクト <code>a</code> と <code>b</code> を受け取り、両方のプロパティを持つ新しいオブジェクトを返します。<code>a</code> と <code>b</code> は、どちらもオブジェクトに限ります。<code>a</code> の型を <code>A</code>、<code>b</code> の型を <code>B</code> とすると、戻り値の型は <code>A &amp; B</code>（03章 q06 問1）です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mergeObjects({ a: 1 }, { b: "x" })</code></dt><dd class="r"><code>{ a: 1, b: "x" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>mergeObjects(1, { b: "x" })</code></dt><dd class="r">型のエラー</dd><dd class="c">数値はオブジェクトではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>mergeObjects({ a: 1 }, { b: "x" })</code> の戻り値の型が <code>{ a: number } &amp; { b: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">T extends object</code><h4>オブジェクトだけに限る</h4></div>
+      <p><code>object</code> は、オブジェクトや配列の型です（07章 q02 問16）。文字列・数値・<code>true</code> / <code>false</code>・<code>null</code>・<code>undefined</code> は入りません。<code>&lt;T extends object&gt;</code> と書くと、<code>T</code> に渡せるのはオブジェクトだけになります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Member を作る。id は数値、name は文字列
+type Member = { id: number; name: string };
+// 関数 snapshot を作る。型変数 T（オブジェクトに限る）を使い、T の value を受け取り、読み取り専用の T を返す
+function snapshot&lt;T extends object&gt;(value: T): Readonly&lt;T&gt; {
+  // value を広げたオブジェクトを、書き換えられないようにしたものを返す
+  return Object.freeze({ ...value });
+}
+// 会員 member を Member として作り、{ id: 7, name: "佐藤" } を入れる
+const member: Member = { id: 7, name: "佐藤" };
+// saved を作り、snapshot に member を渡して呼んだ結果を入れる
+const saved = snapshot(member);
+// 結果: saved は { id: 7, name: "佐藤" }。型は Readonly&lt;Member&gt;</code></pre>
+      </div>
+      <p><code>Readonly</code> は 07章 q03 問3、<code>Object.freeze()</code> は 07章 q03 問8 で出ました。</p>
+      <dl class="eg">
+        <div><dt><code>snapshot(member)</code></dt><dd class="r"><code>{ id: 7, name: "佐藤" }</code></dd><dd class="c">型は Readonly&lt;Member&gt;</dd></div>
+        <div><dt><code>snapshot(5)</code></dt><dd class="r">型のエラー</dd><dd class="c">数値はオブジェクトではない</dd></div>
+        <div><dt><code>snapshot("佐藤")</code></dt><dd class="r">型のエラー</dd><dd class="c">文字列もオブジェクトではない</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>制約を付けない</h5>
+          <pre><code class="language-typescript">function snapshot&lt;T&gt;(value: T): Readonly&lt;T&gt; {
+  return Object.freeze({ ...value });
+}</code></pre>
+          <div class="verdict ng">✕ 関数の中はエラーになりません。そのかわり <code>snapshot(5)</code> も型のエラーにならずに通ります</div>
+        </div>
+        <div>
+          <h5>制約を付ける</h5>
+          <pre><code class="language-typescript">function snapshot&lt;T extends object&gt;(value: T): Readonly&lt;T&gt; {
+  return Object.freeze({ ...value });
+}</code></pre>
+          <div class="verdict ok">○ <code>snapshot(5)</code> が型のエラーになります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>スプレッド構文 <code>{ ...value }</code> は、制約のない <code>T</code> にも書けます。そのため制約を付け忘れても、関数の中ではエラーが出ません。テストの「数値は渡せない」の確かめで、初めて気づくことになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mergeObjects を作る。型変数 A（オブジェクトに限る）と、型変数 B（オブジェクトに限る）を使い、A の a と B の b を受け取り、A と B を合わせた型を返す
+export function mergeObjects() {
+  // a に b を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型引数は 2 つで、それぞれに問5 の項目の制約を付けます。<code>&lt;A extends object, B extends object&gt;</code> です。「A と B を合わせた型」は <code>A &amp; B</code> です（03章 q06 問1）。「a に b を重ねた新しいオブジェクト」は、02章 q03 問10 のサンプルの <code>updated</code> と同じ <code>{ ...a, ...b }</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q07-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">オブジェクトに id を足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addId() {}</code></pre>
+      <p>オブジェクト <code>value</code> と数値 <code>id</code> を受け取り、<code>value</code> のプロパティに <code>id</code> を足した新しいオブジェクトを返します。<code>value</code> はオブジェクトに限ります。<code>value</code> の型を <code>T</code> とすると、戻り値の型は <code>T &amp; { id: number }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addId({ name: "山田" }, 1)</code></dt><dd class="r"><code>{ name: "山田", id: 1 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>addId({ name: "山田" }, 1)</code> の戻り値の型が <code>{ name: string } &amp; { id: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addId を作る。型変数 T（オブジェクトに限る）を使い、T の value と数値 id を受け取り、T と { id: 数値 } を合わせた型を返す
+export function addId() {
+  // value を広げて、id を id にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型引数は問5 と同じく <code>object</code> に限ります。「T と { id: 数値 } を合わせた型」は <code>T &amp; { id: number }</code> です（03章 q06 問15）。中の行は、03章 q06 問3 のサンプルの <code>withStock</code> と同じ形で、省略記法の <code>{ ...value, id }</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q07-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">key のプロパティだけを value にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function setProp() {}</code></pre>
+      <p>オブジェクト <code>obj</code>、プロパティ名 <code>key</code>、値 <code>value</code> を受け取ります。<code>obj</code> の <code>key</code> のプロパティだけを <code>value</code> にした、新しいオブジェクトを返します。元の <code>obj</code> は変えません。<code>key</code> は <code>obj</code> のプロパティ名に限ります。<code>value</code> に渡せるのは、そのプロパティの型 <code>T[K]</code> の値だけにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の <code>user</code> を使います。</p>
+        <pre><code class="language-typescript">const user = { name: "山田", age: 30 };</code></pre>
+        <dl class="eg">
+          <div><dt><code>setProp(user, "age", 31)</code></dt><dd class="r"><code>{ name: "山田", age: 31 }</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの <code>user.age</code></dt><dd class="r"><code>30</code></dd><dd class="c">元のまま</dd></div>
+          <div><dt><code>setProp(user, "age", "31")</code></dt><dd class="r">型のエラー</dd><dd class="c">age に文字列は入れられない</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 setProp を作る。型変数 T と、型変数 K（T のプロパティ名に限る）を使い、T の obj と K の key と T[K] の value を受け取り、T を返す
+export function setProp() {
+  // obj を広げて、key の値を value にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型引数は問1 と同じです。<code>T[K]</code> は、戻り値だけでなく引数の型にも書けます。<code>value: T[K]</code> と書くと、<code>"age"</code> を渡したときは <code>number</code> しか渡せなくなります。中の行は、02章 q08 問3 のサンプルの <code>restocked</code> と同じ形で、<code>{ ...obj, [key]: value }</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q07-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">fn の値がいちばん大きい要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function maxBy() {}</code></pre>
+      <p>05章 q07 問14 の <code>maxBy</code> を、どんな型の配列でも使えるようにします。配列 <code>items</code> と、関数 <code>fn</code> を受け取ります。要素ごとに <code>fn</code> を呼び、返ってきた数がいちばん大きい要素を返します。同じ数なら前にある方を返します。配列が空なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>maxBy(["a", "abc", "ab"], (s) =&gt; s.length)</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c">文字数 3 がいちばん大きい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>words</code> が <code>string[]</code> のとき、<code>maxBy(words, (s) =&gt; s.length)</code> の戻り値の型が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 maxBy を作る。型変数 T を使い、読み取り専用の T の配列 items と、関数 fn（T の item を受け取り、数値を返す）を受け取り、T か undefined を返す
+export function maxBy() {
+  // いちばんの要素 best を入れ直せる変数として作り、undefined を入れる。型は T か undefined
+  // いちばん大きい値 bestValue を入れ直せる変数として作り、-Infinity を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   値 value を作り、fn に item を渡して呼んだ結果を入れる
+  //   もし value が bestValue より大きいなら
+  //     best に item を入れ直す
+  //     bestValue に value を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q07 問14 と同じ手順で、<code>string</code> を <code>T</code> に変えます。この問には制約は要りません。<code>T</code> の値は <code>fn</code> に渡すだけで、関数の中で <code>T</code> のプロパティを使わないからです。<code>fn</code> の型は <code>(item: T) =&gt; number</code> です（05章 q07 問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q07-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">fn の値の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumBy() {}</code></pre>
+      <p>配列 <code>items</code> と、関数 <code>fn</code> を受け取ります。要素ごとに <code>fn</code> を呼び、返ってきた数の合計を返します。どんな型の配列でも使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumBy([{ price: 100 }, { price: 50 }], (x) =&gt; x.price)</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumBy(["ab", "c"], (s) =&gt; s.length)</code></dt><dd class="r"><code>3</code></dd><dd class="c">2 文字と 1 文字</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumBy を作る。型変数 T を使い、読み取り専用の T の配列 items と、関数 fn（T の item を受け取り、数値を返す）を受け取り、数値を返す
+export function sumBy() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   total に、fn に item を渡して呼んだ結果を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q07 問13 の <code>sumBy</code> と同じ手順で、<code>string</code> を <code>T</code> に変えます。問8 と同じく、制約は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q07-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">name の辞書順に並べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortByName() {}</code></pre>
+      <p>オブジェクトの配列 <code>items</code> を受け取り、<code>name</code> の辞書順に並べた新しい配列を返します。元の配列は変えません。比べるのには <code>localeCompare</code> を使います。要素の型 <code>T</code> は、<code>name</code>（文字列）を持つ型に限ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>rows</code> に <code>[{ name: "b", age: 1 }, { name: "a", age: 2 }]</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>sortByName(rows).map((r) =&gt; r.name)</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sortByName([{ title: "x" }])</code></dt><dd class="r">型のエラー</dd><dd class="c">name を持たない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>sortByName(rows)</code> の戻り値の型が <code>{ name: string; age: number }[]</code> であることも確かめます。<code>age</code> も型に残っている必要があります。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortByName を作る。型変数 T（name（文字列）を持つ型に限る）を使い、読み取り専用の T の配列 items を受け取り、T の配列を返す
+export function sortByName() {
+  // items をコピーした配列を、name の辞書順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 1 つ目の項目の、2 つ目の比べ方を見てください。引数の型を <code>{ name: string }[]</code> にすると、戻り値の型から <code>age</code> が消えて、型の確かめで落ちます。コピーは <code>[...items]</code>（02章 q05 問1）、並べ替えは <code>.sort()</code> です（02章 q05 問8）。辞書順に比べるのは <code>a.name.localeCompare(b.name)</code> です（07章 q02 の応用）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q07-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">age がいちばん大きい要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function oldest() {}</code></pre>
+      <p>オブジェクトの配列 <code>items</code> を受け取り、<code>age</code> がいちばん大きい要素を返します。同じ <code>age</code> なら前にある方を返します。配列が空なら <code>undefined</code> を返します。要素の型 <code>T</code> は、<code>age</code>（数値）を持つ型に限ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>people</code> に <code>[{ name: "a", age: 30 }, { name: "b", age: 41 }]</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>oldest(people)</code></dt><dd class="r"><code>{ name: "b", age: 41 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>oldest(people)</code> の戻り値の型が <code>{ name: string; age: number } | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 oldest を作る。型変数 T（age（数値）を持つ型に限る）を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+export function oldest() {
+  // いちばん年上のもの best を入れ直せる変数として作り、undefined を入れる。型は T か undefined
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし best が undefined か、item の age が best の age より大きいなら
+  //     best に item を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。違うのは、制約が <code>{ age: number }</code> になることと、比べ方が「より大きい」の <code>&gt;</code> になることです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q07-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">fn の値の小さい順に並べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortByNumber() {}</code></pre>
+      <p>配列 <code>items</code> と、関数 <code>fn</code> を受け取ります。要素ごとに <code>fn</code> を呼び、返ってきた数の小さい順に並べた新しい配列を返します。同じ数の要素は、元の順のままにします。元の配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortByNumber(["ccc", "a", "bb"], (s) =&gt; s.length)</code></dt><dd class="r"><code>["a", "bb", "ccc"]</code></dd><dd class="c">文字数の小さい順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>words</code> が <code>string[]</code> のとき、<code>sortByNumber(words, (s) =&gt; s.length)</code> の戻り値の型が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortByNumber を作る。型変数 T を使い、読み取り専用の T の配列 items と、関数 fn（T の item を受け取り、数値を返す）を受け取り、T の配列を返す
+export function sortByNumber() {
+  // items をコピーした配列を、fn に渡して呼んだ結果の小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q07 問15 の <code>sortByKey</code> と同じ形で、<code>string</code> を <code>T</code> に変えます。<code>.sort()</code> は、比べた結果が 0 になった要素の順を入れ替えません。そのため「同じ数なら元の順」は、何もしなくても満たせます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q07-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">id が一致する要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function findById() {}</code></pre>
+      <p>オブジェクトの配列 <code>items</code> と、数値 <code>id</code> を受け取ります。<code>id</code> が一致する要素を返します。見つからなければ <code>undefined</code> を返します。要素の型 <code>T</code> は、<code>id</code>（数値）を持つ型に限ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>rows</code> に <code>[{ id: 1, name: "a" }, { id: 2, name: "b" }]</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>findById(rows, 2)</code></dt><dd class="r"><code>{ id: 2, name: "b" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>findById(rows, 3)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>findById(rows, 2)</code> の戻り値の型が <code>{ id: number; name: string } | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findById を作る。型変数 T（id（数値）を持つ型に限る）を使い、読み取り専用の T の配列 items と数値 id を受け取り、T か undefined を返す
+export function findById() {
+  // items の要素を 1 つずつ item として、item の id が id と等しい最初のもの（なければ undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 問18 の <code>findByName</code> と同じ形の <code>.find()</code> です。比べるのが <code>item.id</code> と <code>id</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q07-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">id が一致する要素だけを上書きする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function updateById() {}</code></pre>
+      <p>オブジェクトの配列 <code>items</code>、数値 <code>id</code>、上書きする内容 <code>patch</code> を受け取ります。<code>id</code> が一致する要素だけを、<code>patch</code> のプロパティで上書きした新しい配列を返します。元の配列と要素は変えません。要素の型 <code>T</code> は、<code>id</code>（数値）を持つ型に限ります。<code>patch</code> の型は <code>Partial&lt;T&gt;</code>（07章 q03 問1）です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>rows</code> に <code>[{ id: 1, name: "a" }, { id: 2, name: "b" }]</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>updateById(rows, 1, { name: "z" })</code></dt><dd class="r"><code>[{ id: 1, name: "z" }, { id: 2, name: "b" }]</code></dd><dd class="c">id 1 だけが変わる</dd></div>
+          <div><dt>呼んだあとの <code>rows[0]?.name</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 updateById を作る。型変数 T（id（数値）を持つ型に限る）を使い、読み取り専用の T の配列 items と数値 id と、Partial&lt;T&gt; の patch を受け取り、T の配列を返す
+export function updateById() {
+  // items の要素を 1 つずつ item として、item の id が id と等しいなら item に patch を重ねた新しいオブジェクト、そうでなければ item に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 問19 の <code>updateScore</code> と同じく、<code>.map()</code> のコールバックの中で条件演算子 <code>? :</code> を使います。「item に patch を重ねた新しいオブジェクト」は <code>{ ...item, ...patch }</code> です（02章 q03 問10）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q07-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">predicate が true の要素の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countWhere() {}</code></pre>
+      <p>05章 q07 問4 の <code>countWhere</code> を、どんな型の配列でも使えるようにします。配列 <code>items</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> が <code>true</code> を返す要素の数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countWhere([1, 2, 3], (n) =&gt; n &gt; 1)</code></dt><dd class="r"><code>2</code></dd><dd class="c">2 と 3</dd></div>
+          <div><dt><code>countWhere(["a", "bb"], (s) =&gt; s.length === 2)</code></dt><dd class="r"><code>1</code></dd><dd class="c">"bb" だけ</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countWhere を作る。型変数 T を使い、読み取り専用の T の配列 items と、関数 predicate（T の item を受け取り、true か false を返す）を受け取り、数値を返す
+export function countWhere() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし predicate に item を渡して呼んだ結果が true なら
+  //     count に 1 を足す
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q07 問4 と同じ手順で、<code>string</code> を <code>T</code> に変えます。<code>predicate</code> の型は <code>(item: T) =&gt; boolean</code> です。制約は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q07-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">value がなければ fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function orDefault() {}</code></pre>
+      <p>値 <code>value</code> と、代わりの値 <code>fallback</code> を受け取ります。<code>value</code> が <code>undefined</code> なら <code>fallback</code> を、そうでなければ <code>value</code> を返します。型 <code>T</code> は、文字列か数値に限ります。<code>value</code> の型は <code>T | undefined</code>、<code>fallback</code> と戻り値の型は <code>T</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>orDefault(undefined, 5)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>orDefault("a", "b")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">value がある</dd></div>
+          <div><dt><code>orDefault(undefined, true)</code></dt><dd class="r">型のエラー</dd><dd class="c">真偽値は渡せない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>nums</code> が <code>number[]</code> のとき、<code>orDefault(undefined, nums.length)</code> の戻り値の型が <code>number</code> であることも確かめます。</p>
+        <p class="memo"><b>よくある疑問</b>テストが <code>5</code> を使わずに <code>nums.length</code> で型を確かめるのは、<code>orDefault(undefined, 5)</code> の戻り値の型が <code>5</code> というリテラル型（01章 q07）になるからです。<code>5</code> を渡すと、<code>T</code> には <code>5</code> というリテラル型が入ります。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 orDefault を作る。型変数 T（文字列か数値に限る）を使い、T か undefined の value と T の fallback を受け取り、T を返す
+export function orDefault() {
+  // value（なければ fallback）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「文字列か数値に限った T」は、制約にユニオン型を書いて <code>&lt;T extends string | number&gt;</code> とします。中の行は 07章 q06 問18 と同じく <code>??</code> です（02章 q02 問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q07-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">keys のプロパティがすべてあれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasAllKeys() {}</code></pre>
+      <p>オブジェクト <code>obj</code> と、プロパティ名の配列 <code>keys</code> を受け取ります。<code>keys</code> に並べたプロパティが、<code>obj</code> にすべてあれば（どれも <code>undefined</code> でなければ）<code>true</code> を返します。<code>obj</code> はオブジェクトに限ります。<code>keys</code> の型は <code>readonly (keyof T)[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>{ a: number; b?: string }</code> 型の <code>value</code> に <code>{ a: 1 }</code> を入れて使います。</p>
+        <dl class="eg">
+          <div><dt><code>hasAllKeys(value, ["a"])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasAllKeys(value, ["a", "b"])</code></dt><dd class="r"><code>false</code></dd><dd class="c">b がない</dd></div>
+          <div><dt><code>hasAllKeys(value, ["c"])</code></dt><dd class="r">型のエラー</dd><dd class="c">c は value のプロパティではない</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasAllKeys を作る。型変数 T（オブジェクトに限る）を使い、T の obj と、T のプロパティ名の読み取り専用の配列 keys を受け取り、true か false を返す
+export function hasAllKeys() {
+  // keys の要素を 1 つずつ key として、すべての key で obj の key の値が undefined と等しくないか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「T のプロパティ名の読み取り専用の配列」は <code>readonly (keyof T)[]</code> です。かっこがないと、<code>keyof</code> が <code>T[]</code> 全体にかかり、「T の配列のプロパティ名」という別の型になります。03章 q03 問12 の <code>(number | undefined)[]</code> と同じ考え方です。「すべて〜か」は <code>.every()</code> です（02章 q04 問20）。コールバックの中で <code>obj[key] !== undefined</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q07-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">predicate が true の最初の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstWhere() {}</code></pre>
+      <p>05章 q07 問7 を、どんな型の配列でも使えるようにします。配列 <code>items</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> が <code>true</code> を返す最初の要素を返します。なければ <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstWhere([1, 4, 6], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>4</code></dd><dd class="c">最初の偶数</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>nums</code> が <code>number[]</code> のとき、<code>firstWhere(nums, (n) =&gt; n &gt; 0)</code> の戻り値の型が <code>number | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstWhere を作る。型変数 T を使い、読み取り専用の T の配列 items と、関数 predicate（T の item を受け取り、true か false を返す）を受け取り、T か undefined を返す
+export function firstWhere() {
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし predicate に item を渡して呼んだ結果が true なら
+  //     item を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q07 問7 の <code>findNumber</code> と同じ手順で、<code>number</code> を <code>T</code> に変えます。制約は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q07-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">keyFn が返すキーごとの数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countByKey() {}</code></pre>
+      <p>配列 <code>items</code> と、関数 <code>keyFn</code> を受け取ります。要素ごとに <code>keyFn</code> を呼び、返ってきたキーごとに要素の数を数えて、オブジェクトで返します。キーの型 <code>K</code> は、文字列に限ります（<code>K extends string</code>）。戻り値の型は <code>Partial&lt;Record&lt;K, number&gt;&gt;</code> です。<code>Record&lt;K, number&gt;</code>（07章 q05）のすべてのキーを省略できるようにした型です。<code>K</code> のキーが、1 回も出てこないこともあるからです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countByKey(["apple", "avocado", "banana"], (w) =&gt; w.slice(0, 1))</code></dt><dd class="r"><code>{ a: 2, b: 1 }</code></dd><dd class="c">先頭の 1 文字ごと</dd></div>
+          <div><dt><code>countByKey([1, 2, 3], (n): "odd" | "even" =&gt; (n % 2 === 0 ? "even" : "odd"))</code></dt><dd class="r"><code>{ odd: 2, even: 1 }</code></dd><dd class="c">奇数と偶数</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>2 つ目の呼び出しの戻り値の型が <code>Partial&lt;Record&lt;"odd" | "even", number&gt;&gt;</code> であることも確かめます。2 つ目の <code>keyFn</code> は、戻り値の型を <code>"odd" | "even"</code> と書いています。この型が <code>K</code> に入ります。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countByKey を作る。型変数 T と、型変数 K（文字列に限る）を使い、読み取り専用の T の配列 items と、関数 keyFn（T の item を受け取り、K を返す）を受け取り、Partial&lt;Record&lt;K, number&gt;&gt; を返す
+export function countByKey() {
+  // 空の表 counts を作る。型は Partial&lt;Record&lt;K, number&gt;&gt;
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、keyFn に item を渡して呼んだ結果を入れる
+  //   counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 問9 の <code>countByGrade</code> と同じ手順です。型引数は <code>&lt;T, K extends string&gt;</code>、<code>keyFn</code> の型は <code>(item: T) =&gt; K</code> です。<code>counts</code> は <code>Partial</code> なので、空のオブジェクト <code>{}</code> を入れて作れます。くり返しの中は <code>counts[key] = (counts[key] ?? 0) + 1</code> の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q07-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">id をキーにした表を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toIdMap() {}</code></pre>
+      <p>オブジェクトの配列 <code>items</code> を受け取り、要素の <code>id</code> をキー、要素そのものを値にしたオブジェクトを返します。要素の型 <code>T</code> は、<code>id</code>（数値）を持つ型に限ります。戻り値の型は <code>Record&lt;number, T&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>rows</code> に <code>[{ id: 1, name: "a" }, { id: 2, name: "b" }]</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>toIdMap(rows)</code></dt><dd class="r"><code>{ 1: { id: 1, name: "a" }, 2: { id: 2, name: "b" } }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toIdMap(rows)</code> の戻り値の型が <code>Record&lt;number, { id: number; name: string }&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toIdMap を作る。型変数 T（id（数値）を持つ型に限る）を使い、読み取り専用の T の配列 items を受け取り、Record&lt;number, T&gt; を返す
+export function toIdMap() {
+  // 空の表 result を作る。型は Record&lt;number, T&gt;
+  // items から 1 つずつ item に取り出してくり返す
+  //   result の item の id に item を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 問13 の <code>scoreTable</code> と同じ手順です。<code>result[item.id] = item</code> の形で入れていきます。キーが数値でも、<code>Record&lt;number, T&gt;</code> なら <code>result[item.id]</code> と書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c07-q07-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">プロパティを取り出す・長い方・値を並べる・id を足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getProperty() {}
+
+export function longest() {}
+
+export function pluck() {}
+
+export function withId() {}</code></pre>
+      <p>4 つの関数を、型引数と制約を使って書きます。</p>
+      <ol>
+        <li><code>getProperty(obj, key)</code>：<code>obj[key]</code> を返します。<code>key</code> は <code>obj</code> のプロパティ名に限ります。戻り値の型は <code>T[K]</code> です。</li>
+        <li><code>longest(a, b)</code>：<code>length</code> が長い方を返します。同じなら <code>a</code> を返します。<code>length</code> を持つ型に限ります。</li>
+        <li><code>pluck(items, key)</code>：それぞれの要素の <code>key</code> の値を並べた配列を返します。戻り値の型は <code>T[K][]</code> です。</li>
+        <li><code>withId(value, id)</code>：オブジェクトに <code>id</code> を足した新しいオブジェクトを返します。オブジェクトに限ります（<code>T extends object</code>）。戻り値の型は <code>T &amp; { id: number }</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の <code>user</code> を使います。</p>
+        <pre><code class="language-typescript">const user = { name: "山田", age: 30 };</code></pre>
+        <dl class="eg">
+          <div><dt><code>getProperty(user, "age")</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt><code>getProperty(user, "name")</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>getProperty(user, "email")</code></dt><dd class="r">型のエラー</dd><dd class="c">email は user のプロパティではない</dd></div>
+          <div><dt><code>longest("abc", "de")</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>longest([1, 2], [3])</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>longest("ab", "cd")</code></dt><dd class="r"><code>"ab"</code></dd><dd class="c">同じ長さなら a</dd></div>
+          <div><dt><code>longest(1, 2)</code></dt><dd class="r">型のエラー</dd><dd class="c">数値には length がない</dd></div>
+          <div><dt><code>pluck([{ id: 1 }, { id: 2 }], "id")</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>pluck([user], "name")</code></dt><dd class="r"><code>["山田"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>withId(user, 7)</code></dt><dd class="r"><code>{ name: "山田", age: 30, id: 7 }</code></dd><dd class="c">user とは別のオブジェクト</dd></div>
+          <div><dt><code>withId("山田", 7)</code></dt><dd class="r">型のエラー</dd><dd class="c">文字列はオブジェクトではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値の型も確かめます。<code>getProperty(user, "age")</code> は <code>number</code>、<code>getProperty(user, "name")</code> は <code>string</code> です。<code>longest</code> は、文字列 2 つなら <code>string</code>、<code>number[]</code> 2 つなら <code>number[]</code> です。<code>pluck([user], "age")</code> は <code>number[]</code>、<code>pluck([user], "name")</code> は <code>string[]</code> です。<code>withId(user, 7)</code> は <code>{ name: string; age: number } &amp; { id: number }</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 getProperty を作る。型変数 T と、型変数 K（T のプロパティ名に限る）を使い、T の obj と K の key を受け取り、T[K] を返す
+export function getProperty() {
+  // obj の key の値を返す
+}
+
+// 関数 longest を作る。型変数 T（length（数値）を持つ型に限る）を使い、T の a と T の b を受け取り、T を返す
+export function longest() {
+  // もし b の length が a の length より大きいなら b、そうでなければ a を返す
+}
+
+// 関数 pluck を作る。型変数 T と、型変数 K（T のプロパティ名に限る）を使い、読み取り専用の T の配列 items と K の key を受け取り、T[K] の配列を返す
+export function pluck() {
+  // items の要素を 1 つずつ item として、item の key の値に変えた新しい配列を返す
+}
+
+// 関数 withId を作る。型変数 T（オブジェクトに限る）を使い、T の value と数値 id を受け取り、T と { id: 数値 } を合わせた型を返す
+export function withId() {
+  // value を広げて、id を id にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>4 つとも、ドリルに同じ形の問題があります。<code>getProperty</code> は問1、<code>longest</code> は問3、<code>pluck</code> は問4、<code>withId</code> は問6 と同じ形です。<code>withId</code> は新しいオブジェクトを返すので、<code>value</code> を書き換えずに、スプレッド構文で作ります。</p></details>
+    </div>
+  </section>
+</section>

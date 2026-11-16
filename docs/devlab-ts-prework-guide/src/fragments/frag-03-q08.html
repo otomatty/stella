@@ -1,0 +1,1012 @@
+<section class="sec" id="c03-q08">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q08 状態の切り替え</h2>
+    <p>ドア、照明、タイマー、チケットの状態を扱う関数を 20 個書きます。4 つの型は定義済みです。どれも、<code>state</code> か <code>status</code> の値で今の状態を見分ける判別可能なユニオン型です（03章 q04）。状態を変える関数は、受け取ったオブジェクトを書き換えません。次の状態の新しいオブジェクトを作って返します。今の状態では変えられないときは、受け取ったものをそのまま返します。引数と戻り値の型注釈は自分で書きます。最後の総合問題では、注文の状態を表す型も自分で書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q08-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">開いているドアを閉める</span>
+      <span class="q-new">新しく出てくる書き方：今の状態を受け取り、次の状態を返す関数、戻り値の型 <code>: Door</code> で返すオブジェクトを確かめる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Door = { state: "open" } | { state: "closed" } | { state: "locked"; key: string };
+
+export function closeDoor() {}</code></pre>
+      <p>ドア <code>door</code> を受け取ります。開いているドア（<code>state</code> が <code>"open"</code>）なら、閉まっているドア <code>{ state: "closed" }</code> を返します。それ以外のドアは、受け取ったものをそのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>closeDoor({ state: "open" })</code></dt><dd class="r"><code>{ state: "closed" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>closeDoor({ state: "locked", key: "A" })</code></dt><dd class="r"><code>{ state: "locked", key: "A" }</code></dd><dd class="c">鍵がかかっていればそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Door</code>、戻り値が <code>Door</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(door: Door): Door</code><h4>今の状態を受け取り、次の状態を返す</h4></div>
+      <p>ドアの型 <code>Door</code> は、開いている・閉まっている・鍵がかかっている、の 3 つの状態のどれかです。どの状態かは <code>state</code> の値で見分けます。鍵がかかっているときだけ、鍵 <code>key</code> を持ちます。</p>
+      <p>状態を切り替える関数は、今の状態を受け取り、次の状態を返します。引数も戻り値も同じ <code>Door</code> です。問1〜4 の関数は、下の図の矢印 1 本ずつにあたります。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 170" role="img" aria-label="ドアの 3 つの状態と矢印。open から closed へ closeDoor（問1）、closed から open へ openDoor（問2）、closed から locked へ lockDoor（問3）、locked から closed へ unlockDoor（問4、同じ鍵なら）">
+            <rect class="box" x="10" y="66" width="130" height="60" rx="8"/>
+            <text class="m" x="75" y="92" text-anchor="middle">open</text>
+            <text class="s" x="75" y="113" text-anchor="middle">開いている</text>
+            <rect class="box" x="235" y="66" width="130" height="60" rx="8"/>
+            <text class="m" x="300" y="92" text-anchor="middle">closed</text>
+            <text class="s" x="300" y="113" text-anchor="middle">閉まっている</text>
+            <rect class="box" x="460" y="66" width="130" height="60" rx="8"/>
+            <text class="m" x="525" y="92" text-anchor="middle">locked</text>
+            <text class="s" x="525" y="113" text-anchor="middle">鍵がかかっている</text>
+            <text class="s" x="525" y="148" text-anchor="middle">key（鍵）を持つ</text>
+            <text class="s" x="187" y="48" text-anchor="middle">問1</text>
+            <text class="m a" x="187" y="70" text-anchor="middle">closeDoor</text>
+            <line class="ln-a" x1="140" y1="82" x2="223" y2="82"/><polygon class="hd-a" points="223,76 235,82 223,88"/>
+            <line class="ln-a" x1="235" y1="110" x2="152" y2="110"/><polygon class="hd-a" points="152,104 140,110 152,116"/>
+            <text class="m a" x="187" y="134" text-anchor="middle">openDoor</text>
+            <text class="s" x="187" y="154" text-anchor="middle">問2</text>
+            <text class="s" x="412" y="48" text-anchor="middle">問3</text>
+            <text class="m a" x="412" y="70" text-anchor="middle">lockDoor</text>
+            <line class="ln-a" x1="365" y1="82" x2="448" y2="82"/><polygon class="hd-a" points="448,76 460,82 448,88"/>
+            <line class="ln-a" x1="460" y1="110" x2="377" y2="110"/><polygon class="hd-a" points="377,104 365,110 377,116"/>
+            <text class="m a" x="412" y="134" text-anchor="middle">unlockDoor</text>
+            <text class="s" x="412" y="154" text-anchor="middle">問4 同じ鍵なら</text>
+          </svg>
+        </div>
+        <figcaption>四角が状態、矢印が状態を切り替える関数です。矢印のない組み合わせは、受け取ったドアをそのまま返します。たとえば、鍵がかかったドアに <code>closeDoor</code> を使っても、鍵がかかったままです。</figcaption>
+      </figure>
+      <p>書き方は、予約の例で見てみます。仮予約を確定にする関数です。仮予約でないときは、受け取った予約をそのまま返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の型 Reservation を作る。state は "tentative"（仮予約）、"confirmed"（確定）、"cancelled"（取り消し）のどれか
+type Reservation = { state: "tentative" } | { state: "confirmed" } | { state: "cancelled" };
+
+// 関数 confirmReservation を作る。Reservation の reservation を受け取り、Reservation を返す
+function confirmReservation(reservation: Reservation): Reservation {
+  // reservation の state が "tentative" なら、state が "confirmed" のオブジェクトを、そうでなければ reservation を返す
+  return reservation.state === "tentative" ? { state: "confirmed" } : reservation;
+}
+// 結果: confirmReservation({ state: "tentative" }) は { state: "confirmed" }、confirmReservation({ state: "cancelled" }) は { state: "cancelled" }</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>受け取った reservation の state</th><th>confirmReservation が返すもの</th></tr></thead>
+          <tbody>
+            <tr><td><code>"tentative"</code></td><td>新しいオブジェクト <code>{ state: "confirmed" }</code></td></tr>
+            <tr><td><code>"confirmed"</code></td><td>受け取った <code>reservation</code>（そのまま）</td></tr>
+            <tr><td><code>"cancelled"</code></td><td>受け取った <code>reservation</code>（そのまま）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>受け取ったオブジェクトを書き換える</h5>
+          <pre><code class="language-typescript">if (reservation.state === "tentative") {
+  reservation.state = "confirmed";
+}
+return reservation;</code></pre>
+          <div class="verdict ng">✕ "confirmed" は "tentative" に入れられない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>新しいオブジェクトを返す</h5>
+          <pre><code class="language-typescript">return reservation.state === "tentative" ? { state: "confirmed" } : reservation;</code></pre>
+          <div class="verdict ok">○ 元の予約は変わりません</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>左のエラーは、<code>if</code> の中の <code>reservation</code> が仮予約だと分かっているために出ます。状態を変えるときは、書き換えずに、次の状態を新しく作ります。</p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">: Door</code><h4>戻り値の型を書くと、返すオブジェクトを確かめてくれる</h4></div>
+      <p>戻り値の型を <code>Reservation</code> と書くと、返すオブジェクトが <code>Reservation</code> のどれかに合っているかを確かめてくれます。<code>state</code> の値を書きまちがえると、その場でエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型を書かない</h5>
+          <pre><code class="language-typescript">function confirmReservation(reservation: Reservation) {
+  return reservation.state === "tentative" ? { state: "confirmed" } : reservation;
+}</code></pre>
+          <div class="verdict ng">✕ 戻り値の型が { state: string } と推論されます。"confirmed" が、ただの文字列として扱われます</div>
+        </div>
+        <div>
+          <h5>戻り値の型を書く</h5>
+          <pre><code class="language-typescript">function confirmReservation(reservation: Reservation): Reservation {
+  return reservation.state === "tentative" ? { state: "confirm" } : reservation;
+}</code></pre>
+          <div class="verdict ok">○ "confirm" は書きまちがいだ、とエラーで教えてくれます（Did you mean "confirmed"?）</div>
+        </div>
+      </div>
+      <p>テストは、戻り値の型が <code>Door</code> であることも確かめます。戻り値の型を書かないと、型の確認が通りません。</p>
+      <p class="more">サバイバルTypeScript「判別可能なユニオン型」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 closeDoor を作る。Door の door を受け取り、Door を返す
+export function closeDoor() {
+  // door の state が "open" なら、state が "closed" のオブジェクトを、そうでなければ door を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>confirmReservation</code> と同じ形です。調べる状態が <code>"open"</code>、返すオブジェクトが <code>{ state: "closed" }</code> になります。「◯ なら ◯ を、そうでなければ ◯ を」は、条件演算子 <code>? :</code> です（01章 q01 問12）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q08-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">閉まっているドアを開ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Door = { state: "open" } | { state: "closed" } | { state: "locked"; key: string };
+
+export function openDoor() {}</code></pre>
+      <p>閉まっているドア（<code>state</code> が <code>"closed"</code>）なら、開いているドア <code>{ state: "open" }</code> を返します。鍵がかかっていれば開けられないので、そのまま返します。開いているドアも、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>openDoor({ state: "closed" })</code></dt><dd class="r"><code>{ state: "open" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>openDoor({ state: "locked", key: "A" })</code></dt><dd class="r"><code>{ state: "locked", key: "A" }</code></dd><dd class="c">鍵がかかっていれば開けられない</dd></div>
+          <div><dt><code>openDoor({ state: "open" })</code></dt><dd class="r"><code>{ state: "open" }</code></dd><dd class="c">もう開いている</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Door</code>、戻り値が <code>Door</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 openDoor を作る。Door の door を受け取り、Door を返す
+export function openDoor() {
+  // door の state が "closed" なら、state が "open" のオブジェクトを、そうでなければ door を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、調べる状態と返すオブジェクトだけが違います。問1 の図で、<code>openDoor</code> の矢印は <code>closed</code> から出る 1 本だけです。ほかの状態はそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q08-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">閉まっているドアに鍵をかける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Door = { state: "open" } | { state: "closed" } | { state: "locked"; key: string };
+
+export function lockDoor() {}</code></pre>
+      <p>ドア <code>door</code> と鍵 <code>key</code>（文字列）を受け取ります。閉まっているドアなら、鍵 <code>key</code> をかけた <code>{ state: "locked", key: … }</code> を返します。開いているドアには鍵をかけられないので、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lockDoor({ state: "closed" }, "A")</code></dt><dd class="r"><code>{ state: "locked", key: "A" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lockDoor({ state: "open" }, "A")</code></dt><dd class="r"><code>{ state: "open" }</code></dd><dd class="c">開いていればかけられない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Door</code> と <code>string</code>、戻り値が <code>Door</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lockDoor を作る。Door の door と文字列 key を受け取り、Door を返す
+export function lockDoor() {
+  // door の state が "closed" なら、state が "locked"、key が key のオブジェクトを、そうでなければ door を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。返すオブジェクトに <code>key</code> が増えます。<code>key: key</code> は、プロパティの省略記法で <code>key</code> とだけ書きます（02章 q01 問3）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q08-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">同じ鍵なら、鍵を開けて閉まっているドアにする</span>
+      <span class="q-new">新しく出てくる書き方：状態を確かめてから、その状態だけが持つプロパティを使う</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Door = { state: "open" } | { state: "closed" } | { state: "locked"; key: string };
+
+export function unlockDoor() {}</code></pre>
+      <p>ドア <code>door</code> と鍵 <code>key</code> を受け取ります。鍵のかかったドアで、かかっている鍵が <code>key</code> と同じなら、鍵を開けて <code>{ state: "closed" }</code> を返します。鍵が違うときや、鍵がかかっていないときは、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>unlockDoor({ state: "locked", key: "A" }, "A")</code></dt><dd class="r"><code>{ state: "closed" }</code></dd><dd class="c">同じ鍵</dd></div>
+          <div><dt><code>unlockDoor({ state: "locked", key: "A" }, "B")</code></dt><dd class="r"><code>{ state: "locked", key: "A" }</code></dd><dd class="c">鍵が違う</dd></div>
+          <div><dt><code>unlockDoor({ state: "open" }, "A")</code></dt><dd class="r"><code>{ state: "open" }</code></dd><dd class="c">鍵がかかっていない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Door</code> と <code>string</code>、戻り値が <code>Door</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">state === "locked" &amp;&amp; door.key</code><h4>状態を確かめてから、その状態だけが持つプロパティを使う</h4></div>
+      <p><code>key</code> を持つのは、鍵がかかったドアだけです。<code>door.key</code> とそのまま書くと、「<code>Door</code> に <code>key</code> はない」というエラーになります。開いているドアには <code>key</code> がないからです。先に状態を確かめると、その後ろでは型が絞り込まれ、<code>key</code> が使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員の型 Member を作る。state は "guest"（ゲスト）か "member"（会員）。会員だけが memberId（文字列）を持つ
+type Member = { state: "guest" } | { state: "member"; memberId: string };
+
+// 関数 isSameMember を作る。Member の member と文字列 id を受け取り、true か false を返す
+function isSameMember(member: Member, id: string): boolean {
+  // member の state が "member"、かつ member の memberId が id と等しいかどうか（true か false）を返す
+  return member.state === "member" &amp;&amp; member.memberId === id;
+}
+// 結果: isSameMember({ state: "member", memberId: "M-01" }, "M-01") は true、isSameMember({ state: "guest" }, "M-01") は false</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>状態を確かめずに使う</h5>
+          <pre><code class="language-typescript">return member.memberId === id;</code></pre>
+          <div class="verdict ng">✕ Member に memberId はない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>&amp;&amp; の左で状態を確かめる</h5>
+          <pre><code class="language-typescript">return member.state === "member" &amp;&amp; member.memberId === id;</code></pre>
+          <div class="verdict ok">○ &amp;&amp; の右では、member は会員だと分かっています</div>
+        </div>
+      </div>
+      <p><code>&amp;&amp;</code>（01章 q02 問16）は、左が <code>false</code> なら右を調べません。そのため、右に進むのは会員のときだけです。<code>if</code> で確かめたときも同じです。<code>if</code> の中で先に <code>return</code> すると、その後ろの行では、残りの状態に絞り込まれます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員の型 Member を作る。state は "guest"（ゲスト）か "member"（会員）。会員だけが memberId（文字列）を持つ
+type Member = { state: "guest" } | { state: "member"; memberId: string };
+
+// 関数 memberLabel を作る。Member の member を受け取り、文字列を返す
+function memberLabel(member: Member): string {
+  // もし member の state が "guest" なら
+  if (member.state === "guest") {
+    // "ゲスト" を返す
+    return "ゲスト";
+  }
+  // member の memberId を埋め込んだ「会員番号 ◯」の文字列を返す
+  return `会員番号 ${member.memberId}`;
+}
+// 結果: memberLabel({ state: "member", memberId: "M-01" }) は "会員番号 M-01"、memberLabel({ state: "guest" }) は "ゲスト"</code></pre>
+      </div>
+      <p class="more">04章 q06（unknown型と型の絞り込み）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 unlockDoor を作る。Door の door と文字列 key を受け取り、Door を返す
+export function unlockDoor() {
+  // もし door の state が "locked"、かつ door の key が key と等しいなら
+    // state が "closed" のオブジェクトを返す
+  // door を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>if</code> の条件は、問4 のサンプルの <code>isSameMember</code> の <code>return</code> の行と同じ形です。<code>door.state === "locked"</code> を <code>&amp;&amp;</code> の左に書くと、右で <code>door.key</code> が使えます。引数の <code>key</code> とドアの <code>key</code> は名前が同じですが、<code>door.key</code> がドアの鍵、<code>key</code> が受け取った鍵です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q08-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">ドアの状態を言葉で返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>switch</code> で、すべての状態の <code>case</code> を書く（03章 q04 のおさらい）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Door = { state: "open" } | { state: "closed" } | { state: "locked"; key: string };
+
+export function doorText() {}</code></pre>
+      <p>ドアの状態を、<code>"開いている"</code>・<code>"閉まっている"</code>・<code>"鍵がかかっている"</code> のどれかの文字列で返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>doorText({ state: "open" })</code></dt><dd class="r"><code>"開いている"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>doorText({ state: "closed" })</code></dt><dd class="r"><code>"閉まっている"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>doorText({ state: "locked", key: "A" })</code></dt><dd class="r"><code>"鍵がかかっている"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Door</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">switch (x.state)</code><h4>状態ごとに場合を分け、すべての状態を書く</h4></div>
+      <p>状態が 3 つ以上あるときは、03章 q04 で出た <code>switch</code> で場合を分けると読みやすくなります。<code>case</code> ごとに <code>return</code> すれば、<code>switch</code> の後ろに <code>return</code> は要りません。すべての状態の <code>case</code> を書いてあることを、TypeScript が分かっているからです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の型 Reservation を作る。state は "tentative"（仮予約）、"confirmed"（確定）、"cancelled"（取り消し）のどれか
+type Reservation = { state: "tentative" } | { state: "confirmed" } | { state: "cancelled" };
+
+// 関数 reservationText を作る。Reservation の reservation を受け取り、文字列を返す
+function reservationText(reservation: Reservation): string {
+  // reservation の state で場合を分ける
+  switch (reservation.state) {
+    // "tentative" の場合
+    case "tentative":
+      // "仮予約" を返す
+      return "仮予約";
+    // "confirmed" の場合
+    case "confirmed":
+      // "確定" を返す
+      return "確定";
+    // "cancelled" の場合
+    case "cancelled":
+      // "取り消し" を返す
+      return "取り消し";
+  }
+}
+// 結果: reservationText({ state: "confirmed" }) は "確定"</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>case</code> を 1 つ書き忘れると、2 つのエラーが出ます。TypeScript は「関数の最後に return がない」、ESLint は「switch で扱っていない場合がある（Switch is not exhaustive）」です。どちらも、足りない <code>case</code> を書き足せば消えます。</p>
+      <p class="more">04章 q02（switch文）、04章 q07（never型と網羅性のチェック）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 doorText を作る。Door の door を受け取り、文字列を返す
+export function doorText() {
+  // door の state で場合を分ける
+    // "open" の場合
+      // "開いている" を返す
+    // "closed" の場合
+      // "閉まっている" を返す
+    // "locked" の場合
+      // "鍵がかかっている" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 のサンプルの <code>reservationText</code> と同じ形です。<code>switch</code> のかっこには <code>door.state</code> を書き、<code>case</code> に 3 つの状態を並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q08-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">消えている照明を明るさ 100 で点ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Light = { state: "off" } | { state: "on"; brightness: number };
+
+export function turnOn() {}</code></pre>
+      <p>照明の型 <code>Light</code> は、消えている（<code>"off"</code>）か、点いている（<code>"on"</code>）かのどちらかです。点いているときだけ、明るさ <code>brightness</code>（数値）を持ちます。消えている照明なら、明るさ <code>100</code> で点けたものを返します。点いていれば、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>turnOn({ state: "off" })</code></dt><dd class="r"><code>{ state: "on", brightness: 100 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnOn({ state: "on", brightness: 40 })</code></dt><dd class="r"><code>{ state: "on", brightness: 40 }</code></dd><dd class="c">点いていれば明るさも変えない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Light</code>、戻り値が <code>Light</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 turnOn を作る。Light の light を受け取り、Light を返す
+export function turnOn() {
+  // light の state が "off" なら、state が "on"、brightness が 100 のオブジェクトを、そうでなければ light を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。返すオブジェクトは <code>{ state: "on", brightness: 100 }</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q08-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">照明を消す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Light = { state: "off" } | { state: "on"; brightness: number };
+
+export function turnOff() {}</code></pre>
+      <p>点いている照明なら、消えた照明 <code>{ state: "off" }</code> を返します。もう消えていれば、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>turnOff({ state: "on", brightness: 40 })</code></dt><dd class="r"><code>{ state: "off" }</code></dd><dd class="c">brightness はなくなる</dd></div>
+          <div><dt><code>turnOff({ state: "off" })</code></dt><dd class="r"><code>{ state: "off" }</code></dd><dd class="c">もう消えている</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Light</code>、戻り値が <code>Light</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 turnOff を作る。Light の light を受け取り、Light を返す
+export function turnOff() {
+  // light の state が "on" なら、state が "off" のオブジェクトを、そうでなければ light を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。消えた照明は明るさを持たないので、返すオブジェクトは <code>{ state: "off" }</code> だけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q08-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">照明の明るさを amount だけ下げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Light = { state: "off" } | { state: "on"; brightness: number };
+
+export function dim() {}</code></pre>
+      <p>照明 <code>light</code> と、下げる量 <code>amount</code>（数値）を受け取ります。点いている照明なら、明るさを <code>amount</code> だけ下げたものを返します。下げた明るさが 0 以下になったら、照明を消して <code>{ state: "off" }</code> を返します。消えている照明は、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dim({ state: "on", brightness: 80 }, 30)</code></dt><dd class="r"><code>{ state: "on", brightness: 50 }</code></dd><dd class="c">80 − 30 = 50</dd></div>
+          <div><dt><code>dim({ state: "on", brightness: 20 }, 30)</code></dt><dd class="r"><code>{ state: "off" }</code></dd><dd class="c">20 − 30 = −10 で 0 以下</dd></div>
+          <div><dt><code>dim({ state: "off" }, 30)</code></dt><dd class="r"><code>{ state: "off" }</code></dd><dd class="c">消えている</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Light</code> と <code>number</code>、戻り値が <code>Light</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dim を作る。Light の light と数値 amount を受け取り、Light を返す
+export function dim() {
+  // もし light の state が "off" なら
+    // light を返す
+  // 明るさ brightness を作り、light の brightness から amount を引いた数を入れる
+  // brightness が 0 以下なら、state が "off" のオブジェクトを、そうでなければ state が "on"、brightness が brightness のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>先に消えている照明を <code>return</code> するのは、問4 のサンプルの <code>memberLabel</code> と同じ形です。その後ろでは <code>light</code> が点いている照明に絞り込まれるので、<code>light.brightness</code> が使えます。最後の行は条件演算子 <code>? :</code> で、どちらの側もオブジェクトを書きます。<code>brightness: brightness</code> は <code>brightness</code> とだけ書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q08-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">照明の状態を「消灯」か「点灯（80%）」で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Light = { state: "off" } | { state: "on"; brightness: number };
+
+export function lightText() {}</code></pre>
+      <p>消えている照明なら <code>"消灯"</code> を返します。点いている照明なら、明るさを入れた <code>"点灯（80%）"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lightText({ state: "off" })</code></dt><dd class="r"><code>"消灯"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lightText({ state: "on", brightness: 80 })</code></dt><dd class="r"><code>"点灯（80%）"</code></dd><dd class="c">かっこは全角</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Light</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lightText を作る。Light の light を受け取り、文字列を返す
+export function lightText() {
+  // light の state が "off" なら "消灯" を、そうでなければ light の brightness を埋め込んだ「点灯（◯%）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>条件演算子 <code>? :</code> の <code>:</code> の後ろでは、<code>light</code> は点いている照明に絞り込まれています。そこでは <code>light.brightness</code> が使えます。文字列はテンプレートリテラルで組み立てます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q08-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">タイマーを動かす</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Timer =
+  | { state: "idle" }
+  | { state: "running"; startedAt: number }
+  | { state: "paused"; elapsed: number };
+
+export function startTimer() {}</code></pre>
+      <p>タイマーの型 <code>Timer</code> は、3 つの状態のどれかです。<code>"idle"</code> はまだ動かしていない状態、<code>"running"</code> は動いている状態、<code>"paused"</code> は止めた状態です。動いているときは動かし始めた時刻 <code>startedAt</code>、止めたときはそれまでの経過時間 <code>elapsed</code> を持ちます。</p>
+      <p>タイマー <code>timer</code> と今の時刻 <code>now</code>（数値）を受け取り、タイマーを動かします。</p>
+      <ul>
+        <li><code>"idle"</code> なら、<code>startedAt</code> を <code>now</code> にして <code>"running"</code> にします。</li>
+        <li><code>"paused"</code> なら、止まっていた分を引いて <code>"running"</code> にします。<code>startedAt</code> は <code>now - elapsed</code> です。</li>
+        <li><code>"running"</code> なら、そのまま返します。</li>
+      </ul>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>startTimer({ state: "idle" }, 1000)</code></dt><dd class="r"><code>{ state: "running", startedAt: 1000 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>startTimer({ state: "paused", elapsed: 300 }, 1000)</code></dt><dd class="r"><code>{ state: "running", startedAt: 700 }</code></dd><dd class="c">1000 − 300 = 700</dd></div>
+          <div><dt><code>startTimer({ state: "running", startedAt: 5 }, 1000)</code></dt><dd class="r"><code>{ state: "running", startedAt: 5 }</code></dd><dd class="c">もう動いている</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Timer</code> と <code>number</code>、戻り値が <code>Timer</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 startTimer を作る。Timer の timer と数値 now を受け取り、Timer を返す
+export function startTimer() {
+  // timer の state で場合を分ける
+    // "idle" の場合
+      // state が "running"、startedAt が now のオブジェクトを返す
+    // "paused" の場合
+      // state が "running"、startedAt が now から timer の elapsed を引いた数のオブジェクトを返す
+    // "running" の場合
+      // timer を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 のサンプルの <code>reservationText</code> と同じ <code>switch</code> の形で、<code>case</code> ごとに返すものがオブジェクトになります。<code>case "paused":</code> の中では <code>timer</code> が止めた状態に絞り込まれるので、<code>timer.elapsed</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q08-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">動いているタイマーを止める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Timer =
+  | { state: "idle" }
+  | { state: "running"; startedAt: number }
+  | { state: "paused"; elapsed: number };
+
+export function pauseTimer() {}</code></pre>
+      <p>タイマー <code>timer</code> と今の時刻 <code>now</code> を受け取ります。動いているタイマーなら、止めた状態 <code>"paused"</code> にして返します。経過時間 <code>elapsed</code> は <code>now - startedAt</code> です。動いていなければ、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pauseTimer({ state: "running", startedAt: 1000 }, 1500)</code></dt><dd class="r"><code>{ state: "paused", elapsed: 500 }</code></dd><dd class="c">1500 − 1000 = 500</dd></div>
+          <div><dt><code>pauseTimer({ state: "idle" }, 1500)</code></dt><dd class="r"><code>{ state: "idle" }</code></dd><dd class="c">動いていない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Timer</code> と <code>number</code>、戻り値が <code>Timer</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pauseTimer を作る。Timer の timer と数値 now を受け取り、Timer を返す
+export function pauseTimer() {
+  // もし timer の state が "running" なら
+    // state が "paused"、elapsed が now から timer の startedAt を引いた数のオブジェクトを返す
+  // timer を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じく、<code>if</code> で状態を確かめてから <code>return</code> します。<code>if</code> の中では、<code>timer.startedAt</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q08-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">どの状態からでも idle に戻す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Timer =
+  | { state: "idle" }
+  | { state: "running"; startedAt: number }
+  | { state: "paused"; elapsed: number };
+
+export function resetTimer() {}</code></pre>
+      <p>タイマーを、まだ動かしていない状態 <code>{ state: "idle" }</code> に戻して返します。動いていても、止めていても戻します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>resetTimer({ state: "paused", elapsed: 300 })</code></dt><dd class="r"><code>{ state: "idle" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>resetTimer({ state: "running", startedAt: 5 })</code></dt><dd class="r"><code>{ state: "idle" }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Timer</code>、戻り値が <code>Timer</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 resetTimer を作る。Timer の timer を受け取り、Timer を返す
+export function resetTimer() {
+  // timer の state が "idle" なら timer を、そうでなければ state が "idle" のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。もう <code>"idle"</code> のときは、受け取った <code>timer</code> をそのまま返します。ほかの状態なら、新しい <code>{ state: "idle" }</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q08-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">経過時間を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Timer =
+  | { state: "idle" }
+  | { state: "running"; startedAt: number }
+  | { state: "paused"; elapsed: number };
+
+export function elapsedOf() {}</code></pre>
+      <p>タイマー <code>timer</code> と今の時刻 <code>now</code> を受け取り、経過時間を返します。<code>"idle"</code> なら <code>0</code>、<code>"running"</code> なら <code>now - startedAt</code>、<code>"paused"</code> なら <code>elapsed</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>elapsedOf({ state: "idle" }, 1800)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>elapsedOf({ state: "running", startedAt: 1000 }, 1800)</code></dt><dd class="r"><code>800</code></dd><dd class="c">1800 − 1000 = 800</dd></div>
+          <div><dt><code>elapsedOf({ state: "paused", elapsed: 300 }, 1800)</code></dt><dd class="r"><code>300</code></dd><dd class="c">now は使わない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Timer</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 elapsedOf を作る。Timer の timer と数値 now を受け取り、数値を返す
+export function elapsedOf() {
+  // timer の state で場合を分ける
+    // "idle" の場合
+      // 0 を返す
+    // "running" の場合
+      // now から timer の startedAt を引いた数を返す
+    // "paused" の場合
+      // timer の elapsed を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ <code>switch</code> の形です。返すものが数値になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q08-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">チケットを assignee の担当にする</span>
+      <span class="q-new">新しく出てくる書き方：前の状態から、次の状態が持つプロパティだけを写す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function assignTicket() {}</code></pre>
+      <p>チケットは、作業の依頼を 1 件ずつ記録したものです。型 <code>Ticket</code> は <code>status</code> で状態を見分けます。<code>"open"</code> は未対応、<code>"assigned"</code> は担当者が決まった状態、<code>"closed"</code> は完了です。どの状態も題名 <code>title</code> を持ち、担当中は担当者 <code>assignee</code>、完了は解決のしかた <code>resolution</code> も持ちます。</p>
+      <p>チケット <code>ticket</code> と担当者の名前 <code>assignee</code> を受け取ります。<code>"open"</code> か <code>"assigned"</code> なら、<code>assignee</code> の担当にした <code>"assigned"</code> のチケットを返します。担当者がもういれば、入れ替えます。<code>"closed"</code> なら、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assignTicket({ status: "open", title: "バグ" }, "山田")</code></dt><dd class="r"><code>{ status: "assigned", title: "バグ", assignee: "山田" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>assignTicket({ status: "assigned", title: "バグ", assignee: "山田" }, "佐藤")</code></dt><dd class="r"><code>{ status: "assigned", title: "バグ", assignee: "佐藤" }</code></dd><dd class="c">担当者を入れ替える</dd></div>
+          <div><dt><code>assignTicket({ status: "closed", title: "バグ", resolution: "修正" }, "山田")</code></dt><dd class="r"><code>{ status: "closed", title: "バグ", resolution: "修正" }</code></dd><dd class="c">完了ならそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Ticket</code> と <code>string</code>、戻り値が <code>Ticket</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">guest: booking.guest</code><h4>前の状態から、次の状態が持つプロパティだけを写す</h4></div>
+      <p>状態が変わると、持つプロパティも変わります。次の状態のオブジェクトは、次の状態が持つプロパティを全部書いて作ります。前の状態から引きつぐ値は、<code>booking.guest</code> のように前のオブジェクトから写します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の型 Booking を作る。仮予約は guest（文字列）、確定は guest と seat（文字列）を持つ
+type Booking =
+  { state: "tentative"; guest: string } | { state: "confirmed"; guest: string; seat: string };
+
+// 関数 confirmBooking を作る。Booking の booking と文字列 seat を受け取り、Booking を返す
+function confirmBooking(booking: Booking, seat: string): Booking {
+  // state が "confirmed"、guest が booking の guest、seat が seat のオブジェクトを返す
+  return { state: "confirmed", guest: booking.guest, seat };
+}
+// 結果: confirmBooking({ state: "tentative", guest: "田中" }, "A-3") は { state: "confirmed", guest: "田中", seat: "A-3" }</code></pre>
+      </div>
+      <p><code>guest</code> はどちらの状態にもあるので、状態を確かめずに <code>booking.guest</code> と書けます。</p>
+      <p>オブジェクトのスプレッド <code>{ ...booking }</code>（02章 q02 問8）は、プロパティを全部写します。次の状態にないプロパティまで残ることがあります。確定した予約を仮予約に戻す例で比べます。</p>
+      <div class="cmp">
+        <div>
+          <h5>スプレッドで写す</h5>
+          <pre><code class="language-typescript">return { ...booking, state: "tentative" };</code></pre>
+          <div class="verdict ng">✕ 型のエラーにはなりませんが、仮予約にはない seat が残ります</div>
+        </div>
+        <div>
+          <h5>要るプロパティだけを書く</h5>
+          <pre><code class="language-typescript">return { state: "tentative", guest: booking.guest };</code></pre>
+          <div class="verdict ok">○ 仮予約が持つ state と guest だけになります</div>
+        </div>
+      </div>
+      <dl class="eg">
+        <div><dt><code>{ ...{ state: "confirmed", guest: "田中", seat: "A-3" }, state: "tentative" }</code></dt><dd class="r"><code>{ state: "tentative", guest: "田中", seat: "A-3" }</code></dd><dd class="c">seat が残る</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>テストの <code>toEqual</code> は、余分なプロパティがあると一致しないと判定します。スプレッドで作ると、型のエラーは出ないのにテストが通らないことがあります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 assignTicket を作る。Ticket の ticket と文字列 assignee を受け取り、Ticket を返す
+export function assignTicket() {
+  // もし ticket の status が "closed" なら
+    // ticket を返す
+  // status が "assigned"、title が ticket の title、assignee が assignee のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最後の行は、問14 のサンプルの <code>confirmBooking</code> の <code>return</code> と同じ形です。<code>title</code> は前のチケットから写し、<code>assignee</code> は省略記法で書けます。<code>"open"</code> と <code>"assigned"</code> は同じ形で作れるので、先に <code>"closed"</code> だけを返しておきます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q08-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">チケットを resolution を付けて完了にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function closeTicket() {}</code></pre>
+      <p>チケット <code>ticket</code> と解決のしかた <code>resolution</code> を受け取ります。<code>"open"</code> か <code>"assigned"</code> なら、<code>resolution</code> を付けた <code>"closed"</code> のチケットを返します。もう <code>"closed"</code> なら、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>closeTicket({ status: "open", title: "バグ" }, "修正済み")</code></dt><dd class="r"><code>{ status: "closed", title: "バグ", resolution: "修正済み" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>closeTicket({ status: "closed", title: "バグ", resolution: "重複" }, "修正済み")</code></dt><dd class="r"><code>{ status: "closed", title: "バグ", resolution: "重複" }</code></dd><dd class="c">完了ならそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Ticket</code> と <code>string</code>、戻り値が <code>Ticket</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 closeTicket を作る。Ticket の ticket と文字列 resolution を受け取り、Ticket を返す
+export function closeTicket() {
+  // もし ticket の status が "closed" なら
+    // ticket を返す
+  // status が "closed"、title が ticket の title、resolution が resolution のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 と同じ形です。担当中のチケットを完了にするときも、<code>assignee</code> は写しません。完了のチケットが持つのは <code>status</code>・<code>title</code>・<code>resolution</code> だけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q08-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">完了したチケットを未対応に戻す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function reopen() {}</code></pre>
+      <p><code>"closed"</code> のチケットなら、<code>"open"</code> に戻したチケットを返します。それ以外は、そのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>reopen({ status: "closed", title: "バグ", resolution: "修正" })</code></dt><dd class="r"><code>{ status: "open", title: "バグ" }</code></dd><dd class="c">resolution はなくなる</dd></div>
+          <div><dt><code>reopen({ status: "open", title: "バグ" })</code></dt><dd class="r"><code>{ status: "open", title: "バグ" }</code></dd><dd class="c">もう未対応</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Ticket</code>、戻り値が <code>Ticket</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 reopen を作る。Ticket の ticket を受け取り、Ticket を返す
+export function reopen() {
+  // ticket の status が "closed" なら、status が "open"、title が ticket の title のオブジェクトを、そうでなければ ticket を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問1 と同じ条件演算子 <code>? :</code> です。未対応のチケットに写すのは <code>title</code> だけです。<code>{ ...ticket, status: "open" }</code> と書くと <code>resolution</code> が残り、テストが通りません（問14 の比べ方）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q08-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">担当中なら担当者の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function assigneeOf() {}</code></pre>
+      <p><code>"assigned"</code> のチケットなら、担当者の名前 <code>assignee</code> を返します。それ以外は <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assigneeOf({ status: "assigned", title: "バグ", assignee: "山田" })</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>assigneeOf({ status: "open", title: "バグ" })</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">担当者がいない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Ticket</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 assigneeOf を作る。Ticket の ticket を受け取り、文字列か undefined を返す
+export function assigneeOf() {
+  // ticket の status が "assigned" なら ticket の assignee を、そうでなければ undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は <code>string | undefined</code> です（02章 q04 問4）。<code>?</code> の後ろでは <code>ticket</code> が担当中に絞り込まれるので、<code>ticket.assignee</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q08-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">チケットを「[未対応] バグ」の形の文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function ticketText() {}</code></pre>
+      <p>チケットを、状態ごとに次の形の文字列にして返します。<code>"open"</code> は <code>"[未対応] 題名"</code>、<code>"assigned"</code> は <code>"[担当: 担当者] 題名"</code>、<code>"closed"</code> は <code>"[完了: 解決のしかた] 題名"</code> です。<code>[ ]</code> は半角、<code>:</code> の後ろと <code>]</code> の後ろに半角スペースが 1 つ入ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ticketText({ status: "open", title: "バグ" })</code></dt><dd class="r"><code>"[未対応] バグ"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ticketText({ status: "assigned", title: "バグ", assignee: "山田" })</code></dt><dd class="r"><code>"[担当: 山田] バグ"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ticketText({ status: "closed", title: "バグ", resolution: "修正済み" })</code></dt><dd class="r"><code>"[完了: 修正済み] バグ"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Ticket</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ticketText を作る。Ticket の ticket を受け取り、文字列を返す
+export function ticketText() {
+  // ticket の status で場合を分ける
+    // "open" の場合
+      // ticket の title を埋め込んだ「[未対応] ◯」の文字列を返す
+    // "assigned" の場合
+      // ticket の assignee と ticket の title を埋め込んだ「[担当: ◯] ◯」の文字列を返す
+    // "closed" の場合
+      // ticket の resolution と ticket の title を埋め込んだ「[完了: ◯] ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ <code>switch</code> の形で、返すものをテンプレートリテラルで組み立てます。<code>case "assigned":</code> の中では <code>ticket.assignee</code>、<code>case "closed":</code> の中では <code>ticket.resolution</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q08-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">完了していなければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function canEdit() {}</code></pre>
+      <p>チケットが <code>"closed"</code> でなければ、まだ編集できるので <code>true</code> を返します。<code>"closed"</code> なら <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>canEdit({ status: "open", title: "バグ" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canEdit({ status: "closed", title: "バグ", resolution: "修正" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">完了している</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Ticket</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 canEdit を作る。Ticket の ticket を受け取り、true か false を返す
+export function canEdit() {
+  // ticket の status が "closed" でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「でない」は <code>!==</code> です（01章 q01 問17）。比べた結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q08-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">完了していないチケットの数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Ticket =
+  | { status: "open"; title: string }
+  | { status: "assigned"; title: string; assignee: string }
+  | { status: "closed"; title: string; resolution: string };
+
+export function countUnfinished() {}</code></pre>
+      <p>チケットの配列 <code>tickets</code> を受け取り、<code>"closed"</code> でないチケットの数を返します。引数の配列は書き換えないので、<code>readonly Ticket[]</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countUnfinished([{ status: "open", title: "a" }, { status: "assigned", title: "b", assignee: "山田" }, { status: "closed", title: "c", resolution: "修正" }])</code></dt><dd class="r"><code>2</code></dd><dd class="c">open と assigned</dd></div>
+          <div><dt><code>countUnfinished([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Ticket[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countUnfinished を作る。読み取り専用の Ticket の配列 tickets を受け取り、数値を返す
+export function countUnfinished() {
+  // tickets から status が "closed" でないものだけを集めた配列の、要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「だけを集める」は <code>.filter()</code> です（02章 q04 問7）。渡す関数は、問19 と同じ比べ方の結果を返します。集めた配列の要素の数は <code>.length</code> です。読み取り専用の配列の型は <code>readonly Ticket[]</code> です（02章 q04 問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 -->
+  <section class="q" id="c03-q08-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">注文の状態遷移</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type PendingOrder = unknown;
+export type PaidOrder = unknown;
+export type ShippedOrder = unknown;
+export type CancelledOrder = unknown;
+export type Order = unknown;
+export type Transition = unknown;
+
+export function pay() {}
+
+export function ship() {}
+
+export function cancel() {}
+
+export function statusText() {}</code></pre>
+      <p>ネットショップの注文を判別可能なユニオン型で表し、状態を進める関数を書きます。状態遷移は、状態が決まった矢印に沿って移り変わることです。どの関数も、元の注文オブジェクトは変えません。新しいオブジェクトを作って返します。</p>
+      <ol>
+        <li>次の型を書いて <code>export</code> します。<code>unknown</code> を書き換えます。
+          <ul>
+            <li><code>PendingOrder</code>（未払い）：<code>status</code> が <code>"pending"</code>、<code>id</code>（数値）、<code>amount</code>（金額。数値）</li>
+            <li><code>PaidOrder</code>（支払済み）：<code>status</code> が <code>"paid"</code>、<code>id</code>、<code>amount</code>、<code>paidAt</code>（支払日時。<code>Date</code>）</li>
+            <li><code>ShippedOrder</code>（発送済み）：<code>status</code> が <code>"shipped"</code>、<code>id</code>、<code>amount</code>、<code>paidAt</code>、<code>shippedAt</code>（<code>Date</code>）、<code>trackingNumber</code>（追跡番号。文字列）</li>
+            <li><code>CancelledOrder</code>（キャンセル）：<code>status</code> が <code>"cancelled"</code>、<code>id</code>、<code>amount</code>、<code>reason</code>（理由。文字列）</li>
+            <li><code>Order</code>：上の 4 つのユニオン型</li>
+            <li><code>Transition</code>：状態を進めた結果。成功は <code>{ ok: true; order: Order }</code>、失敗は <code>{ ok: false; error: string }</code></li>
+          </ul>
+        </li>
+        <li><code>pay(order, paidAt)</code> は、未払いの注文だけを支払済みにします。それ以外は失敗を返します。</li>
+        <li><code>ship(order, shippedAt, trackingNumber)</code> は、支払済みの注文だけを発送済みにします。それ以外は失敗を返します。</li>
+        <li><code>cancel(order, reason)</code> は、未払いか支払済みの注文だけをキャンセルにします。発送済みとキャンセル済みは失敗を返します。</li>
+        <li><code>statusText(order)</code> は、状態ごとに <code>"注文1: 未払い（1,200円）"</code>・<code>"注文1: 支払済み（1,200円）"</code>・<code>"注文1: 発送済み（追跡番号 ABC123）"</code>・<code>"注文1: キャンセル（在庫切れ）"</code> の形の文字列を返します。金額は 3 桁ごとにカンマで区切ります。</li>
+      </ol>
+      <p>失敗のときの <code>error</code> には、何がなぜできないのかが分かる文を書きます。たとえば <code>"注文1は発送済みなのでキャンセルできません"</code> です。テストは <code>ok</code> が <code>false</code> であることだけを確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の 4 つの注文を使います。</p>
+        <pre><code class="language-typescript">const paidAt = new Date("2026-12-01T10:00:00Z");
+const shippedAt = new Date("2026-12-02T15:00:00Z");
+
+const pending = { status: "pending", id: 1, amount: 1200 };
+const paid = { status: "paid", id: 1, amount: 1200, paidAt };
+const shipped = {
+  status: "shipped",
+  id: 1,
+  amount: 1200,
+  paidAt,
+  shippedAt,
+  trackingNumber: "ABC123",
+};
+const cancelled = { status: "cancelled", id: 1, amount: 1200, reason: "在庫切れ" };</code></pre>
+        <dl class="eg">
+          <div><dt><code>pay(pending, paidAt)</code></dt><dd class="r"><code>{ ok: true, order: paid }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>pay(paid, paidAt)</code> などの <code>ok</code></dt><dd class="r"><code>false</code></dd><dd class="c">paid・shipped・cancelled はどれも失敗</dd></div>
+          <div><dt><code>pay</code> を呼んだあとの元の注文</dt><dd class="r">元のまま</dd><dd class="c">注文を変えない</dd></div>
+          <div><dt><code>ship(paid, shippedAt, "ABC123")</code></dt><dd class="r"><code>{ ok: true, order: shipped }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ship(pending, shippedAt, "ABC123")</code> などの <code>ok</code></dt><dd class="r"><code>false</code></dd><dd class="c">pending・shipped・cancelled はどれも失敗</dd></div>
+          <div><dt><code>cancel(pending, "在庫切れ")</code></dt><dd class="r"><code>{ ok: true, order: cancelled }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>cancel(paid, "在庫切れ")</code></dt><dd class="r"><code>{ ok: true, order: cancelled }</code></dd><dd class="c">paidAt は残さない</dd></div>
+          <div><dt><code>cancel(shipped, "在庫切れ")</code> の <code>ok</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>cancel(cancelled, "在庫切れ")</code> の <code>ok</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusText(pending)</code></dt><dd class="r"><code>"注文1: 未払い（1,200円）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusText(paid)</code></dt><dd class="r"><code>"注文1: 支払済み（1,200円）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusText(shipped)</code></dt><dd class="r"><code>"注文1: 発送済み（追跡番号 ABC123）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusText(cancelled)</code></dt><dd class="r"><code>"注文1: キャンセル（在庫切れ）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>4 つの注文の型が上のとおりであること、<code>Order</code> が 4 つのユニオン型であること、<code>Transition</code> が <code>{ ok: true; order: Order } | { ok: false; error: string }</code> であることを確かめます。引数は、<code>pay</code> が <code>Order</code>・<code>Date</code>、<code>ship</code> が <code>Order</code>・<code>Date</code>・<code>string</code>、<code>cancel</code> が <code>Order</code>・<code>string</code>、<code>statusText</code> が <code>Order</code> です。戻り値は、<code>pay</code>・<code>ship</code>・<code>cancel</code> が <code>Transition</code>、<code>statusText</code> が <code>string</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// PendingOrder という型を作る。status は "pending"、id は数値、amount は数値
+export type PendingOrder = unknown;
+// PaidOrder という型を作る。status は "paid"、id は数値、amount は数値、paidAt は Date
+export type PaidOrder = unknown;
+// ShippedOrder という型を作る。status は "shipped"、id は数値、amount は数値、paidAt は Date、shippedAt は Date、trackingNumber は文字列
+export type ShippedOrder = unknown;
+// CancelledOrder という型を作る。status は "cancelled"、id は数値、amount は数値、reason は文字列
+export type CancelledOrder = unknown;
+// Order という型を作る。PendingOrder か PaidOrder か ShippedOrder か CancelledOrder
+export type Order = unknown;
+// Transition という型を作る。ok が true で order が Order のオブジェクトか、ok が false で error が文字列のオブジェクト
+export type Transition = unknown;
+
+// 関数 pay を作る。Order の order と Date の paidAt を受け取り、Transition を返す
+export function pay() {
+  // もし order の status が "pending" でないなら
+    // ok が false、error が order の id を埋め込んだ「注文◯は未払いではないので支払いできません」の文字列のオブジェクトを返す
+  // ok が true、order が「order を広げて、status を "paid"、paidAt を paidAt にしたもの」のオブジェクトを返す
+}
+
+// 関数 ship を作る。Order の order と Date の shippedAt と文字列 trackingNumber を受け取り、Transition を返す
+export function ship() {
+  // もし order の status が "paid" でないなら
+    // ok が false、error が order の id を埋め込んだ「注文◯は支払済みではないので発送できません」の文字列のオブジェクトを返す
+  // ok が true、order が「order を広げて、status を "shipped"、shippedAt を shippedAt、trackingNumber を trackingNumber にしたもの」のオブジェクトを返す
+}
+
+// 関数 cancel を作る。Order の order と文字列 reason を受け取り、Transition を返す
+export function cancel() {
+  // もし order の status が "shipped" なら
+    // ok が false、error が order の id を埋め込んだ「注文◯は発送済みなのでキャンセルできません」の文字列のオブジェクトを返す
+  // もし order の status が "cancelled" なら
+    // ok が false、error が order の id を埋め込んだ「注文◯はキャンセル済みなのでキャンセルできません」の文字列のオブジェクトを返す
+  // ok が true、order が「status が "cancelled"、id が order の id、amount が order の amount、reason が reason のオブジェクト」のオブジェクトを返す
+}
+
+// 関数 statusText を作る。Order の order を受け取り、文字列を返す
+export function statusText() {
+  // order の status で場合を分ける
+    // "pending" の場合
+      // order の id と、order の amount を 3 桁ごとにカンマで区切ったものを埋め込んだ「注文◯: 未払い（◯円）」の文字列を返す
+    // "paid" の場合
+      // order の id と、order の amount を 3 桁ごとにカンマで区切ったものを埋め込んだ「注文◯: 支払済み（◯円）」の文字列を返す
+    // "shipped" の場合
+      // order の id と order の trackingNumber を埋め込んだ「注文◯: 発送済み（追跡番号 ◯）」の文字列を返す
+    // "cancelled" の場合
+      // order の id と order の reason を埋め込んだ「注文◯: キャンセル（◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は、オブジェクトの型（02章 q01）を 4 つ書き、<code>Order</code> で <code>|</code> につなぎます。<code>status</code> の型は <code>"pending"</code> のようなリテラル型、<code>Date</code> は 03章 q03 問20 で出た型です。<code>Transition</code> の <code>ok: true</code> と <code>ok: false</code> は、03章 q04 問16 の <code>ApiResponse</code> と同じ形です。<code>pay</code> と <code>ship</code> は、問4 のサンプルの <code>memberLabel</code> と同じく、先に失敗を <code>return</code> します。その後ろでは <code>order</code> が未払い（または支払済み）に絞り込まれるので、<code>{ ...order, status: "paid", paidAt }</code>（02章 q02 問8）で次の状態を作れます。<code>cancel</code> では、支払済みの注文から <code>paidAt</code> を残さないように、スプレッドを使わずに要るプロパティだけを書きます（問14）。返す結果は <code>{ ok: true, order: … }</code> のように、オブジェクトの中にオブジェクトを書きます。金額の区切りは <code>.toLocaleString("ja-JP")</code> です（01章 q02 問12）。<code>statusText</code> は問5 と同じ <code>switch</code> の形です。</p></details>
+    </div>
+  </section>
+</section>

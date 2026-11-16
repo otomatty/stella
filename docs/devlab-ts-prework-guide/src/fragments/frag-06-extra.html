@@ -1,0 +1,431 @@
+<section class="sec" id="c06-extra">
+  <div class="sec-h">
+    <span class="eyebrow">06章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。e01 には「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。フィールド、constructor の引数、メソッドの引数と戻り値には型注釈を付けます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c06-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">抽象クラス</span>
+      <span class="q-new">新しく出てくる書き方：<code>abstract class</code>、<code>abstract</code> なメソッド</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export class Report {}
+
+export class SalesReport {}
+
+export class TodoReport {}</code></pre>
+      <p>抽象クラスは、それ自体からは <code>new</code> できず、継承して使うためのクラスです。中身を子クラスに任せたいメソッドには <code>abstract</code> を付け、本体を書かずに形だけを決めます。レポートを表す抽象クラス <code>Report</code> と、それを継承したクラスを 2 つ書きます。</p>
+      <ol>
+        <li><code>Report</code> は抽象クラスにします。<code>title()</code>（文字列を返す）と <code>body()</code>（文字列の配列を返す）は <code>abstract</code> にして、子クラスで書きます。<code>render()</code> は <code>Report</code> に書きます。<code>"# タイトル"</code> の行と、<code>body()</code> の各行の前に <code>"- "</code> を付けた行を、改行（<code>"\n"</code>）でつないだ文字列を返します。</li>
+        <li><code>SalesReport</code> は、売上の配列 <code>sales</code>（<code>readonly number[]</code>）を受け取ります。<code>title()</code> は <code>"売上レポート"</code>、<code>body()</code> は <code>["件数 3", "合計 600"]</code> の形の配列を返します。</li>
+        <li><code>TodoReport</code> は、ToDo の配列 <code>todos</code>（<code>readonly string[]</code>）を受け取ります。<code>title()</code> は <code>"ToDo"</code>、<code>body()</code> は <code>todos</code> をそのまま並べた配列を返します。<code>todos</code> が空なら <code>["なし"]</code> を返します。</li>
+      </ol>
+      <p>説明すること：インターフェースではなく抽象クラスを使うとよいのは、どんなときか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Report()</code></dt><dd class="r">型エラー</dd><dd class="c">抽象クラスからは new できない</dd></div>
+        </dl>
+        <p><code>sales</code> は <code>new SalesReport([100, 200, 300])</code>、<code>todos</code> は <code>new TodoReport(["買い物", "掃除"])</code>、<code>empty</code> は <code>new TodoReport([])</code> です。</p>
+        <dl class="eg">
+          <div><dt><code>sales.render()</code></dt><dd class="r"><code>"# 売上レポート\n- 件数 3\n- 合計 600"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>todos.render()</code></dt><dd class="r"><code>"# ToDo\n- 買い物\n- 掃除"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>empty.render()</code></dt><dd class="r"><code>"# ToDo\n- なし"</code></dd><dd class="c">空なら "なし" の 1 行</dd></div>
+        </dl>
+        <p><code>reports</code> は、型を <code>Report[]</code> にした配列 <code>[new SalesReport([100]), new TodoReport([])]</code> です。</p>
+        <dl class="eg">
+          <div><dt><code>reports.map((r) =&gt; r.title())</code></dt><dd class="r"><code>["売上レポート", "ToDo"]</code></dd><dd class="c">子クラスは Report として扱える</dd></div>
+        </dl>
+        <p><code>sales.render()</code> の結果を画面に出すと、次の 3 行になります。</p>
+        <pre><code class="language-typescript"># 売上レポート
+- 件数 3
+- 合計 600</code></pre>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">abstract class</code><h4>new できない、継承するためだけのクラス</h4></div>
+      <p><code>class</code> の前に <code>abstract</code> を付けると、抽象クラスになります。抽象クラスからは <code>new</code> できません。<code>extends</code>（06章 q04）で子クラスを作り、子クラスから <code>new</code> します。子クラスに共通の処理を、親の抽象クラスに書いておけます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 継承するためだけのクラス Notice を作る
+abstract class Notice {
+  // 子クラスで書くメソッド subject を決める。文字列を返す
+  abstract subject(): string;
+
+  // メソッド header を作る。文字列を返す
+  header(): string {
+    // this.subject() の結果を埋め込んだ「件名: ◯」の文字列を返す
+    return `件名: ${this.subject()}`;
+  }
+}
+
+// Notice を継承したクラス ShippingNotice を作る
+class ShippingNotice extends Notice {
+  // メソッド subject を作る。文字列を返す
+  subject(): string {
+    // "発送のお知らせ" を返す
+    return "発送のお知らせ";
+  }
+}
+
+// header を作り、新しい ShippingNotice の header を呼んだ結果を入れる
+const header = new ShippingNotice().header();
+// 結果: header は "件名: 発送のお知らせ"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>抽象クラスから new する</h5>
+          <pre><code class="language-typescript">const notice = new Notice();</code></pre>
+          <div class="verdict ng">✕ 抽象クラスのインスタンスは作れない、という型エラーになります</div>
+        </div>
+        <div>
+          <h5>子クラスから new する</h5>
+          <pre><code class="language-typescript">const notice = new ShippingNotice();</code></pre>
+          <div class="verdict ok">○ subject を書いた子クラスなので、作れます</div>
+        </div>
+      </div>
+      <p>抽象クラスも、型として使えます。<code>const notices: Notice[] = [new ShippingNotice()];</code> のように、抽象クラスの型の配列に、子クラスのインスタンスを入れられます（06章 q04 の、子クラスを親クラスの型で扱う項目）。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/abstract-class">サバイバルTypeScript「抽象クラス」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">abstract subject(): string;</code><h4>中身を子クラスに任せるメソッド</h4></div>
+      <p>抽象クラスの中で、メソッドに <code>abstract</code> を付けると、名前と引数と戻り値の型だけを決めたメソッドになります。<code>{ }</code> の本体は書かず、最後に <code>;</code> を付けます。インターフェースのメソッドの書き方（06章 q03）と同じ形です。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>abstract</span> <span class="seg"><i>2</i>subject()</span><span class="seg c"><i>3</i>: string</span><span class="seg c"><i>4</i>;</span></pre>
+        <ol>
+          <li><span>中身を子クラスに任せる、という印です。抽象クラスの中でだけ書けます。</span></li>
+          <li><span>メソッドの名前と引数です。</span></li>
+          <li><span>戻り値の型です。子クラスで書くメソッドは、この型の値を返します。</span></li>
+          <li><span>本体の <code>{ }</code> の代わりに、<code>;</code> で終えます。</span></li>
+        </ol>
+      </figure>
+      <p>子クラスは、<code>abstract</code> なメソッドをすべて書かないと、型エラーになります。書き忘れたメソッドがあれば、型の確認で気づけます。親の <code>header()</code> の中の <code>this.subject()</code> は、06章 q04 の <code>override</code> の項目と同じく、子クラスで書いたメソッドが呼ばれます。</p>
+      <div class="cmp">
+        <div>
+          <h5>subject を書かない</h5>
+          <pre><code class="language-typescript">class EmptyNotice extends Notice {}</code></pre>
+          <div class="verdict ng">✕ 継承した abstract なメンバー subject を書いていない、という型エラーになります</div>
+        </div>
+        <div>
+          <h5>subject を書く</h5>
+          <pre><code class="language-typescript">class ShippingNotice extends Notice {
+  subject(): string {
+    return "発送のお知らせ";
+  }
+}</code></pre>
+          <div class="verdict ok">○ 型エラーになりません</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b><code>abstract</code> なメソッドを子クラスで書くときは、<code>override</code> を付けなくても型エラーになりません。親に本体がないので、書き換えにはあたらないからです。付けてもかまいません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 継承するためだけのクラス Report を作る
+export class Report {
+  // 子クラスで書くメソッド title を決める。文字列を返す
+  // 子クラスで書くメソッド body を決める。文字列の配列を返す
+  // メソッド render を作る。文字列を返す
+  //   lines を作り、this.body() の結果の要素を 1 つずつ line として、line を埋め込んだ「- ◯」の文字列に変えた新しい配列を入れる
+  //   this.title() の結果を埋め込んだ「# ◯」の文字列と lines の要素すべてをこの順に並べた配列の、要素を改行でつないだ文字列を返す
+}
+
+// Report を継承したクラス SalesReport を作る
+export class SalesReport {
+  // constructor を作る。数値の読み取り専用の配列 sales を受け取り、外から読めず、入れ直せないフィールド sales にする
+  //   親の constructor に何も渡さずに呼ぶ
+  // メソッド title を作る。文字列を返す
+  //   "売上レポート" を返す
+  // メソッド body を作る。文字列の配列を返す
+  //   合計 total を入れ直せる変数として作り、0 を入れる
+  //   this.sales から 1 つずつ sale に取り出してくり返す
+  //     total に sale を足す
+  //   this.sales の要素の数を埋め込んだ「件数 ◯」の文字列と、total を埋め込んだ「合計 ◯」の文字列を並べた配列を返す
+}
+
+// Report を継承したクラス TodoReport を作る
+export class TodoReport {
+  // constructor を作る。文字列の読み取り専用の配列 todos を受け取り、外から読めず、入れ直せないフィールド todos にする
+  //   親の constructor に何も渡さずに呼ぶ
+  // メソッド title を作る。文字列を返す
+  //   "ToDo" を返す
+  // メソッド body を作る。文字列の配列を返す
+  //   もし this.todos の要素の数が 0 と等しいなら
+  //     "なし" だけが入った配列を返す
+  //   this.todos をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Report</code> は、<code>abstract class</code> の項目のサンプルの <code>Notice</code> と同じ形で、<code>abstract</code> なメソッドが 2 つになります。<code>render</code> の改行は <code>"\n"</code> で、<code>.join("\n")</code> でつなぎます（04章 q08 問20、02章 q04 問11）。「◯ と lines の要素すべてをこの順に並べた配列」は、配列のスプレッド <code>[`# …`, ...lines]</code> です（02章 q05 問1）。<code>SalesReport</code> と <code>TodoReport</code> は、スターターの <code>export class</code> の後ろに <code>extends Report</code> を書き足します。constructor は、06章 q04 ドリル問17 の <code>EmailNotifier</code> と同じく <code>super()</code> を呼びます。<code>TodoReport</code> の <code>body</code> は戻り値が <code>string[]</code> なので、読み取り専用の <code>this.todos</code> はそのまま返せません。<code>[...this.todos]</code> でコピーして返します。説明することは、<code>Report</code> を 06章 q03 の <code>interface</code> で書き直そうとしてみて、<code>render</code> をどこに書くことになるかを確かめてから書きます。試したあとは、抽象クラスの形に戻してから提出します。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c06-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">static、getter・setter、メソッドチェーン</span>
+      <span class="q-new">新しく出てくる書き方：<code>static</code> なフィールド、<code>static</code> なメソッド、getter <code>get</code>、setter <code>set</code>、戻り値の型 <code>this</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export class Temperature {}
+
+export class QueryBuilder {}</code></pre>
+      <p>温度を表すクラス <code>Temperature</code> と、文字列を組み立てるクラス <code>QueryBuilder</code> を書きます。</p>
+      <ol>
+        <li><code>Temperature</code> は、constructor で摂氏 <code>celsius</code> を受け取り、<code>private</code> なフィールドに持ちます。
+          <ul>
+            <li><code>fahrenheit</code>：読むと華氏を返します（摂氏 × 9 ÷ 5 + 32）。<code>temperature.fahrenheit</code> のように、<code>()</code> なしで読めるようにします。</li>
+            <li><code>fahrenheit</code> に代入すると、華氏で受け取った値を摂氏に直して持ちます（(華氏 − 32) × 5 ÷ 9）。</li>
+            <li><code>celsius</code>：読むと摂氏を返します。</li>
+            <li><code>Temperature.fromFahrenheit(value)</code>：華氏から <code>Temperature</code> を作って返します。<code>new</code> しなくても、クラスの名前から呼べるようにします。</li>
+            <li><code>Temperature.created</code>：これまでに作られた <code>Temperature</code> の数です。クラスそのものに持たせ、constructor で 1 増やします。</li>
+          </ul>
+        </li>
+        <li><code>QueryBuilder</code> は、メソッドをつなげて条件の文字列を組み立てます。
+          <ul>
+            <li><code>where(condition)</code>：条件を足して、自分（<code>this</code>）を返します。戻り値の型も <code>this</code> にします。</li>
+            <li><code>limit(n)</code>：件数を決めて、自分を返します。</li>
+            <li><code>build()</code>：<code>"WHERE age &gt; 20 AND active LIMIT 10"</code> の形の文字列を返します。条件が 2 つ以上なら <code>" AND "</code> でつなぎます。条件がなければ <code>WHERE</code> の部分を、件数がなければ <code>LIMIT</code> の部分を付けません。</li>
+          </ul>
+        </li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p><code>t</code> は <code>new Temperature(100)</code> です。</p>
+        <dl class="eg">
+          <div><dt><code>t.celsius</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+          <div><dt><code>t.fahrenheit</code></dt><dd class="r"><code>212</code></dd><dd class="c">100 × 9 ÷ 5 + 32</dd></div>
+          <div><dt><code>t.fahrenheit = 32</code> のあとの <code>t.celsius</code></dt><dd class="r"><code>0</code></dd><dd class="c">(32 − 32) × 5 ÷ 9</dd></div>
+          <div><dt><code>Temperature.fromFahrenheit(212).celsius</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fromFahrenheit</code> を 1 回呼んだ前後の <code>Temperature.created</code></dt><dd class="r">1 増える</dd><dd class="c">fromFahrenheit の中でも constructor が動く</dd></div>
+        </dl>
+        <p><code>q1</code> は <code>new QueryBuilder().where("age &gt; 20").where("active").limit(10)</code>、<code>q2</code> は <code>new QueryBuilder().limit(5)</code>、<code>q3</code> は <code>new QueryBuilder()</code> です。</p>
+        <dl class="eg">
+          <div><dt><code>q1.build()</code></dt><dd class="r"><code>"WHERE age &gt; 20 AND active LIMIT 10"</code></dd><dd class="c">条件を " AND " でつなぐ</dd></div>
+          <div><dt><code>q2.build()</code></dt><dd class="r"><code>"LIMIT 5"</code></dd><dd class="c">条件がない</dd></div>
+          <div><dt><code>q3.build()</code></dt><dd class="r"><code>""</code></dd><dd class="c">どちらもない</dd></div>
+        </dl>
+        <p><code>builder</code> は <code>new QueryBuilder()</code> です。</p>
+        <dl class="eg">
+          <div><dt><code>builder.where("a")</code></dt><dd class="r"><code>builder</code> そのもの</dd><dd class="c">新しいインスタンスは作らない</dd></div>
+          <div><dt><code>builder.limit(1)</code></dt><dd class="r"><code>builder</code> そのもの</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>fahrenheit</code> は <code>number</code>、<code>fromFahrenheit</code> の戻り値は <code>Temperature</code>、<code>Temperature.created</code> は <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">static issued = 0;</code><h4>クラスそのものに持たせるフィールド</h4></div>
+      <p>フィールドの前に <code>static</code> を付けると、クラスに 1 つだけのフィールドになります。インスタンスが持つフィールドとは別のものです。読み書きするときは、<code>クラス名.フィールド名</code> と書きます。いくつインスタンスを作っても、同じ 1 つのフィールドを使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Ticket を作る
+class Ticket {
+  // クラスそのものに持たせるフィールド issued を作り、0 を入れる
+  static issued = 0;
+
+  // constructor を作る。文字列の seat を受け取り、入れ直せないフィールド seat にする
+  constructor(readonly seat: string) {
+    // Ticket の issued を 1 増やす
+    Ticket.issued++;
+  }
+}
+
+// first を作り、座席を "A1" にした Ticket を入れる
+const first = new Ticket("A1");
+// second を作り、座席を "A2" にした Ticket を入れる
+const second = new Ticket("A2");
+// 結果: Ticket.issued は 2、first.seat は "A1"、second.seat は "A2"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>インスタンスから読む</h5>
+          <pre><code class="language-typescript">const count = first.issued;</code></pre>
+          <div class="verdict ng">✕ Ticket のインスタンスに issued はない、という型エラーになります</div>
+        </div>
+        <div>
+          <h5>クラスの名前から読む</h5>
+          <pre><code class="language-typescript">const count = Ticket.issued;</code></pre>
+          <div class="verdict ok">○ count は 2 です</div>
+        </div>
+      </div>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/static-fields">サバイバルTypeScript「静的フィールド」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">static fromThousands(…)</code><h4>new しないで、クラスの名前から呼べるメソッド</h4></div>
+      <p>メソッドの前に <code>static</code> を付けると、<code>クラス名.メソッド名()</code> で呼べるメソッドになります。インスタンスを作る前に呼べるので、別の単位の値から、インスタンスを作って返すときによく使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Price を作る
+class Price {
+  // constructor を作る。数値の yen を受け取り、入れ直せないフィールド yen にする
+  constructor(readonly yen: number) {}
+
+  // new しないで呼べるメソッド fromThousands を作る。数値の thousands を受け取り、Price を返す
+  static fromThousands(thousands: number): Price {
+    // thousands × 1000 を渡した、新しい Price を返す
+    return new Price(thousands * 1000);
+  }
+}
+
+// price を作り、Price の fromThousands に 3 を渡して呼んだ結果を入れる
+const price = Price.fromThousands(3);
+// 結果: price.yen は 3000</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>static</code> なメソッドの中では、<code>this</code> はインスタンスを指しません。インスタンスのフィールドを使うときは、サンプルのように <code>new</code> で作ってから使います。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/static-methods">サバイバルTypeScript「静的メソッド」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">get total(): number</code><h4><code>()</code> なしで読める、読むときに動くメソッド（getter）</h4></div>
+      <p>メソッドの前に <code>get</code> を付けると、フィールドと同じく <code>()</code> なしで読めるメソッドになります。これを getter と呼びます。読むたびに、中の処理が動いて値を返します。ほかのフィールドから計算して出す値に使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Cart を作る
+class Cart {
+  // constructor を作る。数値の読み取り専用の配列 prices を受け取り、外から読めず、入れ直せないフィールド prices にする
+  constructor(private readonly prices: readonly number[]) {}
+
+  // 読むときに動くメソッド total を作る。数値を返す
+  get total(): number {
+    // 合計 sum を入れ直せる変数として作り、0 を入れる
+    let sum = 0;
+    // this.prices から 1 つずつ price に取り出してくり返す
+    for (const price of this.prices) {
+      // sum に price を足す
+      sum += price;
+    }
+    // sum を返す
+    return sum;
+  }
+}
+
+// total を作り、[300, 500] を渡した Cart の total を読んだ値を入れる
+const total = new Cart([300, 500]).total;
+// 結果: total は 800</code></pre>
+      </div>
+      <p class="memo"><b>決まり</b>getter と同じ名前のフィールドは、同じクラスに作れません。<code>celsius</code> という getter を作るなら、中で持つフィールドは <code>celsiusValue</code> のように別の名前にします。</p>
+      <p class="more"><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Functions/get">MDN「get」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">set years(value: number)</code><h4>代入したときに動くメソッド（setter）</h4></div>
+      <p>メソッドの前に <code>set</code> を付けると、<code>インスタンス.名前 = 値</code> と代入したときに動くメソッドになります。これを setter と呼びます。代入した値が、引数に入ります。同じ名前の getter と組みにすると、外からはふつうのフィールドのように読み書きできます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Contract を作る
+class Contract {
+  // 外から読めないフィールド months を作り、12 を入れる
+  private months = 12;
+
+  // 読むときに動くメソッド years を作る。数値を返す
+  get years(): number {
+    // this.months ÷ 12 を返す
+    return this.months / 12;
+  }
+
+  // 代入したときに動くメソッド years を作る。数値の value を受け取る
+  set years(value: number) {
+    // this.months に value × 12 を入れ直す
+    this.months = value * 12;
+  }
+
+  // メソッド label を作る。文字列を返す
+  label(): string {
+    // this.months を埋め込んだ「契約 ◯か月」の文字列を返す
+    return `契約 ${this.months}か月`;
+  }
+}
+
+// contract を作り、新しい Contract を入れる
+const contract = new Contract();
+// contract の years に 3 を入れる
+contract.years = 3;
+// 結果: contract.years は 3、contract.label() は "契約 36か月"</code></pre>
+      </div>
+      <p class="memo"><b>決まり</b>setter には、戻り値の型を書きません。書くと型エラーになります。値を返さないことが決まっているからです。</p>
+      <p class="more"><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Functions/set">MDN「set」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">add(line: string): this</code><h4>自分を返して、メソッドをつなげる（メソッドチェーン）</h4></div>
+      <p>メソッドの最後で <code>return this;</code> と書くと、そのメソッドは呼んだインスタンス自身を返します。そのため、結果に続けて、同じインスタンスのメソッドを呼べます。このつなげ方をメソッドチェーンと呼びます。戻り値の型には <code>this</code> と書きます。「自分と同じ型」という意味です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス MailBuilder を作る
+class MailBuilder {
+  // 外から読めないフィールド lines を作り、空の文字列の配列を入れる
+  private lines: string[] = [];
+
+  // メソッド add を作る。文字列の line を受け取り、自分と同じ型を返す
+  add(line: string): this {
+    // this.lines の後ろに line をつなげる
+    this.lines.push(line);
+    // this を返す
+    return this;
+  }
+
+  // メソッド build を作る。文字列を返す
+  build(): string {
+    // this.lines の要素を "／" でつないだ文字列を返す
+    return this.lines.join("／");
+  }
+}
+
+// mail を作り、新しい MailBuilder に "ご注文ありがとうございます" と "発送しました" を順に add し、build した結果を入れる
+const mail = new MailBuilder().add("ご注文ありがとうございます").add("発送しました").build();
+// 結果: mail は "ご注文ありがとうございます／発送しました"</code></pre>
+      </div>
+      <p>サンプルの最後の行は、左から順に動きます。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>順番</th><th>呼ぶもの</th><th>返すもの</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>new MailBuilder()</td><td>新しいインスタンス</td></tr>
+            <tr><td>2</td><td>.add("ご注文ありがとうございます")</td><td>同じインスタンス（lines は 1 行）</td></tr>
+            <tr><td>3</td><td>.add("発送しました")</td><td>同じインスタンス（lines は 2 行）</td></tr>
+            <tr><td>4</td><td>.build()</td><td>"ご注文ありがとうございます／発送しました"</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある疑問</b>戻り値の型を <code>MailBuilder</code> と書いても動きます。<code>this</code> と書くと、<code>MailBuilder</code> を継承した子クラスで呼んだときに、戻り値の型が子クラスになります。子クラスにだけあるメソッドも、続けて呼べます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/return-this-type">サバイバルTypeScript「戻り値のthis型」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Temperature を作る
+export class Temperature {
+  // クラスそのものに持たせるフィールド created を作り、0 を入れる
+  // constructor を作る。数値の celsiusValue を受け取り、外から読めないフィールド celsiusValue にする
+  //   Temperature の created を 1 増やす
+  // new しないで呼べるメソッド fromFahrenheit を作る。数値の value を受け取り、Temperature を返す
+  //   (value − 32) × 5 ÷ 9 を渡した、新しい Temperature を返す
+  // 読むときに動くメソッド celsius を作る。数値を返す
+  //   this.celsiusValue を返す
+  // 読むときに動くメソッド fahrenheit を作る。数値を返す
+  //   this.celsiusValue × 9 ÷ 5 + 32 を返す
+  // 代入したときに動くメソッド fahrenheit を作る。数値の value を受け取る
+  //   this.celsiusValue に (value − 32) × 5 ÷ 9 を入れ直す
+}
+
+// クラス QueryBuilder を作る
+export class QueryBuilder {
+  // 外から読めないフィールド conditions を作り、空の文字列の配列を入れる
+  // 外から読めないフィールド count を作る。型は数値か undefined
+  // メソッド where を作る。文字列の condition を受け取り、自分と同じ型を返す
+  //   this.conditions の後ろに condition をつなげる
+  //   this を返す
+  // メソッド limit を作る。数値の n を受け取り、自分と同じ型を返す
+  //   this.count に n を入れ直す
+  //   this を返す
+  // メソッド build を作る。文字列を返す
+  //   部分 parts を作り、空の文字列の配列を入れる
+  //   もし this.conditions の要素の数が 0 より大きいなら
+  //     parts の後ろに、this.conditions の要素を " AND " でつないだものを埋め込んだ「WHERE ◯」の文字列をつなげる
+  //   もし this.count が undefined でないなら
+  //     parts の後ろに、this.count を埋め込んだ「LIMIT ◯」の文字列をつなげる
+  //   parts の要素を " " でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>created</code> は、<code>static</code> なフィールドの項目の <code>Ticket</code> の <code>issued</code> と同じ形です。constructor の引数の名前は、getter の <code>celsius</code> とぶつからないように <code>celsiusValue</code> にします。<code>fromFahrenheit</code> は、<code>static</code> なメソッドの項目の <code>Price.fromThousands</code> と同じ形です。<code>new Temperature(…)</code> で作るので、<code>created</code> もそこで 1 増えます。<code>celsius</code> と <code>fahrenheit</code> の読み書きは、getter・setter の項目の <code>Contract</code> の <code>years</code> と同じ形です。計算は、先に掛けてから割る順で書くと、テストの値がちょうどになります。<code>count</code> は、値を入れずに <code>private count: number | undefined;</code> と書くと、最初は <code>undefined</code> が入ります。<code>where</code> と <code>limit</code> は、メソッドチェーンの項目の <code>add</code> と同じ形です。<code>build</code> の最後は <code>.join(" ")</code> です。<code>parts</code> が空なら空の文字列、1 つならその文字列だけになります。</p></details>
+    </div>
+  </section>
+</section>

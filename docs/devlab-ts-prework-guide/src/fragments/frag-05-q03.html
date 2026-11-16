@@ -1,0 +1,768 @@
+<section class="sec" id="c05-q03">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q03 オプション引数</h2>
+    <p>省略できる引数を使う関数を 20 個書きます。引数と戻り値には型注釈を付けます。問題文で「省略できる」と書いた引数は、<code>title?: string</code> のように、名前の後ろに <code>?</code> を付けます。このような引数を、オプション引数と呼びます。省略された引数の値は <code>undefined</code> になります。そのため、関数の中では <code>??</code>（02章 q02）か <code>=== undefined</code> で扱います。<code>times = 1</code> のように値を書く形（デフォルト引数）は q04 で学ぶので、ここでは使いません。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">肩書きがあれば付け、なければ「さん」を付ける</span>
+      <span class="q-new">新しく出てくる書き方：オプション引数 <code>title?: string</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greetWithTitle() {}</code></pre>
+      <p>名前 <code>name</code> と、省略できる肩書き <code>title</code> を受け取ります。<code>title</code> があれば、名前の後ろに肩書きを付けて返します。<code>title</code> がなければ、名前の後ろに <code>"さん"</code> を付けて返します。引数は文字列 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetWithTitle("山田", "部長")</code></dt><dd class="r"><code>"山田部長"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>greetWithTitle("山田")</code></dt><dd class="r"><code>"山田さん"</code></dd><dd class="c">title を省略した</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">days?: number</code><h4>省略できる引数（オプション引数）</h4></div>
+      <p>引数の名前の後ろに <code>?</code> を付けると、呼び出す側がその引数を省略できます。省略されたとき、その引数の値は <code>undefined</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 shippingText を作る。文字列 city と、省略できる数値 days を受け取り、文字列を返す
+function shippingText(city: string, days?: number): string {
+  // city と、days（なければ 3）を埋め込んだ「◯まで◯日」の文字列を返す
+  return `${city}まで${days ?? 3}日`;
+}
+// 結果: shippingText("大阪", 2) は "大阪まで2日"、shippingText("大阪") は "大阪まで3日"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function shippingText(city: string, <span class="seg"><i>1</i>days</span><span class="seg c"><i>2</i>?</span><span class="seg"><i>3</i>: number</span>): string {</pre>
+        <ol>
+          <li><span>引数の名前です。</span></li>
+          <li><span>名前のすぐ後ろの <code>?</code> が「省略できる」という印です。</span></li>
+          <li><span>渡されたときの型です。関数の中では、<code>days</code> の型は <code>number | undefined</code> になります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>shippingText("大阪", 2)</code></dt><dd class="r"><code>"大阪まで2日"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>shippingText("大阪")</code></dt><dd class="r"><code>"大阪まで3日"</code></dd><dd class="c">days は undefined なので、?? の右の 3 を使う</dd></div>
+      </dl>
+      <p>「なければ ◯、あれば ◯」と書き分けたいときは、<code>=== undefined</code> で調べます。条件演算子（01章 q01 問12）で書けます。<code>if</code> で書いてもかまいません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 giftLabel を作る。文字列 item と、省略できる文字列 message を受け取り、文字列を返す
+function giftLabel(item: string, message?: string): string {
+  // message がなければ item、そうでなければ item と message を埋め込んだ「◯（◯）」の文字列を返す
+  return message === undefined ? item : `${item}（${message}）`;
+}
+// 結果: giftLabel("花束") は "花束"、giftLabel("花束", "お祝い") は "花束（お祝い）"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5><code>days: number | undefined</code> と書く</h5>
+          <pre><code class="language-typescript">function shippingText(city: string, days: number | undefined): string {
+  return `${city}まで${days ?? 3}日`;
+}
+shippingText("大阪");</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。引数を省略できず、undefined を書いて渡す必要があります</div>
+        </div>
+        <div>
+          <h5><code>days?: number</code> と書く</h5>
+          <pre><code class="language-typescript">function shippingText(city: string, days?: number): string {
+  return `${city}まで${days ?? 3}日`;
+}
+shippingText("大阪");</code></pre>
+          <div class="verdict ok">○ days を省略して呼べます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>関数の中で <code>days + 1</code> のように、そのまま数として使うと、型の確認で「<code>days</code> は <code>undefined</code> かもしれない」というエラーになります。先に <code>??</code> か <code>=== undefined</code> で、ない場合を扱います。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/optional-parameters">サバイバルTypeScript「オプション引数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greetWithTitle を作る。文字列 name と、省略できる文字列 title を受け取り、文字列を返す
+export function greetWithTitle() {
+  // name と、title（なければ "さん"）を埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「省略できる文字列 title」は <code>title?: string</code> です。中身は、問1 の 1 つめのサンプルの <code>shippingText</code> と同じ形で、<code>${}</code> を 2 つ並べます。「title（なければ "さん"）」は <code>title ?? "さん"</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">小数第 digits 位までの文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fixed() {}</code></pre>
+      <p>数 <code>n</code> と、省略できる桁数 <code>digits</code> を受け取ります。<code>n</code> を、小数第 <code>digits</code> 位までの文字列にして返します。<code>digits</code> を省略したら、小数点以下は 0 桁です。引数は数値 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fixed(3.14159, 2)</code></dt><dd class="r"><code>"3.14"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fixed(3.6)</code></dt><dd class="r"><code>"4"</code></dd><dd class="c">0 桁にすると四捨五入される</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fixed を作る。数値 n と、省略できる数値 digits を受け取り、文字列を返す
+export function fixed() {
+  // n を小数点以下 digits（なければ 0）桁の文字列にして返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>小数点以下の桁数をそろえた文字列は <code>.toFixed()</code> です（01章 q03 の応用）。かっこの中に、<code>digits ?? 0</code> をそのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">姓と、あれば名を、半角スペースでつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nameText() {}</code></pre>
+      <p>姓 <code>last</code> と、省略できる名 <code>first</code> を受け取ります。<code>first</code> があれば、姓と名を半角スペースでつないで返します。<code>first</code> がなければ、姓だけを返します。引数は文字列 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameText("山田", "太郎")</code></dt><dd class="r"><code>"山田 太郎"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nameText("山田")</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c">後ろにスペースも付けない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameText を作る。文字列 last と、省略できる文字列 first を受け取り、文字列を返す
+export function nameText() {
+  // first がなければ last、そうでなければ last と first を埋め込んだ「◯ ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>giftLabel</code> と同じ形です。<code>`${last} ${first ?? ""}`</code> と書くと、<code>first</code> がないときに <code>"山田 "</code> と、後ろにスペースが残ります。スペースごと書き分けるので、<code>=== undefined</code> で分けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">文字列を times 回つなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function repeatOnce() {}</code></pre>
+      <p>文字列 <code>text</code> と、省略できる回数 <code>times</code> を受け取ります。<code>text</code> を <code>times</code> 回つないだ文字列を返します。<code>times</code> を省略したら 1 回です。引数は文字列と数値で、数値は省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>repeatOnce("ab")</code></dt><dd class="r"><code>"ab"</code></dd><dd class="c">times を省略したので 1 回</dd></div>
+          <div><dt><code>repeatOnce("ab", 3)</code></dt><dd class="r"><code>"ababab"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 repeatOnce を作る。文字列 text と、省略できる数値 times を受け取り、文字列を返す
+export function repeatOnce() {
+  // text を times（なければ 1）回つなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>同じ文字列を何回もつなぐのは <code>.repeat()</code> です（01章 q02 問4）。かっこの中に <code>times ?? 1</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">from から to まで 1 ずつ減らした配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countdownFrom() {}</code></pre>
+      <p>始まりの数 <code>from</code> と、省略できる終わりの数 <code>to</code> を受け取ります。<code>from</code> から <code>to</code> まで、1 ずつ減らしながら数を並べた配列を返します。<code>to</code> も配列に入れます。<code>to</code> を省略したら 1 までです。引数は数値 2 つで、2 つめは省略できます。戻り値は数値の配列（<code>number[]</code>）です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countdownFrom(3)</code></dt><dd class="r"><code>[3, 2, 1]</code></dd><dd class="c">to を省略したので 1 まで</dd></div>
+          <div><dt><code>countdownFrom(5, 3)</code></dt><dd class="r"><code>[5, 4, 3]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countdownFrom を作る。数値 from と、省略できる数値 to を受け取り、数値の配列を返す
+export function countdownFrom() {
+  // 終わり end を作り、to（なければ 1）を入れる
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // i を from から end まで 1 ずつ減らしながらくり返す
+  //   result の最後に i を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>先に <code>to ?? 1</code> を変数 <code>end</code> に入れておくと、くり返しの条件が <code>i &gt;= end</code> と短く書けます。「減らしながらくり返す」は、01章 q01 問7 の <code>for</code> と <code>--</code> です。数値の配列の作り方と <code>.push()</code> は 02章 q04 問17 で出ました。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">max 文字を超えたら切って「…」を付ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function cut() {}</code></pre>
+      <p>文字列 <code>text</code> と、省略できる上限 <code>max</code> を受け取ります。<code>text</code> の文字数が <code>max</code> を超えていたら、先頭から <code>max</code> 文字を取り出し、後ろに <code>"…"</code> を付けて返します。超えていなければ、<code>text</code> をそのまま返します。<code>max</code> を省略したら 10 です。<code>"…"</code> は 1 文字の記号です。引数は文字列と数値で、数値は省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cut("TypeScript入門講座", 6)</code></dt><dd class="r"><code>"TypeSc…"</code></dd><dd class="c">先頭の 6 文字に "…" を付ける</dd></div>
+          <div><dt><code>cut("TypeScript入門講座")</code></dt><dd class="r"><code>"TypeScript…"</code></dd><dd class="c">max を省略したので 10 文字</dd></div>
+          <div><dt><code>cut("短い")</code></dt><dd class="r"><code>"短い"</code></dd><dd class="c">10 文字以下なので、そのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cut を作る。文字列 text と、省略できる数値 max を受け取り、文字列を返す
+export function cut() {
+  // 上限 limit を作り、max（なければ 10）を入れる
+  // text の文字数が limit より大きいなら、text の 0 文字目から limit 文字目の前までを取り出したものの後ろに "…" をつなげた文字列、そうでなければ text を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>max ?? 10</code> は 2 回使うので、先に変数 <code>limit</code> に入れます。文字数は <code>.length</code>、取り出すのは <code>.slice(0, limit)</code> です（01章 q02）。「なら ◯、そうでなければ ◯」は条件演算子で書けます。後ろに <code>"…"</code> をつなげるのは、テンプレートリテラルで書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">width 桁になるよう前を 0 で埋める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function padTwo() {}</code></pre>
+      <p>数 <code>n</code> と、省略できる桁数 <code>width</code> を受け取ります。<code>n</code> を文字列にし、<code>width</code> 桁になるように前を <code>0</code> で埋めて返します。<code>width</code> を省略したら 2 桁です。引数は数値 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>padTwo(5)</code></dt><dd class="r"><code>"05"</code></dd><dd class="c">width を省略したので 2 桁</dd></div>
+          <div><dt><code>padTwo(5, 4)</code></dt><dd class="r"><code>"0005"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 padTwo を作る。数値 n と、省略できる数値 width を受け取り、文字列を返す
+export function padTwo() {
+  // n を文字列にして前を "0" で埋め、width（なければ 2）文字にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>数を文字列にするのは <code>String()</code>、前を埋めるのは <code>.padStart()</code> です（01章 q01 問20）。<code>.padStart()</code> の 1 つめに <code>width ?? 2</code>、2 つめに <code>"0"</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">「1,200円」の形にする。単位は変えられる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function priceLabel() {}</code></pre>
+      <p>金額 <code>price</code> と、省略できる単位 <code>unit</code> を受け取ります。金額を 3 桁ごとのカンマ区切りにし、後ろに単位を付けて返します。<code>unit</code> を省略したら <code>"円"</code> です。引数は数値と文字列で、文字列は省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceLabel(1200)</code></dt><dd class="r"><code>"1,200円"</code></dd><dd class="c">unit を省略したので円</dd></div>
+          <div><dt><code>priceLabel(1200, "ドル")</code></dt><dd class="r"><code>"1,200ドル"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priceLabel を作る。数値 price と、省略できる文字列 unit を受け取り、文字列を返す
+export function priceLabel() {
+  // price を 3 桁ごとのカンマ区切りにした文字列と、unit（なければ "円"）を埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>3 桁ごとのカンマ区切りは <code>.toLocaleString("ja-JP")</code> です（01章 q02 問12）。問1 と同じく、<code>${}</code> を 2 つ並べたテンプレートリテラルにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">最初の count 単語を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstWords() {}</code></pre>
+      <p>文字列 <code>text</code> と、省略できる単語の数 <code>count</code> を受け取ります。<code>text</code> は、単語を半角スペースで区切った文字列です。最初の <code>count</code> 個の単語を、半角スペースでつないで返します。<code>count</code> を省略したら 1 単語です。引数は文字列と数値で、数値は省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstWords("a b c d", 2)</code></dt><dd class="r"><code>"a b"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>firstWords("a b c d")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">count を省略したので 1 単語</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstWords を作る。文字列 text と、省略できる数値 count を受け取り、文字列を返す
+export function firstWords() {
+  // 単語の配列 words を作り、text を " " で区切った文字列の配列を入れる
+  // words の 0 番目から count（なければ 1）番目の前までを取り出した配列を、" " でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>区切るのは <code>.split(" ")</code>（02章 q06 問12）、配列の一部を取り出すのは <code>.slice()</code>（02章 q05 問3）、つなぐのは <code>.join(" ")</code>（02章 q04 問11）です。<code>.slice()</code> の 2 つめに <code>count ?? 1</code> を書きます。変数を作らずに、3 つを続けて呼んでもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">名前と、あれば年齢を持つオブジェクトを返す</span>
+      <span class="q-new">新しく出てくる書き方：省略された値は、プロパティごと付けない</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeUser() {}</code></pre>
+      <p>名前 <code>name</code> と、省略できる年齢 <code>age</code> を受け取り、利用者のオブジェクトを返します。<code>age</code> があれば、<code>name</code> と <code>age</code> を持つオブジェクトです。<code>age</code> がなければ、<code>name</code> だけを持つオブジェクトです。<code>age</code> というプロパティ自体を付けません。引数は文字列と数値で、数値は省略できます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeUser("山田", 30)</code></dt><dd class="r"><code>{ name: "山田", age: 30 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>makeUser("山田")</code></dt><dd class="r"><code>{ name: "山田" }</code></dd><dd class="c">age というプロパティがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>number</code>、戻り値が <code>{ name: string; age?: number }</code> であることも確かめます。<code>age?: number</code> は、なくてもよいプロパティです（02章 q02 問1）。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ item }</code><h4>省略された値は、プロパティごと付けない</h4></div>
+      <p>省略された引数をそのまま <code>{ item, note }</code> に入れると、値が <code>undefined</code> の <code>note</code> というプロパティができます。「プロパティがない」ことと、「値が <code>undefined</code> のプロパティがある」ことは、別のものです。テストの <code>toStrictEqual</code> は、この 2 つを区別します。そこで、省略されたときは、そのプロパティを書かないオブジェクトを返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 makeOrder を作る。文字列 item と、省略できる文字列 note を受け取り、オブジェクト（item は文字列、note はなくてもよい文字列）を返す
+function makeOrder(item: string, note?: string): { item: string; note?: string } {
+  // note がなければ item だけのオブジェクト、そうでなければ item と note のオブジェクトを返す
+  return note === undefined ? { item } : { item, note };
+}
+// 結果: makeOrder("本") は { item: "本" }、makeOrder("本", "急ぎ") は { item: "本", note: "急ぎ" }</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>makeOrder("本")</code></dt><dd class="r"><code>{ item: "本" }</code></dd><dd class="c">note を付けない</dd></div>
+        <div><dt><code>makeOrder("本", "急ぎ")</code></dt><dd class="r"><code>{ item: "本", note: "急ぎ" }</code></dd><dd class="c"></dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>いつも <code>{ item, note }</code> を返す</h5>
+          <pre><code class="language-typescript">function makeOrder(item: string, note?: string): { item: string; note?: string } {
+  return { item, note };
+}
+// makeOrder("本") は { item: "本", note: undefined }
+// Object.keys(makeOrder("本")) は ["item", "note"]</code></pre>
+          <div class="verdict ng">✕ 型の確認は通りますが、toStrictEqual は { item: "本" } と違うと判定します</div>
+        </div>
+        <div>
+          <h5>省略されたら <code>{ item }</code> を返す</h5>
+          <pre><code class="language-typescript">function makeOrder(item: string, note?: string): { item: string; note?: string } {
+  return note === undefined ? { item } : { item, note };
+}
+// makeOrder("本") は { item: "本" }
+// Object.keys(makeOrder("本")) は ["item"]</code></pre>
+          <div class="verdict ok">○ note というプロパティ自体がありません</div>
+        </div>
+      </div>
+      <p class="memo"><b>なぜ</b>画面に出すと、どちらも <code>note</code> が見当たらないので、違いに気づきにくいです。<code>Object.keys()</code>（02章 q08 問4）でキーを並べると、違いが分かります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeUser を作る。文字列 name と、省略できる数値 age を受け取り、オブジェクト（name は文字列、age はなくてもよい数値）を返す
+export function makeUser() {
+  // age がなければ name だけのオブジェクト、そうでなければ name と age のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のサンプルの <code>makeOrder</code> と同じ形です。戻り値の型は <code>{ name: string; age?: number }</code> と書きます。<code>{ name }</code> は、プロパティの省略記法（02章 q01 問3）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">b があれば平均、なければ a を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function averageOf2() {}</code></pre>
+      <p>数 <code>a</code> と、省略できる数 <code>b</code> を受け取ります。<code>b</code> があれば、<code>a</code> と <code>b</code> の平均を返します。<code>b</code> がなければ、<code>a</code> をそのまま返します。引数は数値 2 つで、2 つめは省略できます。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>averageOf2(4, 6)</code></dt><dd class="r"><code>5</code></dd><dd class="c">(4 + 6) ÷ 2</dd></div>
+          <div><dt><code>averageOf2(4)</code></dt><dd class="r"><code>4</code></dd><dd class="c">b がないので a のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 averageOf2 を作る。数値 a と、省略できる数値 b を受け取り、数値を返す
+export function averageOf2() {
+  // b がなければ a、そうでなければ a と b を足して 2 で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の <code>giftLabel</code> と同じく、<code>b === undefined</code> で分けます。<code>:</code> の後ろでは <code>b</code> は数値として扱えるので、そのまま足せます。足してから割るので、足し算をかっこで囲みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">「&lt;name&gt;」、color があれば「&lt;name:color&gt;」</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function tagText() {}</code></pre>
+      <p>タグの名前 <code>name</code> と、省略できる色 <code>color</code> を受け取ります。<code>color</code> がなければ <code>"&lt;名前&gt;"</code> を、あれば <code>"&lt;名前:色&gt;"</code> を返します。<code>&lt;</code> と <code>&gt;</code> と <code>:</code> は半角です。引数は文字列 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>tagText("重要", "red")</code></dt><dd class="r"><code>"&lt;重要:red&gt;"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>tagText("メモ")</code></dt><dd class="r"><code>"&lt;メモ&gt;"</code></dd><dd class="c">color がないので : も付けない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 tagText を作る。文字列 name と、省略できる文字列 color を受け取り、文字列を返す
+export function tagText() {
+  // color がなければ name を埋め込んだ「&lt;◯&gt;」の文字列、そうでなければ name と color を埋め込んだ「&lt;◯:◯&gt;」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じく、<code>:</code> ごと書き分けるので <code>=== undefined</code> で分けます。<code>?</code> の後ろと <code>:</code> の後ろに、それぞれテンプレートリテラルを書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">文字数が min 以上なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>??</code> を式の途中で使うときのかっこ <code>(min ?? 8)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isLongEnough() {}</code></pre>
+      <p>文字列 <code>text</code> と、省略できる最小の文字数 <code>min</code> を受け取ります。<code>text</code> の文字数が <code>min</code> 以上なら <code>true</code>、そうでなければ <code>false</code> を返します。<code>min</code> を省略したら 8 です。引数は文字列と数値で、数値は省略できます。戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isLongEnough("abcdefgh")</code></dt><dd class="r"><code>true</code></dd><dd class="c">8 文字。min を省略したので 8 以上か</dd></div>
+          <div><dt><code>isLongEnough("abc")</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 文字</dd></div>
+          <div><dt><code>isLongEnough("abc", 3)</code></dt><dd class="r"><code>true</code></dd><dd class="c">3 以上か</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(threshold ?? 5)</code><h4><code>??</code> を式の途中で使うときは、かっこで囲む</h4></div>
+      <p><code>??</code> は、<code>&lt;</code> や <code>+</code> よりも後に計算されます。かっこがないと、先に <code>stock &lt; threshold</code> を計算しようとします。<code>threshold</code> は <code>undefined</code> かもしれないので、型の確認でエラーになります。<code>??</code> の部分をかっこで囲むと、先に「なければ ◯」が決まり、その数で比べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 needsRestock を作る。数値 stock と、省略できる数値 threshold を受け取り、true か false を返す
+function needsRestock(stock: number, threshold?: number): boolean {
+  // stock が threshold（なければ 5）より小さいかどうか（true か false）を返す
+  return stock &lt; (threshold ?? 5);
+}
+// 結果: needsRestock(3) は true、needsRestock(3, 2) は false</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>needsRestock(3)</code></dt><dd class="r"><code>true</code></dd><dd class="c">3 &lt; 5</dd></div>
+        <div><dt><code>needsRestock(3, 2)</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 &lt; 2 ではない</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>かっこなし</h5>
+          <pre><code class="language-typescript">return stock &lt; threshold ?? 5;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。threshold が undefined かもしれないと言われます</div>
+        </div>
+        <div>
+          <h5>かっこあり</h5>
+          <pre><code class="language-typescript">return stock &lt; (threshold ?? 5);</code></pre>
+          <div class="verdict ok">○ 先に threshold（なければ 5）が決まります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>足し算でも同じです。<code>price + fee ?? 0</code> はエラーになり、<code>price + (fee ?? 0)</code> は通ります。<code>.toFixed(digits ?? 0)</code> のように、かっこの中に <code>??</code> だけを書くときは、そのままで大丈夫です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isLongEnough を作る。文字列 text と、省略できる数値 min を受け取り、true か false を返す
+export function isLongEnough() {
+  // text の文字数が min（なければ 8）以上かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>needsRestock</code> と同じ形です。「以上」は <code>&gt;=</code>、文字数は <code>.length</code> です。<code>min ?? 8</code> は、かっこで囲みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">「[INFO] message」の形にする。level は "info" か "warn"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function logText() {}</code></pre>
+      <p>メッセージ <code>message</code> と、省略できるログの種類 <code>level</code> を受け取ります。<code>level</code> は <code>"info"</code> か <code>"warn"</code> のどちらかです。種類を大文字にして <code>[ ]</code> で囲み、半角スペースのあとにメッセージを続けて返します。<code>level</code> を省略したら <code>"info"</code> です。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>logText("起動")</code></dt><dd class="r"><code>"[INFO] 起動"</code></dd><dd class="c">level を省略したので info</dd></div>
+          <div><dt><code>logText("起動", "warn")</code></dt><dd class="r"><code>"[WARN] 起動"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>"info" | "warn"</code>、戻り値が <code>string</code> であることも確かめます。<code>level</code> の型は、リテラル型のユニオン（01章 q07 問1）にします。<code>string</code> にすると、型の確認で落ちます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 logText を作る。文字列 message と、省略できる level（"info" か "warn"）を受け取り、文字列を返す
+export function logText() {
+  // 種類 kind を作り、level（なければ "info"）を入れる
+  // kind を大文字にしたものと message を埋め込んだ「[◯] ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>level?: "info" | "warn"</code> と書きます。大文字にするのは <code>.toUpperCase()</code> です（01章 q02 問18）。変数 <code>kind</code> を作らずに 1 行で書くなら、<code>(level ?? "info").toUpperCase()</code> のように <code>??</code> の部分をかっこで囲みます（問13）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">n にいちばん近い step の倍数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function roundStep() {}</code></pre>
+      <p>数 <code>n</code> と、省略できる刻み <code>step</code> を受け取ります。<code>step</code> の倍数のうち、<code>n</code> にいちばん近いものを返します。<code>step</code> を省略したら 1 です。このときは、<code>n</code> を四捨五入した整数になります。引数は数値 2 つで、2 つめは省略できます。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>roundStep(17, 5)</code></dt><dd class="r"><code>15</code></dd><dd class="c">15 と 20 のうち、15 が近い</dd></div>
+          <div><dt><code>roundStep(18, 5)</code></dt><dd class="r"><code>20</code></dd><dd class="c">20 が近い</dd></div>
+          <div><dt><code>roundStep(2.6)</code></dt><dd class="r"><code>3</code></dd><dd class="c">step を省略したので 1 刻み</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 roundStep を作る。数値 n と、省略できる数値 step を受け取り、数値を返す
+export function roundStep() {
+  // 刻み s を作り、step（なければ 1）を入れる
+  // n を s で割って四捨五入し、s を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>step ?? 1</code> は 2 回使うので、先に変数 <code>s</code> に入れます。四捨五入は <code>Math.round()</code> です（01章 q01 問13）。17 を 5 で割ると 3.4 で、四捨五入すると 3、5 を掛けると 15 です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">省略できる age だけを受け取り、「30歳」か「年齢不明」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function ageLabel() {}</code></pre>
+      <p>省略できる年齢 <code>age</code> だけを受け取ります。<code>age</code> があれば <code>"30歳"</code> の形の文字列を、なければ <code>"年齢不明"</code> を返します。引数はこの 1 つだけなので、<code>ageLabel()</code> のように何も渡さずに呼べます。引数は数値で、省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ageLabel(30)</code></dt><dd class="r"><code>"30歳"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ageLabel()</code></dt><dd class="r"><code>"年齢不明"</code></dd><dd class="c">何も渡さない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が省略できる <code>number</code> 1 つだけ、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ageLabel を作る。省略できる数値 age を受け取り、文字列を返す
+export function ageLabel() {
+  // age がなければ "年齢不明"、そうでなければ age を埋め込んだ「◯歳」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>かっこの中は <code>age?: number</code> だけです。中身は問1 の <code>giftLabel</code> と同じく、<code>age === undefined</code> で分けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">a と、渡された b と c だけを足す</span>
+      <span class="q-new">新しく出てくる書き方：省略できる引数を続けて並べる <code>b?: number, c?: number</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumUpTo3() {}</code></pre>
+      <p>数 <code>a</code> と、省略できる数 <code>b</code> と <code>c</code> を受け取ります。渡された数だけを足して返します。引数は数値 3 つで、2 つめと 3 つめは省略できます。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumUpTo3(1)</code></dt><dd class="r"><code>1</code></dd><dd class="c">b と c を省略した</dd></div>
+          <div><dt><code>sumUpTo3(1, 2)</code></dt><dd class="r"><code>3</code></dd><dd class="c">c を省略した</dd></div>
+          <div><dt><code>sumUpTo3(1, 2, 3)</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code> と、省略できる <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">shipping?: number, discount?: number</code><h4>省略できる引数を続けて並べる</h4></div>
+      <p>省略できる引数は、続けていくつでも書けます。呼び出す側は、後ろの引数から順に省略します。途中の引数だけを飛ばす書き方はありません。後ろの引数だけを渡したいときは、手前の引数に <code>undefined</code> を渡します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 orderTotal を作る。数値 price と、省略できる数値 shipping と、省略できる数値 discount を受け取り、数値を返す
+function orderTotal(price: number, shipping?: number, discount?: number): number {
+  // price に shipping（なければ 0）を足し、discount（なければ 0）を引いた数を返す
+  return price + (shipping ?? 0) - (discount ?? 0);
+}
+// 結果: orderTotal(1000) は 1000、orderTotal(1000, 500) は 1500、orderTotal(1000, 500, 200) は 1300</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>orderTotal(1000)</code></dt><dd class="r"><code>1000</code></dd><dd class="c">shipping と discount を省略した</dd></div>
+        <div><dt><code>orderTotal(1000, 500)</code></dt><dd class="r"><code>1500</code></dd><dd class="c">discount を省略した</dd></div>
+        <div><dt><code>orderTotal(1000, 500, 200)</code></dt><dd class="r"><code>1300</code></dd><dd class="c"></dd></div>
+        <div><dt><code>orderTotal(1000, undefined, 200)</code></dt><dd class="r"><code>800</code></dd><dd class="c">shipping を省略して、discount だけ渡す</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>orderTotal(1000, , 200)</code> のように、<code>,</code> の間を空けて飛ばすことはできません。型の確認より前に、書き方の誤りとしてエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumUpTo3 を作る。数値 a と、省略できる数値 b と、省略できる数値 c を受け取り、数値を返す
+export function sumUpTo3() {
+  // a に b（なければ 0）と c（なければ 0）を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問17 のサンプルの <code>orderTotal</code> と同じ形で、引くところが足すところに変わります。渡されなかった数は 0 として足せば、足していないのと同じです。<code>??</code> の部分は、それぞれかっこで囲みます（問13）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">「/path?query」、query がなければ「/path」</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function buildUrl() {}</code></pre>
+      <p>パス <code>path</code> と、省略できるクエリ <code>query</code> を受け取ります。クエリは、URL の <code>?</code> の後ろに付く条件の部分です。<code>query</code> があれば、パスの後ろに <code>?</code> とクエリをつないで返します。<code>query</code> がなければ、パスだけを返します。引数は文字列 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>buildUrl("/search", "q=ts")</code></dt><dd class="r"><code>"/search?q=ts"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>buildUrl("/home")</code></dt><dd class="r"><code>"/home"</code></dd><dd class="c">? も付けない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 buildUrl を作る。文字列 path と、省略できる文字列 query を受け取り、文字列を返す
+export function buildUrl() {
+  // query がなければ path、そうでなければ path と query を埋め込んだ「◯?◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じく、<code>?</code> ごと書き分けるので <code>=== undefined</code> で分けます。テンプレートリテラルの中の <code>?</code> は、ただの文字です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">min 以上 max 以下なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function inRange() {}</code></pre>
+      <p>数 <code>n</code> と、省略できる下限 <code>min</code> と上限 <code>max</code> を受け取ります。<code>n</code> が <code>min</code> 以上で、<code>max</code> 以下なら <code>true</code>、そうでなければ <code>false</code> を返します。<code>min</code> を省略したら 0、<code>max</code> を省略したら 100 です。引数は数値 3 つで、2 つめと 3 つめは省略できます。戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>inRange(50)</code></dt><dd class="r"><code>true</code></dd><dd class="c">0 以上 100 以下</dd></div>
+          <div><dt><code>inRange(150)</code></dt><dd class="r"><code>false</code></dd><dd class="c">100 を超えている</dd></div>
+          <div><dt><code>inRange(150, 0, 200)</code></dt><dd class="r"><code>true</code></dd><dd class="c">0 以上 200 以下</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と、省略できる <code>number</code> と、省略できる <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 inRange を作る。数値 n と、省略できる数値 min と、省略できる数値 max を受け取り、true か false を返す
+export function inRange() {
+  // n が min（なければ 0）以上、かつ n が max（なければ 100）以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。<code>min ?? 0</code> と <code>max ?? 100</code> は、それぞれかっこで囲みます（問13）。引数の並べ方は問17 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">頭文字を「T」、last があれば「T.Y」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function initialsOf() {}</code></pre>
+      <p>名 <code>first</code> と、省略できる姓 <code>last</code> を受け取ります。<code>last</code> がなければ、名の先頭 1 文字を返します。<code>last</code> があれば、名の先頭 1 文字と姓の先頭 1 文字を <code>.</code> でつないで返します。引数は文字列 2 つで、2 つめは省略できます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>initialsOf("Taro", "Yamada")</code></dt><dd class="r"><code>"T.Y"</code></dd><dd class="c">最後に . は付けない</dd></div>
+          <div><dt><code>initialsOf("Taro")</code></dt><dd class="r"><code>"T"</code></dd><dd class="c">last がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 initialsOf を作る。文字列 first と、省略できる文字列 last を受け取り、文字列を返す
+export function initialsOf() {
+  // 頭文字 head を作り、first の 0 文字目から 1 文字目の前までを取り出したものを入れる
+  // last がなければ head、そうでなければ head と、last の 0 文字目から 1 文字目の前までを取り出したものを埋め込んだ「◯.◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>先頭の 1 文字は <code>.slice(0, 1)</code> です（01章 q02 問10）。<code>head</code> は両方の場合で使うので、先に変数にします。<code>last</code> の先頭を取り出すのは、<code>last === undefined</code> で分けた後ろ側です。そこでは <code>last</code> は文字列として扱えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c05-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">あいさつ・名前の組み立て・タグの作成</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greet() {}
+
+export function formatName() {}
+
+export function createTag() {}</code></pre>
+      <p>省略できる引数を使って、次の 3 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>greet(name, title?)</code>：<code>title</code> があれば <code>"山田部長、こんにちは"</code>、なければ <code>"山田さん、こんにちは"</code> の形で返します。</li>
+        <li><code>formatName(last, first?, middle?)</code>：渡された部分だけを半角スペースでつないで返します。つなぐ順番は <code>last</code>、<code>middle</code>、<code>first</code> です。引数の順番とは違うので気をつけます。</li>
+        <li><code>createTag(name, color?)</code>：<code>name</code> と <code>color</code> を持つオブジェクトを返します。<code>color</code> がなければ <code>"gray"</code> にします。</li>
+      </ol>
+      <p>「説明すること」もあります。オプション引数を、必須の引数（省略できない引数）より前に置けない理由を、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greet("山田", "部長")</code></dt><dd class="r"><code>"山田部長、こんにちは"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>greet("山田")</code></dt><dd class="r"><code>"山田さん、こんにちは"</code></dd><dd class="c">title がない</dd></div>
+          <div><dt><code>formatName("Kennedy", "John", "F")</code></dt><dd class="r"><code>"Kennedy F John"</code></dd><dd class="c">last、middle、first の順</dd></div>
+          <div><dt><code>formatName("山田", "太郎")</code></dt><dd class="r"><code>"山田 太郎"</code></dd><dd class="c">middle がない</dd></div>
+          <div><dt><code>formatName("山田")</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c">first も middle もない</dd></div>
+          <div><dt><code>createTag("重要", "red")</code></dt><dd class="r"><code>{ name: "重要", color: "red" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>createTag("メモ")</code></dt><dd class="r"><code>{ name: "メモ", color: "gray" }</code></dd><dd class="c">color がないので gray</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>greet</code> は、引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>string</code> です。<code>formatName</code> は、引数が <code>string</code> と、省略できる <code>string</code> 2 つ、戻り値が <code>string</code> です。<code>createTag</code> は、引数が <code>string</code> と、省略できる <code>string</code>、戻り値が <code>{ name: string; color: string }</code> です。<code>createTag</code> の戻り値では、<code>color</code> はいつもあるので <code>?</code> を付けません。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greet を作る。文字列 name と、省略できる文字列 title を受け取り、文字列を返す
+export function greet() {
+  // title がなければ name を埋め込んだ「◯さん、こんにちは」の文字列、そうでなければ name と title を埋め込んだ「◯◯、こんにちは」の文字列を返す
+}
+
+// 関数 formatName を作る。文字列 last と、省略できる文字列 first と、省略できる文字列 middle を受け取り、文字列を返す
+export function formatName() {
+  // 名前 text を入れ直せる変数として作り、last を入れる
+  // もし middle があるなら
+  //   text に、text と middle を埋め込んだ「◯ ◯」の文字列を入れ直す
+  // もし first があるなら
+  //   text に、text と first を埋め込んだ「◯ ◯」の文字列を入れ直す
+  // text を返す
+}
+
+// 関数 createTag を作る。文字列 name と、省略できる文字列 color を受け取り、オブジェクト（name は文字列、color は文字列）を返す
+export function createTag() {
+  // name が name、color が color（なければ "gray"）のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>greet</code> は問1 の <code>giftLabel</code> と同じ形です。<code>title ?? "さん"</code> と書いてもかまいません。<code>formatName</code> は、<code>let</code> で作った <code>text</code> に、あるものだけを後ろにつなげていきます。「もし middle があるなら」は <code>if (middle !== undefined)</code> です。<code>middle</code> の <code>if</code> を先に書くと、順番が <code>last</code>、<code>middle</code>、<code>first</code> になります。<code>createTag</code> は、<code>{ name, color: color ?? "gray" }</code> のように、<code>color</code> の値の位置に <code>??</code> を書きます。説明することは、<code>greet</code> の引数の順番を入れ替えて <code>(title?: string, name: string)</code> と書いてみて、型の確認が何と言うかを見てから考えます。呼び出す側で <code>greet("山田")</code> と書いたときのことも考えてみます。試した書き方は、提出する前に元に戻します。</p></details>
+    </div>
+  </section>
+</section>

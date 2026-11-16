@@ -1,0 +1,978 @@
+<section class="sec" id="c08-q04">
+  <div class="sec-h">
+    <span class="eyebrow">08章 非同期処理</span>
+    <h2>q04 非同期のエラー処理</h2>
+    <p>失敗するかもしれない非同期の処理を扱う関数を 20 個書きます。使うのは、<code>async</code>・<code>await</code> と、04章 q05 で出た <code>try</code> / <code>catch</code> / <code>finally</code> です。Promise が値を持って終わることを「解決する」、エラーで終わることを「失敗する」と書きます。型 <code>Task</code> は「呼ぶたびに処理を始め、数値で解決するか失敗する関数」の型で、ファイルに書いてあります。呼んだ回数だけ処理が走るので、やり直すときは <code>task</code> をもう一度呼びます。<code>catch</code> で受け取る値の型は <code>unknown</code> です。<code>message</code> を使う前に、<code>instanceof Error</code> で確かめます。<code>try</code> の中で Promise を返すときは、<code>return await</code> と書きます。引数と戻り値には型注釈を付けます。テストは、返す値のほかに、引数と戻り値の型も確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c08-q04-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">成功ならその値、失敗なら undefined を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>await</code> と <code>try</code> / <code>catch</code>、<code>return await</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Task = () =&gt; Promise&lt;number&gt;;
+
+export function safeRun() {}</code></pre>
+      <p><code>Task</code> は、引数を受け取らず、<code>Promise&lt;number&gt;</code> を返す関数の型です（関数の型は 05章 q07 問1）。<code>task()</code> とかっこを付けて呼ぶたびに、新しく処理が始まります。<code>safeRun</code> は、<code>task</code> を呼んで待ちます。成功したらその値を、失敗したら <code>undefined</code> を返します。失敗を外に出さずに、ここで受け止めます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>safeRun(5 で解決する task)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>safeRun(失敗する task)</code></dt><dd class="r"><code>undefined</code> で解決する</dd><dd class="c">失敗はしない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code>、戻り値が <code>Promise&lt;number | undefined&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">try { await … } catch { }</code><h4>失敗した Promise を catch で受け止める</h4></div>
+      <p>08章 q01 問10 では、失敗した Promise を <code>.catch()</code> で受け止めました。<code>async</code> 関数の中では、04章 q05 問5 の <code>try</code> / <code>catch</code> でも受け止められます。<code>await</code> で待った Promise が失敗すると、その行で例外が投げられたのと同じになるからです。<code>catch</code> に届くのは、Promise を失敗させたエラーです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 fetchStock を作る。文字列の code を受け取り、数値で解決する Promise を返す
+function fetchStock(code: string): Promise&lt;number&gt; {
+  // もし code が "A-1" と等しいなら
+  if (code === "A-1") {
+    // 12 で解決する Promise を返す
+    return Promise.resolve(12);
+  }
+  // "商品がありません" というメッセージのエラーで失敗する Promise を返す
+  return Promise.reject(new Error("商品がありません"));
+}
+
+// 非同期の関数 orderLabel を作る。文字列の code を受け取り、文字列で解決する Promise を返す
+async function orderLabel(code: string): Promise&lt;string&gt; {
+  // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+  try {
+    // fetchStock に code を渡して呼び、終わるのを待つ
+    await fetchStock(code);
+    // "注文できます" を返す
+    return "注文できます";
+  } catch {
+    // （例外が投げられたら）"在庫を確かめられません" を返す
+    return "在庫を確かめられません";
+  }
+}
+// 結果: orderLabel("A-1") は "注文できます" で解決し、orderLabel("B-9") は "在庫を確かめられません" で解決する</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>await fetchStock("A-1")</code></dt><dd class="r"><code>12</code></dd><dd class="c">解決した値になる</dd></div>
+        <div><dt><code>await fetchStock("B-9")</code></dt><dd class="r">例外が投げられる</dd><dd class="c">投げられるのは "商品がありません" のエラー</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b><code>orderLabel</code> は、失敗を <code>catch</code> で受け止めて文字列を返します。そのため、<code>orderLabel("B-9")</code> が返す Promise は失敗しません。<code>"在庫を確かめられません"</code> で解決します。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/await">サバイバルTypeScript「await」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">return await</code><h4>try の中で Promise を返すときは await を付ける</h4></div>
+      <p><code>async</code> 関数では、Promise をそのまま <code>return</code> しても、呼んだ側はその値を受け取れます。ただし、<code>try</code> の中では違いが出ます。<code>await</code> がないと、関数は Promise の結果を待たずに <code>try</code> を抜けます。あとで Promise が失敗しても、もう <code>catch</code> は動きません。失敗は、そのまま呼んだ側に届きます。<code>return await</code> と書くと、<code>try</code> の中で結果を待つので、失敗が <code>catch</code> に届きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 stockOrZero を作る。文字列の code を受け取り、数値で解決する Promise を返す
+async function stockOrZero(code: string): Promise&lt;number&gt; {
+  // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+  try {
+    // fetchStock に code を渡して呼び、待った値を返す
+    return await fetchStock(code);
+  } catch {
+    // （例外が投げられたら）0 を返す
+    return 0;
+  }
+}
+// 結果: stockOrZero("A-1") は 12 で解決し、stockOrZero("B-9") は 0 で解決する</code></pre>
+      </div>
+      <p><code>fetchStock</code> は、1 つ目の項目のサンプルの関数です。</p>
+      <div class="cmp">
+        <div>
+          <h5>await がない</h5>
+          <pre><code class="language-typescript">try {
+  return fetchStock(code);
+} catch {
+  return 0;
+}</code></pre>
+          <div class="verdict ng">✕ <code>stockOrZero("B-9")</code> は 0 にならず、"商品がありません" で失敗します</div>
+        </div>
+        <div>
+          <h5>return await</h5>
+          <pre><code class="language-typescript">try {
+  return await fetchStock(code);
+} catch {
+  return 0;
+}</code></pre>
+          <div class="verdict ok">○ 失敗が catch に届き、0 で解決します</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b>このガイドの設定では、<code>try</code> の中の <code>return</code> に <code>await</code> がないと、ESLint の <code>@typescript-eslint/return-await</code> がエラーにします。型の確認ではエラーにならないので、ESLint の結果も見ます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function safeRun(task: Task): Promise&lt;number | undefined&gt; {
+  // 次の中を試す
+  //   task を呼び、待った値を返す
+  // 例外が投げられたら
+  //   undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「次の中を試す」は <code>try {</code>、「例外が投げられたら」は <code>} catch {</code> です。2 つ目のサンプルの <code>stockOrZero</code> と同じ形で、<code>fetchStock(code)</code> が <code>task()</code> に、<code>0</code> が <code>undefined</code> になります。<code>await</code> を使うので、関数の前に <code>async</code> を付けます。<code>undefined</code> も返すので、戻り値の型は <code>Promise&lt;number | undefined&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c08-q04-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">成功ならその値、失敗なら fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function runOr() {}</code></pre>
+      <p><code>task</code> と数値 <code>fallback</code> を受け取ります。<code>task</code> を呼んで待ち、成功したらその値を、失敗したら <code>fallback</code> を返します。<code>fallback</code> は「うまくいかなかったときに代わりに使う値」という意味です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>runOr(5 で解決する task, 0)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>runOr(失敗する task, -1)</code></dt><dd class="r"><code>-1</code> で解決する</dd><dd class="c">fallback の値</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function runOr(task: Task, fallback: number): Promise&lt;number&gt; {
+  // 次の中を試す
+  //   task を呼び、待った値を返す
+  // 例外が投げられたら
+  //   fallback を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>catch</code> の中で返す値が <code>fallback</code> になります。どちらも数値なので、戻り値の型は <code>Promise&lt;number&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c08-q04-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">成功なら "OK"、失敗ならエラーのメッセージを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function errorText() {}</code></pre>
+      <p><code>task</code> を呼んで待ちます。成功したら <code>"OK"</code> を返します。<code>Error</code> で失敗したら、その <code>message</code> を返します。<code>Error</code> でないもの（文字列など）で失敗したら、<code>"不明なエラー"</code> を返します。成功した値は使いません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorText(1 で解決する task)</code></dt><dd class="r"><code>"OK"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>errorText(Error("通信エラー") で失敗する task)</code></dt><dd class="r"><code>"通信エラー"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>errorText("文字列" を投げる task)</code></dt><dd class="r"><code>"不明なエラー"</code> で解決する</dd><dd class="c">Error でないものが投げられた</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function errorText(task: Task): Promise&lt;string&gt; {
+  // 次の中を試す
+  //   task を呼び、終わるのを待つ
+  //   "OK" を返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>値を使わずに待つだけなら、問1 の 1 つ目のサンプルのように <code>await task();</code> と書きます。「例外が投げられたら、投げられたものを error で受け取る」は <code>} catch (error) {</code>（04章 q05 問18）です。最後の行は、04章 q05 問10 と同じく、条件演算子 <code>? :</code> で書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c08-q04-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">成功と失敗を Result の形にして返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Result = { ok: true; value: number } | { ok: false; message: string };
+
+export function toResult() {}</code></pre>
+      <p><code>task</code> を呼んで待ち、結果を <code>Result</code> の形のオブジェクトにして返します。成功したら <code>{ ok: true, value: 値 }</code> です。失敗したら <code>{ ok: false, message: メッセージ }</code> です。<code>Error</code> でないもので失敗したときの <code>message</code> は、<code>"不明なエラー"</code> にします。失敗も、Promise の失敗にせずに、値として返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toResult(5 で解決する task)</code></dt><dd class="r"><code>{ ok: true, value: 5 }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>toResult(Error("x") で失敗する task)</code></dt><dd class="r"><code>{ ok: false, message: "x" }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>toResult("文字列" を投げる task)</code></dt><dd class="r"><code>{ ok: false, message: "不明なエラー" }</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code>、戻り値が <code>Promise&lt;Result&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function toResult(task: Task): Promise&lt;Result&gt; {
+  // 次の中を試す
+  //   ok が true で、value に task を呼んで待った値を持つオブジェクトを返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   ok が false で、message に「error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー"」を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>await</code> は式の途中にも書けます。<code>{ ok: true, value: await task() }</code> のように、オブジェクトの中にまとめて書けます。先に <code>const</code> の変数に入れてから返しても、同じ結果です。失敗のほうの <code>message</code> は、問3 の最後の行と同じ条件演算子です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c08-q04-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">失敗したら、何をしていたかを足したエラーを投げ直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withContext() {}</code></pre>
+      <p><code>task</code> と文字列 <code>context</code> を受け取ります。<code>context</code> は「何をしていたか」を表す文字列で、<code>"保存"</code> などです。<code>task</code> が成功したら、その値を返します。失敗したら、<code>`${context}: ${元の message}`</code> というメッセージの、新しいエラーを投げます。新しいエラーには、<code>{ cause: error }</code> で元の失敗を持たせます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withContext(5 で解決する task, "保存")</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>withContext(Error("x") で失敗する task, "保存")</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は Error で、message は "保存: x"</dd></div>
+          <div><dt>そのエラーの <code>cause</code></dt><dd class="r">元のエラー</dd><dd class="c">task を失敗させた Error("x") そのもの</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>string</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function withContext(task: Task, context: string): Promise&lt;number&gt; {
+  // 次の中を試す
+  //   task を呼び、待った値を返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   文字列 message を作り、error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー" を入れる
+  //   context と message を埋め込んだ「◯: ◯」というメッセージで、cause に error を入れたエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最後の行は、04章 q05 問18 の 2 つ目のサンプル（<code>wrapped</code>）と同じ形のエラーを、<code>throw</code> で投げます。メッセージはテンプレートリテラルで組み立てます。<code>async</code> 関数の中でエラーを投げると、関数が返す Promise が、そのエラーで失敗します。<code>error</code> の型は <code>unknown</code> なので、<code>.message</code> を読む前に <code>instanceof Error</code> で確かめます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c08-q04-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">失敗したら 1 回だけやり直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function retryOnce() {}</code></pre>
+      <p><code>task</code> を呼びます。成功したら、その値を返します。失敗したら、<code>task</code> をもう一度呼んで、やり直します。やり直しも失敗したら、その失敗をそのまま投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>retryOnce(1 回目だけ失敗し、そのあと 5 で解決する task)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">task を呼んだ回数は 2</dd></div>
+          <div><dt><code>retryOnce(2 回失敗する task)</code></dt><dd class="r">失敗する</dd><dd class="c">2 回目の失敗の "失敗 2"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。テストの task は、失敗するとき <code>"失敗 1"</code>、<code>"失敗 2"</code> のように、何回目かを入れたメッセージのエラーを投げます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function retryOnce(task: Task): Promise&lt;number&gt; {
+  // 次の中を試す
+  //   task を呼び、待った値を返す
+  // 例外が投げられたら
+  //   もう一度 task を呼び、待った値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>catch</code> の中にも、<code>try</code> の中と同じ <code>return await task();</code> を書きます。<code>catch</code> の中の Promise が失敗すると、その失敗は受け止められずに外へ出ます。そのまま <code>retryOnce</code> が返す Promise の失敗になるので、投げ直す処理は書かなくてかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c08-q04-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">成功するまで、attempts 回までやり直す</span>
+      <span class="q-new">新しく出てくる書き方：投げ直す <code>throw error;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function retry() {}</code></pre>
+      <p><code>task</code> と数値 <code>attempts</code> を受け取ります。<code>attempts</code> は「何回まで試すか」です。成功するまで、全部で <code>attempts</code> 回まで <code>task</code> を呼びます。成功したら、その値を返し、それ以上は呼びません。<code>attempts</code> 回とも失敗したら、最後の失敗を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>retry(2 回失敗し、そのあと 5 で解決する task, 3)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">task を呼んだ回数は 3</dd></div>
+          <div><dt><code>retry(ずっと失敗する task, 3)</code></dt><dd class="r">失敗する</dd><dd class="c">最後の失敗の "失敗 3"。task を呼んだ回数は 3</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">throw error;</code><h4>受け取った失敗を、そのまま投げ直す</h4></div>
+      <p><code>catch</code> で受け取ったものは、<code>throw</code> でもう一度投げられます。これを「投げ直す」と言います。記録を残してから、失敗は呼んだ側に伝えたいときに使います。受け取った値は <code>unknown</code> 型のままで投げられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 stockWithLog を作る。文字列の code と文字列の配列 log を受け取り、数値で解決する Promise を返す
+async function stockWithLog(code: string, log: string[]): Promise&lt;number&gt; {
+  // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+  try {
+    // fetchStock に code を渡して呼び、待った値を返す
+    return await fetchStock(code);
+  } catch (error) {
+    // （例外が投げられたら、投げられたものを error で受け取る）log の最後に、code を埋め込んだ「取得に失敗: ◯」を足す
+    log.push(`取得に失敗: ${code}`);
+    // error を投げ直す
+    throw error;
+  }
+}
+// 結果: stockWithLog("B-9", log) は "商品がありません" で失敗し、log は ["取得に失敗: B-9"] になる</code></pre>
+      </div>
+      <p><code>fetchStock</code> は、問1 のサンプルの関数です。</p>
+      <dl class="eg">
+        <div><dt><code>stockWithLog("A-1", log)</code></dt><dd class="r"><code>12</code> で解決する</dd><dd class="c">log は空のまま</dd></div>
+        <div><dt><code>stockWithLog("B-9", log)</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は、fetchStock の "商品がありません" のエラーそのもの</dd></div>
+      </dl>
+      <p class="memo"><b>決まり</b><code>catch</code> の中に <code>throw error;</code> だけを書くと、ESLint の <code>no-useless-catch</code> がエラーにします。受け止めて何もせずに投げ直すなら、<code>try</code> / <code>catch</code> は要らないからです。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function retry(task: Task, attempts: number): Promise&lt;number&gt; {
+  // 最後の失敗 lastError を入れ直せる変数として作り、型を unknown にする
+  // i を 0 から、attempts より小さい間 1 ずつ増やしながらくり返す
+  //   次の中を試す
+  //     task を呼び、待った値を返す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     lastError に error を入れ直す
+  // lastError を投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、04章 q05 問16 の <code>let order: unknown;</code> と同じ形です。<code>try</code> の中の <code>return</code> は、くり返しの途中でも関数ごと終わります。成功した回で終わるので、残りの回は呼びません。失敗した回は <code>lastError</code> に入れておき、くり返しが終わったら <code>throw lastError;</code> で投げます。サンプルの <code>throw error;</code> と同じく、<code>unknown</code> 型のまま投げられます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c08-q04-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">成功までに何回呼んだかを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function attemptsNeeded() {}</code></pre>
+      <p><code>task</code> と数値 <code>max</code> を受け取ります。成功するまで、全部で <code>max</code> 回まで <code>task</code> を呼びます。成功したら、成功までに呼んだ回数を返します。<code>max</code> 回とも失敗したら、最後の失敗を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>attemptsNeeded(2 回失敗する task, 5)</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c">3 回目で成功</dd></div>
+          <div><dt><code>attemptsNeeded(すぐ成功する task, 5)</code></dt><dd class="r"><code>1</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>attemptsNeeded(ずっと失敗する task, 2)</code></dt><dd class="r">失敗する</dd><dd class="c">最後の失敗の "失敗 2"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function attemptsNeeded(task: Task, max: number): Promise&lt;number&gt; {
+  // 最後の失敗 lastError を入れ直せる変数として作り、型を unknown にする
+  // i を 1 から、max 以下の間 1 ずつ増やしながらくり返す
+  //   次の中を試す
+  //     task を呼び、終わるのを待つ
+  //     i を返す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     lastError に error を入れ直す
+  // lastError を投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。返すのは呼んだ回数です。<code>i</code> を 1 から数えると、成功した回の <code>i</code> がそのまま答えになります。「<code>max</code> 以下の間」は <code>i &lt;= max</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c08-q04-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">前から順に試し、最初に成功した値を返す</span>
+      <span class="q-new">新しく出てくる書き方：何もしない <code>catch</code> に書くコメント</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstSuccess() {}</code></pre>
+      <p><code>Task</code> の配列 <code>tasks</code> を受け取ります。前から順番に 1 つずつ呼んで待ち、最初に成功した値を返します。成功したら、その後ろの task は呼びません。全部失敗したら、<code>"すべて失敗しました"</code> というメッセージのエラーを投げます。<code>tasks</code> が空のときも、同じエラーです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstSuccess([失敗する task, 7 で解決する task, 8 で解決する task])</code></dt><dd class="r"><code>7</code> で解決する</dd><dd class="c">3 つ目の task は 1 回も呼ばれない</dd></div>
+          <div><dt><code>firstSuccess([失敗する task, 失敗する task])</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "すべて失敗しました"</dd></div>
+          <div><dt><code>firstSuccess([])</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "すべて失敗しました"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることを確かめます。引数の型は、<code>Task</code> の読み取り専用の配列 <code>readonly Task[]</code>（02章 q04 問1）にします。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">catch { // … }</code><h4>何もしない catch には、わけをコメントで書く</h4></div>
+      <p>失敗したら何もせずに先へ進みたいときは、<code>catch</code> の中に処理を書きません。ただし、中身がまったくない <code>{ }</code> は、ESLint の <code>no-empty</code> がエラーにします。書き忘れと見分けがつかないからです。中に、なぜ何もしないのかをコメントで書きます。コメントがあれば、エラーになりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 countInStock を作る。文字列の読み取り専用の配列 codes を受け取り、数値で解決する Promise を返す
+async function countInStock(codes: readonly string[]): Promise&lt;number&gt; {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  let count = 0;
+  // codes から 1 つずつ code に取り出してくり返す
+  for (const code of codes) {
+    // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+    try {
+      // fetchStock に code を渡して呼び、終わるのを待つ
+      await fetchStock(code);
+      // count に 1 を足す
+      count += 1;
+    } catch {
+      // 取得できない商品は数えない
+    }
+  }
+  // count を返す
+  return count;
+}
+// 結果: countInStock(["A-1", "B-9", "A-1"]) は 2 で解決する</code></pre>
+      </div>
+      <p><code>fetchStock</code> は、問1 のサンプルの関数です。</p>
+      <div class="cmp">
+        <div>
+          <h5>中身がない</h5>
+          <pre><code class="language-typescript">} catch {}</code></pre>
+          <div class="verdict ng">✕ ESLint の no-empty がエラーにします</div>
+        </div>
+        <div>
+          <h5>わけをコメントで書く</h5>
+          <pre><code class="language-typescript">} catch {
+  // 取得できない商品は数えない
+}</code></pre>
+          <div class="verdict ok">○ 何もしないことが、読む人に伝わります</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function firstSuccess(tasks: readonly Task[]): Promise&lt;number&gt; {
+  // tasks から 1 つずつ task に取り出してくり返す
+  //   次の中を試す
+  //     task を呼び、待った値を返す
+  //   例外が投げられたら
+  //     （何もせずに、次の task へ進む。わけをコメントで書く）
+  // "すべて失敗しました" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>成功した回の <code>return</code> で関数が終わるので、後ろの task は呼ばれません。<code>catch</code> の中は、サンプルのように、わけを書いたコメントだけにします。くり返しを最後まで回りきったら、全部失敗したということなので、最後の行でエラーを投げます。<code>tasks</code> が空のときは、くり返しが 1 回も回らずに最後の行に来ます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c08-q04-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">全部を同時に呼び、失敗した数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countFailures() {}</code></pre>
+      <p><code>Task</code> の配列 <code>tasks</code> を受け取ります。全部の task を同時に呼び、<code>Promise.allSettled</code> で全部が終わるのを待ちます。そのうち、失敗した数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countFailures([成功する task, 失敗する task, 失敗する task])</code></dt><dd class="r"><code>2</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>countFailures([])</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることを確かめます。引数の型は <code>readonly Task[]</code> にします。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function countFailures(tasks: readonly Task[]): Promise&lt;number&gt; {
+  // 結果の配列 results を作り、tasks のそれぞれを呼んだ Promise の配列を Promise.allSettled に渡し、待った値を入れる
+  // results のうち、status が "rejected" のものだけを集めた配列の長さを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>tasks.map((task) =&gt; task())</code> で、全部の task を呼んだ Promise の配列ができます。<code>map</code> の中で呼んだときに、全部の処理が同時に始まります。<code>Promise.allSettled</code>（08章 q01 問17）は、全部が終わるのを待ち、成功も失敗も <code>status</code> を持つオブジェクトにして並べます。失敗は <code>status</code> が <code>"rejected"</code> です。集めるのは <code>filter</code>（02章 q04 問7）、数は <code>.length</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c08-q04-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">成功しても失敗しても、最後に片付けをする</span>
+      <span class="q-new">新しく出てくる書き方：<code>catch</code> のない <code>try</code> / <code>finally</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withCleanup() {}</code></pre>
+      <p><code>task</code> と、片付けをする関数 <code>cleanup</code> を受け取ります。<code>task</code> を呼んで待ち、その結果を返します。成功ならその値で解決し、失敗ならその失敗をそのまま投げます。どちらの場合も、最後に <code>cleanup()</code> を 1 回呼びます。<code>cleanup</code> は、引数を受け取らず、何も返さない関数です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withCleanup(5 で解決する task, cleanup)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">cleanup は 1 回呼ばれる</dd></div>
+          <div><dt><code>withCleanup(Error("x") で失敗する task, cleanup)</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は "x" のまま。cleanup は 1 回呼ばれる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>() =&gt; void</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。<code>void</code> は 04章 q05 問13 で出ました。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">try { } finally { }</code><h4>catch を書かずに、最後の処理だけを付ける</h4></div>
+      <p>04章 q05 問19 では、<code>try</code> / <code>catch</code> の後ろに <code>finally</code> を付けました。<code>catch</code> を書かずに、<code>try</code> のすぐ後ろに <code>finally</code> を書くこともできます。このときは、失敗を受け止めません。<code>finally</code> の中を実行してから、失敗はそのまま呼んだ側に届きます。成功のときは、<code>finally</code> の中を実行してから値を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 loadStockLabel を作る。文字列の code と文字列の配列 screen を受け取り、文字列で解決する Promise を返す
+async function loadStockLabel(code: string, screen: string[]): Promise&lt;string&gt; {
+  // screen の最後に "読み込み中を表示" を足す
+  screen.push("読み込み中を表示");
+  // 次の中を試す
+  try {
+    // 在庫 stock を作り、fetchStock に code を渡して呼び、待った値を入れる
+    const stock = await fetchStock(code);
+    // stock を埋め込んだ「在庫 ◯ 個」を返す
+    return `在庫 ${stock} 個`;
+  } finally {
+    // （最後に、例外があってもなくても）screen の最後に "読み込み中を消す" を足す
+    screen.push("読み込み中を消す");
+  }
+}
+// 結果: loadStockLabel("B-9", screen) は "商品がありません" で失敗し、screen は ["読み込み中を表示", "読み込み中を消す"] になる</code></pre>
+      </div>
+      <p><code>fetchStock</code> は、問1 のサンプルの関数です。</p>
+      <dl class="eg">
+        <div><dt><code>loadStockLabel("A-1", screen)</code></dt><dd class="r"><code>"在庫 12 個"</code> で解決する</dd><dd class="c">screen は ["読み込み中を表示", "読み込み中を消す"]</dd></div>
+        <div><dt><code>loadStockLabel("B-9", screen)</code></dt><dd class="r">失敗する</dd><dd class="c">screen は ["読み込み中を表示", "読み込み中を消す"]</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>try</code> の中を <code>return fetchStock(code);</code> のように <code>await</code> なしで書くと、Promise の結果を待たずに <code>finally</code> が実行されます。読み込みが終わる前に「読み込み中を消す」が足されてしまいます。ここでも <code>return await</code> と書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function withCleanup(task: Task, cleanup: () =&gt; void): Promise&lt;number&gt; {
+  // 次の中を試す
+  //   task を呼び、待った値を返す
+  // 最後に、例外があってもなくても
+  //   cleanup を呼ぶ
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「最後に、例外があってもなくても」は <code>} finally {</code> です。<code>catch</code> は書きません。失敗のときは、<code>cleanup()</code> を呼んだあとで、その失敗がそのまま <code>withCleanup</code> の失敗になります。<code>cleanup</code> の型は、05章 q07 問1 の関数の型で <code>() =&gt; void</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c08-q04-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">決めた時間までに終わらなければ、タイムアウトにする</span>
+      <span class="q-new">新しく出てくる書き方：<code>new Promise</code> の <code>reject</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ms ミリ秒待つ
+export function wait(ms: number): Promise&lt;void&gt; {
+  return new Promise((resolve) =&gt; {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function withTimeout() {}</code></pre>
+      <p><code>task</code> と数値 <code>ms</code> を受け取ります。<code>task</code> が <code>ms</code> ミリ秒以内に終われば、その値を返します。間に合わなければ、<code>"タイムアウトしました"</code> というメッセージのエラーで失敗します。タイムアウトは「時間切れ」のことです。<code>wait</code> はファイルに書いてあり、テストが task を作るときに使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withTimeout(50 ミリ秒で 2 を返す task, 100)</code></dt><dd class="r"><code>2</code> で解決する</dd><dd class="c">間に合った</dd></div>
+          <div><dt><code>withTimeout(200 ミリ秒かかる task, 100)</code></dt><dd class="r">失敗する</dd><dd class="c">100 ミリ秒たったところで、メッセージは "タイムアウトしました"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。テストは、本当に待たずに時間を進める仕組み（偽のタイマー）で確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Promise&lt;never&gt;((_, reject) =&gt; …)</code><h4>時間がたったら失敗する Promise を作る</h4></div>
+      <p>08章 q01 問3 では、<code>new Promise((resolve) =&gt; { … })</code> で、時間がたったら解決する Promise を作りました。<code>new Promise</code> に渡す関数は、2 つ目の引数で「失敗させる関数」も受け取れます。名前は <code>reject</code> がよく使われます。<code>reject(エラー)</code> を呼ぶと、その Promise はそのエラーで失敗します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 deadline を作る。数値の ms を受け取り、解決しない Promise（Promise&lt;never&gt;）を返す
+function deadline(ms: number): Promise&lt;never&gt; {
+  // 新しい Promise を返す。1 つ目の引数は使わず、失敗させる関数を reject で受け取る
+  return new Promise&lt;never&gt;((_, reject) =&gt; {
+    // ms ミリ秒たったら、次の関数を呼ぶ
+    setTimeout(() =&gt; {
+      // "締め切りを過ぎました" というメッセージのエラーで、この Promise を失敗させる
+      reject(new Error("締め切りを過ぎました"));
+    }, ms);
+  });
+}
+// 結果: deadline(100) は、100 ミリ秒たつと "締め切りを過ぎました" で失敗する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>new Promise<span class="seg"><i>1</i>&lt;never&gt;</span>((<span class="seg c"><i>2</i>_</span>, <span class="seg"><i>3</i>reject</span>) =&gt; { … })</pre>
+        <ol>
+          <li><span>解決する値の型です。この Promise は失敗するだけで、値を持って解決することがありません。そのような型を <code>never</code> と書きます（08章 q01 問2 の <code>Promise&lt;never&gt;</code>）。</span></li>
+          <li><span>1 つ目の引数は「解決させる関数」ですが、ここでは使いません。使わない引数は、名前を <code>_</code> にしておきます。</span></li>
+          <li><span>2 つ目の引数が「失敗させる関数」です。<code>reject(new Error("…"))</code> のように、<code>Error</code> を渡して呼びます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある間違い</b><code>&lt;never&gt;</code> を書かずに <code>new Promise((_, reject) =&gt; …)</code> とすると、中身の型が <code>unknown</code> の Promise になります。それを数値の Promise と <code>Promise.race</code> に並べると、結果の型も <code>unknown</code> になります。<code>Promise&lt;number&gt;</code> を返す関数では、型の確認でエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function withTimeout(task: Task, ms: number): Promise&lt;number&gt; {
+  // 時間切れ timer を作り、ms ミリ秒たったら "タイムアウトしました" というメッセージのエラーで失敗する Promise（Promise&lt;never&gt;）を入れる
+  // task を呼んだ Promise と timer を並べて Promise.race に渡し、待った値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の右側は、サンプルの <code>deadline</code> の <code>return</code> の後ろと同じ形で、メッセージが違います。2 行目は、<code>Promise.race</code>（08章 q01 問16）に <code>[task(), timer]</code> を渡して <code>return await</code> します。先に終わったほうが結果になるので、task が先に解決すればその値、timer が先に失敗すればタイムアウトの失敗になります。<code>number</code> と <code>never</code> を並べた結果の型は、<code>Promise&lt;number&gt;</code> になります。task が先に終わっても timer の <code>setTimeout</code> は残りますが、この問題では気にしなくてかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c08-q04-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">取得した文字列を年齢にする。おかしければエラーを投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseAge() {}</code></pre>
+      <p>文字列で解決する task を受け取ります。task を呼んで待ち、その文字列を 0 以上の整数にして返します。整数にならないときや、0 より小さいときは、<code>`年齢が正しくありません: ${文字列}`</code> というメッセージのエラーを投げます。この task の型は <code>Task</code> と違い、<code>() =&gt; Promise&lt;string&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseAge(() =&gt; Promise.resolve("20"))</code></dt><dd class="r"><code>20</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>parseAge(() =&gt; Promise.resolve("-1"))</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "年齢が正しくありません: -1"</dd></div>
+          <div><dt><code>parseAge(() =&gt; Promise.resolve("abc"))</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "年齢が正しくありません: abc"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>() =&gt; Promise&lt;string&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function parseAge(task: () =&gt; Promise&lt;string&gt;): Promise&lt;number&gt; {
+  // 文字列 text を作り、task を呼び、待った値を入れる
+  // 年齢 age を作り、text を数値にしたものを入れる
+  // もし age が整数でないか、age が 0 より小さいなら
+  //   text を埋め込んだ「年齢が正しくありません: ◯」というメッセージのエラーを投げる
+  // age を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問11 のサンプルの <code>stock</code> の行と同じ形です。<code>try</code> / <code>catch</code> は要りません。<code>async</code> 関数の中で投げたエラーは、そのまま <code>parseAge</code> が返す Promise の失敗になります（問5）。数値にするのは <code>Number()</code>（01章 q08 問16）、整数かを調べるのは <code>Number.isInteger()</code>（01章 q04 応用）です。<code>"abc"</code> を数値にすると <code>NaN</code> になり、整数ではないので弾けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c08-q04-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">ok でなければ HTTP のエラーを投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type ApiResult = { ok: boolean; status: number };
+
+export function assertOk() {}</code></pre>
+      <p><code>ApiResult</code> で解決する task を受け取ります。<code>ApiResult</code> は、通信の結果を表す型です。<code>ok</code> はうまくいったか、<code>status</code> はステータスコード（200 や 500 などの番号）です。task を呼んで待ち、<code>ok</code> が <code>true</code> なら <code>status</code> を返します。<code>ok</code> が <code>false</code> なら、<code>`HTTP ${status}`</code> というメッセージのエラーを投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assertOk(() =&gt; Promise.resolve({ ok: true, status: 200 }))</code></dt><dd class="r"><code>200</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>assertOk(() =&gt; Promise.resolve({ ok: false, status: 500 }))</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "HTTP 500"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>() =&gt; Promise&lt;ApiResult&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function assertOk(task: () =&gt; Promise&lt;ApiResult&gt;): Promise&lt;number&gt; {
+  // 結果 result を作り、task を呼び、待った値を入れる
+  // もし result の ok が false なら
+  //   result の status を埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // result の status を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>08章 q03 問5 で <code>res.ok</code> を確かめたのと同じ形です。「<code>ok</code> が <code>false</code> なら」は <code>!result.ok</code> と書けます。<code>ok</code> は <code>boolean</code> なので、そのまま条件に書けます。テンプレートリテラルには、数値の <code>status</code> を埋め込めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c08-q04-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">順番に呼び、失敗は記録して続ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function logErrors() {}</code></pre>
+      <p><code>Task</code> の配列 <code>tasks</code> と、文字列の配列 <code>log</code> を受け取ります。<code>tasks</code> を前から順番に 1 つずつ呼んで待ちます。成功した値は集めます。失敗したら、そのメッセージを <code>log</code> の最後に足して、次の task に進みます。<code>Error</code> でないもので失敗したときのメッセージは <code>"不明なエラー"</code> です。最後に、成功した値の配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>logErrors([1 で解決, Error("x") で失敗, 3 で解決, "文字列" を投げる], log)</code></dt><dd class="r"><code>[1, 3]</code> で解決する</dd><dd class="c">log は空の配列から始める</dd></div>
+          <div><dt>呼んだあとの <code>log</code></dt><dd class="r"><code>["x", "不明なエラー"]</code></dd><dd class="c">失敗した順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number[]&gt;</code> であることを確かめます。引数の型は <code>readonly Task[]</code> と <code>string[]</code> にします。<code>log</code> には <code>.push()</code> するので、<code>readonly</code> は付けません。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function logErrors(tasks: readonly Task[], log: string[]): Promise&lt;number[]&gt; {
+  // 成功した値の配列 values を作り、空の配列を入れる
+  // tasks から 1 つずつ task に取り出してくり返す
+  //   次の中を試す
+  //     values の最後に、task を呼んで待った値を足す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     log の最後に「error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー"」を足す
+  // values を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 応用の <code>parseAges</code> と同じ形です。<code>values.push(await task())</code> のように、<code>await</code> はかっこの中にも書けます。<code>try</code> の中で失敗すると <code>push</code> は実行されないので、失敗した値は足されません。配列の型注釈は <code>const values: number[] = []</code> のように書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c08-q04-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">全部を同時に呼び、失敗した位置を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function failedIndexes() {}</code></pre>
+      <p><code>Task</code> の配列 <code>tasks</code> を受け取ります。全部の task を同時に呼び、全部が終わるのを待ちます。失敗した task の位置（0 から数える番号）を、前から順に並べた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>failedIndexes([成功, 失敗, 成功, 失敗])</code></dt><dd class="r"><code>[1, 3]</code> で解決する</dd><dd class="c">2 番目と 4 番目が失敗。番号は 0 から数える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number[]&gt;</code> であることを確かめます。引数の型は <code>readonly Task[]</code> にします。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function failedIndexes(tasks: readonly Task[]): Promise&lt;number[]&gt; {
+  // 結果の配列 results を作り、tasks のそれぞれを呼んだ Promise の配列を Promise.allSettled に渡し、待った値を入れる
+  // 位置の配列 indexes を作り、空の配列を入れる
+  // results の番号と要素の組を 1 つずつ [i, result] に取り出してくり返す
+  //   もし result の status が "rejected" と等しいなら
+  //     indexes の最後に i を足す
+  // indexes を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問10 と同じです。番号と要素を一緒に取り出すのは <code>for (const [i, result] of results.entries())</code>（04章 q03 問9）です。<code>allSettled</code> の結果は、渡した順に並ぶので、番号がそのまま task の位置になります。<code>flatMap</code>（08章 q01 問18）のコールバックの 2 つ目の引数で番号を受け取って、1 行で書くこともできます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c08-q04-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">失敗したら、少し待ってからやり直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ms ミリ秒待つ
+export function wait(ms: number): Promise&lt;void&gt; {
+  return new Promise((resolve) =&gt; {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function retryWithDelay() {}</code></pre>
+      <p><code>task</code>、数値 <code>attempts</code>、数値 <code>ms</code> を受け取ります。問7 の <code>retry</code> と同じように、成功するまで全部で <code>attempts</code> 回まで呼びます。違うのは、失敗するたびに <code>wait(ms)</code> で <code>ms</code> ミリ秒待ってから、やり直すところです。最後の失敗の後は待たずに、すぐその失敗を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>retryWithDelay(2 回失敗する task, 3, 100)</code> を呼んで 99 ミリ秒</dt><dd class="r">呼んだ回数は 1</dd><dd class="c">まだ待っている</dd></div>
+          <div><dt>100 ミリ秒たったとき</dt><dd class="r">呼んだ回数は 2</dd><dd class="c">1 回目の失敗から 100 ミリ秒待った</dd></div>
+          <div><dt>さらに 100 ミリ秒たったとき</dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">呼んだ回数は 3</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code>、<code>number</code>、<code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。時間は、問12 と同じ偽のタイマーで進めます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function retryWithDelay(task: Task, attempts: number, ms: number): Promise&lt;number&gt; {
+  // 最後の失敗 lastError を入れ直せる変数として作り、型を unknown にする
+  // i を 0 から、attempts より小さい間 1 ずつ増やしながらくり返す
+  //   もし i が 0 より大きいなら
+  //     wait に ms を渡して呼び、終わるのを待つ
+  //   次の中を試す
+  //     task を呼び、待った値を返す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     lastError に error を入れ直す
+  // lastError を投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 の形に、待つ行を足します。2 回目から、呼ぶ前に待つようにすると、最後の失敗の後には待ちません。「<code>wait</code> に <code>ms</code> を渡して呼び、終わるのを待つ」は <code>await wait(ms);</code> です。<code>wait</code> は 08章 q01 問3 と同じ関数で、ファイルに書いてあります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c08-q04-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">やり直してよい失敗のときだけ、やり直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function retryIf() {}</code></pre>
+      <p><code>task</code>、数値 <code>attempts</code>、関数 <code>shouldRetry</code> を受け取ります。問7 の <code>retry</code> と同じように、成功するまで全部で <code>attempts</code> 回まで呼びます。違うのは、失敗したときに <code>shouldRetry(error)</code> を呼んで確かめるところです。結果が <code>false</code> なら、やり直さずに、その失敗をすぐに投げます。<code>shouldRetry</code> は、受け取った失敗が「やり直してよい失敗」なら <code>true</code> を返す関数です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>retryIf(2 回失敗する task, 3, () =&gt; true)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">いつもやり直す</dd></div>
+          <div><dt><code>retryIf(2 回失敗する task, 3, () =&gt; false)</code></dt><dd class="r">失敗する</dd><dd class="c">"失敗 1"。task を呼んだ回数は 1</dd></div>
+          <div><dt><code>retryIf(ずっと失敗する task, 5, "失敗 1" のときだけ true)</code></dt><dd class="r">失敗する</dd><dd class="c">"失敗 2"。task を呼んだ回数は 2</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code>、<code>number</code>、<code>(error: unknown) =&gt; boolean</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function retryIf(
+  task: Task,
+  attempts: number,
+  shouldRetry: (error: unknown) =&gt; boolean,
+): Promise&lt;number&gt; {
+  // 最後の失敗 lastError を入れ直せる変数として作り、型を unknown にする
+  // i を 0 から、attempts より小さい間 1 ずつ増やしながらくり返す
+  //   次の中を試す
+  //     task を呼び、待った値を返す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     もし shouldRetry に error を渡した結果が false なら
+  //       error を投げ直す
+  //     lastError に error を入れ直す
+  // lastError を投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 の形の <code>catch</code> の中に、<code>if</code> を足します。「<code>shouldRetry</code> に <code>error</code> を渡した結果が <code>false</code> なら」は <code>!shouldRetry(error)</code> です。「<code>error</code> を投げ直す」は、問7 のサンプルと同じ <code>throw error;</code> です。投げたところで関数が終わるので、残りの回は呼びません。<code>shouldRetry</code> の型は、関数の型（05章 q07 問1）で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c08-q04-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">開始・成功か失敗・終了を記録する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function finallyLog() {}</code></pre>
+      <p><code>task</code> と文字列の配列 <code>log</code> を受け取ります。はじめに <code>log</code> に <code>"開始"</code> を足してから、task を呼んで待ちます。成功したら <code>"成功"</code>、失敗したら <code>"失敗"</code> を足します。どちらの場合も、最後に <code>"終了"</code> を足します。結果は task と同じです。成功ならその値で解決し、失敗ならその失敗をそのまま投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>finallyLog(5 で解決する task, log)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">log は ["開始", "成功", "終了"]</dd></div>
+          <div><dt><code>finallyLog(Error("x") で失敗する task, log)</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は "x" のまま。log は ["開始", "失敗", "終了"]</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Task</code> と <code>string[]</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function finallyLog(task: Task, log: string[]): Promise&lt;number&gt; {
+  // log の最後に "開始" を足す
+  // 次の中を試す
+  //   値 value を作り、task を呼び、待った値を入れる
+  //   log の最後に "成功" を足す
+  //   value を返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   log の最後に "失敗" を足す
+  //   error を投げ直す
+  // 最後に、例外があってもなくても
+  //   log の最後に "終了" を足す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 問19 の <code>try</code> / <code>catch</code> / <code>finally</code> に、問7 のサンプルの投げ直しを合わせた形です。<code>"成功"</code> は task を待ったあとに足すので、値をいったん <code>value</code> に入れてから足し、そのあとで返します。<code>throw error;</code> のあとでも、<code>finally</code> の中は実行されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c08-q04-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">全部を同時に呼び、成功の値と失敗のメッセージに分ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function settleAll() {}</code></pre>
+      <p><code>Task</code> の配列 <code>tasks</code> を受け取ります。全部の task を同時に呼び、全部が終わるのを待ちます。成功した値を <code>values</code> に、失敗のメッセージを <code>errors</code> に集めて、<code>{ values, errors }</code> を返します。どちらも元の順に並べます。<code>Error</code> でないもので失敗したときのメッセージは <code>"不明なエラー"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>settleAll([1 で解決, Error("x") で失敗, "文字列" を投げる, 4 で解決])</code></dt><dd class="r"><code>{ values: [1, 4], errors: ["x", "不明なエラー"] }</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;{ values: number[]; errors: string[] }&gt;</code> であることを確かめます。引数の型は <code>readonly Task[]</code> にします。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function settleAll(
+  tasks: readonly Task[],
+): Promise&lt;{ values: number[]; errors: string[] }&gt; {
+  // 結果の配列 results を作り、tasks のそれぞれを呼んだ Promise の配列を Promise.allSettled に渡し、待った値を入れる
+  // 成功した値の配列 values を作り、空の配列を入れる
+  // 失敗のメッセージの配列 errors を作り、空の配列を入れる
+  // results から 1 つずつ result に取り出してくり返す
+  //   もし result の status が "fulfilled" と等しいなら
+  //     values の最後に result の値を足す
+  //   そうでなければ
+  //     理由 reason を作り、型を unknown にして、result の失敗の理由を入れる
+  //     errors の最後に「reason が Error から作った値なら reason のメッセージ、そうでなければ "不明なエラー"」を足す
+  // values と errors を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問10 と同じです。<code>status</code> で絞り込むと、成功のほうでは <code>result.value</code>、失敗のほうでは <code>result.reason</code> を読めます（08章 q01 問17〜問19）。<code>reason</code> の型は <code>any</code> なので、<code>const reason: unknown = result.reason;</code> のように <code>unknown</code> の変数に入れてから確かめます。最後は <code>{ values, errors }</code>（02章 q01 問3 の省略記法）を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c08-q04-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">結果にする・やり直す・最初の成功・全部呼ぶ</span>
+      <span class="q-new">新しく出てくる書き方：<code>Error</code> 型</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Result&lt;T&gt; = { ok: true; value: T } | { ok: false; error: Error };
+
+export function tryAsync() {}
+
+export function withRetry() {}
+
+export function firstSuccessful() {}
+
+export function runAll() {}</code></pre>
+      <p>失敗するかもしれない非同期の処理を扱う関数を、4 つ書きます。引数の <code>fn</code> や <code>tasks</code> の要素は、呼ぶたびに新しく処理を始める関数です。ドリルでは数値で解決する <code>Task</code> でしたが、ここでは型引数 <code>T</code>（07章 q06 問1）を使い、どんな型で解決する関数でも受け取れるようにします。</p>
+      <ol>
+        <li><code>tryAsync(fn)</code>：<code>fn()</code> を待ち、成功なら <code>{ ok: true, value: 値 }</code>、失敗なら <code>{ ok: false, error: エラー }</code> を返します（<code>Result&lt;T&gt;</code>）。<code>Error</code> でないものが投げられたときは、<code>String(値)</code> をメッセージにした <code>Error</code> を作って入れます。</li>
+        <li><code>withRetry(fn, attempts)</code>：<code>fn()</code> が成功するまで、全部で <code>attempts</code> 回まで呼び、成功したらその値を返します。<code>attempts</code> 回とも失敗したら、最後の失敗をそのまま投げます。<code>attempts</code> が 1 より小さいときは、<code>fn</code> を呼ばずにエラーを投げます。</li>
+        <li><code>firstSuccessful(tasks)</code>：<code>tasks</code> を前から順番に 1 つずつ呼び、最初に成功した値を返します。成功したら、後ろの task は呼びません。すべて失敗したら（<code>tasks</code> が空のときも）、<code>"すべて失敗しました"</code> というメッセージのエラーを投げます。</li>
+        <li><code>runAll(tasks)</code>：<code>tasks</code> を前から順番に 1 つずつ呼びます。失敗しても止めずに最後まで呼び、<code>{ values: 成功した値の配列, errors: 失敗のメッセージの配列 }</code> を返します。どちらも呼んだ順です。<code>Error</code> でないものが投げられたときのメッセージは <code>"不明なエラー"</code> です。</li>
+      </ol>
+      <p>説明すること：<code>withRetry</code> で、<code>try</code> の中を <code>return fn();</code> と書くと何が起きるか。試した結果を、ファイルの「説明すること」のすぐ下に、<code>//</code> のコメントで書きます。試すときは、<code>withRetry</code> が通ってから、<code>try</code> の中の <code>return await fn();</code> を一時的に <code>return fn();</code> に書き換えます。テストを動かして、どのテストが通らなくなったか、<code>fn</code> が何回呼ばれたかを見ます。ESLint の結果も見ます。試したら、<code>return await fn();</code> に戻します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>tryAsync("a" で解決する fn)</code></dt><dd class="r"><code>{ ok: true, value: "a" }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>tryAsync(Error("失敗 1") で失敗する fn)</code></dt><dd class="r"><code>ok</code> が <code>false</code> の結果で解決する</dd><dd class="c">error は Error で、message は "失敗 1"</dd></div>
+          <div><dt><code>tryAsync("文字列" を投げる fn)</code></dt><dd class="r"><code>ok</code> が <code>false</code> の結果で解決する</dd><dd class="c">error は Error で、message は "文字列"</dd></div>
+          <div><dt><code>withRetry(2 回失敗し、そのあと "ok" で解決する fn, 3)</code></dt><dd class="r"><code>"ok"</code> で解決する</dd><dd class="c">fn を呼んだ回数は 3</dd></div>
+          <div><dt><code>withRetry(すぐ "ok" で解決する fn, 3)</code></dt><dd class="r"><code>"ok"</code> で解決する</dd><dd class="c">fn を呼んだ回数は 1</dd></div>
+          <div><dt><code>withRetry(5 回失敗する fn, 3)</code></dt><dd class="r">失敗する</dd><dd class="c">"失敗 3"。fn を呼んだ回数は 3</dd></div>
+          <div><dt><code>withRetry(fn, 0)</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は Error。fn は 1 回も呼ばない</dd></div>
+          <div><dt><code>firstSuccessful([1 回目は失敗する a, b, c])</code></dt><dd class="r"><code>"b"</code> で解決する</dd><dd class="c">呼んだ回数は a が 1、b が 1、c が 0</dd></div>
+          <div><dt><code>firstSuccessful([失敗する a, 失敗する b])</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "すべて失敗しました"</dd></div>
+          <div><dt><code>firstSuccessful([])</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "すべて失敗しました"</dd></div>
+          <div><dt><code>runAll(["a" で解決, Error("失敗 1") で失敗, "文字列" を投げる, "d" で解決])</code></dt><dd class="r"><code>{ values: ["a", "d"], errors: ["失敗 1", "不明なエラー"] }</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列で解決する関数を渡したとき、<code>tryAsync</code> の戻り値が <code>Promise&lt;Result&lt;string&gt;&gt;</code>、<code>withRetry</code> と <code>firstSuccessful</code> が <code>Promise&lt;string&gt;</code>、<code>runAll</code> が <code>Promise&lt;{ values: string[]; errors: string[] }&gt;</code> になることを確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">error: Error</code><h4>Error を型として書く</h4></div>
+      <p><code>new Error()</code> で作った値の型は <code>Error</code> です。型注釈やオブジェクトの型の中にも、<code>Error</code> と書けます。<code>RangeError</code>（04章 q05 問14）のような <code>Error</code> の仲間も、<code>Error</code> 型の場所に入れられます。文字列などの <code>Error</code> でない値は入れられません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 SaveResult を作る。ok が true なら id は数値、ok が false なら error は Error
+type SaveResult = { ok: true; id: number } | { ok: false; error: Error };
+// 結果 failed を作り、ok が false で、error に "保存できません" というメッセージのエラーを持つ SaveResult を入れる
+const failed: SaveResult = { ok: false, error: new Error("保存できません") };
+// 結果 tooMany を作り、ok が false で、error に "在庫数が範囲外です" というメッセージの RangeError を持つ SaveResult を入れる
+const tooMany: SaveResult = { ok: false, error: new RangeError("在庫数が範囲外です") };
+// 結果: failed の error の message は "保存できません"、tooMany の error の message は "在庫数が範囲外です"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>const e: Error = new RangeError("範囲外です");</code></dt><dd class="r">通る</dd><dd class="c">RangeError も Error の仲間</dd></div>
+        <div><dt><code>const e: Error = "失敗";</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">文字列は Error ではない</dd></div>
+        <div><dt><code>new Error(String(404)).message</code></dt><dd class="r"><code>"404"</code></dd><dd class="c">Error でない値も、文字列にすれば Error のメッセージにできる</dd></div>
+      </dl>
+      <p class="memo"><b>コツ</b><code>catch</code> で受け取る値は <code>unknown</code> なので、そのままでは <code>error: Error</code> の場所に入れられません。<code>instanceof Error</code> で確かめて、<code>Error</code> ならそのまま、そうでなければ <code>new Error(String(値))</code> で <code>Error</code> を作ってから入れます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function tryAsync&lt;T&gt;(fn: () =&gt; Promise&lt;T&gt;): Promise&lt;Result&lt;T&gt;&gt; {
+  // 次の中を試す
+  //   ok が true で、value に fn を呼んで待った値を持つオブジェクトを返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   ok が false で、error に「error が Error から作った値なら error、そうでなければ error を文字列にしたものをメッセージにしたエラー」を持つオブジェクトを返す
+}
+
+export async function withRetry&lt;T&gt;(fn: () =&gt; Promise&lt;T&gt;, attempts: number): Promise&lt;T&gt; {
+  // もし attempts が 1 より小さいなら
+  //   "attempts は1以上にしてください" というメッセージのエラーを投げる
+  // 最後の失敗 lastError を入れ直せる変数として作り、型を unknown にする
+  // i を 0 から、attempts より小さい間 1 ずつ増やしながらくり返す
+  //   次の中を試す
+  //     fn を呼び、待った値を返す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     lastError に error を入れ直す
+  // lastError を投げる
+}
+
+export async function firstSuccessful&lt;T&gt;(tasks: readonly (() =&gt; Promise&lt;T&gt;)[]): Promise&lt;T&gt; {
+  // tasks から 1 つずつ task に取り出してくり返す
+  //   次の中を試す
+  //     task を呼び、待った値を返す
+  //   例外が投げられたら
+  //     （何もせずに、次の task へ進む。わけをコメントで書く）
+  // "すべて失敗しました" というメッセージのエラーを投げる
+}
+
+export async function runAll&lt;T&gt;(
+  tasks: readonly (() =&gt; Promise&lt;T&gt;)[],
+): Promise&lt;{ values: T[]; errors: string[] }&gt; {
+  // 成功した値の配列 values を作り、空の配列を入れる
+  // 失敗のメッセージの配列 errors を作り、空の配列を入れる
+  // tasks から 1 つずつ task に取り出してくり返す
+  //   次の中を試す
+  //     values の最後に、task を呼んで待った値を足す
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     errors の最後に「error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー"」を足す
+  // values と errors を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>tryAsync</code> は問4 と同じ形で、失敗のほうに、上の「コツ」のとおりに作った <code>Error</code> を入れます。<code>withRetry</code> は問7 の形の前に、<code>attempts</code> を確かめる <code>if</code> を足します。<code>firstSuccessful</code> は問9、<code>runAll</code> は問15 と同じ形です。どれも関数名の後ろに <code>&lt;T&gt;</code> を付け、ドリルの <code>number</code> のところを <code>T</code> にします。<code>readonly (() =&gt; Promise&lt;T&gt;)[]</code> は、「<code>T</code> で解決する Promise を返す関数」の読み取り専用の配列です。関数の型をかっこで囲んでから <code>[]</code> を付けます。かっこがないと、型の確認で文法のエラーになります。<code>values</code> の型注釈は <code>const values: T[] = []</code> です。</p></details>
+    </div>
+  </section>
+</section>

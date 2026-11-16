@@ -1,0 +1,838 @@
+<section class="sec" id="c02-q03">
+  <div class="sec-h">
+    <span class="eyebrow">02章 オブジェクト・配列・タプル</span>
+    <h2>q03 分割代入とスプレッド構文</h2>
+    <p>商品の型 <code>Item</code> と利用者の型 <code>User</code> は、ファイルに書いてあります。関数を 20 個書き、引数と戻り値には型注釈を付けます。オブジェクトからプロパティを取り出すときは、分割代入を使います。分割代入は、プロパティをまとめて変数に取り出す書き方です。オブジェクトの一部を変えるときは、元のオブジェクトを書き換えません。スプレッド構文（q02 問8）で新しいオブジェクトを作って返します。テストは、元のオブジェクトが変わっていないことも確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c02-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">分割代入で name と price を取り出し、「りんご 150円」の形にする</span>
+      <span class="q-new">新しく出てくる書き方：オブジェクトの分割代入 <code>const { a, b } = obj;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function itemLabel() {}</code></pre>
+      <p>商品 <code>Item</code> を受け取り、名前と価格を「りんご 150円」の形の文字列にして返します。名前と価格の間は半角スペースです。<code>name</code> と <code>price</code> は、分割代入で取り出します。引数は <code>Item</code> 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>itemLabel({ id: 1, name: "りんご", price: 150, stock: 12 })</code></dt><dd class="r"><code>"りんご 150円"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">const { a, b } = obj;</code><h4>オブジェクトの分割代入</h4></div>
+      <p>オブジェクトから、いくつかのプロパティをまとめて取り出し、同じ名前の変数を作ります。<code>=</code> の左に、取り出すプロパティの名前を <code>{ }</code> で囲んで並べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文の型 Order を作る。id は数値、customer は文字列、total は数値
+type Order = { id: number; customer: string; total: number };
+// 注文 order を作り、id が 7、customer が "佐藤"、total が 3200 のオブジェクトを入れる
+const order: Order = { id: 7, customer: "佐藤", total: 3200 };
+// order から customer と total を取り出す
+const { customer, total } = order;
+// receipt を作り、customer と total を持つオブジェクトを入れる
+const receipt = { customer, total };
+// 結果: customer は "佐藤"、total は 3200、receipt は { customer: "佐藤", total: 3200 }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const <span class="seg"><i>1</i>{ customer, total }</span> <span class="seg c"><i>2</i>=</span> <span class="seg"><i>3</i>order</span>;</pre>
+        <ol>
+          <li><span>取り出すプロパティの名前です。同じ名前の変数 <code>customer</code> と <code>total</code> ができます。</span></li>
+          <li><span>右のオブジェクトから、左の名前のプロパティを取り出して入れます。</span></li>
+          <li><span>取り出す元のオブジェクトです。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある疑問</b><code>const customer = order.customer;</code> と <code>const total = order.total;</code> の 2 行と同じ意味です。分割代入なら 1 行で書けます。<code>receipt</code> の行は、q01 問3 のプロパティの省略記法です。</p>
+      <p class="memo"><b>よくある間違い</b>取り出せるのは、型にあるプロパティだけです。<code>Order</code> には <code>price</code> がないので、<code>const { price } = order;</code> は型の確認でエラーになります。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects">サバイバルTypeScript「オブジェクトの分割代入」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 itemLabel を作る。Item の item を受け取り、文字列を返す
+export function itemLabel() {
+  // item から name と price を取り出す
+  // name と price を埋め込んだ「◯ ◯円」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「Item の item を受け取り」は <code>item: Item</code> です。「取り出す」は、問1 のサンプルの <code>customer</code> と <code>total</code> の行と同じ形です。文字列は、テンプレートリテラル（01章 q01 問3）で作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c02-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">price だけを変えた新しい Item を返す</span>
+      <span class="q-new">新しく出てくる書き方：スプレッドの後ろに書いたプロパティで上書きする <code>{ ...obj, a }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function setPrice() {}</code></pre>
+      <p>商品 <code>item</code> と新しい価格 <code>price</code> を受け取ります。<code>price</code> だけを変えた、新しい <code>Item</code> を返します。元の <code>item</code> は書き換えません。引数は <code>Item</code> と数値、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>setPrice(item, 120)</code></dt><dd class="r"><code>{ id: 1, name: "りんご", price: 120, stock: 12 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>item.price</code></dt><dd class="r"><code>150</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code> と <code>number</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ ...obj, a }</code><h4>スプレッドの後ろに書いたプロパティで上書きする</h4></div>
+      <p>q02 問8 で、<code>{ ...todo, done: true }</code> の形を使いました。<code>{ }</code> の中は、左から順に入ります。先に <code>...</code> で元のプロパティをすべて写し、後ろに書いたプロパティで同じ名前のものを上書きします。後ろが変数と同じ名前なら、省略記法（q01 問3）で名前だけを書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の型 Reservation を作る。id は数値、guest は文字列、people は数値
+type Reservation = { id: number; guest: string; people: number };
+// 予約 booking を作り、id が 3、guest が "田中"、people が 2 のオブジェクトを入れる
+const booking: Reservation = { id: 3, guest: "田中", people: 2 };
+// 人数 people を作り、4 を入れる
+const people = 4;
+// changed を作り、booking をもとに people だけを変えた新しいオブジェクトを入れる
+const changed = { ...booking, people };
+// moved を作り、booking をもとに id を 9 に変えた新しいオブジェクトを入れる
+const moved = { ...booking, id: 9 };
+// 結果: changed は { id: 3, guest: "田中", people: 4 }、moved は { id: 9, guest: "田中", people: 2 }</code></pre>
+      </div>
+      <p><code>changed</code> の <code>{ }</code> の中で、プロパティが入っていく順番です。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>書いた順</th><th>id</th><th>guest</th><th>people</th></tr></thead>
+          <tbody>
+            <tr><td>...booking</td><td>3</td><td>"田中"</td><td>2</td></tr>
+            <tr><td>people</td><td>3</td><td>"田中"</td><td>4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>booking</code> そのものは変わりません。<code>booking.people</code> は 2 のままです。</p>
+      <div class="cmp">
+        <div>
+          <h5>上書きするプロパティを先に書く</h5>
+          <pre><code class="language-typescript">const changed = { people, ...booking };</code></pre>
+          <div class="verdict ng">✕ 後ろの booking の people で上書きされるので、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>上書きするプロパティを後ろに書く</h5>
+          <pre><code class="language-typescript">const changed = { ...booking, people };</code></pre>
+          <div class="verdict ok">○ people だけが 4 になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b><code>{ ...booking, people: people }</code> とは書きません。ESLint は省略記法の <code>{ ...booking, people }</code> を求めます（<code>object-shorthand</code>）。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object">サバイバルTypeScript「オブジェクトのスプレッド構文」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 setPrice を作る。Item の item と数値 price を受け取り、Item を返す
+export function setPrice() {
+  // item をもとに price だけを変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 のサンプルの <code>changed</code> の行と同じ形です。引数の名前を <code>price</code> にすると、後ろには <code>price</code> とだけ書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c02-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">stock だけを変えた新しい Item を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function setStock() {}</code></pre>
+      <p>商品 <code>item</code> と新しい在庫数 <code>stock</code> を受け取ります。<code>stock</code> だけを変えた、新しい <code>Item</code> を返します。元の <code>item</code> は書き換えません。引数は <code>Item</code> と数値、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>setStock(item, 0)</code></dt><dd class="r"><code>{ id: 1, name: "りんご", price: 150, stock: 0 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>item.stock</code></dt><dd class="r"><code>12</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code> と <code>number</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 setStock を作る。Item の item と数値 stock を受け取り、Item を返す
+export function setStock() {
+  // item をもとに stock だけを変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、変えるプロパティが <code>stock</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c02-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">stock を amount だけ増やした新しい Item を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function addStock() {}</code></pre>
+      <p>商品 <code>item</code> と、入荷した数 <code>amount</code> を受け取ります。在庫数を <code>amount</code> だけ増やした、新しい <code>Item</code> を返します。元の <code>item</code> は書き換えません。引数は <code>Item</code> と数値、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addStock(item, 8).stock</code></dt><dd class="r"><code>20</code></dd><dd class="c">12 に 8 を足す</dd></div>
+          <div><dt><code>item.stock</code></dt><dd class="r"><code>12</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code> と <code>number</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addStock を作る。Item の item と数値 amount を受け取り、Item を返す
+export function addStock() {
+  // item をもとに stock を item の stock + amount に変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 のサンプルの <code>moved</code> の行と同じ形です。<code>stock:</code> の後ろに、<code>9</code> の代わりに式を書きます。「item の stock」は <code>item.stock</code> です（q01 問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c02-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">name だけを変えた新しい Item を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function rename() {}</code></pre>
+      <p>商品 <code>item</code> と新しい名前 <code>name</code> を受け取ります。<code>name</code> だけを変えた、新しい <code>Item</code> を返します。元の <code>item</code> は書き換えません。引数は <code>Item</code> と文字列、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rename(item, "青りんご")</code></dt><dd class="r"><code>{ id: 1, name: "青りんご", price: 150, stock: 12 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>item.name</code></dt><dd class="r"><code>"りんご"</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code> と <code>string</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rename を作る。Item の item と文字列 name を受け取り、Item を返す
+export function rename() {
+  // item をもとに name だけを変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。今度は 2 つめの引数が文字列なので、型注釈は <code>name: string</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c02-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">分割代入で name と age を取り出し、「山田（30）」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number; email: string };
+
+export function userSummary() {}</code></pre>
+      <p>利用者 <code>User</code> を受け取り、名前と年齢を「山田（30）」の形の文字列にして返します。かっこは全角の「（」と「）」です。<code>name</code> と <code>age</code> は、分割代入で取り出します。引数は <code>User</code> 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>userSummary({ id: 1, name: "山田", age: 30, email: "y@example.com" })</code></dt><dd class="r"><code>"山田（30）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 userSummary を作る。User の user を受け取り、文字列を返す
+export function userSummary() {
+  // user から name と age を取り出す
+  // name と age を埋め込んだ「◯（◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、取り出すプロパティが <code>name</code> と <code>age</code> になります。数値の <code>age</code> は、テンプレートリテラルに埋め込むと文字に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c02-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">age を 1 増やした新しい User を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number; email: string };
+
+export function birthday() {}</code></pre>
+      <p>利用者 <code>user</code> を受け取り、年齢を 1 増やした新しい <code>User</code> を返します。元の <code>user</code> は書き換えません。引数は <code>User</code> 1 つ、戻り値は <code>User</code> です。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", age: 30, email: "y@example.com" }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>birthday(user).age</code></dt><dd class="r"><code>31</code></dd><dd class="c"></dd></div>
+          <div><dt><code>user.age</code></dt><dd class="r"><code>30</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code>、戻り値が <code>User</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 birthday を作る。User の user を受け取り、User を返す
+export function birthday() {
+  // user をもとに age を user の age + 1 に変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。<code>user.age++</code> や <code>user.age += 1</code> は元の <code>user</code> を書き換えてしまうので、使いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c02-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">email だけを変えた新しい User を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number; email: string };
+
+export function changeEmail() {}</code></pre>
+      <p>利用者 <code>user</code> と新しいメールアドレス <code>email</code> を受け取ります。<code>email</code> だけを変えた、新しい <code>User</code> を返します。元の <code>user</code> は書き換えません。引数は <code>User</code> と文字列、戻り値は <code>User</code> です。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", age: 30, email: "y@example.com" }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>changeEmail(user, "new@example.com")</code></dt><dd class="r"><code>{ id: 1, name: "山田", age: 30, email: "new@example.com" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>user.email</code></dt><dd class="r"><code>"y@example.com"</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code> と <code>string</code>、戻り値が <code>User</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 changeEmail を作る。User の user と文字列 email を受け取り、User を返す
+export function changeEmail() {
+  // user をもとに email だけを変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。もとにするオブジェクトが <code>user</code>、変えるプロパティが <code>email</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c02-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">分割代入で id と name を取り出し、{ id, name } だけのオブジェクトを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number; email: string };
+
+export function pickIdName() {}</code></pre>
+      <p>利用者 <code>User</code> を受け取り、<code>id</code> と <code>name</code> だけを持つオブジェクトを返します。<code>age</code> と <code>email</code> は入れません。<code>id</code> と <code>name</code> は、分割代入で取り出します。引数は <code>User</code> 1 つ、戻り値は <code>id</code> が数値、<code>name</code> が文字列のオブジェクトです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pickIdName({ id: 1, name: "山田", age: 30, email: "y@example.com" })</code></dt><dd class="r"><code>{ id: 1, name: "山田" }</code></dd><dd class="c">age と email はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code>、戻り値が <code>{ id: number; name: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pickIdName を作る。User の user を受け取り、id が数値、name が文字列のオブジェクトを返す
+export function pickIdName() {
+  // user から id と name を取り出す
+  // id と name を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、<code>{ id: number; name: string }</code> のようにオブジェクトの型で書きます（q01 問1）。2 行目は、問1 のサンプルの <code>receipt</code> の行と同じ省略記法です。<code>user</code> をそのまま返すと、<code>age</code> と <code>email</code> も残るのでテストが通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c02-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">patch { name, email } の値で上書きした新しい User を返す</span>
+      <span class="q-new">新しく出てくる書き方：2 つのオブジェクトを重ねる <code>{ ...a, ...b }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number; email: string };
+
+export function mergeUser() {}</code></pre>
+      <p>利用者 <code>user</code> と、変更する値をまとめたオブジェクト <code>patch</code> を受け取ります。<code>patch</code> は <code>name</code> と <code>email</code> を持ちます。<code>user</code> の名前とメールアドレスを <code>patch</code> の値で上書きした、新しい <code>User</code> を返します。元の <code>user</code> は書き換えません。戻り値は <code>User</code> です。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", age: 30, email: "y@example.com" }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mergeUser(user, { name: "山田太郎", email: "t@example.com" })</code></dt><dd class="r"><code>{ id: 1, name: "山田太郎", age: 30, email: "t@example.com" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>user.name</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code> と <code>{ name: string; email: string }</code>、戻り値が <code>User</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ ...a, ...b }</code><h4>2 つのオブジェクトを重ねる</h4></div>
+      <p><code>{ }</code> の中には、<code>...</code> をいくつも並べられます。左から順に写すので、同じ名前のプロパティは後ろのオブジェクトの値が残ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員の型 Member を作る。id は数値、name は文字列、rank は文字列
+type Member = { id: number; name: string; rank: string };
+// 会員 member を作り、id が 5、name が "鈴木"、rank が "一般" のオブジェクトを入れる
+const member: Member = { id: 5, name: "鈴木", rank: "一般" };
+// 変更 change を作り、rank が "ゴールド" のオブジェクトを入れる
+const change = { rank: "ゴールド" };
+// updated を作り、member に change を重ねた新しいオブジェクトを入れる
+const updated = { ...member, ...change };
+// 結果: updated は { id: 5, name: "鈴木", rank: "ゴールド" }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const updated = { <span class="seg"><i>1</i>...member</span>, <span class="seg"><i>2</i>...change</span> };</pre>
+        <ol>
+          <li><span>先に、<code>member</code> のプロパティをすべて写します。</span></li>
+          <li><span>次に、<code>change</code> のプロパティを写します。<code>rank</code> は同じ名前なので、<code>change</code> の値で上書きされます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>{ ...member, ...change }.rank</code></dt><dd class="r"><code>"ゴールド"</code></dd><dd class="c">後ろの change が残る</dd></div>
+        <div><dt><code>{ ...change, ...member }.rank</code></dt><dd class="r"><code>"一般"</code></dd><dd class="c">順番を逆にすると、member が残る</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>順番を逆にしても、型の確認ではエラーになりません。変更を後ろに書いたか、自分で確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mergeUser を作る。User の user と、name が文字列、email が文字列のオブジェクト patch を受け取り、User を返す
+export function mergeUser() {
+  // user に patch を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つめの引数の型は <code>patch: { name: string; email: string }</code> です。中身は、問10 のサンプルの <code>updated</code> の行と同じ形です。上書きする <code>patch</code> を後ろに書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c02-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">中身が同じで、別のオブジェクトになった Item を返す</span>
+      <span class="q-new">新しく出てくる書き方：オブジェクトのコピー <code>{ ...obj }</code> と、同じオブジェクトかどうか</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function copyItem() {}</code></pre>
+      <p>商品 <code>item</code> を受け取り、中身が同じ新しい <code>Item</code> を返します。<code>item</code> そのものは返しません。新しく作ったオブジェクトを返します。引数は <code>Item</code> 1 つ、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>copyItem(item)</code></dt><dd class="r"><code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code></dd><dd class="c">中身は item と同じ</dd></div>
+          <div><dt><code>copyItem(item) === item</code></dt><dd class="r"><code>false</code></dd><dd class="c">item とは別のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ ...obj }</code><h4>オブジェクトのコピーと、同じオブジェクトかどうか</h4></div>
+      <p>後ろに何も書かずに <code>...</code> だけを使うと、中身が同じ新しいオブジェクトができます。これをコピーと呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 配送先 address を作り、city が "大阪"、zip が "530-0001" のオブジェクトを入れる
+const address = { city: "大阪", zip: "530-0001" };
+// copied を作り、address を広げた新しいオブジェクトを入れる
+const copied = { ...address };
+// 結果: copied は { city: "大阪", zip: "530-0001" }</code></pre>
+      </div>
+      <p>オブジェクトを <code>===</code> で比べると、同じ 1 つのオブジェクトかどうかを調べます。中身は比べません。中身が同じでも、別に作ったオブジェクトなら <code>false</code> です。別の変数に入れただけなら、同じオブジェクトなので <code>true</code> です。</p>
+      <dl class="eg">
+        <div><dt><code>copied === address</code></dt><dd class="r"><code>false</code></dd><dd class="c">別に作ったオブジェクト</dd></div>
+        <div><dt><code>copied.city === address.city</code></dt><dd class="r"><code>true</code></dd><dd class="c">中の値は同じ</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>テストの「中身が同じ」は、プロパティを 1 つずつ比べる確かめ方です。「別のオブジェクト」は、<code>===</code> と同じ確かめ方です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 copyItem を作る。Item の item を受け取り、Item を返す
+export function copyItem() {
+  // item を広げた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>copied</code> の行と同じ形です。<code>return item;</code> では同じオブジェクトを返すことになり、型の確認は通っても、テストが通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c02-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">price を percentOff パーセント引きにした新しい Item を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function discountItem() {}</code></pre>
+      <p>商品 <code>item</code> と割引率 <code>percentOff</code>（パーセント）を受け取ります。価格を割り引いた新しい <code>Item</code> を返します。1 円未満は切り捨てます。元の <code>item</code> は書き換えません。引数は <code>Item</code> と数値、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>discountItem(item, 10).price</code></dt><dd class="r"><code>135</code></dd><dd class="c">150 円の 90%</dd></div>
+          <div><dt><code>discountItem(item, 15).price</code></dt><dd class="r"><code>127</code></dd><dd class="c">127.5 を切り捨てる</dd></div>
+          <div><dt><code>item.price</code></dt><dd class="r"><code>150</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code> と <code>number</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 discountItem を作る。Item の item と数値 percentOff を受け取り、Item を返す
+export function discountItem() {
+  // 値引き後の価格 discounted を作り、item の price × (100 - percentOff) ÷ 100 を切り捨てた数を入れる
+  // item をもとに price を discounted に変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の計算は、01章 q02 問11 と同じです。切り捨ては <code>Math.floor()</code> です。2 行目は、問2 のサンプルの <code>moved</code> の行と同じ形で、<code>price:</code> の後ろに <code>discounted</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c02-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">引数の位置で分割代入して、「こんにちは、山田さん」を返す</span>
+      <span class="q-new">新しく出てくる書き方：引数の位置での分割代入 <code>({ a }: 型)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number; email: string };
+
+export function greetByName() {}</code></pre>
+      <p>利用者 <code>User</code> を受け取り、「こんにちは、山田さん」の形のあいさつを返します。<code>name</code> は、引数のかっこの中で分割代入して取り出します（<code>function greetByName({ name }: User)</code> の形）。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetByName({ id: 1, name: "山田", age: 30, email: "y@example.com" })</code></dt><dd class="r"><code>"こんにちは、山田さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">({ a }: 型)</code><h4>引数の位置で分割代入する</h4></div>
+      <p>引数を受け取る場所で、そのまま分割代入できます。関数の中では、取り出したプロパティの名前を変数として使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文の型 Order を作る。id は数値、customer は文字列、total は数値
+type Order = { id: number; customer: string; total: number };
+// 関数 thanks を作る。Order を受け取り、引数の位置で customer を取り出す。文字列を返す
+function thanks({ customer }: Order): string {
+  // customer を埋め込んだ「◯様、ご注文ありがとうございます」を返す
+  return `${customer}様、ご注文ありがとうございます`;
+}
+// 結果: thanks({ id: 7, customer: "佐藤", total: 3200 }) は "佐藤様、ご注文ありがとうございます"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function thanks(<span class="seg"><i>1</i>{ customer }</span><span class="seg"><i>2</i>: Order</span>)<span class="seg"><i>3</i>: string</span> {</pre>
+        <ol>
+          <li><span>受け取ったオブジェクトから取り出すプロパティです。関数の中で <code>customer</code> として使えます。</span></li>
+          <li><span>受け取るオブジェクト全体の型です。取り出すプロパティ 1 つの型ではありません。</span></li>
+          <li><span>戻り値の型です。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>{ } の中に型を書く</h5>
+          <pre><code class="language-typescript">function thanks({ customer: string }) {</code></pre>
+          <div class="verdict ng">✕ string という名前の変数を作る書き方になり、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>{ } の外に型を書く</h5>
+          <pre><code class="language-typescript">function thanks({ customer }: Order): string {</code></pre>
+          <div class="verdict ok">○ customer を取り出し、全体の型は Order です</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>{ a: b }</code> の形は、名前を付け替える分割代入です（問17）。型を書く場所と間違えやすいので、型はいつも <code>{ }</code> の外に書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greetByName を作る。User を受け取り、引数の位置で name を取り出す。文字列を返す
+export function greetByName() {
+  // name を埋め込んだ「こんにちは、◯さん」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>thanks</code> と同じ形です。かっこの中は <code>{ name }: User</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c02-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">引数の位置で price を分割代入し、1000円以上なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function isExpensive() {}</code></pre>
+      <p>商品 <code>Item</code> を受け取り、価格が 1000 円以上なら <code>true</code>、そうでなければ <code>false</code> を返します。<code>price</code> は、引数の位置で分割代入して取り出します。戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isExpensive({ id: 1, name: "りんご", price: 150, stock: 12 })</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isExpensive({ id: 2, name: "メロン", price: 1000, stock: 1 })</code></dt><dd class="r"><code>true</code></dd><dd class="c">ちょうど 1000 円も true</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isExpensive を作る。Item を受け取り、引数の位置で price を取り出す。true か false を返す
+export function isExpensive() {
+  // price が 1000 以上かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>かっこの中は問13 と同じ形で、<code>{ price }: Item</code> です。「true か false を返す」は <code>: boolean</code>、「以上」は <code>&gt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c02-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">引数の位置で price と stock を分割代入し、在庫金額を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function stockValue() {}</code></pre>
+      <p>商品 <code>Item</code> を受け取り、在庫金額（価格 × 在庫数）を返します。<code>price</code> と <code>stock</code> は、引数の位置で分割代入して取り出します。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>stockValue({ id: 1, name: "りんご", price: 150, stock: 12 })</code></dt><dd class="r"><code>1800</code></dd><dd class="c">150 × 12</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 stockValue を作る。Item を受け取り、引数の位置で price と stock を取り出す。数値を返す
+export function stockValue() {
+  // price と stock を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じ形で、<code>{ }</code> の中に <code>price</code> と <code>stock</code> を <code>,</code> で区切って並べます。掛け算は <code>*</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c02-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">stock を 0 にした新しい Item を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function resetStock() {}</code></pre>
+      <p>商品 <code>item</code> を受け取り、在庫数を 0 にした新しい <code>Item</code> を返します。元の <code>item</code> は書き換えません。引数は <code>Item</code> 1 つ、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>resetStock(item).stock</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>item.stock</code></dt><dd class="r"><code>12</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 resetStock を作る。Item の item を受け取り、Item を返す
+export function resetStock() {
+  // item をもとに stock を 0 に変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 のサンプルの <code>moved</code> の行と同じ形です。問3 と違って引数で数を受け取らないので、<code>0</code> を直接書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c02-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">分割代入で名前を付け替えて、{ value, label } を返す</span>
+      <span class="q-new">新しく出てくる書き方：分割代入で名前を付け替える <code>{ a: b }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function toOption() {}</code></pre>
+      <p>商品 <code>Item</code> を受け取り、選択肢の形 <code>{ value, label }</code> にして返します。<code>value</code> には <code>id</code>、<code>label</code> には <code>name</code> の値を入れます。分割代入で、<code>id</code> を <code>value</code>、<code>name</code> を <code>label</code> という名前に付け替えて取り出します（<code>const { id: value, name: label } = item</code> の形）。戻り値は、<code>value</code> が数値、<code>label</code> が文字列のオブジェクトです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toOption({ id: 1, name: "りんご", price: 150, stock: 12 })</code></dt><dd class="r"><code>{ value: 1, label: "りんご" }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>{ value: number; label: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ a: b }</code><h4>分割代入で名前を付け替える</h4></div>
+      <p>分割代入の <code>{ }</code> の中に <code>プロパティ名: 新しい名前</code> と書くと、プロパティを別の名前の変数に取り出します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員の型 Member を作る。id は数値、name は文字列、rank は文字列
+type Member = { id: number; name: string; rank: string };
+// 会員 member を作り、id が 5、name が "鈴木"、rank が "ゴールド" のオブジェクトを入れる
+const member: Member = { id: 5, name: "鈴木", rank: "ゴールド" };
+// member から id を memberId、name を displayName という名前で取り出す
+const { id: memberId, name: displayName } = member;
+// 結果: memberId は 5、displayName は "鈴木"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const { <span class="seg"><i>1</i>id</span>: <span class="seg"><i>2</i>memberId</span>, name: displayName } = member;</pre>
+        <ol>
+          <li><span>取り出すプロパティの名前です。<code>member</code> の型にある名前を書きます。</span></li>
+          <li><span>新しくできる変数の名前です。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある間違い</b>付け替えると、元の名前の変数はできません。上のサンプルのあとで <code>id</code> を使うと、型の確認で「<code>id</code> が見つからない」エラーになります。左が元の名前、右が新しい名前です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toOption を作る。Item の item を受け取り、value が数値、label が文字列のオブジェクトを返す
+export function toOption() {
+  // item から id を value、name を label という名前で取り出す
+  // value と label を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問17 のサンプルの <code>memberId</code> と <code>displayName</code> の行と同じ形です。2 行目は、問9 と同じく省略記法で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c02-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">{ size?, color? } の足りない値を、既定値で補う</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withDefaults() {}</code></pre>
+      <p>設定のオブジェクト <code>options</code> を受け取ります。<code>options</code> の <code>size</code>（数値）と <code>color</code>（文字列）は、なくてもよいプロパティです（q02 問1）。足りない値を、<code>size</code> は <code>10</code>、<code>color</code> は <code>"black"</code> で補ったオブジェクトを返します。既定値（値がないときに使う値）のオブジェクトの後ろに、スプレッドで <code>options</code> を重ねます。戻り値は、<code>size</code> が数値、<code>color</code> が文字列のオブジェクトです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withDefaults({ color: "red" })</code></dt><dd class="r"><code>{ size: 10, color: "red" }</code></dd><dd class="c">size だけ補う</dd></div>
+          <div><dt><code>withDefaults({})</code></dt><dd class="r"><code>{ size: 10, color: "black" }</code></dd><dd class="c">両方を補う</dd></div>
+          <div><dt><code>withDefaults({ size: 20, color: "blue" })</code></dt><dd class="r"><code>{ size: 20, color: "blue" }</code></dd><dd class="c">両方あれば、そのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ size?: number; color?: string }</code>、戻り値が <code>{ size: number; color: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withDefaults を作る。size（なくてもよい数値）と color（なくてもよい文字列）を持つオブジェクト options を受け取り、size が数値、color が文字列のオブジェクトを返す
+export function withDefaults() {
+  // size が 10、color が "black" のオブジェクトに options を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「なくてもよい」は <code>size?: number</code> のように <code>?</code> を付けます。既定値のプロパティを先に書き、そのあとに <code>...options</code> を書きます。問10 のように後ろが勝つので、<code>options</code> にある値だけが上書きされます。既定値を書かずに <code>{ ...options }</code> だけを返すと、<code>size</code> がないかもしれないので、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c02-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">{ x } と { y } を合わせて { x, y } にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function combine() {}</code></pre>
+      <p><code>x</code> を持つオブジェクトと、<code>y</code> を持つオブジェクトを受け取ります。2 つを合わせて、<code>x</code> と <code>y</code> を持つ 1 つのオブジェクトにして返します。<code>x</code> と <code>y</code> は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>combine({ x: 1 }, { y: 2 })</code></dt><dd class="r"><code>{ x: 1, y: 2 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ x: number }</code> と <code>{ y: number }</code>、戻り値が <code>{ x: number; y: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 combine を作る。x が数値のオブジェクト a と、y が数値のオブジェクト b を受け取り、x と y が数値のオブジェクトを返す
+export function combine() {
+  // a に b を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のサンプルの <code>updated</code> の行と同じ形です。同じ名前のプロパティがないので、今度は順番を逆にしても結果は同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c02-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">price を税込みにした新しい Item を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Item = { id: number; name: string; price: number; stock: number };
+
+export function withTax() {}</code></pre>
+      <p>商品 <code>item</code> を受け取り、価格を税込み（10%）にした新しい <code>Item</code> を返します。1 円未満は切り捨てます。元の <code>item</code> は書き換えません。引数は <code>Item</code> 1 つ、戻り値は <code>Item</code> です。</p>
+      <p>テストの <code>item</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withTax(item).price</code></dt><dd class="r"><code>165</code></dd><dd class="c">150 円の 110%</dd></div>
+          <div><dt><code>item.price</code></dt><dd class="r"><code>150</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Item</code>、戻り値が <code>Item</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withTax を作る。Item の item を受け取り、Item を返す
+export function withTax() {
+  // 税込みの価格 taxed を作り、item の price × 110 ÷ 100 を切り捨てた数を入れる
+  // item をもとに price を taxed に変えた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じ形で、計算の式だけが違います。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c02-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">価格の変更・入荷・商品の説明</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = {
+  id: number;
+  name: string;
+  price: number;
+  stock: number;
+};
+
+export function updatePrice() {}
+
+export function restock() {}
+
+export function summary() {}</code></pre>
+      <p>商品の型 <code>Product</code> は書いてあります。3 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>updatePrice(product, price)</code>：<code>price</code> だけを変えた、新しい <code>Product</code> を返します。スプレッド構文を使い、元の <code>product</code> は変えません。</li>
+        <li><code>restock(product, amount)</code>：<code>stock</code> を <code>amount</code> だけ増やした、新しい <code>Product</code> を返します。元の <code>product</code> は変えません。</li>
+        <li><code>summary(product)</code>：分割代入で <code>name</code>、<code>price</code>、<code>stock</code> を取り出し、<code>"りんご: 150円（在庫 12）"</code> の形の文字列を返します。</li>
+      </ol>
+      <p>テストの <code>product</code> は <code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>updatePrice(product, 120)</code></dt><dd class="r"><code>{ id: 1, name: "りんご", price: 120, stock: 12 }</code></dd><dd class="c">product とは別のオブジェクト</dd></div>
+          <div><dt><code>product</code></dt><dd class="r"><code>{ id: 1, name: "りんご", price: 150, stock: 12 }</code></dd><dd class="c">updatePrice を呼んだあとも元のまま</dd></div>
+          <div><dt><code>restock(product, 8)</code></dt><dd class="r"><code>{ id: 1, name: "りんご", price: 150, stock: 20 }</code></dd><dd class="c">呼んだあとも product は元のまま</dd></div>
+          <div><dt><code>summary(product)</code></dt><dd class="r"><code>"りんご: 150円（在庫 12）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>updatePrice</code> と <code>restock</code> は、引数が <code>Product</code> と <code>number</code>、戻り値が <code>Product</code> です。<code>summary</code> は、引数が <code>Product</code>、戻り値が <code>string</code> です。どちらも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 updatePrice を作る。Product の product と数値 price を受け取り、Product を返す
+export function updatePrice() {
+  // product をもとに price だけを変えた新しいオブジェクトを返す
+}
+
+// 関数 restock を作る。Product の product と数値 amount を受け取り、Product を返す
+export function restock() {
+  // product をもとに stock を product の stock + amount に変えた新しいオブジェクトを返す
+}
+
+// 関数 summary を作る。Product の product を受け取り、文字列を返す
+export function summary() {
+  // product から name と price と stock を取り出す
+  // name と price と stock を埋め込んだ「◯: ◯円（在庫 ◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>updatePrice</code> は問2、<code>restock</code> は問4、<code>summary</code> は問1 と同じ形です。<code>summary</code> の文字列は、<code>:</code> の後ろと「在庫」の後ろに半角スペースがあります。かっこは全角です。</p></details>
+    </div>
+  </section>
+</section>

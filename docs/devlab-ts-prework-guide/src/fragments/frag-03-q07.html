@@ -1,0 +1,903 @@
+<section class="sec" id="c03-q07">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q07 as const</h2>
+    <p>値の後ろに <code>as const</code> を付ける練習を 20 問します。問1〜8 は、定数を <code>as const</code> を付けて作り、ほかのファイルから使えるようにします。テストは値だけでなく、推論される型（読み取り専用と、リテラル型）も確かめます。問9〜20 は、用意された定数 <code>STATUSES</code>、<code>PRIORITY_POINTS</code>、<code>MONTH_NAMES</code> などを使って関数を書きます。引数と戻り値には型注釈を付けます。スターターにある型 <code>Status</code> と <code>Priority</code> の書き方は 07章で学びます。ここでは、出てきた問題で読み方だけを説明します。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q07-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">定数 DAYS を宣言する</span>
+      <span class="q-new">新しく出てくる書き方：<code>as const</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに DAYS を宣言する</code></pre>
+      <p>定数 <code>DAYS</code> を作り、<code>["月", "火", "水"]</code> を入れます。<code>as const</code> を付けて、型が <code>readonly ["月", "火", "水"]</code> になるようにします。テストがこの定数を読むので、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>DAYS</code></dt><dd class="r"><code>["月", "火", "水"]</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>DAYS</code> の型</dt><dd class="r"><code>readonly ["月", "火", "水"]</code></dd><dd class="c">読み取り専用で、入れた値がそのまま型になる</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">as const</code><h4>値を、細かい型のまま読み取り専用にする</h4></div>
+      <p>値の後ろに <code>as const</code> を付けると、TypeScript は値をできるだけ細かい型にします。配列に付けると、次の 3 つが起きます。</p>
+      <p>1 つめは、要素の型が、入れた値そのもののリテラル型（01章 q07 問1）になることです。2 つめは、要素の数と並びが決まったタプル（02章 q06 問1）になることです。3 つめは、読み取り専用（<code>readonly</code>）になり、書き換えられなくなることです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 SIZES を作り、["S", "M", "L"] を as const を付けて入れる
+const SIZES = ["S", "M", "L"] as const;
+// 結果: SIZES の型は readonly ["S", "M", "L"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const SIZES = <span class="seg"><i>1</i>["S", "M", "L"]</span> <span class="seg"><i>2</i>as const</span>;</pre>
+        <ol>
+          <li><span>入れる値です。</span></li>
+          <li><span>「この値を、細かい型のまま読み取り専用にする」という印です。値のすぐ後ろに書きます。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5><code>as const</code> なし</h5>
+          <pre><code class="language-typescript">// サイズ sizes を作り、["S", "M", "L"] を入れる
+const sizes = ["S", "M", "L"];
+// 結果: 型は string[]</code></pre>
+        </div>
+        <div>
+          <h5><code>as const</code> あり</h5>
+          <pre><code class="language-typescript">// 定数 SIZES を作り、["S", "M", "L"] を as const を付けて入れる
+const SIZES = ["S", "M", "L"] as const;
+// 結果: 型は readonly ["S", "M", "L"]</code></pre>
+        </div>
+      </div>
+      <p>読み取り専用なので、要素を足したり入れ直したりすると、型の確認でエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>as const</code> なしの配列に足す</h5>
+          <pre><code class="language-typescript">// sizes の最後に "XL" を足す
+sizes.push("XL");</code></pre>
+          <div class="verdict ok">○ 書き換えられる配列なので、足せます</div>
+        </div>
+        <div>
+          <h5><code>as const</code> ありの配列に足す</h5>
+          <pre><code class="language-typescript">// SIZES の最後に "XL" を足す
+SIZES.push("XL");</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Property 'push' does not exist on type 'readonly ["S", "M", "L"]'）</div>
+        </div>
+      </div>
+      <p>オブジェクトに付けると、すべてのプロパティが <code>readonly</code>（02章 q02 問7）になり、値の型はリテラル型になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料の設定 SHIPPING を作り、{ fee: 500, region: "関東" } を as const を付けて入れる
+const SHIPPING = { fee: 500, region: "関東" } as const;
+// 結果: SHIPPING の型は { readonly fee: 500; readonly region: "関東" }</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>{ fee: 500, region: "関東" }</code></dt><dd class="r"><code>{ fee: number; region: string }</code></dd><dd class="c"><code>as const</code> なしで推論される型</dd></div>
+        <div><dt><code>[10, 20] as const</code></dt><dd class="r"><code>readonly [10, 20]</code></dd><dd class="c">数もリテラル型になる</dd></div>
+        <div><dt><code>{ open: true } as const</code></dt><dd class="r"><code>{ readonly open: true }</code></dd><dd class="c"><code>true</code> もリテラル型になる</dd></div>
+        <div><dt><code>["S", 12] as const</code></dt><dd class="r"><code>readonly ["S", 12]</code></dd><dd class="c">種類のちがう値を並べたタプル</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>テストの <code>expectTypeOf</code> は、定数の型が決めた型と同じかを確かめます。VS Code で定数にマウスを載せると、推論された型が表示されます。<code>as const</code> を付け忘れると型が <code>string[]</code> になり、テストが通りません。</p>
+      <p class="memo"><b>決まり</b><code>as const</code> は型の確認のための印です。JavaScript に変換したあとのコードには残りません。値は変わりません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/const-assertion">サバイバルTypeScript「constアサーション」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 DAYS を作り、["月", "火", "水"] を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「as const を付けて入れる」は、値のすぐ後ろに <code>as const</code> を書きます。問1 のサンプルの <code>SIZES</code> の行と同じ形です。「ほかのファイルから使えるようにする」は、01章 q03 問1 の <code>export</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q07-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">定数 ORIGIN を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに ORIGIN を宣言する</code></pre>
+      <p>定数 <code>ORIGIN</code> を作り、オブジェクト <code>{ x: 0, y: 0 }</code> を入れます。<code>as const</code> を付けて、型が <code>{ readonly x: 0; readonly y: 0 }</code> になるようにします。ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ORIGIN</code></dt><dd class="r"><code>{ x: 0, y: 0 }</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>ORIGIN</code> の型</dt><dd class="r"><code>{ readonly x: 0; readonly y: 0 }</code></dd><dd class="c">どのプロパティも読み取り専用で、値は 0 だけ</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 ORIGIN を作り、{ x: 0, y: 0 } を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>SHIPPING</code> の行と同じ形です。オブジェクトの <code>}</code> のすぐ後ろに <code>as const</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q07-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">定数 ROLES を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに ROLES を宣言する</code></pre>
+      <p>定数 <code>ROLES</code> を作り、<code>["admin", "editor", "viewer"]</code> を入れます。<code>as const</code> を付け、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ROLES</code></dt><dd class="r"><code>["admin", "editor", "viewer"]</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>ROLES</code> の型</dt><dd class="r"><code>readonly ["admin", "editor", "viewer"]</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 ROLES を作り、["admin", "editor", "viewer"] を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、入れる値だけが違います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q07-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">定数 HTTP_STATUS を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに HTTP_STATUS を宣言する</code></pre>
+      <p>定数 <code>HTTP_STATUS</code> を作り、オブジェクト <code>{ ok: 200, notFound: 404 }</code> を入れます。<code>as const</code> を付け、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>HTTP_STATUS</code></dt><dd class="r"><code>{ ok: 200, notFound: 404 }</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>HTTP_STATUS</code> の型</dt><dd class="r"><code>{ readonly ok: 200; readonly notFound: 404 }</code></dd><dd class="c">値の型は、その数だけを表すリテラル型</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 HTTP_STATUS を作り、{ ok: 200, notFound: 404 } を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。<code>as const</code> がないと、型は <code>{ ok: number; notFound: number }</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q07-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">定数 LEVELS を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに LEVELS を宣言する</code></pre>
+      <p>定数 <code>LEVELS</code> を作り、数の配列 <code>[1, 2, 3]</code> を入れます。<code>as const</code> を付け、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>LEVELS</code></dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>LEVELS</code> の型</dt><dd class="r"><code>readonly [1, 2, 3]</code></dd><dd class="c">数もリテラル型になる</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 LEVELS を作り、[1, 2, 3] を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。問1 の表の <code>[10, 20] as const</code> のように、数の配列でも書き方は変わりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q07-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">定数 THEME を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに THEME を宣言する</code></pre>
+      <p>定数 <code>THEME</code> を作り、オブジェクト <code>{ primary: "#0066ff", radius: 4 }</code> を入れます。文字列と数のプロパティが混ざっています。<code>as const</code> を付け、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>THEME</code></dt><dd class="r"><code>{ primary: "#0066ff", radius: 4 }</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>THEME</code> の型</dt><dd class="r"><code>{ readonly primary: "#0066ff"; readonly radius: 4 }</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 THEME を作り、{ primary: "#0066ff", radius: 4 } を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。問1 の <code>SHIPPING</code> のサンプルのように、文字列と数が混ざっていても、<code>as const</code> は 1 つ付ければすべてのプロパティに効きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q07-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">定数 FLAGS を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに FLAGS を宣言する</code></pre>
+      <p>定数 <code>FLAGS</code> を作り、オブジェクト <code>{ beta: true, debug: false }</code> を入れます。<code>as const</code> を付け、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>FLAGS</code></dt><dd class="r"><code>{ beta: true, debug: false }</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>FLAGS</code> の型</dt><dd class="r"><code>{ readonly beta: true; readonly debug: false }</code></dd><dd class="c"><code>true</code> と <code>false</code> が、それぞれ別のリテラル型になる</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 FLAGS を作り、{ beta: true, debug: false } を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。問1 の表の <code>{ open: true } as const</code> と同じく、<code>true</code> と <code>false</code> もリテラル型になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q07-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">定数 ENTRY を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに ENTRY を宣言する</code></pre>
+      <p>定数 <code>ENTRY</code> を作り、文字列と数を並べた <code>["key", 1]</code> を入れます。<code>as const</code> を付けて、型が <code>readonly ["key", 1]</code> になるようにします。ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ENTRY</code></dt><dd class="r"><code>["key", 1]</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>ENTRY</code> の型</dt><dd class="r"><code>readonly ["key", 1]</code></dd><dd class="c">読み取り専用のタプル</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 ENTRY を作り、["key", 1] を as const を付けて入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。問1 の表の <code>["S", 12] as const</code> と同じく、種類のちがう値を並べると、それぞれの位置の型が決まったタプルになります。<code>as const</code> がないと、型は <code>(string | number)[]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q07-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">文字列が STATUSES のどれかなら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.some()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"] as const;
+
+export function isStatus() {}</code></pre>
+      <p>文字列を 1 つ受け取り、<code>STATUSES</code> の要素のどれかと等しければ <code>true</code>、どれとも等しくなければ <code>false</code> を返します。<code>STATUSES</code> の <code>.some()</code> を使って書きます。配列の <code>.includes()</code> は、引数の型が合わないので使えません。わけは「新しい書き方」で説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isStatus("doing")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isStatus("closed")</code></dt><dd class="r"><code>false</code></dd><dd class="c">STATUSES にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.some()</code><h4>条件に合う要素が 1 つでもあるかを調べる</h4></div>
+      <p>要素を 1 つずつコールバックに渡し、1 つでも <code>true</code> が返れば <code>true</code> を返します。すべてで <code>false</code> が返れば <code>false</code> です。「すべて」を調べる <code>.every()</code>（02章 q04 問20）に対して、<code>.some()</code> は「どれか 1 つでも」を調べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫数 stocks を作り、[12, 0, 5] を入れる
+const stocks = [12, 0, 5];
+// hasSoldOut を作り、stocks の要素のどれかが 0 と等しいか（true か false）を入れる
+const hasSoldOut = stocks.some((stock) =&gt; stock === 0);
+// 結果: hasSoldOut は true</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>[12, 5].some((stock) =&gt; stock === 0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">0 の要素がない</dd></div>
+        <div><dt><code>[].some((stock) =&gt; stock === 0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">空の配列は、合う要素がないので false</dd></div>
+      </dl>
+      <p><code>as const</code> を付けた配列に、型が <code>string</code> の値が含まれるかを調べるときも、<code>.some()</code> を使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 PAYMENTS を作り、["card", "cash"] を as const を付けて入れる
+const PAYMENTS = ["card", "cash"] as const;
+// 関数 isPaymentMethod を作る。文字列の input を受け取り、true か false を返す
+function isPaymentMethod(input: string): boolean {
+  // PAYMENTS の要素のどれかが input と等しいか（true か false）を返す
+  return PAYMENTS.some((method) =&gt; method === input);
+}
+// 結果: isPaymentMethod("cash") は true、isPaymentMethod("bank") は false</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5><code>.includes()</code> で調べる</h5>
+          <pre><code class="language-typescript">// PAYMENTS に input が含まれるか（true か false）を返す
+return PAYMENTS.includes(input);</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Argument of type 'string' is not assignable to parameter of type '"card" | "cash"'）</div>
+        </div>
+        <div>
+          <h5><code>.some()</code> で調べる</h5>
+          <pre><code class="language-typescript">// PAYMENTS の要素のどれかが input と等しいか（true か false）を返す
+return PAYMENTS.some((method) =&gt; method === input);</code></pre>
+          <div class="verdict ok">○ 要素と input を === で比べるので、型の確認が通ります</div>
+        </div>
+      </div>
+      <p><code>as const</code> を付けた配列の <code>.includes()</code> は、要素の型（ここでは <code>"card" | "cash"</code>）の値しか受け取りません。<code>input</code> の型は <code>string</code> で、<code>"bank"</code> のような値も入りうるので、エラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isStatus を作る。文字列の text を受け取り、true か false を返す
+export function isStatus() {
+  // STATUSES の要素のどれかが text と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 の 2 つめのサンプルの <code>isPaymentMethod</code> と同じ形です。コールバックの引数は、<code>status</code> のように中身が分かる名前にします。結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q07-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">STATUSES の何番目かを返す</span>
+      <span class="q-new">新しく出てくる書き方：型の位置の <code>typeof</code>、<code>(typeof 配列)[number]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+export function statusIndex() {}</code></pre>
+      <p>ステータスを 1 つ受け取り、<code>STATUSES</code> の中で何番目にあるかを返します。位置は 0 から数えます。引数の型は、スターターにある <code>Status</code> にします。<code>Status</code> は、<code>"todo"</code> か <code>"doing"</code> か <code>"done"</code> のどれかを表す型です。<code>Status</code> の行の読み方は、下で説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>statusIndex("todo")</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusIndex("done")</code></dt><dd class="r"><code>2</code></dd><dd class="c">"todo" が 0、"doing" が 1、"done" が 2</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Status</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">typeof SIZES</code><h4>型の位置で、定数の型を取り出す</h4></div>
+      <p>型を書く場所（<code>type</code> の <code>=</code> の右や、<code>:</code> の後ろ）に <code>typeof 定数の名前</code> と書くと、その定数の型になります。03章 q01 問3 の <code>typeof</code> は、値の種類を <code>"string"</code> のような文字列で返す演算子でした。書く場所が違うと、意味も違います。ここでは、読めれば十分。くわしくは 07章 q01。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 SIZES を作り、["S", "M", "L"] を as const を付けて入れる
+const SIZES = ["S", "M", "L"] as const;
+// SizeList という型を作る。SIZES の型と同じ
+type SizeList = typeof SIZES;
+// 結果: SizeList は readonly ["S", "M", "L"]</code></pre>
+      </div>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/typeof-type-operator">サバイバルTypeScript「typeof型演算子」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">(typeof SIZES)[number]</code><h4>配列の要素の型を取り出す</h4></div>
+      <p>配列の型の後ろに <code>[number]</code> を付けると、その配列の「何番目でもよい要素」の型になります。<code>as const</code> を付けた配列なら、要素のリテラル型を <code>|</code> でつないだユニオン型になります。ここでは、読めれば十分。くわしくは 07章 q01。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 SIZES を作り、["S", "M", "L"] を as const を付けて入れる
+const SIZES = ["S", "M", "L"] as const;
+// Size という型を作る。SIZES の要素のどれか
+type Size = (typeof SIZES)[number];
+// 選んだサイズ selected を作る。型は Size。"M" を入れる
+const selected: Size = "M";
+// 結果: Size は "S" | "M" | "L"、selected は "M"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Size = (<span class="seg"><i>1</i>typeof SIZES</span>)<span class="seg"><i>2</i>[number]</span>;</pre>
+        <ol>
+          <li><span>先に、定数 <code>SIZES</code> の型 <code>readonly ["S", "M", "L"]</code> を取り出します。かっこは、ここを先に読むという印です。</span></li>
+          <li><span>その型の要素の型を取り出します。<code>number</code> は「何番目でも」という意味です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>typeof SIZES</code></dt><dd class="r"><code>readonly ["S", "M", "L"]</code></dd><dd class="c">定数の型</dd></div>
+        <div><dt><code>(typeof SIZES)[number]</code></dt><dd class="r"><code>"S" | "M" | "L"</code></dd><dd class="c">要素のどれか</dd></div>
+        <div><dt><code>(typeof SIZES)[0]</code></dt><dd class="r"><code>"S"</code></dd><dd class="c">0 番目の要素の型だけ</dd></div>
+        <div><dt><code>(typeof sizes)[number]</code></dt><dd class="r"><code>string</code></dd><dd class="c"><code>as const</code> のない <code>sizes</code>（型は <code>string[]</code>）のとき</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>要素にある値を入れる</h5>
+          <pre><code class="language-typescript">// 選んだサイズ selected を作る。型は Size。"M" を入れる
+const selected: Size = "M";</code></pre>
+          <div class="verdict ok">○ "M" は SIZES の要素にあります</div>
+        </div>
+        <div>
+          <h5>要素にない値を入れる</h5>
+          <pre><code class="language-typescript">// 選んだサイズ selected を作る。型は Size。"XL" を入れる
+const selected: Size = "XL";</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Type '"XL"' is not assignable to type '"S" | "M" | "L"'）</div>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b>この書き方では、値の一覧と型を 1 か所で決められます。<code>SIZES</code> に <code>"XL"</code> を足すと、<code>Size</code> にも <code>"XL"</code> が入ります。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/indexed-access-types">サバイバルTypeScript「インデックスアクセス型」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 statusIndex を作る。Status 型の status を受け取り、数値を返す
+export function statusIndex() {
+  // STATUSES の中で status がある位置（0 から数える）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型注釈は <code>Status</code> と書きます。スターターで作ってある型なので、そのまま使えます。位置は、配列の <code>.indexOf()</code>（02章 q04 問10）で求めます。<code>status</code> の型が <code>Status</code> なので、<code>.includes()</code> と違って、<code>STATUSES.indexOf(status)</code> は型の確認が通ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q07-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">STATUSES の 1 つ前のステータスを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+export function prevStatus() {}</code></pre>
+      <p>ステータスを受け取り、<code>STATUSES</code> の並びで 1 つ前のステータスを返します。先頭の <code>"todo"</code> には前がないので、<code>"todo"</code> のまま返します。引数と戻り値の型は、どちらも <code>Status</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>prevStatus("done")</code></dt><dd class="r"><code>"doing"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>prevStatus("doing")</code></dt><dd class="r"><code>"todo"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>prevStatus("todo")</code></dt><dd class="r"><code>"todo"</code></dd><dd class="c">前がないので、そのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Status</code>、戻り値が <code>Status</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 prevStatus を作る。Status 型の status を受け取り、Status 型の値を返す
+export function prevStatus() {
+  // 位置 index を作り、STATUSES の中で status がある位置（0 から数える）を入れる
+  // STATUSES の（index − 1）番目の要素を返す。undefined なら status を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>位置は問10 と同じく <code>.indexOf()</code> で求めます。<code>"todo"</code> の位置は 0 なので、1 を引くと -1 番目になります。<code>[ ]</code> に -1 を書いても、後ろから数える位置にはなりません（01章 q05 問4 の <code>.slice()</code> とは違います）。要素がないので <code>undefined</code> が返ります。取り出した値の型も <code>Status | undefined</code> です。「undefined なら status」は <code>??</code>（02章 q02 問1）で、02章 q04 問3 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q07-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">PRIORITY_POINTS から点数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>keyof typeof オブジェクト</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const PRIORITY_POINTS = { high: 3, middle: 2, low: 1 } as const;
+
+export type Priority = keyof typeof PRIORITY_POINTS;
+
+export function priorityPoint() {}</code></pre>
+      <p>優先度を 1 つ受け取り、<code>PRIORITY_POINTS</code> からその点数を返します。引数の型は、スターターにある <code>Priority</code> にします。<code>Priority</code> は、<code>"high"</code> か <code>"middle"</code> か <code>"low"</code> のどれかを表す型です。<code>Priority</code> の行の読み方は、下で説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priorityPoint("high")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priorityPoint("low")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Priority</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">keyof typeof SHIPPING_FEES</code><h4>オブジェクトのキーの名前を並べた型</h4></div>
+      <p><code>keyof オブジェクトの型</code> と書くと、その型のキーの名前を <code>|</code> でつないだユニオン型になります。問10 の <code>typeof</code> と組み合わせると、定数のオブジェクトから「キーのどれか」の型を作れます。ここでは、読めれば十分。くわしくは 07章 q02。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 SHIPPING_FEES を作り、{ standard: 500, express: 1200 } を as const を付けて入れる
+const SHIPPING_FEES = { standard: 500, express: 1200 } as const;
+// Shipping という型を作る。SHIPPING_FEES のキーのどれか
+type Shipping = keyof typeof SHIPPING_FEES;
+// 配送方法 method を作る。型は Shipping。"express" を入れる
+const method: Shipping = "express";
+// fee を作り、SHIPPING_FEES の method の値を入れる
+const fee = SHIPPING_FEES[method];
+// 結果: Shipping は "standard" | "express"、fee は 1200</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Shipping = <span class="seg"><i>1</i>keyof</span> <span class="seg"><i>2</i>typeof SHIPPING_FEES</span>;</pre>
+        <ol>
+          <li><span>2 の型から、キーの名前を取り出します。</span></li>
+          <li><span>先に、定数の型 <code>{ readonly standard: 500; readonly express: 1200 }</code> を取り出します（問10）。</span></li>
+        </ol>
+      </figure>
+      <p>右から順に読みます。定数の型を取り出し、その型のキーを並べます。</p>
+      <dl class="eg">
+        <div><dt><code>typeof SHIPPING_FEES</code></dt><dd class="r"><code>{ readonly standard: 500; readonly express: 1200 }</code></dd><dd class="c">定数の型</dd></div>
+        <div><dt><code>keyof typeof SHIPPING_FEES</code></dt><dd class="r"><code>"standard" | "express"</code></dd><dd class="c">キーのどれか</dd></div>
+        <div><dt><code>SHIPPING_FEES[method]</code> の型</dt><dd class="r"><code>500 | 1200</code></dd><dd class="c"><code>method</code> の型が <code>Shipping</code> のとき。<code>undefined</code> は付かない</dd></div>
+      </dl>
+      <p>02章 q08 問1 のインデックス型では、どのキーがあるかが型から分からないので、取り出した値に <code>undefined</code> が付きました。<code>keyof</code> で作った型のキーは、かならずオブジェクトにあります。そのため、取り出した値に <code>undefined</code> が付きません。</p>
+      <div class="cmp">
+        <div>
+          <h5>あるキーを入れる</h5>
+          <pre><code class="language-typescript">// 配送方法 method を作る。型は Shipping。"standard" を入れる
+const method: Shipping = "standard";</code></pre>
+          <div class="verdict ok">○ "standard" は SHIPPING_FEES のキーです</div>
+        </div>
+        <div>
+          <h5>ないキーを入れる</h5>
+          <pre><code class="language-typescript">// 配送方法 method を作る。型は Shipping。"pickup" を入れる
+const method: Shipping = "pickup";</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Type '"pickup"' is not assignable to type '"standard" | "express"'）</div>
+        </div>
+      </div>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/keyof-type-operator">サバイバルTypeScript「keyof型演算子」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priorityPoint を作る。Priority 型の priority を受け取り、数値を返す
+export function priorityPoint() {
+  // PRIORITY_POINTS の priority の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 のサンプルの <code>fee</code> の行と同じ形で、<code>[ ]</code> の中にキーの入った引数を書きます。取り出した値の型は <code>3 | 2 | 1</code> で、<code>number</code> の戻り値にそのまま入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q07-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">点数の高いほうの優先度を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const PRIORITY_POINTS = { high: 3, middle: 2, low: 1 } as const;
+
+export type Priority = keyof typeof PRIORITY_POINTS;
+
+export function higherPriority() {}</code></pre>
+      <p>優先度を 2 つ（<code>a</code> と <code>b</code>）受け取り、<code>PRIORITY_POINTS</code> の点数が高いほうの優先度を返します。同じ点数なら <code>a</code> を返します。引数と戻り値の型は、どれも <code>Priority</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>higherPriority("low", "middle")</code></dt><dd class="r"><code>"middle"</code></dd><dd class="c">1 点と 2 点</dd></div>
+          <div><dt><code>higherPriority("high", "middle")</code></dt><dd class="r"><code>"high"</code></dd><dd class="c">3 点と 2 点</dd></div>
+          <div><dt><code>higherPriority("low", "low")</code></dt><dd class="r"><code>"low"</code></dd><dd class="c">同じなら a</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Priority</code> と <code>Priority</code>、戻り値が <code>Priority</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 higherPriority を作る。Priority 型の a と Priority 型の b を受け取り、Priority 型の値を返す
+export function higherPriority() {
+  // PRIORITY_POINTS の b の値が PRIORITY_POINTS の a の値より大きいなら b、そうでなければ a を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>点数は問12 と同じく、<code>PRIORITY_POINTS[a]</code> のように取り出します。「◯ なら b、そうでなければ a」は条件演算子 <code>? :</code>（01章 q01 問12）です。b のほうが大きいときだけ b にすると、同じ点数のときは a が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q07-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">月の数から月の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const MONTH_NAMES = [
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
+] as const;
+
+export function monthName() {}</code></pre>
+      <p>月の数（1〜12）を受け取り、<code>MONTH_NAMES</code> からその月の名前を返します。1〜12 の外の数なら、エラーを投げます。引数は数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>monthName(4)</code></dt><dd class="r"><code>"4月"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>monthName(12)</code></dt><dd class="r"><code>"12月"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>monthName(13)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">13 月はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 monthName を作る。数値の month を受け取り、文字列を返す
+export function monthName() {
+  // 名前 name を作り、MONTH_NAMES の（month − 1）番目の要素を入れる
+  // もし name が undefined なら
+  //   "月は 1〜12 にしてください" というメッセージのエラーを投げる
+  // name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>位置は 0 から数えるので、"1月" は 0 番目です。<code>month - 1</code> 番目を取り出します。13 なら 12 番目で、要素がないので <code>undefined</code> になります。取り出した値の型も <code>"1月" | … | "12月" | undefined</code> なので、<code>undefined</code> を確かめてから返します。エラーは 01章 q04 問8 の <code>throw new Error()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q07-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">STATUSES をコピーした、書き換えられる配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：読み取り専用の配列から <code>[...配列]</code> で書き換えられる配列を作る</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+export function allStatuses() {}</code></pre>
+      <p><code>STATUSES</code> と同じ要素を同じ順に並べた、新しい配列を返します。返す配列は、受け取った側が書き換えられる配列にします。戻り値の型は <code>Status[]</code>（読み取り専用でない、<code>Status</code> の配列）です。引数はありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>allStatuses()</code></dt><dd class="r"><code>["todo", "doing", "done"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Status[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[...SIZES]</code><h4>読み取り専用の配列から、書き換えられる配列を作る</h4></div>
+      <p><code>as const</code> を付けた配列は読み取り専用です。そのため、書き換えられる配列の型（<code>Size[]</code> など）の変数には、そのまま入れられません。スプレッド <code>[...配列]</code>（02章 q05 問1）で要素を並べ直すと、新しい配列ができます。新しい配列は書き換えられる配列なので、<code>Size[]</code> に入れられます。元の配列は変わりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 SIZES を作り、["S", "M", "L"] を as const を付けて入れる
+const SIZES = ["S", "M", "L"] as const;
+// Size という型を作る。SIZES の要素のどれか
+type Size = (typeof SIZES)[number];
+// 大きい順のサイズ largeFirst を作る。型は Size の配列。SIZES の要素すべてを並べた新しい配列を入れる
+const largeFirst: Size[] = [...SIZES];
+// largeFirst の並びを逆にする
+largeFirst.reverse();
+// 結果: largeFirst は ["L", "M", "S"]、SIZES は ["S", "M", "L"] のまま</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>そのまま入れる</h5>
+          <pre><code class="language-typescript">const largeFirst: Size[] = SIZES;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（The type 'readonly ["S", "M", "L"]' is 'readonly' and cannot be assigned to the mutable type 'Size[]'）</div>
+        </div>
+        <div>
+          <h5>新しい配列にして入れる</h5>
+          <pre><code class="language-typescript">const largeFirst: Size[] = [...SIZES];</code></pre>
+          <div class="verdict ok">○ 新しい配列は書き換えられるので、Size[] に入ります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>エラーの mutable は「書き換えられる」という意味です。読み取り専用の配列を、書き換えられる配列として渡すと、元の定数が書き換えられてしまうかもしれません。それを止めるエラーです。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 allStatuses を作る。何も受け取らず、Status 型の配列を返す
+export function allStatuses() {
+  // STATUSES の要素すべてを並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型注釈は <code>Status[]</code> です。問15 のサンプルの <code>largeFirst</code> の行と同じく、<code>[...STATUSES]</code> で新しい配列を作って返します。<code>STATUSES</code> をそのまま返すと、サンプルの ✕ と同じエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q07-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">ステータスの表示名を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+// ここに STATUS_TEXT と関数 statusText を書く</code></pre>
+      <p>はじめに、定数 <code>STATUS_TEXT</code> を作り、<code>{ todo: "未着手", doing: "作業中", done: "完了" }</code> を <code>as const</code> を付けて入れます。ほかのファイルから使えるようにします。</p>
+      <p>次に、関数 <code>statusText</code> を書きます。ステータスを受け取り、<code>STATUS_TEXT</code> から表示名を返します。引数の型は <code>Status</code> です。戻り値の型注釈は書きません。<code>as const</code> のおかげで、戻り値の型が <code>"未着手" | "作業中" | "完了"</code> に推論されます。関数も、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>STATUS_TEXT</code></dt><dd class="r"><code>{ todo: "未着手", doing: "作業中", done: "完了" }</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>statusText("doing")</code></dt><dd class="r"><code>"作業中"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Status</code>、戻り値が <code>"未着手" | "作業中" | "完了"</code> であることも確かめます。戻り値に <code>: string</code> と書くと、戻り値の型が <code>string</code> になり、テストの型の確認が通りません。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 STATUS_TEXT を作り、{ todo: "未着手", doing: "作業中", done: "完了" } を as const を付けて入れる。ほかのファイルから使えるようにする
+
+// 関数 statusText を作る。Status 型の status を受け取る。戻り値の型は書かない
+export function statusText() {
+  // STATUS_TEXT の status の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>定数は問2 と同じ形です。関数の中は問12 と同じく、<code>[ ]</code> の中にキーの入った引数を書きます。<code>( )</code> の後ろに <code>:</code> を書かずに <code>{</code> を続けると、戻り値の型は推論されます。VS Code で <code>statusText</code> にマウスを載せて、戻り値の型を確かめてください。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q07-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">サイズの文字の大きさを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに SIZE_PX と関数 sizePx を書く</code></pre>
+      <p>はじめに、定数 <code>SIZE_PX</code> を作り、<code>{ S: 12, M: 16, L: 20 }</code> を <code>as const</code> を付けて入れます。ほかのファイルから使えるようにします。</p>
+      <p>次に、関数 <code>sizePx</code> を書きます。<code>"S"</code> か <code>"M"</code> か <code>"L"</code> のサイズを受け取り、<code>SIZE_PX</code> からその大きさ（数値）を返します。引数の型は <code>"S" | "M" | "L"</code>、戻り値の型は <code>number</code> と書きます。関数も、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>SIZE_PX</code> の型</dt><dd class="r"><code>{ readonly S: 12; readonly M: 16; readonly L: 20 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sizePx("L")</code></dt><dd class="r"><code>20</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"S" | "M" | "L"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 SIZE_PX を作り、{ S: 12, M: 16, L: 20 } を as const を付けて入れる。ほかのファイルから使えるようにする
+
+// 関数 sizePx を作る。"S" か "M" か "L" の size を受け取り、数値を返す
+export function sizePx() {
+  // SIZE_PX の size の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、リテラル型のユニオン型（01章 q07 問1）をそのまま書きます。<code>size</code> の型が <code>SIZE_PX</code> のキーと同じなので、問12 と同じく <code>SIZE_PX[size]</code> で値を取り出せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q07-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">土日なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに WEEKEND と関数 isWeekendDay を書く</code></pre>
+      <p>はじめに、定数 <code>WEEKEND</code> を作り、<code>["土", "日"]</code> を <code>as const</code> を付けて入れます。ほかのファイルから使えるようにします。</p>
+      <p>次に、関数 <code>isWeekendDay</code> を書きます。曜日の文字列を受け取り、<code>WEEKEND</code> の要素のどれかと等しければ <code>true</code>、そうでなければ <code>false</code> を返します。引数の型は <code>string</code>、戻り値の型は <code>boolean</code> です。関数も、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>WEEKEND</code> の型</dt><dd class="r"><code>readonly ["土", "日"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isWeekendDay("日")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isWeekendDay("月")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 WEEKEND を作り、["土", "日"] を as const を付けて入れる。ほかのファイルから使えるようにする
+
+// 関数 isWeekendDay を作る。文字列の day を受け取り、true か false を返す
+export function isWeekendDay() {
+  // WEEKEND の要素のどれかが day と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じく <code>.some()</code> を使います。引数の型が <code>string</code> なので、<code>.includes()</code> は問9 のサンプルの ✕ と同じエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q07-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">ステータスごとの数を数える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+export function countByStatus() {}</code></pre>
+      <p>ステータスの配列を受け取り、<code>"todo"</code>、<code>"doing"</code>、<code>"done"</code> がそれぞれいくつあるかを数えます。結果は <code>{ todo, doing, done }</code> のオブジェクトで返します。1 つもないステータスは 0 にします。引数の型は「<code>Status</code> 型の読み取り専用の配列」、戻り値の型は「<code>todo</code>・<code>doing</code>・<code>done</code> がどれも数値のオブジェクト」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countByStatus(["todo", "done", "done"])</code></dt><dd class="r"><code>{ todo: 1, doing: 0, done: 2 }</code></dd><dd class="c">doing は 1 つもない</dd></div>
+          <div><dt><code>countByStatus([])</code></dt><dd class="r"><code>{ todo: 0, doing: 0, done: 0 }</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Status[]</code>、戻り値が <code>{ todo: number; doing: number; done: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countByStatus を作る。Status 型の読み取り専用の配列 statuses を受け取り、オブジェクト（todo は数値、doing は数値、done は数値）を返す
+export function countByStatus() {
+  // 集計 counts を作り、todo と doing と done がどれも 0 のオブジェクトを入れる
+  // statuses から 1 つずつ status に取り出してくり返す
+  //   counts の status の値を 1 増やす
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は <code>readonly Status[]</code>（02章 q04 問1）、戻り値の型は 02章 q01 のオブジェクトの型で書きます。長い型は、保存して整形すると複数の行に分かれます。<code>counts</code> のキーは <code>todo</code>・<code>doing</code>・<code>done</code> で、<code>status</code> の型 <code>Status</code> と同じです。そのため <code>counts[status]</code> で値を取り出せ、<code>undefined</code> も付きません。「1 増やす」は <code>++</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q07-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">次の月の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const MONTH_NAMES = [
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
+] as const;
+
+export function nextMonthName() {}</code></pre>
+      <p>月の数（1〜12）を受け取り、その次の月の名前を <code>MONTH_NAMES</code> から返します。12月の次は "1月" です。1〜12 の外の数なら、エラーを投げます。引数は数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextMonthName(4)</code></dt><dd class="r"><code>"5月"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextMonthName(12)</code></dt><dd class="r"><code>"1月"</code></dd><dd class="c">12月の次は 1月</dd></div>
+          <div><dt><code>nextMonthName(0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0 月はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nextMonthName を作る。数値の month を受け取り、文字列を返す
+export function nextMonthName() {
+  // もし month が 1 より小さい、または month が 12 より大きいなら
+  //   "月は 1〜12 にしてください" というメッセージのエラーを投げる
+  // 名前 name を作り、MONTH_NAMES の（month を 12 で割った余り）番目の要素を入れる
+  // もし name が undefined なら
+  //   "月は 1〜12 の整数にしてください" というメッセージのエラーを投げる
+  // name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>4月の次の "5月" は 4 番目、12月の次の "1月" は 0 番目です。どちらも「month を 12 で割った余り」番目になります。ただし、余りを使うと 0 や 13 でも名前が取れてしまいます（0 なら 0 番目の "1月"）。そのため、先に範囲を確かめます。「または」は <code>||</code>（01章 q01 問15）です。範囲を確かめたあとも、取り出した値の型には <code>undefined</code> が残ります。1.5 のような小数なら、本当に <code>undefined</code> になります。問14 と同じく、<code>undefined</code> を確かめてから返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c03-q07-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">タスクのステータスを扱う</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const STATUSES = ["todo", "doing", "done"];
+export type Status = (typeof STATUSES)[number];
+
+export function nextStatus() {}
+
+// ここに STATUS_LABELS を宣言する
+
+export function labelOf() {}</code></pre>
+      <p>タスクのステータスを扱う、次の 4 つをします。</p>
+      <ol>
+        <li><code>STATUSES</code> に <code>as const</code> を付けます。すると、その下の <code>Status</code> 型が <code>"todo" | "doing" | "done"</code> になります。<code>Status</code> の行は書き換えません。</li>
+        <li><code>nextStatus(status)</code>：<code>STATUSES</code> の並びで 1 つ先のステータスを返します。最後の <code>"done"</code> は <code>"done"</code> のままです。<code>STATUSES</code> と <code>.indexOf()</code> を使い、<code>"todo"</code> などの文字列を関数の中に直接書きません。</li>
+        <li>定数 <code>STATUS_LABELS</code> を、<code>as const</code> を付けて作り、ほかのファイルから使えるようにします。<code>todo</code> は <code>"未着手"</code>、<code>doing</code> は <code>"作業中"</code>、<code>done</code> は <code>"完了"</code> です。</li>
+        <li><code>labelOf(status)</code>：<code>STATUS_LABELS</code> からステータスの表示名を返します。戻り値の型注釈は書きません。どんな型に推論されるかを、VS Code で <code>labelOf</code> にマウスを載せて確かめます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>STATUSES</code> の型</dt><dd class="r"><code>readonly ["todo", "doing", "done"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Status</code></dt><dd class="r"><code>"todo" | "doing" | "done"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextStatus("todo")</code></dt><dd class="r"><code>"doing"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextStatus("doing")</code></dt><dd class="r"><code>"done"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextStatus("done")</code></dt><dd class="r"><code>"done"</code></dd><dd class="c">最後はそのまま</dd></div>
+          <div><dt><code>STATUS_LABELS</code></dt><dd class="r"><code>{ todo: "未着手", doing: "作業中", done: "完了" }</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>STATUS_LABELS</code> の型</dt><dd class="r"><code>{ readonly todo: "未着手"; readonly doing: "作業中"; readonly done: "完了" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>labelOf("todo")</code></dt><dd class="r"><code>"未着手"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>labelOf("done")</code></dt><dd class="r"><code>"完了"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>nextStatus</code> は引数が <code>Status</code>、戻り値が <code>Status</code> であることを確かめます。<code>labelOf</code> は引数が <code>Status</code>、戻り値が <code>"未着手" | "作業中" | "完了"</code> であることを確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// STATUSES の値の後ろに as const を付ける
+export const STATUSES = ["todo", "doing", "done"];
+export type Status = (typeof STATUSES)[number];
+
+// 関数 nextStatus を作る。Status 型の status を受け取り、Status 型の値を返す
+export function nextStatus() {
+  // 位置 index を作り、STATUSES の中で status がある位置（0 から数える）を入れる
+  // STATUSES の（index + 1）番目の要素を返す。undefined なら status を返す
+}
+
+// 定数 STATUS_LABELS を作り、{ todo: "未着手", doing: "作業中", done: "完了" } を as const を付けて入れる。ほかのファイルから使えるようにする
+
+// 関数 labelOf を作る。Status 型の status を受け取る。戻り値の型は書かない
+export function labelOf() {
+  // STATUS_LABELS の status の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 つめは問1 と同じく、値の後ろに <code>as const</code> を書きます。<code>as const</code> がないと <code>STATUSES</code> の型は <code>string[]</code> で、<code>Status</code> は <code>string</code> になります（問10 の表の <code>(typeof sizes)[number]</code>）。<code>nextStatus</code> は、問11 の「1 を引く」を「1 を足す」に変えた形です。最後の <code>"done"</code> では 3 番目になり、要素がないので <code>??</code> の右が返ります。<code>STATUS_LABELS</code> と <code>labelOf</code> は、問16 と同じ形です。</p></details>
+    </div>
+  </section>
+</section>

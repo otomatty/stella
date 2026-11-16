@@ -1,0 +1,819 @@
+<section class="sec" id="c03-q02">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q02 リテラル型のユニオン</h2>
+    <p>決まった値だけを持つ型を使って、関数を 20 個書きます。問1〜10 では、ファイルにはじめから書いてある型 <code>Direction</code>（向き）、<code>Weekday</code>（平日）、<code>Plan</code>（料金プラン）を使います。問11〜20 では、<code>"表" | "裏"</code> のような型に <code>type</code> で名前を付け、<code>export</code> を付けてから関数で使います。どの問題も、引数と戻り値の型注釈は自分で書きます。文字列を型の値に変える関数（名前が <code>parse</code> で始まるもの）は、どれにも当てはまらなければ <code>undefined</code> を返します。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">右に 90 度回った向きを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Direction = "up" | "down" | "left" | "right";
+
+export function turnRight() {}</code></pre>
+      <p>向きを受け取り、右に 90 度回った向きを返します。<code>"up"</code> → <code>"right"</code> → <code>"down"</code> → <code>"left"</code> → <code>"up"</code> の順です。<code>Direction</code> は、4 つの文字列のどれかを表す型に付けた名前です。引数と戻り値の型には、この <code>Direction</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>turnRight("up")</code></dt><dd class="r"><code>"right"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnRight("right")</code></dt><dd class="r"><code>"down"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnRight("down")</code></dt><dd class="r"><code>"left"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnRight("left")</code></dt><dd class="r"><code>"up"</code></dd><dd class="c">最初に戻る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Direction</code>、戻り値が <code>Direction</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 turnRight を作る。Direction の direction を受け取り、Direction を返す
+export function turnRight() {
+  // もし direction が "up" と等しいなら
+  //   "right" を返す
+  // もし direction が "right" と等しいなら
+  //   "down" を返す
+  // もし direction が "down" と等しいなら
+  //   "left" を返す
+  // "up" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「Direction の direction」は <code>direction: Direction</code> です。戻り値の型も <code>Direction</code> にします。中は 01章 q07 問9 の <code>opposite</code> と同じ形です。最後の行まで来るのは <code>"left"</code> のときだけです。<code>Direction</code> にない値（<code>"upp"</code> など）と比べると型の確認でエラーになるので、打ち間違いにすぐ気付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">文字列を Direction に変える</span>
+      <span class="q-new">新しく出てくる書き方：<code>===</code> で比べて、<code>string</code> をリテラル型に絞り込む</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Direction = "up" | "down" | "left" | "right";
+
+export function parseDirection() {}</code></pre>
+      <p>文字列を受け取り、前後の空白を取り除いて小文字にします。その結果が <code>Direction</code> の 4 つのどれかなら、それを返します。どれでもなければ <code>undefined</code> を返します。引数は文字列、戻り値は「<code>Direction</code> か <code>undefined</code>」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseDirection(" UP ")</code></dt><dd class="r"><code>"up"</code></dd><dd class="c">空白を取り除いて小文字にする</dd></div>
+          <div><dt><code>parseDirection("left")</code></dt><dd class="r"><code>"left"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseDirection("forward")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">Direction にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Direction | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">text === "normal"</code><h4>比べると、<code>string</code> がリテラル型に絞り込まれる</h4></div>
+      <p>型が <code>string</code> の変数は、そのままでは <code>Direction</code> を返す関数から返せません。<code>string</code> には、<code>"forward"</code> のような値も入るからです。</p>
+      <p><code>if</code> の条件で、変数を決まった値と <code>===</code> で比べます。すると <code>if</code> の中では、変数の型がその値のリテラル型になります。このように型を狭めることを、絞り込みと呼びます。q01 で <code>typeof</code> や <code>===</code> で場合を分けたときと、同じしくみです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 配送方法 Delivery という型を作る。"normal" か "express" のどれか。ほかのファイルから使えるようにする
+export type Delivery = "normal" | "express";
+
+// 関数 parseDelivery を作る。文字列 text を受け取り、Delivery か undefined を返す。ほかのファイルから使えるようにする
+export function parseDelivery(text: string): Delivery | undefined {
+  // もし text が "normal" と等しい、または text が "express" と等しいなら
+  if (text === "normal" || text === "express") {
+    // text を返す（ここでは text の型は Delivery）
+    return text;
+  }
+  // undefined を返す
+  return undefined;
+}
+// 結果: parseDelivery("express") は "express"、parseDelivery("bike") は undefined</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>if</code> の前の <code>text</code> の型</dt><dd class="r"><code>string</code></dd><dd class="c">どんな文字列でも入る</dd></div>
+        <div><dt><code>if</code> の中の <code>text</code> の型</dt><dd class="r"><code>"normal" | "express"</code></dd><dd class="c"><code>Delivery</code> と同じ型</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>比べずに返す</h5>
+          <pre><code class="language-typescript">function parseDelivery(text: string): Delivery | undefined {
+  return text;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。<code>string</code> は <code>Delivery | undefined</code> に入りません</div>
+        </div>
+        <div>
+          <h5>比べてから返す</h5>
+          <pre><code class="language-typescript">function parseDelivery(text: string): Delivery | undefined {
+  if (text === "normal" || text === "express") {
+    return text;
+  }
+  return undefined;
+}</code></pre>
+          <div class="verdict ok">○ <code>if</code> の中では <code>text</code> の型が <code>Delivery</code> なので、返せます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>候補を配列に入れて <code>.includes()</code>（02章 q04 問9）で調べても、<code>text</code> の型は <code>string</code> のままです。<code>if</code> の中で <code>text</code> を返すと、型の確認でエラーになります。この番号では、<code>===</code> で 1 つずつ比べます。</p>
+      <p class="memo"><b>型の確かめ方</b>VS Code で、<code>if</code> の中の <code>text</code> にマウスを載せます。絞り込まれた型が表示されます。</p>
+      <p class="more">04章 q06（unknown型と型の絞り込み）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseDirection を作る。文字列 text を受け取り、Direction か undefined を返す
+export function parseDirection() {
+  // value を作り、text の前後の空白を取り除き、小文字にしたものを入れる
+  // もし value が "up" と等しい、または value が "down" と等しい、または value が "left" と等しい、または value が "right" と等しいなら
+  //   value を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>value</code> の行は、01章 q05 問9 と同じく <code>.trim()</code> と <code>.toLowerCase()</code> をつなげます。条件は、4 つの <code>===</code> を <code>||</code> でつなぎます（01章 q01 問15）。<code>if</code> の中で <code>value</code> を返す形は、問2 のサンプルの <code>parseDelivery</code> と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">上か下の向きなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Direction = "up" | "down" | "left" | "right";
+
+export function isVertical() {}</code></pre>
+      <p>向きが縦（<code>"up"</code> か <code>"down"</code>）なら <code>true</code>、横（<code>"left"</code> か <code>"right"</code>）なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isVertical("down")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isVertical("left")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Direction</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isVertical を作る。Direction の direction を受け取り、true か false を返す
+export function isVertical() {
+  // direction が "up" と等しい、または direction が "down" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つの <code>===</code> を <code>||</code> でつなぎ、その結果をそのまま返します。比べた結果が <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">向きを矢印にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Direction = "up" | "down" | "left" | "right";
+
+export function arrowOf() {}</code></pre>
+      <p>向きを矢印の文字に変えて返します。<code>"up"</code> は <code>"↑"</code>、<code>"down"</code> は <code>"↓"</code>、<code>"left"</code> は <code>"←"</code>、<code>"right"</code> は <code>"→"</code> です。戻り値の型は、4 つの矢印のどれかを表すリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>arrowOf("up")</code></dt><dd class="r"><code>"↑"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>arrowOf("down")</code></dt><dd class="r"><code>"↓"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>arrowOf("left")</code></dt><dd class="r"><code>"←"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>arrowOf("right")</code></dt><dd class="r"><code>"→"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Direction</code>、戻り値が <code>"↑" | "↓" | "←" | "→"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 arrowOf を作る。Direction の direction を受け取り、"↑" か "↓" か "←" か "→" を返す
+export function arrowOf() {
+  // もし direction が "up" と等しいなら
+  //   "↑" を返す
+  // もし direction が "down" と等しいなら
+  //   "↓" を返す
+  // もし direction が "left" と等しいなら
+  //   "←" を返す
+  // "→" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、4 つの矢印の文字列をそのまま <code>|</code> でつないで書きます（01章 q07 問1）。<code>string</code> にすると、テストの型の確認に通りません。中は問1 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">次の平日を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Weekday = "月" | "火" | "水" | "木" | "金";
+
+export function nextWeekday() {}</code></pre>
+      <p>平日を受け取り、次の平日を返します。<code>"月"</code> → <code>"火"</code> → <code>"水"</code> → <code>"木"</code> → <code>"金"</code> の順で、<code>"金"</code> の次は <code>"月"</code> です。引数と戻り値の型には <code>Weekday</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextWeekday("月")</code></dt><dd class="r"><code>"火"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextWeekday("木")</code></dt><dd class="r"><code>"金"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextWeekday("金")</code></dt><dd class="r"><code>"月"</code></dd><dd class="c">週の最初に戻る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Weekday</code>、戻り値が <code>Weekday</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nextWeekday を作る。Weekday の day を受け取り、Weekday を返す
+export function nextWeekday() {
+  // もし day が "月" と等しいなら
+  //   "火" を返す
+  // もし day が "火" と等しいなら
+  //   "水" を返す
+  // もし day が "水" と等しいなら
+  //   "木" を返す
+  // もし day が "木" と等しいなら
+  //   "金" を返す
+  // "月" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、比べる値が 4 つになります。最後の行まで来るのは <code>"金"</code> のときだけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">文字列の最初の 1 文字を Weekday に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Weekday = "月" | "火" | "水" | "木" | "金";
+
+export function parseWeekday() {}</code></pre>
+      <p>文字列の最初の 1 文字を取り出します。それが <code>Weekday</code> の 5 つのどれかなら、その 1 文字を返します。違えば <code>undefined</code> を返します。引数は文字列、戻り値は「<code>Weekday</code> か <code>undefined</code>」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseWeekday("水曜日")</code></dt><dd class="r"><code>"水"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseWeekday("金")</code></dt><dd class="r"><code>"金"</code></dd><dd class="c">1 文字だけでもよい</dd></div>
+          <div><dt><code>parseWeekday("土曜日")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">"土" は Weekday にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Weekday | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseWeekday を作る。文字列 text を受け取り、Weekday か undefined を返す
+export function parseWeekday() {
+  // first を作り、text の 0 文字目から 1 文字目の前までを取り出したものを入れる
+  // もし first が "月" と等しい、または first が "火" と等しい、または first が "水" と等しい、または first が "木" と等しい、または first が "金" と等しいなら
+  //   first を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最初の 1 文字は <code>.slice(0, 1)</code> で取り出せます（01章 q05 問3）。あとは問2 と同じ形で、比べる値が 5 つになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">金曜日なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Weekday = "月" | "火" | "水" | "木" | "金";
+
+export function isFriday() {}</code></pre>
+      <p>平日を受け取り、<code>"金"</code> なら <code>true</code>、それ以外なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isFriday("金")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isFriday("月")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Weekday</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isFriday を作る。Weekday の day を受け取り、true か false を返す
+export function isFriday() {
+  // day が "金" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じく、比べた結果をそのまま返します。比べるのは 1 つだけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">プランの月額料金を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Plan = "free" | "pro" | "enterprise";
+
+export function planPrice() {}</code></pre>
+      <p>料金プランを受け取り、月額料金を数値で返します。<code>"free"</code> は 0、<code>"pro"</code> は 1000、<code>"enterprise"</code> は 5000 です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>planPrice("free")</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>planPrice("pro")</code></dt><dd class="r"><code>1000</code></dd><dd class="c"></dd></div>
+          <div><dt><code>planPrice("enterprise")</code></dt><dd class="r"><code>5000</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Plan</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 planPrice を作る。Plan の plan を受け取り、数値を返す
+export function planPrice() {
+  // もし plan が "free" と等しいなら
+  //   0 を返す
+  // もし plan が "pro" と等しいなら
+  //   1000 を返す
+  // 5000 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、返すのが数値になります。戻り値の型は <code>number</code> です。最後の行まで来るのは <code>"enterprise"</code> のときだけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">1 つ上のプランを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Plan = "free" | "pro" | "enterprise";
+
+export function upgrade() {}</code></pre>
+      <p>料金プランを受け取り、1 つ上のプランを返します。<code>"free"</code> → <code>"pro"</code> → <code>"enterprise"</code> の順です。<code>"enterprise"</code> より上はないので、<code>"enterprise"</code> はそのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>upgrade("free")</code></dt><dd class="r"><code>"pro"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>upgrade("pro")</code></dt><dd class="r"><code>"enterprise"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>upgrade("enterprise")</code></dt><dd class="r"><code>"enterprise"</code></dd><dd class="c">いちばん上なのでそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Plan</code>、戻り値が <code>Plan</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 upgrade を作る。Plan の plan を受け取り、Plan を返す
+export function upgrade() {
+  // もし plan が "free" と等しいなら
+  //   "pro" を返す
+  // もし plan が "pro" と等しいなら
+  //   "enterprise" を返す
+  // "enterprise" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>"pro"</code> のときも <code>"enterprise"</code> のときも <code>"enterprise"</code> を返すので、2 つ目の <code>if</code> を消して、最後の 1 行にまとめてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">文字列を Plan に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Plan = "free" | "pro" | "enterprise";
+
+export function parsePlan() {}</code></pre>
+      <p>文字列を受け取り、小文字にします。その結果が <code>Plan</code> の 3 つのどれかなら、それを返します。違えば <code>undefined</code> を返します。引数は文字列、戻り値は「<code>Plan</code> か <code>undefined</code>」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parsePlan("Pro")</code></dt><dd class="r"><code>"pro"</code></dd><dd class="c">小文字にする</dd></div>
+          <div><dt><code>parsePlan("FREE")</code></dt><dd class="r"><code>"free"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parsePlan("premium")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">Plan にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Plan | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parsePlan を作る。文字列 text を受け取り、Plan か undefined を返す
+export function parsePlan() {
+  // value を作り、text を小文字にしたものを入れる
+  // もし value が "free" と等しい、または value が "pro" と等しい、または value が "enterprise" と等しいなら
+  //   value を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。この問題は空白を取り除かないので、<code>.toLowerCase()</code> だけを使います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">型 Coin を作り、コインの反対の面を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Coin と関数 flipCoin を書く</code></pre>
+      <p>ここからは、型も自分で書きます。型 <code>Coin</code> と関数 <code>flipCoin(coin: Coin)</code> を書き、どちらにも <code>export</code> を付けます。<code>Coin</code> は <code>"表"</code> か <code>"裏"</code> のどちらかを表す型です。<code>flipCoin</code> はコインの面を受け取り、反対の面を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Coin</code> の型</dt><dd class="r"><code>"表" | "裏"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>flipCoin("表")</code></dt><dd class="r"><code>"裏"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>flipCoin("裏")</code></dt><dd class="r"><code>"表"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Coin</code>、戻り値が <code>Coin</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Coin という型を作る。"表" か "裏" のどれか。ほかのファイルから使えるようにする
+
+// 関数 flipCoin を作る。Coin の coin を受け取り、Coin を返す。ほかのファイルから使えるようにする
+  // coin が "表" と等しいなら "裏"、そうでなければ "表" を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Coin</code> は、問2 のサンプルの <code>Delivery</code> と同じ <code>export type</code> の形です（02章 q01 応用）。<code>flipCoin</code> の中は、01章 q07 問1 のサンプルの <code>paymentLabel</code> と同じ条件演算子の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">型 Answer を作り、文字列を Answer に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Answer と関数 parseAnswer を書く</code></pre>
+      <p>型 <code>Answer</code> と関数 <code>parseAnswer(text: string)</code> を書き、どちらにも <code>export</code> を付けます。<code>Answer</code> は <code>"yes"</code>、<code>"no"</code>、<code>"maybe"</code> のどれかを表す型です。<code>parseAnswer</code> は文字列を小文字にして、<code>Answer</code> のどれかならそれを返します。違えば <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Answer</code> の型</dt><dd class="r"><code>"yes" | "no" | "maybe"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>parseAnswer("YES")</code></dt><dd class="r"><code>"yes"</code></dd><dd class="c">小文字にする</dd></div>
+          <div><dt><code>parseAnswer("maybe")</code></dt><dd class="r"><code>"maybe"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseAnswer("ok")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">Answer にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Answer | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Answer という型を作る。"yes" か "no" か "maybe" のどれか。ほかのファイルから使えるようにする
+
+// 関数 parseAnswer を作る。文字列 text を受け取り、Answer か undefined を返す。ほかのファイルから使えるようにする
+  // value を作り、text を小文字にしたものを入れる
+  // もし value が "yes" と等しい、または value が "no" と等しい、または value が "maybe" と等しいなら
+  //   value を返す
+  // undefined を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問11 と同じ形で、値が 3 つになります。関数の中は、問10 の <code>parsePlan</code> と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">型 Theme を作り、実際に使うテーマを返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>if</code> で返したあとの、残りの値の型</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Theme と関数 resolveTheme を書く</code></pre>
+      <p>型 <code>Theme</code> と関数 <code>resolveTheme(theme: Theme, osDark: boolean)</code> を書き、どちらにも <code>export</code> を付けます。<code>Theme</code> は <code>"light"</code>、<code>"dark"</code>、<code>"system"</code> のどれかを表す型です。</p>
+      <p><code>resolveTheme</code> は、画面に実際に使うテーマを返します。<code>"system"</code> のときは OS の設定に従い、<code>osDark</code> が <code>true</code> なら <code>"dark"</code>、<code>false</code> なら <code>"light"</code> を返します。<code>"light"</code> と <code>"dark"</code> は、<code>osDark</code> に関係なくそのまま返します。戻り値の型は <code>"light" | "dark"</code> で、<code>"system"</code> は返しません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Theme</code> の型</dt><dd class="r"><code>"light" | "dark" | "system"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>resolveTheme("system", true)</code></dt><dd class="r"><code>"dark"</code></dd><dd class="c">OS がダーク</dd></div>
+          <div><dt><code>resolveTheme("system", false)</code></dt><dd class="r"><code>"light"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>resolveTheme("light", true)</code></dt><dd class="r"><code>"light"</code></dd><dd class="c">OS の設定は見ない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Theme</code> と <code>boolean</code>、戻り値が <code>"light" | "dark"</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">return seat;</code><h4><code>if</code> で返したあとは、残りの値の型になる</h4></div>
+      <p><code>if</code> の中で <code>return</code> すると、後ろの行に来るのは、条件に合わなかったときだけです（01章 q07 問2）。TypeScript もこれを分かっています。後ろの行では、変数の型から、もう返した値が除かれます。これも問2 で見た絞り込みです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 座席 Seat という型を作る。"window" か "aisle" か "any" のどれか
+type Seat = "window" | "aisle" | "any";
+
+// 関数 assignSeat を作る。Seat の seat を受け取り、"window" か "aisle" を返す。ほかのファイルから使えるようにする
+export function assignSeat(seat: Seat): "window" | "aisle" {
+  // もし seat が "any" と等しいなら
+  if (seat === "any") {
+    // "aisle" を返す
+    return "aisle";
+  }
+  // seat を返す（ここでは seat の型は "window" | "aisle"）
+  return seat;
+}
+// 結果: assignSeat("any") は "aisle"、assignSeat("window") は "window"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>if</code> の前の <code>seat</code> の型</dt><dd class="r"><code>"window" | "aisle" | "any"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>if</code> の後ろの <code>seat</code> の型</dt><dd class="r"><code>"window" | "aisle"</code></dd><dd class="c"><code>"any"</code> は <code>if</code> の中で返したので除かれる</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>先に返さない</h5>
+          <pre><code class="language-typescript">function assignSeat(seat: Seat): "window" | "aisle" {
+  return seat;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。<code>seat</code> の型に <code>"any"</code> が残っています</div>
+        </div>
+        <div>
+          <h5><code>"any"</code> を先に返す</h5>
+          <pre><code class="language-typescript">function assignSeat(seat: Seat): "window" | "aisle" {
+  if (seat === "any") {
+    return "aisle";
+  }
+  return seat;
+}</code></pre>
+          <div class="verdict ok">○ 最後の行の <code>seat</code> は <code>"window" | "aisle"</code> なので、返せます</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Theme という型を作る。"light" か "dark" か "system" のどれか。ほかのファイルから使えるようにする
+
+// 関数 resolveTheme を作る。Theme の theme と、true か false の osDark を受け取り、"light" か "dark" を返す。ほかのファイルから使えるようにする
+  // もし theme が "system" と等しいなら
+  //   osDark が true なら "dark"、そうでなければ "light" を返す
+  // theme を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>assignSeat</code> と同じ形です。<code>"system"</code> のときを先に返すと、最後の行の <code>theme</code> の型は <code>"light" | "dark"</code> になり、そのまま返せます。<code>"system"</code> のときの中身は、条件演算子 <code>? :</code> で書けます（01章 q01 問12）。<code>osDark</code> は <code>boolean</code> なので、そのまま条件に書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">型 Unit を作り、長さを mm に直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Unit と関数 toMillimeters を書く</code></pre>
+      <p>型 <code>Unit</code> と関数 <code>toMillimeters(value: number, unit: Unit)</code> を書き、どちらにも <code>export</code> を付けます。<code>Unit</code> は長さの単位 <code>"mm"</code>、<code>"cm"</code>、<code>"m"</code> のどれかを表す型です。<code>toMillimeters</code> は、長さの数値と単位を受け取り、mm に直した数値を返します。1 m は 1000 mm、1 cm は 10 mm です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Unit</code> の型</dt><dd class="r"><code>"mm" | "cm" | "m"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>toMillimeters(1.5, "m")</code></dt><dd class="r"><code>1500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toMillimeters(3, "cm")</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toMillimeters(7, "mm")</code></dt><dd class="r"><code>7</code></dd><dd class="c">mm はそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>Unit</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Unit という型を作る。"mm" か "cm" か "m" のどれか。ほかのファイルから使えるようにする
+
+// 関数 toMillimeters を作る。数値 value と Unit の unit を受け取り、数値を返す。ほかのファイルから使えるようにする
+  // もし unit が "m" と等しいなら
+  //   value に 1000 を掛けた数を返す
+  // もし unit が "cm" と等しいなら
+  //   value に 10 を掛けた数を返す
+  // value を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問11 と同じ形です。関数の中は問8 と同じ形で、返すのが計算した数になります。「掛けた数」は <code>*</code> です。最後の行まで来るのは <code>"mm"</code> のときだけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">型 Grade を作り、点数から成績を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Grade と関数 gradeFrom を書く</code></pre>
+      <p>型 <code>Grade</code> と関数 <code>gradeFrom(score: number)</code> を書き、どちらにも <code>export</code> を付けます。<code>Grade</code> は <code>"A"</code>、<code>"B"</code>、<code>"C"</code>、<code>"D"</code> のどれかを表す型です。<code>gradeFrom</code> は点数を受け取り、90 点以上は <code>"A"</code>、70 点以上は <code>"B"</code>、50 点以上は <code>"C"</code>、50 点未満は <code>"D"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Grade</code> の型</dt><dd class="r"><code>"A" | "B" | "C" | "D"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>gradeFrom(90)</code></dt><dd class="r"><code>"A"</code></dd><dd class="c">ちょうど 90 点は A</dd></div>
+          <div><dt><code>gradeFrom(75)</code></dt><dd class="r"><code>"B"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>gradeFrom(50)</code></dt><dd class="r"><code>"C"</code></dd><dd class="c">ちょうど 50 点は C</dd></div>
+          <div><dt><code>gradeFrom(49)</code></dt><dd class="r"><code>"D"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Grade</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Grade という型を作る。"A" か "B" か "C" か "D" のどれか。ほかのファイルから使えるようにする
+
+// 関数 gradeFrom を作る。数値 score を受け取り、Grade を返す。ほかのファイルから使えるようにする
+  // もし score が 90 以上なら
+  //   "A" を返す
+  // もし score が 70 以上なら
+  //   "B" を返す
+  // もし score が 50 以上なら
+  //   "C" を返す
+  // "D" を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q07 問6 の <code>gradeOf</code> と同じ形で、段階が 1 つ増えます。「以上」は <code>&gt;=</code> です。戻り値の型を、自分で作った <code>Grade</code> にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">型 Rank を作り、ランクの点数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Rank と関数 rankPoint を書く</code></pre>
+      <p>型 <code>Rank</code> と関数 <code>rankPoint(rank: Rank)</code> を書き、どちらにも <code>export</code> を付けます。<code>Rank</code> は <code>"gold"</code>、<code>"silver"</code>、<code>"bronze"</code> のどれかを表す型です。<code>rankPoint</code> は、<code>"gold"</code> なら 3、<code>"silver"</code> なら 2、<code>"bronze"</code> なら 1 を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Rank</code> の型</dt><dd class="r"><code>"gold" | "silver" | "bronze"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>rankPoint("gold")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>rankPoint("silver")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>rankPoint("bronze")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Rank</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Rank という型を作る。"gold" か "silver" か "bronze" のどれか。ほかのファイルから使えるようにする
+
+// 関数 rankPoint を作る。Rank の rank を受け取り、数値を返す。ほかのファイルから使えるようにする
+  // もし rank が "gold" と等しいなら
+  //   3 を返す
+  // もし rank が "silver" と等しいなら
+  //   2 を返す
+  // 1 を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問11 と同じ形です。関数の中は、問8 の <code>planPrice</code> と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">型 TaskStatus を作り、終わっていれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 TaskStatus と関数 isFinished を書く</code></pre>
+      <p>型 <code>TaskStatus</code> と関数 <code>isFinished(status: TaskStatus)</code> を書き、どちらにも <code>export</code> を付けます。<code>TaskStatus</code> は作業の状態 <code>"todo"</code>（未着手）、<code>"doing"</code>（作業中）、<code>"done"</code>（完了）のどれかを表す型です。<code>isFinished</code> は、<code>"done"</code> なら <code>true</code>、それ以外なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>TaskStatus</code> の型</dt><dd class="r"><code>"todo" | "doing" | "done"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>isFinished("done")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isFinished("doing")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>TaskStatus</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// TaskStatus という型を作る。"todo" か "doing" か "done" のどれか。ほかのファイルから使えるようにする
+
+// 関数 isFinished を作る。TaskStatus の status を受け取り、true か false を返す。ほかのファイルから使えるようにする
+  // status が "done" と等しいかどうか（true か false）を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問11 と同じ形です。関数の中は、問7 の <code>isFriday</code> と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">型 Signal を作り、青信号なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Signal と関数 canGo を書く</code></pre>
+      <p>型 <code>Signal</code> と関数 <code>canGo(signal: Signal)</code> を書き、どちらにも <code>export</code> を付けます。<code>Signal</code> は信号の色 <code>"red"</code>、<code>"yellow"</code>、<code>"green"</code> のどれかを表す型です。<code>canGo</code> は、<code>"green"</code> なら <code>true</code>、それ以外なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Signal</code> の型</dt><dd class="r"><code>"red" | "yellow" | "green"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>canGo("green")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canGo("yellow")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Signal</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Signal という型を作る。"red" か "yellow" か "green" のどれか。ほかのファイルから使えるようにする
+
+// 関数 canGo を作る。Signal の signal を受け取り、true か false を返す。ほかのファイルから使えるようにする
+  // signal が "green" と等しいかどうか（true か false）を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問17 と同じ形です。型の名前と値が変わるだけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">型 Lang を作り、その言語のあいさつを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Lang と関数 hello を書く</code></pre>
+      <p>型 <code>Lang</code> と関数 <code>hello(lang: Lang)</code> を書き、どちらにも <code>export</code> を付けます。<code>Lang</code> は言語 <code>"ja"</code>（日本語）か <code>"en"</code>（英語）のどちらかを表す型です。<code>hello</code> は、<code>"ja"</code> なら <code>"こんにちは"</code>、<code>"en"</code> なら <code>"Hello"</code> を返します。戻り値の型は <code>"こんにちは" | "Hello"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Lang</code> の型</dt><dd class="r"><code>"ja" | "en"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>hello("ja")</code></dt><dd class="r"><code>"こんにちは"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hello("en")</code></dt><dd class="r"><code>"Hello"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Lang</code>、戻り値が <code>"こんにちは" | "Hello"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Lang という型を作る。"ja" か "en" のどれか。ほかのファイルから使えるようにする
+
+// 関数 hello を作る。Lang の lang を受け取り、"こんにちは" か "Hello" を返す。ほかのファイルから使えるようにする
+  // lang が "ja" と等しいなら "こんにちは"、そうでなければ "Hello" を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、問4 と同じく 2 つの文字列をそのまま <code>|</code> でつないで書きます。関数の中は、問11 の <code>flipCoin</code> と同じ条件演算子の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">型 Visibility を作り、見られるなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Visibility と関数 canView を書く</code></pre>
+      <p>型 <code>Visibility</code> と関数 <code>canView(visibility: Visibility, isOwner: boolean)</code> を書き、どちらにも <code>export</code> を付けます。<code>Visibility</code> は公開の範囲 <code>"public"</code>（公開）か <code>"private"</code>（非公開）のどちらかを表す型です。<code>canView</code> は、見られるなら <code>true</code> を返します。<code>"public"</code> ならだれでも見られます。<code>"private"</code> なら、持ち主（<code>isOwner</code> が <code>true</code>）だけが見られます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Visibility</code> の型</dt><dd class="r"><code>"public" | "private"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>canView("public", false)</code></dt><dd class="r"><code>true</code></dd><dd class="c">持ち主でなくても見られる</dd></div>
+          <div><dt><code>canView("private", false)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canView("private", true)</code></dt><dd class="r"><code>true</code></dd><dd class="c">持ち主なので見られる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Visibility</code> と <code>boolean</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Visibility という型を作る。"public" か "private" のどれか。ほかのファイルから使えるようにする
+
+// 関数 canView を作る。Visibility の visibility と、true か false の isOwner を受け取り、true か false を返す。ほかのファイルから使えるようにする
+  // visibility が "public" と等しい、または isOwner かどうか（true か false）を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「または」は <code>||</code> です（01章 q01 問15）。<code>isOwner</code> は <code>boolean</code> なので、比べずにそのまま <code>||</code> の右に書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c03-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">飲み物のサイズ Size と、サイズを扱う関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Size = unknown;
+
+export function priceOf() {}
+
+export function parseSize() {}
+
+export function upsize() {}</code></pre>
+      <p>飲み物のサイズを表す型と、その型を使う関数を 3 つ書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>Size</code>：<code>"S"</code>、<code>"M"</code>、<code>"L"</code> のどれかだけを表す型です。<code>unknown</code> を書き換えます。テストがこの型を読むので、<code>export</code> は残します。</li>
+        <li><code>priceOf(size)</code>：サイズの値段を返します。<code>"S"</code> は 300、<code>"M"</code> は 400、<code>"L"</code> は 500 です。</li>
+        <li><code>parseSize(text)</code>：文字列の前後の空白を取り除いて、大文字にします。それが <code>"S"</code>、<code>"M"</code>、<code>"L"</code> のどれかなら、その <code>Size</code> を返します。どれでもなければ <code>undefined</code> を返します。引数は <code>string</code>、戻り値は <code>Size | undefined</code> です。</li>
+        <li><code>upsize(size)</code>：1 つ大きいサイズを返します。<code>"L"</code> は <code>"L"</code> のまま返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Size</code> の型</dt><dd class="r"><code>"S" | "M" | "L"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>priceOf("S")</code></dt><dd class="r"><code>300</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priceOf("M")</code></dt><dd class="r"><code>400</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priceOf("L")</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priceOf("XL")</code></dt><dd class="r">型の確認でエラー</dd><dd class="c"><code>"XL"</code> は渡せないこと</dd></div>
+          <div><dt><code>parseSize("S")</code></dt><dd class="r"><code>"S"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseSize(" m ")</code></dt><dd class="r"><code>"M"</code></dd><dd class="c">空白を取り除いて大文字にする</dd></div>
+          <div><dt><code>parseSize("l")</code></dt><dd class="r"><code>"L"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseSize("XL")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseSize("")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の文字列</dd></div>
+          <div><dt><code>upsize("S")</code></dt><dd class="r"><code>"M"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>upsize("M")</code></dt><dd class="r"><code>"L"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>upsize("L")</code></dt><dd class="r"><code>"L"</code></dd><dd class="c">いちばん大きいのでそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>priceOf</code> は引数が <code>Size</code>、戻り値が <code>number</code> であることも確かめます。<code>parseSize</code> は引数が <code>string</code>、戻り値が <code>Size | undefined</code> であることを確かめます。<code>upsize</code> は引数と戻り値が <code>Size</code> であることを確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Size という型を作る。"S" か "M" か "L" のどれか。ほかのファイルから使えるようにする
+export type Size = unknown;
+
+// 関数 priceOf を作る。Size の size を受け取り、数値を返す
+export function priceOf() {
+  // もし size が "S" と等しいなら
+  //   300 を返す
+  // もし size が "M" と等しいなら
+  //   400 を返す
+  // 500 を返す
+}
+
+// 関数 parseSize を作る。文字列 text を受け取り、Size か undefined を返す
+export function parseSize() {
+  // upper を作り、text の前後の空白を取り除き、大文字にしたものを入れる
+  // もし upper が "S" と等しい、または upper が "M" と等しい、または upper が "L" と等しいなら
+  //   upper を返す
+  // undefined を返す
+}
+
+// 関数 upsize を作る。Size の size を受け取り、Size を返す
+export function upsize() {
+  // もし size が "S" と等しいなら
+  //   "M" を返す
+  // "L" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Size</code> は、<code>unknown</code> を消して、問11〜20 と同じリテラル型のユニオンを書きます。<code>priceOf</code> は問8 と同じ形です。<code>parseSize</code> は問2 と同じ形で、小文字の代わりに大文字（<code>.toUpperCase()</code>、01章 q02 問18）にします。<code>upsize</code> は問9 と同じ考え方で、<code>"M"</code> と <code>"L"</code> はどちらも <code>"L"</code> を返すので、最後の 1 行にまとめられます。</p></details>
+    </div>
+  </section>
+</section>

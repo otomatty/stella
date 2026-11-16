@@ -1,0 +1,790 @@
+<section class="sec" id="c02-q06">
+  <div class="sec-h">
+    <span class="eyebrow">02章 オブジェクト・配列・タプル</span>
+    <h2>q06 タプル</h2>
+    <p>タプルを使う関数を 20 個書きます。タプルは、決まった数の値を決まった順に並べた配列です。型は <code>[number, number]</code> のように、要素の型を順に並べて書きます。引数と戻り値には型注釈を付けます。タプルから要素を取り出すときは、<code>const [x, y] = point;</code> のような配列の分割代入を使うと読みやすくなります。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c02-q06-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">名前と数を、[名前, 数] のタプルにする</span>
+      <span class="q-new">新しく出てくる書き方：タプルの型 <code>[string, number]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makePair() {}</code></pre>
+      <p>名前（文字列）と数（数値）を受け取り、名前、数の順に並べたタプルを返します。戻り値の型は、2 つの要素の型を順に並べたタプルの型にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makePair("りんご", 3)</code></dt><dd class="r"><code>["りんご", 3]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>[string, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[string, number]</code><h4>タプルの型</h4></div>
+      <p>タプルは、要素の数と、何番目に何の型が入るかが決まっている配列です。型は <code>[ ]</code> の中に、要素の型を順に並べて書きます。値の作り方は、ふつうの配列と同じです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約 reservation を [文字列, 数値] のタプルとして作り、["会議室A", 8] を入れる
+const reservation: [string, number] = ["会議室A", 8];
+// 結果: reservation の 0 番目は "会議室A"、1 番目は 8</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const reservation: [<span class="seg"><i>1</i>string</span>, <span class="seg"><i>2</i>number</span>] = <span class="seg"><i>3</i>["会議室A", 8]</span>;</pre>
+        <ol>
+          <li><span>0 番目の要素の型です。</span></li>
+          <li><span>1 番目の要素の型です。<code>,</code> で区切って続けます。</span></li>
+          <li><span>入れる値です。型と同じ数、同じ順番で並べます。</span></li>
+        </ol>
+      </figure>
+      <p>関数の戻り値をタプルにするときは、かっこの後ろの戻り値の型注釈にタプルの型を書きます。要素は 3 つ以上でもかまいません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 shipment を作る。文字列 orderId と数値 boxes と true か false の express を受け取り、[文字列, 数値, true か false] のタプルを返す
+function shipment(orderId: string, boxes: number, express: boolean): [string, number, boolean] {
+  // orderId、boxes、express の順に並べたタプルを返す
+  return [orderId, boxes, express];
+}
+// 結果: shipment("ORD-001", 2, true) は ["ORD-001", 2, true]</code></pre>
+      </div>
+      <p>型と合わない値を入れると、型の確認でエラーになります。</p>
+      <dl class="eg">
+        <div><dt><code>const r: [string, number] = [8, "会議室A"];</code></dt><dd class="r">型のエラー</dd><dd class="c">順番が違う</dd></div>
+        <div><dt><code>const r: [string, number] = ["会議室A"];</code></dt><dd class="r">型のエラー</dd><dd class="c">数が足りない</dd></div>
+        <div><dt><code>const r: [string, number] = ["会議室A", 8, 9];</code></dt><dd class="r">型のエラー</dd><dd class="c">数が多い</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>型を書かない</h5>
+          <pre><code class="language-typescript">const entry = ["会議室A", 8];</code></pre>
+          <div class="verdict ng">✕ 型は (string | number)[] になり、タプルになりません</div>
+        </div>
+        <div>
+          <h5>タプルの型を書く</h5>
+          <pre><code class="language-typescript">const entry: [string, number] = ["会議室A", 8];</code></pre>
+          <div class="verdict ok">○ 型は [string, number] になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>[ ]</code> で値を並べただけでは、TypeScript はふつうの配列と推論します。推論は、型を書かなくても TypeScript が型を決めてくれることです。タプルにしたいときは、変数や戻り値に型注釈を書きます。</p>
+      <p class="more">サバイバルTypeScript「タプル」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makePair を作る。文字列 name と数値 count を受け取り、[文字列, 数値] のタプルを返す
+export function makePair() {
+  // name、count の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「[文字列, 数値] のタプルを返す」は、かっこの後ろの <code>: [string, number]</code> になります。問1 の 2 つ目のサンプル <code>shipment</code> と同じ形で、要素が 2 つになります。返す値は、<code>[ ]</code> の中に <code>name</code> と <code>count</code> を順に並べたものです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c02-q06-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">[数, 名前] を [名前, 数] に並べ替える</span>
+      <span class="q-new">新しく出てくる書き方：配列の分割代入 <code>const [a, b] = pair;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function flipPair() {}</code></pre>
+      <p>数、名前の順に並んだタプルを 1 つ受け取ります。並びを入れ替えて、名前、数の順のタプルにして返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>flipPair([3, "りんご"])</code></dt><dd class="r"><code>["りんご", 3]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, string]</code>、戻り値が <code>[string, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">const [a, b] = pair;</code><h4>配列の分割代入</h4></div>
+      <p>配列やタプルの要素を、前から順に変数へ取り出す書き方です。<code>const</code> の後ろの <code>[ ]</code> に変数の名前を並べると、0 番目、1 番目… の要素がそれぞれに入ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 配送 delivery を [文字列, 数値] のタプルとして作り、["大阪", 2] を入れる
+const delivery: [string, number] = ["大阪", 2];
+// delivery の 0 番目を city、1 番目を days として取り出す
+const [city, days] = delivery;
+// 結果: city は "大阪"、days は 2</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const [<span class="seg"><i>1</i>city</span>, <span class="seg"><i>2</i>days</span>] = <span class="seg"><i>3</i>delivery</span>;</pre>
+        <ol>
+          <li><span>0 番目の要素が入る変数です。型は <code>string</code> になります。</span></li>
+          <li><span>1 番目の要素が入る変数です。型は <code>number</code> になります。</span></li>
+          <li><span>取り出す元のタプルです。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある疑問</b>オブジェクトの分割代入（02章 q03 問1）は、プロパティの名前で取り出します。配列の分割代入は、位置で取り出します。そのため、変数の名前は自由に決められます。並べる順番だけが大事です。</p>
+      <p class="more">サバイバルTypeScript「配列の分割代入」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 flipPair を作る。[数値, 文字列] のタプル pair を受け取り、[文字列, 数値] のタプルを返す
+export function flipPair() {
+  // pair の 0 番目を count、1 番目を name として取り出す
+  // name、count の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は <code>pair: [number, string]</code> です。1 行目は、問2 のサンプルの <code>const [city, days]</code> の行と同じ形です。<code>pair</code> は数値が先なので、先に書く変数に数値が入ります。返すときは、並べる順番を入れ替えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c02-q06-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">[名前, 数] の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nameOf() {}</code></pre>
+      <p>名前、数の順に並んだタプルを受け取り、名前（0 番目）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameOf(["りんご", 3])</code></dt><dd class="r"><code>"りんご"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[string, number]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameOf を作る。[文字列, 数値] のタプル pair を受け取り、文字列を返す
+export function nameOf() {
+  // pair の 0 番目を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「0 番目」は添字アクセス <code>pair[0]</code> です（01章 q03 問20）。タプルは位置ごとに型が決まっているので、<code>pair[0]</code> の型は <code>string</code> になります。要素が 2 つのタプルに <code>pair[2]</code> と書くと、「その位置に要素はない」という型のエラーになります。問2 の分割代入で取り出してから返しても、かまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c02-q06-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">[名前, 数] の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countOf() {}</code></pre>
+      <p>名前、数の順に並んだタプルを受け取り、数（1 番目）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countOf(["りんご", 3])</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[string, number]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countOf を作る。[文字列, 数値] のタプル pair を受け取り、数値を返す
+export function countOf() {
+  // pair の 1 番目を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形で、位置が <code>1</code> になります。<code>pair[1]</code> の型は <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c02-q06-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">2 つの座標 [x, y] を足した座標を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addPoints() {}</code></pre>
+      <p>座標（横の位置 x と縦の位置 y を並べたタプル）を 2 つ受け取ります。x どうし、y どうしを足した座標を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addPoints([1, 2], [3, 4])</code></dt><dd class="r"><code>[4, 6]</code></dd><dd class="c">1 + 3 と 2 + 4</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code> と <code>[number, number]</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addPoints を作る。[数値, 数値] のタプル a と [数値, 数値] のタプル b を受け取り、[数値, 数値] のタプルを返す
+export function addPoints() {
+  // a の 0 番目を x1、1 番目を y1 として取り出す
+  // b の 0 番目を x2、1 番目を y2 として取り出す
+  // x1 と x2 を足した数、y1 と y2 を足した数の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 のサンプルの分割代入を 2 回書きます。同じ名前の変数は 2 回作れないので、<code>x1</code> と <code>x2</code> のように名前を分けます。返すタプルの <code>[ ]</code> の中には、足し算の式をそのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c02-q06-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">座標 [x, y] を k 倍した座標を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function scalePoint() {}</code></pre>
+      <p>座標と数 <code>k</code> を受け取ります。x と y をそれぞれ <code>k</code> 倍した座標を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scalePoint([1, 2], 3)</code></dt><dd class="r"><code>[3, 6]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code> と <code>number</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 scalePoint を作る。[数値, 数値] のタプル point と数値 k を受け取り、[数値, 数値] のタプルを返す
+export function scalePoint() {
+  // point の 0 番目を x、1 番目を y として取り出す
+  // x に k を掛けた数、y に k を掛けた数の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じく、分割代入で取り出してから、計算した式を <code>[ ]</code> に並べて返します。「掛ける」は <code>*</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c02-q06-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">座標 [x, y] の原点からの距離を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function distanceFromOrigin() {}</code></pre>
+      <p>座標を受け取り、原点（x も y も 0 の点）からのまっすぐな距離を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>distanceFromOrigin([3, 4])</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>distanceFromOrigin([0, 0])</code></dt><dd class="r"><code>0</code></dd><dd class="c">原点そのもの</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 distanceFromOrigin を作る。[数値, 数値] のタプル point を受け取り、数値を返す
+export function distanceFromOrigin() {
+  // point の 0 番目を x、1 番目を y として取り出す
+  // x と y から斜めの長さを求めて返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ と ◯ から斜めの長さを求める」は <code>Math.hypot()</code> です（01章 q04 問17）。原点からの距離は、横に x、縦に y 進んだときの斜めの長さです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c02-q06-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">x と y から座標 [x, y] を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toPoint() {}</code></pre>
+      <p>数を 2 つ受け取り、x、y の順に並べた座標を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toPoint(1, 2)</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toPoint を作る。数値 x と数値 y を受け取り、[数値, 数値] のタプルを返す
+export function toPoint() {
+  // x、y の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。戻り値の型注釈を <code>: [number, number]</code> にしないと、配列 <code>number[]</code> と推論されてテストに通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c02-q06-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">引数の位置で分割代入して、「(x, y)」を返す</span>
+      <span class="q-new">新しく出てくる書き方：引数の位置での配列の分割代入 <code>([x, y]: [number, number])</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pointText() {}</code></pre>
+      <p>座標を受け取り、<code>"(1, 2)"</code> のような文字列にして返します。ファイルの問題文にあるとおり、引数のかっこの中で、受け取った座標をその場で <code>x</code> と <code>y</code> に取り出します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pointText([1, 2])</code></dt><dd class="r"><code>"(1, 2)"</code></dd><dd class="c">カンマの後ろに半角スペースが 1 つ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">([a, b]: [A, B])</code><h4>引数の位置で、配列の分割代入をする</h4></div>
+      <p>引数の名前の代わりに <code>[ ]</code> を書くと、受け取ったタプルをその場で変数に取り出せます。型は、取り出す部分の後ろに <code>: </code> を付けて書きます。オブジェクトで同じことをする書き方（02章 q03 問13）の、配列版です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 routeText を作る。[文字列, 文字列] のタプルを受け取り、その場で from と to に取り出し、文字列を返す
+function routeText([from, to]: [string, string]): string {
+  // from と to を埋め込んだ「◯ → ◯」の文字列を返す
+  return `${from} → ${to}`;
+}
+// 結果: routeText(["東京", "大阪"]) は "東京 → 大阪"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function routeText(<span class="seg"><i>1</i>[from, to]</span><span class="seg"><i>2</i>: [string, string]</span>): string {</pre>
+        <ol>
+          <li><span>受け取ったタプルを、その場で <code>from</code> と <code>to</code> に取り出します。関数の中では、この 2 つの変数を使います。</span></li>
+          <li><span>受け取るタプルの型です。取り出す部分の後ろに書きます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある疑問</b>呼び出すときは、ふつうにタプルを 1 つ渡します。<code>routeText("東京", "大阪")</code> のように 2 つに分けて渡すと、型のエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pointText を作る。[数値, 数値] のタプルを受け取り、その場で x と y に取り出し、文字列を返す
+export function pointText() {
+  // x と y を埋め込んだ「(◯, ◯)」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 のサンプルの <code>routeText</code> と同じ形です。かっこの中は <code>[x, y]: [number, number]</code> になります。文字列は、テンプレートリテラル（01章 q01 問3）で作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c02-q06-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">色 [r, g, b] を「rgb(r, g, b)」にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rgbText() {}</code></pre>
+      <p>色を、赤・緑・青の強さを並べた 3 つの数のタプルで受け取ります。<code>"rgb(255, 0, 0)"</code> のような文字列にして返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rgbText([255, 0, 0])</code></dt><dd class="r"><code>"rgb(255, 0, 0)"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number, number]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rgbText を作る。[数値, 数値, 数値] のタプル color を受け取り、文字列を返す
+export function rgbText() {
+  // color の 0 番目を r、1 番目を g、2 番目を b として取り出す
+  // r と g と b を埋め込んだ「rgb(◯, ◯, ◯)」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>要素が 3 つのタプルの型は <code>[number, number, number]</code> です。問1 の 2 つ目のサンプルにも、要素が 3 つのタプルがあります。分割代入も <code>[r, g, b]</code> と 3 つ並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c02-q06-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">a を b で割った [商, 余り] を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function divmod() {}</code></pre>
+      <p>2 つの数 <code>a</code> と <code>b</code> を受け取り、<code>a</code> を <code>b</code> で割った商と余りを、商、余りの順のタプルで返します。商は小数点以下を切り捨てます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>divmod(17, 5)</code></dt><dd class="r"><code>[3, 2]</code></dd><dd class="c">17 = 5 × 3 + 2</dd></div>
+          <div><dt><code>divmod(10, 5)</code></dt><dd class="r"><code>[2, 0]</code></dd><dd class="c">割り切れる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 divmod を作る。数値 a と数値 b を受け取り、[数値, 数値] のタプルを返す
+export function divmod() {
+  // a ÷ b を切り捨てた数、a を b で割った余りの順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「切り捨て」は <code>Math.floor()</code>（01章 q01 問1）、「割った余り」は <code>%</code>（01章 q01 問3）です。2 つの式を <code>[ ]</code> の中に並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c02-q06-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">「姓 名」の文字列を [姓, 名] に分ける</span>
+      <span class="q-new">新しく出てくる書き方：<code>.split()</code>、分割代入の既定値 <code>[a = ""]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function splitName() {}</code></pre>
+      <p>姓と名を半角スペースでつないだ文字列を受け取ります。姓、名の順のタプルに分けて返します。スペースがないときは、名を空の文字列にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>splitName("山田 太郎")</code></dt><dd class="r"><code>["山田", "太郎"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>splitName("山田")</code></dt><dd class="r"><code>["山田", ""]</code></dd><dd class="c">スペースがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>[string, string]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.split()</code><h4>決まった文字で区切って、配列にする</h4></div>
+      <p>文字列を、かっこの中の文字で区切ります。区切った文字列を並べた配列を返します。区切りの文字そのものは、結果に残りません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 住所 address を作り、"東京都,港区,芝公園" を入れる
+const address = "東京都,港区,芝公園";
+// parts を作り、address を "," で区切った文字列の配列を入れる
+const parts = address.split(",");
+// 結果: parts は ["東京都", "港区", "芝公園"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"10:30".split(":")</code></dt><dd class="r"><code>["10", "30"]</code></dd><dd class="c"></dd></div>
+        <div><dt><code>"東京都".split(",")</code></dt><dd class="r"><code>["東京都"]</code></dd><dd class="c">区切りの文字がなければ、要素は 1 つ</dd></div>
+      </dl>
+      <p class="memo"><b>型</b><code>.split()</code> の戻り値の型は <code>string[]</code> です。いくつに分かれるかは、実行するまで分からないので、タプルにはなりません。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">[a = "00"]</code><h4>分割代入の既定値</h4></div>
+      <p>分割代入で、変数の後ろに <code>= 値</code> を書くと、その位置に要素がないときに入る値（既定値）になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 時刻 time を作り、"10" を入れる
+const time = "10";
+// time を ":" で区切り、0 番目を hour、1 番目を minute として取り出す。ないときは "00" にする
+const [hour = "00", minute = "00"] = time.split(":");
+// 結果: hour は "10"、minute は "00"</code></pre>
+      </div>
+      <p>この課題の設定では、ふつうの配列から取り出した値は「ないかもしれない」として、<code>string | undefined</code> の型になります（02章 q04 問4）。既定値を書くと、ないときにも文字列が入るので、型は <code>string</code> になります。</p>
+      <div class="cmp">
+        <div>
+          <h5>既定値を書かない</h5>
+          <pre><code class="language-typescript">const [hour, minute] = time.split(":");</code></pre>
+          <div class="verdict ng">✕ hour と minute の型は string | undefined</div>
+        </div>
+        <div>
+          <h5>既定値を書く</h5>
+          <pre><code class="language-typescript">const [hour = "00", minute = "00"] = time.split(":");</code></pre>
+          <div class="verdict ok">○ hour と minute の型は string</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>既定値を書かずに <code>[hour, minute]</code> を返すと、戻り値の型 <code>[string, string]</code> と合わず、型の確認でエラーになります。</p>
+      <p class="more">サバイバルTypeScript「配列の分割代入」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 splitName を作る。文字列 fullName を受け取り、[文字列, 文字列] のタプルを返す
+export function splitName() {
+  // fullName を " " で区切り、0 番目を last、1 番目を first として取り出す。ないときは "" にする
+  // last、first の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問12 の 2 つ目のサンプルの <code>[hour = "00", minute = "00"]</code> の行と同じ形です。区切る文字は <code>" "</code>、既定値は <code>""</code> になります。スペースがないときは <code>.split(" ")</code> の結果の要素が 1 つなので、<code>first</code> には既定値が入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c02-q06-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">2 つの数を [小さい方, 大きい方] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function order2() {}</code></pre>
+      <p>数を 2 つ受け取り、小さい方、大きい方の順に並べたタプルを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>order2(5, 2)</code></dt><dd class="r"><code>[2, 5]</code></dd><dd class="c">入れ替える</dd></div>
+          <div><dt><code>order2(1, 3)</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c">もう小さい順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 order2 を作る。数値 a と数値 b を受け取り、[数値, 数値] のタプルを返す
+export function order2() {
+  // a が b 以下なら a、b の順のタプル、そうでなければ b、a の順のタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ なら ◯、そうでなければ ◯ を返す」は条件演算子 <code>? :</code> です（01章 q01 問12）。<code>?</code> の後ろと <code>:</code> の後ろに、それぞれタプルを書けます。<code>if</code> と <code>return</code> を 2 回書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c02-q06-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">配列を [最初の要素, 残りの配列] に分ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function headTail() {}</code></pre>
+      <p>文字列の配列を受け取り、最初の要素と、それより後ろの要素の配列を並べたタプルを返します。空の配列なら <code>[undefined, []]</code> を返します。受け取る配列は読み取り専用（<code>readonly string[]</code>）にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>headTail(["a", "b", "c"])</code></dt><dd class="r"><code>["a", ["b", "c"]]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>headTail([])</code></dt><dd class="r"><code>[undefined, []]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>[string | undefined, string[]]</code> であることも確かめます。タプルの要素には、ユニオン型や配列の型も書けます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 headTail を作る。文字列の読み取り専用の配列 items を受け取り、[文字列か undefined, 文字列の配列] のタプルを返す
+export function headTail() {
+  // items の 0 番目、items の 1 番目から後ろを取り出した配列の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>0 番目は <code>items[0]</code>、1 番目から後ろは <code>items.slice(1)</code> です（02章 q05 問3）。<code>items[0]</code> の型は <code>string | undefined</code> なので、戻り値の 0 番目の型をそれに合わせておきます。空の配列では <code>items[0]</code> が <code>undefined</code>、<code>items.slice(1)</code> が <code>[]</code> になるので、<code>if</code> で分ける必要はありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c02-q06-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">[開始, 終了] から、開始以上終了以下の整数を並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function expandRange() {}</code></pre>
+      <p>開始と終了の 2 つの数を並べたタプルを受け取ります。開始から終了までの整数を、1 ずつ増やしながら並べた配列を返します。終了の数も含めます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>expandRange([2, 5])</code></dt><dd class="r"><code>[2, 3, 4, 5]</code></dd><dd class="c">5 も含む</dd></div>
+          <div><dt><code>expandRange([3, 3])</code></dt><dd class="r"><code>[3]</code></dd><dd class="c">開始と終了が同じ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code>、戻り値が <code>number[]</code> であることも確かめます。戻り値は要素の数が決まっていないので、ふつうの配列の型にします。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 expandRange を作る。[数値, 数値] のタプル range を受け取り、数値の配列を返す
+export function expandRange() {
+  // range の 0 番目を start、1 番目を end として取り出す
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // i を start から end まで 1 ずつ増やしながらくり返す
+  //   result の最後に i を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型注釈を付けた空の配列と、最後に付け足す <code>.push()</code> は、02章 q04 問17 と同じ形です。くり返しは <code>for (;;)</code>（01章 q01 問5）で、<code>end</code> も含めるので、続ける条件は <code>&lt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c02-q06-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">座標 [x, y] が原点（0, 0）なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isOrigin() {}</code></pre>
+      <p>座標を受け取り、x も y も 0 なら <code>true</code>、そうでなければ <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isOrigin([0, 0])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isOrigin([0, 1])</code></dt><dd class="r"><code>false</code></dd><dd class="c">y が 0 でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isOrigin を作る。[数値, 数値] のタプル point を受け取り、true か false を返す
+export function isOrigin() {
+  // point の 0 番目を x、1 番目を y として取り出す
+  // x が 0 と等しい、かつ y が 0 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「等しい」は <code>===</code>（01章 q01 問9）、「かつ」は <code>&amp;&amp;</code>（01章 q02 問16）です。比べた結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c02-q06-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">[名前, 数] を「りんご × 3」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function entryText() {}</code></pre>
+      <p>名前、数の順に並んだタプルを受け取り、名前と数を <code>" × "</code> でつないだ文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>entryText(["りんご", 3])</code></dt><dd class="r"><code>"りんご × 3"</code></dd><dd class="c">× の前後に半角スペース</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[string, number]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 entryText を作る。[文字列, 数値] のタプルを受け取り、その場で name と count に取り出し、文字列を返す
+export function entryText() {
+  // name と count を埋め込んだ「◯ × ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 のサンプルの <code>routeText</code> と同じ形です。<code>×</code> は全角の記号です。テストの文字列からコピーすると、まちがえません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c02-q06-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">[a, b] の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumPair() {}</code></pre>
+      <p>2 つの数を並べたタプルを受け取り、2 つを足した数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumPair([3, 4])</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumPair を作る。[数値, 数値] のタプルを受け取り、その場で a と b に取り出し、数値を返す
+export function sumPair() {
+  // a と b を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じく、引数のかっこの中で <code>[a, b]: [number, number]</code> と取り出します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c02-q06-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">座標 [x, y] を [y, x] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function swapXY() {}</code></pre>
+      <p>座標を受け取り、x と y を入れ替えた座標を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>swapXY([1, 2])</code></dt><dd class="r"><code>[2, 1]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[number, number]</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 swapXY を作る。[数値, 数値] のタプルを受け取り、その場で x と y に取り出し、[数値, 数値] のタプルを返す
+export function swapXY() {
+  // y、x の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は問18 と同じ形で取り出します。返すときは、問2 と同じく並べる順番を入れ替えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c02-q06-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">各要素を [番号, 要素] のタプルにした配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：タプルの配列の型 <code>[string, number][]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withIndex() {}</code></pre>
+      <p>文字列の配列を受け取ります。各要素を、番号、要素の順のタプルにして、そのタプルを並べた配列を返します。番号は 0 から数えます。受け取る配列は読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withIndex(["a", "b"])</code></dt><dd class="r"><code>[[0, "a"], [1, "b"]]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>[number, string][]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[string, number][]</code><h4>タプルの配列の型</h4></div>
+      <p>配列の型は <code>number[]</code> のように、要素の型の後ろに <code>[]</code> を付けて書きました（01章 q08 応用）。要素がタプルなら、タプルの型の後ろに <code>[]</code> を付けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫の一覧 stockList を [文字列, 数値] のタプルの配列として作り、[["A-01", 5], ["B-02", 0]] を入れる
+const stockList: [string, number][] = [
+  ["A-01", 5],
+  ["B-02", 0],
+];
+// 結果: stockList の 0 番目は ["A-01", 5]、1 番目は ["B-02", 0]</code></pre>
+      </div>
+      <p><code>.map()</code>（02章 q04 問5）に渡す関数でタプルを作ると、タプルの配列ができます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 withLength を作る。文字列の読み取り専用の配列 names を受け取り、[文字列, 数値] のタプルの配列を返す
+function withLength(names: readonly string[]): [string, number][] {
+  // names の要素 name から、[name, name の文字数] のタプルを作って並べた新しい配列を返す
+  return names.map((name) =&gt; [name, name.length]);
+}
+// 結果: withLength(["佐藤", "Tanaka"]) は [["佐藤", 2], ["Tanaka", 6]]</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>型注釈のない変数に入れてから返す</h5>
+          <pre><code class="language-typescript">const result = names.map((name) =&gt; [name, name.length]);
+return result;</code></pre>
+          <div class="verdict ng">✕ result が (string | number)[][] と推論され、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>そのまま返す</h5>
+          <pre><code class="language-typescript">return names.map((name) =&gt; [name, name.length]);</code></pre>
+          <div class="verdict ok">○ 戻り値の型注釈に合わせて、タプルとして扱われます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>問1 で見たとおり、<code>[ ]</code> で並べただけの値は配列と推論されます。いったん変数に入れるなら、その変数にも <code>[string, number][]</code> の型注釈を書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withIndex を作る。文字列の読み取り専用の配列 items を受け取り、[数値, 文字列] のタプルの配列を返す
+export function withIndex() {
+  // items の要素 item と番号 i から、[i, item] のタプルを作って並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問20 の 2 つ目のサンプルの <code>withLength</code> と同じ形です。番号は、<code>.map()</code> に渡す関数の 2 つ目の引数で受け取れます（02章 q05 問6）。戻り値の型は <code>[number, string][]</code> で、数値が先です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c02-q06-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">座標の型 Point・2 点間の距離・中点・最小値と最大値</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Point = unknown;
+
+export function distance() {}
+
+export function midpoint() {}
+
+export function minMax() {}</code></pre>
+      <p>型を 1 つと、関数を 3 つ書きます。関数の引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>Point</code>：座標を表す型です。x と y の 2 つの数値を並べたタプルの型にします。<code>unknown</code> を書き換えます。</li>
+        <li><code>distance(a, b)</code>：2 つの点 <code>a</code> と <code>b</code> の間の、まっすぐな距離を返します。<code>Math.hypot</code> か <code>Math.sqrt</code> を使います。</li>
+        <li><code>midpoint(a, b)</code>：2 つの点のちょうど真ん中の点（中点）を <code>Point</code> で返します。<code>const [x1, y1] = a;</code> のように、配列の分割代入を使います。</li>
+        <li><code>minMax(numbers)</code>：数の配列を受け取り、最小値、最大値の順のタプルを返します。引数は <code>readonly number[]</code> にします。空の配列なら <code>Error</code> を投げます。</li>
+      </ol>
+      <p>ファイルの問題文には、<code>minMax</code> の戻り値の型注釈を書かないとどんな型に推論されるか、確かめておくようにとあります。型注釈をいったん消して、VS Code で関数の名前にマウスを載せると、推論された型が出ます。確かめたら、型注釈は元に戻します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>distance([0, 0], [3, 4])</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>distance([1, 1], [1, 1])</code></dt><dd class="r"><code>0</code></dd><dd class="c">同じ点</dd></div>
+          <div><dt><code>distance([-1, -1], [2, 3])</code></dt><dd class="r"><code>5</code></dd><dd class="c">横に 3、縦に 4 離れている</dd></div>
+          <div><dt><code>midpoint([0, 0], [4, 2])</code></dt><dd class="r"><code>[2, 1]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>midpoint([-2, 3], [2, 5])</code></dt><dd class="r"><code>[0, 4]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>minMax([3, 1, 2])</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>minMax([7])</code></dt><dd class="r"><code>[7, 7]</code></dd><dd class="c">要素が 1 つなら、最小値も最大値も同じ</dd></div>
+          <div><dt><code>minMax([-5, 10, 0])</code></dt><dd class="r"><code>[-5, 10]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>minMax([])</code></dt><dd class="r"><code>Error</code></dd><dd class="c">Error を投げる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Point</code> が <code>[number, number]</code> であることを確かめます。<code>distance</code> は引数が <code>Point</code> と <code>Point</code>、戻り値が <code>number</code> です。<code>midpoint</code> は引数が <code>Point</code> と <code>Point</code>、戻り値が <code>Point</code> です。<code>minMax</code> は引数が <code>readonly number[]</code>、戻り値が <code>[number, number]</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Point という型を作る。数値と数値を並べたタプル。ほかのファイルから使えるようにする
+export type Point = unknown;
+
+// 関数 distance を作る。Point の a と Point の b を受け取り、数値を返す
+export function distance() {
+  // b の 0 番目から a の 0 番目を引いた数と、b の 1 番目から a の 1 番目を引いた数から、斜めの長さを求めて返す
+}
+
+// 関数 midpoint を作る。Point の a と Point の b を受け取り、Point を返す
+export function midpoint() {
+  // a の 0 番目を x1、1 番目を y1 として取り出す
+  // b の 0 番目を x2、1 番目を y2 として取り出す
+  // x1 と x2 を足して 2 で割った数、y1 と y2 を足して 2 で割った数の順に並べたタプルを返す
+}
+
+// 関数 minMax を作る。数値の読み取り専用の配列 numbers を受け取り、[数値, 数値] のタプルを返す
+export function minMax() {
+  // もし numbers の要素の数が 0 と等しいなら
+  //   "空の配列です" というメッセージのエラーを投げる
+  // numbers の中でいちばん小さい数、いちばん大きい数の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Point</code> は、型エイリアス <code>type</code>（02章 q01 応用）の <code>unknown</code> を <code>[number, number]</code> に書き換えます。型を作ったら、関数の引数と戻り値の型注釈に <code>Point</code> と書けます。<code>distance</code> の「斜めの長さを求める」は <code>Math.hypot()</code> です（問7）。<code>minMax</code> の要素の数は <code>.length</code>、いちばん小さい数は <code>Math.min(...numbers)</code> です（02章 q04 問12 の引数のスプレッド）。エラーを投げる書き方は 01章 q04 問8 と同じです。</p></details>
+    </div>
+  </section>
+</section>

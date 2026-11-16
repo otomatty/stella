@@ -1,0 +1,845 @@
+<section class="sec" id="c05-q07">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q07 コールバック関数</h2>
+    <p>関数を引数として受け取る関数を 20 個書きます。引数と戻り値には型注釈を付けます。関数を受け取る引数の型は、<code>(n: number) =&gt; number</code> のように書きます。02章 q04 では、<code>.map()</code> にアロー関数を渡しました。この番号では、関数を受け取る側を自分で書きます。中では <code>map</code>、<code>filter</code>、<code>find</code>、<code>some</code>、<code>every</code>、<code>reduce</code> などの配列のメソッドを使いません。<code>for-of</code> や <code>for</code> で回して、受け取った関数を自分で呼びます。テストは、返す値のほかに、引数と戻り値の型も確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q07-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">それぞれの要素に fn を当てはめた配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：関数の型 <code>(n: number) =&gt; number</code>、引数で受け取った関数を呼ぶ <code>fn(n)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mapNumbers() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>fn</code> を受け取ります。<code>fn</code> は、数値を 1 つ受け取って数値を返す関数です。<code>numbers</code> の要素を 1 つずつ <code>fn</code> に渡し、返ってきた数を並べた新しい配列を返します。<code>.map()</code> と同じ働きを、<code>for-of</code> で自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mapNumbers([1, 2], (n) =&gt; n * 10)</code></dt><dd class="r"><code>[10, 20]</code></dd><dd class="c">それぞれを 10 倍にする関数を渡す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(amount: number) =&gt; number</code><h4>関数の型（関数を受け取る引数の型）</h4></div>
+      <p>関数も値の 1 つです。02章 q04 問5 では、<code>.map()</code> にアロー関数を渡しました。渡してあとで呼んでもらう関数を、コールバックと呼びます。同じように、自分で書く関数でも、引数で関数を受け取れます。</p>
+      <p>受け取る引数には、ほかの引数と同じく型注釈が要ります。関数の型は <code>(引数の名前: 型) =&gt; 戻り値の型</code> と書きます。「この形の引数を受け取り、この型の値を返す関数」という意味です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 payAmount を作る。数値 price と、関数 feeOf（数値 amount を受け取り、数値を返す）を受け取り、数値を返す
+function payAmount(price: number, feeOf: (amount: number) =&gt; number): number {
+  // price に、feeOf に price を渡して呼んだ結果を足した数を返す
+  return price + feeOf(price);
+}
+// 支払い pay を作り、payAmount に 3000 と、amount を受け取り、amount が 5000 以上なら 0、そうでなければ 500 を返す関数を渡して呼んだ結果を入れる
+const pay = payAmount(3000, (amount) =&gt; (amount &gt;= 5000 ? 0 : 500));
+// 結果: pay は 3500</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>feeOf</span>: <span class="seg"><i>2</i>(amount: number)</span> <span class="seg c"><i>3</i>=&gt;</span> <span class="seg"><i>4</i>number</span></pre>
+        <ol>
+          <li><span>引数の名前です。ほかの引数と同じく、<code>:</code> の後ろに型を書きます。</span></li>
+          <li><span>受け取る関数の、引数の形です。「数値を 1 つ受け取る関数」を表します。</span></li>
+          <li><span>「左を受け取って、右を返す」という印です。アロー関数の <code>=&gt;</code> と同じ形です。</span></li>
+          <li><span>受け取る関数の、戻り値の型です。ここには型を書きます。</span></li>
+        </ol>
+      </figure>
+      <p>呼ぶ側の <code>(amount) =&gt; …</code> には、型注釈を書いていません。<code>payAmount</code> の引数の型から、<code>amount</code> は <code>number</code> だと TypeScript が推論します（02章 q04 問5 と同じです）。</p>
+      <p>関数の型に合わない関数を渡すと、型の確認でエラーになります。</p>
+      <dl class="eg">
+        <div><dt><code>payAmount(3000, (amount) =&gt; `${amount}円`)</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">文字列を返している。戻り値は数値のはず</dd></div>
+        <div><dt><code>payAmount(3000, 500)</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">関数を渡すところに、数値を渡している</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>関数の型の中の <code>amount</code> は、説明のための名前です。渡す関数の引数の名前と、そろえなくてかまいません。テストの型の確かめも、名前は比べません。<code>fn: (value: number) =&gt; number</code> と書いても、テストが求める <code>(n: number) =&gt; number</code> と同じ型として通ります。比べるのは、引数の型の並びと戻り値の型です。</p>
+      <p class="memo"><b>よくある間違い</b><code>feeOf: (amount: number) =&gt; amount + 500</code> のように、<code>=&gt;</code> の右に計算を書くと、文法のエラーになります。関数の型に書けるのは型だけです。計算は、呼ぶ側が渡す関数の中に書きます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/function-type-declaration">サバイバルTypeScript「関数の型の宣言」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">feeOf(price)</code><h4>引数で受け取った関数を呼ぶ</h4></div>
+      <p>引数で受け取った関数は、自分で書いた関数と同じように呼べます（01章 q01 問20）。引数の名前の後ろにかっこを付けて、渡す値を入れます。呼んだ関数が返した値が、その場所の値になります。</p>
+      <figure class="anat">
+        <pre>return <span class="seg"><i>1</i>price</span> + <span class="seg"><i>2</i>feeOf</span><span class="seg"><i>3</i>(price)</span>;</pre>
+        <ol>
+          <li><span>ふつうの数値の引数です。</span></li>
+          <li><span>関数を受け取った引数です。中身は、呼ぶ側が渡したアロー関数です。</span></li>
+          <li><span>かっこを付けると、その関数を呼びます。<code>price</code> が、アロー関数の <code>amount</code> に入ります。</span></li>
+        </ol>
+      </figure>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 280" role="img" aria-label="payAmount に 3000 と関数を渡すと、price に 3000、feeOf に関数が入る。中で feeOf(price) を呼ぶと 500 が返り、3000 + 500 で 3500 を返す">
+            <text class="s" x="62" y="43" text-anchor="middle">呼ぶ</text>
+            <rect class="box" x="130" y="20" width="390" height="36" rx="8"/>
+            <text class="m" x="325" y="43" text-anchor="middle">payAmount(3000, (amount) =&gt; …)</text>
+            <line class="ln" x1="225" y1="56" x2="225" y2="78"/><polygon class="hd" points="219,78 225,90 231,78"/>
+            <line class="ln-a" x1="430" y1="56" x2="430" y2="78"/><polygon class="hd-a" points="424,78 430,90 436,78"/>
+            <text class="s" x="62" y="113" text-anchor="middle">受け取る</text>
+            <rect class="box" x="130" y="90" width="190" height="36" rx="8"/>
+            <text x="225" y="113" text-anchor="middle">price は 3000</text>
+            <rect class="box-a" x="340" y="90" width="180" height="36" rx="8"/>
+            <text class="a" x="430" y="113" text-anchor="middle">feeOf は関数</text>
+            <line class="ln-a" x1="430" y1="126" x2="430" y2="148"/><polygon class="hd-a" points="424,148 430,160 436,148"/>
+            <text class="s" x="62" y="183" text-anchor="middle">中で呼ぶ</text>
+            <rect class="box" x="130" y="160" width="170" height="36" rx="8"/>
+            <text x="215" y="183" text-anchor="middle">500 が返ってくる</text>
+            <rect class="box-a" x="340" y="160" width="180" height="36" rx="8"/>
+            <text class="m a" x="430" y="183" text-anchor="middle">feeOf(price)</text>
+            <line class="ln-a" x1="340" y1="178" x2="314" y2="178"/><polygon class="hd-a" points="314,172 302,178 314,184"/>
+            <line class="ln" x1="215" y1="196" x2="215" y2="218"/><polygon class="hd" points="209,218 215,230 221,218"/>
+            <text class="s" x="62" y="253" text-anchor="middle">返す</text>
+            <rect class="box" x="130" y="230" width="390" height="36" rx="8"/>
+            <text x="325" y="253" text-anchor="middle">3000 + 500 で、3500 を返す</text>
+          </svg>
+        </div>
+        <figcaption>呼ぶ側が渡した関数は、引数 <code>feeOf</code> に入ります。<code>feeOf(price)</code> と書くと、その関数が呼ばれます。アロー関数の <code>amount</code> には 3000 が入り、5000 より小さいので 500 が返ってきます。</figcaption>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>payAmount(3000, (amount) =&gt; (amount &gt;= 5000 ? 0 : 500))</code></dt><dd class="r"><code>3500</code></dd><dd class="c">送料 500 を足す</dd></div>
+        <div><dt><code>payAmount(6000, (amount) =&gt; (amount &gt;= 5000 ? 0 : 500))</code></dt><dd class="r"><code>6000</code></dd><dd class="c">5000 以上なので送料 0</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>かっこを付けずに使う</h5>
+          <pre><code class="language-typescript">// price に feeOf を足した数を返す
+return price + feeOf;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>かっこを付けて呼ぶ</h5>
+          <pre><code class="language-typescript">// price に、feeOf に price を渡して呼んだ結果を足した数を返す
+return price + feeOf(price);</code></pre>
+          <div class="verdict ok">○ 3500</div>
+        </div>
+      </div>
+      <p><code>feeOf</code> とだけ書くと、関数そのものです。数値と関数は足せないので、<code>Operator '+' cannot be applied to types 'number' and '(amount: number) =&gt; number'.</code> というエラーになります。「<code>+</code> は、数値と関数には使えません」という意味です。</p>
+      <p>要素ごとに呼びたいときは、<code>for-of</code> の中で呼びます。くり返すたびに、取り出した要素を渡して呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 receiptText を作る。読み取り専用の数値の配列 prices と、関数 format（数値 price を受け取り、文字列を返す）を受け取り、文字列を返す
+function receiptText(prices: readonly number[], format: (price: number) =&gt; string): string {
+  // 文 text を入れ直せる変数として作り、空の文字列を入れる
+  let text = "";
+  // prices から 1 つずつ price に取り出してくり返す
+  for (const price of prices) {
+    // text と、format に price を渡して呼んだ結果を埋め込んだ「◯[◯]」の文字列を、text に入れ直す
+    text = `${text}[${format(price)}]`;
+  }
+  // text を返す
+  return text;
+}
+// 明細 receipt を作り、receiptText に [1200, 800] と、price を受け取り、price を埋め込んだ「◯円」の文字列を返す関数を渡して呼んだ結果を入れる
+const receipt = receiptText([1200, 800], (price) =&gt; `${price}円`);
+// 結果: receipt は "[1200円][800円]"</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>price（取り出した要素）</th><th>format(price) の結果</th><th>text</th></tr></thead>
+          <tbody>
+            <tr><td>（くり返しの前）</td><td></td><td>""</td></tr>
+            <tr><td>1200</td><td>"1200円"</td><td>"[1200円]"</td></tr>
+            <tr><td>800</td><td>"800円"</td><td>"[1200円][800円]"</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>receiptText</code> は、受け取った関数が何をするかを知りません。「1 つずつ取り出して呼ぶ」ことだけを決めています。何に変えるかは、呼ぶ側が渡す関数で決めます。<code>(price) =&gt; `${price} yen`</code> を渡せば、同じ <code>receiptText</code> のまま <code>"[1200 yen][800 yen]"</code> になります。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/callback-functions">サバイバルTypeScript「コールバック関数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mapNumbers を作る。読み取り専用の数値の配列 numbers と、関数 fn（数値 n を受け取り、数値を返す）を受け取り、数値の配列を返す
+export function mapNumbers() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   result の最後に、fn に n を渡して呼んだ結果を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の「関数 fn（数値 n を受け取り、数値を返す）」は、1 つ目の項目のサンプルの <code>feeOf</code> と同じ形で、<code>fn: (n: number) =&gt; number</code> です。「読み取り専用の数値の配列」は <code>readonly number[]</code> です（02章 q04 問1）。くり返しの形は、2 つ目の項目のサンプル <code>receiptText</code> と同じです。「最後に付け足す」は <code>.push()</code> で（02章 q04 問17）、付け足すのは <code>fn(n)</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q07-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">predicate が true の要素だけを集める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function filterNumbers() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> は、数値を 1 つ受け取って <code>true</code> か <code>false</code> を返す関数です。このように、条件に合うかを答える関数を predicate（述語）と呼びます。<code>predicate</code> が <code>true</code> を返した要素だけを並べた、新しい配列を返します。<code>.filter()</code>（02章 q04 問7）と同じ働きです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>filterNumbers([1, 2, 3, 4], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>[2, 4]</code></dd><dd class="c">偶数だけが残る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 filterNumbers を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、数値の配列を返す
+export function filterNumbers() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が true なら
+  //     result の最後に n を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>関数の型は、戻り値が <code>boolean</code> の <code>(n: number) =&gt; boolean</code> です。「もし predicate に n を渡して呼んだ結果が true なら」は <code>if (predicate(n))</code> です。呼んだ結果がそのまま <code>true</code> か <code>false</code> なので、<code>=== true</code> は付けません。付けると、ESLint の「boolean を boolean と比べなくてよい」というエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q07-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">それぞれの要素と番号を fn に渡して呼ぶ</span>
+      <span class="q-new">新しく出てくる書き方：引数が 2 つの関数の型、何も返さない関数の型 <code>=&gt; void</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function eachWithIndex() {}</code></pre>
+      <p>文字列の配列 <code>items</code> と、関数 <code>fn</code> を受け取ります。<code>fn</code> は、文字列 <code>item</code> と数値 <code>index</code> の 2 つを受け取り、何も返さない関数です。<code>items</code> の要素を前から順に、その要素と番号（0 から数える）を <code>fn</code> に渡して呼びます。<code>eachWithIndex</code> 自身も、何も返しません。<code>.forEach()</code>（02章 q04 問19）と同じ働きです。</p>
+      <p>テストは、呼ばれた順を記録する関数を <code>fn</code> として渡し、記録の中身を確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>eachWithIndex(["a", "b"], fn)</code></dt><dd class="r"><code>fn("a", 0)</code>、<code>fn("b", 1)</code> の順に呼ぶ</dd><dd class="c">要素が先、番号が後</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(item: string, index: number) =&gt; void</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(item: string, left: number) =&gt; void</code><h4>引数が 2 つの関数の型、何も返さない関数の型</h4></div>
+      <p>受け取る関数の引数が 2 つ以上なら、かっこの中に <code>,</code> で区切って並べます。ふつうの関数の引数と同じ書き方です。</p>
+      <p>受け取る関数が何も返さないときは、戻り値の型を <code>void</code> にします。<code>void</code> は、04章 q05 問13 で出た「何も返さない」を表す型です。値を返す代わりに、配列に付け足すなどの仕事をする関数に使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 alertIfLow を作る。文字列 name と数値 count と、関数 send（文字列 item と数値 left を受け取り、何も返さない）を受け取り、何も返さない
+function alertIfLow(name: string, count: number, send: (item: string, left: number) =&gt; void): void {
+  // もし count が 5 より小さいなら
+  if (count &lt; 5) {
+    // send に name と count を渡して呼ぶ
+    send(name, count);
+  }
+}
+// 知らせた記録 sent を文字列の配列として作り、空の配列を入れる
+const sent: string[] = [];
+// alertIfLow に "ペン" と 3 と、item と left を受け取る関数を渡して呼ぶ
+alertIfLow("ペン", 3, (item, left) =&gt; {
+  // sent の最後に、item と left を埋め込んだ「◯ 残り◯個」の文字列を付け足す
+  sent.push(`${item} 残り${left}個`);
+});
+// alertIfLow に "ノート" と 20 と、item と left を受け取る関数を渡して呼ぶ
+alertIfLow("ノート", 20, (item, left) =&gt; {
+  // sent の最後に、item と left を埋め込んだ「◯ 残り◯個」の文字列を付け足す
+  sent.push(`${item} 残り${left}個`);
+});
+// 結果: sent は ["ペン 残り3個"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>send: <span class="seg"><i>1</i>(item: string, left: number)</span> =&gt; <span class="seg"><i>2</i>void</span></pre>
+        <ol>
+          <li><span>受け取る関数の引数を、<code>,</code> で区切って 2 つ並べます。呼ぶときも、この順に 2 つ渡します。</span></li>
+          <li><span>何も返さない関数であることを表します。</span></li>
+        </ol>
+      </figure>
+      <p>ノートは 20 個あり、5 より小さくありません。そのため <code>send</code> は呼ばれず、<code>sent</code> には何も足されません。</p>
+      <p><code>send</code> は何も返さないので、<code>send(name, count);</code> と呼ぶだけで、結果を変数に入れたり返したりしません。呼ぶ側のアロー関数は、<code>{ }</code> の中で <code>sent</code> に付け足すだけで、<code>return</code> を書いていません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/void-type">サバイバルTypeScript「戻り値がない関数とvoid型」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 eachWithIndex を作る。読み取り専用の文字列の配列 items と、関数 fn（文字列 item と数値 index を受け取り、何も返さない）を受け取り、何も返さない
+export function eachWithIndex() {
+  // items の番号と要素の組を 1 つずつ [index, item] に取り出してくり返す
+  //   fn に item と index を渡して呼ぶ
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の関数 <code>fn</code> の型は、問3 のサンプルの <code>send</code> と同じ形です。<code>eachWithIndex</code> 自身の戻り値の型も <code>: void</code> です。「番号と要素の組」は <code>.entries()</code> です（04章 q03 問9）。組は <code>[番号, 要素]</code> の順に取り出します。<code>fn</code> には要素、番号の順に渡すので、順番を取り違えないようにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q07-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">predicate が true の要素の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countWhere() {}</code></pre>
+      <p>文字列の配列 <code>items</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> は、文字列を 1 つ受け取って <code>true</code> か <code>false</code> を返す関数です。<code>predicate</code> が <code>true</code> を返した要素の数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countWhere(["a", "bb", "ccc"], (s) =&gt; s.length &gt; 1)</code></dt><dd class="r"><code>2</code></dd><dd class="c">"bb" と "ccc" の 2 つ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(s: string) =&gt; boolean</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countWhere を作る。読み取り専用の文字列の配列 items と、関数 predicate（文字列 s を受け取り、true か false を返す）を受け取り、数値を返す
+export function countWhere() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし predicate に item を渡して呼んだ結果が true なら
+  //     count に 1 を足す
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>関数の型は <code>(s: string) =&gt; boolean</code> です。<code>if</code> の行は、問2 と同じく <code>if (predicate(item))</code> です。「count に 1 を足す」は <code>count++</code> です（01章 q01 問5）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q07-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">predicate が true になる要素が 1 つでもあれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function someMatch() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> が <code>true</code> を返す要素が 1 つでもあれば <code>true</code>、1 つもなければ <code>false</code> を返します。<code>.some()</code>（03章 q07 問9）と同じ働きです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>someMatch([1, 3], (n) =&gt; n &gt; 2)</code></dt><dd class="r"><code>true</code></dd><dd class="c">3 が 2 より大きい</dd></div>
+          <div><dt><code>someMatch([1, 2], (n) =&gt; n &gt; 2)</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 より大きい数がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 someMatch を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、true か false を返す
+export function someMatch() {
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が true なら
+  //     true を返す
+  // false を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しの中で <code>return true;</code> すると、その場で関数が終わり、残りの要素は見ません。最後まで見つからなかったときだけ、くり返しのあとの <code>return false;</code> に進みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q07-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">すべての要素で predicate が true なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function everyMatch() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>predicate</code> を受け取ります。すべての要素で <code>predicate</code> が <code>true</code> を返すなら <code>true</code>、1 つでも <code>false</code> があれば <code>false</code> を返します。空の配列なら <code>true</code> です。<code>.every()</code>（02章 q04 問20）と同じ働きです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>everyMatch([2, 4], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>true</code></dd><dd class="c">どちらも偶数</dd></div>
+          <div><dt><code>everyMatch([2, 3], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 が偶数でない</dd></div>
+          <div><dt><code>everyMatch([], () =&gt; false)</code></dt><dd class="r"><code>true</code></dd><dd class="c">空の配列は true。引数を使わない関数も渡せる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 everyMatch を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、true か false を返す
+export function everyMatch() {
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が false なら
+  //     false を返す
+  // true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 の反対の形です。「呼んだ結果が false なら」は、<code>!</code>（01章 q04）を付けて <code>if (!predicate(n))</code> と書きます。空の配列では 1 回もくり返さないので、そのまま <code>return true;</code> に進みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q07-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">predicate が true になる最初の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function findNumber() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>predicate</code> を受け取ります。前から見ていき、<code>predicate</code> が最初に <code>true</code> を返した要素を返します。1 つもなければ <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>findNumber([1, 5, 8], (n) =&gt; n &gt; 4)</code></dt><dd class="r"><code>5</code></dd><dd class="c">8 も 4 より大きいが、先の 5 を返す</dd></div>
+          <div><dt><code>findNumber([1], (n) =&gt; n &gt; 4)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code>、戻り値が <code>number | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findNumber を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、数値か undefined を返す
+export function findNumber() {
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が true なら
+  //     n を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形で、くり返しの中で返すのが <code>n</code> になります。「数値か undefined を返す」は <code>: number | undefined</code> です（02章 q04 問4）。最後の行は <code>return undefined;</code> です（01章 q03 問12）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q07-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">predicate が true になる最初の要素の番号を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function findIndexWhere() {}</code></pre>
+      <p>文字列の配列 <code>items</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> が最初に <code>true</code> を返した要素の番号（0 から数える）を返します。1 つもなければ <code>-1</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>findIndexWhere(["a", "bb"], (s) =&gt; s.length === 2)</code></dt><dd class="r"><code>1</code></dd><dd class="c">"bb" は 1 番目</dd></div>
+          <div><dt><code>findIndexWhere(["a"], (s) =&gt; s.length === 2)</code></dt><dd class="r"><code>-1</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(s: string) =&gt; boolean</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findIndexWhere を作る。読み取り専用の文字列の配列 items と、関数 predicate（文字列 s を受け取り、true か false を返す）を受け取り、数値を返す
+export function findIndexWhere() {
+  // items の番号と要素の組を 1 つずつ [index, item] に取り出してくり返す
+  //   もし predicate に item を渡して呼んだ結果が true なら
+  //     index を返す
+  // -1 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは、問3 と同じく <code>.entries()</code> で番号と要素を取り出します。中は問7 と同じ形で、返すのが番号の <code>index</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q07-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">fn を n 回呼ぶ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function times() {}</code></pre>
+      <p>数値 <code>n</code> と、関数 <code>fn</code> を受け取ります。<code>fn</code> は、数値を 1 つ受け取り、何も返さない関数です。<code>fn</code> を <code>n</code> 回呼びます。呼ぶときは、0 から数えた回数（0、1、2…）を渡します。<code>times</code> 自身は何も返しません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>times(3, fn)</code></dt><dd class="r"><code>fn(0)</code>、<code>fn(1)</code>、<code>fn(2)</code> の順に呼ぶ</dd><dd class="c">3 回。最初は 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>(i: number) =&gt; void</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 times を作る。数値 n と、関数 fn（数値 i を受け取り、何も返さない）を受け取り、何も返さない
+export function times() {
+  // i を 0 から、n より小さい間 1 ずつ増やしながらくり返す
+  //   fn に i を渡して呼ぶ
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>関数の型は、問3 の <code>=&gt; void</code> の形で、引数が 1 つの <code>(i: number) =&gt; void</code> です。くり返しは <code>for (let i = 0; i &lt; n; i++)</code> です（01章 q01 問5）。「n より小さい間」なので <code>&lt;</code> を使います。0、1、2 の 3 回になります。<code>&lt;=</code> にすると 4 回呼んでしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q07-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">fn で配列を 1 つの値にまとめる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function reduceNumbers() {}</code></pre>
+      <p>数値の配列 <code>numbers</code>、関数 <code>fn</code>、始めの値 <code>initial</code> の 3 つを受け取ります。<code>fn</code> は、ここまでの値 <code>acc</code> と要素 <code>n</code> の 2 つを受け取り、次の値を返す関数です。<code>initial</code> から始めて、要素ごとに <code>fn(ここまでの値, 要素)</code> の結果を次の「ここまでの値」にします。最後の値を返します。</p>
+      <p>1 つ目のテストで、ここまでの値が変わっていく様子です。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>n（要素）</th><th>fn に渡すもの</th><th>ここまでの値</th></tr></thead>
+          <tbody>
+            <tr><td>（くり返しの前）</td><td></td><td>0（initial）</td></tr>
+            <tr><td>1</td><td>fn(0, 1)</td><td>1</td></tr>
+            <tr><td>2</td><td>fn(1, 2)</td><td>3</td></tr>
+            <tr><td>3</td><td>fn(3, 3)</td><td>6</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>reduceNumbers([1, 2, 3], (acc, n) =&gt; acc + n, 0)</code></dt><dd class="r"><code>6</code></dd><dd class="c">0 から足していく</dd></div>
+          <div><dt><code>reduceNumbers([2, 3], (acc, n) =&gt; acc * n, 1)</code></dt><dd class="r"><code>6</code></dd><dd class="c">1 からかけていく</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(acc: number, n: number) =&gt; number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 reduceNumbers を作る。読み取り専用の数値の配列 numbers と、関数 fn（数値 acc と数値 n を受け取り、数値を返す）と、数値 initial を受け取り、数値を返す
+export function reduceNumbers() {
+  // ここまでの値 acc を入れ直せる変数として作り、initial を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   fn に acc と n を渡して呼んだ結果を、acc に入れ直す
+  // acc を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>関数の型は、問3 と同じく引数を 2 つ並べた <code>(acc: number, n: number) =&gt; number</code> です。「fn に acc と n を渡して呼んだ結果を、acc に入れ直す」は <code>acc = fn(acc, n);</code> です。引数の <code>initial</code> に直接入れ直すと、ESLint の「引数に入れ直さない」のエラーになります。そのため、別の変数 <code>acc</code> を作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q07-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">それぞれの文字列に fn を当てはめた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mapStrings() {}</code></pre>
+      <p>文字列の配列 <code>items</code> と、関数 <code>fn</code> を受け取ります。<code>fn</code> は、文字列を 1 つ受け取って文字列を返す関数です。要素を 1 つずつ <code>fn</code> に渡し、返ってきた文字列を並べた新しい配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mapStrings(["a", "b"], (s) =&gt; s.toUpperCase())</code></dt><dd class="r"><code>["A", "B"]</code></dd><dd class="c">それぞれを大文字にする関数を渡す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(s: string) =&gt; string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mapStrings を作る。読み取り専用の文字列の配列 items と、関数 fn（文字列 s を受け取り、文字列を返す）を受け取り、文字列の配列を返す
+export function mapStrings() {
+  // 結果 result を文字列の配列として作り、空の配列を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   result の最後に、fn に item を渡して呼んだ結果を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、型が数値から文字列に変わります。関数の型は <code>(s: string) =&gt; string</code>、結果の配列は <code>string[]</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q07-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">x に fn を 2 回当てはめる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function applyTwice() {}</code></pre>
+      <p>関数 <code>fn</code> と数値 <code>x</code> を受け取ります。<code>x</code> を <code>fn</code> に渡し、返ってきた値をもう一度 <code>fn</code> に渡します。その結果を返します。引数の順番は、関数が先、数値が後です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>applyTwice((n) =&gt; n + 3, 1)</code></dt><dd class="r"><code>7</code></dd><dd class="c">1 + 3 で 4、4 + 3 で 7</dd></div>
+          <div><dt><code>applyTwice((n) =&gt; n * n, 3)</code></dt><dd class="r"><code>81</code></dd><dd class="c">3 × 3 で 9、9 × 9 で 81</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>(n: number) =&gt; number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 applyTwice を作る。関数 fn（数値 n を受け取り、数値を返す）と数値 x を受け取り、数値を返す
+export function applyTwice() {
+  // 1 回目 once を作り、fn に x を渡して呼んだ結果を入れる
+  // fn に once を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>どちらの行も、問1 の 1 つ目の項目のサンプルの <code>feeOf(price)</code> と同じく、かっこに値を入れて呼びます。2 行をまとめて、<code>fn</code> の呼び出しを重ねて 1 行に書くこともできます。そのときは、内側のかっこから先に計算されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q07-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">それぞれの単語に fn を当てはめた数の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumBy() {}</code></pre>
+      <p>文字列の配列 <code>words</code> と、関数 <code>fn</code> を受け取ります。<code>fn</code> は、文字列を 1 つ受け取って数値を返す関数です。単語ごとに <code>fn</code> を呼び、返ってきた数の合計を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumBy(["a", "bcd"], (w) =&gt; w.length)</code></dt><dd class="r"><code>4</code></dd><dd class="c">文字数 1 と 3 の合計</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(w: string) =&gt; number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumBy を作る。読み取り専用の文字列の配列 words と、関数 fn（文字列 w を受け取り、数値を返す）を受け取り、数値を返す
+export function sumBy() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // words から 1 つずつ word に取り出してくり返す
+  //   total に、fn に word を渡して呼んだ結果を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>受け取る関数は、文字列を受け取って数値を返すので <code>(w: string) =&gt; number</code> です。「total に、◯ を足す」は <code>+=</code> です（01章 q01 問5）。足すのは <code>fn(word)</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q07-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">fn の値がいちばん大きい単語を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function maxBy() {}</code></pre>
+      <p>文字列の配列 <code>words</code> と、関数 <code>fn</code> を受け取ります。単語ごとに <code>fn</code> を呼び、返ってきた数がいちばん大きい単語を返します。同じ数の単語が複数あれば、前にある方を返します。配列が空なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>maxBy(["a", "bcd", "ef"], (w) =&gt; w.length)</code></dt><dd class="r"><code>"bcd"</code></dd><dd class="c">文字数 3 がいちばん大きい</dd></div>
+          <div><dt><code>maxBy([], (w) =&gt; w.length)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(w: string) =&gt; number</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 maxBy を作る。読み取り専用の文字列の配列 words と、関数 fn（文字列 w を受け取り、数値を返す）を受け取り、文字列か undefined を返す
+export function maxBy() {
+  // いちばんの単語 best を入れ直せる変数として作り、undefined を入れる。型は文字列か undefined
+  // いちばん大きい値 bestValue を入れ直せる変数として作り、-Infinity を入れる
+  // words から 1 つずつ word に取り出してくり返す
+  //   値 value を作り、fn に word を渡して呼んだ結果を入れる
+  //   もし value が bestValue より大きいなら
+  //     best に word を入れ直す
+  //     bestValue に value を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q08 問10 と同じ形で、比べる値を <code>fn(word)</code> で求めます。<code>best</code> は <code>let best: string | undefined;</code> と書くと、最初は <code>undefined</code> が入ります。<code>bestValue</code> を <code>-Infinity</code> から始めると、最初の単語の値は必ずそれより大きくなります。同じ数なら前の単語を残すので、比べるのは <code>&gt;</code> です。<code>&gt;=</code> にすると、後ろの単語に入れ替わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q07-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">key の値の小さい順に並べた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortByKey() {}</code></pre>
+      <p>文字列の配列 <code>words</code> と、関数 <code>key</code> を受け取ります。<code>key</code> は、文字列を 1 つ受け取って数値を返す関数です。<code>key</code> が返す数の小さい順に並べた、新しい配列を返します。同じ数なら元の順のままです。この問題だけは、<code>[...words].sort()</code> を使ってかまいません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortByKey(["ccc", "a", "bb"], (w) =&gt; w.length)</code></dt><dd class="r"><code>["a", "bb", "ccc"]</code></dd><dd class="c">文字数の小さい順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>(w: string) =&gt; number</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortByKey を作る。読み取り専用の文字列の配列 words と、関数 key（文字列 w を受け取り、数値を返す）を受け取り、文字列の配列を返す
+export function sortByKey() {
+  // words をコピーした配列を、key に渡して呼んだ結果の小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>コピーは <code>[...words]</code>、並べ替えは <code>.sort()</code> です（02章 q05 問1、問8）。02章 q05 問8 の比べ方の関数は <code>(a, b) =&gt; a - b</code> でした。ここでは、<code>a</code> と <code>b</code> をそれぞれ <code>key</code> に渡して呼び、その結果どうしを引き算します。比べ方の関数の中で、受け取った <code>key</code> を呼ぶ形です。<code>.sort()</code> は、比べた結果が同じ要素の順を入れ替えません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q07-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">predicate が true の要素を除いた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rejectNumbers() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> が <code>true</code> を返した要素を除き、残りを並べた新しい配列を返します。問2 の反対です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rejectNumbers([1, 2, 3], (n) =&gt; n === 2)</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c">2 を除く</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rejectNumbers を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、数値の配列を返す
+export function rejectNumbers() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が false なら
+  //     result の最後に n を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、<code>if</code> の条件だけが違います。「呼んだ結果が false なら」は、問6 と同じく <code>!</code> を付けて書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q07-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">true の要素と false の要素に分ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function splitBy() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> と、関数 <code>predicate</code> を受け取ります。<code>predicate</code> が <code>true</code> を返した要素の配列と、<code>false</code> を返した要素の配列の 2 つに分けます。<code>[true の配列, false の配列]</code> のタプルにして返します。どちらの配列も、元の順のままです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>splitBy([1, 2, 3], (n) =&gt; n &gt; 1)</code></dt><dd class="r"><code>[[2, 3], [1]]</code></dd><dd class="c">1 より大きい 2、3 と、残りの 1</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code>、戻り値が <code>[number[], number[]]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 splitBy を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、[数値の配列, 数値の配列] のタプルを返す
+export function splitBy() {
+  // 当てはまる要素 yes を数値の配列として作り、空の配列を入れる
+  // 当てはまらない要素 no を数値の配列として作り、空の配列を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が true なら
+  //     yes の最後に n を付け足す
+  //   そうでなければ
+  //     no の最後に n を付け足す
+  // yes、no の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、タプルの <code>[number[], number[]]</code> です（02章 q06 問1）。「そうでなければ」は <code>else</code> です。最後の行は <code>return [yes, no];</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q07-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">記録を足してから fn(x) の結果を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withLog() {}</code></pre>
+      <p>文字列の配列 <code>log</code>、関数 <code>fn</code>、数値 <code>x</code> の 3 つを受け取ります。まず、<code>log</code> の最後に <code>"call(x の値)"</code> の文字列を足します。そのあとで、<code>x</code> を <code>fn</code> に渡して呼んだ結果を返します。<code>log</code> は書き換えるので、<code>readonly</code> を付けません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withLog(log, (n) =&gt; n * 2, 5)</code></dt><dd class="r"><code>10</code></dd><dd class="c">log は空の配列から <code>["call(5)"]</code> になる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code> と <code>(n: number) =&gt; number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withLog を作る。文字列の配列 log と、関数 fn（数値 n を受け取り、数値を返す）と、数値 x を受け取り、数値を返す
+export function withLog() {
+  // log の最後に、x を埋め込んだ「call(◯)」の文字列を付け足す
+  // fn に x を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>log</code> の型は <code>readonly</code> の付かない <code>string[]</code> です。<code>readonly string[]</code> にすると、<code>.push()</code> が使えません。「x を埋め込んだ文字列」はテンプレートリテラルで作ります（01章 q01 問3）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q07-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">fn が true を返すまで、最大 times 回呼ぶ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function retry() {}</code></pre>
+      <p>数値 <code>times</code> と、関数 <code>fn</code> を受け取ります。<code>fn</code> は、何回目かの数を受け取り、成功なら <code>true</code>、失敗なら <code>false</code> を返す関数です。回数は 1 から数えます。<code>fn</code> が <code>true</code> を返したら、そこでやめて <code>true</code> を返します。<code>times</code> 回呼んでもすべて失敗なら、<code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>retry(3, (attempt) =&gt; attempt === 2)</code></dt><dd class="r"><code>true</code></dd><dd class="c">1 回目、2 回目の順に呼び、2 回目で成功する。3 回目は呼ばない</dd></div>
+          <div><dt><code>retry(3, () =&gt; false)</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 回とも失敗</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>(attempt: number) =&gt; boolean</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 retry を作る。数値 times と、関数 fn（数値 attempt を受け取り、true か false を返す）を受け取り、true か false を返す
+export function retry() {
+  // attempt を 1 から times まで 1 ずつ増やしながらくり返す
+  //   もし fn に attempt を渡して呼んだ結果が true なら
+  //     true を返す
+  // false を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは、問9 と同じ <code>for</code> 文で、始まりが 1、続ける条件が <code>attempt &lt;= times</code> です。中は問5 と同じ形です。成功した時点で <code>return true;</code> するので、残りの回は呼ばれません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q07-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">x に f を当てはめ、その結果に g を当てはめる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function composeTwo() {}</code></pre>
+      <p>関数 <code>f</code>、関数 <code>g</code>、数値 <code>x</code> の 3 つを受け取ります。<code>f</code> も <code>g</code> も、数値を 1 つ受け取って数値を返す関数です。<code>x</code> を <code>f</code> に渡し、返ってきた値を <code>g</code> に渡します。その結果を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>composeTwo((n) =&gt; n + 1, (n) =&gt; n * 10, 2)</code></dt><dd class="r"><code>30</code></dd><dd class="c">f で 2 + 1 = 3、g で 3 × 10 = 30</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>(n: number) =&gt; number</code> と <code>(n: number) =&gt; number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 composeTwo を作る。関数 f（数値 n を受け取り、数値を返す）と、関数 g（数値 n を受け取り、数値を返す）と、数値 x を受け取り、数値を返す
+export function composeTwo() {
+  // 途中の値 middle を作り、f に x を渡して呼んだ結果を入れる
+  // g に middle を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じ形で、2 回目に呼ぶ関数が <code>g</code> になります。順番に気をつけます。先に呼ぶのは <code>f</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c05-q07-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">価格のルール・条件に合う数・最初の要素・回数分呼ぶ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function applyRule() {}
+
+export function countIf() {}
+
+export function findFirst() {}
+
+export function repeatCall() {}</code></pre>
+      <p>関数を引数として受け取る関数を 4 つ書きます。引数と戻り値には型注釈を付けます。中では <code>map</code> や <code>filter</code> を使わず、<code>for-of</code> などで回して、受け取った関数を自分で呼びます。</p>
+      <ol>
+        <li><code>applyRule(prices, rule)</code>：それぞれの価格に <code>rule</code> を当てはめた、新しい配列を返します。<code>prices</code> は <code>readonly number[]</code>、<code>rule</code> は価格を受け取って数値を返す関数です。</li>
+        <li><code>countIf(items, predicate)</code>：<code>predicate</code> が <code>true</code> を返す要素の数を返します。<code>items</code> は <code>readonly string[]</code> です。</li>
+        <li><code>findFirst(numbers, predicate)</code>：<code>predicate</code> が <code>true</code> を返す最初の要素を返します。なければ <code>undefined</code> を返します。</li>
+        <li><code>repeatCall(times, fn)</code>：<code>fn</code> を <code>times</code> 回呼びます。<code>fn</code> には、0、1、2… と、何回目か（0 から数える）を渡します。何も返しません。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>applyRule([100, 200], (p) =&gt; p * 2)</code></dt><dd class="r"><code>[200, 400]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>applyRule([1000, 1500], (p) =&gt; Math.floor(p * 0.9))</code></dt><dd class="r"><code>[900, 1350]</code></dd><dd class="c">1 割引きして切り捨て</dd></div>
+          <div><dt><code>applyRule([], (p) =&gt; p)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>countIf(["a", "bb", "ccc"], (s) =&gt; s.length &gt;= 2)</code></dt><dd class="r"><code>2</code></dd><dd class="c">"bb" と "ccc"</dd></div>
+          <div><dt><code>countIf([], () =&gt; true)</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>findFirst([1, 4, 6], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>4</code></dd><dd class="c">最初の偶数</dd></div>
+          <div><dt><code>findFirst([1, 3], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">偶数がない</dd></div>
+          <div><dt><code>repeatCall(3, fn)</code></dt><dd class="r"><code>fn(0)</code>、<code>fn(1)</code>、<code>fn(2)</code> の順に呼ぶ</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数と戻り値の型も確かめます。<code>applyRule</code> は <code>readonly number[]</code> と <code>(price: number) =&gt; number</code> を受け取り <code>number[]</code> を返します。<code>countIf</code> は <code>readonly string[]</code> と <code>(item: string) =&gt; boolean</code> を受け取り <code>number</code> を返します。<code>findFirst</code> は <code>readonly number[]</code> と <code>(n: number) =&gt; boolean</code> を受け取り <code>number | undefined</code> を返します。<code>repeatCall</code> は <code>number</code> と <code>(i: number) =&gt; void</code> を受け取り <code>void</code> を返します。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 applyRule を作る。読み取り専用の数値の配列 prices と、関数 rule（数値 price を受け取り、数値を返す）を受け取り、数値の配列を返す
+export function applyRule() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // prices から 1 つずつ price に取り出してくり返す
+  //   result の最後に、rule に price を渡して呼んだ結果を付け足す
+  // result を返す
+}
+
+// 関数 countIf を作る。読み取り専用の文字列の配列 items と、関数 predicate（文字列 item を受け取り、true か false を返す）を受け取り、数値を返す
+export function countIf() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし predicate に item を渡して呼んだ結果が true なら
+  //     count に 1 を足す
+  // count を返す
+}
+
+// 関数 findFirst を作る。読み取り専用の数値の配列 numbers と、関数 predicate（数値 n を受け取り、true か false を返す）を受け取り、数値か undefined を返す
+export function findFirst() {
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし predicate に n を渡して呼んだ結果が true なら
+  //     n を返す
+  // undefined を返す
+}
+
+// 関数 repeatCall を作る。数値 times と、関数 fn（数値 i を受け取り、何も返さない）を受け取り、何も返さない
+export function repeatCall() {
+  // i を 0 から、times より小さい間 1 ずつ増やしながらくり返す
+  //   fn に i を渡して呼ぶ
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>applyRule</code> は問1、<code>countIf</code> は問4、<code>findFirst</code> は問7、<code>repeatCall</code> は問9 と同じ形です。関数の型の中の引数の名前は、<code>price</code> や <code>item</code> のように変えてかまいません（問1 の 1 つ目の項目）。<code>repeatCall</code> の戻り値の型は <code>: void</code> です。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,159 @@
+<section class="sec" id="c01-extra">
+  <div class="sec-h">
+    <span class="eyebrow">01章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。どちらの問題にも「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c01-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">bigint型</span>
+      <span class="q-new">新しく出てくる書き方：<code>bigint</code> 型、<code>10n</code> のように <code>n</code> を付けた数</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function factorial() {}</code></pre>
+      <p><code>n</code> の階乗（1 × 2 × … × n）を返す関数 <code>factorial</code> を書きます。q01 の問6 と同じ計算ですが、引数と戻り値を <code>bigint</code> にします。<code>n</code> が負の数なら Error を投げます。</p>
+      <p>受け取る値：<code>bigint</code> の <code>n</code>　／　返す値：<code>bigint</code></p>
+      <p>説明すること：<code>number</code> で 25 の階乗を計算すると、結果はどうなるか。なぜそうなるのか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>factorial(0n)</code></dt><dd class="r"><code>1n</code></dd><dd class="c"></dd></div>
+          <div><dt><code>factorial(5n)</code></dt><dd class="r"><code>120n</code></dd><dd class="c"></dd></div>
+          <div><dt><code>factorial(25n)</code></dt><dd class="r"><code>15511210043330985984000000n</code></dd><dd class="c"></dd></div>
+          <div><dt><code>factorial(-1n)</code></dt><dd class="r">Error を投げる</dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">bigint</code><code class="tok">10n</code><h4>とても大きな整数を正確に扱う型</h4></div>
+      <p><code>number</code> は、とても大きな整数を正確に表せません。<code>bigint</code> は、どんなに大きな整数でも正確に表せる型です。数の後ろに <code>n</code> を付けると、<code>bigint</code> の値になります。</p>
+      <dl class="eg">
+        <div><dt><code>2 ** 53 + 1</code></dt><dd class="r"><code>9007199254740992</code></dd><dd class="c"><code>number</code>。1 を足したのに、答えが 1 ずれる</dd></div>
+        <div><dt><code>2n ** 53n + 1n</code></dt><dd class="r"><code>9007199254740993n</code></dd><dd class="c"><code>bigint</code>。正確</dd></div>
+        <div><dt><code>5n &lt; 10n</code></dt><dd class="r"><code>true</code></dd><dd class="c">比べることもできます。</dd></div>
+      </dl>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 totalBytes を作る。bigint の files と、bigint の size を受け取り、bigint を返す
+function totalBytes(files: bigint, size: bigint): bigint {
+  // files に size を掛けた数を返す
+  return files * size;
+}
+// 結果: totalBytes(3000000n, 4000000000n) は 12000000000000000n</code></pre>
+      </div>
+      <p><code>++</code> や <code>*=</code> も、<code>bigint</code> の変数にそのまま使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 件数 count を入れ直せる変数として作り、bigint の 1n を入れる
+let count = 1n;
+// count を 1 増やす
+count++;
+// 結果: count は 2n</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5><code>bigint</code> と <code>number</code> を混ぜる</h5>
+          <pre><code class="language-typescript">const population = 8000000000n;
+const doubled = population * 2;</code></pre>
+          <div class="verdict ng">✕ 2 行目が型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5><code>bigint</code> どうしで計算する</h5>
+          <pre><code class="language-typescript">// 人口 population を作り、bigint の 8000000000n を入れる
+const population = 8000000000n;
+// doubled を作り、population に 2n を掛けた数を入れる
+const doubled = population * 2n;</code></pre>
+          <div class="verdict ok">○ doubled は 16000000000n になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>bigint</code> の計算に出てくる数には、全部 <code>n</code> を付けます。<code>0</code> や <code>1</code> も <code>0n</code>、<code>1n</code> と書きます。</p>
+      <p class="more">サバイバルTypeScript の bigint型</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 factorial を作る。bigint の n を受け取り、bigint を返す
+export function factorial() {
+  // もし n が 0n より小さいなら
+  //   Error を投げる（throw）
+  // 結果 result を入れ直せる変数として作り、bigint の 1n を入れる
+  // i を 2n から n まで 1 ずつ増やしながらくり返す
+  //   result に i を掛ける
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>q01 の問6 の手順を、全部 <code>bigint</code> に置き換える形です。数える変数 <code>i</code> も <code>2n</code> から始めます。Error を投げる書き方は q04 の問8 と同じです。説明することは、<code>number</code> で 25 の階乗を計算して、出てきた値をテストの値と見比べてから考えます。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c01-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">小数の計算の誤差</span>
+      <span class="q-new">新しく出てくる書き方：小数の誤差と、整数に直してから計算する方法</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addPrices() {}
+
+export function multiplyPrice() {}</code></pre>
+      <p>小数を計算すると、誤差が出ることがあります。ドル建ての金額（小数第 2 位まで）を、誤差なく計算する関数を 2 つ書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>addPrices(a, b)</code>：2 つの金額を足した金額を返す</li>
+        <li><code>multiplyPrice(price, quantity)</code>：単価に個数を掛けた金額を返す</li>
+      </ol>
+      <p>受け取る値：数　／　返す値：数</p>
+      <p>説明すること：なぜ <code>0.1 + 0.2</code> は <code>0.3</code> にならないのか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addPrices(0.1, 0.2)</code></dt><dd class="r"><code>0.3</code></dd><dd class="c">そのまま足すと 0.30000000000000004</dd></div>
+          <div><dt><code>addPrices(19.99, 0.01)</code></dt><dd class="r"><code>20</code></dd><dd class="c"></dd></div>
+          <div><dt><code>addPrices(1.15, 2.3)</code></dt><dd class="r"><code>3.45</code></dd><dd class="c">そのまま足すと 3.4499999999999997</dd></div>
+          <div><dt><code>multiplyPrice(0.1, 3)</code></dt><dd class="r"><code>0.3</code></dd><dd class="c">そのまま掛けると 0.30000000000000004</dd></div>
+          <div><dt><code>multiplyPrice(19.99, 3)</code></dt><dd class="r"><code>59.97</code></dd><dd class="c"></dd></div>
+          <div><dt><code>multiplyPrice(1.15, 100)</code></dt><dd class="r"><code>115</code></dd><dd class="c">そのまま掛けると 114.99999999999999</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">0.1 + 0.2</code><h4>小数の計算の誤差</h4></div>
+      <p>小数を足したり掛けたりすると、ほんの少しずれた答えになることがあります。TypeScript（JavaScript）の <code>number</code> の決まりで、どの環境でも同じように起きます。</p>
+      <dl class="eg">
+        <div><dt><code>0.1 + 0.2</code></dt><dd class="r"><code>0.30000000000000004</code></dd><dd class="c"></dd></div>
+        <div><dt><code>0.7 + 0.1</code></dt><dd class="r"><code>0.7999999999999999</code></dd><dd class="c"></dd></div>
+        <div><dt><code>1.15 * 100</code></dt><dd class="r"><code>114.99999999999999</code></dd><dd class="c">100 倍しても、ぴったりの整数にならない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>お金の計算でこの誤差が残ると、<code>0.3</code> と比べても等しくならず、テストが通りません。</p>
+      <p class="more">01章 q04（number型）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Math.round(x * 100)</code><h4>整数に直してから計算する</h4></div>
+      <p>整数どうしの足し算や掛け算は、大きすぎなければ誤差が出ません。小数第 2 位までの金額なら、100 倍して整数に直してから計算します。100 倍した数にも誤差が出ることがあるので、<code>Math.round()</code> で四捨五入して整数にそろえます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 単価 price を作り、1.15 を入れる（ドル）
+const price = 1.15;
+// 結果: price * 100 は 114.99999999999999（整数にならない）
+// セント cents を作り、price × 100 を四捨五入した数を入れる
+const cents = Math.round(price * 100);
+// 結果: cents は 115</code></pre>
+      </div>
+      <p class="memo"><b>コツ</b>1 ドルは 100 セントです。セント（整数）で計算して、最後に 100 で割ってドルに戻します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addPrices を作る。数の a と、数の b を受け取り、数を返す
+export function addPrices() {
+  // a × 100 を四捨五入した数と、b × 100 を四捨五入した数を足し、100 で割った数を返す
+}
+
+// 関数 multiplyPrice を作る。数の price と、数の quantity を受け取り、数を返す
+export function multiplyPrice() {
+  // price × 100 を四捨五入した数に quantity を掛け、100 で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「× 100 を四捨五入した数」は、e02 のサンプルの <code>cents</code> の行と同じ形です。足してから 100 で割るときは、足し算をかっこで囲みます。説明することは、サバイバルTypeScript の number型 のページを読んでから考えます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,982 @@
+<section class="sec" id="c05-q08">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q08 関数を返す関数</h2>
+    <p>関数を返す関数を 20 個書きます。引数と戻り値には型注釈を付けます。関数を返すときは、戻り値の型を <code>(x: number) =&gt; number</code> のような関数の型で書きます。返された関数は、外側の関数の引数や変数を覚えています。外側の関数の呼び出しが終わったあとでも、その値を使えます。外側で <code>let</code> で作った変数を書き換えると、その値は次に呼んだときまで残ります。この仕組みをクロージャーと呼びます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q08-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">受け取った数に n を足す関数を返す</span>
+      <span class="q-new">新しく出てくる書き方：関数を返す関数 <code>return (x) =&gt; …</code>、返された関数が外側の値を覚えていること（クロージャー）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeAdder() {}</code></pre>
+      <p>数 <code>n</code> を受け取り、関数を返します。返す関数は、数を 1 つ受け取り、その数に <code>n</code> を足した数を返します。<code>makeAdder</code> が返すのは関数です。返された関数を呼ぶと、足し算の答えが出ます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeAdder(3)</code></dt><dd class="r">関数</dd><dd class="c">この関数を <code>add3</code> に入れる</dd></div>
+          <div><dt><code>add3(4)</code></dt><dd class="r"><code>7</code></dd><dd class="c">4 に 3 を足す</dd></div>
+          <div><dt><code>add3(10)</code></dt><dd class="r"><code>13</code></dd><dd class="c">同じ関数を、もう一度呼んでもよい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>(x: number) =&gt; number</code>（数値を受け取って数値を返す関数）であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">return (x) =&gt; …</code><h4>関数を返す関数</h4></div>
+      <p>関数は、数や文字列と同じ値です。05章 q07 では、関数を引数で受け取りました。同じように、関数を <code>return</code> で返せます。返す関数は、アロー関数（01章 q01 問20）で書くと短く書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 makeTaxed を作る。数値 percent を受け取り、「数値を受け取って数値を返す関数」を返す
+function makeTaxed(percent: number): (price: number) =&gt; number {
+  // price を受け取り、price に price × percent ÷ 100 を切り捨てた数を足した数を返す関数を返す
+  return (price) =&gt; price + Math.floor((price * percent) / 100);
+}
+// 関数 withTax10 を作り、makeTaxed に 10 を渡して呼んだ結果を入れる
+const withTax10 = makeTaxed(10);
+// 金額 total を作り、withTax10 に 1000 を渡して呼んだ結果を入れる
+const total = withTax10(1000);
+// 結果: total は 1100</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function makeTaxed(percent: number): <span class="seg"><i>1</i>(price: number) =&gt; number</span> {
+  return <span class="seg"><i>2</i>(price)</span> =&gt; <span class="seg"><i>3</i>price + Math.floor((price * percent) / 100)</span>;
+}</pre>
+        <ol>
+          <li><span>戻り値の型です。「数値を受け取って数値を返す関数」を表します。05章 q07 で出た関数の型と同じ書き方です。</span></li>
+          <li><span>返す関数の引数です。型は書かなくてかまいません。1 の戻り値の型から、<code>price</code> は <code>number</code> だと決まるからです。</span></li>
+          <li><span>返す関数が返す値です。<code>return</code> の行では、この計算はまだ行われません。返された関数を呼んだときに、はじめて計算します。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型を書かない</h5>
+          <pre><code class="language-typescript">function makeTaxed(percent: number) {
+  return (price) =&gt; price + percent;
+}</code></pre>
+          <div class="verdict ng">✕ <code>price</code> の型が決まらず、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>戻り値の型を書く</h5>
+          <pre><code class="language-typescript">function makeTaxed(percent: number): (price: number) =&gt; number {
+  return (price) =&gt; price + percent;
+}</code></pre>
+          <div class="verdict ok">○ <code>price</code> は <code>number</code> になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>関数の型の中の引数の名前は、自由に決めてかまいません。<code>(x: number) =&gt; number</code> と <code>(price: number) =&gt; number</code> は同じ型です。テストの型の確認でも、名前は比べません。</p>
+      <p class="more">サバイバルTypeScript「関数は値」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">withTax10(1000)</code><h4>返された関数を呼ぶ・外側の値を覚えている（クロージャー）</h4></div>
+      <p>返された関数は、ふつうの関数と同じように呼べます。<code>makeTaxed(10)(250)</code> のように、返された関数をその場で続けて呼ぶこともできます。</p>
+      <p>返された関数は、作られたときの <code>percent</code> を覚えています。<code>makeTaxed</code> の呼び出しはもう終わっていますが、返された関数の中から <code>percent</code> を使えます。このように、関数が外側の変数を覚えている仕組みをクロージャーと呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 withTax10 を作り、makeTaxed に 10 を渡して呼んだ結果を入れる
+const withTax10 = makeTaxed(10);
+// 関数 withTax8 を作り、makeTaxed に 8 を渡して呼んだ結果を入れる
+const withTax8 = makeTaxed(8);
+// a を作り、withTax10 に 1000 を渡して呼んだ結果を入れる
+const a = withTax10(1000);
+// b を作り、withTax8 に 1000 を渡して呼んだ結果を入れる
+const b = withTax8(1000);
+// c を作り、makeTaxed に 10 を渡して呼んだ結果に、250 を渡して呼んだ結果を入れる
+const c = makeTaxed(10)(250);
+// 結果: a は 1100、b は 1080、c は 275</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 212" role="img" aria-label="makeTaxed(10) を呼ぶと、percent が 10 だと覚えた関数が返る。その関数に 1000 を渡すと、覚えた 10 を使って 1100 を返す">
+            <rect class="box" x="16" y="16" width="184" height="60" rx="6"/>
+            <text class="m" x="28" y="41">makeTaxed(10)</text>
+            <text class="s" x="28" y="64">percent に 10 が入る</text>
+            <path class="ln-a" d="M200 46 H282"/>
+            <polygon class="hd-a" points="282,40 294,46 282,52"/>
+            <text class="a" x="226" y="36">返す</text>
+            <rect class="box-a" x="296" y="16" width="248" height="60" rx="6"/>
+            <text class="m" x="308" y="41">(price) =&gt; price + …</text>
+            <text class="s" x="308" y="64">percent が 10 だと覚えている</text>
+            <path class="ln" d="M372 76 V136"/>
+            <text class="s" x="382" y="112">覚えた percent を使う</text>
+            <rect class="box" x="16" y="136" width="184" height="60" rx="6"/>
+            <text class="m" x="28" y="161">withTax10(1000)</text>
+            <text class="s" x="28" y="184">price に 1000 が入る</text>
+            <path class="ln-a" d="M200 166 H282"/>
+            <polygon class="hd-a" points="282,160 294,166 282,172"/>
+            <text class="a" x="226" y="156">呼ぶ</text>
+            <rect class="box" x="296" y="136" width="152" height="60" rx="6"/>
+            <text class="m" x="308" y="161">1000 + 100</text>
+            <text class="s" x="308" y="184">10% ぶんを足す</text>
+            <path class="ln-a" d="M448 166 H470"/>
+            <polygon class="hd-a" points="470,160 482,166 470,172"/>
+            <rect class="box-a" x="484" y="136" width="60" height="60" rx="6"/>
+            <text class="m a" x="497" y="171">1100</text>
+          </svg>
+        </div>
+        <figcaption>上の段で <code>makeTaxed(10)</code> が返した関数を、<code>withTax10</code> に入れます。下の段で <code>withTax10(1000)</code> を呼ぶと、覚えていた <code>percent</code> の 10 を使って計算します。</figcaption>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>呼び出し</th><th>覚えている percent</th><th>price</th><th>返す値</th></tr></thead>
+          <tbody>
+            <tr><td>withTax10(1000)</td><td>10</td><td>1000</td><td>1100</td></tr>
+            <tr><td>withTax8(1000)</td><td>8</td><td>1000</td><td>1080</td></tr>
+            <tr><td>withTax10(250)</td><td>10</td><td>250</td><td>275</td></tr>
+            <tr><td>makeTaxed(10)(250)</td><td>10</td><td>250</td><td>275</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>withTax10</code> と <code>withTax8</code> は別の関数です。それぞれが、自分が作られたときの <code>percent</code> を覚えています。</p>
+      <p class="memo"><b>よくある間違い</b><code>makeTaxed(10, 1000)</code> とは書けません。<code>makeTaxed</code> の引数は 1 つだけです。<code>makeTaxed(10)</code> で関数を受け取り、その関数に <code>1000</code> を渡します。</p>
+      <p class="more">サバイバルTypeScript「関数は値」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeAdder を作る。数値 n を受け取り、「数値を受け取って数値を返す関数」を返す
+export function makeAdder() {
+  // x を受け取り、x に n を足した数を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の「数値を受け取って数値を返す関数」は、戻り値の型の <code>(x: number) =&gt; number</code> になります。中の行は、問1 のサンプルの <code>makeTaxed</code> の <code>return</code> の行と同じ形です。<code>return</code> の後ろに、<code>x</code> を受け取るアロー関数を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q08-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">受け取った数を n 倍する関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeTimes() {}</code></pre>
+      <p>数 <code>n</code> を受け取り、関数を返します。返す関数は、数を 1 つ受け取り、その数を <code>n</code> 倍した数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeTimes(2)(5)</code></dt><dd class="r"><code>10</code></dd><dd class="c">5 の 2 倍</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>(x: number) =&gt; number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeTimes を作る。数値 n を受け取り、「数値を受け取って数値を返す関数」を返す
+export function makeTimes() {
+  // x を受け取り、x × n を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、足し算がかけ算 <code>*</code> に変わるだけです。<code>makeTimes(2)(5)</code> は、<code>makeTimes(2)</code> が返した関数に <code>5</code> を渡して呼んでいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q08-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">名前を受け取り「greeting、◯◯さん」を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeGreeter() {}</code></pre>
+      <p>あいさつの文字列 <code>greeting</code> を受け取り、関数を返します。返す関数は、名前を受け取り、<code>"おはよう、山田さん"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeGreeter("おはよう")("山田")</code></dt><dd class="r"><code>"おはよう、山田さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>(name: string) =&gt; string</code>（文字列を受け取って文字列を返す関数）であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeGreeter を作る。文字列 greeting を受け取り、「文字列を受け取って文字列を返す関数」を返す
+export function makeGreeter() {
+  // name を受け取り、greeting と name を埋め込んだ「◯、◯さん」の文字列を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は <code>(name: string) =&gt; string</code> です。返す関数の中身は、テンプレートリテラル（01章 q01 問3）で作ります。<code>greeting</code> は外側の引数ですが、返す関数の中から使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q08-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">呼ぶたびに 1、2、3… を返す関数を返す</span>
+      <span class="q-new">新しく出てくる書き方：外側の <code>let</code> を書き換えて、呼ぶたびに値を残す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeCounter() {}</code></pre>
+      <p>何も受け取らず、関数を返します。返す関数を 1 回目に呼ぶと <code>1</code>、2 回目に呼ぶと <code>2</code> を返します。呼ぶたびに 1 ずつ増えます。<code>makeCounter()</code> をもう一度呼んで作った関数は、また <code>1</code> から始まります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>next()</code></dt><dd class="r"><code>1</code></dd><dd class="c"><code>next</code> は <code>makeCounter()</code> が返した関数。1 回目</dd></div>
+          <div><dt><code>next()</code></dt><dd class="r"><code>2</code></dd><dd class="c">2 回目</dd></div>
+          <div><dt><code>makeCounter()()</code></dt><dd class="r"><code>1</code></dd><dd class="c">新しく作った関数は 1 から</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>() =&gt; number</code>（何も受け取らず数値を返す関数）であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">let left = stock;</code><h4>外側の let を書き換えて、呼ぶたびに値を残す</h4></div>
+      <p>返す関数の外側で、<code>let</code> の変数を作ります。返す関数の中で、その変数を書き換えます。書き換えた値は、次に呼んだときまで残ります。返された関数が、変数そのものを覚えているからです。</p>
+      <p>返す関数の中身が 2 行以上あるときは、<code>=&gt;</code> の後ろを <code>{ }</code> で囲み、<code>return</code> で返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 makeTaker を作る。数値 stock を受け取り、「何も受け取らず数値を返す関数」を返す
+function makeTaker(stock: number): () =&gt; number {
+  // 残り left を入れ直せる変数として作り、stock を入れる
+  let left = stock;
+  // 何も受け取らず、次のことをする関数を返す
+  return () =&gt; {
+    // left を 1 減らす
+    left--;
+    // left を返す
+    return left;
+  };
+}
+// 関数 takeApple を作り、makeTaker に 3 を渡して呼んだ結果を入れる
+const takeApple = makeTaker(3);
+// 関数 takeOrange を作り、makeTaker に 5 を渡して呼んだ結果を入れる
+const takeOrange = makeTaker(5);
+// first を作り、takeApple を呼んだ結果を入れる
+const first = takeApple();
+// second を作り、takeApple を呼んだ結果を入れる
+const second = takeApple();
+// other を作り、takeOrange を呼んだ結果を入れる
+const other = takeOrange();
+// 結果: first は 2、second は 1、other は 4</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>呼び出し</th><th>呼ぶ前の left</th><th>呼んだ後の left</th><th>返す値</th></tr></thead>
+          <tbody>
+            <tr><td>takeApple()</td><td>3</td><td>2</td><td>2</td></tr>
+            <tr><td>takeApple()</td><td>2</td><td>1</td><td>1</td></tr>
+            <tr><td>takeOrange()</td><td>5</td><td>4</td><td>4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>makeTaker</code> を呼ぶたびに、新しい <code>left</code> が 1 つ作られます。<code>takeApple</code> と <code>takeOrange</code> は、それぞれ別の <code>left</code> を覚えています。だから、りんごを取っても、みかんの残りは減りません。</p>
+      <div class="cmp">
+        <div>
+          <h5>返す関数の中で <code>let</code> を作る</h5>
+          <pre><code class="language-typescript">function makeTaker(stock: number): () =&gt; number {
+  return () =&gt; {
+    let left = stock;
+    left--;
+    return left;
+  };
+}</code></pre>
+          <div class="verdict ng">✕ 呼ぶたびに <code>left</code> が作り直され、いつも 2 を返します（<code>stock</code> が 3 のとき）</div>
+        </div>
+        <div>
+          <h5>返す関数の外で <code>let</code> を作る</h5>
+          <pre><code class="language-typescript">function makeTaker(stock: number): () =&gt; number {
+  let left = stock;
+  return () =&gt; {
+    left--;
+    return left;
+  };
+}</code></pre>
+          <div class="verdict ok">○ <code>left</code> は 1 つだけで、呼ぶたびに減っていきます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>引数の <code>stock</code> を、そのまま <code>stock--</code> で書き換えたくなります。引数に値を入れ直すと、ESLint の <code>no-param-reassign</code> でエラーになります。サンプルのように、<code>let</code> の変数に入れてから書き換えます。</p>
+      <p class="more">サバイバルTypeScript「関数は値」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeCounter を作る。何も受け取らず、「何も受け取らず数値を返す関数」を返す
+export function makeCounter() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   count を 1 増やす
+  //   count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>makeTaker</code> と同じ形です。戻り値の型は <code>() =&gt; number</code> です。<code>count</code> は 0 から始め、先に 1 増やしてから返すので、1 回目は <code>1</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q08-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">呼ぶたびに start、start + 1、… を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeCounterFrom() {}</code></pre>
+      <p>はじめの数 <code>start</code> を受け取り、関数を返します。返す関数は、1 回目に <code>start</code> そのものを返し、そのあと 1 ずつ増えた数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>next()</code></dt><dd class="r"><code>10</code></dd><dd class="c"><code>next</code> は <code>makeCounterFrom(10)</code> が返した関数。1 回目は start のまま</dd></div>
+          <div><dt><code>next()</code></dt><dd class="r"><code>11</code></dd><dd class="c">2 回目</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>() =&gt; number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeCounterFrom を作る。数値 start を受け取り、「何も受け取らず数値を返す関数」を返す
+export function makeCounterFrom() {
+  // 今の数 current を入れ直せる変数として作り、start を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   返す数 value を作り、current を入れる
+  //   current を 1 増やす
+  //   value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と違い、増やす前の数を返します。増やす前に <code>value</code> に控えておき、<code>current</code> を増やしてから <code>value</code> を返します。<code>start</code> は引数なので、そのまま増やさずに <code>current</code> に入れてから書き換えます（問4 のよくある間違い）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q08-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">呼ぶたびに真偽値を反転し、反転した後の値を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeToggle() {}</code></pre>
+      <p>はじめの真偽値を受け取り、関数を返します。返す関数は、呼ぶたびに値を反転します。反転とは、<code>true</code> なら <code>false</code>、<code>false</code> なら <code>true</code> にすることです。反転した後の値を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toggle()</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>toggle</code> は <code>makeToggle(false)</code> が返した関数。false を反転</dd></div>
+          <div><dt><code>toggle()</code></dt><dd class="r"><code>false</code></dd><dd class="c">true を反転</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>boolean</code>、戻り値が <code>() =&gt; boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeToggle を作る。true か false の initial を受け取り、「何も受け取らず true か false を返す関数」を返す
+export function makeToggle() {
+  // 状態 state を入れ直せる変数として作り、initial を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   state の反対（true なら false、false なら true）を、state に入れ直す
+  //   state を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「反対」は <code>!</code> です（01章 q04 応用）。<code>state = !state</code> で入れ直します。形は問4 のサンプルの <code>makeTaker</code> と同じで、戻り値の型は <code>() =&gt; boolean</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q08-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">受け取った数を足し続け、それまでの合計を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeAccumulator() {}</code></pre>
+      <p>何も受け取らず、関数を返します。返す関数は数を 1 つ受け取り、それまでに受け取った数の合計に足します。足した後の合計を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add(5)</code></dt><dd class="r"><code>5</code></dd><dd class="c"><code>add</code> は <code>makeAccumulator()</code> が返した関数。0 + 5</dd></div>
+          <div><dt><code>add(3)</code></dt><dd class="r"><code>8</code></dd><dd class="c">5 + 3</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>(n: number) =&gt; number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeAccumulator を作る。何も受け取らず、「数値を受け取って数値を返す関数」を返す
+export function makeAccumulator() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // n を受け取り、次のことをする関数を返す
+  //   total に n を足す
+  //   total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>makeTaker</code> と同じ形で、返す関数が引数 <code>n</code> を受け取ります。「足す」は <code>+=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q08-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">呼ぶたびに "u1"、"u2"… を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeIdMaker() {}</code></pre>
+      <p>頭に付ける文字列 <code>prefix</code> を受け取り、関数を返します。返す関数は、呼ぶたびに <code>prefix</code> の後ろに 1、2、3… の番号を付けた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextId()</code></dt><dd class="r"><code>"u1"</code></dd><dd class="c"><code>nextId</code> は <code>makeIdMaker("u")</code> が返した関数。1 回目</dd></div>
+          <div><dt><code>nextId()</code></dt><dd class="r"><code>"u2"</code></dd><dd class="c">2 回目</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>() =&gt; string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeIdMaker を作る。文字列 prefix を受け取り、「何も受け取らず文字列を返す関数」を返す
+export function makeIdMaker() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   count を 1 増やす
+  //   prefix と count を埋め込んだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 の <code>makeCounter</code> と同じ数え方です。返すところだけが、テンプレートリテラルで <code>prefix</code> と <code>count</code> を並べた文字列になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q08-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">fn を最初の 1 回だけ呼び、2 回目からは 1 回目の結果を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function onlyOnce() {}</code></pre>
+      <p>何も受け取らず数値を返す関数 <code>fn</code> を受け取り、関数を返します。返す関数を 1 回目に呼んだときだけ、<code>fn</code> を呼びます。2 回目からは <code>fn</code> を呼ばずに、1 回目の結果を返します。時間のかかる計算を 1 回で済ませたいときに使う形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>get()</code></dt><dd class="r"><code>42</code></dd><dd class="c"><code>get</code> は <code>onlyOnce(() =&gt; 42)</code> が返した関数。1 回目</dd></div>
+          <div><dt><code>get()</code></dt><dd class="r"><code>42</code></dd><dd class="c">2 回目も同じ値</dd></div>
+          <div><dt>fn が呼ばれた回数</dt><dd class="r"><code>1</code></dd><dd class="c">2 回目は fn を呼ばない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>() =&gt; number</code>、戻り値が <code>() =&gt; number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 onlyOnce を作る。「何も受け取らず数値を返す関数」fn を受け取り、「何も受け取らず数値を返す関数」を返す
+export function onlyOnce() {
+  // 呼んだか called を入れ直せる変数として作り、false を入れる
+  // 結果 result を入れ直せる変数として作り、0 を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   もし called が false なら
+  //     fn を呼んだ結果を、result に入れ直す
+  //     called に true を入れ直す
+  //   result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、05章 q07 の関数の型で <code>() =&gt; number</code> と書きます。「called が false なら」は <code>!called</code> で書けます。<code>called</code> と <code>result</code> は外側の <code>let</code> なので、2 回目に呼んだときも値が残っています（問4）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q08-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">max 回目までは true、それより後は false を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeLimiter() {}</code></pre>
+      <p>回数の上限 <code>max</code> を受け取り、関数を返します。返す関数は、<code>max</code> 回目に呼ぶまでは <code>true</code> を返します。それより後に呼ぶと <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>allow()</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>allow</code> は <code>makeLimiter(2)</code> が返した関数。1 回目</dd></div>
+          <div><dt><code>allow()</code></dt><dd class="r"><code>true</code></dd><dd class="c">2 回目。ちょうど max 回目</dd></div>
+          <div><dt><code>allow()</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 回目</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>() =&gt; boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeLimiter を作る。数値 max を受け取り、「何も受け取らず true か false を返す関数」を返す
+export function makeLimiter() {
+  // 使った回数 used を入れ直せる変数として作り、0 を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   used を 1 増やす
+  //   used が max 以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ数え方です。先に 1 増やすので、<code>used</code> は「今が何回目か」になります。「以下」は <code>&lt;=</code> で、比べた結果をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q08-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">{ add, list } を返す</span>
+      <span class="q-new">新しく出てくる書き方：関数を持つオブジェクトを返す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeHistory() {}</code></pre>
+      <p>何も受け取らず、<code>add</code> と <code>list</code> の 2 つの関数を持つオブジェクトを返します。</p>
+      <ol>
+        <li><code>add(text)</code>：文字列を 1 つ受け取り、履歴の最後に足します。何も返しません。</li>
+        <li><code>list()</code>：それまでの履歴を、配列で返します。返すのはコピーです。返された配列を書き換えても、中の履歴は変わりません。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>history.list()</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c"><code>history</code> は <code>makeHistory()</code> の結果。<code>add("a")</code>、<code>add("b")</code> の後</dd></div>
+          <div><dt><code>history.list()</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">返された配列に <code>"x"</code> を足した後も変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>{ add: (text: string) =&gt; void; list: () =&gt; string[] }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ add: (name) =&gt; { … } }</code><h4>関数を持つオブジェクトを返す</h4></div>
+      <p>オブジェクトのプロパティの値に、関数を入れられます。関数を 2 つ以上返したいときは、オブジェクトにまとめて返します。返したどの関数も、外側の同じ変数を覚えています。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 makeCart を作る。何も受け取らず、add と count を持つオブジェクトを返す（add は文字列を受け取って何も返さない関数、count は何も受け取らず数値を返す関数）
+function makeCart(): { add: (name: string) =&gt; void; count: () =&gt; number } {
+  // 商品名 names を文字列の配列として作り、空の配列を入れる
+  const names: string[] = [];
+  // 次の add と count を持つオブジェクトを返す
+  return {
+    // add は、name を受け取り、次のことをする関数
+    add: (name) =&gt; {
+      // names の最後に name を付け足す
+      names.push(name);
+    },
+    // count は、何も受け取らず、names の要素の数を返す関数
+    count: () =&gt; names.length,
+  };
+}
+// 買い物かご cart を作り、makeCart を呼んだ結果を入れる
+const cart = makeCart();
+// cart の add に "りんご" を渡して呼ぶ
+cart.add("りんご");
+// cart の add に "みかん" を渡して呼ぶ
+cart.add("みかん");
+// 結果: cart.count() は 2</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function makeCart(): { <span class="seg"><i>1</i>add: (name: string) =&gt; void</span>; <span class="seg"><i>2</i>count: () =&gt; number</span> } {</pre>
+        <ol>
+          <li><span><code>add</code> は「文字列を受け取って何も返さない関数」です。何も返さない関数の戻り値の型は <code>void</code> です（04章 q05）。</span></li>
+          <li><span><code>count</code> は「何も受け取らず数値を返す関数」です。引数がないときは <code>()</code> と書きます。</span></li>
+        </ol>
+      </figure>
+      <p>返したオブジェクトの関数は、<code>cart.add("りんご")</code> のように、<code>.</code> でプロパティを選んでから呼びます。<code>add</code> が足した商品名を、<code>count</code> が数えられます。どちらも同じ <code>names</code> を覚えているからです。</p>
+      <p class="memo"><b>よくある疑問</b><code>names</code> は <code>const</code> です。<code>.push()</code> は配列の中身を変えるだけで、<code>names</code> に別の配列を入れ直すわけではありません。だから <code>const</code> のままで使えます（02章 q04 問17）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeHistory を作る。何も受け取らず、add と list を持つオブジェクトを返す（add は文字列を受け取って何も返さない関数、list は何も受け取らず文字列の配列を返す関数）
+export function makeHistory() {
+  // 履歴 items を文字列の配列として作り、空の配列を入れる
+  // 次の add と list を持つオブジェクトを返す
+  //   add は、text を受け取り、次のことをする関数
+  //     items の最後に text を付け足す
+  //   list は、何も受け取らず、items をコピーした新しい配列を返す関数
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>makeCart</code> と同じ形です。戻り値の型は、テストで確かめる型をそのまま書きます。配列のコピーは <code>[...items]</code> です（02章 q05）。<code>items</code> をそのまま返すと、受け取った側の <code>.push()</code> で履歴まで変わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q08-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">{ push, pop, size } を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.pop()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeStack() {}</code></pre>
+      <p>何も受け取らず、<code>push</code>・<code>pop</code>・<code>size</code> の 3 つの関数を持つオブジェクトを返します。数を積み重ねて、上から取り出す入れ物です。このような入れ物をスタックと呼びます。</p>
+      <ol>
+        <li><code>push(n)</code>：数を 1 つ受け取り、いちばん上に積みます。何も返しません。</li>
+        <li><code>pop()</code>：最後に積んだ数を取り出して返します。空なら <code>undefined</code> を返します。</li>
+        <li><code>size()</code>：積んである数の個数を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>stack.size()</code></dt><dd class="r"><code>2</code></dd><dd class="c"><code>stack</code> は <code>makeStack()</code> の結果。<code>push(1)</code>、<code>push(2)</code> の後</dd></div>
+          <div><dt><code>stack.pop()</code></dt><dd class="r"><code>2</code></dd><dd class="c">最後に積んだもの</dd></div>
+          <div><dt><code>stack.pop()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>stack.pop()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空になった</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>{ push: (n: number) =&gt; void; pop: () =&gt; number | undefined; size: () =&gt; number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.pop()</code><h4>配列の最後の要素を取り出す</h4></div>
+      <p>配列の最後の要素を取り除き、その要素を返します。元の配列は 1 つ短くなります。空の配列で呼ぶと、<code>undefined</code> を返します。そのため、戻り値の型は <code>string | undefined</code> のように、<code>undefined</code> とのユニオン型になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 orders を文字列の配列として作り、["A-1", "A-2", "A-3"] を入れる
+const orders: string[] = ["A-1", "A-2", "A-3"];
+// 取り消した注文 canceled を作り、orders の最後の要素を取り出したものを入れる
+const canceled = orders.pop();
+// 結果: canceled は "A-3"、orders は ["A-1", "A-2"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>[5, 6].pop()</code></dt><dd class="r"><code>6</code></dd><dd class="c">最後の要素</dd></div>
+        <div><dt>空の配列の <code>.pop()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">取り出すものがない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b><code>.push()</code>（02章 q04 問17）が最後に足し、<code>.pop()</code> が最後から取り出します。どちらも元の配列を書き換えます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeStack を作る。何も受け取らず、push と pop と size を持つオブジェクトを返す（push は数値を受け取って何も返さない関数、pop は何も受け取らず数値か undefined を返す関数、size は何も受け取らず数値を返す関数）
+export function makeStack() {
+  // 積んだもの items を数値の配列として作り、空の配列を入れる
+  // 次の push と pop と size を持つオブジェクトを返す
+  //   push は、n を受け取り、次のことをする関数
+  //     items の最後に n を付け足す
+  //   pop は、何も受け取らず、items の最後の要素を取り出したものを返す関数
+  //   size は、何も受け取らず、items の要素の数を返す関数
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>makeCart</code> と同じ形で、関数が 3 つになります。<code>pop</code> は、問12 のサンプルの <code>canceled</code> の行と同じく <code>.pop()</code> の結果を返します。空のときの <code>undefined</code> も、<code>.pop()</code> がそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q08-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">{ square, computed } を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeSquareCache() {}</code></pre>
+      <p>何も受け取らず、<code>square</code> と <code>computed</code> の 2 つの関数を持つオブジェクトを返します。一度計算した答えを覚えておき、同じ計算をくり返さない仕組みです。</p>
+      <ol>
+        <li><code>square(n)</code>：<code>n × n</code> を返します。同じ <code>n</code> は 2 回目から計算せず、覚えておいた答えを返します。</li>
+        <li><code>computed()</code>：<code>square</code> が実際に計算した回数を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cache.square(3)</code></dt><dd class="r"><code>9</code></dd><dd class="c"><code>cache</code> は <code>makeSquareCache()</code> の結果。計算する</dd></div>
+          <div><dt><code>cache.square(3)</code></dt><dd class="r"><code>9</code></dd><dd class="c">覚えた答えを返す</dd></div>
+          <div><dt><code>cache.square(4)</code></dt><dd class="r"><code>16</code></dd><dd class="c">計算する</dd></div>
+          <div><dt><code>cache.computed()</code></dt><dd class="r"><code>2</code></dd><dd class="c">3 と 4 で 2 回</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>{ square: (n: number) =&gt; number; computed: () =&gt; number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeSquareCache を作る。何も受け取らず、square と computed を持つオブジェクトを返す（square は数値を受け取って数値を返す関数、computed は何も受け取らず数値を返す関数）
+export function makeSquareCache() {
+  // 空の表 cache を作る。キーは文字列、値は数値
+  // 計算した回数 count を入れ直せる変数として作り、0 を入れる
+  // 次の square と computed を持つオブジェクトを返す
+  //   square は、n を受け取り、次のことをする関数
+  //     キー key を作り、n を文字列にしたものを入れる
+  //     覚えた値 cached を作り、cache の key の値を入れる
+  //     もし cached が undefined でないなら
+  //       cached を返す
+  //     count を 1 増やす
+  //     答え value を作り、n × n を入れる
+  //     cache の key に value を入れる
+  //     value を返す
+  //   computed は、何も受け取らず、count を返す関数
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>表は、02章 q08 のインデックス型 <code>{ [key: string]: number }</code> で作ります。<code>cache[key]</code> は、まだ入れていないキーなら <code>undefined</code> です。形は問11 のサンプルの <code>makeCart</code> と同じで、<code>cache</code> と <code>count</code> を 2 つの関数が一緒に使います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q08-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">items を先頭から順に返し、最後まで行ったら先頭に戻る関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeCycler() {}</code></pre>
+      <p>文字列の配列 <code>items</code> を受け取り、関数を返します。返す関数は、呼ぶたびに <code>items</code> の要素を先頭から 1 つずつ返します。最後の要素を返したら、次はまた先頭から返します。<code>items</code> が空の配列なら、<code>makeCycler</code> を呼んだときに <code>Error</code> を投げます。返された関数を呼んだときに投げるのでは、テストに通りません。引数の配列は読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>next()</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"><code>next</code> は <code>makeCycler(["a", "b"])</code> が返した関数。1 回目</dd></div>
+          <div><dt><code>next()</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">2 回目</dd></div>
+          <div><dt><code>next()</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">3 回目。先頭に戻る</dd></div>
+          <div><dt><code>makeCycler([])</code></dt><dd class="r"><code>Error</code></dd><dd class="c">空の配列なら、呼んだときに Error を投げる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>() =&gt; string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeCycler を作る。読み取り専用の文字列の配列 items を受け取り、「何も受け取らず文字列を返す関数」を返す
+export function makeCycler() {
+  // もし items の要素の数が 0 と等しいなら
+  //   "空の配列です" というメッセージのエラーを投げる
+  // 番号 index を入れ直せる変数として作り、0 を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   要素 item を作り、items の（index を items の要素の数で割った余り）番目の要素を入れる。なければ "" を入れる
+  //   index を 1 増やす
+  //   item を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空かどうかは、関数を返す前に確かめます。割った余りは <code>%</code> です（01章 q01）。<code>index</code> が 2 なら <code>2 % 2</code> で 0 になり、先頭に戻ります。添字で取り出した値は、型の確認では <code>undefined</code> かもしれないと扱われるので、<code>?? ""</code> を付けて文字列にそろえます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q08-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">{ deposit, withdraw, balance } を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeWallet() {}</code></pre>
+      <p>はじめの残高を受け取り、<code>deposit</code>・<code>withdraw</code>・<code>balance</code> の 3 つの関数を持つオブジェクトを返します。お財布の残高を管理する仕組みです。</p>
+      <ol>
+        <li><code>deposit(n)</code>：残高に <code>n</code> を足し、足した後の残高を返します。</li>
+        <li><code>withdraw(n)</code>：残高から <code>n</code> を引き、引いた後の残高を返します。残高より多く引き出そうとしたら、<code>"残高が足りません"</code> というメッセージの <code>Error</code> を投げます。このとき、残高は変えません。</li>
+        <li><code>balance()</code>：今の残高を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>wallet.withdraw(300)</code></dt><dd class="r"><code>700</code></dd><dd class="c"><code>wallet</code> は <code>makeWallet(1000)</code> の結果</dd></div>
+          <div><dt><code>wallet.deposit(50)</code></dt><dd class="r"><code>750</code></dd><dd class="c"></dd></div>
+          <div><dt><code>wallet.withdraw(1000)</code></dt><dd class="r"><code>Error</code></dd><dd class="c">"残高が足りません" のエラーを投げる</dd></div>
+          <div><dt><code>wallet.balance()</code></dt><dd class="r"><code>750</code></dd><dd class="c">エラーのときは残高が変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>{ deposit: (n: number) =&gt; number; withdraw: (n: number) =&gt; number; balance: () =&gt; number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeWallet を作る。数値 initial を受け取り、deposit と withdraw と balance を持つオブジェクトを返す（deposit と withdraw は数値を受け取って数値を返す関数、balance は何も受け取らず数値を返す関数）
+export function makeWallet() {
+  // 残高 money を入れ直せる変数として作り、initial を入れる
+  // 次の deposit と withdraw と balance を持つオブジェクトを返す
+  //   deposit は、n を受け取り、次のことをする関数
+  //     money に n を足す
+  //     money を返す
+  //   withdraw は、n を受け取り、次のことをする関数
+  //     もし n が money より大きいなら
+  //       "残高が足りません" というメッセージのエラーを投げる
+  //     money から n を引く
+  //     money を返す
+  //   balance は、何も受け取らず、money を返す関数
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>makeCart</code> と同じ形です。引数の <code>initial</code> は書き換えず、<code>let</code> の <code>money</code> に入れてから書き換えます（問4）。エラーを投げる確認は、<code>money</code> を引く前に置きます。先に引くと、エラーのときも残高が減ってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q08-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">数を受け取り「数 + unit」の文字列を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeFormatter() {}</code></pre>
+      <p>単位の文字列 <code>unit</code> を受け取り、関数を返します。返す関数は、数を 1 つ受け取り、その数の後ろに <code>unit</code> を付けた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeFormatter("kg")(3)</code></dt><dd class="r"><code>"3kg"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>(n: number) =&gt; string</code>（数値を受け取って文字列を返す関数）であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeFormatter を作る。文字列 unit を受け取り、「数値を受け取って文字列を返す関数」を返す
+export function makeFormatter() {
+  // n を受け取り、n と unit を埋め込んだ文字列を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形です。受け取る型と返す型が違うので、戻り値の型は <code>(n: number) =&gt; string</code> になります。テンプレートリテラルには、数をそのまま埋め込めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q08-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">数を受け取り、min 以上 max 以下なら true を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeValidator() {}</code></pre>
+      <p>下限 <code>min</code> と上限 <code>max</code> の 2 つの数を受け取り、関数を返します。返す関数は、数を 1 つ受け取り、その数が <code>min</code> 以上 <code>max</code> 以下なら <code>true</code> を返します。そうでなければ <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isValid(5)</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>isValid</code> は <code>makeValidator(1, 10)</code> が返した関数</dd></div>
+          <div><dt><code>isValid(11)</code></dt><dd class="r"><code>false</code></dd><dd class="c">10 より大きい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>(n: number) =&gt; boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeValidator を作る。数値 min と数値 max を受け取り、「数値を受け取って true か false を返す関数」を返す
+export function makeValidator() {
+  // n を受け取り、n が min 以上、かつ n が max 以下かどうか（true か false）を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。返す関数は、外側の <code>min</code> と <code>max</code> の 2 つを覚えています。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q08-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">前回呼んだときの時刻との差を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeLapTimer() {}</code></pre>
+      <p>何も受け取らず、関数を返します。返す関数は、時刻 <code>t</code>（ミリ秒）を受け取り、前回呼んだときの <code>t</code> との差を返します。1 回目は <code>t</code> をそのまま返します。ストップウォッチのラップタイムと同じ考え方です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lap(1000)</code></dt><dd class="r"><code>1000</code></dd><dd class="c"><code>lap</code> は <code>makeLapTimer()</code> が返した関数。1 回目はそのまま</dd></div>
+          <div><dt><code>lap(1500)</code></dt><dd class="r"><code>500</code></dd><dd class="c">1500 − 1000</dd></div>
+          <div><dt><code>lap(1600)</code></dt><dd class="r"><code>100</code></dd><dd class="c">1600 − 1500</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>(t: number) =&gt; number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeLapTimer を作る。何も受け取らず、「数値を受け取って数値を返す関数」を返す
+export function makeLapTimer() {
+  // 前回の時刻 last を入れ直せる変数として作り、0 を入れる
+  // t を受け取り、次のことをする関数を返す
+  //   差 lap を作り、t から last を引いた数を入れる
+  //   last に t を入れ直す
+  //   lap を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>last</code> を 0 から始めると、1 回目は <code>t - 0</code> で <code>t</code> のままになります。差を先に計算してから、<code>last</code> を入れ直します。順番を逆にすると、差がいつも 0 になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q08-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">fn と a を受け取り、b だけを受け取って fn(a, b) を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function partial() {}</code></pre>
+      <p>2 つの数を受け取る関数 <code>fn</code> と、数 <code>a</code> を受け取り、関数を返します。返す関数は、数 <code>b</code> を 1 つ受け取り、<code>fn</code> に <code>a</code> と <code>b</code> を渡して呼んだ結果を返します。引数の一部を先に決めておく形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>partial((a, b) =&gt; a - b, 10)(3)</code></dt><dd class="r"><code>7</code></dd><dd class="c">10 − 3</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>(a: number, b: number) =&gt; number</code> と <code>number</code>、戻り値が <code>(b: number) =&gt; number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 partial を作る。「数値 2 つを受け取って数値を返す関数」fn と数値 a を受け取り、「数値を受け取って数値を返す関数」を返す
+export function partial() {
+  // b を受け取り、fn に a と b を渡して呼んだ結果を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 つめの引数の型は、05章 q07 の関数の型で <code>(a: number, b: number) =&gt; number</code> と書きます。返す関数は問1 と同じ形で、中で <code>fn(a, b)</code> を呼びます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q08-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">文字列を受け取り「&lt;tag&gt;文字列&lt;/tag&gt;」を返す関数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeTagger() {}</code></pre>
+      <p>タグの名前 <code>tag</code> を受け取り、関数を返します。返す関数は、文字列を受け取り、HTML のタグで囲んだ文字列を返します。前には <code>&lt;tag&gt;</code>、後ろには <code>&lt;/tag&gt;</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeTagger("b")("太字")</code></dt><dd class="r"><code>"&lt;b&gt;太字&lt;/b&gt;"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>(text: string) =&gt; string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeTagger を作る。文字列 tag を受け取り、「文字列を受け取って文字列を返す関数」を返す
+export function makeTagger() {
+  // text を受け取り、tag と text を埋め込んだ「&lt;◯&gt;◯&lt;/◯&gt;」の文字列を返す関数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形です。テンプレートリテラルの中で、<code>tag</code> を前と後ろの 2 回埋め込みます。後ろのタグには <code>/</code> が入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c05-q08-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">カウンター・n 倍する関数・1 回だけ呼ぶ関数・ID を作る関数</span>
+      <span class="q-new">新しく出てくる書き方：<code>??=</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function createCounter() {}
+
+export function makeMultiplier() {}
+
+export function once() {}
+
+export function makeIdGenerator() {}</code></pre>
+      <p>関数を返す関数を 4 つ書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>createCounter(start = 0)</code>：<code>increment</code>・<code>reset</code>・<code>current</code> の 3 つの関数を持つオブジェクトを返します。<code>increment()</code> は 1 増やして、増やした後の値を返します。<code>reset()</code> は値を <code>start</code> に戻し、何も返しません。<code>current()</code> は今の値を返します。<code>start</code> は省略できるデフォルト引数（05章 q04）で、q04 と同じく型注釈は書きません。</li>
+        <li><code>makeMultiplier(n)</code>：受け取った数を <code>n</code> 倍して返す関数を返します。</li>
+        <li><code>once(fn)</code>：<code>fn</code> を最初の 1 回だけ呼ぶ関数を返します。2 回目からは <code>fn</code> を呼ばず、1 回目の結果を返します。<code>fn</code> の型は <code>() =&gt; number</code> です。</li>
+        <li><code>makeIdGenerator(prefix)</code>：呼ぶたびに <code>"user-1"</code>、<code>"user-2"</code>… と番号を増やした文字列を返す関数を返します（<code>prefix</code> が <code>"user"</code> のとき）。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>counter.increment()</code></dt><dd class="r"><code>6</code></dd><dd class="c"><code>counter</code> は <code>createCounter(5)</code> の結果。1 回目</dd></div>
+          <div><dt><code>counter.increment()</code></dt><dd class="r"><code>7</code></dd><dd class="c">2 回目</dd></div>
+          <div><dt><code>counter.current()</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>counter.current()</code></dt><dd class="r"><code>5</code></dd><dd class="c"><code>counter.reset()</code> の後。start に戻る</dd></div>
+          <div><dt><code>createCounter().increment()</code></dt><dd class="r"><code>1</code></dd><dd class="c">start を省略すると 0 から</dd></div>
+          <div><dt><code>b.current()</code></dt><dd class="r"><code>0</code></dd><dd class="c">別に作った <code>a</code> を増やしても、<code>b</code> は変わらない</dd></div>
+          <div><dt><code>triple(5)</code></dt><dd class="r"><code>15</code></dd><dd class="c"><code>triple</code> は <code>makeMultiplier(3)</code> が返した関数</dd></div>
+          <div><dt><code>makeMultiplier(0.5)(8)</code></dt><dd class="r"><code>4</code></dd><dd class="c">小数でもよい</dd></div>
+          <div><dt><code>getValue()</code></dt><dd class="r"><code>42</code></dd><dd class="c"><code>getValue</code> は <code>once(() =&gt; 42)</code> が返した関数。2 回呼んでも 42</dd></div>
+          <div><dt>fn が呼ばれた回数</dt><dd class="r"><code>1</code></dd><dd class="c"><code>getValue()</code> を 2 回呼んだ後</dd></div>
+          <div><dt><code>nextUserId()</code></dt><dd class="r"><code>"user-1"</code></dd><dd class="c"><code>nextUserId</code> は <code>makeIdGenerator("user")</code> が返した関数。1 回目</dd></div>
+          <div><dt><code>nextUserId()</code></dt><dd class="r"><code>"user-2"</code></dd><dd class="c">2 回目</dd></div>
+          <div><dt><code>makeIdGenerator("room")()</code></dt><dd class="r"><code>"room-1"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>createCounter</code> は、引数が省略できる <code>number</code>、戻り値が <code>{ increment: () =&gt; number; reset: () =&gt; void; current: () =&gt; number }</code> であることを確かめます。<code>makeMultiplier</code> は <code>(x: number) =&gt; number</code> を、<code>once</code> は <code>() =&gt; number</code> を受け取って <code>() =&gt; number</code> を、<code>makeIdGenerator</code> は <code>string</code> を受け取って <code>() =&gt; string</code> を返すことを確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">??=</code><h4>undefined か null のときだけ入れ直す</h4></div>
+      <p><code>a ??= b</code> は、<code>a</code> が <code>undefined</code> か <code>null</code> のときだけ、<code>a</code> に <code>b</code> を入れ直します。<code>a</code> に値があれば、何もしません。<code>a = a ?? b</code> と同じ意味です。<code>??</code> は 02章 q02 で出ました。<code>+=</code> が <code>a = a + b</code> の短い書き方なのと同じ関係です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 shipName を作る。文字列か undefined の name を受け取り、文字列を返す
+function shipName(name: string | undefined): string {
+  // 宛名 label を入れ直せる変数として作り、name を入れる
+  let label = name;
+  // label が undefined なら、"ご担当者様" を入れ直す
+  label ??= "ご担当者様";
+  // label を返す
+  return label;
+}
+// 結果: shipName(undefined) は "ご担当者様"、shipName("佐藤") は "佐藤"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>shipName(undefined)</code></dt><dd class="r"><code>"ご担当者様"</code></dd><dd class="c">label が undefined なので入れ直す</dd></div>
+        <div><dt><code>shipName("佐藤")</code></dt><dd class="r"><code>"佐藤"</code></dd><dd class="c">label に値があるので、そのまま</dd></div>
+      </dl>
+      <p><code>label ??= "ご担当者様"</code> の行の後では、<code>label</code> の型は <code>string</code> に絞り込まれます。<code>undefined</code> のままの道がなくなるからです。そのため、戻り値の型が <code>string</code> の関数で <code>label</code> を返せます。</p>
+      <p class="memo"><b>コツ</b><code>once</code> は、問9 と同じく <code>if</code> で書けます。<code>??=</code> を使うと、「まだ結果がなければ <code>fn</code> を呼んで入れる」を 1 行で書けます。どちらで書いてもかまいません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 createCounter を作る。数値 start（省略したら 0）を受け取り、increment と reset と current を持つオブジェクトを返す（increment は何も受け取らず数値を返す関数、reset は何も受け取らず何も返さない関数、current は何も受け取らず数値を返す関数）
+export function createCounter() {
+  // 今の値 value を入れ直せる変数として作り、start を入れる
+  // 次の increment と reset と current を持つオブジェクトを返す
+  //   increment は、何も受け取らず、次のことをする関数
+  //     value を 1 増やす
+  //     value を返す
+  //   reset は、何も受け取らず、次のことをする関数
+  //     value に start を入れ直す
+  //   current は、何も受け取らず、value を返す関数
+}
+
+// 関数 makeMultiplier を作る。数値 n を受け取り、「数値を受け取って数値を返す関数」を返す
+export function makeMultiplier() {
+  // x を受け取り、x × n を返す関数を返す
+}
+
+// 関数 once を作る。「何も受け取らず数値を返す関数」fn を受け取り、「何も受け取らず数値を返す関数」を返す
+export function once() {
+  // 結果 result を、数値か undefined を入れ直せる変数として作る
+  // 何も受け取らず、次のことをする関数を返す
+  //   result が undefined なら、fn を呼んだ結果を入れ直す
+  //   result を返す
+}
+
+// 関数 makeIdGenerator を作る。文字列 prefix を受け取り、「何も受け取らず文字列を返す関数」を返す
+export function makeIdGenerator() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // 何も受け取らず、次のことをする関数を返す
+  //   count を 1 増やす
+  //   prefix と count を "-" でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>createCounter</code> は問11 のサンプルの <code>makeCart</code> と同じ形で、<code>reset</code> の型は何も返さない <code>() =&gt; void</code> です。<code>reset</code> で戻せるように、引数の <code>start</code> は書き換えずに残しておきます。<code>makeMultiplier</code> は問2、<code>makeIdGenerator</code> は問8 と同じ形です。<code>once</code> の「undefined なら入れ直す」は、応用のサンプルの <code>label</code> の行と同じ <code>??=</code> です。<code>result</code> の型は <code>number | undefined</code> と書きます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,393 @@
+<section class="sec" id="c09-extra">
+  <div class="sec-h">
+    <span class="eyebrow">09章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。e01 では、外から来た JSON の形を確かめて読み、JSON の文字列に書き出します。e02 では、正規表現で文字列を調べ、取り出し、置き換えます。どちらにも「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。引数と戻り値には型注釈を付けます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c09-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">JSON の読み書き</span>
+      <span class="q-new">新しく出てくる書き方：<code>JSON.stringify()</code> の字下げ、<code>Date</code> と JSON、<code>new Date(文字列)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; tags: string[] };
+export type AppEvent = { title: string; at: Date };
+
+export function parseUser() {}
+
+export function toJson() {}
+
+export function parseEvent() {}
+
+export function eventToJson() {}</code></pre>
+      <p><code>JSON.parse</code> の戻り値の型は <code>any</code> です。外から来た JSON は、形を確かめてから使います。<code>any</code> を使わずに、読んだ値を <code>unknown</code> の変数に入れて（04章 q05 問5）、次の 4 つの関数を書きます。型 <code>User</code> と <code>AppEvent</code> は、ファイルに書いてあります。</p>
+      <ol>
+        <li><code>parseUser(json)</code>：JSON の文字列を読み、<code>{ id: number; name: string; tags: string[] }</code> の形なら <code>User</code> として返します。JSON として読めなければ <code>"JSON として読めません"</code>、形が違えば <code>"ユーザーの形が違います"</code> というメッセージのエラーを投げます。</li>
+        <li><code>toJson(user)</code>：<code>User</code> を、2 つの空白で字下げした JSON の文字列にします。</li>
+        <li><code>parseEvent(json)</code>：<code>{ "title": "勉強会", "at": "2026-04-01T10:00:00.000Z" }</code> の形の JSON を読み、<code>AppEvent</code>（<code>{ title: string; at: Date }</code>）を返します。JSON には <code>Date</code> がないので、日時は文字列で入っています。<code>title</code> が文字列でないときや、<code>at</code> が日時として読めないときは、<code>"イベントの形が違います"</code> というメッセージのエラーを投げます。</li>
+        <li><code>eventToJson(event)</code>：<code>AppEvent</code> を、字下げのない JSON の文字列にします。<code>at</code> は <code>"2026-04-01T10:00:00.000Z"</code> の形になります。</li>
+      </ol>
+      <p>説明すること：<code>JSON.stringify</code> で、値が <code>undefined</code> のプロパティや、関数のプロパティはどうなるか。試した結果を書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseUser('{"id":1,"name":"山田","tags":["admin"]}')</code></dt><dd class="r"><code>{ id: 1, name: "山田", tags: ["admin"] }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseUser('{"id":2,"name":"佐藤","tags":[]}')</code></dt><dd class="r"><code>tags</code> が <code>[]</code></dd><dd class="c">空の配列もよい</dd></div>
+          <div><dt><code>parseUser("{id:1}")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "JSON として読めません"</dd></div>
+          <div><dt><code>parseUser('{"id":"1","name":"山田","tags":[]}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">id が文字列。メッセージは "ユーザーの形が違います"</dd></div>
+          <div><dt><code>parseUser('{"id":1,"name":"山田"}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">tags がない</dd></div>
+          <div><dt><code>parseUser('{"id":1,"name":"山田","tags":[1]}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">tags の要素が数値</dd></div>
+          <div><dt><code>parseUser("null")</code></dt><dd class="r">エラーを投げる</dd><dd class="c"><code>null</code> はオブジェクトの形ではない。<code>"[]"</code> も同じ</dd></div>
+          <div><dt><code>toJson({ id: 1, name: "山田", tags: ["admin"] })</code></dt><dd class="r"><code>'{\n  "id": 1,\n  "name": "山田",\n  "tags": [\n    "admin"\n  ]\n}'</code></dd><dd class="c">\n は改行</dd></div>
+          <div><dt><code>parseEvent('{"title":"勉強会","at":"2026-04-01T10:00:00.000Z"}')</code></dt><dd class="r"><code>title</code> が <code>"勉強会"</code>、<code>at</code> が <code>Date</code></dd><dd class="c"><code>at.getTime()</code> は <code>Date.UTC(2026, 3, 1, 10)</code> と等しい</dd></div>
+          <div><dt><code>parseEvent('{"title":"勉強会","at":"あした"}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "イベントの形が違います"</dd></div>
+          <div><dt><code>parseEvent('{"title":1,"at":"2026-04-01T10:00:00.000Z"}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">title が数値</dd></div>
+          <div><dt><code>parseEvent('{"title":"勉強会"}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">at がない</dd></div>
+          <div><dt><code>eventToJson({ title: "勉強会", at: new Date(Date.UTC(2026, 3, 1, 10)) })</code></dt><dd class="r"><code>'{"title":"勉強会","at":"2026-04-01T10:00:00.000Z"}'</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>parseUser</code> の戻り値が <code>User</code>、<code>parseEvent</code> の戻り値が <code>AppEvent</code> であることも確かめます。<code>parseUser(toJson(user))</code> と <code>parseEvent(eventToJson(event))</code> が、元の値と同じになるかも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">JSON.stringify(値, null, 2)</code><h4>字下げした JSON の文字列にする</h4></div>
+      <p><code>JSON.stringify()</code>（04章 q07 問1）は、値を JSON の文字列にします。かっこに 1 つだけ渡すと、空白も改行もない 1 行の文字列になります。3 つ目の引数に数を渡すと、その数の空白で字下げし、改行を入れた、人が読みやすい文字列になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 order を作り、id が 7、items が ["ペン", "ノート"] のオブジェクトを入れる
+const order = { id: 7, items: ["ペン", "ノート"] };
+// 文字列 oneLine を作り、order を JSON の文字列にしたものを入れる
+const oneLine = JSON.stringify(order);
+// 文字列 indented を作り、order を 2 つの空白で字下げした JSON の文字列にしたものを入れる
+const indented = JSON.stringify(order, null, 2);
+// 結果: oneLine は '{"id":7,"items":["ペン","ノート"]}'。indented は '{\n  "id": 7,\n  "items": [\n    "ペン",\n    "ノート"\n  ]\n}'（\n は改行）</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>JSON.stringify(<span class="seg"><i>1</i>order</span>, <span class="seg"><i>2</i>null</span>, <span class="seg"><i>3</i>2</span>)</pre>
+        <ol>
+          <li><span>JSON の文字列にする値です。</span></li>
+          <li><span>どのプロパティを入れるかを選ぶための引数です。<code>null</code> を渡すと、すべてのプロパティを入れます。3 つ目の引数を渡すために書きます。</span></li>
+          <li><span>字下げの空白の数です。入れ子が 1 段深くなるごとに、この数だけ空白が増えます。</span></li>
+        </ol>
+      </figure>
+      <p><code>indented</code> を画面に出すと、次のようになります。</p>
+      <pre><code class="language-typescript">{
+  "id": 7,
+  "items": [
+    "ペン",
+    "ノート"
+  ]
+}</code></pre>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Date(文字列)</code><h4>JSON の中の日時を Date にする</h4></div>
+      <p><code>new Date(文字列)</code> は、<code>"2026-05-10T09:30:00.000Z"</code> のような日時の文字列を読んで、<code>Date</code>（09章 q03）を作ります。日時として読めない文字列を渡しても、例外は投げません。代わりに、無効な日時（Invalid Date）ができます。無効な日時の時刻の数 <code>getTime()</code> は <code>NaN</code> なので、<code>Number.isNaN()</code>（01章 q04 問11）で見分けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 日時 start を作り、"2026-05-10T09:30:00.000Z" を日時として読んだものを入れる
+const start = new Date("2026-05-10T09:30:00.000Z");
+// 日時 wrong を作り、"来週" を日時として読んだものを入れる
+const wrong = new Date("来週");
+// isWrong を作り、wrong の時刻の数が NaN か（true か false）を入れる
+const isWrong = Number.isNaN(wrong.getTime());
+// 結果: start.getTime() は 1778405400000。isWrong は true</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>new Date("2026-05-10T09:30:00.000Z").getTime()</code></dt><dd class="r"><code>1778405400000</code></dd><dd class="c"></dd></div>
+        <div><dt><code>new Date("来週").getTime()</code></dt><dd class="r"><code>NaN</code></dd><dd class="c">日時として読めない</dd></div>
+        <div><dt><code>String(new Date("来週"))</code></dt><dd class="r"><code>"Invalid Date"</code></dd><dd class="c"></dd></div>
+      </dl>
+      <p>JSON には <code>Date</code> の値がありません。<code>JSON.stringify()</code> に <code>Date</code> を渡すと、<code>toISOString()</code>（03章 q03 問20）と同じ形の文字列になります。読み直しても、文字列のままです。読み直した値は、<code>new Date(文字列)</code> で <code>Date</code> に戻します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約 booking を作り、room が "A"、at が "2026-05-10T09:30:00.000Z" を日時として読んだもののオブジェクトを入れる
+const booking = { room: "A", at: new Date("2026-05-10T09:30:00.000Z") };
+// 文字列 text を作り、booking を JSON の文字列にしたものを入れる
+const text = JSON.stringify(booking);
+// 読み直した値 data を作り、型を unknown にして、text を JSON として読んだものを入れる
+const data: unknown = JSON.parse(text);
+// 結果: text は '{"room":"A","at":"2026-05-10T09:30:00.000Z"}'。data の at は Date ではなく、文字列の "2026-05-10T09:30:00.000Z"</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>無効な日時でも、<code>instanceof Date</code> は <code>true</code> です。<code>Date</code> かどうかだけでは、読めたかどうかはわかりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+function isUser() {
+  // もし value の型がオブジェクトでないか、value が null と等しいなら
+  //   false を返す
+  // もし value が id と name と tags のプロパティを持たないなら
+  //   false を返す
+  // もし value の id の型が数値でないか、value の name の型が文字列でないか、value の tags が配列でないなら
+  //   false を返す
+  // 要素 tags を作り、型を unknown の読み取り専用の配列にして、value の tags を入れる
+  // tags の要素がすべて文字列か（true か false）を返す
+}
+
+// 関数 parseUser を作る。文字列 json を受け取り、User を返す
+export function parseUser() {
+  // データ data を入れ直せる変数として作り、型を unknown にする
+  // 次の中を試す
+  //   data に json を JSON として読んだものを入れ直す
+  // 例外が投げられたら
+  //   "JSON として読めません" というメッセージのエラーを投げる
+  // もし data が User でないなら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}
+
+// 関数 toJson を作る。User の user を受け取り、文字列を返す
+export function toJson() {
+  // user を 2 つの空白で字下げした JSON の文字列にしたものを返す
+}
+
+// 関数 parseEvent を作る。文字列 json を受け取り、AppEvent を返す
+export function parseEvent() {
+  // データ data を入れ直せる変数として作り、型を unknown にする
+  // 次の中を試す
+  //   data に json を JSON として読んだものを入れ直す
+  // 例外が投げられたら
+  //   "JSON として読めません" というメッセージのエラーを投げる
+  // もし data の型がオブジェクトでないか、data が null と等しいか、data が title と at のプロパティを持たないなら
+  //   "イベントの形が違います" というメッセージのエラーを投げる
+  // もし data の title の型が文字列でないか、data の at の型が文字列でないなら
+  //   "イベントの形が違います" というメッセージのエラーを投げる
+  // 日時 at を作り、data の at を日時として読んだものを入れる
+  // もし at の時刻の数が NaN なら
+  //   "イベントの形が違います" というメッセージのエラーを投げる
+  // title が data の title、at が at のオブジェクトを返す
+}
+
+// 関数 eventToJson を作る。AppEvent の event を受け取り、文字列を返す
+export function eventToJson() {
+  // event を JSON の文字列にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>isUser</code> は、ファイルの中だけで使う型ガード関数（05章 q09 問1）です。戻り値の型を <code>value is User</code> にすると、<code>parseUser</code> の <code>if</code> の後ろで <code>data</code> が <code>User</code> として扱われ、そのまま返せます。「プロパティを持たない」は <code>!("id" in value &amp;&amp; "name" in value &amp;&amp; "tags" in value)</code> です（04章 q05 問16）。<code>Array.isArray()</code> で確かめた値は <code>any[]</code> になるので、<code>const tags: readonly unknown[] = value.tags;</code> と <code>unknown</code> として受け取ります（04章 q06 問17）。「すべて〜か」は <code>.every()</code>（02章 q04 問20）です。JSON を読む前半は、04章 q05 問16 の <code>readOrder</code> と同じ形です。<code>parseUser</code> と <code>parseEvent</code> で同じなので、関数にまとめてもかまいません。<code>parseEvent</code> の後半は、e01 の 2 つ目の項目のサンプルの <code>isWrong</code> と同じ確かめ方です。<code>toJson</code> と <code>eventToJson</code> は 1 行で書けます。<code>Date</code> は <code>JSON.stringify</code> が自動で文字列にします。説明することは、ターミナルで <code>node</code> と打って試します。JavaScript を 1 行ずつ実行できます（終えるときは <code>.exit</code>）。値が <code>undefined</code> のプロパティと、関数のプロパティを持つオブジェクトを <code>JSON.stringify</code> に渡し、出てきた文字列を見てから書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c09-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">正規表現（RegExp）</span>
+      <span class="q-new">新しく出てくる書き方：正規表現のまとめ（<code>[^…]</code> <code>.</code> <code>{3}</code> <code>\b</code> など）、<code>.matchAll()</code>、<code>$1</code>、名前付きグループ <code>(?&lt;名前&gt;…)</code> と <code>.groups</code>、<code>.replace()</code> に関数を渡す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type LogLine = { level: "INFO" | "WARN" | "ERROR"; time: string; message: string };
+
+export function isPostalCode() {}
+
+export function extractHashtags() {}
+
+export function maskPhone() {}
+
+export function parseLogLine() {}
+
+export function camelToKebab() {}</code></pre>
+      <p>次の 5 つの関数を、正規表現を使って書きます。型 <code>LogLine</code> は、ファイルに書いてあります。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>isPostalCode(text)</code>：<code>"123-4567"</code> の形（数字 3 つ、ハイフン、数字 4 つ）だけなら <code>true</code> を返します。前後に余計な文字があれば <code>false</code> です。</li>
+        <li><code>extractHashtags(text)</code>：文章の中の <code>"#"</code> で始まるハッシュタグを、<code>"#"</code> を除いて、出てきた順に配列で返します。ハッシュタグは <code>"#"</code> の後ろから、空白か次の <code>"#"</code> の手前までです。</li>
+        <li><code>maskPhone(text)</code>：文章の中の <code>"090-1234-5678"</code> の形（数字 3 つ-4 つ-4 つ）の電話番号を、すべて <code>"090-****-5678"</code> のように、真ん中だけ隠します。</li>
+        <li><code>parseLogLine(line)</code>：<code>"[ERROR] 2026-04-01 09:00:00 接続できません"</code> の形の 1 行を読み、<code>{ level: "ERROR", time: "2026-04-01 09:00:00", message: "接続できません" }</code> を返します。<code>level</code> は <code>INFO</code>・<code>WARN</code>・<code>ERROR</code> のどれかです。形が違えば <code>null</code> を返します。名前付きグループ（<code>(?&lt;level&gt;…)</code>）を使います。</li>
+        <li><code>camelToKebab(name)</code>：<code>"userName"</code> を <code>"user-name"</code> にするように、大文字の前に <code>"-"</code> を入れて、小文字にします。</li>
+      </ol>
+      <p>説明すること：<code>g</code> を付けた正規表現を変数に入れて、<code>.test()</code> で何度も使うと、どんなことが起きるか（<code>lastIndex</code>）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPostalCode("123-4567")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPostalCode("1234567")</code></dt><dd class="r"><code>false</code></dd><dd class="c">ハイフンがない</dd></div>
+          <div><dt><code>isPostalCode("〒123-4567")</code></dt><dd class="r"><code>false</code></dd><dd class="c">前に余計な文字がある</dd></div>
+          <div><dt><code>isPostalCode("123-45678")</code></dt><dd class="r"><code>false</code></dd><dd class="c">後ろが 5 けた</dd></div>
+          <div><dt><code>isPostalCode("abc-defg")</code></dt><dd class="r"><code>false</code></dd><dd class="c">数字でない</dd></div>
+          <div><dt><code>extractHashtags("今日は #TypeScript と #型 の勉強")</code></dt><dd class="r"><code>["TypeScript", "型"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>extractHashtags("#a#b c")</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">次の # の手前で区切る</dd></div>
+          <div><dt><code>extractHashtags("タグなし")</code></dt><dd class="r"><code>[]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>maskPhone("連絡先: 090-1234-5678")</code></dt><dd class="r"><code>"連絡先: 090-****-5678"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>maskPhone("080-1111-2222 と 070-3333-4444")</code></dt><dd class="r"><code>"080-****-2222 と 070-****-4444"</code></dd><dd class="c">すべて隠す</dd></div>
+          <div><dt><code>maskPhone("03-1234-5678")</code></dt><dd class="r"><code>"03-1234-5678"</code></dd><dd class="c">最初が 2 けたなので、そのまま</dd></div>
+          <div><dt><code>parseLogLine("[ERROR] 2026-04-01 09:00:00 接続できません")</code></dt><dd class="r"><code>{ level: "ERROR", time: "2026-04-01 09:00:00", message: "接続できません" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseLogLine("[INFO] 2026-04-01 09:00:01 開始 します")?.message</code></dt><dd class="r"><code>"開始 します"</code></dd><dd class="c">message には空白も入る</dd></div>
+          <div><dt><code>parseLogLine("[DEBUG] 2026-04-01 09:00:00 x")</code></dt><dd class="r"><code>null</code></dd><dd class="c">知らない level</dd></div>
+          <div><dt><code>parseLogLine("ERROR 2026-04-01 09:00:00 x")</code></dt><dd class="r"><code>null</code></dd><dd class="c">[ ] がない</dd></div>
+          <div><dt><code>parseLogLine("[WARN] 2026/04/01 09:00:00 x")</code></dt><dd class="r"><code>null</code></dd><dd class="c">日付の区切りが /</dd></div>
+          <div><dt><code>camelToKebab("userName")</code></dt><dd class="r"><code>"user-name"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>camelToKebab("getHTTPStatus")</code></dt><dd class="r"><code>"get-h-t-t-p-status"</code></dd><dd class="c">大文字が続いても、1 文字ずつ</dd></div>
+          <div><dt><code>camelToKebab("id")</code></dt><dd class="r"><code>"id"</code></dd><dd class="c">大文字がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>extractHashtags</code> の戻り値が <code>string[]</code>、<code>parseLogLine</code> の戻り値が <code>LogLine | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">/…/</code><h4>正規表現の書き方のまとめ</h4></div>
+      <p>正規表現は、文字の並びの形を表す書き方です。01章 q05 から少しずつ使い、そのたびに「まねて書ければ十分」としてきました。ここで、書き方をまとめます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約番号 reserveNo を作り、"AB-1234" を入れる
+const reserveNo = "AB-1234";
+// isReserveNo を作り、reserveNo 全体が「英大文字 2 文字、-、数字 4 文字」の形か（true か false）を入れる
+const isReserveNo = /^[A-Z]{2}-\d{4}$/.test(reserveNo);
+// 結果: isReserveNo は true</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>/<span class="seg c"><i>1</i>^</span><span class="seg"><i>2</i>[A-Z]{2}</span><span class="seg c"><i>3</i>-</span><span class="seg"><i>4</i>\d{4}</span><span class="seg c"><i>5</i>$</span>/</pre>
+        <ol>
+          <li><span>文字列の先頭です。</span></li>
+          <li><span>英大文字の 1 文字が、ちょうど 2 つです。<code>{2}</code> は、すぐ前のものの数を決めます。</span></li>
+          <li><span>記号の <code>-</code> そのものです。<code>-</code> は <code>[ ]</code> の外では、ふつうの文字です。</span></li>
+          <li><span>数字の 1 文字が、ちょうど 4 つです。</span></li>
+          <li><span>文字列の最後です。</span></li>
+        </ol>
+      </figure>
+      <p>よく使う書き方を表にしました。「出た所」は、このガイドで初めて使った問題です。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>書き方</th><th>意味</th><th>例</th><th>結果</th><th>出た所</th></tr></thead>
+          <tbody>
+            <tr><td><code>/…/</code></td><td>正規表現を囲む</td><td><code>/a/.test("cat")</code></td><td><code>true</code></td><td>01章 q05 問18</td></tr>
+            <tr><td><code>g</code></td><td>見つかったものをすべて扱う（最後の / の後ろに付ける）</td><td><code>"A-1 B-22".replace(/\d/g, "#")</code></td><td><code>"A-# B-##"</code></td><td>01章 q05 問18</td></tr>
+            <tr><td><code>[abc]</code></td><td>かっこの中のどれか 1 文字</td><td><code>/[aeiou]/.test("sky")</code></td><td><code>false</code></td><td>01章 q05 問18</td></tr>
+            <tr><td><code>[0-9] [A-Z] [a-z]</code></td><td>範囲の中の 1 文字</td><td><code>/[A-Z]/.test("tokyo")</code></td><td><code>false</code></td><td>01章 q05 問18、q06 問13</td></tr>
+            <tr><td><code>[^abc]</code></td><td>かっこの中のどれでもない 1 文字</td><td><code>/[^0-9]/.test("12a")</code></td><td><code>true</code></td><td>ここで初めて</td></tr>
+            <tr><td><code>\d</code></td><td>数字の 1 文字</td><td><code>/\d/.test("A-12")</code></td><td><code>true</code></td><td>01章 q06 問13</td></tr>
+            <tr><td><code>\s</code></td><td>空白の 1 文字</td><td><code>/\s/.test("山田 太郎")</code></td><td><code>true</code></td><td>01章 q06 問13</td></tr>
+            <tr><td><code>.</code></td><td>改行のほかの、どの 1 文字でも</td><td><code>/^.$/.test("円")</code></td><td><code>true</code></td><td>ここで初めて</td></tr>
+            <tr><td><code>\. \[ \]</code></td><td>記号そのもの（前に \ を付ける）</td><td><code>/^\d+\.\d+$/.test("1x5")</code></td><td><code>false</code></td><td>ここで初めて</td></tr>
+            <tr><td><code>+</code></td><td>すぐ前のものが 1 つ以上</td><td><code>/^A\d+$/.test("A")</code></td><td><code>false</code></td><td>01章 q05 応用</td></tr>
+            <tr><td><code>*</code></td><td>すぐ前のものが 0 個以上</td><td><code>/^A\d*$/.test("A")</code></td><td><code>true</code></td><td>ここで初めて</td></tr>
+            <tr><td><code>?</code></td><td>すぐ前のものが、あってもなくてもよい</td><td><code>/^-?\d+$/.test("-12")</code></td><td><code>true</code></td><td>04章 q05 問3</td></tr>
+            <tr><td><code>{3}</code></td><td>すぐ前のものが、ちょうど 3 つ</td><td><code>/^\d{3}$/.test("1234")</code></td><td><code>false</code></td><td>ここで初めて</td></tr>
+            <tr><td><code>^ $</code></td><td>文字列の先頭と最後</td><td><code>/^\d+$/.test("12px")</code></td><td><code>false</code></td><td>04章 q05 問3</td></tr>
+            <tr><td><code>\b</code></td><td>単語の境目（英数字とそれ以外の間、文字列の端）</td><td><code>/\bcat\b/.test("concat")</code></td><td><code>false</code></td><td>ここで初めて</td></tr>
+            <tr><td><code>( )</code></td><td>まとめて 1 つにし、合った部分を取り出せるようにする（グループ）</td><td><code>/^(\d+)(個|箱)$/.exec("3箱")</code></td><td><code>["3箱", "3", "箱"]</code></td><td>04章 q08 問6</td></tr>
+            <tr><td><code>|</code></td><td>どちらか</td><td><code>/^(個|箱)$/.test("袋")</code></td><td><code>false</code></td><td>04章 q08 問6</td></tr>
+            <tr><td><code>(?&lt;名前&gt;…)</code></td><td>名前を付けたグループ</td><td>このあとの項目</td><td></td><td>ここで初めて</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>コツ</b>正規表現の中で特別な意味を持つ記号（<code>. + * ? ( ) [ ] { } ^ $ | \ /</code>）を、記号そのものとして探すときは、前に <code>\</code> を付けます。<code>\.</code> は「. という文字」、<code>.</code> は「どの 1 文字でも」です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/builtin-api/regexp">サバイバルTypeScript「正規表現 (RegExp)」</a></p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">.matchAll()</code><h4>合った部分を、すべて取り出す</h4></div>
+      <p><code>.exec()</code>（04章 q08 問6）は、最初に合った 1 つだけを取り出します。<code>.matchAll()</code> は、文字列の中で合った部分を、すべて順に取り出します。正規表現には <code>g</code> を付けます。取り出した結果は、1 つずつが <code>.exec()</code> の結果と同じ形の配列です。0 番目が合った部分の全体、1 番目からが <code>( )</code> で囲んだ部分です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 明細 receipt を作り、"ペン 120円、ノート 250円" を入れる
+const receipt = "ペン 120円、ノート 250円";
+// matches を作り、receipt の中で /(\d+)円/g に合った結果をすべて並べた新しい配列を入れる
+const matches = [...receipt.matchAll(/(\d+)円/g)];
+// prices を作り、matches の要素を 1 つずつ m として、m の 1 番目を数値にしたものに変えた新しい配列を入れる
+const prices = matches.map((m) =&gt; Number(m[1]));
+// 結果: matches[0] は ["120円", "120"]、prices は [120, 250]</code></pre>
+      </div>
+      <p><code>.matchAll()</code> の結果は、<code>for-of</code> で 1 つずつ取り出せるものです。配列のメソッドを使うために、<code>[... ]</code>（02章 q05 問1 の配列のスプレッド）で新しい配列にしています。</p>
+      <dl class="eg">
+        <div><dt><code>[..."ペン 120円、ノート 250円".matchAll(/(\d+)円/g)].length</code></dt><dd class="r"><code>2</code></dd><dd class="c">合った部分が 2 つ</dd></div>
+        <div><dt><code>"ペン 120円".matchAll(/(\d+)円/)</code></dt><dd class="r"><code>TypeError</code> を投げる</dd><dd class="c"><code>g</code> がない</dd></div>
+      </dl>
+      <p class="memo"><b>型</b><code>m[1]</code> の型は <code>string | undefined</code> です。配列の要素を <code>[ ]</code> で取り出したときと同じです。文字列として使うときは、<code>m[1] ?? ""</code> のように <code>??</code>（02章 q02 問1）で決めておきます。</p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">$1</code><h4>置き換える文字列に、グループで合った部分を入れる</h4></div>
+      <p><code>.replace()</code>（01章 q05 問18）の 2 つ目の引数の中で、<code>$1</code>、<code>$2</code> … と書くと、そこに 1 つ目、2 つ目 … の <code>( )</code> に合った部分が入ります。合った部分の一部だけを残して、ほかを書き換えるときに使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 日付 date を作り、"2026-05-10" を入れる
+const date = "2026-05-10";
+// usDate を作り、date の中の「数字 4 つ、-、数字 2 つ、-、数字 2 つ」を、2 つ目のグループ、/、3 つ目のグループ、/、1 つ目のグループの順に並べ替えたものを入れる
+const usDate = date.replace(/(\d{4})-(\d{2})-(\d{2})/g, "$2/$3/$1");
+// 結果: usDate は "05/10/2026"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>date.replace(/<span class="seg"><i>1</i>(\d{4})</span>-<span class="seg"><i>2</i>(\d{2})</span>-<span class="seg"><i>3</i>(\d{2})</span>/g, <span class="seg"><i>4</i>"$2/$3/$1"</span>)</pre>
+        <ol>
+          <li><span>1 つ目のグループです。<code>$1</code> に <code>"2026"</code> が入ります。</span></li>
+          <li><span>2 つ目のグループです。<code>$2</code> に <code>"05"</code> が入ります。</span></li>
+          <li><span>3 つ目のグループです。<code>$3</code> に <code>"10"</code> が入ります。</span></li>
+          <li><span>代わりに入れる文字列です。グループで合った部分を、好きな順に並べられます。</span></li>
+        </ol>
+      </figure>
+      <p>番号の一部だけが合ってしまうのを防ぐには、<code>\b</code>（単語の境目）を前後に付けます。</p>
+      <dl class="eg">
+        <div><dt><code>"090-1234-56789".replace(/(\d{3})-\d{4}-(\d{4})/g, "$1-****-$2")</code></dt><dd class="r"><code>"090-****-56789"</code></dd><dd class="c">最後の 5 けたの途中で合ってしまう</dd></div>
+        <div><dt><code>"090-1234-56789".replace(/\b(\d{3})-\d{4}-(\d{4})\b/g, "$1-****-$2")</code></dt><dd class="r"><code>"090-1234-56789"</code></dd><dd class="c">\b があると、数字の途中では合わない</dd></div>
+      </dl>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">(?&lt;名前&gt;…)</code><code class="tok">.groups</code><h4>グループに名前を付けて取り出す</h4></div>
+      <p><code>( )</code> の始まりを <code>(?&lt;名前&gt;</code> にすると、そのグループに名前を付けられます。<code>.exec()</code> の結果の <code>.groups</code> から、<code>groups.名前</code> の形で取り出せます。番号で数えるより、何を取り出したのかがわかりやすくなります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫の行 line を作り、"SKU-0042:12" を入れる
+const line = "SKU-0042:12";
+// groups を作り、line を /^(?&lt;code&gt;[A-Z]+-\d+):(?&lt;qty&gt;\d+)$/ に合わせた結果の名前付きグループ（合わなければ undefined）を入れる
+const groups = /^(?&lt;code&gt;[A-Z]+-\d+):(?&lt;qty&gt;\d+)$/.exec(line)?.groups;
+// 商品コード code を作り、groups の code（groups が undefined なら undefined）を入れる
+const code = groups?.code;
+// 結果: code は "SKU-0042"。groups の qty は "12"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>/^<span class="seg"><i>1</i>(?&lt;code&gt;[A-Z]+-\d+)</span>:<span class="seg"><i>2</i>(?&lt;qty&gt;\d+)</span>$/</pre>
+        <ol>
+          <li><span><code>code</code> という名前のグループです。英大文字が 1 つ以上、<code>-</code>、数字が 1 つ以上です。</span></li>
+          <li><span><code>qty</code> という名前のグループです。数字が 1 つ以上です。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>型</b><code>.exec()</code> は、合わなければ <code>null</code> を返します。<code>?.</code>（03章 q03 問1）を付けると、<code>null</code> のときは <code>groups</code> が <code>undefined</code> になります。<code>groups?.code</code> の型は <code>string | undefined</code> です。使う前に <code>undefined</code> でないことを確かめます。</p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">.replace(正規表現, 関数)</code><h4>合った部分ごとに、関数で置き換える</h4></div>
+      <p><code>.replace()</code> の 2 つ目の引数には、関数（02章 q04 問5 のコールバック）も渡せます。合った部分が見つかるたびに、その部分の文字列を引数にして関数が呼ばれます。関数が返した文字列で置き換えます。合った部分を、大文字にするなど、変えてから入れたいときに使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 名前 guest を作り、"sato taro" を入れる
+const guest = "sato taro";
+// title を作り、guest の中の「単語の先頭の英小文字」を、1 つずつ c として受け取って大文字にしたものに置き換えたものを入れる
+const title = guest.replace(/\b[a-z]/g, (c) =&gt; c.toUpperCase());
+// 結果: title は "Sato Taro"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"a-b".replace(/[a-z]/g, (c) =&gt; c.toUpperCase())</code></dt><dd class="r"><code>"A-B"</code></dd><dd class="c">a と b の 2 回、関数が呼ばれる</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPostalCode を作る。文字列 text を受け取り、true か false を返す
+export function isPostalCode() {
+  // text 全体が「数字 3 つ、-、数字 4 つ」の形か（true か false）を返す
+}
+
+// 関数 extractHashtags を作る。文字列 text を受け取り、文字列の配列を返す
+export function extractHashtags() {
+  // matches を作り、text の中で「#、空白でも # でもない文字が 1 つ以上」に合った結果をすべて並べた新しい配列を入れる（# の後ろはグループにする）
+  // matches の要素を 1 つずつ m として、m の 1 番目（undefined なら空の文字列）に変えた新しい配列を返す
+}
+
+// 関数 maskPhone を作る。文字列 text を受け取り、文字列を返す
+export function maskPhone() {
+  // text の中の「数字 3 つ、-、数字 4 つ、-、数字 4 つ」をすべて、1 つ目のグループ、-****-、2 つ目のグループの順に並べたものに置き換えたものを返す
+}
+
+// 関数 isLevel を作る。文字列 value を受け取り、true か false を返す。true のときは value を LogLine の level の型に絞り込む
+function isLevel() {
+  // value が "INFO" と等しいか、"WARN" と等しいか、"ERROR" と等しいか（true か false）を返す
+}
+
+// 関数 parseLogLine を作る。文字列 line を受け取り、LogLine か null を返す
+export function parseLogLine() {
+  // groups を作り、line を「先頭、[、level、]、空白、time、空白、message、最後」の正規表現に合わせた結果の名前付きグループ（合わなければ undefined）を入れる
+  // level を作り、groups の level（groups が undefined なら undefined）を入れる
+  // time を作り、groups の time（groups が undefined なら undefined）を入れる
+  // message を作り、groups の message（groups が undefined なら undefined）を入れる
+  // もし level が undefined と等しいか、time が undefined と等しいか、message が undefined と等しいか、level が LogLine の level でないなら
+  //   null を返す
+  // level と time と message を持つオブジェクトを返す
+}
+
+// 関数 camelToKebab を作る。文字列 name を受け取り、文字列を返す
+export function camelToKebab() {
+  // name の中の英大文字を、1 つずつ c として受け取って「- と、c を小文字にしたもの」に置き換えたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>isPostalCode</code> は、1 つ目の項目のサンプルの <code>isReserveNo</code> と同じ形です。<code>extractHashtags</code> の「空白でも # でもない文字」は <code>[^\s#]</code> で、2 つ目の項目のサンプルの <code>matches</code> と <code>prices</code> の形を使います。<code>maskPhone</code> は、3 つ目の項目のサンプルと同じく <code>$1</code> と <code>$2</code> を使います。<code>parseLogLine</code> の正規表現は、<code>level</code> が <code>(?&lt;level&gt;INFO|WARN|ERROR)</code>、<code>time</code> が <code>(?&lt;time&gt;\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})</code>、<code>message</code> が <code>(?&lt;message&gt;.+)</code> です。<code>[</code> と <code>]</code> は <code>\[</code> と <code>\]</code> と書きます。<code>groups.level</code> の型は <code>string</code> なので、<code>isLevel</code> を型ガード関数（05章 q09 問1）にして、<code>"INFO" | "WARN" | "ERROR"</code> に絞り込みます。戻り値の型は <code>value is LogLine["level"]</code> と書けます。<code>LogLine["level"]</code> は、<code>LogLine</code> の <code>level</code> の型です（03章 q07 問10 のインデックスアクセス型）。<code>camelToKebab</code> は、4 つ目の項目のサンプルと同じく、<code>.replace()</code> に関数を渡します。説明することは、ターミナルで <code>node</code> と打って試します。<code>g</code> を付けた正規表現を変数に入れ、同じ文字列で <code>.test()</code> を何度か続けて呼び、結果と、変数の <code>lastIndex</code> の値がどう変わるかを見てから書きます。</p></details>
+    </div>
+  </section>
+</section>

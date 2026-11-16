@@ -1,0 +1,804 @@
+<section class="sec" id="c02-q02">
+  <div class="sec-h">
+    <span class="eyebrow">02章 オブジェクト・配列・タプル</span>
+    <h2>q02 オプションプロパティと readonly</h2>
+    <p>オブジェクトのプロパティに印を付ける書き方を使って、関数を 20 個書きます。なくてもよいプロパティには、名前の後ろに <code>?</code> を付けます（<code>nickname?: string</code>）。書き換えさせないプロパティには、前に <code>readonly</code> を付けます。なくてもよいプロパティの値は <code>undefined</code> のことがあります。そのときの扱いは、<code>??</code> や <code>!== undefined</code> で書きます。引数と戻り値の型注釈は、これまでと同じく自分で書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c02-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">nickname があれば nickname で、なければ name であいさつする</span>
+      <span class="q-new">新しく出てくる書き方：オプションプロパティ <code>?</code> <code>??</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greetUser() {}</code></pre>
+      <p>利用者のオブジェクトを 1 つ受け取ります。<code>name</code>（名前）はいつもあり、<code>nickname</code>（ニックネーム）はないこともあります。<code>nickname</code> があれば <code>nickname</code> を、なければ <code>name</code> を使って、「こんにちは、◯◯さん」を返します。引数の型には、<code>nickname</code> がなくてもよいことを書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetUser({ name: "山田太郎", nickname: "たろう" })</code></dt><dd class="r"><code>"こんにちは、たろうさん"</code></dd><dd class="c">nickname を使う</dd></div>
+          <div><dt><code>greetUser({ name: "佐藤花子" })</code></dt><dd class="r"><code>"こんにちは、佐藤花子さん"</code></dd><dd class="c">nickname がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string; nickname?: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">名前?: 型</code><h4>なくてもよいプロパティ</h4></div>
+      <p>オブジェクトの型（q01 問1）で、プロパティの名前の後ろに <code>?</code> を付けます。そのプロパティは、なくてもよくなります。これをオプションプロパティと呼びます。ないプロパティを読むと <code>undefined</code>（01章 q03 問12）になります。そのため、値の型は <code>string | undefined</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 deliveryNote を作る。オブジェクト order（item は文字列、note はなくてもよい文字列）を受け取り、文字列を返す
+function deliveryNote(order: { item: string; note?: string }): string {
+  // もし order の note がなければ
+  if (order.note === undefined) {
+    // "備考なし" を返す
+    return "備考なし";
+  }
+  // order の note を返す
+  return order.note;
+}
+// 結果: deliveryNote({ item: "米" }) は "備考なし"、deliveryNote({ item: "米", note: "置き配" }) は "置き配"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>order: { <span class="seg"><i>1</i>item: string</span>; <span class="seg"><i>2</i>note</span><span class="seg c"><i>3</i>?</span><span class="seg"><i>4</i>: string</span> }</pre>
+        <ol>
+          <li><span><code>?</code> のないプロパティです。渡すオブジェクトに、いつも書きます。</span></li>
+          <li><span>なくてもよいプロパティの名前です。</span></li>
+          <li><span>名前のすぐ後ろの <code>?</code> が「なくてもよい」の印です。</span></li>
+          <li><span>あるときの値の型です。ないときは <code>undefined</code> になります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>deliveryNote({ item: "米" })</code></dt><dd class="r"><code>"備考なし"</code></dd><dd class="c">note は書かなくてよい</dd></div>
+        <div><dt><code>deliveryNote({ item: "米", note: "置き配" })</code></dt><dd class="r"><code>"置き配"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>deliveryNote({ note: "置き配" })</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">item は省けない</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>ないときを考えない</h5>
+          <pre><code class="language-typescript">function deliveryNote(order: { item: string; note?: string }): string {
+  // order の note を返す
+  return order.note;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。note は undefined かもしれません</div>
+        </div>
+        <div>
+          <h5>ないときを先に返す</h5>
+          <pre><code class="language-typescript">function deliveryNote(order: { item: string; note?: string }): string {
+  if (order.note === undefined) {
+    return "備考なし";
+  }
+  return order.note;
+}</code></pre>
+          <div class="verdict ok">○ if の後ろでは、note は string として扱われます</div>
+        </div>
+      </div>
+      <p>値があるかどうかは、<code>!== undefined</code>（01章 q01 問17）で調べます。結果は <code>true</code> か <code>false</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 hasNote を作る。オブジェクト order（item は文字列、note はなくてもよい文字列）を受け取り、true か false を返す
+function hasNote(order: { item: string; note?: string }): boolean {
+  // order の note があるかどうか（true か false）を返す
+  return order.note !== undefined;
+}
+// 結果: hasNote({ item: "米", note: "置き配" }) は true、hasNote({ item: "米" }) は false</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>note: string | undefined</code> と書くと、「なくてもよい」になりません。<code>note</code> は書く必要があり、<code>{ item: "米" }</code> を渡すと型の確認でエラーになります。この番号のテストは、<code>?</code> を付けた形を確かめます。</p>
+      <p class="more">サバイバルTypeScript「オプションプロパティ」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">??</code><h4>なければ、代わりの値を使う</h4></div>
+      <p>左の値が <code>undefined</code> なら右の値を、そうでなければ左の値を使います。左が <code>null</code> のときも右の値を使います。<code>null</code> は 03章 q03 で学びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 shippingFee を作る。オブジェクト item（name は文字列、fee はなくてもよい数値）を受け取り、数値を返す
+function shippingFee(item: { name: string; fee?: number }): number {
+  // item の fee（なければ 500）を返す
+  return item.fee ?? 500;
+}
+// 結果: shippingFee({ name: "本", fee: 300 }) は 300、shippingFee({ name: "本" }) は 500</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>return <span class="seg"><i>1</i>item.fee</span> <span class="seg c"><i>2</i>??</span> <span class="seg"><i>3</i>500</span>;</pre>
+        <ol>
+          <li><span>まず使いたい値です。型は <code>number | undefined</code> です。</span></li>
+          <li><span>左が <code>undefined</code> のときだけ、右に切り替えます。</span></li>
+          <li><span>左がないときに使う値です。式全体の型は <code>number</code> になります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>shippingFee({ name: "本", fee: 300 })</code></dt><dd class="r"><code>300</code></dd><dd class="c"></dd></div>
+        <div><dt><code>shippingFee({ name: "本" })</code></dt><dd class="r"><code>500</code></dd><dd class="c">fee がない</dd></div>
+        <div><dt><code>shippingFee({ name: "本", fee: 0 })</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 は値があるので、そのまま使う</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5><code>||</code> で書く</h5>
+          <pre><code class="language-typescript">function shippingFee(item: { name: string; fee?: number }): number {
+  return item.fee || 500;
+}</code></pre>
+          <div class="verdict ng">✕ fee が 0 のときも 500 になります。lint もエラーにします</div>
+        </div>
+        <div>
+          <h5><code>??</code> で書く</h5>
+          <pre><code class="language-typescript">function shippingFee(item: { name: string; fee?: number }): number {
+  return item.fee ?? 500;
+}</code></pre>
+          <div class="verdict ok">○ fee が 0 なら 0 を返します</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>||</code>（01章 q01 問15）は、<code>0</code> や <code>""</code> も「ない」と同じに扱います。<code>??</code> が右に切り替えるのは、<code>undefined</code> と <code>null</code> のときだけです。</p>
+      <p class="memo"><b>コツ</b><code>??</code> の式は、テンプレートリテラルの <code>${ }</code> の中にもそのまま書けます。</p>
+      <p class="more">03章 q03（null と undefined）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greetUser を作る。オブジェクト user（name は文字列、nickname はなくてもよい文字列）を受け取り、文字列を返す
+export function greetUser() {
+  // user の nickname（なければ user の name）を埋め込んだ「こんにちは、◯さん」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の引数の型は、問1 のサンプルの <code>deliveryNote</code> と同じ書き方で、プロパティの名前が <code>name</code> と <code>nickname</code> になります。「（なければ ◯）」は <code>??</code> で、サンプルの <code>shippingFee</code> と同じ形です。その式を、テンプレートリテラルの <code>${ }</code> に入れます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c02-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">email があれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasEmail() {}</code></pre>
+      <p>オブジェクトを 1 つ受け取ります。<code>email</code>（メールアドレス）はないこともあります。<code>email</code> があれば <code>true</code>、なければ <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasEmail({ email: "a@example.com" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasEmail({})</code></dt><dd class="r"><code>false</code></dd><dd class="c">プロパティが 1 つもない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ email?: string }</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasEmail を作る。オブジェクト user（email はなくてもよい文字列）を受け取り、true か false を返す
+export function hasEmail() {
+  // user の email があるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>hasNote</code> と同じ形です。「あるかどうか」は <code>!== undefined</code> で、比べた結果をそのまま返します。プロパティが 1 つだけでも、型は <code>{ }</code> で囲みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c02-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">email を返す。なければ「（未登録）」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function emailText() {}</code></pre>
+      <p>オブジェクトを 1 つ受け取ります。<code>email</code> があれば、その文字列を返します。なければ <code>"（未登録）"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>emailText({ email: "a@example.com" })</code></dt><dd class="r"><code>"a@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>emailText({})</code></dt><dd class="r"><code>"（未登録）"</code></dd><dd class="c">かっこは全角</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ email?: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 emailText を作る。オブジェクト user（email はなくてもよい文字列）を受け取り、文字列を返す
+export function emailText() {
+  // user の email（なければ "（未登録）"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>shippingFee</code> と同じ形で、右の値が文字列になります。<code>deliveryNote</code> のように <code>if</code> で書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c02-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">age を「◯歳」にする。なければ「年齢不明」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function ageText() {}</code></pre>
+      <p>オブジェクトを 1 つ受け取ります。<code>age</code>（年齢の数値）があれば「30歳」の形の文字列を返します。なければ <code>"年齢不明"</code> を返します。<code>0</code> 歳も、年齢があるとみなします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ageText({ age: 30 })</code></dt><dd class="r"><code>"30歳"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ageText({ age: 0 })</code></dt><dd class="r"><code>"0歳"</code></dd><dd class="c">0 も年齢がある</dd></div>
+          <div><dt><code>ageText({})</code></dt><dd class="r"><code>"年齢不明"</code></dd><dd class="c">age がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ age?: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ageText を作る。オブジェクト person（age はなくてもよい数値）を受け取り、文字列を返す
+export function ageText() {
+  // もし person の age がなければ
+  //   "年齢不明" を返す
+  // person の age を埋め込んだ「◯歳」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>deliveryNote</code> と同じ形です。「age がなければ」は <code>=== undefined</code> です。<code>if (person.age)</code> と書くと、lint がエラーにします（<code>strict-boolean-expressions</code>）。動いたとしても、<code>0</code> 歳が「年齢不明」になってしまいます。条件演算子 <code>? :</code>（01章 q01 問12）で 1 行に書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c02-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">color を返す。なければ "black" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function colorOf() {}</code></pre>
+      <p>設定のオブジェクトを 1 つ受け取ります。<code>color</code>（色の名前）があれば、その文字列を返します。なければ <code>"black"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>colorOf({ color: "red" })</code></dt><dd class="r"><code>"red"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>colorOf({})</code></dt><dd class="r"><code>"black"</code></dd><dd class="c">color がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ color?: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 colorOf を作る。オブジェクト options（color はなくてもよい文字列）を受け取り、文字列を返す
+export function colorOf() {
+  // options の color（なければ "black"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じく、問1 のサンプルの <code>shippingFee</code> の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c02-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">perPage を返す。なければ 20 を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function perPageOf() {}</code></pre>
+      <p>一覧の設定のオブジェクトを 1 つ受け取ります。<code>perPage</code>（1 ページに出す件数）があれば、その数を返します。なければ <code>20</code> を返します。<code>0</code> も、値があるとみなします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>perPageOf({ perPage: 50 })</code></dt><dd class="r"><code>50</code></dd><dd class="c"></dd></div>
+          <div><dt><code>perPageOf({ perPage: 0 })</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 も値がある</dd></div>
+          <div><dt><code>perPageOf({})</code></dt><dd class="r"><code>20</code></dd><dd class="c">perPage がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ perPage?: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 perPageOf を作る。オブジェクト options（perPage はなくてもよい数値）を受け取り、数値を返す
+export function perPageOf() {
+  // options の perPage（なければ 20）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>shippingFee</code> と同じ形です。<code>||</code> で書くと、<code>perPage</code> が <code>0</code> のときに <code>20</code> になります（問1 の <code>??</code> の比べた例）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c02-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">読み取り専用の id を持つ ToDo を作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>readonly</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function createTodo() {}</code></pre>
+      <p>番号 <code>id</code> と題 <code>title</code> を受け取り、ToDo のオブジェクト <code>{ id, title, done }</code> を作って返します。<code>done</code>（済んだかどうか）は <code>false</code> にします。<code>id</code> は、あとから書き換えられないように読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>createTodo(1, "買い物")</code></dt><dd class="r"><code>{ id: 1, title: "買い物", done: false }</code></dd><dd class="c"></dd></div>
+          <div><dt>できた ToDo の <code>id</code> に代入する</dt><dd class="r">型の確認でエラー</dd><dd class="c">id は書き換えられない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>string</code>、戻り値が <code>{ readonly id: number; title: string; done: boolean }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">readonly</code><h4>書き換えさせないプロパティ</h4></div>
+      <p>オブジェクトの型で、プロパティの名前の前に <code>readonly</code> を付けます。そのプロパティに値を入れ直そうとすると、型の確認でエラーになります。読むことはこれまでどおりできます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 createOrder を作る。数値 id と数値 quantity を受け取り、オブジェクト（id は読み取り専用の数値、quantity は数値）を返す
+function createOrder(id: number, quantity: number): { readonly id: number; quantity: number } {
+  // id と quantity を入れたオブジェクトを返す
+  return { id, quantity };
+}
+// 注文 order を作り、createOrder に 10 と 2 を渡して呼んだ結果を入れる
+const order = createOrder(10, 2);
+// order の quantity に 3 を入れ直す
+order.quantity = 3;
+// 結果: order は { id: 10, quantity: 3 }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>{ <span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>id: number</span>; <span class="seg"><i>3</i>quantity: number</span> }</pre>
+        <ol>
+          <li><span>「書き換えさせない」の印です。すぐ後ろのプロパティ 1 つにだけ効きます。</span></li>
+          <li><span>読み取り専用のプロパティです。</span></li>
+          <li><span>印のないプロパティです。値を入れ直せます。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>quantity を入れ直す</h5>
+          <pre><code class="language-typescript">const order = createOrder(10, 2);
+// order の quantity に 3 を入れ直す
+order.quantity = 3;</code></pre>
+          <div class="verdict ok">○ quantity には印がないので、入れ直せます</div>
+        </div>
+        <div>
+          <h5>id を入れ直す</h5>
+          <pre><code class="language-typescript">const order = createOrder(10, 2);
+// order の id に 11 を入れ直す
+order.id = 11;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Cannot assign to 'id' because it is a read-only property）</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>テストにある <code>// @ts-expect-error</code> は、「次の行は型の確認でエラーになるはず」という印です。<code>readonly</code> を付け忘れると、次の行がエラーになりません。そのときは、この印のほうがエラー（<code>Unused '@ts-expect-error' directive</code>）になります。</p>
+      <p class="memo"><b>決まり</b><code>readonly</code> は型の確認のための印です。JavaScript に変換したあとのコードには残りません。</p>
+      <p class="more">サバイバルTypeScript「readonly プロパティ」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 createTodo を作る。数値 id と文字列 title を受け取り、オブジェクト（id は読み取り専用の数値、title は文字列、done は true か false）を返す
+export function createTodo() {
+  // id と title と、false を入れた done を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、問7 のサンプルの <code>createOrder</code> と同じ書き方です。「true か false」は <code>boolean</code> です。返すオブジェクトは、省略記法の <code>{ id, title }</code>（q01 問3）に <code>done: false</code> を足します。保存して整形すると、長い型は複数の行に分かれます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c02-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">done を true にした、新しい ToDo を返す</span>
+      <span class="q-new">新しく出てくる書き方：スプレッド構文 <code>{ ...元 }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function completeTodo() {}</code></pre>
+      <p>問7 と同じ形の ToDo を受け取ります。<code>done</code> を <code>true</code> にした、新しい ToDo を返します。受け取った ToDo は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>completeTodo({ id: 1, title: "買い物", done: false })</code></dt><dd class="r"><code>{ id: 1, title: "買い物", done: true }</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの、元の ToDo の <code>done</code></dt><dd class="r"><code>false</code></dd><dd class="c">元は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数と戻り値が、どちらも <code>{ readonly id: number; title: string; done: boolean }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ ...元, 名前: 値 }</code><h4>プロパティを写して、新しいオブジェクトを作る</h4></div>
+      <p>オブジェクトの前に <code>...</code> を付けて <code>{ }</code> の中に書くと、そのプロパティをすべて写した新しいオブジェクトができます。この書き方をスプレッド構文と呼びます。後ろに書いたプロパティは、写した値を上書きします。元のオブジェクトは変わりません。ここでは、まねて書ければ十分です。くわしくは q03（分割代入とスプレッド構文）で学びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 upgrade を作る。オブジェクト member（id は読み取り専用の数値、rank は文字列）を受け取り、同じ形のオブジェクトを返す
+function upgrade(member: { readonly id: number; rank: string }): {
+  readonly id: number;
+  rank: string;
+} {
+  // member のプロパティをすべて写し、rank を "ゴールド" にしたオブジェクトを返す
+  return { ...member, rank: "ゴールド" };
+}
+// 会員 before を作り、id が 5、rank が "一般" のオブジェクトを入れる
+const before = { id: 5, rank: "一般" };
+// 会員 after を作り、upgrade に before を渡して呼んだ結果を入れる
+const after = upgrade(before);
+// 結果: after は { id: 5, rank: "ゴールド" }、before は { id: 5, rank: "一般" } のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>return { <span class="seg"><i>1</i>...member</span>, <span class="seg"><i>2</i>rank: "ゴールド"</span> };</pre>
+        <ol>
+          <li><span><code>member</code> のプロパティ（<code>id</code> と <code>rank</code>）をすべて写します。</span></li>
+          <li><span>後ろに書いたプロパティです。写した <code>rank</code> を上書きします。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>{ ...before, rank: "ゴールド" }</code></dt><dd class="r"><code>{ id: 5, rank: "ゴールド" }</code></dd><dd class="c">後ろの rank が残る</dd></div>
+        <div><dt><code>{ rank: "ゴールド", ...before }</code></dt><dd class="r"><code>{ rank: "一般", id: 5 }</code></dd><dd class="c">写した rank で上書きされる。型の確認もエラーにする</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>受け取ったオブジェクトの <code>done</code> に <code>true</code> を入れ直して、そのまま返すこともできます。型の確認は通りますが、元の ToDo まで変わります。この問題のテストは、元の ToDo が変わっていないことを確かめます。</p>
+      <p class="more">02章 q03（分割代入とスプレッド構文）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 completeTodo を作る。オブジェクト todo（id は読み取り専用の数値、title は文字列、done は true か false）を受け取り、同じ形のオブジェクトを返す
+export function completeTodo() {
+  // todo のプロパティをすべて写し、done を true にしたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>upgrade</code> と同じ形です。引数と戻り値の型は、どちらも問7 の戻り値の型と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c02-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">middle があれば間に入れて、名前をつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nameWithMiddle() {}</code></pre>
+      <p>名前のオブジェクトを 1 つ受け取ります。<code>first</code>（名）と <code>last</code>（姓）はいつもあり、<code>middle</code>（ミドルネーム）はないこともあります。<code>middle</code> があれば「first middle last」、なければ「first last」の形で、半角スペースでつないで返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameWithMiddle({ first: "John", middle: "F", last: "Kennedy" })</code></dt><dd class="r"><code>"John F Kennedy"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nameWithMiddle({ first: "Taro", last: "Yamada" })</code></dt><dd class="r"><code>"Taro Yamada"</code></dd><dd class="c">middle がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ first: string; middle?: string; last: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameWithMiddle を作る。オブジェクト parts（first は文字列、middle はなくてもよい文字列、last は文字列）を受け取り、文字列を返す
+export function nameWithMiddle() {
+  // もし parts の middle がなければ
+  //   parts の first と last を半角スペースでつないだ文字列を返す
+  // parts の first、middle、last を半角スペースでつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じく、<code>if</code> で「ない」ときを先に返します。<code>if</code> の後ろでは <code>middle</code> が <code>string</code> として扱われるので、そのまま埋め込めます。つなぐ文字列はテンプレートリテラルで作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c02-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">name と email の両方がそろっていれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isComplete() {}</code></pre>
+      <p>プロフィールのオブジェクトを 1 つ受け取ります。<code>name</code> と <code>email</code> は、どちらもないことがあります。両方があるときだけ <code>true</code>、どちらか 1 つでもなければ <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isComplete({ name: "山田", email: "a@example.com" })</code></dt><dd class="r"><code>true</code></dd><dd class="c">両方ある</dd></div>
+          <div><dt><code>isComplete({ name: "山田" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">email がない</dd></div>
+          <div><dt><code>isComplete({})</code></dt><dd class="r"><code>false</code></dd><dd class="c">どちらもない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name?: string; email?: string }</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isComplete を作る。オブジェクト profile（name はなくてもよい文字列、email はなくてもよい文字列）を受け取り、true か false を返す
+export function isComplete() {
+  // profile の name がある、かつ profile の email があるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「あるかどうか」は、問1 のサンプルの <code>hasNote</code> と同じく <code>!== undefined</code> です。「かつ」は <code>&amp;&amp;</code>（01章 q02 問16）で、2 つの比べる式をつなぎます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c02-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">値があるプロパティの数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countFilled() {}</code></pre>
+      <p>入力欄のオブジェクトを 1 つ受け取ります。<code>a</code>・<code>b</code>・<code>c</code> は、どれもないことがあります。値があるプロパティがいくつあるかを数えて返します。空の文字列 <code>""</code> も、値があるとみなします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countFilled({ a: "x", c: "z" })</code></dt><dd class="r"><code>2</code></dd><dd class="c">a と c</dd></div>
+          <div><dt><code>countFilled({})</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countFilled({ a: "", b: "", c: "" })</code></dt><dd class="r"><code>3</code></dd><dd class="c">空の文字列も数える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ a?: string; b?: string; c?: string }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countFilled を作る。オブジェクト form（a・b・c はなくてもよい文字列）を受け取り、数値を返す
+export function countFilled() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // もし form の a があるなら
+  //   count を 1 増やす
+  // もし form の b があるなら
+  //   count を 1 増やす
+  // もし form の c があるなら
+  //   count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「form の a があるなら」は <code>if (form.a !== undefined)</code> です。「1 増やす」は <code>++</code>（01章 q01 問5）です。<code>if (form.a)</code> と書くと、lint がエラーにします。動いたとしても、<code>""</code> のときに数えられません。型は、3 つのプロパティのそれぞれに <code>?</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c02-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">クーポンを引いた支払額を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function payAmount() {}</code></pre>
+      <p>注文のオブジェクトを 1 つ受け取ります。<code>price</code>（価格）はいつもあり、<code>coupon</code>（クーポンで引く金額）はないこともあります。<code>price</code> から <code>coupon</code> を引いた支払額を返します。<code>coupon</code> がなければ 0 円引きです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>payAmount({ price: 1000, coupon: 200 })</code></dt><dd class="r"><code>800</code></dd><dd class="c"></dd></div>
+          <div><dt><code>payAmount({ price: 1000 })</code></dt><dd class="r"><code>1000</code></dd><dd class="c">coupon がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ price: number; coupon?: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 payAmount を作る。オブジェクト order（price は数値、coupon はなくてもよい数値）を受け取り、数値を返す
+export function payAmount() {
+  // order の price から、order の coupon（なければ 0）を引いた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「order の coupon（なければ 0）」を先に計算するので、その部分をかっこで囲みます。かっこがないと、<code>order.price - order.coupon</code> を先に計算することになります。型の確認で <code>'order.coupon' is possibly 'undefined'</code>（undefined かもしれない）のエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c02-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">building があれば city の後ろにつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addressText() {}</code></pre>
+      <p>住所のオブジェクトを 1 つ受け取ります。<code>city</code>（市区町村）はいつもあり、<code>building</code>（建物の名前）はないこともあります。<code>building</code> があれば、<code>city</code> と半角スペースでつないで返します。なければ <code>city</code> だけを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addressText({ city: "渋谷区", building: "渋谷ビル" })</code></dt><dd class="r"><code>"渋谷区 渋谷ビル"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>addressText({ city: "新宿区" })</code></dt><dd class="r"><code>"新宿区"</code></dd><dd class="c">building がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ city: string; building?: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addressText を作る。オブジェクト address（city は文字列、building はなくてもよい文字列）を受け取り、文字列を返す
+export function addressText() {
+  // address の building がなければ address の city、そうでなければ city と building を半角スペースでつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>条件演算子 <code>? :</code>（01章 q01 問12）で 1 行に書けます。条件は <code>address.building === undefined</code> です。問9 のように <code>if</code> で書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c02-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">読み取り専用の座標を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function frozenPoint() {}</code></pre>
+      <p><code>x</code> と <code>y</code> の数を受け取り、座標のオブジェクト <code>{ x, y }</code> を作って返します。<code>x</code> と <code>y</code> は、どちらも読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>frozenPoint(1, 2)</code></dt><dd class="r"><code>{ x: 1, y: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt>できた座標の <code>x</code> に代入する</dt><dd class="r">型の確認でエラー</dd><dd class="c">x は書き換えられない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>{ readonly x: number; readonly y: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 frozenPoint を作る。数値 x と数値 y を受け取り、オブジェクト（x は読み取り専用の数値、y は読み取り専用の数値）を返す
+export function frozenPoint() {
+  // x と y を入れたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>createOrder</code> と同じ形です。<code>readonly</code> は 1 つのプロパティにだけ効くので、<code>x</code> と <code>y</code> の両方の前に付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c02-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">x を 1 増やした、新しい座標を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function moveRight() {}</code></pre>
+      <p>問14 と同じ形の、読み取り専用の座標を受け取ります。<code>x</code> を 1 増やした、新しい座標を返します。受け取った座標は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>moveRight({ x: 1, y: 2 })</code></dt><dd class="r"><code>{ x: 2, y: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの、元の座標</dt><dd class="r"><code>{ x: 1, y: 2 }</code></dd><dd class="c">元は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数と戻り値が、どちらも <code>{ readonly x: number; readonly y: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 moveRight を作る。オブジェクト point（x は読み取り専用の数値、y は読み取り専用の数値）を受け取り、同じ形のオブジェクトを返す
+export function moveRight() {
+  // x に point の x + 1、y に point の y を入れたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>x</code> は <code>readonly</code> なので、<code>point.x += 1</code> と書くと型の確認でエラーになります（<code>Cannot assign to 'x' because it is a read-only property</code>）。新しいオブジェクトを作って返します。問8 のスプレッド構文で <code>x</code> だけを上書きしてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c02-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">subtitle があれば「title: subtitle」にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function titleText() {}</code></pre>
+      <p>本のオブジェクトを 1 つ受け取ります。<code>title</code>（題）はいつもあり、<code>subtitle</code>（副題）はないこともあります。<code>subtitle</code> があれば「題: 副題」の形で返します。<code>:</code> の後ろには半角スペースを 1 つ入れます。なければ <code>title</code> だけを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>titleText({ title: "入門", subtitle: "TypeScript" })</code></dt><dd class="r"><code>"入門: TypeScript"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>titleText({ title: "入門" })</code></dt><dd class="r"><code>"入門"</code></dd><dd class="c">subtitle がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ title: string; subtitle?: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 titleText を作る。オブジェクト book（title は文字列、subtitle はなくてもよい文字列）を受け取り、文字列を返す
+export function titleText() {
+  // book の subtitle がなければ book の title、そうでなければ title と subtitle を ": " でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じ形で、つなぐ文字が <code>": "</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c02-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">timeoutSeconds をミリ秒にする。なければ 30 秒とみなす</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function timeoutMs() {}</code></pre>
+      <p>設定のオブジェクトを 1 つ受け取ります。<code>timeoutSeconds</code>（待つ秒数）はないこともあります。秒数をミリ秒にして返します。1 秒は 1000 ミリ秒です。<code>timeoutSeconds</code> がなければ 30 秒とみなします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>timeoutMs({ timeoutSeconds: 5 })</code></dt><dd class="r"><code>5000</code></dd><dd class="c"></dd></div>
+          <div><dt><code>timeoutMs({})</code></dt><dd class="r"><code>30000</code></dd><dd class="c">30 秒とみなす</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ timeoutSeconds?: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 timeoutMs を作る。オブジェクト options（timeoutSeconds はなくてもよい数値）を受け取り、数値を返す
+export function timeoutMs() {
+  // options の timeoutSeconds（なければ 30）に 1000 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じく、<code>??</code> の部分を先に計算するので、かっこで囲みます。そのあとに <code>* 1000</code> を続けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c02-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">memberId がなければ true（ゲスト）を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isGuest() {}</code></pre>
+      <p>利用者のオブジェクトを 1 つ受け取ります。<code>name</code> はいつもあり、<code>memberId</code>（会員番号の数値）はないこともあります。<code>memberId</code> がなければゲストとみなして <code>true</code> を返します。あれば <code>false</code> です。会員番号 <code>0</code> も、番号があるとみなします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isGuest({ name: "山田" })</code></dt><dd class="r"><code>true</code></dd><dd class="c">memberId がない</dd></div>
+          <div><dt><code>isGuest({ name: "佐藤", memberId: 0 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">0 も番号がある</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string; memberId?: number }</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isGuest を作る。オブジェクト user（name は文字列、memberId はなくてもよい数値）を受け取り、true か false を返す
+export function isGuest() {
+  // user の memberId がないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 の反対です。「ないかどうか」は <code>=== undefined</code> で、比べた結果をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c02-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">label を返す。なければ「#id」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function labelOf() {}</code></pre>
+      <p>部屋のオブジェクトを 1 つ受け取ります。<code>id</code>（番号）はいつもあり、<code>label</code>（表示名）はないこともあります。<code>label</code> があれば <code>label</code> を返します。なければ、<code>#</code> の後ろに番号を付けた文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>labelOf({ id: 7, label: "会議室A" })</code></dt><dd class="r"><code>"会議室A"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>labelOf({ id: 7 })</code></dt><dd class="r"><code>"#7"</code></dd><dd class="c">label がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ id: number; label?: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 labelOf を作る。オブジェクト item（id は数値、label はなくてもよい文字列）を受け取り、文字列を返す
+export function labelOf() {
+  // item の label（なければ item の id を埋め込んだ「#◯」）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>shippingFee</code> と同じ形です。<code>??</code> の右には、テンプレートリテラルもそのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c02-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">設定を「ダーク / 16px」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function settingText() {}</code></pre>
+      <p>画面の設定のオブジェクトを 1 つ受け取ります。<code>darkMode</code> は <code>true</code> か <code>false</code> で、読み取り専用です。<code>fontSize</code>（文字の大きさ）はないこともあります。「ダーク / 16px」の形の文字列を返します。<code>darkMode</code> が <code>true</code> なら「ダーク」、<code>false</code> なら「ライト」にします。<code>fontSize</code> がなければ 16 とみなします。<code>/</code> の前後には、半角スペースを 1 つずつ入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>settingText({ darkMode: true })</code></dt><dd class="r"><code>"ダーク / 16px"</code></dd><dd class="c">fontSize がない</dd></div>
+          <div><dt><code>settingText({ darkMode: false, fontSize: 20 })</code></dt><dd class="r"><code>"ライト / 20px"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ readonly darkMode: boolean; fontSize?: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 settingText を作る。オブジェクト setting（darkMode は読み取り専用の true か false、fontSize はなくてもよい数値）を受け取り、文字列を返す
+export function settingText() {
+  // 表示 mode を作り、setting の darkMode が true なら "ダーク"、そうでなければ "ライト" を入れる
+  // 大きさ size を作り、setting の fontSize（なければ 16）を入れる
+  // mode と size を埋め込んだ「◯ / ◯px」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は条件演算子 <code>? :</code> です。<code>darkMode</code> は <code>boolean</code> なので、条件にそのまま書けます。2 行目は問1 のサンプルの <code>shippingFee</code> と同じ形です。型は、<code>darkMode</code> の前に <code>readonly</code>、<code>fontSize</code> の後ろに <code>?</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c02-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">利用者の型 User と、表示名・ニックネームの有無</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = unknown;
+
+export function displayName() {}
+
+export function hasNickname() {}</code></pre>
+      <p>型を 1 つと、関数を 2 つ書きます。関数の引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>User</code>：利用者を表す型です。<code>unknown</code> を書き換えて作ります。<code>id</code> は数値で、あとから書き換えられないように読み取り専用にします。<code>name</code> は文字列です。<code>nickname</code> は文字列で、なくてもよいプロパティにします。</li>
+        <li><code>displayName</code>：<code>User</code> を 1 つ受け取ります。<code>nickname</code> があれば <code>nickname</code> を、なければ <code>name</code> を返します。</li>
+        <li><code>hasNickname</code>：<code>User</code> を 1 つ受け取ります。<code>nickname</code> があれば <code>true</code>、なければ <code>false</code> を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>User</code> の型</dt><dd class="r"><code>{ readonly id: number; name: string; nickname?: string }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>User</code> の <code>id</code> に代入する</dt><dd class="r">型の確認でエラー</dd><dd class="c">id は書き換えられない</dd></div>
+          <div><dt><code>User</code> の <code>name</code> に <code>"山田次郎"</code> を入れる</dt><dd class="r">入れ直せる</dd><dd class="c">name は書き換えられる</dd></div>
+          <div><dt><code>displayName({ id: 1, name: "山田太郎", nickname: "たろう" })</code></dt><dd class="r"><code>"たろう"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>displayName({ id: 2, name: "佐藤花子" })</code></dt><dd class="r"><code>"佐藤花子"</code></dd><dd class="c">nickname がない</dd></div>
+          <div><dt><code>hasNickname({ id: 1, name: "山田太郎", nickname: "たろう" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasNickname({ id: 2, name: "佐藤花子" })</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>displayName</code> は引数が <code>User</code>、戻り値が <code>string</code>、<code>hasNickname</code> は引数が <code>User</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 利用者の型 User を作る。id は読み取り専用の数値、name は文字列、nickname はなくてもよい文字列
+export type User = unknown;
+
+// 関数 displayName を作る。User の user を受け取り、文字列を返す
+export function displayName() {
+  // user の nickname（なければ user の name）を返す
+}
+
+// 関数 hasNickname を作る。User の user を受け取り、true か false を返す
+export function hasNickname() {
+  // user の nickname があるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>User</code> は、q01 の応用と同じく <code>type</code> で書きます。<code>{ }</code> の中のプロパティには、問7 の <code>readonly</code> と問1 の <code>?</code> を使います。<code>displayName</code> は問1 と同じ <code>??</code> の形、<code>hasNickname</code> は問2 と同じ <code>!== undefined</code> の形です。引数の型には、作った <code>User</code> をそのまま書きます。</p></details>
+    </div>
+  </section>
+</section>

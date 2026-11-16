@@ -1,0 +1,979 @@
+<section class="sec" id="c06-q01">
+  <div class="sec-h">
+    <span class="eyebrow">06章 クラス</span>
+    <h2>q01 クラスの基本</h2>
+    <p>クラスを書きます。クラスは、値（フィールド）と、その値を使う処理（メソッド）をひとまとめにした設計図です。ドリル 1 問（1 つのファイルに 20 個のクラス）を確認して提出してから、応用に進みます。フィールド、constructor の引数、メソッドの引数と戻り値には型注釈を付けます。フィールドの値は、constructor の中で <code>this.x = x;</code> のように入れるか、<code>count = 0</code> のように初期値を書きます。<code>private</code> などの印は q02 で学ぶので、ドリルでは何も付けません。</p>
+  </div>
+
+  <!-- ドリル -->
+  <section class="q" id="c06-q01-1">
+    <header class="q-h">
+      <span class="q-n">ドリル</span><span class="q-t">20 個のクラスを書く</span>
+      <span class="q-new">新しく出てくる書き方：<code>class</code>、<code>export class</code>、<code>new</code> とインスタンス、フィールド、<code>constructor</code>、<code>this</code>、メソッド、フィールドの初期値、<code>.shift()</code>、クラスの名前を型に使う</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問1 Point(x, y)。フィールド x と y。label() で "(1, 2)" を返す
+//     例: new Point(1, 2).label() → "(1, 2)"
+export class Point {}
+
+// 問2 Rect(width, height)。area() で面積を返す
+//     例: new Rect(3, 4).area() → 12
+export class Rect {}
+
+// …（問20 まで、同じ形で続きます）</code></pre>
+      <p>1 つのファイルに、クラスを 20 個書きます。ファイルには、<code>export class Point {}</code> のように、中身が空のクラスが並んでいます。<code>{}</code> の中に、フィールド・constructor・メソッドを書き足します。<code>Point(x, y)</code> のように名前の後ろにかっこがあるものは、constructor でその値を受け取ります。かっこがないものは、constructor を書かず、フィールドに初期値を書きます。</p>
+      <p>フィールド、constructor の引数、メソッドの引数と戻り値には、型注釈を付けます。<code>private</code> などの印（アクセス修飾子）は q02 で学びます。ここでは何も付けません。テストは、値のほかに型も確かめます。</p>
+      <h4>問1 Point：点の座標と表示</h4>
+      <pre><code class="language-typescript">export class Point {}</code></pre>
+      <p>点を表すクラスです。<code>new Point(1, 2)</code> のように、x 座標と y 座標の 2 つの数を受け取ります。受け取った数は、フィールド <code>x</code> と <code>y</code> に入れます。メソッド <code>label()</code> は、<code>"(1, 2)"</code> の形の文字列を返します。カンマの後ろに空白が 1 つ入ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Point(1, 2).x</code></dt><dd class="r"><code>1</code></dd><dd class="c">フィールド x</dd></div>
+          <div><dt><code>new Point(1, 2).y</code></dt><dd class="r"><code>2</code></dd><dd class="c">フィールド y</dd></div>
+          <div><dt><code>new Point(1, 2).label()</code></dt><dd class="r"><code>"(1, 2)"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 2 つ（<code>x</code> と <code>y</code>）、<code>label</code> が何も受け取らず文字列を返すことも確かめます。</p>
+      </div>
+      <h4>問2 Rect：長方形の面積</h4>
+      <pre><code class="language-typescript">export class Rect {}</code></pre>
+      <p>長方形を表すクラスです。幅 <code>width</code> と高さ <code>height</code> を受け取り、同じ名前のフィールドに入れます。メソッド <code>area()</code> は、面積（幅 × 高さ）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Rect(3, 4).area()</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 2 つ（<code>width</code> と <code>height</code>）、<code>area</code> が何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問3 Circle：円の面積と円周</h4>
+      <pre><code class="language-typescript">export class Circle {}</code></pre>
+      <p>円を表すクラスです。半径 <code>radius</code> を 1 つ受け取ります。メソッドは 2 つです。<code>area()</code> は面積（円周率 × 半径 × 半径）、<code>circumference()</code> は円周（2 × 円周率 × 半径）を返します。円周率は <code>Math.PI</code> です（03章 q04 問1）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Circle(1).area()</code></dt><dd class="r"><code>3.14159…</code></dd><dd class="c">Math.PI とほぼ同じなら合格</dd></div>
+          <div><dt><code>new Circle(1).circumference()</code></dt><dd class="r"><code>6.28318…</code></dd><dd class="c">2 × Math.PI とほぼ同じなら合格</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 1 つ（<code>radius</code>）、<code>area</code> と <code>circumference</code> が何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問4 Tally：数を数える</h4>
+      <pre><code class="language-typescript">export class Tally {}</code></pre>
+      <p>数を数えるクラスです。constructor はありません。フィールド <code>count</code> は、初期値（はじめに入っている値）を 0 にします。メソッド <code>increment()</code> は、<code>count</code> を 1 増やし、増やした後の値を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Tally().count</code></dt><dd class="r"><code>0</code></dd><dd class="c">作ったばかりは 0</dd></div>
+          <div><dt><code>new Tally()</code> で作り、<code>increment()</code> を 1 回呼ぶ</dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt>続けてもう 1 回 <code>increment()</code></dt><dd class="r"><code>2</code></dd><dd class="c">前の値の続きから数える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>count</code> の型が <code>number</code>、<code>increment</code> が何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問5 Person：あいさつの文</h4>
+      <pre><code class="language-typescript">export class Person {}</code></pre>
+      <p>人を表すクラスです。名前 <code>name</code>（文字列）と年齢 <code>age</code>（数値）を受け取ります。メソッド <code>greet()</code> は、<code>"こんにちは、山田です（30歳）"</code> の形の文字列を返します。かっこは全角です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Person("山田", 30).greet()</code></dt><dd class="r"><code>"こんにちは、山田です（30歳）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が文字列と数値、<code>greet</code> が何も受け取らず文字列を返すことも確かめます。</p>
+      </div>
+      <h4>問6 Book：税込価格</h4>
+      <pre><code class="language-typescript">export class Book {}</code></pre>
+      <p>本を表すクラスです。題名 <code>title</code>（文字列）と価格 <code>price</code>（数値）を受け取ります。メソッド <code>priceWithTax()</code> は、価格に 10% の税を足した税込価格を返します。1 円未満は切り捨てます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Book("入門", 1980).priceWithTax()</code></dt><dd class="r"><code>2178</code></dd><dd class="c">1980 × 1.1 = 2178</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が文字列と数値、<code>priceWithTax</code> が何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問7 Stopwatch：秒を数えて「分:秒」で表示する</h4>
+      <pre><code class="language-typescript">export class Stopwatch {}</code></pre>
+      <p>ストップウォッチのクラスです。constructor はありません。フィールド <code>seconds</code> の初期値は 0 です。メソッドは 2 つです。<code>tick()</code> は 1 秒進めます（<code>seconds</code> を 1 増やす）。何も返しません。<code>text()</code> は、<code>"01:05"</code> のように、分と秒をどちらも 2 桁にした文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>tick()</code> を 65 回呼んだ後の <code>seconds</code></dt><dd class="r"><code>65</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>text()</code></dt><dd class="r"><code>"01:05"</code></dd><dd class="c">65 秒は 1 分 5 秒</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>tick</code> が何も受け取らず何も返さない（<code>void</code>）、<code>text</code> が何も受け取らず文字列を返すことも確かめます。</p>
+      </div>
+      <h4>問8 Purse：お金が足りるときだけ払う</h4>
+      <pre><code class="language-typescript">export class Purse {}</code></pre>
+      <p>財布を表すクラスです。持っているお金 <code>money</code> を受け取ります。メソッド <code>spend(amount)</code> は、お金が足りれば <code>money</code> から <code>amount</code> を引いて <code>true</code> を返します。足りなければ何もせず、<code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Purse(500)</code> で作り、<code>spend(800)</code></dt><dd class="r"><code>false</code></dd><dd class="c">足りないので減らさない</dd></div>
+          <div><dt>続けて <code>spend(300)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>money</code></dt><dd class="r"><code>200</code></dd><dd class="c">500 − 300</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 1 つ（<code>money</code>）、<code>spend</code> が数値を 1 つ受け取って <code>boolean</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問9 NumberStack：数を積んで、最後に積んだものから取り出す</h4>
+      <pre><code class="language-typescript">export class NumberStack {}</code></pre>
+      <p>数を積み重ねるクラスです。フィールド <code>items</code> は数値の配列で、初期値は空の配列 <code>[]</code> です。メソッドは 3 つです。<code>push(n)</code> は <code>n</code> を積みます。何も返しません。<code>pop()</code> は、最後に積んだものを取り出して返します。空なら <code>undefined</code> を返します。<code>size()</code> は、積んである数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>push(1)</code>、<code>push(2)</code> の後の <code>size()</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>pop()</code></dt><dd class="r"><code>2</code></dd><dd class="c">最後に積んだもの</dd></div>
+          <div><dt>もう 1 回 <code>pop()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt>もう 1 回 <code>pop()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空になった</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>push</code> が数値を受け取って何も返さない、<code>pop</code> が数値か <code>undefined</code>（<code>number | undefined</code>）を返す、<code>size</code> が数値を返すことも確かめます。</p>
+      </div>
+      <h4>問10 TextQueue：文字列を並べて、先に入れたものから取り出す</h4>
+      <pre><code class="language-typescript">export class TextQueue {}</code></pre>
+      <p>文字列を順番待ちの列に並べるクラスです。フィールド <code>items</code> は文字列の配列で、初期値は <code>[]</code> です。<code>enqueue(text)</code> は、<code>text</code> を列の最後に足します。何も返しません。<code>dequeue()</code> は、列の先頭を取り出して返します。空なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>enqueue("a")</code>、<code>enqueue("b")</code> の後の <code>dequeue()</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">先に入れたもの</dd></div>
+          <div><dt>続けて <code>dequeue()</code></dt><dd class="r"><code>"b"</code></dd><dd class="c"></dd></div>
+          <div><dt>もう 1 回 <code>dequeue()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空になった</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>enqueue</code> が文字列を受け取って何も返さない、<code>dequeue</code> が文字列か <code>undefined</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問11 Thermometer：摂氏を華氏にする</h4>
+      <pre><code class="language-typescript">export class Thermometer {}</code></pre>
+      <p>温度計のクラスです。摂氏の温度 <code>celsius</code> を受け取ります。メソッド <code>toFahrenheit()</code> は、華氏の温度（摂氏 × 9 ÷ 5 + 32）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Thermometer(100).toFahrenheit()</code></dt><dd class="r"><code>212</code></dd><dd class="c">100 × 9 ÷ 5 + 32</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 1 つ（<code>celsius</code>）、<code>toFahrenheit</code> が何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問12 Score：点数を足す、0 に戻す</h4>
+      <pre><code class="language-typescript">export class Score {}</code></pre>
+      <p>点数を数えるクラスです。constructor はありません。フィールド <code>points</code> の初期値は 0 です。<code>add(n)</code> は <code>points</code> に <code>n</code> を足します。<code>reset()</code> は <code>points</code> を 0 に戻します。どちらも何も返しません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add(10)</code>、<code>add(5)</code> の後の <code>points</code></dt><dd class="r"><code>15</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>reset()</code> した後の <code>points</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>add</code> が数値を受け取って何も返さない、<code>reset</code> が何も受け取らず何も返さないことも確かめます。</p>
+      </div>
+      <h4>問13 Dice：さいころの目として正しいか</h4>
+      <pre><code class="language-typescript">export class Dice {}</code></pre>
+      <p>さいころを表すクラスです。面の数 <code>faces</code> を受け取ります。メソッド <code>isValid(n)</code> は、<code>n</code> が 1 以上 <code>faces</code> 以下の整数なら <code>true</code> を返します。それ以外は <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Dice(6).isValid(6)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Dice(6).isValid(7)</code></dt><dd class="r"><code>false</code></dd><dd class="c">faces より大きい</dd></div>
+          <div><dt><code>new Dice(6).isValid(1.5)</code></dt><dd class="r"><code>false</code></dd><dd class="c">整数でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 1 つ（<code>faces</code>）、<code>isValid</code> が数値を受け取って <code>boolean</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問14 Cart：買い物かごの合計</h4>
+      <pre><code class="language-typescript">export class Cart {}</code></pre>
+      <p>買い物かごのクラスです。フィールド <code>items</code> は、<code>{ name: string; price: number }</code> の配列で、初期値は <code>[]</code> です。<code>add(name, price)</code> は、商品名と価格のオブジェクトを <code>items</code> の最後に足します。何も返しません。<code>total()</code> は、価格の合計を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add("りんご", 150)</code>、<code>add("みかん", 80)</code> の後の <code>total()</code></dt><dd class="r"><code>230</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>items</code></dt><dd class="r"><code>[{ name: "りんご", price: 150 }, { name: "みかん", price: 80 }]</code></dd><dd class="c">足した順に並ぶ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>add</code> が文字列と数値を受け取って何も返さない、<code>total</code> が数値を返すことも確かめます。</p>
+      </div>
+      <h4>問15 TextBuffer：文字をためる</h4>
+      <pre><code class="language-typescript">export class TextBuffer {}</code></pre>
+      <p>文字列をためていくクラスです。フィールド <code>text</code> の初期値は空の文字列 <code>""</code> です。<code>append(s)</code> は <code>text</code> の後ろに <code>s</code> をつなげます。<code>clear()</code> は <code>text</code> を空にします。どちらも何も返しません。<code>length()</code> は、<code>text</code> の文字数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>append("ab")</code>、<code>append("c")</code> の後の <code>text</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>length()</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>clear()</code> した後の <code>length()</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>append</code> が文字列を受け取って何も返さない、<code>clear</code> が何も返さない、<code>length</code> が数値を返すことも確かめます。</p>
+      </div>
+      <h4>問16 NumberRange：範囲に入るか、範囲の大きさ</h4>
+      <pre><code class="language-typescript">export class NumberRange {}</code></pre>
+      <p>数の範囲を表すクラスです。始まり <code>start</code> と終わり <code>end</code> を受け取ります。<code>includes(n)</code> は、<code>n</code> が <code>start</code> 以上 <code>end</code> 以下なら <code>true</code> を返します。<code>size()</code> は、範囲に入る整数の個数（<code>end - start + 1</code>）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new NumberRange(3, 7).includes(3)</code></dt><dd class="r"><code>true</code></dd><dd class="c">端も含む</dd></div>
+          <div><dt><code>new NumberRange(3, 7).includes(8)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new NumberRange(3, 7).size()</code></dt><dd class="r"><code>5</code></dd><dd class="c">3, 4, 5, 6, 7</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 2 つ、<code>includes</code> が数値を受け取って <code>boolean</code> を返す、<code>size</code> が数値を返すことも確かめます。</p>
+      </div>
+      <h4>問17 Money：同じ通貨のお金を足す</h4>
+      <pre><code class="language-typescript">export class Money {}</code></pre>
+      <p>お金を表すクラスです。金額 <code>amount</code>（数値）と通貨 <code>currency</code>（文字列）を受け取ります。<code>add(other)</code> は、別の <code>Money</code> を受け取ります。通貨が同じなら、金額を合計した新しい <code>Money</code> を返します。自分の金額は変えません。通貨が違えば、<code>"通貨が違います"</code> というメッセージのエラーを投げます。<code>format()</code> は、<code>"1,200円"</code> の形（3 桁ごとのカンマ区切りの金額の後ろに通貨）を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Money(1000, "円").add(new Money(200, "円")).format()</code></dt><dd class="r"><code>"1,200円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>add</code> した後の、元の <code>Money(1000, "円")</code> の <code>amount</code></dt><dd class="r"><code>1000</code></dd><dd class="c">元のお金は変わらない</dd></div>
+          <div><dt><code>new Money(1000, "円").add(new Money(1, "ドル"))</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "通貨が違います"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値と文字列、<code>add</code> が <code>Money</code> を受け取って <code>Money</code> を返す、<code>format</code> が文字列を返すことも確かめます。</p>
+      </div>
+      <h4>問18 Vector：ベクトルを足す、長さを求める</h4>
+      <pre><code class="language-typescript">export class Vector {}</code></pre>
+      <p>平面のベクトル（向きと大きさを持つ矢印）を表すクラスです。<code>x</code> と <code>y</code> を受け取ります。<code>plus(other)</code> は、x どうし、y どうしを足した新しい <code>Vector</code> を返します。<code>length()</code> は、ベクトルの長さを返します。長さは <code>Math.hypot(x, y)</code> で求めます（01章 q04 問17）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Vector(1, 2).plus(new Vector(2, 2))</code> の <code>x</code> と <code>y</code></dt><dd class="r"><code>3</code> と <code>4</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Vector(1, 2).plus(new Vector(2, 2)).length()</code></dt><dd class="r"><code>5</code></dd><dd class="c">3 と 4 の斜めの長さ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が数値 2 つ、<code>plus</code> が <code>Vector</code> を受け取って <code>Vector</code> を返す、<code>length</code> が数値を返すことも確かめます。</p>
+      </div>
+      <h4>問19 Lamp：スイッチを切り替える</h4>
+      <pre><code class="language-typescript">export class Lamp {}</code></pre>
+      <p>電灯のクラスです。constructor はありません。フィールド <code>on</code> の初期値は <code>false</code>（消えている）です。<code>toggle()</code> は、<code>on</code> を反対にして（<code>true</code> なら <code>false</code>、<code>false</code> なら <code>true</code>）、反対にした後の値を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Lamp().on</code></dt><dd class="r"><code>false</code></dd><dd class="c">作ったばかりは消えている</dd></div>
+          <div><dt><code>new Lamp()</code> で作り、<code>toggle()</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>toggle()</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>on</code> の型が <code>boolean</code>、<code>toggle</code> が何も受け取らず <code>boolean</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問20 Greeter：決まったあいさつで呼びかける</h4>
+      <pre><code class="language-typescript">export class Greeter {}</code></pre>
+      <p>あいさつをするクラスです。あいさつの言葉 <code>greeting</code> を受け取ります。<code>greet(name)</code> は、<code>"おはよう、山田さん"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Greeter("おはよう").greet("山田")</code></dt><dd class="r"><code>"おはよう、山田さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が文字列 1 つ（<code>greeting</code>）、<code>greet</code> が文字列を受け取って文字列を返すことも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export class Item { … }</code><h4>クラスとインスタンス（設計図と、そこから作ったもの）</h4></div>
+      <p>クラスは、同じ形のオブジェクトをいくつも作るための設計図です。<code>class</code> の後ろにクラスの名前を書き、<code>{ }</code> の中に、持たせる値（フィールド）と、できること（メソッド）を書きます。クラスの名前は、<code>Item</code> のように大文字で始めます。</p>
+      <p>クラスからオブジェクトを作るには、<code>new クラスの名前(…)</code> と書きます（<code>new</code> は 01章 q04 問8 の <code>new Error()</code> で出ました）。こうして作ったオブジェクトを、そのクラスのインスタンスと呼びます。1 つのクラスから、インスタンスはいくつでも作れます。</p>
+      <p>前に <code>export</code> を付けると、ほかのファイルからもそのクラスを使えます。<code>export function</code>（00章 q01）と同じ考え方です。テストはクラスを読み込んで <code>new</code> するので、<code>export</code> は消さずに残します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Item を作る。ほかのファイルから使えるようにする
+export class Item {
+  // 文字列のフィールド name を作る
+  name: string;
+  // 数値のフィールド price を作る
+  price: number;
+
+  // constructor を作る。文字列の name と数値の price を受け取る
+  constructor(name: string, price: number) {
+    // 自分の name に name を入れる
+    this.name = name;
+    // 自分の price に price を入れる
+    this.price = price;
+  }
+}
+
+// pen を作り、Item に "ペン" と 120 を渡して new で作ったインスタンスを入れる
+const pen = new Item("ペン", 120);
+// note を作り、Item に "ノート" と 200 を渡して new で作ったインスタンスを入れる
+const note = new Item("ノート", 200);
+// 結果: pen.name は "ペン"、note.price は 200</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 680 236" role="img" aria-label="クラス Item は name と price と label を決めた設計図。new Item(&quot;ペン&quot;, 120) で pen、new Item(&quot;ノート&quot;, 200) で note という 2 つのインスタンスができ、それぞれが自分の name と price を持つ">
+            <text class="s" x="101" y="18" text-anchor="middle">クラス（設計図）</text>
+            <rect class="box-a" x="16" y="28" width="170" height="196" rx="8"/>
+            <text class="m a" x="30" y="56">class Item</text>
+            <line class="ln" x1="16" y1="70" x2="186" y2="70"/>
+            <text class="m" x="30" y="98">name: string</text>
+            <text class="m" x="30" y="126">price: number</text>
+            <line class="ln" x1="16" y1="142" x2="186" y2="142"/>
+            <text class="m" x="30" y="170">constructor(…)</text>
+            <text class="m" x="30" y="198">label()</text>
+            <text class="s" x="554" y="18" text-anchor="middle">インスタンス</text>
+            <rect class="box" x="444" y="28" width="220" height="88" rx="8"/>
+            <text class="m a" x="458" y="54">pen</text>
+            <text class="m" x="458" y="80">name: "ペン"</text>
+            <text class="m" x="458" y="104">price: 120</text>
+            <rect class="box" x="444" y="136" width="220" height="88" rx="8"/>
+            <text class="m a" x="458" y="162">note</text>
+            <text class="m" x="458" y="188">name: "ノート"</text>
+            <text class="m" x="458" y="212">price: 200</text>
+            <text class="m" x="314" y="62" text-anchor="middle">new Item("ペン", 120)</text>
+            <line class="ln-a" x1="190" y1="72" x2="432" y2="72"/>
+            <polygon class="hd-a" points="432,66 444,72 432,78"/>
+            <text class="m" x="314" y="170" text-anchor="middle">new Item("ノート", 200)</text>
+            <line class="ln-a" x1="190" y1="180" x2="432" y2="180"/>
+            <polygon class="hd-a" points="432,174 444,180 432,186"/>
+          </svg>
+        </div>
+        <figcaption>クラス <code>Item</code> は、どんなフィールドとメソッドを持つかを決めた設計図です。<code>new Item(…)</code> と書くたびに、新しいインスタンスが 1 つできます。<code>pen</code> と <code>note</code> は同じ形ですが、<code>name</code> と <code>price</code> の値はそれぞれが別に持っています。</figcaption>
+      </figure>
+      <p>インスタンスのフィールドは、オブジェクトのプロパティ（02章 q01 問1）と同じく、<code>pen.name</code> のように <code>.</code> で読めます。</p>
+            <dl class="eg">
+        <div><dt><code>pen.name</code></dt><dd class="r"><code>"ペン"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>note.name</code></dt><dd class="r"><code>"ノート"</code></dd><dd class="c">同じクラスでも、値は別々</dd></div>
+        <div><dt><code>pen.price + note.price</code></dt><dd class="r"><code>320</code></dd><dd class="c"></dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>Item("ペン", 120)</code> のように <code>new</code> を付けずに呼ぶと、型の確認でエラーになります。クラスからインスタンスを作るときは、必ず <code>new</code> を付けます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class">サバイバルTypeScript「クラス」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">name: string;</code><h4>フィールド（インスタンスが持つ値）</h4></div>
+      <p>クラスの <code>{ }</code> のすぐ内側に <code>名前: 型;</code> と書くと、フィールドになります。フィールドは、インスタンスが 1 つずつ持つ値の入れ物です。オブジェクトの型（02章 q01 問1）のプロパティと同じ書き方ですが、行の終わりに <code>;</code> を付けます。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>name</span><span class="seg c"><i>2</i>:</span> <span class="seg"><i>3</i>string</span><span class="seg c"><i>4</i>;</span></pre>
+        <ol>
+          <li><span>フィールドの名前です。インスタンスから <code>pen.name</code> のように読みます。</span></li>
+          <li><span>名前と型を区切る <code>:</code> です。</span></li>
+          <li><span>このフィールドに入れる値の型です。</span></li>
+          <li><span>フィールドの宣言の終わりです。</span></li>
+        </ol>
+      </figure>
+      <p>宣言しただけのフィールドには、まだ値が入っていません。値は、次の項目の constructor で入れます。</p>
+      <p class="memo"><b>よくある間違い</b>フィールドを宣言したのに、constructor で値を入れ忘れると、型の確認で <code>Property 'name' has no initializer and is not definitely assigned in the constructor.</code> というエラーになります。「name に初期値がなく、constructor でも値が入っていない」という意味です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/fields">サバイバルTypeScript「フィールド」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">constructor(…) { this.name = name; }</code><h4>constructor（new のときに値を入れる）</h4></div>
+      <p><code>constructor</code> は、<code>new</code> でインスタンスを作るときに、1 回だけ自動で呼ばれる特別なメソッドです。<code>new Item("ペン", 120)</code> のかっこの中の値が、constructor の引数に順に入ります。constructor の中では、受け取った値をフィールドに入れます。</p>
+      <figure class="anat">
+        <pre>export class Item {
+  <span class="seg"><i>1</i>name: string;</span>
+  <span class="seg"><i>2</i>constructor</span>(<span class="seg"><i>3</i>name: string</span>) {
+    <span class="seg"><i>4</i>this.name</span> <span class="seg c"><i>5</i>=</span> <span class="seg"><i>6</i>name</span>;
+  }
+}</pre>
+        <ol>
+          <li><span>フィールドの宣言です。インスタンスが <code>name</code> を持つことを決めます。</span></li>
+          <li><span>constructor です。名前は必ず <code>constructor</code> で、戻り値の型は書きません。</span></li>
+          <li><span>constructor の引数です。関数の引数と同じく、型注釈を付けます。</span></li>
+          <li><span>作っている途中のインスタンスの <code>name</code> フィールドです。<code>this</code> は、このあとの <code>this</code> の項目で説明します。</span></li>
+          <li><span>右の値を左に入れる <code>=</code> です。</span></li>
+          <li><span>引数の <code>name</code> です。④ と同じ名前ですが、こちらは受け取った値です。</span></li>
+        </ol>
+      </figure>
+      <p><code>const pen = new Item("ペン", 120);</code> は、次の順で進みます。</p>
+      <ol class="steps">
+        <li><b>空のインスタンス</b><span>フィールドにまだ値のない、新しいインスタンスが 1 つできます。</span></li>
+        <li><b>constructor を呼ぶ</b><span>引数の <code>name</code> に <code>"ペン"</code>、<code>price</code> に <code>120</code> が入ります。</span></li>
+        <li><b>フィールドに入れる</b><span><code>this.name = name;</code> などで、値がフィールドに入ります。</span></li>
+        <li><b>変数に入る</b><span>できあがったインスタンスが <code>pen</code> に入ります。</span></li>
+      </ol>
+      <div class="cmp">
+        <div>
+          <h5><code>this.</code> を付けない</h5>
+          <pre><code class="language-typescript">class Item {
+  name: string;
+  constructor(name: string) {
+    name = name;
+  }
+}</code></pre>
+          <div class="verdict ng">✕ 引数に引数を入れ直すだけで、フィールドに値が入りません</div>
+        </div>
+        <div>
+          <h5><code>this.</code> を付ける</h5>
+          <pre><code class="language-typescript">class Item {
+  name: string;
+  constructor(name: string) {
+    this.name = name;
+  }
+}</code></pre>
+          <div class="verdict ok">○ 受け取った値がフィールドに入ります</div>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b>引数とフィールドに同じ名前を付けることがよくあります。<code>this.</code> が付いているほうがフィールド、付いていないほうが引数です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/constructor">サバイバルTypeScript「コンストラクタ」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">label(): string { … }</code><h4>メソッド（インスタンスができること）</h4></div>
+      <p>クラスの中に <code>名前(引数): 戻り値の型 { … }</code> と書くと、メソッドになります。メソッドは、クラスの中に書いた関数です。関数宣言（00章 q01）と同じ形で、前の <code>function</code> だけを書きません。呼ぶときは、インスタンスの後ろに <code>.</code> を付けて <code>pen.label()</code> と書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Item を作る。ほかのファイルから使えるようにする
+export class Item {
+  // 文字列のフィールド name を作る
+  name: string;
+  // 数値のフィールド price を作る
+  price: number;
+
+  // constructor を作る。文字列の name と数値の price を受け取る
+  constructor(name: string, price: number) {
+    // 自分の name に name を入れる
+    this.name = name;
+    // 自分の price に price を入れる
+    this.price = price;
+  }
+
+  // メソッド label を作る。何も受け取らず、文字列を返す
+  label(): string {
+    // 自分の name と自分の price を埋め込んだ「◯（◯円）」の文字列を返す
+    return `${this.name}（${this.price}円）`;
+  }
+}
+
+// pen を作り、Item に "ペン" と 120 を渡して new で作ったインスタンスを入れる
+const pen = new Item("ペン", 120);
+// 表示 text を作り、pen の label を呼んだ結果を入れる
+const text = pen.label();
+// 結果: text は "ペン（120円）"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>label</span><span class="seg"><i>2</i>()</span><span class="seg"><i>3</i>: string</span> {
+  return `${<span class="seg"><i>4</i>this.name</span>}（${this.price}円）`;
+}</pre>
+        <ol>
+          <li><span>メソッドの名前です。<code>function</code> は付けません。</span></li>
+          <li><span>引数です。受け取るものがなければ、空のかっこを書きます。</span></li>
+          <li><span>戻り値の型です。関数と同じく、テストはこの型も確かめます。</span></li>
+          <li><span>メソッドの中でフィールドを読むときは、<code>this.</code> を付けます。</span></li>
+        </ol>
+      </figure>
+      <p>何も返さないメソッドは、戻り値の型を <code>void</code> にします（04章 q05 問13）。メソッドは何個でも書けます。メソッドとメソッドの間には、<code>,</code> も <code>;</code> も要りません。</p>
+      <p class="memo"><b>コメントの読み方</b>このページのコメントでは、<code>this</code> を「自分の」と書きます。「自分の price」は <code>this.price</code> です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/methods">サバイバルTypeScript「メソッド」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">this</code><h4>this（メソッドを呼んだインスタンス）</h4></div>
+      <p>メソッドの中の <code>this</code> は、そのメソッドを呼んだインスタンスを指します。<code>warehouseA.ship(3)</code> なら <code>this</code> は <code>warehouseA</code>、<code>warehouseB.ship(3)</code> なら <code>warehouseB</code> です。そのため、同じメソッドでも、呼んだインスタンスのフィールドだけが変わります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Stock を作る。ほかのファイルから使えるようにする
+export class Stock {
+  // 数値のフィールド count を作る
+  count: number;
+
+  // constructor を作る。数値の count を受け取る
+  constructor(count: number) {
+    // 自分の count に count を入れる
+    this.count = count;
+  }
+
+  // メソッド ship を作る。数値の n を受け取り、何も返さない
+  ship(n: number): void {
+    // 自分の count から n を引く
+    this.count -= n;
+  }
+}
+
+// 倉庫A warehouseA を作り、Stock に 10 を渡して new で作ったインスタンスを入れる
+const warehouseA = new Stock(10);
+// 倉庫B warehouseB を作り、Stock に 10 を渡して new で作ったインスタンスを入れる
+const warehouseB = new Stock(10);
+// warehouseA の ship に 3 を渡して呼ぶ
+warehouseA.ship(3);
+// 結果: warehouseA.count は 7、warehouseB.count は 10</code></pre>
+      </div>
+            <dl class="eg">
+        <div><dt><code>warehouseA.ship(3)</code> の中の <code>this.count</code></dt><dd class="r"><code>warehouseA.count</code></dd><dd class="c">ここが 10 から 7 になる</dd></div>
+        <div><dt><code>warehouseB</code> の <code>count</code></dt><dd class="r"><code>10</code></dd><dd class="c">ship を呼んでいないので、そのまま</dd></div>
+      </dl>
+      <p>フィールドは、<code>this.count -= n;</code> のように、メソッドの中で入れ直せます（<code>-=</code> は 04章 q01 応用）。入れ直した値は、次にメソッドを呼んだときにも残っています。</p>
+      <p class="memo"><b>よくある間違い</b>メソッドの中で <code>this.</code> を付けずに <code>count</code> と書くと、フィールドを探してくれません。型の確認で <code>Cannot find name 'count'. Did you mean the instance member 'this.count'?</code> というエラーになります。「<code>this.count</code> のことですか」と教えてくれています。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">total = 0;</code><h4>フィールドの初期値（はじめから入れておく値）</h4></div>
+      <p>フィールドの宣言に <code>= 値</code> を続けると、インスタンスを作ったときに、はじめからその値が入ります。これをフィールドの初期値（初期化子）と呼びます。どのインスタンスも同じ値から始めるなら、constructor を書かずに済みます。constructor がないクラスは、<code>new Visitors()</code> のように、空のかっこで作ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Visitors を作る。ほかのファイルから使えるようにする
+export class Visitors {
+  // 数値のフィールド total を作り、0 を入れる
+  total = 0;
+  // 文字列の配列のフィールド names を作り、空の配列を入れる
+  names: string[] = [];
+
+  // メソッド enter を作る。文字列の name を受け取り、何も返さない
+  enter(name: string): void {
+    // 自分の total を 1 増やす
+    this.total++;
+    // 自分の names の最後に name を足す
+    this.names.push(name);
+  }
+}
+
+// 受付 desk を作り、Visitors を new で作ったインスタンスを入れる
+const desk = new Visitors();
+// desk の enter に "佐藤" を渡して呼ぶ
+desk.enter("佐藤");
+// 結果: desk.total は 1、desk.names は ["佐藤"]</code></pre>
+      </div>
+      <p>初期値を書くと、フィールドの型は値から決まります（01章 q03 の型推論と同じです）。</p>
+            <dl class="eg">
+        <div><dt><code>total = 0;</code></dt><dd class="r"><code>number</code></dd><dd class="c">型注釈は書かない</dd></div>
+        <div><dt><code>memo = "";</code></dt><dd class="r"><code>string</code></dd><dd class="c"></dd></div>
+        <div><dt><code>open = false;</code></dt><dd class="r"><code>boolean</code></dd><dd class="c"></dd></div>
+        <div><dt><code>names: string[] = [];</code></dt><dd class="r"><code>string[]</code></dd><dd class="c">空の配列には型注釈を付ける</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>空の配列に型注釈を付けない</h5>
+          <pre><code class="language-typescript">class Visitors {
+  names = [];
+  enter(name: string): void {
+    this.names.push(name);
+  }
+}</code></pre>
+          <div class="verdict ng">✕ <code>names</code> の型が <code>never[]</code>（何も入らない配列）になり、push の行がエラーになります</div>
+        </div>
+        <div>
+          <h5>型注釈を付ける</h5>
+          <pre><code class="language-typescript">class Visitors {
+  names: string[] = [];
+  enter(name: string): void {
+    this.names.push(name);
+  }
+}</code></pre>
+          <div class="verdict ok">○ 文字列を入れられる配列になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>total: number = 0;</code> のように、型が分かる初期値に型注釈も付けると、ESLint が <code>Type number trivially inferred from a number literal, remove type annotation.</code> と言います。「値から分かるので、型注釈は消してください」という意味です。型注釈を付けるのは、空の配列のように値から型が決まらないときだけです。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/field-initializers">サバイバルTypeScript「フィールドの初期化子」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.shift()</code><h4>配列の先頭の要素を取り出す</h4></div>
+      <p><code>.shift()</code> は、配列の先頭の要素を取り出して返します。取り出した要素は、元の配列からなくなります。<code>.pop()</code>（05章 q08 問12）の、先頭から取り出す版です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 受付の列 orders を作り、"A-1" と "A-2" と "A-3" を並べた配列を入れる
+const orders = ["A-1", "A-2", "A-3"];
+// 次の注文 next を作り、orders の先頭の要素を取り出したものを入れる
+const next = orders.shift();
+// 結果: next は "A-1"、orders は ["A-2", "A-3"]</code></pre>
+      </div>
+            <dl class="eg">
+        <div><dt><code>["A-2", "A-3"].shift()</code></dt><dd class="r"><code>"A-2"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>[].shift()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列なら undefined</dd></div>
+      </dl>
+      <p>空の配列では <code>undefined</code> を返すので、文字列の配列に使った結果の型は <code>string | undefined</code> です（02章 q04 問4）。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/array">サバイバルTypeScript「配列」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">merge(other: Weight): Weight</code><h4>クラスの名前を型に使う</h4></div>
+      <p>クラスを作ると、クラスの名前をそのまま型として使えます。型 <code>Weight</code> は「<code>Weight</code> のインスタンス」という意味です。引数や戻り値に書けば、同じクラスのインスタンスを受け取ったり返したりするメソッドになります。メソッドの中で <code>new Weight(…)</code> と書けば、新しいインスタンスを作れます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Weight を作る。ほかのファイルから使えるようにする
+export class Weight {
+  // 数値のフィールド grams を作る
+  grams: number;
+
+  // constructor を作る。数値の grams を受け取る
+  constructor(grams: number) {
+    // 自分の grams に grams を入れる
+    this.grams = grams;
+  }
+
+  // メソッド merge を作る。Weight の other を受け取り、Weight を返す
+  merge(other: Weight): Weight {
+    // Weight に、自分の grams + other の grams を渡して new で作ったインスタンスを返す
+    return new Weight(this.grams + other.grams);
+  }
+}
+
+// 箱 box を作り、Weight に 300 を渡して new で作ったインスタンスを入れる
+const box = new Weight(300);
+// 合計 sum を作り、box の merge に、Weight に 200 を渡して new で作ったインスタンスを渡して呼んだ結果を入れる
+const sum = box.merge(new Weight(200));
+// 結果: sum.grams は 500、box.grams は 300</code></pre>
+      </div>
+      <p><code>this.grams</code> は呼んだインスタンス（<code>box</code>）の値、<code>other.grams</code> は引数で受け取ったインスタンスの値です。新しいインスタンスを返すので、<code>box</code> の値は変わりません。</p>
+      <p class="memo"><b>型</b>問17 と問18 のテストは、メソッドの型が <code>(other: Money) =&gt; Money</code> のように、受け取るものも返すものも、そのクラスであることを確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>問1 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Point を作る。ほかのファイルから使えるようにする
+export class Point {
+  // 数値のフィールド x を作る
+  // 数値のフィールド y を作る
+
+  // constructor を作る。数値の x と数値の y を受け取る
+  //   自分の x に x を入れる
+  //   自分の y に y を入れる
+
+  // メソッド label を作る。何も受け取らず、文字列を返す
+  //   自分の x と自分の y を埋め込んだ「(◯, ◯)」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>問1 ヒント 2<span>コードへの直し方</span></summary><p>フィールドと constructor は、1 つ目の項目のサンプルの <code>Item</code> と同じ形です。フィールドの型が 2 つとも <code>number</code> になります。<code>label</code> は、メソッドの項目のサンプルの <code>label</code> と同じ形です。「自分の x」は <code>this.x</code> です。</p></details>
+      <details class="hint"><summary>問2 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Rect を作る。ほかのファイルから使えるようにする
+export class Rect {
+  // 数値のフィールド width を作る
+  // 数値のフィールド height を作る
+
+  // constructor を作る。数値の width と数値の height を受け取る
+  //   自分の width に width を入れる
+  //   自分の height に height を入れる
+
+  // メソッド area を作る。何も受け取らず、数値を返す
+  //   自分の width × 自分の height を返す
+}</code></pre></details>
+      <details class="hint"><summary>問2 ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、フィールドの名前と、メソッドの中身が違います。メソッドの中でフィールドを読むときは、<code>this.width</code> のように <code>this.</code> を付けます。</p></details>
+      <details class="hint"><summary>問3 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Circle を作る。ほかのファイルから使えるようにする
+export class Circle {
+  // 数値のフィールド radius を作る
+
+  // constructor を作る。数値の radius を受け取る
+  //   自分の radius に radius を入れる
+
+  // メソッド area を作る。何も受け取らず、数値を返す
+  //   円周率 × 自分の radius × 自分の radius を返す
+
+  // メソッド circumference を作る。何も受け取らず、数値を返す
+  //   2 × 円周率 × 自分の radius を返す
+}</code></pre></details>
+      <details class="hint"><summary>問3 ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、メソッドが 2 つになります。メソッドは、1 つ目の <code>}</code> の後ろに続けて書きます。メソッドとメソッドの間に <code>,</code> は要りません。小数の計算なので、テストは「ほぼ同じ」で比べます。</p></details>
+      <details class="hint"><summary>問4 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Tally を作る。ほかのファイルから使えるようにする
+export class Tally {
+  // 数値のフィールド count を作り、0 を入れる
+
+  // メソッド increment を作る。何も受け取らず、数値を返す
+  //   自分の count を 1 増やす
+  //   自分の count を返す
+}</code></pre></details>
+      <details class="hint"><summary>問4 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは、フィールドの初期値の項目のサンプルの <code>total = 0;</code> と同じ形です。初期値を書けば型は <code>number</code> になるので、型注釈は付けません。constructor も要りません。「1 増やす」は <code>++</code> です（01章 q01 問5）。</p></details>
+      <details class="hint"><summary>問5 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Person を作る。ほかのファイルから使えるようにする
+export class Person {
+  // 文字列のフィールド name を作る
+  // 数値のフィールド age を作る
+
+  // constructor を作る。文字列の name と数値の age を受け取る
+  //   自分の name に name を入れる
+  //   自分の age に age を入れる
+
+  // メソッド greet を作る。何も受け取らず、文字列を返す
+  //   自分の name と自分の age を埋め込んだ「こんにちは、◯です（◯歳）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>問5 ヒント 2<span>コードへの直し方</span></summary><p>フィールドと constructor は、1 つ目の項目のサンプルの <code>Item</code> と同じ形です。文字列の組み立ては、テンプレートリテラルに <code>${this.name}</code> のように埋め込みます（01章 q01 問3）。</p></details>
+      <details class="hint"><summary>問6 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Book を作る。ほかのファイルから使えるようにする
+export class Book {
+  // 文字列のフィールド title を作る
+  // 数値のフィールド price を作る
+
+  // constructor を作る。文字列の title と数値の price を受け取る
+  //   自分の title に title を入れる
+  //   自分の price に price を入れる
+
+  // メソッド priceWithTax を作る。何も受け取らず、数値を返す
+  //   自分の price × 110 ÷ 100 を切り捨てた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>問6 ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。税込価格の計算は 01章 q01 問1 と同じで、切り捨ては <code>Math.floor()</code> です。<code>title</code> はメソッドで使いませんが、フィールドには入れておきます。</p></details>
+      <details class="hint"><summary>問7 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Stopwatch を作る。ほかのファイルから使えるようにする
+export class Stopwatch {
+  // 数値のフィールド seconds を作り、0 を入れる
+
+  // メソッド tick を作る。何も受け取らず、何も返さない
+  //   自分の seconds を 1 増やす
+
+  // メソッド text を作る。何も受け取らず、文字列を返す
+  //   分 m を作り、自分の seconds ÷ 60 を切り捨てた数を文字列にして前を "0" で埋め、2 文字にしたものを入れる
+  //   秒 s を作り、自分の seconds を 60 で割った余りを文字列にして前を "0" で埋め、2 文字にしたものを入れる
+  //   m と s を埋め込んだ「◯:◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>問7 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは問4 と同じ形です。何も返さないメソッドの戻り値の型は <code>void</code> です（04章 q05 問13）。<code>text</code> の中身は、01章 q01 問20 の「秒を時計の形にする」と同じ考え方です。割った余りは <code>%</code>、前を埋めるのは <code>String()</code> と <code>.padStart(2, "0")</code> です。メソッドの中でも <code>const</code> で変数を作れます。</p></details>
+      <details class="hint"><summary>問8 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Purse を作る。ほかのファイルから使えるようにする
+export class Purse {
+  // 数値のフィールド money を作る
+
+  // constructor を作る。数値の money を受け取る
+  //   自分の money に money を入れる
+
+  // メソッド spend を作る。数値の amount を受け取り、true か false を返す
+  //   もし amount が自分の money より大きいなら
+  //     false を返す
+  //   自分の money から amount を引く
+  //   true を返す
+}</code></pre></details>
+      <details class="hint"><summary>問8 ヒント 2<span>コードへの直し方</span></summary><p><code>this</code> の項目のサンプルの <code>ship</code> と同じく、フィールドの値は <code>this.money -= amount;</code> で減らせます（04章 q01 応用）。足りないときに先に <code>return false;</code> で抜けると、残りの行は足りるときだけ実行されます。</p></details>
+      <details class="hint"><summary>問9 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス NumberStack を作る。ほかのファイルから使えるようにする
+export class NumberStack {
+  // 数値の配列のフィールド items を作り、空の配列を入れる
+
+  // メソッド push を作る。数値の n を受け取り、何も返さない
+  //   自分の items の最後に n を足す
+
+  // メソッド pop を作る。何も受け取らず、数値か undefined を返す
+  //   自分の items の最後の要素を取り出したものを返す
+
+  // メソッド size を作る。何も受け取らず、数値を返す
+  //   自分の items の要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>問9 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは、フィールドの初期値の項目のサンプルの <code>names</code> と同じ形で、型が <code>number[]</code> になります。空の配列には型注釈が要ります。「最後に足す」は <code>.push()</code>（02章 q04 問17）、「最後の要素を取り出す」は <code>.pop()</code>（05章 q08 問12）です。<code>.pop()</code> は空の配列で <code>undefined</code> を返すので、そのまま返せます。</p></details>
+      <details class="hint"><summary>問10 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス TextQueue を作る。ほかのファイルから使えるようにする
+export class TextQueue {
+  // 文字列の配列のフィールド items を作り、空の配列を入れる
+
+  // メソッド enqueue を作る。文字列の text を受け取り、何も返さない
+  //   自分の items の最後に text を足す
+
+  // メソッド dequeue を作る。何も受け取らず、文字列か undefined を返す
+  //   自分の items の先頭の要素を取り出したものを返す
+}</code></pre></details>
+      <details class="hint"><summary>問10 ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形で、取り出す場所が先頭になります。先頭の要素を取り出すのは <code>.shift()</code> です（<code>.shift()</code> の項目）。</p></details>
+      <details class="hint"><summary>問11 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Thermometer を作る。ほかのファイルから使えるようにする
+export class Thermometer {
+  // 数値のフィールド celsius を作る
+
+  // constructor を作る。数値の celsius を受け取る
+  //   自分の celsius に celsius を入れる
+
+  // メソッド toFahrenheit を作る。何も受け取らず、数値を返す
+  //   自分の celsius × 9 ÷ 5 + 32 を返す
+}</code></pre></details>
+      <details class="hint"><summary>問11 ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形で、メソッドが 1 つです。掛け算と割り算は足し算より先に計算されるので、<code>this.celsius * 9 / 5 + 32</code> のまま書けます。</p></details>
+      <details class="hint"><summary>問12 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Score を作る。ほかのファイルから使えるようにする
+export class Score {
+  // 数値のフィールド points を作り、0 を入れる
+
+  // メソッド add を作る。数値の n を受け取り、何も返さない
+  //   自分の points に n を足す
+
+  // メソッド reset を作る。何も受け取らず、何も返さない
+  //   自分の points に 0 を入れ直す
+}</code></pre></details>
+      <details class="hint"><summary>問12 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは問4 と同じ形です。「足す」は <code>+=</code>、「入れ直す」は <code>=</code> です。フィールドに入れ直すときも <code>this.points = 0;</code> のように <code>this.</code> を付けます。</p></details>
+      <details class="hint"><summary>問13 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Dice を作る。ほかのファイルから使えるようにする
+export class Dice {
+  // 数値のフィールド faces を作る
+
+  // constructor を作る。数値の faces を受け取る
+  //   自分の faces に faces を入れる
+
+  // メソッド isValid を作る。数値の n を受け取り、true か false を返す
+  //   n が整数、かつ n が 1 以上、かつ n が自分の faces 以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>問13 ヒント 2<span>コードへの直し方</span></summary><p>整数かどうかは <code>Number.isInteger()</code> です（01章 q04 応用）。「かつ」は <code>&amp;&amp;</code> で、3 つの条件をつなげます。<code>this.faces</code> 以外は引数の <code>n</code> なので、<code>this.</code> は付けません。</p></details>
+      <details class="hint"><summary>問14 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Cart を作る。ほかのファイルから使えるようにする
+export class Cart {
+  // { name: 文字列; price: 数値 } の配列のフィールド items を作り、空の配列を入れる
+
+  // メソッド add を作る。文字列の name と数値の price を受け取り、何も返さない
+  //   自分の items の最後に、name と price を持つオブジェクトを足す
+
+  // メソッド total を作る。何も受け取らず、数値を返す
+  //   合計 sum を入れ直せる変数として作り、0 を入れる
+  //   自分の items から 1 つずつ item に取り出してくり返す
+  //     sum に item の price を足す
+  //   sum を返す
+}</code></pre></details>
+      <details class="hint"><summary>問14 ヒント 2<span>コードへの直し方</span></summary><p>フィールドの型は、オブジェクトの型（02章 q01 問1）の後ろに <code>[]</code> を付けた <code>{ name: string; price: number }[]</code> です。「name と price を持つオブジェクト」は、省略記法で <code>{ name, price }</code> と書けます（02章 q01 問3）。合計の計算は 02章 q04 問1 と同じ形で、くり返す配列が <code>this.items</code> になります。</p></details>
+      <details class="hint"><summary>問15 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス TextBuffer を作る。ほかのファイルから使えるようにする
+export class TextBuffer {
+  // 文字列のフィールド text を作り、空の文字列を入れる
+
+  // メソッド append を作る。文字列の s を受け取り、何も返さない
+  //   自分の text の後ろに s をつなげる
+
+  // メソッド clear を作る。何も受け取らず、何も返さない
+  //   自分の text に空の文字列を入れ直す
+
+  // メソッド length を作る。何も受け取らず、数値を返す
+  //   自分の text の文字数を返す
+}</code></pre></details>
+      <details class="hint"><summary>問15 ヒント 2<span>コードへの直し方</span></summary><p><code>text = "";</code> と初期値を書くと、型は <code>string</code> になります。「後ろにつなげる」は、テンプレートリテラルで <code>this.text = `${this.text}${s}`;</code> と書くか、<code>this.text += s;</code> と書きます。文字数は <code>.length</code> です（01章 q02 問13）。メソッドの名前が <code>length</code> でも、<code>this.text.length</code> は文字列の文字数なので、ぶつかりません。</p></details>
+      <details class="hint"><summary>問16 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス NumberRange を作る。ほかのファイルから使えるようにする
+export class NumberRange {
+  // 数値のフィールド start を作る
+  // 数値のフィールド end を作る
+
+  // constructor を作る。数値の start と数値の end を受け取る
+  //   自分の start に start を入れる
+  //   自分の end に end を入れる
+
+  // メソッド includes を作る。数値の n を受け取り、true か false を返す
+  //   n が自分の start 以上、かつ n が自分の end 以下かどうか（true か false）を返す
+
+  // メソッド size を作る。何も受け取らず、数値を返す
+  //   自分の end − 自分の start + 1 を返す
+}</code></pre></details>
+      <details class="hint"><summary>問16 ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。<code>includes</code> は 01章 q02 問16 の「範囲に入るか」と同じ形で、端の数が <code>this.start</code> と <code>this.end</code> になります。</p></details>
+      <details class="hint"><summary>問17 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Money を作る。ほかのファイルから使えるようにする
+export class Money {
+  // 数値のフィールド amount を作る
+  // 文字列のフィールド currency を作る
+
+  // constructor を作る。数値の amount と文字列の currency を受け取る
+  //   自分の amount に amount を入れる
+  //   自分の currency に currency を入れる
+
+  // メソッド add を作る。Money の other を受け取り、Money を返す
+  //   もし other の currency が自分の currency と等しくないなら
+  //     "通貨が違います" というメッセージのエラーを投げる
+  //   Money に、自分の amount + other の amount と、自分の currency を渡して new で作ったインスタンスを返す
+
+  // メソッド format を作る。何も受け取らず、文字列を返す
+  //   自分の amount を 3 桁ごとのカンマ区切りにした文字列の後ろに、自分の currency をつなげて返す
+}</code></pre></details>
+      <details class="hint"><summary>問17 ヒント 2<span>コードへの直し方</span></summary><p>引数と戻り値の型 <code>Money</code> は、クラスの名前を型に使う項目のサンプルの <code>merge</code> と同じ形です。新しい <code>Money</code> は、メソッドの中で <code>new Money(…)</code> と書いて作ります。カンマ区切りは <code>.toLocaleString()</code> です（01章 q02 問12）。</p></details>
+      <details class="hint"><summary>問18 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Vector を作る。ほかのファイルから使えるようにする
+export class Vector {
+  // 数値のフィールド x を作る
+  // 数値のフィールド y を作る
+
+  // constructor を作る。数値の x と数値の y を受け取る
+  //   自分の x に x を入れる
+  //   自分の y に y を入れる
+
+  // メソッド plus を作る。Vector の other を受け取り、Vector を返す
+  //   Vector に、自分の x + other の x と、自分の y + other の y を渡して new で作ったインスタンスを返す
+
+  // メソッド length を作る。何も受け取らず、数値を返す
+  //   自分の x と自分の y から斜めの長さを求めて返す
+}</code></pre></details>
+      <details class="hint"><summary>問18 ヒント 2<span>コードへの直し方</span></summary><p><code>plus</code> は問17 の <code>add</code> の最後の行と同じ形です。<code>this.x</code> は自分の x、<code>other.x</code> は受け取ったベクトルの x です。</p></details>
+      <details class="hint"><summary>問19 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Lamp を作る。ほかのファイルから使えるようにする
+export class Lamp {
+  // true か false のフィールド on を作り、false を入れる
+
+  // メソッド toggle を作る。何も受け取らず、true か false を返す
+  //   自分の on に、自分の on の反対を入れ直す
+  //   自分の on を返す
+}</code></pre></details>
+      <details class="hint"><summary>問19 ヒント 2<span>コードへの直し方</span></summary><p><code>on = false;</code> と書くと、型は <code>boolean</code> になります。「反対」は <code>!</code> です（01章 q04 応用）。<code>this.on = !this.on;</code> の右側は、入れ直す前の値で計算されます。</p></details>
+      <details class="hint"><summary>問20 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Greeter を作る。ほかのファイルから使えるようにする
+export class Greeter {
+  // 文字列のフィールド greeting を作る
+
+  // constructor を作る。文字列の greeting を受け取る
+  //   自分の greeting に greeting を入れる
+
+  // メソッド greet を作る。文字列の name を受け取り、文字列を返す
+  //   自分の greeting と name を埋め込んだ「◯、◯さん」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>問20 ヒント 2<span>コードへの直し方</span></summary><p>constructor で受け取った値はフィールドに入れておくので、あとから呼ぶメソッドで <code>this.greeting</code> として読めます。メソッドの引数の <code>name</code> は、そのメソッドの中だけで使う値なので、<code>this.</code> は付けません。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c06-q01-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">数を数える Counter と、温度の Temperature</span>
+      <span class="q-new">新しく出てくる書き方：<code>private</code>、<code>readonly</code>（クラスのフィールド）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export class Counter {}
+
+export class Temperature {}</code></pre>
+      <p>クラスを 2 つ書きます。フィールド、constructor の引数、メソッドの引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>Counter</code>：数を数えるクラスです。フィールド <code>count</code>（数値）に今の値を持ちます。constructor は始めの値 <code>start</code> を受け取ります。省略したら 0 です。メソッドは 3 つです。<code>increment()</code> は 1 増やして、増やした後の値を返します。<code>decrement()</code> は 1 減らして、減らした後の値を返します。ただし 0 より小さくはしません。<code>reset()</code> は、<code>count</code> を始めの値に戻します。何も返しません。始めの値を覚えておくフィールドが、もう 1 つ要ります。</li>
+        <li><code>Temperature</code>：温度のクラスです。constructor で摂氏 <code>celsius</code> を受け取り、フィールド <code>celsius</code> に入れます。<code>toFahrenheit()</code> は華氏（摂氏 × 9 ÷ 5 + 32）を返します。<code>isFreezing()</code> は、0 以下なら <code>true</code> を返します。<code>label()</code> は <code>"25℃"</code> の形の文字列を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Counter(5).count</code></dt><dd class="r"><code>5</code></dd><dd class="c">始めの値が入る</dd></div>
+          <div><dt><code>new Counter(5)</code> で作り、<code>increment()</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>decrement()</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt>さらに <code>increment()</code> して <code>reset()</code> した後の <code>count</code></dt><dd class="r"><code>5</code></dd><dd class="c">始めの値に戻る</dd></div>
+          <div><dt><code>new Counter()</code> で作り、<code>decrement()</code></dt><dd class="r"><code>0</code></dd><dd class="c">省略すると 0 から。0 より小さくしない</dd></div>
+          <div><dt>続けて <code>increment()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Temperature(25).celsius</code></dt><dd class="r"><code>25</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Temperature(25).toFahrenheit()</code></dt><dd class="r"><code>77</code></dd><dd class="c">25 × 9 ÷ 5 + 32</dd></div>
+          <div><dt><code>new Temperature(25).isFreezing()</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Temperature(25).label()</code></dt><dd class="r"><code>"25℃"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Temperature(0).isFreezing()</code></dt><dd class="r"><code>true</code></dd><dd class="c">0 ちょうども true</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Counter</code> の constructor の引数が省略できる数値 1 つ（<code>[start?: number]</code>）、<code>count</code> が <code>number</code>、<code>increment</code> と <code>decrement</code> が数値を返し、<code>reset</code> が何も返さないことも確かめます。<code>Temperature</code> は、constructor の引数が数値 1 つ、<code>celsius</code> が <code>number</code>、3 つのメソッドがそれぞれ数値・<code>boolean</code>・文字列を返すことを確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">private readonly full: number;</code><h4>外から読めないフィールド、入れ直せないフィールド</h4></div>
+      <p>フィールドの前に印を付けると、使える場所を決められます。<code>private</code> を付けたフィールドは、クラスの中（メソッドや constructor）からだけ使えます。<code>readonly</code> を付けたフィールドは、constructor で値を入れたあとは入れ直せません。<code>readonly</code> は、02章 q02 問7 のオブジェクトの型の <code>readonly</code> と同じ考え方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Bottle を作る。ほかのファイルから使えるようにする
+export class Bottle {
+  // 数値のフィールド amount を作る
+  amount: number;
+  // 外から読めず、入れ直せない数値のフィールド full を作る
+  private readonly full: number;
+
+  // constructor を作る。数値の full を受け取る。省略したら 500
+  constructor(full = 500) {
+    // 自分の full に full を入れる
+    this.full = full;
+    // 自分の amount に full を入れる
+    this.amount = full;
+  }
+
+  // メソッド refill を作る。何も受け取らず、何も返さない
+  refill(): void {
+    // 自分の amount に自分の full を入れ直す
+    this.amount = this.full;
+  }
+}
+
+// 水筒 bottle を作り、Bottle に 350 を渡して new で作ったインスタンスを入れる
+const bottle = new Bottle(350);
+// bottle の amount に 100 を入れ直す
+bottle.amount = 100;
+// bottle の refill を呼ぶ
+bottle.refill();
+// 結果: bottle.amount は 350</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>private</span> <span class="seg"><i>2</i>readonly</span> <span class="seg"><i>3</i>full: number</span>;</pre>
+        <ol>
+          <li><span>クラスの外から <code>bottle.full</code> と読んだり書いたりすると、型の確認でエラーになります。</span></li>
+          <li><span>constructor の外で <code>this.full = …</code> と入れ直すと、型の確認でエラーになります。</span></li>
+          <li><span>ふつうのフィールドと同じ、名前と型です。</span></li>
+        </ol>
+      </figure>
+      <p>このサンプルの <code>full</code> は、あとで <code>refill()</code> で使うために覚えておく値です。外から書き換えられると困るので <code>private</code>、作ったあとは変えないので <code>readonly</code> を付けています。</p>
+            <dl class="eg">
+        <div><dt><code>bottle.full</code>（クラスの外で）</dt><dd class="r">型の確認でエラー</dd><dd class="c">private なので外から読めない</dd></div>
+        <div><dt><code>this.full = 0;</code>（refill の中で）</dt><dd class="r">型の確認でエラー</dd><dd class="c">readonly なので入れ直せない</dd></div>
+      </dl>
+      <p>constructor の引数 <code>full = 500</code> は、デフォルト引数（05章 q04 問1）です。引数を省略して <code>new Bottle()</code> と書くと、<code>full</code> は 500 になります。型注釈を書かなくても、<code>full</code> の型は <code>number</code> になります。</p>
+      <p class="memo"><b>よくある疑問</b>この応用のテストは、始めの値を覚えるフィールドに <code>private</code> や <code>readonly</code> が付いているかは確かめません。付けなくても通ります。付けておくと、間違えて書き換えたときに型の確認で気づけます。</p>
+      <p>ここでは、まねて書ければ十分です。</p>
+      <p class="more">q02（アクセス修飾子と readonly）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Counter を作る。ほかのファイルから使えるようにする
+export class Counter {
+  // 数値のフィールド count を作る
+  // 外から読めず、入れ直せない数値のフィールド start を作る
+
+  // constructor を作る。数値の start を受け取る。省略したら 0
+  //   自分の start に start を入れる
+  //   自分の count に start を入れる
+
+  // メソッド increment を作る。何も受け取らず、数値を返す
+  //   自分の count を 1 増やす
+  //   自分の count を返す
+
+  // メソッド decrement を作る。何も受け取らず、数値を返す
+  //   自分の count に、自分の count − 1 と 0 の大きい方を入れ直す
+  //   自分の count を返す
+
+  // メソッド reset を作る。何も受け取らず、何も返さない
+  //   自分の count に自分の start を入れ直す
+}
+
+// クラス Temperature を作る。ほかのファイルから使えるようにする
+export class Temperature {
+  // 数値のフィールド celsius を作る
+
+  // constructor を作る。数値の celsius を受け取る
+  //   自分の celsius に celsius を入れる
+
+  // メソッド toFahrenheit を作る。何も受け取らず、数値を返す
+  //   自分の celsius × 9 ÷ 5 + 32 を返す
+
+  // メソッド isFreezing を作る。何も受け取らず、true か false を返す
+  //   自分の celsius が 0 以下かどうか（true か false）を返す
+
+  // メソッド label を作る。何も受け取らず、文字列を返す
+  //   自分の celsius を埋め込んだ「◯℃」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Counter</code> のフィールドと constructor は、応用のサンプルの <code>Bottle</code> と同じ形です。<code>constructor(start = 0)</code> と書くと、テストの <code>[start?: number]</code>（省略できる数値）に合います。<code>start: number = 0</code> と型注釈も付けると、ESLint が「値から分かるので消してください」と言います（フィールドの初期値の項目と同じです）。「◯ と 0 の大きい方」は <code>Math.max()</code> です（01章 q04 問9）。<code>reset</code> は、<code>Bottle</code> の <code>refill</code> と同じ形です。<code>Temperature</code> は、ドリルの問11 にメソッドを 2 つ足した形です。「0 以下」は <code>&lt;=</code> です。</p></details>
+    </div>
+  </section>
+</section>

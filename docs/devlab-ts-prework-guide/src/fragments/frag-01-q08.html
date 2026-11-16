@@ -1,0 +1,822 @@
+<section class="sec" id="c01-q08">
+  <div class="sec-h"><span class="eyebrow">01章 値・型・変数</span><h2>q08 any をなくす</h2><p>この番号の関数は、引数と戻り値の型が <code>any</code> になっていて、型の確認が効いていません。<code>any</code> を正しい型に書き換えてください。いくつかの関数には、<code>any</code> のせいで気付けなかったバグが隠れています。型を直すとエラーになって見つかるので、あわせて直します。文字列を <code>+</code> でつないでいるところは、テンプレートリテラルに書き換えます。テストは、返す値に加えて、引数と戻り値の型も確かめます。</p></div>
+
+  <section class="q" id="c01-q08-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">2 つの数を足す</span>
+      <span class="q-new">新しく出てくる書き方：<code>any</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問1 2つの数を足す
+//     例: add(2, 3) → 5
+export function add(a: any, b: any): any {
+  return a + b;
+}</code></pre>
+      <p>2 つの数を足した数を返す関数です。引数と戻り値の型が <code>any</code> になっています。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add(2, 3)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">any</code><h4>どんな値でもよい型</h4><span class="bd bd-r">最初から書いてある</span></div>
+      <p><code>any</code> は「どんな値でもよい」という型です。<code>any</code> の付いた値には、型の確認が何も言わなくなります。間違いがあっても、実行するまで気付けません。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>any</code> のまま</h5>
+          <pre><code class="language-typescript">function feeLabel(fee: any): any {
+  // fee を小数なしの文字列にする（つづりを間違えた）
+  return fee.toFixd(0);
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認は通ります。実行すると止まります</div>
+        </div>
+        <div>
+          <h5>型を書いた場合</h5>
+          <pre><code class="language-typescript">function feeLabel(fee: number): string {
+  // fee を小数なしの文字列にする（つづりを間違えた）
+  return fee.toFixd(0);
+}</code></pre>
+          <div class="verdict ok">○ 型の確認が、つづりの間違いを教えてくれます</div>
+        </div>
+      </div>
+      <p>右のエラーには <code>Did you mean 'toFixed'?</code>（toFixed のことですか）と、正しい名前の候補も出ます。つづりを直すと、次のように動きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 feeLabel を作る。数値 fee を受け取り、文字列を返す
+function feeLabel(fee: number): string {
+  // fee を小数点以下 0 桁の文字列にして返す
+  return fee.toFixed(0);
+}
+// 結果: feeLabel(500) は "500"</code></pre>
+      </div>
+      <p class="memo"><b>型の決め方</b>引数の型は「何を受け取るか」、戻り値の型は「<code>return</code> の右の値が何か」で決めます。数なら <code>number</code>、文字列なら <code>string</code>、<code>true</code> か <code>false</code> なら <code>boolean</code> です。</p>
+      <p class="memo"><b>決まり</b>この課題の lint は、<code>any</code> を書くとエラーにします（<code>no-explicit-any</code>）。<code>any</code> を 1 つでも残すと提出できません。</p>
+      <p class="more">01章 q02（型注釈）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 a と b の型を number にする
+// 戻り値の型を number にする
+export function add(a: any, b: any): any {
+  return a + b;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>a: any</code> の <code>any</code> を消して、<code>number</code> と書きます。戻り値の型は、かっこの後ろの <code>: any</code> です。足し算の結果は数なので、ここも <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">「こんにちは、◯◯さん」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問2 「こんにちは、◯◯さん」を返す
+//     例: greet("山田") → "こんにちは、山田さん"
+export function greet(name: any): any {
+  return "こんにちは、" + name + "さん";
+}</code></pre>
+      <p>名前の前に「こんにちは、」を、後ろに「さん」を付けて返します。文字列を <code>+</code> でつないでいるところは、テンプレートリテラルに書き換えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greet("山田")</code></dt><dd class="r"><code>"こんにちは、山田さん"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 name の型を string にする
+// 戻り値の型を string にする
+export function greet(name: any): any {
+  // "こんにちは、" と name と "さん" を + でつないでいるのを、name を埋め込んだテンプレートリテラルに書き換える
+  return "こんにちは、" + name + "さん";
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>テンプレートリテラルは <code>`</code> で全体を囲み、<code>name</code> を埋め込む所に <code>${name}</code> と書きます。01章 q01 の問3 のサンプル（<code>message</code>）と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">文字数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問3 文字数を返す
+//     例: lengthOf("abc") → 3
+export function lengthOf(text: any): any {
+  return text.length;
+}</code></pre>
+      <p>文字列の文字数を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lengthOf("abc")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を number にする
+export function lengthOf(text: any): any {
+  return text.length;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>受け取るのは文字列なので <code>string</code>、返すのは文字数なので <code>number</code> です。引数と戻り値で型が違います。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">20 歳以上なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問4 20歳以上なら true を返す
+//     例: isAdult(20) → true
+export function isAdult(age: any): any {
+  return age &gt;= 20;
+}</code></pre>
+      <p>年齢が 20 以上なら <code>true</code>、そうでなければ <code>false</code> を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isAdult(20)</code></dt><dd class="r"><code>true</code></dd><dd class="c">ちょうど 20 歳</dd></div>
+          <div><dt><code>isAdult(19)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 age の型を number にする
+// 戻り値の型を boolean にする
+export function isAdult(age: any): any {
+  return age &gt;= 20;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>age &gt;= 20</code> のように比べた結果は、<code>true</code> か <code>false</code> です。この型は <code>boolean</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">英字を大文字にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問5 英字を大文字にする
+//     例: shout("abc") → "ABC"
+export function shout(text: any): any {
+  return text.toUppercase();
+}</code></pre>
+      <p>英字をすべて大文字にして返します。型を直すと、どこかがエラーになります。それが、any のせいで見落とされていたバグです。あわせて直します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shout("abc")</code></dt><dd class="r"><code>"ABC"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を string にする
+export function shout(text: any): any {
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  return text.toUppercase();
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>メソッドの名前のつづりが違います。大文字にするメソッドは、01章 q02 の問18 で使った <code>toUpperCase</code> です。エラーの <code>Did you mean …?</code> に、正しい名前の候補が出ています。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">半分にした数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問6 半分にした数を返す
+//     例: half(9) → 4.5
+export function half(n: any): any {
+  return n / 2;
+}</code></pre>
+      <p>数を 2 で割った数を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>half(9)</code></dt><dd class="r"><code>4.5</code></dd><dd class="c">小数になる</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 n の型を number にする
+// 戻り値の型を number にする
+export function half(n: any): any {
+  return n / 2;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>number</code> は整数と小数を区別しません。<code>4.5</code> も <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">前後の空白を取り除く</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問7 前後の空白を取り除く
+//     例: tidy("  hi  ") → "hi"
+export function tidy(text: any): any {
+  return text.trimm();
+}</code></pre>
+      <p>文字列の前後にある空白を取り除いて返します。型を直すと、どこかがエラーになります。それが、any のせいで見落とされていたバグです。あわせて直します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>tidy("  hi  ")</code></dt><dd class="r"><code>"hi"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を string にする
+export function tidy(text: any): any {
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  return text.trimm();
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>メソッドの名前のつづりが違います。前後の空白を取り除くメソッドは、01章 q05 の問9 で使った <code>trim</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">長方形の面積を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問8 長方形の面積を返す
+//     例: area(3, 4) → 12
+export function area(width: any, height: any): any {
+  return width * height;
+}</code></pre>
+      <p>横の長さと縦の長さを掛けた数を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>area(3, 4)</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 width と height の型を number にする
+// 戻り値の型を number にする
+export function area(width: any, height: any): any {
+  return width * height;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数が 2 つあるときは、どちらにも <code>: 型</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">金額をカンマ区切りにして「円」を付ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問9 金額を3桁ごとのカンマ区切りにし、「円」を付ける
+//     例: priceText(1200) → "1,200円"
+export function priceText(price: any): any {
+  return price.toLocalString("ja-JP") + "円";
+}</code></pre>
+      <p>金額を 3 桁ごとのカンマ区切りにして、後ろに「円」を付けます。型を直すと、どこかがエラーになります。それが、any のせいで見落とされていたバグです。あわせて直します。文字列を <code>+</code> でつないでいるところは、テンプレートリテラルに書き換えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceText(1200)</code></dt><dd class="r"><code>"1,200円"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 price の型を number にする
+// 戻り値の型を string にする
+export function priceText(price: any): any {
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  // + でつないでいるのを、テンプレートリテラルに書き換える
+  return price.toLocalString("ja-JP") + "円";
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>メソッドの名前のつづりが違います。カンマ区切りにするメソッドは、01章 q02 の問12 で使った <code>toLocaleString</code> です（Local の後ろに e があります）。直したメソッドの呼び出しを <code>${ }</code> の中に書き、後ろに「円」を付けます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">空の文字列なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：プロパティへの代入 <code>text.length = …</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問10 空の文字列なら true を返す
+//     例: isEmpty("") → true
+export function isEmpty(text: any): any {
+  return (text.length = 0);
+}</code></pre>
+      <p>文字列が空（0 文字）なら <code>true</code>、そうでなければ <code>false</code> を返します。型を直すと、どこかがエラーになります。それが、any のせいで見落とされていたバグです。あわせて直します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isEmpty("")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isEmpty("a")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">値.名前 = …</code><h4>プロパティに値を入れる</h4><span class="bd bd-r">最初から書いてある</span></div>
+      <p><code>text.length</code> のように、<code>.</code> の右に書く名前をプロパティと呼びます。<code>値.名前 = 新しい値</code> と書くと、プロパティに値を入れる書き方になります。オブジェクト（02章）でよく使います。</p>
+      <p>文字列の <code>length</code> は、読むだけのプロパティです。値を入れることはできません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"A01" を入れる
+const code = "A01";
+// 文字数 count を作り、code の length を読んだ値を入れる
+const count = code.length;
+// 結果: count は 3</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>length に値を入れる</h5>
+          <pre><code class="language-typescript">const code = "A01";
+code.length = 5;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります</div>
+        </div>
+      </div>
+      <p class="memo"><b>エラーの読み方</b><code>Cannot assign to 'length' because it is a read-only property.</code> は、「length は読み取り専用なので、値を入れられません」という意味です。</p>
+      <p class="more">02章 q01（オブジェクトの型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を boolean にする
+export function isEmpty(text: any): any {
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  return (text.length = 0);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>=</code> は「入れる」です。ここでしたいのは、文字数が 0 と等しいかを「比べる」ことです。比べる書き方は 01章 q01 の問9 で出ました。比べた結果は <code>true</code> か <code>false</code> なので、戻り値の型とも合います。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">最初の 1 文字を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問11 最初の1文字を返す
+//     例: firstChar("abc") → "a"
+export function firstChar(text: any): any {
+  return text.charAt(0);
+}</code></pre>
+      <p>文字列の最初の 1 文字を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstChar("abc")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を string にする
+export function firstChar(text: any): any {
+  return text.charAt(0);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>TypeScript には 1 文字だけを表す型はありません。1 文字も文字列なので <code>string</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">3 つの数を足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問12 3つの数を足す
+//     例: sum3(1, 2, 3) → 6
+export function sum3(a: any, b: any, c: any): any {
+  return a + b + c;
+}</code></pre>
+      <p>3 つの数を足した数を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sum3(1, 2, 3)</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 a と b と c の型を number にする
+// 戻り値の型を number にする
+export function sum3(a: any, b: any, c: any): any {
+  return a + b + c;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>3 つの引数のどれにも、<code>: 型</code> を書きます。1 つでも <code>any</code> が残ると、lint でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">text を times 回つなげる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問13 text を times 回つなげる
+//     例: repeat("ha", 3) → "hahaha"
+export function repeat(text: any, times: any): any {
+  return text.repeat(times);
+}</code></pre>
+      <p>文字列 <code>text</code> を <code>times</code> 回くり返してつなげます。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>repeat("ha", 3)</code></dt><dd class="r"><code>"hahaha"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 引数 times の型を number にする
+// 戻り値の型を string にする
+export function repeat(text: any, times: any): any {
+  return text.repeat(times);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つの引数で型が違います。くり返す文字列の <code>text</code> は <code>string</code>、回数の <code>times</code> は <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 つの数のうち大きい方を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問14 2つの数のうち大きい方を返す
+//     例: larger(3, 7) → 7
+export function larger(a: any, b: any): any {
+  return Math.max(a, b);
+}</code></pre>
+      <p>2 つの数のうち、大きい方を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>larger(3, 7)</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 a と b の型を number にする
+// 戻り値の型を number にする
+export function larger(a: any, b: any): any {
+  return Math.max(a, b);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Math.max()</code> は、渡した数のうち一番大きい数を返します（01章 q04 の問9）。返すのも数なので <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">text に word が含まれていれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問15 text に word が含まれていれば true を返す
+//     例: contains("TypeScript", "Script") → true
+export function contains(text: any, word: any): any {
+  return text.contain(word);
+}</code></pre>
+      <p>文字列 <code>text</code> の中に <code>word</code> が含まれていれば <code>true</code>、なければ <code>false</code> を返します。型を直すと、どこかがエラーになります。それが、any のせいで見落とされていたバグです。あわせて直します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>contains("TypeScript", "Script")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>contains("TypeScript", "Java")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text と word の型を string にする
+// 戻り値の型を boolean にする
+export function contains(text: any, word: any): any {
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  return text.contain(word);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>メソッドの名前が違います。含まれているかを調べるメソッドは、01章 q01 の問16 で使った <code>includes</code> です。このエラーには候補が出ないので、名前を思い出して直します。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">文字列を数値に変える</span>
+      <span class="q-new">新しく出てくる書き方：<code>Number()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問16 文字列を数値に変える
+//     例: toNumber("42") → 42
+export function toNumber(text: any): any {
+  return Number(text);
+}</code></pre>
+      <p>数字の文字列を、数値に変えて返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toNumber("42")</code></dt><dd class="r"><code>42</code></dd><dd class="c">文字列ではなく数値</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Number()</code><h4>値を数値に変える</h4><span class="bd bd-r">最初から書いてある</span></div>
+      <p>01章 q01 の問12 で出た <code>String()</code> の反対です。文字列の <code>"42"</code> を、数値の <code>42</code> に変えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 入力 input を作り、"120" を入れる
+const input = "120";
+// 個数 quantity を作り、input を数値にしたものを入れる
+const quantity = Number(input);
+// 結果: quantity は数値の 120</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Number("3.5")</code></dt><dd class="r"><code>3.5</code></dd><dd class="c">小数も変えられます。</dd></div>
+        <div><dt><code>Number("abc")</code></dt><dd class="r"><code>NaN</code></dd><dd class="c">数にできないときは <code>NaN</code>（数ではない、という値）になります。</dd></div>
+      </dl>
+      <p class="more">01章 q04（number型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を number にする
+export function toNumber(text: any): any {
+  return Number(text);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>受け取るのは <code>"42"</code> のような文字列、返すのは <code>42</code> のような数値です。引数と戻り値で型が違います。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">件数の後ろに「件」を付ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問17 件数の後ろに「件」を付ける
+//     例: countLabel(3) → "3件"
+export function countLabel(count: any): any {
+  return count + "件";
+}</code></pre>
+      <p>件数の後ろに「件」を付けた文字列を返します。文字列を <code>+</code> でつないでいるところは、テンプレートリテラルに書き換えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countLabel(3)</code></dt><dd class="r"><code>"3件"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 count の型を number にする
+// 戻り値の型を string にする
+export function countLabel(count: any): any {
+  // + でつないでいるのを、count を埋め込んだテンプレートリテラルに書き換える
+  return count + "件";
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>受け取るのは数値、返すのは文字列です。テンプレートリテラルに数値を埋め込むと、文字に変わります。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">小数点以下を四捨五入する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問18 小数点以下を四捨五入する
+//     例: roundOff(2.6) → 3
+export function roundOff(n: any): any {
+  return Math.round(n);
+}</code></pre>
+      <p>数の小数点以下を四捨五入して返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>roundOff(2.6)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 n の型を number にする
+// 戻り値の型を number にする
+export function roundOff(n: any): any {
+  return Math.round(n);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Math.round()</code> は四捨五入した数を返します（01章 q01 の問13）。返すのも数です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">2 人の名前を「・」でつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問19 2人の名前を「・」でつなぐ
+//     例: joinNames("山田", "佐藤") → "山田・佐藤"
+export function joinNames(a: any, b: any): any {
+  return a + "・" + b;
+}</code></pre>
+      <p>2 人の名前の間に「・」を入れて、1 つの文字列にします。文字列を <code>+</code> でつないでいるところは、テンプレートリテラルに書き換えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>joinNames("山田", "佐藤")</code></dt><dd class="r"><code>"山田・佐藤"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 a と b の型を string にする
+// 戻り値の型を string にする
+export function joinNames(a: any, b: any): any {
+  // + でつないでいるのを、a と b を埋め込んだテンプレートリテラルに書き換える
+  return a + "・" + b;
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>${ }</code> は 1 つの文字列の中に何回でも書けます。<code>a</code> と <code>b</code> の間に、「・」をそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">最後の 1 文字を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問20 最後の1文字を返す
+//     例: lastChar("abc") → "c"
+export function lastChar(text: any): any {
+  return text.slice(-1);
+}</code></pre>
+      <p>文字列の最後の 1 文字を返します。中身はそのままで正しく動きます。直すのは型だけです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastChar("abc")</code></dt><dd class="r"><code>"c"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 text の型を string にする
+// 戻り値の型を string にする
+export function lastChar(text: any): any {
+  return text.slice(-1);
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>slice(-1)</code> は、後ろから 1 文字を取り出した文字列を返します。1 文字も文字列なので <code>string</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q08-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">テストの点数を集計する（any をなくす）</span>
+      <span class="q-new">新しく出てくる書き方：<code>number[]</code>（数値の配列の型）、配列の <code>.length</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function average(scores: any): any {
+  let sum = 0;
+  for (const score of scores) {
+    sum += score;
+  }
+  return sum / scores.lenght;
+}
+
+export function toGrade(score: any): any {
+  if (score &gt;= 80) {
+    return "A";
+  }
+  if (score &gt;= 60) {
+    return "B";
+  }
+  return "C";
+}
+
+export function report(name: any, scores: any): any {
+  const avg = average(scores);
+  return name + "さんの平均点は" + avg.toFixd(1) + "点（" + toGrade(avg) + "）";
+}</code></pre>
+      <p>テストの点数を集計する 3 つの関数です。<code>average</code> は平均点、<code>toGrade</code> は評価（A・B・C）、<code>report</code> は結果の文を返します。</p>
+      <p>次の 4 つをします。</p>
+      <ol><li><code>any</code> をすべて正しい型に書き換えます。1 つも残しません。数値の配列の型は <code>number[]</code> と書きます。</li><li>型を直すと、エラーが 2 か所に出ます。それが、any のせいで見落とされていたバグです。あわせて直します。</li><li><code>average</code> は、点数が 1 つもない空の配列を受け取ったら、Error を投げるようにします。</li><li><code>report</code> の文字列の組み立てを、テンプレートリテラルに書き換えます。</li></ol>
+      <p>最後に、「any を外したことで見つかったバグは何だったか」「any のままだと、どんなときに困るか」を、ファイルの下に <code>//</code> のコメントで説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>average([80, 90, 70])</code></dt><dd class="r"><code>80</code></dd><dd class="c"></dd></div>
+          <div><dt><code>average([55, 60])</code></dt><dd class="r"><code>57.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>average([])</code></dt><dd class="r">Error を投げる</dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>toGrade(80)</code></dt><dd class="r"><code>"A"</code></dd><dd class="c">80 以上</dd></div>
+          <div><dt><code>toGrade(79)</code></dt><dd class="r"><code>"B"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toGrade(60)</code></dt><dd class="r"><code>"B"</code></dd><dd class="c">60 以上</dd></div>
+          <div><dt><code>toGrade(59)</code></dt><dd class="r"><code>"C"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>report("田中", [80, 90, 70])</code></dt><dd class="r"><code>"田中さんの平均点は80.0点（A）"</code></dd><dd class="c">平均点は小数第 1 位まで</dd></div>
+          <div><dt><code>report("佐藤", [55, 60])</code></dt><dd class="r"><code>"佐藤さんの平均点は57.5点（C）"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">number[]</code><h4>数値の配列の型</h4></div>
+      <p>配列は、値を順番に並べたものです。<code>[80, 90, 70]</code> のように <code>[ ]</code> で囲み、<code>,</code> で区切って書きます。数値を並べた配列の型は <code>number[]</code> です。配列は 02章で詳しく学びます。ここでは、型の書き方と、次の 2 つだけ使えれば十分です。</p>
+      <ul>
+        <li><code>for-of</code> で、先頭から 1 つずつ取り出せます。文字列のときと同じ書き方です。</li>
+        <li><code>.length</code> で、要素（並んでいる値）の数が分かります。</li>
+      </ul>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 hasExpensive を作る。数値の配列 prices を受け取り、true か false を返す
+function hasExpensive(prices: number[]): boolean {
+  // 見つかったか found を入れ直せる変数として作り、false を入れる
+  let found = false;
+  // prices から 1 つずつ price に取り出してくり返す
+  for (const price of prices) {
+    // もし price が 1000 以上なら
+    if (price &gt;= 1000) {
+      // found に true を入れ直す
+      found = true;
+    }
+  }
+  // found を返す
+  return found;
+}
+// 結果: hasExpensive([300, 1500]) は true</code></pre>
+      </div>
+      <p class="more">02章 q04（配列の型）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.length</code><h4>配列の要素の数</h4></div>
+      <p>文字列の <code>.length</code> は文字数でした。配列の <code>.length</code> は、要素の数です。空の配列 <code>[]</code> なら 0 です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 countItems を作る。数値の配列 prices を受け取り、数値を返す
+function countItems(prices: number[]): number {
+  // prices の要素の数を返す
+  return prices.length;
+}
+// 結果: countItems([300, 500, 200]) は 3、countItems([]) は 0</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>直すことを、コードの上に日本語で書きました。1 つずつ直してください。</p><pre><code class="language-typescript">// 引数 scores の型を number[] にする
+// 戻り値の型を number にする
+export function average(scores: any): any {
+  // もし scores の要素の数が 0 と等しいなら
+  //   Error を投げる
+  let sum = 0;
+  for (const score of scores) {
+    sum += score;
+  }
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  return sum / scores.lenght;
+}
+
+// 引数 score の型を number にする
+// 戻り値の型を string にする
+export function toGrade(score: any): any {
+  if (score &gt;= 80) {
+    return "A";
+  }
+  if (score &gt;= 60) {
+    return "B";
+  }
+  return "C";
+}
+
+// 引数 name の型を string に、scores の型を number[] にする
+// 戻り値の型を string にする
+export function report(name: any, scores: any): any {
+  const avg = average(scores);
+  // 型を直すと、この行がエラーになる。エラーのメッセージを読んで直す
+  // + でつないでいるのを、name、avg を小数第 1 位までにした文字列、toGrade(avg) を埋め込んだテンプレートリテラルに書き換える
+  return name + "さんの平均点は" + avg.toFixd(1) + "点（" + toGrade(avg) + "）";
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>バグは 2 つとも、名前のつづりの間違いです。<code>scores.lenght</code> は配列の要素の数の <code>length</code>、<code>avg.toFixd(1)</code> は 01章 q03 で使った <code>toFixed</code> です。空の配列のチェックは、合計を求める前に書きます。要素の数が 0 かを <code>if</code> で比べ、<code>throw new Error("…")</code> で Error を投げます（01章 q04 の問8）。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,774 @@
+<section class="sec" id="c01-q07">
+  <div class="sec-h">
+    <span class="eyebrow">01章 値・型・変数</span>
+    <h2>q07 リテラル型</h2>
+    <p>決まった値しか受け取らない・返さない関数を書きます。<code>"on" | "off"</code> のように、使える値を <code>|</code> でつないで型にします。どの問題も、引数と戻り値の型注釈は自分で書きます。テストは値に加えて、引数と戻り値の型が決めたとおりかも確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c01-q07-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">"on" なら "off"、"off" なら "on" を返す</span>
+      <span class="q-new">新しく出てくる書き方：リテラル型 <code>"on" | "off"</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toggle() {}</code></pre>
+      <p>スイッチの状態を切り替えます。<code>"on"</code> を受け取ったら <code>"off"</code>、<code>"off"</code> を受け取ったら <code>"on"</code> を返します。</p>
+      <p>受け取る値：<code>"on"</code> か <code>"off"</code> の 2 つだけ　／　返す値：<code>"on"</code> か <code>"off"</code> の 2 つだけ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toggle("on")</code></dt><dd class="r"><code>"off"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toggle("off")</code></dt><dd class="r"><code>"on"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">"card" | "cash"</code><h4>リテラル型（決まった値だけを受け付ける型）</h4></div>
+      <p><code>string</code> はどんな文字列でも受け付けます。<code>"card"</code> のように値そのものを型に書くと、その値だけを受け付ける型になります。これをリテラル型と呼びます。</p>
+      <p>リテラル型を <code>|</code> でつなぐと、「どれか 1 つ」を受け付ける型になります。<code>"card" | "cash"</code> は、<code>"card"</code> か <code>"cash"</code> だけを受け付けます。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 168" role="img" aria-label="string 型はどんな文字列でも受け付け、&quot;card&quot; | &quot;cash&quot; はその中の 2 つだけを受け付ける">
+            <rect class="box" x="24" y="16" width="512" height="136" rx="12"/>
+            <text class="s" x="44" y="44">string（どんな文字列でも）</text>
+            <text class="m s" x="68" y="88">"bank"</text>
+            <text class="m s" x="164" y="88">"points"</text>
+            <text class="m s" x="68" y="128">"abc"</text>
+            <text class="m s" x="164" y="128">""</text>
+            <rect class="box-a" x="280" y="56" width="232" height="80" rx="8"/>
+            <text class="m a" x="396" y="84" text-anchor="middle">"card" | "cash"</text>
+            <text class="m" x="348" y="116" text-anchor="middle">"card"</text>
+            <text class="m" x="444" y="116" text-anchor="middle">"cash"</text>
+          </svg>
+        </div>
+        <figcaption><code>"card" | "cash"</code> は、<code>string</code> の中から 2 つの値だけを選んだ型です。</figcaption>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 paymentLabel を作る。"card" か "cash" の method を受け取り、文字列を返す
+function paymentLabel(method: "card" | "cash"): string {
+  // method が "card" と等しいなら "カード払い"、そうでなければ "現金払い" を返す
+  return method === "card" ? "カード払い" : "現金払い";
+}
+// 結果: paymentLabel("cash") は "現金払い"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>決めた値を渡す</h5>
+          <pre><code class="language-typescript">// paymentLabel に "card" を渡して呼ぶ
+paymentLabel("card");</code></pre>
+          <div class="verdict ok">○ "カード払い" が返ります</div>
+        </div>
+        <div>
+          <h5>決めていない値を渡す</h5>
+          <pre><code class="language-typescript">// paymentLabel に "bank" を渡して呼ぶ
+paymentLabel("bank");</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります</div>
+        </div>
+      </div>
+      <p>数や <code>true</code> も、リテラル型にできます。</p>
+      <dl class="eg">
+        <div><dt><code>"card" | "cash"</code></dt><dd class="r"><code>"card"</code> か <code>"cash"</code></dd><dd class="c">文字列のリテラル型</dd></div>
+        <div><dt><code>10 | 20 | 50</code></dt><dd class="r"><code>10</code> か <code>20</code> か <code>50</code></dd><dd class="c">数のリテラル型。割引率など</dd></div>
+        <div><dt><code>true</code></dt><dd class="r"><code>true</code> だけ</dd><dd class="c"><code>true | false</code> は <code>boolean</code> と同じです。</dd></div>
+      </dl>
+      <p class="memo"><b>コツ</b>値の候補が決まっているところにリテラル型を書くと、打ち間違い（<code>"crad"</code> など）を実行する前に見つけられます。</p>
+      <p class="memo"><b>よくある間違い</b>型の <code>|</code> は 1 本です。「または」の <code>||</code>（2 本）とは別のものです。</p>
+      <p class="more">03章 q01（型エイリアスとユニオン型）、03章 q02（リテラル型のユニオン）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toggle を作る。"on" か "off" の state を受け取り、"on" か "off" を返す
+export function toggle() {
+  // state が "on" と等しいなら "off"、そうでなければ "on" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「"on" か "off"」は、型で <code>"on" | "off"</code> と書きます。引数の型と戻り値の型の両方に書きます。関数の中は、問1 のサンプルの <code>paymentLabel</code> と同じ条件演算子の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c01-q07-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">正なら 1、負なら -1、0 なら 0 を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>if</code> の中で <code>return</code> する</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function signOf() {}</code></pre>
+      <p>数の符号を調べます。0 より大きければ <code>1</code>、0 より小さければ <code>-1</code>、0 なら <code>0</code> を返します。</p>
+      <p>受け取る値：どんな数でも　／　返す値：<code>-1</code> か <code>0</code> か <code>1</code> の 3 つだけ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>signOf(-5)</code></dt><dd class="r"><code>-1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signOf(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signOf(8)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">if (…) { return …; }</code><h4>条件に合ったら、その場で返す</h4></div>
+      <p><code>return</code> を実行すると、関数はそこで終わります。<code>if</code> の中に <code>return</code> を書くと、条件に合ったときだけ、その場で値を返せます。後ろの行は実行されません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockLevel を作る。数の stock を受け取り、"なし" か "少ない" か "十分" を返す
+function stockLevel(stock: number): "なし" | "少ない" | "十分" {
+  // もし stock が 0 と等しいなら
+  if (stock === 0) {
+    // "なし" を返す（ここで関数が終わる）
+    return "なし";
+  }
+  // もし stock が 10 より小さいなら
+  if (stock &lt; 10) {
+    // "少ない" を返す
+    return "少ない";
+  }
+  // "十分" を返す
+  return "十分";
+}
+// 結果: stockLevel(0) は "なし"、stockLevel(3) は "少ない"、stockLevel(50) は "十分"</code></pre>
+      </div>
+      <p>最後の <code>return "十分";</code> まで来るのは、どちらの <code>if</code> にも当てはまらなかったときだけです。</p>
+      <p>返す値をリテラル型にした関数では、<code>let</code> の変数に入れてから最後に返す書き方がエラーになります。<code>let</code> で作った変数の型が <code>string</code> になり、<code>"なし" | "十分"</code> に入らないからです。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>let</code> に入れてから返す</h5>
+          <pre><code class="language-typescript">function stockLevel(stock: number): "なし" | "十分" {
+  let level = "十分";
+  if (stock === 0) {
+    level = "なし";
+  }
+  return level;
+}</code></pre>
+          <div class="verdict ng">✕ return の行が型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5><code>if</code> の中で返す</h5>
+          <pre><code class="language-typescript">function stockLevel(stock: number): "なし" | "十分" {
+  // もし stock が 0 と等しいなら
+  if (stock === 0) {
+    // "なし" を返す
+    return "なし";
+  }
+  // "十分" を返す
+  return "十分";
+}</code></pre>
+          <div class="verdict ok">○ 返す値が "なし" か "十分" だけなので通ります</div>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b><code>let level: "なし" | "十分" = "十分";</code> のように変数にも型を付ければ、<code>let</code> でも書けます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 signOf を作る。数の n を受け取り、-1 か 0 か 1 を返す
+export function signOf() {
+  // もし n が 0 より大きいなら
+  //   1 を返す
+  // もし n が 0 より小さいなら
+  //   -1 を返す
+  // 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>どんな数でも受け取るので、引数の型は <code>number</code> です。戻り値の型は <code>-1 | 0 | 1</code> です。<code>if</code> の中で返す形は、問2 のサンプルの <code>stockLevel</code> と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c01-q07-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">偶数なら "表"、奇数なら "裏" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function coinSide() {}</code></pre>
+      <p>数が偶数なら <code>"表"</code>、奇数なら <code>"裏"</code> を返します。</p>
+      <p>受け取る値：どんな数でも　／　返す値：<code>"表"</code> か <code>"裏"</code> の 2 つだけ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>coinSide(4)</code></dt><dd class="r"><code>"表"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>coinSide(3)</code></dt><dd class="r"><code>"裏"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 coinSide を作る。数の n を受け取り、"表" か "裏" を返す
+export function coinSide() {
+  // n を 2 で割った余りが 0 と等しいなら "表"、そうでなければ "裏" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は <code>"表" | "裏"</code> です。偶数は「2 で割った余りが 0」です。関数の中は、問1 のサンプルと同じ条件演算子の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c01-q07-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">曜日の番号が土日なら "休日"、それ以外は "平日" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dayType() {}</code></pre>
+      <p>曜日の番号を受け取ります。0 が日曜、1 が月曜、…、6 が土曜です。土曜か日曜なら <code>"休日"</code>、それ以外は <code>"平日"</code> を返します。</p>
+      <p>受け取る値：数（曜日の番号）　／　返す値：<code>"平日"</code> か <code>"休日"</code> の 2 つだけ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dayType(0)</code></dt><dd class="r"><code>"休日"</code></dd><dd class="c">日曜</dd></div>
+          <div><dt><code>dayType(3)</code></dt><dd class="r"><code>"平日"</code></dd><dd class="c">水曜</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dayType を作る。数の day を受け取り、"平日" か "休日" を返す
+export function dayType() {
+  // day が 0 と等しい、または day が 6 と等しいなら "休日"、そうでなければ "平日" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「または」は <code>||</code> です。型の <code>|</code>（1 本）と取り違えないようにします。戻り値の型は <code>"平日" | "休日"</code> です。並べる順番は、どちらが先でもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c01-q07-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">信号の次の色を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nextLight() {}</code></pre>
+      <p>信号の色は <code>"green"</code> → <code>"yellow"</code> → <code>"red"</code> → <code>"green"</code> の順に変わります。今の色を受け取り、次の色を返します。</p>
+      <p>受け取る値：<code>"green"</code> か <code>"yellow"</code> か <code>"red"</code>　／　返す値：同じ 3 つ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextLight("green")</code></dt><dd class="r"><code>"yellow"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextLight("yellow")</code></dt><dd class="r"><code>"red"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextLight("red")</code></dt><dd class="r"><code>"green"</code></dd><dd class="c">最初に戻る</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nextLight を作る。"green" か "yellow" か "red" の light を受け取り、"green" か "yellow" か "red" を返す
+export function nextLight() {
+  // もし light が "green" と等しいなら
+  //   "yellow" を返す
+  // もし light が "yellow" と等しいなら
+  //   "red" を返す
+  // "green" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>3 つ以上の値も <code>|</code> でつなげます。最後の行まで来るのは <code>"red"</code> のときだけなので、比べずに返せます。問2 のサンプルの <code>stockLevel</code> と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c01-q07-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">80点以上は "A"、60点以上は "B"、それ未満は "C" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function gradeOf() {}</code></pre>
+      <p>点数から成績を決めます。80 点以上は <code>"A"</code>、60 点以上 80 点未満は <code>"B"</code>、60 点未満は <code>"C"</code> を返します。</p>
+      <p>受け取る値：数（点数）　／　返す値：<code>"A"</code> か <code>"B"</code> か <code>"C"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>gradeOf(80)</code></dt><dd class="r"><code>"A"</code></dd><dd class="c">ちょうど 80 点は A</dd></div>
+          <div><dt><code>gradeOf(75)</code></dt><dd class="r"><code>"B"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>gradeOf(10)</code></dt><dd class="r"><code>"C"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 gradeOf を作る。数の score を受け取り、"A" か "B" か "C" を返す
+export function gradeOf() {
+  // もし score が 80 以上なら
+  //   "A" を返す
+  // もし score が 60 以上なら
+  //   "B" を返す
+  // "C" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「以上」は <code>&gt;=</code> です。上から順に比べます。80 点以上は 1 つ目の <code>if</code> で返るので、2 つ目の <code>if</code> に来るのは 80 点未満だけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c01-q07-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">ステータスコード 200、404、500 のどれかを受け取り、200 なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isSuccess() {}</code></pre>
+      <p>Web の通信の結果を表す番号（ステータスコード）を受け取ります。200 は成功、404 は見つからない、500 はサーバーの失敗です。200 なら <code>true</code>、それ以外は <code>false</code> を返します。</p>
+      <p>受け取る値：<code>200</code> か <code>404</code> か <code>500</code> の 3 つだけ　／　返す値：<code>true</code> か <code>false</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isSuccess(200)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isSuccess(404)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isSuccess を作る。200 か 404 か 500 の code を受け取り、true か false を返す
+export function isSuccess() {
+  // code が 200 と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>数のリテラル型も <code>|</code> でつなげます。引数の型は <code>200 | 404 | 500</code> です。「true か false」は <code>boolean</code> です。比べた結果は <code>true</code> か <code>false</code> なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c01-q07-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">"S" なら "小"、"M" なら "中"、"L" なら "大" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sizeLabel() {}</code></pre>
+      <p>服のサイズの記号を、日本語の表示に変えます。</p>
+      <p>受け取る値：<code>"S"</code> か <code>"M"</code> か <code>"L"</code>　／　返す値：<code>"小"</code> か <code>"中"</code> か <code>"大"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sizeLabel("S")</code></dt><dd class="r"><code>"小"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sizeLabel("M")</code></dt><dd class="r"><code>"中"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sizeLabel("L")</code></dt><dd class="r"><code>"大"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sizeLabel を作る。"S" か "M" か "L" の size を受け取り、"小" か "中" か "大" を返す
+export function sizeLabel() {
+  // もし size が "S" と等しいなら
+  //   "小" を返す
+  // もし size が "M" と等しいなら
+  //   "中" を返す
+  // "大" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>受け取る値と返す値で、別のリテラル型を書きます。引数は <code>"S" | "M" | "L"</code>、戻り値は <code>"小" | "中" | "大"</code> です。関数の中は問5 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c01-q07-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">反対の方角を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function opposite() {}</code></pre>
+      <p>方角を受け取り、反対の方角を返します。<code>"north"</code>（北）と <code>"south"</code>（南）、<code>"east"</code>（東）と <code>"west"</code>（西）が反対どうしです。</p>
+      <p>受け取る値：<code>"north"</code> か <code>"south"</code> か <code>"east"</code> か <code>"west"</code>　／　返す値：同じ 4 つ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>opposite("north")</code></dt><dd class="r"><code>"south"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>opposite("east")</code></dt><dd class="r"><code>"west"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>opposite("west")</code></dt><dd class="r"><code>"east"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 opposite を作る。"north" か "south" か "east" か "west" の direction を受け取り、同じ 4 つのどれかを返す
+export function opposite() {
+  // もし direction が "north" と等しいなら
+  //   "south" を返す
+  // もし direction が "south" と等しいなら
+  //   "north" を返す
+  // もし direction が "east" と等しいなら
+  //   "west" を返す
+  // "east" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数と戻り値は、同じ <code>"north" | "south" | "east" | "west"</code> です。最後の行まで来るのは <code>"west"</code> のときだけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c01-q07-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">true なら "yes"、false なら "no" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function answerOf() {}</code></pre>
+      <p><code>true</code> か <code>false</code> を受け取り、<code>true</code> なら <code>"yes"</code>、<code>false</code> なら <code>"no"</code> を返します。</p>
+      <p>受け取る値：<code>true</code> か <code>false</code>　／　返す値：<code>"yes"</code> か <code>"no"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>answerOf(true)</code></dt><dd class="r"><code>"yes"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>answerOf(false)</code></dt><dd class="r"><code>"no"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 answerOf を作る。true か false の flag を受け取り、"yes" か "no" を返す
+export function answerOf() {
+  // flag が true なら "yes"、そうでなければ "no" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「true か false」は <code>boolean</code> です。「flag が true なら」は、<code>flag</code> だけで条件になります（q01 の問15）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c01-q07-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">優先度 1、2、3 を受け取り、1 なら "高"、2 なら "中"、3 なら "低" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function priorityLabel() {}</code></pre>
+      <p>タスクの優先度の番号を、日本語の表示に変えます。</p>
+      <p>受け取る値：<code>1</code> か <code>2</code> か <code>3</code>　／　返す値：<code>"高"</code> か <code>"中"</code> か <code>"低"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priorityLabel(1)</code></dt><dd class="r"><code>"高"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priorityLabel(3)</code></dt><dd class="r"><code>"低"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priorityLabel を作る。1 か 2 か 3 の level を受け取り、"高" か "中" か "低" を返す
+export function priorityLabel() {
+  // もし level が 1 と等しいなら
+  //   "高" を返す
+  // もし level が 2 と等しいなら
+  //   "中" を返す
+  // "低" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は数のリテラル型 <code>1 | 2 | 3</code>、戻り値は文字列のリテラル型 <code>"高" | "中" | "低"</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c01-q07-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">サイコロの目を受け取り、6 なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rollAgain() {}</code></pre>
+      <p>サイコロの目（1〜6）を受け取ります。6 が出たらもう 1 回振れるので <code>true</code>、それ以外は <code>false</code> を返します。</p>
+      <p>受け取る値：<code>1</code>〜<code>6</code> の 6 つだけ　／　返す値：<code>true</code> か <code>false</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rollAgain(6)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>rollAgain(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rollAgain を作る。1 か 2 か 3 か 4 か 5 か 6 の face を受け取り、true か false を返す
+export function rollAgain() {
+  // face が 6 と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「1〜6」のような範囲の書き方はないので、6 つの値を <code>|</code> でつなぎます。関数の中は問7 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c01-q07-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">"left" なら x を1減らし、"right" なら1増やした値を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function moveX() {}</code></pre>
+      <p>横の位置 <code>x</code> と、動く向きを受け取ります。<code>"left"</code> なら 1 減らし、<code>"right"</code> なら 1 増やした位置を返します。</p>
+      <p>受け取る値：数の <code>x</code> と、<code>"left"</code> か <code>"right"</code>　／　返す値：数</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>moveX(5, "left")</code></dt><dd class="r"><code>4</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moveX(5, "right")</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 moveX を作る。数の x と、"left" か "right" の direction を受け取り、数を返す
+export function moveX() {
+  // direction が "left" と等しいなら x から 1 を引いた数、そうでなければ x に 1 を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数が 2 つあり、型が違います。1 つ目は <code>number</code>、2 つ目は <code>"left" | "right"</code> です。返す値はどんな数にもなるので、戻り値は <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c01-q07-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">"light" なら "ライトモード"、"dark" なら "ダークモード" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function modeLabel() {}</code></pre>
+      <p>画面の表示モードの名前を、日本語の表示に変えます。</p>
+      <p>受け取る値：<code>"light"</code> か <code>"dark"</code>　／　返す値：<code>"ライトモード"</code> か <code>"ダークモード"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>modeLabel("light")</code></dt><dd class="r"><code>"ライトモード"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>modeLabel("dark")</code></dt><dd class="r"><code>"ダークモード"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 modeLabel を作る。"light" か "dark" の mode を受け取り、"ライトモード" か "ダークモード" を返す
+export function modeLabel() {
+  // mode が "light" と等しいなら "ライトモード"、そうでなければ "ダークモード" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>日本語の文字列もリテラル型にできます。戻り値は <code>"ライトモード" | "ダークモード"</code> です。関数の中は問1 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c01-q07-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">true なら 1、false なら 0 を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function bitOf() {}</code></pre>
+      <p><code>true</code> か <code>false</code> を、数の <code>1</code> か <code>0</code> に変えます。</p>
+      <p>受け取る値：<code>true</code> か <code>false</code>　／　返す値：<code>0</code> か <code>1</code> の 2 つだけ</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>bitOf(true)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bitOf(false)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bitOf を作る。true か false の flag を受け取り、0 か 1 を返す
+export function bitOf() {
+  // flag が true なら 1、そうでなければ 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>boolean</code>、戻り値は <code>0 | 1</code> です。関数の中は問10 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c01-q07-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">月から季節を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function seasonOf() {}</code></pre>
+      <p>月（1〜12）から季節を返します。3〜5 月は <code>"春"</code>、6〜8 月は <code>"夏"</code>、9〜11 月は <code>"秋"</code>、それ以外（12 月・1 月・2 月）は <code>"冬"</code> です。</p>
+      <p>受け取る値：数（月）　／　返す値：<code>"春"</code> か <code>"夏"</code> か <code>"秋"</code> か <code>"冬"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>seasonOf(4)</code></dt><dd class="r"><code>"春"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOf(8)</code></dt><dd class="r"><code>"夏"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOf(11)</code></dt><dd class="r"><code>"秋"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOf(1)</code></dt><dd class="r"><code>"冬"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOf(12)</code></dt><dd class="r"><code>"冬"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 seasonOf を作る。数の month を受け取り、"春" か "夏" か "秋" か "冬" を返す
+export function seasonOf() {
+  // もし month が 3 以上、かつ month が 5 以下なら
+  //   "春" を返す
+  // もし month が 6 以上、かつ month が 8 以下なら
+  //   "夏" を返す
+  // もし month が 9 以上、かつ month が 11 以下なら
+  //   "秋" を返す
+  // "冬" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code>、「以下」は <code>&lt;=</code> です（q02 の問16 と同じ形）。12 月・1 月・2 月はどの <code>if</code> にも当てはまらず、最後の行に来ます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c01-q07-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">a が小さければ -1、等しければ 0、大きければ 1 を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function compare() {}</code></pre>
+      <p>2 つの数 <code>a</code> と <code>b</code> を比べます。<code>a</code> のほうが小さければ <code>-1</code>、等しければ <code>0</code>、大きければ <code>1</code> を返します。</p>
+      <p>受け取る値：数の <code>a</code> と <code>b</code>　／　返す値：<code>-1</code> か <code>0</code> か <code>1</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>compare(2, 5)</code></dt><dd class="r"><code>-1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>compare(5, 5)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>compare(9, 5)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 compare を作る。数の a と、数の b を受け取り、-1 か 0 か 1 を返す
+export function compare() {
+  // もし a が b より小さいなら
+  //   -1 を返す
+  // もし a が b より大きいなら
+  //   1 を返す
+  // 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、比べる相手が 0 から <code>b</code> に変わっただけです。戻り値の型も同じ <code>-1 | 0 | 1</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c01-q07-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">"GET" なら "取得"、"POST" なら "作成"、"DELETE" なら "削除" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function methodLabel() {}</code></pre>
+      <p>Web の通信の種類（メソッド）を、日本語の表示に変えます。</p>
+      <p>受け取る値：<code>"GET"</code> か <code>"POST"</code> か <code>"DELETE"</code>　／　返す値：<code>"取得"</code> か <code>"作成"</code> か <code>"削除"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>methodLabel("GET")</code></dt><dd class="r"><code>"取得"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>methodLabel("POST")</code></dt><dd class="r"><code>"作成"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>methodLabel("DELETE")</code></dt><dd class="r"><code>"削除"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 methodLabel を作る。"GET" か "POST" か "DELETE" の method を受け取り、"取得" か "作成" か "削除" を返す
+export function methodLabel() {
+  // もし method が "GET" と等しいなら
+  //   "取得" を返す
+  // もし method が "POST" と等しいなら
+  //   "作成" を返す
+  // "削除" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 と同じ形です。リテラル型の文字は、大文字と小文字も区別します。<code>"get"</code> と書くと、<code>"GET"</code> とは別の値になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c01-q07-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">在席ステータスから色を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function statusColor() {}</code></pre>
+      <p>チャットの在席の状態から、表示に使う色を返します。<code>"online"</code>（在席）は <code>"green"</code>、<code>"busy"</code>（取り込み中）は <code>"red"</code>、<code>"offline"</code>（不在）は <code>"gray"</code> です。</p>
+      <p>受け取る値：<code>"online"</code> か <code>"busy"</code> か <code>"offline"</code>　／　返す値：<code>"green"</code> か <code>"red"</code> か <code>"gray"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>statusColor("online")</code></dt><dd class="r"><code>"green"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusColor("busy")</code></dt><dd class="r"><code>"red"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusColor("offline")</code></dt><dd class="r"><code>"gray"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 statusColor を作る。"online" か "busy" か "offline" の status を受け取り、"green" か "red" か "gray" を返す
+export function statusColor() {
+  // もし status が "online" と等しいなら
+  //   "green" を返す
+  // もし status が "busy" と等しいなら
+  //   "red" を返す
+  // "gray" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8・問18 と同じ形です。引数は <code>"online" | "busy" | "offline"</code>、戻り値は <code>"green" | "red" | "gray"</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c01-q07-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">順位が 1 なら "金"、2 なら "銀"、3 なら "銅"、それ以外は "なし" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function medal() {}</code></pre>
+      <p>順位からメダルを返します。1 位は <code>"金"</code>、2 位は <code>"銀"</code>、3 位は <code>"銅"</code>、4 位より下は <code>"なし"</code> です。</p>
+      <p>受け取る値：数（4 位より下も来る）　／　返す値：<code>"金"</code> か <code>"銀"</code> か <code>"銅"</code> か <code>"なし"</code></p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>medal(1)</code></dt><dd class="r"><code>"金"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>medal(2)</code></dt><dd class="r"><code>"銀"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>medal(3)</code></dt><dd class="r"><code>"銅"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>medal(4)</code></dt><dd class="r"><code>"なし"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 medal を作る。数の rank を受け取り、"金" か "銀" か "銅" か "なし" を返す
+export function medal() {
+  // もし rank が 1 と等しいなら
+  //   "金" を返す
+  // もし rank が 2 と等しいなら
+  //   "銀" を返す
+  // もし rank が 3 と等しいなら
+  //   "銅" を返す
+  // "なし" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>4 位より下の順位も来るので、引数は <code>1 | 2 | 3</code> にせず <code>number</code> にします。返す値は 4 つに決まっているので、戻り値は 4 つをつないだリテラル型です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c01-q07-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">リテラル型</span>
+      <span class="q-new">新しく出てくる書き方：<code>const</code> で作った値の型（リテラル型になる）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function move() {}
+
+// ここに START_POSITION を宣言する</code></pre>
+      <p>2 つのことをします。</p>
+      <ol>
+        <li>関数 <code>move(position, direction)</code> を書きます。<code>direction</code> には <code>"up"</code> か <code>"down"</code> だけを渡せるように、リテラル型で型注釈を付けます。<code>"up"</code> なら <code>position</code> に 1 を足した数、<code>"down"</code> なら 1 を引いた数を返します。</li>
+        <li>定数 <code>START_POSITION</code> を、<code>export</code> を付けて作ります。値は <code>0</code> です。型注釈は書かずに、推論される型が <code>0</code> になるようにします。</li>
+      </ol>
+      <p>「説明すること」もあります。<code>let</code> で作った場合と <code>const</code> で作った場合で、推論される型がどう変わるか、なぜそうなるのかを、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>move(5, "up")</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+          <div><dt><code>move(5, "down")</code></dt><dd class="r"><code>4</code></dd><dd class="c"></dd></div>
+          <div><dt><code>move(5, "left")</code></dt><dd class="r">型の確認でエラー</dd><dd class="c"><code>"left"</code> は渡せないこと</dd></div>
+          <div><dt><code>START_POSITION</code></dt><dd class="r"><code>0</code></dd><dd class="c">型も <code>0</code> であること</dd></div>
+          <div><dt><code>move(START_POSITION, "up")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">const SIZE = "M"</code><h4><code>const</code> で作った値の型</h4></div>
+      <p>型注釈を書かずに <code>const</code> で作ると、型はその値そのもののリテラル型になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 標準のサイズ DEFAULT_SIZE を作り、"M" を入れる
+const DEFAULT_SIZE = "M";
+// 結果: DEFAULT_SIZE の型は "M"（string ではない）</code></pre>
+      </div>
+      <p class="memo"><b>型の確かめ方</b>VS Code で変数の名前にマウスを載せると、推論された型が表示されます。<code>const DEFAULT_SIZE: "M"</code> のように出ます。</p>
+      <p class="more">01章 q03（型推論）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 move を作る。数の position と、"up" か "down" の direction を受け取り、数を返す
+export function move() {
+  // もし direction が "up" と等しいなら
+  //   position に 1 を足した数を返す
+  // position から 1 を引いた数を返す
+}
+
+// 定数 START_POSITION を作り、0 を入れる（export を付け、型注釈は書かない）</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>move</code> の引数は、問13 と同じく数と 2 つのリテラル型です。中は問2 のサンプルと同じ、<code>if</code> の中で返す形です。<code>START_POSITION</code> は q03 の問1 と同じ <code>export const</code> です。説明することは、<code>let</code> と <code>const</code> で 1 つずつ変数を作り、マウスを載せて型を見比べてから考えます。違いの理由は、「あとから入れ直せるか」から考えます。</p></details>
+    </div>
+  </section>
+</section>

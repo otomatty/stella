@@ -1,0 +1,1141 @@
+<section class="sec" id="c09-q04">
+  <div class="sec-h">
+    <span class="eyebrow">09章 組み込みの API とモジュール</span>
+    <h2>q04 Error</h2>
+    <p>エラーを扱う関数とクラスを 20 個書きます。エラーの基本（<code>throw</code>、<code>try</code> / <code>catch</code>、<code>instanceof Error</code>、<code>RangeError</code>）は 04章 q05 で学びました。ここでは、<code>TypeError</code> などのほかの種類のエラーと、自分で作るエラーのクラスを使います。いくつかの問題のファイルには、HTTP の通信の失敗を表すエラーのクラス <code>HttpError</code> と、それを継承した <code>NotFoundError</code> が書いてあります。引数と戻り値には型注釈を付けます。<code>catch</code> で受け取る値や、引数の <code>error</code> の型は <code>unknown</code> です。エラーの種類は、<code>name</code> や <code>message</code> の文字列ではなく、<code>instanceof</code> で見分けます。子のクラス（<code>NotFoundError</code>）は、親のクラス（<code>HttpError</code>）より先に確かめます。エラーのクラスを作るときは、<code>extends Error</code> で継承します。constructor の中で <code>super(message)</code> を呼んでから、<code>this.name</code> を設定します。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c09-q04-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">message のエラーを必ず投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fail() {}</code></pre>
+      <p>メッセージの文字列を受け取り、そのメッセージのエラーを必ず投げます。値を返すことはないので、戻り値の型は <code>never</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fail("失敗")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "失敗"</dd></div>
+          <div><dt><code>fail("x")</code></dt><dd class="r"><code>Error</code> を投げる</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>never</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fail を作る。文字列 message を受け取り、決して値を返さない
+export function fail() {
+  // message というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「決して値を返さない」は、戻り値の型 <code>: never</code> です（04章 q07 問1 の <code>assertNever</code>）。関数宣言では、<code>: never</code> を書かないと、戻り値の型が <code>void</code> になります。すると、型の確認で失敗します。エラーを投げるのは <code>throw new Error(message)</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c09-q04-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">Error ならメッセージ、そうでなければ「不明なエラー」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function errorMessage() {}</code></pre>
+      <p><code>catch</code> で受け取ったような値を受け取ります。値が <code>Error</code> なら、その <code>message</code> を返します。そうでなければ <code>"不明なエラー"</code> を返します。引数は <code>unknown</code> 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorMessage(new Error("x"))</code></dt><dd class="r"><code>"x"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorMessage(new TypeError("型"))</code></dt><dd class="r"><code>"型"</code></dd><dd class="c">TypeError も Error の仲間</dd></div>
+          <div><dt><code>errorMessage("x")</code></dt><dd class="r"><code>"不明なエラー"</code></dd><dd class="c">文字列は Error ではない</dd></div>
+          <div><dt><code>errorMessage(null)</code></dt><dd class="r"><code>"不明なエラー"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 errorMessage を作る。unknown 型の error を受け取り、文字列を返す
+export function errorMessage() {
+  // error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 問10 の <code>messageOf</code> と同じ形です。条件演算子 <code>? :</code> の後ろ側が <code>"不明なエラー"</code> になります。<code>TypeError</code> で作った値も、<code>instanceof Error</code> が <code>true</code> になります（問6）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c09-q04-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">範囲の中ならそのまま返し、外なら RangeError を投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function checkRange() {}</code></pre>
+      <p>数値 <code>n</code>、<code>min</code>、<code>max</code> を受け取ります。<code>n</code> が <code>min</code> 以上 <code>max</code> 以下なら、<code>n</code> をそのまま返します。範囲の外なら、<code>RangeError</code>（04章 q05 問14）を投げます。メッセージは <code>`${n} は ${min}〜${max} の範囲外です`</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>checkRange(5, 1, 10)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>checkRange(10, 1, 10)</code></dt><dd class="r"><code>10</code></dd><dd class="c">max と同じ数は範囲の中</dd></div>
+          <div><dt><code>checkRange(11, 1, 10)</code></dt><dd class="r"><code>RangeError</code> を投げる</dd><dd class="c"></dd></div>
+          <div><dt><code>checkRange(0, 1, 10)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "0 は 1〜10 の範囲外です"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> 3 つ、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 checkRange を作る。数値 n と数値 min と数値 max を受け取り、数値を返す
+export function checkRange() {
+  // もし n が min より小さいか、n が max より大きいなら
+  //   n と min と max を埋め込んだ「◯ は ◯〜◯ の範囲外です」というメッセージの RangeError を投げる
+  // n を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 問14 のサンプルの <code>checkDiscount</code> と同じ形です。「〜か、〜なら」は <code>||</code>（01章 q01 問15）でつなぎます。メッセージはテンプレートリテラルで作ります。「〜」は全角の記号なので、問題文からそのまま写します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c09-q04-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">文字列ならそのまま返し、そうでなければ TypeError を投げる</span>
+      <span class="q-new">新しく出てくる書き方：<code>new TypeError()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function requireString() {}</code></pre>
+      <p>どんな値でも受け取ります。文字列なら、そのまま返します。文字列でなければ、<code>"文字列ではありません"</code> というメッセージの <code>TypeError</code> を投げます。引数は <code>unknown</code> 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>requireString("a")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>requireString(1)</code></dt><dd class="r"><code>TypeError</code> を投げる</dd><dd class="c"></dd></div>
+          <div><dt><code>requireString(null)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "文字列ではありません"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new TypeError()</code><h4>型が違うことを知らせるエラーを投げる</h4></div>
+      <p><code>TypeError</code> は、値の型が思っていたものと違うことを表すエラーです。<code>RangeError</code>（04章 q05 問14）と同じく、<code>Error</code> の仲間です。作り方も <code>new Error()</code> と同じで、かっこにメッセージを渡します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 requireQuantity を作る。unknown 型の value を受け取り、数値を返す
+function requireQuantity(value: unknown): number {
+  // もし value の型が数値でないなら
+  if (typeof value !== "number") {
+    // "数量は数値で指定してください" というメッセージの TypeError を投げる
+    throw new TypeError("数量は数値で指定してください");
+  }
+  // value を返す
+  return value;
+}
+// 結果: requireQuantity(3) は 3。requireQuantity("3") は TypeError を投げる</code></pre>
+      </div>
+      <p>数値かどうかと、数値の大きさとで、エラーの種類を使い分けます。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>受け取った値</th><th>投げるエラー</th><th>意味</th></tr></thead>
+          <tbody>
+            <tr><td><code>"3"</code>（文字列）</td><td><code>TypeError</code></td><td>型が違う</td></tr>
+            <tr><td><code>-1</code>（数値だが小さすぎる）</td><td><code>RangeError</code></td><td>型は合っているが、範囲の外</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 requireString を作る。unknown 型の value を受け取り、文字列を返す
+export function requireString() {
+  // もし value の型が文字列でないなら
+  //   "文字列ではありません" というメッセージの TypeError を投げる
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>requireQuantity</code> と同じ形で、<code>"number"</code> が <code>"string"</code> になります。型を調べるのは <code>typeof</code>（03章 q01 問3）です。<code>throw</code> で関数を抜けるので、<code>if</code> の後ろでは <code>value</code> が <code>string</code> に絞り込まれ、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c09-q04-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">JSON として読み、読めなければ null を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>instanceof SyntaxError</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseJsonOrNull() {}</code></pre>
+      <p>文字列を <code>JSON.parse</code> で読んで返します。JSON として読めず、<code>SyntaxError</code> が投げられたら <code>null</code> を返します。引数は文字列 1 つ、戻り値は <code>unknown</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseJsonOrNull('{"a":1}')</code></dt><dd class="r"><code>{ a: 1 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseJsonOrNull("[1, 2]")</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c">配列も JSON</dd></div>
+          <div><dt><code>parseJsonOrNull("{a:1}")</code></dt><dd class="r"><code>null</code></dd><dd class="c">キーが " で囲まれていない</dd></div>
+          <div><dt><code>parseJsonOrNull("")</code></dt><dd class="r"><code>null</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>unknown</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">instanceof SyntaxError</code><h4>読めない書き方のエラーかを調べる</h4></div>
+      <p><code>SyntaxError</code> は、文字列の書き方（文法）が決まりに合わないことを表すエラーです。<code>JSON.parse()</code>（04章 q05 問5）や <code>BigInt()</code>（04章 q05 問12）は、読めない文字列を渡すと <code>SyntaxError</code> を投げます。<code>catch (error)</code>（04章 q05 問18）で受け取った値が <code>SyntaxError</code> かは、<code>instanceof SyntaxError</code> で調べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 toOrderNo を作る。文字列 text を受け取り、bigint か null を返す
+function toOrderNo(text: string): bigint | null {
+  // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+  try {
+    // text を bigint にしたものを返す
+    return BigInt(text);
+  } catch (error) {
+    // （例外が投げられたら、投げられたものを error で受け取る）もし error が SyntaxError から作った値なら
+    if (error instanceof SyntaxError) {
+      // null を返す
+      return null;
+    }
+    // error をそのまま投げ直す
+    throw error;
+  }
+}
+// 結果: toOrderNo("1024") は 1024n、toOrderNo("A-1") は null</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>BigInt("1024")</code></dt><dd class="r"><code>1024n</code></dd><dd class="c"></dd></div>
+        <div><dt><code>BigInt("A-1")</code></dt><dd class="r"><code>SyntaxError</code> を投げる</dd><dd class="c">数として読めない</dd></div>
+        <div><dt><code>JSON.parse("{a:1}")</code></dt><dd class="r"><code>SyntaxError</code> を投げる</dd><dd class="c">JSON ではキーを " で囲む</dd></div>
+        <div><dt><code>JSON.parse("")</code></dt><dd class="r"><code>SyntaxError</code> を投げる</dd><dd class="c">空の文字列も JSON として読めない</dd></div>
+      </dl>
+      <p>思っていた種類でないエラーを受け取ったら、<code>throw error;</code> でそのまま外に投げ直します。思っていない失敗まで <code>null</code> に変えてしまうと、何が起きたのかがわからなくなるからです。</p>
+      <p class="memo"><b>型</b><code>throw error;</code> の <code>error</code> は <code>unknown</code> 型のままですが、そのまま投げられます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseJsonOrNull を作る。文字列 text を受け取り、unknown を返す
+export function parseJsonOrNull() {
+  // 次の中を試す
+  //   データ data を作り、型を unknown にして、text を JSON として読んだものを入れる
+  //   data を返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   もし error が SyntaxError から作った値なら
+  //     null を返す
+  //   error をそのまま投げ直す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 のサンプルの <code>toOrderNo</code> と同じ形です。<code>BigInt(text)</code> を返す行が、2 行に変わります。<code>data</code> の行は、04章 q05 問5 のサンプルの <code>data</code> の行と同じです。テストは <code>SyntaxError</code> のときだけを確かめますが、最後の <code>throw error;</code> も書いておきます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c09-q04-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">エラーの種類の名前を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>instanceof TypeError</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function errorKind() {}</code></pre>
+      <p>受け取った値が <code>TypeError</code> なら <code>"TypeError"</code>、<code>RangeError</code> なら <code>"RangeError"</code>、<code>SyntaxError</code> なら <code>"SyntaxError"</code> を返します。それ以外の <code>Error</code> なら <code>"Error"</code>、<code>Error</code> でなければ <code>"unknown"</code> を返します。見分けるのには <code>instanceof</code> を使います。引数は <code>unknown</code> 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorKind(new TypeError("x"))</code></dt><dd class="r"><code>"TypeError"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorKind(new MyTypeError("x"))</code></dt><dd class="r"><code>"TypeError"</code></dd><dd class="c">TypeError を継承した、テストの中のクラス</dd></div>
+          <div><dt><code>errorKind(new RangeError("x"))</code></dt><dd class="r"><code>"RangeError"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorKind(new SyntaxError("x"))</code></dt><dd class="r"><code>"SyntaxError"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorKind(fake)</code></dt><dd class="r"><code>"Error"</code></dd><dd class="c"><code>new Error("x")</code> の <code>name</code> を <code>"TypeError"</code> に書き換えたもの</dd></div>
+          <div><dt><code>errorKind("x")</code></dt><dd class="r"><code>"unknown"</code></dd><dd class="c">Error ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">instanceof TypeError</code><h4>エラーの種類を順に見分ける</h4></div>
+      <p><code>TypeError</code>、<code>RangeError</code>、<code>SyntaxError</code> は、どれも <code>Error</code> の仲間です。<code>instanceof TypeError</code> は、値が <code>TypeError</code> から作ったエラーなら <code>true</code> です。<code>if</code> を並べると、種類ごとに分けられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 failureLabel を作る。unknown 型の reason を受け取り、文字列を返す
+function failureLabel(reason: unknown): string {
+  // もし reason が TypeError から作った値なら
+  if (reason instanceof TypeError) {
+    // "数量の型が違います" を返す
+    return "数量の型が違います";
+  }
+  // もし reason が RangeError から作った値なら
+  if (reason instanceof RangeError) {
+    // "数量が範囲の外です" を返す
+    return "数量が範囲の外です";
+  }
+  // もし reason が Error から作った値なら
+  if (reason instanceof Error) {
+    // "注文に失敗しました" を返す
+    return "注文に失敗しました";
+  }
+  // "不明な失敗です" を返す
+  return "不明な失敗です";
+}
+// 結果: failureLabel(new TypeError("x")) は "数量の型が違います"、failureLabel(new Error("x")) は "注文に失敗しました"、failureLabel(1) は "不明な失敗です"</code></pre>
+      </div>
+      <p><code>TypeError</code> で作った値は、<code>instanceof Error</code> も <code>true</code> になります。そのため、<code>instanceof Error</code> を先に書くと、すべてのエラーがそこに入ってしまいます。<code>Error</code> は最後に確かめます。</p>
+      <div class="cmp">
+        <div>
+          <h5>Error を先に確かめる</h5>
+          <pre><code class="language-typescript">if (reason instanceof Error) {
+  return "注文に失敗しました";
+}
+if (reason instanceof TypeError) {
+  return "数量の型が違います";
+}</code></pre>
+          <div class="verdict ng">✕ TypeError も先の if に入り、"注文に失敗しました" になります</div>
+        </div>
+        <div>
+          <h5>Error を最後に確かめる</h5>
+          <pre><code class="language-typescript">if (reason instanceof TypeError) {
+  return "数量の型が違います";
+}
+if (reason instanceof Error) {
+  return "注文に失敗しました";
+}</code></pre>
+          <div class="verdict ok">○ TypeError は "数量の型が違います" になります</div>
+        </div>
+      </div>
+      <p>JavaScript の組み込みの関数も、失敗の種類に合わせたエラーを投げます。04章 q05 で使った関数では、次のようになります。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>コード</th><th>投げるエラー</th></tr></thead>
+          <tbody>
+            <tr><td><code>JSON.parse("{")</code></td><td><code>SyntaxError</code></td></tr>
+            <tr><td><code>BigInt("1.5")</code></td><td><code>SyntaxError</code></td></tr>
+            <tr><td><code>"a".repeat(-1)</code></td><td><code>RangeError</code></td></tr>
+            <tr><td><code>new URL("x")</code></td><td><code>TypeError</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある間違い</b>エラーの種類を <code>error.name</code> の文字列で見分けると、うまくいかないことがあります。<code>name</code> は書き換えられるからです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 偽物 fake を作り、"x" というメッセージのエラーを入れる
+const fake = new Error("x");
+// fake の name に "TypeError" を入れ直す
+fake.name = "TypeError";
+// isType を作り、fake が TypeError から作った値か（true か false）を入れる
+const isType = fake instanceof TypeError;
+// 結果: fake.name は "TypeError" だが、isType は false</code></pre>
+      </div>
+      <p><code>instanceof</code> は、どのクラスから作ったかを調べるので、<code>name</code> を書き換えても変わりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 errorKind を作る。unknown 型の error を受け取り、文字列を返す
+export function errorKind() {
+  // もし error が TypeError から作った値なら
+  //   "TypeError" を返す
+  // もし error が RangeError から作った値なら
+  //   "RangeError" を返す
+  // もし error が SyntaxError から作った値なら
+  //   "SyntaxError" を返す
+  // もし error が Error から作った値なら
+  //   "Error" を返す
+  // "unknown" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>failureLabel</code> と同じ形で、<code>if</code> が 4 つになります。<code>instanceof Error</code> は最後に書きます。<code>error.name</code> を返すと、<code>fake</code> のテストで <code>"TypeError"</code> になって失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c09-q04-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">Error を継承したクラス ValidationError</span>
+      <span class="q-new">新しく出てくる書き方：<code>class ◯ extends Error</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export class ValidationError {}</code></pre>
+      <p>入力のチェックで使うエラーのクラス <code>ValidationError</code> を作ります。<code>Error</code> を継承します。<code>new ValidationError(field, message)</code> で作り、どの項目のエラーかを表す <code>field</code>（文字列）を、<code>readonly</code> のフィールドとして持ちます。<code>message</code> は 2 つ目の引数、<code>name</code> は <code>"ValidationError"</code> です。</p>
+      <p>テストは、<code>new ValidationError("email", "形が違います")</code> で作ったエラー <code>error</code> を確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>error instanceof Error</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>error.field</code></dt><dd class="r"><code>"email"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>error.message</code></dt><dd class="r"><code>"形が違います"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>error.name</code></dt><dd class="r"><code>"ValidationError"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>throw error</code></dt><dd class="r"><code>ValidationError</code> が投げられる</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が <code>string</code> と <code>string</code>、<code>field</code> が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">class ◯ extends Error</code><h4>エラーのクラスを自分で作る</h4></div>
+      <p>06章 q02 で、<code>extends</code> でクラスを継承しました。<code>Error</code> も継承できます。<code>Error</code> を継承したクラスから作った値は、<code>message</code> と <code>name</code> を持ちます。<code>throw</code> で投げられ、<code>instanceof</code> で見分けられます。そのうえで、自分で決めたフィールドも持たせられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Error を継承したクラス StockError を作る。ほかのファイルから使えるようにする
+export class StockError extends Error {
+  // 読み取り専用の文字列のフィールド itemId を作る
+  readonly itemId: string;
+
+  // constructor を作る。文字列の itemId と数値の stock を受け取る
+  constructor(itemId: string, stock: number) {
+    // 親の constructor に、itemId と stock を埋め込んだ「◯ の在庫は ◯ 個です」を渡して呼ぶ
+    super(`${itemId} の在庫は ${stock} 個です`);
+    // 自分の name に "StockError" を入れる
+    this.name = "StockError";
+    // 自分の itemId に itemId を入れる
+    this.itemId = itemId;
+  }
+}
+
+// 失敗 failure を作り、StockError に "A-1" と 0 を渡して new で作ったインスタンスを入れる
+const failure = new StockError("A-1", 0);
+// 結果: failure.message は "A-1 の在庫は 0 個です"、failure.name は "StockError"、failure.itemId は "A-1"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>class StockError <span class="seg"><i>1</i>extends Error</span> {
+  <span class="seg"><i>2</i>readonly itemId: string;</span>
+  constructor(itemId: string, stock: number) {
+    <span class="seg"><i>3</i>super(`${itemId} の在庫は ${stock} 個です`);</span>
+    <span class="seg"><i>4</i>this.name = "StockError";</span>
+    this.itemId = itemId;
+  }
+}</pre>
+        <ol>
+          <li><span><code>Error</code> を継承します。</span></li>
+          <li><span>エラーに持たせたい値のフィールドです。<code>readonly</code>（06章 q01）で、あとから書き換えられないようにします。</span></li>
+          <li><span>親（<code>Error</code>）の constructor を呼びます（06章 q04）。渡した文字列が <code>message</code> になります。</span></li>
+          <li><span>エラーの種類の名前（04章 q05 問11）を入れます。書かないと、<code>name</code> は <code>"Error"</code> のままです。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>failure instanceof StockError</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        <div><dt><code>failure instanceof Error</code></dt><dd class="r"><code>true</code></dd><dd class="c">Error を継承しているので</dd></div>
+      </dl>
+      <p class="memo"><b>決まり</b><code>super(…)</code> を呼ぶ前に <code>this</code> を使うと、型の確認でエラーになります。constructor の中では、先に <code>super(…)</code> を書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Error を継承したクラス ValidationError を作る。ほかのファイルから使えるようにする
+export class ValidationError {
+  // 読み取り専用の文字列のフィールド field を作る
+  // constructor を作る。文字列の field と文字列の message を受け取る
+  //   親の constructor に message を渡して呼ぶ
+  //   自分の name に "ValidationError" を入れる
+  //   自分の field に field を入れる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>StockError</code> と同じ形です。「Error を継承した」は、クラスの名前の後ろの <code>extends Error</code> です。「親の constructor に message を渡して呼ぶ」は <code>super(message);</code>、「自分の」は <code>this</code> です。サンプルと違い、<code>message</code> は受け取った文字列をそのまま渡します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c09-q04-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">Error を継承したクラス TimeoutError</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export class TimeoutError {}</code></pre>
+      <p>時間切れを表すエラーのクラス <code>TimeoutError</code> を作ります。<code>Error</code> を継承します。<code>new TimeoutError(ms)</code> で作り、待った時間 <code>ms</code>（数値）を <code>readonly</code> のフィールドとして持ちます。<code>message</code> は <code>`${ms}ミリ秒でタイムアウトしました`</code>、<code>name</code> は <code>"TimeoutError"</code> です。</p>
+      <p>テストは、<code>new TimeoutError(500)</code> で作ったエラー <code>error</code> を確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>error instanceof Error</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>error.ms</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>error.message</code></dt><dd class="r"><code>"500ミリ秒でタイムアウトしました"</code></dd><dd class="c">数とミリ秒の間に空白はない</dd></div>
+          <div><dt><code>error.name</code></dt><dd class="r"><code>"TimeoutError"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が <code>number</code> 1 つであることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Error を継承したクラス TimeoutError を作る。ほかのファイルから使えるようにする
+export class TimeoutError {
+  // 読み取り専用の数値のフィールド ms を作る
+  // constructor を作る。数値の ms を受け取る
+  //   親の constructor に、ms を埋め込んだ「◯ミリ秒でタイムアウトしました」を渡して呼ぶ
+  //   自分の name に "TimeoutError" を入れる
+  //   自分の ms に ms を入れる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>StockError</code> と同じく、メッセージを constructor の中で作ってから <code>super()</code> に渡します。テンプレートリテラルに数値を埋め込めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c09-q04-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">HttpError なら status を返す</span>
+      <span class="q-new">新しく出てくる書き方：子のクラスと親のクラスの <code>instanceof</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function httpStatusOf() {}</code></pre>
+      <p>問9 から問12 と問20 のファイルには、次の 2 つのクラスが書いてあります。<code>HttpError</code> は、HTTP の通信の失敗を表すエラーで、状態の番号 <code>status</code> を持ちます。<code>NotFoundError</code> は <code>HttpError</code> を継承した、見つからないことを表すエラーです。<code>status</code> はいつも <code>404</code> です。</p>
+      <pre><code class="language-typescript">export class HttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
+export class NotFoundError extends HttpError {
+  constructor(resource: string) {
+    super(404, `${resource} が見つかりません`);
+    this.name = "NotFoundError";
+  }
+}</code></pre>
+      <p>受け取った値が <code>HttpError</code> なら、その <code>status</code> を返します。そうでなければ <code>undefined</code> を返します。引数は <code>unknown</code> 1 つ、戻り値は <code>number | undefined</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>httpStatusOf(new HttpError(500, "サーバーエラー"))</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>httpStatusOf(new NotFoundError("ユーザー"))</code></dt><dd class="r"><code>404</code></dd><dd class="c">NotFoundError も HttpError の仲間</dd></div>
+          <div><dt><code>httpStatusOf(new Error("x"))</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">HttpError ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>number | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">instanceof 親のクラス</code><h4>子のクラスから作った値は、親のクラスでも true になる</h4></div>
+      <p><code>instanceof</code> は、自分で作ったクラスにも使えます。値が子のクラスから作ったものなら、親のクラスの <code>instanceof</code> も <code>true</code> になります。親のクラスから作った値は、子のクラスの <code>instanceof</code> では <code>false</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Error を継承したクラス ShopError を作る
+class ShopError extends Error {
+  // constructor を作る。文字列の message を受け取る
+  constructor(message: string) {
+    // 親の constructor に message を渡して呼ぶ
+    super(message);
+    // 自分の name に "ShopError" を入れる
+    this.name = "ShopError";
+  }
+}
+
+// ShopError を継承したクラス SoldOutError を作る
+class SoldOutError extends ShopError {
+  // constructor を作る。文字列の item を受け取る
+  constructor(item: string) {
+    // 親の constructor に、item を埋め込んだ「◯ は売り切れです」を渡して呼ぶ
+    super(`${item} は売り切れです`);
+    // 自分の name に "SoldOutError" を入れる
+    this.name = "SoldOutError";
+  }
+}
+
+// 売り切れ soldOut を作り、SoldOutError に "ペン" を渡して new で作ったインスタンスを入れる
+const soldOut = new SoldOutError("ペン");
+// 閉店 closed を作り、ShopError に "閉店中です" を渡して new で作ったインスタンスを入れる
+const closed = new ShopError("閉店中です");
+// isShop を作り、soldOut が ShopError から作った値か（true か false）を入れる
+const isShop = soldOut instanceof ShopError;
+// isSoldOut を作り、closed が SoldOutError から作った値か（true か false）を入れる
+const isSoldOut = closed instanceof SoldOutError;
+// 結果: isShop は true、isSoldOut は false</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>値</th><th>instanceof SoldOutError</th><th>instanceof ShopError</th><th>instanceof Error</th></tr></thead>
+          <tbody>
+            <tr><td><code>soldOut</code>（SoldOutError）</td><td><code>true</code></td><td><code>true</code></td><td><code>true</code></td></tr>
+            <tr><td><code>closed</code>（ShopError）</td><td><code>false</code></td><td><code>true</code></td><td><code>true</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>コツ</b>子のクラスの値は、親のクラスの <code>if</code> にも入ります。子と親で分けたいときは、子のクラスを先に確かめます（問12）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 httpStatusOf を作る。unknown 型の error を受け取り、数値か undefined を返す
+export function httpStatusOf() {
+  // error が HttpError から作った値なら error の status、そうでなければ undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ、条件演算子 <code>? :</code> の形です。<code>?</code> の後ろでは <code>error</code> が <code>HttpError</code> に絞り込まれるので、<code>error.status</code> を読めます。<code>NotFoundError</code> の値も <code>instanceof HttpError</code> が <code>true</code> になるので、<code>404</code> が返ります。戻り値の型は <code>number | undefined</code>（02章 q04 問4）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c09-q04-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">見つからないことを表すエラーなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isNotFound() {}</code></pre>
+      <p>受け取った値が <code>NotFoundError</code> なら <code>true</code> を返します。<code>status</code> が <code>404</code> の <code>HttpError</code> でも <code>true</code> です。それ以外は <code>false</code> です。<code>HttpError</code> と <code>NotFoundError</code> は、問9 と同じものがファイルに書いてあります。引数は <code>unknown</code> 1 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isNotFound(new NotFoundError("ユーザー"))</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isNotFound(new HttpError(404, "x"))</code></dt><dd class="r"><code>true</code></dd><dd class="c">status が 404</dd></div>
+          <div><dt><code>isNotFound(new HttpError(500, "x"))</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isNotFound(new Error("x"))</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isNotFound を作る。unknown 型の error を受け取り、true か false を返す
+export function isNotFound() {
+  // error が NotFoundError から作った値か、error が HttpError から作った値で error の status が 404 と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「〜か、〜」は <code>||</code>（01章 q01 問15）、「〜で〜」は <code>&amp;&amp;</code>（01章 q02 問16）です。<code>&amp;&amp;</code> の右側では <code>error</code> が <code>HttpError</code> に絞り込まれるので、<code>error.status</code> を読めます。<code>&amp;&amp;</code> の部分をかっこで囲むと、読みやすくなります。結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c09-q04-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">状態の番号から、エラーを作って返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toHttpError() {}</code></pre>
+      <p>状態の番号 <code>status</code> を受け取り、エラーを作って返します。投げずに、<code>return</code> で返します。<code>status</code> が <code>404</code> なら <code>new NotFoundError("ページ")</code>、それ以外なら <code>new HttpError(status, `HTTP ${status}`)</code> です。<code>HttpError</code> と <code>NotFoundError</code> は、問9 と同じものがファイルに書いてあります。引数は数値 1 つ、戻り値は <code>HttpError</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toHttpError(404)</code></dt><dd class="r"><code>NotFoundError</code> の値</dd><dd class="c"><code>message</code> は <code>"ページ が見つかりません"</code></dd></div>
+          <div><dt><code>toHttpError(500)</code></dt><dd class="r"><code>HttpError</code> の値</dd><dd class="c"><code>NotFoundError</code> ではない。<code>message</code> は <code>"HTTP 500"</code>、<code>status</code> は <code>500</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>HttpError</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toHttpError を作る。数値 status を受け取り、HttpError を返す
+export function toHttpError() {
+  // もし status が 404 と等しいなら
+  //   NotFoundError に "ページ" を渡して new で作ったインスタンスを返す
+  // HttpError に status と、status を埋め込んだ「HTTP ◯」を渡して new で作ったインスタンスを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>エラーは <code>throw</code> を付けなければ、ふつうの値として返せます。戻り値の型が <code>HttpError</code> でも、<code>NotFoundError</code> の値を返せます。子のクラスの値は、親のクラスの値として扱えるからです（問9）。<code>"ページ が見つかりません"</code> のメッセージは、<code>NotFoundError</code> の constructor が作ります。条件演算子 <code>? :</code> で 1 行に書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c09-q04-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">エラーの種類ごとに、画面に出す文を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function statusMessage() {}</code></pre>
+      <p>受け取った値が <code>NotFoundError</code> なら <code>"見つかりません"</code> を返します。それ以外の <code>HttpError</code> なら <code>`通信エラー（${status}）`</code> を返します。それ以外の <code>Error</code> ならその <code>message</code>、<code>Error</code> でなければ <code>"不明なエラー"</code> を返します。<code>HttpError</code> と <code>NotFoundError</code> は、問9 と同じものがファイルに書いてあります。引数は <code>unknown</code> 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>statusMessage(new NotFoundError("ユーザー"))</code></dt><dd class="r"><code>"見つかりません"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusMessage(new HttpError(503, "x"))</code></dt><dd class="r"><code>"通信エラー（503）"</code></dd><dd class="c">かっこは全角</dd></div>
+          <div><dt><code>statusMessage(new Error("その他"))</code></dt><dd class="r"><code>"その他"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusMessage(1)</code></dt><dd class="r"><code>"不明なエラー"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 statusMessage を作る。unknown 型の error を受け取り、文字列を返す
+export function statusMessage() {
+  // もし error が NotFoundError から作った値なら
+  //   "見つかりません" を返す
+  // もし error が HttpError から作った値なら
+  //   error の status を埋め込んだ「通信エラー（◯）」を返す
+  // もし error が Error から作った値なら
+  //   error のメッセージを返す
+  // "不明なエラー" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>failureLabel</code> と同じく、<code>if</code> を並べる形です。<code>NotFoundError</code> は <code>instanceof HttpError</code> も <code>true</code> なので（問9）、子の <code>NotFoundError</code> を先に確かめます。順番を逆にすると、<code>NotFoundError</code> のテストが <code>"通信エラー（404）"</code> になって失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c09-q04-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">元のエラーを cause に入れた、新しいエラーを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function wrapError() {}</code></pre>
+      <p>元のエラー <code>error</code> と、新しいメッセージ <code>message</code> を受け取ります。<code>message</code> を持つ新しい <code>Error</code> を作り、元のエラーを <code>{ cause: error }</code>（04章 q05 問18）で持たせて返します。投げずに返します。引数は <code>unknown</code> と文字列、戻り値は <code>Error</code> です。</p>
+      <p>テストは、元のエラー <code>original</code>（<code>new TypeError("型")</code>）を渡した <code>wrapped = wrapError(original, "保存できません")</code> を確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>wrapped.message</code></dt><dd class="r"><code>"保存できません"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>wrapped.cause</code></dt><dd class="r"><code>original</code></dd><dd class="c">元のエラーそのもの</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> と <code>string</code>、戻り値が <code>Error</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 wrapError を作る。unknown 型の error と文字列 message を受け取り、エラーを返す
+export function wrapError() {
+  // message というメッセージで、cause に error を入れたエラーを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 問18 の 2 つ目のサンプルの <code>wrapped</code> の右側と同じ形です。<code>cause</code> には、型が <code>unknown</code> の値もそのまま入れられます。「エラーを返す」は、戻り値の型 <code>: Error</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c09-q04-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">cause をたどり、いちばん元の原因を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.cause</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rootCause() {}</code></pre>
+      <p>エラーの <code>cause</code> をたどり、いちばん元の原因を返します。たどっている値が <code>Error</code> でないか、<code>cause</code> を持たない（<code>undefined</code> の）ところで止めて、その値を返します。引数は <code>unknown</code> 1 つ、戻り値は <code>unknown</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rootCause(c)</code></dt><dd class="r"><code>a</code></dd><dd class="c"><code>c</code> の cause が <code>b</code>、<code>b</code> の cause が <code>a</code></dd></div>
+          <div><dt><code>rootCause(a)</code></dt><dd class="r"><code>a</code></dd><dd class="c">cause がない</dd></div>
+          <div><dt><code>rootCause(new Error("x", { cause: "文字列" }))</code></dt><dd class="r"><code>"文字列"</code></dd><dd class="c">Error でないところで止める</dd></div>
+          <div><dt><code>rootCause(1)</code></dt><dd class="r"><code>1</code></dd><dd class="c">最初から Error でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>unknown</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.cause</code><h4>エラーの原因を取り出す</h4></div>
+      <p><code>{ cause: … }</code> で入れた原因は、<code>.cause</code> で取り出せます。原因を入れずに作ったエラーの <code>.cause</code> は <code>undefined</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 元のエラー original を作り、"在庫がありません" というメッセージのエラーを入れる
+const original = new Error("在庫がありません");
+// エラー wrapped を作り、"注文できません" というメッセージで、cause に original を入れたエラーを入れる
+const wrapped = new Error("注文できません", { cause: original });
+// 原因 reason を作り、wrapped の cause を入れる
+const reason = wrapped.cause;
+// 結果: reason は original。型は unknown</code></pre>
+      </div>
+      <p class="memo"><b>型</b><code>.cause</code> の型は <code>unknown</code> です。<code>cause</code> には、エラーでない値（文字列など）も入れられるからです。<code>message</code> を読むときは、先に <code>instanceof Error</code> で絞り込みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 causeMessage を作る。エラーの failure を受け取り、文字列を返す
+function causeMessage(failure: Error): string {
+  // もし failure の cause が Error から作った値なら
+  if (failure.cause instanceof Error) {
+    // failure の cause のメッセージを返す
+    return failure.cause.message;
+  }
+  // "原因はわかりません" を返す
+  return "原因はわかりません";
+}
+// 結果: causeMessage(new Error("注文できません", { cause: new Error("在庫がありません") })) は "在庫がありません"、causeMessage(new Error("注文できません")) は "原因はわかりません"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>wrapped.cause</code></dt><dd class="r"><code>original</code></dd><dd class="c"></dd></div>
+        <div><dt><code>original.cause</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">原因を入れずに作った</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rootCause を作る。unknown 型の error を受け取り、unknown を返す
+export function rootCause() {
+  // 今の原因 current を入れ直せる変数として作り、error を入れる
+  // current が Error から作った値で、current の cause が undefined でない間くり返す
+  //   current に current の cause を入れ直す
+  // current を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「〜の間くり返す」は <code>while</code>（01章 q01 問11）です。<code>let current = error;</code> と書くと、<code>current</code> の型は <code>unknown</code> になります。条件の <code>&amp;&amp;</code> の右側では <code>current</code> が <code>Error</code> に絞り込まれるので、<code>current.cause</code> を読めます。<code>rootCause(c)</code> では、<code>current</code> が <code>c</code>、<code>b</code>、<code>a</code> と変わり、<code>a</code> の cause が <code>undefined</code> なので止まります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c09-q04-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">関数を呼び、例外が投げられたら代わりの値を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function tryOr() {}</code></pre>
+      <p>数値を返す関数 <code>fn</code> と、代わりの数値 <code>fallback</code> を受け取ります。<code>fn()</code> を呼んで、その値を返します。<code>fn</code> が例外を投げたら、<code>fallback</code> を返します。引数は <code>() =&gt; number</code> と数値、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>tryOr(() =&gt; 5, 0)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>tryOr(() =&gt; Number(JSON.parse("{")), 0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">JSON.parse が SyntaxError を投げる</dd></div>
+          <div><dt><code>tryOr(throwText, -1)</code></dt><dd class="r"><code>-1</code></dd><dd class="c"><code>throwText</code> は、Error でない文字列を投げる関数</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>() =&gt; number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 tryOr を作る。数値を返す関数 fn と数値 fallback を受け取り、数値を返す
+export function tryOr() {
+  // 次の中を試す
+  //   fn を呼んだ結果を返す
+  // 例外が投げられたら
+  //   fallback を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数値を返す関数 fn」は <code>fn: () =&gt; number</code> です（05章 q07 問1）。<code>try</code> / <code>catch</code> は、04章 q05 問9 と同じ形です。投げられたものは使わないので、<code>catch</code> に変数は要りません。Error でないものが投げられても、<code>catch</code> に飛びます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c09-q04-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">成功か失敗かを、オブジェクトにして返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function attempt() {}</code></pre>
+      <p>数値を返す関数 <code>fn</code> を受け取り、<code>fn()</code> を呼びます。値が返ったら <code>{ ok: true, value }</code> を返します。例外が投げられたら <code>{ ok: false, error }</code> を返します。投げられたものが <code>Error</code> でないときは、<code>String(値)</code> をメッセージにした <code>Error</code> を作って <code>error</code> に入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>attempt(() =&gt; 5)</code></dt><dd class="r"><code>{ ok: true, value: 5 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>attempt(() =&gt; { throw original; })</code></dt><dd class="r"><code>{ ok: false, error: original }</code></dd><dd class="c"><code>original</code> は <code>new RangeError("範囲外")</code></dd></div>
+          <div><dt><code>attempt(throwText)</code></dt><dd class="r"><code>error.message</code> が <code>"文字列"</code></dd><dd class="c"><code>throwText</code> は、文字列 <code>"文字列"</code> を投げる関数</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>() =&gt; number</code>、戻り値が <code>{ ok: true; value: number } | { ok: false; error: Error }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 attempt を作る。数値を返す関数 fn を受け取り、ok が true で value が数値のオブジェクトか、ok が false で error がエラーのオブジェクトを返す
+export function attempt() {
+  // 次の中を試す
+  //   ok が true、value が fn を呼んだ結果のオブジェクトを返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   もし error が Error から作った値なら
+  //     ok が false、error が error のオブジェクトを返す
+  //   ok が false、error が「error を文字列にしたものをメッセージにしたエラー」のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、判別可能なユニオン型（03章 q04）の <code>{ ok: true; value: number } | { ok: false; error: Error }</code> です。<code>ok: true</code> の <code>true</code> はリテラル型です。「ok が false、error が error のオブジェクト」は、省略記法（02章 q01 問3）で <code>{ ok: false, error }</code> と書けます。最後の行のエラーは <code>new Error(String(error))</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c09-q04-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">関数を順に呼び、投げられたエラーのメッセージを集める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function collectErrors() {}</code></pre>
+      <p>何も返さない関数の配列 <code>fns</code> を受け取り、順番にすべて呼びます。例外が投げられたら、その <code>message</code> を配列に集めます。<code>Error</code> でないものが投げられたら、<code>"不明なエラー"</code> を集めます。例外が投げられても、残りの関数も呼びます。集めた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>collectErrors(fns)</code></dt><dd class="r"><code>["a", "不明なエラー", "b"]</code></dd><dd class="c"><code>fns</code> は、何も投げない関数、<code>Error("a")</code> を投げる関数、文字列を投げる関数、<code>TypeError("b")</code> を投げる関数の 4 つ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>(() =&gt; void)[]</code>、戻り値が <code>string[]</code> であることも確かめます。<code>() =&gt; void[]</code> と書くと、「<code>void[]</code> を返す関数」の型になってしまいます。関数の型をかっこで囲んでから <code>[]</code> を付けます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 collectErrors を作る。何も返さない関数の配列 fns を受け取り、文字列の配列を返す
+export function collectErrors() {
+  // メッセージの配列 messages を作り、空の配列を入れる
+  // fns から 1 つずつ fn に取り出してくり返す
+  //   次の中を試す
+  //     fn を呼ぶ
+  //   例外が投げられたら、投げられたものを error で受け取る
+  //     messages の最後に、error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー" を足す
+  // messages を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 問17 の <code>countInvalidJson</code> と同じく、<code>for-of</code> の中に <code>try</code> / <code>catch</code> を書きます。足す値は、問2 と同じ条件演算子です。空の配列は <code>const messages: string[] = [];</code> のように型を付けて作ります。足すのは <code>.push()</code>（02章 q04 問17）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c09-q04-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">関数を呼び、最後に必ず記録を残す</span>
+      <span class="q-new">新しく出てくる書き方：<code>catch</code> のない <code>try</code> / <code>finally</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withFinally() {}</code></pre>
+      <p>数値を返す関数 <code>fn</code> と、文字列の配列 <code>log</code> を受け取ります。<code>fn()</code> の値を返します。<code>fn</code> が例外を投げても投げなくても、最後に <code>log</code> に <code>"終了"</code> を足します。例外は受け止めずに、そのまま外に投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withFinally(() =&gt; 1, log)</code></dt><dd class="r"><code>1</code></dd><dd class="c"><code>log</code> は <code>["終了"]</code></dd></div>
+          <div><dt><code>withFinally(() =&gt; { throw new Error("x"); }, log)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "x"。続けて呼ぶと、<code>log</code> は <code>["終了", "終了"]</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>() =&gt; number</code> と <code>string[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">try { } finally { }</code><h4>catch を書かずに、後片付けだけをする</h4></div>
+      <p><code>finally</code>（04章 q05 問19）は、<code>catch</code> を書かずに <code>try</code> のすぐ後ろに書けます。例外が投げられたときは、<code>finally</code> の中を実行してから、例外がそのまま関数の外に出ていきます。例外を受け止めるのは、関数を呼んだ側です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 checkStock を作る。数値の stock を受け取り、数値を返す
+function checkStock(stock: number): number {
+  // もし stock が 0 と等しいなら
+  if (stock === 0) {
+    // "在庫がありません" というメッセージのエラーを投げる
+    throw new Error("在庫がありません");
+  }
+  // stock を返す
+  return stock;
+}
+
+// 関数 shipOrder を作る。数値の stock と文字列の配列 log を受け取り、文字列を返す
+function shipOrder(stock: number, log: string[]): string {
+  // 次の中を試す
+  try {
+    // checkStock に stock を渡して呼ぶ
+    checkStock(stock);
+    // "出荷しました" を返す
+    return "出荷しました";
+  } finally {
+    // （最後に、例外があってもなくても）log の最後に "在庫を確認" を足す
+    log.push("在庫を確認");
+  }
+}
+
+// 記録 log を作り、空の配列を入れる
+const log: string[] = [];
+// 結果 result を入れ直せる変数として作り、型を文字列にする
+let result: string;
+// 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+try {
+  // result に、shipOrder に 0 と log を渡した結果を入れ直す
+  result = shipOrder(0, log);
+} catch {
+  // （例外が投げられたら）result に "出荷できません" を入れ直す
+  result = "出荷できません";
+}
+// 結果: result は "出荷できません"、log は ["在庫を確認"]</code></pre>
+      </div>
+      <p><code>shipOrder(0, log)</code> を呼んだときの流れです。</p>
+      <ol class="steps">
+        <li><b>try の中</b><span><code>checkStock(0)</code> が例外を投げる</span></li>
+        <li><b>finally の中</b><span><code>log</code> に <code>"在庫を確認"</code> を足す</span></li>
+        <li><b>呼んだ側の catch</b><span><code>result</code> に <code>"出荷できません"</code> を入れ直す</span></li>
+      </ol>
+      <dl class="eg">
+        <div><dt><code>shipOrder(3, log)</code></dt><dd class="r"><code>"出荷しました"</code></dd><dd class="c">例外がなくても、<code>log</code> に <code>"在庫を確認"</code> が足される</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withFinally を作る。数値を返す関数 fn と文字列の配列 log を受け取り、数値を返す
+export function withFinally() {
+  // 次の中を試す
+  //   fn を呼んだ結果を返す
+  // 最後に、例外があってもなくても
+  //   log の最後に "終了" を足す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問18 のサンプルの <code>shipOrder</code> と同じ形です。「次の中を試す」が <code>try {</code>、「最後に、例外があってもなくても」が <code>} finally {</code> です。<code>catch</code> を書かないので、<code>fn</code> が投げた例外は、<code>finally</code> の後でそのまま外に出ます。<code>return</code> の後でも <code>finally</code> は実行されます（04章 q05 問19）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c09-q04-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">負の数があれば、まとめて AggregateError を投げる</span>
+      <span class="q-new">新しく出てくる書き方：<code>new AggregateError()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function validateAll() {}</code></pre>
+      <p>数値の配列 <code>values</code> を受け取ります。負の数が 1 つもなければ、何も返さずに終わります。負の数があれば、<code>AggregateError</code> を投げます。まとめるエラーは、負の数ごとの <code>RangeError</code> の配列です。<code>RangeError</code> のメッセージは <code>`${n} は負の数です`</code>、<code>AggregateError</code> のメッセージは <code>"負の数があります"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>validateAll([1, 2, 0])</code></dt><dd class="r">何も投げない</dd><dd class="c">0 は負の数ではない</dd></div>
+          <div><dt><code>validateAll([1, -2, 3, -4])</code></dt><dd class="r"><code>AggregateError</code> を投げる</dd><dd class="c">メッセージは "負の数があります"</dd></div>
+          <div><dt>まとめたエラー</dt><dd class="r">2 つの <code>RangeError</code></dd><dd class="c">メッセージは "-2 は負の数です" と "-4 は負の数です"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number[]</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new AggregateError()</code><h4>いくつものエラーを 1 つにまとめて投げる</h4></div>
+      <p><code>AggregateError</code> は、いくつものエラーをまとめて 1 つにしたエラーです。<code>Error</code> の仲間です。入力のチェックのように、最初の失敗で止めずに、見つけた失敗を全部知らせたいときに使います。</p>
+      <figure class="anat">
+        <pre>new AggregateError(<span class="seg"><i>1</i>problems</span>, <span class="seg"><i>2</i>"数量に問題があります"</span>)</pre>
+        <ol>
+          <li><span>まとめるエラーの配列です。あとから <code>.errors</code> で取り出せます。</span></li>
+          <li><span>まとめたエラーのメッセージです。<code>.message</code> で取り出せます。</span></li>
+        </ol>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 checkCart を作る。数値の配列 quantities を受け取り、何も返さない
+function checkCart(quantities: number[]): void {
+  // 問題の配列 problems を作り、空の配列を入れる
+  const problems: RangeError[] = [];
+  // quantities から 1 つずつ q に取り出してくり返す
+  for (const q of quantities) {
+    // もし q が 10 より大きいなら
+    if (q &gt; 10) {
+      // problems の最後に、q を埋め込んだ「◯ 個は多すぎます」というメッセージの RangeError を足す
+      problems.push(new RangeError(`${q} 個は多すぎます`));
+    }
+  }
+  // もし problems の要素の数が 0 より大きいなら
+  if (problems.length &gt; 0) {
+    // problems をまとめた、"数量に問題があります" というメッセージの AggregateError を投げる
+    throw new AggregateError(problems, "数量に問題があります");
+  }
+}
+
+// 個数 count を入れ直せる変数として作り、0 を入れる
+let count = 0;
+// 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+try {
+  // checkCart に [3, 12, 20] を渡して呼ぶ
+  checkCart([3, 12, 20]);
+} catch (error) {
+  // （例外が投げられたら、投げられたものを error で受け取る）もし error が AggregateError から作った値なら
+  if (error instanceof AggregateError) {
+    // count に、error の errors の要素の数を入れ直す
+    count = error.errors.length;
+  }
+}
+// 結果: count は 2</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>error.errors.length</code></dt><dd class="r"><code>2</code></dd><dd class="c">12 と 20 の 2 つの <code>RangeError</code></dd></div>
+        <div><dt><code>error.message</code></dt><dd class="r"><code>"数量に問題があります"</code></dd><dd class="c"></dd></div>
+      </dl>
+      <p class="memo"><b>型</b><code>.errors</code> の型は <code>any[]</code> です。要素の <code>message</code> を読もうとすると、ESLint がエラーにします。要素を使うときは <code>const list: readonly unknown[] = error.errors;</code> のように <code>unknown</code> として受け取り、絞り込んでから使います。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 validateAll を作る。数値の配列 values を受け取り、何も返さない
+export function validateAll() {
+  // エラーの配列 errors を作り、空の配列を入れる
+  // values から 1 つずつ n に取り出してくり返す
+  //   もし n が 0 より小さいなら
+  //     errors の最後に、n を埋め込んだ「◯ は負の数です」というメッセージの RangeError を足す
+  // もし errors の要素の数が 0 より大きいなら
+  //   errors をまとめた、"負の数があります" というメッセージの AggregateError を投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問19 のサンプルの <code>checkCart</code> と同じ形です。空の配列は <code>const errors: RangeError[] = [];</code> のように型を付けて作ります。「何も返さない」は <code>: void</code>（04章 q05 問13）です。<code>.filter()</code> と <code>.map()</code>（02章 q04 問7、問5）で、エラーの配列を 1 行で作ってもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c09-q04-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">エラーを、名前とメッセージのオブジェクトにする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function errorToJson() {}</code></pre>
+      <p>受け取った値が <code>Error</code> なら、<code>{ name, message }</code> のオブジェクトを返します。<code>name</code> はエラーの種類の名前、<code>message</code> はメッセージです。<code>Error</code> でなければ、<code>{ name: "Unknown", message: String(error) }</code> を返します。<code>HttpError</code> と <code>NotFoundError</code> は、問9 と同じものがファイルに書いてあります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorToJson(new NotFoundError("ユーザー"))</code></dt><dd class="r"><code>{ name: "NotFoundError", message: "ユーザー が見つかりません" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorToJson(new TypeError("型"))</code></dt><dd class="r"><code>{ name: "TypeError", message: "型" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorToJson(42)</code></dt><dd class="r"><code>{ name: "Unknown", message: "42" }</code></dd><dd class="c">数値を文字列にする</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>{ name: string; message: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 errorToJson を作る。unknown 型の error を受け取り、文字列の name と文字列の message を持つオブジェクトを返す
+export function errorToJson() {
+  // もし error が Error から作った値なら
+  //   name が error の種類の名前、message が error のメッセージのオブジェクトを返す
+  // name が "Unknown"、message が error を文字列にしたもののオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>種類の名前は <code>.name</code>（04章 q05 問11）です。<code>NotFoundError</code> の <code>name</code> は、constructor で入れた <code>"NotFoundError"</code> です（問7）。戻り値の型は <code>{ name: string; message: string }</code> と書きます。文字列にするのは <code>String()</code>（01章 q01 問12）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c09-q04-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">入力のチェックのエラーと、チェックの関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { email: string; age: number };
+export type ValidationResult = { ok: true; user: User } | { ok: false; errors: ValidationError[] };
+
+export class ValidationError {}
+
+export function validateEmail() {}
+
+export function validateAge() {}
+
+export function validateUser() {}
+
+export function describeError() {}</code></pre>
+      <p>入力のチェックで使うエラーのクラスと、チェックの関数を書きます。型 <code>User</code> と <code>ValidationResult</code> は、ファイルに書いてあります。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>ValidationError</code>：問7 と同じクラスです。<code>Error</code> を継承し、<code>constructor(field, message)</code> で作ります。<code>field</code>（文字列）を <code>readonly</code> で持ち、<code>name</code> は <code>"ValidationError"</code> です。</li>
+        <li><code>validateEmail(email)</code>：<code>"@"</code> をちょうど 1 つ含み、<code>"@"</code> の前と後ろが空でなければ、<code>email</code> をそのまま返します。そうでなければ <code>ValidationError("email", "メールアドレスの形が違います")</code> を投げます。引数も戻り値も文字列です。</li>
+        <li><code>validateAge(age)</code>：<code>age</code> の型は <code>unknown</code> です。0 以上 150 以下の整数なら、その数を返します。そうでなければ <code>ValidationError("age", "年齢は0〜150の整数にしてください")</code> を投げます。</li>
+        <li><code>validateUser(input)</code>：<code>input</code> は <code>{ email: string; age: unknown }</code> です。<code>validateEmail</code> と <code>validateAge</code> の両方を試します。どちらも通れば <code>{ ok: true, user: { email, age } }</code> を返します。通らなければ、投げられた <code>ValidationError</code> を <code>email</code>、<code>age</code> の順に集めて <code>{ ok: false, errors }</code> を返します。<code>ValidationError</code> 以外のエラーが投げられたら、そのまま投げ直します。戻り値は <code>ValidationResult</code> です。</li>
+        <li><code>describeError(error)</code>：<code>error</code> の型は <code>unknown</code> です。<code>ValidationError</code> なら <code>`${field}: ${message}`</code>、それ以外の <code>Error</code> なら <code>`エラー: ${message}`</code>、<code>Error</code> でなければ <code>"不明なエラー"</code> を返します。</li>
+      </ol>
+      <p>説明すること：<code>describeError</code> で、<code>ValidationError</code> かどうかを、<code>Error</code> かどうかより先に確かめる必要があるのはなぜか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new ValidationError("email", "形が違います").field</code></dt><dd class="r"><code>"email"</code></dd><dd class="c"><code>field</code> を書き換えると、型の確認でエラー</dd></div>
+          <div><dt><code>validateEmail("taro@example.com")</code></dt><dd class="r"><code>"taro@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>validateEmail("taro.example.com")</code></dt><dd class="r"><code>ValidationError</code> を投げる</dd><dd class="c">@ がない</dd></div>
+          <div><dt><code>validateEmail("@example.com")</code></dt><dd class="r"><code>ValidationError</code> を投げる</dd><dd class="c">@ の前が空</dd></div>
+          <div><dt><code>validateEmail("taro@")</code></dt><dd class="r"><code>ValidationError</code> を投げる</dd><dd class="c">@ の後ろが空</dd></div>
+          <div><dt><code>validateEmail("a@b@c")</code></dt><dd class="r"><code>ValidationError</code> を投げる</dd><dd class="c">@ が 2 つ</dd></div>
+          <div><dt><code>validateAge(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>validateAge(150)</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+          <div><dt><code>validateAge(-1)</code></dt><dd class="r"><code>ValidationError</code> を投げる</dd><dd class="c"><code>151</code>、<code>20.5</code>、<code>null</code> も同じ</dd></div>
+          <div><dt><code>validateAge("20")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "年齢は0〜150の整数にしてください"。文字列は数値ではない</dd></div>
+          <div><dt><code>validateUser({ email: "taro@example.com", age: 30 })</code></dt><dd class="r"><code>{ ok: true, user: { email: "taro@example.com", age: 30 } }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>validateUser({ email: "x", age: "abc" })</code></dt><dd class="r"><code>ok</code> が <code>false</code></dd><dd class="c"><code>errors</code> の <code>field</code> は <code>["email", "age"]</code> の順</dd></div>
+          <div><dt><code>validateUser({ email: "taro@example.com", age: -5 })</code></dt><dd class="r"><code>ok</code> が <code>false</code></dd><dd class="c"><code>errors</code> の <code>field</code> は <code>["age"]</code></dd></div>
+          <div><dt><code>describeError(new ValidationError("age", "年齢が違います"))</code></dt><dd class="r"><code>"age: 年齢が違います"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeError(new TypeError("型が違います"))</code></dt><dd class="r"><code>"エラー: 型が違います"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeError("文字列")</code></dt><dd class="r"><code>"不明なエラー"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>validateAge</code> は引数が <code>unknown</code>、戻り値が <code>number</code>、<code>validateUser</code> は戻り値が <code>ValidationResult</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Error を継承したクラス ValidationError を作る。ほかのファイルから使えるようにする
+export class ValidationError {
+  // （問7 と同じ）
+}
+
+// 関数 validateEmail を作る。文字列 email を受け取り、文字列を返す
+export function validateEmail() {
+  // parts を作り、email を "@" で区切った文字列の配列を入れる
+  // もし parts の要素の数が 2 でないか、parts の 0 番目が空の文字列と等しいか、parts の 1 番目が空の文字列と等しいなら
+  //   ValidationError に "email" と "メールアドレスの形が違います" を渡して new で作ったインスタンスを投げる
+  // email を返す
+}
+
+// 関数 validateAge を作る。unknown 型の age を受け取り、数値を返す
+export function validateAge() {
+  // もし age の型が数値でないか、age が整数でないか、age が 0 より小さいか、age が 150 より大きいなら
+  //   ValidationError に "age" と "年齢は0〜150の整数にしてください" を渡して new で作ったインスタンスを投げる
+  // age を返す
+}
+
+// 関数 validateUser を作る。文字列の email と unknown の age を持つオブジェクト input を受け取り、ValidationResult を返す
+export function validateUser() {
+  // エラーの配列 errors を作り、空の配列を入れる
+  // email を、文字列か undefined を入れ直せる変数として作る
+  // 次の中を試す
+  //   email に、validateEmail に input の email を渡した結果を入れ直す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   もし error が ValidationError から作った値でないなら
+  //     error をそのまま投げ直す
+  //   errors の最後に error を足す
+  // age を、数値か undefined を入れ直せる変数として作る
+  // 次の中を試す
+  //   age に、validateAge に input の age を渡した結果を入れ直す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   （email のときと同じ）
+  // もし email が undefined と等しいか、age が undefined と等しいなら
+  //   ok が false、errors が errors のオブジェクトを返す
+  // ok が true、user が email と age を持つオブジェクトのオブジェクトを返す
+}
+
+// 関数 describeError を作る。unknown 型の error を受け取り、文字列を返す
+export function describeError() {
+  // もし error が ValidationError から作った値なら
+  //   error の field と error のメッセージを埋め込んだ「◯: ◯」を返す
+  // もし error が Error から作った値なら
+  //   error のメッセージを埋め込んだ「エラー: ◯」を返す
+  // "不明なエラー" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>ValidationError</code> は問7 をそのまま書きます。<code>validateEmail</code> の「区切った文字列の配列」は <code>.split()</code>（02章 q06 問12）です。<code>validateAge</code> の「整数でない」は <code>!Number.isInteger(age)</code>（01章 q04 応用）です。<code>typeof</code> の確かめを先に書くと、そのあとの条件では <code>age</code> が <code>number</code> として扱えます。<code>validateUser</code> の「文字列か undefined を入れ直せる変数」は <code>let email: string | undefined;</code> です。<code>catch</code> の中で、<code>ValidationError</code> でないものを先に投げ直すと、そのあとの <code>error</code> は <code>ValidationError</code> に絞り込まれ、<code>errors</code> に足せます。<code>if</code> の後ろでは、<code>email</code> と <code>age</code> が <code>undefined</code> でないことがわかっているので、そのまま <code>user</code> に入れられます。<code>describeError</code> は問12 と同じく、子のクラスから確かめる形です。説明することは、<code>describeError</code> の 2 つの <code>if</code> を入れ替えて テストを走らせ、どのテストがどう失敗するかを見てから書きます。試したあとは、元の順番に戻してから提出します。</p></details>
+    </div>
+  </section>
+</section>

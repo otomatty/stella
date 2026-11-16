@@ -1,0 +1,855 @@
+<section class="sec" id="c07-q03">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q03 Partial・Required・Readonly</h2>
+    <p>もとの型から、プロパティの付け方だけを変えた型を作る 20 問です。型 <code>Options</code> と <code>Profile</code> は、各ファイルに定義済みです。<code>Partial&lt;T&gt;</code> はすべてのプロパティを省略できる型、<code>Required&lt;T&gt;</code> はすべてのプロパティを省略できない型、<code>Readonly&lt;T&gt;</code> はすべてのプロパティを読み取り専用にした型です。型を書く問題では、プロパティを手で書き並べずに、この 3 つで作ります。関数を書く問題では、引数と戻り値に型注釈を付けます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">型 PartialOptions を Options から作る</span>
+      <span class="q-new">新しく出てくる書き方：ユーティリティ型、<code>Partial&lt;T&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+// ここに型 PartialOptions を書く</code></pre>
+      <p><code>Options</code> は、文字の大きさ <code>size</code>、色 <code>color</code>、太字かどうか <code>bold</code> を持つ設定の型です。<code>Options</code> をもとに、すべてのプロパティを省略できる型 <code>PartialOptions</code> を作り、export します。プロパティを手で書き並べずに、ユーティリティ型で作ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>PartialOptions</code></dt><dd class="r"><code>{ size?: number; color?: string; bold?: boolean }</code></dd><dd class="c">この型と同じであること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">ユーティリティ型</code><h4>もとの型から新しい型を作る組み込みの型</h4></div>
+      <p>ユーティリティ型は、もとの型から新しい型を作る型です。TypeScript に最初から入っています。名前の後ろの <code>&lt; &gt;</code> の中に、もとの型を書きます。07章 q01 問12 の <code>ReturnType&lt;typeof makeItem&gt;</code> も、ユーティリティ型の 1 つです。</p>
+      <p>この番号では、プロパティの付け方をまとめて変える 3 つを使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の型 Booking を作る。date は文字列、note はなくてもよい文字列
+type Booking = { date: string; note?: string };
+// BookingDraft という型を作る。Booking のすべてのプロパティを省略できるようにした型
+type BookingDraft = Partial&lt;Booking&gt;;
+// BookingFull という型を作る。Booking のすべてのプロパティを省略できないようにした型
+type BookingFull = Required&lt;Booking&gt;;
+// BookingFixed という型を作る。Booking のすべてのプロパティを読み取り専用にした型
+type BookingFixed = Readonly&lt;Booking&gt;;
+// 結果: BookingDraft は { date?: string; note?: string }
+//       BookingFull は { date: string; note: string }
+//       BookingFixed は { readonly date: string; readonly note?: string }</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>ユーティリティ型</th><th>すること</th><th>Booking から作った型</th></tr></thead>
+          <tbody>
+            <tr><td><code>Partial&lt;T&gt;</code></td><td>すべてのプロパティに <code>?</code> を付けます。どれも省略できます。</td><td><code>{ date?: string; note?: string }</code></td></tr>
+            <tr><td><code>Required&lt;T&gt;</code></td><td>すべてのプロパティから <code>?</code> を外します。どれも省略できません。</td><td><code>{ date: string; note: string }</code></td></tr>
+            <tr><td><code>Readonly&lt;T&gt;</code></td><td>すべてのプロパティに <code>readonly</code> を付けます。<code>?</code> はそのまま残ります。</td><td><code>{ readonly date: string; readonly note?: string }</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>コツ</b>もとの型を直すと、作った型も一緒に変わります。<code>Booking</code> にプロパティを足せば、3 つの型にも同じプロパティが入ります。手で書き並べた型は、直し忘れることがあります。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Partial&lt;T&gt;</code><h4>すべてのプロパティを省略できる型</h4></div>
+      <p><code>Partial&lt;T&gt;</code> は、<code>T</code> のすべてのプロパティを、なくてもよいプロパティ（02章 q02 問1）にした型です。「変えたいところだけを書いたオブジェクト」の型によく使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の型 Product を作る。name は文字列、price は数値、stock は数値
+type Product = { name: string; price: number; stock: number };
+// 商品の変更 ProductPatch という型を作る。Product のすべてのプロパティを省略できるようにした型
+type ProductPatch = Partial&lt;Product&gt;;
+// 値下げ sale を作り、型を ProductPatch にして、price が 980 のオブジェクトを入れる
+const sale: ProductPatch = { price: 980 };
+// 何も変えない none を作り、型を ProductPatch にして、空のオブジェクトを入れる
+const none: ProductPatch = {};
+// 結果: sale は { price: 980 }、none は {}</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type ProductPatch = <span class="seg"><i>1</i>Partial</span><span class="seg"><i>2</i>&lt;Product&gt;</span>;</pre>
+        <ol>
+          <li><span>ユーティリティ型の名前です。大文字の P で始めます。</span></li>
+          <li><span><code>&lt; &gt;</code> の中に、もとの型を書きます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>const p: ProductPatch = { price: 980 }</code></dt><dd class="r">入れられる</dd><dd class="c">1 つだけでもよい</dd></div>
+        <div><dt><code>const p: ProductPatch = {}</code></dt><dd class="r">入れられる</dd><dd class="c">何もなくてもよい</dd></div>
+        <div><dt><code>const p: ProductPatch = { price: "980" }</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">値の型は number のまま</dd></div>
+        <div><dt><code>const p: ProductPatch = { color: "red" }</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">Product にないプロパティは書けない</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>手で書き並べる</h5>
+          <pre><code class="language-typescript">type Product = { name: string; price: number; stock: number };
+type ProductPatch = { name?: string; price?: number; stock?: number };</code></pre>
+          <div class="verdict ng">✕ 型は同じでも、Product を直したときに追いつきません。この番号では使いません</div>
+        </div>
+        <div>
+          <h5>ユーティリティ型で作る</h5>
+          <pre><code class="language-typescript">type Product = { name: string; price: number; stock: number };
+type ProductPatch = Partial&lt;Product&gt;;</code></pre>
+          <div class="verdict ok">○ Product に合わせて、ProductPatch も変わります</div>
+        </div>
+      </div>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/utility-types/partial">サバイバルTypeScript「Partial&lt;T&gt;」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+// PartialOptions という型を作る。Options のすべてのプロパティを省略できるようにした型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>ProductPatch</code> の行と同じ形です。もとの型が <code>Options</code> になります。「ほかのファイルから使えるようにする」は、先頭の <code>export</code> です（02章 q01 応用）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">型 RequiredProfile を Profile から作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>Required&lt;T&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+// ここに型 RequiredProfile を書く</code></pre>
+      <p><code>Profile</code> は、名前 <code>name</code> と、なくてもよいメールアドレス <code>email</code>・年齢 <code>age</code> を持つ型です。<code>Profile</code> をもとに、すべてのプロパティを省略できない型 <code>RequiredProfile</code> を作り、export します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>RequiredProfile</code></dt><dd class="r"><code>{ name: string; email: string; age: number }</code></dd><dd class="c">この型と同じであること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Required&lt;T&gt;</code><h4>すべてのプロパティを省略できない型</h4></div>
+      <p><code>Required&lt;T&gt;</code> は、<code>T</code> のすべてのプロパティから <code>?</code> を外した型です。値の型からも <code>undefined</code> がなくなります。もとの型は変わりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の型 Booking を作る。date は文字列、seats はなくてもよい数値、note はなくてもよい文字列
+type Booking = { date: string; seats?: number; note?: string };
+// 確定した予約 FullBooking という型を作る。Booking のすべてのプロパティを省略できないようにした型
+type FullBooking = Required&lt;Booking&gt;;
+// 予約 booking を作り、型を FullBooking にして、date が "2025-04-01"、seats が 2、note が "窓側" のオブジェクトを入れる
+const booking: FullBooking = { date: "2025-04-01", seats: 2, note: "窓側" };
+// 席の数 seats を作り、booking の seats を入れる
+const seats = booking.seats;
+// 結果: seats は 2。型は number で、undefined にはならない</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>const b: Booking = { date: "2025-04-01" }</code></dt><dd class="r">入れられる</dd><dd class="c">もとの Booking では seats と note を省ける</dd></div>
+        <div><dt><code>const b: FullBooking = { date: "2025-04-01" }</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">seats と note が足りない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>エラーの文は <code>Type '{ date: string; }' is missing the following properties from type 'Required&lt;Booking&gt;': seats, note</code> です。足りないプロパティの名前が、最後に並びます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/utility-types/required">サバイバルTypeScript「Required&lt;T&gt;」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+// RequiredProfile という型を作る。Profile のすべてのプロパティを省略できないようにした型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 のサンプルの <code>FullBooking</code> の行と同じ形です。もとの型が <code>Profile</code> になり、先頭に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">型 ReadonlyOptions を Options から作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>Readonly&lt;T&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+// ここに型 ReadonlyOptions を書く</code></pre>
+      <p><code>Options</code> をもとに、すべてのプロパティを読み取り専用にした型 <code>ReadonlyOptions</code> を作り、export します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ReadonlyOptions</code></dt><dd class="r"><code>{ readonly size: number; readonly color: string; readonly bold: boolean }</code></dd><dd class="c">この型と同じであること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Readonly&lt;T&gt;</code><h4>すべてのプロパティを読み取り専用にした型</h4></div>
+      <p><code>Readonly&lt;T&gt;</code> は、<code>T</code> のすべてのプロパティに <code>readonly</code>（02章 q02 問7）を付けた型です。プロパティを読むことはできますが、値を入れ直すと型の確認でエラーになります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文の型 Order を作る。id は数値、quantity は数値
+type Order = { id: number; quantity: number };
+// 確定した注文 FixedOrder という型を作る。Order のすべてのプロパティを読み取り専用にした型
+type FixedOrder = Readonly&lt;Order&gt;;
+// 注文 order を作り、型を FixedOrder にして、id が 10、quantity が 2 のオブジェクトを入れる
+const order: FixedOrder = { id: 10, quantity: 2 };
+// 数 count を作り、order の quantity を入れる
+const count = order.quantity;
+// 結果: count は 2。order の id と quantity は、読めるが入れ直せない</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>読む</h5>
+          <pre><code class="language-typescript">const order: FixedOrder = { id: 10, quantity: 2 };
+// 数 count を作り、order の quantity を入れる
+const count = order.quantity;</code></pre>
+          <div class="verdict ok">○ 読むことはできます</div>
+        </div>
+        <div>
+          <h5>入れ直す</h5>
+          <pre><code class="language-typescript">const order: FixedOrder = { id: 10, quantity: 2 };
+// order の quantity に 3 を入れ直す
+order.quantity = 3;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Cannot assign to 'quantity' because it is a read-only property）</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b><code>Readonly&lt;T&gt;</code> も、<code>readonly</code> と同じく型の確認のための印です。JavaScript に変換したあとのコードには残りません。実行しているときにも書き換えを止めるには、問8 の <code>Object.freeze()</code> を使います。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/utility-types/readonly">サバイバルTypeScript「Readonly&lt;T&gt;」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+// ReadonlyOptions という型を作る。Options のすべてのプロパティを読み取り専用にした型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>FixedOrder</code> の行と同じ形です。もとの型が <code>Options</code> になり、先頭に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">型 ReadonlyProfile を Profile から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+// ここに型 ReadonlyProfile を書く</code></pre>
+      <p><code>Profile</code> をもとに、すべてのプロパティを読み取り専用にした型 <code>ReadonlyProfile</code> を作り、export します。なくてもよいプロパティは、なくてもよいまま残ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ReadonlyProfile</code></dt><dd class="r"><code>{ readonly name: string; readonly email?: string; readonly age?: number }</code></dd><dd class="c">この型と同じであること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+// ReadonlyProfile という型を作る。Profile のすべてのプロパティを読み取り専用にした型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形で、もとの型が <code>Profile</code> になります。<code>Readonly&lt;T&gt;</code> は <code>?</code> を消さないので、問1 の表の <code>Booking</code> と同じく、<code>email</code> と <code>age</code> はなくてもよいまま残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">足りないところを DEFAULT_OPTIONS で補う</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export const DEFAULT_OPTIONS: Options = { size: 12, color: "black", bold: false };
+
+export function withDefaults() {}</code></pre>
+      <p>一部だけを指定した設定 <code>Partial&lt;Options&gt;</code> を受け取ります。指定のないプロパティを、既定値（指定がないときに使う値）の <code>DEFAULT_OPTIONS</code> で補った <code>Options</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withDefaults({ size: 20 })</code></dt><dd class="r"><code>{ size: 20, color: "black", bold: false }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>withDefaults({})</code></dt><dd class="r"><code>{ size: 12, color: "black", bold: false }</code></dd><dd class="c">何も指定がなければ既定値のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Partial&lt;Options&gt;</code>、戻り値が <code>Options</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withDefaults を作る。Partial&lt;Options&gt; の options を受け取り、Options を返す
+export function withDefaults() {
+  // DEFAULT_OPTIONS に options を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型注釈は <code>options: Partial&lt;Options&gt;</code> です。中身は、02章 q03 問10 の <code>{ ...a, ...b }</code> と同じ形です。指定のあるプロパティを残したいので、<code>options</code> を後ろに書きます。<code>Partial&lt;Options&gt;</code> を後ろに重ねても、前の <code>DEFAULT_OPTIONS</code> にすべてのプロパティがあるので、結果は <code>Options</code> として返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">options を patch で上書きした、新しい Options を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function patchOptions() {}</code></pre>
+      <p>設定 <code>options</code> と、変えるところだけを書いた <code>patch</code>（<code>Partial&lt;Options&gt;</code>）を受け取ります。<code>options</code> を <code>patch</code> の値で上書きした、新しい <code>Options</code> を返します。元の <code>options</code> は変えません。</p>
+      <p>テストの <code>options</code> は <code>{ size: 12, color: "red", bold: false }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>patchOptions(options, { bold: true })</code></dt><dd class="r"><code>{ size: 12, color: "red", bold: true }</code></dd><dd class="c">bold だけが変わる</dd></div>
+          <div><dt><code>options.bold</code></dt><dd class="r"><code>false</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Options</code> と <code>Partial&lt;Options&gt;</code>、戻り値が <code>Options</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 patchOptions を作る。Options の options と Partial&lt;Options&gt; の patch を受け取り、Options を返す
+export function patchOptions() {
+  // options に patch を重ねた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。前に重ねるものが <code>DEFAULT_OPTIONS</code> から <code>options</code> に、後ろに重ねるものが <code>patch</code> に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">Profile の足りないところを補って、Required&lt;Profile&gt; を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+export function completeProfile() {}</code></pre>
+      <p><code>Profile</code> を受け取ります。<code>email</code> がなければ <code>""</code>（空の文字列）、<code>age</code> がなければ <code>0</code> で補い、すべてのプロパティがそろった <code>Required&lt;Profile&gt;</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>completeProfile({ name: "山田" })</code></dt><dd class="r"><code>{ name: "山田", email: "", age: 0 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>completeProfile({ name: "山田", email: "y@example.com", age: 30 })</code></dt><dd class="r"><code>{ name: "山田", email: "y@example.com", age: 30 }</code></dd><dd class="c">そろっていればそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Profile</code>、戻り値が <code>Required&lt;Profile&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 completeProfile を作る。Profile の profile を受け取り、Required&lt;Profile&gt; を返す
+export function completeProfile() {
+  // name に profile の name、email に profile の email（なければ ""）、age に profile の age（なければ 0）を入れたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「（なければ ◯）」は <code>??</code> です（02章 q02 問1）。<code>{ name: profile.name, email: …, age: … }</code> の <code>…</code> に、<code>??</code> の式を入れます。<code>profile</code> をそのまま返すと、<code>email</code> の型が <code>string | undefined</code> のままなので、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">options のコピーを凍らせて、Readonly&lt;Options&gt; として返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Object.freeze()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function freezeOptions() {}</code></pre>
+      <p>設定 <code>options</code> を受け取ります。そのコピーを <code>Object.freeze()</code> で書き換えられないようにして、<code>Readonly&lt;Options&gt;</code> として返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Object.isFrozen(freezeOptions({ size: 12, color: "red", bold: false }))</code></dt><dd class="r"><code>true</code></dd><dd class="c">凍っている</dd></div>
+          <div><dt>戻り値の <code>size</code> に <code>1</code> を入れる</dt><dd class="r"><code>TypeError</code> を投げる</dd><dd class="c">実行しても書き換えられない</dd></div>
+          <div><dt>戻り値の <code>size</code> に <code>1</code> を入れる</dt><dd class="r">型の確認でエラー</dd><dd class="c">テストの <code>// @ts-expect-error</code> で確かめる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Options</code>、戻り値が <code>Readonly&lt;Options&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Object.freeze()</code><h4>オブジェクトを凍らせて、書き換えられないようにする</h4></div>
+      <p><code>Object.freeze()</code> は、渡したオブジェクトを凍らせて（書き換えられないようにして）、そのオブジェクトを返します。export を書いたファイル（モジュール）では、凍ったオブジェクトのプロパティに値を入れると、<code>TypeError</code> というエラーが投げられます。戻り値の型は <code>Readonly&lt;渡したものの型&gt;</code> になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料の型 Shipping を作る。base は数値、free は数値
+type Shipping = { base: number; free: number };
+// 元の送料 source を作り、型を Shipping にして、base が 500、free が 5000 のオブジェクトを入れる
+const source: Shipping = { base: 500, free: 5000 };
+// 送料表 fees を作り、source を広げた新しいオブジェクトを Object.freeze したものを入れる
+const fees = Object.freeze({ ...source });
+// 結果: fees は { base: 500, free: 5000 }。型は Readonly&lt;{ base: number; free: number }&gt;</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Object.isFrozen(fees)</code></dt><dd class="r"><code>true</code></dd><dd class="c">凍っているかを調べる</dd></div>
+        <div><dt><code>Object.isFrozen(source)</code></dt><dd class="r"><code>false</code></dd><dd class="c">凍ったのはコピーだけ</dd></div>
+        <div><dt><code>fees.base = 0</code></dt><dd class="r"><code>TypeError</code></dd><dd class="c">Cannot assign to read only property 'base' of object</dd></div>
+      </dl>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>書き方</th><th>型の確認</th><th>実行したとき</th></tr></thead>
+          <tbody>
+            <tr><td><code>Readonly&lt;T&gt;</code> の型注釈だけ</td><td>代入はエラー</td><td>止まりません。値が入れ直されます</td></tr>
+            <tr><td><code>Object.freeze()</code> の戻り値</td><td>代入はエラー（型が <code>Readonly&lt;T&gt;</code>）</td><td><code>TypeError</code> が投げられます</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>Object.freeze(source)</code> と書くと、元の <code>source</code> そのものが凍ります。呼んだ側のオブジェクトまで書き換えられなくなります。コピーを凍らせるときは、先に <code>{ ...source }</code> で広げます（02章 q03 問11）。</p>
+      <p class="memo"><b>決まり</b>凍るのは、そのオブジェクトのプロパティだけです。プロパティの中にある配列やオブジェクトまでは凍りません。</p>
+      <p class="more"><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze">MDN「Object.freeze()」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 freezeOptions を作る。Options の options を受け取り、Readonly&lt;Options&gt; を返す
+export function freezeOptions() {
+  // options を広げた新しいオブジェクトを Object.freeze したものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>fees</code> の行の右側と同じ形で、広げるものが <code>options</code> になります。戻り値の型注釈は <code>Readonly&lt;Options&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">email と age の両方があれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+export function isComplete() {}</code></pre>
+      <p><code>Profile</code> を受け取り、<code>email</code> と <code>age</code> の両方があれば <code>true</code>、どちらかがなければ <code>false</code> を返します。戻り値の型は、型ガード関数（05章 q09 問1）の形 <code>profile is Required&lt;Profile&gt;</code> にします。<code>true</code> が返ったあとは、<code>profile</code> を <code>Required&lt;Profile&gt;</code> として扱えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isComplete({ name: "山田" })</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isComplete({ name: "山田", email: "y@example.com", age: 30 })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>型ガードで絞り込む先の型が <code>Required&lt;Profile&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isComplete を作る。Profile の profile を受け取り、profile が Required&lt;Profile&gt; かどうかを返す（型ガード）
+export function isComplete() {
+  // profile の email がある、かつ profile の age があるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型注釈は <code>: profile is Required&lt;Profile&gt;</code> です。「あるかどうか」は <code>!== undefined</code>（02章 q02 問1）、「かつ」は <code>&amp;&amp;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">値が入っているプロパティの数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function countSet() {}</code></pre>
+      <p><code>Partial&lt;Options&gt;</code> を受け取り、値が入っているプロパティの数を返します。<code>false</code> も値なので、数に入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countSet({ size: 1, bold: false })</code></dt><dd class="r"><code>2</code></dd><dd class="c">bold の false も数える</dd></div>
+          <div><dt><code>countSet({})</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Partial&lt;Options&gt;</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countSet を作る。Partial&lt;Options&gt; の options を受け取り、数値を返す
+export function countSet() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // もし options の size があるなら
+  //   count を 1 増やす
+  // もし options の color があるなら
+  //   count を 1 増やす
+  // もし options の bold があるなら
+  //   count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「あるなら」は <code>if (options.size !== undefined)</code> の形です。<code>if (options.bold)</code> と書くと、<code>false</code> のときに数えられません。lint も <code>Unexpected nullable boolean value in conditional</code> というエラーにします。「1 増やす」は <code>count++</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">いくつかの変更を、前から順に重ねる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function mergePatches() {}</code></pre>
+      <p><code>Partial&lt;Options&gt;</code> をいくつでも受け取り、前から順に重ねた <code>Partial&lt;Options&gt;</code> を返します。同じプロパティは、後ろの値が残ります。引数は残余引数（05章 q05 問1）で受け取ります。1 つも渡されなければ、空のオブジェクトを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mergePatches({ size: 1 }, { size: 2, bold: true })</code></dt><dd class="r"><code>{ size: 2, bold: true }</code></dd><dd class="c">size は後ろの 2 が残る</dd></div>
+          <div><dt><code>mergePatches()</code></dt><dd class="r"><code>{}</code></dd><dd class="c">何も渡さない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Partial&lt;Options&gt;[]</code> の残余引数、戻り値が <code>Partial&lt;Options&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mergePatches を作る。Partial&lt;Options&gt; の patches をいくつでも受け取り（残余引数）、Partial&lt;Options&gt; を返す
+export function mergePatches() {
+  // 結果 result を入れ直せる変数として作り、型を Partial&lt;Options&gt; にして、空のオブジェクトを入れる
+  // patches から 1 つずつ patch に取り出してくり返す
+  //   result に patch を重ねた新しいオブジェクトを、result に入れ直す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>...patches: Partial&lt;Options&gt;[]</code> と書きます。1 行目は <code>let result: Partial&lt;Options&gt; = {};</code> です（変数の型注釈は 02章 q04 問17）。くり返しは <code>for (const patch of patches)</code>、中の行は問5 と同じ <code>{ ...a, ...b }</code> の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">email だけを変えた、新しい Readonly&lt;Profile&gt; を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+export function updateEmail() {}</code></pre>
+      <p>読み取り専用の <code>Readonly&lt;Profile&gt;</code> と、新しいメールアドレス（文字列）を受け取ります。<code>email</code> だけを変えた、新しい <code>Readonly&lt;Profile&gt;</code> を返します。元のオブジェクトは変えません。</p>
+      <p>テストの <code>profile</code> は <code>{ name: "山田" }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>updateEmail(profile, "new@example.com")</code></dt><dd class="r"><code>{ name: "山田", email: "new@example.com" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>profile.email</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">呼んだあとも元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Readonly&lt;Profile&gt;</code> と <code>string</code>、戻り値が <code>Readonly&lt;Profile&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 updateEmail を作る。Readonly&lt;Profile&gt; の profile と文字列の email を受け取り、Readonly&lt;Profile&gt; を返す
+export function updateEmail() {
+  // profile を広げて、email を email にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q02 問8 の <code>{ ...member, rank: "ゴールド" }</code> と同じ形です。<code>email: email</code> は、省略記法で <code>email</code> だけにします（lint がそう求めます）。<code>profile.email = email</code> と入れ直す書き方は、読み取り専用なので型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">email を返す。なければエラーを投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+export function requireEmail() {}</code></pre>
+      <p><code>Profile</code> を受け取り、<code>email</code> を返します。<code>email</code> がなければ、<code>"email がありません"</code> というメッセージの <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>requireEmail({ name: "山田", email: "y@example.com" })</code></dt><dd class="r"><code>"y@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>requireEmail({ name: "山田" })</code></dt><dd class="r"><code>"email がありません"</code> のエラーを投げる</dd><dd class="c">email がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Profile</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 requireEmail を作る。Profile の profile を受け取り、文字列を返す
+export function requireEmail() {
+  // もし profile の email がなければ
+  //   "email がありません" というメッセージのエラーを投げる
+  // profile の email を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「なければ」は <code>=== undefined</code>、エラーは <code>throw new Error("email がありません")</code> です（01章 q04 問8）。<code>if</code> の中で投げたあとの行では、<code>profile.email</code> は <code>string</code> として扱われるので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">a と b で値が違うプロパティだけを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function diffOptions() {}</code></pre>
+      <p>2 つの <code>Options</code>、<code>a</code> と <code>b</code> を受け取ります。値が違うプロパティだけを、<code>b</code> の値で持つ <code>Partial&lt;Options&gt;</code> を返します。違うところがなければ、空のオブジェクトを返します。</p>
+      <p>テストの <code>a</code> は <code>{ size: 12, color: "black", bold: false }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>diffOptions(a, { ...a, size: 20 })</code></dt><dd class="r"><code>{ size: 20 }</code></dd><dd class="c">size だけが違う</dd></div>
+          <div><dt><code>diffOptions(a, a)</code></dt><dd class="r"><code>{}</code></dd><dd class="c">違うところがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Options</code> と <code>Options</code>、戻り値が <code>Partial&lt;Options&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 diffOptions を作る。Options の a と Options の b を受け取り、Partial&lt;Options&gt; を返す
+export function diffOptions() {
+  // 結果 result を作り、型を Partial&lt;Options&gt; にして、空のオブジェクトを入れる
+  // もし a の size と b の size が等しくないなら
+  //   result の size に b の size を入れる
+  // もし a の color と b の color が等しくないなら
+  //   result の color に b の color を入れる
+  // もし a の bold と b の bold が等しくないなら
+  //   result の bold に b の bold を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は <code>const result: Partial&lt;Options&gt; = {};</code> です。<code>const</code> の変数でも、プロパティに値を入れることはできます（01章 q08 問10）。型注釈を書かずに <code>const result = {};</code> とすると、<code>result.size</code> の行が <code>Property 'size' does not exist on type '{}'</code> という型のエラーになります。「等しくない」は <code>!==</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">bold を反対にした、新しい Options を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function toggleBold() {}</code></pre>
+      <p>読み取り専用の <code>Readonly&lt;Options&gt;</code> を受け取ります。<code>bold</code> を反対（<code>true</code> なら <code>false</code>、<code>false</code> なら <code>true</code>）にした、新しい <code>Options</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toggleBold({ size: 12, color: "black", bold: false }).bold</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Readonly&lt;Options&gt;</code>、戻り値が <code>Options</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toggleBold を作る。Readonly&lt;Options&gt; の options を受け取り、Options を返す
+export function toggleBold() {
+  // options を広げて、bold を options の bold の反対（true なら false、false なら true）にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じく <code>{ ...options, bold: … }</code> の形です。「反対」は <code>!</code> です（01章 q04 応用）。広げて作った新しいオブジェクトには <code>readonly</code> が付かないので、<code>Options</code> として返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">size を返す。なければ fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function sizeOr() {}</code></pre>
+      <p><code>Partial&lt;Options&gt;</code> と、代わりの数 <code>fallback</code> を受け取ります。<code>size</code> があれば <code>size</code> を、なければ <code>fallback</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sizeOr({}, 16)</code></dt><dd class="r"><code>16</code></dd><dd class="c">size がない</dd></div>
+          <div><dt><code>sizeOr({ size: 10 }, 16)</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Partial&lt;Options&gt;</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sizeOr を作る。Partial&lt;Options&gt; の options と数値の fallback を受け取り、数値を返す
+export function sizeOr() {
+  // options の size（なければ fallback）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q02 問1 のサンプルの <code>shippingFee</code> と同じ <code>??</code> の形です。<code>Partial&lt;Options&gt;</code> の <code>size</code> は <code>number | undefined</code> なので、<code>??</code> で <code>number</code> にそろえます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">設定を「12px black」の形の文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function describeOptions() {}</code></pre>
+      <p><code>Readonly&lt;Options&gt;</code> を受け取り、<code>"12px black"</code> の形の文字列にして返します。<code>bold</code> が <code>true</code> なら、後ろに <code>" 太字"</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>describeOptions({ size: 12, color: "black", bold: true })</code></dt><dd class="r"><code>"12px black 太字"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeOptions({ size: 10, color: "red", bold: false })</code></dt><dd class="r"><code>"10px red"</code></dd><dd class="c">太字でなければ付けない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Readonly&lt;Options&gt;</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 describeOptions を作る。Readonly&lt;Options&gt; の options を受け取り、文字列を返す
+export function describeOptions() {
+  // 基本 base を作り、options の size と options の color を埋め込んだ「◯px ◯」の文字列を入れる
+  // options の bold が true なら base を埋め込んだ「◯ 太字」の文字列、そうでなければ base を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「埋め込んだ文字列」はテンプレートリテラル（01章 q01 問3）です。2 行目は条件演算子 <code>? :</code>（01章 q01 問12）で書きます。<code>options.bold</code> は <code>boolean</code> なので、そのまま条件に書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">profile の足りないところを defaults で補う</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email?: string; age?: number };
+
+export function fillProfile() {}</code></pre>
+      <p><code>Profile</code> の <code>profile</code> と、すべてそろった既定値 <code>defaults</code>（<code>Required&lt;Profile&gt;</code>）を受け取ります。<code>profile</code> に足りないところを <code>defaults</code> の値で補った <code>Required&lt;Profile&gt;</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fillProfile({ name: "山田" }, { name: "", email: "-", age: 0 })</code></dt><dd class="r"><code>{ name: "山田", email: "-", age: 0 }</code></dd><dd class="c">name は profile の値</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Profile</code> と <code>Required&lt;Profile&gt;</code>、戻り値が <code>Required&lt;Profile&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fillProfile を作る。Profile の profile と Required&lt;Profile&gt; の defaults を受け取り、Required&lt;Profile&gt; を返す
+export function fillProfile() {
+  // name に profile の name、email に profile の email（なければ defaults の email）、age に profile の age（なければ defaults の age）を入れたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。<code>??</code> の右側が、決まった値から <code>defaults.email</code> と <code>defaults.age</code> に変わります。保存して整形すると、長いオブジェクトは複数の行に分かれます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">何も指定していない Partial&lt;Options&gt; を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export function emptyPatch() {}</code></pre>
+      <p>引数はありません。何も指定していない <code>Partial&lt;Options&gt;</code>、つまり空のオブジェクトを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>emptyPatch()</code></dt><dd class="r"><code>{}</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>Partial&lt;Options&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 emptyPatch を作る。何も受け取らず、Partial&lt;Options&gt; を返す
+export function emptyPatch() {
+  // 空のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Partial&lt;Options&gt;</code> はどのプロパティも省略できるので、<code>{}</code> を返せます（問1 のサンプルの <code>none</code>）。戻り値の型注釈 <code>: Partial&lt;Options&gt;</code> を忘れずに書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">keys に並べたプロパティだけを既定値に戻す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Options = { size: number; color: string; bold: boolean };
+
+export const DEFAULT_OPTIONS: Options = { size: 12, color: "black", bold: false };
+
+export function resetKeys() {}</code></pre>
+      <p>設定 <code>options</code> と、プロパティ名を並べた <code>keys</code> を受け取ります。<code>keys</code> に並べたプロパティだけを <code>DEFAULT_OPTIONS</code> の値に戻した、新しい <code>Options</code> を返します。<code>keys</code> の型は <code>readonly (keyof Options)[]</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>resetKeys({ size: 20, color: "red", bold: true }, ["size"])</code></dt><dd class="r"><code>{ size: 12, color: "red", bold: true }</code></dd><dd class="c">size だけ戻す</dd></div>
+          <div><dt><code>resetKeys({ size: 20, color: "red", bold: true }, ["color", "bold"])</code></dt><dd class="r"><code>{ size: 20, color: "black", bold: false }</code></dd><dd class="c">color と bold を戻す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Options</code> と <code>readonly ("size" | "color" | "bold")[]</code>、戻り値が <code>Options</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 resetKeys を作る。Options の options と、Options のプロパティ名の読み取り専用の配列 keys を受け取り、Options を返す
+export function resetKeys() {
+  // 結果 result を作り、options を広げた新しいオブジェクトを入れる
+  // keys から 1 つずつ key に取り出してくり返す
+  //   もし key が "size" と等しいなら
+  //     result の size に DEFAULT_OPTIONS の size を入れ直す
+  //   そうでなく、もし key が "color" と等しいなら
+  //     result の color に DEFAULT_OPTIONS の color を入れ直す
+  //   そうでなければ
+  //     result の bold に DEFAULT_OPTIONS の bold を入れ直す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>keys</code> の型は、07章 q02 問13 と同じ <code>readonly (keyof Options)[]</code> です。1 行目は <code>{ ...options }</code> でコピーを作ります（02章 q03 問11）。<code>result[key] = DEFAULT_OPTIONS[key]</code> と 1 行で書くと、<code>Type 'string | number | boolean' is not assignable to type 'never'</code> という型のエラーになります。<code>key</code> がどのプロパティか決まらないので、入れる値の型を確かめられないためです。<code>if</code> で <code>key</code> を 1 つずつ確かめると、<code>result.size</code> のように書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c07-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">プロフィールの更新・そろっているかの確認・凍らせる・変わったところ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = { name: string; email: string; bio: string; age: number };
+
+export function updateProfile() {}
+
+export function completeProfile() {}
+
+export function freezeProfile() {}
+
+export function changedKeys() {}</code></pre>
+      <p>4 つの関数を書きます。この <code>Profile</code> は、ドリルと違ってすべてのプロパティが必ずある型です。<code>bio</code> は自己紹介の文です。</p>
+      <ol>
+        <li><code>updateProfile(profile, patch)</code>：<code>patch</code> は <code>Partial&lt;Profile&gt;</code> です。<code>profile</code> を <code>patch</code> で上書きした、新しい <code>Profile</code> を返します。元の <code>profile</code> は変えません。</li>
+        <li><code>completeProfile(draft)</code>：<code>draft</code> は <code>Partial&lt;Profile&gt;</code> です。すべてそろっていれば <code>Required&lt;Profile&gt;</code> として返します。足りないものがあれば、<code>name</code>、<code>email</code>、<code>bio</code>、<code>age</code> の順に調べて、最初に見つかったものについて <code>"&lt;名前&gt; がありません"</code> の <code>Error</code> を投げます。</li>
+        <li><code>freezeProfile(profile)</code>：<code>profile</code> のコピーを <code>Object.freeze()</code> で凍らせて、<code>Readonly&lt;Profile&gt;</code> として返します。</li>
+        <li><code>changedKeys(before, after)</code>：値が違うプロパティの名前を、<code>name</code>、<code>email</code>、<code>bio</code>、<code>age</code> の順に並べた配列にして返します。戻り値の型は <code>(keyof Profile)[]</code> です。</li>
+      </ol>
+      <p>テストの <code>profile</code>（<code>base</code>）は <code>{ name: "山田", email: "y@example.com", bio: "よろしく", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>updateProfile(profile, { bio: "TS を勉強中" })</code></dt><dd class="r"><code>{ name: "山田", email: "y@example.com", bio: "TS を勉強中", age: 30 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>updateProfile(profile, {})</code></dt><dd class="r"><code>{ name: "山田", email: "y@example.com", bio: "よろしく", age: 30 }</code></dd><dd class="c">何も変えない</dd></div>
+          <div><dt>呼んだあとの <code>profile</code></dt><dd class="r">元のまま</dd><dd class="c"></dd></div>
+          <div><dt><code>completeProfile(base)</code></dt><dd class="r"><code>base</code> と同じ中身</dd><dd class="c">すべてそろっている</dd></div>
+          <div><dt><code>completeProfile({ name: "山田", bio: "x" })</code></dt><dd class="r"><code>"email がありません"</code> のエラーを投げる</dd><dd class="c">email と age がない。先に調べる email を言う</dd></div>
+          <div><dt><code>completeProfile({})</code></dt><dd class="r"><code>"name がありません"</code> のエラーを投げる</dd><dd class="c">全部ない。最初の name を言う</dd></div>
+          <div><dt><code>completeProfile({ name: "a", email: "b", bio: "c" })</code></dt><dd class="r"><code>"age がありません"</code> のエラーを投げる</dd><dd class="c"></dd></div>
+          <div><dt><code>freezeProfile(profile)</code></dt><dd class="r"><code>base</code> と同じ中身</dd><dd class="c"><code>profile</code> とは別のオブジェクト</dd></div>
+          <div><dt><code>Object.isFrozen(freezeProfile(profile))</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt>戻り値の <code>name</code> に <code>"佐藤"</code> を入れる</dt><dd class="r"><code>TypeError</code> を投げる</dd><dd class="c">型の確認でもエラーになること</dd></div>
+          <div><dt><code>changedKeys(base, { ...base, age: 31, name: "山田太郎" })</code></dt><dd class="r"><code>["name", "age"]</code></dd><dd class="c">name、email、bio、age の順に並べる</dd></div>
+          <div><dt><code>changedKeys(base, base)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">違うところがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>updateProfile</code> は引数が <code>Profile</code> と <code>Partial&lt;Profile&gt;</code>、戻り値が <code>Profile</code>。<code>completeProfile</code> は引数が <code>Partial&lt;Profile&gt;</code>、戻り値が <code>Required&lt;Profile&gt;</code>。<code>freezeProfile</code> は戻り値が <code>Readonly&lt;Profile&gt;</code>。<code>changedKeys</code> は引数が <code>Profile</code> と <code>Profile</code>、戻り値が <code>(keyof Profile)[]</code>。これも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 updateProfile を作る。Profile の profile と Partial&lt;Profile&gt; の patch を受け取り、Profile を返す
+export function updateProfile() {
+  // profile に patch を重ねた新しいオブジェクトを返す
+}
+
+// 関数 completeProfile を作る。Partial&lt;Profile&gt; の draft を受け取り、Required&lt;Profile&gt; を返す
+export function completeProfile() {
+  // draft から name、email、bio、age を取り出す
+  // もし name がなければ
+  //   "name がありません" というメッセージのエラーを投げる
+  // もし email がなければ
+  //   "email がありません" というメッセージのエラーを投げる
+  // もし bio がなければ
+  //   "bio がありません" というメッセージのエラーを投げる
+  // もし age がなければ
+  //   "age がありません" というメッセージのエラーを投げる
+  // name、email、bio、age を入れたオブジェクトを返す
+}
+
+// 関数 freezeProfile を作る。Profile の profile を受け取り、Readonly&lt;Profile&gt; を返す
+export function freezeProfile() {
+  // profile を広げた新しいオブジェクトを Object.freeze したものを返す
+}
+
+// 名前の一覧 KEYS を作り、型を Profile のプロパティ名の読み取り専用の配列にして、"name"、"email"、"bio"、"age" を入れる
+
+// 関数 changedKeys を作る。Profile の before と Profile の after を受け取り、Profile のプロパティ名の配列を返す
+export function changedKeys() {
+  // KEYS から、before の key と after の key が等しくないものだけを残した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>updateProfile</code> は問6、<code>freezeProfile</code> は問8 と同じ形です。<code>completeProfile</code> の 1 行目はオブジェクトの分割代入（02章 q03 問1）です。<code>if</code> で投げたあとの行では、取り出した変数は <code>undefined</code> でない型として扱われます。最後の行は省略記法の <code>{ name, email, bio, age }</code> です。<code>KEYS</code> の型は <code>readonly (keyof Profile)[]</code> で、関数の外に書きます。<code>changedKeys</code> は 07章 q02 問14 と同じ考え方で、<code>KEYS.filter((key) =&gt; …)</code> の中で <code>before[key]</code> と <code>after[key]</code> を <code>!==</code> で比べます。</p></details>
+    </div>
+  </section>
+</section>

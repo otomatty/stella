@@ -1,0 +1,201 @@
+<section class="sec" id="c05-extra">
+  <div class="sec-h">
+    <span class="eyebrow">05章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。e01 では、引数の型によって戻り値の型が変わる関数を書きます。e02 では、関数の型に名前を付け、関数を組み合わせて新しい関数を作ります。e01 には「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c05-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">オーバーロード関数</span>
+      <span class="q-new">新しく出てくる書き方：オーバーロードのシグネチャ <code>function f(value: string): number;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function convert() {}
+
+export function pick() {}</code></pre>
+      <p>引数の型によって戻り値の型が変わる関数を 2 つ、オーバーロード（同じ名前の関数の型を、呼び方ごとに並べる書き方）で書きます。</p>
+      <ol>
+        <li><code>convert(value)</code>：文字列を渡したら、数値にして返します。このときの戻り値の型は <code>number</code> です。数値を渡したら、文字列にして返します。このときの戻り値の型は <code>string</code> です。</li>
+        <li><code>pick(items, index?)</code>：<code>index</code> を渡したら、その番号の要素を返します。このときの戻り値の型は <code>string | undefined</code> です。<code>index</code> を省略したら、配列のコピーを返します。このときの戻り値の型は <code>string[]</code> です。引数の配列の型は <code>readonly string[]</code> です。</li>
+      </ol>
+      <p>説明すること：オーバーロードを使わずに、戻り値の型を <code>number | string</code> にした場合と比べて、呼び出し側で何がうれしいか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>convert("42")</code></dt><dd class="r"><code>42</code></dd><dd class="c">文字列が数値になる</dd></div>
+          <div><dt><code>convert(42)</code></dt><dd class="r"><code>"42"</code></dd><dd class="c">数値が文字列になる</dd></div>
+          <div><dt><code>convert("42")</code> の型</dt><dd class="r"><code>number</code></dd><dd class="c"></dd></div>
+          <div><dt><code>convert(42)</code> の型</dt><dd class="r"><code>string</code></dd><dd class="c"></dd></div>
+          <div><dt><code>pick(["a", "b"], 1)</code></dt><dd class="r"><code>"b"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>pick(["a", "b"], 5)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">その番号の要素がない</dd></div>
+          <div><dt><code>pick(["a", "b"])</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">渡した配列とは別の、新しい配列</dd></div>
+          <div><dt><code>pick(["a"], 0)</code> の型</dt><dd class="r"><code>string | undefined</code></dd><dd class="c"></dd></div>
+          <div><dt><code>pick(["a"])</code> の型</dt><dd class="r"><code>string[]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>呼び方ごとの戻り値の型を、テストで確かめます。<code>pick</code> がコピーを返すときは、渡した配列そのものでないことも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">function f(value: string): number;</code><h4>呼び方ごとに型を並べる、オーバーロード</h4></div>
+      <p>関数の中身の前に、呼び方ごとの型を 1 行ずつ並べます。この 1 行を、オーバーロードのシグネチャと呼びます。シグネチャは、関数の名前・引数の型・戻り値の型だけを書いた行です。<code>{ }</code> を付けずに、<code>;</code> で終えます。最後に、中身を持つ関数（実装）を 1 つ書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 toTaxed の呼び方 1 を書く。数値 input を受け取り、数値を返す
+function toTaxed(input: number): number;
+// 関数 toTaxed の呼び方 2 を書く。読み取り専用の数値の配列 input を受け取り、数値の配列を返す
+function toTaxed(input: readonly number[]): number[];
+// 関数 toTaxed の中身を作る。数値か、読み取り専用の数値の配列の input を受け取り、数値か数値の配列を返す
+function toTaxed(input: number | readonly number[]): number | number[] {
+  // もし input の型が数値なら
+  if (typeof input === "number") {
+    // input に 1.1 を掛けて四捨五入した数を返す
+    return Math.round(input * 1.1);
+  }
+  // input のそれぞれに 1.1 を掛けて四捨五入した、新しい配列を返す
+  return input.map((price) =&gt; Math.round(price * 1.1));
+}
+// 1 個の税込み価格 one を作り、toTaxed に 1000 を渡して呼んだ結果を入れる
+const one = toTaxed(1000);
+// 税込み価格の一覧 list を作り、toTaxed に [100, 250] を渡して呼んだ結果を入れる
+const list = toTaxed([100, 250]);
+// 結果: one は 1100（型は number）、list は [110, 275]（型は number[]）</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>function toTaxed(input: number): number;</span>
+<span class="seg"><i>2</i>function toTaxed(input: readonly number[]): number[];</span>
+<span class="seg"><i>3</i>function toTaxed(input: number | readonly number[]): number | number[]</span> { … }</pre>
+        <ol>
+          <li><span>呼び方 1 です。数値を渡すと、戻り値の型は <code>number</code> になります。</span></li>
+          <li><span>呼び方 2 です。数値の配列を渡すと、戻り値の型は <code>number[]</code> になります。</span></li>
+          <li><span>中身を持つ実装です。引数と戻り値の型には、1 と 2 をすべて受け止められる型を書きます。中では、<code>typeof</code> などで引数を確かめて場合を分けます。</span></li>
+        </ol>
+      </figure>
+      <p>呼び出す側から見えるのは、1 と 2 の呼び方だけです。TypeScript は、渡した引数に合う呼び方を上から探し、その戻り値の型を使います。</p>
+      <dl class="eg">
+        <div><dt><code>toTaxed(1000)</code> の型</dt><dd class="r"><code>number</code></dd><dd class="c">呼び方 1 に合う</dd></div>
+        <div><dt><code>toTaxed([100, 250])</code> の型</dt><dd class="r"><code>number[]</code></dd><dd class="c">呼び方 2 に合う</dd></div>
+        <div><dt>型が <code>number | readonly number[]</code> の値を渡す</dt><dd class="r">型のエラー</dd><dd class="c">「No overload matches this call」。3 の実装の型では呼べない</dd></div>
+      </dl>
+      <p>引数の数が違う呼び方も、オーバーロードで並べられます。そのときの実装では、省略できる引数に <code>?</code> を付けて、オプション引数（q03）にします。</p>
+      <p class="memo"><b>よくある間違い</b>ほかのファイルから使うときは、シグネチャの行にも実装の行にも、すべて <code>export</code> を付けます。1 行でも抜けると、「Overload signatures must all be exported or non-exported.」というエラーになります。</p>
+      <p class="memo"><b>よくある間違い</b>実装の型が、シグネチャのどれかを受け止められないと、「This overload signature is not compatible with its implementation signature.」というエラーになります。実装の引数の型と戻り値の型は、シグネチャの型を <code>|</code> で合わせたものにします。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/overload-functions">サバイバルTypeScript「オーバーロード関数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 convert の呼び方 1 を書く。文字列 value を受け取り、数値を返す。ほかのファイルから使えるようにする
+// 関数 convert の呼び方 2 を書く。数値 value を受け取り、文字列を返す。ほかのファイルから使えるようにする
+// 関数 convert の中身を作る。文字列か数値の value を受け取り、数値か文字列を返す
+export function convert() {
+  // value の型が文字列なら value を数値にしたもの、そうでなければ value を文字列にしたものを返す
+}
+
+// 関数 pick の呼び方 1 を書く。読み取り専用の文字列の配列 items と数値 index を受け取り、文字列か undefined を返す。ほかのファイルから使えるようにする
+// 関数 pick の呼び方 2 を書く。読み取り専用の文字列の配列 items を受け取り、文字列の配列を返す。ほかのファイルから使えるようにする
+// 関数 pick の中身を作る。読み取り専用の文字列の配列 items と、なくてもよい数値 index を受け取り、文字列か undefined か文字列の配列を返す
+export function pick() {
+  // index が undefined なら items をコピーした新しい配列、そうでなければ items の index 番目の要素を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>呼び方の行は、e01 のサンプルの <code>toTaxed</code> の 1 行目・2 行目と同じ形で、前に <code>export</code> を付けます。中身は、問題のファイルの <code>export function convert() {}</code> の行に、引数と戻り値の型を書き足して作ります。数値にするのは <code>Number()</code>（01章 q08 問16）、文字列にするのは <code>String()</code>（01章 q01 問12）です。「◯ なら ◯、そうでなければ ◯ を返す」は、条件演算子 <code>? :</code>（01章 q01 問12）で書けます。<code>pick</code> の「なくてもよい数値 index」は <code>index?: number</code> です（q03）。コピーは <code>[...items]</code>（02章 q05 問1）、「items の index 番目の要素」は <code>items[index]</code> です。説明することは、オーバーロードの 2 行をいったん消して試します。<code>convert("42")</code> にマウスを載せて表示される型を見たり、<code>const n = convert("42");</code> の下で <code>n</code> を数値として使う行を書いたりして、型の確認の結果を見比べます。試した行は、提出する前に元に戻します。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c05-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">関数の型と、関数の組み合わせ</span>
+      <span class="q-new">新しく出てくる書き方：関数の型に名前を付ける <code>type NumberFn = (x: number) =&gt; number</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type NumberFn = unknown;
+
+export function compose() {}
+
+export function pipe() {}
+
+export function repeatFn() {}</code></pre>
+      <p>「数値を 1 つ受け取って数値を返す関数」に名前を付け、それを組み合わせる関数を 3 つ書きます。3 つとも、関数を受け取って、新しい関数を返します（q08 の関数を返す関数）。</p>
+      <ol>
+        <li><code>NumberFn</code>：「数値を 1 つ受け取って数値を返す関数」の型にします。<code>unknown</code> を書き直します。</li>
+        <li><code>compose(f, g)</code>：「<code>x</code> に <code>f</code> を当てはめ、その結果に <code>g</code> を当てはめる」関数を返します。式で書くと <code>g(f(x))</code> です。引数も戻り値も <code>NumberFn</code> です。</li>
+        <li><code>pipe(...fns)</code>：渡された関数を、前から順に当てはめる関数を返します。関数が 1 つもなければ、<code>x</code> をそのまま返す関数を返します。</li>
+        <li><code>repeatFn(fn, times)</code>：<code>fn</code> を <code>times</code> 回当てはめる関数を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>NumberFn</code> の型</dt><dd class="r"><code>(x: number) =&gt; number</code></dd><dd class="c"></dd></div>
+          <div><dt><code>compose((x) =&gt; x + 1, (x) =&gt; x * 2)(3)</code></dt><dd class="r"><code>8</code></dd><dd class="c">3 + 1 で 4、4 × 2 で 8</dd></div>
+          <div><dt><code>pipe((x) =&gt; x + 1, (x) =&gt; x * 10)(2)</code></dt><dd class="r"><code>30</code></dd><dd class="c">2 + 1 で 3、3 × 10 で 30</dd></div>
+          <div><dt><code>pipe()(7)</code></dt><dd class="r"><code>7</code></dd><dd class="c">関数が 1 つもないので、そのまま</dd></div>
+          <div><dt><code>repeatFn((x) =&gt; x * 2, 3)(1)</code></dt><dd class="r"><code>8</code></dd><dd class="c">1 → 2 → 4 → 8</dd></div>
+          <div><dt><code>repeatFn((x) =&gt; x * 2, 0)(5)</code></dt><dd class="r"><code>5</code></dd><dd class="c">0 回なので、そのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>compose</code> は引数が <code>NumberFn</code> 2 つ、戻り値が <code>NumberFn</code> です。<code>pipe</code> は残余引数で、引数の型が <code>NumberFn[]</code>、戻り値が <code>NumberFn</code> です。<code>repeatFn</code> は引数が <code>NumberFn</code> と <code>number</code>、戻り値が <code>NumberFn</code> です。どれもテストで確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">type NumberFn = (x: number) =&gt; number</code><h4>関数の型に名前を付ける</h4></div>
+      <p>q07 で、引数の型に <code>(n: number) =&gt; number</code> のような関数の型を書きました。この型にも、<code>type</code>（02章 q01 の応用）で名前を付けられます。名前を付けると、同じ型を何度も書かずに済みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// PriceRule という型を作る。数値 price を受け取り、数値を返す関数の型
+type PriceRule = (price: number) =&gt; number;
+// 割引 discount を PriceRule として作り、数値 price を受け取り、price から 100 を引いた数を返す関数を入れる
+const discount: PriceRule = (price) =&gt; price - 100;
+// 関数 makeRule を作る。数値 rate を受け取り、PriceRule を返す
+function makeRule(rate: number): PriceRule {
+  // 数値 price を受け取り、次のことをする関数を返す
+  return (price) =&gt; {
+    // 値引き off を作り、price に rate を掛けて四捨五入した数を入れる
+    const off = Math.round(price * rate);
+    // price から off を引いた数を返す
+    return price - off;
+  };
+}
+// 1 割引き tenOff を作り、makeRule に 0.1 を渡して呼んだ結果を入れる
+const tenOff = makeRule(0.1);
+// 結果: discount(1000) は 900、tenOff(1000) は 900、tenOff(1980) は 1782</code></pre>
+      </div>
+      <p>変数の型や戻り値の型に <code>PriceRule</code> と書くと、そこに入れるアロー関数の引数 <code>price</code> には、型を書かなくても <code>number</code> が付きます。<code>makeRule</code> が返すアロー関数も同じです。</p>
+      <dl class="eg">
+        <div><dt><code>discount(1000)</code></dt><dd class="r"><code>900</code></dd><dd class="c"></dd></div>
+        <div><dt><code>tenOff(1980)</code></dt><dd class="r"><code>1782</code></dd><dd class="c">198 を引く</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>関数の型の中の引数の名前は、型を読みやすくするためのものです。<code>(x: number) =&gt; number</code> と <code>(n: number) =&gt; number</code> は同じ型として扱われます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/function-type-declaration">サバイバルTypeScript「関数の型の宣言」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// NumberFn という型を作る。数値 x を受け取り、数値を返す関数の型。ほかのファイルから使えるようにする
+
+// 関数 compose を作る。NumberFn の f と NumberFn の g を受け取り、NumberFn を返す
+export function compose() {
+  // 数値 x を受け取り、「f に x を渡して呼んだ結果」を g に渡して呼んだ結果を返す関数を返す
+}
+
+// 関数 pipe を作る。NumberFn をいくつでも fns として受け取り、NumberFn を返す
+export function pipe() {
+  // 数値 x を受け取り、次のことをする関数を返す
+  //   値 value を入れ直せる変数として作り、x を入れる
+  //   fns から 1 つずつ fn に取り出してくり返す
+  //     value に、fn に value を渡して呼んだ結果を入れ直す
+  //   value を返す
+}
+
+// 関数 repeatFn を作る。NumberFn の fn と数値 times を受け取り、NumberFn を返す
+export function repeatFn() {
+  // 数値 x を受け取り、次のことをする関数を返す
+  //   値 value を入れ直せる変数として作り、x を入れる
+  //   i を 0 から、times より小さい間 1 ずつ増やしながらくり返す
+  //     value に、fn に value を渡して呼んだ結果を入れ直す
+  //   value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>NumberFn</code> は、e02 のサンプルの <code>PriceRule</code> と同じ形で、前に <code>export</code> を付けます。<code>compose</code> の中身は、q07 問20 の <code>composeTwo</code> と同じ <code>g(f(x))</code> です。違うのは、<code>x</code> を受け取る関数を返すことで、サンプルの <code>discount</code> の右側のように書いて <code>return</code> します。戻り値の型を <code>NumberFn</code> にしたので、返すアロー関数の <code>x</code> には型を書かなくてもかまいません。<code>pipe</code> の「いくつでも」は、残余引数 <code>...fns: NumberFn[]</code> です（q05 問1）。<code>pipe</code> と <code>repeatFn</code> は、サンプルの <code>makeRule</code> と同じく <code>{ }</code> のあるアロー関数を返し、その中でくり返します。<code>fns</code> が空の配列なら、くり返しは 1 回も動かず、<code>x</code> がそのまま返ります。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,13 @@
+{
+  "name": "devlab-ts-prework-guide",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "check": "node scripts/check_page.mjs"
+  },
+  "devDependencies": {
+    "highlight.js": "11.9.0",
+    "playwright": "1.65.0"
+  }
+}
