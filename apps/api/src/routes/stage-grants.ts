@@ -25,7 +25,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
  */
 
 import { Hono } from "hono";
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { sql, and, eq, inArray, notInArray } from "drizzle-orm";
 
 import type { Db } from "../db/client.js";
 import {
@@ -665,7 +665,13 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
         .from(profiles)
         .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
       db
-        .select({ profileId: stageGrants.profileId, ...guidanceColumns })
+        .select({
+          profileId: stageGrants.profileId,
+          source_group: sql<
+            string | null
+          >`(select name from integration_groups where id = ${stageGrants.sourceGroupId})`,
+          ...guidanceColumns,
+        })
         .from(stageGrants)
         .where(eq(stageGrants.stageId, stage.id)),
       db
@@ -714,6 +720,7 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
       guidance_summary: summarizeGuidance(grantRows),
       learners: listed.learners.map((row) => ({
         ...row,
+        source_group: grantRows.find((grant) => grant.profileId === row.id)?.source_group ?? null,
         guidance: row.assigned
           ? guidanceOf(grantRows.find((grant) => grant.profileId === row.id))
           : null,

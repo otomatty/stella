@@ -1,4 +1,4 @@
-import { isIntegrationScopes } from "@stella/shared/integrations/types";
+import { isIntegrationScopes, isAllowedStagePrefixes } from "@stella/shared/integrations/types";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { integrationClients } from "../db/schema.js";
@@ -13,6 +13,7 @@ const publicClient = (r: typeof integrationClients.$inferSelect) => ({
   name: r.name,
   tokenPrefix: r.tokenPrefix,
   scopes: r.scopes,
+  allowedStagePrefixes: r.allowedStagePrefixes,
   enabled: r.enabled,
   lastUsedAt: r.lastUsedAt,
   createdBy: r.createdBy,
@@ -57,6 +58,8 @@ adminIntegrationsRoute.post("/api/admin/integrations", async (c) => {
       typeof body.name !== "string" ||
       !body.name.trim() ||
       body.name.trim().length > 200 ||
+      (body.allowedStagePrefixes !== undefined &&
+        !isAllowedStagePrefixes(body.allowedStagePrefixes)) ||
       !isIntegrationScopes(body.scopes)
     )
       return c.json({ error: "名前と scope を確認してください" }, 400);
@@ -66,6 +69,7 @@ adminIntegrationsRoute.post("/api/admin/integrations", async (c) => {
       .values({
         name: body.name.trim(),
         scopes: [...new Set(body.scopes)],
+        allowedStagePrefixes: body.allowedStagePrefixes as string[] | undefined,
         createdBy: caller.id,
         ...stored,
       })
@@ -97,10 +101,17 @@ adminIntegrationsRoute.patch("/api/admin/integrations/:id", async (c) => {
       !body ||
       (body.enabled !== undefined && typeof body.enabled !== "boolean") ||
       (body.scopes !== undefined && !isIntegrationScopes(body.scopes)) ||
-      (body.enabled === undefined && body.scopes === undefined)
+      (body.allowedStagePrefixes !== undefined &&
+        !isAllowedStagePrefixes(body.allowedStagePrefixes)) ||
+      (body.enabled === undefined &&
+        body.scopes === undefined &&
+        body.allowedStagePrefixes === undefined)
     )
       return c.json({ error: "変更内容を確認してください" }, 400);
     const changes = {
+      ...(isAllowedStagePrefixes(body.allowedStagePrefixes)
+        ? { allowedStagePrefixes: [...new Set(body.allowedStagePrefixes)] }
+        : {}),
       ...(body.enabled !== undefined ? { enabled: body.enabled as boolean } : {}),
       ...(isIntegrationScopes(body.scopes) ? { scopes: [...new Set(body.scopes)] } : {}),
       updatedAt: new Date(),

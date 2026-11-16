@@ -34,6 +34,7 @@ export function IntegrationsAdmin() {
   const [clients, setClients] = useState<IntegrationClient[]>([]);
   const [name, setName] = useState("");
   const [scopes, setScopes] = useState<IntegrationScope[]>([]);
+  const [prefixes, setPrefixes] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +122,11 @@ export function IntegrationsAdmin() {
             className="space-y-5"
             onSubmit={(e) => {
               e.preventDefault();
-              void mutate(ROOT, "POST", { name, scopes });
+              void mutate(ROOT, "POST", {
+                name,
+                scopes,
+                allowedStagePrefixes: prefixList(prefixes),
+              });
             }}
           >
             <div className="max-w-md">
@@ -135,6 +140,7 @@ export function IntegrationsAdmin() {
                 className="min-h-11"
               />
             </div>
+            <PrefixEditor value={prefixes} onChange={setPrefixes} disabled={busy} />
             <ScopeEditor value={scopes} onChange={setScopes} disabled={busy} />
             <div className="flex flex-wrap gap-2 border-t border-border pt-4">
               <Button
@@ -223,6 +229,11 @@ function ClientCard({
   onGroups: () => void;
 }) {
   const [scopes, setScopes] = useState(client.scopes);
+  const [prefixes, setPrefixes] = useState(client.allowedStagePrefixes.join(", "));
+  useEffect(
+    () => setPrefixes(client.allowedStagePrefixes.join(", ")),
+    [client.allowedStagePrefixes],
+  );
   useEffect(() => setScopes(client.scopes), [client.scopes]);
   return (
     <Card className={cn(!client.enabled && "border-warning")}>
@@ -251,6 +262,7 @@ function ClientCard({
             </dd>
           </div>
         </dl>
+        <PrefixEditor value={prefixes} onChange={setPrefixes} disabled={busy} />
         <ScopeEditor value={scopes} onChange={setScopes} disabled={busy} />
         <div className="flex flex-wrap gap-2 border-t border-border pt-4">
           <Button
@@ -258,7 +270,7 @@ function ClientCard({
             variant="primary"
             className={BUTTON_CLASS}
             disabled={busy}
-            onClick={() => onUpdate({ scopes })}
+            onClick={() => onUpdate({ scopes, allowedStagePrefixes: prefixList(prefixes) })}
           >
             範囲を保存する
           </Button>
@@ -344,5 +356,36 @@ function ScopeEditor({
         ))}
       </div>
     </fieldset>
+  );
+}
+
+function prefixList(value: string) {
+  return [...new Set(value.split(/[,\s]+/).filter(Boolean))];
+}
+function PrefixEditor({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <Label htmlFor={id}>指定してよいステージの接頭辞</Label>
+      <Input
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="例: devlab-"
+        className="min-h-11"
+      />
+      <p className="mt-1 text-xs text-ink-3">
+        カンマか空白で区切ってください。空欄の場合はステージを指定できません。
+      </p>
+    </div>
   );
 }

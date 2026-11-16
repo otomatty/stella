@@ -5,7 +5,8 @@
 import { eq } from "drizzle-orm";
 
 import type { Db } from "../db/client.js";
-import { authUsers } from "../db/schema.js";
+import type { InviteUserInput } from "@stella/shared/admin/types";
+import { authUsers, profiles } from "../db/schema.js";
 
 /** 招待時: プロフィール ID と同じ auth_users 行を作成する (Google ログイン待ち)。 */
 export async function registerInvitedUser(db: Db, userId: string, email: string): Promise<void> {
@@ -29,4 +30,20 @@ export async function resolveInviteAuthUserId(
     return { userId: existing.id, authExists: true };
   }
   return { userId: crypto.randomUUID(), authExists: false };
+}
+
+/** 管理画面と連携 API の共通招待。招待メールは送らず Google ログインを待つ。 */
+export async function inviteUser(db: Db, inv: InviteUserInput): Promise<string> {
+  const { userId, authExists } = await resolveInviteAuthUserId(db, inv.email);
+  const profileInsert = db.insert(profiles).values({
+    id: userId,
+    role: inv.role,
+    displayName: inv.displayName,
+    initials: inv.displayName.slice(0, 2).toUpperCase(),
+    email: inv.email,
+  });
+  if (authExists) await profileInsert;
+  else
+    await db.batch([profileInsert, db.insert(authUsers).values({ id: userId, email: inv.email })]);
+  return userId;
 }

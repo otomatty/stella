@@ -19,6 +19,7 @@ export interface StageGrantLearnerCounts {
 }
 
 export interface StageGrantLearnerDetail {
+  source_group?: string | null;
   guidance?: StageGrantGuidance | null;
   id: string;
   display_name: string;
