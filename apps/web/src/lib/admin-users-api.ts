@@ -11,8 +11,10 @@ import { apiFetch } from "./api-client";
 
 export type AdminProfileRow = ProfileRow & { disabled: boolean };
 
-export async function listProfiles(): Promise<AdminProfileRow[]> {
-  const { rows } = await apiFetch<{ rows: ProfileRow[] }>("/api/admin/users");
+export async function listProfiles(groupId?: string): Promise<AdminProfileRow[]> {
+  const { rows } = await apiFetch<{ rows: ProfileRow[] }>(
+    `/api/admin/users${groupId ? `?groupId=${encodeURIComponent(groupId)}` : ""}`,
+  );
   return (rows ?? []).map((row) => ({
     ...row,
     disabled: row.disabled ?? false,

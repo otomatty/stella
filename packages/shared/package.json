@@ -83,7 +83,8 @@
     "./tasks/source-reference": "./src/tasks/source-reference.ts",
     "./markdown/tutorial-blocks": "./src/markdown/tutorial-blocks.ts",
     "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
-    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts"
+    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
+    "./integrations/types": "./src/integrations/types.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -49,9 +49,12 @@ export async function fetchMyStageCompletions(): Promise<StageCompletion[]> {
 }
 
 /** staff 向け: ステージの成績台帳 (受講者 × 達成状況) を取得する。 */
-export async function fetchStageGradebook(stageId: string): Promise<StageGradebook | null> {
+export async function fetchStageGradebook(
+  stageId: string,
+  groupId?: string,
+): Promise<StageGradebook | null> {
   const { gradebook } = await apiFetch<{ gradebook: StageGradebook | null }>(
-    `/api/certificates/gradebook/${encodeURIComponent(stageId)}`,
+    `/api/certificates/gradebook/${encodeURIComponent(stageId)}${groupId ? `?groupId=${encodeURIComponent(groupId)}` : ""}`,
   );
   return gradebook ?? null;
 }

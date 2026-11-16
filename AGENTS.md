@@ -39,7 +39,7 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **ログインなしで読める単元 (#41):** `unit.json` に `"public": true` を書いた単元 (VS Code を入れる前に読む `dev-env-basics` の U00 `u00-start`・U01 `u01-vscode-setup` に草稿を配置済み。課題のある旧見本単元は `u02-first-task`。本文は AI が下書きし (`references.json` は `draft`)、承認待ちはマージ・公開を止めず `content:check` の警告と CI の要約で追い、講師が後から参照元と本文を確かめて `approved` にする。AI は `approved` を付けない) のスライドとまとめを、未ログインの Web `/start` (認証付きシェル `_app` の外) と公開 API `GET /api/public/units`・`GET /api/public/lessons/:id` が返す。印は seed が D1 `lessons.public` (migration 0056) に書く。公開 API は認証付き API と別経路で、印のある slides/text・課題文でない・published・catalog・前提なし・format 2 のステージのものだけを返し、それ以外は 404 (IP 単位のレート制限 `PUBLIC_CONTENT_RATE_LIMITER`。印を外したらすぐ読めなくなるよう `Cache-Control: no-store`)。`content:check` は課題 (`tasks/`) のある単元・`granted`・前提のあるステージへの印を落とす。`/start` は進捗を記録しない。詳細は 07 §12.2 と `packages/content/ADDING_STAGE.md`。
 
-**本棚 (廃止、2026-11):** 本棚の画面・API・スキル `stella-book` は削除した。D1 の `library_*` 表は migration 0078 で落とす。R2 `stella-library-private` はデプロイの step (`retire-library-storage.ts`) がライフサイクルで空にしてから消す。旧 URL `/library` はホームへ送る。
+**本棚 (廃止、2026-11):** 本棚の画面・API・スキル `stella-book` は削除した。D1 の `library_*` 表は migration 0079 で落とす。R2 `stella-library-private` はデプロイの step (`retire-library-storage.ts`) がライフサイクルで空にしてから消す。旧 URL `/library` はホームへ送る。
 
 **Default local loop:** copy env from examples → `bun run db:migrate && bun run db:seed && bun run smoke:d1` → `dev:api` + `dev` → Google login → D1-backed UI. See `README.md` setup section for role promotion (`admin` / `platform_admin`) and the manual verification checklist.
 
@@ -87,6 +87,8 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 
 ### Key caveats
+
+- **外部連携 (#204)**: `/api/integrations/v1/*` は Cookie・セッションを見ず、連携トークンの SHA-256 ハッシュで認証する。管理画面 `/admin/integrations` と管理 API は `platform_admin` のみ。後続ルートは `lib/integrations.ts` の認証・scope・所有グループ/メンバーの確認を通し、範囲外は404。トークンは発行・再発行のときだけ返し、DB・ログに平文を残さない。グループはクライアント所有、受講者の削除でメンバー行も CASCADE。staff の一覧の `groupId` は既存の受講者範囲に追加する。仕様・判断は `docs/integrations.md`。
 
 - **案内されたステージ (#201)**: 案内元・期限・文は受講登録と別に `stage_grants` の `source_name` / `due_at` / `message` に持つ。ホームは `GET /api/stage-grants/mine` を専用の枠へ出し、通常の「次にやること」はスキルマップの `unguided_next_stage_ids` / `has_unguided_enrollment` で組む (古い API は従来項目)。割り当ては初回の Basic の名指しの判定に数えず、案内されたステージだけを始めても最初の研修の案内を残す。枠の開始は `POST /api/stages/:id/start` のみ、開く操作もフォーカスを変えない。本人が選んだフォーカスは従来どおり扱う。管理者は割り当て画面の「案内の内容」から `PATCH /api/stage-grants/:stageId/guidance` で全員へ保存・消去。未保存の割り当てがある間は案内を操作できず、入力した日付は日本時間23:59:59として送る。
 

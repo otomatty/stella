@@ -1,3 +1,4 @@
+import { IntegrationGroupFilter } from "@/components/integrations/IntegrationGroupFilter";
 /**
  * `/admin/users` — ユーザー管理 (Issue #22)。
  *
@@ -61,7 +62,8 @@ function UsersAdminLive({
   currentUserId: string | null;
   currentUserRole: ProfileRole | null;
 }) {
-  const { profiles, loading, error, refetch } = useProfiles();
+  const [groupId, setGroupId] = useState("");
+  const { profiles, loading, error, refetch } = useProfiles(true, groupId);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<ProfileRole | "all">("all");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -148,6 +150,7 @@ function UsersAdminLive({
         sub="ユーザーを管理 · CSV一括招待 / ロール割当"
         actions={
           <>
+            <IntegrationGroupFilter value={groupId} onChange={setGroupId} />
             <Button onClick={() => setCsvOpen(true)}>
               <Upload size={14} />
               CSV一括招待

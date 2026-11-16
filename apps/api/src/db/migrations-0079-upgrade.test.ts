@@ -3,14 +3,20 @@ import { URL } from "node:url";
 import { expect, it } from "vitest";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 
-it("0078: 本棚の全表を子から落とし、他の表と行は残す (外部キー有効)", () => {
-  const { sqlite } = sqliteD1({ beforeMigration: "0078_drop_personal_library" });
+it("0079: 本棚の全表を子から落とし、他の表と行は残す (外部キー有効)", () => {
+  const { sqlite } = sqliteD1({ beforeMigration: "0079_drop_personal_library" });
   try {
     expect(sqlite.prepare("pragma foreign_keys").get()).toEqual({ foreign_keys: 1 });
     sqlite.exec(`
       insert into tenants (id, name, created_at, updated_at) values ('ses', '架空の組織', 1, 1);
       insert into auth_users (id, email, created_at) values ('user', 'learner@example.test', 1);
       insert into profiles (id, tenant_id, role, display_name, created_at) values ('learner', 'ses', 'student', '架空の受講者', 1);
+      insert into integration_clients (id, name, token_hash, token_prefix, created_by, created_at, updated_at)
+        values ('client', '連携元', 'hash', 'prefix', 'learner', 1, 1);
+      insert into integration_groups (id, client_id, external_key, name, created_at, updated_at)
+        values ('group', 'client', 'group-key', 'グループ', 1, 1);
+      insert into integration_group_members (group_id, profile_id, external_id, joined_at)
+        values ('group', 'learner', 'external-learner', 1);
       insert into library_books (id, tenant_id, owner_id, package_id, title, created_at, updated_at)
         values ('book', 'ses', 'learner', 'package', '本', 1, 1);
       insert into library_files (id, tenant_id, book_id, content_key, kind, content_type, size, r2_key, created_at, updated_at)
@@ -51,18 +57,24 @@ it("0078: 本棚の全表を子から落とし、他の表と行は残す (外�
           "select * from sqlite_master where name not glob 'library_*' and tbl_name not glob 'library_*' order by name",
         )
         .all();
+    const integrations = () =>
+      ["integration_clients", "integration_groups", "integration_group_members"].map((table) =>
+        sqlite.prepare(`select * from "${table}"`).all(),
+      );
+    const integrationRows = integrations();
     const schema = otherSchema();
     const profiles = sqlite.prepare("select * from profiles").all();
     const users = sqlite.prepare("select * from auth_users").all();
     const tenants = sqlite.prepare("select * from tenants").all();
     const sql = readFileSync(
-      new URL("../../drizzle/0078_drop_personal_library.sql", import.meta.url),
+      new URL("../../drizzle/0079_drop_personal_library.sql", import.meta.url),
       "utf8",
     );
     // D1 applies each statement with foreign keys enabled.
     for (const statement of sql.split("--> statement-breakpoint")) sqlite.exec(statement);
     expect(libraryTables()).toEqual([]);
     expect(otherSchema()).toEqual(schema);
+    expect(integrations()).toEqual(integrationRows);
     expect(sqlite.prepare("select * from profiles").all()).toEqual(profiles);
     expect(sqlite.prepare("select * from auth_users").all()).toEqual(users);
     expect(sqlite.prepare("select * from tenants").all()).toEqual(tenants);

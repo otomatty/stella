@@ -1,3 +1,4 @@
+import { integrationGroupFilter } from "../lib/integrations.js";
 import { manualCompletionCounts, taskCompletionCounts } from "../lib/task-completion.js";
 /**
  * 修了判定 / 成績台帳 / 修了証 API
@@ -367,7 +368,13 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
       })
       .from(enrollments)
       .innerJoin(profiles, eq(profiles.id, enrollments.userId))
-      .where(and(eq(enrollments.stageId, stageId), learnerOnly(enrollments.userId)))
+      .where(
+        and(
+          eq(enrollments.stageId, stageId),
+          learnerOnly(enrollments.userId),
+          integrationGroupFilter(enrollments.userId, c.req.query("groupId")),
+        ),
+      )
       .orderBy(profiles.displayName);
 
     // 受講者ごとに computeStageCompletion を呼ぶと N+1 になり Workers の subrequest

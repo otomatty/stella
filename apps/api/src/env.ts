@@ -3,6 +3,7 @@
  */
 
 export interface Env {
+  INTEGRATION_RATE_LIMITER?: RateLimit;
   ANTHROPIC_API_KEY: string;
   ANTHROPIC_MODEL?: string;
   OPENAI_API_KEY?: string;

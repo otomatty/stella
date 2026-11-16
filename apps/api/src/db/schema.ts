@@ -2169,3 +2169,48 @@ export const APP_TABLES = [
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;
+
+/** 外部アプリの認証情報。平文トークンは保存しない。 */
+export const integrationClients = sqliteTable("integration_clients", {
+  id: uuid(),
+  name: text("name").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  tokenPrefix: text("token_prefix").notNull(),
+  scopes: json<import("@stella/shared/integrations/types").IntegrationScope[]>("scopes", []),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  lastUsedAt: ts("last_used_at"),
+  createdBy: text("created_by").references(() => profiles.id, { onDelete: "set null" }),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
+});
+export const integrationGroups = sqliteTable(
+  "integration_groups",
+  {
+    id: uuid(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => integrationClients.id, { onDelete: "cascade" }),
+    key: text("external_key").notNull(),
+    name: text("name").notNull(),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [uniqueIndex("integration_groups_client_key").on(t.clientId, t.key)],
+);
+export const integrationGroupMembers = sqliteTable(
+  "integration_group_members",
+  {
+    groupId: text("group_id")
+      .notNull()
+      .references(() => integrationGroups.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    externalId: text("external_id"),
+    joinedAt: tsNow("joined_at"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.groupId, t.profileId] }),
+    index("integration_members_profile").on(t.profileId),
+  ],
+);

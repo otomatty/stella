@@ -1,3 +1,4 @@
+import { integrationGroupFilter } from "../lib/integrations.js";
 /**
  * 専用ステージ (`audience = granted`) のユーザー割当 API。
  *
@@ -661,7 +662,8 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
           role: profiles.role,
           disabled: profiles.disabled,
         })
-        .from(profiles),
+        .from(profiles)
+        .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
       db
         .select({ profileId: stageGrants.profileId, ...guidanceColumns })
         .from(stageGrants)

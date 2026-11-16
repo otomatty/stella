@@ -107,6 +107,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   discovery: "/discovery",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
+  integrations: "/admin/integrations",
   enrollments: "/admin/enrollments",
   audit: "/admin/audit",
   report: "/admin/report",
