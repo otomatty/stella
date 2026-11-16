@@ -109,24 +109,6 @@ it("見積もりにも読み辞書を使い、headerは読み上げに含めな�
     sceneVideoSequence([], [], topic)[0].timing.duration,
   );
 });
-it.each([undefined, "", "　 "])("takeawayが無い場合 (%s) はタイトルだけで終わる", (takeaway) => {
-  const sequence = sceneVideoSequence(
-    scenes,
-    scenes.map(() => [1, 2]),
-    {
-      title: "学ぶ流れ",
-      header: "開発環境",
-      takeaway,
-    },
-  );
-  expect(sequence.at(-1)?.scene).toEqual({
-    kind: "text",
-    id: "summary",
-    title: "学ぶ流れ",
-    header: undefined,
-    duration: 4,
-  });
-});
 it.each([
   [0, 0],
   [0.2, 0.5],

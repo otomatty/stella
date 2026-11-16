@@ -35,10 +35,7 @@ function parseList(value: string): string[] {
   return inner.split(",").map((s) => unquote(s));
 }
 
-export function parseSlides(
-  source: string,
-  options: { allowMissingTakeaway?: boolean } = {},
-): SlidesFrontMatter {
+export function parseSlides(source: string): SlidesFrontMatter {
   const normalized = source.replace(/\r\n/g, "\n");
   const match = /^---\n([\s\S]*?)\n---\n/.exec(normalized);
   if (!match) throw new Error("slides.md に front-matter がありません");
@@ -50,7 +47,7 @@ export function parseSlides(
     if (kv) fields.set(kv[1], kv[2]);
   }
 
-  const required = options.allowMissingTakeaway ? ["id", "title"] : ["id", "title", "takeaway"];
+  const required = ["id", "title", "takeaway"];
   for (const key of required) {
     if (!fields.has(key)) throw new Error(`front-matter に ${key} がありません`);
   }

@@ -51,6 +51,7 @@ function fixture() {
     stageSlug: "fixture",
     id: "first",
     title: "動画",
+    takeaway: "動画で流れを確かめます。",
     readings: {},
     parseError: "旧台本が不正",
   } as NarrationTopic;

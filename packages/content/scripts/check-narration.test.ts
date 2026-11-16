@@ -22,8 +22,8 @@ it("video.json があれば、壊れた旧台本の parseError も内容の検�
   try {
     writeFileSync(join(root, "video.json"), "{}");
     vi.mocked(collectNarrationTopics).mockReturnValue([
-      { topicDir: root, parseError: "invalid JSON" },
-      { topicDir: root, narration: {} },
+      { topicDir: root, parseError: "invalid JSON", takeaway: "動画で流れを確かめます。" },
+      { topicDir: root, narration: {}, takeaway: "動画で流れを確かめます。" },
     ] as NarrationTopic[]);
     await import("./check-narration.js");
     expect(validateTopic).not.toHaveBeenCalled();

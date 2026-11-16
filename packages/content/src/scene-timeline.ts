@@ -49,7 +49,7 @@ export function sceneSpeeches(
 export function sceneVideoSequence(
   scenes: Scene[],
   durations: number[][],
-  topic: { title: string; header?: string; takeaway?: string; readings?: Record<string, string> },
+  topic: { title: string; header?: string; takeaway: string; readings?: Record<string, string> },
   clips: Record<string, ClipInfo> = {},
   textDurations?: Record<TextScene["id"], number>,
 ): SceneVideoEntry[] {
@@ -61,12 +61,11 @@ export function sceneVideoSequence(
     duration: 2.6,
   };
   const timings = sceneTimelines(scenes, durations, clips);
-  const takeaway = topic.takeaway?.trim();
   const summary: TextScene = {
     kind: "text",
     id: "summary",
-    title: takeaway || topic.title,
-    header: takeaway ? "まとめ" : undefined,
+    title: topic.takeaway.trim(),
+    header: "まとめ",
     duration: 4,
   };
   const textTiming = (scene: TextScene): SceneTimeline => {

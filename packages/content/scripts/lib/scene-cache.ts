@@ -57,7 +57,7 @@ export function sceneVideoSourceHash(input: {
   storyboard: import("../../src/video-storyboard.js").VideoStoryboard;
   title: string;
   header?: string;
-  takeaway?: string;
+  takeaway: string;
   readings: Record<string, string>;
   voice: string;
   assets: Record<string, string>;
@@ -77,7 +77,7 @@ export function sceneVideoSourceHash(input: {
         ...storyboard.scenes.map((s) =>
           s.beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings)),
         ),
-        [speechOf({ text: input.takeaway?.trim() || input.title }, readings)],
+        [speechOf({ text: input.takeaway.trim() }, readings)],
       ],
       timing: SCENE_TIMING,
     }),

@@ -135,9 +135,7 @@ export function collectNarrationTopics(selectors: string[] = []): NarrationTopic
     const vocabulary: string[] = [];
     dirs.forEach((topicDir, i) => {
       const slidesSource = readFileSync(join(topicDir, "slides.md"), "utf8");
-      const fm = parseSlides(slidesSource, {
-        allowMissingTakeaway: existsSync(join(topicDir, "video.json")),
-      });
+      const fm = parseSlides(slidesSource);
       const prior = [...vocabulary];
       vocabulary.push(...fm.introduces);
       if (!matchesSelectors(topicDir, selectors)) return;
@@ -169,9 +167,7 @@ export function collectNarrationTopics(selectors: string[] = []): NarrationTopic
         parseError,
         docSection: existsSync(docFile) ? docSectionFor(readFileSync(docFile, "utf8"), fm.id) : "",
         nextTopicTitle: next
-          ? parseSlides(readFileSync(join(next, "slides.md"), "utf8"), {
-              allowMissingTakeaway: existsSync(join(next, "video.json")),
-            }).title
+          ? parseSlides(readFileSync(join(next, "slides.md"), "utf8")).title
           : undefined,
         readings,
         priorVocabulary: prior,

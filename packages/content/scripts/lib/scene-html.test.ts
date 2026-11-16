@@ -52,7 +52,7 @@ it("文字だけのタイトルは字幕なしで中央に出し、前後0.4秒�
   expect(window.__busyRanges[1][1]).toBe(2.6);
   expect(window.__overflows()).toEqual([]);
 });
-it.each(["Webで読み、VS Codeで課題を書き、確認して提出します。", undefined])(
+it.each(["Webで読み、VS Codeで課題を書き、確認して提出します。"])(
   "まとめはtakeaway (%s) を中央に出し、3行の検査と白へのフェードを行う",
   async (takeaway) => {
     const scene = sceneVideoSequence(
@@ -64,9 +64,8 @@ it.each(["Webで読み、VS Codeで課題を書き、確認して提出します
     ).at(-1)?.scene;
     if (scene?.kind !== "text") throw new Error("文字の場面ではありません");
     const html = textSceneHtml(scene);
-    expect(html).toContain(`<h1>${takeaway ?? "学ぶ流れ"}</h1>`);
-    if (takeaway) expect(html).toContain("<header>まとめ</header>");
-    else expect(html).not.toContain("<header>");
+    expect(html).toContain(`<h1>${takeaway}</h1>`);
+    expect(html).toContain("<header>まとめ</header>");
     expect(html).toContain("font-size:32px;color:#5C5C66");
     expect(html).toContain("max-width:1500px");
     expect(html).toContain("font-size:56px;line-height:1.5");

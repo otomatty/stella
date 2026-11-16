@@ -140,9 +140,10 @@ describe("場面音声の作り直し", () => {
   });
   it("知らない場面idはブラウザ起動や音声合成より前に拒む", async () => {
     vi.mocked(collectNarrationTopics).mockReturnValue([
-      { topicDir: new URL(".", videoFile).pathname } as ReturnType<
-        typeof collectNarrationTopics
-      >[number],
+      {
+        topicDir: new URL(".", videoFile).pathname,
+        takeaway: "動画で流れを確かめます。",
+      } as ReturnType<typeof collectNarrationTopics>[number],
     ]);
     await expect(
       buildSceneVideos(["dev-env-basics", "--refresh-audio", "unknown"]),
@@ -211,6 +212,7 @@ describe("素材不足の書き出し", () => {
           stageSlug: "fixture",
           id: "fixture",
           title: "学ぶ流れ",
+          takeaway: "動画で流れを確かめます。",
           readings: {},
         } as ReturnType<typeof collectNarrationTopics>[number],
       ]);
@@ -245,6 +247,7 @@ describe("はみ出しがある場合の書き出し", () => {
               stageSlug: "fixture",
               id: "fixture",
               title: "学ぶ流れ",
+              takeaway: "動画で流れを確かめます。",
               readings: {},
             } as ReturnType<typeof collectNarrationTopics>[number],
           ]);
@@ -556,7 +559,6 @@ describe("音声モデルと日次上限", () => {
       expect(
         planSceneTopic({ ...topics[0], takeaway: "確認して提出します。" }, "fixture"),
       ).not.toBe(before);
-      expect(planSceneTopic({ ...topics[0], takeaway: "" }, "fixture")).not.toBe(before);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

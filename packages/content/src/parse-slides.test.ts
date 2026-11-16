@@ -42,15 +42,8 @@ describe("parseSlides", () => {
   it("front-matter が無ければ投げる", () => {
     expect(() => parseSlides("# no front matter")).toThrow(/front-matter/);
   });
-  it("新方式の動画向けに指定した場合だけtakeawayの省略を許す", () => {
+  it("takeaway が無ければ投げる", () => {
     const source = "---\nid: 1-1-1\ntitle: 学ぶ流れ\n---\n本文\n";
     expect(() => parseSlides(source)).toThrow("takeaway");
-    expect(parseSlides(source, { allowMissingTakeaway: true })).toMatchObject({
-      title: "学ぶ流れ",
-      takeaway: "",
-    });
-    expect(() =>
-      parseSlides(source.replace("title: 学ぶ流れ\n", ""), { allowMissingTakeaway: true }),
-    ).toThrow("title");
   });
 });
