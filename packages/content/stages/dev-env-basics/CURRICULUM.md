@@ -52,6 +52,6 @@ format 2を使い、OSで違う手順は `:::os` で分け、`stage.json` の `p
 
 固定IDを保つため、U02のトピックIDは旧見本単元の `0-1-*` のままとする。U00は `00-1-1`、U01は `01-1-*`、U03は `03-1-*`、U04は `04-1-1` である。
 
-12トピックすべてに読み上げ台本 `narration.json` がある。GitHub Secret `GEMINI_API_KEY` を登録するとデプロイで動画が生成される。現在は未登録で、動画はまだ生成されていない。実機での手順確認、画像と使い方動画の収録、参照元と本文の講師による確認を進める。
+12トピックすべてに読み上げ台本 `narration.json` がある。GitHub Secret `GEMINI_API_KEY` は登録済みで、main への push でデプロイの `video:sync` が動画を作る。U02 の t1・t3 と U03 の t1〜t3 の5トピックは、VS Code の操作を収録した動画 (`screen.*`) を使う。00-1-1 は絵コンテ `video.json` の新方式で作る。VS Code の操作のクリップ2本は未収録で、Windows の手元で撮る。それ以外のトピックは `narration.json` のスライド版の動画になる。実機での手順確認、画像と使い方動画の収録、参照元と本文の講師による確認を進める。
 
 新形式の執筆は[07](../../../../docs/curriculum/07-stella-adoption-redesign.md)と[ADDING_STAGE.md](../../ADDING_STAGE.md)に従う。

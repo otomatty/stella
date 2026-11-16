@@ -1,5 +1,5 @@
 /**
- * Chat provider selection for SSE chat / review-draft (Issue #204).
+ * Chat provider selection for SSE chat / review-draft (Issue #3).
  */
 
 import type { Env } from "../env.js";

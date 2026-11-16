@@ -1,5 +1,5 @@
 /**
- * Issue #204 — POST /api/chat provider + AI Gateway behavior (TDD).
+ * Issue #3 — POST /api/chat provider + AI Gateway behavior (TDD).
  */
 
 import type { Hono } from "hono";

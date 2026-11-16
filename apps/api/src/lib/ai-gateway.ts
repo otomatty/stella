@@ -1,5 +1,5 @@
 /**
- * Cloudflare AI Gateway URL helpers (Issue #204).
+ * Cloudflare AI Gateway URL helpers (Issue #3).
  */
 
 import type { Env } from "../env.js";

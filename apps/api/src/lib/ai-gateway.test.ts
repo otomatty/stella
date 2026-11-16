@@ -1,5 +1,5 @@
 /**
- * Issue #204 — Cloudflare AI Gateway URL construction (TDD; module not implemented yet).
+ * Issue #3 — Cloudflare AI Gateway URL construction (TDD; module not implemented yet).
  */
 
 import Anthropic from "@anthropic-ai/sdk";
