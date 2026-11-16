@@ -7,6 +7,7 @@
  * そのまま描けばよい (クライアントで伏せ直さない)。
  */
 
+import type { UnguidedHomeFields } from "@stella/shared/stage-grants/types";
 import type { StageClearedNotice } from "@stella/shared/cms/types";
 import type { SkillMapState, SkillMapVisibility } from "@stella/shared/skill-map/evaluate";
 
@@ -96,7 +97,7 @@ export interface DiscoveryNode {
   passed: boolean;
 }
 
-export interface SkillMapMine {
+export interface SkillMapMine extends Partial<UnguidedHomeFields> {
   stages: SkillMapStageNode[];
   /** 発見教材。バックエンドが古い場合に備えて省略可 (無ければ描かない)。 */
   discoveries?: DiscoveryNode[];

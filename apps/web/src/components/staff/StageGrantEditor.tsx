@@ -1,3 +1,5 @@
+import { guidanceDate } from "@/lib/guided-stages";
+import { StageGrantGuidanceEditor } from "./StageGrantGuidanceEditor";
 import { manualCompletionUrl } from "@/lib/manual-completion";
 /**
  * Extra ステージ 1 件の割り当て。
@@ -107,6 +109,7 @@ export function StageGrantEditor({
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [pending, setPending] = useState<StageRosterPending>(new Map());
   const [saving, setSaving] = useState(false);
+  const [guidanceBusy, setGuidanceBusy] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
   const [epoch, setEpoch] = useState(0);
   const [sheetNonce, setSheetNonce] = useState(0);
@@ -144,6 +147,7 @@ export function StageGrantEditor({
       setError(null);
       setLoadMoreError(null);
       setSaving(false);
+      setGuidanceBusy(false);
       setReloadTick(0);
       setEpoch((n) => n + 1);
     }
@@ -246,7 +250,7 @@ export function StageGrantEditor({
   const showError = error !== null && !changesOnly && !loading;
 
   const requestClose = () => {
-    if (closingRef.current) return;
+    if (closingRef.current || guidanceBusy) return;
     if (changeCount > 0 && !confirm(CLOSE_CONFIRM)) {
       if (isMobile) setSheetNonce((n) => n + 1);
       return;
@@ -290,7 +294,7 @@ export function StageGrantEditor({
   };
 
   const save = () => {
-    if (stageId === null || savingRef.current || changeCount === 0) return;
+    if (stageId === null || savingRef.current || guidanceBusy || changeCount === 0) return;
     const id = ++saveIdRef.current;
     const epochAtSave = epochRef.current;
     const savedStageId = stageId;
@@ -325,15 +329,15 @@ export function StageGrantEditor({
   };
 
   const onAssigned = (baseline: StageRosterRow, assigned: boolean) => {
-    if (saving) return;
+    if (saving || guidanceBusy) return;
     setPending((current) => setRosterAssigned(current, baseline, assigned));
   };
   const onExempted = (baseline: StageRosterRow, exempted: boolean) => {
-    if (saving) return;
+    if (saving || guidanceBusy) return;
     setPending((current) => setRosterExempted(current, baseline, exempted));
   };
   const onToggleVisible = () => {
-    if (saving) return;
+    if (saving || guidanceBusy) return;
     setPending((current) => toggleVisibleAssignments(current, baselines));
   };
 
@@ -360,7 +364,7 @@ export function StageGrantEditor({
     changesOnly,
     summary,
     changeCount,
-    saving,
+    saving: saving || guidanceBusy,
     queryText,
     onQueryText: setQueryText,
     onRetry: () => setReloadTick((n) => n + 1),
@@ -369,6 +373,29 @@ export function StageGrantEditor({
     onSave: save,
     onClose: requestClose,
     listFooter,
+    guidanceEditor:
+      stageId && page?.guidance_summary ? (
+        <StageGrantGuidanceEditor
+          key={`${epoch}:${stageId}:${JSON.stringify(page.guidance_summary)}`}
+          stageId={stageId}
+          summary={page.guidance_summary}
+          count={page.counts.assigned}
+          pending={changeCount > 0}
+          disabled={loading || saving || error !== null}
+          onBusy={setGuidanceBusy}
+          onSaved={(guidance) => {
+            setPage((current) =>
+              current ? { ...current, guidance_summary: { uniform: true, guidance } } : null,
+            );
+            setLearners((current) =>
+              current.map((row) => (row.assigned ? { ...row, guidance } : row)),
+            );
+            toast.success("案内を保存しました");
+            setReloadTick((n) => n + 1);
+            onSaved();
+          }}
+        />
+      ) : null,
   };
 
   if (isMobile) {
@@ -695,6 +722,7 @@ function PcRoster({
   onSave,
   onClose,
   listFooter,
+  guidanceEditor,
 }: {
   completionStageId: string | null;
   stageLabel: string;
@@ -725,6 +753,7 @@ function PcRoster({
   onSave: () => void;
   onClose: () => void;
   listFooter: React.ReactNode;
+  guidanceEditor: React.ReactNode;
 }) {
   const tabs: { id: PcStatus; label: string; count: number }[] = [
     { id: "all", label: "すべて", count: counts?.learners ?? 0 },
@@ -801,6 +830,7 @@ function PcRoster({
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
+        {guidanceEditor}
         <ListRegion
           showSkeleton={showSkeleton}
           showError={showError}
@@ -866,6 +896,7 @@ function PcRoster({
                           手で済みにする
                         </a>
                       ) : null}
+                      <GuidanceDue row={view.baseline} />
                       {view.baseline.email ? (
                         <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
                       ) : null}
@@ -971,6 +1002,7 @@ function MobileRoster({
   onSave,
   onClose,
   listFooter,
+  guidanceEditor,
 }: {
   completionStageId: string | null;
   stageLabel: string;
@@ -1006,6 +1038,7 @@ function MobileRoster({
   onSave: () => void;
   onClose: () => void;
   listFooter: React.ReactNode;
+  guidanceEditor: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -1101,6 +1134,7 @@ function MobileRoster({
         </label>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
+        {guidanceEditor}
         <ListRegion
           showSkeleton={showSkeleton}
           showError={showError}
@@ -1157,6 +1191,9 @@ function MobileRoster({
                     <ExemptionField view={view} saving={saving} tall onExempted={onExempted} />
                   </div>
                 )}
+                <div className="px-4">
+                  <GuidanceDue row={view.baseline} />
+                </div>
                 {view.baseline.assigned && completionStageId && !saving && changeCount === 0 ? (
                   <a
                     className="block px-4 pb-3 text-sm text-brand underline"
@@ -1176,4 +1213,10 @@ function MobileRoster({
       </div>
     </div>
   );
+}
+
+function GuidanceDue({ row }: { row: StageRosterRow }) {
+  return row.guidance?.due_at ? (
+    <p className="text-xs text-ink-3">案内の期限 {guidanceDate(row.guidance.due_at)}</p>
+  ) : null;
 }

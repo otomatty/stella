@@ -1,3 +1,5 @@
+import { useGuidedStages } from "@/hooks/useGuidedStages";
+import { guidedDeadline } from "@/lib/guided-stages";
 import { useFirstSteps } from "@/hooks/useFirstSteps";
 import { FirstStepsCard } from "./FirstStepsCard";
 import {
@@ -98,6 +100,9 @@ export const StageDetail = ({
   onAskAiAboutTask,
 }: StageDetailProps) => {
   const firstSteps = useFirstSteps();
+  const guided = useGuidedStages();
+  const guidance = guided.stages.find((item) => item.stage_id === stage.id);
+  const guidanceDue = guidedDeadline(guidance?.due_at ?? null);
   const sections = stage.sections ?? [];
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const { submissions } = useMySubmissions(true);
@@ -259,6 +264,16 @@ export const StageDetail = ({
             {stage.dueAt ? (
               <span className="flex items-center gap-1">
                 <Calendar size={13} /> 提出期限 {stage.dueAt}
+              </span>
+            ) : guidanceDue ? (
+              <span
+                className={cn(
+                  "flex items-center gap-1",
+                  guidanceDue.urgent && "font-bold text-danger",
+                )}
+              >
+                <Calendar size={13} /> 案内の期限 {guidanceDue.text}
+                {guidance?.source_name ? `（${guidance.source_name} からの案内）` : ""}
               </span>
             ) : null}
           </div>
