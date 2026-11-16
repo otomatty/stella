@@ -88,7 +88,7 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 ### Key caveats
 
-- **課題・問題を手で済みにする (#200)**: 管理者がステージ管理の受講者一覧・割り当て済みの行から `/task-manual-completion?userId=…&stageId=…` を開き、理由を添えて過去の学習を引き継ぐ。`task_problem_results.source = 'manual'` に理由・操作者・日時を残し、全問がそろうと `submissions.review_source = 'manual'` の合格を作る。ステージの進捗・修了証には数え、スキルの根拠・その日に解いた活動には数えない。受講者には「引き継ぎ」と出し、理由は返さない。取り消せるのは manual だけで、本人の提出・レビューで合格した課題の中では取り消せない。`GET/POST /api/task-manual-completion`・`POST /api/task-manual-completion/revoke`。Web は課題3つずつ順に送り、取り消しの409も部分成功を反映して再取得する。取り消しで課題の合格・修了証が戻ることがある。
+- **課題・問題を手で済みにする (#200)**: 管理者がステージ管理の受講者一覧・割り当て済みの行から `/task-manual-completion?userId=…&stageId=…` を開き、理由を添えて過去の学習を引き継ぐ。`task_problem_results.source = 'manual'` に理由・操作者・日時を残し、全問がそろうと `submissions.review_source = 'manual'` の合格を作る。ステージの進捗・修了証には数え、スキルの根拠・その日に解いた活動には数えない。本人があとから全問を解く・合格すると、課題の合格も本人のものに置き換わる（manual の合格の提出は削除し、合格日は本人が合格した日になる）。受講者には「引き継ぎ」と出し、理由は返さない。取り消せるのは manual だけで、本人の提出・レビューで合格した課題の中では取り消せない。`GET/POST /api/task-manual-completion`・`POST /api/task-manual-completion/revoke`。Web は課題3つずつ順に送り、取り消しの409も部分成功を反映して再取得する。取り消しで課題の合格・修了証が戻ることがある。
 
 - **学習ペース (Issue #40)**: 設定の「学習のペース」は `GET /api/learning-pace` で都度計算する。受講者の学習の記録画面は廃止 (`/records` はホームへリダイレクト)。提出・添削は課題のレッスン画面 (その課題の提出だけ) とホームのガイド (すべての提出)、お知らせは通知ベルの「お知らせ」タブから確認する。学習ログ・復習・講師の支援は保持する。週35時間 / `dev-env-basics` の初回開始日が既定。目標日を `enrollments.due_at` に書かない。進捗は現行ハッシュの課題合格とレッスン完了の予定時間。管理者はだれでも他者のペース・診断を参照・編集できる。既存cronが1週超の差を有効な管理者全員へ受講者・宛先・週ごとに1通通知する。計算対象は受講中の登録がある有効な受講者だけで、1回のcronで20人まで (`PACE_DELAY_LEARNERS_PER_RUN`)。確認Bは `task_progress.passed_at` の7日後。詳細は `docs/learning-pace.md`。
 

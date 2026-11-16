@@ -166,6 +166,8 @@ export async function readManualCompletion(
     const progress = progressByTask.get(task.id);
     const pass = passByTask.get(task.id);
     const saved = savedByTask.get(task.id) ?? [];
+    const problems = readTaskDefinition(task.definition).problems ?? [];
+    const currentProblemIds = new Set(problems.map((problem) => problem.id));
     const counted = countedProblemIds(saved, task.contentHash, Boolean(pass));
     result.units
       .find((unit) => unit.id === task.sectionId)
@@ -175,7 +177,10 @@ export async function readManualCompletion(
         status: progress?.status ?? "not-started",
         reviewSource: pass?.reviewSource ?? null,
         manualReason: pass?.reviewSource === "manual" ? pass.reviewNotes : null,
-        problems: (readTaskDefinition(task.definition).problems ?? []).map((problem) => {
+        obsoleteManualProblems: saved.filter(
+          (row) => row.source === "manual" && !currentProblemIds.has(row.problemId),
+        ).length,
+        problems: problems.map((problem) => {
           const row = counted.has(problem.id)
             ? saved.find((r) => r.problemId === problem.id)
             : undefined;
@@ -216,7 +221,7 @@ export function planManualCompletion(
         return [pid, paths.source];
       }),
     );
-    return { ...entry, problems, selected, paths };
+    return { ...entry, problems, selected, paths, wholeTask: item.problemIds === undefined };
   });
 }
 
@@ -236,237 +241,273 @@ export async function writeManualCompletion(
   let savedAny = false;
   const passedTaskIds: string[] = [];
   const blocked: ManualRevokeResult["blocked"] = [];
-  for (const { task, unitTitle, problems, selected, paths } of planned) {
-    const locked = await withResourceLock(
-      db,
-      taskSubmissionLockId(input.userId, task.id),
-      async () => {
-        const now = new Date();
-        const saved = await db
-          .select()
-          .from(taskProblemResults)
-          .where(
-            and(
-              eq(taskProblemResults.userId, input.userId),
-              eq(taskProblemResults.taskId, task.id),
-            ),
-          );
-        const passes = await db
-          .select()
-          .from(submissions)
-          .where(
-            and(
-              eq(submissions.studentId, input.userId),
-              eq(submissions.taskId, task.id),
-              eq(submissions.verdict, "pass"),
-            ),
-          );
-        const [progress] = await db
-          .select({ status: taskProgress.status })
-          .from(taskProgress)
-          .where(and(eq(taskProgress.userId, input.userId), eq(taskProgress.taskId, task.id)))
-          .limit(1);
-        const taskPassed =
-          passes.length > 0 || progress?.status === "passed" || progress?.status === "ai-passed";
-        const writes: BatchItem<"sqlite">[] = [];
-        const counted = countedProblemIds(saved, task.contentHash, taskPassed);
-        let problemCount = 0;
-        if (revoke) {
-          if (passes.some((p) => p.reviewSource !== "manual")) {
-            const reason = "本人の提出またはレビューで合格した課題の手で済みは取り消せません";
-            blocked.push({ taskId: task.id, reason });
-            return;
-          }
-          const removable = saved.filter(
-            (r) => r.source === "manual" && selected.includes(r.problemId),
-          );
-          for (const rows of chunk(removable, 90))
-            writes.push(
-              db.delete(taskProblemResults).where(
-                and(
-                  eq(taskProblemResults.userId, input.userId),
-                  eq(taskProblemResults.taskId, task.id),
-                  inArray(
-                    taskProblemResults.problemId,
-                    rows.map((row) => row.problemId),
-                  ),
-                  eq(taskProblemResults.source, "manual"),
-                ),
+  const stageInput = { actor: caller, userId: input.userId, stageIds: [input.stageId], ip };
+  const reconcileStage = () =>
+    revoke
+      ? reclaimAutoCertificatesIfUnmet(db, stageInput)
+      : autoCompleteStagesIfMet(db, stageInput);
+  try {
+    for (const { task, unitTitle, problems, selected, paths, wholeTask } of planned) {
+      const locked = await withResourceLock(
+        db,
+        taskSubmissionLockId(input.userId, task.id),
+        async () => {
+          const now = new Date();
+          const saved = await db
+            .select()
+            .from(taskProblemResults)
+            .where(
+              and(
+                eq(taskProblemResults.userId, input.userId),
+                eq(taskProblemResults.taskId, task.id),
               ),
             );
-          deleted += removable.length;
-          problemCount = removable.length;
-          for (const pid of selected.filter((pid) => !removable.some((r) => r.problemId === pid)))
-            blocked.push({
-              taskId: task.id,
-              problemId: pid,
-              reason: "手で済みにした問題ではありません",
-            });
-          if ((!problems || removable.length > 0) && passes.length) {
-            for (const pass of passes)
+          const passes = await db
+            .select()
+            .from(submissions)
+            .where(
+              and(
+                eq(submissions.studentId, input.userId),
+                eq(submissions.taskId, task.id),
+                eq(submissions.verdict, "pass"),
+              ),
+            );
+          const [progress] = await db
+            .select({ status: taskProgress.status })
+            .from(taskProgress)
+            .where(and(eq(taskProgress.userId, input.userId), eq(taskProgress.taskId, task.id)))
+            .limit(1);
+          const taskPassed =
+            passes.length > 0 || progress?.status === "passed" || progress?.status === "ai-passed";
+          const writes: BatchItem<"sqlite">[] = [];
+          const counted = countedProblemIds(saved, task.contentHash, taskPassed);
+          let problemCount = 0;
+          if (revoke) {
+            const personalPass = passes.some((p) => p.reviewSource !== "manual");
+            const currentIds = new Set(problems?.map((p) => p.id) ?? []);
+            const removable = saved.filter(
+              (r) =>
+                r.source === "manual" &&
+                (wholeTask || selected.includes(r.problemId)) &&
+                (!personalPass || (wholeTask && !currentIds.has(r.problemId))),
+            );
+            if (personalPass && (!wholeTask || removable.length === 0)) {
+              const reason = "本人の提出またはレビューで合格した課題の手で済みは取り消せません";
+              blocked.push({ taskId: task.id, reason });
+              return;
+            }
+            for (const rows of chunk(removable, 90))
               writes.push(
-                db
-                  .delete(submissions)
-                  .where(and(eq(submissions.id, pass.id), eq(submissions.reviewSource, "manual"))),
-              );
-            if (!problems) deleted += passes.length;
-            writes.push(
-              db
-                .delete(taskProgress)
-                .where(
-                  and(eq(taskProgress.userId, input.userId), eq(taskProgress.taskId, task.id)),
+                db.delete(taskProblemResults).where(
+                  and(
+                    eq(taskProblemResults.userId, input.userId),
+                    eq(taskProblemResults.taskId, task.id),
+                    inArray(
+                      taskProblemResults.problemId,
+                      rows.map((row) => row.problemId),
+                    ),
+                    eq(taskProblemResults.source, "manual"),
+                  ),
                 ),
-            );
-            writes.push(
-              recomputeTaskProgress(db, { studentId: input.userId, taskId: task.id }, now),
-            );
-            if (saved.some((row) => row.source === "tests")) {
+              );
+            deleted += removable.length;
+            problemCount = removable.length;
+            for (const pid of (wholeTask ? [] : selected).filter(
+              (pid) => !removable.some((r) => r.problemId === pid),
+            ))
+              blocked.push({
+                taskId: task.id,
+                problemId: pid,
+                reason: "手で済みにした問題ではありません",
+              });
+            if (
+              personalPass &&
+              saved.some((r) => r.source === "manual" && currentIds.has(r.problemId))
+            ) {
+              blocked.push({
+                taskId: task.id,
+                reason: "本人の提出またはレビューで合格した課題の手で済みは取り消せません",
+              });
+            }
+            if (
+              !personalPass &&
+              (wholeTask || !problems || removable.length > 0) &&
+              passes.length
+            ) {
+              for (const pass of passes)
+                writes.push(
+                  db
+                    .delete(submissions)
+                    .where(
+                      and(eq(submissions.id, pass.id), eq(submissions.reviewSource, "manual")),
+                    ),
+                );
+              if (!problems || removable.length === 0) deleted += passes.length;
               writes.push(
                 db
-                  .insert(taskProgress)
-                  .values({
-                    userId: input.userId,
-                    taskId: task.id,
-                    contentHash: task.contentHash,
-                    status: "local-passed",
-                    updatedAt: now,
-                  })
-                  .onConflictDoUpdate({
-                    target: [taskProgress.userId, taskProgress.taskId],
-                    set: {
-                      status: "local-passed",
+                  .delete(taskProgress)
+                  .where(
+                    and(eq(taskProgress.userId, input.userId), eq(taskProgress.taskId, task.id)),
+                  ),
+              );
+              writes.push(
+                recomputeTaskProgress(db, { studentId: input.userId, taskId: task.id }, now),
+              );
+              if (saved.some((row) => row.source === "tests")) {
+                writes.push(
+                  db
+                    .insert(taskProgress)
+                    .values({
+                      userId: input.userId,
+                      taskId: task.id,
                       contentHash: task.contentHash,
+                      status: "local-passed",
                       updatedAt: now,
-                      passedAt: null,
+                    })
+                    // 提出が残れば直前の recompute の結果を尊重する。
+                    // 行が無い = 提出なし・本人の問題だけ残る場合に限り local-passed。
+                    .onConflictDoNothing({ target: [taskProgress.userId, taskProgress.taskId] }),
+                );
+              }
+              writes.push(resetPassedAt(db, { studentId: input.userId, taskId: task.id }));
+            } else if (!problems && !passes.length && removable.length === 0)
+              blocked.push({ taskId: task.id, reason: "手で済みにした課題ではありません" });
+          } else {
+            const additions = selected.filter((pid) => !counted.has(pid));
+            problemCount = additions.length;
+            for (const ids of chunk(additions, 4))
+              writes.push(
+                db
+                  .insert(taskProblemResults)
+                  .values(
+                    ids.map((pid) => ({
+                      userId: input.userId,
+                      taskId: task.id,
+                      problemId: pid,
+                      path: paths.get(pid) ?? "",
+                      code: "",
+                      sha256: "",
+                      contentHash: task.contentHash,
+                      source: "manual" as const,
+                      manualReason: input.reason,
+                      manualBy: caller.id,
+                      manualAt: now,
+                      attempts: 0,
+                      firstPassedAt: now,
+                      updatedAt: now,
+                    })),
+                  )
+                  .onConflictDoUpdate({
+                    target: [
+                      taskProblemResults.userId,
+                      taskProblemResults.taskId,
+                      taskProblemResults.problemId,
+                    ],
+                    set: {
+                      path: sql`excluded.path`,
+                      code: sql`excluded.code`,
+                      sha256: sql`excluded.sha256`,
+                      contentHash: sql`excluded.content_hash`,
+                      source: sql`excluded.source`,
+                      manualReason: sql`excluded.manual_reason`,
+                      manualBy: sql`excluded.manual_by`,
+                      manualAt: sql`excluded.manual_at`,
+                      attempts: sql`excluded.attempts`,
+                      firstPassedAt: sql`excluded.first_passed_at`,
+                      updatedAt: sql`excluded.updated_at`,
                     },
                   }),
               );
-            }
-            writes.push(resetPassedAt(db, { studentId: input.userId, taskId: task.id }));
-          } else if (!problems && !passes.length)
-            blocked.push({ taskId: task.id, reason: "手で済みにした課題ではありません" });
-        } else {
-          const additions = selected.filter((pid) => !counted.has(pid));
-          problemCount = additions.length;
-          for (const ids of chunk(additions, 4))
-            writes.push(
-              db
-                .insert(taskProblemResults)
-                .values(
-                  ids.map((pid) => ({
-                    userId: input.userId,
-                    taskId: task.id,
-                    problemId: pid,
-                    path: paths.get(pid) ?? "",
-                    code: "",
-                    sha256: "",
-                    contentHash: task.contentHash,
-                    source: "manual" as const,
-                    manualReason: input.reason,
-                    manualBy: caller.id,
-                    manualAt: now,
-                    attempts: 0,
-                    firstPassedAt: now,
-                    updatedAt: now,
-                  })),
-                )
-                .onConflictDoUpdate({
-                  target: [
-                    taskProblemResults.userId,
-                    taskProblemResults.taskId,
-                    taskProblemResults.problemId,
-                  ],
-                  set: {
-                    path: sql`excluded.path`,
-                    code: sql`excluded.code`,
-                    sha256: sql`excluded.sha256`,
-                    contentHash: sql`excluded.content_hash`,
-                    source: sql`excluded.source`,
-                    manualReason: sql`excluded.manual_reason`,
-                    manualBy: sql`excluded.manual_by`,
-                    manualAt: sql`excluded.manual_at`,
-                    attempts: sql`excluded.attempts`,
-                    firstPassedAt: sql`excluded.first_passed_at`,
-                    updatedAt: sql`excluded.updated_at`,
-                  },
+            inserted += additions.length;
+            skipped += selected.length - additions.length;
+            for (const pid of additions) counted.add(pid);
+            const complete = !problems || problems.every((p) => counted.has(p.id));
+            if (complete && !taskPassed) {
+              const submissionId = crypto.randomUUID();
+              writes.push(
+                db.insert(submissions).values({
+                  id: submissionId,
+                  studentId: input.userId,
+                  taskId: task.id,
+                  taskContentHash: task.contentHash,
+                  taskKind: task.kind,
+                  submissionMode: "submit",
+                  stageTitle: scope.stage.title,
+                  sectionTitle: unitTitle,
+                  assignmentTitle: task.title,
+                  code: "",
+                  reviewSource: "manual",
+                  verdict: "pass",
+                  status: "passed",
+                  reviewerId: caller.id,
+                  reviewNotes: input.reason,
+                  reviewTaskContentHash: task.contentHash,
+                  submittedAt: now,
+                  reviewedAt: now,
+                  attempt: sql`(select coalesce(max(attempt), 0) + 1 from submissions where student_id = ${input.userId} and task_id = ${task.id})`,
                 }),
-            );
-          inserted += additions.length;
-          skipped += selected.length - additions.length;
-          for (const pid of additions) counted.add(pid);
-          const complete = !problems || problems.every((p) => counted.has(p.id));
-          if (complete && !taskPassed) {
-            const submissionId = crypto.randomUUID();
+              );
+              writes.push(
+                recomputeTaskProgress(db, { studentId: input.userId, taskId: task.id }, now),
+              );
+              passedTaskIds.push(task.id);
+              if (!problems) inserted++;
+            } else if (!problems) skipped++;
+          }
+          if (writes.length) {
             writes.push(
-              db.insert(submissions).values({
-                id: submissionId,
-                studentId: input.userId,
-                taskId: task.id,
-                taskContentHash: task.contentHash,
-                taskKind: task.kind,
-                submissionMode: "submit",
-                stageTitle: scope.stage.title,
-                sectionTitle: unitTitle,
-                assignmentTitle: task.title,
-                code: "",
-                reviewSource: "manual",
-                verdict: "pass",
-                status: "passed",
-                reviewerId: caller.id,
-                reviewNotes: input.reason,
-                reviewTaskContentHash: task.contentHash,
-                submittedAt: now,
-                reviewedAt: now,
-                attempt: sql`(select coalesce(max(attempt), 0) + 1 from submissions where student_id = ${input.userId} and task_id = ${task.id})`,
+              auditLogInsert(db, caller, {
+                action: revoke ? "task_manual_revoke" : "task_manual_complete",
+                targetType: "task",
+                targetId: task.id,
+                ip,
+                metadata: {
+                  user_id: input.userId,
+                  stage_id: input.stageId,
+                  task_ids: [task.id],
+                  problem_count: problemCount,
+                  reason: revoke
+                    ? (passes[0]?.reviewNotes ??
+                      saved.find(
+                        (row) =>
+                          row.source === "manual" &&
+                          (wholeTask || selected.includes(row.problemId)),
+                      )?.manualReason ??
+                      null)
+                    : input.reason,
+                },
               }),
             );
-            writes.push(
-              recomputeTaskProgress(db, { studentId: input.userId, taskId: task.id }, now),
-            );
-            passedTaskIds.push(task.id);
-            if (!problems) inserted++;
-          } else if (!problems) skipped++;
-        }
-        if (writes.length) {
-          writes.push(
-            auditLogInsert(db, caller, {
-              action: revoke ? "task_manual_revoke" : "task_manual_complete",
-              targetType: "task",
-              targetId: task.id,
-              ip,
-              metadata: {
-                user_id: input.userId,
-                stage_id: input.stageId,
-                task_ids: [task.id],
-                problem_count: problemCount,
-                reason: revoke
-                  ? (passes[0]?.reviewNotes ??
-                    saved.find((row) => row.source === "manual" && selected.includes(row.problemId))
-                      ?.manualReason ??
-                    null)
-                  : input.reason,
-              },
-            }),
-          );
-          const [first, ...rest] = writes;
-          if (first) {
-            await db.batch([first, ...rest]);
-            savedAny = true;
+            const [first, ...rest] = writes;
+            if (first) {
+              await db.batch([first, ...rest]);
+              savedAny = true;
+            }
           }
-        }
-      },
-      { ttlMs: 120_000 },
-    );
-    if (!locked.ran)
-      throw new ApiError(
-        savedAny
-          ? "一部は保存済みです。一覧を読み込み直してから、残りをもう一度操作してください"
-          : "別の提出・レビューを保存中です。もう一度操作してください",
-        409,
+        },
+        { ttlMs: 120_000 },
       );
+      if (!locked.ran)
+        throw new ApiError(
+          savedAny
+            ? "一部は保存済みです。一覧を読み込み直してから、残りをもう一度操作してください"
+            : "別の提出・レビューを保存中です。もう一度操作してください",
+          409,
+        );
+    }
+  } catch (error) {
+    if (savedAny) {
+      try {
+        await reconcileStage();
+      } catch (reconcileError) {
+        console.error(
+          "[task-manual-completion] 一部保存後のステージの付け直しに失敗",
+          reconcileError,
+        );
+      }
+    }
+    throw error;
   }
-  const stageInput = { actor: caller, userId: input.userId, stageIds: [input.stageId], ip };
-  if (revoke) await reclaimAutoCertificatesIfUnmet(db, stageInput);
-  else await autoCompleteStagesIfMet(db, stageInput);
+  await reconcileStage();
   return { inserted, skipped, passedTaskIds, deleted, blocked };
 }

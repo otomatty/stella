@@ -5,6 +5,7 @@ import {
   manualReasonSummary,
   completionSourceLabel,
   eligibleTargets,
+  taskSelectionTargets,
   selectedItems,
   selectionState,
   sendCompletionBatches,
@@ -36,6 +37,7 @@ const task = (
   status: "local-passed",
   reviewSource: null,
   manualReason: null,
+  obsoleteManualProblems: 0,
   problems,
 });
 describe("単元・課題・問題の選択", () => {
@@ -227,4 +229,61 @@ describe("課題にまとめる理由", () => {
       ),
     ).toEqual({ mixed: true, reason: null });
   });
+});
+
+describe("課題単位の取り消し", () => {
+  it("課題の全部を選ぶとproblemIdsを省き、一部なら問題を指定する", () => {
+    const row = {
+      ...task("one", [problem("a", "manual"), problem("b", "manual")]),
+      reviewSource: "manual" as const,
+    };
+    const all = toggleTargets(taskSelectionTargets([row], "revoke"), new Set());
+    expect(selectedItems([row], "revoke", all)).toEqual([{ taskId: "one" }]);
+    const partial = new Set([targetKey({ taskId: "one", problemId: "a" })]);
+    expect(selectedItems([row], "revoke", partial)).toEqual([{ taskId: "one", problemIds: ["a"] }]);
+    expect(selectedItems([row], "complete", partial)).toEqual([]);
+  });
+  it("現行の全問が未提出でも、manual合格の課題は選べる", () => {
+    const row = {
+      ...task("changed", [problem("q11"), problem("q12")]),
+      reviewSource: "manual" as const,
+    };
+    const targets = eligibleTargets([row], "revoke");
+    expect(targets).toEqual([{ taskId: "changed" }]);
+    expect(selectedItems([row], "revoke", toggleTargets(targets, new Set()))).toEqual([
+      { taskId: "changed" },
+    ]);
+  });
+  it("現行版に問題が無くてもmanual合格を選べる", () => {
+    const row = { ...task("plain", []), reviewSource: "manual" as const };
+    expect(eligibleTargets([row], "revoke")).toEqual([{ taskId: "plain" }]);
+    expect(selectedItems([row], "revoke", new Set([targetKey({ taskId: row.id })]))).toEqual([
+      { taskId: row.id },
+    ]);
+  });
+});
+
+it("課題のチェックはテスト済みや未提出が混じっていても課題単位。一部を外すと問題単位に戻る", () => {
+  const row = task("mixed", [
+    problem("a", "manual"),
+    problem("b", "manual"),
+    problem("c", "tests"),
+    problem("d"),
+  ]);
+  const all = toggleTargets(taskSelectionTargets([row], "revoke"), new Set());
+  expect(selectedItems([row], "revoke", all)).toEqual([{ taskId: row.id }]);
+  const partial = toggleTargets([{ taskId: row.id, problemId: "a" }], all);
+  expect(selectedItems([row], "revoke", partial)).toEqual([{ taskId: row.id, problemIds: ["b"] }]);
+});
+it("本人の合格でも、旧問題のmanualが残れば課題単位を選べる", () => {
+  const row = {
+    ...task("old", [problem("q11", "tests")]),
+    reviewSource: "tests" as const,
+    obsoleteManualProblems: 2,
+  };
+  const targets = eligibleTargets([row], "revoke");
+  expect(targets).toEqual([{ taskId: row.id }]);
+  expect(selectedItems([row], "revoke", toggleTargets(targets, new Set()))).toEqual([
+    { taskId: row.id },
+  ]);
 });

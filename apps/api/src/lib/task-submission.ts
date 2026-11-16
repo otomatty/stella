@@ -676,6 +676,21 @@ export async function reviewTaskSubmission(
       source === "human" && row.verdict === null && row.aiReviewStatus === "escalated"
         ? await appliedAiReview(db, id, "escalated")
         : null;
+    const priorPasses =
+      verdict === "pass"
+        ? await db
+            .select({ source: submissions.reviewSource })
+            .from(submissions)
+            .where(
+              and(
+                eq(submissions.studentId, row.studentId),
+                eq(submissions.taskId, row.taskId),
+                eq(submissions.verdict, "pass"),
+              ),
+            )
+        : [];
+    const replacesManualPass =
+      priorPasses.length > 0 && priorPasses.every((pass) => pass.source === "manual");
     const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
       db
         .update(submissions)
@@ -811,9 +826,32 @@ export async function reviewTaskSubmission(
         );
       }
     }
+    if (verdict === "pass") {
+      // 本人の合格への置き換えは、確定・証拠・進捗と同じ batch で行う。
+      statements.push(
+        db
+          .delete(submissions)
+          .where(
+            and(
+              eq(submissions.studentId, row.studentId),
+              eq(submissions.taskId, row.taskId),
+              eq(submissions.verdict, "pass"),
+              eq(submissions.reviewSource, "manual"),
+            ),
+          ),
+      );
+    }
     statements.push(
       recomputeTaskProgress(db, { studentId: row.studentId, taskId: row.taskId }, now),
     );
+    // 0044 のトリガーは初回日を保持するので、manual だけから本人の合格へ移るときだけ付け直す。
+    if (replacesManualPass)
+      statements.push(
+        db
+          .update(taskProgress)
+          .set({ passedAt: now })
+          .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId))),
+      );
     // 進捗を付け直した後に置く (トリガーが残した覆した合格の日付を上書きする)。
     if (overturned)
       statements.push(resetPassedAt(db, { studentId: row.studentId, taskId: row.taskId }));

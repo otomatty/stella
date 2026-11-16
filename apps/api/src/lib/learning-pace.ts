@@ -12,6 +12,7 @@ import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { toStudyDate } from "@stella/shared/study/activity";
 import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
 import type { Db } from "../db/client.js";
+import { hasOnlyManualTaskPass } from "./task-pass-source.js";
 import {
   contentUnits,
   enrollments,
@@ -219,7 +220,7 @@ export async function loadLearningPace(
           status: taskProgress.status,
           // 移行した合格日は、本人がその日に解いた日として確認Bの予定に使わない。
           passedAt:
-            sql<Date | null>`case when exists (select 1 from submissions s where s.student_id = ${taskProgress.userId} and s.task_id = ${taskProgress.taskId} and s.verdict = 'pass' and s.review_source = 'manual') then null else ${taskProgress.passedAt} end`.mapWith(
+            sql<Date | null>`case when ${hasOnlyManualTaskPass(taskProgress.userId, taskProgress.taskId)} then null else ${taskProgress.passedAt} end`.mapWith(
               taskProgress.passedAt,
             ),
         })
