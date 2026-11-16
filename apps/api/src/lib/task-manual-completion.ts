@@ -68,7 +68,7 @@ export function parseManualCompletion(raw: unknown, revoke = false): ManualCompl
 export async function loadManualCompletionScope(db: Db, userId: string, stageId: string) {
   if (!id(userId) || !id(stageId)) throw new ApiError("利用者とステージを指定してください", 400);
   const [user] = await db
-    .select({ id: profiles.id, disabled: profiles.disabled })
+    .select({ id: profiles.id, disabled: profiles.disabled, displayName: profiles.displayName })
     .from(profiles)
     .where(eq(profiles.id, userId))
     .limit(1);
@@ -90,16 +90,18 @@ export async function loadManualCompletionScope(db: Db, userId: string, stageId:
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .where(and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)))
     .orderBy(asc(sections.order), asc(tasks.order));
-  return { stage, units, taskRows };
+  return { user, stage, units, taskRows };
 }
 
 export async function readManualCompletion(
   db: Db,
   userId: string,
   stageId: string,
-): Promise<ManualCompletionView> {
+): Promise<ManualCompletionView & { userName: string; stageTitle: string }> {
   const scope = await loadManualCompletionScope(db, userId, stageId);
-  const result: ManualCompletionView = {
+  const result: ManualCompletionView & { userName: string; stageTitle: string } = {
+    userName: scope.user.displayName,
+    stageTitle: scope.stage.title,
     userId,
     stageId,
     units: scope.units.map((unit) => ({ ...unit, tasks: [] })),

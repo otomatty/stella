@@ -1,3 +1,4 @@
+import { manualCompletionUrl } from "@/lib/manual-completion";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type {
@@ -572,6 +573,12 @@ function LearnersTab({ stageId }: { stageId: string }) {
                   <TableRow key={row.user_id}>
                     <TableCell>
                       <div className="font-medium">{row.display_name}</div>
+                      <a
+                        href={manualCompletionUrl(stageId, row.user_id)}
+                        className="text-sm text-brand underline"
+                      >
+                        手で済みにする
+                      </a>
                       <div className="text-xs text-ink-3">{row.email}</div>
                     </TableCell>
                     <TableCell>

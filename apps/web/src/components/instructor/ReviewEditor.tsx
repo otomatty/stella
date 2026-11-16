@@ -1,3 +1,4 @@
+import { manualCompletionUrl } from "@/lib/manual-completion";
 import {
   useCallback,
   useEffect,
@@ -250,6 +251,33 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
       </div>
     );
   }
+
+  if (submission.reviewSource === "manual")
+    return (
+      <div className="p-5 space-y-4">
+        <Button type="button" variant="outline" onClick={() => setPage("review-queue")}>
+          キューに戻る
+        </Button>
+        <h1 className="text-lg font-semibold">
+          {submission.assignmentTitle} · {submission.studentName}
+        </h1>
+        <p>管理者が手で済みにしました</p>
+        <p className="whitespace-pre-wrap break-words text-sm">
+          理由: {taskDetail?.reviewNotes ?? submission.reviewNotes}
+        </p>
+        {(taskDetail?.stageId ?? submission.stageId) && submission.studentId ? (
+          <a
+            className="text-brand underline"
+            href={manualCompletionUrl(
+              (taskDetail?.stageId ?? submission.stageId) as string,
+              submission.studentId,
+            )}
+          >
+            手で済みを取り消す画面を開く
+          </a>
+        ) : null}
+      </div>
+    );
 
   const adopt = (id: string) =>
     setSuggestions((s) => s.map((x) => (x.id === id ? { ...x, adopted: true } : x)));

@@ -47,8 +47,9 @@ export function testsPassedRows(rows: readonly Submission[]): Submission[] {
 /** 合格の出どころ。AI の合格と、テストで確定した合格を混ぜない。 */
 export function passByLabel(
   s: Pick<Submission, "verdict" | "reviewSource">,
-): "AI で合格" | "テストで確認" | null {
+): "AI で合格" | "テストで確認" | "手で済み" | null {
   if (s.verdict !== "pass") return null;
+  if (s.reviewSource === "manual") return "手で済み";
   if (s.reviewSource === "tests") return "テストで確認";
   if (s.reviewSource === "ai") return "AI で合格";
   return null;

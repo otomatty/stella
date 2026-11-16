@@ -27,7 +27,11 @@ export interface ApiOptions {
 
 export class ApiClientError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    public data?: unknown,
+  ) {
     super(message);
     this.name = "ApiClientError";
     this.status = status;
@@ -59,15 +63,17 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   if (!res.ok) {
     let message = `サーバエラー (${res.status})`;
     const text = await res.text().catch(() => "");
+    let errorData: unknown;
     if (text) {
       try {
         const data = JSON.parse(text) as { error?: string };
+        errorData = data;
         message = data.error ?? `${message}: ${text}`;
       } catch {
         message = `${message}: ${text}`;
       }
     }
-    throw new ApiClientError(message, res.status);
+    throw new ApiClientError(message, res.status, errorData);
   }
 
   if (res.status === 204) return undefined as T;
@@ -105,15 +111,17 @@ export async function apiFetchRaw(
   if (!res.ok) {
     let message = `サーバエラー (${res.status})`;
     const text = await res.text().catch(() => "");
+    let errorData: unknown;
     if (text) {
       try {
         const data = JSON.parse(text) as { error?: string };
+        errorData = data;
         message = data.error ?? `${message}: ${text}`;
       } catch {
         message = `${message}: ${text}`;
       }
     }
-    throw new ApiClientError(message, res.status);
+    throw new ApiClientError(message, res.status, errorData);
   }
   return res;
 }

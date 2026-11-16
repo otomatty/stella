@@ -134,3 +134,17 @@ describe("テストで合格した提出", () => {
     expect(rows.map((s) => s.id)).toEqual(["old", "ai", "new", "mid", "human", "none"]);
   });
 });
+
+it("手で済みは専用の文言を出し、テスト合格一覧にもAI合格にも混ぜない", () => {
+  const row = submission({
+    id: "manual",
+    taskId: "fictional-task",
+    verdict: "pass",
+    reviewSource: "manual",
+    status: "passed",
+  });
+  expect(passByLabel(row)).toBe("手で済み");
+  expect(testsPassedRows([row])).toEqual([]);
+  expect(isAiPassed(row)).toBe(false);
+  expect(needsHumanReview(row)).toBe(false);
+});

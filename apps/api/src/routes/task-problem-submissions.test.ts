@@ -493,10 +493,20 @@ describe("問題の提出", () => {
     expect(await listedSubmissions.json()).toMatchObject({
       rows: [{ review_source: "manual", verdict: "pass" }],
     });
+    const staffDetail = await request(app(), env, `/api/submissions/${row.id}`, {
+      token: instructorToken,
+    });
+    expect(await staffDetail.json()).toMatchObject({
+      row: { review_source: "manual", review_notes: "別の学習環境で確認済み", stage_id: "stage" },
+    });
+    const mine = await request(app(), env, "/api/submissions/mine", { token });
+    expect(await mine.json()).toMatchObject({
+      rows: [{ review_source: "manual", review_notes: "" }],
+    });
     const detail = await request(app(), env, `/api/submissions/${row.id}`, { token });
     expect(detail.status, await detail.clone().text()).toBe(200);
     expect(await detail.json()).toMatchObject({
-      row: { review_source: "manual", review_notes: "別の学習環境で確認済み" },
+      row: { review_source: "manual", review_notes: "" },
     });
   });
 

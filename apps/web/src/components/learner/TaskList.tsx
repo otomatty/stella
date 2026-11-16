@@ -127,7 +127,10 @@ export function TaskList({
                   <h3 className="text-sm font-medium">{task.title}</h3>
                   <TaskRowProgress task={task} />
                 </div>
-                <span className="text-xs px-2 py-1 rounded bg-sunken">{taskStatusLabel(task)}</span>
+                <span className="text-xs px-2 py-1 rounded bg-sunken">
+                  {taskStatusLabel(task)}
+                  {task.manual_passed ? "（引き継ぎ）" : ""}
+                </span>
                 {onAskAi && !task.aiChatDisabled ? (
                   <Button
                     variant="ghost"

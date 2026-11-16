@@ -9,9 +9,10 @@ export function isProblemTask(task: { problems_total?: number }): boolean {
 export function taskProblemCountLabel(task: {
   problems_total?: number;
   problems_passed?: number;
+  problems_manual?: number;
 }): string | null {
   if (!isProblemTask(task)) return null;
-  return `${task.problems_passed ?? 0}/${task.problems_total} 問`;
+  return `${task.problems_passed ?? 0}/${task.problems_total} 問${task.problems_manual ? `（うち引き継ぎ ${task.problems_manual} 問）` : ""}`;
 }
 
 /**
