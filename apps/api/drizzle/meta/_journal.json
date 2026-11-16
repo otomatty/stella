@@ -526,6 +526,13 @@
       "when": 1794873600000,
       "tag": "0077_stage_grant_guidance",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "6",
+      "when": 1794873600001,
+      "tag": "0078_drop_personal_library",
+      "breakpoints": true
     }
   ]
 }

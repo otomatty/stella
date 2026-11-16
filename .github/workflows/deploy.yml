@@ -210,3 +210,8 @@ jobs:
       # Web の中継が最新版になった直後に、秘密値を含まない状態だけを照合する。
       - name: Verify production configuration
         run: bun run deploy:health:check
+
+      # 本棚のデータの片付け (2026-11)。バケットが消えたら、この step とスクリプトは消してよい
+      - name: Retire personal library storage
+        continue-on-error: true
+        run: bun run apps/api/scripts/retire-library-storage.ts

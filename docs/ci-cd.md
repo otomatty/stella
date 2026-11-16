@@ -7,7 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 → 未掲載の版だけ Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -76,6 +76,8 @@ seed は SQL を D1 の 100KB/query に収まるチャンクへ割って**直列
 seed は `packages/content/stages/<slug>/` を正本として各ステージを D1 に upsert し、GitHub から消えたトピック / セクションは prune する。旧デモのステージ (`web-fundamentals` 等) は安定 UUID で削除する。デプロイ時は `db:seed:remote:content`（検証用 `seed-*` ユーザー / 提出は含めない）。CMS で作った別 ID のコースのレッスンツリーは触らない。
 
 **seed は内容の変わった行だけを書く**（upsert の `do update ... where 列 is not excluded.列 or ...`。`export-seed-sql.ts` の `doUpdate`）。D1 は内容が同じでも書き直した行を書き込み行数に数え、**無料枠は 1 日 10 万行の書き込み**で止まる（2026-10-06 に全行を書き直す seed でデプロイが止まった）。remote の seed はログの最後に D1 が返した `rows_written` の合計を出す。upsert を足すときも `doUpdate` を通し、`export-seed-sql-writes.test.ts`（2 回目の seed は 0 行）を通すこと。
+
+本棚の廃止 (2026-11) に伴い、最後に `retire-library-storage.ts` が非公開 R2 `stella-library-private` を削除する。空でなければ、全オブジェクトの削除と未完了のマルチパートアップロードの中止を作成から 1 日で行うライフサイクルを設定し、次のデプロイで削除を再試行する。この step は `continue-on-error: true` で、失敗してもアプリのデプロイは成功のまま。バケットが消えたら step とスクリプトを削除してよい。
 
 ## VS Code 拡張のリリース
 
@@ -156,7 +158,7 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → 動画 → migrate → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check の順で進む。画像・PDF・動画・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → 動画 → migrate → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check → 本棚 R2 の片付けの順で進む。画像・PDF・動画・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
