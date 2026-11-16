@@ -179,6 +179,7 @@ async function enqueueWeek(db: Db, weekStart: string, now: Date): Promise<number
                           .where(
                             and(
                               eq(submissions.studentId, profiles.id),
+                              sql`(${submissions.reviewSource} is null or ${submissions.reviewSource} <> 'manual')`,
                               gte(submissions.submittedAt, weekBegin),
                               lt(submissions.submittedAt, weekEnd),
                             ),
@@ -316,7 +317,13 @@ export async function collectMemoMaterial(
         supportLog: submissions.supportLog,
       })
       .from(submissions)
-      .where(and(eq(submissions.studentId, learner.id), gte(submissions.submittedAt, from))),
+      .where(
+        and(
+          eq(submissions.studentId, learner.id),
+          sql`(${submissions.reviewSource} is null or ${submissions.reviewSource} <> 'manual')`,
+          gte(submissions.submittedAt, from),
+        ),
+      ),
     db
       .select({ title: tasks.title, kind: tasks.kind })
       .from(taskProgress)
@@ -324,6 +331,7 @@ export async function collectMemoMaterial(
       .where(
         and(
           eq(taskProgress.userId, learner.id),
+          sql`not exists (select 1 from submissions s where s.student_id = ${taskProgress.userId} and s.task_id = ${taskProgress.taskId} and s.verdict = 'pass' and s.review_source = 'manual')`,
           gte(taskProgress.passedAt, from),
           lt(taskProgress.passedAt, to),
         ),

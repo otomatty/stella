@@ -1,4 +1,4 @@
-import { taskCompletionCounts } from "../lib/task-completion.js";
+import { manualCompletionCounts, taskCompletionCounts } from "../lib/task-completion.js";
 /**
  * 修了判定 / 成績台帳 / 修了証 API
  * (旧 compute_course_completion / get_my_course_completion / get_course_gradebook /
@@ -377,6 +377,11 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
       stage,
       enrolled.map((e) => e.userId),
     );
+    const manualCounts = await manualCompletionCounts(
+      db,
+      stageId,
+      enrolled.map((e) => e.userId),
+    );
     const rows: GradebookEntry[] = enrolled.map((e) => ({
       user_id: e.userId,
       display_name: e.displayName,
@@ -385,6 +390,8 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
       enrollment_status: e.status,
       due_at: e.dueAt ? e.dueAt.toISOString() : null,
       enrolled_at: e.enrolledAt.toISOString(),
+      manual_tasks: manualCounts.get(e.userId)?.manual_tasks ?? 0,
+      manual_problems: manualCounts.get(e.userId)?.manual_problems ?? 0,
       completion: completions.get(e.userId) ?? null,
     }));
 

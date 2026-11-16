@@ -346,6 +346,7 @@ export async function readSubmissionFiles(db: Db, env: Env, submissionId: string
           and(
             eq(taskProblemResults.userId, submission.studentId),
             eq(taskProblemResults.taskId, submission.taskId),
+            eq(taskProblemResults.source, "tests"),
           ),
         )
         .orderBy(asc(taskProblemResults.problemId));
@@ -463,7 +464,11 @@ async function assertAiApplicable(
  * 課題の進捗を、提出の記録から付け直す文。合格がある限り教材更新・再提出では取り消さない。
  * 合格が無ければ最新試行の状態を使う。AI の確認待ちだけが「AI が確認中」(submitted) になる。
  */
-function recomputeTaskProgress(db: Db, row: { studentId: string; taskId: string }, now: Date) {
+export function recomputeTaskProgress(
+  db: Db,
+  row: { studentId: string; taskId: string },
+  now: Date,
+) {
   return db
     .insert(taskProgress)
     .select(
@@ -572,7 +577,7 @@ async function appliedAiReview(db: Db, submissionId: string, outcome: "confirmed
  * 取り消した合格から数えられてしまう。残っている合格 (同じ版) の最初の合格の記録から付け直し、
  * 合格が残っていなければ消す。合格の記録が無い古い行は今の値を残す。
  */
-function resetPassedAt(db: Db, row: { studentId: string; taskId: string }) {
+export function resetPassedAt(db: Db, row: { studentId: string; taskId: string }) {
   const firstRemainingPass = sql`(select min(r.created_at) from submission_reviews r
     join submissions s on s.id = r.submission_id
     where s.student_id = ${row.studentId}

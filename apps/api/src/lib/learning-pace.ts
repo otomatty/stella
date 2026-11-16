@@ -217,7 +217,11 @@ export async function loadLearningPace(
           hash: tasks.contentHash,
           progressHash: taskProgress.contentHash,
           status: taskProgress.status,
-          passedAt: taskProgress.passedAt,
+          // 移行した合格日は、本人がその日に解いた日として確認Bの予定に使わない。
+          passedAt:
+            sql<Date | null>`case when exists (select 1 from submissions s where s.student_id = ${taskProgress.userId} and s.task_id = ${taskProgress.taskId} and s.verdict = 'pass' and s.review_source = 'manual') then null else ${taskProgress.passedAt} end`.mapWith(
+              taskProgress.passedAt,
+            ),
         })
         .from(tasks)
         .innerJoin(sections, eq(sections.id, tasks.sectionId))

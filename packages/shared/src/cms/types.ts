@@ -373,6 +373,10 @@ export interface GradebookEntry {
   enrollment_status: EnrollmentStatus;
   due_at: string | null;
   enrolled_at: string;
+  /** 管理者が手で合格にした課題の数。 */
+  manual_tasks?: number;
+  /** 済みに数える問題のうち、管理者が手で済みにした数。 */
+  manual_problems?: number;
   completion: StageCompletion | null;
 }
 

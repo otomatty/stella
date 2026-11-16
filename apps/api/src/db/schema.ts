@@ -630,6 +630,12 @@ export const taskProblemResults = sqliteTable(
     path: text("path").notNull(),
     code: text("code").notNull(),
     sha256: text("sha256").notNull(),
+    source: text("source", { enum: ["tests", "manual"] })
+      .notNull()
+      .default("tests"),
+    manualReason: text("manual_reason"),
+    manualBy: text("manual_by"),
+    manualAt: ts("manual_at"),
     attempts: integer("attempts").notNull().default(1),
     firstPassedAt: ts("first_passed_at").notNull(),
     updatedAt: ts("updated_at").notNull(),
@@ -1679,7 +1685,7 @@ export const submissions = sqliteTable("submissions", {
   assessedSkills: json<string[]>("assessed_skills", []),
   reviewTaskContentHash: text("review_task_content_hash"),
   /** `tests` は問題のテストが揃った提出。AI の合格 (`ai`) とは別。 */
-  reviewSource: text("review_source", { enum: ["ai", "human", "tests"] }),
+  reviewSource: text("review_source", { enum: ["ai", "human", "tests", "manual"] }),
   /** 新形式の提出の AI 一次レビューの状態 (0048)。旧形式の提出は null。 */
   aiReviewStatus: text("ai_review_status", {
     enum: ["queued", "confirmed", "escalated", "superseded", "human"],

@@ -666,10 +666,15 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     }
     // テストで確定した合格を再提出に戻すと、受講者は全問提出済みで先へ進めない。
     if (
-      before.reviewSource === "tests" &&
+      (before.reviewSource === "tests" || before.reviewSource === "manual") &&
       (patch.verdict !== undefined || patch.status !== undefined)
     ) {
-      throw new ApiError("テストで確認した提出の判定は変えられません", 409);
+      throw new ApiError(
+        before.reviewSource === "manual"
+          ? "手で済みにした課題は専用の取消し操作で戻してください"
+          : "テストで確認した提出の判定は変えられません",
+        409,
+      );
     }
 
     const set: Partial<SubmissionSelect> = {};
