@@ -259,6 +259,15 @@
           "clip": "vscode/submit#press-submit"
         },
         {
+          "say": "取り組んだことを、短く書きます。",
+          "clip": "vscode/submit#write",
+          "speed": 2
+        },
+        {
+          "say": "「提出する」を押して、送ります。",
+          "clip": "vscode/submit#sent"
+        },
+        {
           "say": "Webアプリに戻って、結果を読みます。",
           "clip": "web/read-result#open-submissions"
         }
