@@ -329,10 +329,39 @@ export async function writeManualCompletion(
                 reason: "本人の提出またはレビューで合格した課題の手で済みは取り消せません",
               });
             }
+            const removedIds = new Set(removable.map((row) => row.problemId));
+            const remainingIds = countedProblemIds(
+              saved.filter((row) => !removedIds.has(row.problemId)),
+              task.contentHash,
+              false,
+            );
+            const cancelsCompletion =
+              !personalPass &&
+              removable.length > 0 &&
+              problems &&
+              !problems.every((problem) => remainingIds.has(problem.id));
+            if (cancelsCompletion) {
+              // 最後の問題の保存後、tests の確定がロックを取り直す前の提出も捨てる。
+              // 相談や AI の確認待ちは対象にしない。
+              writes.push(
+                db
+                  .delete(submissions)
+                  .where(
+                    and(
+                      eq(submissions.studentId, input.userId),
+                      eq(submissions.taskId, task.id),
+                      eq(submissions.submissionMode, "submit"),
+                      isNull(submissions.verdict),
+                      isNull(submissions.aiReviewStatus),
+                      sql`json_extract(${submissions.localResult}, '$.problemId') is not null`,
+                    ),
+                  ),
+              );
+            }
             if (
               !personalPass &&
               (wholeTask || !problems || removable.length > 0) &&
-              passes.length
+              (passes.length > 0 || cancelsCompletion)
             ) {
               for (const pass of passes)
                 writes.push(

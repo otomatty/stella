@@ -36,6 +36,8 @@ import { signAccessToken } from "../lib/auth-jwt.js";
 import * as stageAutoComplete from "../lib/stage-auto-complete.js";
 import { countedProblemIds, submitTaskProblem } from "../lib/task-problem-submission.js";
 import { reviewTaskSubmission } from "../lib/task-submission.js";
+import * as taskSubmission from "../lib/task-submission.js";
+import * as problemSubmission from "../lib/task-problem-submission.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { submissionsRoute } from "./submissions.js";
@@ -919,6 +921,116 @@ describe("問題の提出", () => {
     expect(await detail.json()).toMatchObject({
       row: { review_source: "manual", review_notes: "" },
     });
+  });
+
+  /** 保存のロックを離したところでテスト確定だけを止め、競合の窓を再現する。 */
+  async function pendingProblemCompletion() {
+    expect((await manual(["q01-add"])).status).toBe(200);
+    const finalize = vi
+      .spyOn(taskSubmission, "reviewTaskSubmission")
+      .mockImplementationOnce(async () => {
+        const [pending] = await db.select().from(submissions);
+        return pending;
+      });
+    try {
+      await submitProblem("q02-sub");
+      expect(finalize).toHaveBeenCalledTimes(1);
+      const [pending] = await db.select().from(submissions);
+      expect(pending).toMatchObject({
+        verdict: null,
+        submissionMode: "submit",
+        aiReviewStatus: null,
+      });
+      return pending.id;
+    } finally {
+      finalize.mockRestore();
+    }
+  }
+
+  const learnerCaller = {
+    id: "learner",
+    role: "student" as const,
+    name: "架空の受講者",
+    email: null,
+  };
+
+  it("最後の問題の保存と確定の間にmanualを取り消しても、合格・証拠・確認待ちを残さない", async () => {
+    const pendingId = await pendingProblemCompletion();
+    expect((await manual(["q01-add"], true)).status).toBe(200);
+    // 取り消し自体で、全問がそろったときの未確定の提出を捨てる。
+    expect(await db.select().from(submissions)).toEqual([]);
+    await expect(
+      reviewTaskSubmission(db, learnerCaller, pendingId, "pass", "", "tests"),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(await db.select().from(skillEvidence)).toEqual([]);
+    expect(await db.select().from(taskProblemResults)).toMatchObject([
+      { problemId: "q02-sub", source: "tests" },
+    ]);
+    expect((await db.select().from(taskProgress))[0]).toMatchObject({
+      status: "local-passed",
+      passedAt: null,
+    });
+  });
+
+  it("テスト確定もロック内で問題を数え直し、欠けていれば未確定の提出を捨てる", async () => {
+    const pendingId = await pendingProblemCompletion();
+    // 古い取り消し処理が先に動いた場合にも、確定側だけで誤合格を防ぐ。
+    await db.delete(taskProblemResults).where(eq(taskProblemResults.problemId, "q01-add"));
+    await expect(
+      reviewTaskSubmission(db, learnerCaller, pendingId, "pass", "", "tests"),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(await db.select().from(submissions)).toEqual([]);
+    expect(await db.select().from(skillEvidence)).toEqual([]);
+    expect((await db.select().from(taskProgress))[0]).toMatchObject({
+      status: "local-passed",
+      passedAt: null,
+    });
+  });
+
+  it("手で済みの集計は課題ごとに一度だけ定義を読み、問題の問い合わせには全文を載せない", async () => {
+    const problems = Array.from({ length: 168 }, (_, index) => ({
+      id: `q${index}`,
+      title: `架空の問題${index}`,
+    }));
+    const built = await problemBundle(CURRENT, problems);
+    await db
+      .update(tasks)
+      .set({ definition: JSON.stringify(built.definition), bundle: JSON.stringify(built.bundle) })
+      .where(eq(tasks.id, TASK_ID));
+    expect((await manual()).status).toBe(200);
+    // 合格済みの課題では旧版の現行IDも数える。未合格なら旧版・廃止したIDは数えない。
+    await db
+      .update(taskProblemResults)
+      .set({ contentHash: "old" })
+      .where(eq(taskProblemResults.problemId, "q0"));
+    const [template] = await db.select().from(taskProblemResults);
+    await db.insert(taskProblemResults).values([
+      { ...template, userId: "other", problemId: "q0", contentHash: CURRENT },
+      { ...template, userId: "other", problemId: "q1", contentHash: "old" },
+      { ...template, userId: "other", problemId: "removed", contentHash: CURRENT },
+      { ...template, userId: "learner", problemId: "removed", contentHash: CURRENT },
+    ]);
+    const parse = vi.spyOn(problemSubmission, "readTaskDefinition");
+    const prepare = vi.spyOn(database.binding, "prepare");
+    try {
+      // 利用者を分割しても同じ定義を解析し直さない。
+      const counts = await manualCompletionCounts(db, "stage", [
+        "learner",
+        "other",
+        ...Array.from({ length: 50 }, (_, i) => `sample-${i}`),
+      ]);
+      expect(counts.get("learner")).toEqual({ manual_tasks: 1, manual_problems: 168 });
+      expect(counts.get("other")).toEqual({ manual_tasks: 0, manual_problems: 1 });
+      expect(parse).toHaveBeenCalledTimes(2); // 問題つき1課題と、問題なし1課題。
+      const problemQueries = prepare.mock.calls
+        .map(([query]) => query)
+        .filter((query) => query.includes('from "task_problem_results"'));
+      expect(problemQueries.length).toBeGreaterThan(0);
+      expect(problemQueries.every((query) => !query.includes('"definition"'))).toBe(true);
+    } finally {
+      parse.mockRestore();
+      prepare.mockRestore();
+    }
   });
 
   it("残りを本人が解けばtestsで合格し、問題ごとの出所は残る。tests合格内のmanualは取消せない", async () => {

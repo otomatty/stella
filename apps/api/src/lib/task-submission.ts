@@ -42,7 +42,11 @@ import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTask } from "./task-access.js";
-import { submitTaskProblem } from "./task-problem-submission.js";
+import {
+  countedProblemIds,
+  readTaskDefinition,
+  submitTaskProblem,
+} from "./task-problem-submission.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
 import { hasRecordedSupport, isAssistedSubmission } from "./task-support.js";
@@ -647,6 +651,76 @@ export async function reviewTaskSubmission(
         409,
       );
     const now = new Date();
+    if (source === "tests" && verdict === "pass") {
+      // 保存から確定までに manual が取り消されることがあるため、同じ課題のロック内で再確認する。
+      const [current] = await db
+        .select({ hash: tasks.contentHash, definition: tasks.definition })
+        .from(tasks)
+        .where(eq(tasks.id, row.taskId))
+        .limit(1);
+      const problems = readTaskDefinition(current?.definition ?? "").problems;
+      if (problems || row.taskSnapshot?.manifest.problems?.length) {
+        const saved = await db
+          .select({
+            problemId: taskProblemResults.problemId,
+            contentHash: taskProblemResults.contentHash,
+            source: taskProblemResults.source,
+          })
+          .from(taskProblemResults)
+          .where(
+            and(
+              eq(taskProblemResults.userId, row.studentId),
+              eq(taskProblemResults.taskId, row.taskId),
+            ),
+          );
+        const [progress] = await db
+          .select({ status: taskProgress.status })
+          .from(taskProgress)
+          .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId)))
+          .limit(1);
+        const counted = countedProblemIds(
+          saved,
+          current?.hash ?? "",
+          progress?.status === "passed" || progress?.status === "ai-passed",
+        );
+        if (!problems?.every((problem) => counted.has(problem.id))) {
+          // 確認中の表示や人の一覧に取り残さず、残っている提出・問題の結果から状態を付け直す。
+          const scope = { studentId: row.studentId, taskId: row.taskId };
+          const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
+            db.delete(submissions).where(eq(submissions.id, row.id)),
+            db
+              .delete(taskProgress)
+              .where(
+                and(
+                  eq(taskProgress.userId, row.studentId),
+                  eq(taskProgress.taskId, row.taskId),
+                  sql`not exists (select 1 from submissions where student_id = ${row.studentId} and task_id = ${row.taskId})`,
+                ),
+              ),
+            recomputeTaskProgress(db, scope, now),
+          ];
+          if (saved.some((problem) => problem.source === "tests"))
+            statements.push(
+              db
+                .insert(taskProgress)
+                .values({
+                  userId: row.studentId,
+                  taskId: row.taskId,
+                  contentHash: current?.hash ?? row.taskContentHash ?? "",
+                  status: "local-passed",
+                  updatedAt: now,
+                })
+                .onConflictDoNothing({ target: [taskProgress.userId, taskProgress.taskId] }),
+            );
+          statements.push(resetPassedAt(db, scope));
+          await db.batch(statements);
+          throw new ApiError(
+            "問題の結果が変わっています。残りの問題を確認して提出してください",
+            409,
+          );
+        }
+      }
+    }
     if (source === "ai") {
       try {
         if (verdict !== "pass") throw new AiReviewNotApplicable();
