@@ -37,14 +37,10 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { auditLogInsert, clientIp, recordAudit } from "../lib/audit.js";
-import { resolveInviteAuthUserId } from "../lib/auth-users.js";
+import { inviteUser } from "../lib/auth-users.js";
 import { ApiError, errorResponse, getCaller, requireAdmin, type Caller } from "../lib/authz.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
-
-function initialsFrom(name: string): string {
-  return name.slice(0, 2).toUpperCase();
-}
 
 /** ユーザー管理用: admin | platform_admin + caller 解決。 */
 async function requireAdminCtx(c: Context<{ Bindings: Env }>): Promise<{ caller: Caller; db: Db }> {
@@ -134,24 +130,7 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           });
           continue;
         }
-        const { userId, authExists } = await resolveInviteAuthUserId(db, inv.email);
-        const profileInsert = db.insert(profiles).values({
-          id: userId,
-          role: inv.role,
-          displayName: inv.displayName,
-          initials: initialsFrom(inv.displayName),
-          email: inv.email,
-        });
-        if (authExists) {
-          // login-before-invite: 既存 auth_users.id に profile のみ紐付け
-          await profileInsert;
-        } else {
-          // 新規: profile + auth_users を D1 batch で原子作成
-          await db.batch([
-            profileInsert,
-            db.insert(authUsers).values({ id: userId, email: inv.email }),
-          ]);
-        }
+        const userId = await inviteUser(db, inv);
         existingEmails.add(inv.email);
 
         await recordAudit(db, caller, {

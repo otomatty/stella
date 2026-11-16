@@ -38,6 +38,7 @@ export type IntegrationAuth = {
     integrationClient: typeof integrationClients.$inferSelect;
     integrationDb: Db;
     integrationGroupId: string | null;
+    integrationCounts: Record<string, number> | undefined;
   };
 };
 export const authenticateIntegration = createMiddleware<IntegrationAuth>(async (c, next) => {
@@ -74,6 +75,7 @@ export const authenticateIntegration = createMiddleware<IntegrationAuth>(async (
             clientId: client.id,
             operation: `${c.req.method} ${c.req.routePath}`,
             status: c.res.status,
+            ...c.get("integrationCounts"),
           },
         },
       );
