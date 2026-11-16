@@ -7,6 +7,12 @@ import {
   type TaskBundleResponse,
   type TaskSummary,
 } from "@stella/shared/tasks/catalog";
+import {
+  EXTENSION_VERSION_PARAM,
+  extensionSatisfies,
+  extensionUpgradeMessage,
+  requiredExtensionVersion,
+} from "@stella/shared/tasks/extension-compat";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import {
@@ -263,8 +269,12 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
       .limit(1);
     // 予備の類題は出題した受講者にだけ配る (#39)。
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
+    const bundle = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const required = requiredExtensionVersion(bundle.manifest);
+    if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
+      throw new ApiError(extensionUpgradeMessage(required), 426);
     const response: TaskBundleResponse = {
-      bundle: parsePublicTaskBundle(JSON.parse(row.bundle)),
+      bundle,
       fixedStart: row.fixedStartHash === row.contentHash,
     };
     return c.json(response);

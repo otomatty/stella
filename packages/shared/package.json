@@ -62,6 +62,7 @@
     "./tasks/manual-completion": "./src/tasks/manual-completion.ts",
     "./tasks/problems": "./src/tasks/problems.ts",
     "./tasks/environment": "./src/tasks/environment.ts",
+    "./tasks/extension-compat": "./src/tasks/extension-compat.ts",
     "./tasks/run-result": "./src/tasks/run-result.ts",
     "./tasks/ci-run": "./src/tasks/ci-run.ts",
     "./tasks/hash": "./src/tasks/hash.ts",

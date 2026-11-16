@@ -1,5 +1,6 @@
 import type { ExtensionContext } from "vscode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import extensionPackage from "../package.json";
 
 const state = vi.hoisted(() => ({
   handler: undefined as { handleUri: (uri: { path: string; query: string }) => void } | undefined,
@@ -48,9 +49,11 @@ vi.mock("./open-task.js", () => ({
 
 import { apiRequest } from "./api.js";
 import { activate } from "./extension.js";
+import { taskBundleUrl } from "./task-bundle-url.js";
 
 const taskId = "dev-env-basics/u02-first-task/q01-first-page";
-const bundleUrl = `http://127.0.0.1:8787/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
+const bundleUrl = `http://127.0.0.1:8787/api/tasks/bundle?${new URLSearchParams({ taskId, extension: extensionPackage.version })}`;
+let context: ExtensionContext;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -58,9 +61,10 @@ beforeEach(() => {
   state.fetch.mockReset();
   vi.stubGlobal("fetch", state.fetch);
   state.openTask.mockImplementation(async (_context, id) => {
-    await apiRequest(`/api/tasks/bundle?${new URLSearchParams({ taskId: id })}`);
+    await apiRequest(taskBundleUrl(id));
   });
-  activate({
+  context = {
+    extension: { packageJSON: extensionPackage },
     subscriptions: [],
     secrets: {
       onDidChange: () => ({ dispose: vi.fn() }),
@@ -75,7 +79,8 @@ beforeEach(() => {
     globalState: { get: () => undefined, update: async () => undefined },
     // vscode.ExtensionMode.Test — 既定の接続先はローカル (http://127.0.0.1:8787 / :5173)。
     extensionMode: 3,
-  } as unknown as ExtensionContext);
+  } as unknown as ExtensionContext;
+  activate(context);
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -145,6 +150,29 @@ describe("task URI の接続導線", () => {
     expect(headers.get("Authorization")).toBe("Bearer saved-token");
     expect(state.openExternal).not.toHaveBeenCalled();
     expect(state.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it("拡張の版を取得できなければ版の申告を省いて呼ぶ", async () => {
+    activate({ ...context, extension: undefined } as unknown as ExtensionContext);
+    state.secrets.set("stella.accessToken", "saved-token");
+    state.fetch.mockResolvedValue(Response.json({}));
+    dispatch();
+    await vi.waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(1));
+    expect(state.fetch).toHaveBeenCalledWith(
+      `http://127.0.0.1:8787/api/tasks/bundle?${new URLSearchParams({ taskId })}`,
+      expect.objectContaining({ headers: expect.any(Headers) }),
+    );
+    expect(state.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it("課題 API が 426 を返したら更新の案内をそのまま表示する", async () => {
+    const message = "この課題を開くには、VS Code の STELLA 拡張を 0.8.0 以上に更新してください。";
+    state.secrets.set("stella.accessToken", "saved-token");
+    state.fetch.mockResolvedValue(Response.json({ error: message }, { status: 426 }));
+    dispatch();
+    await vi.waitFor(() => expect(state.showErrorMessage).toHaveBeenCalledWith(message));
+    expect(state.openExternal).not.toHaveBeenCalled();
+    expect(state.secrets.get("stella.accessToken")).toBe("saved-token");
   });
 
   it("課題 API が 401 を返したらトークンを消し、再接続へ戻す", async () => {

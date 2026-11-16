@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
+import { version as extensionVersion } from "../package.json";
+import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
 import {
   prepareTaskSubmission,
   readRecordedSupport,
@@ -17,6 +19,7 @@ describe("確認した課題の提出", () => {
   const notes = { explanation: "実装の説明", support: [] };
   beforeEach(async () => {
     vi.clearAllMocks();
+    setTaskBundleExtensionVersion(extensionVersion);
     root = await mkdtemp(path.join(tmpdir(), "stella-submit-"));
     fixture = await submissionFixture();
     for (const [file, content] of Object.entries(fixture.bundle.files)) {
@@ -119,6 +122,9 @@ describe("確認した課題の提出", () => {
         }),
       },
     ]);
-    expect(vi.mocked(apiRequest).mock.calls[0]?.[1]).toEqual({ session: 7 });
+    expect(vi.mocked(apiRequest).mock.calls[0]).toEqual([
+      `/api/tasks/bundle?${new URLSearchParams({ taskId: fixture.input.taskId, extension: extensionVersion })}`,
+      { session: 7 },
+    ]);
   });
 });

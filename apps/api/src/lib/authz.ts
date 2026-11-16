@@ -23,7 +23,7 @@ export type { ProfileRole };
 export class ApiError extends Error {
   // 410 は「あった機能を廃止した」ぶんだけ (Phase 3b の割当 API)。404 だと呼び出し側が
   // 綴り違いを疑って探し回るので、退役したことが伝わる番号を使う。
-  status: 400 | 401 | 403 | 404 | 409 | 410 | 429 | 500 | 502 | 503;
+  status: 400 | 401 | 403 | 404 | 409 | 410 | 426 | 429 | 500 | 502 | 503;
   constructor(message: string, status: ApiError["status"]) {
     super(message);
     this.name = "ApiError";

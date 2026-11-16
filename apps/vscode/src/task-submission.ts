@@ -18,6 +18,7 @@ import {
   sha256Hex,
 } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
+import { taskBundleUrl } from "./task-bundle-url.js";
 
 export interface SubmissionNotes {
   explanation: string;
@@ -145,10 +146,9 @@ export async function sendTaskSubmission(
 ): Promise<{ id: string; attempt: number }> {
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
-  const response = await apiRequest<{ bundle: unknown }>(
-    `/api/tasks/bundle?taskId=${encodeURIComponent(loaded.manifest.id)}`,
-    { session },
-  );
+  const response = await apiRequest<{ bundle: unknown }>(taskBundleUrl(loaded.manifest.id), {
+    session,
+  });
   const bundle = parsePublicTaskBundle(response.bundle);
   const body = await prepareTaskSubmission(root, mode, notes, bundle);
   const result = await apiRequest<{ row: { id: string; attempt: number } }>("/api/submissions", {

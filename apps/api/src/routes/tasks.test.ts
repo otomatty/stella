@@ -121,15 +121,39 @@ describe("課題の配布 API (実 SQLite)", () => {
   afterEach(() => database.sqlite.close());
 
   const app = () => mountTestApp(env, tasksRoute, submissionsRoute).app;
-  const bundleOf = (as = token) =>
+  const bundleOf = (as = token, extension?: string) =>
     request(
       app(),
       env,
-      `/api/tasks/bundle?${new URLSearchParams({ taskId: fixture.input.taskId })}`,
+      `/api/tasks/bundle?${new URLSearchParams({
+        taskId: fixture.input.taskId,
+        ...(extension === undefined ? {} : { extension }),
+      })}`,
       {
         token: as,
       },
     );
+  const useTypeScriptBundle = async (withProblems = false) => {
+    const { bundle } = await submissionFixture({
+      runner: "ts-test",
+      submit: { files: ["src/**/*.ts"] },
+      protected: [
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        "eslint.config.js",
+        "vitest.config.js",
+        "tests/**",
+      ],
+      checks: { lint: true, format: false },
+      ...(withProblems ? { problems: [{ id: "q01", title: "値を返す" }] } : {}),
+    });
+    await db
+      .update(tasks)
+      .set({ bundle: JSON.stringify(bundle) })
+      .where(eq(tasks.id, fixture.input.taskId));
+    return bundle;
+  };
   const fixedStart = (as = token, taskId = fixture.input.taskId) =>
     request(app(), env, "/api/tasks/fixed-start", {
       method: "POST",
@@ -201,6 +225,53 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect(body.fixedStart).toBe(false);
     expect(JSON.stringify(body)).not.toContain(PRIVATE_MARKER);
     expect(JSON.stringify(body)).not.toContain(encode(PRIVATE_MARKER));
+  });
+
+  it("ts-test の課題は版の申告がない拡張に更新を案内する", async () => {
+    await useTypeScriptBundle();
+    const response = await bundleOf();
+    expect(response.status).toBe(426);
+    const body = await json<{ error: string }>(response);
+    expect(body.error).toContain("0.6.0");
+    expect(body.error).toContain("更新してください");
+    expect(body.error).toContain("拡張機能ビュー");
+    expect(body.error).toContain("VS Code で開く");
+    expect(Object.keys(body)).toEqual(["error"]);
+  });
+
+  it("問題つきの課題は 0.7.0 の拡張に 0.8.0 以上への更新を案内する", async () => {
+    await useTypeScriptBundle(true);
+    const response = await bundleOf(token, "0.7.0");
+    expect(response.status).toBe(426);
+    expect(await json<{ error: string }>(response)).toEqual({
+      error: expect.stringContaining("0.8.0 以上に更新してください"),
+    });
+  });
+
+  it.each([false, true])(
+    "0.8.2 の拡張には ts-test の課題を配る (問題つき: %s)",
+    async (problems) => {
+      const bundle = await useTypeScriptBundle(problems);
+      const response = await bundleOf(token, "0.8.2");
+      expect(response.status, await response.clone().text()).toBe(200);
+      expect(await json<TaskBundleResponse>(response)).toEqual({ bundle, fixedStart: false });
+    },
+  );
+
+  it("版の要件がない課題は申告なしの拡張にも配る", async () => {
+    const response = await bundleOf();
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await json<TaskBundleResponse>(response)).toEqual({
+      bundle: fixture.bundle,
+      fixedStart: false,
+    });
+  });
+
+  it("版の要件がある課題もアクセスできない受講者には 404 を返す", async () => {
+    await useTypeScriptBundle();
+    const response = await bundleOf(otherToken);
+    expect(response.status).toBe(404);
+    expect(await json<{ error: string }>(response)).toEqual({ error: "task not found" });
   });
 
   it("課題一覧は課題文のレッスンを返し、定義・配布物・private/ を返さない", async () => {

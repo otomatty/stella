@@ -27,6 +27,7 @@ import { savePendingTaskOpen, takePendingTaskOpen } from "./pending-task-open.js
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
 import { resolveFileInRoot } from "./runner/files.js";
+import { taskBundleUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import { fetchProblemResults, loadProblemStates, problemFileToOpen } from "./task-problems.js";
 import { readDistribution } from "./task-submission.js";
@@ -278,13 +279,9 @@ async function prepareAndOpen(
   await openTaskInWindow(store, trainingRoot, taskRoot);
 }
 
-function bundleUrl(taskId: string): string {
-  return `/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
-}
-
 /** Web の「VS Code で開く」から来た課題を準備して開く。 */
 export async function openDistributedTask(context: TaskOpenContext, taskId: string): Promise<void> {
-  const { bundle } = await apiRequest<TaskBundleResponse>(bundleUrl(taskId));
+  const { bundle } = await apiRequest<TaskBundleResponse>(taskBundleUrl(taskId));
   if (bundle.manifest.id !== taskId) throw new Error("配布する課題の ID が一致しません");
   await prepareAndOpen(storeOf(context), bundle, "standard");
 }
@@ -316,7 +313,7 @@ async function startFromFixedStart(store: TaskOpenStore): Promise<void> {
     );
     return;
   }
-  const { fixedStart } = await apiRequest<TaskBundleResponse>(bundleUrl(taskId));
+  const { fixedStart } = await apiRequest<TaskBundleResponse>(taskBundleUrl(taskId));
   if (!fixedStart) {
     void vscode.window.showInformationMessage(
       "この課題には固定した開始点がありません。進められないときは「STELLA: 講師に相談する」を使ってください",
