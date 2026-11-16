@@ -87,6 +87,22 @@ export async function taskCountsForUser(
 /** 進捗として数えている現行の問題と、残っている手動合格の数。日々の活動とは区別する。 */
 export async function manualCompletionCounts(db: Db, stageId: string, userIds: string[]) {
   const out = new Map<string, { manual_tasks: number; manual_problems: number }>();
+  if (userIds.length === 0) return out;
+  // 大きな定義を問題の行に繰り返し載せず、利用者の分割より前に課題ごとに一度だけ解析する。
+  const stageTasks = await db
+    .select({ id: tasks.id, hash: tasks.contentHash, definition: tasks.definition })
+    .from(tasks)
+    .innerJoin(sections, eq(sections.id, tasks.sectionId))
+    .where(and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)));
+  const currentByTask = new Map(
+    stageTasks.map((task) => [
+      task.id,
+      {
+        hash: task.hash,
+        problemIds: new Set(readTaskDefinition(task.definition).problems?.map((p) => p.id) ?? []),
+      },
+    ]),
+  );
   for (const users of chunk(userIds, 50)) {
     const rows = await db
       .select({ userId: submissions.studentId, taskId: submissions.taskId })
@@ -112,10 +128,9 @@ export async function manualCompletionCounts(db: Db, stageId: string, userIds: s
     const problems = await db
       .select({
         userId: taskProblemResults.userId,
+        taskId: taskProblemResults.taskId,
         problemId: taskProblemResults.problemId,
         hash: taskProblemResults.contentHash,
-        currentHash: tasks.contentHash,
-        definition: tasks.definition,
         status: taskProgress.status,
       })
       .from(taskProblemResults)
@@ -135,9 +150,9 @@ export async function manualCompletionCounts(db: Db, stageId: string, userIds: s
         ),
       );
     for (const row of problems) {
-      if (row.hash !== row.currentHash && row.status !== "passed" && row.status !== "ai-passed")
-        continue;
-      if (!readTaskDefinition(row.definition).problems?.some((p) => p.id === row.problemId))
+      const current = currentByTask.get(row.taskId);
+      if (!current?.problemIds.has(row.problemId)) continue;
+      if (row.hash !== current.hash && row.status !== "passed" && row.status !== "ai-passed")
         continue;
       const entry = out.get(row.userId);
       if (entry) entry.manual_problems++;
