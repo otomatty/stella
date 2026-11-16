@@ -38,6 +38,7 @@ export const SEED_INPUT_PATHS = [
   "packages/content/scripts/lib/scene-html.ts",
   "packages/content/scripts/lib/scene-view-html.ts",
   "packages/content/scripts/lib/storyboard-assets.ts",
+  "packages/content/src/storyboard-assets.ts",
   "packages/content/src/scene-layout.ts",
   "packages/content/src/scene-timeline.ts",
   "packages/content/src/scene-view.ts",

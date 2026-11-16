@@ -1,3 +1,4 @@
+import { storyboardAssets } from "./storyboard-assets.js";
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -162,6 +163,7 @@ export function unitContentHash(
   const hash = createHash("sha256");
   const lessonKeys = new Set<string>();
   const environments = new Set<string>();
+  const videos: string[] = [];
   // sourceRefs を外すのは、公開ゲートが sourceRefs を照合する公開教材だけ。スターターなど
   // そのまま配る Markdown の front-matter は内容として含める。
   const sourcedMarkdown = new Set(publicContentFiles(directory).filter((f) => f.endsWith(".md")));
@@ -182,6 +184,8 @@ export function unitContentHash(
       const update = (data: string | Buffer) =>
         hash.update(`${rel}\0${Buffer.byteLength(data)}\0`).update(data);
       const parts = rel.split("/");
+      if (entry === "video.json" && parts.length === 3 && !["tasks", "private"].includes(parts[0]))
+        videos.push(path);
       if (sourcedMarkdown.has(rel)) {
         let content = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
         if (entry === "slides.md" && parts.length === 3 && !["tasks", "private"].includes(parts[0]))
@@ -239,6 +243,20 @@ export function unitContentHash(
   // 環境の無い単元 (旧形式) は従来どおりの指紋のまま。
   if (typeof config.environment === "string") environments.add(config.environment);
   const root = dirname(dirname(stageDirectory));
+  for (const file of videos) {
+    const assets = storyboardAssets(root, dirname(file), JSON.parse(readFileSync(file, "utf8")), {
+      onlyReferenced: true,
+      freshVideoHashes: true,
+    });
+    for (const [ref, digest] of Object.entries(assets.hashes).sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      if (ref.startsWith("art:")) continue;
+      hash.update(
+        `storyboard-asset\0${file.slice(directory.length + 1).replaceAll("\\", "/")}\0${ref}\0${digest}`,
+      );
+    }
+  }
   for (const id of [...environments].sort()) {
     const content = environmentContent(root, id);
     hash.update(`environment\0${id}\0${Buffer.byteLength(content)}\0`).update(content);

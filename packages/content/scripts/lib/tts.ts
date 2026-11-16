@@ -432,11 +432,9 @@ export function synthesizeCached(
   if (running) return running;
   const job = synthesizeUncached(provider, speech, cacheDir, refresh);
   inflight.set(key, job);
-  if (!refresh) {
-    // 通常の合成は終わったら外す (以降はディスクのキャッシュを読む)。作り直しは残す。
-    const forget = () => inflight.delete(key);
-    job.then(forget, forget);
-  }
+  // 同時の要求だけをまとめる。完了後の refresh は新たに合成する。
+  const forget = () => inflight.delete(key);
+  job.then(forget, forget);
   return job;
 }
 

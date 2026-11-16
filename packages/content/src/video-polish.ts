@@ -324,7 +324,9 @@ export function applyPolish(
 export function sayHash(storyboard: VideoStoryboard): string {
   return createHash("sha256")
     .update(
-      JSON.stringify(storyboard.scenes.map((s) => s.beats.map((b) => [b.say, b.speech ?? null]))),
+      JSON.stringify(
+        linesOf(storyboard).map(({ id, beat }) => [id, beat.say, beat.speech ?? null]),
+      ),
     )
     .digest("hex");
 }

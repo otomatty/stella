@@ -200,7 +200,18 @@ export function storyboardStates(storyboard: VideoStoryboard): (SceneState | Vie
   let lastBoard: { name: string; end: BoardState } | undefined;
   for (const scene of storyboard.scenes) {
     if (scene.kind === "view") {
-      const start: ViewState = { image: scene.image, spot: [], zoom: "all", label: [] };
+      const previous = states.at(-1);
+      const start: ViewState = {
+        image: scene.image,
+        spot: [],
+        zoom: "all",
+        label: [],
+        ...(previous?.kind === "view" &&
+        previous.end.image === scene.image &&
+        previous.end.lastFrame
+          ? { lastFrame: true }
+          : {}),
+      };
       let current = start;
       const beats = scene.beats.map((beat) => {
         const before = structuredClone(current);

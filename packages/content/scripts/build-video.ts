@@ -799,6 +799,8 @@ export async function buildVideos(
     for (const { topic, sourceHash } of pendingScenes) {
       try {
         if (quota) throw quota;
+        if (planSceneTopic(topic, provider.identity) !== sourceHash)
+          throw new Error("動画の入力が計画後に変わりました (生成前)");
         const result = await buildSceneTopic(
           await getBrowser(),
           {
@@ -814,6 +816,8 @@ export async function buildVideos(
           true,
         );
         if (!result) throw new Error("場面の動画がありません");
+        if (planSceneTopic(topic, provider.identity) !== sourceHash)
+          throw new Error("動画の入力が計画後に変わりました (生成後)");
         const report: TopicReport = {
           ...result,
           stageSlug: topic.stageSlug,
