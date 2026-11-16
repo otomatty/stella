@@ -1,3 +1,4 @@
+import { IntegrationGroupFilter } from "@/components/integrations/IntegrationGroupFilter";
 import { gradebookCsv, gradebookTaskLabel } from "@/lib/gradebook";
 /**
  * 講師/管理者向け成績台帳 (gradebook) (Issue #26)。
@@ -9,7 +10,7 @@ import { gradebookCsv, gradebookTaskLabel } from "@/lib/gradebook";
  * バックエンド未設定時は実データが無いため、 その旨を案内する。
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Award, CheckCircle, Download, Loader2 } from "@/lib/icons";
 import { SkeletonRows } from "@/components/ui/skeleton";
@@ -28,28 +29,33 @@ interface GradebookProps {
 
 export const Gradebook = ({ stages }: GradebookProps) => {
   const [stageId, setStageId] = useState<string>(() => stages[0]?.id ?? "");
+  const [groupId, setGroupId] = useState("");
   const [data, setData] = useState<StageGradebook | null>(null);
   const [loading, setLoading] = useState(false);
   const [issuingUser, setIssuingUser] = useState<string | null>(null);
 
   const backendEnabled = isBackendConfigured();
+  const requestIdRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     if (!backendEnabled || !stageId) {
       setData(null);
       return;
     }
     setLoading(true);
     try {
-      setData(await fetchStageGradebook(stageId));
+      const next = await fetchStageGradebook(stageId, groupId);
+      if (requestId === requestIdRef.current) setData(next);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error("[Gradebook] load failed", err);
       toast.error("成績台帳の取得に失敗しました");
       setData(null);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [backendEnabled, stageId]);
+  }, [backendEnabled, stageId, groupId]);
 
   useEffect(() => {
     void load();
@@ -95,6 +101,7 @@ export const Gradebook = ({ stages }: GradebookProps) => {
         sub="受講者ごとの達成状況を確認し、 修了証を発行できます"
         actions={
           <>
+            <IntegrationGroupFilter value={groupId} onChange={setGroupId} />
             <select
               value={stageId}
               onChange={(e) => setStageId(e.target.value)}

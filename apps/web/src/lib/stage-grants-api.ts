@@ -48,6 +48,7 @@ export interface StageGrantLearnerPage {
 }
 
 export interface StageGrantLearnerQuery {
+  groupId?: string;
   q?: string;
   status?: "all" | "assigned" | "unassigned" | "exempted";
   prereq?: "all" | "done" | "doing" | "none" | "not_done";
@@ -70,6 +71,7 @@ export interface UpdatedStageGrants {
 
 function stageGrantLearnerQuery(params: StageGrantLearnerQuery): string {
   const search = new URLSearchParams();
+  if (params.groupId) search.set("groupId", params.groupId);
   if (params.q) search.set("q", params.q);
   if (params.status && params.status !== "all") search.set("status", params.status);
   if (params.prereq && params.prereq !== "all") search.set("prereq", params.prereq);

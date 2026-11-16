@@ -1,3 +1,4 @@
+import { IntegrationGroupFilter } from "@/components/integrations/IntegrationGroupFilter";
 import { guidanceDate } from "@/lib/guided-stages";
 import { StageGrantGuidanceEditor } from "./StageGrantGuidanceEditor";
 import { Link } from "@tanstack/react-router";
@@ -90,6 +91,7 @@ export function StageGrantEditor({
   stageTitleOf,
 }: StageGrantEditorProps) {
   const isMobile = useIsMobileViewport();
+  const [groupId, setGroupId] = useState("");
   const [session, setSession] = useState({ open, stageId });
   const [queryText, setQueryText] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -131,6 +133,7 @@ export function StageGrantEditor({
       closingRef.current = false;
       savingRef.current = false;
       saveIdRef.current += 1;
+      setGroupId("");
       setQueryText("");
       setDebouncedQ("");
       setStatus("all");
@@ -205,7 +208,7 @@ export function StageGrantEditor({
     setLearners([]);
     void listStageGrantLearners(
       stageId,
-      { ...activeFilter, offset: 0, limit: PAGE_SIZE },
+      { ...activeFilter, groupId, offset: 0, limit: PAGE_SIZE },
       ac.signal,
     )
       .then((data) => {
@@ -221,7 +224,7 @@ export function StageGrantEditor({
         setLoading(false);
       });
     return () => ac.abort();
-  }, [activeFilter, changesOnly, epoch, open, reloadTick, stageId]);
+  }, [activeFilter, changesOnly, epoch, open, reloadTick, stageId, groupId]);
 
   const assignedScope = isMobile && mobileTab === "exempt";
   const views = useMemo(
@@ -280,7 +283,11 @@ export function StageGrantEditor({
       ac.signal.aborted || `${epochRef.current}:${reloadTickRef.current}` !== requestId;
     setLoadingMore(true);
     setLoadMoreError(null);
-    void listStageGrantLearners(stageId, { ...activeFilter, offset, limit: PAGE_SIZE }, ac.signal)
+    void listStageGrantLearners(
+      stageId,
+      { ...activeFilter, groupId, offset, limit: PAGE_SIZE },
+      ac.signal,
+    )
       .then((data) => {
         if (current()) return;
         setLearners((rows) => [...rows, ...data.learners]);
@@ -374,29 +381,30 @@ export function StageGrantEditor({
     onSave: save,
     onClose: requestClose,
     listFooter,
-    guidanceEditor:
-      stageId && page?.guidance_summary ? (
-        <StageGrantGuidanceEditor
-          key={`${epoch}:${stageId}`}
-          stageId={stageId}
-          summary={page.guidance_summary}
-          count={page.counts.assigned}
-          pending={changeCount > 0}
-          disabled={loading || saving || guidanceBusy || error !== null}
-          onBusy={(busy) => setGuidanceSaveCount((count) => Math.max(0, count + (busy ? 1 : -1)))}
-          onSaved={(guidance) => {
-            setPage((current) =>
-              current ? { ...current, guidance_summary: { uniform: true, guidance } } : null,
-            );
-            setLearners((current) =>
-              current.map((row) => (row.assigned ? { ...row, guidance } : row)),
-            );
-            toast.success("案内を保存しました");
-            setReloadTick((n) => n + 1);
-            onSaved();
-          }}
-        />
-      ) : null,
+    guidanceEditor: groupId ? (
+      <p className="text-sm">案内の内容を編集するには、グループの絞り込みを解除してください。</p>
+    ) : stageId && page?.guidance_summary ? (
+      <StageGrantGuidanceEditor
+        key={`${epoch}:${stageId}`}
+        stageId={stageId}
+        summary={page.guidance_summary}
+        count={page.counts.assigned}
+        pending={changeCount > 0}
+        disabled={loading || saving || guidanceBusy || error !== null}
+        onBusy={(busy) => setGuidanceSaveCount((count) => Math.max(0, count + (busy ? 1 : -1)))}
+        onSaved={(guidance) => {
+          setPage((current) =>
+            current ? { ...current, guidance_summary: { uniform: true, guidance } } : null,
+          );
+          setLearners((current) =>
+            current.map((row) => (row.assigned ? { ...row, guidance } : row)),
+          );
+          toast.success("案内を保存しました");
+          setReloadTick((n) => n + 1);
+          onSaved();
+        }}
+      />
+    ) : null,
   };
 
   if (isMobile) {
@@ -408,6 +416,11 @@ export function StageGrantEditor({
         }}
       >
         <DrawerContent key={sheetNonce} className="h-[92dvh] max-h-[92dvh]">
+          <IntegrationGroupFilter
+            value={groupId}
+            onChange={setGroupId}
+            disabled={pending.size > 0 || saving || guidanceBusy}
+          />
           <MobileRoster
             {...shellProps}
             tab={mobileTab}
@@ -440,6 +453,11 @@ export function StageGrantEditor({
       }}
     >
       <DialogContent className="flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] w-[min(calc(100vw-2rem),960px)] flex-col gap-0">
+        <IntegrationGroupFilter
+          value={groupId}
+          onChange={setGroupId}
+          disabled={pending.size > 0 || saving || guidanceBusy}
+        />
         <PcRoster
           {...shellProps}
           changedLearnerCount={changedLearnerCount}
