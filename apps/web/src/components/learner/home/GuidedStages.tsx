@@ -58,9 +58,7 @@ export function GuidedStageCard({
         aria-label={`${stage.title}の進み具合 ${card.progress}`}
       />
       {stage.message ? (
-        <p className="line-clamp-3 whitespace-pre-wrap break-words text-xs text-ink-2">
-          {stage.message}
-        </p>
+        <p className="whitespace-pre-wrap break-words text-xs text-ink-2">{stage.message}</p>
       ) : null}
       {card.prerequisite ? <p className="text-xs text-ink-3">{card.prerequisite}</p> : null}
       {error ? (
@@ -119,6 +117,36 @@ export function GuidedStageLines({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+export function GuidedStagesLoadError({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <div role="alert" data-testid="guide-guided-error" className="p-3 text-xs text-danger">
+      <p>{message}</p>
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={loading}
+        onClick={async () => {
+          setLoading(true);
+          try {
+            await onRetry();
+          } finally {
+            setLoading(false);
+          }
+        }}
+      >
+        もう一度読み込む
+      </Button>
     </div>
   );
 }

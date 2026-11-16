@@ -1,4 +1,8 @@
-import type { GuidedStage, StageGrantGuidance } from "@stella/shared/stage-grants/types";
+import type {
+  GuidedStage,
+  GuidedStagesResponse,
+  StageGrantGuidance,
+} from "@stella/shared/stage-grants/types";
 
 const DAY = 86_400_000;
 const JST = 9 * 60 * 60 * 1000;
@@ -79,4 +83,13 @@ export function guidedStageLineTitle(stage: Pick<GuidedStage, "title" | "source_
   return stage.source_name && !stage.title.startsWith(stage.source_name)
     ? `${stage.source_name}・${stage.title}`
     : stage.title;
+}
+
+/** 404 は案内 API のない旧版。正常な0件と読み込みの失敗を分ける。 */
+export function guidedStagesLoadResult(data: GuidedStagesResponse | null, failureStatus?: number) {
+  return {
+    stages: data?.stages ?? [],
+    error:
+      data !== null || failureStatus === 404 ? null : "案内されたステージを読み込めませんでした",
+  };
 }

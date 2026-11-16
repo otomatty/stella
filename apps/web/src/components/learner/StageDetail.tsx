@@ -83,6 +83,7 @@ export const LessonStatusIcon = ({ status }: { status: LessonStatus }) => {
 };
 
 interface StageDetailProps {
+  currentUserId: string | null;
   stage: Stage;
   setPage: (page: string) => void;
   /** 指定のレッスンでレッスン画面を開く。 */
@@ -93,6 +94,7 @@ interface StageDetailProps {
 }
 
 export const StageDetail = ({
+  currentUserId,
   stage,
   setPage,
   onOpenLesson,
@@ -100,7 +102,7 @@ export const StageDetail = ({
   onAskAiAboutTask,
 }: StageDetailProps) => {
   const firstSteps = useFirstSteps();
-  const guided = useGuidedStages();
+  const guided = useGuidedStages(currentUserId);
   const guidance = guided.stages.find((item) => item.stage_id === stage.id);
   const guidanceDue = guidedDeadline(guidance?.due_at ?? null);
   const sections = stage.sections ?? [];

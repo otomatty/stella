@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { GuidedStage } from "@stella/shared/stage-grants/types";
-import { GuidedStageCard, GuidedStageLines } from "./GuidedStages";
+import { GuidedStageCard, GuidedStageLines, GuidedStagesLoadError } from "./GuidedStages";
 
 const stage: GuidedStage = {
   stage_id: "sample",
@@ -32,6 +32,30 @@ describe("案内カードの描画", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain('role="progressbar"');
     expect(html).toContain("始める");
+  });
+  it("長い案内も改行を保って全文を出し、行数で切らない", () => {
+    const message = `${"架空の案内です。".repeat(50)}\n案内の最後です。`;
+    const html = renderToStaticMarkup(
+      createElement(GuidedStageCard, { stage: { ...stage, message }, ...handlers }),
+    );
+    expect(html).toContain(message);
+    expect(html).toContain("whitespace-pre-wrap");
+    expect(html).toContain("break-words");
+    expect(html).not.toContain("line-clamp");
+  });
+  it("案内の読み込み失敗を通知し、再読み込みの操作を表示する", () => {
+    const html = renderToStaticMarkup(
+      createElement(GuidedStagesLoadError, {
+        message: "案内されたステージを読み込めませんでした",
+        onRetry: async () => {
+          /* 描画だけを確認する */
+        },
+      }),
+    );
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("案内されたステージを読み込めませんでした");
+    expect(html).toContain("もう一度読み込む");
+    expect(html).toContain("<button");
   });
   it("ロック中は開始ボタンを出さず、前提名を表示する", () => {
     const html = renderToStaticMarkup(

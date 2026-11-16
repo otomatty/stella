@@ -48,12 +48,14 @@ export function StageGrantGuidanceEditor({
     if (busyRef.current || pending || disabled || count === 0) return;
     setError(null);
     setSaved(null);
+    let started = false;
     try {
       const guidance = clear
         ? { source_name: null, due_at: null, message: null }
         : guidancePayload({ sourceName, date, message });
       busyRef.current = true;
       setBusy(true);
+      started = true;
       onBusy(true);
       await updateStageGrantGuidance(stageId, { all: true, ...guidance });
       if (clear) {
@@ -69,7 +71,7 @@ export function StageGrantGuidanceEditor({
     } finally {
       busyRef.current = false;
       setBusy(false);
-      onBusy(false);
+      if (started) onBusy(false);
     }
   };
   const summaryText = !summary.uniform

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { GuidedStage } from "@stella/shared/stage-grants/types";
 import {
+  guidedStagesLoadResult,
   guidancePayload,
   guidedDeadline,
   guidedStageCard,
@@ -137,5 +138,23 @@ describe("畳んだ案内の行の名前", () => {
     ["", "事前課題", "事前課題"],
   ])("案内元 %s・名前 %s → %s", (source_name, title, expected) => {
     expect(guidedStageLineTitle({ source_name, title })).toBe(expected);
+  });
+});
+
+describe("案内の読み込み結果", () => {
+  it("正常な0件と旧APIの404はエラーにしない", () => {
+    expect(guidedStagesLoadResult({ stages: [] })).toEqual({ stages: [], error: null });
+    expect(guidedStagesLoadResult(null, 404)).toEqual({ stages: [], error: null });
+  });
+  it("503と通信の失敗は、0件と区別して再読み込みを案内する", () => {
+    for (const status of [503, 500, 403, undefined]) {
+      expect(guidedStagesLoadResult(null, status)).toEqual({
+        stages: [],
+        error: "案内されたステージを読み込めませんでした",
+      });
+    }
+  });
+  it("成功した結果はそのまま返し、エラーを消す", () => {
+    expect(guidedStagesLoadResult({ stages: [stage] })).toEqual({ stages: [stage], error: null });
   });
 });

@@ -109,7 +109,9 @@ export function StageGrantEditor({
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [pending, setPending] = useState<StageRosterPending>(new Map());
   const [saving, setSaving] = useState(false);
-  const [guidanceBusy, setGuidanceBusy] = useState(false);
+  // レイアウトの切り替えで子が作り直されても、すべての保存が終わるまで操作を止める。
+  const [guidanceSaveCount, setGuidanceSaveCount] = useState(0);
+  const guidanceBusy = guidanceSaveCount > 0;
   const [reloadTick, setReloadTick] = useState(0);
   const [epoch, setEpoch] = useState(0);
   const [sheetNonce, setSheetNonce] = useState(0);
@@ -147,7 +149,6 @@ export function StageGrantEditor({
       setError(null);
       setLoadMoreError(null);
       setSaving(false);
-      setGuidanceBusy(false);
       setReloadTick(0);
       setEpoch((n) => n + 1);
     }
@@ -381,8 +382,8 @@ export function StageGrantEditor({
           summary={page.guidance_summary}
           count={page.counts.assigned}
           pending={changeCount > 0}
-          disabled={loading || saving || error !== null}
-          onBusy={setGuidanceBusy}
+          disabled={loading || saving || guidanceBusy || error !== null}
+          onBusy={(busy) => setGuidanceSaveCount((count) => Math.max(0, count + (busy ? 1 : -1)))}
           onSaved={(guidance) => {
             setPage((current) =>
               current ? { ...current, guidance_summary: { uniform: true, guidance } } : null,

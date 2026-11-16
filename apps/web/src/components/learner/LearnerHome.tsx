@@ -27,7 +27,7 @@
  */
 
 import { useGuidedStages } from "@/hooks/useGuidedStages";
-import { GuidedStageCard, GuidedStageLines } from "./home/GuidedStages";
+import { GuidedStageCard, GuidedStageLines, GuidedStagesLoadError } from "./home/GuidedStages";
 import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { useFirstSteps } from "@/hooks/useFirstSteps";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -744,13 +744,16 @@ export const LearnerHome = ({
 
               <NextStepCard guide={guide} loading={loadingMap} {...stepContext} />
 
-              {guided.stages.length > 0 ? (
+              {guided.stages.length > 0 || guided.error ? (
                 <section
                   aria-label="案内されたステージ"
                   data-testid="guide-guided-stages"
                   className="flex flex-col gap-2"
                 >
                   <h2 className="text-xs font-bold text-ink-3">案内されたステージ</h2>
+                  {guided.error ? (
+                    <GuidedStagesLoadError message={guided.error} onRetry={guided.refetch} />
+                  ) : null}
                   {guided.stages.map((stage) => (
                     <GuidedStageCard
                       key={stage.stage_id}
@@ -821,6 +824,9 @@ export const LearnerHome = ({
                   読み込めなかった情報があります。開いて確認してください。
                 </button>
               </div>
+            ) : null}
+            {guided.error ? (
+              <GuidedStagesLoadError message={guided.error} onRetry={guided.refetch} />
             ) : null}
             <GuidedStageLines
               stages={guided.stages}
