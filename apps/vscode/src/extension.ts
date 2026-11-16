@@ -45,6 +45,7 @@ import { openLessonDoc } from "./lesson-doc.js";
 import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskHelp } from "./task-help.js";
 import { registerTaskStatus } from "./task-status.js";
+import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
 import { openDistributedTask, registerTaskOpening } from "./open-task.js";
 import { showSubmissionForm } from "./submission-form.js";
 import type { SubmissionDraft } from "./submission-form-view.js";
@@ -319,6 +320,7 @@ export function activate(context: vscode.ExtensionContext): void {
   setUrlDefaultsForMode(context.extensionMode);
   const auth = new AuthStore(context.secrets);
   initApi(auth, () => stellaUrl("serverUrl"));
+  setTaskBundleExtensionVersion(context.extension?.packageJSON?.version);
   // 別のウィンドウでの接続・切断も、このウィンドウの接続の切り替えとして扱う (#36)。
   context.subscriptions.push(auth.watchExternalChanges());
   const grader = initGraderHost(context.extensionUri);

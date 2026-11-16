@@ -4,6 +4,8 @@ import path from "node:path";
 import type { ExtensionContext } from "vscode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
+import { version as extensionVersion } from "../package.json";
+import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
 
 const state = vi.hoisted(() => ({
   home: "",
@@ -128,6 +130,7 @@ let context: ExtensionContext;
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  setTaskBundleExtensionVersion(extensionVersion);
   state.memento.clear();
   state.commands.clear();
   state.log = [];
@@ -248,6 +251,17 @@ describe("学習フォルダー", () => {
 });
 
 describe("課題を開く", () => {
+  it("拡張の版をクエリで申告して配布を受け取る", async () => {
+    await openDistributedTask(context, taskId);
+    expect(state.apiRequest).toHaveBeenCalledWith(
+      `/api/tasks/bundle?taskId=course%2Funit%2Fq1&extension=${extensionVersion}`,
+    );
+  });
+  it.each([undefined, null, "", 82])("版を取得できない場合 (%s) は申告を省く", async (version) => {
+    setTaskBundleExtensionVersion(version);
+    await openDistributedTask(context, taskId);
+    expect(state.apiRequest).toHaveBeenCalledWith("/api/tasks/bundle?taskId=course%2Funit%2Fq1");
+  });
   it("初めてでも学習フォルダーを尋ねずに準備して開く (Web のボタンから課題文まで止めない)", async () => {
     state.memento.clear();
     await rm(training, { recursive: true });
@@ -625,6 +639,10 @@ describe("固定した開始点から始める", () => {
       .mockResolvedValueOnce({ bundle: fixedBundle });
     state.showWarningMessage.mockResolvedValueOnce("固定した開始点を使う");
     await run();
+    expect(state.apiRequest).toHaveBeenNthCalledWith(
+      2,
+      `/api/tasks/bundle?taskId=course%2Funit%2Fq1&extension=${extensionVersion}`,
+    );
     expect(state.apiRequest).toHaveBeenLastCalledWith("/api/tasks/fixed-start", {
       method: "POST",
       body: { taskId },
