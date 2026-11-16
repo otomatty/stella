@@ -128,7 +128,7 @@ integrationsRoute.put(
         continue;
       }
       const externalId = typeof row.externalId === "string" ? row.externalId.trim() : null;
-      const [existing] = await db
+      let [existing] = await db
         .select()
         .from(profiles)
         .where(sql`lower(${profiles.email}) = ${email}`)
@@ -156,8 +156,41 @@ integrationsRoute.put(
             role: "student",
           });
         } catch {
-          fail("invite_failed");
-          continue;
+          // 別の要求が同じ人を先に招待していたら、そのプロフィールで続ける。
+          [existing] = await db
+            .select()
+            .from(profiles)
+            .where(sql`lower(${profiles.email}) = ${email}`)
+            .limit(1);
+          if (!existing) {
+            fail("invite_failed");
+            continue;
+          }
+          if (existing.role !== "student" || existing.disabled) {
+            fail("not_invitable");
+            continue;
+          }
+          if (externalId !== null) {
+            const owner = profileByExternal.get(externalId);
+            const [savedOwner] = await db
+              .select({ profileId: integrationGroupMembers.profileId })
+              .from(integrationGroupMembers)
+              .where(
+                and(
+                  eq(integrationGroupMembers.groupId, group.id),
+                  eq(integrationGroupMembers.externalId, externalId),
+                ),
+              )
+              .limit(1);
+            if (
+              (owner !== undefined && owner !== existing.id) ||
+              (savedOwner && savedOwner.profileId !== existing.id)
+            ) {
+              fail("external_id_conflict");
+              continue;
+            }
+          }
+          id = existing.id;
         }
       }
       const alreadyMember = memberIds.has(id);
