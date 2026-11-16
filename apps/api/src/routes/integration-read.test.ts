@@ -329,6 +329,123 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     for (const forbidden of ["PRIVATE", "outside", '"other"', "study_activity"])
       expect(JSON.stringify(after)).not.toContain(forbidden);
   });
+  it("未所属の人の INSERT・UPDATE では、どの出来事も書き込まない", async () => {
+    const before = await events();
+    const count = sqlite.sqlite.prepare("select count(*) n from integration_events").get()?.n;
+    expect(
+      sqlite.sqlite
+        .prepare("select count(*) n from integration_events where user_id='outside'")
+        .get()?.n,
+    ).toBe(0);
+    const db = getDb(env);
+    await db.insert(enrollments).values({
+      userId: "outside",
+      stageId: "other",
+      enrolledAt: new Date(T2 + 1000),
+      completedAt: new Date(T2 + 2000),
+    });
+    sqlite.sqlite
+      .prepare(
+        "update enrollments set enrolled_at=?,completed_at=? where user_id='outside' and stage_id='stage'",
+      )
+      .run(T2 + 1000, T2 + 2000);
+    for (const verdict of ["pass", "resubmit"] as const) {
+      await db.insert(submissions).values({
+        studentId: "outside",
+        taskId: "task-stage",
+        stageTitle: "stage",
+        assignmentTitle: "fixture",
+        code: "PRIVATE",
+        verdict,
+        reviewSource: "human",
+        reviewedAt: new Date(T2 + 3000),
+      });
+    }
+    sqlite.sqlite
+      .prepare(
+        "update submissions set verdict='resubmit',reviewed_at=? where id='pass-outside-stage'",
+      )
+      .run(T2 + 4000);
+    sqlite.sqlite
+      .prepare("update submissions set verdict='pass',reviewed_at=? where id='pass-outside-stage'")
+      .run(T2 + 5000);
+    await db.insert(taskProblemResults).values({
+      userId: "outside",
+      taskId: "task-stage",
+      problemId: "q3",
+      contentHash: "current",
+      path: "PRIVATE",
+      code: "PRIVATE",
+      sha256: "hash",
+      firstPassedAt: new Date(T2 + 6000),
+      updatedAt: new Date(T2 + 6000),
+    });
+    sqlite.sqlite
+      .prepare(
+        "update task_problem_results set content_hash='next',source='tests',updated_at=? where user_id='outside'",
+      )
+      .run(T2 + 7000);
+    expect(
+      sqlite.sqlite
+        .prepare("select count(*) n from integration_events where user_id='outside'")
+        .get()?.n,
+    ).toBe(0);
+    expect(sqlite.sqlite.prepare("select count(*) n from integration_events").get()?.n).toBe(count);
+    expect(await events()).toEqual(before);
+  });
+  it("メンバー追加で過去分を埋めず、progress は現在の状態を返し、参加後の出来事だけ読める", async () => {
+    const before = await events();
+    sqlite.sqlite.exec(
+      `update integration_clients set scopes='["progress:read","events:read","members:write"]'`,
+    );
+    const response = await app.request(
+      "/api/integrations/v1/groups/sample/members",
+      {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          members: [{ email: "outside@example.test", externalId: "external-2" }],
+        }),
+      },
+      env,
+    );
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await response.json()).toMatchObject({
+      results: [{ id: "outside", status: "existing" }],
+    });
+    expect(await events()).toEqual(before);
+    const person = (await progress()).members.find((m) => m.id === "outside");
+    expect(person?.stages[0]?.units[0]?.tasks[0]).toMatchObject({
+      passed: true,
+      problems: { total: 2, passed: 2 },
+    });
+    // 参加前の行にある、出来事ではない項目の再保存でも過去分を書かない。
+    sqlite.sqlite.exec("update enrollments set status='completed' where user_id='outside'");
+    sqlite.sqlite.exec(
+      "update submissions set review_notes='PRIVATE CHANGED' where student_id='outside'",
+    );
+    sqlite.sqlite.exec(
+      "update task_problem_results set code='PRIVATE CHANGED' where user_id='outside'",
+    );
+    expect(await events()).toEqual(before);
+    sqlite.sqlite
+      .prepare(
+        "update submissions set verdict='resubmit',reviewed_at=? where id='pass-outside-stage'",
+      )
+      .run(T2 + 1000);
+    const after = await events(`?after=${before.next}`);
+    expect(after.events).toHaveLength(1);
+    expect(after.events[0]).toMatchObject({
+      type: "task_returned",
+      person: { id: "outside", externalId: "external-2" },
+      occurredAt: new Date(T2 + 1000).toISOString(),
+    });
+    expect(
+      sqlite.sqlite
+        .prepare("select count(*) n from integration_events where user_id='outside'")
+        .get()?.n,
+    ).toBe(1);
+  });
   it("200人・500件でページング。大人数でも100バインドを超えない。同時刻の安定IDで続く", async () => {
     const db = getDb(env);
     for (let i = 0; i < 201; i++) {

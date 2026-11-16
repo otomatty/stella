@@ -65,7 +65,7 @@ export function removeGroupGrantStatements(
 
 /** INSERT SELECT で人数に比例するバインドを避ける。手動・他グループの行は変更しない。 */
 export function applyGroupStageStatements(binding: Env["DB"], groupId: string, sourceName: string) {
-  const now = Math.floor(Date.now() / 1000);
+  const now = Date.now();
   return [
     binding
       .prepare(`INSERT INTO stage_grants
