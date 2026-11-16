@@ -1135,6 +1135,7 @@ export const stageUnlocks = sqliteTable(
     via: text("via", { enum: ["skill_check", "staff"] })
       .notNull()
       .default("skill_check"),
+    sourceGroupId: text("source_group_id").references(() => integrationGroups.id),
     unlockedAt: tsNow("unlocked_at"),
   },
   (t) => ({
@@ -2069,6 +2070,7 @@ export const stageGrants = sqliteTable(
     profileId: text("profile_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
+    sourceGroupId: text("source_group_id").references(() => integrationGroups.id),
     sourceName: text("source_name"),
     dueAt: text("due_at"),
     message: text("message"),
@@ -2177,6 +2179,7 @@ export const integrationClients = sqliteTable("integration_clients", {
   tokenHash: text("token_hash").notNull().unique(),
   tokenPrefix: text("token_prefix").notNull(),
   scopes: json<import("@stella/shared/integrations/types").IntegrationScope[]>("scopes", []),
+  allowedStagePrefixes: json<string[]>("allowed_stage_prefixes", []),
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
   lastUsedAt: ts("last_used_at"),
   createdBy: text("created_by").references(() => profiles.id, { onDelete: "set null" }),
@@ -2212,5 +2215,22 @@ export const integrationGroupMembers = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.groupId, t.profileId] }),
     index("integration_members_profile").on(t.profileId),
+    uniqueIndex("integration_members_external_unique").on(t.groupId, t.externalId),
   ],
+);
+
+export const integrationGroupStages = sqliteTable(
+  "integration_group_stages",
+  {
+    groupId: text("group_id")
+      .notNull()
+      .references(() => integrationGroups.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    dueAt: text("due_at"),
+    message: text("message"),
+    exempt: integer("exempt", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.groupId, t.stageId] })],
 );

@@ -77,7 +77,7 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 
 **seed は内容の変わった行だけを書く**（upsert の `do update ... where 列 is not excluded.列 or ...`。`export-seed-sql.ts` の `doUpdate`）。D1 は内容が同じでも書き直した行を書き込み行数に数え、**無料枠は 1 日 10 万行の書き込み**で止まる（2026-10-06 に全行を書き直す seed でデプロイが止まった）。remote の seed はログの最後に D1 が返した `rows_written` の合計を出す。upsert を足すときも `doUpdate` を通し、`export-seed-sql-writes.test.ts`（2 回目の seed は 0 行）を通すこと。
 
-本棚の廃止 (2026-11) に伴い、D1 の本棚の表は `0078_integrations` の後の `0079_drop_personal_library` で削除する。最後に `retire-library-storage.ts` が非公開 R2 `stella-library-private` を削除する。空でなければ、全オブジェクトの削除と未完了のマルチパートアップロードの中止を作成から 1 日で行うライフサイクルを設定し、次のデプロイで削除を再試行する。この step は `continue-on-error: true` で、失敗してもアプリのデプロイは成功のまま。バケットが消えたら step とスクリプトを削除してよい。
+本棚の廃止 (2026-11) に伴い、D1 の本棚の表は `0079_integration_write` の後の `0080_drop_personal_library` で削除する。最後に `retire-library-storage.ts` が非公開 R2 `stella-library-private` を削除する。空でなければ、全オブジェクトの削除と未完了のマルチパートアップロードの中止を作成から 1 日で行うライフサイクルを設定し、次のデプロイで削除を再試行する。この step は `continue-on-error: true` で、失敗してもアプリのデプロイは成功のまま。バケットが消えたら step とスクリプトを削除してよい。
 
 ## VS Code 拡張のリリース
 

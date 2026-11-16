@@ -3,8 +3,8 @@ import { URL } from "node:url";
 import { expect, it } from "vitest";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 
-it("0079: 本棚の全表を子から落とし、他の表と行は残す (外部キー有効)", () => {
-  const { sqlite } = sqliteD1({ beforeMigration: "0079_drop_personal_library" });
+it("0080: 本棚の全表を子から落とし、他の表と行は残す (外部キー有効)", () => {
+  const { sqlite } = sqliteD1({ beforeMigration: "0080_drop_personal_library" });
   try {
     expect(sqlite.prepare("pragma foreign_keys").get()).toEqual({ foreign_keys: 1 });
     sqlite.exec(`
@@ -67,7 +67,7 @@ it("0079: 本棚の全表を子から落とし、他の表と行は残す (外�
     const users = sqlite.prepare("select * from auth_users").all();
     const tenants = sqlite.prepare("select * from tenants").all();
     const sql = readFileSync(
-      new URL("../../drizzle/0079_drop_personal_library.sql", import.meta.url),
+      new URL("../../drizzle/0080_drop_personal_library.sql", import.meta.url),
       "utf8",
     );
     // D1 applies each statement with foreign keys enabled.

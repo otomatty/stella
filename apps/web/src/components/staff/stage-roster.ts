@@ -6,6 +6,7 @@
  */
 
 export interface StageRosterRow {
+  source_group?: string | null;
   guidance?: import("@stella/shared/stage-grants/types").StageGrantGuidance | null;
   id: string;
   display_name: string;

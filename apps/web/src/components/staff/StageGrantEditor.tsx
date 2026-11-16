@@ -1237,7 +1237,12 @@ function MobileRoster({
 }
 
 function GuidanceDue({ row }: { row: StageRosterRow }) {
-  return row.guidance?.due_at ? (
-    <p className="text-xs text-ink-3">案内の期限 {guidanceDate(row.guidance.due_at)}</p>
-  ) : null;
+  return (
+    <>
+      {row.source_group ? <p className="text-xs text-ink-3">グループ: {row.source_group}</p> : null}
+      {row.guidance?.due_at ? (
+        <p className="text-xs text-ink-3">案内の期限 {guidanceDate(row.guidance.due_at)}</p>
+      ) : null}
+    </>
+  );
 }

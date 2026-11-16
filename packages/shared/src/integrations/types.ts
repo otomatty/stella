@@ -28,10 +28,42 @@ export interface IntegrationClient {
   id: string;
   name: string;
   tokenPrefix: string;
+  allowedStagePrefixes: string[];
   scopes: IntegrationScope[];
   enabled: boolean;
   lastUsedAt: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** 空配列はすべて拒否。空文字を許すと全ステージに一致するので禁止する。 */
+export function isAllowedStagePrefixes(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 100 &&
+    value.every((prefix) => typeof prefix === "string" && /^[a-z0-9][a-z0-9-]{0,99}$/.test(prefix))
+  );
+}
+export interface IntegrationMemberInput {
+  email: string;
+  displayName?: string;
+  externalId?: string | null;
+}
+export interface IntegrationMemberResult {
+  index: number;
+  status: "invited" | "existing" | "already_member" | "failed";
+  id: string | null;
+  code?:
+    | "invalid_email"
+    | "invalid_member"
+    | "external_id_conflict"
+    | "not_invitable"
+    | "invite_failed";
+}
+export interface IntegrationStageInput {
+  slug: string;
+  due_at?: string | null;
+  message?: string | null;
+  exempt?: boolean;
 }
