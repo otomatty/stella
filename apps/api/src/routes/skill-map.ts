@@ -171,6 +171,20 @@ function appearancePayloads(
   return { appearances: anchored, appearance_parent_ids: parents };
 }
 
+/** 通常のツリーで前提の実名を出せるか。案内の前提名にも同じ判定を使う。 */
+export function isLockReasonNameVisible(
+  result: ReturnType<typeof evaluateSkillMapFor>,
+  reason: SkillMapLockReason,
+  revealDev = false,
+): boolean {
+  return (
+    revealDev ||
+    reason.stageId === undefined ||
+    (result.visibility.get(reason.stageId) === "full" &&
+      result.states.get(reason.stageId) !== "locked")
+  );
+}
+
 /**
  * `locked` の星の解放条件を、**視界に応じて伏せた**表示名にする。
  *
@@ -186,13 +200,9 @@ export function maskedLockReasons(
   revealDev = false,
 ): string[] {
   const byId = new Map(source.stages.map((stage) => [stage.id, stage]));
-  const masked = (reason: SkillMapLockReason): boolean =>
-    !revealDev &&
-    reason.stageId !== undefined &&
-    ((result.visibility.get(reason.stageId) ?? "hidden") !== "full" ||
-      result.states.get(reason.stageId) === "locked");
+
   return (result.lockReasons.get(stageId) ?? []).map((reason: SkillMapLockReason) =>
-    masked(reason)
+    !isLockReasonNameVisible(result, reason, revealDev)
       ? ((reason.stageId === undefined ? undefined : byId.get(reason.stageId)?.theme) ?? FOG_LABEL)
       : reason.label,
   );
@@ -515,6 +525,13 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           passed: passedIds.has(row.id),
         })),
         next_stage_ids: result.nextStageIds,
+        // #201: 通常の道の案内には、割り当てられた Extra を含めない。
+        unguided_next_stage_ids: result.nextStageIds.filter(
+          (id) => !source.guidedStageIds?.has(id),
+        ),
+        has_unguided_enrollment: [...(source.enrolledStageIds ?? [])].some(
+          (id) => !source.guidedStageIds?.has(id),
+        ),
         /**
          * 受講登録が 1 つでもあるか。
          *

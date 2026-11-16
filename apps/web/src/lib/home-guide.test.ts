@@ -196,3 +196,18 @@ describe("VS Code の準備の案内", () => {
     expect(buildHomeGuide(setup).steps).toEqual([{ kind: "setup-vscode" }]);
   });
 });
+
+it("案内されたステージだけを始めた人にも、最初の研修とVS Codeの準備を並べる", () => {
+  const input = {
+    ...base,
+    hasEnrollment: false,
+    hasAnyEnrollment: true,
+    connectedVscode: false,
+    firstStageStarted: false,
+    startableStageIds: ["sample-basic"],
+  };
+  expect(buildHomeGuide(input).steps).toEqual([
+    { kind: "first-stage", stageId: "sample-basic" },
+    { kind: "setup-vscode" },
+  ]);
+});

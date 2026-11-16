@@ -519,6 +519,13 @@
       "when": 1794787200000,
       "tag": "0076_manual_task_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "6",
+      "when": 1794873600000,
+      "tag": "0077_stage_grant_guidance",
+      "breakpoints": true
     }
   ]
 }

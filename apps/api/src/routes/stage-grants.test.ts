@@ -1048,9 +1048,18 @@ describe("PUT /api/stage-grants/:stageId", () => {
     });
     expect(res.status).toBe(200);
     expect(stageLookup).toHaveBeenCalledTimes(1);
-    expect(inserted()).toEqual([
-      expect.objectContaining({ stageId: "stage-child", profileId: "seed-learner" }),
-    ]);
+    // PUTも差分で保存する。残る人を入れ直さず、対象ステージの外す人だけ消す。
+    expect(inserted()).toEqual([]);
+    const grantDeletes = deleted.filter((op) => op.table === stageGrants);
+    expect(grantDeletes).toHaveLength(1);
+    expect(sqlSketch(grantDeletes[0]?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageGrants.stageId, "stage-child"),
+          notInArray(stageGrants.profileId, ["seed-learner"]),
+        ),
+      ),
+    );
     expect(recordAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),

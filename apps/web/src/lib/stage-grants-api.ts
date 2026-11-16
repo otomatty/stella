@@ -1,3 +1,8 @@
+import type {
+  StageGrantGuidance,
+  StageGrantGuidanceRequest,
+  StageGrantGuidanceSummary,
+} from "@stella/shared/stage-grants/types";
 import { apiFetch } from "./api-client";
 
 /** 保存時に自動で足した、祖先のステージへの割当。 */
@@ -14,6 +19,7 @@ export interface StageGrantLearnerCounts {
 }
 
 export interface StageGrantLearnerDetail {
+  guidance?: StageGrantGuidance | null;
   id: string;
   display_name: string;
   email: string | null;
@@ -27,6 +33,7 @@ export interface StageGrantLearnerDetail {
 }
 
 export interface StageGrantLearnerPage {
+  guidance_summary?: StageGrantGuidanceSummary;
   stage: {
     id: string;
     slug: string;
@@ -98,4 +105,11 @@ export async function updateStageGrants(
     counts: body.counts ?? { learners: 0, assigned: 0, unassigned: 0, exempted: 0 },
     ancestor_grants: Array.isArray(body.ancestor_grants) ? body.ancestor_grants : [],
   };
+}
+
+export function updateStageGrantGuidance(stageId: string, guidance: StageGrantGuidanceRequest) {
+  return apiFetch(`/api/stage-grants/${encodeURIComponent(stageId)}/guidance`, {
+    method: "PATCH",
+    body: guidance,
+  });
 }

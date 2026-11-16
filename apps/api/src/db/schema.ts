@@ -2069,6 +2069,9 @@ export const stageGrants = sqliteTable(
     profileId: text("profile_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
+    sourceName: text("source_name"),
+    dueAt: text("due_at"),
+    message: text("message"),
     grantedBy: text("granted_by"),
     grantedAt: tsNow("granted_at"),
   },

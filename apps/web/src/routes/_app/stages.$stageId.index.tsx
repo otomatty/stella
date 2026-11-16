@@ -24,6 +24,7 @@ function StageDetailPage() {
         <StaffStageDetail key={stageId} stageId={stageId} />
       ) : target ? (
         <StageDetail
+          currentUserId={s.currentUserId}
           stage={target}
           setPage={s.setPage}
           onOpenLesson={(lessonId) => s.onOpenLesson(target, lessonId)}

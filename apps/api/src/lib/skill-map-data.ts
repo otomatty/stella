@@ -10,7 +10,7 @@
  * 修了証を revoke したステージで判定が食い違う。
  */
 
-import { and, count, countDistinct, desc, eq, gte, inArray, max } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray, max, notInArray } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { evaluateSkillMap, isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
 import type { SkillMapStage } from "@stella/shared/skill-map/evaluate";
@@ -35,11 +35,7 @@ import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
 import { loadUnlockedStageIds } from "./skill-check-data.js";
-import {
-  dropOrphanGrantedStages,
-  filterStagesByAudience,
-  loadGrantedStageIds,
-} from "./stage-audience.js";
+import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
 /**
  * 「いま進めている星」の候補として見る、直近に進捗が付いたステージの数。
@@ -182,6 +178,8 @@ export interface SkillMapLoadOptions {
 
 export interface SkillMapSource {
   stages: SkillMapStage[];
+  /** 通常のホームの道から分ける、本人に割り当てられた Extra。 */
+  guidedStageIds?: Set<string>;
   clearedStageIds: Set<string>;
   activeStageId?: string;
   /**
@@ -222,7 +220,13 @@ export async function loadSkillMapSource(
     .from(stages)
     .where(eq(stages.status, "published"));
 
-  const grantedStageIds = await loadGrantedStageIds(db, caller.id);
+  // 公開外の Extra に受講登録が残っていても、通常の道の集約には混ぜない。
+  const grantRows = await db
+    .select({ stageId: stageGrants.stageId })
+    .from(stageGrants)
+    .innerJoin(stages, eq(stages.id, stageGrants.stageId))
+    .where(and(eq(stageGrants.profileId, caller.id), eq(stages.audience, "granted")));
+  const grantedStageIds = new Set(grantRows.map((row) => row.stageId));
   const audienceRows = filterStagesByAudience(stageRows, grantedStageIds);
 
   const clearedStageIds = await loadClearedStageIds(db, caller);
@@ -261,6 +265,7 @@ export async function loadSkillMapSource(
 
   return {
     stages: mapStages,
+    guidedStageIds: grantedStageIds,
     clearedStageIds,
     enrolledStageIds,
     unlockedStageIds,
@@ -571,7 +576,19 @@ async function findActiveStageId(
     .from(lessonProgress)
     .innerJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .where(eq(lessonProgress.userId, caller.id))
+    .where(
+      and(
+        eq(lessonProgress.userId, caller.id),
+        notInArray(
+          sections.stageId,
+          db
+            .select({ id: stageGrants.stageId })
+            .from(stageGrants)
+            .innerJoin(stages, eq(stages.id, stageGrants.stageId))
+            .where(and(eq(stageGrants.profileId, caller.id), eq(stages.audience, "granted"))),
+        ),
+      ),
+    )
     .groupBy(sections.stageId)
     .orderBy(desc(lastAt))
     .limit(ACTIVE_STAGE_CANDIDATES);

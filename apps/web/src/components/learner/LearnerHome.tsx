@@ -26,6 +26,9 @@
  * 何をどの順でガイドに並べるかは `@/lib/home-guide` (純関数) が決める。
  */
 
+import { useGuidedStages } from "@/hooks/useGuidedStages";
+import { GuidedStageCard, GuidedStageLines, GuidedStagesLoadError } from "./home/GuidedStages";
+import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { useFirstSteps } from "@/hooks/useFirstSteps";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -73,7 +76,7 @@ import {
 import { SkillLanes } from "@/components/learner/tree/SkillLanes";
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
-import { buildHomeGuide, startableStageIds } from "@/lib/home-guide";
+import { buildHomeGuide, homeGuideStageInput } from "@/lib/home-guide";
 import { AlertTriangle, ChevronDown, ChevronUp, Compass, ListTree, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
@@ -116,6 +119,7 @@ export const LearnerHome = ({
 }: LearnerHomeProps) => {
   const navigate = useNavigate();
   const firstSteps = useFirstSteps(undefined, backendEnabled);
+  const guided = useGuidedStages(currentUserId);
   const progressMap = useLessonProgressMap();
   // 取得に失敗すると一覧は空になる (= 「見直す」が黙って消える) ので、失敗も受け取って出す。
   const { submissions, error: submissionsError } = useMySubmissions(true);
@@ -208,8 +212,11 @@ export const LearnerHome = ({
   // 受講登録の有無はサーバの集約フラグを使う。星ごとの `enrolled` は霧より先に
   // 付かないので、星の配列で数えると「唯一の登録が 2 歩先」の受講者を取りこぼす。
   // 古い応答のときだけ星から数える。
-  const hasEnrollment =
-    skillMap.map?.has_enrollment ?? nodes.some((node) => node.enrolled === true);
+  const ordinaryGuide = useMemo(
+    () => homeGuideStageInput(skillMap.map, nodes),
+    [skillMap.map, nodes],
+  );
+  const hasEnrollment = ordinaryGuide.hasEnrollment;
 
   const guide = useMemo(() => {
     const plan = buildTodayPlan({
@@ -230,13 +237,11 @@ export const LearnerHome = ({
       // マップが届く前 (`null`) は「始めている」側に倒す — 初回の案内が一瞬だけ出て
       // 消える瞬きを避ける。
       hasEnrollment: skillMap.map ? hasEnrollment : true,
-      hasVisibleExtra: nodes.some((node) => node.audience === "granted"),
+      hasAnyEnrollment:
+        skillMap.map?.has_enrollment ?? nodes.some((node) => node.enrolled === true),
+      hasVisibleExtra: ordinaryGuide.hasVisibleExtra,
       activeWithoutLesson: Boolean(activeStage && !activeStage.completed && !nextLesson),
-      startableStageIds: startableStageIds(
-        nodes,
-        skillMap.map?.next_stage_ids ?? [],
-        serverActiveStageId,
-      ),
+      startableStageIds: ordinaryGuide.startableStageIds,
       stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
       reviewDone,
       connectedVscode: firstSteps?.items.find((item) => item.key === "connected-vscode")?.done,
@@ -250,8 +255,9 @@ export const LearnerHome = ({
     recentMiss,
     skillMap.map,
     hasEnrollment,
+    ordinaryGuide.hasVisibleExtra,
+    ordinaryGuide.startableStageIds,
     nodes,
-    serverActiveStageId,
     reviewDone,
     firstSteps,
   ]);
@@ -486,6 +492,23 @@ export const LearnerHome = ({
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [expandedPref, setExpandedPref] = useState<boolean | null>(null);
   const expanded = expandedPref ?? isDesktop;
+  const [guidedTarget, setGuidedTarget] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expanded || !guidedTarget) return;
+    const frame = requestAnimationFrame(() => {
+      const card = document.getElementById(`guided-stage-${guidedTarget}`);
+      card?.scrollIntoView({ block: "nearest" });
+      card?.focus({ preventScroll: true });
+      setGuidedTarget(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [expanded, guidedTarget]);
+  const beginGuidedStage = async (id: string) => {
+    const seq = ++startSeqRef.current;
+    await startGuidedStage(id);
+    await Promise.all([guided.refetch(), refetchStages(), skillMap.refetch()]);
+    if (mountedRef.current && seq === startSeqRef.current) openStage(id);
+  };
   const loadingMap = backendEnabled && skillMap.map === null && !skillMap.error;
 
   // 切り替え先の盤面と視界が描かれてから、控えていた星へ一度だけ寄せる。
@@ -721,6 +744,27 @@ export const LearnerHome = ({
 
               <NextStepCard guide={guide} loading={loadingMap} {...stepContext} />
 
+              {guided.stages.length > 0 || guided.error ? (
+                <section
+                  aria-label="案内されたステージ"
+                  data-testid="guide-guided-stages"
+                  className="flex flex-col gap-2"
+                >
+                  <h2 className="text-xs font-bold text-ink-3">案内されたステージ</h2>
+                  {guided.error ? (
+                    <GuidedStagesLoadError message={guided.error} onRetry={guided.refetch} />
+                  ) : null}
+                  {guided.stages.map((stage) => (
+                    <GuidedStageCard
+                      key={stage.stage_id}
+                      stage={stage}
+                      onStart={beginGuidedStage}
+                      onOpen={openStage}
+                    />
+                  ))}
+                </section>
+              ) : null}
+
               <LaterSteps steps={later} {...stepContext} />
 
               {discoveries.length > 0 ? (
@@ -781,6 +825,16 @@ export const LearnerHome = ({
                 </button>
               </div>
             ) : null}
+            {guided.error ? (
+              <GuidedStagesLoadError message={guided.error} onRetry={guided.refetch} />
+            ) : null}
+            <GuidedStageLines
+              stages={guided.stages}
+              onExpand={(id) => {
+                setGuidedTarget(id);
+                setExpandedPref(true);
+              }}
+            />
             <NextStepBar
               guide={guide}
               loading={loadingMap}

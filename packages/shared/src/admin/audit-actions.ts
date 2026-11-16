@@ -35,6 +35,7 @@ const LABELS = {
   // 「もう記録できない」 を型で担保する)。 更新 / 解除は staff の運用操作として残る。
   stage_self_start: "ステージの自己開始",
   stage_grants_replace: "Extra ステージの割当",
+  stage_grants_guidance_update: "ステージの案内を更新",
   stage_grants_update: "Extra の割り当てを変更",
   enrollment_update: "受講登録の更新",
   enrollment_delete: "受講登録の解除",

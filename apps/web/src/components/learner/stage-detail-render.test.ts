@@ -3,9 +3,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Stage } from "@/data/types";
 import { FIRST_STEP_KEYS, type FirstSteps } from "@stella/shared/study/first-steps";
+import { useGuidedStages } from "@/hooks/useGuidedStages";
 import { useFirstSteps } from "@/hooks/useFirstSteps";
 import { StageDetail } from "./StageDetail";
 
+vi.mock("@/hooks/useGuidedStages", () => ({
+  useGuidedStages: vi.fn(() => ({ stages: [], error: null, refetch: () => Promise.resolve() })),
+}));
 vi.mock("@/hooks/useFirstSteps", () => ({ useFirstSteps: vi.fn() }));
 const stage: Stage = {
   id: "root",
@@ -25,12 +29,17 @@ const render = (id = "root") =>
   renderToStaticMarkup(
     createElement(StageDetail, {
       stage: { ...stage, id },
+      currentUserId: "sample-user",
       setPage: vi.fn(),
       onOpenLesson: vi.fn(),
     }),
   );
 beforeEach(() => vi.mocked(useFirstSteps).mockReturnValue(data));
 describe("ステージ詳細の到達リスト", () => {
+  it("現在の利用者IDを案内のフックへ渡す", () => {
+    render();
+    expect(useGuidedStages).toHaveBeenLastCalledWith("sample-user");
+  });
   it("最初のステージの上部に表示する", () => {
     const html = render();
     expect(html).toContain("STELLA の使い方");
