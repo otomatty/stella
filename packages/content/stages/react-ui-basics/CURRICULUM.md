@@ -13,10 +13,18 @@
 
 ## 予定している内容
 
-- UI部品の設計
-- デザイン規則
-- Storybook
-- 部品のテスト
+- Button
+- TextField
+- Select
+- Checkbox
+- Card・Badge
+- 通知・空状態
+- ダイアログ
+- 部品の仕様と状態見本
+- デザイントークン
+- ライブラリの利用と調整
+
+[単元の一覧: 01 §3 M09 ReactのUI部品とデザイン規則](../../../../docs/curriculum/01-content-split-and-learning-order.md#m09-reactのui部品とデザイン規則)
 
 ## 執筆時の扱い
 

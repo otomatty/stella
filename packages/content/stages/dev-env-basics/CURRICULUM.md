@@ -42,7 +42,7 @@ VS CodeとSTELLA拡張を入れ、Webから課題を開き、編集・保存・�
 
 このステージで評価するスキルは `stella-task-loop`・`open-learning-folder`・`file-save-reopen`・`html-document`・`preview-changes` の5個である。
 
-相対リンク、ターミナル、Node.js・npmの準備と環境診断、Gitのローカルの記録、ローカルサーバーは最初に使う後続ステージの冒頭で扱う。旧構成の自力・統合の課題と復習のレッスンも置かない。具体的なステージは執筆時(#41)に決める。`relative-link`・`terminal-location`・`node-npm-ready`・`git-local-commit`・`local-server-run`・`report-problem` は `skills.json` に残すが、このステージでは評価せず、最初に使うステージで評価する。
+相対リンクは `html-css-basics` の最初の単元、ターミナル・Node.jsとnpmの準備・環境診断・Gitのローカルの記録・困ったときの報告は `javascript-basics` の冒頭、ローカルサーバーは `http-async-basics` の冒頭で扱う。旧構成の自力・統合の課題と復習のレッスンも置かない。`relative-link`・`terminal-location`・`node-npm-ready`・`git-local-commit`・`local-server-run`・`report-problem` は `skills.json` に残すが、このステージでは評価しない。`relative-link` は `html-css-basics` の最初の単元、`terminal-location`・`node-npm-ready`・`git-local-commit`・`report-problem` は `javascript-basics` の冒頭(困ったときの報告は環境診断で詰まった場面)、`local-server-run` は `http-async-basics` の冒頭で教え、評価する。
 
 Node.jsやGitを初めて要するステージでは、最初の課題の前に環境診断の課題を1つ置く。腕試しで飛んだ人も、このステージを修了した人も対象である。詳細は[06 §9](../../../../docs/curriculum/06-m01-beginner-setup-and-basic-operations.md#9-後続のステージへの引き継ぎ)に従う。
 

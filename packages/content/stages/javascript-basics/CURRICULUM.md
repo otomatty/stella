@@ -13,22 +13,31 @@
 
 ## 予定している内容
 
-- 値と変数
-- 条件分岐
-- 繰り返し
-- 境界の確認
+- 値・変数・型
+- 演算と変換
+- 比較と条件
+- 条件の組合せ
+- ループ
+- 文字列
+- 処理の追跡とデバッグ
+
+[単元の一覧: 01 §3 M03 JavaScriptの値と制御](../../../../docs/curriculum/01-content-split-and-learning-order.md#m03-javascriptの値と制御)
+
+冒頭で道具の準備(ターミナル・Node.jsとnpm・環境診断・Git)と、環境診断で困ったときの報告を扱う。
 
 ## M01から引き継ぐもの
 
-手元には日本語表示のVS CodeとSTELLA拡張、学習フォルダー `web-training` とそのルートを管理するGitの学習リポジトリ、Node.js・npmがある。Gitの名前とメールは学習リポジトリだけに設定する。
+手元には日本語表示のVS CodeとSTELLA拡張、学習フォルダー `web-training` だけがある。
 
-課題の `skills.uses` では、`html-document`、`preview-changes`、`stella-task-loop`、`open-learning-folder`、`file-save-reopen`、`relative-link`、`terminal-location`、`node-npm-ready`、`git-local-commit`、`local-server-run`、`report-problem` を使ってよい。
+課題の `skills.uses` では、`html-document`、`preview-changes`、`stella-task-loop`、`open-learning-folder`、`file-save-reopen` を使ってよい。
+
+冒頭でターミナル、Node.jsとnpmの準備、環境診断、学習フォルダーのGitのローカルの記録(init・add・commit・diff・log、`git-record`、診断は `diagnose-git-01`)と、環境診断で困ったときの報告を教える。`terminal-location`・`node-npm-ready`・`git-local-commit`・`report-problem` を新しく評価する。Gitの名前とメールは学習リポジトリだけに設定する。
 
 [06 §8「Stellaの機能をどこで初めて教えるか」](../../../../docs/curriculum/06-m01-beginner-setup-and-basic-operations.md#8-stellaの機能をどこで初めて教えるか)の機能は説明し直さず、使い方動画と06へリンクする。[引き継ぎの詳細は06 §9](../../../../docs/curriculum/06-m01-beginner-setup-and-basic-operations.md#9-後続のステージへの引き継ぎ)を参照する。
 
 確認Bは `dev-env-basics` の確認A合格の7日後に出る。`html-css-basics` の最初の単元に「確認Bが出たら先に解く」と書く予定である。
 
-Node.js・npmの版は `node-test-01` と `dev-env-basics` の診断で同じものを使う。腕試しで `dev-env-basics` を飛ばした人のために、最初の課題の前に環境診断を1つ置く予定である。
+最初の課題の前に環境診断 (`env-diagnose`、`diagnose-node-01`) を置き、版は `node-test-01` に合わせる。腕試しで先に来た人も含め、全員がここで診断を通る。
 
 ## 執筆時の扱い
 

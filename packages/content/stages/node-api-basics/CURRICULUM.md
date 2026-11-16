@@ -13,10 +13,15 @@ Node.jsでAPIを実装し、入力と応答をテストできる。
 
 ## 予定している内容
 
-- Node.js
-- APIの契約
-- 入力の検証
-- APIのテスト
+- Node.jsとブラウザ
+- 依存関係
+- ルートとHTTP
+- 検証
+- ミドルウェア
+- エラーとログ
+- APIテスト
+
+[単元の一覧: 01 §3 M11 Node.jsとAPI](../../../../docs/curriculum/01-content-split-and-learning-order.md#m11-nodejsとapi)
 
 ## 執筆時の扱い
 

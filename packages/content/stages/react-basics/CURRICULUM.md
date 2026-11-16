@@ -13,10 +13,17 @@ Reactのコンポーネントと状態で、対話的な画面を作れる。
 
 ## 予定している内容
 
-- コンポーネントとJSX
-- propsとstate
+- JSX
+- props
+- 一覧とkey
+- state
 - イベント
-- 状態の更新
+- 制御された入力
+- 状態共有
+- 導出値
+- 必要な副作用
+
+[単元の一覧: 01 §3 M08 Reactの基礎と状態](../../../../docs/curriculum/01-content-split-and-learning-order.md#m08-reactの基礎と状態)
 
 ## 執筆時の扱い
 

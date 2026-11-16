@@ -13,10 +13,15 @@ HTMLとJavaScriptで、状態と操作を持つUI部品を作れる。
 
 ## 予定している内容
 
-- 部品の構造と状態
-- フォーム部品
-- キーボード操作
-- 部品の再利用
+- 操作ボタン
+- 入力とエラー
+- チェック・選択
+- 開閉
+- 確認ダイアログ
+- 通知・空状態
+- 部品を組み合わせたフォーム
+
+[単元の一覧: 01 §3 M06 HTMLとJavaScriptのUI部品](../../../../docs/curriculum/01-content-split-and-learning-order.md#m06-htmlとjavascriptのui部品)
 
 ## 執筆時の扱い
 
