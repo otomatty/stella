@@ -2261,6 +2261,8 @@ export const integrationEvents = sqliteTable(
     taskId: text("task_id").references(() => tasks.id, { onDelete: "cascade" }),
     submissionId: text("submission_id"),
     source: text("source"),
+    submissionAttempt: integer("submission_attempt").notNull().default(1),
+    reason: text("reason"),
     problemId: text("problem_id"),
     contentHash: text("content_hash"),
   },

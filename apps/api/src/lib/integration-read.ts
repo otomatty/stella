@@ -122,23 +122,34 @@ export async function readIntegrationProgress(
     }>(
       at === null
         ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at,'task_passed' type from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
-        : sql`select user_id,task_id,id,source,reviewed_at,type from (
-            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,
-              row_number() over (partition by e.user_id,e.task_id order by e.occurred_at desc,e.seq desc) position
+        : sql`with history as (
+            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,e.submission_attempt,e.seq,
+              sum(case when e.type='task_pass_revoked' then 1 else 0 end) over (
+                partition by e.user_id,e.task_id,e.submission_id order by e.occurred_at,e.seq
+              ) pass_period
             from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
-            where e.type in ('task_passed','task_returned') and e.occurred_at <= ${at}
-          ) where position=1`,
+            where e.type in ('task_passed','task_pass_revoked') and e.occurred_at <= ${at}
+          ), decisions as (
+            select *,min(case when type='task_passed' then reviewed_at end) over (
+                partition by user_id,task_id,id,pass_period
+              ) first_passed_at,
+              row_number() over (partition by user_id,task_id,id order by reviewed_at desc,seq desc) position
+            from history
+          ), remaining as (
+            select *,min(first_passed_at) over (partition by user_id,task_id) task_passed_at,
+              row_number() over (partition by user_id,task_id order by submission_attempt desc,id) chosen
+            from decisions where position=1 and type='task_passed'
+          ) select user_id,task_id,id,source,task_passed_at reviewed_at,type from remaining where chosen=1`,
     ),
     db.all<ProblemRow & { user_id: string; task_id: string }>(
       at === null
         ? sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id`
         : sql`select user_id,task_id,problemId,contentHash,source,firstPassedAt from (
-            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,
+            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,
               row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
             from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
-            where e.type='problem_passed' and e.occurred_at <= ${at}
-              and exists (select 1 from task_problem_results r where r.user_id=e.user_id and r.task_id=e.task_id and r.problem_id=e.problem_id)
-          ) where position=1 order by firstPassedAt desc,sequence desc`,
+            where e.type in ('problem_passed','problem_pass_revoked') and e.occurred_at <= ${at}
+          ) where position=1 and type='problem_passed' order by firstPassedAt desc,sequence desc`,
     ),
     db.all<{ id: string }>(
       sql`select p.id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
@@ -271,6 +282,7 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     slug: string;
     task_id: string | null;
     source: IntegrationSource | null;
+    reason: IntegrationEvent["reason"];
     count: number | null;
     submission_id: string | null;
     definition: string | null;
@@ -282,13 +294,13 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     scope as (select s.id,s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
     scoped as (select e.*,m.external_id,s.slug from integration_events e join members m on m.profile_id=e.user_id join scope s on s.id=e.stage_id
       left join tasks t on t.id=e.task_id where e.seq > ${sequence} and (e.task_id is null or (t.active=1 and t.variant_of is null))),
-    keyed as (select *,case when type='problem_passed' then json_array(user_id,task_id,occurred_at) else json_array('event',seq) end group_key from scoped),
+    keyed as (select *,case when type in ('problem_passed','problem_pass_revoked') then json_array(type,user_id,task_id,occurred_at) else json_array('event',seq) end group_key from scoped),
     marked as (select *,case when group_key=lag(group_key) over (order by seq) then 0 else 1 end group_start from keyed),
     numbered as (select *,sum(group_start) over (order by seq) group_number from marked),
     events as (
-      select id,type,occurred_at time,seq,user_id,external_id,slug,task_id,source,null count,submission_id from numbered where type <> 'problem_passed'
+      select id,type,occurred_at time,seq,user_id,external_id,slug,task_id,source,reason,null count,submission_id from numbered where type not in ('problem_passed','problem_pass_revoked')
       union all
-      select json_array('problems',user_id,task_id,occurred_at,min(seq),max(seq)),'problems_passed',occurred_at,max(seq),user_id,external_id,slug,task_id,null,count(distinct problem_id),null from numbered where type='problem_passed' group by group_number,user_id,task_id,occurred_at
+      select json_array(type,user_id,task_id,occurred_at,min(seq),max(seq)),case when type='problem_passed' then 'problems_passed' else 'problems_revoked' end,occurred_at,max(seq),user_id,external_id,slug,task_id,null,null,count(distinct problem_id),null from numbered where type in ('problem_passed','problem_pass_revoked') group by group_number,type,user_id,task_id,occurred_at
     ),
     page as (select * from events order by seq limit 501)
     select page.*, t.definition,t.content_hash,tp.status,
@@ -303,10 +315,11 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     stage: r.slug,
     ...(r.task_id === null ? {} : { taskId: r.task_id }),
     ...(r.type === "task_passed" ? { source: r.source } : {}),
+    ...(r.type === "task_pass_revoked" ? { reason: r.reason } : {}),
     ...(r.submission_id === null
       ? {}
       : { submissionUrl: `/submissions/${encodeURIComponent(r.submission_id)}` }),
-    ...(r.type !== "problems_passed"
+    ...(r.type !== "problems_passed" && r.type !== "problems_revoked"
       ? {}
       : {
           count: r.count ?? 0,

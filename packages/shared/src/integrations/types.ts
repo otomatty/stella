@@ -102,13 +102,21 @@ export interface IntegrationProgress {
 }
 export interface IntegrationEvent {
   id: string;
-  type: "stage_started" | "stage_cleared" | "task_passed" | "task_returned" | "problems_passed";
+  type:
+    | "stage_started"
+    | "stage_cleared"
+    | "task_passed"
+    | "task_returned"
+    | "task_pass_revoked"
+    | "problems_passed"
+    | "problems_revoked";
   occurredAt: string;
   person: { id: string; externalId: string | null };
   stage: string;
   taskId?: string;
   source?: IntegrationSource | null;
   submissionUrl?: string;
+  reason?: "resubmit" | "fail" | "removed";
   count?: number;
   problemsPassed?: number;
 }

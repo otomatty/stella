@@ -133,6 +133,61 @@ it.each([true, false])(
       expect(
         JSON.stringify(fixture.sqlite.prepare("select * from integration_events").all()),
       ).not.toContain("PRIVATE");
+      const deletedAfter = Date.now();
+      for (const userId of ["fixture-user", "outside"]) {
+        fixture.sqlite
+          .prepare(
+            "update submissions set verdict='fail',reviewed_at=6000 where student_id=? and verdict='pass'",
+          )
+          .run(userId);
+        fixture.sqlite.prepare("delete from task_problem_results where user_id=?").run(userId);
+        await db.insert(submissions).values({
+          id: `delete-${userId}`,
+          studentId: userId,
+          taskId: "fixture-task",
+          stageTitle: "fixture",
+          assignmentTitle: "fixture",
+          code: "PRIVATE",
+          verdict: "pass",
+          reviewSource: "manual",
+          attempt: 2,
+          reviewedAt: new Date(7000),
+        });
+        fixture.sqlite.prepare("delete from submissions where id=?").run(`delete-${userId}`);
+      }
+      const revocations = fixture.sqlite
+        .prepare(
+          "select type,reason,submission_attempt,occurred_at from integration_events where type in ('task_pass_revoked','problem_pass_revoked') order by seq",
+        )
+        .all();
+      expect(
+        revocations.map((row) => ({
+          type: row.type,
+          reason: row.reason,
+          attempt: row.submission_attempt,
+        })),
+      ).toEqual(
+        hasGroup
+          ? [
+              { type: "task_pass_revoked", reason: "fail", attempt: 1 },
+              { type: "problem_pass_revoked", reason: null, attempt: 1 },
+              { type: "task_pass_revoked", reason: "removed", attempt: 2 },
+            ]
+          : [],
+      );
+      if (hasGroup) {
+        expect(revocations[0]?.occurred_at).toBe(6000);
+        for (const row of revocations.slice(1)) {
+          expect(Number.isSafeInteger(row.occurred_at)).toBe(true);
+          expect(Number(row.occurred_at)).toBeGreaterThanOrEqual(deletedAfter);
+          expect(Number(row.occurred_at)).toBeLessThanOrEqual(Date.now());
+        }
+      }
+      expect(
+        fixture.sqlite
+          .prepare("select count(*) n from integration_events where user_id='outside'")
+          .get()?.n,
+      ).toBe(0);
       const sequences = fixture.sqlite
         .prepare("select seq from integration_events order by seq")
         .all()
