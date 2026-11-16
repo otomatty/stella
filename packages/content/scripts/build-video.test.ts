@@ -177,3 +177,43 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
   expect(chromium.launch).toHaveBeenCalledOnce();
   expect(close).toHaveBeenCalledOnce();
 });
+
+for (const phase of ["生成前", "生成後"] as const)
+  it(`計画後に絵コンテが変われば${phase}にトピックを失敗にする`, async () => {
+    const { root } = fixture();
+    const change = () => {
+      const file = join(root, "video.json");
+      const json = JSON.parse(readFileSync(file, "utf8"));
+      json.scenes[0].beats[0].say = "内容を変えます。";
+      writeFileSync(file, JSON.stringify(json));
+    };
+    vi.mocked(chromium.launch).mockResolvedValue({ close: vi.fn() } as unknown as Awaited<
+      ReturnType<typeof chromium.launch>
+    >);
+    if (phase === "生成後")
+      vi.mocked(buildSceneTopic).mockImplementationOnce(async () => {
+        change();
+        return {
+          generatorVersion: 1,
+          ttsIdentity: "fake",
+          durationSec: 90,
+          probedDurationSec: 90,
+          scenes: [],
+          loudness: { integratedLufs: -16, truePeakDb: -3 },
+          warnings: [],
+        };
+      });
+    const result = await buildVideos(["--tts", "fake", "--out", join(root, "out")], () => {
+      if (phase === "生成前") change();
+      return false;
+    });
+    expect(result.reports).toEqual([]);
+    expect(result.failures).toEqual([
+      expect.objectContaining({
+        id: "first",
+        reason: `動画の入力が計画後に変わりました (${phase})`,
+      }),
+    ]);
+    if (phase === "生成前") expect(buildSceneTopic).not.toHaveBeenCalled();
+    else expect(buildSceneTopic).toHaveBeenCalledOnce();
+  });

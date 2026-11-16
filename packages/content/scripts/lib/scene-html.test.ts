@@ -298,3 +298,36 @@ it("1行のノードとリンクのラベル枠は文字サイズの1.5倍以上
     expect(JSON.parse(match[1]).h).toBeGreaterThanOrEqual(Number(match[2]) * 1.5);
   }
 });
+
+for (const art of [true, false])
+  it(`3行目の低いカードでも${art ? "イラスト" : "アイコン"}とラベルに正の描画領域を確保する`, () => {
+    const sb = structuredClone(sample);
+    sb.boards.main = {
+      cols: 2,
+      rows: 3,
+      zones: [{ id: "last", label: "操作", cells: [1, 3, 2, 1] }],
+      nodes: [
+        {
+          id: "a",
+          label: "書く",
+          ...(art ? { art: "write" } : { icon: "write" as const }),
+          at: [1, 3],
+        },
+        {
+          id: "b",
+          label: "確認",
+          ...(art ? { art: "check" } : { icon: "check" as const }),
+          at: [2, 3],
+        },
+      ],
+      links: [{ id: "back", from: "b", to: "a", route: "under" }],
+    };
+    const { html } = page(0, sb);
+    expect(html).not.toMatch(/(?:width|height)="-/);
+    const boxes = [...html.matchAll(/data-fit='([^']+)'/g)].map((m) => JSON.parse(m[1]));
+    expect(boxes.length).toBeGreaterThanOrEqual(2);
+    for (const box of boxes) {
+      expect(box.w).toBeGreaterThan(0);
+      expect(box.h).toBeGreaterThan(40);
+    }
+  });

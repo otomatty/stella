@@ -1,5 +1,13 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -612,3 +620,49 @@ describe("大きな非公開素材の seed", () => {
     SEED_TIMEOUT,
   );
 });
+
+it(
+  "video.json だけの実ファイルから manifest と SQL を通して動画を公開する",
+  async () => {
+    const real = await vi.importActual<typeof import("@stella/content")>("@stella/content");
+    const root = mkdtempSync(join(tmpdir(), "stella-storyboard-seed-"));
+    const content = fileURLToPath(new URL("../../content", import.meta.url));
+    const db = migratedDb();
+    try {
+      const stage = join(root, "stages", COURSE);
+      mkdirSync(join(root, "stages"));
+      cpSync(join(content, "src/__fixtures__/format2-sample"), stage, { recursive: true });
+      for (const name of ["skills.json", "patterns.json", "environments", "sources"])
+        cpSync(join(content, name), join(root, name), { recursive: true });
+      const topic = join(stage, "modules/u00-start/l1-public/t1-public");
+      const lessonId = "sample-public-slides";
+      const video = `lesson-video/ses/${COURSE}/${lessonId}/hash.mp4`;
+      const file = join(root, "video-manifest.json");
+      writeFileSync(file, JSON.stringify({ [lessonId]: { video } }));
+      writeFileSync(join(topic, "video.json"), "{}");
+      writeFileSync(join(topic, "narration.json"), "{}");
+      const manifest = () => real.buildContentManifest(join(root, "stages"));
+      const mutate = (target: Manifest) => Object.assign(target, manifest());
+      const current = () =>
+        db
+          .prepare("select video_path from lessons where id = ?")
+          .get(stableUuid(`lesson:ses:${COURSE}:${lessonId}`));
+      apply(db, await exportSql(mutate, file));
+      expect(current()).toEqual({ video_path: video });
+      rmSync(join(topic, "narration.json"));
+      const built = manifest();
+      expect(
+        built.stages[0].sections?.flatMap((s) => s.lessons).find((l) => l.id === lessonId)
+          ?.hasNarration,
+      ).toBe(true);
+      apply(db, await exportSql(mutate, file));
+      expect(current()).toEqual({ video_path: video });
+      apply(db, await exportSql(mutate));
+      expect(current()).toEqual({ video_path: video });
+    } finally {
+      db.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+  SEED_TIMEOUT,
+);

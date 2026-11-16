@@ -218,6 +218,9 @@ describe("校正の記録", () => {
   it("sayとspeechが変わるとhashが変わり、他の項目には依存しない", () => {
     const sb = fresh(),
       hash = sayHash(sb);
+    const swapped = fresh();
+    [swapped.scenes[0].id, swapped.scenes[1].id] = [swapped.scenes[1].id, swapped.scenes[0].id];
+    expect(sayHash(swapped)).not.toBe(hash);
     sb.polish = { model: "test", sayHash: hash };
     sb.scenes[0].title = "別の題";
     expect(sayHash(sb)).toBe(hash);

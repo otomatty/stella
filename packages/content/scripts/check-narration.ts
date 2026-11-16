@@ -3,7 +3,8 @@
  *
  *   bun run --filter=@stella/content narration:check [stages/<slug> ...]
  *
- * 全トピックの収録ファイルを検査し、収録済み動画には台本を必須とする。
+ * video.json のあるトピックは video:check に任せ、旧方式の収録ファイルを検査する。
+ * 旧方式の収録済み動画には台本を必須とする。
  * 台本の内容は narration.json のあるトピックだけ検査する (段階導入)。
  * エラーがあれば exit 1、警告は表示だけ。
  */
@@ -21,6 +22,7 @@ const topics = collectNarrationTopics(selectors);
 let errors = 0;
 let warnings = 0;
 for (const topic of topics) {
+  if (existsSync(join(topic.topicDir, "video.json"))) continue;
   const label = `${topic.stageSlug}/${topic.id}`;
   try {
     if (!existsSync(join(topic.topicDir, "video.json"))) {

@@ -148,3 +148,28 @@ describe("同じ行の下を回る矢印", () => {
       expect(link.label.y + 27).toBeLessThan(zone.y + zone.h);
     });
 });
+
+it("3行目の囲み内でも under の通路とカードと見出しの余白を確保する", () => {
+  const board: Board = {
+    cols: 2,
+    rows: 3,
+    zones: [{ id: "last", label: "操作", cells: [1, 3, 2, 1] }],
+    nodes: [
+      { id: "a", label: "書く", art: "write", at: [1, 3] },
+      { id: "b", label: "確認", art: "check", at: [2, 3] },
+    ],
+    links: [{ id: "back", from: "b", to: "a", route: "under" }],
+  };
+  const layout = layoutBoard(board),
+    zone = layout.zones.last,
+    link = layout.links.back;
+  for (const box of Object.values(layout.nodes)) {
+    expect(box.h).toBeGreaterThan(0);
+    expect(box.y).toBeGreaterThanOrEqual(zone.y + 66);
+    expect(link.label.y - (box.y + box.h)).toBeGreaterThanOrEqual(56);
+  }
+  expect(link.label.y + 28).toBeLessThan(zone.y + zone.h);
+  for (let i = 1; i < link.points.length; i++)
+    for (const box of Object.values(layout.nodes))
+      expect(segmentHits(link.points[i - 1], link.points[i], box)).toBe(false);
+});

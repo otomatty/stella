@@ -522,3 +522,29 @@ describe("場面の状態", () => {
     expect(parseStoryboard(s).storyboard).toBeDefined();
   });
 });
+
+it("同じクリップで始まる次の view は直前の最後のコマを引き継ぐ", () => {
+  const view = {
+    kind: "view" as const,
+    id: "first",
+    role: "hook" as const,
+    title: "操作",
+    image: "clip:web/read#open",
+    beats: [{ say: "開きます。", clip: "web/read#open" }],
+  };
+  const states = storyboardStates({
+    schema: 1,
+    brief: sample.brief,
+    scenes: [
+      view,
+      { ...view, id: "second", beats: [{ say: "読みます。", spot: ["all"] }] },
+      { ...view, id: "other", image: "clip:web/other#open", beats: [] },
+    ],
+  });
+  expect(states[1]).toMatchObject({
+    start: { lastFrame: true },
+    beats: [{ before: { lastFrame: true }, after: { lastFrame: true } }],
+  });
+  if (states[2].kind !== "view") throw new Error("view expected");
+  expect(states[2].start.lastFrame).toBeUndefined();
+});
