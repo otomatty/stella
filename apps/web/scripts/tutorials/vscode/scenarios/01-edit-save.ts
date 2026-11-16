@@ -53,9 +53,8 @@ export default {
     await t.expect(dirtyTab, { count: 1 });
     await t.highlight(dirtyTab, 3000);
 
-    await t.caption("「ファイル」から「保存」を選びます。", {
+    await t.caption("Ctrl + S（Mac は ⌘ + S）で保存します。", {
       hold: 9000,
-      say: "ファイルから、保存を選びます。",
     });
     await saveFile(t);
 

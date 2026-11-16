@@ -1,9 +1,13 @@
-import type { Locator, Page } from "playwright";
+import type { Frame, Locator, Page } from "playwright";
 import type { Director } from "../lib/director";
 
 export interface TaskContext {
   taskRoot: string;
   trainingRoot: string;
+  /** Web の「VS Code で開く」と同じ URI を、収録中の VS Code に渡す。lms のときだけ入る。 */
+  openTask?: () => Promise<void>;
+  /** 提出が届いたかを読むための、収録用 API。lms のときだけ入る。 */
+  api?: { base: string; token: string };
 }
 
 export interface Scenario {
@@ -18,6 +22,11 @@ export interface Scenario {
   topic: string;
   /** 取り組む課題 (<ステージ>/<単元>/<課題>) */
   task: string;
+  /**
+   * 収録用のローカル API と Web を起動し、拡張をそこへ接続する。
+   * 課題は手元にコピーせず、拡張が API から受け取って学習フォルダーに置く。
+   */
+  lms?: boolean;
   /** 学習フォルダーに一緒に置く、受け取り済みの課題 */
   others?: string[];
   /** 起動時に開くファイル。既定は index.html、null なら課題文を開いたあと閉じる */
@@ -65,8 +74,7 @@ export async function dragText(t: Director, line: Locator, text: string) {
 }
 
 export async function saveFile(t: Director) {
-  await t.click('.menubar-menu-button[aria-label="ファイル"]');
-  await t.click(t.page.locator(".monaco-menu .action-label").filter({ hasText: /^保存$/ }));
+  await t.press("Control+s", { label: ["Ctrl", "S"] });
   await t.park();
 }
 
@@ -77,6 +85,43 @@ export function webviewBody(page: Page): Locator {
     .first()
     .frameLocator('iframe[src*="fake.html"]')
     .locator("body");
+}
+
+/** selector を含むフレームの body。入れ子の iframe も page.frames() から探す。 */
+export async function webviewWith(page: Page, selector: string, timeout: number): Promise<Locator> {
+  const deadline = Date.now() + timeout;
+  const workbench = page.mainFrame();
+  for (;;) {
+    for (const frame of page.frames()) {
+      // 本体のタブ名が WebView の見出しより先に当たる。
+      if (frame === workbench || frame.isDetached()) continue;
+      try {
+        const found = await frame.locator(selector).filter({ visible: true }).count();
+        if (!found) continue;
+        let visible = true;
+        for (
+          let current: Frame | null = frame;
+          current?.parentFrame();
+          current = current.parentFrame()
+        ) {
+          const iframe = await current.frameElement();
+          try {
+            if (!(await iframe.isVisible())) {
+              visible = false;
+              break;
+            }
+          } finally {
+            await iframe.dispose();
+          }
+        }
+        if (visible) return frame.locator("body");
+      } catch {
+        /* 切り離されたフレームは次の候補へ */
+      }
+    }
+    if (Date.now() >= deadline) throw new Error(`WebView が見つかりません: ${selector}`);
+    await page.waitForTimeout(200);
+  }
 }
 
 export async function closeNotifications(page: Page, t?: Director) {
@@ -124,13 +169,4 @@ export function explorerRow(page: Page, name: string, level?: number): Locator {
 export async function expandFolder(t: Director, row: Locator) {
   await t.expect(row);
   if ((await row.getAttribute("aria-expanded")) === "false") await t.click(row);
-}
-
-export async function rightClick(t: Director, target: Locator) {
-  await t.moveTo(target);
-  await t.wait(420);
-  await t.page.mouse.down({ button: "right" });
-  await t.wait(90);
-  await t.page.mouse.up({ button: "right" });
-  await t.wait(800);
 }

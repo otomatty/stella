@@ -10,6 +10,7 @@ import { splitSlides } from "./split-slides.js";
 export interface SlidesFrontMatter {
   id: string;
   title: string;
+  header?: string;
   takeaway: string;
   introduces: string[];
   requires: string[];
@@ -56,6 +57,7 @@ export function parseSlides(source: string): SlidesFrontMatter {
     ...(sourceRefs === undefined ? {} : { sourceRefs }),
     id: unquote(fields.get("id") ?? ""),
     title: unquote(fields.get("title") ?? ""),
+    ...(fields.has("header") ? { header: unquote(fields.get("header") ?? "") } : {}),
     takeaway: unquote(fields.get("takeaway") ?? ""),
     introduces: parseList(fields.get("introduces") ?? "[]"),
     requires: parseList(fields.get("requires") ?? "[]"),

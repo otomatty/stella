@@ -81,11 +81,16 @@ export function toSpeech(text: string): string {
   // （Ctrl…）は「、または Ctrl…」。中身の Ctrl や + は、このあとの規則で読む。
   speech = speech.replace(/（(Ctrl[^）]*)）/g, "、または $1");
 
+  // OS 別のキーは括弧を読まず、Mac の操作として続ける。
+  speech = speech.replace(/（Mac は ([^）]+)）/g, "、Mac では $1");
+
   // キーの間の +（前後の空白ごと）
   speech = speech.replace(/\s*\+\s*/g, " プラス ");
 
   speech = speech.replaceAll("⌘", "コマンド ");
   speech = speech.replace(/\bCtrl\b/g, "コントロール");
+  speech = speech.replace(/\bF2\b/g, "エフツー");
+  speech = speech.replace(/\bEnter\b/g, "エンター");
   speech = speech.replaceAll("⇧", "シフト");
   speech = speech.replaceAll("⌥", "オプション");
 

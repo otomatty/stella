@@ -2,8 +2,9 @@ import { existsSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { speechOf } from "../../src/narration.js";
 import { createHash } from "node:crypto";
-import type { SceneTimeline } from "../../src/scene-timeline.js";
+import type { SceneTimeline, TextScene } from "../../src/scene-timeline.js";
 import { SCENE_TIMING } from "../../src/scene-timeline.js";
+import type { SceneSfxCue } from "../../src/scene-sfx.js";
 import {
   normalizeStoryboard,
   type Board,
@@ -11,10 +12,13 @@ import {
   type ViewState,
   type Scene,
 } from "../../src/video-storyboard.js";
-export interface SceneCacheInput<S extends Scene = Scene, T = BoardState | ViewState> {
+export interface SceneCacheInput<
+  S extends Scene | TextScene = Scene | TextScene,
+  T = BoardState | ViewState,
+> {
   version: number;
-  board: Board;
-  start: T;
+  board: S extends TextScene ? undefined : Board;
+  start: S extends TextScene ? undefined : T;
   /** 使う画像・クリップ定義と動画全体の sha256。ファイルの時刻・サイズは使わない。 */
   assets?: Record<string, string>;
   scene: S;
@@ -24,7 +28,9 @@ export interface SceneCacheInput<S extends Scene = Scene, T = BoardState | ViewS
   /** 抽出したコマの一時URL。作業フォルダーの違いはキャッシュを変えない。 */
   assetRoot?: string;
   voice: string;
+  speeches: string[];
   audio: Int16Array[];
+  sfx: SceneSfxCue[];
   code: Record<string, string>;
 }
 const digest = (data: string | Uint8Array): string =>
@@ -49,6 +55,9 @@ export function sceneCacheHash(input: SceneCacheInput): string {
 export function sceneVideoSourceHash(input: {
   version: number;
   storyboard: import("../../src/video-storyboard.js").VideoStoryboard;
+  title: string;
+  header?: string;
+  takeaway: string;
   readings: Record<string, string>;
   voice: string;
   assets: Record<string, string>;
@@ -63,9 +72,13 @@ export function sceneVideoSourceHash(input: {
       art: Object.fromEntries(
         Object.entries(storyboard.art ?? {}).map(([id, art]) => [id, { regions: art.regions }]),
       ),
-      speeches: storyboard.scenes.map((s) =>
-        s.beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings)),
-      ),
+      speeches: [
+        [speechOf({ text: input.title }, readings)],
+        ...storyboard.scenes.map((s) =>
+          s.beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings)),
+        ),
+        [speechOf({ text: input.takeaway.trim() }, readings)],
+      ],
       timing: SCENE_TIMING,
     }),
   );

@@ -172,6 +172,8 @@ Calm, warm and clear narration for a software tutorial video, at a relaxed, slig
 | 字幕 | 読み上げ |
 | --- | --- |
 | `⌘K（Ctrl+K）のパレットから` | `コマンド K、または コントロール プラス Kのパレットから` |
+| `Ctrl + S（Mac は ⌘ + S）` | `コントロール プラス S、Mac では コマンド プラス S` |
+| `F2 キー（Mac は Enter キー）` | `エフツー キー、Mac では エンター キー` |
 | `⇧` / `⌥` | `シフト` / `オプション` |
 | `G → I` | `G のあとに I` |
 | `J / K` | `J と K`（英字 1 文字どうしの ` / `） |
@@ -220,7 +222,7 @@ bun run --cwd apps/vscode build
 bun run tutorials:vscode -- --no-narration
 ```
 
-`vscode/scenarios/` の台本をファイル名順に収録します。現在は「編集して保存する」(`edit-save`)、「課題を確認する」(`run-check`)、「新しいファイルを作る」(`new-file`)、「ファイルの名前を変える」(`rename`)、「保存先を確かめる」(`where-saved`) の 5 本です。id の一部を並べると、そのどれかを含む台本だけ収録します。
+`vscode/scenarios/` の台本をファイル名順に収録します。通常の収録は「編集して保存する」(`edit-save`)、「課題を確認する」(`run-check`)、「新しいファイルを作る」(`new-file`)、「ファイルの名前を変える」(`rename`)、「保存先を確かめる」(`where-saved`) の 5 本です。別に、クリップ用の「課題を開く」(`open-task`)、「課題を提出する」(`submit`)、「課題を確認する」(`run-check-clip`) があります。id の一部を並べると、そのどれかを含む台本だけ収録します。
 
 ```powershell
 bun run tutorials:vscode -- run-check new-file
@@ -230,7 +232,11 @@ bun run tutorials:vscode -- --save
 
 オプションは `--no-narration`、調査用のフレーム画像を残す `--keep-frames`、教材へコピーする `--save` です。ナレーションを付ける場合は `GEMINI_API_KEY` を設定し、`--no-narration` を外します。`--save` と `--no-narration` は同時に指定できません。上記のナレーション用環境変数と `os.tmpdir()/stella-tutorials/_narration` のキャッシュを共用します。
 
-台本の `topic` は `packages/content/stages` から見たトピックの相対パスで、保存先には `slides.md` が必要です。`task` は取り組む課題の `<ステージ>/<単元>/<課題>`、`others` は学習フォルダーに一緒に置く課題です。`open` は起動時に開くファイルで、既定は `index.html`、`null` なら開きません。`prepare` で起動前にファイルを用意し、`setup` で録画前の画面を整えます。どの台本でも、右に課題文のパネルを開いてから録画します。
+台本の `topic` は `packages/content/stages` から見たトピックの相対パスで、保存先には `slides.md` が必要です。`task` は取り組む課題の `<ステージ>/<単元>/<課題>`、`others` は学習フォルダーに一緒に置く課題です。通常の収録では、`open` は起動時に開くファイルで、既定は `index.html`、`null` なら課題文を開いたあと閉じます。`prepare` で起動前にファイルを用意し、`setup` で録画前の画面を整えます。右に課題文のパネルを開いてから録画します。
+
+`lms: true` の台本は、`TutorialEnvironment` で収録用のローカルの API と Web を起動します。収録用プロファイルのユーザー設定に `stella.serverUrl`・`stella.webUrl` を入れます。Web アプリは操作せず、`ctx.openTask()` が `POST /api/auth/vscode-link` で接続コードを発行し、課題の URI を VS Code の CLI の `--open-url` で渡します。
+
+VS Code は収録用の学習フォルダーを開いて起動するため、課題を開くときに窓を読み込み直しません。VS Code とその CLI の起動時だけ `USERPROFILE`・`HOME` を一時フォルダーに差し替えます。URI を開く許可は、録画の前に無害な URI を 1 度開いて済ませます。`open-task` は録画中に課題を開き、`submit` は `setup` で課題を開いて確認を通します。提出の録画は `press-submit`・`write`・`sent` に分け、送ったあと `GET /api/submissions/mine` で届いたことを確かめます。WebView の中身は `webviewWith(page, selector, timeout)` で探します。
 
 出力は `os.tmpdir()/stella-tutorials/vscode/out/<id>.mp4`・`<id>.jpg`・`<id>.vtt` です。`--save` では、成功した動画を `packages/content/stages/<topic>/screen.mp4`・`screen.vtt`・`screen.jpg` にもコピーします。この 3 ファイルを教材の正本としてコミットすると、既存の教材動画の生成・同期・seed の経路で配信されます。収録コマンド自体はアップロードしません。
 `--save` で `screen.*` を足す・撮り直すと単元の内容指紋が変わるので、`references.json` の版と `contentHash` を更新します。
@@ -275,7 +281,7 @@ export default defineShots({
 
 ## 教材動画に使う操作のクリップを撮る
 
-字幕・タイトルカード・押したキー・読み上げを付けず、カーソルとクリックの波紋を映します。Gemini は呼びません。Bun・Playwright Chromium・ffmpeg・ffprobe が必要です。Web は既存の収録と同じ専用 D1 の写し・ローカル API を使い、light テーマで撮ります。
+字幕・タイトルカード・読み上げを付けず、カーソルとクリックの波紋、押したキーを映します。`t.press` はクリップでもキーを表示し、`show: false` のときだけ表示しません。Gemini は呼びません。Bun・Playwright Chromium・ffmpeg・ffprobe が必要です。Web は既存の収録と同じ専用 D1 の写し・ローカル API を使い、light テーマで撮ります。
 
 ```bash
 bun run --filter=@stella/web tutorials:clips
@@ -291,3 +297,16 @@ bun run --filter=@stella/web tutorials:clips -- --url http://127.0.0.1:5173
 出力は `packages/content/clips/<組>/<名前>.mp4` と `.json`。動画は音声なしの H.264 / yuv420p / 1600×1000 / 固定 30fps / faststart です。JSON に定義の `source`、content からの相対パス `video`、`width`・`height`・ffprobe で確認した `duration`・`fps`・`marks`・動画ピクセルの `regions` を保存します。既存のチュートリアルやトピックの `screen.*` は更新しません。
 
 Windows の VS Code では台本に `clip: "vscode/submit"` と任意の `regions: { button: [x, y, w, h] }` を付け、`tutorials:vscode -- --clip submit` で撮ります。`--clip` がない実行は clip 付き台本を除外します。`--save` との併用はできません。強調 (`t.highlight`) は映ります。詳しい手元での手順は [video-local-recording.md](../../../../docs/video-local-recording.md) にあります。
+
+`vscode/open-task` と `vscode/submit` は撮影済みで、`00-1-1` の `video.json` に組み込み済みです。撮り直すときは次を実行します。
+
+```powershell
+bun run --filter=@stella/web tutorials:vscode -- --clip open-task
+bun run --filter=@stella/web tutorials:vscode -- --clip submit
+```
+
+`vscode/run-check` は、次の収録でレッスン動画の区間から専用クリップに切り替わります。課題を手元にコピーして確認するため、ローカルの API は使いません。
+
+```powershell
+bun run --filter=@stella/web tutorials:vscode -- --clip run-check-clip
+```

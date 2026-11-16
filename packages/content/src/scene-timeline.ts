@@ -1,16 +1,20 @@
 import type { ClipInfo, Scene } from "./video-storyboard.js";
+import { estimateSpeechSeconds, speechOf } from "./narration.js";
 
 export const SCENE_TIMING = {
   lead: 0.8,
-  between: 0.9,
+  switchSpeechDelay: 0.4,
+  between: 1.2,
+  highlightHold: 1.5,
   tail: 1.2,
-  finalTail: 2.0,
   fps: 30,
 } as const;
 export interface TimedBeat {
   start: number;
   end: number;
   say: string;
+  /** 文の開始で窓を切り替える場合だけ、効果音のあとに読み始める。 */
+  speechStart?: number;
   speechEnd?: number;
   clip?: { start: number; end: number; speed: number };
 }
@@ -18,6 +22,96 @@ export interface SceneTimeline {
   start: number;
   duration: number;
   beats: TimedBeat[];
+}
+/** 絵コンテには書かない、ビルドが追加する文字だけの場面。 */
+export interface TextScene {
+  kind: "text";
+  id: "title" | "summary";
+  title: string;
+  header?: string;
+  duration: number;
+}
+export interface SceneVideoEntry {
+  scene: Scene | TextScene;
+  timing: SceneTimeline;
+  /** 自動の場面は -1。通常の場面の状態・素材は絵コンテの添字で引く。 */
+  sourceIndex: number;
+}
+export function sceneSpeeches(
+  scene: Scene | TextScene,
+  readings: Record<string, string>,
+): string[] {
+  // ponytail: タイトル・まとめの読みは読み辞書まかせ。記号の多い takeaway を読み分けるなら video.json に読みの上書きを足す
+  const beats: { say: string; speech?: string }[] =
+    scene.kind === "text" ? [{ say: scene.title }] : scene.beats;
+  return beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings));
+}
+export function sceneVideoSequence(
+  scenes: Scene[],
+  durations: number[][],
+  topic: { title: string; header?: string; takeaway: string; readings?: Record<string, string> },
+  clips: Record<string, ClipInfo> = {},
+  textDurations?: Record<TextScene["id"], number>,
+): SceneVideoEntry[] {
+  const title: TextScene = {
+    kind: "text",
+    id: "title",
+    title: topic.title,
+    header: topic.header,
+    duration: 2.6,
+  };
+  const timings = sceneTimelines(scenes, durations, clips);
+  const summary: TextScene = {
+    kind: "text",
+    id: "summary",
+    title: topic.takeaway.trim(),
+    header: "まとめ",
+    duration: 4,
+  };
+  const textTiming = (scene: TextScene): SceneTimeline => {
+    const speech =
+      textDurations?.[scene.id] ??
+      estimateSpeechSeconds(sceneSpeeches(scene, topic.readings ?? {})[0]);
+    const lead = scene.id === "title" ? 0.6 : 0.8;
+    const tail = scene.id === "title" ? 0.8 : 1.4;
+    scene.duration =
+      Math.ceil((Math.max(scene.duration, lead + speech + tail) - 1e-9) * SCENE_TIMING.fps) /
+      SCENE_TIMING.fps;
+    return {
+      start: 0,
+      duration: scene.duration,
+      beats: [{ start: lead, end: lead + speech, say: scene.title }],
+    };
+  };
+  const titleTiming = textTiming(title);
+  const summaryTiming = textTiming(summary);
+  return [
+    { scene: title, timing: titleTiming, sourceIndex: -1 },
+    ...scenes.map((scene, i) => ({
+      scene,
+      timing: { ...timings[i], start: timings[i].start + title.duration },
+      sourceIndex: i,
+    })),
+    {
+      scene: summary,
+      timing: {
+        ...summaryTiming,
+        start: title.duration + timings.reduce((sum, timing) => sum + timing.duration, 0),
+      },
+      sourceIndex: -1,
+    },
+  ];
+}
+/** 場面内の時刻で、読み上げ中の文だけを返す。操作・強調の待ち時間には出さない。 */
+export function sceneCaptionAt(timing: SceneTimeline, time: number): string {
+  return (
+    timing.beats.find((b) => time >= (b.speechStart ?? b.start) && time < (b.speechEnd ?? b.end))
+      ?.say ?? ""
+  );
+}
+/** 場面のタイトルは冒頭の3秒だけ表示する。 */
+export function sceneTitleOpacity(time: number): number {
+  return Math.max(0, Math.min(1, time / 0.4, (3 - time) / 0.4));
 }
 /** 別アプリの窓は入れ替え、それ以外はクロスフェード。 */
 export function viewTransition(from: string | undefined, to: string): number {
@@ -39,12 +133,20 @@ export function sceneTimelines(
     const opening = image ? viewTransition(previous, image) : 0;
     const beats = scene.beats.map((beat, j) => {
       const start = t;
-      const speechEnd = start + durations[i][j];
+      const viewBeat = scene.kind === "view" ? scene.beats[j] : undefined;
+      const next = viewBeat?.clip ? `clip:${viewBeat.clip}` : (viewBeat?.image ?? image);
+      // opening は lead 中の切り替えなので、文の start から動く切り替えだけを遅らせる。
+      const speechStart =
+        next && viewTransition(image, next) === 1
+          ? start + SCENE_TIMING.switchSpeechDelay
+          : undefined;
+      const speechEnd = (speechStart ?? start) + durations[i][j];
       let end = speechEnd;
       let playback: TimedBeat["clip"];
       if (scene.kind === "view") {
         const b = scene.beats[j];
-        const next = b.clip ? `clip:${b.clip}` : (b.image ?? image);
+        if (b.spot?.length || b.label?.length || b.click)
+          end = Math.max(end, speechEnd + SCENE_TIMING.highlightHold);
         if (b.clip) {
           const [id, mark] = b.clip.split("#");
           const range = clips[id]?.marks[mark];
@@ -64,21 +166,20 @@ export function sceneTimelines(
         image = next;
       }
       t = end + SCENE_TIMING.between;
-      return { start, end, say: beat.say, ...(playback ? { speechEnd, clip: playback } : {}) };
+      return {
+        start,
+        end,
+        say: beat.say,
+        ...(speechStart !== undefined ? { speechStart } : {}),
+        ...(speechStart !== undefined || end > speechEnd || playback ? { speechEnd } : {}),
+        ...(playback ? { clip: playback } : {}),
+      };
     });
-    t += i === scenes.length - 1 ? SCENE_TIMING.finalTail : SCENE_TIMING.tail;
+    t += SCENE_TIMING.tail;
     const duration = Math.ceil((t - 1e-9) * SCENE_TIMING.fps) / SCENE_TIMING.fps;
     const result = { start: offset, duration, beats };
     offset += duration;
     previous = image;
     return result;
   });
-}
-export function sceneVtt(timelines: SceneTimeline[]): string {
-  const stamp = (s: number) => {
-    const ms = Math.round(s * 1000);
-    return `${String(Math.floor(ms / 3600000)).padStart(2, "0")}:${String(Math.floor(ms / 60000) % 60).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}.${String(ms % 1000).padStart(3, "0")}`;
-  };
-  let cue = 0;
-  return `WEBVTT\n\n${timelines.flatMap((s) => s.beats.map((b) => `${++cue}\n${stamp(s.start + b.start)} --> ${stamp(s.start + (b.speechEnd ?? b.end))}\n${b.say.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}\n`)).join("\n")}`;
 }

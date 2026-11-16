@@ -186,15 +186,41 @@ function server(cwd: string, args: string[], env = process.env): ChildProcess {
 
 async function stop(child: ChildProcess | undefined): Promise<void> {
   if (!child?.pid || child.exitCode !== null || child.signalCode !== null) return;
+  const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+  // child.kill は bun だけを止める。残った wrangler と workerd が D1 の写しを掴んだままになる。
+  if (process.platform === "win32") {
+    const pid = child.pid;
+    const result = await new Promise<string>((resolve) => {
+      const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], {
+        stdio: "ignore",
+        windowsHide: true,
+      });
+      killer.on("error", (error) => resolve(error.message));
+      killer.on("exit", (code) => resolve(`終了コード ${code}`));
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        exited,
+        new Promise<void>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`API のプロセスを止められませんでした (taskkill: ${result})`)),
+            10_000,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+    return;
+  }
   const kill = (signal: NodeJS.Signals) => {
     try {
-      if (child.pid && process.platform !== "win32") process.kill(-child.pid, signal);
-      else child.kill(signal);
+      if (child.pid) process.kill(-child.pid, signal);
     } catch {
       /* 終了済み */
     }
   };
-  const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
   kill("SIGTERM");
   let timer: ReturnType<typeof setTimeout> | undefined;
   await Promise.race([
@@ -208,14 +234,32 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
   await exited;
 }
 
+/** WORK_DIR 直下の `state-*` だけ消す。開発者の .wrangler/state や seed の写しには触れない。 */
+async function removeTutorialState(
+  dir: string,
+  options: { maxRetries?: number; retryDelay?: number } = {},
+): Promise<void> {
+  const name = path.relative(WORK_DIR, dir);
+  if (!name.startsWith("state-") || name.includes("/") || name.includes("\\")) {
+    throw new Error(`収録の D1 の写し以外は消しません: ${dir}`);
+  }
+  await rm(dir, { recursive: true, force: true, ...options });
+}
+
 /** API の終了を待ってから D1 の写しを戻す。開発者の .wrangler/state には触れない。 */
 export class TutorialEnvironment {
   private api?: ChildProcess;
   private web?: ChildProcess;
   private snapshot = "";
   private apiPort = 0;
-  private state = path.join(WORK_DIR, `state-${process.pid}`);
+  private stateCount = 0;
+  private state = "";
+  private leftoverStates: string[] = [];
   base = "";
+
+  get apiBase(): string {
+    return `http://127.0.0.1:${this.apiPort}`;
+  }
 
   async boot(skipBuild: boolean): Promise<string> {
     await mkdir(WORK_DIR, { recursive: true });
@@ -262,7 +306,15 @@ export class TutorialEnvironment {
     }
     // 再利用するポートが他の API に取られていれば、収録せずに止める。
     await freePort(this.apiPort);
-    await rm(this.state, { recursive: true, force: true });
+    if (this.state) {
+      try {
+        await removeTutorialState(this.state);
+      } catch {
+        this.leftoverStates.push(this.state);
+      }
+    }
+    this.stateCount += 1;
+    this.state = path.join(WORK_DIR, `state-${process.pid}-${this.stateCount}`);
     await cp(this.snapshot, this.state, { recursive: true });
     for (const sql of seedSql) await command(API, seedSqlArgs(this.state, sql));
     // 空の env-file で .dev.vars の自動読み込みを避け、鍵をメモリ上で渡す。
@@ -298,6 +350,14 @@ export class TutorialEnvironment {
   async close(): Promise<void> {
     await stop(this.api);
     await stop(this.web);
-    await rm(this.state, { recursive: true, force: true });
+    const dirs = [...this.leftoverStates];
+    if (this.state) dirs.push(this.state);
+    for (const dir of dirs) {
+      try {
+        await removeTutorialState(dir, { maxRetries: 10, retryDelay: 300 });
+      } catch {
+        console.warn(`D1 の写しを消せませんでした: ${dir}`);
+      }
+    }
   }
 }

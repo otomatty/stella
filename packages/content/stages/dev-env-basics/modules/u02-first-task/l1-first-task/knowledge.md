@@ -23,7 +23,7 @@ sourceRefs: ["SRC-mdn-html-20261005", "SRC-dev-env-editor-20261107"]
 
 - A. `<h1>` と `</h1>` を残し、間の文字を変える
 - B. `<h1>` と `</h1>` を消す
-- C. 編集したら「ファイル」→「保存」を選ぶ
+- C. 編集したら Ctrl + S（Mac は ⌘ + S）で保存する
 
 <details>
 <summary>解答</summary>

@@ -78,6 +78,105 @@ images["art:art"] = {
   height: 1000,
   regions: { top: [0, 0, 300, 300] },
 };
+
+describe("Windows のウィンドウ枠", () => {
+  function render(image: string) {
+    const { sb, state, timing, input } = setup();
+    state.start.image = image;
+    state.beats[0].after = { ...state.start, zoom: "top" };
+    const images = {
+      [image]: {
+        url: "file:///tmp/window.png",
+        width: 1600,
+        height: 1000,
+        regions: { top: [100, 100, 100, 100] as [number, number, number, number] },
+      },
+    };
+    input.images = images;
+    const html = sceneHtml({
+      board: { cols: 1, rows: 1, nodes: [] },
+      scene: sb.scenes[1],
+      state,
+      timing,
+      index: 1,
+      total: 3,
+      images,
+    });
+    const elements = new Map<
+      string,
+      {
+        innerHTML: string;
+        style: Record<string, string>;
+        firstElementChild: { scrollHeight: number };
+      }
+    >();
+    const window = {} as ScenePageWindow;
+    const document = {
+      getElementById: (id: string) => {
+        if (!elements.has(id))
+          elements.set(id, { innerHTML: "", style: {}, firstElementChild: { scrollHeight: 44 } });
+        return elements.get(id);
+      },
+    };
+    runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", { window, document });
+    return {
+      input,
+      at: async (time: number) => {
+        await window.__setTime(time);
+        return elements.get("surface")?.innerHTML ?? "";
+      },
+    };
+  }
+  it.each(["shot:web/one", "clip:web/action#open"])(
+    "%s の2段とボタンは寄っても同じ位置・大きさ",
+    async (image) => {
+      const page = render(image),
+        initial = await page.at(0),
+        zoomed = await page.at(1.6);
+      const chrome = (html: string) =>
+        html.slice(
+          html.indexOf("<g data-browser-chrome"),
+          html.indexOf("<rect data-window-border"),
+        );
+      expect(chrome(initial)).toBe(chrome(zoomed));
+      expect(chrome(initial)).toContain('height="40"');
+      expect(chrome(initial)).toContain('data-caption-buttons="web"');
+      expect(chrome(initial)).toContain('<rect width="10" height="10"/>');
+      expect(chrome(initial)).toContain('stroke-width="1"');
+      expect(chrome(initial)).toContain("stella.saedgewell.workers.dev");
+      expect(initial).toContain('rx="8"');
+      expect(initial).toContain('stroke="#C8C8CE" stroke-width="1"');
+      expect(zoomed).toMatch(/<\/foreignObject><\/g><\/g>\s*<g data-browser-chrome/);
+      expect(zoomed).not.toContain("Webアプリ");
+      expect(zoomed).not.toContain("#2563EB");
+    },
+  );
+  it.each(["shot:vscode/one", "clip:vscode/action#open"])(
+    "%s のボタンは画像座標でカメラと切り抜きの内側に置く",
+    async (image) => {
+      const page = render(image),
+        zoomed = await page.at(1.6);
+      const { box, camera } = viewFrame(page.input, 1.6);
+      expect(camera.scale).toBe(2.4);
+      expect(zoomed).toContain(
+        `<g data-camera="true" transform="translate(${camera.x} ${camera.y}) scale(${camera.scale})">`,
+      );
+      expect(zoomed).toContain(
+        `</foreignObject><g transform="translate(${box.x} ${box.y}) scale(${box.w / 1600})"><g data-caption-buttons="vscode"`,
+      );
+      expect(zoomed).toContain('stroke="#CCCCCC"');
+      expect(zoomed).toContain(
+        `translate(${1428 + 172 / 6 - ((10 * 172) / 3 / 46) / 2} ${(44 - (10 * 172) / 3 / 46) / 2})`,
+      );
+      expect(zoomed).toMatch(/clip-path="url\(#clip-[^)]+\)"><g data-camera/);
+      expect(zoomed).not.toContain("data-browser-chrome");
+    },
+  );
+  it("art には枠線もブラウザーもキャプションボタンも付けない", async () => {
+    const html = await render("art:art").at(0);
+    expect(html).not.toMatch(/data-caption-buttons|data-window-border|data-browser-chrome/);
+  });
+});
 function setup() {
   const sb = fresh(),
     states = storyboardStates(sb),
@@ -200,6 +299,48 @@ describe("view の絵コンテ", () => {
   });
 });
 describe("view の時刻による描画", () => {
+  it("最後の文の囲み・札・カーソルは場面の終わりまで残り、静止コマを使い回せる", () => {
+    const { input, timing } = setup();
+    input.state.beats[1].after = { ...input.state.beats[0].after };
+    const last = timing.beats[1];
+    const ranges = viewBusyRanges(timing);
+    for (const time of [last.end, timing.duration - 1 / 30]) {
+      const f = viewFrame(input, time);
+      expect(f.spots).toHaveLength(1);
+      expect(f.labels).toHaveLength(1);
+      expect(f.cursor?.ripple).toBe(-1);
+      expect(f.opacity).toBe(1);
+    }
+    expect(ranges.some(([a, b]) => timing.duration - 0.1 >= a && timing.duration - 0.1 <= b)).toBe(
+      false,
+    );
+    const end = viewFrame(input, timing.duration);
+    expect(end.spots).toEqual([]);
+    expect(end.labels).toEqual([]);
+    expect(end.cursor).toBeUndefined();
+    expect(viewFrame(input, last.start + 0.15).opacity).toBeCloseTo(0.5);
+  });
+  it.each([
+    { image: "shot:web/one", width: 1600, height: 1000, y: 104, w: 1417.6, h: 886 },
+    { image: "clip:web/action#open", width: 1600, height: 1000, y: 104, w: 1417.6, h: 886 },
+    { image: "shot:vscode/one", width: 1600, height: 1000, y: 24, w: 1545.6, h: 966 },
+    { image: "clip:vscode/action#open", width: 1600, height: 1000, y: 24, w: 1545.6, h: 966 },
+    { image: "shot:vscode/one", width: 2400, height: 1000, y: 132, w: 1800, h: 750 },
+    { image: "art:art", width: 1000, height: 1000, y: 24, w: 966, h: 966 },
+    { image: "shot:web/one", width: 2400, height: 1000, y: 172, w: 1800, h: 750 },
+  ])("画像の領域と幅の上限: $image ($width×$height)", ({ image, width, height, y, w, h }) => {
+    const { input } = setup();
+    input.state.start.image = image;
+    input.images = {
+      [image]: { url: "file:///tmp/image.png", width, height, regions: {} },
+    };
+    const { box } = viewFrame(input, 0);
+    expect(box.y).toBeCloseTo(y);
+    expect(box.w).toBeCloseTo(w);
+    expect(box.h).toBeCloseTo(h);
+    expect(box.x).toBeCloseTo((1920 - w) / 2);
+    expect(box.y + box.h).toBeLessThanOrEqual(990);
+  });
   it.each([
     { name: "横長の領域も寄る", width: 1600, height: 194, expected: 1.32038835 },
     { name: "縦長は高さで制限する", width: 194, height: 1000, expected: 1.29770992 },
@@ -237,7 +378,7 @@ describe("view の時刻による描画", () => {
     const a = viewFrame(input, start),
       mid = viewFrame(input, start + 0.4),
       end = viewFrame(input, start + 0.8);
-    expect(a.box).toMatchObject({ y: 170, h: 780 });
+    expect(a.box).toMatchObject({ y: 104, h: 886 });
     expect(a.box.x).toBeGreaterThanOrEqual(60);
     expect(a.camera.scale).toBe(1);
     expect(mid.camera.scale).toBeCloseTo(1.7);
@@ -248,7 +389,7 @@ describe("view の時刻による描画", () => {
     );
     expect(viewFrame(input, start + 0.4)).toEqual(mid);
   });
-  it("クロスフェード・クリック移動・波紋・文末の消去", () => {
+  it("クロスフェード・クリック移動・波紋を保ち、強調は次の文まで残す", () => {
     const { input, timing } = setup(),
       start = timing.beats[0].start;
     const first = viewFrame(input, start),
@@ -257,9 +398,15 @@ describe("view の時刻による描画", () => {
     expect(arrived.cursor?.ripple).toBe(0);
     expect(viewFrame(input, start + 0.95).cursor?.ripple).toBeCloseTo(0.5);
     expect(viewFrame(input, start + 1.2).cursor?.ripple).toBe(-1);
-    expect(viewFrame(input, timing.beats[0].end).spots).toEqual([]);
-    expect(viewFrame(input, timing.beats[0].end).cursor).toBeUndefined();
+    for (const time of [timing.beats[0].end, timing.beats[1].start - 0.001]) {
+      expect(viewFrame(input, time).spots).toHaveLength(1);
+      expect(viewFrame(input, time).labels).toHaveLength(1);
+      expect(viewFrame(input, time).cursor?.ripple).toBe(-1);
+    }
     const change = timing.beats[1].start;
+    expect(viewFrame(input, change).spots).toEqual([]);
+    expect(viewFrame(input, change).labels).toEqual([]);
+    expect(viewFrame(input, change).cursor).toBeUndefined();
     expect(viewFrame(input, change + 0.5).fade).toBeCloseTo(0.5);
     expect(viewFrame(input, change + 1).fade).toBeCloseTo(1);
     expect(viewFrame(input, change).old?.image).toBe("shot:web/one");
@@ -292,10 +439,18 @@ describe("view の時刻による描画", () => {
       total: 3,
       images,
     });
-    const elements = new Map<string, { innerHTML: string; style: Record<string, string> }>();
+    const elements = new Map<
+      string,
+      {
+        innerHTML: string;
+        style: Record<string, string>;
+        firstElementChild: { scrollHeight: number };
+      }
+    >();
     const document = {
       getElementById: (id: string) => {
-        if (!elements.has(id)) elements.set(id, { innerHTML: "", style: {} });
+        if (!elements.has(id))
+          elements.set(id, { innerHTML: "", style: {}, firstElementChild: { scrollHeight: 44 } });
         return elements.get(id);
       },
     };
@@ -524,6 +679,7 @@ describe("操作のクリップ", () => {
         if (!elements.has(id))
           elements.set(id, {
             innerHTML: "",
+            firstElementChild: { scrollHeight: 44 },
             style: {},
             querySelectorAll: () => [{ decode: () => decoding }],
             getBoundingClientRect: () => ({}),
@@ -592,10 +748,18 @@ it("同じ組のフェードは不透明な旧画面の上に重ね、終わっ�
     total: 3,
     images: input.images,
   });
-  const elements = new Map<string, { innerHTML: string; style: Record<string, string> }>();
+  const elements = new Map<
+    string,
+    {
+      innerHTML: string;
+      style: Record<string, string>;
+      firstElementChild: { scrollHeight: number };
+    }
+  >();
   const document = {
     getElementById: (id: string) => {
-      if (!elements.has(id)) elements.set(id, { innerHTML: "", style: {} });
+      if (!elements.has(id))
+        elements.set(id, { innerHTML: "", style: {}, firstElementChild: { scrollHeight: 44 } });
       return elements.get(id);
     },
   };

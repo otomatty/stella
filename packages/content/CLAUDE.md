@@ -14,7 +14,7 @@
 
 新カリキュラムは `stage.json` の `format: 2` を使います。**単元＝モジュール**、レッスンの下のトピックは従来どおりです。単元直下に `unit.json`・`references.json`・`tasks/`、レッスン直下に `knowledge.md` を置きます。予定時間・環境・スキル・パターンの台帳と書き方は [ADDING_STAGE.md の format 2](ADDING_STAGE.md#新カリキュラムの-format-2)、見本は `stages/dev-env-basics/` にあります。
 
-WindowsとmacOSで手順が違う説明は、`doc.md` と課題文の `README.md` にだけ OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）で書きます。スライドと動画は OS に依存しない説明にします。書き方は [STYLE_GUIDE.md](STYLE_GUIDE.md#os別の手順osのルール) にあります。
+WindowsとmacOSで手順が違う説明は、`doc.md` と課題文の `README.md` にだけ OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）で書きます。スライドと動画は OS に依存しない説明にします。ショートカットキーの併記は例外です。書き方は [STYLE_GUIDE.md](STYLE_GUIDE.md#os別の手順osのルール) にあります。
 
 format 2 では `practice.md` を配信しません。実装課題は課題ディレクトリ、知識問題は `knowledge.md` に分けます。解答・解説・レビュー用素材・未出題の類題は課題の `private/` で管理し、公開API・配布PDF・拡張のbundleに混ぜません。公開する解説は `doc.md` に書きます。参照元は課題文の近くと単元台帳に記録します。
 
@@ -102,7 +102,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
-**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。以下は旧方式の説明です。
+**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は動画に焼き込み、`captions.vtt` は空にします。以下は旧方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 

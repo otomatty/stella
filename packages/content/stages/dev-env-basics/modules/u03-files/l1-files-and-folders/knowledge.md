@@ -21,8 +21,10 @@ sourceRefs: ["SRC-dev-env-explorer-20261107", "SRC-dev-env-files-20261107", "SRC
 ### Q2. 文章のメモ memo.txt を plan.txt に変える操作はどれですか？
 <!-- kind: single; skills: file-save-reopen -->
 
-- A. 右クリックの「名前の変更」で plan.html にする
-- B. 右クリックの「名前の変更」で .txt を残して plan.txt にする
+エクスプローラーで memo.txt を選び、F2 キー（Mac は Enter キー）を押します。
+
+- A. 拡張子も変えて plan.html にする
+- B. .txt を残して plan.txt にする
 
 <details>
 <summary>解答</summary>

@@ -189,7 +189,7 @@
         },
         {
           "say": "VS Code に切り替わり、課題が開きます。",
-          "clip": "vscode/run-check#opened"
+          "clip": "vscode/open-task#open"
         },
         {
           "say": "VS Code は、課題を書く場所です。",
@@ -230,7 +230,8 @@
           "zoom": "code"
         },
         {
-          "say": "直したら、保存します。",
+          "say": "直したら、Ctrl + S で保存します。",
+          "speech": "直したら、コントロール プラス エスで保存します。",
           "clip": "vscode/run-check#save",
           "zoom": "all"
         },
@@ -251,13 +252,20 @@
       "role": "point",
       "point": 3,
       "title": "通ったら、提出する",
-      "image": "shot:vscode/check-pass",
+      "image": "clip:vscode/submit#press-submit",
       "beats": [
         {
           "say": "確認が通ったら、提出します。",
-          "zoom": "result",
-          "spot": ["submit"],
-          "click": "submit"
+          "clip": "vscode/submit#press-submit"
+        },
+        {
+          "say": "取り組んだことを、短く書きます。",
+          "clip": "vscode/submit#write",
+          "speed": 2
+        },
+        {
+          "say": "「提出する」を押して、送ります。",
+          "clip": "vscode/submit#sent"
         },
         {
           "say": "Webアプリに戻って、結果を読みます。",

@@ -6,9 +6,12 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
@@ -16,7 +19,8 @@ import { pathToFileURL } from "node:url";
 import { chromium, type Browser } from "playwright";
 import { estimateSpeechSeconds, speechOf } from "../src/narration.js";
 import { splitNarration, trimSilence } from "../src/narration-split.js";
-import { sceneTimelines, sceneVtt } from "../src/scene-timeline.js";
+import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
+import { sceneSfxCues, synthesizeSceneSfx } from "../src/scene-sfx.js";
 import {
   parseStoryboard,
   storyboardStates,
@@ -35,7 +39,7 @@ import {
 } from "./lib/ffmpeg.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
 import { sceneCacheHash, sceneVideoSourceHash, touchVideoCacheFile } from "./lib/scene-cache.js";
-import { sceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.js";
+import { sceneHtml, textSceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.js";
 import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
 import {
   createTtsProvider,
@@ -49,6 +53,25 @@ import {
 
 export const SCENE_GENERATOR_VERSION = 1;
 const GENERATOR_VERSION = SCENE_GENERATOR_VERSION;
+/** 指定の出力先の直下だけを掃除し、リンクで別のフォルダーを消さない。 */
+export function prepareSceneStills(outputRoot: string, stage: string, topic: string): string {
+  if (![stage, topic].every((part) => /^[\w-]+$/.test(part)))
+    throw new Error("静止画の出力先が想定の場所ではありません");
+  mkdirSync(outputRoot, { recursive: true });
+  let dir = realpathSync(outputRoot);
+  for (const part of [stage, topic, "stills"]) {
+    const expected = join(dir, part);
+    mkdirSync(expected, { recursive: true });
+    if (realpathSync(expected) !== expected)
+      throw new Error("静止画の出力先が想定の場所ではありません");
+    dir = expected;
+  }
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if ((entry.isFile() || entry.isSymbolicLink()) && /\.png$/i.test(entry.name))
+      unlinkSync(join(dir, entry.name));
+  }
+  return dir;
+}
 export function argumentsOf(args: string[]) {
   const selectors: string[] = [];
   const refreshAudio: string[] = [];
@@ -107,13 +130,13 @@ async function cachedScenePcm(
   }
 }
 export async function sceneAudio(
-  scene: Scene,
+  scene: Scene | TextScene,
   readings: Record<string, string>,
   provider: TtsProvider,
   cache: string,
   refresh = false,
 ): Promise<Int16Array[]> {
-  const speeches = scene.beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings));
+  const speeches = sceneSpeeches(scene, readings);
   const weights = speeches.map(estimateSpeechSeconds);
   if (provider.unit === "topic") {
     const speech = speeches.join("\n\n");
@@ -165,6 +188,7 @@ function sceneGenerationCode(): Record<string, string> {
     "../src/storyboard-assets.ts",
     "../src/scene-layout.ts",
     "../src/scene-timeline.ts",
+    "../src/scene-sfx.ts",
     "../src/scene-view.ts",
     "../src/video-storyboard.ts",
     "../src/video-art.ts",
@@ -203,6 +227,9 @@ export function planSceneTopic(
   return sceneVideoSourceHash({
     version: SCENE_GENERATOR_VERSION,
     storyboard,
+    title: topic.title,
+    header: topic.header,
+    takeaway: topic.takeaway,
     readings: topic.readings,
     voice,
     assets: assets.hashes,
@@ -251,7 +278,7 @@ export async function buildSceneTopic(
         estimateSpeechSeconds(speechOf({ text: b.say, speech: b.speech }, topic.readings)),
       ),
     );
-    let timelines = sceneTimelines(storyboard.scenes, estimates, assets.context.clips);
+    let sequence = sceneVideoSequence(storyboard.scenes, estimates, topic, assets.context.clips);
     const sceneAssets = (i: number) => {
       const scene = storyboard.scenes[i];
       const refs = new Set(
@@ -273,19 +300,25 @@ export async function buildSceneTopic(
     };
     const stillOverflows = new Set<string>();
     const load = async (i: number) => {
-      const scene = storyboard.scenes[i];
-      const html = sceneHtml({
-        board: scene.kind === "view" ? { cols: 1, rows: 1, nodes: [] } : boards[scene.board],
-        scene,
-        state: states[i],
-        images: sceneAssets(i).images,
-        previousView:
-          states[i - 1]?.kind === "view" ? (states[i - 1] as ViewSceneState) : undefined,
-        timing: { ...timelines[i], start: 0 },
-        index: i,
-        total: storyboard.scenes.length,
-        previous: storyboard.scenes[i - 1],
-      });
+      const { scene, timing, sourceIndex } = sequence[i];
+      const html =
+        scene.kind === "text"
+          ? textSceneHtml(scene)
+          : sceneHtml({
+              board: scene.kind === "view" ? { cols: 1, rows: 1, nodes: [] } : boards[scene.board],
+              scene,
+              state: states[sourceIndex],
+              images: sceneAssets(sourceIndex).images,
+              previousView:
+                states[sourceIndex - 1]?.kind === "view"
+                  ? (states[sourceIndex - 1] as ViewSceneState)
+                  : undefined,
+              timing: { ...timing, start: 0 },
+              index: i,
+              total: sequence.length,
+              previous: storyboard.scenes[sourceIndex - 1],
+              fadeFromBackground: sourceIndex === 0,
+            });
       const htmlFile = join(work, `scene-${i}.html`);
       writeFileSync(htmlFile, html);
       const errors: string[] = [];
@@ -297,8 +330,11 @@ export async function buildSceneTopic(
       const overflows: string[] = [];
       const samples = [
         0,
-        ...timelines[i].beats.flatMap((b) =>
-          [b.start + 0.15, b.start + 0.4, b.start + 0.8, b.end - 1 / 30].filter((t) => t < b.end),
+        ...(scene.kind === "text" ? [0.4, timing.duration - 0.4] : []),
+        ...timing.beats.flatMap((b) =>
+          [b.start, b.start + 0.15, b.start + 0.4, b.start + 0.8, b.end - 1 / 30].filter(
+            (t) => t < b.end,
+          ),
         ),
       ];
       for (const time of samples)
@@ -319,25 +355,30 @@ export async function buildSceneTopic(
       }
       return html;
     };
-    for (let i = 0; i < storyboard.scenes.length; i++) await load(i);
+    for (let i = 0; i < sequence.length; i++) await load(i);
     if (options.stills) {
-      const dir = join(out, "stills");
-      mkdirSync(dir, { recursive: true });
+      const dir = prepareSceneStills(options.out, topic.stageSlug, topic.id);
       const frames: { file: string; label: string }[] = [];
-      for (let i = 0; i < storyboard.scenes.length; i++) {
+      for (let i = 0; i < sequence.length; i++) {
         await load(i);
-        for (let j = 0; j < timelines[i].beats.length; j++) {
-          const beat = timelines[i].beats[j],
-            scene = storyboard.scenes[i];
+        const { scene, timing } = sequence[i];
+        const samples =
+          scene.kind === "text"
+            ? [{ time: timing.duration / 2, label: scene.title }]
+            : timing.beats.map((beat, j) => ({
+                time: beat.end - 1 / 30,
+                label: `${j + 1}　${beat.say}`,
+              }));
+        for (const [j, sample] of samples.entries()) {
           await page.evaluate(
             (t) => (window as unknown as ScenePageWindow).__setTime(t),
-            beat.end - 1 / 30,
+            sample.time,
           );
           const name = `scene-${i + 1}-beat-${j + 1}.png`;
           await page.screenshot({ path: join(dir, name) });
           frames.push({
             file: pathToFileURL(join(dir, name)).href,
-            label: `${scene.id} · ${j + 1}　${beat.say}`,
+            label: `${scene.id} · ${sample.label}`,
           });
         }
       }
@@ -358,7 +399,7 @@ export async function buildSceneTopic(
     }
     if (!provider) throw new Error("音声プロバイダーがありません");
     const pcms: Int16Array[][] = [];
-    for (const scene of storyboard.scenes)
+    for (const { scene } of sequence)
       pcms.push(
         await sceneAudio(
           scene,
@@ -368,28 +409,47 @@ export async function buildSceneTopic(
           options.refreshAudio.includes(scene.id),
         ),
       );
-    timelines = sceneTimelines(
+    sequence = sceneVideoSequence(
       storyboard.scenes,
-      pcms.map((ps) => ps.map((p) => p.length / AUDIO_RATE)),
+      sequence.flatMap(({ scene }, i) =>
+        scene.kind === "text" ? [] : [pcms[i].map((p) => p.length / AUDIO_RATE)],
+      ),
+      topic,
       assets.context.clips,
+      {
+        title: pcms[0][0].length / AUDIO_RATE,
+        summary: pcms[pcms.length - 1][0].length / AUDIO_RATE,
+      },
     );
     const clips: string[] = [],
       reports: unknown[] = [];
-    for (let i = 0; i < storyboard.scenes.length; i++) {
-      const html = await load(i),
-        scene = storyboard.scenes[i],
-        timing = timelines[i];
+    for (let i = 0; i < sequence.length; i++) {
+      const html = await load(i);
+      const { scene, timing, sourceIndex } = sequence[i];
+      const previous = states[sourceIndex - 1];
+      const sfx = sceneSfxCues(
+        scene,
+        timing,
+        previous?.kind === "view" ? previous.end.image : undefined,
+      );
       const sourceHash = sceneCacheHash({
         version: GENERATOR_VERSION,
-        board: scene.kind === "view" ? { cols: 1, rows: 1, nodes: [] } : boards[scene.board],
-        start: states[i].start,
-        assets: sceneAssets(i).hashes,
+        board:
+          scene.kind === "text"
+            ? undefined
+            : scene.kind === "view"
+              ? { cols: 1, rows: 1, nodes: [] }
+              : boards[scene.board],
+        start: scene.kind === "text" ? undefined : states[sourceIndex].start,
+        assets: scene.kind === "text" ? {} : sceneAssets(sourceIndex).hashes,
         scene,
         timing: { ...timing, start: 0 },
         html,
         assetRoot: pathToFileURL(work).href,
         voice: provider.identity,
+        speeches: sceneSpeeches(scene, topic.readings),
         audio: pcms[i],
+        sfx,
         code: sceneGenerationCode(),
       });
       const destination = join(cache, sourceHash),
@@ -411,9 +471,22 @@ export async function buildSceneTopic(
         writeNarrationWav(
           wav,
           timing.duration,
-          timing.beats.map((b, j) => ({ startSec: b.start, pcm: pcms[i][j] })),
+          timing.beats.map((b, j) => ({ startSec: b.speechStart ?? b.start, pcm: pcms[i][j] })),
         );
-        await encodeNarration(wav, audio);
+        const sfxWav = sfx.length ? join(work, `sfx-${i}.wav`) : undefined;
+        if (sfxWav)
+          writeNarrationWav(
+            sfxWav,
+            timing.duration,
+            sfx.map((cue) => ({
+              startSec: cue.at,
+              pcm: synthesizeSceneSfx(cue.kind, AUDIO_RATE),
+            })),
+          );
+        await encodeNarration(wav, audio, {
+          preventSilence: true,
+          ...(sfxWav ? { sfxWav } : {}),
+        });
         const pending = join(work, `clip-${i}.mp4`);
         const shots = await encodeScene(page, timing.duration, audio, pending);
         await page.evaluate(
@@ -437,7 +510,7 @@ export async function buildSceneTopic(
         hash: sourceHash,
         cached: hit,
       });
-      if (i === storyboard.scenes.length - 1)
+      if (scene.kind !== "text" && sourceIndex === storyboard.scenes.length - 1)
         await toPosterJpeg(join(destination, "poster.png"), join(work, "poster.jpg"));
     }
     const list = join(work, "concat.txt");
@@ -456,7 +529,7 @@ export async function buildSceneTopic(
       "+faststart",
       video,
     ]);
-    const duration = timelines.reduce((n, t) => n + t.duration, 0);
+    const duration = sequence.reduce((n, entry) => n + entry.timing.duration, 0);
     const report = {
       generatorVersion: GENERATOR_VERSION,
       ttsIdentity: provider.identity,
@@ -469,7 +542,8 @@ export async function buildSceneTopic(
     // 検査・生成に成功した3ファイルだけを公開用の出力先へ移す。
     copyFileSync(video, join(out, "video.mp4"));
     copyFileSync(join(work, "poster.jpg"), join(out, "poster.jpg"));
-    writeFileSync(join(out, "captions.vtt"), sceneVtt(timelines));
+    // ponytail: 字幕は焼き込み。プレイヤーで字幕を消せるようにするなら、動画ごとの印を manifest と D1 に足して cue を戻す
+    writeFileSync(join(out, "captions.vtt"), "WEBVTT\n\nNOTE 字幕は動画に焼き込み済み\n\n");
     writeFileSync(join(out, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
     console.info(`${topic.stageSlug}/${topic.id}: ${duration.toFixed(2)}秒`);
     return report;
@@ -491,7 +565,7 @@ export async function buildSceneVideos(args: string[]) {
         );
         if (!storyboard)
           throw new Error(`絵コンテの検査エラー: ${issues.map((i) => i.message).join(" / ")}`);
-        return storyboard.scenes.map((scene) => scene.id);
+        return ["title", ...storyboard.scenes.map((scene) => scene.id), "summary"];
       }),
     );
     for (const id of options.refreshAudio)

@@ -80,7 +80,7 @@ describe("mark timing", () => {
       }),
     ).rejects.toThrow();
   });
-  it("suppresses clip narration/title/caption/keys but keeps actual keyboard input", async () => {
+  it("suppresses clip narration/title/caption but displays keys with actual keyboard input", async () => {
     const narrator = { clip: vi.fn() };
     const page = { evaluate: vi.fn(), waitForTimeout: vi.fn(), keyboard: { press: vi.fn() } };
     const t = new Director(page as unknown as Page, null, {
@@ -89,10 +89,18 @@ describe("mark timing", () => {
     });
     await t.title("badge", "title", "sub");
     await t.caption("caption");
-    await t.press("Control+s");
     expect(narrator.clip).not.toHaveBeenCalled();
     expect(page.evaluate).not.toHaveBeenCalled();
+    await t.press("Control+s", { label: ["Ctrl", "S"] });
+    expect(page.evaluate).toHaveBeenCalledWith(expect.any(Function), ["Ctrl", "S"]);
     expect(page.keyboard.press).toHaveBeenCalledWith("Control+s");
+    page.evaluate.mockClear();
+    await t.press("F2");
+    expect(page.evaluate).toHaveBeenCalledWith(expect.any(Function), ["F2"]);
+    page.evaluate.mockClear();
+    await t.press("Enter", { show: false });
+    expect(page.evaluate).not.toHaveBeenCalled();
+    expect(page.keyboard.press).toHaveBeenCalledWith("Enter");
   });
   it("pretendClick never sends mouse down/up or clicks the target", async () => {
     const page = {

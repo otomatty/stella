@@ -30,6 +30,7 @@ export interface NarrationTopic {
   courseTitle: string;
   id: string;
   title: string;
+  header?: string;
   takeaway: string;
   introduces: string[];
   requires: string[];
@@ -155,6 +156,7 @@ export function collectNarrationTopics(selectors: string[] = []): NarrationTopic
         courseTitle: stage.title,
         id: fm.id,
         title: fm.title,
+        header: fm.header,
         takeaway: fm.takeaway,
         introduces: fm.introduces,
         requires: fm.requires,

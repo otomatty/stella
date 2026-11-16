@@ -12,7 +12,12 @@ import {
   type BoardLayout,
   type Box,
 } from "../../src/scene-layout.js";
-import type { SceneTimeline } from "../../src/scene-timeline.js";
+import {
+  sceneCaptionAt,
+  sceneTitleOpacity,
+  type SceneTimeline,
+  type TextScene,
+} from "../../src/scene-timeline.js";
 import {
   VIDEO_ICONS,
   type Board,
@@ -35,6 +40,8 @@ export const sceneFontCss = readFileSync(fontFile, "utf8").replace(
   /url\(\.\/(.+?)\)/g,
   (_, p: string) => `url(${pathToFileURL(join(dirname(fontFile), p)).href})`,
 );
+export const sceneCaptionCss =
+  "#caption{position:absolute;left:72px;right:72px;top:990px;height:90px;display:flex;align-items:center;justify-content:center;font-size:34px;line-height:1.3;color:#0E0E10;text-align:center;z-index:1;overflow:hidden}#caption span{display:block;width:100%;overflow-wrap:anywhere}";
 export interface SceneHtmlInput {
   board: Board;
   images?: Record<string, ViewImage>;
@@ -45,6 +52,7 @@ export interface SceneHtmlInput {
   index: number;
   total: number;
   previous?: Scene;
+  fadeFromBackground?: boolean;
 }
 interface BoardHtmlInput extends Omit<SceneHtmlInput, "scene" | "state"> {
   scene: BoardScene;
@@ -58,9 +66,55 @@ export interface ScenePageWindow extends Window {
   __busyRanges: [number, number][];
   __overflows: () => string[];
 }
-function runtime(data: RenderData, interpolate: typeof travelPoint) {
+function textRuntime(scene: TextScene) {
+  const win = window as unknown as ScenePageWindow;
+  const content = document.getElementById("text-scene") as HTMLElement;
+  const white = document.getElementById("white") as HTMLElement;
+  const summary = scene.id === "summary";
+  const fadeOut = summary ? 0.6 : 0.4;
+  const clamp = (value: number) => Math.max(0, Math.min(1, value));
+  win.__busyRanges = [
+    [0, 0.4],
+    [scene.duration - fadeOut, scene.duration],
+  ];
+  win.__setTime = async (time) => {
+    content.style.opacity = String(
+      clamp(Math.min(time / 0.4, summary ? 1 : (scene.duration - time) / fadeOut)),
+    );
+    white.style.opacity = String(
+      clamp(summary ? (time - (scene.duration - fadeOut)) / fadeOut : 1 - time / 0.4),
+    );
+  };
+  win.__overflows = () => {
+    if (summary) {
+      const text = content.querySelector("h1") as HTMLElement;
+      const lineHeight = Number.parseFloat(getComputedStyle(text).lineHeight);
+      return text.scrollHeight > lineHeight * 3 + 1 ? ["まとめの文が3行に収まりません"] : [];
+    }
+    return content.scrollHeight > 900 ? ["タイトルが画面に収まりません"] : [];
+  };
+  win.__setTime(0);
+}
+/** タイトルとまとめは中央の文を読むため、音声があっても字幕を重ねない。 */
+export function textSceneHtml(scene: TextScene): string {
+  const data = JSON.stringify(scene).replace(/</g, "\\u003c");
+  const summary = scene.id === "summary";
+  return `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
+  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}
+  body{display:flex;align-items:center;justify-content:center}#text-scene{width:1680px;text-align:center;overflow-wrap:anywhere;opacity:0}#text-scene header{font-size:32px;color:#5C5C66;margin-bottom:24px}#text-scene h1{font-size:80px;font-weight:700;line-height:1.4;margin:0}#accent{width:96px;height:6px;background:#E62F9A;margin:40px auto 0}#white{position:absolute;inset:0;background:white;pointer-events:none}
+  ${summary ? "#text-scene{width:1500px;max-width:1500px;word-break:normal;line-break:strict;text-wrap:balance}#text-scene h1{font-size:56px;line-height:1.5}" : ""}
+  </style><main id="text-scene">${scene.header ? `<header>${escapeHtml(scene.header)}</header>` : ""}<h1>${escapeHtml(scene.title)}</h1><div id="accent"></div></main><div id="white"></div><script>(${textRuntime.toString()})(${data});</script></html>`;
+}
+function runtime(
+  data: RenderData,
+  interpolate: typeof travelPoint,
+  titleOpacity: typeof sceneTitleOpacity,
+  captionAt: typeof sceneCaptionAt,
+) {
   const win = window as unknown as ScenePageWindow;
   const { board, scene, state, timing, layout } = data;
+  const caption = document.getElementById("caption") as HTMLElement;
+  const safe = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
   const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
   const smooth = (n: number) => {
@@ -134,6 +188,11 @@ function runtime(data: RenderData, interpolate: typeof travelPoint) {
   });
   win.__busyRanges = [
     [0, 0.4],
+    [2.6, 3.0],
+    ...timing.beats.map((b): [number, number] => [
+      b.speechEnd ?? b.end,
+      (b.speechEnd ?? b.end) + 1 / 30,
+    ]),
     ...timing.beats.map((t, i): [number, number] => [
       t.start,
       Math.max(
@@ -147,6 +206,7 @@ function runtime(data: RenderData, interpolate: typeof travelPoint) {
       .map((t) => [t.end, t.end + 0.2] as [number, number]),
   ];
   win.__setTime = async (time: number) => {
+    caption.innerHTML = `<span>${safe(captionAt(timing, time))}</span>`;
     let k = -1;
     for (let i = 0; i < timing.beats.length; i++) if (timing.beats[i].start <= time) k = i;
     const beat = k >= 0 ? scene.beats[k] : undefined,
@@ -291,15 +351,21 @@ function runtime(data: RenderData, interpolate: typeof travelPoint) {
           el.dataset.icon === (beat?.travel?.icon ?? "file") ? "inline" : "none",
         );
     }
-    const title = document.getElementById("heading"),
-      prev = document.getElementById("previous-heading");
-    if (title) title.style.opacity = String(ease(time / 0.4));
-    if (prev) prev.style.opacity = String(1 - ease(time / 0.4));
+    const title = document.getElementById("heading");
+    if (title) title.style.opacity = String(titleOpacity(time));
     const white = document.getElementById("white");
-    if (white) white.style.opacity = String(data.index === 0 ? 1 - ease(time / 0.4) : 0);
+    if (white) {
+      white.style.background = data.fadeFromBackground ? "#F7F7F9" : "white";
+      white.style.opacity = String(
+        data.index === 0 || data.fadeFromBackground ? 1 - ease(time / 0.4) : 0,
+      );
+    }
   };
-  win.__overflows = () =>
-    [...document.querySelectorAll<SVGTextElement>("[data-fit]")].flatMap((el) => {
+  win.__overflows = () => [
+    ...((caption.firstElementChild as HTMLElement).scrollHeight > 90
+      ? [`字幕が2行に収まりません: ${caption.textContent}`]
+      : []),
+    ...[...document.querySelectorAll<SVGTextElement>("[data-fit]")].flatMap((el) => {
       const b = el.getBBox(),
         limit = JSON.parse(el.dataset.fit ?? "{}") as Box;
       return b.x < limit.x - 1 ||
@@ -308,7 +374,8 @@ function runtime(data: RenderData, interpolate: typeof travelPoint) {
         b.y + b.height > limit.y + limit.h + 1
         ? [el.textContent ?? ""]
         : [];
-    });
+    }),
+  ];
   win.__setTime(0);
 }
 function iconSvg(name: IconName, x: number, y: number, size: number): string {
@@ -379,18 +446,22 @@ function boardHtml(input: BoardHtmlInput): string {
       ? `<span>${s.role === "point" ? `要点 ${s.point}` : s.role === "recap" ? "まとめ" : ""}</span> ${escapeHtml(s.title)}`
       : "";
   const { previous: _previous, ...renderInput } = input;
+  const sameTitle =
+    input.previous?.role === input.scene.role &&
+    input.previous?.point === input.scene.point &&
+    input.previous?.title === input.scene.title;
   const data = JSON.stringify({ ...renderInput, layout }).replace(/</g, "\\u003c");
-  return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
-  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}header{height:130px;background:white;border-bottom:2px solid #DDDDE2;display:flex;align-items:center;padding:0 72px;font-size:48px}header span{font-size:30px;color:#5C5C66;margin-right:24px}#heading,#previous-heading{position:absolute;left:72px;top:30px;height:72px;white-space:nowrap}.dots{margin-left:auto;display:flex;gap:18px}.dot{width:16px;height:16px;border-radius:50%;background:#DDDDE2}.dot.active{background:#E62F9A}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:170px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;background:white;pointer-events:none}
+  return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${sceneCaptionCss}
+  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}#heading{position:absolute;top:24px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:1;opacity:0;height:80px;display:flex;align-items:center;padding:0 36px;background:white;border-radius:16px;border:2px solid #DDDDE2;box-shadow:0 4px 12px #0000000D;font-size:40px}#heading span{font-size:26px;color:#5C5C66;margin-right:24px}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:170px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;z-index:2;background:white;pointer-events:none}
   </style>${Object.values(input.images ?? {})
     .map((img) => `<img hidden src="${escapeHtml(img.url)}">`)
     .join(
       "",
-    )}<header><div id="previous-heading">${heading(input.previous)}</div><div id="heading">${heading(input.scene)}</div><div class="dots">${Array.from({ length: input.total }, (_, i) => `<i class="dot ${i === input.index ? "active" : ""}"></i>`).join("")}</div></header><svg id="diagram" viewBox="0 170 1920 760"><defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/></filter>${["arrow", "arrow-accent"].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9Z" fill="${i ? "#E62F9A" : "#5C5C66"}"/></marker>`).join("")}</defs>${zones}${links}${nodes}<g id="traveler" style="color:white"><circle r="27" fill="#E62F9A"/>${Object.keys(
+    )}${sameTitle ? "" : `<div id="heading">${heading(input.scene)}</div>`}<svg id="diagram" viewBox="0 170 1920 760"><defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/></filter>${["arrow", "arrow-accent"].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9Z" fill="${i ? "#E62F9A" : "#5C5C66"}"/></marker>`).join("")}</defs>${zones}${links}${nodes}<g id="traveler" style="color:white"><circle r="27" fill="#E62F9A"/>${Object.keys(
     VIDEO_ICONS,
   )
     .map((name) => `<g data-icon="${name}">${iconSvg(name as IconName, -18, -18, 36)}</g>`)
     .join(
       "",
-    )}</g></svg><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint);</script></html>`;
+    )}</g></svg><div id="caption"></div><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint, ${sceneTitleOpacity.toString()}, ${sceneCaptionAt.toString()});</script></html>`;
 }
