@@ -113,7 +113,7 @@ HTML標準要素を土台に、DOMイベントと状態を付ける。まず同�
 
 単元は、Node.jsとブラウザ、依存関係、ルートとHTTP、検証、ミドルウェア、エラーとログ、APIテストとする。
 
-M10のAPI契約を自分のAPIで実装する。APIを置き換えても、UI部品と主要な画面操作を保つ。Expressを主教材、HonoをM17の比較教材とする初期案を引き継ぎ、採用先に応じて主従を変更できるようにする。
+M10のAPI契約を自分のAPIで実装する。APIを置き換えても、UI部品と主要な画面操作を保つ。APIの主教材はExpressとする(2026-11-16決定、#220の案A)。node-api-basics(M11)・auth-basics(M13)はExpressで作り、deploy-ops-basics(M16)で公開する。Honoは開発ラボGの事前課題(Extraステージ)で扱う。
 
 ### M12 SQLとデータベース
 

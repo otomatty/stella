@@ -294,7 +294,7 @@ packages/content/
 | `http-mock` | http-async-basics | 疑似応答と提供API |
 | `react-test` / `storybook` | react-basics, react-ui-basics, ui-integration-basics | Vitest + Testing Library、Storybookの状態見本 |
 | `e2e` | ui-integration-basics, nextjs-basics, deploy-ops-basics | Playwright |
-| `api-test` | node-api-basics, auth-basics | APIテスト(Express/Hono) |
+| `api-test` | node-api-basics, auth-basics | APIテスト(Express) |
 | `db` | sql-basics, auth-basics | PostgreSQL(PGlite。決定、下記) |
 | `next-app` | nextjs-basics | `next build`と、`next start`で開いた画面のPlaywright |
 | `ci-deploy` | deploy-ops-basics, fullstack-capstone | GitHub Actions・公開先。CIの結果を提出に添える(§5.5、実装済み) |
@@ -346,7 +346,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。TypeScriptの`ts-test`のテンプレートと見本も足した。
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
   - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
-  - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。
+  - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。2026-11-16にAPIの主教材をExpressと決めたため(#220の案A)、テンプレートは#224(バックエンド3ステージ)でExpressに作り直し、それまではHonoのままとする。作り直しでは、ポートを開かずに試せる今の利点、特にWindowsのファイアウォールの確認が出ないことを保てるかを、supertestが127.0.0.1のその場限りのポートで動く方式などで確かめる。
 - **Windows・macOS:** npmの解決(`npm-cli.js`をNode.jsで直接起動)、PATHの探索(`.exe`・`.com`だけ)、時間切れ・中断での停止(`taskkill /T /F`)、長いパスと日本語のパスを、OSを差し替えた単体テストで確かめた。実機での確認は残っている。確認項目は`apps/vscode/samples/README.md`。
 
 - **課題の配布(#31):** APIから課題を受け取り、学習フォルダーへ配る(§4.4)。`apps/vscode/src/open-task.ts`・`task-distribution.ts`・`training-folder.ts`。
@@ -931,7 +931,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
    - 共通とステージのコーディング規則の本文・ID、課題ごとの適用範囲を用意する。
    - ファイル提出、AIの一次レビュー(キュー・構造化出力・課題ごとのルーブリック)、人に回した提出のキュー、確信度のしきい値、スキルの証拠を作る。
    - `node-test`・`dom-test`を作る。
-   - 00 §6 の代表単元(JavaScriptの条件抽出、HTML・DOMの入力とエラー)で、基礎から確認Bまで一巡させる。
+   - 00 §6 の代表単元(JavaScriptの条件抽出、HTML・DOMの入力とエラー)で、基礎から確認Bまで一巡させる。最初の代表単元にReactは入れず、量産の途中でM08を書くときに同じ確かめ方を当てる(2026-11-16決定、#226)。
 4. **育成と復習:**
    - 管理者全員による支援、週次の育成メモ、つまずきの検知(担当は持たない、2026-11)。
    - 類題の在庫と出題、AIの判定の校正。

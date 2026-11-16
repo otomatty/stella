@@ -39,7 +39,7 @@ Node.js の道具を使う課題と、C# の課題 (`task.json` の `runner`) �
 - **整形の改行は `endOfLine: "auto"`。** Windows で作ったファイル (CRLF) を「整形が必要」と誤って判定しない。`.prettierignore` で `package-lock.json` と `.stella/` を外し、`npm run format` で配布ファイルの内容ハッシュを変えない。
 - **画面を開く道具は npm を通さずに起動する。** Playwright の `webServer` は `node node_modules/<道具>/...` で起動する (Windows でも同じ書き方で動く)。待ち受けは `127.0.0.1` に限り、Windows のファイアウォールの確認を出さない。
 - **ファイル名は英数字にする。** macOS で濁点の正規化が食い違い、提出の glob に当たらなくなるのを避ける。
-- **API は Hono。** `app.request()` でポートを開かずにテストでき、ポートの衝突や Windows のファイアウォールの確認が起きない。Express の版は要るときに足す。
+- **API は Hono。** `app.request()` でポートを開かずにテストでき、ポートの衝突や Windows のファイアウォールの確認が起きない。API の主教材は Express に決まったが (2026-11-16)、テンプレートは #224 (バックエンド 3 ステージ) で Express に作り直すまでは、表のとおり Hono のままとする。
 - **DB は PGlite。** Docker を入れずに PostgreSQL を動かす (07 §5.2)。1 つで約 0.8GB のメモリを使い、作るのに数秒かかるので、空の DB を 1 回作って `clone()` で複製し、テストのファイルは 1 つずつ実行する。
 - **Storybook はブラウザーを使わずに確かめる。** 状態見本 (`*.stories.jsx`) を `composeStories` で読み込み、jsdom で表示して `play` の確認を通す。`npm run storybook` で受講者が画面でも見られる。
 
