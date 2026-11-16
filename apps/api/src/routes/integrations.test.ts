@@ -5,12 +5,14 @@ import type { Env } from "../env.js";
 import { errorResponse } from "../lib/authz.js";
 import { eq } from "drizzle-orm";
 import {
+  profiles,
   stages,
   enrollments,
   stageGrants,
   stageUnlocks,
   integrationGroupMembers,
 } from "../db/schema.js";
+import * as authUsers from "../lib/auth-users.js";
 import { getDb } from "../db/client.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import {
@@ -801,6 +803,111 @@ describe("外部連携の境界 (実 SQLite)", () => {
       { stage_id: "extra2" },
     ]);
   });
+  it("同じメールの招待が競合しても、先に作られたプロフィールで existing として続ける", async () => {
+    const a = await setupWrite();
+    await write(a.token, "stages", { stages: [setting] });
+    const original = authUsers.inviteUser;
+    let recoveredId = "";
+    const invite = vi
+      .spyOn(authUsers, "inviteUser")
+      .mockImplementationOnce(async (database, input) => {
+        recoveredId = await original(database, { ...input, displayName: "先に招待された名前" });
+        throw new Error("UNIQUE constraint failed: profiles.email");
+      });
+    try {
+      const response = await write(a.token, "members", {
+        members: [
+          {
+            email: " RACE@EXAMPLE.TEST ",
+            displayName: "後からの名前",
+            externalId: "race-external",
+          },
+        ],
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        results: [{ index: 0, status: "existing", id: recoveredId }],
+      });
+      expect(invite).toHaveBeenCalledTimes(1);
+      expect(
+        db.sqlite.prepare("select count(*) n from profiles where email='race@example.test'").get()
+          ?.n,
+      ).toBe(1);
+      expect(
+        db.sqlite.prepare("select count(*) n from auth_users where email='race@example.test'").get()
+          ?.n,
+      ).toBe(1);
+      expect(
+        db.sqlite.prepare("select display_name from profiles where email='race@example.test'").get()
+          ?.display_name,
+      ).toBe("先に招待された名前");
+      expect(
+        db.sqlite
+          .prepare("select external_id from integration_group_members where profile_id=?")
+          .get(recoveredId)?.external_id,
+      ).toBe("race-external");
+      expect(
+        db.sqlite.prepare("select count(*) n from stage_grants where profile_id=?").get(recoveredId)
+          ?.n,
+      ).toBe(1);
+    } finally {
+      invite.mockRestore();
+    }
+  });
+  it.each(["admin", "disabled", "external-conflict"] as const)(
+    "競合後のプロフィールも再検証する (%s)",
+    async (kind) => {
+      const a = await setupWrite();
+      const invite = vi
+        .spyOn(authUsers, "inviteUser")
+        .mockImplementationOnce(async (database, input) => {
+          await database.insert(profiles).values({
+            id: "race-profile",
+            email: input.email,
+            displayName: "架空の同時招待",
+            role: kind === "admin" ? "admin" : "student",
+            disabled: kind === "disabled",
+          });
+          if (kind === "external-conflict") {
+            // この要求がメンバー一覧を読み終えた後、別の要求が外部IDを取得した状況。
+            const ownGroup = db.sqlite
+              .prepare("select id from integration_groups where external_key='sample:term-1'")
+              .get();
+            db.sqlite
+              .prepare(
+                "insert into integration_group_members(group_id,profile_id,external_id,joined_at) values (?, 'inside', 'race-external', ?)",
+              )
+              .run(String(ownGroup?.id), Date.now());
+          }
+          throw new Error("UNIQUE constraint failed: profiles.email");
+        });
+      try {
+        const response = await write(a.token, "members", {
+          members: [{ email: "race@example.test", externalId: "race-external" }],
+        });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({
+          results: [
+            {
+              index: 0,
+              status: "failed",
+              id: null,
+              code: kind === "external-conflict" ? "external_id_conflict" : "not_invitable",
+            },
+          ],
+        });
+        expect(
+          db.sqlite
+            .prepare(
+              "select count(*) n from integration_group_members where profile_id='race-profile'",
+            )
+            .get()?.n,
+        ).toBe(0);
+      } finally {
+        invite.mockRestore();
+      }
+    },
+  );
   it("ログインが招待より先の場合のID再利用と、招待失敗後の次の人の処理", async () => {
     const a = await setupWrite();
     db.sqlite.exec(

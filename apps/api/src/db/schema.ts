@@ -2243,3 +2243,39 @@ export const integrationGroupStages = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.groupId, t.stageId] })],
 );
+
+/** 連携用の不変の出来事索引。既存テーブルのトリガーが同じトランザクションで記録する。 */
+export const integrationEvents = sqliteTable(
+  "integration_events",
+  {
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    id: text("id").notNull().unique(),
+    type: text("type").notNull(),
+    occurredAt: ts("occurred_at").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "cascade" }),
+    submissionId: text("submission_id"),
+    source: text("source"),
+    submissionAttempt: integer("submission_attempt").notNull().default(1),
+    reason: text("reason"),
+    problemId: text("problem_id"),
+    contentHash: text("content_hash"),
+  },
+  (t) => ({
+    position: index("integration_events_position_idx").on(t.occurredAt, t.id),
+    scope: index("integration_events_scope_idx").on(t.userId, t.stageId, t.occurredAt),
+    problem: index("integration_events_problem_idx").on(
+      t.userId,
+      t.taskId,
+      t.problemId,
+      t.contentHash,
+      t.source,
+      t.occurredAt,
+    ),
+  }),
+);
