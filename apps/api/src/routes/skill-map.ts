@@ -515,6 +515,13 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           passed: passedIds.has(row.id),
         })),
         next_stage_ids: result.nextStageIds,
+        // #201: 通常の道の案内には、割り当てられた Extra を含めない。
+        unguided_next_stage_ids: result.nextStageIds.filter(
+          (id) => !source.guidedStageIds?.has(id),
+        ),
+        has_unguided_enrollment: [...(source.enrolledStageIds ?? [])].some(
+          (id) => !source.guidedStageIds?.has(id),
+        ),
         /**
          * 受講登録が 1 つでもあるか。
          *

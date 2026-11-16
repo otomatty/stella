@@ -36,7 +36,13 @@ import {
   stages,
 } from "../db/schema.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import { ApiError, errorResponse, getCaller, requireCanManageStageGrants } from "../lib/authz.js";
+import {
+  ApiError,
+  errorResponse,
+  getCaller,
+  requireAdmin,
+  requireCanManageStageGrants,
+} from "../lib/authz.js";
 import { chunk } from "../lib/enrollment-bulk.js";
 import { loadClearedStageIdsByUser } from "../lib/skill-map-data.js";
 import { loadGrantedStages, parentSlugFromRow } from "../lib/stage-audience.js";
@@ -57,6 +63,18 @@ import {
   parseStageGrantLearnerQuery,
 } from "../lib/stage-grant-learners.js";
 import type { Env } from "../env.js";
+
+import {
+  guidanceColumns,
+  guidanceOf,
+  guidanceValues,
+  inheritGrantGuidance,
+  loadStageGuidance,
+  parseGuidance,
+  summarizeGuidance,
+} from "../lib/stage-grant-guidance.js";
+
+import { loadGuidedStages } from "../lib/guided-stages.js";
 
 interface GrantStageNode {
   id: string;
@@ -166,6 +184,16 @@ async function loadGrantedPrerequisites(db: Db, start: GrantStageNode): Promise<
 
 export const stageGrantsRoute = new Hono<{ Bindings: Env }>();
 
+stageGrantsRoute.get("/api/stage-grants/mine", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    c.header("Cache-Control", "private, no-store");
+    return c.json(await loadGuidedStages(db, caller));
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 stageGrantsRoute.get("/api/stage-grants", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -179,6 +207,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
             .select({
               stageId: stageGrants.stageId,
               profileId: stageGrants.profileId,
+              ...guidanceColumns,
             })
             .from(stageGrants)
             .where(
@@ -274,6 +303,10 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
         title: stage.title,
         category: stage.category,
         profile_ids: grantsByStage.get(stage.id) ?? [],
+        guidance_summary: summarizeGuidance(grantRows.filter((row) => row.stageId === stage.id)),
+        guidance_by_profile: grantRows
+          .filter((row) => row.stageId === stage.id)
+          .map((row) => ({ profile_id: row.profileId, ...guidanceOf(row) })),
         unlocked_profile_ids: unlockedByStage.get(stage.id) ?? [],
         prerequisites_cleared_profile_ids: prerequisitesClearedProfileIds(
           prerequisitesByStageId.get(stage.id),
@@ -342,7 +375,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const existingGrantIds = new Set<string>();
     if (profileIds.length > 0) {
       const existingGrantRows = await db
-        .select({ profileId: stageGrants.profileId })
+        .select({ profileId: stageGrants.profileId, ...guidanceColumns })
         .from(stageGrants)
         .where(eq(stageGrants.stageId, stageId));
       for (const row of existingGrantRows) existingGrantIds.add(row.profileId);
@@ -391,11 +424,23 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       }
     }
 
+    const savedGuidance = await loadStageGuidance(db, stageId);
+    const inheritedRows = await inheritGrantGuidance(db, [
+      ...newlyAdded.map((profileId) => ({ stageId, profileId })),
+      ...ancestorInserts,
+    ]);
     const deleteOp = db.delete(stageGrants).where(eq(stageGrants.stageId, stageId));
     const valuesFor = (row: { stageId: string; profileId: string }) => ({
       stageId: row.stageId,
       profileId: row.profileId,
       grantedBy: caller.id,
+      ...(row.stageId === stageId && existingGrantIds.has(row.profileId)
+        ? guidanceValues(
+            guidanceOf(savedGuidance.find((saved) => saved.profileId === row.profileId)),
+          )
+        : inheritedRows.find(
+            (saved) => saved.stageId === row.stageId && saved.profileId === row.profileId,
+          )),
     });
     const stageInserts = profileIds.map((profileId) =>
       db.insert(stageGrants).values(valuesFor({ stageId, profileId })),
@@ -616,7 +661,7 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
         })
         .from(profiles),
       db
-        .select({ profileId: stageGrants.profileId })
+        .select({ profileId: stageGrants.profileId, ...guidanceColumns })
         .from(stageGrants)
         .where(eq(stageGrants.stageId, stage.id)),
       db
@@ -662,7 +707,13 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
       counts: listed.counts,
       total: listed.total,
       next_offset: listed.next_offset,
-      learners: listed.learners,
+      guidance_summary: summarizeGuidance(grantRows),
+      learners: listed.learners.map((row) => ({
+        ...row,
+        guidance: row.assigned
+          ? guidanceOf(grantRows.find((grant) => grant.profileId === row.id))
+          : null,
+      })),
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -683,7 +734,7 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
         .select({ id: profiles.id, role: profiles.role, disabled: profiles.disabled })
         .from(profiles),
       db
-        .select({ profileId: stageGrants.profileId })
+        .select({ profileId: stageGrants.profileId, ...guidanceColumns })
         .from(stageGrants)
         .where(eq(stageGrants.stageId, stageId)),
       db
@@ -717,7 +768,10 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
     const statements = planStageGrantWriteStatements(db, {
       stageId,
       grantedBy: caller.id,
-      grantRows: [...plan.added.map((profileId) => ({ stageId, profileId })), ...ancestorRows],
+      grantRows: await inheritGrantGuidance(db, [
+        ...plan.added.map((profileId) => ({ stageId, profileId })),
+        ...ancestorRows,
+      ]),
       removeProfileIds: plan.removed,
       deleteStaffUserIds: plan.deleteStaffIds,
       exemptUserIds: plan.exempted,
@@ -746,6 +800,39 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
       ip: clientIp(c),
     });
     return c.json({ stage_id: stageId, counts, ancestor_grants: ancestorGrants });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 案内全体の置き換え。null で各項目を消す。割り当て自体は変えない。 */
+stageGrantsRoute.patch("/api/stage-grants/:stageId/guidance", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireAdmin(caller);
+    const { guidance, profileIds } = parseGuidance(await c.req.json().catch(() => null));
+    const stage = await loadGrantStage(db, c.req.param("stageId"));
+    const rows = await loadStageGuidance(db, stage.id);
+    const assigned = new Set(rows.map((row) => row.profileId));
+    if (profileIds?.some((id) => !assigned.has(id)))
+      throw new ApiError("割り当て済みのユーザーを指定してください", 400);
+    const targets = profileIds ?? [...assigned];
+    const statements = chunk(targets, 90).map((ids) =>
+      db
+        .update(stageGrants)
+        .set(guidanceValues(guidance))
+        .where(and(eq(stageGrants.stageId, stage.id), inArray(stageGrants.profileId, ids))),
+    );
+    const [first, ...rest] = statements;
+    if (first) await db.batch([first, ...rest]);
+    await recordAudit(db, caller, {
+      action: "stage_grants_guidance_update",
+      targetType: "stage",
+      targetId: stage.id,
+      metadata: { profile_ids: targets, all: profileIds === null, ...guidance },
+      ip: clientIp(c),
+    });
+    return c.json({ stage_id: stage.id, updated: targets.length, guidance });
   } catch (err) {
     return errorResponse(c, err);
   }

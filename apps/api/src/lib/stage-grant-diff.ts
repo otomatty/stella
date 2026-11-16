@@ -197,7 +197,7 @@ export function stageIdListChunkSize(
   return rowsPerInsert((count) => build(measured, sampleIds(count)));
 }
 
-type GrantInsert = { stageId: string; profileId: string; grantedBy: string };
+type GrantInsert = typeof stageGrants.$inferInsert;
 type UnlockInsert = { userId: string; stageId: string; via: "staff"; unlockedAt: Date };
 
 function insertGrants(db: Db, rows: GrantInsert[]) {
@@ -232,7 +232,13 @@ function insertStaffUnlocks(db: Db, rows: UnlockInsert[]) {
 export interface StageGrantWriteInput {
   stageId: string;
   grantedBy: string;
-  grantRows: readonly { stageId: string; profileId: string }[];
+  grantRows: readonly {
+    stageId: string;
+    profileId: string;
+    sourceName?: string | null;
+    dueAt?: string | null;
+    message?: string | null;
+  }[];
   removeProfileIds: readonly string[];
   deleteStaffUserIds: readonly string[];
   exemptUserIds: readonly string[];
@@ -273,6 +279,9 @@ export function planStageGrantWriteStatements(db: Db, input: StageGrantWriteInpu
           stageId: input.stageId,
           profileId: `measure-${index}`,
           grantedBy: input.grantedBy,
+          sourceName: "measure",
+          dueAt: "measure",
+          message: "measure",
         })),
       ),
     );
