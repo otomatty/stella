@@ -1,5 +1,5 @@
 -- 本棚の廃止 (2026-11)。オーナーの指示により、残っている本棚のデータも削除する。
--- 0080: 0079_integration_write の適用後、0070 後の 7 表を、外部キーで参照する子から先に落とす。
+-- 0081: 0080_integration_events の適用後、0070 後の 7 表を、外部キーで参照する子から先に落とす。
 -- 本棚専用の通知・監査 action はない。R2 はデプロイの retire-library-storage.ts が片付ける。
 DROP TABLE IF EXISTS `library_revision_files`;
 --> statement-breakpoint

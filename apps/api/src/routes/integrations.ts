@@ -6,6 +6,7 @@ import type {
   IntegrationMemberResult,
   IntegrationStageInput,
 } from "@stella/shared/integrations/types";
+import { readIntegrationProgress, readIntegrationEvents } from "../lib/integration-read.js";
 import { parentSlugFromRow } from "../lib/stage-audience.js";
 import { inviteUser } from "../lib/auth-users.js";
 import {
@@ -127,7 +128,7 @@ integrationsRoute.put(
         continue;
       }
       const externalId = typeof row.externalId === "string" ? row.externalId.trim() : null;
-      const [existing] = await db
+      let [existing] = await db
         .select()
         .from(profiles)
         .where(sql`lower(${profiles.email}) = ${email}`)
@@ -155,8 +156,41 @@ integrationsRoute.put(
             role: "student",
           });
         } catch {
-          fail("invite_failed");
-          continue;
+          // 別の要求が同じ人を先に招待していたら、そのプロフィールで続ける。
+          [existing] = await db
+            .select()
+            .from(profiles)
+            .where(sql`lower(${profiles.email}) = ${email}`)
+            .limit(1);
+          if (!existing) {
+            fail("invite_failed");
+            continue;
+          }
+          if (existing.role !== "student" || existing.disabled) {
+            fail("not_invitable");
+            continue;
+          }
+          if (externalId !== null) {
+            const owner = profileByExternal.get(externalId);
+            const [savedOwner] = await db
+              .select({ profileId: integrationGroupMembers.profileId })
+              .from(integrationGroupMembers)
+              .where(
+                and(
+                  eq(integrationGroupMembers.groupId, group.id),
+                  eq(integrationGroupMembers.externalId, externalId),
+                ),
+              )
+              .limit(1);
+            if (
+              (owner !== undefined && owner !== existing.id) ||
+              (savedOwner && savedOwner.profileId !== existing.id)
+            ) {
+              fail("external_id_conflict");
+              continue;
+            }
+          }
+          id = existing.id;
         }
       }
       const alreadyMember = memberIds.has(id);
@@ -338,3 +372,24 @@ integrationsRoute.put(
     return c.json({ stages: settings.map(({ stageId: _, ...setting }) => setting) });
   },
 );
+
+for (const kind of ["progress", "events"] as const) {
+  integrationsRoute.get(
+    `/api/integrations/v1/groups/:key/${kind}`,
+    requireScope(`${kind}:read`),
+    async (c) => {
+      const db = c.get("integrationDb");
+      const group = await requireOwnGroup(db, c.get("integrationClient").id, c.req.param("key"));
+      c.set("integrationGroupId", group.id);
+      return c.json(
+        kind === "progress"
+          ? await readIntegrationProgress(db, group.id, {
+              stage: c.req.query("stage"),
+              at: c.req.query("at"),
+              cursor: c.req.query("cursor"),
+            })
+          : await readIntegrationEvents(db, group.id, c.req.query("after")),
+      );
+    },
+  );
+}

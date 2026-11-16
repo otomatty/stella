@@ -67,3 +67,58 @@ export interface IntegrationStageInput {
   message?: string | null;
   exempt?: boolean;
 }
+
+export type IntegrationSource = "tests" | "ai" | "human" | "manual";
+export interface IntegrationTaskProgress {
+  id: string;
+  title: string;
+  /** at 指定時は状態を復元せず省略する。 */
+  status?: string;
+  pendingReview?: boolean;
+  passed: boolean;
+  passedAt: string | null;
+  source: IntegrationSource | null;
+  submissionUrl?: string;
+  problems?: { total: number; passed: number; sources: ("tests" | "manual")[] };
+}
+export interface IntegrationProgress {
+  members: {
+    id: string;
+    externalId: string | null;
+    email: string;
+    displayName: string;
+    lastActiveDate?: string | null;
+    stages: {
+      slug: string;
+      status: "assigned" | "started" | "cleared";
+      startedAt: string | null;
+      clearedAt: string | null;
+      progressUrl: string;
+      units: { id: string; title: string; tasks: IntegrationTaskProgress[] }[];
+    }[];
+  }[];
+  next: string | null;
+  hasMore: boolean;
+}
+export interface IntegrationEvent {
+  id: string;
+  type:
+    | "stage_started"
+    | "stage_cleared"
+    | "stage_clear_revoked"
+    | "stage_unassigned"
+    | "task_passed"
+    | "task_returned"
+    | "task_pass_revoked"
+    | "problems_passed"
+    | "problems_revoked";
+  occurredAt: string;
+  person: { id: string; externalId: string | null };
+  stage: string;
+  taskId?: string;
+  source?: IntegrationSource | null;
+  submissionUrl?: string;
+  reason?: "resubmit" | "fail" | "removed";
+  count?: number;
+  problemsPassed?: number;
+}

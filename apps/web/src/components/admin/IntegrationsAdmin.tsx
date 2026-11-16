@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Copy, Plus } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { syncIntegrationClientDraft } from "./integrations-admin-draft";
 import { PageHeader } from "@/components/common/PageHeader";
 
 const ROOT = "/api/admin/integrations";
@@ -228,13 +229,9 @@ function ClientCard({
   onRotate: () => void;
   onGroups: () => void;
 }) {
-  const [scopes, setScopes] = useState(client.scopes);
-  const [prefixes, setPrefixes] = useState(client.allowedStagePrefixes.join(", "));
-  useEffect(
-    () => setPrefixes(client.allowedStagePrefixes.join(", ")),
-    [client.allowedStagePrefixes],
-  );
-  useEffect(() => setScopes(client.scopes), [client.scopes]);
+  const [draft, setDraft] = useState(() => syncIntegrationClientDraft(null, client));
+  useEffect(() => setDraft((previous) => syncIntegrationClientDraft(previous, client)), [client]);
+  const { prefixes, scopes } = draft;
   return (
     <Card className={cn(!client.enabled && "border-warning")}>
       <CardHeader className={cn(!client.enabled && "bg-warning-soft")}>
@@ -262,8 +259,16 @@ function ClientCard({
             </dd>
           </div>
         </dl>
-        <PrefixEditor value={prefixes} onChange={setPrefixes} disabled={busy} />
-        <ScopeEditor value={scopes} onChange={setScopes} disabled={busy} />
+        <PrefixEditor
+          value={prefixes}
+          onChange={(value) => setDraft((previous) => ({ ...previous, prefixes: value }))}
+          disabled={busy}
+        />
+        <ScopeEditor
+          value={scopes}
+          onChange={(value) => setDraft((previous) => ({ ...previous, scopes: value }))}
+          disabled={busy}
+        />
         <div className="flex flex-wrap gap-2 border-t border-border pt-4">
           <Button
             type="button"
