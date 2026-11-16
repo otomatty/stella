@@ -13,6 +13,7 @@
  * 送った出来事は ID を主キーで引いて先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 
+import { lastLearningDate } from "./last-learning-date.js";
 import {
   and,
   asc,
@@ -109,13 +110,7 @@ async function activeLearners(db: Db): Promise<Learner[]> {
       learnerId: profiles.id,
       learnerName: profiles.displayName,
       // 視聴・完了・手元の確認・提出・復習・受講開始のどれもない日を、学習の記録がない日とする。
-      lastActive: sql<string>`max(
-        coalesce((select max(date) from study_activity where user_id = ${learner} and (watched_sec > 0 or completed_lessons > 0)), ''),
-        coalesce((select date(max(last_run_at) / 1000, 'unixepoch', '+9 hours') from task_local_runs where user_id = ${learner}), ''),
-        coalesce((select date(max(submitted_at) / 1000, 'unixepoch', '+9 hours') from submissions where student_id = ${learner} and (review_source is null or review_source <> 'manual')), ''),
-        coalesce((select date(max(answered_at) / 1000, 'unixepoch', '+9 hours') from review_logs where user_id = ${learner}), ''),
-        coalesce((select date(max(enrolled_at) / 1000, 'unixepoch', '+9 hours') from enrollments where user_id = ${learner}), '')
-      )`,
+      lastActive: lastLearningDate(learner),
       active: sql<number>`exists (select 1 from enrollments where user_id = ${learner} and status = 'active')`,
     })
     .from(profiles)

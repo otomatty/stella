@@ -6,6 +6,7 @@ import type {
   IntegrationMemberResult,
   IntegrationStageInput,
 } from "@stella/shared/integrations/types";
+import { readIntegrationProgress, readIntegrationEvents } from "../lib/integration-read.js";
 import { inviteUser } from "../lib/auth-users.js";
 import {
   applyGroupStageStatements,
@@ -315,3 +316,24 @@ integrationsRoute.put(
     return c.json({ stages: settings.map(({ stageId: _, ...setting }) => setting) });
   },
 );
+
+for (const kind of ["progress", "events"] as const) {
+  integrationsRoute.get(
+    `/api/integrations/v1/groups/:key/${kind}`,
+    requireScope(`${kind}:read`),
+    async (c) => {
+      const db = c.get("integrationDb");
+      const group = await requireOwnGroup(db, c.get("integrationClient").id, c.req.param("key"));
+      c.set("integrationGroupId", group.id);
+      return c.json(
+        kind === "progress"
+          ? await readIntegrationProgress(db, group.id, {
+              stage: c.req.query("stage"),
+              at: c.req.query("at"),
+              cursor: c.req.query("cursor"),
+            })
+          : await readIntegrationEvents(db, group.id, c.req.query("after")),
+      );
+    },
+  );
+}

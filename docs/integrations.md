@@ -2,7 +2,7 @@
 
 連携 API の基点は `/api/integrations/v1`。サーバーから呼び出すための API です。
 管理者のログイン Cookie・セッショントークンとは独立しています。
-グループ・メンバー・ステージの書き込みに対応しています。#206 の読み取り API は後続です。
+グループ・メンバー・ステージの書き込みと、進み具合・できごとの読み取りに対応しています。
 
 ## 認証と運用
 
@@ -241,3 +241,113 @@ staff のユーザー管理・成績台帳・割り当て一覧は `groupId` ク
 11. 設定から外したときとメンバー削除時に、未着手は割り当てが消え、開始済みは進捗が残ることを確認する。
 
 自動テストは架空の情報だけを使い、再送・権限・既存名の保護・手動割り当ての保護・削除・batch のロールバック・100人時のバインド上限を検証します。
+
+## 進み具合を読む (#206)
+
+`GET /api/integrations/v1/groups/{key}/progress` (`progress:read`)。
+グループの現在のメンバー (student) と、`integration_group_stages` に設定したステージだけを返します。
+グループの設定は、実際の割り当ての所有元が手動・別グループでも読み取り対象です。
+`stage=<slug>` で1ステージに絞れます。未設定の slug は空の `stages` になります。
+人は STELLA ID 順、1回200人。`hasMore: true` の間、`next` をそのまま `cursor` に渡してください。
+ページの途中で `stage`・`at` を変える場合は cursor を外して先頭から読み直します。
+
+```json
+{
+  "members": [{
+    "id": "sample-profile", "externalId": "applicant-001",
+    "email": "applicant@example.test", "displayName": "応募者の例",
+    "lastActiveDate": "2026-11-16",
+    "stages": [{
+      "slug": "devlab-ts-prework", "status": "started",
+      "startedAt": "2026-11-01T00:00:00.000Z", "clearedAt": null,
+      "progressUrl": "/task-manual-completion?userId=sample-profile&stageId=sample-stage",
+      "units": [{ "id": "sample-unit", "title": "はじめの単元", "tasks": [{
+        "id": "sample-task", "title": "事前課題",
+        "status": "passed", "pendingReview": false,
+        "passed": true, "passedAt": "2026-11-16T00:00:00.000Z", "source": "tests",
+        "submissionUrl": "/submissions/sample-submission",
+        "problems": { "total": 10, "passed": 10, "sources": ["tests"] }
+      }] }]
+    }]
+  }],
+  "next": null, "hasMore": false
+}
+```
+
+- `id` は STELLA のプロフィール ID。`externalId` はメンバー追加時の外部 ID (未設定は null)。
+- `lastActiveDate` は既存のつまずき検知と同じ日本時間の日付です。視聴・完了、手元の確認、本人の提出、復習、受講開始のうち最後の日を返し、記録がなければ null。手動合格は本人の活動に含めません。視聴の元記録が日単位なので、正確な時刻を作って返すことはしません。
+- ステージの `status` は受講登録なしなら `assigned`、開始済みなら `started`、修了日時ありなら `cleared`。日時は UTC ISO 形式、未到達は null。
+- `units` は課題を持つ単元、`tasks` は有効な通常課題です。予備の類題・無効な課題は含みません。
+- 課題の `status` は現在の `task_progress.status` (記録なしは `not-started`)。`passed` は `passed` / `ai-passed` の確定合格です。手元のテスト合格 (`local-passed`) だけでは確定合格になりません。
+- `pendingReview` は `instructor-pending` (人の確認待ち) かどうか。
+- `source` は合格した提出の `review_source`: `tests` / `ai` / `human` / `manual`。未合格・出所未記録は null。複数の合格がある場合は最後の試行の出所です。
+- 問題つきの課題だけ `problems` が付きます。分母は現在の定義の問題数。合格済みの課題は版が変わっても合格を保ち、未合格なら今の版の問題だけを数えます。削除済みの問題は数えません。`sources` は数えた問題の `task_problem_results.source` (`tests` / `manual`) の重複なしの一覧です。既存の手で済み画面と同じ `readTaskDefinition` / `countedProblemIds` を使います。
+- `progressUrl` は受講者×ステージの成績確認画面、`submissionUrl` は合格した提出の詳細。STELLA の Web の origin に対する相対 URL で、閲覧には管理者のログインが必要です。
+
+### 締切の時点の数 (`at`)
+
+`at=2026-11-16T00:00:00Z` のように、タイムゾーンと秒を含む ISO 日時を指定します。
+オフセットの `+` は URL エンコードしてください。指定時刻と同じ日時の記録も数えます。
+完全な過去の画面や名簿・教材の版を復元する API ではありません。
+
+| 項目 | `at` 指定時 |
+| --- | --- |
+| 人・外部 ID・名前・メール、設定ステージ、単元・課題の題、問題の分母 | 現在の設定・教材を返す |
+| ステージの開始・修了日時と状態 | 保存された日時が `at` 以下のものだけ数える |
+| 課題の `passed`・`passedAt`・出所・提出 URL | 合格日時・レビュー日時が `at` 以下の記録だけ使う |
+| 問題の合格数・出所 | 現在残る問題のうち、その版・出所の合格記録が `at` 以下のものだけ数える |
+| 課題の `status`・`pendingReview`、人の `lastActiveDate` | **項目自体を省略**する |
+
+手動合格の取り消しで消えた元行、導入前に上書きされた版・レビューは復元できません。
+0080導入時に残る記録はその保存日時で索引に移し、以後は版・出所が変わった合格も日時を残します。
+締切の厳密な名簿・教材・確認待ちの状態が必要なアプリは、日ごとに応答を自分で控えてください。
+
+## できごとを読む (#206)
+
+`GET /api/integrations/v1/groups/{key}/events` (`events:read`)。
+応答は `{"events":[...],"next":"不透明な位置","hasMore":false}`。
+初回は `after` を省略し、2回目以降は受信した `next` を `after` にそのまま渡します。
+1回500件まで、起きた日時の昇順、同時刻は安定した ID の順です。
+空のページでは渡された位置を保ちます。初回から空なら `next` は null。
+`hasMore: false` でも後日、新しい出来事を同じ位置から取得できます。
+
+各要素は `id`、`type`、`occurredAt` (UTC ISO)、`person: { id, externalId }`、
+`stage` (slug)、課題があれば `taskId` を持ちます。
+
+| type | 追加項目・意味 |
+| --- | --- |
+| `stage_started` | 受講開始 |
+| `stage_cleared` | 修了 |
+| `task_passed` | `source`: 合格の出所 (未記録は null)、`submissionUrl` |
+| `task_returned` | 出し直し (`verdict=resubmit`)、`submissionUrl` |
+| `problems_passed` | `count`: そのまとまりで合格した問題数、`problemsPassed`: その課題の今の合格数 |
+
+問題は人×課題×合格した時刻でまとめます。同じ提出操作で同時に保存した複数の問題は1件です。
+位置は日時と安定 ID を含むバージョン付きの不透明な文字列で、グループに結び付きます。
+デコード・編集・別グループへの流用をせず、そのまま保存してください。不正な位置は400です。
+同じ位置からの再取得は同じ順序と ID を返すので、受信側は `id` で重複を除けます。
+`problemsPassed` は取得時点の数なので後の合格・取り消しで変わります。
+メンバーの外部 ID とグループへの所属・ステージ設定も取得時点のものです。
+新しい出来事が届けば末尾に増えます。削除された人・ステージの出来事は返しません。
+過去の日時に訂正した記録は保存済みの位置より前に入る場合があるので、訂正後は必要に応じて先頭から再取得してください。
+
+出来事索引は0080で導入します。導入時に残る開始・修了・レビュー・問題の合格を取り込み、
+以後は元行の変更と同じトランザクションのトリガーで追記します。
+元のレビューや問題の合格が上書きされても、既に出した出来事の ID と日時は維持します。
+導入前に削除・上書きされた出来事は復元しません。
+
+## 読み取りで返さないもの
+
+提出コード、ファイルのパスや内容、レビュー本文、AI の所見、チャット、手で済みにした理由、
+学んだ時間 (`study_activity` の量) は返しません。画面への URL だけを渡します。
+自分の所有でないグループは404、scope がなければ403です。
+応答はエラーも含め `Cache-Control: no-store`。サーバーにも応答キャッシュは持ちません。
+#204 のクライアント単位の回数制限・呼び出しごとの監査をそのまま使います。
+
+## 判断したこと (#206、PR 記載用)
+
+- 学んだ時間は返さない。受講者に知らせる方法を決めてから、別の `activity:read` scope で足す。
+- `at` は記録の日時から判定できる項目だけ。確認待ちなどの復元できない項目は省略し、外部アプリ側で日ごとに控える。
+- キャッシュは持たず `no-store` とし、#204 のクライアント単位の制限で読み取り回数を抑える。
+- 上書きされる元行から位置を毎回作り直すと再取得が不安定になるため、本文を持たない出来事索引とトリガーを追加する。
+- 最後の活動の元記録に日別の記録が含まれるため、架空の時刻を付けず、既存の判定と同じ日本時間の `lastActiveDate` を返す。
