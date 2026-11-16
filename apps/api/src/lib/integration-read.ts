@@ -115,16 +115,30 @@ export async function readIntegrationProgress(
     db.all<{
       user_id: string;
       task_id: string;
-      id: string;
+      id: string | null;
       source: IntegrationSource | null;
       reviewed_at: number | null;
+      type: "task_passed" | "task_returned";
     }>(
       at === null
-        ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
-        : sql`select x.student_id user_id,x.task_id,x.id,e.source,e.occurred_at reviewed_at from submissions x join integration_events e on e.submission_id=x.id and e.type='task_passed' join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' and e.occurred_at <= ${at} order by x.attempt desc,e.occurred_at desc,e.rowid desc`,
+        ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at,'task_passed' type from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
+        : sql`select user_id,task_id,id,source,reviewed_at,type from (
+            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,
+              row_number() over (partition by e.user_id,e.task_id order by e.occurred_at desc,e.rowid desc) position
+            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+            where e.type in ('task_passed','task_returned') and e.occurred_at <= ${at}
+          ) where position=1`,
     ),
     db.all<ProblemRow & { user_id: string; task_id: string }>(
-      sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id ${at === null ? sql`` : sql`where exists (select 1 from integration_events e where e.user_id=r.user_id and e.task_id=r.task_id and e.problem_id=r.problem_id and e.content_hash=r.content_hash and e.source=r.source and e.occurred_at <= ${at})`}`,
+      at === null
+        ? sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id`
+        : sql`select user_id,task_id,problemId,contentHash,source,firstPassedAt from (
+            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.rowid sequence,
+              row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.rowid desc) position
+            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+            where e.type='problem_passed' and e.occurred_at <= ${at}
+              and exists (select 1 from task_problem_results r where r.user_id=e.user_id and r.task_id=e.task_id and r.problem_id=e.problem_id)
+          ) where position=1 order by firstPassedAt desc,sequence desc`,
     ),
     db.all<{ id: string }>(
       sql`select p.id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
@@ -169,11 +183,20 @@ export async function readIntegrationProgress(
           const k = key(member.id, task.id),
             tp = progressMap.get(k),
             pass = passMap.get(k);
-          const isPassed =
-            at === null
-              ? passed(tp?.status ?? null)
-              : Boolean(pass) ||
-                (tp?.passed_at !== null && tp?.passed_at !== undefined && tp.passed_at <= at);
+          const isPassed = at === null ? passed(tp?.status ?? null) : pass?.type === "task_passed";
+          // 履歴は版ごとに最新を取得済み。確定合格の保持という既存の数え方を守り、
+          // 数える版の中で各問題のいちばん新しい出所だけを使う。
+          const seenProblems = new Set<string>();
+          const problemRows = (problemMap.get(k) ?? []).filter((row) => {
+            if (at === null) return true;
+            if (
+              (!isPassed && row.contentHash !== task.content_hash) ||
+              seenProblems.has(row.problemId)
+            )
+              return false;
+            seenProblems.add(row.problemId);
+            return true;
+          });
           unit.tasks.push({
             id: task.id,
             title: task.title,
@@ -186,19 +209,16 @@ export async function readIntegrationProgress(
             passed: isPassed,
             passedAt: isPassed
               ? iso(
-                  at === null || (tp?.passed_at ?? Infinity) <= at
+                  at === null
                     ? (tp?.passed_at ?? pass?.reviewed_at ?? null)
                     : (pass?.reviewed_at ?? null),
                 )
               : null,
             source: isPassed ? (pass?.source ?? null) : null,
-            ...(pass ? { submissionUrl: `/submissions/${encodeURIComponent(pass.id)}` } : {}),
-            problems: problemSummary(
-              task.definition,
-              task.content_hash,
-              problemMap.get(k) ?? [],
-              isPassed,
-            ),
+            ...(pass?.id && (at === null || isPassed)
+              ? { submissionUrl: `/submissions/${encodeURIComponent(pass.id)}` }
+              : {}),
+            problems: problemSummary(task.definition, task.content_hash, problemRows, isPassed),
           });
         }
         return {

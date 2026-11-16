@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IntegrationProgress, IntegrationEvent } from "@stella/shared/integrations/types";
 import { Hono } from "hono";
 import { getDb } from "../db/client.js";
@@ -17,6 +17,7 @@ import {
   submissions,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
+import { checkAiPassedSubmission } from "../lib/review-desk.js";
 import { newIntegrationToken } from "../lib/integrations.js";
 import { manualCompletionCounts } from "../lib/task-completion.js";
 import { encodePosition } from "../lib/integration-read.js";
@@ -269,6 +270,177 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
       });
     },
   );
+  it("締切後に AI 合格を人が覆しても、at は締切時点の合格と出所を保つ", async () => {
+    const db = getDb(env);
+    await db.insert(profiles).values({ id: "teacher", displayName: "架空の管理者", role: "admin" });
+    sqlite.sqlite.exec(
+      "update submissions set review_source='ai',task_content_hash='current' where id='pass-inside-stage'",
+    );
+    const deadline = T2 + 1000;
+    const snapshot = (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]
+      ?.stages[0]?.units[0]?.tasks[0];
+    expect(snapshot).toMatchObject({
+      passed: true,
+      passedAt: new Date(T2).toISOString(),
+      source: "ai",
+      submissionUrl: "/submissions/pass-inside-stage",
+    });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(T2 + 2000));
+    try {
+      await checkAiPassedSubmission(
+        db,
+        { id: "teacher", name: "架空の管理者", role: "admin", email: null },
+        "pass-inside-stage",
+        { action: "overturn", comment: "架空の訂正理由" },
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(
+      sqlite.sqlite.prepare("select verdict from submissions where id='pass-inside-stage'").get()
+        ?.verdict,
+    ).toBe("resubmit");
+    expect(
+      sqlite.sqlite
+        .prepare(
+          "select passed_at from task_progress where user_id='inside' and task_id='task-stage'",
+        )
+        .get()?.passed_at,
+    ).toBeNull();
+    expect((await events()).events).toContainEqual(
+      expect.objectContaining({
+        type: "task_returned",
+        taskId: "task-stage",
+        occurredAt: new Date(T2 + 2000).toISOString(),
+      }),
+    );
+    const historical = (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]
+      ?.stages[0]?.units[0]?.tasks[0];
+    expect(historical).toEqual(snapshot);
+    expect((await progress()).members[0]?.stages[0]?.units[0]?.tasks[0]).toMatchObject({
+      passed: false,
+      passedAt: null,
+      source: null,
+    });
+    expect(
+      (await progress(`?at=${new Date(T2 + 2000).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0],
+    ).toMatchObject({ passed: false, passedAt: null, source: null });
+  });
+  it("締切後に問題を manual から tests に解き直しても、at は manual の合格を数える", async () => {
+    sqlite.sqlite.exec(
+      "update task_problem_results set content_hash='current' where user_id='inside' and task_id='task-stage' and problem_id='q1'",
+    );
+    const deadline = T1 + 500;
+    const snapshot = (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]
+      ?.stages[0]?.units[0]?.tasks[0]?.problems;
+    expect(snapshot).toEqual({ total: 2, passed: 1, sources: ["manual"] });
+    sqlite.sqlite
+      .prepare(
+        "update task_problem_results set source='tests',first_passed_at=?,updated_at=? where user_id='inside' and task_id='task-stage' and problem_id='q1'",
+      )
+      .run(T2 + 1000, T2 + 1000);
+    const historical = (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]
+      ?.stages[0]?.units[0]?.tasks[0]?.problems;
+    expect(historical).toEqual(snapshot);
+    expect((await progress()).members[0]?.stages[0]?.units[0]?.tasks[0]?.problems).toMatchObject({
+      passed: 2,
+      sources: expect.arrayContaining(["tests"]),
+    });
+  });
+  it("at は試行番号や現在の passedAt によらず、課題の最新のできごとで合否と日時を決める", async () => {
+    const db = getDb(env);
+    const review = async (
+      id: string,
+      verdict: "pass" | "resubmit",
+      time: number,
+      attempt: number,
+    ) =>
+      db.insert(submissions).values({
+        id,
+        studentId: "inside",
+        taskId: "task-stage",
+        stageTitle: "stage",
+        assignmentTitle: "fixture",
+        code: "PRIVATE",
+        verdict,
+        reviewSource: "human",
+        attempt,
+        reviewedAt: new Date(time),
+      });
+    // 試行番号が大きくても、出来事の日時が古ければ最新の合格にはしない。
+    await review("older-pass", "pass", T1, 10);
+    expect(
+      (await progress(`?at=${new Date(T2).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0],
+    ).toMatchObject({
+      passed: true,
+      source: "manual",
+      passedAt: new Date(T2).toISOString(),
+      submissionUrl: "/submissions/pass-inside-stage",
+    });
+    await review("new-return", "resubmit", T2 + 500, 11);
+    const returned = (await progress(`?at=${new Date(T2 + 500).toISOString()}`)).members[0]
+      ?.stages[0]?.units[0]?.tasks[0];
+    expect(returned).toMatchObject({ passed: false, passedAt: null, source: null });
+    expect(returned).not.toHaveProperty("submissionUrl");
+    await review("new-pass", "pass", T2 + 1000, 12);
+    expect(
+      (await progress(`?at=${new Date(T2 + 1000).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0],
+    ).toMatchObject({
+      passed: true,
+      source: "human",
+      passedAt: new Date(T2 + 1000).toISOString(),
+      submissionUrl: "/submissions/new-pass",
+    });
+    // 同時刻は索引への追記順。繰り返し読んでも最後の出来事で判定する。
+    await review("same-time-return", "resubmit", T2 + 1000, 13);
+    const query = `?at=${new Date(T2 + 1000).toISOString()}`;
+    const snapshot = await progress(query);
+    expect(snapshot.members[0]?.stages[0]?.units[0]?.tasks[0]).toMatchObject({
+      passed: false,
+      passedAt: null,
+      source: null,
+    });
+    expect(await progress(query)).toEqual(snapshot);
+  });
+  it("at は問題の版ごとに締切以前の最新の出所を使い、削除済みの結果は数えない", async () => {
+    sqlite.sqlite.exec(
+      "update task_problem_results set content_hash='current' where user_id='inside' and task_id='task-stage' and problem_id='q1'",
+    );
+    sqlite.sqlite
+      .prepare(
+        "update task_problem_results set source='tests',updated_at=? where user_id='inside' and task_id='task-stage' and problem_id='q1'",
+      )
+      .run(T1 + 100);
+    const cutoff = T1 + 200;
+    expect(
+      (await progress(`?at=${new Date(cutoff).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0]?.problems,
+    ).toEqual({ total: 2, passed: 1, sources: ["tests"] });
+    sqlite.sqlite
+      .prepare(
+        "update task_problem_results set content_hash='next',source='manual',updated_at=? where user_id='inside' and task_id='task-stage' and problem_id='q1'",
+      )
+      .run(T2 + 1000);
+    expect(
+      (await progress(`?at=${new Date(cutoff).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0]?.problems,
+    ).toEqual({ total: 2, passed: 1, sources: ["tests"] });
+    expect(
+      (await progress(`?at=${new Date(T2 + 1000).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0]?.problems,
+    ).toEqual({ total: 2, passed: 2, sources: ["manual"] });
+    sqlite.sqlite.exec(
+      "delete from task_problem_results where user_id='inside' and task_id='task-stage' and problem_id='q1'",
+    );
+    expect(
+      (await progress(`?at=${new Date(cutoff).toISOString()}`)).members[0]?.stages[0]?.units[0]
+        ?.tasks[0]?.problems,
+    ).toEqual({ total: 2, passed: 0, sources: [] });
+  });
   it("同じ行の再保存で出来事を増やさず、失敗したbatchは出来事も戻す", async () => {
     const initial = await events();
     sqlite.sqlite.exec(
