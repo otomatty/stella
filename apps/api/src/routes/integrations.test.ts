@@ -3,7 +3,14 @@ import { Hono } from "hono";
 import type { IntegrationClient, IntegrationScope } from "@stella/shared/integrations/types";
 import type { Env } from "../env.js";
 import { errorResponse } from "../lib/authz.js";
-import { stages, enrollments, stageGrants } from "../db/schema.js";
+import { eq } from "drizzle-orm";
+import {
+  stages,
+  enrollments,
+  stageGrants,
+  stageUnlocks,
+  integrationGroupMembers,
+} from "../db/schema.js";
 import { getDb } from "../db/client.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import {
@@ -20,6 +27,8 @@ import { adminIntegrationsRoute } from "./admin-integrations.js";
 import { adminRoute } from "./admin.js";
 import { certificatesRoute } from "./certificates.js";
 import { stageGrantsRoute } from "./stage-grants.js";
+import { stageStartRoute } from "./stage-start.js";
+import { skillMapRoute } from "./skill-map.js";
 
 const ROOT = "/api/admin/integrations";
 const API = "/api/integrations/v1";
@@ -48,6 +57,8 @@ describe("外部連携の境界 (実 SQLite)", () => {
       adminRoute,
       certificatesRoute,
       stageGrantsRoute,
+      stageStartRoute,
+      skillMapRoute,
     ).app;
     app.route("/", integrationsRoute);
     platformToken = await signAccessToken(SECRET, "platform", "platform@example.test");
@@ -390,6 +401,125 @@ describe("外部連携の境界 (実 SQLite)", () => {
     message: "架空の案内",
     exempt: true,
   };
+  it.each(["先に参加", "後から参加"])("連携で作る日時をミリ秒で保存する (%s)", async (order) => {
+    const a = await setupWrite();
+    const before = Date.now();
+    const addMember = () =>
+      write(a.token, "members", { members: [{ email: "inside@example.test" }] });
+    if (order === "先に参加") expect((await addMember()).status).toBe(200);
+    expect((await write(a.token, "stages", { stages: [setting] })).status).toBe(200);
+    if (order === "後から参加") expect((await addMember()).status).toBe(200);
+    const after = Date.now();
+    const orm = getDb(env);
+    const [member] = await orm.select().from(integrationGroupMembers);
+    const [grant] = await orm.select().from(stageGrants);
+    const [unlock] = await orm.select().from(stageUnlocks);
+    for (const date of [member?.joinedAt, grant?.grantedAt, unlock?.unlockedAt]) {
+      expect(date).toBeInstanceOf(Date);
+      expect.soft(date?.getUTCFullYear()).toBe(new Date(before).getUTCFullYear());
+      expect.soft(date?.getTime()).toBeGreaterThanOrEqual(before);
+      expect.soft(date?.getTime()).toBeLessThanOrEqual(after);
+    }
+  });
+  it("granted の親が要求に無ければ全体を拒否し、既存の設定と割り当てを保つ", async () => {
+    const a = await setupWrite();
+    await getDb(env)
+      .update(stages)
+      .set({ prerequisites: '["sample-extra"]' })
+      .where(eq(stages.id, "extra2"));
+    await write(a.token, "members", { members: [{ email: "inside@example.test" }] });
+    await write(a.token, "stages", { stages: [setting] });
+    const res = await write(a.token, "stages", {
+      stages: [{ slug: "sample-other", exempt: true }],
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "Invalid stages",
+      errors: [{ slug: "sample-extra", code: "parent_not_included" }],
+    });
+    expect(db.sqlite.prepare("select stage_id from integration_group_stages").all()).toEqual([
+      { stage_id: "extra" },
+    ]);
+    expect(db.sqlite.prepare("select stage_id from stage_grants").all()).toEqual([
+      { stage_id: "extra" },
+    ]);
+    expect(db.sqlite.prepare("select stage_id from stage_unlocks").all()).toEqual([
+      { stage_id: "extra" },
+    ]);
+  });
+  it("明示した親から祖先をたどり、catalog を挟んだ granted の祖先も要求する", async () => {
+    const a = await setupWrite();
+    await getDb(env)
+      .update(stages)
+      .set({ parent: "sample-basic", prerequisites: '["sample-other","sample-basic"]' })
+      .where(eq(stages.id, "extra"));
+    await getDb(env)
+      .update(stages)
+      .set({ prerequisites: '["sample-other"]' })
+      .where(eq(stages.id, "basic"));
+    const res = await write(a.token, "stages", { stages: [setting] });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "Invalid stages",
+      errors: [{ slug: "sample-other", code: "parent_not_included" }],
+    });
+  });
+  it("直接の親を指定しても、その先の granted の祖先が無ければ拒否する", async () => {
+    const a = await setupWrite();
+    await getDb(env)
+      .update(stages)
+      .set({ prerequisites: '["other-extra"]' })
+      .where(eq(stages.id, "extra"));
+    await getDb(env)
+      .update(stages)
+      .set({ prerequisites: '["sample-extra"]' })
+      .where(eq(stages.id, "extra2"));
+    const res = await write(a.token, "stages", { stages: [{ slug: "sample-other" }, setting] });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "Invalid stages",
+      errors: [{ slug: "other-extra", code: "parent_not_included" }],
+    });
+    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(0);
+  });
+  it("granted の親子を順序にかかわらず設定でき、両方がツリーに出て免除した子を始められる", async () => {
+    const a = await setupWrite();
+    await getDb(env)
+      .update(stages)
+      .set({ parent: "sample-extra", prerequisites: '["sample-basic","sample-extra"]' })
+      .where(eq(stages.id, "extra2"));
+    await write(a.token, "members", { members: [{ email: "inside@example.test" }] });
+    expect(
+      (
+        await write(a.token, "stages", {
+          stages: [{ slug: "sample-other", exempt: true }, setting],
+        })
+      ).status,
+    ).toBe(200);
+    const map = await request(app, env, "/api/skill-map/mine?tiers=7", { token: studentToken });
+    expect(map.status).toBe(200);
+    expect(await map.json()).toMatchObject({
+      skill_map: {
+        stages: expect.arrayContaining([
+          expect.objectContaining({ id: "extra" }),
+          expect.objectContaining({ id: "extra2" }),
+        ]),
+      },
+    });
+    const start = await request(app, env, "/api/stages/extra2/start", {
+      token: studentToken,
+      method: "POST",
+    });
+    expect(start.status).toBe(200);
+    expect(await start.json()).toMatchObject({
+      created: true,
+      enrollment: { stage_id: "extra2", user_id: "inside" },
+    });
+  });
+  it("catalog の親は一緒に指定しなくても通る", async () => {
+    const a = await setupWrite();
+    expect((await write(a.token, "stages", { stages: [setting] })).status).toBe(200);
+  });
   it("招待・既存・再送・行ごとの失敗。既存の名前と手動割り当てを保護する", async () => {
     const a = await setupWrite();
     await getDb(env)

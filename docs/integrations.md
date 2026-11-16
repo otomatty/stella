@@ -131,6 +131,7 @@ PUT と GET の応答は、下の本文と同じ形 (省略した項目は `null
 ```
 
 - `slug` は `audience: granted` のステージだけ。クライアントの `allowedStagePrefixes` のいずれかで始まる必要があります。空の許可一覧は何も指定できません。
+- 親の鎖に `audience: granted` のステージがある場合は、その祖先もすべて同じ要求の `stages` に指定してください (順序は問いません)。`catalog` の祖先は指定不要です。親を自動では割り当てず、祖先にも接頭辞の制限が適用されます。
 - `due_at` は省略・`null`、タイムゾーン付き ISO 日時 (秒必須)、または日付 `YYYY-MM-DD`。日付だけなら、**日本時間のその日の 23:59:59** とし、保存・応答は UTC の ISO 日時に揃えます (例: `2026-12-04` → `2026-12-04T14:59:59.000Z`)。時刻付きは指定された時刻を保ちます。存在しない日付は拒否します。
 - `message` は省略・`null` または500文字以内。既存の案内と同じ上限です。
 - `exempt` は省略時 `false`。`true` なら既存と同じ `via: staff` の前提免除を作ります。受講登録は作らず、始めるのは本人です。
@@ -144,7 +145,9 @@ PUT と GET の応答は、下の本文と同じ形 (省略した項目は `null
 ```
 
 ステージ別のコードは `invalid_stage` (形式・日時・文字数)、`duplicate_slug`、
-`prefix_not_allowed`、`not_granted` (不存在または granted 以外) です。
+`prefix_not_allowed`、`not_granted` (不存在または granted 以外)、
+`parent_not_included` (granted の祖先が同じ要求に無い) です。
+`parent_not_included` の `slug` は、指定が足りない祖先の slug を返します。
 
 設定をグループ内の受講者に適用し、`stage_grants` の `due_at`・`message`・`source_name`
 (クライアント名) に案内を保存します。ホーム・スキルツリーは既存の読み取り経路で表示します。

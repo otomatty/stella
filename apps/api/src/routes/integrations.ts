@@ -6,6 +6,7 @@ import type {
   IntegrationMemberResult,
   IntegrationStageInput,
 } from "@stella/shared/integrations/types";
+import { parentSlugFromRow } from "../lib/stage-audience.js";
 import { inviteUser } from "../lib/auth-users.js";
 import {
   applyGroupStageStatements,
@@ -175,9 +176,7 @@ integrationsRoute.put(
           : binding.prepare(
               "INSERT INTO integration_group_members(group_id, profile_id, external_id, joined_at) VALUES (?, ?, ?, ?) ON CONFLICT(group_id, profile_id) DO UPDATE SET external_id = excluded.external_id",
             );
-      membershipStatements.push(
-        membership.bind(group.id, id, externalId, Math.floor(Date.now() / 1000)),
-      );
+      membershipStatements.push(membership.bind(group.id, id, externalId, Date.now()));
       results.push({
         index,
         id,
@@ -269,6 +268,7 @@ integrationsRoute.put(
     const errors: { slug: unknown; code: string }[] = [];
     const settings: (Required<IntegrationStageInput> & { stageId: string })[] = [];
     const seen = new Set<string>();
+    const stageRows = new Map<string, typeof stages.$inferSelect>();
     for (const raw of body.stages) {
       let input: Required<IntegrationStageInput>;
       try {
@@ -295,8 +295,31 @@ integrationsRoute.put(
         errors.push({ slug: input.slug, code: "not_granted" });
         continue;
       }
+      stageRows.set(stage.slug, stage);
       settings.push({ ...input, stageId: stage.id });
     }
+    if (errors.length) return c.json({ error: "Invalid stages", errors }, 400);
+    // 親を自動で割り当てると、クライアントに許した接頭辞の外まで広がりうる。
+    // 同じ要求に granted の祖先がすべて含まれることを、書き込み前に確かめる。
+    const included = new Set(settings.map((setting) => setting.slug));
+    const missingParents = new Set<string>();
+    for (const setting of settings) {
+      let row = stageRows.get(setting.slug);
+      const visited = new Set<string>([setting.slug]);
+      while (row) {
+        const parentSlug = parentSlugFromRow(row);
+        if (!parentSlug || visited.has(parentSlug)) break;
+        visited.add(parentSlug);
+        row = stageRows.get(parentSlug);
+        if (!row) {
+          [row] = await db.select().from(stages).where(eq(stages.slug, parentSlug)).limit(1);
+          if (row) stageRows.set(parentSlug, row);
+        }
+        if (row?.audience === "granted" && !included.has(parentSlug))
+          missingParents.add(parentSlug);
+      }
+    }
+    for (const slug of missingParents) errors.push({ slug, code: "parent_not_included" });
     if (errors.length) return c.json({ error: "Invalid stages", errors }, 400);
     const binding = c.env.DB;
     await binding.batch([
