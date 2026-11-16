@@ -21,17 +21,17 @@ CREATE INDEX integration_events_scope_idx ON integration_events(user_id, stage_i
 CREATE INDEX integration_events_problem_idx ON integration_events(user_id, task_id, problem_id, content_hash, source, occurred_at);
 INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_started',id,enrolled_at),'stage_started',enrolled_at,user_id,stage_id FROM enrollments WHERE enrolled_at IS NOT NULL AND EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = enrollments.user_id);
 CREATE TRIGGER integration_stage_started_insert AFTER INSERT ON enrollments WHEN EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = NEW.user_id) AND (NEW.enrolled_at IS NOT NULL) BEGIN
-INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_started',NEW.id,NEW.enrolled_at),'stage_started',NEW.enrolled_at,NEW.user_id,NEW.stage_id;
+INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_started',NEW.id,NEW.enrolled_at,(SELECT coalesce(max(seq),0)+1 FROM integration_events)),'stage_started',NEW.enrolled_at,NEW.user_id,NEW.stage_id;
 END;
 CREATE TRIGGER integration_stage_started_update AFTER UPDATE ON enrollments WHEN EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = NEW.user_id) AND (NEW.enrolled_at IS NOT NULL) AND NEW.enrolled_at IS NOT OLD.enrolled_at BEGIN
-INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_started',NEW.id,NEW.enrolled_at),'stage_started',NEW.enrolled_at,NEW.user_id,NEW.stage_id;
+INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_started',NEW.id,NEW.enrolled_at,(SELECT coalesce(max(seq),0)+1 FROM integration_events)),'stage_started',NEW.enrolled_at,NEW.user_id,NEW.stage_id;
 END;
 INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_cleared',id,completed_at),'stage_cleared',completed_at,user_id,stage_id FROM enrollments WHERE completed_at IS NOT NULL AND EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = enrollments.user_id);
 CREATE TRIGGER integration_stage_cleared_insert AFTER INSERT ON enrollments WHEN EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = NEW.user_id) AND (NEW.completed_at IS NOT NULL) BEGIN
-INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_cleared',NEW.id,NEW.completed_at),'stage_cleared',NEW.completed_at,NEW.user_id,NEW.stage_id;
+INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_cleared',NEW.id,NEW.completed_at,(SELECT coalesce(max(seq),0)+1 FROM integration_events)),'stage_cleared',NEW.completed_at,NEW.user_id,NEW.stage_id;
 END;
 CREATE TRIGGER integration_stage_cleared_update AFTER UPDATE ON enrollments WHEN EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = NEW.user_id) AND (NEW.completed_at IS NOT NULL) AND NEW.completed_at IS NOT OLD.completed_at BEGIN
-INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_cleared',NEW.id,NEW.completed_at),'stage_cleared',NEW.completed_at,NEW.user_id,NEW.stage_id;
+INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id) SELECT json_array('stage_cleared',NEW.id,NEW.completed_at,(SELECT coalesce(max(seq),0)+1 FROM integration_events)),'stage_cleared',NEW.completed_at,NEW.user_id,NEW.stage_id;
 END;
 INSERT OR IGNORE INTO integration_events(id,type,occurred_at,user_id,stage_id,task_id,submission_id,source,submission_attempt) SELECT json_array('task_passed',x.id,x.reviewed_at,x.review_source),'task_passed',x.reviewed_at,x.student_id,u.stage_id,t.id,x.id,x.review_source,x.attempt FROM submissions x JOIN tasks t ON t.id=x.task_id JOIN sections u ON u.id=t.section_id WHERE x.verdict='pass' AND x.reviewed_at IS NOT NULL AND x.student_id IN (SELECT id FROM profiles) AND EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = x.student_id);
 CREATE TRIGGER integration_task_passed_insert AFTER INSERT ON submissions WHEN EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = NEW.student_id) AND (NEW.verdict='pass' AND NEW.reviewed_at IS NOT NULL AND NEW.student_id IN (SELECT id FROM profiles)) BEGIN
@@ -88,4 +88,22 @@ FROM tasks t JOIN sections u ON u.id=t.section_id JOIN stages s ON s.id=u.stage_
 JOIN (SELECT OLD.content_hash content_hash UNION SELECT content_hash FROM integration_events
   WHERE user_id=OLD.user_id AND task_id=OLD.task_id AND problem_id=OLD.problem_id AND type='problem_passed') v
 WHERE t.id=OLD.task_id;
+END;
+
+-- 修了の取り消しと割当の解除も、現在行を書き換える前の履歴を失わず記録する。
+CREATE TRIGGER integration_stage_clear_revoked_update AFTER UPDATE ON enrollments
+WHEN OLD.completed_at IS NOT NULL AND NEW.completed_at IS NULL
+  AND EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = NEW.user_id)
+BEGIN
+INSERT INTO integration_events(id,type,occurred_at,user_id,stage_id)
+VALUES (lower(hex(randomblob(16))),'stage_clear_revoked',(CAST(strftime('%s','now') AS INTEGER) * 1000 + CAST(substr(strftime('%f','now'),4,3) AS INTEGER)),NEW.user_id,NEW.stage_id);
+END;
+-- 割当解除の1件で開始と修了の両方を取り消す。親の削除による CASCADE は記録しない。
+CREATE TRIGGER integration_stage_unassigned_delete AFTER DELETE ON enrollments
+WHEN EXISTS (SELECT 1 FROM integration_group_members m WHERE m.profile_id = OLD.user_id)
+  AND EXISTS (SELECT 1 FROM profiles p WHERE p.id = OLD.user_id)
+  AND EXISTS (SELECT 1 FROM stages s WHERE s.id = OLD.stage_id)
+BEGIN
+INSERT INTO integration_events(id,type,occurred_at,user_id,stage_id)
+VALUES (lower(hex(randomblob(16))),'stage_unassigned',(CAST(strftime('%s','now') AS INTEGER) * 1000 + CAST(substr(strftime('%f','now'),4,3) AS INTEGER)),OLD.user_id,OLD.stage_id);
 END;

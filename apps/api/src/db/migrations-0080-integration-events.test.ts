@@ -188,6 +188,31 @@ it.each([true, false])(
           .prepare("select count(*) n from integration_events where user_id='outside'")
           .get()?.n,
       ).toBe(0);
+      const stageChangesAfter = Date.now();
+      for (const userId of ["fixture-user", "outside"]) {
+        fixture.sqlite
+          .prepare("update enrollments set status='active',completed_at=null where user_id=?")
+          .run(userId);
+        fixture.sqlite.prepare("delete from enrollments where user_id=?").run(userId);
+      }
+      const stageChanges = fixture.sqlite
+        .prepare(
+          "select type,occurred_at from integration_events where type in ('stage_clear_revoked','stage_unassigned') order by seq",
+        )
+        .all();
+      expect(stageChanges.map((row) => row.type)).toEqual(
+        hasGroup ? ["stage_clear_revoked", "stage_unassigned"] : [],
+      );
+      for (const row of stageChanges) {
+        expect(Number.isSafeInteger(row.occurred_at)).toBe(true);
+        expect(Number(row.occurred_at)).toBeGreaterThanOrEqual(stageChangesAfter);
+        expect(Number(row.occurred_at)).toBeLessThanOrEqual(Date.now());
+      }
+      expect(
+        fixture.sqlite
+          .prepare("select count(*) n from integration_events where user_id='outside'")
+          .get()?.n,
+      ).toBe(0);
       const sequences = fixture.sqlite
         .prepare("select seq from integration_events order by seq")
         .all()

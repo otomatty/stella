@@ -296,10 +296,18 @@ staff のユーザー管理・成績台帳・割り当て一覧は `groupId` ク
 | 項目 | `at` 指定時 |
 | --- | --- |
 | 人・外部 ID・名前・メール、設定ステージ、単元・課題の題、問題の分母 | 現在の設定・教材を返す |
-| ステージの開始・修了日時と状態 | 保存された日時が `at` 以下のものだけ数える |
+| ステージの開始・修了日時と状態 | `at` 以下の開始・修了・取り消し・割当解除の履歴から、開始と修了それぞれで `seq` が最後のものを使う |
 | 課題の `passed`・`passedAt`・出所・提出 URL | 提出ごとに `at` 以下の `task_passed` / `task_pass_revoked` の最新1件で判定。合格が1つでも残れば合格 |
 | 問題の合格数・出所 | `at` 以下の `problem_passed` / `problem_pass_revoked` から、問題 ID・版ごとに最新の判定を取得し、合格のものだけ数える |
 | 課題の `status`・`pendingReview`、人の `lastActiveDate` | **項目自体を省略**する |
+
+ステージは現在の `enrollments.enrolled_at` / `completed_at` では判定しません。
+開始は `stage_started` / `stage_unassigned`、修了は `stage_cleared` / `stage_clear_revoked` / `stage_unassigned` のうち、
+それぞれ `occurredAt <= at` で保存番号 `seq` が最後の出来事を使います。
+最後が開始・修了の出来事ならその日時を返し、取り消し・解除、または記録なしなら該当の日時は null です。
+自動修了を締切後に取り消し・再修了しても、締切時点では最初の修了日時が残ります。
+割当解除は開始と修了の両方を取り消します。再開した場合、以前の修了は新しい修了の出来事があるまで引き継ぎません。
+`at` なしでは従来どおり現在の受講行を使います。修了取り消し・割当解除の日時は DB の時刻 (ミリ秒) です。
 
 課題の合否は、提出の現在の `verdict` や `task_progress.passed_at` では絞りません。
 提出ごとの最新が `task_pass_revoked` なら、その提出だけを合格から外します。別の提出の合格が残れば課題は合格です。
@@ -315,7 +323,7 @@ staff のユーザー管理・成績台帳・割り当て一覧は `groupId` ク
 判定変更の取り消しは新しいレビュー日時、削除の取り消しは DB の削除時刻 (ミリ秒) を使います。判定なしに戻してレビュー日時も無くなった場合は DB の時刻を使います。
 導入前に上書き・削除された版・レビューも復元できません。
 0080導入時に残る記録のうち、いずれかの連携グループに所属する人の分だけ、その保存日時で索引に移します。
-以後の索引への記録も所属中だけです。参加前の記録は後から補わないため、`at` で索引を使う項目 (課題の合否・日時・出所・提出 URL、問題の合格数・出所) は参加前の履歴を復元できません。
+以後の索引への記録も所属中だけです。参加前の記録は後から補わないため、`at` で索引を使う項目 (ステージの開始・修了、課題の合否・日時・出所・提出 URL、問題の合格数・出所) は参加前の履歴を復元できません。
 締切の厳密な名簿・教材・確認待ちの状態が必要なアプリは、日ごとに応答を自分で控えてください。
 
 ## できごとを読む (#206)
@@ -334,11 +342,15 @@ staff のユーザー管理・成績台帳・割り当て一覧は `groupId` ク
 | --- | --- |
 | `stage_started` | 受講開始 |
 | `stage_cleared` | 修了 |
+| `stage_clear_revoked` | 修了の取り消し。開始は残る |
+| `stage_unassigned` | 受講の行の削除 (割当解除)。開始・修了の両方を取り消す |
 | `task_passed` | `source`: 合格の出所 (未記録は null)、`submissionUrl` |
 | `task_returned` | 合格していない提出への出し直し (`verdict=resubmit`)、`submissionUrl` |
 | `task_pass_revoked` | その提出の合格の取り消し。`reason`: `resubmit` / `fail` / `removed`、`submissionUrl` |
 | `problems_passed` | `count`: そのまとまりで合格した問題数、`problemsPassed`: その課題の今の合格数 |
 | `problems_revoked` | `count`: そのまとまりで合格を取り消した問題数 (同じ問題の複数の版は1問)、`problemsPassed`: その課題の今の合格数 |
+
+修了済みの受講の行を削除したときも、`stage_unassigned` の1件だけを返し、`stage_clear_revoked` を重ねて返しません。
 
 `pass → resubmit` の訂正は `task_pass_revoked` (`reason: resubmit`) の1件にまとめ、同じ操作の `task_returned` は返しません。
 `pass → fail` は `reason: fail`、判定なしへの変更・合格した提出の削除は `reason: removed` です。

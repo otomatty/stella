@@ -3,6 +3,7 @@ import type { IntegrationProgress, IntegrationEvent } from "@stella/shared/integ
 import { Hono } from "hono";
 import { getDb } from "../db/client.js";
 import {
+  certificates,
   integrationClients,
   integrationGroups,
   integrationGroupMembers,
@@ -17,6 +18,7 @@ import {
   submissions,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
+import { reclaimAutoCertificatesIfUnmet } from "../lib/stage-auto-complete.js";
 import { checkAiPassedSubmission } from "../lib/review-desk.js";
 import { newIntegrationToken } from "../lib/integrations.js";
 import { manualCompletionCounts } from "../lib/task-completion.js";
@@ -232,6 +234,178 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     expect(same.members[0]?.stages[0]?.units[0]?.tasks[0]?.problems?.passed).toBe(1);
     expect((await read("progress?at=2026-02-30T00:00:00Z")).status).toBe(400);
     expect((await read("progress?at=2026-11-01")).status).toBe(400);
+  });
+  it("段の自動修了を取り消して再修了しても、締切時点の修了日時を保つ", async () => {
+    const db = getDb(env);
+    await db.insert(profiles).values({ id: "teacher", displayName: "架空の管理者", role: "admin" });
+    await db.insert(certificates).values({
+      userId: "inside",
+      stageId: "stage",
+      certCode: "fixture-auto-certificate",
+      recipientName: "fixture",
+      stageTitle: "fixture",
+      issuerName: "fixture",
+      issuedBy: null,
+    });
+    const deadline = T2 + 1000;
+    const before = (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]
+      ?.stages[0];
+    expect(before).toMatchObject({
+      status: "cleared",
+      startedAt: new Date(T0).toISOString(),
+      clearedAt: new Date(T2).toISOString(),
+    });
+    const position = (await events()).next;
+    // レッスンが無い段は未達。実際の自動修了の取り消し処理を通す。
+    await reclaimAutoCertificatesIfUnmet(db, {
+      actor: { id: "teacher", name: "架空の管理者", role: "admin" },
+      userId: "inside",
+      stageIds: ["stage"],
+    });
+    expect(
+      sqlite.sqlite
+        .prepare("select completed_at from enrollments where user_id='inside' and stage_id='stage'")
+        .get()?.completed_at,
+    ).toBeNull();
+    expect(
+      (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]?.stages[0],
+    ).toEqual(before);
+    const revokedAt = Number(
+      sqlite.sqlite
+        .prepare(
+          "select occurred_at from integration_events where user_id='inside' and stage_id='stage' and type='stage_clear_revoked'",
+        )
+        .get()?.occurred_at,
+    );
+    expect(Number.isSafeInteger(revokedAt)).toBe(true);
+    expect(
+      (await progress(`?at=${new Date(revokedAt).toISOString()}`)).members[0]?.stages[0],
+    ).toMatchObject({ status: "started", startedAt: new Date(T0).toISOString(), clearedAt: null });
+    expect((await progress()).members[0]?.stages[0]).toMatchObject({
+      status: "started",
+      clearedAt: null,
+    });
+    const completedAgainAt = revokedAt + 1000;
+    sqlite.sqlite
+      .prepare(
+        "update enrollments set status='completed',completed_at=? where user_id='inside' and stage_id='stage'",
+      )
+      .run(completedAgainAt);
+    expect(
+      (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]?.stages[0],
+    ).toEqual(before);
+    expect(
+      (await progress(`?at=${new Date(revokedAt).toISOString()}`)).members[0]?.stages[0],
+    ).toMatchObject({ status: "started", clearedAt: null });
+    expect(
+      (await progress(`?at=${new Date(completedAgainAt).toISOString()}`)).members[0]?.stages[0],
+    ).toMatchObject({
+      status: "cleared",
+      startedAt: new Date(T0).toISOString(),
+      clearedAt: new Date(completedAgainAt).toISOString(),
+    });
+    expect((await progress()).members[0]?.stages[0]?.clearedAt).toBe(
+      new Date(completedAgainAt).toISOString(),
+    );
+    const feed = await events(`?after=${position}`);
+    expect(feed.events.map((e) => e.type)).toEqual(["stage_clear_revoked", "stage_cleared"]);
+    expect(await events(`?after=${position}`)).toEqual(feed);
+  });
+  it.each([T1, T2 + 1000])(
+    "受講の行を削除しても、解除前の at=%s の開始・修了は履歴に残る",
+    async (deadline) => {
+      const before = (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]
+        ?.stages[0];
+      const position = (await events()).next;
+      sqlite.sqlite.exec("delete from enrollments where user_id='inside' and stage_id='stage'");
+      expect(
+        (await progress(`?at=${new Date(deadline).toISOString()}`)).members[0]?.stages[0],
+      ).toEqual(before);
+      const deletedAt = Number(
+        sqlite.sqlite
+          .prepare(
+            "select occurred_at from integration_events where user_id='inside' and stage_id='stage' and type='stage_unassigned'",
+          )
+          .get()?.occurred_at,
+      );
+      expect(Number.isSafeInteger(deletedAt)).toBe(true);
+      expect(
+        (await progress(`?at=${new Date(deletedAt).toISOString()}`)).members[0]?.stages[0],
+      ).toMatchObject({ status: "assigned", startedAt: null, clearedAt: null });
+      expect((await progress()).members[0]?.stages[0]).toMatchObject({
+        status: "assigned",
+        startedAt: null,
+        clearedAt: null,
+      });
+      const feed = await events(`?after=${position}`);
+      expect(feed.events).toHaveLength(1);
+      expect(feed.events[0]).toMatchObject({
+        type: "stage_unassigned",
+        occurredAt: new Date(deletedAt).toISOString(),
+        stage: "stage",
+        person: { id: "inside", externalId: "external-1" },
+      });
+      expect(await events(`?after=${position}`)).toEqual(feed);
+    },
+  );
+  it("同時刻の解除・再開始・再修了も seq 順に判定し、以前の修了を復活させない", async () => {
+    sqlite.sqlite.exec("delete from enrollments where user_id='inside' and stage_id='stage'");
+    const deletedAt = Number(
+      sqlite.sqlite
+        .prepare(
+          "select occurred_at from integration_events where user_id='inside' and stage_id='stage' and type='stage_unassigned'",
+        )
+        .get()?.occurred_at,
+    );
+    const db = getDb(env);
+    await db.insert(enrollments).values({
+      userId: "inside",
+      stageId: "stage",
+      enrolledAt: new Date(deletedAt),
+      status: "active",
+    });
+    const query = `?at=${new Date(deletedAt).toISOString()}`;
+    expect((await progress(query)).members[0]?.stages[0]).toMatchObject({
+      status: "started",
+      startedAt: new Date(deletedAt).toISOString(),
+      clearedAt: null,
+    });
+    sqlite.sqlite
+      .prepare(
+        "update enrollments set status='completed',completed_at=? where user_id='inside' and stage_id='stage'",
+      )
+      .run(deletedAt);
+    expect((await progress(query)).members[0]?.stages[0]).toMatchObject({
+      status: "cleared",
+      clearedAt: new Date(deletedAt).toISOString(),
+    });
+    sqlite.sqlite.exec(
+      "update enrollments set status='active',completed_at=null where user_id='inside' and stage_id='stage'",
+    );
+    const revokedAt = Number(
+      sqlite.sqlite
+        .prepare(
+          "select occurred_at from integration_events where user_id='inside' and stage_id='stage' and type='stage_clear_revoked' order by seq desc limit 1",
+        )
+        .get()?.occurred_at,
+    );
+    const after = `?at=${new Date(revokedAt).toISOString()}`;
+    expect((await progress(after)).members[0]?.stages[0]).toMatchObject({
+      status: "started",
+      clearedAt: null,
+    });
+    // 同じ修了日時で再確定しても、前の取り消しより後の1件として記録する。
+    sqlite.sqlite
+      .prepare(
+        "update enrollments set status='completed',completed_at=? where user_id='inside' and stage_id='stage'",
+      )
+      .run(deletedAt);
+    const snapshot = await progress(after);
+    expect(snapshot.members[0]?.stages[0]).toMatchObject({
+      status: "cleared",
+      clearedAt: new Date(deletedAt).toISOString(),
+    });
+    expect(await progress(after)).toEqual(snapshot);
   });
   it.each(["tests", "ai", "human", "manual"] as const)(
     "合格の出所 %s を保ち、今の版の問題だけを数える",

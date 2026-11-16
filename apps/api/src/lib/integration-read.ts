@@ -95,8 +95,28 @@ export async function readIntegrationProgress(
   );
   const stageRows = await db.all<{ id: string; slug: string }>(sql`${scope} order by s.slug,s.id`);
   const [enrolled, taskRows, progress, passes, problems, more] = await Promise.all([
-    db.all<{ user_id: string; stage_id: string; enrolled_at: number; completed_at: number | null }>(
-      sql`select e.user_id,e.stage_id,e.enrolled_at,e.completed_at from enrollments e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id`,
+    db.all<{
+      user_id: string;
+      stage_id: string;
+      enrolled_at: number | null;
+      completed_at: number | null;
+    }>(
+      at === null
+        ? sql`select e.user_id,e.stage_id,e.enrolled_at,e.completed_at from enrollments e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id`
+        : sql`with history as (
+            select e.user_id,e.stage_id,e.type,e.occurred_at,e.seq
+            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+            where e.type in ('stage_started','stage_cleared','stage_clear_revoked','stage_unassigned') and e.occurred_at <= ${at}
+          ), fields as (
+            select *,'started' field from history where type in ('stage_started','stage_unassigned')
+            union all
+            select *,'cleared' field from history where type in ('stage_cleared','stage_clear_revoked','stage_unassigned')
+          ), latest as (
+            select *,row_number() over (partition by user_id,stage_id,field order by seq desc) position from fields
+          ) select user_id,stage_id,
+              max(case when field='started' and type='stage_started' then occurred_at end) enrolled_at,
+              max(case when field='cleared' and type='stage_cleared' then occurred_at end) completed_at
+            from latest where position=1 group by user_id,stage_id`,
     ),
     db.all<{
       id: string;
@@ -177,13 +197,8 @@ export async function readIntegrationProgress(
       ...(at === null ? { lastActiveDate: member.last_active || null } : {}),
       stages: stageRows.map((stage) => {
         const e = enrolled.find((r) => r.user_id === member.id && r.stage_id === stage.id);
-        const started = e && (at === null || e.enrolled_at <= at) ? e.enrolled_at : null;
-        const cleared =
-          e?.completed_at !== null &&
-          e?.completed_at !== undefined &&
-          (at === null || e.completed_at <= at)
-            ? e.completed_at
-            : null;
+        const started = e?.enrolled_at ?? null;
+        const cleared = e?.completed_at ?? null;
         const units: IntegrationProgress["members"][number]["stages"][number]["units"] = [];
         for (const task of taskRows.filter((r) => r.stage_id === stage.id)) {
           let unit = units.find((u) => u.id === task.unit_id);

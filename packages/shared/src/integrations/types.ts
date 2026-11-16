@@ -105,6 +105,8 @@ export interface IntegrationEvent {
   type:
     | "stage_started"
     | "stage_cleared"
+    | "stage_clear_revoked"
+    | "stage_unassigned"
     | "task_passed"
     | "task_returned"
     | "task_pass_revoked"
