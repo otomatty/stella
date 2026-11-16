@@ -11,6 +11,9 @@ export default defineClip({
       await t.expect("[data-testid=lesson-slides]");
       await t.wait(1200);
     });
+    while (!(await t.page.locator("[data-testid=lesson-slides][data-page='1']").count()))
+      await t.click(t.page.getByRole("button", { name: "前へ", exact: true }));
+    await t.expect("[data-testid=lesson-slides][data-page='1']");
     await t.mark("next-slide", async () => {
       await t.click("[data-testid=lesson-next-slide]");
       await t.expect("[data-testid=lesson-slides][data-page='2']");

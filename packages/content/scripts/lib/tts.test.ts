@@ -416,7 +416,7 @@ describe("synthesizeCached", () => {
     }
   });
 
-  it("同じ読み上げ文を同時に頼まれても 1 回しか合成しない (作り直しも 1 回まで)", async () => {
+  it("同時の合成・作り直しは1回にまとめ、完了後の作り直しは再合成する", async () => {
     const dir = mkdtempSync(join(tmpdir(), "tts-cache-"));
     try {
       let release: () => void = () => undefined;
@@ -446,8 +446,9 @@ describe("synthesizeCached", () => {
         synthesizeCached(p, "同時", dir, true),
         synthesizeCached(p, "同時", dir, true),
       ]);
-      await synthesizeCached(p, "同時", dir, true);
       expect(synthesize).toHaveBeenCalledTimes(2);
+      await synthesizeCached(p, "同時", dir, true);
+      expect(synthesize).toHaveBeenCalledTimes(3);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

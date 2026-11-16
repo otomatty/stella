@@ -131,7 +131,7 @@ export function layoutBoard(board: Board): BoardLayout {
     board.nodes.map((n) => {
       const w = Math.min(n.art ? 600 : 360, cw - (n.art ? 36 : 80));
       let h = Math.min(n.art ? (board.rows === 1 ? 470 : 300) : 210, ch - 100);
-      const centerY = 210 + (n.at[1] - 0.5) * ch + 24;
+      let centerY = 210 + (n.at[1] - 0.5) * ch + 24;
       const underRow = (board.links ?? []).some((l) => {
         const from = board.nodes.find((node) => node.id === l.from);
         const to = board.nodes.find((node) => node.id === l.to);
@@ -145,6 +145,8 @@ export function layoutBoard(board: Board): BoardLayout {
             .map((z) => 210 + (z.cells[1] - 1 + z.cells[3]) * ch - 12),
         );
         // 通路まで56px、札(半高28px)・travel(半径27px)を含む下側の余白を32px確保する。
+        const rowTop = 210 + (n.at[1] - 1) * ch + 66;
+        if (rowBottom - centerY - 56 - 32 <= 0) centerY = (rowTop + rowBottom - 56 - 32) / 2;
         h = Math.min(h, 2 * (rowBottom - centerY - 56 - 32));
         if (h <= 0) throw new Error("下を回る矢印の余地がありません");
       }
