@@ -47,6 +47,12 @@ function showHandoffHint(): void {
     description: createElement(VscodeHandoffHint),
     duration: 15_000,
     cancel: { label: "閉じる", onClick: () => undefined },
+    // sonner の CSS はレイヤーの外にあるため、上書きには important が要る。
+    classNames: {
+      toast: "flex-wrap",
+      content: "basis-full!",
+      cancelButton: "ml-auto!",
+    },
   });
   try {
     localStorage.setItem(HANDOFF_HINT_KEY, String(next));

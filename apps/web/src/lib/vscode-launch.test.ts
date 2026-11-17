@@ -70,6 +70,11 @@ describe("VS Code への引き継ぎ", () => {
         description: createElement(VscodeHandoffHint),
         duration: 15_000,
         cancel: { label: "閉じる", onClick: expect.any(Function) },
+        classNames: {
+          toast: "flex-wrap",
+          content: "basis-full!",
+          cancelButton: "ml-auto!",
+        },
       }),
     );
     expect(storage.setItem).toHaveBeenCalledWith(key, "1");
