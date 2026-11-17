@@ -8,7 +8,7 @@
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["devlab-ts-ch00"],
-  "plannedHours": 14.75,
+  "plannedHours": 15.25,
   "environment": "ts-test-01",
   "canDo": "値・型・変数を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
@@ -16,6 +16,7 @@
     "u01-let-const": "q01 letとconst",
     "u02-type-annotation": "q02 型注釈",
     "u03-type-inference": "q03 型推論",
+    "u04-number": "q04 number型",
     "u05-string": "q05 string型",
     "u99-problems": "01章の問題"
   }
