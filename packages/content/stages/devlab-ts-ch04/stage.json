@@ -1,0 +1,18 @@
+{
+  "format": 2,
+  "title": "開発ラボG 第1部 04章 文と例外",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "文と例外の書き方を手元で確かめます。問題を 1 問ずつ確認して提出します。",
+  "header": "開発ラボG 事前課題 第1部",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["devlab-ts-ch03"],
+  "plannedHours": 11.5,
+  "environment": "ts-test-01",
+  "canDo": "文と例外を使い、テストと型の確認が通るコードを書けます。",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "u99-problems": "04章の問題"
+  }
+}

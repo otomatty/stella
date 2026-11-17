@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-extra/u06-classes@1",
+  "contentHash": "9df9d8d6141d3d8d1cc62ae3d957fc2c762c2e3c27ac66ab26a7fe485f4e178e",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-object-oriented-class-abstract-class",
+        "SRC-typescriptbook-object-oriented-class-static-fields",
+        "SRC-typescriptbook-object-oriented-class-static-methods",
+        "SRC-typescriptbook-object-oriented-class-return-this-type"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

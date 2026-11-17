@@ -1,0 +1,58 @@
+{
+  "id": "devlab-ts-extra/u04-statements/extra",
+  "title": "04章 文と例外の発展問題",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "e01-labeled-break",
+      "title": "ラベル付き break（発展問題）"
+    },
+    {
+      "id": "e02-finally",
+      "title": "finally（発展問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-exception"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch09/u99-problems@1",
+  "contentHash": "ef0114d18d16684d054e33c3037c7784fc70eefe3e82c5bf41611d50a2830a96",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/chapter/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-builtin-api-map",
+        "SRC-typescriptbook-builtin-api-set",
+        "SRC-typescriptbook-builtin-api-date",
+        "SRC-typescriptbook-builtin-api-error",
+        "SRC-typescriptbook-statements-exception",
+        "SRC-typescriptbook-import-export-require"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の組み込みの API とモジュールの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

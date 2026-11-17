@@ -1,0 +1,18 @@
+{
+  "format": 2,
+  "title": "開発ラボG 第1部 09章 組み込みの API とモジュール",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "組み込みの API とモジュールの書き方を手元で確かめます。問題を 1 問ずつ確認して提出します。",
+  "header": "開発ラボG 事前課題 第1部",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["devlab-ts-ch08"],
+  "plannedHours": 8,
+  "environment": "ts-test-01",
+  "canDo": "組み込みの API とモジュールを使い、テストと型の確認が通るコードを書けます。",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "u99-problems": "09章の問題"
+  }
+}

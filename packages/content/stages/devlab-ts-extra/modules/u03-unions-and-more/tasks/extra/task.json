@@ -1,0 +1,58 @@
+{
+  "id": "devlab-ts-extra/u03-unions-and-more/extra",
+  "title": "03章 ユニオン型とそのほかの型の発展問題",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "e01-satisfies",
+      "title": "satisfies 演算子（発展問題）"
+    },
+    {
+      "id": "e02-enum-to-union",
+      "title": "enum をユニオン型に置き換える（発展問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-satisfies",
+    "SRC-typescriptbook-values-types-variables-enum"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

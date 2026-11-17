@@ -943,7 +943,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "claude-code-team",
       "claude-cowork-basics",
     ];
-    expect(stages).toHaveLength(32);
+    expect(stages).toHaveLength(42);
     for (const slug of placeholders) {
       const stage = stages.find((c) => c.id === slug);
       expect(stage, slug).toBeDefined();
@@ -1188,7 +1188,17 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "fe-kamoku-a",
       "fe-kamoku-b",
       "claude-developer-foundations",
-      "devlab-ts-prework",
+      "devlab-ts-ch00",
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08",
+      "devlab-ts-ch09",
+      "devlab-ts-extra",
       "csharp-foundations",
       "python-basics",
       "python-testing-ci-basics",

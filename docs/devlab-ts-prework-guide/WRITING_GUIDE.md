@@ -1,6 +1,6 @@
 # 書き方ガイドの断片を書く担当への指示書
 
-TypeScript の選考の事前課題（STELLA の `devlab-ts-prework` ステージ）に、応募者が読む「書き方ガイド」を章ごとの HTML ページで作っている。あなたは、ある章のある番号（q01 など、約 21 問）を担当し、HTML の断片ファイルを 1 つ書いて終わる。ページへの組み込みとハイライトの焼き込みは `npm run build` で行う。公開は claude.ai の Artifact で手作業で行う。
+TypeScript の選考の事前課題（STELLA の `devlab-ts-ch00`〜`devlab-ts-ch09` と `devlab-ts-extra` ステージ）に、応募者が読む「書き方ガイド」を章ごとの HTML ページで作っている。あなたは、ある章のある番号（q01 など、約 21 問）を担当し、HTML の断片ファイルを 1 つ書いて終わる。ページへの組み込みとハイライトの焼き込みは `npm run build` で行う。公開は claude.ai の Artifact で手作業で行う。
 
 ## 触ってよいもの
 
@@ -10,7 +10,7 @@ TypeScript の選考の事前課題（STELLA の `devlab-ts-prework` ステー�
 ## 置き場所
 
 - 断片：`docs/devlab-ts-prework-guide/src/fragments/`。以下のパスはリポジトリのルートからの相対パス。
-- 課題：`packages/content/stages/devlab-ts-prework/modules/<モジュール>/tasks/s01-chapter/`（発展問題は `s02-extra/`）
+- 課題：`packages/content/stages/devlab-ts-ch<章2桁>/modules/u99-problems/tasks/chapter/`（発展問題は `packages/content/stages/devlab-ts-extra/modules/u<章2桁>-<名前>/tasks/extra/`）
   - `README.md`：番号ごとのルールと、教材（サバイバルTypeScript）のリンク
   - `starter/src/<id>.ts`：問題文とスターター（応募者が見るもの）
   - `tests/<id>.test.ts`：テストの値
@@ -82,11 +82,11 @@ TypeScript の選考の事前課題（STELLA の `devlab-ts-prework` ステー�
 
 ## 確かめること（終える前に必ず）
 
-1. **確認フォルダーを作る。** 次のコマンドで、自分専用のフォルダーを用意する。`modules/<モジュール>/tasks/s01-chapter/starter/` の設定をコピーし、`npm ci` してから使う。ほかの担当の probe には触らない。
+1. **確認フォルダーを作る。** 次のコマンドで、自分専用のフォルダーを用意する。`modules/u99-problems/tasks/chapter/starter/` の設定をコピーし、`npm ci` してから使う。ほかの担当の probe には触らない。
 
    ```bash
    # リポジトリのルートで実行する。モジュール名は担当に合わせる。
-   GUIDE_STARTER="$PWD/packages/content/stages/devlab-ts-prework/modules/m02-objects-arrays-tuples/tasks/s01-chapter/starter"
+   GUIDE_STARTER="$PWD/packages/content/stages/devlab-ts-ch02/modules/u99-problems/tasks/chapter/starter"
    GUIDE_PROBE=$(mktemp -d -t probe-02-q03-XXXXXXXX)
    mkdir -p "$GUIDE_PROBE/src"
    cp "$GUIDE_STARTER"/{package.json,package-lock.json,tsconfig.json,eslint.config.js,.prettierrc.json,.prettierignore} "$GUIDE_PROBE/"

@@ -792,7 +792,7 @@ describe("layoutRadialSkillTree", () => {
         ["terraform-basics", "DevOps", "devops-basics"],
         ["kubernetes-basics", "DevOps", "networking-ops-basics"],
         ["salesforce-dev-basics", "Salesforce案件", "sql-basics"],
-        ["devlab-ts-prework", "開発ラボG", "dev-env-basics"],
+        ["devlab-ts-ch00", "開発ラボG", "dev-env-basics"],
       ];
       return rows.map(([id, category, parentId]) =>
         node({

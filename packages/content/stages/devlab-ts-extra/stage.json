@@ -1,0 +1,26 @@
+{
+  "format": 2,
+  "title": "開発ラボG 第1部 発展問題（任意）",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "各章の発展問題に任意で取り組みます。TypeScript の書き方を手元で確かめ、1 問ずつ提出します。",
+  "header": "開発ラボG 事前課題 第1部",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["devlab-ts-ch00"],
+  "plannedHours": 9.0,
+  "environment": "ts-test-01",
+  "canDo": "各章で学んだ型や処理を組み合わせたコードを書けます。",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "u01-values-types-variables": "01章 値・型・変数",
+    "u02-objects-arrays-tuples": "02章 オブジェクト・配列・タプル",
+    "u03-unions-and-more": "03章 ユニオン型とそのほかの型",
+    "u04-statements": "04章 文と例外",
+    "u05-functions": "05章 関数",
+    "u06-classes": "06章 クラス",
+    "u07-type-reuse-generics": "07章 型の再利用とジェネリクス",
+    "u08-async": "08章 非同期処理",
+    "u09-builtins-modules": "09章 組み込みの API とモジュール"
+  }
+}

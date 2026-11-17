@@ -6,10 +6,17 @@ import re
 import textwrap
 
 ROOT = Path(__file__).resolve().parents[1]
-STAGE = Path(__file__).resolve().parents[3] / "packages/content/stages/devlab-ts-prework"
+STAGES = Path(__file__).resolve().parents[3] / "packages/content/stages"
+
+
+def chapter_readmes(ch):
+    stage = STAGES / f"devlab-ts-ch{ch}"
+    readmes = [stage / "modules/u99-problems/tasks/chapter/README.md"]
+    extra = STAGES / "devlab-ts-extra"
+    readmes += sorted(extra.glob(f"modules/u{ch}-*/tasks/extra/README.md"))
+    return readmes
 
 def assemble_first(CH):
-    MOD = STAGE / "modules/m01-values-types-variables/tasks"
     s = (ROOT / "src/template.html").read_text(encoding="utf-8")
 
 
@@ -83,7 +90,7 @@ def assemble_first(CH):
 
     # ---- 出典（教材のリンク） ----
     links = []
-    for readme in [MOD / "s01-chapter/README.md", MOD / "s02-extra/README.md"]:
+    for readme in chapter_readmes(CH):
         for label, url in re.findall(r"- \[サバイバルTypeScript: ([^\]]+)\]\((https://typescriptbook\.jp/[^)]+)\)", readme.read_text(encoding="utf-8")):
             if url in [u for _, u in links]:
                 continue
@@ -99,9 +106,8 @@ def assemble_first(CH):
 
 def assemble_chapter(CH):
     CH1_URL = URLS["01"]
-    stage = json.loads((STAGE / "stage.json").read_text(encoding="utf-8"))
-    mod = next(m for m in stage["modules"] if m.startswith(f"m{CH}-"))
-    chapter_name = stage["modules"][mod]  # 例: "02章 オブジェクト・配列・タプル"
+    stage = json.loads((STAGES / f"devlab-ts-ch{CH}/stage.json").read_text(encoding="utf-8"))
+    chapter_name = stage["title"].removeprefix("開発ラボG 第1部 ")
 
     s = (ROOT / "src/template.html").read_text(encoding="utf-8")
 
@@ -175,7 +181,7 @@ def assemble_chapter(CH):
 
     # ---- 出典 ----
     links = []
-    for readme in [STAGE / f"modules/{mod}/tasks/s01-chapter/README.md", STAGE / f"modules/{mod}/tasks/s02-extra/README.md"]:
+    for readme in chapter_readmes(CH):
         if not readme.exists():
             continue
         for label, url in re.findall(r"- \[サバイバルTypeScript: ([^\]]+)\]\((https://typescriptbook\.jp/[^)]+)\)", readme.read_text(encoding="utf-8")):
