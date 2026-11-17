@@ -1,0 +1,723 @@
+<section class="sec" id="c01-q06">
+  <div class="sec-h"><span class="eyebrow">01章 値・型・変数</span><h2>q06 boolean型</h2><p>この番号の関数は、どれも <code>true</code> か <code>false</code> を返します。比べた結果はそれだけで <code>true</code> か <code>false</code> になるので、<code>if</code> を使わずに <code>return 比べる式;</code> の 1 行で書けるものが多くあります。条件にも、<code>true</code> か <code>false</code> になる式を書きます。問題のファイルには関数の名前だけが書いてあるので、引数と戻り値の型注釈は自分で付けます。</p></div>
+
+  <section class="q" id="c01-q06-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">0 より大きければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPositive() {}</code></pre>
+      <p>受け取った数が 0 より大きければ <code>true</code>、そうでなければ <code>false</code> を返します。0 は <code>false</code> です。</p>
+      <p>引数は <code>number</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <p>問題のファイルには、関数の名前だけが書いてあります。この番号の問題は、どれも同じです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPositive(3)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPositive(0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">0 は 0 より大きくない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">この番号で大事な書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">return 比べる式;</code><h4>比べた結果を、そのまま返す</h4></div>
+      <p>比べた結果は、それだけで <code>true</code> か <code>false</code> になります。だから <code>if</code> を使わずに、比べる式をそのまま <code>return</code> できます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">function isFreeShipping(subtotal: number): boolean {
+  // subtotal が 5000 以上かどうか（true か false）を返す
+  return subtotal &gt;= 5000;
+}
+// 結果: isFreeShipping(6000) は true、isFreeShipping(3000) は false</code></pre>
+      </div>
+      <p><code>if</code> で書いても同じ結果になります。1 行で書くほうが短く、読みやすくなります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>if</code> で書く</h5>
+          <pre><code class="language-typescript">function isFreeShipping(subtotal: number): boolean {
+  // もし subtotal が 5000 以上なら
+  if (subtotal &gt;= 5000) {
+    // true を返す
+    return true;
+  }
+  // false を返す
+  return false;
+}</code></pre>
+        </div>
+        <div>
+          <h5>1 行で書く</h5>
+          <pre><code class="language-typescript">function isFreeShipping(subtotal: number): boolean {
+  // subtotal が 5000 以上かどうか（true か false）を返す
+  return subtotal &gt;= 5000;
+}</code></pre>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b><code>if</code> の中で <code>return</code> すると、関数はそこで終わります。だから <code>if</code> の後ろの <code>return false;</code> は、条件に合わなかったときだけ実行されます。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">&amp;&amp;</code><code class="tok">||</code><code class="tok">!</code><h4>条件を組み合わせる</h4></div>
+      <p>「かつ」は <code>&amp;&amp;</code>、「または」は <code>||</code>、「でない」は <code>!</code> です。どれも q01〜q04 で出てきました。この番号では、これらを組み合わせて 1 行で返します。</p>
+      <dl class="eg">
+          <div><dt><code>true &amp;&amp; true</code></dt><dd class="r"><code>true</code></dd><dd class="c">両方が true のときだけ true</dd></div>
+          <div><dt><code>true &amp;&amp; false</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>false || true</code></dt><dd class="r"><code>true</code></dd><dd class="c">どちらかが true なら true</dd></div>
+          <div><dt><code>false || false</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>!true</code></dt><dd class="r"><code>false</code></dd><dd class="c">true と false を入れ替える</dd></div>
+        </dl>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">function canReserve(seats: number, isClosed: boolean): boolean {
+  // seats が 0 より大きい、かつ isClosed でないかどうか（true か false）を返す
+  return seats &gt; 0 &amp;&amp; !isClosed;
+}
+// 結果: canReserve(3, false) は true、canReserve(3, true) は false</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>isClosed === false</code> と書く必要はありません。「isClosed でない」は <code>!isClosed</code> です。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">: boolean</code><h4>条件と戻り値には、true か false になる式を書く</h4></div>
+      <p>戻り値の型が <code>boolean</code> の関数で、数値をそのまま返すと型の確認でエラーになります。比べる式にして返します。</p>
+      <div class="cmp">
+        <div>
+          <h5>数値をそのまま返す</h5>
+          <pre><code class="language-typescript">function hasStock(stock: number): boolean {
+  // stock をそのまま返す
+  return stock;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>比べる式にして返す</h5>
+          <pre><code class="language-typescript">function hasStock(stock: number): boolean {
+  // stock が 0 より大きいかどうか（true か false）を返す
+  return stock &gt; 0;
+}</code></pre>
+          <div class="verdict ok">○ true か false を返します</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b>この課題では、<code>if</code> などの条件にも、true か false になる式を書きます。<code>if (stock)</code> のように数値をそのまま書くと、0 のときだけ false として扱われます。この決まりを truthy・falsy と呼びますが、読み違えやすいので比べる式で書きます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values">サバイバルTypeScript「truthy な値、falsy な値」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isPositive(n: number): boolean {
+  // n が 0 より大きいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「より大きい」は <code>&gt;</code> です。上のサンプル <code>isFreeShipping</code> と同じく、比べる式をそのまま <code>return</code> します。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">0 より小さければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isNegative() {}</code></pre>
+      <p>受け取った数が 0 より小さければ <code>true</code> を返します。</p>
+      <p>引数は <code>number</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isNegative(-1)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isNegative(0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">0 は 0 より小さくない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isNegative(n: number): boolean {
+  // n が 0 より小さいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「より小さい」は <code>&lt;</code> です。問1 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">奇数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isOdd() {}</code></pre>
+      <p>受け取った数が奇数なら <code>true</code> を返します。負の数でも正しく判定します。-3 も奇数です。</p>
+      <p>引数は <code>number</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isOdd(3)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isOdd(-3)</code></dt><dd class="r"><code>true</code></dd><dd class="c">負の奇数</dd></div>
+          <div><dt><code>isOdd(4)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isOdd(n: number): boolean {
+  // n を 2 で割った余りが 0 と等しくないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「等しくない」は <code>!==</code> です。<code>-3 % 2</code> は <code>-1</code> になります。だから「余りが 1 と等しい」で比べると、-3 で間違えます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">13 歳以上 19 歳以下なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isTeen() {}</code></pre>
+      <p>年齢が 13 歳以上 19 歳以下なら <code>true</code> を返します。13 と 19 も含みます。</p>
+      <p>引数は <code>number</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isTeen(13)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isTeen(19)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isTeen(20)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isTeen(12)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isTeen(age: number): boolean {
+  // age が 13 以上、かつ age が 19 以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「以上」は <code>&gt;=</code>、「以下」は <code>&lt;=</code>、「かつ」は <code>&amp;&amp;</code> です。算数のように <code>13 &lt;= age &lt;= 19</code> とつなげると、型の確認でエラーになります。比べる式を 2 つ書いて、<code>&amp;&amp;</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">土日なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isWeekend() {}</code></pre>
+      <p>曜日の番号を受け取ります。0 が日曜、6 が土曜です。土日なら <code>true</code> を返します。</p>
+      <p>引数は <code>number</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isWeekend(0)</code></dt><dd class="r"><code>true</code></dd><dd class="c">日曜</dd></div>
+          <div><dt><code>isWeekend(6)</code></dt><dd class="r"><code>true</code></dd><dd class="c">土曜</dd></div>
+          <div><dt><code>isWeekend(3)</code></dt><dd class="r"><code>false</code></dd><dd class="c">水曜</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isWeekend(day: number): boolean {
+  // day が 0 と等しい、または day が 6 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「等しい」は <code>===</code>、「または」は <code>||</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">母音なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isVowel() {}</code></pre>
+      <p>1 文字の英字を受け取り、母音（a、e、i、o、u）なら <code>true</code> を返します。大文字の母音も <code>true</code> です。2 文字以上なら <code>false</code> です。</p>
+      <p>引数は <code>string</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isVowel("a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isVowel("E")</code></dt><dd class="r"><code>true</code></dd><dd class="c">大文字も母音</dd></div>
+          <div><dt><code>isVowel("b")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isVowel("ae")</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 文字</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isVowel(char: string): boolean {
+  // char の文字数が 1 と等しい、かつ "aeiou" に char を小文字にしたものが含まれるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字数は <code>.length</code>、小文字にするのは <code>.toLowerCase()</code>、含まれるかは <code>.includes()</code> です。<code>"aeiou".includes("ae")</code> も <code>true</code> になるので、1 文字かどうかも確かめます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">逆の真偽値を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function not() {}</code></pre>
+      <p><code>true</code> を受け取ったら <code>false</code>、<code>false</code> を受け取ったら <code>true</code> を返します。</p>
+      <p>引数は <code>boolean</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>not(true)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>not(false)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function not(value: boolean): boolean {
+  // value でないもの（true なら false、false なら true）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「でない」は <code>!</code> です。問1 のサンプル <code>canReserve</code> の <code>!isClosed</code> と同じ書き方です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">2 つとも true なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function both() {}</code></pre>
+      <p>2 つの真偽値を受け取り、両方とも <code>true</code> なら <code>true</code> を返します。</p>
+      <p>引数は <code>boolean</code> を 2 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>both(true, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>both(true, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function both(a: boolean, b: boolean): boolean {
+  // a かつ b かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">どちらか 1 つでも true なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function either() {}</code></pre>
+      <p>2 つの真偽値を受け取り、どちらか 1 つでも <code>true</code> なら <code>true</code> を返します。</p>
+      <p>引数は <code>boolean</code> を 2 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>either(false, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>either(false, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function either(a: boolean, b: boolean): boolean {
+  // a または b かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「または」は <code>||</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">どちらか片方だけが true なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function onlyOne() {}</code></pre>
+      <p>2 つの真偽値を受け取り、片方だけが <code>true</code> のときに <code>true</code> を返します。両方 <code>true</code> のときと、両方 <code>false</code> のときは <code>false</code> です。</p>
+      <p>引数は <code>boolean</code> を 2 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>onlyOne(true, false)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>onlyOne(false, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>onlyOne(true, true)</code></dt><dd class="r"><code>false</code></dd><dd class="c">両方 true</dd></div>
+          <div><dt><code>onlyOne(false, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function onlyOne(a: boolean, b: boolean): boolean {
+  // a と b が等しくないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>片方だけが true のとき、a と b は違う値です。だから「等しくない」の <code>!==</code> で比べられます。<code>&amp;&amp;</code> と <code>||</code> と <code>!</code> を組み合わせて書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">空の文字列なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isEmpty() {}</code></pre>
+      <p>文字列を受け取り、空の文字列（<code>""</code>）なら <code>true</code> を返します。空白 1 文字は空ではありません。</p>
+      <p>引数は <code>string</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isEmpty("")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isEmpty(" ")</code></dt><dd class="r"><code>false</code></dd><dd class="c">空白が 1 文字ある</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isEmpty(text: string): boolean {
+  // text の文字数が 0 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字数は <code>.length</code> です（q02 の問13）。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">空の文字列か、空白だけなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isBlank() {}</code></pre>
+      <p>文字列を受け取り、空の文字列か、空白だけでできていれば <code>true</code> を返します。空白以外の文字が 1 つでもあれば <code>false</code> です。</p>
+      <p>引数は <code>string</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isBlank("   ")</code></dt><dd class="r"><code>true</code></dd><dd class="c">空白だけ</dd></div>
+          <div><dt><code>isBlank("")</code></dt><dd class="r"><code>true</code></dd><dd class="c">空の文字列</dd></div>
+          <div><dt><code>isBlank(" a ")</code></dt><dd class="r"><code>false</code></dd><dd class="c">a がある</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isBlank(text: string): boolean {
+  // text の前後の空白を取り除いた文字列の文字数が 0 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>前後の空白を取り除くのは <code>.trim()</code> です（q05）。<code>.trim()</code> の結果に続けて <code>.length</code> と書けます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">数字が含まれていれば true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.test()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasDigit() {}</code></pre>
+      <p>文字列を受け取り、数字（0〜9）が 1 文字でも含まれていれば <code>true</code> を返します。正規表現 <code>/\d/</code> の <code>.test()</code> を使います。</p>
+      <p>引数は <code>string</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasDigit("abc1")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasDigit("abc")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">/…/.test()</code><h4>正規表現に合う文字が含まれるかを調べる</h4></div>
+      <p>正規表現は、文字の形を表す書き方です。q05 の問18 で <code>.replace()</code> といっしょに出ました。<code>.test()</code> は、文字列の中に合う部分があれば <code>true</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 名前 name を作り、"山田 太郎" を入れる
+const name = "山田 太郎";
+// hasSpace を作り、name に空白が含まれるか（true か false）を入れる
+const hasSpace = /\s/.test(name);
+// 結果: hasSpace は true</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>/\s/</span>.<span class="seg"><i>2</i>test</span>(<span class="seg"><i>3</i>name</span>)</pre>
+        <ol>
+          <li><span>正規表現です。<code>/</code> と <code>/</code> で囲みます。<code>\s</code> は空白の 1 文字です。</span></li>
+          <li><span>メソッドの名前です。</span></li>
+          <li><span>調べる文字列です。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>正規表現</th><th>合う文字</th></tr></thead>
+          <tbody>
+            <tr><td><code>/\d/</code></td><td>数字（0〜9）の 1 文字</td></tr>
+            <tr><td><code>/[A-Z]/</code></td><td>英大文字の 1 文字</td></tr>
+            <tr><td><code>/[a-z]/</code></td><td>英小文字の 1 文字</td></tr>
+            <tr><td><code>/\s/</code></td><td>空白の 1 文字</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <dl class="eg">
+          <div><dt><code>/\d/.test("A-12")</code></dt><dd class="r"><code>true</code></dd><dd class="c">数字が含まれる</dd></div>
+          <div><dt><code>/[A-Z]/.test("tokyo")</code></dt><dd class="r"><code>false</code></dd><dd class="c">英大文字が含まれない</dd></div>
+        </dl>
+      <p class="memo"><b>コツ</b>ここでは、この形をまねて書ければ十分です。正規表現は、09章の発展問題でくわしく学びます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function hasDigit(text: string): boolean {
+  // text に数字が含まれるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数字が含まれる」は <code>/\d/</code> の <code>.test()</code> で調べます。サンプルの <code>hasSpace</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">強いパスワードなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isStrongPassword() {}</code></pre>
+      <p>パスワードを受け取り、次の 3 つがすべてそろえば <code>true</code> を返します。</p>
+      <p>8 文字以上であること。数字を 1 文字以上含むこと。英大文字を 1 文字以上含むこと。</p>
+      <p>引数は <code>string</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isStrongPassword("Agora2026")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isStrongPassword("agora2026")</code></dt><dd class="r"><code>false</code></dd><dd class="c">英大文字がない</dd></div>
+          <div><dt><code>isStrongPassword("Agora")</code></dt><dd class="r"><code>false</code></dd><dd class="c">8 文字より短い</dd></div>
+          <div><dt><code>isStrongPassword("AgoraAgora")</code></dt><dd class="r"><code>false</code></dd><dd class="c">数字がない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isStrongPassword(password: string): boolean {
+  // password の文字数が 8 以上、かつ password に数字が含まれる、かつ password に英大文字が含まれるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>3 つの条件を <code>&amp;&amp;</code> でつなぎます。数字は <code>/\d/</code>、英大文字は <code>/[A-Z]/</code> で調べます（問13 の表）。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">2 つの数が同じ符号なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isSameSign() {}</code></pre>
+      <p>2 つの数を受け取ります。どちらも正、またはどちらも負なら <code>true</code> を返します。0 が含まれていれば <code>false</code> です。0 は正でも負でもありません。</p>
+      <p>引数は <code>number</code> を 2 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isSameSign(2, 5)</code></dt><dd class="r"><code>true</code></dd><dd class="c">どちらも正</dd></div>
+          <div><dt><code>isSameSign(-2, -5)</code></dt><dd class="r"><code>true</code></dd><dd class="c">どちらも負</dd></div>
+          <div><dt><code>isSameSign(-2, 5)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isSameSign(0, 5)</code></dt><dd class="r"><code>false</code></dd><dd class="c">0 がある</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isSameSign(a: number, b: number): boolean {
+  // （a が 0 より大きい、かつ b が 0 より大きい）、または（a が 0 より小さい、かつ b が 0 より小さい）かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>日本語のかっこで囲んだまとまりは、コードでも <code>( )</code> で囲みます。<code>&amp;&amp;</code> は <code>||</code> より先に計算されるので、かっこがなくても結果は同じです。かっこを付けると読みやすくなります。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">買えるなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function canBuy() {}</code></pre>
+      <p>所持金、価格、在庫があるかどうかを受け取ります。所持金が価格以上で、在庫があれば <code>true</code> を返します。</p>
+      <p>引数は <code>number</code> を 2 つと <code>boolean</code> を 1 つ（この順）、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>canBuy(1000, 800, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canBuy(1000, 800, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c">在庫がない</dd></div>
+          <div><dt><code>canBuy(500, 800, true)</code></dt><dd class="r"><code>false</code></dd><dd class="c">お金が足りない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function canBuy(money: number, price: number, inStock: boolean): boolean {
+  // money が price 以上、かつ inStock が true かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「以上」は <code>&gt;=</code>、「かつ」は <code>&amp;&amp;</code> です。「inStock が true」は <code>inStock</code> とだけ書きます（q01 の問15 の <code>isMember</code> と同じ）。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">3 の倍数か 5 の倍数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isMultipleOf3Or5() {}</code></pre>
+      <p>受け取った数が 3 の倍数か 5 の倍数なら <code>true</code> を返します。</p>
+      <p>引数は <code>number</code> を 1 つ、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isMultipleOf3Or5(9)</code></dt><dd class="r"><code>true</code></dd><dd class="c">3 の倍数</dd></div>
+          <div><dt><code>isMultipleOf3Or5(10)</code></dt><dd class="r"><code>true</code></dd><dd class="c">5 の倍数</dd></div>
+          <div><dt><code>isMultipleOf3Or5(7)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isMultipleOf3Or5(n: number): boolean {
+  // n を 3 で割った余りが 0 と等しい、または n を 5 で割った余りが 0 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「割り切れる」は、q01 の問12（FizzBuzz）と同じく <code>%</code> と <code>===</code> で書きます。2 つを <code>||</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">範囲の外なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isOutOfRange() {}</code></pre>
+      <p>値と、範囲の最小値・最大値を受け取ります。値が最小値より小さいか、最大値より大きければ <code>true</code> を返します。ちょうど最小値や最大値のときは範囲の中です。</p>
+      <p>引数は <code>number</code> を 3 つ（値、最小値、最大値の順）、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isOutOfRange(11, 1, 10)</code></dt><dd class="r"><code>true</code></dd><dd class="c">最大値より大きい</dd></div>
+          <div><dt><code>isOutOfRange(0, 1, 10)</code></dt><dd class="r"><code>true</code></dd><dd class="c">最小値より小さい</dd></div>
+          <div><dt><code>isOutOfRange(10, 1, 10)</code></dt><dd class="r"><code>false</code></dd><dd class="c">ちょうど最大値</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isOutOfRange(value: number, min: number, max: number): boolean {
+  // value が min より小さい、または value が max より大きいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「より小さい」は <code>&lt;</code>、「より大きい」は <code>&gt;</code>、「または」は <code>||</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">正しい名前なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isValidName() {}</code></pre>
+      <p>名前と、最大の文字数を受け取ります。名前が空ではなく、最大の文字数以下なら <code>true</code> を返します。</p>
+      <p>引数は <code>string</code> を 1 つと <code>number</code> を 1 つ（この順）、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isValidName("山田", 10)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isValidName("", 10)</code></dt><dd class="r"><code>false</code></dd><dd class="c">空</dd></div>
+          <div><dt><code>isValidName("abcdefghijk", 10)</code></dt><dd class="r"><code>false</code></dd><dd class="c">11 文字</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isValidName(name: string, max: number): boolean {
+  // name の文字数が 0 より大きい、かつ name の文字数が max 以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「空ではない」は「文字数が 0 より大きい」と言い換えられます。文字数は <code>.length</code>、「以下」は <code>&lt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">店が開いていれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isOpen() {}</code></pre>
+      <p>時刻（何時か）と、休日かどうかを受け取ります。店が開いていれば <code>true</code> を返します。</p>
+      <p>平日は 9 時以上 18 時未満、休日は 10 時以上 15 時未満に開いています。「未満」はその数を含みません。18 時ちょうどは閉まっています。</p>
+      <p>引数は <code>number</code> を 1 つと <code>boolean</code> を 1 つ（この順）、戻り値は <code>boolean</code> です。型注釈は自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isOpen(9, false)</code></dt><dd class="r"><code>true</code></dd><dd class="c">平日 9 時</dd></div>
+          <div><dt><code>isOpen(18, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c">平日 18 時</dd></div>
+          <div><dt><code>isOpen(9, true)</code></dt><dd class="r"><code>false</code></dd><dd class="c">休日 9 時</dd></div>
+          <div><dt><code>isOpen(14, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c">休日 14 時</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isOpen(hour: number, isHoliday: boolean): boolean {
+  // もし isHoliday が true なら
+  //   hour が 10 以上、かつ hour が 15 より小さいかどうか（true か false）を返す
+  // hour が 9 以上、かつ hour が 18 より小さいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「未満」は「より小さい」なので <code>&lt;</code> です。「isHoliday が true」は <code>isHoliday</code> とだけ書きます。問1 のコツのとおり、<code>if</code> の中で <code>return</code> すると関数はそこで終わるので、最後の行は平日のときだけ実行されます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q06-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">うるう年・空白以外の文字・会場に入れるか</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isLeapYear() {}
+
+export function hasText() {}
+
+export function canEnter() {}</code></pre>
+      <p>次の 3 つの関数を書きます。どれも戻り値は <code>boolean</code> で、引数と戻り値の型注釈は自分で書きます。</p>
+      <ol>
+        <li><code>isLeapYear</code>：年（<code>number</code>）を受け取り、うるう年なら <code>true</code> を返します。4 で割り切れる年はうるう年です。ただし 100 で割り切れる年はうるう年ではありません。ただし 400 で割り切れる年はうるう年です。</li>
+        <li><code>hasText</code>：文字列（<code>string</code>）を受け取り、空白以外の文字が 1 文字でもあれば <code>true</code> を返します。<code>text.trim().length</code> のような数値は返しません。</li>
+        <li><code>canEnter</code>：年齢（<code>number</code>）、チケットを持っているか（<code>boolean</code>）、スタッフか（<code>boolean</code>）をこの順に受け取り、イベント会場に入れるなら <code>true</code> を返します。スタッフはいつでも入れます。スタッフでない人は、チケットを持っていて、かつ 12 歳以上なら入れます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isLeapYear(2024)</code></dt><dd class="r"><code>true</code></dd><dd class="c">4 で割り切れる</dd></div>
+          <div><dt><code>isLeapYear(2023)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isLeapYear(1900)</code></dt><dd class="r"><code>false</code></dd><dd class="c">100 で割り切れる</dd></div>
+          <div><dt><code>isLeapYear(2100)</code></dt><dd class="r"><code>false</code></dd><dd class="c">100 で割り切れる</dd></div>
+          <div><dt><code>isLeapYear(2000)</code></dt><dd class="r"><code>true</code></dd><dd class="c">400 で割り切れる</dd></div>
+          <div><dt><code>hasText("  a ")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasText("Agora")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasText("")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasText("   ")</code></dt><dd class="r"><code>false</code></dd><dd class="c">空白だけ</dd></div>
+          <div><dt><code>canEnter(10, false, true)</code></dt><dd class="r"><code>true</code></dd><dd class="c">スタッフ</dd></div>
+          <div><dt><code>canEnter(12, true, false)</code></dt><dd class="r"><code>true</code></dd><dd class="c">ちょうど 12 歳でチケットあり</dd></div>
+          <div><dt><code>canEnter(30, true, false)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canEnter(30, false, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c">チケットがない</dd></div>
+          <div><dt><code>canEnter(11, true, false)</code></dt><dd class="r"><code>false</code></dd><dd class="c">12 歳未満</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isLeapYear(year: number): boolean {
+  // もし year を 400 で割った余りが 0 と等しいなら
+  //   true を返す
+  // もし year を 100 で割った余りが 0 と等しいなら
+  //   false を返す
+  // year を 4 で割った余りが 0 と等しいかどうか（true か false）を返す
+}
+
+export function hasText(text: string): boolean {
+  // text の前後の空白を取り除いた文字列の文字数が 0 より大きいかどうか（true か false）を返す
+}
+
+export function canEnter(age: number, hasTicket: boolean, isStaff: boolean): boolean {
+  // isStaff が true、または（hasTicket が true、かつ age が 12 以上）かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>isLeapYear</code> は、400、100、4 の順に確かめます。決まりの「ただし」を先に片付けると、<code>if</code> の中で <code>return</code> するだけで書けます。<code>hasText</code> は問12 の反対です。<code>canEnter</code> の日本語のかっこは、コードでも <code>( )</code> で囲みます（問15 と同じ）。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,775 @@
+<section class="sec" id="c05-q01">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q01 関数宣言・関数式・アロー関数</h2>
+    <p>関数を 20 個書きます。関数の作り方には、関数宣言・関数式・アロー関数の 3 つがあります。問1〜7 は関数宣言、問8〜14 は関数式、問15〜20 はアロー関数で、どの書き方を使うかは問題のコードに用意してあります。書き方は変えずに、引数の名前と型、戻り値の型、中身を書き足します。アロー関数は、中身が式 1 つなら <code>(n: number): number =&gt; n * 2</code> のように <code>{ }</code> と <code>return</code> を省けます。テストは、返す値に加えて型も確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q01-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">3 つの数を足す</span>
+      <span class="q-new">新しく出てくる書き方：関数の 3 つの書き方（関数宣言・関数式・アロー関数）の見分け方と使い分け</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function add3() {}</code></pre>
+      <p>3 つの数を受け取り、足した数を返します。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add3(1, 2, 3)</code></dt><dd class="r"><code>6</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">function</code><h4>関数の 3 つの書き方</h4></div>
+      <p>関数の作り方には、関数宣言・関数式・アロー関数の 3 つがあります。受け取る引数と返す値が同じなら、どれで作っても同じように呼べます。関数宣言は、00章からずっと使ってきた形です。アロー関数は 01章 q01 問20 で出ました。関数式は問8 でくわしく見ます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 withShipping を作る。数値の price を受け取り、数値を返す
+function withShipping(price: number): number {
+  // price に 500 を足した数を返す
+  return price + 500;
+}
+// 結果: withShipping(1200) は 1700</code></pre>
+      </div>
+      <p>同じ関数を 3 つの書き方で書くと、次のようになります。</p>
+      <div class="cmp">
+        <div>
+          <h5>関数宣言</h5>
+          <pre><code class="language-typescript">function withShipping(price: number): number {
+  return price + 500;
+}</code></pre>
+          <div class="verdict ok">○ withShipping(1200) は 1700</div>
+        </div>
+        <div>
+          <h5>関数式</h5>
+          <pre><code class="language-typescript">const withShipping = function (price: number): number {
+  return price + 500;
+};</code></pre>
+          <div class="verdict ok">○ withShipping(1200) は 1700</div>
+        </div>
+        <div>
+          <h5>アロー関数</h5>
+          <pre><code class="language-typescript">const withShipping = (price: number): number =&gt; price + 500;</code></pre>
+          <div class="verdict ok">○ withShipping(1200) は 1700</div>
+        </div>
+      </div>
+      <p>見分けるところは、次の表のとおりです。引数の書き方と、戻り値の型を書く場所（引数のかっこのすぐ後ろ）は、3 つとも同じです。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th></th><th>関数宣言</th><th>関数式</th><th>アロー関数</th></tr></thead>
+          <tbody>
+            <tr><th>名前を書く場所</th><td><code>function</code> の後ろ</td><td><code>const</code> の後ろ</td><td><code>const</code> の後ろ</td></tr>
+            <tr><th>引数のかっこの前</th><td><code>function 名前</code></td><td><code>= function</code></td><td><code>=</code> だけ</td></tr>
+            <tr><th>引数と中身の間</th><td>何も書かない</td><td>何も書かない</td><td><code>=&gt;</code></td></tr>
+            <tr><th>中身が式 1 つのとき</th><td><code>{ return 式; }</code></td><td><code>{ return 式; }</code></td><td><code>{ }</code> と <code>return</code> を省ける</td></tr>
+            <tr><th>最後の <code>;</code></th><td>要らない</td><td>付ける</td><td>付ける</td></tr>
+            <tr><th>この番号の問題</th><td>問1〜7</td><td>問8〜14</td><td>問15〜20</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>自分で書き方を選んでよいときは、次のように使い分けると読みやすくなります。</p>
+      <dl class="eg">
+        <div><dt>名前を付けて <code>export</code> する、ファイルの中心になる関数</dt><dd class="r">関数宣言</dd><dd class="c"></dd></div>
+        <div><dt><code>.map()</code> などに渡す短い関数</dt><dd class="r">アロー関数</dd><dd class="c">02章 q04 問5 のコールバック</dd></div>
+        <div><dt>関数の中で作る小さな関数</dt><dd class="r">アロー関数</dd><dd class="c">01章 q01 問20 の <code>pad</code></dd></div>
+      </dl>
+      <p>関数式は、アロー関数ができる前からある書き方です。古いコードでよく見かけます。新しく書くときは、同じ関数をアロー関数で短く書くことが多くなっています。</p>
+      <p class="memo"><b>決まり</b>この番号では、書き方を自分で選びません。問題のコードに用意してある形のまま、引数・型・中身を書き足します。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/function-declaration">サバイバルTypeScript「関数宣言」</a>、<a href="https://typescriptbook.jp/reference/functions/function-expression">サバイバルTypeScript「関数式」</a>、<a href="https://typescriptbook.jp/reference/functions/arrow-functions">サバイバルTypeScript「アロー関数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 add3 を作る。数値の a、b、c を受け取り、数値を返す
+export function add3() {
+  // a と b と c を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の「◯ を受け取り」はかっこの中の引数に、「数値を返す」はかっこの後ろの <code>: number</code> になります（01章 q02 問1）。問1 のサンプルの <code>withShipping</code> と同じ形で、引数が 3 つになります。引数は <code>,</code> で区切って並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q01-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">3 乗を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function cubeOf() {}</code></pre>
+      <p>数を 1 つ受け取り、その数の 3 乗を返します。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cubeOf(3)</code></dt><dd class="r"><code>27</code></dd><dd class="c">3 × 3 × 3</dd></div>
+          <div><dt><code>cubeOf(-2)</code></dt><dd class="r"><code>-8</code></dd><dd class="c">マイナスの数の 3 乗はマイナス</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cubeOf を作る。数値の n を受け取り、数値を返す
+export function cubeOf() {
+  // n の 3 乗を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ 乗」は <code>**</code> です（01章 q04 問7）。<code>n * n * n</code> と書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q01-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">名と姓の頭文字を「T.Y.」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function initials() {}</code></pre>
+      <p>名と姓の 2 つの文字列を受け取ります。それぞれの最初の 1 文字の後ろに <code>"."</code> を付け、名、姓の順につなげた文字列を返します。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>initials("Taro", "Yamada")</code></dt><dd class="r"><code>"T.Y."</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 initials を作る。文字列の first と last を受け取り、文字列を返す
+export function initials() {
+  // first の 0 文字目から 1 文字目の前までと、last の 0 文字目から 1 文字目の前までを、それぞれの後ろに "." を付けてつなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最初の 1 文字を取り出すのは <code>.slice(0, 1)</code> です（01章 q02 問10）。つなげた文字列は、テンプレートリテラル（01章 q01 問3）の中に、取り出した 2 つの文字と <code>"."</code> を並べて作ります。<code>+</code> でつなぐと、lint でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q01-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">時と分を、0 時からの分にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toMinutes() {}</code></pre>
+      <p>時刻の「時」と「分」を受け取り、0 時 0 分から何分たったかを返します。9 時 30 分なら、9 × 60 + 30 で 570 分です。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toMinutes(9, 30)</code></dt><dd class="r"><code>570</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toMinutes(0, 0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 時 0 分</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toMinutes を作る。数値の hour と minute を受け取り、数値を返す
+export function toMinutes() {
+  // hour に 60 を掛けた数に、minute を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>掛け算は <code>*</code>、足し算は <code>+</code> です。掛け算は足し算より先に計算されるので、かっこは要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q01-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">英字を含み、すべて大文字なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isAllUpper() {}</code></pre>
+      <p>文字列が英字を 1 つ以上含み、その英字がすべて大文字なら <code>true</code> を返します。小文字の英字が 1 つでもあれば <code>false</code> です。数字だけのように、英字が 1 つもないときも <code>false</code> です。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isAllUpper("ABC")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isAllUpper("AbC")</code></dt><dd class="r"><code>false</code></dd><dd class="c">小文字の b がある</dd></div>
+          <div><dt><code>isAllUpper("123")</code></dt><dd class="r"><code>false</code></dd><dd class="c">英字が 1 つもない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isAllUpper を作る。文字列の text を受け取り、true か false を返す
+export function isAllUpper() {
+  // text を大文字にしたものが text と等しい、かつ text を小文字にしたものが text と等しくないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 つめの条件で、小文字の英字がないことを確かめます。ただし <code>"123"</code> のように英字がない文字列も、大文字にして変わりません。そこで 2 つめの条件で、小文字にすると変わること（大文字の英字があること）も確かめます。大文字にするのは <code>.toUpperCase()</code>（01章 q02 問18）、小文字にするのは <code>.toLowerCase()</code>（01章 q05 問7）です。「かつ」は <code>&amp;&amp;</code>（01章 q02 問16）、「等しくない」は <code>!==</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q01-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">円の面積を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function circleArea() {}</code></pre>
+      <p>円の半径を受け取り、面積を返します。面積は 円周率 × 半径 × 半径 です。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>circleArea(1)</code></dt><dd class="r"><code>3.14159…</code></dd><dd class="c"><code>Math.PI</code> に近いかを確かめる（小数第 2 位まで）</dd></div>
+          <div><dt><code>circleArea(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">半径 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 circleArea を作る。数値の radius を受け取り、数値を返す
+export function circleArea() {
+  // 円周率に radius を 2 回掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>円周率は <code>Math.PI</code> です（03章 q04 問1）。関数ではないので、かっこを付けません。半径を 2 回掛けるところは、<code>radius ** 2</code> と書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q01-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">曜日の番号が土日なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isWeekendDay() {}</code></pre>
+      <p>曜日の番号を受け取ります。番号は 0 が日曜、1 が月曜と続き、6 が土曜です。土曜か日曜なら <code>true</code>、それ以外なら <code>false</code> を返します。問題のコードは関数宣言の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isWeekendDay(6)</code></dt><dd class="r"><code>true</code></dd><dd class="c">土曜</dd></div>
+          <div><dt><code>isWeekendDay(3)</code></dt><dd class="r"><code>false</code></dd><dd class="c">水曜</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isWeekendDay を作る。数値の day を受け取り、true か false を返す
+export function isWeekendDay() {
+  // day が 0 と等しい、または day が 6 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「等しい」は <code>===</code>、「または」は <code>||</code> です（01章 q01 問15）。テストは 6 だけを確かめますが、日曜の 0 も <code>true</code> になるように書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q01-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">半分にする</span>
+      <span class="q-new">新しく出てくる書き方：関数式 <code>const 名前 = function () {}</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const half = function () {};</code></pre>
+      <p>数を 1 つ受け取り、その半分の数を返します。割り切れないときは小数になります。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>half(9)</code></dt><dd class="r"><code>4.5</code></dd><dd class="c">切り捨てない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">function () {}</code><h4>関数式（関数を値として作り、<code>const</code> に入れる）</h4></div>
+      <p><code>function</code> で作った関数を、値として <code>=</code> の右に書きます。それを <code>const</code> で作った名前に入れます。この形を関数式と呼びます。式は、計算すると値になる書き方のことです。<code>function</code> の後ろには名前を書きません。名前は <code>const</code> の後ろに書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 withTax を作る。数値の price を受け取り、数値を返す
+const withTax = function (price: number): number {
+  // price に 1.1 を掛けて切り捨てた数を返す
+  return Math.floor(price * 1.1);
+};
+// 結果: withTax(1000) は 1100</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const <span class="seg"><i>1</i>withTax</span> <span class="seg c"><i>2</i>=</span> <span class="seg"><i>3</i>function</span> <span class="seg"><i>4</i>(price: number)</span><span class="seg"><i>5</i>: number</span> { … }<span class="seg c"><i>6</i>;</span></pre>
+        <ol>
+          <li><span>関数に付ける名前です。<code>const</code> の後ろに書きます。</span></li>
+          <li><span>右に作った関数を、左の名前に入れます。</span></li>
+          <li><span>ここから関数です。後ろに名前を書きません。</span></li>
+          <li><span>引数です。関数宣言と同じ書き方です。</span></li>
+          <li><span>戻り値の型です。引数のかっこのすぐ後ろに書きます。</span></li>
+          <li><span><code>const</code> の文の終わりなので、<code>;</code> を付けます。</span></li>
+        </ol>
+      </figure>
+      <p>関数式で作った関数も、呼び方は関数宣言と同じで <code>withTax(1000)</code> です。<code>{ }</code> の中も、関数宣言と同じように書けます。</p>
+      <p class="memo"><b>よくある間違い</b>問題のコードの <code>function ()</code> の後ろに、<code>half</code> と名前を書き足す必要はありません。名前は <code>const</code> の後ろにもうあります。かっこの中に引数を、かっこの後ろに戻り値の型を書き足します。</p>
+      <p class="memo"><b>よくある疑問</b>最後の <code>;</code> は、書き忘れても整形（prettier）で付きます。関数宣言の <code>}</code> の後ろには付きません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/function-expression">サバイバルTypeScript「関数式」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 half を作る。数値の n を受け取り、数値を返す
+export const half = function () {
+  // n を 2 で割った数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>withTax</code> と同じ形です。<code>function</code> の後ろのかっこに引数を、そのかっこの後ろに <code>: number</code> を書きます。「割る」は <code>/</code> です。半分は切り捨てないので、<code>Math.floor()</code> は使いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q01-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">符号を反転する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const negate = function () {};</code></pre>
+      <p>数を 1 つ受け取り、符号を反転した数を返します。プラスの数はマイナスに、マイナスの数はプラスになります。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>negate(3)</code></dt><dd class="r"><code>-3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>negate(-2)</code></dt><dd class="r"><code>2</code></dd><dd class="c">マイナスの数はプラスになる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 negate を作る。数値の n を受け取り、数値を返す
+export const negate = function () {
+  // n の符号を反転した数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問8 と同じです。符号を反転するのは、変数の前に <code>-</code> を付けた <code>-n</code> です（04章 q01 問1）。<code>0 - n</code> と書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q01-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">文字列を「"」で囲む</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const quote = function () {};</code></pre>
+      <p>文字列を 1 つ受け取り、その前と後ろに <code>"</code>（ダブルクォート）を 1 つずつ付けた文字列を返します。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>quote("abc")</code></dt><dd class="r"><code>'"abc"'</code></dd><dd class="c">前と後ろに " が付いた 5 文字</dd></div>
+        </dl>
+        <p class="memo"><b>よくある疑問</b>テストの <code>'"abc"'</code> は、<code>"</code> を含む文字列を <code>'</code> で囲んで書いたものです。外側の <code>'</code> は文字列に含まれません。</p>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 quote を作る。文字列の text を受け取り、文字列を返す
+export const quote = function () {
+  // text の前と後ろに " を付けた文字列を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問8 と同じです。つなげた文字列は、テンプレートリテラル（01章 q01 問3）で作ります。テンプレートリテラルは <code>`</code> で囲むので、中に <code>"</code> をそのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q01-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">km をマイルにする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const kmToMiles = function () {};</code></pre>
+      <p>距離（km）を受け取り、マイルに直して返します。1 マイルは 1.609km なので、km を 1.609 で割ります。結果は、小数第 2 位までに四捨五入します。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>kmToMiles(10)</code></dt><dd class="r"><code>6.22</code></dd><dd class="c">10 ÷ 1.609 は 6.215…</dd></div>
+          <div><dt><code>kmToMiles(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 kmToMiles を作る。数値の km を受け取り、数値を返す
+export const kmToMiles = function () {
+  // km を 1.609 で割り、100 を掛けて四捨五入し、100 で割った数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問8 と同じです。小数第 2 位までに四捨五入するのは、01章 q04 問19 と同じ形です。6.215… を 100 倍すると 621.5…、<code>Math.round()</code> で四捨五入すると 622、100 で割ると 6.22 です。返すのは数値なので、<code>.toFixed()</code> は使いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q01-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">0〜1 の割合を「50%」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const percentText = function () {};</code></pre>
+      <p>0〜1 の割合を受け取り、百分率の文字列にして返します。割合に 100 を掛け、四捨五入して整数にし、後ろに <code>"%"</code> を付けます。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>percentText(0.5)</code></dt><dd class="r"><code>"50%"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>percentText(0.123)</code></dt><dd class="r"><code>"12%"</code></dd><dd class="c">12.3 を四捨五入して 12</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 percentText を作る。数値の ratio を受け取り、文字列を返す
+export const percentText = function () {
+  // ratio に 100 を掛けて四捨五入した数の後ろに "%" をつなげた文字列を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問8 と同じです。四捨五入は <code>Math.round()</code> です（01章 q01 問13）。テンプレートリテラルの <code>${ }</code> の中には、計算の式をそのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q01-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">7 の倍数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const isMultipleOf7 = function () {};</code></pre>
+      <p>数を 1 つ受け取り、7 の倍数なら <code>true</code>、そうでなければ <code>false</code> を返します。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isMultipleOf7(21)</code></dt><dd class="r"><code>true</code></dd><dd class="c">7 × 3</dd></div>
+          <div><dt><code>isMultipleOf7(22)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isMultipleOf7 を作る。数値の n を受け取り、true か false を返す
+export const isMultipleOf7 = function () {
+  // n を 7 で割った余りが 0 と等しいかどうか（true か false）を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問8 と同じです。割った余りは <code>%</code> です（01章 q01 問3）。比べた結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q01-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">最後の単語を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const lastWord = function () {};</code></pre>
+      <p>半角スペースで区切った文字列を受け取り、最後の単語を返します。スペースがないときは、文字列をそのまま返します。問題のコードは関数式の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastWord("hello big world")</code></dt><dd class="r"><code>"world"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lastWord("single")</code></dt><dd class="r"><code>"single"</code></dd><dd class="c">スペースがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lastWord を作る。文字列の text を受け取り、文字列を返す
+export const lastWord = function () {
+  // 位置 space を作り、text の中で最後の " " がある位置を入れる
+  // text の space + 1 文字目から後ろを取り出したものを返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問8 と同じです。1 行目は 01章 q05 問16 のサンプルの <code>last</code> の行と同じ形です。2 行目の「後ろを取り出す」は、<code>.slice()</code> に始まりの位置だけを渡します。スペースがないとき、<code>.lastIndexOf()</code> は <code>-1</code> を返します。1 を足すと 0 なので、文字列の全体が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q01-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">3 倍にする</span>
+      <span class="q-new">新しく出てくる書き方：アロー関数に戻り値の型を書く <code>(price: number): number =&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const triple = () =&gt; {};</code></pre>
+      <p>数を 1 つ受け取り、3 倍にした数を返します。問題のコードはアロー関数の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>triple(4)</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">): number =&gt;</code><h4>アロー関数に戻り値の型を書く</h4></div>
+      <p>01章 q01 問20 のアロー関数には、戻り値の型を書きませんでした。この番号では書きます。戻り値の型は、引数のかっこのすぐ後ろ、<code>=&gt;</code> の前に <code>: 型</code> と書きます。関数宣言や関数式と同じ場所です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 toPoints を作る。数値の price を受け取り、price を 100 で割って切り捨てた数を返す
+const toPoints = (price: number): number =&gt; Math.floor(price / 100);
+// 結果: toPoints(1980) は 19</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const toPoints = <span class="seg"><i>1</i>(price: number)</span><span class="seg"><i>2</i>: number</span> <span class="seg"><i>3</i>=&gt;</span> <span class="seg"><i>4</i>Math.floor(price / 100)</span>;</pre>
+        <ol>
+          <li><span>引数です。関数宣言と同じ書き方です。</span></li>
+          <li><span>戻り値の型です。<code>=&gt;</code> の前に書きます。</span></li>
+          <li><span>「左を受け取って、右を返す」という印です。</span></li>
+          <li><span>返す値です。式が 1 つなので、<code>{ }</code> と <code>return</code> を省いています。</span></li>
+        </ol>
+      </figure>
+      <p>問題のコードは <code>() =&gt; {}</code> と、<code>{ }</code> が付いた形です。<code>{ }</code> の中に <code>return</code> を書いても、<code>{ }</code> と <code>return</code> を省いても、同じ関数になります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>{ }</code> と <code>return</code> で書く</h5>
+          <pre><code class="language-typescript">const toPoints = (price: number): number =&gt; {
+  return Math.floor(price / 100);
+};</code></pre>
+          <div class="verdict ok">○ toPoints(1980) は 19</div>
+        </div>
+        <div>
+          <h5><code>{ }</code> と <code>return</code> を省く</h5>
+          <pre><code class="language-typescript">const toPoints = (price: number): number =&gt; Math.floor(price / 100);</code></pre>
+          <div class="verdict ok">○ toPoints(1980) は 19</div>
+        </div>
+        <div>
+          <h5><code>{ }</code> を残して <code>return</code> だけ消す</h5>
+          <pre><code class="language-typescript">const toPoints = (price: number): number =&gt; {
+  Math.floor(price / 100);
+};</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。何も返さない関数になるからです</div>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b>戻り値の型を書いておくと、<code>return</code> を書き忘れたときに、型の確認がエラーで知らせてくれます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/arrow-functions">サバイバルTypeScript「アロー関数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 triple を作る。数値の n を受け取り、数値を返す
+export const triple = () =&gt; {
+  // n に 3 を掛けた数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>かっこの中に引数を、かっこの後ろ（<code>=&gt;</code> の前）に <code>: number</code> を書きます。中身が <code>return</code> の 1 行だけなので、問15 のサンプルの <code>toPoints</code> のように、<code>{ }</code> と <code>return</code> を省いて <code>=&gt;</code> の右に式だけを書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q01-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">0 より大きければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const isPositiveNumber = () =&gt; {};</code></pre>
+      <p>数を 1 つ受け取り、0 より大きければ <code>true</code>、そうでなければ <code>false</code> を返します。問題のコードはアロー関数の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPositiveNumber(1)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPositiveNumber(-1)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPositiveNumber を作る。数値の n を受け取り、true か false を返す
+export const isPositiveNumber = () =&gt; {
+  // n が 0 より大きいかどうか（true か false）を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問15 と同じで、戻り値の型が <code>boolean</code> になります。「より大きい」は <code>&gt;</code> です。比べた結果がそのまま <code>true</code> か <code>false</code> なので、<code>=&gt;</code> の右に比べる式だけを書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q01-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">最初の単語を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const firstWord = () =&gt; {};</code></pre>
+      <p>半角スペースで区切った文字列を受け取り、最初の単語を返します。スペースがないときは、文字列をそのまま返します。問題のコードはアロー関数の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstWord("hello world")</code></dt><dd class="r"><code>"hello"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>firstWord("single")</code></dt><dd class="r"><code>"single"</code></dd><dd class="c">スペースがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstWord を作る。文字列の text を受け取り、文字列を返す
+export const firstWord = () =&gt; {
+  // text を " " で区切った文字列の配列の、0 番目の要素を返す。undefined なら "" を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問15 と同じです。区切るのは <code>.split()</code> です（02章 q06 問12）。区切りの文字がなくても、要素が 1 つの配列になります。配列から取り出した要素の型は <code>string | undefined</code> なので、02章 q04 問3 と同じく <code>??</code> で <code>""</code> に変えてから返します。<code>??</code> がないと、<code>string</code> を返す関数で <code>undefined</code> かもしれない値を返すことになり、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q01-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">半角スペースの数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const countSpaces = () =&gt; {};</code></pre>
+      <p>文字列を 1 つ受け取り、その中にある半角スペースの数を返します。問題のコードはアロー関数の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countSpaces("a b c")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countSpaces("abc")</code></dt><dd class="r"><code>0</code></dd><dd class="c">スペースがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countSpaces を作る。文字列の text を受け取り、数値を返す
+export const countSpaces = () =&gt; {
+  // text を " " で区切った文字列の配列の、要素の数から 1 を引いた数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問15 と同じです。<code>"a b c"</code> を <code>" "</code> で区切ると、<code>["a", "b", "c"]</code> の 3 つになります。スペースは区切りの数なので、要素の数より 1 少なくなります。区切るのは <code>.split()</code>（02章 q06 問12）、配列の要素の数は <code>.length</code>（01章 q08 応用）です。01章 q01 問9 のように <code>for-of</code> で 1 文字ずつ数えてもかまいません。そのときは <code>{ }</code> と <code>return</code> を残して書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q01-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">2 つの数の平均を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const average2 = () =&gt; {};</code></pre>
+      <p>2 つの数を受け取り、その平均を返します。平均は、足した数を 2 で割った数です。問題のコードはアロー関数の形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>average2(3, 8)</code></dt><dd class="r"><code>5.5</code></dd><dd class="c">(3 + 8) ÷ 2</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 average2 を作る。数値の a と b を受け取り、数値を返す
+export const average2 = () =&gt; {
+  // a と b を足した数を、2 で割った数を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問15 と同じで、引数が 2 つになります。足してから割るので、足し算をかっこで囲みます。かっこがないと、<code>b / 2</code> が先に計算されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q01-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">気温が 25 以上なら「夏日」を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>{ }</code> と <code>return</code> を使うアロー関数</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const describeTemp = () =&gt; {};</code></pre>
+      <p>気温を受け取り、25 以上なら <code>"夏日"</code>、25 より低ければ <code>"普通"</code> を返します。問題のコードはアロー関数の形です。この問題は <code>{ }</code> と <code>return</code> を使って書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>describeTemp(30)</code></dt><dd class="r"><code>"夏日"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeTemp(20)</code></dt><dd class="r"><code>"普通"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"夏日" | "普通"</code> であることも確かめます。決まった値しか返さないので、戻り値の型はリテラル型のユニオン（01章 q07）にします。<code>string</code> にすると、テストの型の確認で通りません。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">=&gt; { return … }</code><h4><code>{ }</code> と <code>return</code> を使うアロー関数</h4></div>
+      <p>中で <code>if</code> を使うときは、<code>{ }</code> と <code>return</code> が要ります。<code>if</code> は値になる式ではないので、<code>=&gt;</code> の右に直接は書けません。<code>{ }</code> の中は、関数宣言の <code>{ }</code> の中と同じように書けます。最後の <code>}</code> の後ろには、<code>const</code> の文の終わりの <code>;</code> を付けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockLabel を作る。数値の count を受け取り、"在庫あり" か "在庫なし" を返す
+const stockLabel = (count: number): "在庫あり" | "在庫なし" =&gt; {
+  // もし count が 0 より大きいなら
+  if (count &gt; 0) {
+    // "在庫あり" を返す
+    return "在庫あり";
+  }
+  // "在庫なし" を返す
+  return "在庫なし";
+};
+// 結果: stockLabel(3) は "在庫あり"、stockLabel(0) は "在庫なし"</code></pre>
+      </div>
+      <p><code>.forEach()</code> に渡した関数（02章 q04 問19）も、この形でした。</p>
+      <p class="memo"><b>よくある間違い</b><code>(count: number) =&gt; if (count &gt; 0) …</code> のように、<code>=&gt;</code> の右に <code>if</code> を書くと、構文エラーになります。構文エラーは、書き方の決まりに合っていないというエラーです。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 describeTemp を作る。数値の celsius を受け取り、"夏日" か "普通" を返す
+export const describeTemp = () =&gt; {
+  // もし celsius が 25 以上なら
+  //   "夏日" を返す
+  // "普通" を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問20 のサンプルの <code>stockLabel</code> と同じ形です。戻り値の型は、かっこの後ろ（<code>=&gt;</code> の前）に <code>: "夏日" | "普通"</code> と書きます。「以上」は <code>&gt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c05-q01-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">温度の単位を変換する 4 つの関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function celsiusToFahrenheit() {}
+
+export const fahrenheitToCelsius = function () {};
+
+export const kelvinToCelsius = () =&gt; {};
+
+export const convert = () =&gt; {};</code></pre>
+      <p>温度の単位を変換する 4 つの関数を書きます。摂氏（℃）・華氏（アメリカなどで使う単位）・ケルビン（理科で使う単位）の 3 つを扱います。書き方は、問題のコードに用意してある形のまま使います。引数と戻り値には型注釈を付けます。結果は、どれも小数第 2 位までに四捨五入します。</p>
+      <ol>
+        <li><code>celsiusToFahrenheit(celsius)</code>：関数宣言です。摂氏を受け取り、華氏を返します。華氏 = 摂氏 × 9 ÷ 5 + 32 です。</li>
+        <li><code>fahrenheitToCelsius(fahrenheit)</code>：関数式です。華氏を受け取り、摂氏を返します。摂氏 = (華氏 − 32) × 5 ÷ 9 です。</li>
+        <li><code>kelvinToCelsius(kelvin)</code>：アロー関数です。ケルビンを受け取り、摂氏を返します。摂氏 = ケルビン − 273.15 です。</li>
+        <li><code>convert(value, from, to)</code>：アロー関数です。<code>from</code> の単位の温度 <code>value</code> を、<code>to</code> の単位に直して返します。単位は <code>"C"</code>（摂氏）・<code>"F"</code>（華氏）・<code>"K"</code>（ケルビン）のどれかです。いったん摂氏に直してから、<code>to</code> の単位にします。1〜3 の関数を使います。摂氏からケルビンにするときは、273.15 を足します。</li>
+      </ol>
+      <p>説明すること：関数宣言とアロー関数の違いを 1 つ。ファイルの「説明すること」のすぐ下に、<code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>celsiusToFahrenheit(100)</code></dt><dd class="r"><code>212</code></dd><dd class="c">水がふっとうする温度</dd></div>
+          <div><dt><code>celsiusToFahrenheit(36.6)</code></dt><dd class="r"><code>97.88</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fahrenheitToCelsius(212)</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fahrenheitToCelsius(98.6)</code></dt><dd class="r"><code>37</code></dd><dd class="c">四捨五入して 37</dd></div>
+          <div><dt><code>kelvinToCelsius(273.15)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>kelvinToCelsius(300)</code></dt><dd class="r"><code>26.85</code></dd><dd class="c"></dd></div>
+          <div><dt><code>convert(100, "C", "F")</code></dt><dd class="r"><code>212</code></dd><dd class="c">摂氏から華氏</dd></div>
+          <div><dt><code>convert(212, "F", "K")</code></dt><dd class="r"><code>373.15</code></dd><dd class="c">華氏を摂氏の 100 に直してからケルビンへ</dd></div>
+          <div><dt><code>convert(0, "K", "C")</code></dt><dd class="r"><code>-273.15</code></dd><dd class="c">ケルビンから摂氏</dd></div>
+          <div><dt><code>convert(25, "C", "C")</code></dt><dd class="r"><code>25</code></dd><dd class="c">同じ単位ならそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>4 つとも、戻り値は <code>number</code> です。<code>celsiusToFahrenheit</code>・<code>fahrenheitToCelsius</code>・<code>kelvinToCelsius</code> は、引数が <code>number</code> 1 つです。<code>convert</code> は、引数が <code>number</code> と <code>"C" | "F" | "K"</code> と <code>"C" | "F" | "K"</code> です。テストはこれらの型も確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 celsiusToFahrenheit を作る。数値の celsius を受け取り、数値を返す
+export function celsiusToFahrenheit() {
+  // celsius に 9 を掛けて 5 で割り、32 を足した数を、小数第 2 位までに四捨五入して返す
+}
+
+// 関数 fahrenheitToCelsius を作る。数値の fahrenheit を受け取り、数値を返す
+export const fahrenheitToCelsius = function () {
+  // fahrenheit から 32 を引いて 5 を掛け、9 で割った数を、小数第 2 位までに四捨五入して返す
+};
+
+// 関数 kelvinToCelsius を作る。数値の kelvin を受け取り、数値を返す
+export const kelvinToCelsius = () =&gt; {
+  // kelvin から 273.15 を引いた数を、小数第 2 位までに四捨五入して返す
+};
+
+// 関数 convert を作る。数値の value と、"C" か "F" か "K" の from と to を受け取り、数値を返す
+export const convert = () =&gt; {
+  // 摂氏 celsius を入れ直せる変数として作り、value を入れる
+  // もし from が "F" と等しいなら
+  //   celsius に、fahrenheitToCelsius に value を渡して呼んだ結果を入れ直す
+  // そうでなく、もし from が "K" と等しいなら
+  //   celsius に、kelvinToCelsius に value を渡して呼んだ結果を入れ直す
+  // もし to が "F" と等しいなら
+  //   celsiusToFahrenheit に celsius を渡して呼んだ結果を返す
+  // もし to が "K" と等しいなら
+  //   celsius に 273.15 を足した数を、小数第 2 位までに四捨五入して返す
+  // celsius を返す
+};</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>celsiusToFahrenheit</code> は問1、<code>fahrenheitToCelsius</code> は問8 のサンプルの <code>withTax</code>、<code>kelvinToCelsius</code> は問15 のサンプルの <code>toPoints</code>、<code>convert</code> は問20 のサンプルの <code>stockLabel</code> と同じ形です。小数第 2 位までに四捨五入するのは、01章 q04 問19 と同じく、100 を掛けて <code>Math.round()</code> で四捨五入し、100 で割ります。華氏から 32 を引くところは、引き算を先にするので、かっこで囲みます。同じ四捨五入を何度も書くのが気になるときは、四捨五入だけをする関数を <code>export</code> を付けずに作り、それを呼んでもかまいません（01章 q01 問20 の <code>pad</code> と同じ考え方）。<code>from</code> と <code>to</code> の型は <code>"C" | "F" | "K"</code> です（01章 q07）。「そうでなく、もし」は <code>else if</code> です（04章 q01 問1）。作った関数を呼ぶのは、01章 q01 問20 の <code>toYen(500)</code> と同じ形です。説明することは、ファイルの上に書いてある教材の 3 つのページを読んでから考えます。試すなら、関数を作る行より上に <code>celsiusToFahrenheit(0);</code> と <code>kelvinToCelsius(0);</code> の 2 行を書き、型の確認が何と言うかを見比べます。VS Code で 2 つの関数の名前にマウスを載せ、表示を見比べるのも手がかりになります。試した行は、提出する前に消します。</p></details>
+    </div>
+  </section>
+</section>

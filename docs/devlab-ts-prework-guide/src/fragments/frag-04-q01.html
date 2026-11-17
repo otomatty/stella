@@ -1,0 +1,930 @@
+<section class="sec" id="c04-q01">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q01 if-else文</h2>
+    <p>条件によって返す値を変える関数を 20 個書きます。<code>if</code>・<code>else if</code>・<code>else</code> で書きます。2 つの値のどちらかを返すだけの短い関数は、条件演算子 <code>? :</code>（01章 q01 問12。三項演算子とも呼びます）で書いてもかまいません。引数と戻り値の型注釈は自分で書きます。決まった値しか返さない関数は、戻り値の型を <code>"合格" | "不合格"</code> のようなリテラル型のユニオン（01章 q07）にします。テストは、返す値に加えて型も確かめます。どの問題でどの型を確かめるかは、「テストで確かめる値」に書いてあります。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q01-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">絶対値を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>else</code>、if-else の形（<code>else if</code> の並べ方、早めに <code>return</code> する書き方）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function absValue() {}</code></pre>
+      <p>数を受け取り、その絶対値を返します。絶対値は、0 からの距離のことです。負の数なら符号を反転して正の数にします。0 と正の数は、そのまま返します。<code>Math.abs</code> は使わずに、<code>if</code> で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>absValue(-5)</code></dt><dd class="r"><code>5</code></dd><dd class="c">負の数は符号を反転する</dd></div>
+          <div><dt><code>absValue(3)</code></dt><dd class="r"><code>3</code></dd><dd class="c">正の数はそのまま</dd></div>
+          <div><dt><code>absValue(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">else</code><h4>そうでなければ</h4></div>
+      <p><code>if</code> の条件に合わなかったときは、<code>else</code> の後ろの <code>{ }</code> を実行します。<code>if</code> の <code>{ }</code> と <code>else</code> の <code>{ }</code> は、必ずどちらか片方だけが実行されます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 salesAmount を作る。数値の price と、true か false の isReturn を受け取り、数値を返す
+function salesAmount(price: number, isReturn: boolean): number {
+  // もし isReturn が true なら
+  if (isReturn) {
+    // price の符号を反転した数を返す（返品は売上から引く）
+    return -price;
+  } else {
+    // （そうでなければ）price を返す
+    return price;
+  }
+}
+// 結果: salesAmount(1200, false) は 1200、salesAmount(1200, true) は -1200</code></pre>
+      </div>
+      <p><code>-price</code> のように変数の前に <code>-</code> を付けると、符号を反転した数になります。01章 q05 問4 のマイナスの数と同じ記号です。</p>
+      <p><code>if</code>・<code>else if</code>・<code>else</code> を全部使うと、次の形になります。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>if (条件1) { … }</span> <span class="seg"><i>2</i>else if (条件2) { … }</span> <span class="seg"><i>3</i>else { … }</span></pre>
+        <ol>
+          <li><span>最初に確かめます。条件1 が <code>true</code> なら、ここだけを実行します。</span></li>
+          <li><span>条件1 が <code>false</code> のときだけ確かめます。<code>else if</code> はいくつでも並べられます（01章 q03 応用）。</span></li>
+          <li><span>どの条件にも合わなかったときに実行します。最後に 1 つだけ書けます。</span></li>
+        </ol>
+      </figure>
+      <p><code>else if</code> と <code>else</code> は、どちらも省けます。よく使う組み合わせは次の 3 つです。</p>
+      <dl class="eg">
+        <div><dt><code>if { }</code></dt><dd class="r">合うときだけ実行</dd><dd class="c">合わなければ何もしない（01章 q01 問9）</dd></div>
+        <div><dt><code>if { } else { }</code></dt><dd class="r">2 つのどちらか</dd><dd class="c">必ずどちらか片方を実行する</dd></div>
+        <div><dt><code>if { } else if { } else { }</code></dt><dd class="r">3 つ以上のどれか</dd><dd class="c">上から順に確かめ、最初に合ったものを実行する</dd></div>
+      </dl>
+      <p class="memo"><b>決まり</b><code>else</code> の後ろの <code>{ }</code> も、中身が 1 行でも省けません（<code>curly</code>）。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/statements/if-else">サバイバルTypeScript「if-else文」</a>、<a href="https://typescriptbook.jp/reference/statements/ternary-operator">サバイバルTypeScript「三項演算子」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">else if</code><h4>条件を並べる順番</h4></div>
+      <p><code>else if</code> を並べると、上から順に確かめ、最初に <code>true</code> になったところだけを実行します。そこから下の条件は確かめません。そのため、並べる順番で結果が変わります。</p>
+      <p>「◯ 以上」で分けるときは、大きい数から並べます。「◯ より小さい（未満）」で分けるときは、小さい数から並べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 memberRank を作る。数値の points を受け取り、"ゴールド" か "シルバー" か "一般" を返す
+function memberRank(points: number): "ゴールド" | "シルバー" | "一般" {
+  // もし points が 1000 以上なら
+  if (points &gt;= 1000) {
+    // "ゴールド" を返す
+    return "ゴールド";
+  } else if (points &gt;= 300) {
+    // （そうでなく、もし points が 300 以上なら）"シルバー" を返す
+    return "シルバー";
+  } else {
+    // （そうでなければ）"一般" を返す
+    return "一般";
+  }
+}
+// 結果: memberRank(1500) は "ゴールド"、memberRank(500) は "シルバー"、memberRank(100) は "一般"</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>points</th><th>points &gt;= 1000</th><th>points &gt;= 300</th><th>返す値</th></tr></thead>
+          <tbody>
+            <tr><td>1500</td><td>true</td><td class="j">確かめない</td><td>"ゴールド"</td></tr>
+            <tr><td>500</td><td>false</td><td>true</td><td>"シルバー"</td></tr>
+            <tr><td>100</td><td>false</td><td>false</td><td>"一般"</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>順番を逆にすると、1500 点でも <code>"シルバー"</code> になります。1500 は 300 以上でもあるので、先に書いた条件に合ってしまうからです。</p>
+      <div class="cmp">
+        <div>
+          <h5>大きい数から並べる</h5>
+          <pre><code class="language-typescript">if (points &gt;= 1000) {
+  return "ゴールド";
+} else if (points &gt;= 300) {
+  return "シルバー";
+} else {
+  return "一般";
+}</code></pre>
+          <div class="verdict ok">○ memberRank(1500) は "ゴールド"</div>
+        </div>
+        <div>
+          <h5>小さい数から並べる</h5>
+          <pre><code class="language-typescript">if (points &gt;= 300) {
+  return "シルバー";
+} else if (points &gt;= 1000) {
+  return "ゴールド";
+} else {
+  return "一般";
+}</code></pre>
+          <div class="verdict ng">✕ memberRank(1500) が "シルバー" になります。"ゴールド" の行には届きません</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>境目の数に気をつけます。「以上」は <code>&gt;=</code>、「以下」は <code>&lt;=</code>、「未満（より小さい）」は <code>&lt;</code>、「より大きい」は <code>&gt;</code> です。テストは、<code>bmiLabel(18.5)</code> のように境目の数をよく確かめます。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">if (…) { return …; }</code><h4>早めに return する（else を書かない）</h4></div>
+      <p>01章 q07 問2 で、<code>if</code> の中で <code>return</code> すると、関数はそこで終わることを見ました。<code>if</code> の <code>{ }</code> が <code>return</code> で終わるなら、次の行まで来るのは、条件に合わなかったときだけです。そのため <code>else</code> を書かなくても、結果は同じになります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 memberRank を作る。数値の points を受け取り、"ゴールド" か "シルバー" か "一般" を返す
+function memberRank(points: number): "ゴールド" | "シルバー" | "一般" {
+  // もし points が 1000 以上なら
+  if (points &gt;= 1000) {
+    // "ゴールド" を返す（ここで関数が終わる）
+    return "ゴールド";
+  }
+  // もし points が 300 以上なら
+  if (points &gt;= 300) {
+    // "シルバー" を返す
+    return "シルバー";
+  }
+  // "一般" を返す
+  return "一般";
+}
+// 結果: memberRank(1500) は "ゴールド"、memberRank(500) は "シルバー"、memberRank(100) は "一般"</code></pre>
+      </div>
+      <p>2 つめの <code>if</code> まで来るのは、1000 点より少ないときだけです。上の <code>else if</code> の版と同じ結果になります。</p>
+      <p>使えない値や、計算しなくてよい値のときに、関数の最初で先に返しておく書き方もよく使います。残りの行では、ふつうの場合だけを考えれば済みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 unitPrice を作る。数値の total と数値の count を受け取り、数値を返す
+function unitPrice(total: number, count: number): number {
+  // もし count が 0 と等しいなら
+  if (count === 0) {
+    // 0 を返す（ここで関数が終わる）
+    return 0;
+  }
+  // total ÷ count を切り捨てた数を返す
+  return Math.floor(total / count);
+}
+// 結果: unitPrice(1000, 3) は 333、unitPrice(1000, 0) は 0</code></pre>
+      </div>
+      <p class="memo"><b>コツ</b><code>else</code> でつないでも、早めに <code>return</code> しても、テストは通ります。この番号のヒントは、早めに <code>return</code> する形で書いています。1 つの関数の中では、どちらかの形にそろえると読みやすくなります。</p>
+      <p class="memo"><b>よくある間違い</b>戻り値をリテラル型のユニオンにした関数で、<code>let</code> の変数に入れてから最後に返すと、型の確認でエラーになります（01章 q07 問2）。<code>if</code> の中で、値を直接返します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 absValue を作る。数値の n を受け取り、数値を返す
+export function absValue() {
+  // もし n が 0 より小さいなら
+  //   n の符号を反転した数を返す
+  // n を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の <code>unitPrice</code> のサンプルと同じ、早めに <code>return</code> する形です。「n の符号を反転した数」は、<code>salesAmount</code> のサンプルと同じく <code>-n</code> です。条件を「0 以下」（<code>&lt;=</code>）にすると、0 のときに <code>-0</code> という値を返し、<code>absValue(0)</code> のテストが失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q01-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">大きい方を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function maxOf2() {}</code></pre>
+      <p>2 つの数を受け取り、大きい方を返します。<code>Math.max</code> は使いません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>maxOf2(3, 8)</code></dt><dd class="r"><code>8</code></dd><dd class="c">2 つめが大きい</dd></div>
+          <div><dt><code>maxOf2(9, 2)</code></dt><dd class="r"><code>9</code></dd><dd class="c">1 つめが大きい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 maxOf2 を作る。数値の a と数値の b を受け取り、数値を返す
+export function maxOf2() {
+  // もし a が b 以上なら
+  //   a を返す
+  // b を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の <code>unitPrice</code> のサンプルと同じ、早めに <code>return</code> する形です。「以上」は <code>&gt;=</code> です。2 つのどちらかを返すだけなので、条件演算子 <code>? :</code> で 1 行に書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q01-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">60点以上なら "合格"、それ未満は "不合格"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function passFail() {}</code></pre>
+      <p>点数を受け取り、60 点以上なら <code>"合格"</code>、60 点より低ければ <code>"不合格"</code> を返します。ちょうど 60 点は合格です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>passFail(60)</code></dt><dd class="r"><code>"合格"</code></dd><dd class="c">ちょうど 60 点</dd></div>
+          <div><dt><code>passFail(59)</code></dt><dd class="r"><code>"不合格"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"合格" | "不合格"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 passFail を作る。数値の score を受け取り、"合格" か "不合格" を返す
+export function passFail() {
+  // score が 60 以上なら "合格"、そうでなければ "不合格" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ なら A、そうでなければ B を返す」は、条件演算子 <code>? :</code> で書けます（01章 q01 問12）。戻り値の型は <code>"合格" | "不合格"</code> と書きます。<code>string</code> と書くと、テストの型の確認で失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q01-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">BMI が 18.5 未満なら "やせ"、25 未満なら "普通"、それ以上は "肥満"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function bmiLabel() {}</code></pre>
+      <p>BMI の数を受け取り、判定の文字列を返します。18.5 より小さければ <code>"やせ"</code>、18.5 以上 25 より小さければ <code>"普通"</code>、25 以上なら <code>"肥満"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>bmiLabel(18)</code></dt><dd class="r"><code>"やせ"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bmiLabel(18.5)</code></dt><dd class="r"><code>"普通"</code></dd><dd class="c">ちょうど 18.5 は普通</dd></div>
+          <div><dt><code>bmiLabel(25)</code></dt><dd class="r"><code>"肥満"</code></dd><dd class="c">ちょうど 25 は肥満</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"やせ" | "普通" | "肥満"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bmiLabel を作る。数値の bmi を受け取り、"やせ" か "普通" か "肥満" を返す
+export function bmiLabel() {
+  // もし bmi が 18.5 より小さいなら
+  //   "やせ" を返す
+  // もし bmi が 25 より小さいなら
+  //   "普通" を返す
+  // "肥満" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の、早めに <code>return</code> する版の <code>memberRank</code> と同じ形です。「より小さい」で分けるので、小さい数から並べます。「より小さい」は <code>&lt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q01-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">18歳未満は "子ども"、65歳未満は "大人"、それ以上は "シニア"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function ageGroup() {}</code></pre>
+      <p>年齢を受け取り、年齢の区分を返します。18 歳より下なら <code>"子ども"</code>、18 歳以上 65 歳より下なら <code>"大人"</code>、65 歳以上なら <code>"シニア"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ageGroup(17)</code></dt><dd class="r"><code>"子ども"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ageGroup(18)</code></dt><dd class="r"><code>"大人"</code></dd><dd class="c">ちょうど 18 歳は大人</dd></div>
+          <div><dt><code>ageGroup(65)</code></dt><dd class="r"><code>"シニア"</code></dd><dd class="c">ちょうど 65 歳はシニア</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"子ども" | "大人" | "シニア"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ageGroup を作る。数値の age を受け取り、"子ども" か "大人" か "シニア" を返す
+export function ageGroup() {
+  // もし age が 18 より小さいなら
+  //   "子ども" を返す
+  // もし age が 65 より小さいなら
+  //   "大人" を返す
+  // "シニア" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。違うのは、境目の数と返す文字列です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q01-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">気温が 15 未満なら "寒い"、28 以上なら "暑い"、それ以外は "ちょうどよい"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function feeling() {}</code></pre>
+      <p>気温を受け取り、感じ方を返します。15 度より低ければ <code>"寒い"</code>、28 度以上なら <code>"暑い"</code> です。どちらでもなければ <code>"ちょうどよい"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>feeling(14)</code></dt><dd class="r"><code>"寒い"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>feeling(20)</code></dt><dd class="r"><code>"ちょうどよい"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>feeling(28)</code></dt><dd class="r"><code>"暑い"</code></dd><dd class="c">ちょうど 28 度は暑い</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"寒い" | "ちょうどよい" | "暑い"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 feeling を作る。数値の celsius を受け取り、"寒い" か "ちょうどよい" か "暑い" を返す
+export function feeling() {
+  // もし celsius が 15 より小さいなら
+  //   "寒い" を返す
+  // もし celsius が 28 以上なら
+  //   "暑い" を返す
+  // "ちょうどよい" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じく、早めに <code>return</code> する形です。両はしの 2 つを先に返すと、最後の <code>return</code> まで来るのは 15 以上 28 より小さいときだけです。「以上」は <code>&gt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q01-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">正なら "正"、負なら "負"、0 なら "ゼロ"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function signText() {}</code></pre>
+      <p>数を受け取り、0 より大きければ <code>"正"</code>、0 より小さければ <code>"負"</code>、0 なら <code>"ゼロ"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>signText(3)</code></dt><dd class="r"><code>"正"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signText(-2)</code></dt><dd class="r"><code>"負"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signText(0)</code></dt><dd class="r"><code>"ゼロ"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"正" | "負" | "ゼロ"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 signText を作る。数値の n を受け取り、"正" か "負" か "ゼロ" を返す
+export function signText() {
+  // もし n が 0 より大きいなら
+  //   "正" を返す
+  // もし n が 0 より小さいなら
+  //   "負" を返す
+  // "ゼロ" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q07 問2 の <code>signOf</code> と同じ形です。返す値が、数から文字列に変わっただけです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q01-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">バスの運賃を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function busFare() {}</code></pre>
+      <p>年齢を受け取り、バスの運賃（円）を返します。6 歳より下は 0 円、12 歳以下は 120 円、それより上は 240 円です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>busFare(5)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>busFare(12)</code></dt><dd class="r"><code>120</code></dd><dd class="c">ちょうど 12 歳は 120 円</dd></div>
+          <div><dt><code>busFare(13)</code></dt><dd class="r"><code>240</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。返す値は 3 つだけですが、テストが確かめる型は <code>number</code> です。<code>0 | 120 | 240</code> と書くと、型の確認で失敗します。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 busFare を作る。数値の age を受け取り、数値を返す
+export function busFare() {
+  // もし age が 6 より小さいなら
+  //   0 を返す
+  // もし age が 12 以下なら
+  //   120 を返す
+  // 240 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。2 つめの条件だけ「以下」なので <code>&lt;=</code> を使います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q01-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">合計が 10000円以上なら 0.1、5000円以上なら 0.05、それ未満は 0 を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function discountRate() {}</code></pre>
+      <p>買い物の合計金額を受け取り、割引率を返します。10000 円以上なら <code>0.1</code>、5000 円以上なら <code>0.05</code>、5000 円より少なければ <code>0</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>discountRate(10000)</code></dt><dd class="r"><code>0.1</code></dd><dd class="c">ちょうど 10000 円</dd></div>
+          <div><dt><code>discountRate(6000)</code></dt><dd class="r"><code>0.05</code></dd><dd class="c"></dd></div>
+          <div><dt><code>discountRate(4999)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 discountRate を作る。数値の total を受け取り、数値を返す
+export function discountRate() {
+  // もし total が 10000 以上なら
+  //   0.1 を返す
+  // もし total が 5000 以上なら
+  //   0.05 を返す
+  // 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の、早めに <code>return</code> する版の <code>memberRank</code> と同じ形です。「以上」で分けるので、大きい数の 10000 から確かめます。5000 から確かめると、10000 円でも <code>0.05</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q01-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">5〜10時は "おはよう"、11〜17時は "こんにちは"、それ以外は "こんばんは"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greetingFor() {}</code></pre>
+      <p>時（0〜23 の整数）を受け取り、あいさつを返します。5 時から 10 時までは <code>"おはよう"</code>、11 時から 17 時までは <code>"こんにちは"</code> です。それ以外の時間は <code>"こんばんは"</code> で、夜の 18〜23 時と、朝の 0〜4 時の両方が入ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetingFor(5)</code></dt><dd class="r"><code>"おはよう"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>greetingFor(11)</code></dt><dd class="r"><code>"こんにちは"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>greetingFor(18)</code></dt><dd class="r"><code>"こんばんは"</code></dd><dd class="c">夜</dd></div>
+          <div><dt><code>greetingFor(2)</code></dt><dd class="r"><code>"こんばんは"</code></dd><dd class="c">朝の 5 時より前</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"おはよう" | "こんにちは" | "こんばんは"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greetingFor を作る。数値の hour を受け取り、"おはよう" か "こんにちは" か "こんばんは" を返す
+export function greetingFor() {
+  // もし hour が 5 以上、かつ hour が 10 以下なら
+  //   "おはよう" を返す
+  // もし hour が 11 以上、かつ hour が 17 以下なら
+  //   "こんにちは" を返す
+  // "こんばんは" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。範囲を「◯ 以上、かつ ◯ 以下」で書くと、朝の 0〜4 時も夜も、最後の <code>return</code> で <code>"こんばんは"</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q01-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">a が大きければ "a のほうが大きい"、b が大きければ "b のほうが大きい"、同じなら "同じ"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function compareText() {}</code></pre>
+      <p>2 つの数 <code>a</code> と <code>b</code> を受け取り、どちらが大きいかを文字列で返します。文字列は、半角スペースも含めて問題文のとおりにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>compareText(3, 2)</code></dt><dd class="r"><code>"a のほうが大きい"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>compareText(1, 2)</code></dt><dd class="r"><code>"b のほうが大きい"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>compareText(2, 2)</code></dt><dd class="r"><code>"同じ"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>string</code> であることも確かめます。この問題は、リテラル型のユニオンにすると型の確認で失敗します。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 compareText を作る。数値の a と数値の b を受け取り、文字列を返す
+export function compareText() {
+  // もし a が b より大きいなら
+  //   "a のほうが大きい" を返す
+  // もし a が b より小さいなら
+  //   "b のほうが大きい" を返す
+  // "同じ" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形で、0 と比べていたところが <code>b</code> と比べる形になります。戻り値の型は <code>string</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q01-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">座標 (x, y) が第何象限かを返す。どちらかが 0（軸の上）なら 0</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function quadrant() {}</code></pre>
+      <p>座標の <code>x</code> と <code>y</code> を受け取り、点がどの象限にあるかを、1 から 4 の数で返します。象限は、x 軸と y 軸で 4 つに分けた平面のそれぞれの部分です。x も y も正なら 1、x が負で y が正なら 2、x も y も負なら 3、x が正で y が負なら 4 です。x か y のどちらかが 0 なら、点は軸の上にあるので 0 を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>quadrant(1, 2)</code></dt><dd class="r"><code>1</code></dd><dd class="c">x が正、y が正</dd></div>
+          <div><dt><code>quadrant(-1, 2)</code></dt><dd class="r"><code>2</code></dd><dd class="c">x が負、y が正</dd></div>
+          <div><dt><code>quadrant(-1, -2)</code></dt><dd class="r"><code>3</code></dd><dd class="c">x が負、y が負</dd></div>
+          <div><dt><code>quadrant(1, -2)</code></dt><dd class="r"><code>4</code></dd><dd class="c">x が正、y が負</dd></div>
+          <div><dt><code>quadrant(0, 5)</code></dt><dd class="r"><code>0</code></dd><dd class="c">x が 0（軸の上）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>0 | 1 | 2 | 3 | 4</code> であることも確かめます。数のリテラル型も、文字列と同じく <code>|</code> でつなぎます（01章 q07 問1）。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 quadrant を作る。数値の x と数値の y を受け取り、0 か 1 か 2 か 3 か 4 を返す
+export function quadrant() {
+  // もし x が 0 と等しい、または y が 0 と等しいなら
+  //   0 を返す
+  // もし x が 0 より大きい、かつ y が 0 より大きいなら
+  //   1 を返す
+  // もし x が 0 より小さい、かつ y が 0 より大きいなら
+  //   2 を返す
+  // もし x が 0 より小さいなら
+  //   3 を返す
+  // 4 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最初に軸の上の場合を返しておくと（問1 の <code>unitPrice</code> のサンプルと同じ形）、残りの行では x も y も 0 ではありません。「または」は <code>||</code>（01章 q01 問15）、「かつ」は <code>&amp;&amp;</code> です。4 つめの <code>if</code> まで来るのは、y が負のときだけです。そのため、x だけを確かめれば 3 と 4 を分けられます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q01-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">タイム（秒）が 60 未満なら "金"、90 未満なら "銀"、120 未満なら "銅"、それ以外は "参加賞"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function medalByTime() {}</code></pre>
+      <p>競技のタイム（秒）を受け取り、メダルを返します。60 秒より短ければ <code>"金"</code>、90 秒より短ければ <code>"銀"</code>、120 秒より短ければ <code>"銅"</code>、120 秒以上なら <code>"参加賞"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>medalByTime(59)</code></dt><dd class="r"><code>"金"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>medalByTime(75)</code></dt><dd class="r"><code>"銀"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>medalByTime(119)</code></dt><dd class="r"><code>"銅"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>medalByTime(120)</code></dt><dd class="r"><code>"参加賞"</code></dd><dd class="c">ちょうど 120 秒は参加賞</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"金" | "銀" | "銅" | "参加賞"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 medalByTime を作る。数値の seconds を受け取り、"金" か "銀" か "銅" か "参加賞" を返す
+export function medalByTime() {
+  // もし seconds が 60 より小さいなら
+  //   "金" を返す
+  // もし seconds が 90 より小さいなら
+  //   "銀" を返す
+  // もし seconds が 120 より小さいなら
+  //   "銅" を返す
+  // "参加賞" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形で、<code>if</code> が 1 つ増えただけです。「より小さい」で分けるので、小さい数の 60 から並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q01-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">水温が 0 以下なら "氷"、100 未満なら "水"、それ以上は "水蒸気"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function waterState() {}</code></pre>
+      <p>水の温度を受け取り、水の状態を返します。0 度以下なら <code>"氷"</code>、100 度より低ければ <code>"水"</code>、100 度以上なら <code>"水蒸気"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>waterState(0)</code></dt><dd class="r"><code>"氷"</code></dd><dd class="c">ちょうど 0 度は氷</dd></div>
+          <div><dt><code>waterState(50)</code></dt><dd class="r"><code>"水"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>waterState(100)</code></dt><dd class="r"><code>"水蒸気"</code></dd><dd class="c">ちょうど 100 度は水蒸気</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"氷" | "水" | "水蒸気"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 waterState を作る。数値の celsius を受け取り、"氷" か "水" か "水蒸気" を返す
+export function waterState() {
+  // もし celsius が 0 以下なら
+  //   "氷" を返す
+  // もし celsius が 100 より小さいなら
+  //   "水" を返す
+  // "水蒸気" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。1 つめの条件だけ「以下」なので <code>&lt;=</code>、2 つめは「より小さい」なので <code>&lt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q01-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">駐車料金を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parkingFee() {}</code></pre>
+      <p>停めた時間（分）を受け取り、駐車料金（円）を返します。30 分以下なら無料（0 円）です。30 分を超えたら、停めた時間全体を 30 分ずつに区切り、1 区切りごとに 200 円です。最初の 30 分も数に入ります。30 分に満たない残りも、1 区切りと数えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parkingFee(30)</code></dt><dd class="r"><code>0</code></dd><dd class="c">30 分以下は無料</dd></div>
+          <div><dt><code>parkingFee(31)</code></dt><dd class="r"><code>400</code></dd><dd class="c">30 分と 1 分で 2 区切り</dd></div>
+          <div><dt><code>parkingFee(60)</code></dt><dd class="r"><code>400</code></dd><dd class="c">ちょうど 2 区切り</dd></div>
+          <div><dt><code>parkingFee(61)</code></dt><dd class="r"><code>600</code></dd><dd class="c">3 区切り</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parkingFee を作る。数値の minutes を受け取り、数値を返す
+export function parkingFee() {
+  // もし minutes が 30 以下なら
+  //   0 を返す
+  // minutes ÷ 30 を切り上げ、200 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>無料の場合を先に返す形は、問1 の <code>unitPrice</code> のサンプルと同じです。「切り上げ」は <code>Math.ceil()</code> です（01章 q01 問2）。31 ÷ 30 を切り上げると 2 なので、400 円になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q01-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">風速が 5 未満なら "弱い"、10 未満なら "やや強い"、それ以上は "強い"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function windLevel() {}</code></pre>
+      <p>風速を受け取り、風の強さを返します。5 より小さければ <code>"弱い"</code>、10 より小さければ <code>"やや強い"</code>、10 以上なら <code>"強い"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>windLevel(4)</code></dt><dd class="r"><code>"弱い"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>windLevel(7)</code></dt><dd class="r"><code>"やや強い"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>windLevel(10)</code></dt><dd class="r"><code>"強い"</code></dd><dd class="c">ちょうど 10 は強い</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"弱い" | "やや強い" | "強い"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 windLevel を作る。数値の speed を受け取り、"弱い" か "やや強い" か "強い" を返す
+export function windLevel() {
+  // もし speed が 5 より小さいなら
+  //   "弱い" を返す
+  // もし speed が 10 より小さいなら
+  //   "やや強い" を返す
+  // "強い" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。違うのは、境目の数と返す文字列です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q01-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">長い方の文字列を返す。同じ長さなら a</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pickLonger() {}</code></pre>
+      <p>2 つの文字列 <code>a</code> と <code>b</code> を受け取り、文字数の多い方を返します。同じ文字数なら <code>a</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pickLonger("abc", "de")</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c">a のほうが長い</dd></div>
+          <div><dt><code>pickLonger("a", "de")</code></dt><dd class="r"><code>"de"</code></dd><dd class="c">b のほうが長い</dd></div>
+          <div><dt><code>pickLonger("ab", "cd")</code></dt><dd class="r"><code>"ab"</code></dd><dd class="c">同じ長さなら a</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pickLonger を作る。文字列の a と文字列の b を受け取り、文字列を返す
+export function pickLonger() {
+  // b の文字数が a の文字数より大きいなら b、そうでなければ a を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字数は <code>.length</code> です（01章 q02 問13）。「◯ なら A、そうでなければ B を返す」なので、条件演算子 <code>? :</code> で 1 行に書けます。同じ長さのときは <code>a</code> を返したいので、<code>b</code> のほうが長いときだけ <code>b</code> を選びます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q01-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">偶数なら "偶数"、奇数なら "奇数"（三項演算子で書く）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parityLabel() {}</code></pre>
+      <p>整数を受け取り、偶数なら <code>"偶数"</code>、奇数なら <code>"奇数"</code> を返します。この問題は <code>if</code> を使わずに、条件演算子 <code>? :</code>（三項演算子）で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parityLabel(4)</code></dt><dd class="r"><code>"偶数"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parityLabel(7)</code></dt><dd class="r"><code>"奇数"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"偶数" | "奇数"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parityLabel を作る。数値の n を受け取り、"偶数" か "奇数" を返す
+export function parityLabel() {
+  // n を 2 で割った余りが 0 と等しいなら "偶数"、そうでなければ "奇数" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q07 問3 の <code>coinSide</code> と同じ形です。「2 で割った余り」は <code>% 2</code> です（01章 q01 問3）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q01-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">22時〜翌5時前（22, 23, 0〜4時）は運賃を 2割増しにする（1円未満は四捨五入）。それ以外はそのまま</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function taxiFare() {}</code></pre>
+      <p>タクシーの運賃（円）と乗った時（0〜23 の整数）を受け取り、払う運賃を返します。夜の 22 時、23 時と、朝の 0 時から 4 時までは、2 割増し（運賃に 1.2 を掛けた金額）です。1 円未満は四捨五入します。それ以外の時間は、運賃をそのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>taxiFare(1000, 23)</code></dt><dd class="r"><code>1200</code></dd><dd class="c">夜の 23 時は 2 割増し</dd></div>
+          <div><dt><code>taxiFare(1000, 4)</code></dt><dd class="r"><code>1200</code></dd><dd class="c">朝の 4 時も 2 割増し</dd></div>
+          <div><dt><code>taxiFare(1000, 5)</code></dt><dd class="r"><code>1000</code></dd><dd class="c">5 時からはそのまま</dd></div>
+          <div><dt><code>taxiFare(1000, 21)</code></dt><dd class="r"><code>1000</code></dd><dd class="c">22 時より前はそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 taxiFare を作る。数値の fare と数値の hour を受け取り、数値を返す
+export function taxiFare() {
+  // もし hour が 22 以上、または hour が 5 より小さいなら
+  //   fare に 1.2 を掛けて四捨五入した数を返す
+  // fare を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>夜の時間は、22〜23 時と 0〜4 時の 2 つの範囲に分かれています。どちらかに入ればよいので、「または」の <code>||</code> でつなぎます。「四捨五入」は <code>Math.round()</code> です（01章 q01 問13）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q01-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">在庫が 0 なら "在庫なし"、5 以下なら "残りわずか"、それ以外は "在庫あり"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function stockStatus() {}</code></pre>
+      <p>在庫の数を受け取り、在庫の状態を返します。0 なら <code>"在庫なし"</code>、5 以下なら <code>"残りわずか"</code>、6 以上なら <code>"在庫あり"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>stockStatus(0)</code></dt><dd class="r"><code>"在庫なし"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>stockStatus(5)</code></dt><dd class="r"><code>"残りわずか"</code></dd><dd class="c">ちょうど 5 は残りわずか</dd></div>
+          <div><dt><code>stockStatus(6)</code></dt><dd class="r"><code>"在庫あり"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"在庫あり" | "残りわずか" | "在庫なし"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 stockStatus を作る。数値の stock を受け取り、"在庫あり" か "残りわずか" か "在庫なし" を返す
+export function stockStatus() {
+  // もし stock が 0 と等しいなら
+  //   "在庫なし" を返す
+  // もし stock が 5 以下なら
+  //   "残りわずか" を返す
+  // "在庫あり" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。「0 と等しい」は <code>=== 0</code>、「5 以下」は <code>&lt;= 5</code> です。0 は 5 以下でもあるので、0 の場合を先に確かめます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c04-q01-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">成績・送料・入場料を返す 3 つの関数</span>
+      <span class="q-new">新しく出てくる書き方：<code>-=</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function grade() {}
+
+export function shippingCost() {}
+
+export function ticketPrice() {}</code></pre>
+      <p>次の 3 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>grade(score)</code>：点数を受け取り、評価を返します。90 点以上は <code>"秀"</code>、80 点以上は <code>"優"</code>、70 点以上は <code>"良"</code>、60 点以上は <code>"可"</code>、それより低ければ <code>"不可"</code> です。<code>score</code> が 0〜100 の整数でなければ、エラーを投げます。エラーのメッセージは自分で決めてかまいません。</li>
+        <li><code>shippingCost(weightKg, region)</code>：荷物の重さ（kg）と地域を受け取り、送料（円）を返します。地域は <code>"本州"</code>、<code>"北海道"</code>、<code>"沖縄"</code> のどれかです。2kg 以下は 800 円、5kg 以下は 1200 円、それより重いと 2000 円です。北海道と沖縄は、さらに 500 円を足します。重さが 0 以下なら、エラーを投げます。</li>
+        <li><code>ticketPrice(age, isWeekday)</code>：年齢と、平日かどうか（<code>true</code> か <code>false</code>）を受け取り、入場料（円）を返します。6 歳より下は 0 円、12 歳以下は 500 円、65 歳以上は 800 円、それ以外は 1500 円です。平日は 100 円引きです。ただし、0 円の人は 0 円のままです。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>grade(100)</code></dt><dd class="r"><code>"秀"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>grade(90)</code></dt><dd class="r"><code>"秀"</code></dd><dd class="c">ちょうど 90 点</dd></div>
+          <div><dt><code>grade(89)</code></dt><dd class="r"><code>"優"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>grade(70)</code></dt><dd class="r"><code>"良"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>grade(60)</code></dt><dd class="r"><code>"可"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>grade(0)</code></dt><dd class="r"><code>"不可"</code></dd><dd class="c">0 点は範囲の中</dd></div>
+          <div><dt><code>grade(101)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">100 より大きい</dd></div>
+          <div><dt><code>grade(-1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0 より小さい</dd></div>
+          <div><dt><code>grade(80.5)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">整数でない</dd></div>
+          <div><dt><code>shippingCost(2, "本州")</code></dt><dd class="r"><code>800</code></dd><dd class="c">ちょうど 2kg</dd></div>
+          <div><dt><code>shippingCost(2.1, "本州")</code></dt><dd class="r"><code>1200</code></dd><dd class="c">2kg を少し超えた</dd></div>
+          <div><dt><code>shippingCost(5, "本州")</code></dt><dd class="r"><code>1200</code></dd><dd class="c">ちょうど 5kg</dd></div>
+          <div><dt><code>shippingCost(10, "本州")</code></dt><dd class="r"><code>2000</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shippingCost(1, "北海道")</code></dt><dd class="r"><code>1300</code></dd><dd class="c">800 円に 500 円を足す</dd></div>
+          <div><dt><code>shippingCost(10, "沖縄")</code></dt><dd class="r"><code>2500</code></dd><dd class="c">2000 円に 500 円を足す</dd></div>
+          <div><dt><code>shippingCost(0, "本州")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">重さが 0 以下</dd></div>
+          <div><dt><code>ticketPrice(5, false)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ticketPrice(6, false)</code></dt><dd class="r"><code>500</code></dd><dd class="c">ちょうど 6 歳</dd></div>
+          <div><dt><code>ticketPrice(12, false)</code></dt><dd class="r"><code>500</code></dd><dd class="c">ちょうど 12 歳</dd></div>
+          <div><dt><code>ticketPrice(30, false)</code></dt><dd class="r"><code>1500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ticketPrice(65, false)</code></dt><dd class="r"><code>800</code></dd><dd class="c">ちょうど 65 歳</dd></div>
+          <div><dt><code>ticketPrice(30, true)</code></dt><dd class="r"><code>1400</code></dd><dd class="c">平日は 100 円引き</dd></div>
+          <div><dt><code>ticketPrice(10, true)</code></dt><dd class="r"><code>400</code></dd><dd class="c">500 円から 100 円引き</dd></div>
+          <div><dt><code>ticketPrice(3, true)</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 円は平日でも 0 円</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>grade</code> は引数が <code>number</code>、戻り値が <code>"秀" | "優" | "良" | "可" | "不可"</code> です。<code>shippingCost</code> は引数が <code>number</code> と <code>"本州" | "北海道" | "沖縄"</code>、戻り値が <code>number</code> です。<code>ticketPrice</code> は引数が <code>number</code> と <code>boolean</code>、戻り値が <code>number</code> です。テストはこれらの型も確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">-=</code><h4>引いて入れ直す</h4></div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 残高 balance を入れ直せる変数として作り、3000 を入れる
+let balance = 3000;
+// balance から 1200 を引く
+balance -= 1200;
+// 結果: balance は 1800</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>balance -= 1200</code></dt><dd class="r"><code>balance = balance - 1200</code></dd><dd class="c"><code>+=</code>（01章 q01 問5）の引き算版です。</dd></div>
+      </dl>
+      <p>料金を <code>let</code> の変数で決めてから、別の条件で足したり引いたりするときに使います。次のサンプルでは、泊まる日数で 1 泊の料金を決めてから、会員なら 500 円引きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 roomCharge を作る。数値の nights と、true か false の isMember を受け取り、数値を返す
+function roomCharge(nights: number, isMember: boolean): number {
+  // 1 泊の料金 price を入れ直せる変数として作り、9000 を入れる
+  let price = 9000;
+  // もし nights が 3 以上なら
+  if (nights &gt;= 3) {
+    // price に 8000 を入れ直す
+    price = 8000;
+  }
+  // もし isMember が true なら
+  if (isMember) {
+    // price から 500 を引く
+    price -= 500;
+  }
+  // price に nights を掛けた数を返す
+  return price * nights;
+}
+// 結果: roomCharge(1, false) は 9000、roomCharge(3, true) は 22500</code></pre>
+      </div>
+      <p>日数の条件と会員の条件は、別々に確かめます。<code>else if</code> でつなぐと、どちらか片方しか実行されません。</p>
+      <div class="cmp">
+        <div>
+          <h5>別の <code>if</code> にする</h5>
+          <pre><code class="language-typescript">if (nights &gt;= 3) {
+  price = 8000;
+}
+if (isMember) {
+  price -= 500;
+}</code></pre>
+          <div class="verdict ok">○ roomCharge(3, true) は 22500</div>
+        </div>
+        <div>
+          <h5><code>else if</code> でつなぐ</h5>
+          <pre><code class="language-typescript">if (nights &gt;= 3) {
+  price = 8000;
+} else if (isMember) {
+  price -= 500;
+}</code></pre>
+          <div class="verdict ng">✕ roomCharge(3, true) が 24000 になります。3 泊すると、会員の割引が抜けます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>戻り値が <code>number</code> の関数なら、<code>let</code> の変数に入れてから最後に返しても、型の確認は通ります。エラーになるのは、戻り値をリテラル型のユニオンにした関数だけです（01章 q07 問2）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 grade を作る。数値の score を受け取り、"秀" か "優" か "良" か "可" か "不可" を返す
+export function grade() {
+  // もし score が整数でない、または score が 0 より小さい、または score が 100 より大きいなら
+  //   "点数は 0〜100 の整数にしてください" というメッセージのエラーを投げる
+  // もし score が 90 以上なら
+  //   "秀" を返す
+  // もし score が 80 以上なら
+  //   "優" を返す
+  // もし score が 70 以上なら
+  //   "良" を返す
+  // もし score が 60 以上なら
+  //   "可" を返す
+  // "不可" を返す
+}
+
+// 関数 shippingCost を作る。数値の weightKg と、"本州" か "北海道" か "沖縄" の region を受け取り、数値を返す
+export function shippingCost() {
+  // もし weightKg が 0 以下なら
+  //   "重さは 0 より大きくしてください" というメッセージのエラーを投げる
+  // 送料 cost を入れ直せる変数として作り、2000 を入れる
+  // もし weightKg が 2 以下なら
+  //   cost に 800 を入れ直す
+  // そうでなく、もし weightKg が 5 以下なら
+  //   cost に 1200 を入れ直す
+  // もし region が "本州" と等しくないなら
+  //   cost に 500 を足す
+  // cost を返す
+}
+
+// 関数 ticketPrice を作る。数値の age と、true か false の isWeekday を受け取り、数値を返す
+export function ticketPrice() {
+  // 入場料 price を入れ直せる変数として作り、1500 を入れる
+  // もし age が 6 より小さいなら
+  //   price に 0 を入れ直す
+  // そうでなく、もし age が 12 以下なら
+  //   price に 500 を入れ直す
+  // そうでなく、もし age が 65 以上なら
+  //   price に 800 を入れ直す
+  // もし isWeekday が true、かつ price が 0 より大きいなら
+  //   price から 100 を引く
+  // price を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>grade</code> は戻り値がリテラル型のユニオンなので、問1 の早めに <code>return</code> する版の <code>memberRank</code> と同じ形で、<code>if</code> の中で返します。使えない点数のエラーは、最初の <code>if</code> で先に投げます。エラーを投げるのは <code>throw new Error()</code>（01章 q04 問8）、「整数か」は <code>Number.isInteger()</code>、「でない」は <code>!</code> です（01章 q04 応用）。<code>shippingCost</code> と <code>ticketPrice</code> は、応用のサンプルの <code>roomCharge</code> と同じく、料金を <code>let</code> の変数で決めてから、別の <code>if</code> で足したり引いたりします。「そうでなく、もし」は <code>else if</code>、「等しくない」は <code>!==</code>、「足す」は <code>+=</code>、「引く」は <code>-=</code> です。</p></details>
+    </div>
+  </section>
+</section>

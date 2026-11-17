@@ -1,0 +1,837 @@
+<section class="sec" id="c02-q05">
+  <div class="sec-h">
+    <span class="eyebrow">02章 オブジェクト・配列・タプル</span>
+    <h2>q05 配列を壊さない操作</h2>
+    <p>配列を扱う関数を 20 個書きます。引数の配列には <code>readonly</code> を付けます。関数の中では、渡された配列を書き換えません。毎回、新しい配列を作って返します。新しい配列は、スプレッド構文 <code>[...items, item]</code>、<code>.slice()</code>、<code>.filter()</code>、<code>.map()</code> で作ります。<code>.sort()</code> と <code>.reverse()</code> は、呼んだ配列そのものを並べ替えてしまいます。先に <code>[...items]</code> でコピーしてから使います。テストは、返す配列のほかに、渡した配列が元のままかと、引数と戻り値の型も確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c02-q05-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">末尾に item を足した新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：配列のスプレッド構文 <code>[...items]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function append() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の最後に、文字列 <code>item</code> を足した新しい配列を返します。渡された <code>items</code> は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>append(["a", "b"], "c")</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[...items]</code><h4>配列の中身を、新しい配列に並べる</h4></div>
+      <p>配列リテラル <code>[ ]</code> の中で、配列の前に <code>...</code> を付けます。すると、その配列の要素が、そこに 1 つずつ並びます。これを配列のスプレッド構文と呼びます。できるのは新しい配列で、元の配列は変わりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 買い物かご cart を作り、"りんご" と "みかん" を並べた配列を入れる
+const cart = ["りんご", "みかん"];
+// added を作り、cart の要素すべてと "ぶどう" をこの順に並べた新しい配列を入れる
+const added = [...cart, "ぶどう"];
+// 結果: added は ["りんご", "みかん", "ぶどう"]、cart は ["りんご", "みかん"] のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const added = [<span class="seg"><i>1</i>...cart</span>, <span class="seg"><i>2</i>"ぶどう"</span>];</pre>
+        <ol>
+          <li><span><code>cart</code> の要素が、ここに 1 つずつ並びます。</span></li>
+          <li><span>そのあとに並べる要素です。<code>,</code> で区切って続けます。</span></li>
+        </ol>
+      </figure>
+      <p><code>...</code> は、配列の中のどこにでも置けます。いくつ並べてもかまいません。<code>...</code> だけを書くと、配列のコピーになります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 本店の在庫 mainShop を作り、"ペン" と "ノート" を並べた配列を入れる
+const mainShop = ["ペン", "ノート"];
+// 支店の在庫 branch を作り、"のり" だけの配列を入れる
+const branch = ["のり"];
+// copy を作り、mainShop をコピーした新しい配列を入れる
+const copy = [...mainShop];
+// all を作り、"はさみ"、mainShop の要素すべて、branch の要素すべてをこの順に並べた新しい配列を入れる
+const all = ["はさみ", ...mainShop, ...branch];
+// 結果: copy は ["ペン", "ノート"]、all は ["はさみ", "ペン", "ノート", "のり"]</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>cart.push("ぶどう")</code>（q04 問17）でも最後に足せます。でも、<code>cart</code> そのものが変わってしまいます。この番号では、元の配列を変えずに新しい配列を作ります。</p>
+      <p class="memo"><b>よくある疑問</b><code>...</code> は 3 つの場所で出てきます。オブジェクトの中の <code>{ ...todo }</code>（q02 問8）、関数の引数の <code>Math.max(...numbers)</code>（q04 問12）、配列の中の <code>[...cart]</code> です。どれも「中身を広げて並べる」という意味です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function append(items: readonly string[], item: string): string[] {
+  // items の要素すべてと item をこの順に並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 1 つめのサンプルの <code>added</code> の行と同じ形です。作った配列を、変数に入れずにそのまま <code>return</code> します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c02-q05-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">先頭に item を足した新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function prepend() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の先頭に、文字列 <code>item</code> を足した新しい配列を返します。渡された <code>items</code> は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>prepend(["b", "c"], "a")</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function prepend(items: readonly string[], item: string): string[] {
+  // item と items の要素すべてをこの順に並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>all</code> の行のように、<code>...</code> は配列の中のどこに置いてもかまいません。<code>item</code> を先に書き、そのあとに <code>...items</code> を並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c02-q05-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">先頭の要素を除いた新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：配列の <code>.slice()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dropFirst() {}</code></pre>
+      <p>文字列の配列から、先頭の要素を除いた新しい配列を返します。空の配列が渡されたら、空の配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dropFirst(["a", "b", "c"])</code></dt><dd class="r"><code>["b", "c"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dropFirst([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列でもエラーにしない</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.slice()</code><h4>配列の一部を、新しい配列として取り出す</h4></div>
+      <p>文字列の <code>.slice()</code>（01章 q02 問10）と同じ使い方です。配列では、文字の代わりに要素を取り出します。取り出した要素は新しい配列に入り、元の配列は変わりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の待ち行列 queue を作り、4 人の名前を並べた配列を入れる
+const queue = ["佐藤", "鈴木", "高橋", "田中"];
+// next を作り、queue の 1 番目から 3 番目の前までを取り出した新しい配列を入れる
+const next = queue.slice(1, 3);
+// later を作り、queue の 2 番目から後ろを取り出した新しい配列を入れる
+const later = queue.slice(2);
+// 結果: next は ["鈴木", "高橋"]、later は ["高橋", "田中"]、queue は 4 人のまま</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="chars" role="img" aria-label="queue の各要素の番号。佐藤が 0、鈴木が 1、高橋が 2、田中が 3">
+          <span class="ch"><b>佐藤</b>0</span>
+          <span class="ch"><b>鈴木</b>1</span>
+          <span class="ch"><b>高橋</b>2</span>
+          <span class="ch"><b>田中</b>3</span>
+        </div>
+        <figcaption>要素の下の数が番号です。先頭は 0 です。<code>queue.slice(1, 3)</code> は、1 番目の鈴木から、3 番目の田中の前までです。</figcaption>
+      </figure>
+      <figure class="anat">
+        <pre>queue.slice(<span class="seg c"><i>1</i>1</span>, <span class="seg c"><i>2</i>3</span>)</pre>
+        <ol>
+          <li><span>取り出し始める番号です。この番号の要素は含みます。</span></li>
+          <li><span>ここの前までを取り出します。この番号の要素は含みません。省くと、最後まで取り出します。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>queue.slice(-1)</code></dt><dd class="r"><code>["田中"]</code></dd><dd class="c">マイナスの数は後ろから数える（01章 q05 問4）</dd></div>
+        <div><dt><code>queue.slice(0, 10)</code></dt><dd class="r"><code>["佐藤", "鈴木", "高橋", "田中"]</code></dd><dd class="c">終わりが長さを超えても、あるだけを返す</dd></div>
+        <div><dt><code>queue.slice(5)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">始まりが長さを超えると、空の配列</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b><code>.slice()</code> は、取り出す要素がないときもエラーになりません。空の配列を返します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function dropFirst(items: readonly string[]): string[] {
+  // items の 1 番目から後ろを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>later</code> の行と同じ形で、始まりの番号だけが違います。空の配列でも <code>.slice()</code> は空の配列を返すので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c02-q05-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">最後の要素を除いた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dropLast() {}</code></pre>
+      <p>文字列の配列から、最後の要素を除いた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dropLast(["a", "b", "c"])</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function dropLast(items: readonly string[]): string[] {
+  // items の 0 番目から、後ろから 1 つめの前までを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>next</code> の行と同じ形です。終わりの番号にマイナスの数を渡すと、後ろから数えた番号になります（01章 q05 問4）。<code>-1</code> は最後の要素の番号です。終わりの番号の要素は含まないので、最後の要素が除かれます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c02-q05-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">index 番目に item を差し込んだ新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function insertAt() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の <code>index</code> 番目に、文字列 <code>item</code> を差し込んだ新しい配列を返します。もとの <code>index</code> 番目から後ろの要素は、1 つずつ後ろにずれます。<code>index</code> が <code>0</code> なら先頭に入ります。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>insertAt(["a", "c"], 1, "b")</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>insertAt(["a", "c"], 0, "z")</code></dt><dd class="r"><code>["z", "a", "c"]</code></dd><dd class="c">0 番目なら先頭</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>・<code>number</code>・<code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function insertAt(items: readonly string[], index: number, item: string): string[] {
+  // items の 0 番目から index 番目の前までの要素すべて、item、items の index 番目から後ろの要素すべてを、この順に並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 の <code>.slice()</code> で、<code>index</code> の前と後ろに分けます。それを、問1 の 2 つめのサンプルの <code>all</code> の行のように並べます。<code>...</code> は <code>.slice()</code> の結果の前にも付けられます。<code>index</code> が <code>0</code> のときは、前の部分が空の配列になるので、<code>item</code> が先頭に入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c02-q05-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">index 番目の要素を除いた新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：コールバックで番号を受け取る <code>(_, i) =&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function removeAt() {}</code></pre>
+      <p>文字列の配列 <code>items</code> から、<code>index</code> 番目の要素を除いた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>removeAt(["a", "b", "c"], 1)</code></dt><dd class="r"><code>["a", "c"]</code></dd><dd class="c">1 番目の "b" を除く</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>number</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(_, i) =&gt;</code><h4>コールバックで、要素の番号も受け取る</h4></div>
+      <p><code>.filter()</code> や <code>.map()</code>（q04 問7、問5）に渡す関数は、2 つめの引数で、いま見ている要素の番号を受け取れます。番号は 0 から数えます。<code>.forEach()</code>（q04 問19）の 2 つめの引数と同じです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 時間帯 slots を作り、4 つの時刻を並べた配列を入れる
+const slots = ["9:00", "10:00", "11:00", "12:00"];
+// picked を作り、slots から、番号 i が 2 で割り切れるものだけを残した新しい配列を入れる
+const picked = slots.filter((_, i) =&gt; i % 2 === 0);
+// 会員 members を作り、3 人の名前を並べた配列を入れる
+const members = ["佐藤", "鈴木", "高橋"];
+// labeled を作り、members の要素 name と番号 i から「番号. 名前」の文字列を作って並べた新しい配列を入れる
+const labeled = members.map((name, i) =&gt; `${i + 1}. ${name}`);
+// 結果: picked は ["9:00", "11:00"]、labeled は ["1. 佐藤", "2. 鈴木", "3. 高橋"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>slots.filter((<span class="seg c"><i>1</i>_</span>, <span class="seg c"><i>2</i>i</span>) =&gt; <span class="seg"><i>3</i>i % 2 === 0</span>)</pre>
+        <ol>
+          <li><span>1 つめの引数は要素です。ここでは使わないので、名前を <code>_</code> にしています。</span></li>
+          <li><span>2 つめの引数は、その要素の番号です。</span></li>
+          <li><span><code>true</code> になった要素だけが、新しい配列に残ります。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>番号 i</th><th>要素</th><th>i % 2 === 0</th><th>picked に</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>"9:00"</td><td>true</td><td class="j">残す</td></tr>
+            <tr><td>1</td><td>"10:00"</td><td>false</td><td>除く</td></tr>
+            <tr><td>2</td><td>"11:00"</td><td>true</td><td class="j">残す</td></tr>
+            <tr><td>3</td><td>"12:00"</td><td>false</td><td>除く</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある疑問</b>番号は 2 つめの引数なので、要素を使わないときも 1 つめの引数を書きます。使わない引数には <code>_</code> という名前を付けることがよくあります。読む人に「使わない」と伝わります。</p>
+      <p class="more">05章 q07（コールバック関数）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function removeAt(items: readonly string[], index: number): string[] {
+  // items から、番号 i が index と等しくないものだけを残した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>picked</code> の行と同じ形です。条件を「<code>i</code> が <code>index</code> と等しくない」（<code>!==</code>）に変えます。問5 のように <code>.slice()</code> を 2 つ使って、前と後ろを並べてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c02-q05-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">index 番目の要素を item に置き換えた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function replaceAt() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の <code>index</code> 番目だけを、文字列 <code>item</code> に置き換えた新しい配列を返します。ほかの要素はそのままです。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>replaceAt(["a", "b", "c"], 1, "x")</code></dt><dd class="r"><code>["a", "x", "c"]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>・<code>number</code>・<code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function replaceAt(items: readonly string[], index: number, item: string): string[] {
+  // items の要素 value と番号 i から、i が index と等しいなら item、そうでなければ value を作って並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>labeled</code> の行と同じく、<code>.map()</code> で要素と番号を受け取ります。「等しいなら ◯、そうでなければ ◯」は、条件演算子 <code>? :</code>（01章 q01 問12）で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c02-q05-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">小さい順に並べた新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.sort()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortAsc() {}</code></pre>
+      <p>数値の配列を、小さい順に並べた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortAsc([3, 1, 10, 2])</code></dt><dd class="r"><code>[1, 2, 3, 10]</code></dd><dd class="c">10 は一番大きい数として最後</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>[3, 1, 10, 2]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.sort()</code><h4>配列を並べ替える</h4></div>
+      <p>配列の要素を並べ替えます。かっこの中には、2 つの要素の比べ方を表す関数を渡します。<code>.sort()</code> は新しい配列を作りません。呼んだ配列そのものを並べ替えます。元の配列を残したいときは、先に <code>[...]</code>（問1）でコピーします。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 荷物の重さ weights を作り、3 つの数を並べた配列を入れる
+const weights = [12, 5, 30];
+// light を作り、weights をコピーした配列を、小さい順に並べたものを入れる
+const light = [...weights].sort((a, b) =&gt; a - b);
+// 結果: light は [5, 12, 30]、weights は [12, 5, 30] のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>[...weights]</span>.sort(<span class="seg"><i>2</i>(a, b) =&gt; a - b</span>)</pre>
+        <ol>
+          <li><span>先にコピーします。並べ替わるのは、このコピーです。</span></li>
+          <li><span>比べ方を表す関数です。2 つの要素 <code>a</code> と <code>b</code> を受け取り、数を返します。返した数の符号で、どちらを前にするかが決まります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt>関数がマイナスの数を返す</dt><dd class="r"><code>a</code> を前にする</dd><dd class="c"><code>a - b</code> では、a のほうが小さいとき</dd></div>
+        <div><dt>関数がプラスの数を返す</dt><dd class="r"><code>b</code> を前にする</dd><dd class="c"><code>a - b</code> では、b のほうが小さいとき</dd></div>
+        <div><dt>関数が <code>0</code> を返す</dt><dd class="r">順番を変えない</dd><dd class="c">同じ大きさのとき</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>コピーせずに並べる</h5>
+          <pre><code class="language-typescript">// 荷物の重さ weights を作り、3 つの数を並べた配列を入れる
+const weights = [12, 5, 30];
+// weights を小さい順に並べる
+weights.sort((a, b) =&gt; a - b);</code></pre>
+          <div class="verdict ng">✕ weights そのものが [5, 12, 30] に変わります</div>
+        </div>
+        <div>
+          <h5>コピーしてから並べる</h5>
+          <pre><code class="language-typescript">// 荷物の重さ weights を作り、3 つの数を並べた配列を入れる
+const weights = [12, 5, 30];
+// light を作り、weights をコピーした配列を、小さい順に並べたものを入れる
+const light = [...weights].sort((a, b) =&gt; a - b);</code></pre>
+          <div class="verdict ok">○ weights は [12, 5, 30] のままです</div>
+        </div>
+      </div>
+      <p>比べ方の関数を渡さないと、要素をいったん文字列にしてから、辞書の順に並べます。文字列の配列なら、それで辞書順になります。数値の配列では、思った順になりません。</p>
+      <dl class="eg">
+        <div><dt><code>["Osaka", "Fukuoka", "Nagoya"].sort()</code></dt><dd class="r"><code>["Fukuoka", "Nagoya", "Osaka"]</code></dd><dd class="c">文字列は辞書順</dd></div>
+        <div><dt><code>[12, 5, 30].sort()</code></dt><dd class="r"><code>[12, 30, 5]</code></dd><dd class="c">"12"、"30"、"5" の辞書順になる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>数値を並べるときに比べ方の関数を省くと、上の表のように <code>5</code> が <code>30</code> より後ろになります。数値では、いつも関数を渡します。</p>
+      <p class="memo"><b>よくある疑問</b>引数の配列は <code>readonly</code> です。<code>readonly</code> の配列に直接 <code>.sort()</code> を呼ぶとどうなるかは、応用問題で自分の言葉で説明します。そのときに試してみてください。</p>
+      <p class="memo"><b>よくある疑問</b>新しい JavaScript には、コピーしてから並べる <code>.toSorted()</code> もあります。この課題の設定では使えません。型の確認でエラーになります。</p>
+      <p class="more">05章 q10（配列のユーティリティ）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function sortAsc(numbers: readonly number[]): number[] {
+  // numbers をコピーした配列を、小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>light</code> の行と同じ形です。<code>.sort()</code> は並べ替えた配列を返すので、その結果をそのまま <code>return</code> できます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c02-q05-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">大きい順に並べた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortDesc() {}</code></pre>
+      <p>数値の配列を、大きい順に並べた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortDesc([3, 1, 10, 2])</code></dt><dd class="r"><code>[10, 3, 2, 1]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>[3, 1, 10, 2]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function sortDesc(numbers: readonly number[]): number[] {
+  // numbers をコピーした配列を、大きい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 と同じ形で、比べ方の関数だけを変えます。大きい順では、<code>b</code> のほうが大きいときに <code>b</code> を前にします。そのときにプラスの数になるように、引き算の順番を入れ替えます（問8 の表）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c02-q05-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">辞書順に並べた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortWords() {}</code></pre>
+      <p>文字列の配列を、辞書順（アルファベット順）に並べた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortWords(["banana", "cherry", "apple"])</code></dt><dd class="r"><code>["apple", "banana", "cherry"]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["banana", "cherry", "apple"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function sortWords(words: readonly string[]): string[] {
+  // words をコピーした配列を、辞書順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字列の配列は、比べ方の関数を渡さない <code>.sort()</code> で辞書順になります（問8 の <code>"Osaka"</code> の例）。コピーするところは問8 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c02-q05-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">逆順に並べた新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.reverse()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function reversed() {}</code></pre>
+      <p>文字列の配列を、逆の順に並べた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>reversed(["a", "b", "c"])</code></dt><dd class="r"><code>["c", "b", "a"]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.reverse()</code><h4>配列を逆の順に並べ替える</h4></div>
+      <p>要素の順番を逆にします。<code>.sort()</code>（問8）と同じく、呼んだ配列そのものを並べ替えます。元の配列を残したいときは、先に <code>[...]</code> でコピーします。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文の履歴 history を作り、古い順に 3 つの出来事を並べた配列を入れる
+const history = ["注文", "支払い", "発送"];
+// latestFirst を作り、history をコピーした配列を、逆の順に並べたものを入れる
+const latestFirst = [...history].reverse();
+// 結果: latestFirst は ["発送", "支払い", "注文"]、history は元のまま</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b>コピーして逆にする <code>.toReversed()</code> も、<code>.toSorted()</code>（問8）と同じく、この課題の設定では使えません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function reversed(items: readonly string[]): string[] {
+  // items をコピーした配列を、逆の順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルの <code>latestFirst</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c02-q05-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">2 つの配列をつないだ新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function concatBoth() {}</code></pre>
+      <p>数値の配列 <code>a</code> と <code>b</code> を受け取ります。<code>a</code> の要素のあとに <code>b</code> の要素を続けた、新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>concatBoth([1, 2], [3])</code></dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した a（呼んだあと）</dt><dd class="r"><code>[1, 2]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> 2 つ、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function concatBoth(a: readonly number[], b: readonly number[]): number[] {
+  // a の要素すべてと b の要素すべてをこの順に並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>all</code> の行と同じく、<code>...</code> を付けた配列を 2 つ並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c02-q05-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">value と同じ要素をすべて除いた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function without() {}</code></pre>
+      <p>文字列の配列 <code>items</code> から、文字列 <code>value</code> と同じ要素をすべて除いた新しい配列を返します。同じ要素がいくつあっても、全部除きます。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>without(["a", "b", "a"], "a")</code></dt><dd class="r"><code>["b"]</code></dd><dd class="c">2 つの "a" をどちらも除く</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "a"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function without(items: readonly string[], value: string): string[] {
+  // items から、要素 item が value と等しくないものだけを残した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.filter()</code>（q04 問7）で、条件を「<code>value</code> と等しくない」（<code>!==</code>）にします。番号は使わないので、関数の引数は要素の 1 つだけで足ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c02-q05-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">重複を除いた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function uniqueNumbers() {}</code></pre>
+      <p>数値の配列から、同じ数の 2 回目以降を除いた新しい配列を返します。順番は、それぞれの数が最初に出てきた順です。空の配列なら、空の配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>uniqueNumbers([3, 1, 3, 2, 1])</code></dt><dd class="r"><code>[3, 1, 2]</code></dd><dd class="c">2 回目の 3 と 1 を除く</dd></div>
+          <div><dt><code>uniqueNumbers([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function uniqueNumbers(numbers: readonly number[]): number[] {
+  // numbers から、要素 n と番号 i について、numbers の中で n が最初にある位置が i と等しいものだけを残した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.filter()</code> の関数で、要素 <code>n</code> と番号 <code>i</code> の両方を受け取ります（問6）。<code>.indexOf()</code>（q04 問10）は、最初に見つかった位置を返します。1 回目に出てきた数では、その位置と番号 <code>i</code> が同じです。2 回目以降に出てきた数では、位置のほうが前になり、番号と合いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c02-q05-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">index 番目の要素を先頭に移した新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function moveToFront() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の <code>index</code> 番目の要素を、先頭に移した新しい配列を返します。ほかの要素は、元の順のまま後ろに続きます。<code>index</code> が <code>0</code> なら、元と同じ並びになります。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>moveToFront(["a", "b", "c"], 2)</code></dt><dd class="r"><code>["c", "a", "b"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moveToFront(["a", "b", "c"], 0)</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">もう先頭にある</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>number</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function moveToFront(items: readonly string[], index: number): string[] {
+  // item を作り、items の index 番目を入れる
+  // もし item が undefined と等しいなら
+  //   items をコピーした新しい配列を返す
+  // item と、「items から、番号 i が index と等しくないものだけを残した配列」の要素すべてを、この順に並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>items[index]</code> の型は <code>string | undefined</code> です（q04 問4）。<code>undefined</code> のときを先に返しておくと、そのあとの <code>item</code> は <code>string</code> として扱えます。最後の行は、問6 の <code>.filter()</code> で残した配列の前に <code>...</code> を付け、問2 のように <code>item</code> を先に並べます。<code>items</code> をそのまま返すと、<code>readonly string[]</code> は <code>string[]</code> に入れられないという型のエラーになります。<code>[...items]</code> でコピーして返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c02-q05-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">i 番目と j 番目を入れ替えた新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：添字への代入 <code>a[i] = …</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function swapItems() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の <code>i</code> 番目と <code>j</code> 番目の要素を入れ替えた、新しい配列を返します。どちらかの番号に要素がないとき（範囲外のとき）は、エラーを投げます。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>swapItems(["a", "b", "c"], 0, 2)</code></dt><dd class="r"><code>["c", "b", "a"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>swapItems(["a", "b", "c"], 0, 3)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">3 番目の要素はない</dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>・<code>number</code>・<code>number</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">a[i] = …</code><h4>配列の要素を入れ直す</h4></div>
+      <p>添字 <code>a[i]</code>（01章 q03 問20）の後ろに <code>=</code> と値を書くと、その番号の要素を入れ直せます。配列そのものが変わるので、この番号ではコピーした配列に使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 座席 seats を作り、3 つの "空き" を並べた配列を入れる
+const seats = ["空き", "空き", "空き"];
+// booked を作り、seats をコピーした新しい配列を入れる
+const booked = [...seats];
+// booked の 1 番目に "予約済み" を入れ直す
+booked[1] = "予約済み";
+// 結果: booked は ["空き", "予約済み", "空き"]、seats は元のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>booked[1]</span> <span class="seg c"><i>2</i>=</span> <span class="seg"><i>3</i>"予約済み"</span>;</pre>
+        <ol>
+          <li><span>入れ直す場所です。<code>booked</code> の 1 番目です。</span></li>
+          <li><span>右の値を、左の場所に入れます。</span></li>
+          <li><span>新しく入れる値です。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある疑問</b><code>const</code> で作った配列でも、要素は入れ直せます。<code>const</code> が止めるのは、変数 <code>booked</code> に別の配列を入れ直すことです。</p>
+      <p class="memo"><b>よくある間違い</b><code>readonly</code> の配列の要素に代入すると、型の確認でエラーになります。先に <code>[...]</code> でコピーしてから入れ直します。</p>
+      <p class="memo"><b>よくある間違い</b>要素のない番号に代入すると、エラーにならずに配列が伸びます。3 つの配列の 5 番目に入れると、長さが 6 になり、間に空きができます。範囲外を見分けたいときは、代入の前に自分で確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function swapItems(items: readonly string[], i: number, j: number): string[] {
+  // a を作り、items の i 番目を入れる
+  // b を作り、items の j 番目を入れる
+  // もし a が undefined と等しいか、b が undefined と等しいなら
+  //   "範囲外です" というメッセージのエラーを投げる
+  // copied を作り、items をコピーした新しい配列を入れる
+  // copied の i 番目に b を入れ直す
+  // copied の j 番目に a を入れ直す
+  // copied を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>添字で取り出した <code>a</code> と <code>b</code> の型は <code>string | undefined</code> です（q04 問4）。範囲外の番号では <code>undefined</code> になるので、それで見分けます。2 つの <code>=== undefined</code> を <code>||</code> でつなぎます。エラーは <code>throw new Error("…")</code> です（01章 q04 問8）。入れ直す 2 行は、問16 のサンプルの <code>booked[1]</code> の行と同じ形です。先に <code>a</code> と <code>b</code> に取り出しておくので、入れ直しても値は消えません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c02-q05-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">先頭から n 個の要素の新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function take() {}</code></pre>
+      <p>数値の配列の先頭から <code>n</code> 個の要素を取り出した、新しい配列を返します。要素が <code>n</code> 個より少ないときは、あるだけを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>take([1, 2, 3, 4], 2)</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>take([1], 5)</code></dt><dd class="r"><code>[1]</code></dd><dd class="c">1 個しかない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function take(numbers: readonly number[], n: number): number[] {
+  // numbers の 0 番目から n 番目の前までを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>next</code> の行と同じ形です。<code>.slice()</code> は、終わりが長さを超えてもエラーにならず、あるだけを返します（問3 の表）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c02-q05-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">先頭の n 個を除いた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function skip() {}</code></pre>
+      <p>数値の配列から、先頭の <code>n</code> 個を除いた新しい配列を返します。要素が <code>n</code> 個以下なら、空の配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>skip([1, 2, 3, 4], 2)</code></dt><dd class="r"><code>[3, 4]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>skip([1], 5)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">全部除かれる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function skip(numbers: readonly number[], n: number): number[] {
+  // numbers の n 番目から後ろを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>later</code> の行と同じ形です。始まりが長さを超えると、<code>.slice()</code> は空の配列を返します（問3 の表）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c02-q05-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">value を length 個並べた新しい配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Array.from()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function filled() {}</code></pre>
+      <p>数値 <code>length</code> と数値 <code>value</code> を受け取ります。<code>value</code> を <code>length</code> 個並べた新しい配列を返します。<code>length</code> が <code>0</code> なら、空の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>filled(3, 0)</code></dt><dd class="r"><code>[0, 0, 0]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>filled(0, 7)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">0 個なら空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Array.from()</code><h4>長さを決めて、新しい配列を作る</h4></div>
+      <p>1 つめに、長さを表すオブジェクト <code>{ length: 長さ }</code> を渡します。2 つめに、番号ごとに入れる値を返す関数を渡します。関数は番号 0 から順に呼ばれ、返した値が並んだ新しい配列ができます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// seatNumbers を作り、長さ 3 で、番号 i に 1 を足した数を並べた新しい配列を入れる
+const seatNumbers = Array.from({ length: 3 }, (_, i) =&gt; i + 1);
+// memos を作り、長さ 2 で、どの番号でも "未入力" を並べた新しい配列を入れる
+const memos = Array.from({ length: 2 }, () =&gt; "未入力");
+// 結果: seatNumbers は [1, 2, 3]、memos は ["未入力", "未入力"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>Array.from(<span class="seg"><i>1</i>{ length: 3 }</span>, <span class="seg"><i>2</i>(_, i) =&gt; i + 1</span>)</pre>
+        <ol>
+          <li><span>作る配列の長さです。<code>length</code> というプロパティを持つオブジェクトで渡します。</span></li>
+          <li><span>番号ごとに呼ばれる関数です。2 つめの引数 <code>i</code> が番号です（問6）。返した値が、その番号の要素になります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>Array.from({ length: 0 }, () =&gt; "未入力")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">長さ 0 なら空の配列</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>関数の 1 つめの引数は、いつも <code>undefined</code> で、使い道がありません。番号を使うときは <code>(_, i) =&gt;</code>、番号も使わないときは <code>() =&gt;</code> と書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function filled(length: number, value: number): number[] {
+  // 長さ length で、どの番号でも value を並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問19 のサンプルの <code>memos</code> の行と同じ形です。引数の名前が <code>length</code> なので、長さのオブジェクトはプロパティの省略記法（q01 問3）で <code>{ length }</code> と書きます。<code>{ length: length }</code> と書くと lint でエラーになります（<code>object-shorthand</code>）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c02-q05-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">index 番目の要素だけを 1 増やした新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function incrementAt() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> の <code>index</code> 番目の要素だけに 1 を足した、新しい配列を返します。ほかの要素はそのままです。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>incrementAt([1, 1, 1], 1)</code></dt><dd class="r"><code>[1, 2, 1]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>[1, 1, 1]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function incrementAt(numbers: readonly number[], index: number): number[] {
+  // numbers の要素 n と番号 i から、i が index と等しいなら n に 1 を足した数、そうでなければ n を作って並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。<code>.map()</code> で要素と番号を受け取り、条件演算子 <code>? :</code> で選びます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c02-q05-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">本の配列を壊さずに足す・取り除く・並べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Book = {
+  title: string;
+  price: number;
+};
+
+export function addItem() {}
+
+export function removeAt() {}
+
+export function sortByPrice() {}</code></pre>
+      <p>本を表す型 <code>Book</code> は書いてあります。3 つの関数を書きます。どの関数も、引数の配列を <code>readonly Book[]</code> にします。元の配列は変えずに、新しい配列を返します。</p>
+      <ol>
+        <li><code>addItem(books, book)</code>：最後に <code>book</code> を足した新しい配列を返します。</li>
+        <li><code>removeAt(books, index)</code>：<code>index</code> 番目の本を取り除いた新しい配列を返します。<code>index</code> が 0 より小さいとき、<code>books</code> の長さ以上のとき、整数でないときは、<code>Error</code> を投げます。</li>
+        <li><code>sortByPrice(books)</code>：価格の安い順に並べた新しい配列を返します。同じ価格の本は、元の順のままにします。</li>
+      </ol>
+      <p>ファイルには「説明すること」があります。<code>readonly Book[]</code> の引数に <code>books.sort()</code> を呼ぶとどうなるか、それはなぜかを、すぐ下に <code>//</code> のコメントで書きます。試しに関数の中で <code>books.sort()</code> と書き、エディターに出るメッセージを読んでみてください。確かめたら、その行は消してから提出します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストの <code>books</code> は、次の 4 冊です。</p>
+        <pre><code class="language-typescript">[
+  { title: "TypeScript入門", price: 2800 },
+  { title: "React入門", price: 2400 },
+  { title: "Git入門", price: 1800 },
+  { title: "CSS入門", price: 2400 },
+]</code></pre>
+        <dl class="eg">
+          <div><dt><code>addItem(books, { title: "Node.js入門", price: 3000 })</code></dt><dd class="r">5 冊の配列</dd><dd class="c">4 番目（最後）が <code>{ title: "Node.js入門", price: 3000 }</code></dd></div>
+          <div><dt><code>removeAt(books, 1)</code> の題名</dt><dd class="r"><code>["TypeScript入門", "Git入門", "CSS入門"]</code></dd><dd class="c">1 番目の React入門 を取り除く</dd></div>
+          <div><dt><code>removeAt(books, 0)</code></dt><dd class="r">3 冊の配列</dd><dd class="c"></dd></div>
+          <div><dt><code>removeAt(books, -1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0 より小さい</dd></div>
+          <div><dt><code>removeAt(books, 4)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">長さ 4 以上</dd></div>
+          <div><dt><code>removeAt(books, 1.5)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">整数でない</dd></div>
+          <div><dt><code>sortByPrice(books)</code> の題名</dt><dd class="r"><code>["Git入門", "React入門", "CSS入門", "TypeScript入門"]</code></dd><dd class="c">React入門 と CSS入門 はどちらも 2400 円で、元の順のまま</dd></div>
+          <div><dt>渡した <code>books</code>（呼んだあと）</dt><dd class="r">元の 4 冊のまま</dd><dd class="c">3 つの関数のどれでも</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>addItem</code> は引数が <code>readonly Book[]</code> と <code>Book</code>、<code>removeAt</code> は <code>readonly Book[]</code> と <code>number</code>、<code>sortByPrice</code> は <code>readonly Book[]</code> であることも確かめます。戻り値はどれも <code>Book[]</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function addItem(books: readonly Book[], book: Book): Book[] {
+  // books の要素すべてと book をこの順に並べた新しい配列を返す
+}
+
+export function removeAt(books: readonly Book[], index: number): Book[] {
+  // もし index が整数でないか、index が 0 より小さいか、index が books の長さ以上なら
+  //   "index が範囲外です" というメッセージのエラーを投げる
+  // books から、番号 i が index と等しくないものだけを残した新しい配列を返す
+}
+
+export function sortByPrice(books: readonly Book[]): Book[] {
+  // books をコピーした配列を、価格の安い順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>addItem</code> は問1、<code>removeAt</code> の最後の行は問6 と同じ形です。「整数でない」は <code>!Number.isInteger(index)</code>（01章 q04 応用）、長さは <code>books.length</code> です。3 つの条件を <code>||</code> でつなぎます。<code>sortByPrice</code> は問8 と同じ形で、比べ方の関数の中で <code>a.price</code> から <code>b.price</code> を引きます。<code>.sort()</code> は、関数が <code>0</code> を返した 2 冊の順番を変えません。だから、同じ価格の本は元の順のまま残ります。</p></details>
+    </div>
+  </section>
+</section>

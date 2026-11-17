@@ -1,0 +1,967 @@
+<section class="sec" id="c04-q06">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q06 unknown型と型の絞り込み</h2>
+    <p>型の分からない値（<code>unknown</code>）を受け取る関数を 20 個書きます。引数と戻り値には型注釈を付けます。<code>unknown</code> の値は、そのままではメソッドもプロパティも使えません。<code>typeof</code>、<code>instanceof</code>、<code>Array.isArray()</code>、<code>=== null</code>、<code>"name" in value</code> などで、どんな値かを確かめてから使います。確かめると、その先では型が狭まります。これを型の絞り込みと呼びます。<code>any</code>（型の確認をしない型）は使いません。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q06-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">文字列なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>unknown</code> の値の絞り込み</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isText() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。文字列なら <code>true</code>、それ以外なら <code>false</code> を返します。引数の型は <code>unknown</code>、戻り値の型は <code>boolean</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isText("a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isText(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c">数値は文字列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">typeof value === "string"</code><h4>unknown の値を確かめて、型を絞り込む</h4></div>
+      <p><code>unknown</code> は、02章 q01 の応用で出た「どんな値が入っているか分からない」型です。引数を <code>unknown</code> にすると、文字列でも数値でも配列でも受け取れます。その代わり、中身を確かめるまでは、メソッドもプロパティも使えません。</p>
+      <p>確かめるには、03章 q01 問3 の <code>typeof</code> を使います。<code>typeof input === "string"</code> は、<code>input</code> の型が文字列なら <code>true</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 入力 input を作り、型を unknown にして、"summer" を入れる
+const input: unknown = "summer";
+// isCode を作り、input の型が文字列かどうか（true か false）を入れる
+const isCode = typeof input === "string";
+// 結果: isCode は true</code></pre>
+      </div>
+      <p>この確かめを <code>if</code> の条件に書くと、その <code>{ }</code> の中では、値を文字列として使えます。確かめずに使うと、型の確認でエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5>確かめずに使う</h5>
+          <pre><code class="language-typescript">// 関数 couponLabel を作る。型の分からない code を受け取り、文字列を返す
+function couponLabel(code: unknown): string {
+  // code を大文字にしたものを返す
+  return code.toUpperCase();
+}</code></pre>
+          <div class="verdict ng">✕ code は unknown なので、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5><code>typeof</code> で確かめてから使う</h5>
+          <pre><code class="language-typescript">// 関数 couponLabel を作る。型の分からない code を受け取り、文字列を返す
+function couponLabel(code: unknown): string {
+  // もし code の型が文字列なら
+  if (typeof code === "string") {
+    // code を大文字にしたものを返す
+    return code.toUpperCase();
+  }
+  // "コードなし" を返す
+  return "コードなし";
+}</code></pre>
+          <div class="verdict ok">○ couponLabel("summer") は "SUMMER"、couponLabel(500) は "コードなし" になります</div>
+        </div>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 224" role="img" aria-label="unknown の code を typeof code === &quot;string&quot; で確かめると、true のときの { } の中では string、if の後ろでは unknown のまま">
+            <rect class="box" x="16" y="80" width="140" height="56" rx="8"/>
+            <text class="m" x="86" y="113" text-anchor="middle">unknown</text>
+            <text class="s" x="86" y="158" text-anchor="middle">code の型</text>
+            <line class="ln" x1="160" y1="108" x2="196" y2="108"/><polygon class="hd" points="196,102 208,108 196,114"/>
+            <rect class="box-a" x="212" y="72" width="180" height="72" rx="8"/>
+            <text class="m" x="302" y="102" text-anchor="middle">typeof code</text>
+            <text class="m" x="302" y="126" text-anchor="middle">=== &quot;string&quot;</text>
+            <path class="ln-a" d="M396 96 C 424 96, 424 52, 448 52"/><polygon class="hd-a" points="448,46 460,52 448,58"/>
+            <text class="a" x="430" y="40" text-anchor="middle">true</text>
+            <rect class="box-a" x="464" y="24" width="120" height="56" rx="8"/>
+            <text class="m" x="524" y="57" text-anchor="middle">string</text>
+            <text class="s" x="524" y="100" text-anchor="middle">{ } の中</text>
+            <path class="ln" d="M396 120 C 424 120, 424 164, 448 164"/><polygon class="hd" points="448,158 460,164 448,170"/>
+            <text class="s" x="430" y="192" text-anchor="middle">false</text>
+            <rect class="box" x="464" y="136" width="120" height="56" rx="8"/>
+            <text class="m" x="524" y="169" text-anchor="middle">unknown</text>
+            <text class="s" x="524" y="214" text-anchor="middle">if の後ろ</text>
+          </svg>
+        </div>
+        <figcaption>条件が <code>true</code> になる <code>{ }</code> の中だけ、<code>code</code> は <code>string</code> になります。<code>if</code> の後ろでは「文字列ではない」ことしか分からないので、<code>unknown</code> のままです。</figcaption>
+      </figure>
+      <p><code>couponLabel</code> の <code>code</code> の型は、場所によって次のように変わります。</p>
+      <dl class="eg">
+        <div><dt>関数に入ったところ</dt><dd class="r"><code>unknown</code></dd><dd class="c">どんな値か分からない</dd></div>
+        <div><dt><code>if</code> の <code>{ }</code> の中</dt><dd class="r"><code>string</code></dd><dd class="c"><code>typeof</code> で文字列だと分かった</dd></div>
+        <div><dt><code>if</code> の後ろ</dt><dd class="r"><code>unknown</code></dd><dd class="c">文字列以外の何かなので、まだ分からない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b><code>any</code> も、どんな値でも入る型です。ただし型の確認をしないので、確かめずに <code>.toUpperCase()</code> を呼んでもエラーになりません。数値が来ると、実行したときに初めて失敗します。この課題では <code>any</code> を書くと ESLint でエラーになります（<code>no-explicit-any</code>）。</p>
+      <p class="more">03章 q01 問3（<code>typeof</code> と絞り込み）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isText を作る。型の分からない value を受け取り、true か false を返す
+export function isText() {
+  // value の型が文字列かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「型の分からない value を受け取り」は <code>value: unknown</code>、「true か false を返す」は <code>: boolean</code> です。中の行は、問1 のサンプルの <code>isCode</code> の行と同じ形です。比べた結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q06-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">文字列か配列なら長さを、それ以外は 0 を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Array.isArray()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lengthOf() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。文字列なら文字数を、配列なら要素の数を返します。どちらも <code>.length</code> で求められます。それ以外の値なら <code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lengthOf("abc")</code></dt><dd class="r"><code>3</code></dd><dd class="c">文字数</dd></div>
+          <div><dt><code>lengthOf([1, 2, 3])</code></dt><dd class="r"><code>3</code></dd><dd class="c">要素の数</dd></div>
+          <div><dt><code>lengthOf(42)</code></dt><dd class="r"><code>0</code></dd><dd class="c">数値には長さがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Array.isArray()</code><h4>配列かどうかを確かめる</h4></div>
+      <p>かっこの中の値が配列なら <code>true</code> を返します。<code>if</code> の条件に書くと、その <code>{ }</code> の中では、値を配列として使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 hasApple を作る。型の分からない cart を受け取り、true か false を返す
+function hasApple(cart: unknown): boolean {
+  // もし cart が配列なら
+  if (Array.isArray(cart)) {
+    // cart に "りんご" が含まれるかどうか（true か false）を返す
+    return cart.includes("りんご");
+  }
+  // false を返す
+  return false;
+}
+// 結果: hasApple(["りんご", "みかん"]) は true、hasApple("りんご") は false</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Array.isArray(["A", "B"])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Array.isArray("AB")</code></dt><dd class="r"><code>false</code></dd><dd class="c">文字列は配列ではない</dd></div>
+        <div><dt><code>typeof ["A", "B"]</code></dt><dd class="r"><code>"object"</code></dd><dd class="c"><code>typeof</code> では配列と分からない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>配列の <code>typeof</code> は <code>"array"</code> になりません。<code>"object"</code> です。配列かどうかは <code>Array.isArray()</code> で確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lengthOf を作る。型の分からない value を受け取り、数値を返す
+export function lengthOf() {
+  // もし value の型が文字列、または value が配列なら
+  //   value の長さ（length）を返す
+  // 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「または」は <code>||</code> です（01章 q01 問15）。<code>typeof value === "string"</code> と <code>Array.isArray(value)</code> を <code>||</code> でつなぐと、<code>{ }</code> の中では <code>value</code> は「文字列か配列」になります。どちらにも <code>.length</code> があるので、そのまま使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q06-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">数値ならそのまま、それ以外は 0 を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function numberOrZero() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。数値ならその数をそのまま返し、それ以外なら <code>0</code> を返します。数字だけの文字列 <code>"5"</code> も文字列なので <code>0</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>numberOrZero(5)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>numberOrZero("5")</code></dt><dd class="r"><code>0</code></dd><dd class="c">数字でも文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 numberOrZero を作る。型の分からない value を受け取り、数値を返す
+export function numberOrZero() {
+  // value の型が数値なら value、そうでなければ 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ なら ◯、そうでなければ ◯」は条件演算子 <code>? :</code> です（01章 q01 問12）。条件に <code>typeof value === "number"</code> を書くと、<code>?</code> のすぐ後ろでは <code>value</code> は数値になります。絞り込みは <code>if</code> だけでなく、条件演算子でも働きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q06-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">値の種類を表す文字列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>typeof null</code> と配列の <code>typeof</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function kindOf() {}</code></pre>
+      <p>どんな値でも 1 つ受け取り、<code>typeof</code> の結果を返します。ただし、<code>null</code> なら <code>"null"</code>、配列なら <code>"array"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>kindOf(null)</code></dt><dd class="r"><code>"null"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>kindOf([])</code></dt><dd class="r"><code>"array"</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>kindOf("a")</code></dt><dd class="r"><code>"string"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>kindOf({})</code></dt><dd class="r"><code>"object"</code></dd><dd class="c">空のオブジェクト</dd></div>
+          <div><dt><code>kindOf(undefined)</code></dt><dd class="r"><code>"undefined"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">typeof null</code><h4>typeof が返す文字列</h4></div>
+      <p>03章 q01 問3 では、数値・文字列・真偽値の <code>typeof</code> を見ました。<code>unknown</code> の値には、ほかの種類の値も来ます。<code>null</code> と配列は、どちらも <code>"object"</code> になるので注意します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 入力 input を作り、型を unknown にして、null を入れる
+const input: unknown = null;
+// kind を作り、input の型を表す文字列を入れる
+const kind = typeof input;
+// 結果: kind は "object"</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>値</th><th><code>typeof</code> の結果</th><th>メモ</th></tr></thead>
+          <tbody>
+            <tr><td><code>"在庫"</code></td><td><code>"string"</code></td><td>文字列</td></tr>
+            <tr><td><code>120</code></td><td><code>"number"</code></td><td>数値</td></tr>
+            <tr><td><code>true</code></td><td><code>"boolean"</code></td><td>真偽値</td></tr>
+            <tr><td><code>undefined</code></td><td><code>"undefined"</code></td><td></td></tr>
+            <tr><td><code>null</code></td><td><code>"object"</code></td><td><code>"null"</code> にはならない</td></tr>
+            <tr><td><code>["A", "B"]</code></td><td><code>"object"</code></td><td><code>"array"</code> にはならない</td></tr>
+            <tr><td><code>{ id: 1 }</code></td><td><code>"object"</code></td><td>オブジェクト</td></tr>
+            <tr><td><code>() =&gt; 1</code></td><td><code>"function"</code></td><td>関数（01章 q01 問20 のアロー関数）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>コツ</b><code>null</code> は <code>=== null</code>、配列は <code>Array.isArray()</code>（問2）で見分けます。<code>=== null</code> は比べるだけなので、<code>unknown</code> の値にそのまま使えます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 kindOf を作る。型の分からない value を受け取り、文字列を返す
+export function kindOf() {
+  // もし value が null と等しいなら
+  //   "null" を返す
+  // もし value が配列なら
+  //   "array" を返す
+  // value の型を表す文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最後の行は、問4 のサンプルの <code>kind</code> の行と同じく <code>typeof value</code> です。<code>typeof</code> を返す行は最後に書きます。先に書くと、<code>null</code> と配列も <code>"object"</code> のまま返ってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q06-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">値を文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toText() {}</code></pre>
+      <p>どんな値でも 1 つ受け取り、種類ごとに文字列を返します。文字列なら、そのまま返します。数値と真偽値は、<code>String()</code> で文字列にして返します。<code>null</code> なら <code>"null"</code>、<code>undefined</code> なら <code>"undefined"</code> を返します。それ以外は <code>"[object]"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toText("a")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toText(1.5)</code></dt><dd class="r"><code>"1.5"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toText(true)</code></dt><dd class="r"><code>"true"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toText(null)</code></dt><dd class="r"><code>"null"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toText(undefined)</code></dt><dd class="r"><code>"undefined"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toText({ a: 1 })</code></dt><dd class="r"><code>"[object]"</code></dd><dd class="c">オブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toText を作る。型の分からない value を受け取り、文字列を返す
+export function toText() {
+  // もし value の型が文字列なら
+  //   value を返す
+  // もし value の型が数値、または value の型が真偽値なら
+  //   value を文字列にしたものを返す
+  // もし value が null と等しいなら
+  //   "null" を返す
+  // もし value が undefined と等しいなら
+  //   "undefined" を返す
+  // "[object]" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>真偽値の <code>typeof</code> は <code>"boolean"</code> です。2 つめの <code>if</code> は、問2 と同じく <code>||</code> で 2 つの確かめをつなぎます。「文字列にしたもの」は <code>String()</code> です（01章 q01 問12）。<code>undefined</code> も <code>=== undefined</code> で比べられます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q06-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">2 つとも数値なら足した数を、そうでなければ null を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addIfNumbers() {}</code></pre>
+      <p>どんな値でも 2 つ受け取ります。2 つとも数値なら、足した数を返します。どちらかが数値でなければ <code>null</code> を返します。戻り値の型は「数値か <code>null</code>」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addIfNumbers(1, 2)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>addIfNumbers(1, "2")</code></dt><dd class="r"><code>null</code></dd><dd class="c">2 つめが文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> と <code>unknown</code>、戻り値が <code>number | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addIfNumbers を作る。型の分からない a と型の分からない b を受け取り、数値か null を返す
+export function addIfNumbers() {
+  // もし a の型が数値、かつ b の型が数値なら
+  //   a と b を足した数を返す
+  // null を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数値か null」は <code>number | null</code> です（03章 q03）。「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。2 つの確かめを <code>&amp;&amp;</code> でつなぐと、<code>{ }</code> の中では <code>a</code> も <code>b</code> も数値になり、足し算ができます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q06-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">Date なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>instanceof Date</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isDateValue() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。日付の値（<code>Date</code>）なら <code>true</code>、それ以外なら <code>false</code> を返します。<code>instanceof</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isDateValue(new Date())</code></dt><dd class="r"><code>true</code></dd><dd class="c">いまの日時の Date</dd></div>
+          <div><dt><code>isDateValue("2026-12-01")</code></dt><dd class="r"><code>false</code></dd><dd class="c">日付の形の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">instanceof Date</code><h4>日付の値かを確かめる</h4></div>
+      <p><code>Date</code> は、日付と時刻を表す組み込みの型です（03章 q03 問20）。<code>new Date("2026-12-01T09:00:00Z")</code> のように <code>new</code> を付けて呼ぶと、日付の値ができます。最後の <code>Z</code> は世界標準時という意味です。かっこを空にすると、いまの日時になります。</p>
+      <p>q05 問10 では、<code>instanceof Error</code> でエラーの値かを確かめました。日付の値も同じく <code>instanceof Date</code> で確かめます。<code>if</code> の条件に書くと、その <code>{ }</code> の中では <code>Date</code> として使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 配達日時 deliveredAt を作り、型を unknown にして、2026年12月1日 9時（世界標準時）の日付を入れる
+const deliveredAt: unknown = new Date("2026-12-01T09:00:00Z");
+// isDate を作り、deliveredAt が Date の値かどうか（true か false）を入れる
+const isDate = deliveredAt instanceof Date;
+// 結果: isDate は true</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>typeof new Date("2026-12-01")</code></dt><dd class="r"><code>"object"</code></dd><dd class="c"><code>typeof</code> では日付と分からない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>"2026-12-01"</code> は日付の形をしていても文字列です。<code>Date</code> の値ではないので、<code>instanceof Date</code> は <code>false</code> になります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isDateValue を作る。型の分からない value を受け取り、true か false を返す
+export function isDateValue() {
+  // value が Date の値かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>isDate</code> の行と同じ形です。<code>instanceof</code> の結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q06-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">Date なら「2026-12-01」の形の文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dateText() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>Date</code> の値なら、<code>.toISOString()</code> で作った文字列の先頭 10 文字を返します。<code>.toISOString()</code> は、日付を <code>"2026-12-01T09:00:00.000Z"</code> の形の文字列にします。<code>Date</code> でなければ <code>"日付ではありません"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dateText(new Date("2026-12-01T09:00:00Z"))</code></dt><dd class="r"><code>"2026-12-01"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dateText("2026-12-01")</code></dt><dd class="r"><code>"日付ではありません"</code></dd><dd class="c">文字列は Date ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dateText を作る。型の分からない value を受け取り、文字列を返す
+export function dateText() {
+  // もし value が Date の値なら
+  //   value を ISO の形の文字列にし、0 文字目から 10 文字目の前までを取り出したものを返す
+  // "日付ではありません" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>if (value instanceof Date)</code> の <code>{ }</code> の中では、<code>value</code> は <code>Date</code> なので <code>.toISOString()</code> を呼べます。その結果に、続けて <code>.slice(0, 10)</code> を呼びます（01章 q02 問10）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q06-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">文字列の要素の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countStrings() {}</code></pre>
+      <p>どんな値が入っているか分からない配列を受け取ります。その中で、文字列の要素がいくつあるかを返します。引数の型は <code>readonly unknown[]</code>（中身の型が分からない、読み取り専用の配列）にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countStrings(["a", 1, "b", null])</code></dt><dd class="r"><code>2</code></dd><dd class="c">"a" と "b"</dd></div>
+          <div><dt><code>countStrings([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly unknown[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countStrings を作る。読み取り専用の、型の分からない値の配列 values を受け取り、数値を返す
+export function countStrings() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // values から 1 つずつ value に取り出してくり返す
+  //   もし value の型が文字列なら
+  //     count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「読み取り専用の、型の分からない値の配列」は <code>readonly unknown[]</code> です（02章 q04 問1 の <code>readonly number[]</code> と同じ形）。取り出した <code>value</code> の型は <code>unknown</code> なので、<code>typeof</code> で確かめてから数えます。「1 増やす」は <code>++</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q06-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">数値の要素だけを集めた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function onlyNumbers() {}</code></pre>
+      <p>どんな値が入っているか分からない配列を受け取ります。数値の要素だけを、元の順番のまま集めた配列を返します。<code>for-of</code> と <code>.push()</code> で書きます。戻り値の型は数値の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>onlyNumbers([1, "2", 3])</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c">"2" は文字列なので入れない</dd></div>
+          <div><dt><code>onlyNumbers([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly unknown[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 onlyNumbers を作る。読み取り専用の、型の分からない値の配列 values を受け取り、数値の配列を返す
+export function onlyNumbers() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // values から 1 つずつ value に取り出してくり返す
+  //   もし value の型が数値なら
+  //     result の最後に value を足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は <code>const result: number[] = [];</code> の形です（02章 q04 問17）。型を書かないと、空の配列の型が決まりません。<code>if</code> の <code>{ }</code> の中では <code>value</code> は数値なので、<code>number[]</code> の <code>result</code> に <code>.push()</code> で足せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q06-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">最初の文字列の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstText() {}</code></pre>
+      <p>どんな値が入っているか分からない配列を受け取ります。前から見て、最初に見つかった文字列の要素を返します。文字列が 1 つもなければ <code>undefined</code> を返します。戻り値の型は「文字列か <code>undefined</code>」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstText([1, "a", "b"])</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">最初の文字列</dd></div>
+          <div><dt><code>firstText([1, 2])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">文字列がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly unknown[]</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstText を作る。読み取り専用の、型の分からない値の配列 values を受け取り、文字列か undefined を返す
+export function firstText() {
+  // values から 1 つずつ value に取り出してくり返す
+  //   もし value の型が文字列なら
+  //     value を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しの中で <code>return</code> すると、その時点で関数が終わります。残りの要素は見ません。最後まで見つからなかったときだけ、くり返しの後ろの <code>return undefined;</code> に進みます（01章 q03 問12）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q06-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">name プロパティが文字列なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasName() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>null</code> でないオブジェクトで、<code>name</code> プロパティを持ち、その値が文字列なら <code>true</code> を返します。それ以外は <code>false</code> です。<code>"name" in value</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasName({ name: "山田" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasName({ name: 1 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">name が数値</dd></div>
+          <div><dt><code>hasName(null)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasName("山田")</code></dt><dd class="r"><code>false</code></dd><dd class="c">オブジェクトではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">"stock" in item</code><h4>オブジェクトのプロパティを、4 つの段階で確かめる</h4></div>
+      <p>q05 問16 で出た書き方です。<code>unknown</code> の値のプロパティを使うには、4 つの確かめを <code>&amp;&amp;</code> でつなぎます。<code>&amp;&amp;</code> は左から順に調べ、<code>false</code> になったところで止まります。そのため、右側では、左側で確かめた型を使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockLabel を作る。型の分からない item を受け取り、文字列を返す
+function stockLabel(item: unknown): string {
+  // もし item の型を表す文字列が "object" と等しい、かつ item が null でない、かつ item に "stock" というキーがある、かつ item の stock の型が数値なら
+  if (
+    typeof item === "object" &amp;&amp;
+    item !== null &amp;&amp;
+    "stock" in item &amp;&amp;
+    typeof item.stock === "number"
+  ) {
+    // item の stock を埋め込んだ「在庫 ◯ 個」の文字列を返す
+    return `在庫 ${item.stock} 個`;
+  }
+  // "在庫不明" を返す
+  return "在庫不明";
+}
+// 結果: stockLabel({ stock: 5 }) は "在庫 5 個"、stockLabel({ stock: "5" }) は "在庫不明"</code></pre>
+      </div>
+      <p>1 つ確かめるごとに、<code>item</code> の型は次のように狭まります。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>確かめたこと</th><th>その右側での型</th><th>メモ</th></tr></thead>
+          <tbody>
+            <tr><td>（まだ何も確かめていない）</td><td><code>unknown</code></td><td>何も使えない</td></tr>
+            <tr><td><code>typeof item === "object"</code></td><td><code>object | null</code></td><td><code>typeof null</code> も <code>"object"</code> なので、<code>null</code> が残る</td></tr>
+            <tr><td><code>item !== null</code></td><td><code>object</code></td><td>オブジェクトだが、どんなプロパティがあるかは分からない</td></tr>
+            <tr><td><code>"stock" in item</code></td><td><code>stock</code> を持つ <code>object</code></td><td><code>item.stock</code> は使えるが、型は <code>unknown</code></td></tr>
+            <tr><td><code>typeof item.stock === "number"</code></td><td><code>item.stock</code> は <code>number</code></td><td>ここで初めて数値として使える</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>item !== null</code> を抜かすと、<code>"stock" in item</code> が型の確認でエラーになります。<code>item</code> が <code>null</code> かもしれないからです。<code>"stock" in item</code> から始めても、<code>item</code> が <code>unknown</code> のままなのでエラーになります。</p>
+      <p class="memo"><b>書き方</b>長い条件は、Prettier が <code>&amp;&amp;</code> ごとに改行して、上のサンプルの形に整えます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasName を作る。型の分からない value を受け取り、true か false を返す
+export function hasName() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value の name の型が文字列かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 のサンプルの <code>if</code> の条件と同じ 4 つを、<code>&amp;&amp;</code> でつなぎます。調べるキーは <code>"name"</code>、最後の型は <code>"string"</code> です。結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。<code>return</code> の後ろの式が長くなるときは、Prettier が <code>( )</code> で囲んで改行します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q06-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">name プロパティが文字列ならそれを、そうでなければ「不明」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nameOrUnknown() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>name</code> プロパティを持つオブジェクトで、その値が文字列なら、その文字列を返します。そうでなければ <code>"不明"</code> を返します。ほかのプロパティ（<code>age</code> など）があってもかまいません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameOrUnknown({ name: "山田", age: 30 })</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nameOrUnknown({})</code></dt><dd class="r"><code>"不明"</code></dd><dd class="c">name がない</dd></div>
+          <div><dt><code>nameOrUnknown(undefined)</code></dt><dd class="r"><code>"不明"</code></dd><dd class="c">オブジェクトではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameOrUnknown を作る。型の分からない value を受け取り、文字列を返す
+export function nameOrUnknown() {
+  // もし value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value の name の型が文字列なら
+  //   value の name を返す
+  // "不明" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 のサンプルの <code>stockLabel</code> と同じ形です。<code>if</code> の <code>{ }</code> の中では <code>value.name</code> は文字列なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q06-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">すべての要素が数値の配列なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isNumberList() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。配列で、すべての要素が数値なら <code>true</code> を返します。数値でない要素が 1 つでもあれば <code>false</code> です。配列でない値も <code>false</code> です。空の配列は、数値でない要素がないので <code>true</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isNumberList([1, 2])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isNumberList([1, "2"])</code></dt><dd class="r"><code>false</code></dd><dd class="c">"2" は文字列</dd></div>
+          <div><dt><code>isNumberList([])</code></dt><dd class="r"><code>true</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>isNumberList("12")</code></dt><dd class="r"><code>false</code></dd><dd class="c">配列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isNumberList を作る。型の分からない value を受け取り、true か false を返す
+export function isNumberList() {
+  // もし value が配列でないなら
+  //   false を返す
+  // value から 1 つずつ item に取り出してくり返す
+  //   もし item の型が数値でないなら
+  //     false を返す
+  // true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「配列でない」は <code>!Array.isArray(value)</code>、「数値でない」は <code>typeof item !== "number"</code> です。配列でないときに先に <code>return</code> すると、その後ろでは <code>value</code> は配列として扱われ、<code>for-of</code> で取り出せます。空の配列では、くり返しが 1 回も起きずに <code>true</code> に進みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q06-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">真偽値ならそのまま、文字列「true」なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toBool() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。真偽値なら、そのまま返します。文字列の <code>"true"</code> なら <code>true</code> を返します。それ以外はすべて <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toBool(true)</code></dt><dd class="r"><code>true</code></dd><dd class="c">真偽値はそのまま</dd></div>
+          <div><dt><code>toBool("true")</code></dt><dd class="r"><code>true</code></dd><dd class="c">文字列の "true"</dd></div>
+          <div><dt><code>toBool("yes")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toBool(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toBool を作る。型の分からない value を受け取り、true か false を返す
+export function toBool() {
+  // もし value の型が真偽値なら
+  //   value を返す
+  // value が "true" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>真偽値の <code>typeof</code> は <code>"boolean"</code> です。最後の行の <code>value === "true"</code> は、<code>unknown</code> のままでも書けます。<code>===</code> は比べるだけで、値の中身を使わないからです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q06-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">エラーの内容を文字列で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function problemText() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>Error</code> の値なら、その <code>message</code> を返します。文字列なら、そのまま返します。それ以外は <code>"エラー"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>problemText(new Error("失敗"))</code></dt><dd class="r"><code>"失敗"</code></dd><dd class="c">Error の message</dd></div>
+          <div><dt><code>problemText("だめ")</code></dt><dd class="r"><code>"だめ"</code></dd><dd class="c">文字列はそのまま</dd></div>
+          <div><dt><code>problemText(1)</code></dt><dd class="r"><code>"エラー"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 problemText を作る。型の分からない value を受け取り、文字列を返す
+export function problemText() {
+  // もし value が Error の値なら
+  //   value の message を返す
+  // もし value の型が文字列なら
+  //   value を返す
+  // "エラー" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 つめの <code>if</code> は、q05 問10 と同じく <code>value instanceof Error</code> です。その <code>{ }</code> の中では <code>value</code> は <code>Error</code> なので、<code>.message</code> を使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q06-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">配列の最初の要素が文字列なら、その文字数を返す</span>
+      <span class="q-new">新しく出てくる書き方：取り出した値を <code>unknown</code> の変数に入れる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstItemLength() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。配列で、その 0 番目の要素が文字列なら、その文字数を返します。それ以外は <code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstItemLength(["abc", 1])</code></dt><dd class="r"><code>3</code></dd><dd class="c">"abc" は 3 文字</dd></div>
+          <div><dt><code>firstItemLength([1, "abc"])</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 番目が数値</dd></div>
+          <div><dt><code>firstItemLength("abc")</code></dt><dd class="r"><code>0</code></dd><dd class="c">配列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">const next: unknown = guests[1];</code><h4>配列から取り出した値は、unknown の変数に入れる</h4></div>
+      <p><code>Array.isArray()</code> で確かめた値は、<code>any[]</code> という型になります。中身が <code>any</code>（型の確認をしない型）の配列です。<code>any</code> の値を、型を書かずに変数に入れると、ESLint がエラーにします（<code>no-unsafe-assignment</code>）。型を <code>unknown</code> と書いて入れれば、エラーになりません。そのあとで、もう一度 <code>typeof</code> で確かめてから使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 nextGuest を作る。型の分からない guests を受け取り、文字列を返す
+function nextGuest(guests: unknown): string {
+  // もし guests が配列なら
+  if (Array.isArray(guests)) {
+    // 次の人 next を作り、型を unknown にして、guests の 1 番目を入れる
+    const next: unknown = guests[1];
+    // もし next の型が文字列なら
+    if (typeof next === "string") {
+      // next を埋め込んだ「次は ◯ さん」の文字列を返す
+      return `次は ${next} さん`;
+    }
+  }
+  // "次の予約なし" を返す
+  return "次の予約なし";
+}
+// 結果: nextGuest(["佐藤", "鈴木"]) は "次は 鈴木 さん"、nextGuest(["佐藤"]) は "次の予約なし"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>型を書かずに入れる</h5>
+          <pre><code class="language-typescript">// 次の人 next を作り、guests の 1 番目を入れる
+const next = guests[1];</code></pre>
+          <div class="verdict ng">✕ next が any になり、ESLint でエラーになります</div>
+        </div>
+        <div>
+          <h5>型を unknown にして入れる</h5>
+          <pre><code class="language-typescript">// 次の人 next を作り、型を unknown にして、guests の 1 番目を入れる
+const next: unknown = guests[1];</code></pre>
+          <div class="verdict ok">○ エラーになりません。typeof で確かめてから使います</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>guests.length</code> を使ったり、<code>for-of</code> で取り出した値を <code>typeof</code> で確かめたりするのは、そのままでエラーになりません。ESLint がエラーにするのは、<code>any</code> の値を、型を書かずに変数に入れたときや、そのまま <code>return</code> したときです。</p>
+      <p class="memo"><b>よくある疑問</b>1 番目の要素がない配列では、<code>guests[1]</code> は <code>undefined</code> です。<code>typeof</code> の確かめで <code>false</code> になるので、エラーにはなりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstItemLength を作る。型の分からない value を受け取り、数値を返す
+export function firstItemLength() {
+  // もし value が配列なら
+  //   先頭 first を作り、型を unknown にして、value の 0 番目を入れる
+  //   もし first の型が文字列なら
+  //     first の文字数を返す
+  // 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問17 のサンプルの <code>nextGuest</code> と同じ形です。取り出す番号が <code>0</code>、返すものが <code>first.length</code> に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q06-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">port プロパティが数値ならそれを、そうでなければ 3000 を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function portOf() {}</code></pre>
+      <p>設定の値を 1 つ受け取ります。中身の型は分かりません。<code>port</code> プロパティを持つオブジェクトで、その値が数値なら、その数を返します。そうでなければ、決まった値の <code>3000</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>portOf({ port: 8080 })</code></dt><dd class="r"><code>8080</code></dd><dd class="c"></dd></div>
+          <div><dt><code>portOf({ port: "8080" })</code></dt><dd class="r"><code>3000</code></dd><dd class="c">port が文字列</dd></div>
+          <div><dt><code>portOf(null)</code></dt><dd class="r"><code>3000</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 portOf を作る。型の分からない config を受け取り、数値を返す
+export function portOf() {
+  // もし config の型を表す文字列が "object" と等しい、かつ config が null でない、かつ config に "port" というキーがある、かつ config の port の型が数値なら
+  //   config の port を返す
+  // 3000 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 のサンプルの <code>stockLabel</code> の <code>if</code> と同じ形です。調べるキーが <code>"port"</code> に変わります。<code>{ }</code> の中では <code>config.port</code> は数値なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q06-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">null でも配列でもないオブジェクトなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPlainObject() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>{}</code> のようなオブジェクトなら <code>true</code> を返します。<code>null</code> と配列は、<code>typeof</code> が <code>"object"</code> でも <code>false</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPlainObject({})</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPlainObject([])</code></dt><dd class="r"><code>false</code></dd><dd class="c">配列</dd></div>
+          <div><dt><code>isPlainObject(null)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPlainObject("a")</code></dt><dd class="r"><code>false</code></dd><dd class="c">文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPlainObject を作る。型の分からない value を受け取り、true か false を返す
+export function isPlainObject() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value が配列でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>はじめの 2 つは、問12 のサンプルの条件の前半と同じです。「配列でない」は、問14 と同じく <code>!Array.isArray(value)</code> です。3 つを <code>&amp;&amp;</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q06-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">JSON を読んだ結果が数値ならそれを、そうでなければ null を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>JSON.parse()</code> の結果を <code>unknown</code> の変数に入れる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function jsonNumber() {}</code></pre>
+      <p>文字列を 1 つ受け取り、JSON として読みます。読んだ結果が数値なら、その数を返します。数値でなければ <code>null</code> を返します。JSON として読めないときも、エラーを投げずに <code>null</code> を返します。この問題だけ、引数の型は <code>string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>jsonNumber("42")</code></dt><dd class="r"><code>42</code></dd><dd class="c">数値として読める</dd></div>
+          <div><dt><code>jsonNumber('"42"')</code></dt><dd class="r"><code>null</code></dd><dd class="c">読んだ結果は文字列の "42"</dd></div>
+          <div><dt><code>jsonNumber("{")</code></dt><dd class="r"><code>null</code></dd><dd class="c">JSON として読めない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">const data: unknown = JSON.parse(json);</code><h4>JSON を読んだ結果を、unknown の変数に入れる</h4></div>
+      <p><code>JSON.parse()</code>（q05 問5）の結果の型も <code>any</code> です。問17 と同じく、型を <code>unknown</code> と書いた変数に入れてから、<code>typeof</code> などで確かめます。読めない文字列ではエラーを投げるので、<code>try</code> と <code>catch</code>（q05 問5）で受け止めます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 tagCount を作る。文字列 json を受け取り、数値を返す
+function tagCount(json: string): number {
+  // 次の中を試す
+  try {
+    // 値 data を作り、型を unknown にして、json を JSON として読んだ結果を入れる
+    const data: unknown = JSON.parse(json);
+    // data が配列なら data の要素の数、そうでなければ 0 を返す
+    return Array.isArray(data) ? data.length : 0;
+  } catch {
+    // （例外が投げられたら）0 を返す
+    return 0;
+  }
+}
+// 結果: tagCount('["新着", "セール"]') は 2、tagCount("12") は 0、tagCount("[") は 0</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>JSON.parse("42")</code></dt><dd class="r"><code>42</code></dd><dd class="c">数値</dd></div>
+        <div><dt><code>JSON.parse('"42"')</code></dt><dd class="r"><code>"42"</code></dd><dd class="c"><code>"</code> で囲まれているので文字列</dd></div>
+        <div><dt><code>JSON.parse("[")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">JSON として読めない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>const data = JSON.parse(json);</code> と型を書かずに入れると、<code>data</code> が <code>any</code> になり、ESLint でエラーになります（<code>no-unsafe-assignment</code>）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 jsonNumber を作る。文字列 text を受け取り、数値か null を返す
+export function jsonNumber() {
+  // 次の中を試す
+  //   値 value を作り、型を unknown にして、text を JSON として読んだ結果を入れる
+  //   value の型が数値なら value、そうでなければ null を返す
+  // 例外が投げられたら
+  //   null を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問20 のサンプルの <code>tagCount</code> と同じ形です。<code>return</code> の行の確かめを、<code>Array.isArray()</code> から <code>typeof value === "number"</code> に変えます。<code>catch</code> の後ろの <code>{ }</code> には <code>return null;</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c04-q06-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">値の説明・数値への変換・数値だけの合計</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function describeValue() {}
+
+export function toNumber() {}
+
+export function sumNumbers() {}</code></pre>
+      <p>型の分からない値を受け取る関数を 3 つ書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>describeValue(value)</code>：値の種類と中身を文字列で返します。文字列は <code>"文字列(3文字)"</code>、数値は <code>"数値(42)"</code>、真偽値は <code>"真偽値(true)"</code> の形です。<code>null</code> は <code>"null"</code>、<code>undefined</code> は <code>"undefined"</code> です。配列は <code>"配列(要素2個)"</code>、<code>Date</code> は <code>"日付(2026-12-01)"</code>（<code>.toISOString()</code> の先頭 10 文字）です。それ以外のオブジェクトは <code>"オブジェクト"</code>、残り（関数など）は <code>"その他"</code> です。</li>
+        <li><code>toNumber(value)</code>：有限の数値なら、そのまま返します。文字列で、前後の空白を取り除くと空でなく、数値に変えられるなら、変えた数値を返します。それ以外は <code>null</code> です。戻り値の型は <code>number | null</code> です。</li>
+        <li><code>sumNumbers(values)</code>：配列の中の、有限の数値だけを合計して返します。引数の型は <code>readonly unknown[]</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>describeValue("abc")</code></dt><dd class="r"><code>"文字列(3文字)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue(42)</code></dt><dd class="r"><code>"数値(42)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue(true)</code></dt><dd class="r"><code>"真偽値(true)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue(null)</code></dt><dd class="r"><code>"null"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue(undefined)</code></dt><dd class="r"><code>"undefined"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue([1, 2])</code></dt><dd class="r"><code>"配列(要素2個)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue(new Date("2026-12-01T09:00:00Z"))</code></dt><dd class="r"><code>"日付(2026-12-01)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue({ a: 1 })</code></dt><dd class="r"><code>"オブジェクト"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeValue(() =&gt; 1)</code></dt><dd class="r"><code>"その他"</code></dd><dd class="c">関数</dd></div>
+          <div><dt><code>toNumber(3.5)</code></dt><dd class="r"><code>3.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toNumber(" 12 ")</code></dt><dd class="r"><code>12</code></dd><dd class="c">前後の空白は気にしない</dd></div>
+          <div><dt><code>toNumber("abc")</code></dt><dd class="r"><code>null</code></dd><dd class="c">数値に変えられない</dd></div>
+          <div><dt><code>toNumber("  ")</code></dt><dd class="r"><code>null</code></dd><dd class="c">空白だけ</dd></div>
+          <div><dt><code>toNumber(NaN)</code></dt><dd class="r"><code>null</code></dd><dd class="c">有限の数ではない</dd></div>
+          <div><dt><code>toNumber(Infinity)</code></dt><dd class="r"><code>null</code></dd><dd class="c">有限の数ではない</dd></div>
+          <div><dt><code>toNumber(true)</code></dt><dd class="r"><code>null</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toNumber(null)</code></dt><dd class="r"><code>null</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toNumber([1])</code></dt><dd class="r"><code>null</code></dd><dd class="c">配列</dd></div>
+          <div><dt><code>sumNumbers([1, "2", 3, null, NaN, 4.5, Infinity])</code></dt><dd class="r"><code>8.5</code></dd><dd class="c">1 + 3 + 4.5</dd></div>
+          <div><dt><code>sumNumbers([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>describeValue</code> は引数が <code>unknown</code>、戻り値が <code>string</code> です。<code>toNumber</code> は引数が <code>unknown</code>、戻り値が <code>number | null</code> です。<code>sumNumbers</code> は引数が <code>readonly unknown[]</code>、戻り値が <code>number</code> です。どれもテストで確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 describeValue を作る。型の分からない value を受け取り、文字列を返す
+export function describeValue() {
+  // もし value の型が文字列なら
+  //   value の文字数を埋め込んだ「文字列(◯文字)」の文字列を返す
+  // もし value の型が数値なら
+  //   value を埋め込んだ「数値(◯)」の文字列を返す
+  // もし value の型が真偽値なら
+  //   value を文字列にしたものを埋め込んだ「真偽値(◯)」の文字列を返す
+  // もし value が null と等しいなら
+  //   "null" を返す
+  // もし value が undefined と等しいなら
+  //   "undefined" を返す
+  // もし value が配列なら
+  //   value の要素の数を埋め込んだ「配列(要素◯個)」の文字列を返す
+  // もし value が Date の値なら
+  //   value を ISO の形の文字列にし、0 文字目から 10 文字目の前までを取り出したものを埋め込んだ「日付(◯)」の文字列を返す
+  // もし value の型を表す文字列が "object" と等しいなら
+  //   "オブジェクト" を返す
+  // "その他" を返す
+}
+
+// 関数 toNumber を作る。型の分からない value を受け取り、数値か null を返す
+export function toNumber() {
+  // もし value の型が数値なら
+  //   value が有限の数なら value、そうでなければ null を返す
+  // もし value の型が文字列、かつ value の前後の空白を取り除いたものが "" でないなら
+  //   数 n を作り、value を数値にしたものを入れる
+  //   n が有限の数なら n、そうでなければ null を返す
+  // null を返す
+}
+
+// 関数 sumNumbers を作る。読み取り専用の、型の分からない値の配列 values を受け取り、数値を返す
+export function sumNumbers() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // values から 1 つずつ value に取り出してくり返す
+  //   もし value の型が数値、かつ value が有限の数なら
+  //     total に value を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>describeValue</code> は、確かめる順番が大事です。配列と <code>Date</code> と <code>null</code> は、どれも <code>typeof</code> が <code>"object"</code> です（問4）。そのため、<code>"object"</code> の確かめは、それらより後ろに書きます。関数の <code>typeof</code> は <code>"function"</code> なので、どの <code>if</code> にも当てはまらず <code>"その他"</code> に進みます。真偽値は <code>String()</code> で文字列にしてから埋め込みます。<code>toNumber</code> の「有限の数」は <code>Number.isFinite()</code>（01章 q04 問12）、「数値にしたもの」は <code>Number()</code>（01章 q08 問16）です。<code>NaN</code> の <code>typeof</code> も <code>"number"</code> なので、<code>Number.isFinite()</code> で落とします。<code>Number("  ")</code> は <code>0</code> になるので、空白だけの文字列は先に <code>.trim()</code> で確かめます。<code>&amp;&amp;</code> の右側では、左側の確かめで <code>value</code> が文字列になっているので、<code>.trim()</code> を呼べます。<code>sumNumbers</code> は、問9 と同じ形のくり返しです。「total に value を足す」は <code>+=</code> です。</p></details>
+    </div>
+  </section>
+</section>

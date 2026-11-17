@@ -1,0 +1,1083 @@
+<section class="sec" id="c09-q01">
+  <div class="sec-h">
+    <span class="eyebrow">09章 組み込みの API とモジュール</span>
+    <h2>q01 Map</h2>
+    <p>点数表や在庫表のように、キーと値の組を集めて扱う関数を 20 個書き、最後に応用問題に取り組みます。この番号では、TypeScript に最初から用意されている Map を使います。引数と戻り値には型注釈を付けます。型は <code>Map&lt;string, number&gt;</code> のように書きます。「新しい Map を返す」問題では、引数の Map を書き換えません。コピーを作ってから変えます。引数の型は <code>Map&lt;…&gt;</code> と書き、<code>ReadonlyMap</code> は使いません。Map は、組を入れた順を覚えています。<code>keys()</code>・<code>values()</code>・<code>entries()</code> は、入れた順に取り出せます。配列にしたいときは、<code>[...map.keys()]</code> のようにスプレッド構文を使います。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c09-q01-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">[名前, 点数] の配列から Map を作る</span>
+      <span class="q-new">新しく出てくる書き方：Map の型 <code>Map&lt;K, V&gt;</code>、<code>new Map()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toMap() {}</code></pre>
+      <p>名前と点数の組を並べた配列を受け取り、その組をそのまま入れた Map を返します。組は、文字列と数値のタプル <code>[string, number]</code> です（02章 q06 問1）。引数の型は、そのタプルの配列 <code>[string, number][]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toMap([["山田", 80], ["佐藤", 65]])</code></dt><dd class="r"><code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd><dd class="c">"佐藤" の値が 65、入っている組の数が 2 であることを確かめる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>[string, number][]</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Map&lt;K, V&gt;</code><h4>キーと値の組を持つ入れ物</h4></div>
+      <p>Map は、キーと値の組をいくつも入れておく入れ物です。キーを渡すと、そのキーの値を取り出せます。点数表なら、キーが名前、値が点数です。同じキーの組は 1 つしか入りません。型は <code>Map&lt;キーの型, 値の型&gt;</code> と書きます。<code>&lt; &gt;</code> に型を渡す形は、07章 q06 問8 の <code>Box&lt;T&gt;</code> と同じです。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>Map</span>&lt;<span class="seg"><i>2</i>string</span>, <span class="seg"><i>3</i>number</span>&gt;</pre>
+        <ol>
+          <li><span>組み込みの型の名前です。TypeScript に最初から用意されています。</span></li>
+          <li><span>キーの型です。</span></li>
+          <li><span>値の型です。どのキーの値も、この型になります。</span></li>
+        </ol>
+      </figure>
+      <p>キーと値の組は、02章 q08 のインデックス型と、07章 q02 問19 の <code>Record</code> でも表せました。<code>Record&lt;string, number&gt;</code> は <code>{ [key: string]: number }</code> と同じ型です。どちらも、中身はただのオブジェクトです。Map との違いを表にまとめます。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th></th><th>Map</th><th>インデックス型・Record</th></tr></thead>
+          <tbody>
+            <tr><td>型の書き方</td><td><code>Map&lt;string, number&gt;</code></td><td><code>{ [key: string]: number }</code><br><code>Record&lt;string, number&gt;</code></td></tr>
+            <tr><td>作り方</td><td><code>new Map([["ノート", 12]])</code></td><td><code>{ ノート: 12 }</code></td></tr>
+            <tr><td>値を取り出す</td><td><code>stock.get("ノート")</code>（問2）</td><td><code>stock["ノート"]</code></td></tr>
+            <tr><td>キーがあるか</td><td><code>stock.has("ノート")</code>（問3）</td><td><code>"ノート" in stock</code></td></tr>
+            <tr><td>値を入れる</td><td><code>stock.set("ノート", 20)</code>（問4）</td><td><code>stock["ノート"] = 20</code></td></tr>
+            <tr><td>組を取り除く</td><td><code>stock.delete("ノート")</code>（問5）</td><td>このガイドでは使いません</td></tr>
+            <tr><td>入っている数</td><td><code>stock.size</code>（問6）</td><td><code>Object.keys(stock).length</code></td></tr>
+            <tr><td>キーの型</td><td>文字列・数値など、どんな型でもよい</td><td>文字列。数値で書いても、文字列として扱われる</td></tr>
+            <tr><td>並ぶ順</td><td>入れた順</td><td>入れた順。ただし、数字だけのキーは先に小さい順で並ぶ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Map は、組を足したり取り除いたりしながら使う入れ物です。数えたり集めたりする処理に向いています。キーが前もって決まっているデータは、これまでどおりオブジェクトの型で書きます。</p>
+      <p>このページでは、Map の中身を <code>Map { "ノート" =&gt; 12 }</code> のように書きます。<code>=&gt;</code> の左がキー、右が値です。課題のファイルの例と同じ書き方です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/builtin-api/map">サバイバルTypeScript「Map&lt;K, V&gt;」</a></p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Map([[k, v], …])</code><h4>[キー, 値] の組の配列から Map を作る</h4></div>
+      <p>Map は、<code>new Error()</code>（01章 q04 問8）と同じく、<code>new</code> を付けて作ります。<code>new Map()</code> のかっこに、<code>[キー, 値]</code> の組を並べた配列を渡すと、その組を前から順に入れた Map ができます。かっこの中を空にすると、空の Map ができます（問11）。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// 結果: stock は Map { "ノート" =&gt; 12, "ペン" =&gt; 0 }</code></pre>
+      </div>
+      <p>Map の型は、渡した組から推論されます。<code>stock</code> の型は <code>Map&lt;string, number&gt;</code> です。</p>
+      <p class="memo"><b>よくある間違い</b>組を 1 つだけ入れるときも、外側の <code>[ ]</code> は省けません。<code>new Map(["ノート", 12])</code> と書くと、型の確認でエラーになります。<code>new Map([["ノート", 12]])</code> と書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toMap を作る。文字列と数値のタプルの配列 pairs を受け取り、キーが文字列で値が数値の Map を返す
+export function toMap() {
+  // pairs の組から作った Map を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>pairs: [string, number][]</code>、戻り値の型は <code>Map&lt;string, number&gt;</code> です。中身は、問1 のサンプルの <code>stock</code> の行と同じ形で、組の配列が <code>pairs</code> になります。作った Map を、そのまま <code>return</code> します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c09-q01-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">name の点数を返す（なければ 0）</span>
+      <span class="q-new">新しく出てくる書き方：<code>.get()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function scoreOf() {}</code></pre>
+      <p>点数表 <code>scores</code>（Map）と名前 <code>name</code> を受け取り、その人の点数を返します。点数表にその名前がなければ、<code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scoreOf(scores, "山田")</code></dt><dd class="r"><code>80</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80 }</code></dd></div>
+          <div><dt><code>scoreOf(scores, "鈴木")</code></dt><dd class="r"><code>0</code></dd><dd class="c">点数表にない名前</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code> と <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.get()</code><h4>キーで値を取り出す</h4></div>
+      <p>かっこにキーを渡すと、そのキーの値を返します。ないキーを渡すと、<code>undefined</code> を返します。そのため、取り出した値の型は <code>number | undefined</code> になります。インデックス型の <code>stock[item]</code>（02章 q08 問1）と同じく、<code>??</code> で代わりの値を決めます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// notes を作り、stock の "ノート" の値を入れる
+const notes = stock.get("ノート");
+// erasers を作り、stock の "消しゴム" の値を入れる。なければ 0 を入れる
+const erasers = stock.get("消しゴム") ?? 0;
+// 結果: notes は 12、erasers は 0</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>stock.get("ノート")</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+        <div><dt><code>stock.get("消しゴム")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">ないキー</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>そのまま number の変数に入れる</h5>
+          <pre><code class="language-typescript">const left: number = stock.get("消しゴム");</code></pre>
+          <div class="verdict ng">✕ number | undefined は number に入れられない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>?? で代わりの値を決める</h5>
+          <pre><code class="language-typescript">const left: number = stock.get("消しゴム") ?? 0;</code></pre>
+          <div class="verdict ok">○ ないときは 0 になるので、型は number です</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 scoreOf を作る。キーが文字列で値が数値の Map scores と文字列 name を受け取り、数値を返す
+export function scoreOf() {
+  // scores の name の値を返す。なければ 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は <code>Map&lt;string, number&gt;</code> と <code>string</code> です。中身は、問2 のサンプルの <code>erasers</code> の行と同じ形です。キーが <code>name</code> に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c09-q01-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">name が Map のキーにあれば true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.has()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasName() {}</code></pre>
+      <p>点数表 <code>scores</code> と名前 <code>name</code> を受け取ります。<code>name</code> が <code>scores</code> のキーにあれば <code>true</code>、なければ <code>false</code> を返します。点数が <code>0</code> の人も、キーにあれば <code>true</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasName(scores, "山田")</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 0 }</code>。点数が 0 でもキーはある</dd></div>
+          <div><dt><code>hasName(scores, "佐藤")</code></dt><dd class="r"><code>false</code></dd><dd class="c">ないキー</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code> と <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.has()</code><h4>キーがあるかを調べる</h4></div>
+      <p>かっこに渡したキーが Map にあれば <code>true</code>、なければ <code>false</code> を返します。値が何であっても、キーがあれば <code>true</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// listed を作り、stock に "ペン" のキーがあるか（true か false）を入れる
+const listed = stock.has("ペン");
+// 結果: listed は true</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>stock.has("ペン")</code></dt><dd class="r"><code>true</code></dd><dd class="c">値は 0 だが、キーはある</dd></div>
+        <div><dt><code>stock.has("消しゴム")</code></dt><dd class="r"><code>false</code></dd><dd class="c">ないキー</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>値が 0 かどうかと、キーがあるかどうかは別のことです。<code>stock.get("ペン")</code> は <code>0</code> で、<code>stock.has("ペン")</code> は <code>true</code> です。キーがあるかを調べるときは、<code>.has()</code> を使います。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasName を作る。キーが文字列で値が数値の Map scores と文字列 name を受け取り、true か false を返す
+export function hasName() {
+  // scores に name のキーがあるか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>listed</code> の行と同じ形です。<code>.has()</code> の結果はそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c09-q01-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">name に score を設定した新しい Map を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.set()</code>、<code>new Map(map)</code>（Map のコピー）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withScore() {}</code></pre>
+      <p>点数表 <code>scores</code>、名前 <code>name</code>、点数 <code>score</code> を受け取ります。<code>name</code> の点数を <code>score</code> にした、新しい点数表を返します。名前がまだなければ最後に足し、もうあれば点数を置き換えます。元の <code>scores</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withScore(scores, "鈴木", 90)</code></dt><dd class="r"><code>Map { "山田" =&gt; 80, "鈴木" =&gt; 90 }</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80 }</code>。ない名前は最後に足す</dd></div>
+          <div><dt><code>withScore(scores, "山田", 10)</code> の <code>"山田"</code> の値</dt><dd class="r"><code>10</code></dd><dd class="c">ある名前は置き換える</dd></div>
+          <div><dt>呼んだあとの <code>scores</code></dt><dd class="r"><code>Map { "山田" =&gt; 80 }</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>・<code>string</code>・<code>number</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.set()</code><h4>キーに値を入れる</h4></div>
+      <p>1 つ目にキー、2 つ目に値を渡します。ないキーなら、その組を最後に足します。あるキーなら、値だけを置き換えます。置き換えても、組の並ぶ順は変わりません。<code>.set()</code> は、呼んだ Map そのものを書き換えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// stock の "ペン" に 30 を入れる
+stock.set("ペン", 30);
+// stock の "消しゴム" に 5 を入れる
+stock.set("消しゴム", 5);
+// 結果: stock は Map { "ノート" =&gt; 12, "ペン" =&gt; 30, "消しゴム" =&gt; 5 }</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>const</code> で作った Map でも、<code>.set()</code> で中身を変えられます。<code>const</code> が止めるのは、<code>stock</code> に別の Map を入れ直すことだけです。配列の <code>.push()</code>（02章 q04 問17）と同じです。</p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Map(stock)</code><h4>Map をコピーする</h4></div>
+      <p><code>new Map()</code> のかっこに Map を渡すと、同じ組を同じ順に入れた、別の Map ができます。コピーを変えても、元の Map は変わりません。配列をコピーする <code>[...items]</code>（02章 q05 問1）と同じ役目です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// 入荷後の在庫 restocked を作り、stock をコピーした Map を入れる
+const restocked = new Map(stock);
+// restocked の "ペン" に 30 を入れる
+restocked.set("ペン", 30);
+// 結果: restocked は Map { "ノート" =&gt; 12, "ペン" =&gt; 30 }、stock は Map { "ノート" =&gt; 12, "ペン" =&gt; 0 } のまま</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>別の変数に入れるだけ</h5>
+          <pre><code class="language-typescript">const restocked = stock;
+restocked.set("ペン", 30);</code></pre>
+          <div class="verdict ng">✕ restocked と stock は同じ Map です。stock の "ペン" も 30 になります</div>
+        </div>
+        <div>
+          <h5>new Map() でコピーする</h5>
+          <pre><code class="language-typescript">const restocked = new Map(stock);
+restocked.set("ペン", 30);</code></pre>
+          <div class="verdict ok">○ 別の Map なので、stock の "ペン" は 0 のままです</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withScore を作る。キーが文字列で値が数値の Map scores と文字列 name と数値 score を受け取り、キーが文字列で値が数値の Map を返す
+export function withScore() {
+  // 結果 result を作り、scores をコピーした Map を入れる
+  // result の name に score を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 の 2 つ目のサンプルの <code>restocked</code> と同じ形です。コピーしてから <code>.set()</code> を呼ぶので、元の <code>scores</code> は変わりません。<code>.set()</code> は、ない名前なら足し、ある名前なら置き換えるので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c09-q01-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">name を取り除いた新しい Map を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.delete()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withoutName() {}</code></pre>
+      <p>点数表 <code>scores</code> と名前 <code>name</code> を受け取り、<code>name</code> の組を取り除いた新しい点数表を返します。元の <code>scores</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withoutName(scores, "山田")</code></dt><dd class="r"><code>Map { "佐藤" =&gt; 65 }</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd></div>
+          <div><dt>呼んだあとの <code>scores</code></dt><dd class="r"><code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code> と <code>string</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.delete()</code><h4>キーと値の組を取り除く</h4></div>
+      <p>かっこにキーを渡すと、その組を Map から取り除きます。<code>.set()</code> と同じく、呼んだ Map そのものを書き換えます。取り除けたら <code>true</code>、キーがなかったら <code>false</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// 販売中 onSale を作り、stock をコピーした Map を入れる
+const onSale = new Map(stock);
+// onSale から "ペン" の組を取り除く
+onSale.delete("ペン");
+// 結果: onSale は Map { "ノート" =&gt; 12 }</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>new Map(stock).delete("ペン")</code></dt><dd class="r"><code>true</code></dd><dd class="c">取り除けた</dd></div>
+        <div><dt><code>new Map(stock).delete("消しゴム")</code></dt><dd class="r"><code>false</code></dd><dd class="c">ないキー。何も変わらない</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withoutName を作る。キーが文字列で値が数値の Map scores と文字列 name を受け取り、キーが文字列で値が数値の Map を返す
+export function withoutName() {
+  // 結果 result を作り、scores をコピーした Map を入れる
+  // result から name の組を取り除く
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 のサンプルの <code>onSale</code> と同じ形です。問4 のヒントの 2 行目が、<code>.delete()</code> に変わります。<code>.delete()</code> の結果の <code>true</code> か <code>false</code> は返しません。返すのは <code>result</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c09-q01-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">Map に入っている数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.size</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sizeOf() {}</code></pre>
+      <p>点数表 <code>scores</code> を受け取り、入っている組の数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sizeOf(new Map([["a", 1]]))</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sizeOf(new Map())</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の Map</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.size</code><h4>入っている組の数</h4></div>
+      <p>Map に入っている組の数です。文字列の <code>.length</code>（01章 q02 問13）と同じく、かっこを付けません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// 品目の数 kinds を作り、stock に入っている組の数を入れる
+const kinds = stock.size;
+// 結果: kinds は 2</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>Map には <code>.length</code> がありません。<code>stock.length</code> と書くと、型の確認でエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sizeOf を作る。キーが文字列で値が数値の Map scores を受け取り、数値を返す
+export function sizeOf() {
+  // scores に入っている組の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>kinds</code> の行と同じ形です。<code>.size</code> にはかっこを付けません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c09-q01-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">キーの配列を返す（入れた順）</span>
+      <span class="q-new">新しく出てくる書き方：<code>.keys()</code>、<code>[...map.keys()]</code>（配列にする）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function namesOf() {}</code></pre>
+      <p>点数表 <code>scores</code> を受け取り、キー（名前）を入れた順に並べた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>namesOf(scores)</code></dt><dd class="r"><code>["山田", "佐藤"]</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[...stock.keys()]</code><h4>キーを入れた順に取り出し、配列にする</h4></div>
+      <p><code>.keys()</code> は、キーを入れた順に 1 つずつ取り出せるものを返します。これは配列ではないので、<code>.length</code> や <code>.map()</code> などの配列のメソッドがありません。配列にするときは、<code>[ ]</code> の中で <code>...</code> を付けて広げます。配列をコピーする <code>[...items]</code>（02章 q05 問1）と同じ書き方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// 品名の配列 names を作り、stock のキーを並べた配列を入れる
+const names = [...stock.keys()];
+// 結果: names は ["ノート", "ペン"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>[<span class="seg"><i>1</i>...</span><span class="seg"><i>2</i>stock.keys()</span>]</pre>
+        <ol>
+          <li><span>取り出せるものを 1 つずつ広げて、<code>[ ]</code> の中に並べます。</span></li>
+          <li><span><code>stock</code> のキーを、入れた順に 1 つずつ取り出せるものです。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>そのまま配列の変数に入れる</h5>
+          <pre><code class="language-typescript">const names: string[] = stock.keys();</code></pre>
+          <div class="verdict ng">✕ MapIterator&lt;string&gt; には配列のプロパティがない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>[...] で広げて配列にする</h5>
+          <pre><code class="language-typescript">const names: string[] = [...stock.keys()];</code></pre>
+          <div class="verdict ok">○ 型は string[] です</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 namesOf を作る。キーが文字列で値が数値の Map scores を受け取り、文字列の配列を返す
+export function namesOf() {
+  // scores のキーを並べた配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>names</code> の行と同じ形です。Map は入れた順を覚えているので、並べ替えは要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c09-q01-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">値の合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.values()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function totalScore() {}</code></pre>
+      <p>点数表 <code>scores</code> を受け取り、点数（値）をすべて足した数を返します。空の Map なら <code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>totalScore(scores)</code></dt><dd class="r"><code>145</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd></div>
+          <div><dt><code>totalScore(new Map())</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の Map</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.values()</code><h4>値を入れた順に取り出す</h4></div>
+      <p><code>.keys()</code> の値の版です。値を入れた順に 1 つずつ取り出せるものを返します。for-of（01章 q01 問9）には、配列にしなくてもそのまま渡せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 8] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 8],
+]);
+// 在庫の合計 total を入れ直せる変数として作り、0 を入れる
+let total = 0;
+// stock の値から 1 つずつ count に取り出してくり返す
+for (const count of stock.values()) {
+  // total に count を足す
+  total += count;
+}
+// 結果: total は 20</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 totalScore を作る。キーが文字列で値が数値の Map scores を受け取り、数値を返す
+export function totalScore() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // scores の値から 1 つずつ score に取り出してくり返す
+    // total に score を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルと同じ形です。空の Map なら、くり返しが 1 回も起きないので、<code>0</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c09-q01-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">Map をオブジェクトにする</span>
+      <span class="q-new">新しく出てくる書き方：<code>Object.fromEntries()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toObject() {}</code></pre>
+      <p>点数表 <code>scores</code>（Map）を受け取り、同じキーと値を持つオブジェクトにして返します。戻り値の型は <code>Record&lt;string, number&gt;</code> です（07章 q02 問19）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toObject(scores)</code></dt><dd class="r"><code>{ 山田: 80, 佐藤: 65 }</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>、戻り値が <code>Record&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Object.fromEntries()</code><h4>[キー, 値] の組からオブジェクトを作る</h4></div>
+      <p><code>Object.entries()</code>（02章 q08 問10）の反対です。<code>[キー, 値]</code> の組を並べたものを受け取り、その組をプロパティにしたオブジェクトを返します。Map も、組を並べたものとしてそのまま渡せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、["ノート", 12] と ["ペン", 0] の組から作った Map を入れる
+const stock = new Map([
+  ["ノート", 12],
+  ["ペン", 0],
+]);
+// 在庫表 table を作り、stock の組から作ったオブジェクトを入れる
+const table = Object.fromEntries(stock);
+// 結果: table は { ノート: 12, ペン: 0 }</code></pre>
+      </div>
+      <p><code>table</code> の型は <code>{ [k: string]: number }</code> と推論されます。インデックス型なので、<code>Record&lt;string, number&gt;</code> としてそのまま使えます。</p>
+      <dl class="eg">
+        <div><dt><code>Object.fromEntries([["送料", 500]])</code></dt><dd class="r"><code>{ 送料: 500 }</code></dd><dd class="c">組の配列も渡せる</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toObject を作る。キーが文字列で値が数値の Map scores を受け取り、キーが文字列で値が数値の Record を返す
+export function toObject() {
+  // scores の組から作ったオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は <code>Record&lt;string, number&gt;</code> です。中身は、問9 のサンプルの <code>table</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c09-q01-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">オブジェクトを Map にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fromObject() {}</code></pre>
+      <p>問9 の反対です。点数表のオブジェクト <code>obj</code> を受け取り、同じキーと値を持つ Map にして返します。キーは、オブジェクトに並んでいる順に入れます。引数の型は <code>Record&lt;string, number&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fromObject({ 山田: 80, 佐藤: 65 })</code></dt><dd class="r"><code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65 }</code></dd><dd class="c">"山田" の値が 80、キーの順が <code>["山田", "佐藤"]</code> であることを確かめる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Record&lt;string, number&gt;</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fromObject を作る。キーが文字列で値が数値の Record obj を受け取り、キーが文字列で値が数値の Map を返す
+export function fromObject() {
+  // obj のキーと値の組を並べた配列から作った Map を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>キーと値の組を並べた配列は、<code>Object.entries()</code> で作れます（02章 q08 問10）。その結果を、問1 のサンプルと同じく <code>new Map()</code> のかっこに渡します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c09-q01-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">文字ごとの出てきた回数の Map を返す</span>
+      <span class="q-new">新しく出てくる書き方：空の Map の型 <code>new Map&lt;string, number&gt;()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function charCounts() {}</code></pre>
+      <p>文字列 <code>text</code> を受け取り、文字ごとに、出てきた回数を数えた Map を返します。キーが文字、値が回数です。キーは、その文字が最初に出てきた順に並べます。空の文字列なら、空の Map を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>charCounts("banana")</code></dt><dd class="r"><code>Map { "b" =&gt; 1, "a" =&gt; 3, "n" =&gt; 2 }</code></dd><dd class="c">最初に出てきた順</dd></div>
+          <div><dt><code>charCounts("")</code></dt><dd class="r">空の Map</dd><dd class="c">入っている組の数が 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Map&lt;string, number&gt;()</code><h4>空の Map を作るときは、型を渡す</h4></div>
+      <p>空の <code>new Map()</code> は、中身がないので型を推論できません。キーも値も <code>any</code> の <code>Map&lt;any, any&gt;</code> になり、何でも入ってしまいます。空の Map を作るときは、<code>new Map</code> の後ろの <code>&lt; &gt;</code> に、キーと値の型を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 orders を作り、"ノート" と "ペン" と "ノート" を並べた配列を入れる
+const orders = ["ノート", "ペン", "ノート"];
+// 品名ごとの注文数 counts を作り、キーが文字列で値が数値の空の Map を入れる
+const counts = new Map&lt;string, number&gt;();
+// orders から 1 つずつ item に取り出してくり返す
+for (const item of orders) {
+  // counts の item に、counts の item の値（なければ 0）に 1 を足した数を入れる
+  counts.set(item, (counts.get(item) ?? 0) + 1);
+}
+// 結果: counts は Map { "ノート" =&gt; 2, "ペン" =&gt; 1 }</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>item</th><th>counts.get(item) ?? 0</th><th>counts</th></tr></thead>
+          <tbody>
+            <tr><td class="j">始める前</td><td></td><td>Map {}</td></tr>
+            <tr><td>"ノート"</td><td>0</td><td>Map { "ノート" =&gt; 1 }</td></tr>
+            <tr><td>"ペン"</td><td>0</td><td>Map { "ノート" =&gt; 1, "ペン" =&gt; 1 }</td></tr>
+            <tr><td>"ノート"</td><td>1</td><td>Map { "ノート" =&gt; 2, "ペン" =&gt; 1 }</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>初めての品名は <code>.get()</code> が <code>undefined</code> なので、<code>?? 0</code> で 0 にしてから 1 を足します。2 回目からは、前の回数に 1 を足した数で置き換えます。置き換えても並ぶ順は変わらないので、キーは最初に出てきた順のままです。</p>
+      <div class="cmp">
+        <div>
+          <h5>型を書かない</h5>
+          <pre><code class="language-typescript">const counts = new Map();</code></pre>
+          <div class="verdict ng">✕ Map&lt;any, any&gt; になります。関数から返すと、ESLint が any の Map を返している、と止めます</div>
+        </div>
+        <div>
+          <h5>new Map の後ろに型を書く</h5>
+          <pre><code class="language-typescript">const counts = new Map&lt;string, number&gt;();</code></pre>
+          <div class="verdict ok">○ 型は Map&lt;string, number&gt; です</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>const counts: Map&lt;string, number&gt; = new Map();</code> のように、変数の側に型注釈を書くこともできます。ただし、この課題の ESLint は「型は <code>new</code> の側に書く」と止めます。<code>new Map&lt;string, number&gt;()</code> と書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 charCounts を作る。文字列 text を受け取り、キーが文字列で値が数値の Map を返す
+export function charCounts() {
+  // 回数 counts を作り、キーが文字列で値が数値の空の Map を入れる
+  // text から 1 文字ずつ char に取り出してくり返す
+    // counts の char に、counts の char の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のサンプルと同じ形です。くり返すものが、配列 <code>orders</code> から文字列 <code>text</code> に変わります。for-of に文字列を渡すと、1 文字ずつ取り出せます（01章 q01 問9）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c09-q01-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">単語を、最初の 1 文字ごとにまとめた Map を返す</span>
+      <span class="q-new">新しく出てくる書き方：値が配列の Map <code>Map&lt;string, string[]&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function groupByInitial() {}</code></pre>
+      <p>単語の配列 <code>words</code> を受け取り、単語を最初の 1 文字ごとにまとめた Map を返します。キーが最初の 1 文字、値がその文字で始まる単語の配列です。キーは最初に出てきた順、中の配列は元の配列の順に並べます。引数の型は <code>string[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>groupByInitial(["apple", "banana", "avocado"])</code></dt><dd class="r"><code>Map { "a" =&gt; ["apple", "avocado"], "b" =&gt; ["banana"] }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Map&lt;string, string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Map&lt;string, string[]&gt;</code><h4>値が配列の Map</h4></div>
+      <p>Map の値には、配列も入れられます。<code>.get()</code> で取り出した配列は、Map の中にある配列そのものです。その配列に <code>.push()</code> で付け足すと、Map の中の配列が変わります。<code>.set()</code> で入れ直す必要はありません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 担当表 staff を作り、キーが文字列で値が文字列の配列の空の Map を入れる
+const staff = new Map&lt;string, string[]&gt;();
+// staff の "東京" に、"佐藤" だけの配列を入れる
+staff.set("東京", ["佐藤"]);
+// tokyo を作り、staff の "東京" の値を入れる
+const tokyo = staff.get("東京");
+// もし tokyo が undefined でないなら
+if (tokyo !== undefined) {
+  // tokyo の最後に "鈴木" を付け足す
+  tokyo.push("鈴木");
+}
+// 結果: staff は Map { "東京" =&gt; ["佐藤", "鈴木"] }</code></pre>
+      </div>
+      <p><code>tokyo</code> の型は <code>string[] | undefined</code> です。<code>undefined</code> でないことを確かめてから、<code>.push()</code> を呼びます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 groupByInitial を作る。文字列の配列 words を受け取り、キーが文字列で値が文字列の配列の Map を返す
+export function groupByInitial() {
+  // まとめ groups を作り、キーが文字列で値が文字列の配列の空の Map を入れる
+  // words から 1 つずつ word に取り出してくり返す
+    // initial を作り、word の 0 文字目から 1 文字目の前までを取り出したものを入れる
+    // group を作り、groups の initial の値を入れる
+    // もし group が undefined なら
+      // groups の initial に、word だけの配列を入れる
+    // そうでなければ
+      // group の最後に word を付け足す
+  // groups を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最初の 1 文字は <code>.slice(0, 1)</code> です（01章 q02 問10）。<code>group</code> の行と <code>if</code> は、問12 のサンプルの <code>tokyo</code> と同じ形です。「word だけの配列」は <code>[word]</code> と書きます。「そうでなければ」は <code>else</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c09-q01-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">キーと値を入れ替えた新しい Map を返す</span>
+      <span class="q-new">新しく出てくる書き方：Map の組をくり返す <code>for (const [key, value] of map)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function invert() {}</code></pre>
+      <p>キーも値も文字列の Map <code>map</code> を受け取り、キーと値を入れ替えた新しい Map を返します。順は元の Map のままです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>invert(colors)</code></dt><dd class="r"><code>Map { "赤" =&gt; "red", "青" =&gt; "blue" }</code></dd><dd class="c"><code>colors</code> は <code>Map { "red" =&gt; "赤", "blue" =&gt; "青" }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, string&gt;</code>、戻り値が <code>Map&lt;string, string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">for (const [key, value] of map)</code><h4>Map の組を 1 つずつ取り出す</h4></div>
+      <p>Map をそのまま for-of に渡すと、<code>[キー, 値]</code> の組を入れた順に 1 つずつ取り出せます。組は 2 つの要素の配列なので、配列の分割代入（02章 q06 問2）でキーと値に分けて受け取れます。<code>Object.entries()</code> の組をくり返したとき（02章 q08 問10）と同じ形です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 価格表 prices を作り、["ノート", 200] と ["ペン", 120] の組から作った Map を入れる
+const prices = new Map([
+  ["ノート", 200],
+  ["ペン", 120],
+]);
+// 値札 labels を文字列の配列として作り、空の配列を入れる
+const labels: string[] = [];
+// prices のキーと値の組を 1 つずつ [item, price] に取り出してくり返す
+for (const [item, price] of prices) {
+  // labels の最後に、item と price を埋め込んだ「◯ ◯円」の文字列を付け足す
+  labels.push(`${item} ${price}円`);
+}
+// 結果: labels は ["ノート 200円", "ペン 120円"]</code></pre>
+      </div>
+      <p>分割代入の名前は自由に決められます。<code>item</code> の型は <code>string</code>、<code>price</code> の型は <code>number</code> になります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 invert を作る。キーが文字列で値が文字列の Map map を受け取り、キーが文字列で値が文字列の Map を返す
+export function invert() {
+  // 結果 result を作り、キーが文字列で値が文字列の空の Map を入れる
+  // map のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // result の value に key を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の Map は、問11 と同じく <code>new Map&lt;string, string&gt;()</code> で作ります。くり返しは問13 のサンプルと同じ形です。<code>.set()</code> に渡すキーと値を、<code>value</code>、<code>key</code> の順にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c09-q01-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 つの Map をまとめ、同じキーは値を足した新しい Map を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mergeAdd() {}</code></pre>
+      <p>2 つの Map <code>a</code> と <code>b</code> を受け取り、まとめた新しい Map を返します。両方にあるキーは、値を足します。並ぶ順は、<code>a</code> のキーを <code>a</code> の順に、その後ろに <code>b</code> にだけあるキーを並べます。<code>a</code> と <code>b</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mergeAdd(a, b)</code></dt><dd class="r"><code>Map { "x" =&gt; 3, "y" =&gt; 3 }</code></dd><dd class="c"><code>a</code> は <code>Map { "x" =&gt; 1 }</code>、<code>b</code> は <code>Map { "x" =&gt; 2, "y" =&gt; 3 }</code></dd></div>
+          <div><dt>呼んだあとの <code>a</code> の <code>"x"</code> の値</dt><dd class="r"><code>1</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code> と <code>Map&lt;string, number&gt;</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mergeAdd を作る。キーが文字列で値が数値の Map a と b を受け取り、キーが文字列で値が数値の Map を返す
+export function mergeAdd() {
+  // 結果 result を作り、a をコピーした Map を入れる
+  // b のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // result の key に、result の key の値（なければ 0）に value を足した数を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>コピーは問4、くり返しは問13、値の足し方は問11 のサンプルと同じ形です。足すものが <code>1</code> から <code>value</code> に変わります。<code>.set()</code> は、あるキーなら並ぶ順を変えずに値だけを置き換えます。そのため、<code>a</code> のキーは <code>a</code> の順のまま残り、<code>b</code> にだけあるキーは後ろに足されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c09-q01-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">値がいちばん大きいキーを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function topName() {}</code></pre>
+      <p>点数表 <code>scores</code> を受け取り、点数がいちばん高い人の名前を返します。同じ点数の人が何人かいれば、先に入った人の名前を返します。空の Map なら、<code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>topName(new Map([["山田", 80], ["佐藤", 95], ["鈴木", 95]]))</code></dt><dd class="r"><code>"佐藤"</code></dd><dd class="c">95 が 2 人。先に入った佐藤</dd></div>
+          <div><dt><code>topName(new Map())</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の Map</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 topName を作る。キーが文字列で値が数値の Map scores を受け取り、文字列か undefined を返す
+export function topName() {
+  // 最高点の人 bestName を入れ直せる変数として作り、undefined を入れる。型は文字列か undefined
+  // 最高点 bestScore を入れ直せる変数として作り、-Infinity を入れる
+  // scores のキーと値の組を 1 つずつ [name, score] に取り出してくり返す
+    // もし score が bestScore より大きいなら
+      // bestName に name を入れ直す
+      // bestScore に score を入れ直す
+  // bestName を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>bestName</code> は <code>let bestName: string | undefined = undefined;</code> と書きます（02章 q08 問10）。<code>-Infinity</code> はどの数よりも小さい数なので、1 人目の点数で必ず入れ直されます。くり返しは問13 のサンプルと同じ形です。「より大きい」は <code>&gt;</code> なので、同じ点数の人では入れ直しません。先に入った人の名前が残ります。空の Map なら、くり返しが 1 回も起きないので <code>undefined</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c09-q01-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">[キー, 値] の配列を、値の大きい順に並べて返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.entries()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortedByValue() {}</code></pre>
+      <p>Map <code>scores</code> を受け取り、<code>[キー, 値]</code> の組を並べた配列を返します。並ぶ順は、値の大きい順です。値が同じ組は、Map に先に入った順にします。戻り値の型は、文字列と数値のタプルの配列 <code>[string, number][]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortedByValue(scores)</code></dt><dd class="r"><code>[["b", 3], ["a", 1], ["c", 1]]</code></dd><dd class="c"><code>scores</code> は <code>Map { "a" =&gt; 1, "b" =&gt; 3, "c" =&gt; 1 }</code>。同じ 1 の a と c は入れた順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code>、戻り値が <code>[string, number][]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.entries()</code><h4>[キー, 値] の組を入れた順に取り出す</h4></div>
+      <p><code>.keys()</code>・<code>.values()</code> の組の版です。Map をそのまま for-of に渡したとき（問13）と同じ組を、入れた順に 1 つずつ取り出せるものを返します。配列にするときは、<code>.keys()</code> と同じく <code>[...]</code> で広げます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 価格表 prices を作り、["ノート", 200] と ["ペン", 120] の組から作った Map を入れる
+const prices = new Map([
+  ["ノート", 200],
+  ["ペン", 120],
+]);
+// 価格の組 rows を作り、prices の組を並べた配列を入れる
+const rows = [...prices.entries()];
+// 結果: rows は [["ノート", 200], ["ペン", 120]]</code></pre>
+      </div>
+      <p><code>rows</code> の型は <code>[string, number][]</code> と推論されます。組の 0 番目がキー、1 番目が値です。<code>rows[0]</code> の値なら、<code>rows[0][1]</code> と書きます。</p>
+      <p class="memo"><b>よくある疑問</b><code>.sort()</code>（02章 q05 問8）は、比べる関数が <code>0</code> を返した 2 つの要素の順を変えません。値が同じ組は、並べ替える前の順（入れた順）のまま残ります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortedByValue を作る。キーが文字列で値が数値の Map scores を受け取り、文字列と数値のタプルの配列を返す
+export function sortedByValue() {
+  // scores の組を並べた配列を、値（組の 1 番目）の大きい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>組を並べた配列は、問16 のサンプルの <code>rows</code> の行と同じ形です。新しい配列なので、そのまま <code>.sort()</code> を続けてかまいません。大きい順の比べ方は 02章 q05 問9 と同じです。比べるのは組の値なので、<code>a</code> と <code>b</code> の代わりに <code>a[1]</code> と <code>b[1]</code> を使います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c09-q01-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">値が min 以上のものだけを残した新しい Map を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function atLeast() {}</code></pre>
+      <p>点数表 <code>scores</code> と数値 <code>min</code> を受け取り、点数が <code>min</code> 以上の組だけを残した新しい Map を返します。順は元の Map のままです。元の <code>scores</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>atLeast(scores, 70)</code></dt><dd class="r"><code>Map { "山田" =&gt; 80, "鈴木" =&gt; 70 }</code></dd><dd class="c"><code>scores</code> は <code>Map { "山田" =&gt; 80, "佐藤" =&gt; 65, "鈴木" =&gt; 70 }</code>。70 ちょうども残る</dd></div>
+          <div><dt>呼んだあとの <code>scores</code> の組の数</dt><dd class="r"><code>3</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code> と <code>number</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 atLeast を作る。キーが文字列で値が数値の Map scores と数値 min を受け取り、キーが文字列で値が数値の Map を返す
+export function atLeast() {
+  // 結果 result を作り、キーが文字列で値が数値の空の Map を入れる
+  // scores のキーと値の組を 1 つずつ [name, score] に取り出してくり返す
+    // もし score が min 以上なら
+      // result の name に score を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の Map は問11、くり返しは問13 のサンプルと同じ形です。「以上」は <code>&gt;=</code> です（01章 q01 問7）。空の Map に足していくので、元の <code>scores</code> は変わりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c09-q01-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">すべての値に fn を当てた新しい Map を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mapValues() {}</code></pre>
+      <p>Map <code>scores</code> と関数 <code>fn</code> を受け取ります。どの値も、<code>fn</code> に渡して呼んだ結果に置き換えた、新しい Map を返します。キーと順は元のままです。<code>fn</code> は、数値を受け取って数値を返す関数です。型は <code>(n: number) =&gt; number</code> です（05章 q07 問1）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mapValues(scores, (n) =&gt; n * 10)</code></dt><dd class="r"><code>Map { "a" =&gt; 10, "b" =&gt; 20 }</code></dd><dd class="c"><code>scores</code> は <code>Map { "a" =&gt; 1, "b" =&gt; 2 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Map&lt;string, number&gt;</code> と <code>(n: number) =&gt; number</code>、戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mapValues を作る。キーが文字列で値が数値の Map scores と、関数 fn（数値 n を受け取り、数値を返す）を受け取り、キーが文字列で値が数値の Map を返す
+export function mapValues() {
+  // 結果 result を作り、キーが文字列で値が数値の空の Map を入れる
+  // scores のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // result の key に、value を fn に渡して呼んだ結果を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の <code>fn</code> の型は <code>(n: number) =&gt; number</code> です。受け取った関数は <code>fn(value)</code> と呼びます（05章 q07 問1）。くり返しは問13 のサンプルと同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c09-q01-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">単語ごとに、最初に出てきた位置の Map を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstIndex() {}</code></pre>
+      <p>単語の配列 <code>words</code> を受け取り、単語ごとに、最初に出てきた位置を入れた Map を返します。位置は 0 から数えます。同じ単語が 2 回目に出てきても、位置は最初のままです。引数の型は <code>string[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstIndex(["a", "b", "a", "c"])</code></dt><dd class="r"><code>Map { "a" =&gt; 0, "b" =&gt; 1, "c" =&gt; 3 }</code></dd><dd class="c">2 番目の "a" は数えない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstIndex を作る。文字列の配列 words を受け取り、キーが文字列で値が数値の Map を返す
+export function firstIndex() {
+  // 結果 result を作り、キーが文字列で値が数値の空の Map を入れる
+  // words の番号と要素の組を 1 つずつ [i, word] に取り出してくり返す
+    // もし result に word のキーがないなら
+      // result の word に i を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>番号と要素の組をくり返すのは <code>for (const [i, word] of words.entries())</code> です（04章 q03 問9）。「キーがないなら」は、<code>.has()</code>（問3）の前に <code>!</code> を付けます（01章 q04）。もうあるキーには入れないので、最初の位置が残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c09-q01-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">ユーザーごとの、いちばん大きい time の Map を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lastSeen() {}</code></pre>
+      <p>アクセスの記録 <code>{ user, time }</code> を並べた配列 <code>events</code> を受け取ります。ユーザーごとに、いちばん大きい <code>time</code> を入れた Map を返します。キーがユーザー名、値が <code>time</code> です。キーは、そのユーザーが最初に出てきた順に並べます。引数の型は <code>{ user: string; time: number }[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastSeen(events)</code></dt><dd class="r"><code>Map { "a" =&gt; 5, "b" =&gt; 9 }</code></dd><dd class="c"><code>events</code> は <code>[{ user: "a", time: 5 }, { user: "b", time: 1 }, { user: "a", time: 3 }, { user: "b", time: 9 }]</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Map&lt;string, number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lastSeen を作る。user が文字列で time が数値のオブジェクトの配列 events を受け取り、キーが文字列で値が数値の Map を返す
+export function lastSeen() {
+  // 結果 result を作り、キーが文字列で値が数値の空の Map を入れる
+  // events から 1 つずつ event に取り出してくり返す
+    // current を作り、result の event の user の値を入れる
+    // もし current が undefined、または event の time が current より大きいなら
+      // result の event の user に event の time を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「または」は <code>||</code> です（01章 q01 問15）。<code>current === undefined</code> を左に書くと、右の式では <code>current</code> が <code>number</code> として扱われ、<code>&gt;</code> で比べられます。初めてのユーザーは左が <code>true</code> なので、そのまま入ります。2 回目からは、大きいときだけ置き換えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c09-q01-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">文章の単語を数える</span>
+      <span class="q-new">新しく出てくる書き方：<code>ReadonlyMap&lt;K, V&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function wordCount() {}
+
+export function topWords() {}
+
+export function mergeCounts() {}
+
+export function groupByLength() {}</code></pre>
+      <p>文章の単語を数える関数を 4 つ、Map を使って書きます。引数の Map や配列は書き換えません。引数と戻り値の型注釈は自分で書きます。</p>
+      <ol>
+        <li><code>wordCount(text)</code>：<code>text</code> を空白（1 つ以上の空白や改行）で区切り、単語ごとの出てきた回数を <code>Map&lt;string, number&gt;</code> で返します。英字は小文字にそろえて数えます。<code>"The"</code> と <code>"the"</code> は同じ単語です。単語がなければ、空の Map を返します。</li>
+        <li><code>topWords(counts, n)</code>：<code>wordCount</code> の結果を受け取り、回数の多い順に上位 <code>n</code> 件を <code>[単語, 回数]</code> の配列で返します。回数が同じなら、Map に先に入った単語を先にします。</li>
+        <li><code>mergeCounts(a, b)</code>：2 つの Map をまとめた新しい Map を返します。両方にある単語は回数を足します。並ぶ順は、<code>a</code> の単語を <code>a</code> の順に、その後ろに <code>b</code> にだけある単語を <code>b</code> の順に並べます。</li>
+        <li><code>groupByLength(words)</code>：単語の配列を、文字数ごとにまとめた <code>Map&lt;number, string[]&gt;</code> を返します。キーは最初に出てきた順です。</li>
+      </ol>
+      <p>「説明すること」もあります。<code>wordCount</code> の結果を、Map の代わりにオブジェクト（<code>Record&lt;string, number&gt;</code>）で返すとしたら、どんな単語で困ることがありそうかを考えます。ファイルの「説明すること」のすぐ下に、<code>//</code> のコメントで書きます。ファイルには「<code>"constructor"</code> や <code>"__proto__"</code>」というヒントがあります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>wordCount("The cat and the hat")</code></dt><dd class="r"><code>Map { "the" =&gt; 2, "cat" =&gt; 1, "and" =&gt; 1, "hat" =&gt; 1 }</code></dd><dd class="c">"The" も "the" と数える</dd></div>
+          <div><dt><code>wordCount("  a  b\nA \n")</code></dt><dd class="r"><code>Map { "a" =&gt; 2, "b" =&gt; 1 }</code></dd><dd class="c">空白や改行が続いても区切れる</dd></div>
+          <div><dt><code>wordCount("   ")</code></dt><dd class="r">空の Map</dd><dd class="c">空白だけ</dd></div>
+          <div><dt><code>wordCount("constructor constructor")</code> の <code>"constructor"</code> の値</dt><dd class="r"><code>2</code></dd><dd class="c">オブジェクトのプロパティ名と同じ単語も数えられる</dd></div>
+          <div><dt><code>topWords(counts, 3)</code></dt><dd class="r"><code>[["b", 3], ["d", 3], ["e", 2]]</code></dd><dd class="c"><code>counts</code> は <code>Map { "a" =&gt; 1, "b" =&gt; 3, "c" =&gt; 1, "d" =&gt; 3, "e" =&gt; 2 }</code></dd></div>
+          <div><dt><code>topWords(counts, 10)</code> の要素の数</dt><dd class="r"><code>5</code></dd><dd class="c">n が組の数より多ければ、全部</dd></div>
+          <div><dt>呼んだあとの <code>counts</code> のキー</dt><dd class="r"><code>["a", "b", "c", "d", "e"]</code></dd><dd class="c">元のまま</dd></div>
+          <div><dt><code>mergeCounts(a, b)</code></dt><dd class="r"><code>Map { "x" =&gt; 4, "y" =&gt; 2, "z" =&gt; 5 }</code></dd><dd class="c"><code>a</code> は <code>Map { "x" =&gt; 1, "y" =&gt; 2 }</code>、<code>b</code> は <code>Map { "z" =&gt; 5, "x" =&gt; 3 }</code></dd></div>
+          <div><dt>呼んだあとの <code>a</code> と <code>b</code></dt><dd class="r">元のまま</dd><dd class="c"><code>a</code> の "x" は 1、<code>b</code> の組の数は 2</dd></div>
+          <div><dt><code>groupByLength(["cat", "horse", "dog", "ox", "zebra"])</code></dt><dd class="r"><code>Map { 3 =&gt; ["cat", "dog"], 5 =&gt; ["horse", "zebra"], 2 =&gt; ["ox"] }</code></dd><dd class="c">キーは数値。最初に出てきた順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が、<code>wordCount</code> は <code>Map&lt;string, number&gt;</code>、<code>topWords</code> は <code>[string, number][]</code>、<code>mergeCounts</code> は <code>Map&lt;string, number&gt;</code>、<code>groupByLength</code> は <code>Map&lt;number, string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">ReadonlyMap&lt;K, V&gt;</code><h4>書き換えられない Map の型</h4></div>
+      <p><code>ReadonlyMap</code> は、<code>.get()</code>・<code>.has()</code>・<code>.size</code>・<code>.keys()</code>・<code>.values()</code>・<code>.entries()</code> だけが使える Map の型です。<code>.set()</code> や <code>.delete()</code> を呼ぶと、型の確認でエラーになります。読み取り専用の配列 <code>readonly T[]</code>（02章 q04 問1）の Map の版です。引数の型にすると、関数の中で引数の Map を書き換えていないことを、型の確認で確かめられます。ドリルでは使いませんでしたが、応用問題の引数には使ってかまいません。<code>Map&lt;…&gt;</code> のままでもテストは通ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 totalStock を作る。キーが文字列で値が数値の読み取り専用の Map stock を受け取り、数値を返す
+function totalStock(stock: ReadonlyMap&lt;string, number&gt;): number {
+  // 在庫の合計 total を入れ直せる変数として作り、0 を入れる
+  let total = 0;
+  // stock の値から 1 つずつ count に取り出してくり返す
+  for (const count of stock.values()) {
+    // total に count を足す
+    total += count;
+  }
+  // total を返す
+  return total;
+}
+// 結果: totalStock(new Map([["ノート", 12], ["ペン", 8]])) は 20</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>ReadonlyMap の引数に .set() を呼ぶ</h5>
+          <pre><code class="language-typescript">stock.set("ペン", 0);</code></pre>
+          <div class="verdict ng">✕ ReadonlyMap&lt;string, number&gt; に set というプロパティはない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>コピーしてから .set() を呼ぶ</h5>
+          <pre><code class="language-typescript">const copy = new Map(stock);
+copy.set("ペン", 0);</code></pre>
+          <div class="verdict ok">○ new Map() でコピーした Map は、書き換えられる Map&lt;string, number&gt; です</div>
+        </div>
+      </div>
+      <p>引数を <code>ReadonlyMap</code> にしても、呼ぶ側はふつうの Map をそのまま渡せます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 wordCount を作る。文字列 text を受け取り、キーが文字列で値が数値の Map を返す
+export function wordCount() {
+  // 回数 counts を作り、キーが文字列で値が数値の空の Map を入れる
+  // text を空白の並びで区切った配列から 1 つずつ word に取り出してくり返す
+    // もし word が "" と等しいなら
+      // この回の残りを飛ばし、次の回に進む
+    // key を作り、word を小文字にしたものを入れる
+    // counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}
+
+// 関数 topWords を作る。キーが文字列で値が数値の読み取り専用の Map counts と数値 n を受け取り、文字列と数値のタプルの配列を返す
+export function topWords() {
+  // counts の組を並べた配列を、値の大きい順に並べ、その 0 番目から n 番目の前までを取り出した新しい配列を返す
+}
+
+// 関数 mergeCounts を作る。キーが文字列で値が数値の読み取り専用の Map a と b を受け取り、キーが文字列で値が数値の Map を返す
+export function mergeCounts() {
+  // まとめ merged を作り、a をコピーした Map を入れる
+  // b のキーと値の組を 1 つずつ [word, count] に取り出してくり返す
+    // merged の word に、merged の word の値（なければ 0）に count を足した数を入れる
+  // merged を返す
+}
+
+// 関数 groupByLength を作る。文字列の配列 words を受け取り、キーが数値で値が文字列の配列の Map を返す
+export function groupByLength() {
+  // まとめ groups を作り、キーが数値で値が文字列の配列の空の Map を入れる
+  // words から 1 つずつ word に取り出してくり返す
+    // group を作り、groups の「word の文字数」の値を入れる
+    // もし group が undefined なら
+      // groups の「word の文字数」に、word だけの配列を入れる
+    // そうでなければ
+      // group の最後に word を付け足す
+  // groups を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>wordCount</code> の区切り方は <code>.split(/\s+/)</code> です（04章 q08 問16）。<code>text</code> の先頭や最後に空白があると、区切った配列に <code>""</code> が入ります。それを <code>continue</code>（04章 q04 問10）で飛ばします。数え方は問11 と同じ形で、キーが <code>word.toLowerCase()</code> になります。<code>topWords</code> は問16 の並べ替えのあとに <code>.slice(0, n)</code> を続けます（02章 q05 問3）。<code>.slice()</code> は、<code>n</code> が要素の数より大きくても、あるだけを返します。<code>mergeCounts</code> は問14 と同じ形です。<code>groupByLength</code> は問12 と同じ形で、キーが <code>word.length</code>、空の Map が <code>new Map&lt;number, string[]&gt;()</code> になります。説明することは、ターミナルで <code>node</code> を起動して試してから考えます。<code>const counts = {};</code> と打ったあと、<code>counts["constructor"]</code> と <code>counts["__proto__"]</code> を打って、何が表示されるかを見ます。</p></details>
+    </div>
+  </section>
+</section>

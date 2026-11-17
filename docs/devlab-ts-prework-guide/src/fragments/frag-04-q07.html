@@ -1,0 +1,947 @@
+<section class="sec" id="c04-q07">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q07 never型と網羅性のチェック</h2>
+    <p>ユニオン型の値で場合分けする関数を 20 個書きます。引数と戻り値には型注釈を付けます。ファイルの上には、関数 <code>assertNever</code> と、型 <code>Fruit</code>・<code>Signal</code>・<code>Op</code>・<code>Shape</code>・<code>LogLevel</code> がもう書いてあります。書き換えずに使います。ユニオン型の値で場合分けするときは、<code>switch</code> で書きます。すべての値の <code>case</code> を書き、<code>default</code> では <code>assertNever(値)</code> を返します。こうしておくと、型に新しい値が増えたとき、書き忘れた <code>case</code> が型の確認のエラーで分かります。この確かめ方を「網羅性のチェック」と呼びます。網羅性とは、場合をもれなく扱っていることです。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q07-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">果物の色を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>never</code> 型、<code>default</code> で <code>assertNever(値)</code> を返す形、ESLint の <code>switch-exhaustiveness-check</code>、<code>JSON.stringify()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function assertNever(value: never): never {
+  throw new Error(`想定していない値です: ${JSON.stringify(value)}`);
+}
+
+export type Fruit = "apple" | "banana" | "cherry";
+
+export function fruitColor() {}</code></pre>
+      <p>果物を 1 つ受け取り、その色を返します。<code>"apple"</code> は <code>"赤"</code>、<code>"banana"</code> は <code>"黄"</code>、<code>"cherry"</code> は <code>"赤"</code> です。引数の型は <code>Fruit</code> です。<code>switch</code> で書き、<code>default</code> では <code>assertNever(fruit)</code> を返します。</p>
+      <p>ファイルの上の <code>assertNever</code> と <code>Fruit</code> は、もう書いてあります。この 2 つの読み方を、下の「新しい書き方」で説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fruitColor("apple")</code></dt><dd class="r"><code>"赤"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fruitColor("banana")</code></dt><dd class="r"><code>"黄"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fruitColor("cherry")</code></dt><dd class="r"><code>"赤"</code></dd><dd class="c">apple と同じ色</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Fruit</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">never</code><h4>never 型（当てはまる値が 1 つもない型）</h4></div>
+      <p><code>never</code> は、当てはまる値が 1 つもない型です。<code>string</code> にはどんな文字列も当てはまり、<code>"free" | "standard"</code> には 2 つの値が当てはまります。<code>never</code> に当てはまる値はありません。</p>
+      <p>スターターの <code>assertNever</code> は、引数の型も戻り値の型も <code>never</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 assertNever を作る。never の value を受け取り、決して値を返さない
+function assertNever(value: never): never {
+  // 「想定していない値です: ◯」というメッセージのエラーを投げる（◯ は value を JSON の文字列にしたもの）
+  throw new Error(`想定していない値です: ${JSON.stringify(value)}`);
+}
+// 結果: assertNever に渡せる値はなく、呼ばれたら必ずエラーを投げる</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function assertNever(<span class="seg"><i>1</i>value: never</span>): <span class="seg"><i>2</i>never</span> {</pre>
+        <ol>
+          <li><span>引数の型が <code>never</code> です。<code>never</code> に当てはまる値はないので、ふつうの値は渡せません。</span></li>
+          <li><span>戻り値の型が <code>never</code> です。この関数は、ふつうに終わって値を返すことがありません。必ずエラーを投げるからです。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>assertNever("free")</code></dt><dd class="r">型の確認でエラー</dd><dd class="c"><code>"free"</code> は <code>never</code> に当てはまらない</dd></div>
+        <div><dt><code>assertNever(0)</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">どんな値も <code>never</code> に当てはまらない</dd></div>
+      </dl>
+      <p>値を 1 つも渡せない関数が、なぜ役に立つのでしょうか。<code>switch</code> で場合を全部分けると、最後に「残りの値がない」場所ができます。そこでは値の型が <code>never</code> になるので、<code>assertNever</code> に渡せます。次の項目で説明します。</p>
+      <p class="memo"><b>なぜ</b>戻り値の型が <code>never</code> の関数は、どんな型の値の代わりにもなります。その先に処理が進まないからです。そのため、戻り値が <code>string</code> の関数の中でも <code>return assertNever(fruit);</code> と書けます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/statements/never">サバイバルTypeScript「never型」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">default: return assertNever(plan);</code><h4>case をすべて書き、default で assertNever を返す</h4></div>
+      <p>ユニオン型の値を <code>switch</code> で分けると、<code>case</code> の中では値の型が絞り込まれます（03章 q04）。<code>case "free":</code> の中では、<code>plan</code> の型は <code>"free"</code> だけです。</p>
+      <p>すべての値の <code>case</code> を書くと、<code>default</code> に来る値はもう残っていません。そのため、<code>default</code> の中では <code>plan</code> の型が <code>never</code> になります。<code>never</code> の値なら、<code>assertNever</code> に渡せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Plan を作る。"free" か "standard" か "premium"
+type Plan = "free" | "standard" | "premium";
+// 関数 planFee を作る。Plan の plan を受け取り、数値を返す
+function planFee(plan: Plan): number {
+  // plan で場合を分ける
+  switch (plan) {
+    // "free" の場合
+    case "free":
+      // 0 を返す
+      return 0;
+    // "standard" の場合
+    case "standard":
+      // 980 を返す
+      return 980;
+    // "premium" の場合
+    case "premium":
+      // 1980 を返す
+      return 1980;
+    // それ以外の場合
+    default:
+      // assertNever に plan を渡して呼んだ結果を返す
+      return assertNever(plan);
+  }
+}
+// 結果: planFee("standard") は 980</code></pre>
+      </div>
+      <p>場所ごとの <code>plan</code> の型です。<code>case</code> を 1 つ通るたびに、残りの値が減っていきます。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>場所</th><th>plan の型</th></tr></thead>
+          <tbody>
+            <tr><td>switch (plan) の前</td><td>"free" | "standard" | "premium"</td></tr>
+            <tr><td>case "free": の中</td><td>"free"</td></tr>
+            <tr><td>case "standard": の中</td><td>"standard"</td></tr>
+            <tr><td>case "premium": の中</td><td>"premium"</td></tr>
+            <tr><td>default: の中</td><td>never（残りがない）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>この形が役に立つのは、あとで型に値が増えたときです。<code>planFee</code> はそのままにして、<code>Plan</code> に <code>"family"</code> を足してみます。</p>
+      <div class="cmp">
+        <div>
+          <h5>Plan が 3 つのとき</h5>
+          <pre><code class="language-typescript">// 型 Plan を作る。"free" か "standard" か "premium"
+type Plan = "free" | "standard" | "premium";</code></pre>
+          <div class="verdict ok">○ default の plan は never なので、assertNever に渡せます</div>
+        </div>
+        <div>
+          <h5>Plan に "family" を足したとき</h5>
+          <pre><code class="language-typescript">// 型 Plan を作る。"free" か "standard" か "premium" か "family"
+type Plan = "free" | "standard" | "premium" | "family";</code></pre>
+          <div class="verdict ng">✕ assertNever(plan) の行が、型の確認でエラーになります</div>
+        </div>
+      </div>
+      <p><code>"family"</code> の <code>case</code> がないので、<code>default</code> に <code>"family"</code> が残ります。<code>"family"</code> は <code>never</code> に当てはまらないので、<code>assertNever</code> に渡せません。型の確認は、<code>Argument of type '"family"' is not assignable to parameter of type 'never'.</code> というメッセージを出します。</p>
+      <p>「<code>"family"</code> 型の値は、<code>never</code> 型の引数に渡せません」という意味です。メッセージの中の <code>"family"</code> が、書き忘れた <code>case</code> です。</p>
+      <p class="memo"><b>よくある間違い</b>エラーが出るのは <code>assertNever(plan)</code> の行ですが、直す場所は <code>switch</code> の中です。<code>case "family":</code> を足すと、エラーは消えます。<code>assertNever</code> の引数の型を変えて消すのは間違いです。</p>
+      <p class="memo"><b>なぜ</b>型の上では、<code>default</code> に来る値はありません。それでも、型の確認をすり抜けた値が実行中に来ることがあります。たとえば、JSON から読んだ値です（04章 q05 問5）。そのときは <code>assertNever</code> がエラーを投げて、おかしな値が来たことを知らせます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/statements/never">サバイバルTypeScript「never型」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">switch-exhaustiveness-check</code><h4>ESLint で case の書き忘れを見つける</h4></div>
+      <p>この課題の ESLint の設定には、<code>switch-exhaustiveness-check</code> という規則が入っています（04章 q02）。ユニオン型の値の <code>switch</code> に、すべての値の <code>case</code> があるかを確かめる規則です。書き忘れがあると、<code>switch</code> の行で <code>Switch is not exhaustive. Cases not matched: "family"</code> というエラーになります。</p>
+      <p>「<code>switch</code> がすべての場合を扱っていません。<code>"family"</code> の <code>case</code> がありません」という意味です。</p>
+      <p>型の確認と ESLint は、別々に書き忘れを見つけます。<code>default</code> の書き方によって、型の確認が見逃すことがあります。次の 2 つは、どちらも <code>Plan</code> に <code>"family"</code> を足したのに、<code>case</code> を足し忘れた例です。</p>
+      <div class="cmp">
+        <div>
+          <h5>default で 0 を返す</h5>
+          <pre><code class="language-typescript">// それ以外の場合
+default:
+  // 0 を返す
+  return 0;</code></pre>
+          <div class="verdict ng">✕ 型の確認は通ってしまいます。書き忘れに気づけるのは ESLint だけです</div>
+        </div>
+        <div>
+          <h5>default で assertNever を返す</h5>
+          <pre><code class="language-typescript">// それ以外の場合
+default:
+  // assertNever に plan を渡して呼んだ結果を返す
+  return assertNever(plan);</code></pre>
+          <div class="verdict ok">○ 型の確認と ESLint の両方が、書き忘れを知らせます</div>
+        </div>
+      </div>
+      <p><code>default</code> で決まった値を返すと、<code>"family"</code> は黙って 0 になります。型の確認から見ると、おかしなところはありません。<code>assertNever</code> を返す形なら、ESLint を動かさなくても、型の確認だけで気づけます。</p>
+      <p>書き方ごとに、どこでエラーになるかをまとめました。</p>
+      <dl class="eg">
+        <div><dt>すべての <code>case</code> と、<code>default</code> の <code>assertNever</code></dt><dd class="r">どちらも通る</dd><dd class="c">この課題で書く形</dd></div>
+        <div><dt><code>case</code> の書き忘れと、<code>default</code> の <code>assertNever</code></dt><dd class="r">どちらもエラー</dd><dd class="c">型の確認は <code>assertNever</code> の行、ESLint は <code>switch</code> の行</dd></div>
+        <div><dt><code>case</code> の書き忘れと、<code>default</code> で <code>0</code> を返す</dt><dd class="r">ESLint だけエラー</dd><dd class="c">型の確認は通ってしまう</dd></div>
+        <div><dt><code>case</code> の書き忘れと、<code>default</code> なし</dt><dd class="r">どちらもエラー</dd><dd class="c">型の確認は「関数の最後に <code>return</code> がない」というエラー</dd></div>
+      </dl>
+      <p class="memo"><b>決まり</b><code>case</code> をすべて書けば、<code>default</code> がなくても型の確認と ESLint は通ります。それでもこの課題では、<code>default</code> で <code>assertNever(値)</code> を返します。型の確認でも気づけるうえに、実行中におかしな値が来たときにエラーで知らせてくれるからです。</p>
+      <p class="more"><a href="https://typescript-eslint.io/rules/switch-exhaustiveness-check/">typescript-eslint「switch-exhaustiveness-check」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">JSON.stringify(value)</code><h4>値を JSON の文字列にする</h4></div>
+      <p><code>JSON.stringify()</code> は、受け取った値を JSON の形の文字列にします。JSON の文字列を値に戻す <code>JSON.parse()</code>（04章 q05 問5）の逆です。<code>assertNever</code> は、エラーのメッセージに来た値を入れるために使っています。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 order を作り、{ id: "A-102", qty: 2 } を入れる
+const order = { id: "A-102", qty: 2 };
+// text を作り、order を JSON の文字列にしたものを入れる
+const text = JSON.stringify(order);
+// 結果: text は '{"id":"A-102","qty":2}'</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>JSON.stringify(order)</code></dt><dd class="r"><code>'{"id":"A-102","qty":2}'</code></dd><dd class="c">オブジェクトの中身が文字列になる</dd></div>
+        <div><dt><code>JSON.stringify("family")</code></dt><dd class="r"><code>'"family"'</code></dd><dd class="c">文字列は、前後に <code>"</code> が付く</dd></div>
+        <div><dt><code>JSON.stringify(3)</code></dt><dd class="r"><code>"3"</code></dd><dd class="c">数は、そのまま文字列になる</dd></div>
+      </dl>
+      <p>実行中に <code>"family"</code> が <code>assertNever</code> に届くと、メッセージが <code>想定していない値です: "family"</code> のエラーを投げます。</p>
+      <p class="memo"><b>なぜ</b>テンプレートリテラルに <code>${value}</code> とそのまま書かないのは、2 つの理由からです。1 つめは、型が <code>never</code> の値を埋め込むと、ESLint がエラーにすることです（<code>Invalid type "never" of template literal expression</code>）。2 つめは、オブジェクトをそのまま埋め込むと <code>"[object Object]"</code> になり、中身が分からないことです。</p>
+      <p class="more"><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify">MDN「JSON.stringify()」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fruitColor を作る。Fruit の fruit を受け取り、文字列を返す
+export function fruitColor() {
+  // fruit で場合を分ける
+  //   "apple" の場合
+  //     "赤" を返す
+  //   "banana" の場合
+  //     "黄" を返す
+  //   "cherry" の場合
+  //     "赤" を返す
+  //   それ以外の場合
+  //     assertNever に fruit を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つ目の項目のサンプル <code>planFee</code> と同じ形です。「fruit で場合を分ける」は <code>switch (fruit) { }</code>、「"apple" の場合」は <code>case "apple":</code>、「それ以外の場合」は <code>default:</code> です。<code>"apple"</code> と <code>"cherry"</code> は同じ <code>"赤"</code> なので、<code>case "apple":</code> と <code>case "cherry":</code> を並べて 1 つの <code>return</code> にまとめてもかまいません（04章 q02）。書けたら、<code>Fruit</code> に <code>"grape"</code> を足して、型の確認と ESLint のエラーを見てみます。見たら元に戻します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q07-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">果物の値段を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fruitPrice() {}</code></pre>
+      <p>果物を 1 つ受け取り、その値段を数値で返します。<code>"apple"</code> は 150、<code>"banana"</code> は 100、<code>"cherry"</code> は 500 です。問1 と同じく、<code>switch</code> で書き、<code>default</code> では <code>assertNever(fruit)</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fruitPrice("apple")</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fruitPrice("banana")</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fruitPrice("cherry")</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Fruit</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fruitPrice を作る。Fruit の fruit を受け取り、数値を返す
+export function fruitPrice() {
+  // fruit で場合を分ける
+  //   "apple" の場合
+  //     150 を返す
+  //   "banana" の場合
+  //     100 を返す
+  //   "cherry" の場合
+  //     500 を返す
+  //   それ以外の場合
+  //     assertNever に fruit を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。違うのは、返す値と戻り値の型です。値段は数なので、戻り値の型は <code>number</code> です。問1 のサンプル <code>planFee</code> とまったく同じ形になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q07-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">信号の次の色を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Signal = "red" | "yellow" | "green";
+
+export function nextSignal() {}</code></pre>
+      <p>信号の色を 1 つ受け取り、次に点く色を返します。色は <code>"green"</code> → <code>"yellow"</code> → <code>"red"</code> → <code>"green"</code> の順に変わります。引数の型も戻り値の型も <code>Signal</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextSignal("green")</code></dt><dd class="r"><code>"yellow"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextSignal("yellow")</code></dt><dd class="r"><code>"red"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextSignal("red")</code></dt><dd class="r"><code>"green"</code></dd><dd class="c">最後の red の次は、最初の green に戻る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Signal</code>、戻り値が <code>Signal</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nextSignal を作る。Signal の signal を受け取り、Signal を返す
+export function nextSignal() {
+  // signal で場合を分ける
+  //   "green" の場合
+  //     "yellow" を返す
+  //   "yellow" の場合
+  //     "red" を返す
+  //   "red" の場合
+  //     "green" を返す
+  //   それ以外の場合
+  //     assertNever に signal を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。戻り値の型には <code>Signal</code> を書きます。返す値は <code>"yellow"</code> などの文字列ですが、どれも <code>Signal</code> の値なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q07-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">渡ってよい信号かどうかを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function canCross() {}</code></pre>
+      <p>信号の色を 1 つ受け取り、渡ってよいかどうかを返します。<code>"green"</code> なら <code>true</code>、<code>"yellow"</code> と <code>"red"</code> なら <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>canCross("green")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canCross("yellow")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>canCross("red")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Signal</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 canCross を作る。Signal の signal を受け取り、true か false を返す
+export function canCross() {
+  // signal で場合を分ける
+  //   "green" の場合
+  //     true を返す
+  //   "yellow" か "red" の場合
+  //     false を返す
+  //   それ以外の場合
+  //     assertNever に signal を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「"yellow" か "red" の場合」は、<code>case "yellow":</code> と <code>case "red":</code> を続けて並べ、その下に 1 つだけ <code>return false;</code> を書きます（04章 q02）。<code>signal === "green"</code> を返すだけでも値は合います。ただし、この番号では網羅性のチェックを身につけるために、<code>switch</code> と <code>assertNever</code> で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q07-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">計算の種類に合わせて計算する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Op = "add" | "sub" | "mul";
+
+export function applyOp() {}</code></pre>
+      <p>計算の種類 <code>op</code> と、2 つの数 <code>a</code>・<code>b</code> を受け取り、計算した結果を返します。<code>"add"</code> は <code>a + b</code>、<code>"sub"</code> は <code>a - b</code>、<code>"mul"</code> は <code>a × b</code> です。引数は、<code>Op</code>、数値、数値の順です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>applyOp("add", 3, 4)</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>applyOp("sub", 3, 4)</code></dt><dd class="r"><code>-1</code></dd><dd class="c">3 - 4</dd></div>
+          <div><dt><code>applyOp("mul", 3, 4)</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Op</code>・<code>number</code>・<code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 applyOp を作る。Op の op と数値 a と数値 b を受け取り、数値を返す
+export function applyOp() {
+  // op で場合を分ける
+  //   "add" の場合
+  //     a と b を足した数を返す
+  //   "sub" の場合
+  //     a から b を引いた数を返す
+  //   "mul" の場合
+  //     a と b を掛けた数を返す
+  //   それ以外の場合
+  //     assertNever に op を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、場合分けするのは <code>op</code> です。<code>a</code> と <code>b</code> は、どの <code>case</code> の中でもそのまま使えます。掛け算の記号は <code>*</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q07-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">計算の種類の記号を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function opSymbol() {}</code></pre>
+      <p>計算の種類を 1 つ受け取り、その記号を返します。<code>"add"</code> は <code>"+"</code>、<code>"sub"</code> は <code>"-"</code>、<code>"mul"</code> は <code>"×"</code> です。<code>"×"</code> は全角の掛け算の記号です。返す値は 3 つに決まっているので、戻り値の型はリテラル型のユニオン（01章 q07 問1）にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>opSymbol("add")</code></dt><dd class="r"><code>"+"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>opSymbol("sub")</code></dt><dd class="r"><code>"-"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>opSymbol("mul")</code></dt><dd class="r"><code>"×"</code></dd><dd class="c">全角の記号</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Op</code>、戻り値が <code>"+" | "-" | "×"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 opSymbol を作る。Op の op を受け取り、"+" か "-" か "×" を返す
+export function opSymbol() {
+  // op で場合を分ける
+  //   "add" の場合
+  //     "+" を返す
+  //   "sub" の場合
+  //     "-" を返す
+  //   "mul" の場合
+  //     "×" を返す
+  //   それ以外の場合
+  //     assertNever に op を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。戻り値の型は <code>"+" | "-" | "×"</code> と書きます。<code>string</code> と書くと、テストの型の確認で失敗します。<code>"×"</code> は、問題文からコピーすると打ち間違えません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q07-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">図形の面積を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape = { kind: "circle"; radius: number } | { kind: "square"; size: number };
+
+export function shapeArea() {}</code></pre>
+      <p>図形を 1 つ受け取り、その面積を返します。<code>Shape</code> は判別可能なユニオン型（03章 q04）で、<code>kind</code> が <code>"circle"</code>（円）か <code>"square"</code>（正方形）かで形を見分けます。円の面積は <code>Math.PI × 半径 × 半径</code>、正方形の面積は <code>1辺 × 1辺</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shapeArea({ kind: "circle", radius: 2 })</code></dt><dd class="r"><code>12.566…</code></dd><dd class="c"><code>4 × Math.PI</code> にほぼ等しければよい</dd></div>
+          <div><dt><code>shapeArea({ kind: "square", size: 3 })</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 shapeArea を作る。Shape の shape を受け取り、数値を返す
+export function shapeArea() {
+  // shape の kind で場合を分ける
+  //   "circle" の場合
+  //     Math.PI と shape の radius と shape の radius を掛けた数を返す
+  //   "square" の場合
+  //     shape の size と shape の size を掛けた数を返す
+  //   それ以外の場合
+  //     assertNever に shape を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>場合分けは <code>switch (shape.kind)</code> です（03章 q04 問1）。<code>case "circle":</code> の中では <code>shape</code> が円に絞り込まれるので、<code>shape.radius</code> が使えます。<code>default</code> では、<code>assertNever</code> に <code>shape</code> を渡します。<code>default</code> の中では <code>shape</code> そのものが <code>never</code> になっています。<code>assertNever(shape.kind)</code> と書くと、「<code>never</code> には <code>kind</code> というプロパティがない」という型のエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q07-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">図形の説明の文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function shapeLabel() {}</code></pre>
+      <p>図形を 1 つ受け取り、説明の文字列を返します。円なら <code>"円（半径 2）"</code>、正方形なら <code>"正方形（1辺 3）"</code> の形です。数のところには、その図形の半径や 1 辺の長さが入ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shapeLabel({ kind: "circle", radius: 2 })</code></dt><dd class="r"><code>"円（半径 2）"</code></dd><dd class="c">かっこは全角、「半径」と 2 の間は半角スペース</dd></div>
+          <div><dt><code>shapeLabel({ kind: "square", size: 3 })</code></dt><dd class="r"><code>"正方形（1辺 3）"</code></dd><dd class="c">「1辺」の間にはスペースがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 shapeLabel を作る。Shape の shape を受け取り、文字列を返す
+export function shapeLabel() {
+  // shape の kind で場合を分ける
+  //   "circle" の場合
+  //     shape の radius を埋め込んだ「円（半径 ◯）」の文字列を返す
+  //   "square" の場合
+  //     shape の size を埋め込んだ「正方形（1辺 ◯）」の文字列を返す
+  //   それ以外の場合
+  //     assertNever に shape を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。「◯ を埋め込んだ文字列」は、テンプレートリテラルの <code>${shape.radius}</code> です（01章 q01 問3）。全角のかっこと半角スペースは、テストの値と 1 文字ずつ見比べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q07-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">ログの重要度を数に直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type LogLevel = "debug" | "info" | "warn" | "error";
+
+export function levelValue() {}</code></pre>
+      <p>ログの重要度を 1 つ受け取り、数に直して返します。<code>"debug"</code> は 0、<code>"info"</code> は 1、<code>"warn"</code> は 2、<code>"error"</code> は 3 です。<code>LogLevel</code> は値が 4 つなので、<code>case</code> も 4 つ書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>levelValue("debug")</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>levelValue("info")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>levelValue("warn")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>levelValue("error")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>LogLevel</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 levelValue を作る。LogLevel の level を受け取り、数値を返す
+export function levelValue() {
+  // level で場合を分ける
+  //   "debug" の場合
+  //     0 を返す
+  //   "info" の場合
+  //     1 を返す
+  //   "warn" の場合
+  //     2 を返す
+  //   "error" の場合
+  //     3 を返す
+  //   それ以外の場合
+  //     assertNever に level を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、<code>case</code> が 4 つになります。1 つ書き忘れると、<code>assertNever(level)</code> の行が型の確認でエラーになります。メッセージに出る値が、書き忘れた <code>case</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q07-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">ログの行の頭に付ける文字を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function levelPrefix() {}</code></pre>
+      <p>ログの重要度を 1 つ受け取り、ログの行の頭に付ける文字を返します。<code>"debug"</code> は <code>"[DEBUG]"</code>、<code>"info"</code> は <code>"[INFO]"</code>、<code>"warn"</code> は <code>"[WARN]"</code>、<code>"error"</code> は <code>"[ERROR]"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>levelPrefix("debug")</code></dt><dd class="r"><code>"[DEBUG]"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>levelPrefix("info")</code></dt><dd class="r"><code>"[INFO]"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>levelPrefix("error")</code></dt><dd class="r"><code>"[ERROR]"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>LogLevel</code>、戻り値が <code>string</code> であることも確かめます。</p>
+        <p class="memo"><b>よくある間違い</b>テストは <code>"warn"</code> を確かめません。それでも <code>case "warn":</code> は書きます。書かないと、型の確認と ESLint がエラーにします。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 levelPrefix を作る。LogLevel の level を受け取り、文字列を返す
+export function levelPrefix() {
+  // level で場合を分ける
+  //   "debug" の場合
+  //     "[DEBUG]" を返す
+  //   "info" の場合
+  //     "[INFO]" を返す
+  //   "warn" の場合
+  //     "[WARN]" を返す
+  //   "error" の場合
+  //     "[ERROR]" を返す
+  //   それ以外の場合
+  //     assertNever に level を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形です。返す値が文字列になるので、戻り値の型は <code>string</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q07-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">知らせるべきログかどうかを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function shouldNotify() {}</code></pre>
+      <p>ログの重要度を 1 つ受け取り、担当者に知らせるべきかどうかを返します。<code>"warn"</code> と <code>"error"</code> なら <code>true</code>、<code>"debug"</code> と <code>"info"</code> なら <code>false</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shouldNotify("debug")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shouldNotify("info")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shouldNotify("warn")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shouldNotify("error")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>LogLevel</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 shouldNotify を作る。LogLevel の level を受け取り、true か false を返す
+export function shouldNotify() {
+  // level で場合を分ける
+  //   "debug" か "info" の場合
+  //     false を返す
+  //   "warn" か "error" の場合
+  //     true を返す
+  //   それ以外の場合
+  //     assertNever に level を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じく、同じ結果の <code>case</code> を続けて並べます。<code>case "debug":</code> と <code>case "info":</code> の下に <code>return false;</code>、<code>case "warn":</code> と <code>case "error":</code> の下に <code>return true;</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q07-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">必ずエラーを投げる関数 fail</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fail() {}</code></pre>
+      <p>文字列の <code>message</code> を受け取り、それをメッセージにしたエラーを投げる関数を書きます。この関数は値を返しません。必ずエラーを投げて終わります。そのため、戻り値の型は <code>never</code> にします。このファイルには <code>assertNever</code> も型もありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fail("だめ")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは <code>"だめ"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>never</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fail を作る。文字列の message を受け取り、決して値を返さない
+export function fail() {
+  // 「◯」というメッセージのエラーを投げる（◯ は message）
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 1 つ目の項目のサンプル <code>assertNever</code> と同じ形です。「決して値を返さない」は、戻り値の型の <code>: never</code> です。メッセージは <code>message</code> そのものなので、<code>new Error(message)</code> と書けます。<code>: never</code> は省かずに書きます。<code>function</code> で作った関数は、エラーを投げるだけでも、戻り値の型が <code>void</code>（何も返さない）と推論されます。すると、テストの型の確認で失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q07-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">ここには来ないはずの場所で呼ぶ関数 unreachable</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function unreachable() {}</code></pre>
+      <p>引数を受け取らず、<code>"ここには来ないはずです"</code> というメッセージのエラーを投げる関数を書きます。問12 と同じく、戻り値の型は <code>never</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>unreachable()</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは <code>"ここには来ないはずです"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>never</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 unreachable を作る。何も受け取らず、決して値を返さない
+export function unreachable() {
+  // "ここには来ないはずです" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じ形です。引数がないので、かっこの中は空のままにします。戻り値の型の <code>: never</code> は、問12 と同じく省かずに書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q07-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">文字列を Fruit に直す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Fruit = "apple" | "banana" | "cherry";
+
+export function toFruit() {}</code></pre>
+      <p>文字列の <code>text</code> を受け取ります。<code>text</code> が <code>Fruit</code> の値のどれかなら、それを <code>Fruit</code> として返します。どれでもなければ、<code>"果物ではありません: &lt;text&gt;"</code> というメッセージのエラーを投げます。<code>&lt;text&gt;</code> のところには、受け取った文字列が入ります。このファイルには <code>assertNever</code> がありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toFruit("apple")</code></dt><dd class="r"><code>"apple"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toFruit("grape")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは <code>"果物ではありません: grape"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Fruit</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toFruit を作る。文字列の text を受け取り、Fruit を返す
+export function toFruit() {
+  // もし text が "apple" と等しいか、"banana" と等しいか、"cherry" と等しいなら
+  //   text を返す
+  // 「果物ではありません: ◯」というメッセージのエラーを投げる（◯ は text）
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ と等しいか、◯ と等しいか」は、<code>===</code> を <code>||</code> でつないだ条件です。<code>===</code> で比べた <code>if</code> の中では、<code>text</code> の型が <code>"apple" | "banana" | "cherry"</code> に絞り込まれます（03章 q01）。だから <code>text</code> を、そのまま <code>Fruit</code> として返せます。<code>if</code> を書かずに <code>return text;</code> だけにすると、「<code>string</code> は <code>Fruit</code> に入れられない」という型のエラーになります。メッセージはテンプレートリテラルで組み立てます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q07-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">重要度ごとのログの数を数える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countByLevel() {}</code></pre>
+      <p>ログの重要度の配列を受け取り、重要度ごとの数を <code>{ debug, info, warn, error }</code> のオブジェクトで返します。数えるときは、<code>switch</code> で重要度を分けます。引数の型は読み取り専用の配列 <code>readonly LogLevel[]</code> です（02章 q04 問1）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countByLevel(["info", "warn", "info"])</code></dt><dd class="r"><code>{ debug: 0, info: 2, warn: 1, error: 0 }</code></dd><dd class="c">出てこない重要度は 0</dd></div>
+          <div><dt><code>countByLevel([])</code></dt><dd class="r"><code>{ debug: 0, info: 0, warn: 0, error: 0 }</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly LogLevel[]</code>、戻り値が <code>{ debug: number; info: number; warn: number; error: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countByLevel を作る。LogLevel の読み取り専用の配列 levels を受け取り、{ debug: 数値; info: 数値; warn: 数値; error: 数値 } を返す
+export function countByLevel() {
+  // 数 counts を作り、{ debug: 0, info: 0, warn: 0, error: 0 } を入れる
+  // levels から 1 つずつ level に取り出してくり返す
+  //   level で場合を分ける
+  //     "debug" の場合
+  //       counts の debug に 1 を足す
+  //       switch を抜ける
+  //     "info" の場合
+  //       counts の info に 1 を足す
+  //       switch を抜ける
+  //     "warn" の場合
+  //       counts の warn に 1 を足す
+  //       switch を抜ける
+  //     "error" の場合
+  //       counts の error に 1 を足す
+  //       switch を抜ける
+  //     それ以外の場合
+  //       assertNever に level を渡して呼ぶ
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>counts</code> は <code>const</code> で作ります。中のプロパティは <code>counts.debug++</code> のように変えられます。「switch を抜ける」は <code>break;</code> です。<code>break</code> は、04章 q04 問11 でくり返しを抜けるのに使いました。<code>switch</code> の中に書いた <code>break</code> が抜けるのは <code>switch</code> だけで、外の <code>for-of</code> は次の要素に進みます。ここで <code>return</code> を書くと、関数ごと終わってしまいます。<code>default</code> では値を返さないので、<code>return</code> を付けずに <code>assertNever(level);</code> と呼ぶだけにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q07-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">果物の絵文字を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fruitEmoji() {}</code></pre>
+      <p>果物を 1 つ受け取り、その絵文字を返します。<code>"apple"</code> は <code>"🍎"</code>、<code>"banana"</code> は <code>"🍌"</code>、<code>"cherry"</code> は <code>"🍒"</code> です。戻り値の型は、問6 と同じくリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fruitEmoji("apple")</code></dt><dd class="r"><code>"🍎"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fruitEmoji("banana")</code></dt><dd class="r"><code>"🍌"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fruitEmoji("cherry")</code></dt><dd class="r"><code>"🍒"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Fruit</code>、戻り値が <code>"🍎" | "🍌" | "🍒"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fruitEmoji を作る。Fruit の fruit を受け取り、"🍎" か "🍌" か "🍒" を返す
+export function fruitEmoji() {
+  // fruit で場合を分ける
+  //   "apple" の場合
+  //     "🍎" を返す
+  //   "banana" の場合
+  //     "🍌" を返す
+  //   "cherry" の場合
+  //     "🍒" を返す
+  //   それ以外の場合
+  //     assertNever に fruit を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 と同じ形です。絵文字も文字列なので、<code>"🍎"</code> のように <code>"</code> で囲みます。絵文字は問題文からコピーします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q07-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">信号が点いている秒数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function signalSeconds() {}</code></pre>
+      <p>信号の色を 1 つ受け取り、その色が点いている長さを秒で返します。<code>"green"</code> は 30、<code>"yellow"</code> は 3、<code>"red"</code> は 27 です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>signalSeconds("green")</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signalSeconds("yellow")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signalSeconds("red")</code></dt><dd class="r"><code>27</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Signal</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 signalSeconds を作る。Signal の signal を受け取り、数値を返す
+export function signalSeconds() {
+  // signal で場合を分ける
+  //   "green" の場合
+  //     30 を返す
+  //   "yellow" の場合
+  //     3 を返す
+  //   "red" の場合
+  //     27 を返す
+  //   それ以外の場合
+  //     assertNever に signal を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、場合分けするのは <code>signal</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q07-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">計算の種類の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function opName() {}</code></pre>
+      <p>計算の種類を 1 つ受け取り、日本語の名前を返します。<code>"add"</code> は <code>"足し算"</code>、<code>"sub"</code> は <code>"引き算"</code>、<code>"mul"</code> は <code>"掛け算"</code> です。戻り値の型は、問6 と同じくリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>opName("add")</code></dt><dd class="r"><code>"足し算"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>opName("sub")</code></dt><dd class="r"><code>"引き算"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>opName("mul")</code></dt><dd class="r"><code>"掛け算"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Op</code>、戻り値が <code>"足し算" | "引き算" | "掛け算"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 opName を作る。Op の op を受け取り、"足し算" か "引き算" か "掛け算" を返す
+export function opName() {
+  // op で場合を分ける
+  //   "add" の場合
+  //     "足し算" を返す
+  //   "sub" の場合
+  //     "引き算" を返す
+  //   "mul" の場合
+  //     "掛け算" を返す
+  //   それ以外の場合
+  //     assertNever に op を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 と同じ形です。戻り値の型は <code>"足し算" | "引き算" | "掛け算"</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q07-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">図形を k 倍に大きくする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function scaleShape() {}</code></pre>
+      <p>図形 <code>shape</code> と数 <code>k</code> を受け取り、大きさを <code>k</code> 倍にした新しい図形を返します。円なら半径を、正方形なら 1 辺の長さを <code>k</code> 倍にします。<code>kind</code> は変えません。受け取った <code>shape</code> は書き換えず、新しいオブジェクトを作って返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scaleShape({ kind: "square", size: 2 }, 3)</code></dt><dd class="r"><code>{ kind: "square", size: 6 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>scaleShape({ kind: "circle", radius: 1 }, 2)</code></dt><dd class="r"><code>{ kind: "circle", radius: 2 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>・<code>number</code>、戻り値が <code>Shape</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 scaleShape を作る。Shape の shape と数値 k を受け取り、Shape を返す
+export function scaleShape() {
+  // shape の kind で場合を分ける
+  //   "circle" の場合
+  //     kind が "circle"、radius が shape の radius と k を掛けた数のオブジェクトを返す
+  //   "square" の場合
+  //     kind が "square"、size が shape の size と k を掛けた数のオブジェクトを返す
+  //   それ以外の場合
+  //     assertNever に shape を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形で、<code>case</code> ごとにオブジェクトを作って返します。円なら <code>{ kind: "circle", radius: … }</code> です。<code>{ ...shape, radius: … }</code> のように、スプレッド構文（02章 q02 問8）で作ってもかまいません。<code>case "circle":</code> の中では <code>shape</code> が円に絞り込まれているので、どちらで書いても <code>Shape</code> として返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q07-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">重要度の高い方を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type LogLevel = "debug" | "info" | "warn" | "error";
+
+export function moreSevere() {}</code></pre>
+      <p>ログの重要度を 2 つ（<code>a</code> と <code>b</code>）受け取り、重要度の高い方を返します。重要度は <code>"debug"</code> &lt; <code>"info"</code> &lt; <code>"warn"</code> &lt; <code>"error"</code> の順に高くなります。2 つが同じなら <code>a</code> を返します。このファイルには <code>assertNever</code> がありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>moreSevere("info", "error")</code></dt><dd class="r"><code>"error"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moreSevere("warn", "debug")</code></dt><dd class="r"><code>"warn"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moreSevere("info", "info")</code></dt><dd class="r"><code>"info"</code></dd><dd class="c">同じなら a</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>LogLevel</code>・<code>LogLevel</code>、戻り値が <code>LogLevel</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 moreSevere を作る。LogLevel の a と LogLevel の b を受け取り、LogLevel を返す
+export function moreSevere() {
+  // 順番 order を LogLevel の読み取り専用の配列として作り、["debug", "info", "warn", "error"] を入れる
+  // order の中の b の位置が、order の中の a の位置より大きいなら b、そうでなければ a を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>重要度の低い順に並べた配列を作れば、位置が大きいほど重要度が高くなります。「order の中の b の位置」は <code>order.indexOf(b)</code> です（02章 q04 問10）。「◯ なら ◯、そうでなければ ◯」は条件演算子 <code>? :</code> です（01章 q01 問12）。同じなら <code>a</code> なので、比べるのは「より大きい」の <code>&gt;</code> です。<code>order</code> の型は <code>readonly LogLevel[]</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c04-q07-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">assertNever を自分で書き、図形とタスクの状態で使う</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "triangle"; base: number; height: number };
+
+export type TaskStatus = "todo" | "doing" | "review" | "done";
+
+export function assertNever() {}
+
+export function area() {}
+
+export function statusLabel() {}</code></pre>
+      <p>図形を表す型 <code>Shape</code> と、タスクの状態を表す型 <code>TaskStatus</code> は、もう書いてあります。<code>Shape</code> には、ドリルの 2 つに三角形（<code>"triangle"</code>）が加わっています。次の 3 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>assertNever(value)</code>：引数の型も戻り値の型も <code>never</code> です。呼ばれたら <code>Error</code> を投げます。メッセージは自由です。今度は自分で書きます。</li>
+        <li><code>area(shape)</code>：面積を返します。円は <code>Math.PI × 半径 × 半径</code>、正方形は <code>1辺 × 1辺</code>、三角形は <code>底辺 × 高さ ÷ 2</code> です。<code>switch</code> で <code>kind</code> ごとに分け、<code>default</code> では <code>assertNever(shape)</code> を返します。</li>
+        <li><code>statusLabel(status)</code>：状態の表示名を返します。<code>"todo"</code> は <code>"未着手"</code>、<code>"doing"</code> は <code>"作業中"</code>、<code>"review"</code> は <code>"確認待ち"</code>、<code>"done"</code> は <code>"完了"</code> です。同じく <code>default</code> で <code>assertNever</code> を使います。</li>
+      </ol>
+      <p>説明すること：<code>TaskStatus</code> に <code>"archived"</code> を足すと、どこに、どんなエラーが出るか。ファイルの「説明すること」のすぐ下に、<code>//</code> のコメントで書きます。試したら、<code>TaskStatus</code> を元に戻します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assertNever("x" as never)</code></dt><dd class="r">エラーを投げる</dd><dd class="c"><code>Error</code> であればよい。メッセージは問わない</dd></div>
+          <div><dt><code>area({ kind: "circle", radius: 1 })</code></dt><dd class="r"><code>3.14159…</code></dd><dd class="c"><code>Math.PI</code> にほぼ等しければよい</dd></div>
+          <div><dt><code>area({ kind: "square", size: 3 })</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+          <div><dt><code>area({ kind: "triangle", base: 3, height: 4 })</code></dt><dd class="r"><code>6</code></dd><dd class="c">3 × 4 ÷ 2</dd></div>
+          <div><dt><code>statusLabel("todo")</code></dt><dd class="r"><code>"未着手"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusLabel("doing")</code></dt><dd class="r"><code>"作業中"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusLabel("review")</code></dt><dd class="r"><code>"確認待ち"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>statusLabel("done")</code></dt><dd class="r"><code>"完了"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li><code>assertNever</code> の引数の型が <code>never</code> で、<code>"x"</code> のようなふつうの値を渡すと型のエラーになることを確かめます。</li>
+          <li><code>assertNever</code> の戻り値の型が <code>never</code> であることを確かめます。戻り値の型が <code>never</code> でないと、テストのファイルが型の確認でエラーになります。</li>
+        </ul>
+        <p class="memo"><b>型</b><code>area</code> は引数が <code>Shape</code>、戻り値が <code>number</code> です。<code>statusLabel</code> は引数が <code>TaskStatus</code>、戻り値が <code>string</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 assertNever を作る。never の value を受け取り、決して値を返さない
+export function assertNever() {
+  // 「想定していない値です: ◯」というメッセージのエラーを投げる（◯ は value を JSON の文字列にしたもの）
+}
+
+// 関数 area を作る。Shape の shape を受け取り、数値を返す
+export function area() {
+  // shape の kind で場合を分ける
+  //   "circle" の場合
+  //     Math.PI と shape の radius と shape の radius を掛けた数を返す
+  //   "square" の場合
+  //     shape の size と shape の size を掛けた数を返す
+  //   "triangle" の場合
+  //     shape の base と shape の height を掛けて、2 で割った数を返す
+  //   それ以外の場合
+  //     assertNever に shape を渡して呼んだ結果を返す
+}
+
+// 関数 statusLabel を作る。TaskStatus の status を受け取り、文字列を返す
+export function statusLabel() {
+  // status で場合を分ける
+  //   "todo" の場合
+  //     "未着手" を返す
+  //   "doing" の場合
+  //     "作業中" を返す
+  //   "review" の場合
+  //     "確認待ち" を返す
+  //   "done" の場合
+  //     "完了" を返す
+  //   それ以外の場合
+  //     assertNever に status を渡して呼んだ結果を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>assertNever</code> は、ドリルのファイルの上に書いてあったものと同じ形です（問1 の 1 つ目の項目のサンプル）。メッセージは自由なので、別の文でもかまいません。<code>area</code> は問7 に <code>case "triangle":</code> を足した形です。<code>statusLabel</code> は問10 と同じ形です。説明することは、実際に試してから書きます。<code>TaskStatus</code> の最後に <code>| "archived"</code> を足し、型の確認と ESLint を動かします。エラーが出た行と、メッセージの中身を読みます。メッセージの読み方は、問1 の 2 つ目と 3 つ目の項目にあります。読んだら <code>"archived"</code> を消して、エラーがなくなることを確かめます。</p></details>
+    </div>
+  </section>
+</section>

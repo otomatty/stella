@@ -1,0 +1,731 @@
+<section class="sec" id="c07-q08">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q08 ジェネリクスのユーティリティ</h2>
+    <p>どんな型の配列にも使える関数を、型変数を使って 20 個書き、最後に★総合問題に取り組みます。05章 q10 では、生徒の配列だけに使える <code>groupBy</code> などを書きました。ここでは同じような処理を、要素の型を型変数 <code>T</code> にして書きます。型変数は 07章 q06、型引数の制約は 07章 q07 で出ました。<code>any</code> や <code>unknown</code> は使いません。引数の配列は <code>readonly T[]</code> にして、元の配列は変えません。<code>findLast</code> や <code>Object.groupBy</code> のようなメソッドは、この課題の設定では型がないので使えません。<code>for</code> 文や、これまでに出たメソッドを使って自分で書きます。引数と戻り値の型注釈も、自分で書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q08-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">keyFn が返す文字列ごとにまとめる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function groupItems() {}</code></pre>
+      <p>配列の要素を、<code>keyFn</code> が返す文字列ごとにまとめたオブジェクトを返します。<code>keyFn</code> は、要素を 1 つ受け取って文字列を返す関数です。返すオブジェクトのキーは <code>keyFn</code> が返した文字列で、値はそのキーになった要素の配列です。配列の中は、元の順に並べます。戻り値の型は <code>Record&lt;string, T[]&gt;</code> です。<code>T</code> は、要素の型を表す型変数です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>groupItems(["ab", "c", "de"], (s) =&gt; String(s.length))</code></dt><dd class="r"><code>{ "2": ["ab", "de"], "1": ["c"] }</code></dd><dd class="c">文字数を文字列にしたものでまとめる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列の配列を渡すと、戻り値の型が <code>Record&lt;string, string[]&gt;</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 groupItems を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列を返す関数 keyFn を受け取り、まとめ表 Record（キーは文字列、値は T の配列）を返す
+export function groupItems() {
+  // 空のまとめ表 groups を Record で作る。キーは文字列、値は T の配列
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   groups の key に、groups の key の値（なければ空の配列）の要素すべてと item をこの順に並べた新しい配列を入れる
+  // groups を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 総合の <code>groupBy</code> と同じ形で、生徒の型 <code>Student</code> が型変数 <code>T</code> に変わります。型変数は、関数の名前のすぐ後ろに <code>&lt;T&gt;</code> と書いて使います（07章 q06 問1）。「T の読み取り専用の配列」は <code>readonly T[]</code> です。「T を受け取って文字列を返す関数」は <code>(item: T) =&gt; string</code> です（05章 q07 問1）。「まとめ表 Record（キーは文字列、値は T の配列）」は <code>Record&lt;string, T[]&gt;</code> です（07章 q02 問19）。<code>groups[key]</code> の型は <code>T[] | undefined</code> なので、<code>?? []</code> で空の配列にしてから並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q08-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">keyFn が返す文字列ごとの数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countItems() {}</code></pre>
+      <p><code>keyFn</code> が返す文字列ごとに、要素の数を数えたオブジェクトを返します。キーは <code>keyFn</code> が返した文字列で、値はその数です。戻り値の型は <code>Record&lt;string, number&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countItems([1, 2, 3], (n) =&gt; (n % 2 === 0 ? "偶数" : "奇数"))</code></dt><dd class="r"><code>{ 奇数: 2, 偶数: 1 }</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countItems を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列を返す関数 keyFn を受け取り、集計表 Record（キーは文字列、値は数値）を返す
+export function countItems() {
+  // 空の集計表 counts を Record で作る。キーは文字列、値は数値
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 総合の <code>countBy</code> と同じ形で、<code>Student</code> が <code>T</code> に変わります。戻り値と <code>counts</code> の型は <code>Record&lt;string, number&gt;</code> です。くり返しの中は <code>counts[key] = (counts[key] ?? 0) + 1</code> の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q08-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">predicate が true の配列と false の配列に分ける</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function splitBy() {}</code></pre>
+      <p><code>predicate</code> が <code>true</code> を返す要素と、<code>false</code> を返す要素に分けます。<code>predicate</code> は、要素を 1 つ受け取って <code>true</code> か <code>false</code> を返す関数です。<code>[true の配列, false の配列]</code> のタプルを返します。戻り値の型は <code>[T[], T[]]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>splitBy([1, 2, 3], (n) =&gt; n &gt; 1)</code></dt><dd class="r"><code>[[2, 3], [1]]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>数値の配列を渡すと、戻り値の型が <code>[number[], number[]]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 splitBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って true か false を返す関数 predicate を受け取り、[T の配列, T の配列] のタプルを返す
+export function splitBy() {
+  // items の要素を 1 つずつ item として、item を predicate に渡して呼んだ結果が true のものだけを集めた配列と、false のものだけを集めた配列の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 総合の <code>partition</code> と同じ形です。「T を受け取って true か false を返す関数」は <code>(item: T) =&gt; boolean</code> です。2 つの <code>.filter()</code> の条件は、<code>predicate(item)</code> と <code>!predicate(item)</code> です。戻り値の型 <code>[T[], T[]]</code> は、02章 q06 問1 のタプルの型です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q08-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">keyFn が同じものは最初の 1 つだけ残す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function uniqueByKey() {}</code></pre>
+      <p><code>keyFn</code> が返す値が同じ要素は、最初の 1 つだけを残します。<code>keyFn</code> は、要素を 1 つ受け取って文字列か数値を返す関数です。残した要素を元の順に並べた、新しい配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>uniqueByKey(["ab", "cd", "e"], (s) =&gt; s.length)</code></dt><dd class="r"><code>["ab", "e"]</code></dd><dd class="c"><code>"cd"</code> は <code>"ab"</code> と同じ 2 文字なので残さない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列の配列を渡すと、戻り値の型が <code>string[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 uniqueByKey を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列か数値を返す関数 keyFn を受け取り、T の配列を返す
+export function uniqueByKey() {
+  // 見たキー seen を作る。型は「文字列か数値」の配列。空の配列を入れる
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   もし seen に key が含まれないなら
+  //     seen の最後に key を付け足す
+  //     result の最後に item を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>keyFn</code> の型は <code>(item: T) =&gt; string | number</code> です。<code>seen</code> の型は、要素がユニオン型の配列 <code>(string | number)[]</code> です（03章 q03 問12）。見たものを <code>seen</code> に付け足していくのは、04章 q03 総合の <code>findFirstDuplicate</code> と同じです。「含まれないなら」は、<code>!</code> と <code>.includes()</code> で書きます（02章 q04 問9）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q08-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">keyFn の数値の小さい順に並べた新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sortByKey() {}</code></pre>
+      <p><code>keyFn</code> が返す数値の小さい順に並べた、新しい配列を返します。<code>keyFn</code> は、要素を 1 つ受け取って数値を返す関数です。<code>keyFn</code> の値が同じ要素どうしは、元の順のままにします。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortByKey([{ n: 2 }, { n: 1 }], (x) =&gt; x.n)</code></dt><dd class="r"><code>[{ n: 1 }, { n: 2 }]</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortByKey を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って数値を返す関数 keyFn を受け取り、T の配列を返す
+export function sortByKey() {
+  // items をコピーした配列を、keyFn に渡して呼んだ結果の小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>05章 q10 問6 のサンプルの <code>byPrice</code> の行と同じ形です。小さい順にするので、引き算は <code>a</code> の値から <code>b</code> の値を引きます。比べる値は、プロパティの代わりに <code>keyFn(a)</code> と <code>keyFn(b)</code> です。値が同じなら比べ方の関数が <code>0</code> を返すので、元の順のまま残ります。<code>items</code> は <code>readonly</code> なので、<code>items.sort()</code> と直接書くとエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q08-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">size 個ずつに区切る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function chunked() {}</code></pre>
+      <p>配列を <code>size</code> 個ずつに区切り、区切ったそれぞれの配列を並べた配列を返します。最後の区切りは、<code>size</code> 個より少なくてもかまいません。<code>size</code> が 1 より小さいときは、<code>Error</code> を投げます。戻り値の型は <code>T[][]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>chunked(["a", "b", "c"], 2)</code></dt><dd class="r"><code>[["a", "b"], ["c"]]</code></dd><dd class="c">最後は 1 個</dd></div>
+          <div><dt><code>chunked(["a", "b", "c"], 0)</code></dt><dd class="r"><code>Error</code></dd><dd class="c"><code>size</code> が 1 より小さい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列の配列を渡すと、戻り値の型が <code>string[][]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 chunked を作る。型変数 T を使い、T の読み取り専用の配列 items と数値の size を受け取り、T の配列の配列を返す
+export function chunked() {
+  // もし size が 1 より小さいなら
+  //   "size は 1 以上にしてください" というメッセージのエラーを投げる
+  // 結果 result を T の配列の配列として作り、空の配列を入れる
+  // i を 0 から、items の要素の数より小さい間 size ずつ増やしながらくり返す
+  //   result の最後に、items の i 番目から i + size 番目の前までを取り出した新しい配列を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q03 総合の <code>chunk</code> と同じ形で、数値が <code>T</code> に変わります。「T の配列の配列」は <code>T[][]</code> です。エラーのメッセージは、テストでは確かめません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q08-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">2 つの配列の同じ番号どうしを fn で組み合わせた配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function zipWith() {}</code></pre>
+      <p>2 つの配列の同じ番号の要素どうしを <code>fn</code> に渡し、その結果を並べた配列を返します。長さは、短い方の配列に合わせます。<code>fn</code> は、1 つめの配列の要素と 2 つめの配列の要素を受け取る関数です。型変数を 3 つ使います。1 つめの配列の要素の型、2 つめの配列の要素の型、<code>fn</code> が返す値の型です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>zipWith([1, 2, 3], ["a", "b"], (n, s) =&gt; `${s}${n}`)</code></dt><dd class="r"><code>["a1", "b2"]</code></dd><dd class="c">短い方の 2 個に合わせる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>数値の配列と文字列の配列を渡し、<code>fn</code> が <code>true</code> か <code>false</code> を返すと、戻り値の型が <code>boolean[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 zipWith を作る。型変数 A、B、C を使う。A の読み取り専用の配列 a と、B の読み取り専用の配列 b と、A と B を受け取って C を返す関数 fn を受け取り、C の配列を返す
+export function zipWith() {
+  // 結果 result を C の配列として作り、空の配列を入れる
+  // 長さ length を作り、a の要素の数と b の要素の数の小さい方を入れる
+  // i を 0 から、length より小さい間 1 ずつ増やしながらくり返す
+  //   x を作り、a の i 番目の要素を入れる
+  //   y を作り、b の i 番目の要素を入れる
+  //   もし x が undefined でない、かつ y が undefined でないなら
+  //     result の最後に、x と y を fn に渡して呼んだ結果を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>07章 q06 問19 の <code>zip</code> と同じ形で、付け足すものが <code>fn(x, y)</code> に変わります。型変数は <code>&lt;A, B, C&gt;</code> と 3 つ並べます（07章 q06 問6）。<code>fn</code> の型は <code>(x: A, y: B) =&gt; C</code> の形です。<code>a[i]</code> の型は <code>A | undefined</code> なので、<code>undefined</code> でないと確かめてから <code>fn</code> に渡します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q08-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">配列の配列を 1 つの配列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function flattenOnce() {}</code></pre>
+      <p>配列を要素に持つ配列を受け取ります。中の配列の要素を順に並べた、1 つの配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>flattenOnce([["a"], ["b", "c"]])</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>string[][]</code> を渡すと、戻り値の型が <code>string[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 flattenOnce を作る。型変数 T を使い、読み取り専用の、T の配列の配列 nested を受け取り、T の配列を返す
+export function flattenOnce() {
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // nested から 1 つずつ inner に取り出してくり返す
+  //   result の最後に inner の要素をばらばらに付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「読み取り専用の、T の配列の配列」は <code>readonly T[][]</code> です。<code>string[][]</code> を渡すと、<code>T</code> は <code>string</code> と推論されます。<code>inner</code> は <code>T[]</code> なので、<code>result.push(...inner)</code> で要素をばらばらに付け足せます（05章 q05 問16）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q08-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">null と undefined を除いた配列</span>
+      <span class="q-new">新しく出てくる書き方：<code>.filter()</code> で <code>null</code> と <code>undefined</code> を除くと、型からも消える</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function compact() {}</code></pre>
+      <p>配列から <code>null</code> と <code>undefined</code> を除いた、新しい配列を返します。<code>0</code> は <code>null</code> でも <code>undefined</code> でもないので残します。引数の要素の型は <code>T | null | undefined</code> です。戻り値の型は <code>T[]</code> で、型からも <code>null</code> と <code>undefined</code> が消えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>compact([1, null, 2, undefined, 0])</code></dt><dd class="r"><code>[1, 2, 0]</code></dd><dd class="c"><code>0</code> は残す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>要素が <code>number | null | undefined</code> の配列を渡すと、戻り値の型が <code>number[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.filter((x) =&gt; x !== null)</code><h4>null を除いた配列は、型からも null が消える</h4></div>
+      <p>02章 q04 問7 の <code>.filter()</code> で、<code>null</code> でないものだけを集めたとします。すると TypeScript は、できた配列の要素の型からも <code>null</code> を取り除きます。コールバックが、型ガード関数（05章 q09 問1）と同じ働きをすると読み取るためです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約した部屋番号の配列 rooms（要素は数値か null）を作り、101 と null と 203 と null を入れる
+const rooms: (number | null)[] = [101, null, 203, null];
+// 決まった部屋 fixed を作り、rooms の要素を 1 つずつ room として、room が null でないものだけを集めた新しい配列を入れる
+const fixed = rooms.filter((room) =&gt; room !== null);
+// 結果: fixed は [101, 203]。fixed の型は number[]</code></pre>
+      </div>
+      <p>型から消えるのは、条件で除いた型だけです。<code>seats</code> の型が <code>(number | null | undefined)[]</code> のとき、次のようになります。</p>
+      <div class="cmp">
+        <div>
+          <h5>null だけを除く</h5>
+          <pre><code class="language-typescript">const ready: number[] = seats.filter((seat) =&gt; seat !== null);</code></pre>
+          <div class="verdict ng">✕ 要素の型に undefined が残るので、number[] に入れられない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>null と undefined を除く</h5>
+          <pre><code class="language-typescript">const ready: number[] = seats.filter((seat) =&gt; seat !== null &amp;&amp; seat !== undefined);</code></pre>
+          <div class="verdict ok">○ 要素の型が number になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>seats.filter((seat) =&gt; seat)</code> のように値そのものを条件にすると、<code>0</code> も除かれてしまいます。この課題の lint でも、条件に boolean でない値を書くとエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 compact を作る。型変数 T を使い、読み取り専用の配列 items（要素は T か null か undefined）を受け取り、T の配列を返す
+export function compact() {
+  // items の要素を 1 つずつ item として、item が null でない、かつ undefined でないものだけを集めた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「読み取り専用の配列 items（要素は T か null か undefined）」は <code>readonly (T | null | undefined)[]</code> です。ユニオン型をかっこで囲んでから <code>[]</code> を付けます（03章 q03 問12）。要素が <code>number | null | undefined</code> の配列を渡すと、TypeScript は <code>T</code> を <code>number</code> と推論します。07章 q06 問18 の <code>Maybe&lt;T&gt;</code> と同じです。中身は、問9 の右の <code>ready</code> の行の <code>=</code> から右と同じ形で、<code>seats</code> が <code>items</code> に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q08-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">keyFn をキーにした Record&lt;string, T&gt;</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function indexBy() {}</code></pre>
+      <p><code>keyFn</code> が返す文字列をキーに、要素を値にしたオブジェクトを返します。同じキーの要素が 2 つ以上あれば、後の方を残します。戻り値の型は <code>Record&lt;string, T&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>indexBy(rows, (x) =&gt; x.code)</code></dt><dd class="r"><code>{ A: { code: "A", n: 3 }, B: { code: "B", n: 2 } }</code></dd><dd class="c"><code>rows</code> は <code>{ code: "A", n: 1 }</code>、<code>{ code: "B", n: 2 }</code>、<code>{ code: "A", n: 3 }</code>。A は後の方を残す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>このとき戻り値の型が <code>Record&lt;string, { code: string; n: number }&gt;</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 indexBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列を返す関数 keyFn を受け取り、表 Record（キーは文字列、値は T）を返す
+export function indexBy() {
+  // 空の表 result を Record で作る。キーは文字列、値は T
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   result の key に item を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>07章 q07 問20 の <code>toIdMap</code> と同じ形で、キーが <code>keyFn(item)</code> に変わります。表の型は <code>Record&lt;string, T&gt;</code> です。同じキーが 2 回出てくると、後の <code>item</code> で入れ直されます。そのため、後の方が残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q08-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">Record&lt;string, T&gt; のすべての値に fn を当てはめた Record&lt;string, U&gt;</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mapValues() {}</code></pre>
+      <p>オブジェクトのすべての値を <code>fn</code> に渡し、その結果を値にした新しいオブジェクトを返します。キーはそのままです。引数のオブジェクトの型は <code>Record&lt;string, T&gt;</code>、戻り値の型は <code>Record&lt;string, U&gt;</code> です。型変数を 2 つ使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mapValues({ a: 1, b: 2 }, (n) =&gt; String(n))</code></dt><dd class="r"><code>{ a: "1", b: "2" }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Record&lt;string, number&gt;</code> を渡し、<code>fn</code> が <code>true</code> か <code>false</code> を返すと、戻り値の型が <code>Record&lt;string, boolean&gt;</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mapValues を作る。型変数 T と U を使い、表 record（Record で、キーは文字列、値は T）と、T を受け取って U を返す関数 fn を受け取り、表 Record（キーは文字列、値は U）を返す
+export function mapValues() {
+  // 空の表 result を Record で作る。キーは文字列、値は U
+  // record のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+  //   result の key に、value を fn に渡して呼んだ結果を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型変数を 2 つ使うときは、07章 q06 問6 と同じく <code>&lt;T, U&gt;</code> と並べます。「T を受け取って U を返す関数」は <code>(value: T) =&gt; U</code> です。キーと値の組を 1 つずつ取り出すのは <code>Object.entries()</code> です（02章 q08 問10）。<code>Record&lt;string, T&gt;</code> に使うと、組の型は <code>[string, T]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q08-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">末尾の n 個の新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lastN() {}</code></pre>
+      <p>配列の後ろから <code>n</code> 個を取り出した、新しい配列を返します。<code>n</code> が 0 以下なら、空の配列を返します。<code>n</code> が要素の数より多ければ、全部を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastN([1, 2, 3], 2)</code></dt><dd class="r"><code>[2, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lastN([1, 2, 3], 0)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">0 以下なので空の配列</dd></div>
+          <div><dt><code>lastN([1, 2, 3], 5)</code></dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c">要素の数より多いので全部</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>数値の配列を渡すと、戻り値の型が <code>number[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lastN を作る。型変数 T を使い、T の読み取り専用の配列 items と数値 n を受け取り、T の配列を返す
+export function lastN() {
+  // もし n が 0 以下なら
+  //   空の配列を返す
+  // items の後ろから n 個を取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「後ろから n 個」は <code>.slice(-n)</code> です（01章 q05 問4、配列の <code>.slice()</code> は 02章 q05 問3）。<code>n</code> が <code>0</code> のときは <code>-0</code> になり、これは <code>0</code> と同じです。<code>.slice(0)</code> は全部を返してしまうので、先に 0 以下かを確かめます。<code>n</code> が要素の数より多いときは、<code>.slice()</code> があるだけを返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q08-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">a にあって b にない要素</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function difference() {}</code></pre>
+      <p>配列 <code>a</code> の要素のうち、配列 <code>b</code> に含まれないものを、<code>a</code> の順に並べた新しい配列を返します。<code>a</code> と <code>b</code> の要素は同じ型です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>difference([1, 2, 3], [2])</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>difference(["a"], ["a"])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">残るものがない</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 difference を作る。型変数 T を使い、T の読み取り専用の配列 a と、T の読み取り専用の配列 b を受け取り、T の配列を返す
+export function difference() {
+  // a の要素を 1 つずつ item として、b に item が含まれないものだけを集めた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.filter()</code>（02章 q04 問7）のコールバックで、<code>.includes()</code>（02章 q04 問9）の結果を <code>!</code> で反対にします。<code>a</code> と <code>b</code> をどちらも <code>readonly T[]</code> にすると、<code>b.includes(item)</code> の <code>item</code> が同じ <code>T</code> なので、そのまま渡せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q08-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">a と b の両方にある要素</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function intersection() {}</code></pre>
+      <p>配列 <code>a</code> と配列 <code>b</code> の両方にある要素を、<code>a</code> の順に並べた新しい配列を返します。<code>a</code> の中に同じ要素が 2 つ以上あっても、1 つだけにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>intersection([1, 2, 2, 3], [2, 3, 4])</code></dt><dd class="r"><code>[2, 3]</code></dd><dd class="c">2 は 1 つだけにする</dd></div>
+          <div><dt><code>intersection(["a"], ["b"])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">両方にあるものがない</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 intersection を作る。型変数 T を使い、T の読み取り専用の配列 a と、T の読み取り専用の配列 b を受け取り、T の配列を返す
+export function intersection() {
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // a から 1 つずつ item に取り出してくり返す
+  //   もし b に item が含まれ、かつ result に item が含まれないなら
+  //     result の最後に item を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q03 総合の <code>findFirstDuplicate</code> と同じく、<code>result</code> に入れたものを見て重複を除きます。2 つの条件は <code>&amp;&amp;</code> でつなぎます（01章 q02 問16）。<code>result</code> に含まれないかは、<code>!result.includes(item)</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q08-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">a と b のどちらかにある要素を、出てきた順に重複なく並べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function union() {}</code></pre>
+      <p>配列 <code>a</code> と配列 <code>b</code> のどちらかにある要素を、<code>a</code>、<code>b</code> の順に出てきた順で並べた新しい配列を返します。同じ要素は 1 つだけにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>union([1, 2], [2, 3])</code></dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c">2 は 1 つだけにする</dd></div>
+          <div><dt><code>union(["a", "a"], [])</code></dt><dd class="r"><code>["a"]</code></dd><dd class="c"><code>a</code> の中の重複も 1 つにする</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 union を作る。型変数 T を使い、T の読み取り専用の配列 a と、T の読み取り専用の配列 b を受け取り、T の配列を返す
+export function union() {
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // a の要素すべてと b の要素すべてをこの順に並べた新しい配列から、1 つずつ item に取り出してくり返す
+  //   もし result に item が含まれないなら
+  //     result の最後に item を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「a の要素すべてと b の要素すべてをこの順に並べた新しい配列」は <code>[...a, ...b]</code> です（02章 q05 問1）。<code>for (const item of [...a, ...b])</code> と、そのまま <code>of</code> の後ろに書けます。中は、問14 の条件から <code>b</code> の確認を除いた形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q08-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">先頭から、predicate が true のあいだの要素を集める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function takeWhile() {}</code></pre>
+      <p>配列の先頭から順に <code>predicate</code> を呼び、<code>true</code> を返すあいだの要素を集めた配列を返します。<code>false</code> を返す要素が出てきたら、そこで止めます。その後ろに <code>true</code> になる要素があっても、集めません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>takeWhile([1, 2, 5, 1], (n) =&gt; n &lt; 3)</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c">5 で止まるので、最後の 1 は集めない</dd></div>
+          <div><dt><code>takeWhile(["a"], () =&gt; false)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">先頭で止まる</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 takeWhile を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って true か false を返す関数 predicate を受け取り、T の配列を返す
+export function takeWhile() {
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし item を predicate に渡して呼んだ結果が false なら
+  //     くり返しを抜ける
+  //   result の最後に item を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「くり返しを抜ける」は <code>break</code> です（04章 q04 問11）。「結果が false なら」は <code>!predicate(item)</code> です。<code>.filter()</code> を使うと、<code>5</code> の後ろの <code>1</code> も集めてしまいます。テストの <code>() =&gt; false</code> のように、引数を受け取らない関数も <code>predicate</code> として渡せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q08-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">先頭から、predicate が true のあいだの要素を飛ばし、残りを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dropWhile() {}</code></pre>
+      <p>配列の先頭から順に <code>predicate</code> を呼び、<code>true</code> を返すあいだの要素を飛ばします。<code>false</code> を返す要素が出てきたら、そこから後ろを全部返します。問16 で集める側の反対です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dropWhile([1, 2, 5, 1], (n) =&gt; n &lt; 3)</code></dt><dd class="r"><code>[5, 1]</code></dd><dd class="c">5 から後ろ。最後の 1 も残る</dd></div>
+          <div><dt><code>dropWhile(["a"], () =&gt; true)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">全部飛ばす</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dropWhile を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って true か false を返す関数 predicate を受け取り、T の配列を返す
+export function dropWhile() {
+  // 番号 index を入れ直せる変数として作り、0 を入れる
+  // index が items の要素の数より小さい間くり返す
+  //   要素 item を作り、items の index 番目の要素を入れる
+  //   もし item が undefined か、item を predicate に渡して呼んだ結果が false なら
+  //     くり返しを抜ける
+  //   index を 1 増やす
+  // items の index 番目から後ろを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q04 問13 の <code>trimZeros</code> と同じく、飛ばした数を <code>index</code> で数え、最後に <code>.slice(index)</code> で後ろを取り出します。<code>items[index]</code> の型は <code>T | undefined</code> なので、<code>item === undefined || !predicate(item)</code> の順に確かめます。<code>||</code> は左が <code>true</code> なら右を調べないので、<code>undefined</code> を <code>predicate</code> に渡すことはありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q08-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">predicate が true の最後の要素</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function findLastItem() {}</code></pre>
+      <p><code>predicate</code> が <code>true</code> を返す要素のうち、いちばん後ろのものを返します。なければ <code>undefined</code> を返します。<code>for</code> 文で、後ろから順に探します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>findLastItem([1, 4, 6, 7], (n) =&gt; n % 2 === 0)</code></dt><dd class="r"><code>6</code></dd><dd class="c">偶数のうち最後</dd></div>
+          <div><dt><code>findLastItem([1, 4, 6, 7], (n) =&gt; n &gt; 10)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">当てはまる要素がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>数値の配列を渡すと、戻り値の型が <code>number | undefined</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findLastItem を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って true か false を返す関数 predicate を受け取り、T か undefined を返す
+export function findLastItem() {
+  // i を（items の要素の数 − 1）から 0 まで 1 ずつ減らしながらくり返す
+  //   要素 item を作り、items の i 番目の要素を入れる
+  //   もし item が undefined でない、かつ item を predicate に渡して呼んだ結果が true なら
+  //     item を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは、04章 q03 問6 の <code>reverseArray</code> と同じく <code>i--</code> で減らします。条件は <code>i &gt;= 0</code> です。戻り値の型「T か undefined」は <code>T | undefined</code> です（07章 q06 問2）。見つかったらその場で <code>return</code> するので、残りは調べません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q08-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">fn の合計</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumOf() {}</code></pre>
+      <p>配列のそれぞれの要素を <code>fn</code> に渡し、返ってきた数値の合計を返します。<code>fn</code> は、要素を 1 つ受け取って数値を返す関数です。空の配列なら <code>0</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumOf([{ p: 100 }, { p: 50 }], (x) =&gt; x.p)</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumOf([], () =&gt; 1)</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumOf を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って数値を返す関数 fn を受け取り、数値を返す
+export function sumOf() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   total に、item を fn に渡して呼んだ結果を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>07章 q07 問9 の <code>sumBy</code> と同じ形です。「足す」は <code>+=</code> です（01章 q01 問5）。空の配列では 1 回もくり返さないので、<code>0</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q08-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">fn の値がいちばん小さい要素</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function minBy() {}</code></pre>
+      <p>配列のそれぞれの要素を <code>fn</code> に渡し、返ってきた数値がいちばん小さい要素を返します。同じ値の要素が 2 つ以上あれば、先の方を返します。空の配列なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>minBy(["abc", "a", "b"], (s) =&gt; s.length)</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"><code>"a"</code> と <code>"b"</code> は同じ 1 文字なので、先の <code>"a"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列の配列を渡すと、戻り値の型が <code>string | undefined</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 minBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って数値を返す関数 fn を受け取り、T か undefined を返す
+export function minBy() {
+  // いちばんの要素 best を入れ直せる変数として作り、undefined を入れる。型は T か undefined
+  // いちばん小さい値 bestValue を入れ直せる変数として作り、Infinity を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   値 value を作り、item を fn に渡して呼んだ結果を入れる
+  //   もし value が bestValue より小さいなら
+  //     best に item を入れ直す
+  //     bestValue に value を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>07章 q07 問8 の <code>maxBy</code> の反対です。<code>-Infinity</code> が <code>Infinity</code> に、<code>&gt;</code> が <code>&lt;</code> に変わります（<code>Infinity</code> は 02章 q08 問10）。同じ値なら先の方を残すので、比べるのは「より小さい」の <code>&lt;</code> です。空の配列では 1 回もくり返さないので、<code>best</code> は <code>undefined</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 -->
+  <section class="q" id="c07-q08-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">ジェネリクスのユーティリティ（まとめる・数える・分ける・重複を除く・並べる・区切る）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function groupBy() {}
+
+export function countBy() {}
+
+export function partition() {}
+
+export function uniqueBy() {}
+
+export function sortBy() {}
+
+export function chunk() {}</code></pre>
+      <p>05章 q10 総合では、生徒の配列だけに使える <code>groupBy</code> などを書きました。これを型変数 <code>T</code> を使って、どんな配列にも使えるように書き直します。関数を 6 つ書きます。どれも引数の配列は <code>readonly T[]</code> にして、元の配列は変えません。中身は、問1〜問6 で書いたものと同じです。</p>
+      <ol>
+        <li><code>groupBy(items, keyFn)</code>：<code>keyFn(要素)</code> が返す文字列ごとにまとめます。戻り値は <code>Record&lt;string, T[]&gt;</code> です（問1）。</li>
+        <li><code>countBy(items, keyFn)</code>：<code>keyFn(要素)</code> が返す文字列ごとに数えます。戻り値は <code>Record&lt;string, number&gt;</code> です（問2）。</li>
+        <li><code>partition(items, predicate)</code>：<code>[true の配列, false の配列]</code> を返します。戻り値は <code>[T[], T[]]</code> です（問3）。</li>
+        <li><code>uniqueBy(items, keyFn)</code>：<code>keyFn(要素)</code> が同じものは、最初の 1 つだけ残します。<code>keyFn</code> は文字列か数値を返します（問4）。</li>
+        <li><code>sortBy(items, keyFn)</code>：<code>keyFn(要素)</code> が返す数値の小さい順に並べた、新しい配列を返します。同じなら元の順です（問5）。</li>
+        <li><code>chunk(items, size)</code>：<code>size</code> 個ずつに区切ります。戻り値は <code>T[][]</code> です。<code>size</code> が 1 より小さいときは <code>Error</code> を投げます（問6）。</li>
+      </ol>
+      <p>テストでは、3 人の配列 <code>members</code> を使います。山田（チーム A・30 歳）、佐藤（チーム B・25 歳）、鈴木（チーム A・41 歳）です。それぞれ <code>name</code>・<code>team</code>・<code>age</code> を持つ <code>Member</code> 型のオブジェクトです。文字列の配列 <code>words</code> は <code>["apple", "avocado", "banana"]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>groupBy(members, (m) =&gt; m.team)</code> の <code>A</code></dt><dd class="r">山田、鈴木の配列</dd><dd class="c"></dd></div>
+          <div><dt><code>groupBy(words, (w) =&gt; w.slice(0, 1))</code></dt><dd class="r"><code>{ a: ["apple", "avocado"], b: ["banana"] }</code></dd><dd class="c">先頭の 1 文字でまとめる</dd></div>
+          <div><dt><code>countBy(members, (m) =&gt; m.team)</code></dt><dd class="r"><code>{ A: 2, B: 1 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countBy([1, 2, 3, 4], (n) =&gt; (n % 2 === 0 ? "偶数" : "奇数"))</code></dt><dd class="r"><code>{ 奇数: 2, 偶数: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>partition([1, 2, 3, 4], (n) =&gt; n &gt; 2)</code></dt><dd class="r"><code>[[3, 4], [1, 2]]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>uniqueBy(members, (m) =&gt; m.team)</code></dt><dd class="r">山田、佐藤の配列</dd><dd class="c">鈴木は山田と同じチーム A</dd></div>
+          <div><dt><code>uniqueBy([1, 2, 3, 4], (n) =&gt; n % 2)</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c">2 で割った余りが同じものは除く</dd></div>
+          <div><dt><code>sortBy(members, (m) =&gt; m.age)</code></dt><dd class="r">佐藤、山田、鈴木の順の配列</dd><dd class="c">若い順</dd></div>
+          <div><dt><code>sortBy(words, (w) =&gt; w.length)</code></dt><dd class="r"><code>["apple", "banana", "avocado"]</code></dd><dd class="c">文字数の少ない順</dd></div>
+          <div><dt><code>sortBy</code> に渡した <code>members</code>（呼んだあと）</dt><dd class="r">山田、佐藤、鈴木の順のまま</dd><dd class="c">元の配列は変えない</dd></div>
+          <div><dt><code>chunk([1, 2, 3, 4, 5], 2)</code></dt><dd class="r"><code>[[1, 2], [3, 4], [5]]</code></dd><dd class="c">最後は 1 個</dd></div>
+          <div><dt><code>chunk(words, 2)</code></dt><dd class="r"><code>[["apple", "avocado"], ["banana"]]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>chunk([1], 0)</code></dt><dd class="r"><code>Error</code></dd><dd class="c"><code>size</code> が 1 より小さい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>要素の型に合わせて、戻り値の型が変わることも確かめます。<code>groupBy</code> は、<code>members</code> を渡すと <code>Record&lt;string, Member[]&gt;</code>、<code>words</code> を渡すと <code>Record&lt;string, string[]&gt;</code> です。<code>countBy</code> は <code>Record&lt;string, number&gt;</code>、<code>partition</code> に <code>members</code> を渡すと <code>[Member[], Member[]]</code> です。<code>uniqueBy</code> に <code>words</code> を渡すと <code>string[]</code>、<code>sortBy</code> に <code>members</code> を渡すと <code>Member[]</code>、<code>chunk</code> に <code>words</code> を渡すと <code>string[][]</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 groupBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列を返す関数 keyFn を受け取り、まとめ表 Record（キーは文字列、値は T の配列）を返す
+export function groupBy() {
+  // 空のまとめ表 groups を Record で作る。キーは文字列、値は T の配列
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   groups の key に、groups の key の値（なければ空の配列）の要素すべてと item をこの順に並べた新しい配列を入れる
+  // groups を返す
+}
+
+// 関数 countBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列を返す関数 keyFn を受け取り、集計表 Record（キーは文字列、値は数値）を返す
+export function countBy() {
+  // 空の集計表 counts を Record で作る。キーは文字列、値は数値
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}
+
+// 関数 partition を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って true か false を返す関数 predicate を受け取り、[T の配列, T の配列] のタプルを返す
+export function partition() {
+  // items の要素を 1 つずつ item として、item を predicate に渡して呼んだ結果が true のものだけを集めた配列と、false のものだけを集めた配列の順に並べたタプルを返す
+}
+
+// 関数 uniqueBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って文字列か数値を返す関数 keyFn を受け取り、T の配列を返す
+export function uniqueBy() {
+  // 見たキー seen を作る。型は「文字列か数値」の配列。空の配列を入れる
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   キー key を作り、item を keyFn に渡して呼んだ結果を入れる
+  //   もし seen に key が含まれないなら
+  //     seen の最後に key を付け足す
+  //     result の最後に item を付け足す
+  // result を返す
+}
+
+// 関数 sortBy を作る。型変数 T を使い、T の読み取り専用の配列 items と、T を受け取って数値を返す関数 keyFn を受け取り、T の配列を返す
+export function sortBy() {
+  // items をコピーした配列を、keyFn に渡して呼んだ結果の小さい順に並べたものを返す
+}
+
+// 関数 chunk を作る。型変数 T を使い、T の読み取り専用の配列 items と数値の size を受け取り、T の配列の配列を返す
+export function chunk() {
+  // もし size が 1 より小さいなら
+  //   "size は 1 以上にしてください" というメッセージのエラーを投げる
+  // 結果 result を T の配列の配列として作り、空の配列を入れる
+  // i を 0 から、items の要素の数より小さい間 size ずつ増やしながらくり返す
+  //   result の最後に、items の i 番目から i + size 番目の前までを取り出した新しい配列を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>6 つとも、問1〜問6 と同じ形で、関数の名前だけが変わります。<code>groupBy</code> は問1、<code>countBy</code> は問2、<code>partition</code> は問3、<code>uniqueBy</code> は問4、<code>sortBy</code> は問5、<code>chunk</code> は問6 です。どれも関数の名前の後ろに <code>&lt;T&gt;</code> を書き、引数の配列を <code>readonly T[]</code> にします。テストで <code>members</code> を渡すと <code>T</code> は <code>Member</code>、<code>words</code> を渡すと <code>T</code> は <code>string</code> と推論されます。そのため、戻り値の型も要素の型に合わせて変わります。</p></details>
+    </div>
+  </section>
+</section>

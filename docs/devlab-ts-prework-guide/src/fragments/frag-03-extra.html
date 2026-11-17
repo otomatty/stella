@@ -1,0 +1,224 @@
+<section class="sec" id="c03-extra">
+  <div class="sec-h">
+    <span class="eyebrow">03章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。どちらも、もう書いてあるコードを書き直す問題です。e01 と e02 には「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c03-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">satisfies 演算子</span>
+      <span class="q-new">新しく出てくる書き方：<code>satisfies</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Route = { path: string; auth: boolean };
+
+export const ROUTES: { [name: string]: Route } = {
+  home: { path: "/", auth: false },
+  settings: { path: "/settings", auth: true },
+  admin: { path: "/admin", auth: true },
+};
+
+export type RouteName = keyof typeof ROUTES;
+
+export function pathOf() {}
+
+export function protectedPaths() {}</code></pre>
+      <p>画面の一覧 <code>ROUTES</code> には、型注釈 <code>{ [name: string]: Route }</code>（キーが自由な文字列のインデックス型、02章 q08 問1）が付いています。このせいで、<code>home</code>・<code>settings</code>・<code>admin</code> というキー名が型から消えています。<code>RouteName</code> も <code>string | number</code> になっています。次の 3 つを書きます。関数の引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>ROUTES</code>：型注釈をやめ、<code>satisfies</code> を使って書き直します。<code>{ [name: string]: Route }</code> の形になっているかは確かめたまま、キー名が型に残るようにします。<code>RouteName</code> の行は変えません。<code>RouteName</code> が <code>"home" | "settings" | "admin"</code> になれば成功です。</li>
+        <li><code>pathOf(name)</code>：<code>name</code> の画面の <code>path</code> を返します。引数の型は <code>RouteName</code> です。</li>
+        <li><code>protectedPaths()</code>：<code>auth</code> が <code>true</code> の画面の <code>path</code> を、<code>ROUTES</code> に書いた順に配列で返します。</li>
+      </ol>
+      <p>説明すること：型注釈で書いた場合と <code>satisfies</code> で書いた場合で、<code>ROUTES</code> の型はどう違うか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>RouteName</code> の型</dt><dd class="r"><code>"home" | "settings" | "admin"</code></dd><dd class="c">キー名が型に残る</dd></div>
+          <div><dt><code>ROUTES.home</code></dt><dd class="r"><code>{ path: "/", auth: false }</code></dd><dd class="c">中身は変わらない</dd></div>
+          <div><dt><code>pathOf("home")</code></dt><dd class="r"><code>"/"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>pathOf("admin")</code></dt><dd class="r"><code>"/admin"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>protectedPaths()</code></dt><dd class="r"><code>["/settings", "/admin"]</code></dd><dd class="c">auth が true のものを、書いた順に</dd></div>
+        </dl>
+        <ul>
+          <li><code>pathOf("profile")</code> のように、<code>ROUTES</code> にない画面の名前を渡すと型のエラーになることを確かめます。テストのファイルでは、この行に <code>@ts-expect-error</code>（次の行が型のエラーになるはず、という印）が付いています。<code>pathOf</code> が <code>"profile"</code> を受け取れてしまうと、型の確認で「Unused '@ts-expect-error' directive」というエラーになります。</li>
+        </ul>
+        <p class="memo"><b>型</b><code>pathOf</code> は引数が <code>RouteName</code>、戻り値が <code>string</code> です。<code>protectedPaths</code> は戻り値が <code>string[]</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">値 satisfies 型</code><h4>型に合っているかだけを確かめる</h4></div>
+      <p>型注釈 <code>const 名前: 型 = 値</code> を付けると、変数の型はその型に決まります。値に書いたキー名は、型から消えます。<code>値 satisfies 型</code> と書くと、値がその型の形に合っているかを確かめるだけです。変数の型は、値から推論された型（01章 q03）のまま残ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Plan という型を作る。price は数値、seats は数値
+type Plan = { price: number; seats: number };
+// 料金表 PLANS を作り、basic と pro の 2 つのプランを入れる。キーが自由な文字列で値が Plan の形になっているかを確かめる
+const PLANS = {
+  basic: { price: 1000, seats: 1 },
+  pro: { price: 3000, seats: 5 },
+} satisfies { [name: string]: Plan };
+// 席数 proSeats を作り、PLANS の pro の seats を入れる
+const proSeats = PLANS.pro.seats;
+// 結果: proSeats は 5</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>{ basic: …, pro: … }</span> <span class="seg"><i>2</i>satisfies</span> <span class="seg"><i>3</i>{ [name: string]: Plan }</span></pre>
+        <ol>
+          <li><span>確かめる値です。<code>PLANS</code> の型は、この値から推論されます。</span></li>
+          <li><span>「左の値が、右の型に合っているかを確かめる」という印です。変数の型は変えません。</span></li>
+          <li><span>確かめに使う型です。値の形が合わなければ、型のエラーになります。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>型注釈で書く</h5>
+          <pre><code class="language-typescript">const PLANS: { [name: string]: Plan } = {
+  basic: { price: 1000, seats: 1 },
+  pro: { price: 3000, seats: 5 },
+};</code></pre>
+          <div class="verdict ng">✕ キー名が型から消えます</div>
+        </div>
+        <div>
+          <h5><code>satisfies</code> で書く</h5>
+          <pre><code class="language-typescript">const PLANS = {
+  basic: { price: 1000, seats: 1 },
+  pro: { price: 3000, seats: 5 },
+} satisfies { [name: string]: Plan };</code></pre>
+          <div class="verdict ok">○ キー名が型に残ります</div>
+        </div>
+      </div>
+      <p>違いは、型を使うところで出ます。<code>keyof typeof</code>（03章 q07 問10・問12）で、キーの型を取り出して比べます。</p>
+      <dl class="eg">
+        <div><dt>型注釈のときの <code>keyof typeof PLANS</code></dt><dd class="r"><code>string | number</code></dd><dd class="c">キー名が消え、どんなキーでもよい型になる</dd></div>
+        <div><dt><code>satisfies</code> のときの <code>keyof typeof PLANS</code></dt><dd class="r"><code>"basic" | "pro"</code></dd><dd class="c">書いたキー名が残る</dd></div>
+        <div><dt>型注釈のときの <code>PLANS.pro.seats</code></dt><dd class="r">型のエラー</dd><dd class="c">「'PLANS.pro' is possibly 'undefined'」。どのキーも、ないかもしれないと扱われる</dd></div>
+        <div><dt><code>satisfies</code> のときの <code>PLANS.premium</code></dt><dd class="r">型のエラー</dd><dd class="c">書いていないキーは使えない</dd></div>
+        <div><dt><code>satisfies</code> で <code>price</code> を <code>"1000"</code> にしたとき</dt><dd class="r">型のエラー</dd><dd class="c">Plan の形に合っているかは確かめる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>型注釈のときに <code>keyof</code> が <code>string | number</code> になるのは、インデックス型 <code>{ [name: string]: Plan }</code> の <code>keyof</code> がそうなると決まっているからです。数値のキー <code>PLANS[1]</code> も、文字列の <code>"1"</code> として読めるので <code>number</code> も入ります。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/satisfies">サバイバルTypeScript「satisfies演算子」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 画面の一覧 ROUTES を作り、home と settings と admin の 3 つの画面を入れる。キーが自由な文字列で値が Route の形になっているかを確かめる。ほかのファイルから使えるようにする
+
+// 関数 pathOf を作る。RouteName の name を受け取り、文字列を返す
+export function pathOf() {
+  // ROUTES の name の値の path を返す
+}
+
+// 関数 protectedPaths を作る。何も受け取らず、文字列の配列を返す
+export function protectedPaths() {
+  // ROUTES の値を並べた配列から、auth が true のものだけを残し、それぞれ path だけにした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>ROUTES</code> は、e01 のサンプルの <code>PLANS</code> と同じ形です。<code>ROUTES</code> の後ろの <code>: { [name: string]: Route }</code> を消し、同じ型を、閉じる <code>}</code> の後ろの <code>satisfies</code> の右に移します。中の 3 行はそのままです。<code>pathOf</code> の「ROUTES の name の値」は <code>ROUTES[name]</code> です（02章 q08 問1）。キー名が型に残ったので、<code>undefined</code> を確かめずに <code>.path</code> を続けられます。<code>protectedPaths</code> は、<code>Object.values()</code>（02章 q08 問5）・<code>.filter()</code>（02章 q04 問7）・<code>.map()</code>（02章 q04 問5）を左から順につなげます。<code>auth</code> はもともと <code>true</code> か <code>false</code> なので、<code>.filter()</code> に渡す関数はそれをそのまま返せます。説明することは、書き直す前と後で、VS Code で <code>ROUTES</code> と <code>RouteName</code> にマウスを載せ、表示される型を見比べてから考えます。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c03-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">enum をユニオン型に置き換える</span>
+      <span class="q-new">新しく出てくる書き方：<code>enum</code>（読めれば十分）、型アサーション <code>as</code>（読めれば十分）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export enum Color {
+  Red = "red",
+  Green = "green",
+  Blue = "blue",
+}
+
+export const COLOR_HEX = {
+  [Color.Red]: "#ff0000",
+  [Color.Green]: "#00ff00",
+  [Color.Blue]: "#0000ff",
+};
+
+export function toHex(color: Color): string {
+  return COLOR_HEX[color];
+}
+
+export function isColor(text: string): boolean {
+  return Object.values(Color).includes(text as Color);
+}</code></pre>
+      <p>ファイルのコードは <code>enum</code> を使っています。サバイバルTypeScript では、<code>enum</code> の代わりにユニオン型を使うことを勧めています。次のように書き直します。</p>
+      <ol>
+        <li><code>enum Color</code> を消し、<code>Color</code> を <code>"red" | "green" | "blue"</code> のユニオン型にします。ほかのファイルから使えるようにします。</li>
+        <li><code>COLOR_HEX</code> を、<code>as const</code>（03章 q07 問1）を付けたオブジェクトにします。キーは色の名前、値は <code>"#ff0000"</code> などです。</li>
+        <li><code>toHex(color)</code> と <code>isColor(text)</code> を、新しい <code>Color</code> と <code>COLOR_HEX</code> を使って書き直します。呼び出す側は、<code>toHex("red")</code> のように文字列をそのまま渡せるようになります。</li>
+      </ol>
+      <p>説明すること：<code>enum</code> には、どんな問題があるか。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Color</code> の型</dt><dd class="r"><code>"red" | "green" | "blue"</code></dd><dd class="c">ユニオン型</dd></div>
+          <div><dt><code>COLOR_HEX</code> の型</dt><dd class="r"><code>{ readonly red: "#ff0000"; readonly green: "#00ff00"; readonly blue: "#0000ff" }</code></dd><dd class="c">as const を付けたオブジェクト</dd></div>
+          <div><dt><code>toHex("red")</code></dt><dd class="r"><code>"#ff0000"</code></dd><dd class="c">文字列をそのまま渡せる</dd></div>
+          <div><dt><code>toHex("blue")</code></dt><dd class="r"><code>"#0000ff"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isColor("green")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isColor("yellow")</code></dt><dd class="r"><code>false</code></dd><dd class="c">ない色</dd></div>
+          <div><dt><code>isColor("Red")</code></dt><dd class="r"><code>false</code></dd><dd class="c">大文字で始まる "Red" は別の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toHex</code> は引数が <code>Color</code>、戻り値が <code>string</code> です。<code>isColor</code> は引数が <code>string</code>、戻り値が <code>boolean</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">enum</code><h4>名前の付いた定数の集まり（読めれば十分）</h4></div>
+      <p><code>enum</code> は、名前と値の組をまとめる書き方です。<code>enum Size { … }</code> と書くと、値の <code>Size</code>（<code>Size.Medium</code> のように使うオブジェクト）と、型の <code>Size</code> が両方できます。<code>export enum</code> と書くと、ほかのファイルから使えます。自分で書くときはユニオン型を使い、<code>enum</code> は読めれば十分です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// enum Size を作る。Small は "S"、Medium は "M"、Large は "L"
+enum Size {
+  Small = "S",
+  Medium = "M",
+  Large = "L",
+}
+// 大きさ size を Size として作り、Size の Medium を入れる
+const size: Size = Size.Medium;
+// 結果: size は "M"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Size.Large</code></dt><dd class="r"><code>"L"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Object.values(Size)</code></dt><dd class="r"><code>["S", "M", "L"]</code></dd><dd class="c">値の Size は、ふつうのオブジェクトとして読める</dd></div>
+      </dl>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/enum">サバイバルTypeScript「列挙型 (enum)」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">値 as 型</code><h4>型アサーション（読めれば十分）</h4></div>
+      <p><code>値 as 型</code> は、「この値はこの型だ」と TypeScript に言い切る書き方です。型アサーションと呼びます。TypeScript は、本当にその型かを確かめません。ファイルの <code>isColor</code> の <code>text as Color</code> は、文字列の <code>text</code> を <code>Color</code> だとみなしています。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Size という型を作る。"S" か "M" か "L"
+type Size = "S" | "M" | "L";
+// 関数 toSize を作る。文字列 text を受け取り、Size を返す
+function toSize(text: string): Size {
+  // text を Size とみなしたものを返す
+  return text as Size;
+}
+// 結果: toSize("XL") はエラーにならず、"XL" を返す</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>戻り値の型は <code>Size</code> なのに、<code>"XL"</code> が返ってきます。<code>as</code> は型の確認をすり抜けるので、自分のコードでは使わずに、<code>===</code> などで本当に確かめます。この課題の ESLint の設定でも、ファイルの <code>text as Color</code> の行はエラーになります。書き直すと、この行もなくなります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Color という型を作る。"red" か "green" か "blue"。ほかのファイルから使えるようにする
+
+// 色の表 COLOR_HEX を作り、red が "#ff0000"、green が "#00ff00"、blue が "#0000ff" のオブジェクトを入れる。最後に as const を付ける。ほかのファイルから使えるようにする
+
+// 関数 toHex を作る。Color の color を受け取り、文字列を返す
+export function toHex(color: Color): string {
+  // COLOR_HEX の color の値を返す
+}
+
+// 関数 isColor を作る。文字列 text を受け取り、true か false を返す
+export function isColor(text: string): boolean {
+  // COLOR_HEX のキーを並べた配列に text が含まれるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>enum Color { … }</code> の 5 行を消し、e02 の 2 つ目の項目のサンプルの <code>Size</code> と同じ形で <code>Color</code> を書きます（03章 q02）。<code>COLOR_HEX</code> のキーの <code>[Color.Red]</code> などは、<code>Color.Red</code> がなくなるので <code>red</code> のように名前を直接書きます。閉じる <code>}</code> の後ろに <code>as const</code> を付けます。<code>toHex</code> は、中身も型注釈も今のままで動きます。<code>isColor</code> は、<code>Object.keys()</code>（02章 q08 問4）の結果に <code>.includes()</code>（02章 q04 問9）を続けます。<code>text === "red" || text === "green" || text === "blue"</code> と書いてもかまいません。説明することは、書き直す前のファイルの下に <code>toHex("red");</code> の 1 行を書いて、型の確認のエラーを見てから考えます。書き直したあとにも同じ行を書いて、見比べます。試した行は、提出する前に消します。</p></details>
+    </div>
+  </section>
+</section>

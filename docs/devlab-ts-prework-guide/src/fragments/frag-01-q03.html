@@ -1,0 +1,806 @@
+<section class="sec" id="c01-q03">
+  <div class="sec-h">
+    <span class="eyebrow">01章 値・型・変数</span>
+    <h2>q03 型推論</h2>
+    <p>型注釈を書かなくても、TypeScript は入れた値や返す値から型を決めます。これを型推論と呼びます。この番号では、定数は型注釈を書かずに <code>export const</code> で作ります。関数は、引数には型注釈を書き、戻り値には型注釈を書きません（推論に任せます）。テストは値に加えて、推論された型が決められたとおりかも確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c01-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">定数 SITE_NAME を宣言する</span>
+      <span class="q-new">新しく出てくる書き方：型推論、<code>export const</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに SITE_NAME を宣言する</code></pre>
+      <p>定数 <code>SITE_NAME</code> を作り、<code>"Agora"</code> を入れます。型注釈は書きません。テストがこの定数を読むので、ほかのファイルから使えるようにします。推論される型が <code>"Agora"</code> になれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>SITE_NAME</code></dt><dd class="r"><code>"Agora"</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>SITE_NAME</code> の型</dt><dd class="r"><code>"Agora"</code></dd><dd class="c">"Agora" だけを表す型</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">型推論</code><h4>型注釈を書かなくても型が決まる</h4></div>
+      <p>入れた値を見て、TypeScript が型を決めます。VS Code で変数にマウスを載せると、決まった型が表示されます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料 SHIPPING_FEE を作り、500 を入れる。型は書かない
+const SHIPPING_FEE = 500;
+// 結果: SHIPPING_FEE の型は 500</code></pre>
+      </div>
+      <p><code>const</code> の変数は入れ直せないので、型は入れた値そのものになります。<code>let</code> の変数は入れ直せるので、同じ種類のどの値でも入る型になります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>const</code> で作る</h5>
+          <pre><code class="language-typescript">// 店名 shopName を作り、"本店" を入れる
+const shopName = "本店";
+// 結果: 型は "本店"</code></pre>
+        </div>
+        <div>
+          <h5><code>let</code> で作る</h5>
+          <pre><code class="language-typescript">// 店名 shopName を入れ直せる変数として作り、"本店" を入れる
+let shopName = "本店";
+// 結果: 型は string</code></pre>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>"本店"</code> のように、値そのものが型になったものをリテラル型と呼びます。くわしくは q07 で学びます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/type-inference">サバイバルTypeScript「型推論」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">export const</code><h4>ほかのファイルから使える定数を作る</h4></div>
+      <p><code>const</code> の前に <code>export</code> を付けると、ほかのファイルから読めるようになります。関数の <code>export function</code> と同じ考え方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 1 回の注文の上限 MAX_ORDER を作り、10 を入れる。ほかのファイルから使えるようにする
+export const MAX_ORDER = 10;
+// 結果: MAX_ORDER の型は 10</code></pre>
+      </div>
+      <p class="memo"><b>コツ</b>プログラム全体で決まっている値の名前は、<code>MAX_ORDER</code> のように大文字と <code>_</code> で書くことがよくあります。</p>
+      <p class="more">09章 q05（import と export）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 SITE_NAME を作り、"Agora" を入れる。型は書かない。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「作り、入れる」は <code>const</code>、「ほかのファイルから使えるようにする」は <code>export</code> です。問1 の <code>MAX_ORDER</code> のサンプルと同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c01-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">定数 MAX_MEMBERS を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに MAX_MEMBERS を宣言する</code></pre>
+      <p>定数 <code>MAX_MEMBERS</code> を作り、<code>50</code> を入れます。型注釈は書かず、ほかのファイルから使えるようにします。推論される型が <code>50</code> になれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>MAX_MEMBERS</code></dt><dd class="r"><code>50</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>MAX_MEMBERS</code> の型</dt><dd class="r"><code>50</code></dd><dd class="c">50 だけを表す型</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 MAX_MEMBERS を作り、50 を入れる。型は書かない。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>let</code> で作ると型が <code>number</code> になり、テストに通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c01-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">定数 IS_BETA を宣言する</span>
+      <span class="q-new">新しく出てくる書き方：<code>true</code> <code>false</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに IS_BETA を宣言する</code></pre>
+      <p>定数 <code>IS_BETA</code> を作り、<code>true</code> を入れます。型注釈は書かず、ほかのファイルから使えるようにします。推論される型が <code>true</code> になれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>IS_BETA</code></dt><dd class="r"><code>true</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>IS_BETA</code> の型</dt><dd class="r"><code>true</code></dd><dd class="c">true だけを表す型</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">true</code><code class="tok">false</code><h4>はい・いいえを表す値</h4></div>
+      <p><code>boolean</code> 型の値は <code>true</code>（はい）と <code>false</code>（いいえ）の 2 つだけです。<code>"true"</code> のように <code>"</code> で囲むと文字列になるので、囲まずに書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 営業中か IS_OPEN を作り、false を入れる。ほかのファイルから使えるようにする
+export const IS_OPEN = false;
+// 結果: IS_OPEN の型は false</code></pre>
+      </div>
+      <p class="more">01章 q06（boolean型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 IS_BETA を作り、true を入れる。型は書かない。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 の <code>IS_OPEN</code> のサンプルと同じ形です。<code>true</code> は <code>"</code> で囲みません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c01-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">定数 TAX_RATE を宣言する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに TAX_RATE を宣言する</code></pre>
+      <p>定数 <code>TAX_RATE</code> を作り、<code>0.1</code> を入れます。型注釈は書かず、ほかのファイルから使えるようにします。推論される型が <code>0.1</code> になれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>TAX_RATE</code></dt><dd class="r"><code>0.1</code></dd><dd class="c">値</dd></div>
+          <div><dt><code>TAX_RATE</code> の型</dt><dd class="r"><code>0.1</code></dd><dd class="c">小数もそのまま型になる</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 定数 TAX_RATE を作り、0.1 を入れる。型は書かない。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。小数も整数と同じように書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c01-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">2 倍の数を返す</span>
+      <span class="q-new">新しく出てくる書き方：戻り値の型を推論に任せる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function double() {}</code></pre>
+      <p>受け取った数を 2 倍にして返します。このファイルには、引数がまだ書いてありません。引数とその型注釈は自分で書きます。戻り値の型注釈は書きません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>double(4)</code></dt><dd class="r"><code>8</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code></dd><dd class="c">推論でこの型になればよい</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">function f(n: number) {</code><h4>戻り値の型を推論に任せる</h4></div>
+      <p>かっこの後ろの <code>: 型</code> を書かないと、<code>return</code> する値から戻り値の型が決まります。数の計算を返せば <code>number</code>、文字列を返せば <code>string</code> です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 withShipping を作る。price（number）を受け取る。戻り値の型は書かない
+function withShipping(price: number) {
+  // price に 500 を足した数を返す
+  return price + 500;
+}
+// 結果: 戻り値の型は number と推論される</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function withShipping(<span class="seg"><i>1</i>price: number</span><span class="seg c"><i>2</i>) {</span></pre>
+        <ol>
+          <li><span>引数の型注釈は書きます。引数は推論されません。</span></li>
+          <li><span>かっこの後ろに戻り値の <code>: number</code> を書かず、すぐ <code>{</code> を書きます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある疑問</b>引数の型注釈を消すとエラーになります。なぜ引数だけは推論されないのかは、応用問題で自分の言葉で説明します。消して試してみてください。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 double を作る。n（number）を受け取る。戻り値の型は書かない
+export function double() {
+  // n に 2 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「n（number）を受け取る」は、かっこの中に <code>n: number</code> と書きます。問5 の <code>withShipping</code> のサンプルと同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c01-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">数値を文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toText() {}</code></pre>
+      <p>受け取った数値を、文字列にして返します。引数と型注釈は自分で書き、戻り値の型注釈は書きません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toText(42)</code></dt><dd class="r"><code>"42"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toText(-1.5)</code></dt><dd class="r"><code>"-1.5"</code></dd><dd class="c">負の数や小数もそのまま</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>string</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toText を作る。n（number）を受け取る。戻り値の型は書かない
+export function toText() {
+  // n を文字列にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「文字列にする」は、q01 の問12 で出た <code>String()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c01-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">0 なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isZero() {}</code></pre>
+      <p>受け取った数が 0 なら <code>true</code>、そうでなければ <code>false</code> を返します。比べた結果は <code>true</code> か <code>false</code> なので、戻り値は <code>boolean</code> に推論されます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isZero(0)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isZero(3)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>boolean</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isZero を作る。n（number）を受け取る。戻り値の型は書かない
+export function isZero() {
+  // n が 0 と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「等しいか」は <code>===</code> です。比べた結果をそのまま返せるので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c01-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">正なら "plus"、負なら "minus"、0 なら "zero" を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>return</code> が 2 つ以上あるときの推論</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sign() {}</code></pre>
+      <p>受け取った数が 0 より大きければ <code>"plus"</code>、0 より小さければ <code>"minus"</code>、0 なら <code>"zero"</code> を返します。戻り値の型が <code>"plus" | "minus" | "zero"</code> に推論されれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sign(5)</code></dt><dd class="r"><code>"plus"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sign(-3)</code></dt><dd class="r"><code>"minus"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sign(0)</code></dt><dd class="r"><code>"zero"</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>"plus" | "minus" | "zero"</code></dd><dd class="c">3 つのどれか</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">return</code><h4>return が 2 つ以上あるときの推論</h4></div>
+      <p><code>if</code> の中で <code>return</code> すると、そこで関数が終わります。決まった文字列を返す <code>return</code> が 2 つ以上あると、戻り値の型はそれらの値を <code>|</code> でつないだ型になります。<code>A | B</code> は「A か B のどちらか」という型です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 sizeLabel を作る。weight（number）を受け取る。戻り値の型は書かない
+function sizeLabel(weight: number) {
+  // もし weight が 2 より小さいなら
+  if (weight &lt; 2) {
+    // "小" を返す
+    return "小";
+  }
+  // "大" を返す
+  return "大";
+}
+// 結果: 戻り値の型は "小" | "大"。sizeLabel(1) は "小"、sizeLabel(3) は "大"</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b>決まった文字列を返す <code>return</code> が 1 つだけなら、戻り値の型は <code>string</code> になります。</p>
+      <p class="more">03章 q01（ユニオン型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sign を作る。n（number）を受け取る。戻り値の型は書かない
+export function sign() {
+  // もし n が 0 より大きいなら
+  //   "plus" を返す
+  // もし n が 0 より小さいなら
+  //   "minus" を返す
+  // "zero" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 の <code>sizeLabel</code> のサンプルに、<code>if</code> をもう 1 つ足した形です。「より大きい」は <code>&gt;</code>、「より小さい」は <code>&lt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c01-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">60 点以上なら "合格"、それ未満なら "不合格" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function judge() {}</code></pre>
+      <p>点数が 60 点以上なら <code>"合格"</code>、60 点より低ければ <code>"不合格"</code> を返します。戻り値の型が <code>"合格" | "不合格"</code> に推論されれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>judge(60)</code></dt><dd class="r"><code>"合格"</code></dd><dd class="c">ちょうど 60 点は合格</dd></div>
+          <div><dt><code>judge(59)</code></dt><dd class="r"><code>"不合格"</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>"合格" | "不合格"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 judge を作る。score（number）を受け取る。戻り値の型は書かない
+export function judge() {
+  // score が 60 以上なら "合格"、そうでなければ "不合格" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「〜なら A、そうでなければ B を返す」は、q01 の問12 で出た条件演算子 <code>? :</code> です。条件演算子で 2 つの文字列のどちらかを返しても、戻り値は <code>"合格" | "不合格"</code> に推論されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c01-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">2 乗した数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function square() {}</code></pre>
+      <p>受け取った数を 2 回掛けた数（2 乗）を返します。負の数を 2 乗すると正の数になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>square(5)</code></dt><dd class="r"><code>25</code></dd><dd class="c"></dd></div>
+          <div><dt><code>square(-3)</code></dt><dd class="r"><code>9</code></dd><dd class="c">-3 × -3</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 square を作る。n（number）を受け取る。戻り値の型は書かない
+export function square() {
+  // n に n を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形で、掛ける数が 2 から <code>n</code> に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c01-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">2 つの単語を半角スペースでつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function joinWords() {}</code></pre>
+      <p>2 つの単語を受け取り、間に半角スペースを 1 つはさんでつなげた文字列を返します。引数は 2 つとも文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>joinWords("Hello", "World")</code></dt><dd class="r"><code>"Hello World"</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>string</code> と <code>string</code></dd><dd class="c">引数は 2 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>string</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 joinWords を作る。a（string）と b（string）を受け取る。戻り値の型は書かない
+export function joinWords() {
+  // a と b を埋め込んだ「◯ ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「埋め込んだ文字列」は、q01 の問3 で出たテンプレートリテラルです。2 つの <code>${ }</code> の間に半角スペースを 1 つ書きます。引数が 2 つのときは、かっこの中を <code>,</code> で区切ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c01-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">偶数なら半分にした数を、奇数なら undefined を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>undefined</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function halfIfEven() {}</code></pre>
+      <p>受け取った数が偶数なら、半分にした数を返します。奇数なら、値がないことを表す <code>undefined</code> を返します。戻り値の型が <code>number | undefined</code> に推論されれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>halfIfEven(8)</code></dt><dd class="r"><code>4</code></dd><dd class="c"></dd></div>
+          <div><dt><code>halfIfEven(7)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">奇数</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number | undefined</code></dd><dd class="c">数か、undefined</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">undefined</code><h4>値がないことを表す値</h4></div>
+      <p>「返す値がない」「まだ決まっていない」ことを表す特別な値です。<code>"</code> で囲まずに書きます。数を返すときと <code>undefined</code> を返すときがある関数の戻り値は、<code>number | undefined</code> に推論されます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 pointOf を作る。price（number）と isMember（boolean）を受け取る。戻り値の型は書かない
+function pointOf(price: number, isMember: boolean) {
+  // もし isMember が true なら
+  if (isMember) {
+    // price ÷ 100 を切り捨てた数を返す
+    return Math.floor(price / 100);
+  }
+  // undefined を返す
+  return undefined;
+}
+// 結果: 戻り値の型は number | undefined。pointOf(1980, true) は 19、pointOf(1980, false) は undefined</code></pre>
+      </div>
+      <p class="more">03章 q03（null と undefined）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 halfIfEven を作る。n（number）を受け取る。戻り値の型は書かない
+export function halfIfEven() {
+  // もし n を 2 で割った余りが 0 と等しいなら
+  //   n ÷ 2 を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 の <code>pointOf</code> のサンプルと同じ形です。「2 で割った余り」は <code>% 2</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c01-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">0〜11 時なら "午前"、12〜23 時なら "午後" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function ampm() {}</code></pre>
+      <p>時刻（0〜23 の数）を受け取り、12 より前なら <code>"午前"</code>、12 以降なら <code>"午後"</code> を返します。戻り値の型が <code>"午前" | "午後"</code> に推論されれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ampm(0)</code></dt><dd class="r"><code>"午前"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ampm(11)</code></dt><dd class="r"><code>"午前"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ampm(13)</code></dt><dd class="r"><code>"午後"</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>"午前" | "午後"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ampm を作る。hour（number）を受け取る。戻り値の型は書かない
+export function ampm() {
+  // hour が 12 より小さいなら "午前"、そうでなければ "午後" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形です。「より小さい」は <code>&lt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c01-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 つの数のうち大きい方を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function bigger() {}</code></pre>
+      <p>2 つの数を受け取り、大きい方を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>bigger(3, 8)</code></dt><dd class="r"><code>8</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bigger(9, 2)</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code> と <code>number</code></dd><dd class="c">引数は 2 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bigger を作る。a（number）と b（number）を受け取る。戻り値の型は書かない
+export function bigger() {
+  // a が b より大きいなら a、そうでなければ b を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ条件演算子の形です。返すのは引数の数なので、戻り値は <code>number</code> に推論されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c01-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">文字数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function charCount() {}</code></pre>
+      <p>受け取った文字列の文字数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>charCount("TypeScript")</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+          <div><dt><code>charCount("")</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の文字列</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>string</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 charCount を作る。text（string）を受け取る。戻り値の型は書かない
+export function charCount() {
+  // text の文字数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「文字数」は、q02 の問13 で出た <code>.length</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c01-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">空の文字列なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isEmptyText() {}</code></pre>
+      <p>受け取った文字列が空（0 文字）なら <code>true</code>、そうでなければ <code>false</code> を返します。半角スペースが 1 つでもあれば、空ではありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isEmptyText("")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isEmptyText(" ")</code></dt><dd class="r"><code>false</code></dd><dd class="c">スペース 1 文字</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>string</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>boolean</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isEmptyText を作る。text（string）を受け取る。戻り値の型は書かない
+export function isEmptyText() {
+  // text が空の文字列と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。空の文字列は <code>""</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c01-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">true なら "はい"、false なら "いいえ" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function yesNo() {}</code></pre>
+      <p><code>true</code> か <code>false</code> を受け取り、<code>true</code> なら <code>"はい"</code>、<code>false</code> なら <code>"いいえ"</code> を返します。戻り値の型が <code>"はい" | "いいえ"</code> に推論されれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>yesNo(true)</code></dt><dd class="r"><code>"はい"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>yesNo(false)</code></dt><dd class="r"><code>"いいえ"</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>boolean</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>"はい" | "いいえ"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 yesNo を作る。flag（boolean）を受け取る。戻り値の型は書かない
+export function yesNo() {
+  // flag が true なら "はい"、そうでなければ "いいえ" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ条件演算子の形です。「flag が true なら」は、q01 の問15 と同じく <code>flag</code> とだけ書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c01-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">次の年を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nextYear() {}</code></pre>
+      <p>年を受け取り、その次の年を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextYear(2026)</code></dt><dd class="r"><code>2027</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>number</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nextYear を作る。year（number）を受け取る。戻り値の型は書かない
+export function nextYear() {
+  // year に 1 を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 の <code>withShipping</code> のサンプルと同じ形で、足す数が 1 になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c01-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">文字列を丸かっこ「()」で囲む</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function wrapParen() {}</code></pre>
+      <p>受け取った文字列の前に <code>(</code>、後ろに <code>)</code> を付けて返します。空の文字列なら <code>"()"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>wrapParen("注")</code></dt><dd class="r"><code>"(注)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>wrapParen("")</code></dt><dd class="r"><code>"()"</code></dd><dd class="c">空の文字列</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>string</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>string</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 wrapParen を作る。text（string）を受け取る。戻り値の型は書かない
+export function wrapParen() {
+  // text を埋め込んだ「(◯)」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 と同じく、テンプレートリテラルで作ります。かっこは半角の <code>(</code> と <code>)</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c01-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">最初の文字を取り出して返す</span>
+      <span class="q-new">新しく出てくる書き方：添字 <code>text[0]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstChar() {}</code></pre>
+      <p>受け取った文字列の最初の 1 文字を、<code>text[0]</code> で取り出して返します。空の文字列には最初の文字がないので、<code>undefined</code> になります。戻り値の型が <code>string | undefined</code> に推論されれば正解です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstChar("abc")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>firstChar("")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の文字列</dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>string</code></dd><dd class="c">引数は 1 つ</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>string | undefined</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">text[0]</code><h4>添字で 1 文字を取り出す</h4></div>
+      <p>文字列の後ろに <code>[番号]</code> を付けると、その番号の文字を取り出せます。番号は 0 から数えます。</p>
+      <figure class="fig">
+        <div class="chars" role="img" aria-label="A-102 の 0 番目は A、1 番目は -、4 番目は 2">
+          <span class="ch"><b>A</b>0番目</span>
+          <span class="ch"><b>-</b>1番目</span>
+          <span class="ch"><b>1</b>2番目</span>
+          <span class="ch"><b>0</b>3番目</span>
+          <span class="ch"><b>2</b>4番目</span>
+        </div>
+        <figcaption>5 文字の文字列では、番号は 0 から 4 までです。</figcaption>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文番号 orderId を作り、"A-102" を入れる
+const orderId = "A-102";
+// 先頭の文字 head を作り、orderId の 0 番目の文字を入れる
+const head = orderId[0];
+// 結果: head は "A"。型は string | undefined</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b>型に <code>undefined</code> が入るのは、その番号の文字がないことがあるからです。空の文字列の 0 番目や、5 文字の文字列の 5 番目は <code>undefined</code> になります。</p>
+      <p class="more">01章 q05（string型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstChar を作る。text（string）を受け取る。戻り値の型は書かない
+export function firstChar() {
+  // text の 0 番目の文字を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「0 番目の文字」は、問20 の <code>head</code> のサンプルと同じく <code>[0]</code> です。空の文字列の場合を別に書く必要はありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c01-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">BMI を計算する 2 つの関数</span>
+      <span class="q-new">新しく出てくる書き方：<code>else if</code> <code>.toFixed()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function calcBmi() {}
+
+export function bmiReport() {}</code></pre>
+      <p>BMI（体格指数）を計算する関数を 2 つ書きます。</p>
+      <ol>
+        <li><code>calcBmi(heightCm, weightKg)</code>：BMI = 体重(kg) ÷ (身長(m) × 身長(m))。身長は cm で受け取るので、m に直してから計算します。結果は小数第 1 位までに四捨五入します。</li>
+        <li><code>bmiReport(heightCm, weightKg)</code>：<code>calcBmi</code> で BMI を求め、判定を付けた文字列を返します。BMI は小数第 1 位まで表示します。判定は 18.5 未満が「低体重」、18.5 以上 25 未満が「普通体重」、25 以上が「肥満」です。</li>
+      </ol>
+      <p>引数には型注釈を書きます。戻り値と、関数の中の変数には型注釈を書きません。また、「引数の型注釈を消すと、どんなエラーになるか。なぜ引数だけは推論されないのか」を、ファイルの下に <code>//</code> のコメントで説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>calcBmi(170, 65)</code></dt><dd class="r"><code>22.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calcBmi(160, 45)</code></dt><dd class="r"><code>17.6</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calcBmi(180, 90)</code></dt><dd class="r"><code>27.8</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bmiReport(160, 45)</code></dt><dd class="r"><code>"BMI 17.6（低体重）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bmiReport(200, 74)</code></dt><dd class="r"><code>"BMI 18.5（普通体重）"</code></dd><dd class="c">ちょうど 18.5 は普通体重</dd></div>
+          <div><dt><code>bmiReport(170, 65)</code></dt><dd class="r"><code>"BMI 22.5（普通体重）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bmiReport(200, 100)</code></dt><dd class="r"><code>"BMI 25.0（肥満）"</code></dd><dd class="c">25 も小数第 1 位まで表示</dd></div>
+          <div><dt><code>bmiReport(180, 90)</code></dt><dd class="r"><code>"BMI 27.8（肥満）"</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型（2 つとも）</dt><dd class="r"><code>number</code> と <code>number</code></dd><dd class="c"></dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code> と <code>string</code></dd><dd class="c">calcBmi は number、bmiReport は string</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">else if</code><h4>そうでなく、もし〜なら</h4></div>
+      <p><code>if</code> の条件に合わなかったときに、別の条件を確かめます。上から順に確かめ、最初に合った <code>{ }</code> だけを実行します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 sizeOf を作る。weight（number）を受け取る。戻り値の型は書かない
+function sizeOf(weight: number) {
+  // サイズ size を入れ直せる変数として作り、"大" を入れる
+  let size = "大";
+  // もし weight が 2 より小さいなら
+  if (weight &lt; 2) {
+    // size に "小" を入れ直す
+    size = "小";
+  } else if (weight &lt; 5) {
+    // （そうでなく、もし weight が 5 より小さいなら）size に "中" を入れ直す
+    size = "中";
+  }
+  // size を返す
+  return size;
+}
+// 結果: sizeOf(1) は "小"、sizeOf(3) は "中"、sizeOf(8) は "大"</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>weight</th><th>weight &lt; 2</th><th>weight &lt; 5</th><th>size</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>true</td><td class="j">確かめない</td><td>"小"</td></tr>
+            <tr><td>3</td><td>false</td><td>true</td><td>"中"</td></tr>
+            <tr><td>8</td><td>false</td><td>false</td><td>"大"</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>let size = "大"</code> は <code>let</code> なので、型は <code>string</code> です。返すのも <code>string</code> になります。</p>
+      <p class="more">04章 q01（if-else文）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.toFixed()</code><h4>小数点以下の桁数を決めて文字列にする</h4></div>
+      <p>数の後ろに <code>.toFixed(桁数)</code> を付けると、その桁数までの文字列になります。足りない桁は 0 で埋めます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 平均 average を作り、7 ÷ 3 を入れる
+const average = 7 / 3;
+// 表示 text を作り、average を小数第 1 位までの文字列にしたものを入れる
+const text = average.toFixed(1);
+// 結果: text は "2.3"。型は string</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>rate.toFixed(1)</code></dt><dd class="r"><code>"25.0"</code></dd><dd class="c"><code>rate</code> が 25 のとき。0 で埋める</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>結果は文字列です。計算に使う数は、<code>.toFixed()</code> を使う前の数のままにしておきます。</p>
+      <p class="more">01章 q04（number型）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 calcBmi を作る。heightCm（number）と weightKg（number）を受け取る。戻り値の型は書かない
+export function calcBmi() {
+  // 身長 heightM を作り、heightCm ÷ 100 を入れる
+  // bmi を作り、weightKg ÷ (heightM × heightM) を入れる
+  // bmi × 10 を四捨五入し、10 で割った数を返す
+}
+
+// 関数 bmiReport を作る。heightCm（number）と weightKg（number）を受け取る。戻り値の型は書かない
+export function bmiReport() {
+  // bmi を作り、calcBmi に heightCm と weightKg を渡して呼んだ結果を入れる
+  // 判定 label を入れ直せる変数として作り、"肥満" を入れる
+  // もし bmi が 18.5 より小さいなら
+  //   label に "低体重" を入れ直す
+  // そうでなく、もし bmi が 25 より小さいなら
+  //   label に "普通体重" を入れ直す
+  // bmi を小数第 1 位までの文字列にしたものと label を埋め込んだ「BMI ◯（◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「四捨五入する」は <code>Math.round()</code> です。10 を掛けてから四捨五入し、10 で割ると、小数第 1 位で丸められます。「そうでなく、もし」は <code>else if</code>、「小数第 1 位までの文字列」は <code>.toFixed(1)</code> です。説明のコメントは、引数の型注釈を実際に消してエラーを見てから書きます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,752 @@
+<section class="sec" id="c06-q02">
+  <div class="sec-h">
+    <span class="eyebrow">06章 クラス</span>
+    <h2>q02 アクセス修飾子と readonly</h2>
+    <p>フィールドに印（アクセス修飾子）を付けて、使える場所を決めます。外から読んだり書き換えたりさせたくないフィールドは <code>private</code>、作ったあとに変えないフィールドは <code>readonly</code> にします。constructor の引数に印を付けると、フィールドの宣言と代入を 1 行で書けます。ドリル 1 問（1 つのファイルに 20 個のクラス）を確認して提出してから、応用に進みます。フィールド、constructor の引数、メソッドの引数と戻り値には型注釈を付けます。テストは、<code>private</code> にしたフィールドが外から見えないことも確かめます。</p>
+  </div>
+
+  <!-- ドリル -->
+  <section class="q" id="c06-q02-1">
+    <header class="q-h">
+      <span class="q-n">ドリル</span><span class="q-t">印を付けた 20 個のクラスを書く</span>
+      <span class="q-new">新しく出てくる書き方：constructor の引数に印を付けてフィールドにする書き方、<code>protected</code>、<code>extends</code>（継承）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問1 Account(id)。id は読み取り専用
+//     例: new Account("A-1").id → "A-1"
+export class Account {}
+
+// 問2 Secret(value)。value は private。matches(guess) で value と同じなら true
+//     例: new Secret("abc").matches("abc") → true
+export class Secret {}
+
+// …（問20 まで、同じ形で続きます）</code></pre>
+      <p>1 つのファイルに、クラスを 20 個書きます。q01 と同じく、フィールド、constructor の引数、メソッドの引数と戻り値には型注釈を付けます。この番号では、フィールドに印（アクセス修飾子）を付けます。外から読んだり書き換えたりさせたくないフィールドは <code>private</code>、作ったあとに変えないフィールドは <code>readonly</code> にします。</p>
+      <p>テストは、<code>private</code> にしたフィールドが外から見えないことも確かめます。テストが調べるフィールドの名前は、問題ごとに書いておきます。JavaScript の <code>#</code> を使った書き方でもテストは通りますが、ここでは TypeScript の <code>private</code> を使います。</p>
+      <h4>問1 Account：口座番号は読めるが書き換えられない</h4>
+      <pre><code class="language-typescript">export class Account {}</code></pre>
+      <p>口座のクラスです。口座番号 <code>id</code>（文字列）を受け取ります。<code>id</code> は外から読めますが、書き換えられないようにします。メソッドはありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Account("A-1").id</code></dt><dd class="r"><code>"A-1"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>account.id = "B";</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">読み取り専用なので書き換えられない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が文字列 1 つ（<code>id</code>）であることも確かめます。</p>
+      </div>
+      <h4>問2 Secret：合言葉が合っているか</h4>
+      <pre><code class="language-typescript">export class Secret {}</code></pre>
+      <p>合言葉を持つクラスです。合言葉 <code>value</code>（文字列）を受け取ります。<code>value</code> は外から読めないようにします。<code>matches(guess)</code> は、<code>guess</code> が <code>value</code> と同じなら <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Secret("abc").matches("abc")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Secret("abc").matches("xyz")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>value</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>matches</code> が文字列を受け取って <code>boolean</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問3 HiddenCounter：外から書き換えられないカウンター</h4>
+      <pre><code class="language-typescript">export class HiddenCounter {}</code></pre>
+      <p>数を数えるクラスです。constructor はありません。数 <code>count</code> は外から読めないようにし、初期値は 0 にします。<code>increment()</code> は 1 増やして、増やした後の値を返します。<code>current()</code> は今の値を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>increment()</code> を 2 回呼んだときの、2 回目の結果</dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>current()</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>count</code> が外から見えない（<code>private</code> である）ことも確かめます。2 つのメソッドが何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問4 Password：パスワードの照合と伏せ字</h4>
+      <pre><code class="language-typescript">export class Password {}</code></pre>
+      <p>パスワードのクラスです。パスワード <code>raw</code>（文字列）を受け取り、外から読めないようにします。<code>check(input)</code> は、<code>input</code> が <code>raw</code> と同じなら <code>true</code> を返します。<code>masked()</code> は、<code>raw</code> と同じ文字数の <code>"*"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Password("abcd").check("abcd")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Password("abcd").masked()</code></dt><dd class="r"><code>"****"</code></dd><dd class="c">4 文字なので * が 4 つ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>raw</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>check</code> が文字列を受け取って <code>boolean</code> を返す、<code>masked</code> が文字列を返すことも確かめます。</p>
+      </div>
+      <h4>問5 Settings：設定の値を読む</h4>
+      <pre><code class="language-typescript">export class Settings {}</code></pre>
+      <p>設定のクラスです。設定の入れ物 <code>values</code>（型は <code>{ [key: string]: string }</code>）を受け取ります。<code>values</code> は外から読めず、入れ直せないようにします。<code>get(key)</code> は、<code>key</code> の値を返します。なければ <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Settings({ theme: "dark" }).get("theme")</code></dt><dd class="r"><code>"dark"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Settings({ theme: "dark" }).get("lang")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">ないキー</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>values</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>get</code> が文字列を受け取って、文字列か <code>undefined</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問6 SerialNumber：通し番号を順に出す</h4>
+      <pre><code class="language-typescript">export class SerialNumber {}</code></pre>
+      <p>通し番号を作るクラスです。頭に付ける文字 <code>prefix</code> を受け取ります。次に出す番号は外から読めないフィールドに持ち、初期値は 1 にします。<code>next()</code> は、<code>prefix</code> が <code>"A"</code> なら <code>"A-1"</code>、<code>"A-2"</code>… と、呼ぶたびに次の番号を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new SerialNumber("A").next()</code></dt><dd class="r"><code>"A-1"</code></dd><dd class="c">1 回目</dd></div>
+          <div><dt>続けて <code>next()</code></dt><dd class="r"><code>"A-2"</code></dd><dd class="c">2 回目</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>constructor の引数が文字列 1 つ（<code>prefix</code>）、<code>next</code> が文字列を返すことも確かめます。</p>
+      </div>
+      <h4>問7 Stock：品物ごとの在庫数</h4>
+      <pre><code class="language-typescript">export class Stock {}</code></pre>
+      <p>在庫のクラスです。constructor はありません。在庫は <code>{ [item: string]: number }</code>（品物の名前と数の組）にして、外から読めないようにします。初期値は <code>{}</code> です。テストでの名前は <code>items</code> です。<code>add(item, n)</code> は、品物 <code>item</code> の数を <code>n</code> 増やします。何も返しません。<code>count(item)</code> は、品物の数を返します。まだない品物は 0 です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>add("りんご", 3)</code>、<code>add("りんご", 2)</code> の後の <code>count("りんご")</code></dt><dd class="r"><code>5</code></dd><dd class="c">同じ品物は足していく</dd></div>
+          <div><dt>そのときの <code>count("みかん")</code></dt><dd class="r"><code>0</code></dd><dd class="c">まだない品物</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>items</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>add</code> が文字列と数値を受け取って何も返さない、<code>count</code> が文字列を受け取って数値を返すことも確かめます。</p>
+      </div>
+      <h4>問8 Thermostat：設定温度を決めた範囲で変える</h4>
+      <pre><code class="language-typescript">export class Thermostat {}</code></pre>
+      <p>エアコンの設定温度のクラスです。constructor はありません。設定温度は外から読めないフィールドに持ち、初期値は 20 にします。テストでの名前は <code>target</code> です。<code>setTarget(n)</code> は設定温度を <code>n</code> に変えます。<code>n</code> が 10〜30 の外なら、<code>"10〜30度にしてください"</code> というメッセージのエラーを投げます。何も返しません。<code>getTarget()</code> は設定温度を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Thermostat().getTarget()</code></dt><dd class="r"><code>20</code></dd><dd class="c">はじめは 20</dd></div>
+          <div><dt><code>setTarget(25)</code> の後の <code>getTarget()</code></dt><dd class="r"><code>25</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Thermostat().setTarget(31)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "10〜30度にしてください"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>target</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>setTarget</code> が数値を受け取って何も返さないことも確かめます。</p>
+      </div>
+      <h4>問9 Member：名前は変えられず、ログイン回数は隠す</h4>
+      <pre><code class="language-typescript">export class Member {}</code></pre>
+      <p>会員のクラスです。名前 <code>name</code>（文字列）を受け取ります。<code>name</code> は外から読めますが、書き換えられないようにします。ログイン回数は外から読めないフィールドに持ち、初期値は 0 にします。<code>login()</code> は回数を 1 増やして、増やした後の回数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Member("山田").name</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Member("山田").login()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>login()</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>m.name = "佐藤";</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">読み取り専用</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>login</code> が何も受け取らず数値を返すことも確かめます。</p>
+      </div>
+      <h4>問10 FixedPoint：動かすと新しい点ができる</h4>
+      <pre><code class="language-typescript">export class FixedPoint {}</code></pre>
+      <p>動かせない点のクラスです。<code>x</code> と <code>y</code> を受け取り、どちらも書き換えられないようにします。<code>moved(dx, dy)</code> は、x に <code>dx</code>、y に <code>dy</code> を足した新しい <code>FixedPoint</code> を返します。元の点は変わりません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new FixedPoint(1, 2).moved(3, 3)</code> の <code>x</code> と <code>y</code></dt><dd class="r"><code>4</code> と <code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moved</code> した後の、元の点の <code>x</code> と <code>y</code></dt><dd class="r"><code>1</code> と <code>2</code></dd><dd class="c">元の点は変わらない</dd></div>
+          <div><dt><code>p.x = 0;</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">読み取り専用</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>moved</code> が数値 2 つを受け取って <code>FixedPoint</code> を返すことも確かめます。</p>
+      </div>
+      <h4>問11 Prepaid：前払いの残高から払う</h4>
+      <pre><code class="language-typescript">export class Prepaid {}</code></pre>
+      <p>前払いカードのクラスです。はじめの残高 <code>initial</code> を受け取り、外から読めないフィールドに入れます。テストでの名前は <code>balance</code> です。<code>pay(n)</code> は残高を <code>n</code> 減らします。足りなければ <code>"残高が足りません"</code> というメッセージのエラーを投げます。何も返しません。<code>getBalance()</code> は残高を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Prepaid(1000)</code> で <code>pay(300)</code> した後の <code>getBalance()</code></dt><dd class="r"><code>700</code></dd><dd class="c"></dd></div>
+          <div><dt><code>(() =&gt; { const p = new Prepaid(1000); p.pay(300); p.pay(800); })()</code></dt><dd class="r">エラーを投げる</dd><dd class="c">残り 700 円で 800 円を払う。メッセージは "残高が足りません"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>balance</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>pay</code> が数値を受け取って何も返さないことも確かめます。</p>
+      </div>
+      <h4>問12 FrozenList：受け取った配列のコピーを持つ</h4>
+      <pre><code class="language-typescript">export class FrozenList {}</code></pre>
+      <p>変わらない並びのクラスです。文字列の読み取り専用の配列 <code>items</code> を受け取ります。受け取った配列のコピーを作り、外から読めないフィールドに持ちます。<code>at(i)</code> は <code>i</code> 番目（0 から数える）の要素を返します。なければ <code>undefined</code> です。<code>size()</code> は要素の数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>source = ["a", "b"]</code> を渡して作り、そのあと <code>source.push("c")</code>。そのときの <code>size()</code></dt><dd class="r"><code>2</code></dd><dd class="c">元の配列が増えても変わらない</dd></div>
+          <div><dt><code>new FrozenList(["a", "b"]).at(1)</code></dt><dd class="r"><code>"b"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new FrozenList(["a", "b"]).at(5)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">ない番号</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>items</code> が外から見えない（<code>private</code> である）ことも確かめます。constructor の引数が <code>readonly string[]</code> であることも確かめます。</p>
+      </div>
+      <h4>問13 Session：ログインしているか</h4>
+      <pre><code class="language-typescript">export class Session {}</code></pre>
+      <p>ログインの状態のクラスです。constructor はありません。トークン（ログインの合図の文字列）は外から読めないフィールドに持ち、型は <code>string | null</code>、初期値は <code>null</code> にします。テストでの名前は <code>token</code> です。<code>login(token)</code> はトークンを入れます。<code>logout()</code> は <code>null</code> に戻します。どちらも何も返しません。<code>isLoggedIn()</code> は、ログイン中（トークンが <code>null</code> でない）なら <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Session().isLoggedIn()</code></dt><dd class="r"><code>false</code></dd><dd class="c">はじめはログインしていない</dd></div>
+          <div><dt><code>login("t")</code> の後の <code>isLoggedIn()</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>logout()</code> した後の <code>isLoggedIn()</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>token</code> が外から見えない（<code>private</code> である）ことも確かめます。</p>
+      </div>
+      <h4>問14 NumberCache：キーで数を覚える</h4>
+      <pre><code class="language-typescript">export class NumberCache {}</code></pre>
+      <p>数を覚えておくクラスです。constructor はありません。入れ物 <code>{ [key: string]: number }</code> は外から読めないようにし、初期値は <code>{}</code> にします。テストでの名前は <code>data</code> です。<code>set(key, value)</code> は覚えます（何も返さない）。<code>get(key)</code> は覚えた数を返します。なければ <code>undefined</code> です。<code>has(key)</code> は、覚えていれば <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>set("a", 1)</code> の後の <code>get("a")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>has("a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>has("b")</code></dt><dd class="r"><code>false</code></dd><dd class="c">覚えていないキー</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>data</code> が外から見えない（<code>private</code> である）ことも確かめます。</p>
+      </div>
+      <h4>問15 Journal：書いた行のコピーを返す</h4>
+      <pre><code class="language-typescript">export class Journal {}</code></pre>
+      <p>日誌のクラスです。constructor はありません。行の配列は外から読めないようにし、初期値は <code>[]</code> にします。テストでの名前は <code>entries</code> です。<code>write(line)</code> は行を足します（何も返さない）。<code>lines()</code> は、行の配列のコピーを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>write("a")</code> の後、<code>lines()</code> の結果に <code>"x"</code> を push する。そのあとの <code>lines()</code></dt><dd class="r"><code>["a"]</code></dd><dd class="c">返したコピーを変えても、中は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>entries</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>lines</code> が文字列の配列（<code>string[]</code>）を返すことも確かめます。</p>
+      </div>
+      <h4>問16 Ballot：賛成と反対の数を比べる</h4>
+      <pre><code class="language-typescript">export class Ballot {}</code></pre>
+      <p>投票のクラスです。constructor はありません。賛成と反対の票数は、どちらも外から読めないフィールドに持ち、初期値は 0 にします。テストでの賛成の名前は <code>yesCount</code> です。<code>yes()</code> は賛成を、<code>no()</code> は反対を 1 票増やします。どちらも何も返しません。<code>result()</code> は、多いほうの <code>"賛成"</code> か <code>"反対"</code>、同じなら <code>"同数"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Ballot().result()</code></dt><dd class="r"><code>"同数"</code></dd><dd class="c">0 票と 0 票</dd></div>
+          <div><dt><code>yes()</code> を 2 回、<code>no()</code> を 1 回の後の <code>result()</code></dt><dd class="r"><code>"賛成"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>yesCount</code> が外から見えない（<code>private</code> である）ことも確かめます。<code>result</code> の戻り値の型が <code>"賛成" | "反対" | "同数"</code> であることも確かめます。</p>
+      </div>
+      <h4>問17 Review：評価の平均</h4>
+      <pre><code class="language-typescript">export class Review {}</code></pre>
+      <p>評価を集めるクラスです。constructor はありません。評価の配列は外から読めないようにし、初期値は <code>[]</code> にします。テストでの名前は <code>ratings</code> です。<code>add(n)</code> は評価を足します。<code>n</code> が 1〜5 の整数でなければ、<code>"評価は1〜5です"</code> というメッセージのエラーを投げます。何も返しません。<code>average()</code> は平均を返します。評価がなければ 0 を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Review().average()</code></dt><dd class="r"><code>0</code></dd><dd class="c">評価がない</dd></div>
+          <div><dt><code>add(4)</code>、<code>add(5)</code> の後の <code>average()</code></dt><dd class="r"><code>4.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new Review().add(6)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "評価は1〜5です"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>ratings</code> が外から見えない（<code>private</code> である）ことも確かめます。</p>
+      </div>
+      <h4>問18 Ticket：1 回だけ使える券</h4>
+      <pre><code class="language-typescript">export class Ticket {}</code></pre>
+      <p>券のクラスです。番号 <code>id</code>（数値）を受け取り、書き換えられないようにします。使ったかどうかは外から読めないフィールドに持ち、初期値は <code>false</code> にします。テストでの名前は <code>used</code> です。<code>use()</code> は券を使います。使用済みなら <code>"使用済みです"</code> というメッセージのエラーを投げます。何も返しません。<code>isUsed()</code> は、使用済みなら <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Ticket(1).isUsed()</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>use()</code> の後の <code>isUsed()</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>(() =&gt; { const t = new Ticket(1); t.use(); t.use(); })()</code></dt><dd class="r">エラーを投げる</dd><dd class="c">2 回目の <code>use()</code>。メッセージは "使用済みです"</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>used</code> が外から見えない（<code>private</code> である）ことも確かめます。</p>
+      </div>
+      <h4>問19 Tank：容量を超えないように足す</h4>
+      <pre><code class="language-typescript">export class Tank {}</code></pre>
+      <p>タンクのクラスです。容量 <code>capacity</code>（数値）を受け取り、書き換えられないようにします。今の量は外から読めないフィールドに持ち、初期値は 0 にします。テストでの名前は <code>amount</code> です。<code>refill(n)</code> は量に <code>n</code> を足しますが、<code>capacity</code> を超えないようにします。足した後の量を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new Tank(50).refill(30)</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>refill(30)</code></dt><dd class="r"><code>50</code></dd><dd class="c">60 にはならず、容量の 50 で止まる</dd></div>
+          <div><dt><code>t.capacity = 100;</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">読み取り専用</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>amount</code> が外から見えない（<code>private</code> である）ことも確かめます。</p>
+      </div>
+      <h4>問20 Animal と PetDog：子のクラスからだけ使える名前</h4>
+      <pre><code class="language-typescript">// ここに Animal と PetDog を書く</code></pre>
+      <p>クラスを 2 つ書きます。<code>Animal</code> は名前 <code>name</code>（文字列）を受け取り、<code>protected</code> にします。<code>protected</code> は、そのクラスと、それを受け継いだクラスの中からだけ使える印です。<code>PetDog</code> は <code>Animal</code> を受け継ぎ（継承し）、<code>speak()</code> で <code>"ポチ: ワン"</code> の形の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new PetDog("ポチ").speak()</code></dt><dd class="r"><code>"ポチ: ワン"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new PetDog("ポチ").name</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">protected なので外からは見えない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>name</code> が外から見えないことも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">constructor(readonly orderId: string) {}</code><h4>constructor の引数をそのままフィールドにする</h4></div>
+      <p>constructor の引数の前に <code>readonly</code> や <code>private</code> などの印を付けると、その引数は同じ名前のフィールドになります。受け取った値も、自動でフィールドに入ります。フィールドの宣言と <code>this.orderId = orderId;</code> を、1 か所にまとめて書けます。教材では、この書き方を constructor shorthand（コンストラクタの省略記法）と呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Order を作る。ほかのファイルから使えるようにする
+export class Order {
+  // 外から読めない数値のフィールド shipped を作り、0 を入れる
+  private shipped = 0;
+
+  // constructor を作る。文字列の orderId を受け取り、入れ直せないフィールド orderId にする。数値の quantity を受け取り、外から読めないフィールド quantity にする
+  constructor(
+    readonly orderId: string,
+    private quantity: number,
+  ) {}
+
+  // メソッド ship を作る。数値の n を受け取り、数値を返す
+  ship(n: number): number {
+    // 自分の shipped に n を足す
+    this.shipped += n;
+    // 自分の quantity − 自分の shipped を返す
+    return this.quantity - this.shipped;
+  }
+}
+
+// 注文 order を作り、Order に "O-7" と 5 を渡して new で作ったインスタンスを入れる
+const order = new Order("O-7", 5);
+// 残り left を作り、order の ship に 2 を渡して呼んだ結果を入れる
+const left = order.ship(2);
+// 結果: order.orderId は "O-7"、left は 3</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>constructor(
+  <span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>orderId: string</span>,
+  <span class="seg"><i>3</i>private</span> quantity: number,
+) <span class="seg"><i>4</i>{}</span></pre>
+        <ol>
+          <li><span>この印が付いた引数は、<code>readonly</code> のフィールドになります。</span></li>
+          <li><span>フィールドの名前と型です。引数の名前が、そのままフィールドの名前になります。</span></li>
+          <li><span><code>private</code> を付けると、外から読めないフィールドになります。</span></li>
+          <li><span>constructor の中身は空です。値はもうフィールドに入っているので、何も書かなくてかまいません。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>q01 の書き方</h5>
+          <pre><code class="language-typescript">class Ticket {
+  readonly code: string;
+
+  constructor(code: string) {
+    this.code = code;
+  }
+}</code></pre>
+        </div>
+        <div>
+          <h5>引数に印を付ける書き方</h5>
+          <pre><code class="language-typescript">class Ticket {
+  constructor(readonly code: string) {}
+}</code></pre>
+        </div>
+      </div>
+      <p>どちらも同じクラスになります。引数が 2 つ以上あって 1 行に収まらないと、Prettier が引数を 1 行ずつに並べ直し、最後にも <code>,</code> を付けます。サンプルの <code>Order</code> がその形です。</p>
+      <p class="memo"><b>よくある間違い</b>印を 1 つも付けない引数は、ただの引数です。フィールドにはなりません。<code>constructor(code: string) {}</code> のあとでメソッドから <code>this.code</code> を読むと、型の確認で <code>Property 'code' does not exist on type 'Ticket'.</code> というエラーになります。</p>
+      <p class="memo"><b>コツ</b>初期値のあるフィールド（<code>shipped</code>）は、これまでどおり <code>{ }</code> のすぐ内側に書きます。1 つのクラスに両方を書いてかまいません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/constructor-shorthand">サバイバルTypeScript「constructor shorthand」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">private / readonly</code><h4>2 つの印でできること・できないこと</h4></div>
+      <p><code>private</code> と <code>readonly</code> は、q01 の応用で出ました。どちらも、フィールドの使い方を型の確認で止める印です。2 つ合わせて付けることもできます。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>印</th><th>クラスの中で読む</th><th>クラスの中で入れ直す</th><th>外から読む</th><th>外から入れ直す</th></tr></thead>
+          <tbody>
+            <tr><td>なし</td><td>○</td><td>○</td><td>○</td><td>○</td></tr>
+            <tr><td><code>readonly</code></td><td>○</td><td>constructor の中だけ</td><td>○</td><td>✕</td></tr>
+            <tr><td><code>private</code></td><td>○</td><td>○</td><td>✕</td><td>✕</td></tr>
+            <tr><td><code>private readonly</code></td><td>○</td><td>constructor の中だけ</td><td>✕</td><td>✕</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>選び方の目安です。外から読んでもらいたい値で、あとから変えないものは <code>readonly</code>（問1 の口座番号）。外に見せたくないもの、勝手に変えられると困るものは <code>private</code> にして、読んだり変えたりする役のメソッドを用意します（問8 の <code>setTarget</code> と <code>getTarget</code>）。</p>
+      <p class="memo"><b>よくある疑問</b><code>readonly</code> が止めるのは、フィールドに別の値を入れ直すことだけです。<code>private readonly items: string[] = [];</code> のフィールドでも、<code>this.items.push("a")</code> で中の要素を足すことはできます。<code>this.items = [];</code> と入れ直す行だけがエラーになります。</p>
+      <p class="memo"><b>テストの読み方</b>テストには <code>// @ts-expect-error count は private</code> の行があります。これは「次の行は型の確認でエラーになるはず」という印です。フィールドが <code>private</code> になっていないと、次の行がエラーにならず、型の確認で失敗します。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/object-oriented/class/access-modifiers">サバイバルTypeScript「アクセス修飾子」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">class Cashier extends Staff</code><h4>protected と extends（受け継いだクラスからだけ使う）</h4></div>
+      <p><code>class 子 extends 親</code> と書くと、親のクラスのフィールドとメソッドを受け継いだ、新しいクラスを作れます。これを継承と呼びます。constructor も受け継ぐので、子のクラスに constructor を書かなければ、<code>new Cashier("佐藤")</code> の <code>"佐藤"</code> は親の constructor に渡ります。</p>
+      <p><code>protected</code> を付けたフィールドは、そのクラスと、それを受け継いだクラスの中からだけ使えます。<code>private</code> だと、受け継いだクラスの中からも使えません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Staff を作る。ほかのファイルから使えるようにする
+export class Staff {
+  // constructor を作る。文字列の name を受け取り、子のクラスからだけ読め、入れ直せないフィールド name にする
+  constructor(protected readonly name: string) {}
+}
+
+// Staff を継承したクラス Cashier を作る。ほかのファイルから使えるようにする
+export class Cashier extends Staff {
+  // メソッド callOut を作る。何も受け取らず、文字列を返す
+  callOut(): string {
+    // 自分の name を埋め込んだ「◯さん、レジへお願いします」の文字列を返す
+    return `${this.name}さん、レジへお願いします`;
+  }
+}
+
+// レジ係 cashier を作り、Cashier に "佐藤" を渡して new で作ったインスタンスを入れる
+const cashier = new Cashier("佐藤");
+// 呼び出し message を作り、cashier の callOut を呼んだ結果を入れる
+const message = cashier.callOut();
+// 結果: message は "佐藤さん、レジへお願いします"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>export class <span class="seg"><i>1</i>Cashier</span> <span class="seg"><i>2</i>extends</span> <span class="seg"><i>3</i>Staff</span> {</pre>
+        <ol>
+          <li><span>新しく作る子のクラスの名前です。</span></li>
+          <li><span>「受け継ぐ」という印です。</span></li>
+          <li><span>受け継ぐ親のクラスです。先に書いておきます。</span></li>
+        </ol>
+      </figure>
+            <dl class="eg">
+        <div><dt><code>this.name</code>（Cashier の callOut の中で）</dt><dd class="r">読める</dd><dd class="c">受け継いだクラスの中</dd></div>
+        <div><dt><code>cashier.name</code>（クラスの外で）</dt><dd class="r">型の確認でエラー</dd><dd class="c">protected なので外からは使えない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>Staff</code> の <code>name</code> を <code>private</code> にすると、<code>Cashier</code> の中の <code>this.name</code> が <code>Property 'name' is private and only accessible within class 'Staff'.</code> というエラーになります。</p>
+      <p>ここでは、まねて書ければ十分です。</p>
+      <p class="more">q04（クラスの継承）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">[...this.dishes]</code><h4>private の配列を守るコピー</h4></div>
+      <p>配列を <code>private</code> にしても、受け取った配列や返した配列が、外の配列と同じものだと守れません。配列を変数に入れたり、引数で渡したりしても、配列は 1 つのままだからです（02章 q04 問1 のメモ）。受け取るときと返すときに、配列のスプレッド <code>[...a]</code>（02章 q05 問1）でコピーを作ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Menu を作る。ほかのファイルから使えるようにする
+export class Menu {
+  // 外から読めず、入れ直せない文字列の配列のフィールド dishes を作る
+  private readonly dishes: string[];
+
+  // constructor を作る。文字列の読み取り専用の配列 dishes を受け取る
+  constructor(dishes: readonly string[]) {
+    // 自分の dishes に、dishes をコピーした新しい配列を入れる
+    this.dishes = [...dishes];
+  }
+
+  // メソッド list を作る。何も受け取らず、文字列の配列を返す
+  list(): string[] {
+    // 自分の dishes をコピーした新しい配列を返す
+    return [...this.dishes];
+  }
+}
+
+// 料理 today を作り、"カレー" と "うどん" を並べた配列を入れる
+const today = ["カレー", "うどん"];
+// メニュー menu を作り、Menu に today を渡して new で作ったインスタンスを入れる
+const menu = new Menu(today);
+// today の最後に "そば" を足す
+today.push("そば");
+// 受け取ったもの got を作り、menu の list を呼んだ結果を入れる
+const got = menu.list();
+// got の最後に "ラーメン" を足す
+got.push("ラーメン");
+// 結果: menu.list() は ["カレー", "うどん"]</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>コピーせずに返す</h5>
+          <pre><code class="language-typescript">list(): string[] {
+  return this.dishes;
+}</code></pre>
+          <div class="verdict ng">✕ 受け取った人が push すると、クラスの中の配列も増えます</div>
+        </div>
+        <div>
+          <h5>コピーして返す</h5>
+          <pre><code class="language-typescript">list(): string[] {
+  return [...this.dishes];
+}</code></pre>
+          <div class="verdict ok">○ 受け取った配列を変えても、中の配列は変わりません</div>
+        </div>
+      </div>
+      <p class="memo"><b>型</b>問12 と問15 のテストは、元の配列や返した配列を変えたあとに、中身が変わっていないことを確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>問1 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Account を作る。ほかのファイルから使えるようにする
+export class Account {
+  // constructor を作る。文字列の id を受け取り、入れ直せないフィールド id にする
+}</code></pre></details>
+      <details class="hint"><summary>問1 ヒント 2<span>コードへの直し方</span></summary><p>1 つ目の項目のサンプルの <code>orderId</code> と同じ形です。constructor の中身は空で、<code>{}</code> だけを書きます。フィールドの宣言と <code>this.id = id;</code> は要りません。</p></details>
+      <details class="hint"><summary>問2 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Secret を作る。ほかのファイルから使えるようにする
+export class Secret {
+  // constructor を作る。文字列の value を受け取り、外から読めず、入れ直せないフィールド value にする
+
+  // メソッド matches を作る。文字列の guess を受け取り、true か false を返す
+  //   guess が自分の value と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>問2 ヒント 2<span>コードへの直し方</span></summary><p>constructor は、1 つ目の項目のサンプルの <code>quantity</code> の印を <code>private readonly</code> にした形です。メソッドの中では、ふつうのフィールドと同じく <code>this.value</code> で読めます。</p></details>
+      <details class="hint"><summary>問3 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス HiddenCounter を作る。ほかのファイルから使えるようにする
+export class HiddenCounter {
+  // 外から読めない数値のフィールド count を作り、0 を入れる
+
+  // メソッド increment を作る。何も受け取らず、数値を返す
+  //   自分の count を 1 増やす
+  //   自分の count を返す
+
+  // メソッド current を作る。何も受け取らず、数値を返す
+  //   自分の count を返す
+}</code></pre></details>
+      <details class="hint"><summary>問3 ヒント 2<span>コードへの直し方</span></summary><p>q01 のドリルの問4（<code>Tally</code>）のフィールドの前に <code>private</code> を付けた形です。外から <code>count</code> が読めなくなるので、今の値を知らせるメソッド <code>current</code> を用意します。</p></details>
+      <details class="hint"><summary>問4 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Password を作る。ほかのファイルから使えるようにする
+export class Password {
+  // constructor を作る。文字列の raw を受け取り、外から読めず、入れ直せないフィールド raw にする
+
+  // メソッド check を作る。文字列の input を受け取り、true か false を返す
+  //   input が自分の raw と等しいかどうか（true か false）を返す
+
+  // メソッド masked を作る。何も受け取らず、文字列を返す
+  //   "*" を、自分の raw の文字数の回数だけつなげた文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>問4 ヒント 2<span>コードへの直し方</span></summary><p>constructor は問2 と同じ形です。「◯ 回つなげた文字列」は <code>.repeat()</code> です（01章 q02 問4）。回数には <code>this.raw.length</code> を渡します。</p></details>
+      <details class="hint"><summary>問5 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Settings を作る。ほかのファイルから使えるようにする
+export class Settings {
+  // constructor を作る。キーが文字列で値が文字列のオブジェクト values を受け取り、外から読めず、入れ直せないフィールド values にする
+
+  // メソッド get を作る。文字列の key を受け取り、文字列か undefined を返す
+  //   自分の values の key の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>問5 ヒント 2<span>コードへの直し方</span></summary><p>constructor は問2 と同じ形で、型が <code>{ [key: string]: string }</code>（02章 q08 問1）になります。<code>this.values[key]</code> の型は <code>string | undefined</code> なので、戻り値の型とそのまま合います。</p></details>
+      <details class="hint"><summary>問6 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス SerialNumber を作る。ほかのファイルから使えるようにする
+export class SerialNumber {
+  // 外から読めない数値のフィールド nextNumber を作り、1 を入れる
+
+  // constructor を作る。文字列の prefix を受け取り、外から読めず、入れ直せないフィールド prefix にする
+
+  // メソッド next を作る。何も受け取らず、文字列を返す
+  //   番号 value を作り、自分の prefix と自分の nextNumber を埋め込んだ「◯-◯」の文字列を入れる
+  //   自分の nextNumber を 1 増やす
+  //   value を返す
+}</code></pre></details>
+      <details class="hint"><summary>問6 ヒント 2<span>コードへの直し方</span></summary><p>初期値のあるフィールドと、constructor の引数のフィールドは、1 つのクラスにいっしょに書けます（1 つ目の項目のサンプルの <code>Order</code>）。番号を返す前に増やすと 2 から始まってしまうので、先に文字列を作って変数に入れておきます。</p></details>
+      <details class="hint"><summary>問7 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Stock を作る。ほかのファイルから使えるようにする
+export class Stock {
+  // キーが文字列で値が数値のオブジェクトの、外から読めないフィールド items を作り、空のオブジェクトを入れる
+
+  // メソッド add を作る。文字列の item と数値の n を受け取り、何も返さない
+  //   自分の items の item に、自分の items の item の値（なければ 0）+ n を入れる
+
+  // メソッド count を作る。文字列の item を受け取り、数値を返す
+  //   自分の items の item の値（なければ 0）を返す
+}</code></pre></details>
+      <details class="hint"><summary>問7 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは <code>private items: { [item: string]: number } = {};</code> の形です。空のオブジェクトは値から型が決まらないので、型注釈を付けます。「なければ 0」は <code>?? 0</code> です（02章 q02 問1）。数を入れるのは 02章 q08 問3 と同じく、<code>this.items[item] = …;</code> です。</p></details>
+      <details class="hint"><summary>問8 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Thermostat を作る。ほかのファイルから使えるようにする
+export class Thermostat {
+  // 外から読めない数値のフィールド target を作り、20 を入れる
+
+  // メソッド setTarget を作る。数値の n を受け取り、何も返さない
+  //   もし n が 10 より小さい、または n が 30 より大きいなら
+  //     "10〜30度にしてください" というメッセージのエラーを投げる
+  //   自分の target に n を入れ直す
+
+  // メソッド getTarget を作る。何も受け取らず、数値を返す
+  //   自分の target を返す
+}</code></pre></details>
+      <details class="hint"><summary>問8 ヒント 2<span>コードへの直し方</span></summary><p><code>private</code> にしたフィールドを変えたいときは、変える役のメソッドを用意します。メソッドの中で値を確かめられるので、おかしな値が入るのを防げます。「または」は <code>||</code> です（01章 q01 問15）。メッセージの「〜」は、問題文からそのまま写します。</p></details>
+      <details class="hint"><summary>問9 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Member を作る。ほかのファイルから使えるようにする
+export class Member {
+  // 外から読めない数値のフィールド loginCount を作り、0 を入れる
+
+  // constructor を作る。文字列の name を受け取り、入れ直せないフィールド name にする
+
+  // メソッド login を作る。何も受け取らず、数値を返す
+  //   自分の loginCount を 1 増やす
+  //   自分の loginCount を返す
+}</code></pre></details>
+      <details class="hint"><summary>問9 ヒント 2<span>コードへの直し方</span></summary><p>問1 の constructor と、問3 のフィールドを 1 つのクラスに書いた形です。<code>name</code> には <code>readonly</code> だけを付け、<code>private</code> は付けません。</p></details>
+      <details class="hint"><summary>問10 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス FixedPoint を作る。ほかのファイルから使えるようにする
+export class FixedPoint {
+  // constructor を作る。数値の x と数値の y を受け取り、入れ直せないフィールド x と y にする
+
+  // メソッド moved を作る。数値の dx と数値の dy を受け取り、FixedPoint を返す
+  //   FixedPoint に、自分の x + dx と、自分の y + dy を渡して new で作ったインスタンスを返す
+}</code></pre></details>
+      <details class="hint"><summary>問10 ヒント 2<span>コードへの直し方</span></summary><p>constructor の引数は <code>constructor(readonly x: number, readonly y: number) {}</code> のように、両方に印を付けます。保存すると Prettier が引数を 1 行ずつに並べ直すことがありますが、意味は同じです。<code>moved</code> は、q01 のドリルの問18（<code>Vector</code> の <code>plus</code>）と同じ形です。</p></details>
+      <details class="hint"><summary>問11 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Prepaid を作る。ほかのファイルから使えるようにする
+export class Prepaid {
+  // constructor を作る。数値の balance を受け取り、外から読めないフィールド balance にする
+
+  // メソッド pay を作る。数値の n を受け取り、何も返さない
+  //   もし n が自分の balance より大きいなら
+  //     "残高が足りません" というメッセージのエラーを投げる
+  //   自分の balance から n を引く
+
+  // メソッド getBalance を作る。何も受け取らず、数値を返す
+  //   自分の balance を返す
+}</code></pre></details>
+      <details class="hint"><summary>問11 ヒント 2<span>コードへの直し方</span></summary><p>残高はあとで減らすので、<code>readonly</code> は付けず <code>private</code> だけにします。引数の名前は、テストでの名前に合わせて <code>balance</code> にしておくと、そのままフィールドの名前になります。</p></details>
+      <details class="hint"><summary>問12 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス FrozenList を作る。ほかのファイルから使えるようにする
+export class FrozenList {
+  // 外から読めず、入れ直せない文字列の配列のフィールド items を作る
+
+  // constructor を作る。文字列の読み取り専用の配列 items を受け取る
+  //   自分の items に、items をコピーした新しい配列を入れる
+
+  // メソッド at を作る。数値の i を受け取り、文字列か undefined を返す
+  //   自分の items の i 番目の要素を返す
+
+  // メソッド size を作る。何も受け取らず、数値を返す
+  //   自分の items の要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>問12 ヒント 2<span>コードへの直し方</span></summary><p>コピーを入れるので、constructor の引数に印を付ける書き方は使いません。q01 のドリルと同じく、フィールドを宣言して constructor で入れます。コピーは <code>[...items]</code> です（配列のコピーの項目）。<code>this.items[i]</code> の型は <code>string | undefined</code> です（02章 q04 問4）。</p></details>
+      <details class="hint"><summary>問13 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Session を作る。ほかのファイルから使えるようにする
+export class Session {
+  // 文字列か null の、外から読めないフィールド token を作り、null を入れる
+
+  // メソッド login を作る。文字列の token を受け取り、何も返さない
+  //   自分の token に token を入れ直す
+
+  // メソッド logout を作る。何も受け取らず、何も返さない
+  //   自分の token に null を入れ直す
+
+  // メソッド isLoggedIn を作る。何も受け取らず、true か false を返す
+  //   自分の token が null と等しくないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>問13 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは <code>private token: string | null = null;</code> です。<code>= null</code> だけでは型が <code>null</code> に決まってしまうので、型注釈で <code>string | null</code>（03章 q03 問2）と書きます。</p></details>
+      <details class="hint"><summary>問14 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス NumberCache を作る。ほかのファイルから使えるようにする
+export class NumberCache {
+  // キーが文字列で値が数値のオブジェクトの、外から読めないフィールド data を作り、空のオブジェクトを入れる
+
+  // メソッド set を作る。文字列の key と数値の value を受け取り、何も返さない
+  //   自分の data の key に value を入れる
+
+  // メソッド get を作る。文字列の key を受け取り、数値か undefined を返す
+  //   自分の data の key の値を返す
+
+  // メソッド has を作る。文字列の key を受け取り、true か false を返す
+  //   自分の data の key の値が undefined と等しくないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>問14 ヒント 2<span>コードへの直し方</span></summary><p>フィールドは問7 と同じ形です。<code>get</code> は問5 と同じく、取り出した値をそのまま返します。<code>has</code> は <code>!== undefined</code> で調べます。<code>key in this.data</code>（04章 q05 問16）と書いてもかまいません。</p></details>
+      <details class="hint"><summary>問15 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Journal を作る。ほかのファイルから使えるようにする
+export class Journal {
+  // 文字列の配列の、外から読めないフィールド entries を作り、空の配列を入れる
+
+  // メソッド write を作る。文字列の line を受け取り、何も返さない
+  //   自分の entries の最後に line を足す
+
+  // メソッド lines を作る。何も受け取らず、文字列の配列を返す
+  //   自分の entries をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>問15 ヒント 2<span>コードへの直し方</span></summary><p><code>return this.entries;</code> と書くと、中の配列そのものを渡してしまい、外から push できます。配列のコピーの項目のサンプルの <code>list</code> と同じく、<code>[...this.entries]</code> を返します。</p></details>
+      <details class="hint"><summary>問16 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Ballot を作る。ほかのファイルから使えるようにする
+export class Ballot {
+  // 外から読めない数値のフィールド yesCount を作り、0 を入れる
+  // 外から読めない数値のフィールド noCount を作り、0 を入れる
+
+  // メソッド yes を作る。何も受け取らず、何も返さない
+  //   自分の yesCount を 1 増やす
+
+  // メソッド no を作る。何も受け取らず、何も返さない
+  //   自分の noCount を 1 増やす
+
+  // メソッド result を作る。何も受け取らず、"賛成" か "反対" か "同数" を返す
+  //   もし自分の yesCount が自分の noCount より大きいなら
+  //     "賛成" を返す
+  //   もし自分の yesCount が自分の noCount より小さいなら
+  //     "反対" を返す
+  //   "同数" を返す
+}</code></pre></details>
+      <details class="hint"><summary>問16 ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、リテラル型のユニオン <code>"賛成" | "反対" | "同数"</code> です（01章 q07 問1）。<code>string</code> にすると、型のテストが通りません。</p></details>
+      <details class="hint"><summary>問17 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Review を作る。ほかのファイルから使えるようにする
+export class Review {
+  // 数値の配列の、外から読めないフィールド ratings を作り、空の配列を入れる
+
+  // メソッド add を作る。数値の n を受け取り、何も返さない
+  //   もし n が整数でない、または n が 1 より小さい、または n が 5 より大きいなら
+  //     "評価は1〜5です" というメッセージのエラーを投げる
+  //   自分の ratings の最後に n を足す
+
+  // メソッド average を作る。何も受け取らず、数値を返す
+  //   もし自分の ratings の要素の数が 0 と等しいなら
+  //     0 を返す
+  //   合計 total を入れ直せる変数として作り、0 を入れる
+  //   自分の ratings から 1 つずつ r に取り出してくり返す
+  //     total に r を足す
+  //   total ÷ 自分の ratings の要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>問17 ヒント 2<span>コードへの直し方</span></summary><p>「整数でない」は <code>!Number.isInteger(n)</code> です（01章 q04 応用）。空の配列で割り算をすると 0 ÷ 0 で <code>NaN</code> になるので、先に要素の数を調べて 0 を返します。合計は q01 のドリルの問14 と同じ形です。</p></details>
+      <details class="hint"><summary>問18 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Ticket を作る。ほかのファイルから使えるようにする
+export class Ticket {
+  // true か false の、外から読めないフィールド used を作り、false を入れる
+
+  // constructor を作る。数値の id を受け取り、入れ直せないフィールド id にする
+
+  // メソッド use を作る。何も受け取らず、何も返さない
+  //   もし自分の used なら
+  //     "使用済みです" というメッセージのエラーを投げる
+  //   自分の used に true を入れ直す
+
+  // メソッド isUsed を作る。何も受け取らず、true か false を返す
+  //   自分の used を返す
+}</code></pre></details>
+      <details class="hint"><summary>問18 ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じく、初期値のあるフィールドと、constructor の引数のフィールドを 1 つのクラスに書きます。<code>this.used</code> はもともと <code>true</code> か <code>false</code> なので、<code>if (this.used)</code> と、そのまま条件に書けます。</p></details>
+      <details class="hint"><summary>問19 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Tank を作る。ほかのファイルから使えるようにする
+export class Tank {
+  // 外から読めない数値のフィールド amount を作り、0 を入れる
+
+  // constructor を作る。数値の capacity を受け取り、入れ直せないフィールド capacity にする
+
+  // メソッド refill を作る。数値の n を受け取り、数値を返す
+  //   自分の amount に、自分の amount + n と自分の capacity の小さい方を入れ直す
+  //   自分の amount を返す
+}</code></pre></details>
+      <details class="hint"><summary>問19 ヒント 2<span>コードへの直し方</span></summary><p>「◯ と ◯ の小さい方」は <code>Math.min()</code> です（01章 q04 問9）。形は問18 と同じです。</p></details>
+      <details class="hint"><summary>問20 ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Animal を作る。ほかのファイルから使えるようにする
+//   constructor を作る。文字列の name を受け取り、子のクラスからだけ読め、入れ直せないフィールド name にする
+
+// Animal を継承したクラス PetDog を作る。ほかのファイルから使えるようにする
+//   メソッド speak を作る。何も受け取らず、文字列を返す
+//     自分の name を埋め込んだ「◯: ワン」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>問20 ヒント 2<span>コードへの直し方</span></summary><p><code>protected</code> と <code>extends</code> の項目のサンプルの <code>Staff</code> と <code>Cashier</code> と同じ形です。<code>PetDog</code> には constructor を書きません。<code>new PetDog("ポチ")</code> の <code>"ポチ"</code> は、受け継いだ <code>Animal</code> の constructor に渡ります。<code>Animal</code> を先に書きます。テストが読み込むのは <code>PetDog</code> だけですが、<code>Animal</code> にも <code>export</code> を付けておきます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c06-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">銀行口座 BankAccount</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export class BankAccount {}</code></pre>
+      <p>銀行口座のクラス <code>BankAccount</code> を書きます。外から直接さわらせたくないものは <code>private</code> に、あとから変えないものは <code>readonly</code> にします。</p>
+      <ol>
+        <li><code>id</code>：口座番号（文字列）です。外から読めますが、書き換えられません。</li>
+        <li>残高と、入出金の履歴（文字列の配列）は <code>private</code> にします。テストでの名前は <code>balance</code> と <code>history</code> です。</li>
+        <li>constructor は <code>id</code> と、はじめの残高 <code>initial</code> を受け取ります。<code>initial</code> は省略でき、省略したら 0 です。<code>initial</code> が負ならエラーを投げます。</li>
+        <li><code>deposit(amount)</code>：入金して、入金後の残高を返します。<code>amount</code> が 0 以下ならエラーを投げます。履歴の最後に <code>"入金 1000"</code> の形で足します。</li>
+        <li><code>withdraw(amount)</code>：出金して、出金後の残高を返します。<code>amount</code> が 0 以下ならエラー、残高より多ければ <code>"残高が足りません"</code> というメッセージのエラーを投げます。履歴の最後に <code>"出金 300"</code> の形で足します。</li>
+        <li><code>getBalance()</code>：残高を返します。</li>
+        <li><code>getHistory()</code>：履歴の配列のコピーを返します。</li>
+      </ol>
+      <p>「残高が足りません」のほかのエラーのメッセージは、自由に決めてかまいません。テストは、エラーを投げることだけを確かめます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>new BankAccount("A-001", 1000).id</code></dt><dd class="r"><code>"A-001"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new BankAccount("A-001", 1000)</code> で作り、<code>deposit(500)</code></dt><dd class="r"><code>1500</code></dd><dd class="c"></dd></div>
+          <div><dt>続けて <code>withdraw(300)</code></dt><dd class="r"><code>1200</code></dd><dd class="c"></dd></div>
+          <div><dt>そのときの <code>getBalance()</code></dt><dd class="r"><code>1200</code></dd><dd class="c"></dd></div>
+          <div><dt><code>new BankAccount("A-002")</code> で <code>deposit(1000)</code>、<code>withdraw(300)</code> の後の <code>getHistory()</code></dt><dd class="r"><code>["入金 1000", "出金 300"]</code></dd><dd class="c">はじめの残高は省略して 0</dd></div>
+          <div><dt>返した履歴に push した後の <code>getHistory()</code> の要素の数</dt><dd class="r"><code>2</code></dd><dd class="c">コピーなので中は変わらない</dd></div>
+          <div><dt><code>new BankAccount("A-003", 100)</code> で <code>deposit(0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0 以下の入金</dd></div>
+          <div><dt>同じ口座で <code>withdraw(-1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0 以下の出金</dd></div>
+          <div><dt><code>new BankAccount("A-003", 100).withdraw(101)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">残高より多い。メッセージは "残高が足りません"</dd></div>
+          <div><dt><code>new BankAccount("A-004", -1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">はじめの残高が負</dd></div>
+          <div><dt><code>account.id = "X";</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">readonly</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>balance</code> と <code>history</code> が外から見えないことも確かめます。constructor の引数が文字列と、省略できる数値（<code>[id: string, initial?: number]</code>）、<code>id</code> が <code>string</code>、<code>deposit</code> と <code>withdraw</code> が数値を受け取って数値を返す、<code>getBalance</code> が数値、<code>getHistory</code> が文字列の配列を返すことも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス BankAccount を作る。ほかのファイルから使えるようにする
+export class BankAccount {
+  // 外から読めない数値のフィールド balance を作る
+  // 外から読めず、入れ直せない文字列の配列のフィールド history を作り、空の配列を入れる
+
+  // constructor を作る。文字列の id を受け取り、入れ直せないフィールド id にする。数値の initial も受け取る。省略したら 0
+  //   もし initial が 0 より小さいなら
+  //     "最初の残高は0以上にしてください" というメッセージのエラーを投げる
+  //   自分の balance に initial を入れる
+
+  // メソッド deposit を作る。数値の amount を受け取り、数値を返す
+  //   もし amount が 0 以下なら
+  //     "入金額は0より大きくしてください" というメッセージのエラーを投げる
+  //   自分の balance に amount を足す
+  //   自分の history の最後に、amount を埋め込んだ「入金 ◯」の文字列を足す
+  //   自分の balance を返す
+
+  // メソッド withdraw を作る。数値の amount を受け取り、数値を返す
+  //   もし amount が 0 以下なら
+  //     "出金額は0より大きくしてください" というメッセージのエラーを投げる
+  //   もし amount が自分の balance より大きいなら
+  //     "残高が足りません" というメッセージのエラーを投げる
+  //   自分の balance から amount を引く
+  //   自分の history の最後に、amount を埋め込んだ「出金 ◯」の文字列を足す
+  //   自分の balance を返す
+
+  // メソッド getBalance を作る。何も受け取らず、数値を返す
+  //   自分の balance を返す
+
+  // メソッド getHistory を作る。何も受け取らず、文字列の配列を返す
+  //   自分の history をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>constructor は、<code>constructor(readonly id: string, initial = 0) {</code> のように、印を付けた引数とふつうの引数を並べて書けます（1 つ目の項目のサンプルの <code>Order</code>）。<code>initial</code> は確かめてから入れるので、印は付けず、中で <code>this.balance = initial;</code> と入れます。<code>history</code> は <code>readonly</code> でも、push で足すことはできます（2 つ目の項目のメモ）。<code>deposit</code> と <code>withdraw</code> は、ドリルの問11（<code>Prepaid</code>）に履歴を足す行を加えた形です。<code>getHistory</code> は、ドリルの問15（<code>Journal</code>）の <code>lines</code> と同じ形です。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,813 @@
+<section class="sec" id="c01-q04">
+  <div class="sec-h"><span class="eyebrow">01章 値・型・変数</span><h2>q04 number型</h2><p>数値を計算する関数を 20 個書きます。四捨五入や切り捨ての <code>Math</code> の関数と、<code>Number.isFinite</code> や <code>Number.parseInt</code> などの <code>Number</code> の関数を使います。q02 と同じく、引数と戻り値の型注釈も自分で書きます。</p></div>
+
+  <article id="c01-q04-sig" class="item">
+      <div class="item-h"><code class="tok">(n: number): number</code><h4>引数と戻り値の型を自分で書く</h4></div>
+      <p>この番号の関数は、<code>export function roundOff() {}</code> のように名前だけが書いてあります。引数と戻り値の型注釈は、q02 と同じように自分で書きます。テストは、引数と戻り値の型も確かめます。</p>
+      <p>ヒント 1 では、関数の形を「◯ を受け取り、◯ を返す」と書いています。次のサンプルと同じ形です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 addShipping を作る。数値の price を受け取り、数値を返す
+export function addShipping(price: number): number {
+  // price に 500 を足した数を返す
+  return price + 500;
+}
+// 結果: addShipping(1200) は 1700</code></pre>
+      </div>
+      <p class="memo"><b>書き方</b>「数値」は <code>number</code>、「文字列」は <code>string</code>、「true か false」は <code>boolean</code> です。</p>
+  </article>
+
+  <section class="q" id="c01-q04-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">小数点以下を四捨五入する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function roundOff() {}</code></pre>
+      <p>数値を 1 つ受け取り、小数点以下を四捨五入した数を返します。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>roundOff(2.5)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roundOff(2.4)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 roundOff を作る。数値の n を受け取り、数値を返す
+export function roundOff() {
+  // n を四捨五入した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の「◯ を受け取り、◯ を返す」は、かっこの中に引数と型を、かっこの後ろに戻り値の型を書きます。四捨五入は、q01 の問13 で出た <code>Math.round()</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">1 の位を切り捨てる（10 の倍数にする）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function floorTo10() {}</code></pre>
+      <p>数値を 1 つ受け取り、1 の位を切り捨てて 10 の倍数にした数を返します。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>floorTo10(123)</code></dt><dd class="r"><code>120</code></dd><dd class="c"></dd></div>
+          <div><dt><code>floorTo10(9)</code></dt><dd class="r"><code>0</code></dd><dd class="c">10 より小さいと 0</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 floorTo10 を作る。数値の n を受け取り、数値を返す
+export function floorTo10() {
+  // n ÷ 10 を切り捨て、10 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>q01 の問2（100 円単位の切り上げ）と同じ考え方です。切り捨ては <code>Math.floor()</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">100 の倍数に切り上げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function ceilTo100() {}</code></pre>
+      <p>数値を 1 つ受け取り、100 の倍数に切り上げた数を返します。もともと 100 の倍数なら、そのままです。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ceilTo100(101)</code></dt><dd class="r"><code>200</code></dd><dd class="c"></dd></div>
+          <div><dt><code>ceilTo100(100)</code></dt><dd class="r"><code>100</code></dd><dd class="c">100 の倍数はそのまま</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ceilTo100 を作る。数値の n を受け取り、数値を返す
+export function ceilTo100() {
+  // n ÷ 100 を切り上げ、100 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 の切り捨てを、切り上げの <code>Math.ceil()</code> に変える形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">2 つの数の差の大きさ（絶対値）を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Math.abs()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function absDiff() {}</code></pre>
+      <p>数値を 2 つ受け取り、2 つの差の大きさを返します。どちらが大きくても、答えは 0 以上です。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>absDiff(3, 10)</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>absDiff(10, 3)</code></dt><dd class="r"><code>7</code></dd><dd class="c">順番を入れ替えても同じ</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Math.abs()</code><h4>絶対値（0 からの距離）を求める</h4></div>
+      <p>マイナスの数はプラスに、プラスの数と 0 はそのままにします。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予定 planned を作り、120 を入れる
+const planned = 120;
+// 実績 actual を作り、95 を入れる
+const actual = 95;
+// ずれ gap を作り、actual から planned を引いた数の絶対値を入れる
+const gap = Math.abs(actual - planned);
+// 結果: gap は 25（-25 にはならない）</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Math.abs(-8)</code></dt><dd class="r"><code>8</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Math.abs(8)</code></dt><dd class="r"><code>8</code></dd><dd class="c">プラスの数はそのままです。</dd></div>
+        </dl>
+      <p class="more">01章 q04（number型）の教材</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 absDiff を作る。数値の a と数値の b を受け取り、数値を返す
+export function absDiff() {
+  // a から b を引いた数の絶対値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>絶対値は <code>Math.abs()</code> です。問4 のサンプルの <code>gap</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">a を b で割った余りを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function remainder() {}</code></pre>
+      <p>数値を 2 つ受け取り、1 つ目を 2 つ目で割った余りを返します。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>remainder(10, 3)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>remainder(9, 3)</code></dt><dd class="r"><code>0</code></dd><dd class="c">割り切れると 0</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 remainder を作る。数値の a と数値の b を受け取り、数値を返す
+export function remainder() {
+  // a を b で割った余りを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>余りは、q01 の問3 で出た <code>%</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">n が base の倍数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isMultipleOf() {}</code></pre>
+      <p>数値を 2 つ受け取ります。1 つ目が 2 つ目の倍数なら <code>true</code>、そうでなければ <code>false</code> を返します。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isMultipleOf(12, 4)</code></dt><dd class="r"><code>true</code></dd><dd class="c">12 は 4 の倍数</dd></div>
+          <div><dt><code>isMultipleOf(10, 4)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isMultipleOf を作る。数値の n と数値の base を受け取り、true か false を返す
+export function isMultipleOf() {
+  // n を base で割った余りが 0 と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「true か false を返す」は <code>boolean</code> です。比べた結果はそのまま true か false なので、<code>if</code> を使わずに、<code>return</code> の後ろに比べる式を書けます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">3 乗した数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>**</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function cube() {}</code></pre>
+      <p>数値を 1 つ受け取り、3 乗（同じ数を 3 回掛けた数）を返します。<code>**</code> 演算子を使います。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cube(3)</code></dt><dd class="r"><code>27</code></dd><dd class="c">3 × 3 × 3</dd></div>
+          <div><dt><code>cube(-2)</code></dt><dd class="r"><code>-8</code></dd><dd class="c">(-2) × (-2) × (-2)</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">**</code><h4>べき乗（同じ数を何回も掛ける）</h4></div>
+      <p><code>a ** b</code> は、a を b 回掛けた数です。q01 の問8 では <code>for</code> 文で掛けましたが、<code>**</code> なら 1 つの式で書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 容量 kilo を作り、2 の 10 乗を入れる
+const kilo = 2 ** 10;
+// 結果: kilo は 1024</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>2 ** 3</code></dt><dd class="r"><code>8</code></dd><dd class="c">2 × 2 × 2</dd></div>
+          <div><dt><code>10 ** 2</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+        </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cube を作る。数値の n を受け取り、数値を返す
+export function cube() {
+  // n の 3 乗を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「n の 3 乗」は <code>**</code> を使います。問7 のサンプルの <code>kilo</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">平方根を返す。負の数ならエラーを投げる</span>
+      <span class="q-new">新しく出てくる書き方：<code>throw</code> <code>new Error()</code> <code>Math.sqrt()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function squareRoot() {}</code></pre>
+      <p>数値を 1 つ受け取り、平方根を返します。平方根は、2 回掛けるとその数になる数です（9 の平方根は 3）。負の数には平方根がないので、エラーを投げます。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>squareRoot(9)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>squareRoot(2)</code></dt><dd class="r"><code>1.41421…</code></dd><dd class="c">1.41421 にほぼ等しければよい</dd></div>
+          <div><dt><code>squareRoot(-1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Math.sqrt()</code><h4>平方根を求める</h4></div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 1 辺 side を作り、49 の平方根を入れる
+const side = Math.sqrt(49);
+// 結果: 面積 49 の正方形の 1 辺。side は 7</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Math.sqrt(9)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Math.sqrt(2)</code></dt><dd class="r"><code>1.4142135623730951</code></dd><dd class="c">割り切れないと小数になります。</dd></div>
+        </dl>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">throw new Error()</code><h4>エラーを投げる</h4></div>
+      <p>続けられないときに、処理をそこで止めて、エラーを知らせます。エラーを投げた関数は、値を返しません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">function checkQuantity(quantity: number): number {
+  // もし quantity が 0 より小さいなら
+  if (quantity &lt; 0) {
+    // "数量は 0 以上にしてください" というメッセージのエラーを投げる
+    throw new Error("数量は 0 以上にしてください");
+  }
+  // quantity を返す
+  return quantity;
+}
+// 結果: checkQuantity(3) は 3。checkQuantity(-1) はエラーになり、値を返さない</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>throw</span> <span class="seg"><i>2</i>new Error</span>(<span class="seg"><i>3</i>"数量は 0 以上にしてください"</span>);</pre>
+        <ol>
+          <li><span><code>throw</code> 右のエラーを投げて、関数をそこで終えます。</span></li>
+          <li><span><code>new</code> は、ものを新しく作る印です。<code>new Error</code> でエラーを 1 つ作ります。</span></li>
+          <li><span>エラーのメッセージです。何がいけなかったかを書きます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>コツ</b>エラーの扱いは 04章 q05 でくわしく学びます。ここでは、サンプルをまねて書ければ十分です。</p>
+      <p class="more">04章 q05（例外処理）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 squareRoot を作る。数値の n を受け取り、数値を返す
+export function squareRoot() {
+  // もし n が 0 より小さいなら
+  //   "負の数の平方根は求められません" というメッセージのエラーを投げる
+  // n の平方根を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 の <code>checkQuantity</code> のサンプルと同じ形です。平方根は <code>Math.sqrt()</code> です。メッセージの文は自由です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">value を min 以上 max 以下に収める</span>
+      <span class="q-new">新しく出てくる書き方：<code>Math.min()</code> <code>Math.max()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function clamp() {}</code></pre>
+      <p>数値を 3 つ（<code>value</code>、<code>min</code>、<code>max</code>）受け取ります。<code>value</code> が <code>min</code> より小さければ <code>min</code> を、<code>max</code> より大きければ <code>max</code> を返します。範囲の中なら <code>value</code> をそのまま返します。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>clamp(15, 0, 10)</code></dt><dd class="r"><code>10</code></dd><dd class="c">大きすぎるので max</dd></div>
+          <div><dt><code>clamp(-5, 0, 10)</code></dt><dd class="r"><code>0</code></dd><dd class="c">小さすぎるので min</dd></div>
+          <div><dt><code>clamp(5, 0, 10)</code></dt><dd class="r"><code>5</code></dd><dd class="c">範囲の中なのでそのまま</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Math.min()</code><code class="tok">Math.max()</code><h4>いちばん小さい数、いちばん大きい数</h4></div>
+      <p>かっこの中に数をいくつか並べると、いちばん小さい数（min）、いちばん大きい数（max）を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を作り、8 を入れる
+const stock = 8;
+// 注文数 ordered を作り、12 を入れる
+const ordered = 12;
+// 出荷数 shipped を作り、stock と ordered の小さい方を入れる
+const shipped = Math.min(stock, ordered);
+// 価格 price を作り、300 を入れる
+const price = 300;
+// 割引後 discounted を作り、price から 500 を引いた数と 0 の大きい方を入れる
+const discounted = Math.max(price - 500, 0);
+// 結果: shipped は 8、discounted は 0（マイナスにならない）</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Math.min(3, 9, 2)</code></dt><dd class="r"><code>2</code></dd><dd class="c">3 つ以上も並べられます。</dd></div>
+          <div><dt><code>Math.max(3, 9, 2)</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+        </dl>
+      <p class="memo"><b>コツ</b><code>Math.max(◯, 0)</code> は「0 より下にしない」、<code>Math.min(◯, 100)</code> は「100 より上にしない」という意味になります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 clamp を作る。数値の value、min、max を受け取り、数値を返す
+export function clamp() {
+  // value と min の大きい方を求め、それと max の小さい方を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「大きい方」は <code>Math.max()</code>、「小さい方」は <code>Math.min()</code> です。<code>Math.max()</code> を呼んだ結果を、そのまま <code>Math.min()</code> のかっこの中に書けます。<code>if</code> で書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">小数第 1 位までの文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toFixed1() {}</code></pre>
+      <p>数値を 1 つ受け取り、小数第 1 位までの文字列にして返します。<code>toFixed</code> を使います。整数でも <code>"2.0"</code> のように小数第 1 位まで書きます。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toFixed1(3.14159)</code></dt><dd class="r"><code>"3.1"</code></dd><dd class="c">文字列</dd></div>
+          <div><dt><code>toFixed1(2)</code></dt><dd class="r"><code>"2.0"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toFixed1 を作る。数値の n を受け取り、文字列を返す
+export function toFixed1() {
+  // n を小数第 1 位までの文字列にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.toFixed(桁数)</code> は、数値を決めた桁数までの文字列にするメソッドです（q03 の応用で出ました）。返すのは文字列なので、戻り値の型は <code>string</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">文字列の先頭の整数を取り出す。取り出せなければ 0</span>
+      <span class="q-new">新しく出てくる書き方：<code>Number.parseInt()</code> <code>Number.isNaN()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseIntOrZero() {}</code></pre>
+      <p>文字列を 1 つ受け取り、先頭にある整数を数値にして返します。<code>"42px"</code> なら 42 です。先頭が数字でなく取り出せないときは 0 を返します。<code>Number.parseInt</code> と <code>Number.isNaN</code> を使います。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseIntOrZero("42px")</code></dt><dd class="r"><code>42</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseIntOrZero("abc")</code></dt><dd class="r"><code>0</code></dd><dd class="c">取り出せない</dd></div>
+          <div><dt><code>parseIntOrZero("-7")</code></dt><dd class="r"><code>-7</code></dd><dd class="c">マイナスも取り出せる</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Number.parseInt()</code><h4>文字列の先頭から整数を取り出す</h4></div>
+      <p>文字列の先頭から読める数字だけを読んで、整数にします。途中に数字でない文字があると、そこで止まります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 入力 input を作り、"120円" を入れる
+const input = "120円";
+// 金額 amount を作り、input の先頭の整数を 10 進数で取り出した数を入れる
+const amount = Number.parseInt(input, 10);
+// 結果: amount は 120</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Number.parseInt("3個", 10)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Number.parseInt("-15℃", 10)</code></dt><dd class="r"><code>-15</code></dd><dd class="c">マイナスも読めます。</dd></div>
+          <div><dt><code>Number.parseInt("約3", 10)</code></dt><dd class="r"><code>NaN</code></dd><dd class="c">先頭が数字でないと読めません。</dd></div>
+        </dl>
+      <p class="memo"><b>書き方</b>2 つ目の <code>10</code> は「10 進数で読む」という指定です。いつも付けておきます。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">NaN</code><code class="tok">Number.isNaN()</code><h4>数ではないことを表す値と、その調べ方</h4></div>
+      <p><code>NaN</code> は「数ではない」ことを表す、number 型の特別な値です。数にできなかったときに出てきます。<code>NaN</code> かどうかは <code>Number.isNaN()</code> で調べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 数 count を作り、"なし" の先頭の整数を 10 進数で取り出した数を入れる
+const count = Number.parseInt("なし", 10);
+// countIsNaN を作り、count が NaN か（true か false）を入れる
+const countIsNaN = Number.isNaN(count);
+// 結果: count は NaN、countIsNaN は true</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>NaN</code> は自分自身とも等しくなりません。<code>count === NaN</code> はいつも <code>false</code> なので、必ず <code>Number.isNaN()</code> を使います。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseIntOrZero を作る。文字列の text を受け取り、数値を返す
+export function parseIntOrZero() {
+  // 数 n を作り、text の先頭の整数を 10 進数で取り出した数を入れる
+  // n が NaN なら 0、そうでなければ n を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目の中身は、問11 のサンプルの <code>amount</code> の行と同じ形です。最後の行は、q01 の問12 で出た「〜なら A、そうでなければ B」の条件演算子 <code>? :</code> で書けます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">NaN でも Infinity でもない数なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Number.isFinite()</code> <code>Infinity</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isFiniteNumber() {}</code></pre>
+      <p>数値を 1 つ受け取ります。<code>NaN</code> でも <code>Infinity</code>（無限大）でもない、普通の数なら <code>true</code> を返します。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isFiniteNumber(1.5)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isFiniteNumber(NaN)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isFiniteNumber(-Infinity)</code></dt><dd class="r"><code>false</code></dd><dd class="c">マイナスの無限大</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Number.isFinite()</code><h4>有限の数か（NaN や Infinity でないか）を調べる</h4></div>
+      <p><code>Infinity</code> は無限大を表す、number 型の特別な値です。0 で割ると出てきます。<code>Number.isFinite()</code> は、<code>NaN</code> でも <code>Infinity</code> でもない数のときだけ <code>true</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 1 個あたりの値段 unitPrice を作り、1000 ÷ 0 を入れる
+const unitPrice = 1000 / 0;
+// isValid を作り、unitPrice が有限の数か（true か false）を入れる
+const isValid = Number.isFinite(unitPrice);
+// 結果: unitPrice は Infinity、isValid は false</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Number.isFinite(1.5)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Number.isFinite(1 / 0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">Infinity</dd></div>
+          <div><dt><code>Number.isFinite(NaN)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isFiniteNumber を作る。数値の n を受け取り、true か false を返す
+export function isFiniteNumber() {
+  // n が有限の数か（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「有限の数か」は <code>Number.isFinite()</code> です。問12 のサンプルの <code>isValid</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">part が total の何パーセントかを、整数に四捨五入して返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function percentOf() {}</code></pre>
+      <p>数値を 2 つ（<code>part</code> と <code>total</code>）受け取り、<code>part</code> が <code>total</code> の何パーセントかを返します。小数点以下は四捨五入します。1 は 3 の 33.33…% なので 33 です。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>percentOf(1, 3)</code></dt><dd class="r"><code>33</code></dd><dd class="c"></dd></div>
+          <div><dt><code>percentOf(2, 3)</code></dt><dd class="r"><code>67</code></dd><dd class="c">66.66… を四捨五入</dd></div>
+          <div><dt><code>percentOf(5, 5)</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 percentOf を作る。数値の part と数値の total を受け取り、数値を返す
+export function percentOf() {
+  // part ÷ total × 100 を四捨五入した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>÷ は <code>/</code>、× は <code>*</code>、四捨五入は <code>Math.round()</code> です。割り算と掛け算は左から順に計算されます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 つの数の平均を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function average2() {}</code></pre>
+      <p>数値を 2 つ受け取り、平均を返します。答えは小数になることがあります。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>average2(3, 8)</code></dt><dd class="r"><code>5.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>average2(-2, 2)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 average2 を作る。数値の a と数値の b を受け取り、数値を返す
+export function average2() {
+  // a と b を足して 2 で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>q01 の問4 と同じく、足し算を先にします。1 行で書くなら、足し算をかっこ <code>( )</code> で囲みます。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">分を秒に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function minutesToSeconds() {}</code></pre>
+      <p>分の数を受け取り、秒の数にして返します。1 分は 60 秒です。小数の分も受け取ります。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>minutesToSeconds(1.5)</code></dt><dd class="r"><code>90</code></dd><dd class="c">1 分 30 秒</dd></div>
+          <div><dt><code>minutesToSeconds(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 minutesToSeconds を作る。数値の minutes を受け取り、数値を返す
+export function minutesToSeconds() {
+  // minutes に 60 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>× は <code>*</code> です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">km を m に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function kmToMeters() {}</code></pre>
+      <p>キロメートルの数を受け取り、メートルの数にして返します。1 km は 1000 m です。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>kmToMeters(1.5)</code></dt><dd class="r"><code>1500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>kmToMeters(42.195)</code></dt><dd class="r"><code>42195</code></dd><dd class="c">フルマラソンの距離</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 kmToMeters を作る。数値の km を受け取り、数値を返す
+export function kmToMeters() {
+  // km に 1000 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問15 と同じ形です。掛ける数が 1000 になります。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">直角三角形の 2 辺から、斜辺の長さを返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Math.hypot()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hypotenuse() {}</code></pre>
+      <p>直角をはさむ 2 辺の長さを受け取り、斜辺（いちばん長い辺）の長さを返します。斜辺は、2 辺をそれぞれ 2 乗して足した数の平方根です。<code>Math.hypot</code> か <code>Math.sqrt</code> を使います。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hypotenuse(3, 4)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hypotenuse(5, 12)</code></dt><dd class="r"><code>13</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Math.hypot()</code><h4>2 乗して足した数の平方根を求める</h4></div>
+      <p>かっこの中の数をそれぞれ 2 乗して足し、その平方根を返します。縦と横から、斜めの長さを求めるときに使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 横 width を作り、6 を入れる
+const width = 6;
+// 縦 height を作り、8 を入れる
+const height = 8;
+// 対角線 diagonal を作り、width と height から斜めの長さを求めて入れる
+const diagonal = Math.hypot(width, height);
+// 結果: diagonal は 10</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Math.hypot(6, 8)</code></dt><dd class="r"><code>10</code></dd><dd class="c">6 × 6 + 8 × 8 = 100 の平方根</dd></div>
+        </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hypotenuse を作る。数値の a と数値の b を受け取り、数値を返す
+export function hypotenuse() {
+  // a と b から斜めの長さを求めて返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「斜めの長さを求める」は、問17 のサンプルの <code>diagonal</code> の行と同じ <code>Math.hypot()</code> です。<code>Math.sqrt()</code> を使うなら、a × a + b × b の平方根です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">0 以上の整数の桁数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function digitCount() {}</code></pre>
+      <p>0 以上の整数を受け取り、何桁かを返します。0 は 1 桁です。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>digitCount(12345)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>digitCount(0)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 digitCount を作る。数値の n を受け取り、数値を返す
+export function digitCount() {
+  // n を文字列にしたものの長さを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字列にするのは q01 の問12 で出た <code>String()</code>、長さは q02 で出た <code>.length</code> です。12345 を文字列にすると <code>"12345"</code> で、5 文字です。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">小数第 2 位までに四捨五入する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function roundTo2() {}</code></pre>
+      <p>数値を 1 つ受け取り、小数第 3 位を四捨五入して、小数第 2 位までの数にして返します。返すのは数値です。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>roundTo2(1.234)</code></dt><dd class="r"><code>1.23</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roundTo2(9.876)</code></dt><dd class="r"><code>9.88</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roundTo2(3)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 roundTo2 を作る。数値の n を受け取り、数値を返す
+export function roundTo2() {
+  // n に 100 を掛けて四捨五入し、100 で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Math.round()</code> は整数にしか丸められません。先に 100 を掛けて、丸めたい桁を整数の位置まで動かします。1.234 なら、100 倍で 123.4、四捨五入で 123、100 で割って 1.23 です。返すのは数値なので、<code>.toFixed()</code> は使いません。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">華氏を摂氏に変え、小数第 1 位までに四捨五入する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fahrenheitToCelsius() {}</code></pre>
+      <p>華氏（アメリカなどで使う温度の単位）の温度を受け取り、摂氏に変えて返します。摂氏 = (華氏 − 32) × 5 ÷ 9 です。小数第 2 位を四捨五入して、小数第 1 位までの数にします。受け取る値と返す値の型は、自分で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fahrenheitToCelsius(98.6)</code></dt><dd class="r"><code>37</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fahrenheitToCelsius(212)</code></dt><dd class="r"><code>100</code></dd><dd class="c">水が沸く温度</dd></div>
+          <div><dt><code>fahrenheitToCelsius(50)</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fahrenheitToCelsius を作る。数値の fahrenheit を受け取り、数値を返す
+export function fahrenheitToCelsius() {
+  // 摂氏 celsius を作り、(fahrenheit − 32) × 5 ÷ 9 を入れる
+  // celsius に 10 を掛けて四捨五入し、10 で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>式のかっこは、そのまま <code>( )</code> で書きます。− は <code>-</code> です。2 行目は問19 と同じ形で、掛ける数と割る数が 10 になります。</p></details>
+    </div>
+  </section>
+
+  <section class="q" id="c01-q04-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">指定した桁までに四捨五入する関数と、パーセントを返す関数</span>
+      <span class="q-new">新しく出てくる書き方：<code>!</code> <code>Number.isInteger()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function roundTo() {}
+
+export function percent() {}</code></pre>
+      <p>2 つの関数を書きます。引数と戻り値の型は自分で書きます。</p>
+      <ol>
+        <li><code>roundTo(value, digits)</code>：<code>value</code> を小数第 <code>digits</code> 位までに四捨五入して返します。<code>value</code> が <code>NaN</code> や <code>Infinity</code> のとき、<code>digits</code> が 0〜10 の整数でないときは、エラーを投げます。</li>
+        <li><code>percent(part, total)</code>：<code>part</code> が <code>total</code> の何パーセントかを、小数第 1 位までに四捨五入して返します。<code>roundTo</code> を使います。<code>total</code> が 0 のときはエラーを投げます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>roundTo(3.14159, 2)</code></dt><dd class="r"><code>3.14</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roundTo(1234.5678, 1)</code></dt><dd class="r"><code>1234.6</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roundTo(2.5, 0)</code></dt><dd class="r"><code>3</code></dd><dd class="c">小数第 0 位は整数</dd></div>
+          <div><dt><code>roundTo(10, 3)</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roundTo(NaN, 2)</code></dt><dd class="r">エラーを投げる</dd><dd class="c"><code>Infinity</code> のときも</dd></div>
+          <div><dt><code>roundTo(1, 1.5)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">digits が整数でない</dd></div>
+          <div><dt><code>roundTo(1, -1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">digits が 0 より小さい</dd></div>
+          <div><dt><code>roundTo(1, 11)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">digits が 10 より大きい</dd></div>
+          <div><dt><code>percent(1, 3)</code></dt><dd class="r"><code>33.3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>percent(2, 3)</code></dt><dd class="r"><code>66.7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>percent(5, 5)</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+          <div><dt><code>percent(0, 8)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>percent(1, 0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">total が 0</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">!</code><h4>true と false を反対にする</h4></div>
+      <p><code>!</code> を前に付けると、<code>true</code> は <code>false</code> に、<code>false</code> は <code>true</code> になります。「〜でない」と書きたいときに使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">function isUnpaid(isPaid: boolean): boolean {
+  // isPaid の反対（true なら false、false なら true）を返す
+  return !isPaid;
+}
+// 結果: isUnpaid(true) は false、isUnpaid(false) は true</code></pre>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Number.isInteger()</code><h4>整数かを調べる</h4></div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 数量 quantity を作り、2.5 を入れる
+const quantity = 2.5;
+// isWhole を作り、quantity が整数か（true か false）を入れる
+const isWhole = Number.isInteger(quantity);
+// 結果: isWhole は false</code></pre>
+      </div>
+      <p><code>!</code> と組み合わせると、「整数でないなら」と書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">function checkBoxes(boxes: number): number {
+  // もし boxes が整数でないなら
+  if (!Number.isInteger(boxes)) {
+    // "箱の数は整数にしてください" というメッセージのエラーを投げる
+    throw new Error("箱の数は整数にしてください");
+  }
+  // boxes を返す
+  return boxes;
+}
+// 結果: checkBoxes(3) は 3。checkBoxes(2.5) はエラーになる</code></pre>
+      </div>
+      <dl class="eg">
+          <div><dt><code>Number.isInteger(3)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>Number.isInteger(2.5)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 roundTo を作る。数値の value と数値の digits を受け取り、数値を返す
+export function roundTo() {
+  // もし value が有限の数でないなら
+  //   "value は有限の数にしてください" というメッセージのエラーを投げる
+  // もし digits が整数でない、または digits が 0 より小さい、または digits が 10 より大きいなら
+  //   "digits は 0〜10 の整数にしてください" というメッセージのエラーを投げる
+  // 倍率 scale を作り、10 の digits 乗を入れる
+  // value に scale を掛けて四捨五入し、scale で割った数を返す
+}
+
+// 関数 percent を作る。数値の part と数値の total を受け取り、数値を返す
+export function percent() {
+  // もし total が 0 と等しいなら
+  //   "total に 0 は使えません" というメッセージのエラーを投げる
+  // part ÷ total × 100 を、roundTo で小数第 1 位までにした数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「有限の数でない」「整数でない」は、<code>Number.isFinite()</code> や <code>Number.isInteger()</code> の前に <code>!</code> を付けます。「または」は <code>||</code>、「10 の digits 乗」は <code>**</code> です。最後の行は問19 と同じ考え方で、100 の代わりに <code>scale</code> を使います。<code>percent</code> の中では、自分で作った <code>roundTo</code> を呼びます（q01 の問20）。メッセージの文は自由です。</p></details>
+    </div>
+  </section>
+</section>

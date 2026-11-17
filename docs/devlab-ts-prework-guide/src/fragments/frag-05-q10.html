@@ -1,0 +1,810 @@
+<section class="sec" id="c05-q10">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q10 配列のユーティリティ</h2>
+    <p>生徒の配列を集計する関数を 20 個書き、最後に★総合問題に取り組みます。ファイルには、生徒を表す型 <code>Student</code> が最初から書いてあります。<code>name</code> が名前、<code>grade</code> が学年、<code>score</code> が点数です。引数の配列は <code>readonly Student[]</code> にします。元の配列も、中の生徒のオブジェクトも書き換えません。引数と戻り値には型注釈を付けます。<code>map</code>・<code>filter</code>・<code>some</code>・<code>every</code>・<code>find</code> などの配列のメソッドを使ってかまいません。<code>sort</code> は元の配列を並べ替えてしまうので、コピーしてから使います。ここで書く関数の多くは、★総合問題で形を広げて、もう一度書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q10-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">名前の配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function namesOf() {}</code></pre>
+      <p>生徒の配列を受け取り、生徒の名前を同じ順に並べた配列を返します。引数の型は <code>readonly Student[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>namesOf(list)</code></dt><dd class="r"><code>["山田", "佐藤"]</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 namesOf を作る。読み取り専用の生徒（Student）の配列 students を受け取り、文字列の配列を返す
+export function namesOf() {
+  // students の要素を 1 つずつ s として、s の name に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「読み取り専用の生徒の配列」は <code>readonly Student[]</code> です（02章 q04 問1）。中の行は、02章 q04 問5 のサンプルの <code>withShipping</code> の行と同じ形です。コールバックが返すのは <code>s.name</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q10-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">点数の平均を返す。空の配列なら 0</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function averageScore() {}</code></pre>
+      <p>生徒の点数を合計し、人数で割った平均を返します。生徒が 1 人もいない空の配列なら、<code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>averageScore(list)</code></dt><dd class="r"><code>85</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・90 点）</dd></div>
+          <div><dt><code>averageScore([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 averageScore を作る。読み取り専用の生徒の配列 students を受け取り、数値を返す
+export function averageScore() {
+  // もし students の要素の数が 0 と等しいなら
+  //   0 を返す
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // students から 1 つずつ s に取り出してくり返す
+  //   total に s の score を足す
+  // total を students の要素の数で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>合計は、02章 q04 問1 の <code>sumAll</code> と同じ形です。足すのが <code>s.score</code> に変わります。空の配列で割り算まで進むと、<code>0 / 0</code> で <code>NaN</code> になります。そのため、先に要素の数（<code>.length</code>）が 0 かを確かめて、<code>0</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q10-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">点数がいちばん高い生徒を返す。同じなら先の方。空なら undefined</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function bestStudent() {}</code></pre>
+      <p>点数がいちばん高い生徒を返します。いちばん高い点数の生徒が 2 人以上いるときは、配列で前にいる生徒を返します。空の配列なら <code>undefined</code> を返します。返すのは、渡された配列の中の生徒のオブジェクトそのものです。コピーは作りません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>bestStudent([a, b])</code></dt><dd class="r"><code>b</code></dd><dd class="c"><code>a</code> は 山田（1 年・80 点）、<code>b</code> は 佐藤（2 年・95 点）。<code>b</code> と同じオブジェクトであることを確かめる</dd></div>
+          <div><dt><code>bestStudent([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>Student | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bestStudent を作る。読み取り専用の生徒の配列 students を受け取り、生徒か undefined を返す
+export function bestStudent() {
+  // いちばんの生徒 best を入れ直せる変数として作り、undefined を入れる。型は Student か undefined
+  // students から 1 つずつ s に取り出してくり返す
+  //   もし best が undefined か、s の score が best の score より大きいなら
+  //     best に s を入れ直す
+  // best を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「生徒か undefined」は <code>Student | undefined</code> です（02章 q04 問4）。<code>best</code> の行は、02章 q08 問10 の 2 つめのサンプルの <code>open</code> と同じ形です。「または」は <code>||</code> です（01章 q01 問15）。<code>best</code> が <code>undefined</code> のときは <code>||</code> の右側を調べないので、<code>best.score</code> で止まりません。同じ点数なら先の生徒を残すので、比べるのは「より大きい」の <code>&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q10-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">grade 年生の生徒だけを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function inGrade() {}</code></pre>
+      <p>生徒の配列と学年 <code>grade</code> を受け取り、その学年の生徒だけを、元の順に並べた新しい配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>inGrade(list, 1)</code></dt><dd class="r">山田、鈴木の配列</dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・60 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code> と <code>number</code>、戻り値が <code>Student[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 inGrade を作る。読み取り専用の生徒の配列 students と数値 grade を受け取り、生徒の配列を返す
+export function inGrade() {
+  // students の要素を 1 つずつ s として、s の grade が grade と等しいものだけを集めた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問7 のサンプルの <code>lowStock</code> の行と同じ形です。コールバックが返すのは「<code>s.grade</code> が <code>grade</code> と等しいか」で、<code>===</code> を使います。<code>.filter()</code> が返すのは新しい配列なので、戻り値の型は <code>readonly</code> の付かない <code>Student[]</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q10-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">border 点以上の生徒だけを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function passedStudents() {}</code></pre>
+      <p>生徒の配列と点数 <code>border</code> を受け取り、点数が <code>border</code> 以上の生徒だけを集めた新しい配列を返します。ちょうど <code>border</code> 点の生徒も入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>passedStudents(list, 70)</code></dt><dd class="r">山田だけの配列</dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、鈴木（1 年・60 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code> と <code>number</code>、戻り値が <code>Student[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 passedStudents を作る。読み取り専用の生徒の配列 students と数値 border を受け取り、生徒の配列を返す
+export function passedStudents() {
+  // students の要素を 1 つずつ s として、s の score が border 以上のものだけを集めた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形で、条件だけが変わります。「以上」は <code>&gt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q10-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">点数の高い順に並べた新しい配列を返す。同じ点数なら元の順</span>
+      <span class="q-new">新しく出てくる書き方：オブジェクトの配列をプロパティで並べる <code>(a, b) =&gt; b.price - a.price</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function sortByScore() {}</code></pre>
+      <p>生徒を、点数の高い順に並べた新しい配列を返します。同じ点数の生徒どうしは、元の配列の順のままにします。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortByScore(list)</code></dt><dd class="r">佐藤、山田、高橋の順の配列</dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、高橋（2 年・80 点）。山田と高橋は同じ点数なので、元の順</dd></div>
+          <div><dt>渡した配列の 0 番目（呼んだあと）</dt><dd class="r">山田</dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>Student[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(a, b) =&gt; b.price - a.price</code><h4>オブジェクトの配列を、プロパティの大きい順に並べる</h4></div>
+      <p>02章 q05 問8・問9 では、数値の配列を <code>.sort()</code> で並べました。オブジェクトの配列を並べるときは、比べ方の関数の中で、比べたいプロパティを取り出して引き算します。大きい順にするときは、<code>b</code> のプロパティから <code>a</code> のプロパティを引きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品 Product という型を作る。name は文字列、price は数値
+type Product = { name: string; price: number };
+// 商品の配列 products を作る。型は Product の配列。3 つの商品を入れる
+const products: Product[] = [
+  { name: "ノート", price: 300 },
+  { name: "ペン", price: 150 },
+  { name: "ファイル", price: 300 },
+];
+// byPrice を作り、products をコピーした配列を、price の大きい順に並べたものを入れる
+const byPrice = [...products].sort((a, b) =&gt; b.price - a.price);
+// 結果: byPrice は ノート、ファイル、ペン の順。products は ノート、ペン、ファイル の順のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>[...products]</span>.sort(<span class="seg"><i>2</i>(a, b)</span> =&gt; <span class="seg"><i>3</i>b.price - a.price</span>)</pre>
+        <ol>
+          <li><span>先にコピーします（02章 q05 問8）。並べ替わるのは、このコピーです。</span></li>
+          <li><span>比べる 2 つの要素です。どちらも <code>Product</code> のオブジェクトです。</span></li>
+          <li><span>2 つの値段の差です。<code>b</code> のほうが高いとプラスの数になり、<code>b</code> が前になります。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>a</th><th>b</th><th>b.price - a.price</th><th>前になるのは</th></tr></thead>
+          <tbody>
+            <tr><td>ノート（300）</td><td>ペン（150）</td><td>-150</td><td class="j">a のノート</td></tr>
+            <tr><td>ペン（150）</td><td>ファイル（300）</td><td>150</td><td class="j">b のファイル</td></tr>
+            <tr><td>ノート（300）</td><td>ファイル（300）</td><td>0</td><td class="j">元の順のまま</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>比べ方の関数が <code>0</code> を返した 2 つは、元の配列の順のまま並びます。サンプルのノートとファイルは、どちらも 300 円です。元の配列でノートが前にあるので、並べたあともノートが前です。</p>
+      <div class="cmp">
+        <div>
+          <h5>オブジェクトどうしを引く</h5>
+          <pre><code class="language-typescript">const byPrice = [...products].sort((a, b) =&gt; b - a);</code></pre>
+          <div class="verdict ng">✕ 引き算の左右は数値でないといけない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>プロパティどうしを引く</h5>
+          <pre><code class="language-typescript">const byPrice = [...products].sort((a, b) =&gt; b.price - a.price);</code></pre>
+          <div class="verdict ok">○ 値段の高い順に並びます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>安い順にしたいときは、<code>a.price - b.price</code> と引き算の順番を入れ替えます。数値の配列のときと同じです。</p>
+      <p class="more">サバイバルTypeScript「配列を壊さない操作」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortByScore を作る。読み取り専用の生徒の配列 students を受け取り、生徒の配列を返す
+export function sortByScore() {
+  // students をコピーした配列を、score の大きい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>byPrice</code> の行と同じ形です。<code>price</code> が <code>score</code> に変わります。同じ点数の生徒は、比べ方の関数が <code>0</code> を返すので、元の順のまま残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q10-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">点数の高い順に「1位 佐藤」「2位 山田」…と並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function rankLabels() {}</code></pre>
+      <p>生徒を点数の高い順に並べ、それぞれを「順位 + 位 + 半角の空白 + 名前」の文字列にした配列を返します。順位は 1 から数えます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rankLabels(list)</code></dt><dd class="r"><code>["1位 佐藤", "2位 山田"]</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rankLabels を作る。読み取り専用の生徒の配列 students を受け取り、文字列の配列を返す
+export function rankLabels() {
+  // students をコピーした配列を score の大きい順に並べ、その要素 s と番号 i から「◯位 ◯」の文字列を作って並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 の形の後ろに、続けて <code>.map()</code> を呼びます。<code>.sort()</code> は並べた配列を返すので、そのままメソッドをつなげられます。番号は、02章 q05 問6 のサンプルの <code>labeled</code> と同じく、コールバックの 2 つめの引数で受け取ります。番号は 0 から数えるので、<code>i + 1</code> にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q10-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">学年ごとにまとめる。キーは学年の文字列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function groupByGrade() {}</code></pre>
+      <p>生徒を学年ごとにまとめたオブジェクトを返します。キーは学年を文字列にしたもの（<code>"1"</code>、<code>"2"</code> …）、値はその学年の生徒の配列です。配列の中は、元の順に並べます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>groupByGrade(list)["1"]</code></dt><dd class="r">山田、鈴木の配列</dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・60 点）</dd></div>
+          <div><dt><code>groupByGrade(list)["2"]</code></dt><dd class="r">佐藤だけの配列</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>{ [grade: string]: Student[] }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 groupByGrade を作る。読み取り専用の生徒の配列 students を受け取り、まとめ表（キーは学年の文字列、値は生徒の配列）を返す
+export function groupByGrade() {
+  // 空のまとめ表 groups を作る。キーは学年の文字列、値は生徒の配列
+  // students から 1 つずつ s に取り出してくり返す
+  //   キー key を作り、s の grade を文字列にしたものを入れる
+  //   groups の key に、groups の key の値（なければ空の配列）の要素すべてと s をこの順に並べた新しい配列を入れる
+  // groups を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空のまとめ表は、02章 q08 問7 のサンプルの <code>empty</code> と同じ形で、値の型が <code>Student[]</code> になります。「文字列にしたもの」は <code>String()</code> です（01章 q01 問12）。「なければ空の配列」は <code>groups[key] ?? []</code> です（02章 q08 問1）。それと <code>s</code> を、<code>[...a, s]</code> の形で新しい配列に並べます（02章 q05 問1）。初めての学年では、空の配列に <code>s</code> を並べた 1 人の配列になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q10-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">学年ごとの人数を返す。キーは学年の文字列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function countByGrade() {}</code></pre>
+      <p>学年ごとの人数を数えたオブジェクトを返します。キーは学年を文字列にしたもの、値は人数です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countByGrade(list)</code></dt><dd class="r"><code>{ "1": 2, "2": 1 }</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・60 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>{ [grade: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countByGrade を作る。読み取り専用の生徒の配列 students を受け取り、集計表（キーは学年の文字列、値は数値）を返す
+export function countByGrade() {
+  // 空の集計表 counts を作る。キーは学年の文字列、値は数値
+  // students から 1 つずつ s に取り出してくり返す
+  //   キー key を作り、s の grade を文字列にしたものを入れる
+  //   counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q08 問7 の <code>countWords</code> と同じ形です。単語の代わりに、<code>String(s.grade)</code> をキーにします。くり返しの中は <code>counts[key] = (counts[key] ?? 0) + 1</code> の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q10-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">学年ごとの平均点を返す（小数第 1 位までに四捨五入）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function averageByGrade() {}</code></pre>
+      <p>学年ごとの平均点を入れたオブジェクトを返します。キーは学年を文字列にしたもの、値は平均点です。平均点は、小数第 2 位を四捨五入して、小数第 1 位までの数にします。値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>averageByGrade(list)</code></dt><dd class="r"><code>{ "1": 70.5, "2": 95 }</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・61 点）。1 年は (80 + 61) ÷ 2</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>{ [grade: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 averageByGrade を作る。読み取り専用の生徒の配列 students を受け取り、平均表（キーは学年の文字列、値は数値）を返す
+export function averageByGrade() {
+  // 空の合計表 totals を作る。キーは学年の文字列、値は数値
+  // 空の人数表 counts を作る。キーは学年の文字列、値は数値
+  // students から 1 つずつ s に取り出してくり返す
+  //   キー key を作り、s の grade を文字列にしたものを入れる
+  //   totals の key に、totals の key の値（なければ 0）に s の score を足した数を入れる
+  //   counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // 空の平均表 result を作る。キーは学年の文字列、値は数値
+  // totals のキーと値の組を 1 つずつ [key, total] に取り出してくり返す
+  //   result の key に、total を counts の key の値（なければ 1）で割り、小数第 1 位までに四捨五入した数を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>前半は問9 と同じ形を、合計と人数の 2 つの表で行います。後半のくり返しは、02章 q08 問10 のサンプルの <code>Object.entries()</code> と同じ形です。<code>counts[key]</code> の型は <code>number | undefined</code> なので、<code>?? 1</code> で数値にしてから割ります。小数第 1 位までの四捨五入は、10 倍してから <code>Math.round()</code>（01章 q01 問13）で整数にし、10 で割ります。<code>.toFixed(1)</code> は文字列を返すので、ここでは使いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q10-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">border 点以上の生徒とそれ以外に分け、[合格の配列, 不合格の配列] を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function splitByPass() {}</code></pre>
+      <p>点数が <code>border</code> 以上の生徒の配列と、<code>border</code> より低い生徒の配列を作ります。この 2 つを、合格・不合格の順に並べたタプルで返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>splitByPass(list, 70)</code> の 0 番目</dt><dd class="r">山田だけの配列</dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、鈴木（1 年・60 点）</dd></div>
+          <div><dt><code>splitByPass(list, 70)</code> の 1 番目</dt><dd class="r">鈴木だけの配列</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code> と <code>number</code>、戻り値が <code>[Student[], Student[]]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 splitByPass を作る。読み取り専用の生徒の配列 students と数値 border を受け取り、[生徒の配列, 生徒の配列] のタプルを返す
+export function splitByPass() {
+  // students の要素を 1 つずつ s として、s の score が border 以上のものだけを集めた配列と、s の score が border より小さいものだけを集めた配列の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、02章 q06 問1 のタプルの型です。中の 2 つの配列は、どちらも問5 と同じ <code>.filter()</code> で作り、条件だけを変えます。2 つを <code>[ ]</code> の中に <code>,</code> で区切って並べて返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q10-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">点数の高い順に n 人を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function topStudents() {}</code></pre>
+      <p>生徒を点数の高い順に並べ、先頭から <code>n</code> 人を取り出した新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>topStudents(list, 2)</code></dt><dd class="r">佐藤、山田の順の配列</dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・60 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code> と <code>number</code>、戻り値が <code>Student[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 topStudents を作る。読み取り専用の生徒の配列 students と数値 n を受け取り、生徒の配列を返す
+export function topStudents() {
+  // students をコピーした配列を score の大きい順に並べ、その 0 番目から n 番目の前までを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 の形の後ろに、続けて <code>.slice(0, n)</code> を呼びます。<code>.slice()</code> は 02章 q05 問3 で出ました。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q10-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">{ 名前: 点数 } のオブジェクトを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function scoreTable() {}</code></pre>
+      <p>生徒の名前をキー、点数を値にしたオブジェクトを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scoreTable(list)</code></dt><dd class="r"><code>{ 山田: 80, 佐藤: 95 }</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>{ [name: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 scoreTable を作る。読み取り専用の生徒の配列 students を受け取り、点数表（キーは名前の文字列、値は数値）を返す
+export function scoreTable() {
+  // 空の点数表 table を作る。キーは名前の文字列、値は数値
+  // students から 1 つずつ s に取り出してくり返す
+  //   table の s の name に s の score を入れる
+  // table を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q08 問7 のサンプルの <code>empty</code> と同じ形です。<code>empty[name] = 0</code> の左のキーが <code>s.name</code>、右の値が <code>s.score</code> に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q10-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">100 点の生徒が 1 人でもいれば true（some を使う）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function hasPerfect() {}</code></pre>
+      <p>点数が 100 点の生徒が 1 人でもいれば <code>true</code>、1 人もいなければ <code>false</code> を返します。<code>.some()</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasPerfect([perfect])</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>perfect</code> は 山田（1 年・100 点）</dd></div>
+          <div><dt><code>hasPerfect([almost])</code></dt><dd class="r"><code>false</code></dd><dd class="c"><code>almost</code> は 山田（1 年・99 点）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasPerfect を作る。読み取り専用の生徒の配列 students を受け取り、true か false を返す
+export function hasPerfect() {
+  // students の要素のどれかの score が 100 と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>03章 q07 問9 のサンプルの <code>hasSoldOut</code> の行と同じ形です。コールバックが返すのは「<code>s.score</code> が 100 と等しいか」です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q10-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">全員が border 点以上なら true（every を使う）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function everyonePassed() {}</code></pre>
+      <p>すべての生徒の点数が <code>border</code> 以上なら <code>true</code>、1 人でも下回る生徒がいれば <code>false</code> を返します。<code>.every()</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>everyonePassed(list, 60)</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、鈴木（1 年・60 点）。ちょうど 60 点も合格</dd></div>
+          <div><dt><code>everyonePassed(list, 70)</code></dt><dd class="r"><code>false</code></dd><dd class="c">鈴木が 70 点に届かない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code> と <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 everyonePassed を作る。読み取り専用の生徒の配列 students と数値 border を受け取り、true か false を返す
+export function everyonePassed() {
+  // students の要素がすべて、score が border 以上か（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問20 のサンプルの <code>allUnder5000</code> の行と同じ形です。コールバックが返すのは「<code>s.score</code> が <code>border</code> 以上か」で、<code>&gt;=</code> を使います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q10-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">点数の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function totalScore() {}</code></pre>
+      <p>すべての生徒の点数を足した合計を返します。空の配列なら <code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>totalScore(list)</code></dt><dd class="r"><code>175</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）</dd></div>
+          <div><dt><code>totalScore([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 totalScore を作る。読み取り専用の生徒の配列 students を受け取り、数値を返す
+export function totalScore() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // students から 1 つずつ s に取り出してくり返す
+  //   total に s の score を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 の合計の部分と同じです。空の配列では 1 回もくり返さないので、<code>0</code> のまま返ります。割り算がないので、空の配列を先に確かめる行は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q10-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">[最低点, 最高点] を返す。空の配列なら Error を投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function scoreRange() {}</code></pre>
+      <p>いちばん低い点数と、いちばん高い点数を、この順に並べたタプルで返します。空の配列なら <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scoreRange(list)</code></dt><dd class="r"><code>[60, 95]</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・60 点）</dd></div>
+          <div><dt><code>scoreRange([])</code></dt><dd class="r"><code>Error</code></dd><dd class="c">Error を投げる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 scoreRange を作る。読み取り専用の生徒の配列 students を受け取り、[数値, 数値] のタプルを返す
+export function scoreRange() {
+  // もし students の要素の数が 0 と等しいなら
+  //   "生徒がいません" というメッセージのエラーを投げる
+  // 点数の配列 scores を作り、students の要素を 1 つずつ s として、s の score に変えた新しい配列を入れる
+  // scores の要素をばらばらに Math.min に渡した結果、scores の要素をばらばらに Math.max に渡した結果の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>エラーは <code>throw new Error("…")</code> です（01章 q04 問8）。<code>scores</code> は問1 と同じ <code>.map()</code> で作ります。「ばらばらに Math.min に渡す」は <code>Math.min(...scores)</code> です（02章 q04 問12）。空の配列を確かめずに進むと、<code>Math.min()</code> は <code>Infinity</code>、<code>Math.max()</code> は <code>-Infinity</code> を返してしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q10-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">名前で生徒を探す（find を使う）。いなければ undefined</span>
+      <span class="q-new">新しく出てくる書き方：<code>.find()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function findByName() {}</code></pre>
+      <p>生徒の配列と名前 <code>name</code> を受け取り、その名前の生徒を返します。その名前の生徒がいなければ <code>undefined</code> を返します。<code>.find()</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>findByName(list, "佐藤")?.score</code></dt><dd class="r"><code>95</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）。佐藤が返る</dd></div>
+          <div><dt><code>findByName(list, "鈴木")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">鈴木はいない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code> と <code>string</code>、戻り値が <code>Student | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.find()</code><h4>条件に合う最初の要素を探す</h4></div>
+      <p><code>.find()</code> は、要素を前から 1 つずつコールバックに渡します。最初に <code>true</code> が返った要素を、そのまま返します。見つかったところで止まり、残りの要素は調べません。1 つも合わなければ <code>undefined</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品 Product という型を作る。code は文字列、price は数値
+type Product = { code: string; price: number };
+// 商品の配列 products を作る。型は Product の配列。2 つの商品を入れる
+const products: Product[] = [
+  { code: "A-01", price: 300 },
+  { code: "B-02", price: 150 },
+];
+// found を作り、products の要素を 1 つずつ p として、p の code が "B-02" と等しい最初のもの（なければ undefined）を入れる
+const found = products.find((p) =&gt; p.code === "B-02");
+// missing を作り、products の要素を 1 つずつ p として、p の code が "C-03" と等しい最初のもの（なければ undefined）を入れる
+const missing = products.find((p) =&gt; p.code === "C-03");
+// 結果: found は { code: "B-02", price: 150 }、missing は undefined</code></pre>
+      </div>
+      <p><code>.filter()</code>（02章 q04 問7）も条件で選びます。<code>.filter()</code> は、合う要素すべてを配列で返します。<code>.find()</code> は、合う最初の 1 つを、配列に入れずに返します。</p>
+      <dl class="eg">
+        <div><dt><code>[3, 8, 12].find((stock) =&gt; stock &gt; 5)</code></dt><dd class="r"><code>8</code></dd><dd class="c">合うのは 8 と 12。最初の 8 だけを返す</dd></div>
+        <div><dt><code>[3, 8, 12].filter((stock) =&gt; stock &gt; 5)</code></dt><dd class="r"><code>[8, 12]</code></dd><dd class="c">合うものすべてを、配列で返す</dd></div>
+        <div><dt><code>[3, 4].find((stock) =&gt; stock &gt; 5)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">1 つも合わない</dd></div>
+      </dl>
+      <p>見つからないときがあるので、<code>found</code> の型は <code>Product | undefined</code> になります。プロパティを使うときは、<code>found?.price</code>（03章 q03 問1）のように書くか、<code>undefined</code> でないことを先に確かめます。</p>
+      <div class="cmp">
+        <div>
+          <h5>そのままプロパティを読む</h5>
+          <pre><code class="language-typescript">const price = found.price;</code></pre>
+          <div class="verdict ng">✕ found は undefined かもしれない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>?. で読む</h5>
+          <pre><code class="language-typescript">const price = found?.price;</code></pre>
+          <div class="verdict ok">○ 見つからなければ price は undefined です</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>.find()</code> が返すのは、配列の中のオブジェクトそのものです。コピーではありません。</p>
+      <p class="more">サバイバルTypeScript「配列を壊さない操作」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 findByName を作る。読み取り専用の生徒の配列 students と文字列 name を受け取り、生徒か undefined を返す
+export function findByName() {
+  // students の要素を 1 つずつ s として、s の name が name と等しい最初のもの（なければ undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問18 のサンプルの <code>found</code> の行と同じ形です。<code>"B-02"</code> の代わりに引数の <code>name</code> と比べ、結果をそのまま <code>return</code> します。戻り値の型は、問3 と同じ <code>Student | undefined</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q10-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">name の生徒の点数だけを score にした新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function updateScore() {}</code></pre>
+      <p>名前が <code>name</code> の生徒だけ、点数を <code>score</code> にした新しい配列を返します。ほかの生徒はそのままです。元の配列も、中の生徒のオブジェクトも変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>updateScore(list, "山田", 90)</code> の点数</dt><dd class="r"><code>[90, 95]</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）</dd></div>
+          <div><dt>渡した配列の山田の点数（呼んだあと）</dt><dd class="r"><code>80</code></dd><dd class="c">元の生徒のオブジェクトは変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>・<code>string</code>・<code>number</code>、戻り値が <code>Student[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 updateScore を作る。読み取り専用の生徒の配列 students、文字列 name、数値 score を受け取り、生徒の配列を返す
+export function updateScore() {
+  // students の要素を 1 つずつ s として、s の name が name と等しいなら s のプロパティをすべて写し score を score にしたオブジェクト、そうでなければ s に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q05 問7 の <code>replaceAt</code> と同じく、<code>.map()</code> のコールバックの中で条件演算子 <code>? :</code> を使います。「プロパティをすべて写し、score を score にしたオブジェクト」は、スプレッド構文 <code>{ ...s, score: … }</code> です（02章 q02 問8）。<code>score: score</code> は、省略記法で <code>score</code> と書きます（02章 q01 問3）。lint は省略記法を求めます。<code>s.score = score</code> のように書き換えると、元の生徒が変わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q10-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">「人数 3、平均 78.3、最高 佐藤（95）」の形にする。空なら「人数 0」</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Student = { name: string; grade: number; score: number };
+
+export function summaryText() {}</code></pre>
+      <p>人数・平均点・最高点の生徒を、1 つの文字列にまとめて返します。平均点は <code>.toFixed(1)</code> で小数第 1 位までにします。最高点の生徒が 2 人以上いるときは、前にいる生徒です。区切りの「、」と、点数を囲む「（ ）」は全角です。空の配列なら <code>"人数 0"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>summaryText(list)</code></dt><dd class="r"><code>"人数 3、平均 78.3、最高 佐藤（95）"</code></dd><dd class="c"><code>list</code> は 山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・60 点）。235 ÷ 3 = 78.33…</dd></div>
+          <div><dt><code>summaryText([])</code></dt><dd class="r"><code>"人数 0"</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Student[]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 summaryText を作る。読み取り専用の生徒の配列 students を受け取り、文字列を返す
+export function summaryText() {
+  // いちばんの生徒 best を入れ直せる変数として作り、undefined を入れる。型は Student か undefined
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // students から 1 つずつ s に取り出してくり返す
+  //   total に s の score を足す
+  //   もし best が undefined か、s の score が best の score より大きいなら
+  //     best に s を入れ直す
+  // もし best が undefined なら
+  //   "人数 0" を返す
+  // 平均 average を作り、total を students の要素の数で割った数を、小数第 1 位までの文字列にしたものを入れる
+  // students の要素の数、average、best の name、best の score を埋め込んだ「人数 ◯、平均 ◯、最高 ◯（◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは、問3 と問16 を 1 つにまとめたものです。空の配列では <code>best</code> が <code>undefined</code> のまま残るので、それで空かどうかを見分けます。先に要素の数で空かを確かめる書き方では、TypeScript には <code>best</code> が <code>undefined</code> でないことが分かりません。<code>best.name</code> の行が、<code>best</code> は <code>undefined</code> かもしれない、というエラーになります。<code>best === undefined</code> で返したあとなら、<code>best</code> は <code>Student</code> として使えます。文字列は、テンプレートリテラルで組み立てます（01章 q01 問3）。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 -->
+  <section class="q" id="c05-q10-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">配列のユーティリティ（まとめる・数える・分ける・上位・平均）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">import { clamp } from "./q02-params-return";
+import { sumAll } from "./q05-rest-params";
+
+export type Student = { name: string; grade: number; score: number };
+
+export function groupBy() {}
+
+export function countBy() {}
+
+export function partition() {}
+
+export function topN() {}
+
+export function averageBy() {}</code></pre>
+      <p>5 つの関数を書きます。どれも生徒の配列 <code>readonly Student[]</code> を受け取り、元の配列も生徒のオブジェクトも変えません。<code>keyFn</code> と <code>predicate</code> は、生徒を 1 人受け取る関数です。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>groupBy(students, keyFn)</code>：<code>keyFn(生徒)</code> が返す文字列ごとに、生徒をまとめます。戻り値は <code>{ [key: string]: Student[] }</code> です。問8 の学年を、<code>keyFn</code> が返す文字列に広げた形です。</li>
+        <li><code>countBy(students, keyFn)</code>：<code>keyFn(生徒)</code> が返す文字列ごとに、人数を数えます。戻り値は <code>{ [key: string]: number }</code> です。</li>
+        <li><code>partition(students, predicate)</code>：<code>predicate</code> が <code>true</code> を返す生徒と <code>false</code> を返す生徒に分け、<code>[true の配列, false の配列]</code> を返します。</li>
+        <li><code>topN(students, n)</code>：点数の高い順に <code>n</code> 人を返します。同じ点数なら元の順のままです。<code>n</code> が負なら空の配列、人数より多ければ全員です。<code>n</code> は、q02 の <code>clamp</code> で 0 以上・生徒の人数以下に収めてから使います。</li>
+        <li><code>averageBy(students, keyFn)</code>：<code>keyFn(生徒)</code> が返す文字列ごとに、点数の平均を小数第 1 位までに四捨五入して返します。戻り値は <code>{ [key: string]: number }</code> です。点数の合計は、q05 の <code>sumAll</code> で出します。<code>groupBy</code> を使うと短く書けます。</li>
+      </ol>
+      <p><code>clamp</code> と <code>sumAll</code> は、ファイルの先頭で import してあります。q02 と q05 が解けていないと、この問題のテストも通りません。テストでは、次の 5 人の配列を使います。山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・62 点）、高橋（2 年・80 点）、田中（3 年・45 点）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>groupBy(students, (s) =&gt; `${s.grade}年`)</code> のキー</dt><dd class="r"><code>["1年", "2年", "3年"]</code></dd><dd class="c">初めて出てきた順</dd></div>
+          <div><dt>その <code>"1年"</code> の生徒</dt><dd class="r">山田、鈴木の配列</dd><dd class="c"></dd></div>
+          <div><dt>その <code>"3年"</code> の生徒</dt><dd class="r">田中だけの配列</dd><dd class="c"></dd></div>
+          <div><dt><code>groupBy</code> に渡した配列（呼んだあと）</dt><dd class="r">元のまま</dd><dd class="c"></dd></div>
+          <div><dt><code>countBy(students, (s) =&gt; (s.score &gt;= 60 ? "合格" : "不合格"))</code></dt><dd class="r"><code>{ 合格: 4, 不合格: 1 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countBy([], (s) =&gt; s.name)</code></dt><dd class="r"><code>{}</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>partition(students, (s) =&gt; s.score &gt;= 70)</code> の 0 番目</dt><dd class="r">山田、佐藤、高橋の配列</dd><dd class="c"></dd></div>
+          <div><dt>その 1 番目</dt><dd class="r">鈴木、田中の配列</dd><dd class="c"></dd></div>
+          <div><dt><code>topN(students, 3)</code></dt><dd class="r">佐藤、山田、高橋の順の配列</dd><dd class="c">山田と高橋は同じ 80 点なので、元の順</dd></div>
+          <div><dt><code>topN(students, 10)</code></dt><dd class="r">5 人の配列</dd><dd class="c">人数より多いので全員</dd></div>
+          <div><dt><code>topN(students, -1)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">負の数なので空の配列</dd></div>
+          <div><dt><code>topN</code> に渡した配列（呼んだあと）</dt><dd class="r">元のまま</dd><dd class="c"></dd></div>
+          <div><dt><code>averageBy(students, (s) =&gt; `${s.grade}年`)</code></dt><dd class="r"><code>{ "1年": 71, "2年": 87.5, "3年": 45 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>groupBy</code>・<code>countBy</code>・<code>averageBy</code> の引数が <code>readonly Student[]</code> と <code>(student: Student) =&gt; string</code> であることを確かめます。<code>partition</code> の引数は <code>readonly Student[]</code> と <code>(student: Student) =&gt; boolean</code>、戻り値は <code>[Student[], Student[]]</code> です。<code>topN</code> の引数は <code>readonly Student[]</code> と <code>number</code>、戻り値は <code>Student[]</code> です。<code>groupBy</code> の戻り値は <code>{ [key: string]: Student[] }</code>、<code>countBy</code> と <code>averageBy</code> の戻り値は <code>{ [key: string]: number }</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 groupBy を作る。読み取り専用の生徒の配列 students と、生徒を受け取って文字列を返す関数 keyFn を受け取り、まとめ表（キーは文字列、値は生徒の配列）を返す
+export function groupBy() {
+  // 空のまとめ表 groups を作る。キーは文字列、値は生徒の配列
+  // students から 1 つずつ student に取り出してくり返す
+  //   キー key を作り、student を keyFn に渡して呼んだ結果を入れる
+  //   groups の key に、groups の key の値（なければ空の配列）の要素すべてと student をこの順に並べた新しい配列を入れる
+  // groups を返す
+}
+
+// 関数 countBy を作る。読み取り専用の生徒の配列 students と、生徒を受け取って文字列を返す関数 keyFn を受け取り、集計表（キーは文字列、値は数値）を返す
+export function countBy() {
+  // 空の集計表 counts を作る。キーは文字列、値は数値
+  // students から 1 つずつ student に取り出してくり返す
+  //   キー key を作り、student を keyFn に渡して呼んだ結果を入れる
+  //   counts の key に、counts の key の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}
+
+// 関数 partition を作る。読み取り専用の生徒の配列 students と、生徒を受け取って true か false を返す関数 predicate を受け取り、[生徒の配列, 生徒の配列] のタプルを返す
+export function partition() {
+  // students の要素を 1 つずつ s として、s を predicate に渡して呼んだ結果が true のものだけを集めた配列と、false のものだけを集めた配列の順に並べたタプルを返す
+}
+
+// 関数 topN を作る。読み取り専用の生徒の配列 students と数値 n を受け取り、生徒の配列を返す
+export function topN() {
+  // 人数 count を作り、n を clamp で 0 以上、students の要素の数以下に収めた数を入れる
+  // students をコピーした配列を score の大きい順に並べ、その 0 番目から count 番目の前までを取り出した新しい配列を返す
+}
+
+// 関数 averageBy を作る。読み取り専用の生徒の配列 students と、生徒を受け取って文字列を返す関数 keyFn を受け取り、平均表（キーは文字列、値は数値）を返す
+export function averageBy() {
+  // 空の平均表 result を作る。キーは文字列、値は数値
+  // students を groupBy で keyFn ごとにまとめた表の、キーと値の組を 1 つずつ [key, group] に取り出してくり返す
+  //   合計 total を作り、group の要素の score を並べた配列の要素を、ばらばらに sumAll に渡した結果を入れる
+  //   result の key に、total を group の要素の数で割り、小数第 1 位までに四捨五入した数を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「生徒を受け取って文字列を返す関数」の型は <code>(student: Student) =&gt; string</code> です（05章 q07 問1）。「keyFn に渡して呼んだ結果」は <code>keyFn(student)</code> です。<code>groupBy</code> は問8、<code>countBy</code> は問9 と同じ形で、キーを作る行だけが変わります。<code>partition</code> は問11 と同じ形で、条件が <code>predicate(s)</code> と <code>!predicate(s)</code> になります。<code>topN</code> は問12 の形です。<code>clamp</code> は <code>clamp(値, 最小, 最大)</code> の順に渡します。<code>n</code> が <code>-1</code> のまま <code>.slice(0, -1)</code> にすると、最後の 1 人を除いた 4 人が返ってしまいます（01章 q05 問4 の、後ろから数える位置）。<code>averageBy</code> は、自分で書いた <code>groupBy</code> を呼んで、<code>Object.entries()</code> で回します。合計は <code>sumAll(...scores)</code> の形で、<code>scores</code> は <code>.map()</code> で作ります。四捨五入は問10 と同じです。</p></details>
+    </div>
+  </section>
+</section>

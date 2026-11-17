@@ -1,0 +1,793 @@
+<section class="sec" id="c06-q05">
+  <div class="sec-h">
+    <span class="eyebrow">06章 クラス</span>
+    <h2>q05 状態を持つクラス</h2>
+    <p>クラスの中にデータを持たせ、メソッドを呼ぶたびにそのデータを変えていくクラスを書きます。呼ぶたびに変わっていく中身のデータを、状態と呼びます。ドリルは 1 つのファイルに 20 問あり、★総合問題の ToDo リストで使う書き方をくり返します。中で持つデータは <code>private</code> にして、外からはメソッドでしか読み書きできないようにします。配列を返すメソッドは、中の配列のコピーを返します。フィールド、constructor の引数、メソッドの引数と戻り値には型注釈を付けます。</p>
+  </div>
+
+  <!-- ドリル -->
+  <section class="q" id="c06-q05-1">
+    <header class="q-h">
+      <span class="q-n">ドリル</span><span class="q-t">データを持ち、メソッドで読み書きするクラスを書く</span>
+      <span class="q-new">新しく出てくる書き方：<code>.splice()</code>、<code>.find()</code> で見つけた要素を書き換える</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問1 NoteBook。add(text) でメモを足し、その番号（1から）を返す。get(id) でメモを返す（なければ undefined）。count() で数を返す
+//     例: add("買い物") → 1、get(1) → "買い物"
+export class NoteBook {}</code></pre>
+      <p>ファイルには、20 個のクラスが <code>export class NoteBook {}</code> のように、空の形で書いてあります。<code>{ }</code> の中に、フィールドとメソッドを書きます。問題文に constructor の引数がないクラスは、引数なしで <code>new</code> します。</p>
+      <p>どのクラスも、中で持つデータは <code>private</code> にします（06章 q01）。配列を返すメソッドは、中の配列のコピーを返します（06章 q02 問15）。受け取った側が配列に要素を足しても、クラスの中の配列が変わらないようにするためです。</p>
+      <ol>
+        <li><code>NoteBook</code>：<code>add(text)</code> でメモを足し、そのメモの番号を返します。番号は 1 から順に振ります。<code>get(id)</code> は、その番号のメモを返します。なければ <code>undefined</code> を返します。<code>count()</code> は、メモの数を返します。</li>
+        <li><code>Playlist</code>：<code>add(song)</code> で曲を足します。何も返しません。<code>next()</code> は、呼ぶたびに先頭から順に曲を返し、最後の曲の次は先頭に戻ります。曲が 1 つもなければ <code>undefined</code> を返します。</li>
+        <li><code>ShoppingCart</code>：<code>add(name, price, quantity)</code> で商品を足します。<code>quantity</code>（個数）は省略でき、省略したら 1 です。同じ <code>name</code> の商品がすでにあれば、個数だけを増やします。<code>remove(name)</code> は、その商品を消します。<code>total()</code> は、価格 × 個数の合計を返します。<code>add</code> と <code>remove</code> は何も返しません。</li>
+        <li><code>Library</code>：<code>addBook(title)</code> で本を足します。<code>borrow(title)</code> で本を貸し出します。ない本なら <code>"本がありません: C"</code>、貸出中の本なら <code>"貸出中です: A"</code> の形のメッセージのエラーを投げます。<code>giveBack(title)</code> で本を返します。<code>available()</code> は、貸し出せる本の題名を、足した順に並べた配列で返します。<code>addBook</code>・<code>borrow</code>・<code>giveBack</code> は何も返しません。</li>
+        <li><code>Scoreboard</code>：<code>record(name, score)</code> で点数を記録します。何も返しません。<code>best(name)</code> は、その人の最高点を返します。記録がなければ <code>undefined</code> を返します。<code>top(n)</code> は、最高点の高い順に、名前を <code>n</code> 人まで並べた配列を返します。同じ点なら、先に記録した人が先です。</li>
+        <li><code>EventCalendar</code>：<code>add(date, title)</code> で予定を足します。何も返しません。<code>on(date)</code> は、その日の予定を足した順に並べた配列を返します。予定がなければ <code>[]</code> を返します。</li>
+        <li><code>ParkingLot</code>：constructor で台数 <code>capacity</code> を受け取ります。<code>park(car)</code> で車を停めます。空きがなければ <code>false</code>、停められたら <code>true</code> を返します。<code>leave(car)</code> で車が出ます。何も返しません。<code>free()</code> は、空きの台数を返します。</li>
+        <li><code>PriorityQueue</code>：<code>enqueue(task, priority)</code> で、優先度 <code>priority</code> の付いたタスクを入れます。何も返しません。<code>dequeue()</code> は、優先度がいちばん大きいタスクを取り出して返します。同じ優先度なら、先に入れた方を取り出します。空なら <code>undefined</code> を返します。</li>
+        <li><code>Inbox</code>：<code>receive(from, text)</code> でメッセージを受け取ります。何も返しません。<code>unreadCount()</code> は、まだ読んでいないメッセージの数を返します。<code>read(index)</code> は、<code>index</code> 番目（0 から数える）のメッセージを <code>"山田: こんにちは"</code> の形で返し、読んだことにします。その番号のメッセージがなければ、<code>"メッセージがありません"</code> というメッセージのエラーを投げます。</li>
+        <li><code>Gradebook</code>：<code>add(student, score)</code> で生徒の点数を足します。何も返しません。<code>average()</code> は平均点を返します。1 人もいなければ <code>0</code> を返します。<code>passed(border)</code> は、<code>border</code> 点以上の生徒の名前を、足した順に並べた配列で返します。</li>
+        <li><code>Elevator</code>：constructor で階の数 <code>floors</code> を受け取ります。最初は 1 階にいます。<code>goTo(floor)</code> でその階へ動きます。1 から <code>floors</code> の外なら、<code>"その階はありません"</code> というメッセージのエラーを投げます。何も返しません。<code>current()</code> は今の階を、<code>history()</code> は止まった階を順に並べた配列を返します。<code>history()</code> には、最初の 1 階も入ります。</li>
+        <li><code>VotingBox</code>：constructor で選択肢の配列 <code>options</code>（<code>readonly string[]</code>）を受け取ります。<code>vote(option)</code> で投票します。選択肢にないものなら、<code>"選択肢にありません: C"</code> の形のメッセージのエラーを投げます。何も返しません。<code>winner()</code> は、票がいちばん多い選択肢を返します。同じ票数なら、<code>options</code> で先にある方です。1 票もなければ <code>undefined</code> を返します。</li>
+        <li><code>HistoryWallet</code>：残高は 0 から始めます。<code>deposit(n)</code> で入金し、<code>withdraw(n)</code> で出金します。どちらも、変えた後の残高を返します。残高より多く出金しようとしたら、<code>"残高が足りません"</code> というメッセージのエラーを投げます。<code>history()</code> は、<code>"+1000"</code>・<code>"-300"</code> の形の履歴を、順に並べた配列で返します。エラーになった出金は、履歴に入れません。</li>
+        <li><code>ChatRoom</code>：<code>join(name)</code> で参加し、<code>leave(name)</code> で抜けます。<code>post(name, text)</code> で投稿します。参加していない人なら、<code>"参加していません: 山田"</code> の形のメッセージのエラーを投げます。<code>messages()</code> は、<code>"山田: こんにちは"</code> の形の投稿を、順に並べた配列で返します。<code>join</code>・<code>leave</code>・<code>post</code> は何も返しません。</li>
+        <li><code>SeatReservation</code>：<code>reserve(seat, name)</code> で席を予約します。予約済みの席なら、<code>"予約済みです: A1"</code> の形のメッセージのエラーを投げます。<code>cancel(seat)</code> で予約を取り消します。<code>seatsOf(name)</code> は、その人の席を予約した順に並べた配列で返します。<code>reserve</code> と <code>cancel</code> は何も返しません。</li>
+        <li><code>TodoStore</code>：<code>add(title)</code> で ToDo を足し、その id を返します。id は 1 から順に振ります。<code>toggle(id)</code> は、その ToDo の完了と未完了を切り替えます。その id の ToDo がなければ、<code>"ToDo がありません: 9"</code> の形のメッセージのエラーを投げます。何も返しません。<code>remaining()</code> は、未完了の数を返します。</li>
+        <li><code>LapTimer</code>：<code>start(t)</code> で、時刻 <code>t</code> から計測を始めます。何も返しません。<code>lap(t)</code> は、前回（<code>start</code> か <code>lap</code>）の時刻からの差を返します。<code>laps()</code> は、それまでの差を順に並べた配列で返します。</li>
+        <li><code>RateLimiter</code>：constructor で、回数 <code>max</code> とミリ秒 <code>windowMs</code> を受け取ります。<code>hit(time)</code> は、時刻 <code>time</code> に来た受け付けの申し込みです。<code>time - windowMs</code> より後に受け付けた回数が <code>max</code> より少なければ、受け付けて <code>true</code> を返します。そうでなければ、受け付けずに <code>false</code> を返します。</li>
+        <li><code>UndoCounter</code>：<code>increment()</code> で 1 増やします。<code>undo()</code> で、直前の <code>increment</code> を取り消します。取り消すものがなければ、何もしません。<code>value()</code> は今の値を返します。<code>increment</code> と <code>undo</code> は何も返しません。</li>
+        <li><code>TagIndex</code>：<code>tag(item, label)</code> で、<code>item</code> にタグ <code>label</code> を付けます。同じ組み合わせは 1 回だけ付けます。何も返しません。<code>itemsWith(label)</code> は、そのタグの付いた <code>item</code> を、付けた順に並べた配列で返します。<code>tagsOf(item)</code> は、その <code>item</code> のタグを、付けた順に並べた配列で返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>問1 は、新しい <code>NoteBook</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>add("買い物")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>add("掃除")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>get(1)</code></dt><dd class="r"><code>"買い物"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>get(3)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">3 番のメモはない</dd></div>
+          <div><dt><code>count()</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問2 は、新しい <code>Playlist</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>next()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">曲がない</dd></div>
+          <div><dt><code>add("A")</code>、<code>add("B")</code> のあと <code>next()</code> を 3 回</dt><dd class="r"><code>"A"</code>、<code>"B"</code>、<code>"A"</code></dd><dd class="c">最後の曲の次は、先頭に戻る</dd></div>
+        </dl>
+        <p>問3 は、新しい <code>ShoppingCart</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>add("りんご", 150, 2)</code>、<code>add("みかん", 80)</code> のあと <code>total()</code></dt><dd class="r"><code>380</code></dd><dd class="c">150 × 2 + 80 × 1</dd></div>
+          <div><dt><code>add("りんご", 150)</code> のあと <code>total()</code></dt><dd class="r"><code>530</code></dd><dd class="c">りんごが 3 個になる</dd></div>
+          <div><dt><code>remove("りんご")</code> のあと <code>total()</code></dt><dd class="r"><code>80</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問4 は、新しい <code>Library</code> に、<code>addBook("A")</code>、<code>addBook("B")</code>、<code>borrow("A")</code> の順に呼んだあと、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>available()</code></dt><dd class="r"><code>["B"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>borrow("A")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "貸出中です: A"</dd></div>
+          <div><dt><code>borrow("C")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "本がありません: C"</dd></div>
+          <div><dt><code>giveBack("A")</code> のあと <code>available()</code></dt><dd class="r"><code>["A", "B"]</code></dd><dd class="c">足した順</dd></div>
+        </dl>
+        <p>問5 は、新しい <code>Scoreboard</code> に、<code>record("山田", 70)</code>、<code>record("佐藤", 90)</code>、<code>record("山田", 95)</code>、<code>record("佐藤", 10)</code> の順に記録したあとです。</p>
+        <dl class="eg">
+          <div><dt><code>best("山田")</code></dt><dd class="r"><code>95</code></dd><dd class="c"></dd></div>
+          <div><dt><code>best("鈴木")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">記録がない</dd></div>
+          <div><dt><code>top(1)</code></dt><dd class="r"><code>["山田"]</code></dd><dd class="c">山田は 95、佐藤は 90</dd></div>
+          <div><dt><code>top(5)</code></dt><dd class="r"><code>["山田", "佐藤"]</code></dd><dd class="c">5 人いなければ、いるだけ</dd></div>
+        </dl>
+        <p>問6 は、新しい <code>EventCalendar</code> に、<code>add("2026-12-01", "会議")</code>、<code>add("2026-12-01", "勉強会")</code> の順に足したあとです。</p>
+        <dl class="eg">
+          <div><dt><code>on("2026-12-01")</code></dt><dd class="r"><code>["会議", "勉強会"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>on("2026-12-02")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">予定がない</dd></div>
+          <div><dt><code>on("2026-12-01").length</code></dt><dd class="r"><code>2</code></dd><dd class="c">on で受け取った配列に push("いたずら") したあとでも 2。中の配列は変わらない</dd></div>
+        </dl>
+        <p>問7 は、<code>new ParkingLot(1)</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>park("A")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>park("B")</code></dt><dd class="r"><code>false</code></dd><dd class="c">空きがない</dd></div>
+          <div><dt><code>free()</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>leave("A")</code> のあと <code>free()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問8 は、新しい <code>PriorityQueue</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>dequeue()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">何も入れていない</dd></div>
+        </dl>
+        <p>続けて <code>enqueue("a", 1)</code>、<code>enqueue("b", 5)</code>、<code>enqueue("c", 5)</code> の順に入れてから、<code>dequeue()</code> を 3 回呼びます。</p>
+        <dl class="eg">
+          <div><dt>1 回目</dt><dd class="r"><code>"b"</code></dd><dd class="c">b と c は同じ優先度なので、先に入れた b</dd></div>
+          <div><dt>2 回目</dt><dd class="r"><code>"c"</code></dd><dd class="c"></dd></div>
+          <div><dt>3 回目</dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問9 は、新しい <code>Inbox</code> に、<code>receive("山田", "こんにちは")</code>、<code>receive("佐藤", "会議です")</code> の順に受け取ったあと、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>unreadCount()</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>read(0)</code></dt><dd class="r"><code>"山田: こんにちは"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>unreadCount()</code></dt><dd class="r"><code>1</code></dd><dd class="c">read(0) で 1 つ読んだ</dd></div>
+          <div><dt><code>read(5)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "メッセージがありません"</dd></div>
+        </dl>
+        <p>問10 は、新しい <code>Gradebook</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>average()</code></dt><dd class="r"><code>0</code></dd><dd class="c">1 人もいない</dd></div>
+          <div><dt><code>add("山田", 80)</code>、<code>add("佐藤", 50)</code> のあと <code>average()</code></dt><dd class="r"><code>65</code></dd><dd class="c"></dd></div>
+          <div><dt><code>passed(60)</code></dt><dd class="r"><code>["山田"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問11 は、<code>new Elevator(5)</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>current()</code></dt><dd class="r"><code>1</code></dd><dd class="c">最初は 1 階</dd></div>
+          <div><dt><code>goTo(3)</code> のあと <code>current()</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>history()</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>goTo(6)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "その階はありません"</dd></div>
+        </dl>
+        <p>問12 は、<code>new VotingBox(["A", "B"])</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>winner()</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">票がない</dd></div>
+          <div><dt><code>vote("B")</code> のあと <code>winner()</code></dt><dd class="r"><code>"B"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>vote("A")</code> のあと <code>winner()</code></dt><dd class="r"><code>"A"</code></dd><dd class="c">1 票ずつで同じなので、options で先の A</dd></div>
+          <div><dt><code>vote("C")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "選択肢にありません: C"</dd></div>
+        </dl>
+        <p>問13 は、新しい <code>HistoryWallet</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>deposit(1000)</code></dt><dd class="r"><code>1000</code></dd><dd class="c"></dd></div>
+          <div><dt><code>withdraw(300)</code></dt><dd class="r"><code>700</code></dd><dd class="c"></dd></div>
+          <div><dt><code>withdraw(800)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "残高が足りません"</dd></div>
+          <div><dt><code>history()</code></dt><dd class="r"><code>["+1000", "-300"]</code></dd><dd class="c">エラーになった出金は入らない</dd></div>
+        </dl>
+        <p>問14 は、新しい <code>ChatRoom</code> に、<code>join("山田")</code>、<code>post("山田", "こんにちは")</code> の順に呼んだあと、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>messages()</code></dt><dd class="r"><code>["山田: こんにちは"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>leave("山田")</code> のあと <code>post("山田", "まだいる？")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "参加していません: 山田"</dd></div>
+        </dl>
+        <p>問15 は、新しい <code>SeatReservation</code> に、<code>reserve("A1", "山田")</code>、<code>reserve("A2", "山田")</code>、<code>reserve("B1", "佐藤")</code> の順に予約したあと、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>seatsOf("山田")</code></dt><dd class="r"><code>["A1", "A2"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>reserve("A1", "鈴木")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "予約済みです: A1"</dd></div>
+          <div><dt><code>cancel("A1")</code> のあと <code>seatsOf("山田")</code></dt><dd class="r"><code>["A2"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問16 は、新しい <code>TodoStore</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>add("a")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>add("b")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toggle(1)</code> のあと <code>remaining()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toggle(1)</code> のあと <code>remaining()</code></dt><dd class="r"><code>2</code></dd><dd class="c">2 回目で未完了に戻る</dd></div>
+          <div><dt><code>toggle(9)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "ToDo がありません: 9"</dd></div>
+        </dl>
+        <p>問17 は、新しい <code>LapTimer</code> に、<code>start(1000)</code> を呼んだあと、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>lap(1500)</code></dt><dd class="r"><code>500</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lap(1800)</code></dt><dd class="r"><code>300</code></dd><dd class="c">前回の 1500 からの差</dd></div>
+          <div><dt><code>laps()</code></dt><dd class="r"><code>[500, 300]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>問18 は、<code>new RateLimiter(2, 1000)</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>hit(0)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hit(100)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hit(200)</code></dt><dd class="r"><code>false</code></dd><dd class="c">-800 より後に、もう 2 回受け付けている</dd></div>
+          <div><dt><code>hit(1100)</code></dt><dd class="r"><code>true</code></dd><dd class="c">100 より後に受け付けたものはない。0 と 100 は数えない</dd></div>
+        </dl>
+        <p>問19 は、新しい <code>UndoCounter</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>increment()</code> を 2 回、<code>undo()</code> のあと <code>value()</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>undo()</code> を 2 回のあと <code>value()</code></dt><dd class="r"><code>0</code></dd><dd class="c">2 回目の undo は、取り消すものがない</dd></div>
+        </dl>
+        <p>問20 は、新しい <code>TagIndex</code> に、<code>tag("記事1", "TS")</code>、<code>tag("記事2", "TS")</code>、<code>tag("記事1", "React")</code>、<code>tag("記事1", "TS")</code> の順に付けたあとです。</p>
+        <dl class="eg">
+          <div><dt><code>itemsWith("TS")</code></dt><dd class="r"><code>["記事1", "記事2"]</code></dd><dd class="c">4 回目は、1 回目と同じ組なので付けない</dd></div>
+          <div><dt><code>tagsOf("記事1")</code></dt><dd class="r"><code>["TS", "React"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>tagsOf("記事3")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">タグがない</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.splice()</code><h4>配列から、位置を決めて要素を取り除く</h4></div>
+      <p><code>配列.splice(位置, 個数)</code> は、その位置から個数だけの要素を、配列から取り除きます。取り除いた要素は、新しい配列に入れて返します。元の配列そのものが変わります。<code>.slice()</code>（02章 q05 問3）は、元の配列を変えずに一部を取り出します。<code>.splice()</code> は、元の配列から抜き取ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 待っている人の列 waiting を作り、"佐藤" と "鈴木" と "高橋" を並べた配列を入れる
+const waiting = ["佐藤", "鈴木", "高橋"];
+// removed を作り、waiting の 1 番目から 1 つを取り除いたものを入れる
+const removed = waiting.splice(1, 1);
+// 結果: removed は ["鈴木"]、waiting は ["佐藤", "高橋"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>waiting</span>.splice(<span class="seg"><i>2</i>1</span>, <span class="seg"><i>3</i>1</span>)</pre>
+        <ol>
+          <li><span>要素を取り除く配列です。この配列そのものが変わるので、<code>readonly</code> の配列には使えません。</span></li>
+          <li><span>取り除き始める位置です。0 から数えます。</span></li>
+          <li><span>取り除く個数です。</span></li>
+        </ol>
+      </figure>
+      <p>取り除いた要素を 1 つだけ受け取りたいときは、配列の分割代入（02章 q06 問2）で、返った配列の最初を取り出します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文の列 orders を作り、"A-1" と "A-2" を並べた配列を入れる
+const orders = ["A-1", "A-2"];
+// orders の 0 番目から 1 つを取り除き、取り除いたものの最初を first に入れる
+const [first] = orders.splice(0, 1);
+// 結果: first は "A-1"、orders は ["A-2"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>["佐藤", "鈴木", "高橋"].splice(0, 2)</code></dt><dd class="r"><code>["佐藤", "鈴木"]</code></dd><dd class="c">元の配列は ["高橋"] になる</dd></div>
+        <div><dt><code>["佐藤", "鈴木", "高橋"].slice(0, 2)</code></dt><dd class="r"><code>["佐藤", "鈴木"]</code></dd><dd class="c">元の配列は変わらない</dd></div>
+        <div><dt><code>[].splice(0, 1)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">取り除くものがなければ、空の配列</dd></div>
+      </dl>
+      <p class="memo"><b>型</b>2 つめのサンプルの <code>first</code> の型は <code>string | undefined</code> です。配列が空なら、取り除くものがなく、<code>first</code> は <code>undefined</code> になるからです。使う前に、<code>undefined</code> でないことを確かめるか、<code>first?.length</code> のように <code>?.</code>（03章 q03 問1）で読みます。</p>
+      <p class="more"><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/splice">MDN「Array.prototype.splice()」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">found.count += 10</code><h4><code>.find()</code> で見つけた要素を、書き換える</h4></div>
+      <p><code>.find()</code>（05章 q10 問18）が返すのは、配列の中のオブジェクトそのものです。コピーではありません（02章 q03 問11）。そのため、見つけたオブジェクトのプロパティを書き換えると、配列の中のオブジェクトも変わります。見つからなければ <code>undefined</code> が返るので、先に確かめます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 Stock という型を作る。name は文字列、count は数値
+type Stock = { name: string; count: number };
+// 在庫の配列 stocks を作る。型は Stock の配列。2 つの在庫を入れる
+const stocks: Stock[] = [
+  { name: "ノート", count: 5 },
+  { name: "ペン", count: 0 },
+];
+// pen を作り、stocks の要素を 1 つずつ s として、s の name が "ペン" と等しい最初のもの（なければ undefined）を入れる
+const pen = stocks.find((s) =&gt; s.name === "ペン");
+// もし pen が undefined でないなら
+if (pen !== undefined) {
+  // pen の count に 10 を足す
+  pen.count += 10;
+}
+// 結果: stocks は [{ name: "ノート", count: 5 }, { name: "ペン", count: 10 }]</code></pre>
+      </div>
+      <p>クラスのフィールドの配列に使うと、配列の中の 1 件だけを書き換えられます。数を増やす、完了にする、貸出中にする、といった変更に使います。</p>
+      <p class="memo"><b>決まり</b>配列の中のオブジェクトを書き換えるには、そのプロパティに <code>readonly</code> が付いていないことが要ります。<code>readonly</code> のプロパティに入れ直すと、型エラーになります（02章 q02 問7）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>問1 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス NoteBook を作る
+export class NoteBook {
+  // 外から読めないフィールド notes を作り、空の文字列の配列を入れる
+  // メソッド add を作る。文字列の text を受け取り、数値を返す
+  //   this.notes の後ろに text をつなげる
+  //   this.notes の要素の数を返す
+  // メソッド get を作る。数値の id を受け取り、文字列か undefined を返す
+  //   this.notes の（id − 1）番目の要素を返す
+  // メソッド count を作る。数値を返す
+  //   this.notes の要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問1 コードへの直し方</span></summary><p>「外から読めないフィールド notes を作り、空の文字列の配列を入れる」は <code>private notes: string[] = [];</code> です。足した直後の要素の数が、そのメモの番号になります。メモの番号は 1 から、配列の番号は 0 から数えるので、<code>this.notes[id - 1]</code> で取り出します。この型は <code>string | undefined</code> なので、そのまま返せます。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問2 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Playlist を作る
+export class Playlist {
+  // 外から読めないフィールド songs を作り、空の文字列の配列を入れる
+  // 外から読めないフィールド position を作り、0 を入れる
+  // メソッド add を作る。文字列の song を受け取り、何も返さない
+  //   this.songs の後ろに song をつなげる
+  // メソッド next を作る。文字列か undefined を返す
+  //   もし this.songs の要素の数が 0 と等しいなら
+  //     undefined を返す
+  //   song を作り、this.songs の「this.position を this.songs の要素の数で割った余り」番目の要素を入れる
+  //   this.position を 1 増やす
+  //   song を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問2 コードへの直し方</span></summary><p><code>position</code> は、これまでに <code>next()</code> を呼んだ回数です。曲の数で割った余り（<code>%</code>、01章 q01 問3）にすると、0、1、0、1… とくり返す番号になります。曲が 0 のときに割り算をしないよう、先に <code>undefined</code> を返します。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問3 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス ShoppingCart を作る
+export class ShoppingCart {
+  // 外から読めないフィールド lines を作り、空の配列を入れる。型は { name: 文字列; price: 数値; quantity: 数値 } の配列
+  // メソッド add を作る。文字列の name と数値の price と数値の quantity（省略したら 1）を受け取り、何も返さない
+  //   line を作り、this.lines の要素を 1 つずつ l として、l の name が name と等しい最初のもの（なければ undefined）を入れる
+  //   もし line が undefined なら
+  //     this.lines の後ろに { name, price, quantity } をつなげる
+  //   そうでなければ
+  //     line の quantity に quantity を足す
+  // メソッド remove を作る。文字列の name を受け取り、何も返さない
+  //   this.lines に、this.lines の要素を 1 つずつ l として、l の name が name と等しくないものだけを集めた新しい配列を入れ直す
+  // メソッド total を作る。数値を返す
+  //   合計 sum を入れ直せる変数として作り、0 を入れる
+  //   this.lines から 1 つずつ line に取り出してくり返す
+  //     sum に line.price × line.quantity を足す
+  //   sum を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問3 コードへの直し方</span></summary><p>「省略したら 1」はデフォルト引数 <code>quantity = 1</code> です（05章 q04 問1）。同じ商品があるときは、<code>.find()</code> の項目のサンプルの <code>pen</code> と同じ形で、見つけた <code>line</code> の個数を増やします。<code>remove</code> は <code>.filter()</code>（02章 q04 問7）で作った新しい配列を、フィールドに入れ直します。入れ直すので、<code>lines</code> には <code>readonly</code> を付けません。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問4 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Library を作る
+export class Library {
+  // 外から読めないフィールド books を作り、空の配列を入れる。型は { title: 文字列; borrowed: boolean } の配列
+  // メソッド addBook を作る。文字列の title を受け取り、何も返さない
+  //   this.books の後ろに、title と、borrowed を false にしたオブジェクトをつなげる
+  // メソッド borrow を作る。文字列の title を受け取り、何も返さない
+  //   book を作り、this.books の要素を 1 つずつ b として、b の title が title と等しい最初のもの（なければ undefined）を入れる
+  //   もし book が undefined なら
+  //     「本がありません: ◯」というメッセージのエラーを投げる（◯ は title）
+  //   もし book の borrowed が true なら
+  //     「貸出中です: ◯」というメッセージのエラーを投げる（◯ は title）
+  //   book の borrowed に true を入れ直す
+  // メソッド giveBack を作る。文字列の title を受け取り、何も返さない
+  //   book を作り、this.books の要素を 1 つずつ b として、b の title が title と等しい最初のもの（なければ undefined）を入れる
+  //   もし book が undefined でないなら
+  //     book の borrowed に false を入れ直す
+  // メソッド available を作る。文字列の配列を返す
+  //   this.books の要素を 1 つずつ b として、b の borrowed が false のものだけを集め、それぞれを b の title に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問4 コードへの直し方</span></summary><p>本は、題名と「貸出中か」を持つオブジェクトにして、配列に入れます。<code>borrow</code> と <code>giveBack</code> は、<code>.find()</code> の項目のサンプルと同じ形で、見つけた本の <code>borrowed</code> を書き換えます。<code>borrowed</code> は <code>boolean</code> なので、<code>if (book.borrowed)</code> とそのまま条件に書けます。<code>available</code> は <code>.filter()</code> のあとに <code>.map()</code> を続けます。どちらも新しい配列を返すので、それがそのままコピーになります。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問5 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Scoreboard を作る
+export class Scoreboard {
+  // 外から読めないフィールド bests を作り、空のオブジェクトを入れる。型は、キーが名前の文字列、値が数値のインデックス型
+  // メソッド record を作る。文字列の name と数値の score を受け取り、何も返さない
+  //   current を作り、this.bests の name の値（なければ undefined）を入れる
+  //   もし current が undefined か、score が current より大きいなら
+  //     this.bests の name に score を入れる
+  // メソッド best を作る。文字列の name を受け取り、数値か undefined を返す
+  //   this.bests の name の値（なければ undefined）を返す
+  // メソッド top を作る。数値の n を受け取り、文字列の配列を返す
+  //   this.bests のキーと値の組の配列を、値の大きい順に並べ、0 番目から n 番目の前までを取り出し、それぞれを名前に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問5 コードへの直し方</span></summary><p>名前ごとの最高点は、インデックス型 <code>{ [name: string]: number }</code>（02章 q08 問1）で持ちます。<code>this.bests[name]</code> の型は <code>number | undefined</code> です。<code>top</code> は、<code>Object.entries()</code>（02章 q08 問10）で <code>[名前, 点数]</code> の組の配列にし、<code>.sort((a, b) =&gt; b[1] - a[1])</code> で点数の大きい順に並べます（05章 q10 問6）。続けて <code>.slice(0, n)</code>、<code>.map(([name]) =&gt; name)</code> をつなげます（02章 q06 問9）。<code>.sort()</code> は同じ点数の順を変えないので、先に記録した人が先のままです。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問6 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス EventCalendar を作る
+export class EventCalendar {
+  // 外から読めないフィールド events を作り、空のオブジェクトを入れる。型は、キーが日付の文字列、値が文字列の配列のインデックス型
+  // メソッド add を作る。文字列の date と文字列の title を受け取り、何も返さない
+  //   this.events の date に、this.events の date の値（なければ空の配列）の要素すべてと title をこの順に並べた新しい配列を入れる
+  // メソッド on を作る。文字列の date を受け取り、文字列の配列を返す
+  //   this.events の date の値（なければ空の配列）をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問6 コードへの直し方</span></summary><p>「◯ の値（なければ空の配列）」は <code>this.events[date] ?? []</code> です（02章 q02 問1）。<code>add</code> は <code>[...(this.events[date] ?? []), title]</code> のように、配列のスプレッド（02章 q05 問1）で新しい配列を作ります。<code>on</code> も同じく <code>[...( … )]</code> でコピーして返します。コピーしないと、テストが受け取った配列に <code>push</code> したとき、中の予定まで増えてしまいます。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問7 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス ParkingLot を作る
+export class ParkingLot {
+  // 外から読めないフィールド cars を作り、空の文字列の配列を入れる
+  // constructor を作る。数値の capacity を受け取り、外から読めず、入れ直せないフィールド capacity にする
+  // メソッド park を作る。文字列の car を受け取り、boolean を返す
+  //   もし this.cars の要素の数が this.capacity 以上なら
+  //     false を返す
+  //   this.cars の後ろに car をつなげる
+  //   true を返す
+  // メソッド leave を作る。文字列の car を受け取り、何も返さない
+  //   this.cars に、this.cars の要素を 1 つずつ c として、c が car と等しくないものだけを集めた新しい配列を入れ直す
+  // メソッド free を作る。数値を返す
+  //   this.capacity から this.cars の要素の数を引いた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問7 コードへの直し方</span></summary><p>constructor の引数に <code>private readonly</code> を付けると、外から見えず、書き換えもできないフィールドになります（06章 q02 問2）。constructor の中には何も書かないので、<code>{}</code> のままです。<code>leave</code> は、問3 の <code>remove</code> と同じ形です。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問8 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス PriorityQueue を作る
+export class PriorityQueue {
+  // 外から読めないフィールド tasks を作り、空の配列を入れる。型は { task: 文字列; priority: 数値 } の配列
+  // メソッド enqueue を作る。文字列の task と数値の priority を受け取り、何も返さない
+  //   this.tasks の後ろに { task, priority } をつなげる
+  // メソッド dequeue を作る。文字列か undefined を返す
+  //   いちばん大きい位置 bestIndex を入れ直せる変数として作り、-1 を入れる
+  //   this.tasks の番号と要素の組を 1 つずつ [i, entry] に取り出してくり返す
+  //     best を作り、this.tasks の bestIndex 番目の要素を入れる
+  //     もし best が undefined か、entry の priority が best の priority より大きいなら
+  //       bestIndex に i を入れ直す
+  //   this.tasks の bestIndex 番目から 1 つを取り除き、取り除いたものの最初を removed に入れる
+  //   removed の task（removed が undefined なら undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問8 コードへの直し方</span></summary><p>「番号と要素の組」は <code>.entries()</code> です（04章 q03 問9）。<code>bestIndex</code> が <code>-1</code> のとき、<code>this.tasks[-1]</code> は <code>undefined</code> なので、最初の要素がそのまま選ばれます。<code>&gt;</code> で比べると、同じ優先度のときは先に入れた方が残ります。取り出しは、<code>.splice()</code> の項目の 2 つめのサンプルと同じ形です。最後の行は <code>removed?.task</code> です（03章 q03 問1）。空のときは <code>.splice(-1, 1)</code> が空の配列を返すので、<code>undefined</code> になります。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問9 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Inbox を作る
+export class Inbox {
+  // 外から読めないフィールド messages を作り、空の配列を入れる。型は { from: 文字列; text: 文字列; read: boolean } の配列
+  // メソッド receive を作る。文字列の from と文字列の text を受け取り、何も返さない
+  //   this.messages の後ろに、from と text と、read を false にしたオブジェクトをつなげる
+  // メソッド unreadCount を作る。数値を返す
+  //   this.messages の要素を 1 つずつ m として、m の read が false のものだけを集めた新しい配列の、要素の数を返す
+  // メソッド read を作る。数値の index を受け取り、文字列を返す
+  //   message を作り、this.messages の index 番目の要素を入れる
+  //   もし message が undefined なら
+  //     "メッセージがありません" というメッセージのエラーを投げる
+  //   message の read に true を入れ直す
+  //   message.from と message.text を埋め込んだ「◯: ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問9 コードへの直し方</span></summary><p><code>this.messages[index]</code> の型は、オブジェクトか <code>undefined</code> です。<code>undefined</code> のときにエラーを投げると、その後ろでは <code>message</code> がオブジェクトに絞り込まれます。取り出したオブジェクトは配列の中のものそのものなので、<code>.find()</code> の項目と同じく、<code>read</code> を書き換えると配列の中も変わります。「read が false のもの」は <code>!m.read</code> です。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問10 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Gradebook を作る
+export class Gradebook {
+  // 外から読めないフィールド records を作り、空の配列を入れる。型は { student: 文字列; score: 数値 } の配列
+  // メソッド add を作る。文字列の student と数値の score を受け取り、何も返さない
+  //   this.records の後ろに { student, score } をつなげる
+  // メソッド average を作る。数値を返す
+  //   もし this.records の要素の数が 0 と等しいなら
+  //     0 を返す
+  //   合計 total を入れ直せる変数として作り、0 を入れる
+  //   this.records から 1 つずつ r に取り出してくり返す
+  //     total に r.score を足す
+  //   total を this.records の要素の数で割った数を返す
+  // メソッド passed を作る。数値の border を受け取り、文字列の配列を返す
+  //   this.records の要素を 1 つずつ r として、r の score が border 以上のものだけを集め、それぞれを r の student に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問10 コードへの直し方</span></summary><p>0 人のときに割り算をすると <code>NaN</code> になるので、先に 0 を返します。<code>{ student, score }</code> はプロパティの省略記法です（02章 q01 問3）。<code>passed</code> は、問4 の <code>available</code> と同じ形です。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問11 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス Elevator を作る
+export class Elevator {
+  // 外から読めないフィールド stops を作り、1 だけが入った数値の配列を入れる
+  // constructor を作る。数値の floors を受け取り、外から読めず、入れ直せないフィールド floors にする
+  // メソッド goTo を作る。数値の floor を受け取り、何も返さない
+  //   もし floor が 1 より小さいか、floor が this.floors より大きいなら
+  //     "その階はありません" というメッセージのエラーを投げる
+  //   this.stops の後ろに floor をつなげる
+  // メソッド current を作る。数値を返す
+  //   this.stops の（要素の数 − 1）番目の要素を返す。undefined なら 1 を返す
+  // メソッド history を作る。数値の配列を返す
+  //   this.stops をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問11 コードへの直し方</span></summary><p>止まった階を配列に記録しておくと、最後の要素が今の階になります。最後の要素は <code>this.stops[this.stops.length - 1]</code> です。型が <code>number | undefined</code> になるので、<code>?? 1</code> を付けます（02章 q02 問1）。コピーは <code>[...this.stops]</code> です（02章 q05 問1）。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問12 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス VotingBox を作る
+export class VotingBox {
+  // 外から読めないフィールド counts を作る。型は数値の配列
+  // constructor を作る。文字列の読み取り専用の配列 options を受け取り、外から読めず、入れ直せないフィールド options にする
+  //   this.counts に、options の要素を 1 つずつ 0 に変えた新しい配列を入れる
+  // メソッド vote を作る。文字列の option を受け取り、何も返さない
+  //   index を作り、this.options の中で option が何番目にあるか（なければ -1）を入れる
+  //   もし index が -1 と等しいなら
+  //     「選択肢にありません: ◯」というメッセージのエラーを投げる（◯ は option）
+  //   this.counts の index 番目に、this.counts の index 番目の値（なければ 0）に 1 を足した数を入れる
+  // メソッド winner を作る。文字列か undefined を返す
+  //   いちばん多い位置 best を入れ直せる変数として作り、-1 を入れる
+  //   いちばん多い票数 bestCount を入れ直せる変数として作り、0 を入れる
+  //   this.counts の番号と要素の組を 1 つずつ [i, count] に取り出してくり返す
+  //     もし count が bestCount より大きいなら
+  //       best に i を入れ直す
+  //       bestCount に count を入れ直す
+  //   this.options の best 番目の要素を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問12 コードへの直し方</span></summary><p>選択肢ごとの票数を、<code>options</code> と同じ並びの数値の配列で持ちます。初期値を constructor の中で入れるフィールドは、型注釈だけを書いて作ります（06章 q01 の応用の <code>count</code> と同じ形）。「options の要素を 1 つずつ 0 に変えた新しい配列」は <code>options.map(() =&gt; 0)</code> です。何番目かは <code>.indexOf()</code> です（02章 q04 問10）。<code>bestCount</code> を 0 から始め、<code>&gt;</code> で比べるので、票がなければ <code>best</code> は <code>-1</code> のまま、<code>this.options[-1]</code> の <code>undefined</code> が返ります。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問13 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス HistoryWallet を作る
+export class HistoryWallet {
+  // 外から読めないフィールド balance を作り、0 を入れる
+  // 外から読めないフィールド entries を作り、空の文字列の配列を入れる
+  // メソッド deposit を作る。数値の n を受け取り、数値を返す
+  //   this.balance に n を足す
+  //   this.entries の後ろに、n を埋め込んだ「+◯」の文字列をつなげる
+  //   this.balance を返す
+  // メソッド withdraw を作る。数値の n を受け取り、数値を返す
+  //   もし n が this.balance より大きいなら
+  //     "残高が足りません" というメッセージのエラーを投げる
+  //   this.balance から n を引く
+  //   this.entries の後ろに、n を埋め込んだ「-◯」の文字列をつなげる
+  //   this.balance を返す
+  // メソッド history を作る。文字列の配列を返す
+  //   this.entries をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問13 コードへの直し方</span></summary><p>エラーを投げると、その後ろの行は動きません。そのため、エラーになった出金は、残高も履歴も変わりません。<code>+</code> と <code>-</code> は、テンプレートリテラルの中にそのまま書きます。<code>`+${n}`</code> のようになります。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問14 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス ChatRoom を作る
+export class ChatRoom {
+  // 外から読めないフィールド members を作り、空の文字列の配列を入れる
+  // 外から読めないフィールド posts を作り、空の文字列の配列を入れる
+  // メソッド join を作る。文字列の name を受け取り、何も返さない
+  //   もし this.members に name が含まれないなら
+  //     this.members の後ろに name をつなげる
+  // メソッド leave を作る。文字列の name を受け取り、何も返さない
+  //   this.members に、this.members の要素を 1 つずつ m として、m が name と等しくないものだけを集めた新しい配列を入れ直す
+  // メソッド post を作る。文字列の name と文字列の text を受け取り、何も返さない
+  //   もし this.members に name が含まれないなら
+  //     「参加していません: ◯」というメッセージのエラーを投げる（◯ は name）
+  //   this.posts の後ろに、name と text を埋め込んだ「◯: ◯」の文字列をつなげる
+  // メソッド messages を作る。文字列の配列を返す
+  //   this.posts をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問14 コードへの直し方</span></summary><p>「含まれないなら」は <code>!this.members.includes(name)</code> です（02章 q04 問9）。<code>leave</code> は、問7 の <code>leave</code> と同じ形です。メソッドの <code>messages</code> とフィールドの <code>posts</code> は、名前を変えておきます。同じ名前のフィールドとメソッドは、1 つのクラスに書けません。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問15 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス SeatReservation を作る
+export class SeatReservation {
+  // 外から読めないフィールド reservations を作り、空の配列を入れる。型は { seat: 文字列; name: 文字列 } の配列
+  // メソッド reserve を作る。文字列の seat と文字列の name を受け取り、何も返さない
+  //   もし this.reservations の要素のどれかの seat が seat と等しいなら
+  //     「予約済みです: ◯」というメッセージのエラーを投げる（◯ は seat）
+  //   this.reservations の後ろに { seat, name } をつなげる
+  // メソッド cancel を作る。文字列の seat を受け取り、何も返さない
+  //   this.reservations に、this.reservations の要素を 1 つずつ r として、r の seat が seat と等しくないものだけを集めた新しい配列を入れ直す
+  // メソッド seatsOf を作る。文字列の name を受け取り、文字列の配列を返す
+  //   this.reservations の要素を 1 つずつ r として、r の name が name と等しいものだけを集め、それぞれを r の seat に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問15 コードへの直し方</span></summary><p>予約は、席と名前の組のオブジェクトにして、予約した順に配列に入れます。「要素のどれかの ◯ が ◯ と等しいなら」は <code>.some()</code> です（03章 q07 問9）。<code>cancel</code> は問3 の <code>remove</code>、<code>seatsOf</code> は問4 の <code>available</code> と同じ形です。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問16 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス TodoStore を作る
+export class TodoStore {
+  // 外から読めないフィールド todos を作り、空の配列を入れる。型は { id: 数値; title: 文字列; done: boolean } の配列
+  // メソッド add を作る。文字列の title を受け取り、数値を返す
+  //   id を作り、this.todos の要素の数に 1 を足した数を入れる
+  //   this.todos の後ろに、id と title と、done を false にしたオブジェクトをつなげる
+  //   id を返す
+  // メソッド toggle を作る。数値の id を受け取り、何も返さない
+  //   todo を作り、this.todos の要素を 1 つずつ t として、t の id が id と等しい最初のもの（なければ undefined）を入れる
+  //   もし todo が undefined なら
+  //     「ToDo がありません: ◯」というメッセージのエラーを投げる（◯ は id）
+  //   todo の done に、todo の done の反対を入れ直す
+  // メソッド remaining を作る。数値を返す
+  //   this.todos の要素を 1 つずつ t として、t の done が false のものだけを集めた新しい配列の、要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問16 コードへの直し方</span></summary><p><code>TodoStore</code> には消すメソッドがないので、要素の数に 1 を足した数を、次の id にできます。「done の反対」は <code>!todo.done</code> です（01章 q04 応用）。<code>.find()</code> の項目のサンプルと同じく、見つけた <code>todo</code> の <code>done</code> を書き換えます。この形は、★総合問題の <code>complete</code> でも使います。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問17 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス LapTimer を作る
+export class LapTimer {
+  // 外から読めないフィールド last を作り、0 を入れる
+  // 外から読めないフィールド records を作り、空の数値の配列を入れる
+  // メソッド start を作る。数値の t を受け取り、何も返さない
+  //   this.last に t を入れ直す
+  //   this.records に空の配列を入れ直す
+  // メソッド lap を作る。数値の t を受け取り、数値を返す
+  //   diff を作り、t から this.last を引いた数を入れる
+  //   this.last に t を入れ直す
+  //   this.records の後ろに diff をつなげる
+  //   diff を返す
+  // メソッド laps を作る。数値の配列を返す
+  //   this.records をコピーした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問17 コードへの直し方</span></summary><p><code>last</code> は「前回の時刻」です。<code>lap</code> では、差を計算してから <code>last</code> を入れ直します。順番を逆にすると、差が 0 になります。<code>start</code> で記録を空に戻すと、2 回目の計測でも前の記録が混ざりません。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問18 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス RateLimiter を作る
+export class RateLimiter {
+  // 外から読めないフィールド times を作り、空の数値の配列を入れる
+  // constructor を作る。数値の max と数値の windowMs を受け取り、どちらも 外から読めず、入れ直せないフィールドにする
+  // メソッド hit を作る。数値の time を受け取り、boolean を返す
+  //   this.times に、this.times の要素を 1 つずつ t として、t が「time - this.windowMs」より大きいものだけを集めた新しい配列を入れ直す
+  //   もし this.times の要素の数が this.max 以上なら
+  //     false を返す
+  //   this.times の後ろに time をつなげる
+  //   true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問18 コードへの直し方</span></summary><p><code>times</code> は、受け付けた時刻の記録です。<code>hit</code> のたびに、古くなった時刻を <code>.filter()</code> で捨ててから数えます。残った数が <code>max</code> に届いていたら受け付けません。受け付けなかった時刻は、記録に入れません。問題文の条件のとおり、比べるのは <code>&gt;</code> です。<code>time - windowMs</code> とちょうど同じ時刻は、数えません。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問19 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス UndoCounter を作る
+export class UndoCounter {
+  // 外から読めないフィールド count を作り、0 を入れる
+  // メソッド increment を作る。何も返さない
+  //   this.count を 1 増やす
+  // メソッド undo を作る。何も返さない
+  //   もし this.count が 0 より大きいなら
+  //     this.count を 1 減らす
+  // メソッド value を作る。数値を返す
+  //   this.count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問19 コードへの直し方</span></summary><p>このクラスで値を変えるのは <code>increment</code> だけです。そのため、値が 0 より大きいことが、取り消せる <code>increment</code> が残っていることと同じになります。「1 減らす」は <code>--</code> です（01章 q01 問7）。</p></details>
+
+      <details class="hint"><summary>ヒント 1<span>問20 日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス TagIndex を作る
+export class TagIndex {
+  // 外から読めないフィールド pairs を作り、空の配列を入れる。型は { item: 文字列; label: 文字列 } の配列
+  // メソッド tag を作る。文字列の item と文字列の label を受け取り、何も返さない
+  //   もし this.pairs の要素のどれかの item が item と等しく、label が label と等しいなら
+  //     何もせずに終わる
+  //   this.pairs の後ろに { item, label } をつなげる
+  // メソッド itemsWith を作る。文字列の label を受け取り、文字列の配列を返す
+  //   this.pairs の要素を 1 つずつ p として、p の label が label と等しいものだけを集め、それぞれを p の item に変えた新しい配列を返す
+  // メソッド tagsOf を作る。文字列の item を受け取り、文字列の配列を返す
+  //   this.pairs の要素を 1 つずつ p として、p の item が item と等しいものだけを集め、それぞれを p の label に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>問20 コードへの直し方</span></summary><p>タグは、<code>item</code> と <code>label</code> の組のオブジェクトにして、付けた順に配列に入れます。同じ組があるかは <code>.some()</code> の中で <code>&amp;&amp;</code> を使って調べます（01章 q02 問16）。「何もせずに終わる」は、値を付けない <code>return;</code> です。<code>itemsWith</code> と <code>tagsOf</code> は、問4 の <code>available</code> と同じ形で、比べるプロパティと取り出すプロパティが入れ替わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 -->
+  <section class="q" id="c06-q05-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">ToDoリスト</span>
+      <span class="q-new">新しく出てくる書き方：ほかのクラスのインスタンスをフィールドに持つ、<code>private</code> なメソッド、アロー関数でオブジェクトを返す <code>({ … })</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">import { Counter } from "./q01-class-basics";
+
+export type Todo = { readonly id: number; title: string; done: boolean };
+export type Filter = "all" | "active" | "done";
+
+export class TodoList {}</code></pre>
+      <p>ToDo を管理するクラス <code>TodoList</code> を書きます。型 <code>Todo</code> と <code>Filter</code> は定義済みです。ToDo の配列は <code>private</code> にして、外からは次のメソッドでしか変えられないようにします。</p>
+      <ol>
+        <li><code>add(title)</code>：ToDo を足して、足した ToDo を返します。<code>id</code> は 1、2、3… と順に振り、<code>done</code> は <code>false</code> です。<code>title</code> は前後の空白を取り除いて入れます。取り除いた結果が空の文字列なら、<code>"タイトルを入力してください"</code> というメッセージのエラーを投げます。</li>
+        <li><code>complete(id)</code>：その ToDo を完了（<code>done</code> を <code>true</code>）にします。何も返しません。見つからなければ、<code>"ToDo がありません: 99"</code> の形のメッセージのエラーを投げます。</li>
+        <li><code>remove(id)</code>：その ToDo を消します。何も返しません。見つからなければ、<code>complete</code> と同じエラーを投げます。</li>
+        <li><code>list(filter)</code>：ToDo の配列を返します。<code>filter</code> は省略でき、省略したら <code>"all"</code> です。<code>"active"</code> なら未完了だけ、<code>"done"</code> なら完了だけを返します。返すのはコピーにします。配列も、中の ToDo も、受け取った側が書き換えても、<code>TodoList</code> の中身が変わらないようにします。</li>
+        <li><code>count()</code>：すべて・未完了・完了の件数を <code>{ all, active, done }</code> のオブジェクトで返します。</li>
+      </ol>
+      <p>id は、q01 の応用問題で書いた <code>Counter</code> で振ります。<code>Counter</code> を <code>private</code> なフィールドに持ち、<code>increment()</code> の戻り値を id にします。<code>Counter</code> は、ファイルの先頭で読み込んであります。q01 が解けていないと、この問題のテストも通りません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>新しい <code>TodoList</code> に、上から順に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>add(" 買い物 ")</code></dt><dd class="r"><code>{ id: 1, title: "買い物", done: false }</code></dd><dd class="c">前後の空白を取り除く</dd></div>
+          <div><dt><code>add("掃除")</code></dt><dd class="r"><code>{ id: 2, title: "掃除", done: false }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p>別の新しい <code>TodoList</code> に呼びます。</p>
+        <dl class="eg">
+          <div><dt><code>add("   ")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "タイトルを入力してください"</dd></div>
+          <div><dt><code>count()</code></dt><dd class="r"><code>{ all: 0, active: 0, done: 0 }</code></dd><dd class="c">1 つもない</dd></div>
+        </dl>
+        <p>ここから先は、次の手順で作った <code>list</code> を使います。どのテストも、この手順で作り直した <code>list</code> から始めます。</p>
+        <pre><code class="language-typescript">const list = new TodoList();
+list.add("買い物");
+list.add("掃除");
+list.add("洗濯");
+list.complete(2);</code></pre>
+        <dl class="eg">
+          <div><dt><code>list.list()</code> のタイトル</dt><dd class="r"><code>["買い物", "掃除", "洗濯"]</code></dd><dd class="c">省略したら "all"</dd></div>
+          <div><dt><code>list.list("active")</code> の id</dt><dd class="r"><code>[1, 3]</code></dd><dd class="c">未完了だけ</dd></div>
+          <div><dt><code>list.list("done")</code> の id</dt><dd class="r"><code>[2]</code></dd><dd class="c">完了だけ</dd></div>
+          <div><dt><code>list.count()</code></dt><dd class="r"><code>{ all: 3, active: 2, done: 1 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>list.complete(99)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "ToDo がありません: 99"</dd></div>
+          <div><dt><code>list.remove(99)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">complete と同じメッセージ</dd></div>
+        </dl>
+        <p><code>list.remove(1)</code> を呼んだあとです。</p>
+        <dl class="eg">
+          <div><dt><code>list.list()</code> の id</dt><dd class="r"><code>[2, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>list.add("料理").id</code></dt><dd class="r"><code>4</code></dd><dd class="c">消しても、番号は戻らない</dd></div>
+        </dl>
+        <p><code>list.list()</code> で受け取った配列を <code>pop()</code> し、残った 0 番目の ToDo の <code>done</code> を <code>true</code> にしたあとです。</p>
+        <dl class="eg">
+          <div><dt><code>list.count()</code></dt><dd class="r"><code>{ all: 3, active: 2, done: 1 }</code></dd><dd class="c">配列も中の ToDo もコピーなので、変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>ToDo の配列が <code>private</code> で、外から見えないことを確かめます。メソッドの型は、<code>add</code> が <code>(title: string) =&gt; Todo</code>、<code>complete</code> と <code>remove</code> が <code>(id: number) =&gt; void</code>、<code>list</code> が <code>(filter?: Filter) =&gt; Todo[]</code>、<code>count</code> が <code>() =&gt; { all: number; active: number; done: number }</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">private readonly numbers = new Sequence();</code><h4>ほかのクラスのインスタンスを、フィールドに持つ</h4></div>
+      <p>フィールドの初期値には、<code>new</code> で作ったインスタンスも入れられます。こうすると、クラスの中で、ほかのクラスのメソッドを使えます。<code>readonly</code> は、フィールドに入れたインスタンスを入れ替えない、という意味です。インスタンスの中の値は、メソッドを呼ぶと変わります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス Sequence を作る
+class Sequence {
+  // 外から読めないフィールド last を作り、0 を入れる
+  private last = 0;
+
+  // メソッド next を作る。数値を返す
+  next(): number {
+    // this.last を 1 増やす
+    this.last++;
+    // this.last を返す
+    return this.last;
+  }
+}
+
+// クラス OrderBook を作る
+class OrderBook {
+  // 外から読めず、入れ直せないフィールド numbers を作り、新しい Sequence を入れる
+  private readonly numbers = new Sequence();
+
+  // メソッド newOrderId を作る。文字列を返す
+  newOrderId(): string {
+    // this.numbers の next を呼んだ結果を埋め込んだ「ORD-◯」の文字列を返す
+    return `ORD-${this.numbers.next()}`;
+  }
+}
+
+// book を作り、新しい OrderBook を入れる
+const book = new OrderBook();
+// first を作り、book の newOrderId を呼んだ結果を入れる
+const first = book.newOrderId();
+// second を作り、book の newOrderId を呼んだ結果を入れる
+const second = book.newOrderId();
+// 結果: first は "ORD-1"、second は "ORD-2"</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>OrderBook</code> を 2 つ作ると、<code>Sequence</code> も 2 つ作られます。番号は、<code>OrderBook</code> ごとに 1 から始まります。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">private find(id: number): Todo</code><h4>クラスの中だけで使うメソッド</h4></div>
+      <p><code>private</code> は、フィールドと同じくメソッドにも付けられます（06章 q01）。<code>private</code> なメソッドは、同じクラスのほかのメソッドから <code>this.メソッド名()</code> で呼べます。外からは呼べません。2 つ以上のメソッドで同じ手順を使うときに、その手順を 1 か所にまとめられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// クラス MemberList を作る
+class MemberList {
+  // 外から読めないフィールド names を作り、"佐藤" と "鈴木" を並べた配列を入れる
+  private names: string[] = ["佐藤", "鈴木"];
+
+  // メソッド greet を作る。数値の index を受け取り、文字列を返す
+  greet(index: number): string {
+    // this.nameAt に index を渡して呼んだ結果を埋め込んだ「こんにちは、◯さん」の文字列を返す
+    return `こんにちは、${this.nameAt(index)}さん`;
+  }
+
+  // 外から呼べないメソッド nameAt を作る。数値の index を受け取り、文字列を返す
+  private nameAt(index: number): string {
+    // name を作り、this.names の index 番目の要素を入れる
+    const name = this.names[index];
+    // もし name が undefined なら
+    if (name === undefined) {
+      // 「会員がいません: ◯」というメッセージのエラーを投げる（◯ は index）
+      throw new Error(`会員がいません: ${index}`);
+    }
+    // name を返す
+    return name;
+  }
+}
+
+// text を作り、新しい MemberList の greet に 1 を渡して呼んだ結果を入れる
+const text = new MemberList().greet(1);
+// 結果: text は "こんにちは、鈴木さん"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>外から呼ぶ</h5>
+          <pre><code class="language-typescript">new MemberList().nameAt(0);</code></pre>
+          <div class="verdict ng">✕ nameAt は private で、MemberList の中でしか使えない、という型エラーになります</div>
+        </div>
+        <div>
+          <h5>中から呼ぶ</h5>
+          <pre><code class="language-typescript">this.nameAt(index)</code></pre>
+          <div class="verdict ok">○ greet の中からは呼べます</div>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b>この問題では、<code>complete</code> と <code>remove</code> が「id で探して、なければエラーを投げる」を同じように使います。<code>private</code> なメソッドにまとめなくてもテストは通りますが、まとめると、メッセージを直すときに 1 か所で済みます。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">(m) =&gt; ({ ...m })</code><h4>アロー関数で、オブジェクトを返す</h4></div>
+      <p>式だけの本体のアロー関数（01章 q01 問20）でオブジェクトを返すときは、オブジェクトを <code>( )</code> で囲みます。<code>( )</code> がないと、<code>{</code> が関数の本体の始まりと読まれてしまうからです。<code>.map()</code> と組み合わせると、配列の中のオブジェクトを 1 つずつコピーした、新しい配列を作れます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員 Member という型を作る。name は文字列、points は数値
+type Member = { name: string; points: number };
+// 会員の配列 members を作る。型は Member の配列。2 人の会員を入れる
+const members: Member[] = [
+  { name: "佐藤", points: 120 },
+  { name: "鈴木", points: 40 },
+];
+// copies を作り、members の要素を 1 つずつ m として、m を写した新しいオブジェクトに変えた新しい配列を入れる
+const copies = members.map((m) =&gt; ({ ...m }));
+// head を作り、copies の 0 番目の要素を入れる
+const head = copies[0];
+// もし head が undefined でないなら
+if (head !== undefined) {
+  // head の points に 0 を入れ直す
+  head.points = 0;
+}
+// 結果: copies の 0 番目の points は 0、members の 0 番目の points は 120 のまま</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>( ) で囲まない</h5>
+          <pre><code class="language-typescript">members.map((m) =&gt; { ...m });</code></pre>
+          <div class="verdict ng">✕ { } が関数の本体と読まれ、書き方の誤りのエラーになります</div>
+        </div>
+        <div>
+          <h5>( ) で囲む</h5>
+          <pre><code class="language-typescript">members.map((m) =&gt; ({ ...m }));</code></pre>
+          <div class="verdict ok">○ 1 人ずつコピーした会員の、新しい配列になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>[...members]</code>（02章 q05 問1）は、配列だけをコピーします。中のオブジェクトは元と同じものなので、<code>copies[0].points</code> を書き換えると、<code>members</code> の会員も変わります。中のオブジェクトまでコピーするには、<code>{ ...m }</code>（02章 q03 問11）で 1 つずつ写します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// クラス TodoList を作る
+export class TodoList {
+  // 外から読めないフィールド todos を作り、空の配列を入れる。型は Todo の配列
+  // 外から読めず、入れ直せないフィールド ids を作り、新しい Counter を入れる
+
+  // メソッド add を作る。文字列の title を受け取り、Todo を返す
+  //   trimmed を作り、title の前後の空白を取り除いたものを入れる
+  //   もし trimmed が空の文字列と等しいなら
+  //     "タイトルを入力してください" というメッセージのエラーを投げる
+  //   todo を作る。型は Todo。id は this.ids の increment を呼んだ結果、title は trimmed、done は false
+  //   this.todos の後ろに todo をつなげる
+  //   todo を写した新しいオブジェクトを返す
+
+  // メソッド complete を作る。数値の id を受け取り、何も返さない
+  //   todo を作り、this.find に id を渡して呼んだ結果を入れる
+  //   todo の done に true を入れ直す
+
+  // メソッド remove を作る。数値の id を受け取り、何も返さない
+  //   this.find に id を渡して呼ぶ
+  //   this.todos に、this.todos の要素を 1 つずつ t として、t の id が id と等しくないものだけを集めた新しい配列を入れ直す
+
+  // メソッド list を作る。Filter の filter（省略したら "all"）を受け取り、Todo の配列を返す
+  //   picked を作り、this.todos の要素を 1 つずつ t として、次の関数が true を返すものだけを集めた新しい配列を入れる
+  //     もし filter が "active" と等しいなら
+  //       t の done の反対を返す
+  //     もし filter が "done" と等しいなら
+  //       t の done を返す
+  //     true を返す
+  //   picked の要素を 1 つずつ t として、t を写した新しいオブジェクトに変えた新しい配列を返す
+
+  // メソッド count を作る。{ all: 数値; active: 数値; done: 数値 } を返す
+  //   done を作り、this.todos の要素を 1 つずつ t として、t の done が true のものだけを集めた新しい配列の、要素の数を入れる
+  //   all に this.todos の要素の数、active に this.todos の要素の数から done を引いた数、done に done を入れたオブジェクトを返す
+
+  // 外から呼べないメソッド find を作る。数値の id を受け取り、Todo を返す
+  //   todo を作り、this.todos の要素を 1 つずつ t として、t の id が id と等しい最初のもの（なければ undefined）を入れる
+  //   もし todo が undefined なら
+  //     「ToDo がありません: ◯」というメッセージのエラーを投げる（◯ は id）
+  //   todo を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>ids</code> は、1 つ目の項目のサンプルの <code>numbers</code> と同じ形で、<code>new Counter()</code> を入れます。<code>increment()</code> は 1 増やした値を返すので、1、2、3… の id になります。消した ToDo があっても、<code>Counter</code> は戻らないので、id は重なりません。前後の空白を取り除くのは <code>.trim()</code> です（01章 q05 問9）。<code>complete</code> は、ドリル問16 の <code>toggle</code> と同じく、見つけた ToDo の <code>done</code> を書き換えます。探す手順は、2 つ目の項目の <code>private</code> なメソッド <code>find</code> にまとめます。<code>remove</code> で <code>this.find(id)</code> を呼ぶのは、見つからないときにエラーを投げるためです。<code>list</code> のデフォルト引数は <code>filter: Filter = "all"</code> です（05章 q04 問1）。<code>.filter()</code> には <code>{ }</code> のある関数を渡し、中で <code>if</code> と <code>return</code> を使います。最後は、3 つ目の項目と同じく <code>.map((t) =&gt; ({ ...t }))</code> で 1 つずつコピーします。<code>add</code> が返す ToDo も <code>{ ...todo }</code> のコピーにします。<code>count</code> の最後の行は、省略記法の <code>{ all: …, active: …, done }</code> で書けます（02章 q01 問3）。</p></details>
+    </div>
+  </section>
+</section>

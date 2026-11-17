@@ -1,0 +1,855 @@
+<section class="sec" id="c07-q02">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q02 keyof 型演算子</h2>
+    <p>型からキーの名前を取り出す <code>keyof</code> を使って、型と関数を 20 個書きます。型 <code>User</code>・<code>Product</code> と、定数 <code>SETTINGS</code>・<code>COLOR_CODES</code> は、ファイルに書いてあります。<code>keyof 型</code> と書くと、その型のプロパティ名を <code>|</code> でつないだユニオン型になります。定数から作るときは <code>keyof typeof 定数</code> と書きます。型を作る問題では、プロパティ名を手で書き並べずに、<code>keyof</code> を使います。関数の引数と戻り値には、型注釈を付けます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">型 UserKey を keyof User で作る</span>
+      <span class="q-new">新しく出てくる書き方：型に付ける <code>keyof 型</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+// ここに型 UserKey を書く</code></pre>
+      <p>型 <code>UserKey</code> を作り、<code>export</code> を付けます。<code>UserKey</code> は、<code>User</code> のプロパティ名のどれかを表す型です。<code>"id"</code> などを手で並べずに、<code>keyof</code> で作ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserKey</code> の型</dt><dd class="r"><code>"id" | "name" | "email" | "age"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">keyof Member</code><h4>型から、キーの名前のユニオン型を作る</h4></div>
+      <p><code>keyof</code> は、型からキーの名前を取り出す型演算子です。型演算子は、型から別の型を作る書き方です。オブジェクトの型の前に <code>keyof</code> を付けると、その型のキー（プロパティ名）を <code>|</code> でつないだユニオン型になります。03章 q07 問12 では、<code>keyof typeof 定数</code> の形を読みました。ここでは、型に直接付ける形から整理します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員 Member という型を作る。name は文字列、points は数値、active は真偽値
+type Member = { name: string; points: number; active: boolean };
+// MemberKey という型を作る。Member のキーのどれか
+type MemberKey = keyof Member;
+// 並べ替える項目 sortField を作る。型は MemberKey。"points" を入れる
+const sortField: MemberKey = "points";
+// 結果: MemberKey は "name" | "points" | "active"、sortField は "points"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type MemberKey = <span class="seg"><i>1</i>keyof</span> <span class="seg"><i>2</i>Member</span>;</pre>
+        <ol>
+          <li><span>後ろの型から、キーの名前を取り出します。</span></li>
+          <li><span>キーを取り出す元の型です。オブジェクトの型を書きます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>keyof Member</code></dt><dd class="r"><code>"name" | "points" | "active"</code></dd><dd class="c">キーのどれか</dd></div>
+        <div><dt><code>Member["points"]</code></dt><dd class="r"><code>number</code></dd><dd class="c">キーを 1 つ決めて取り出したプロパティの型</dd></div>
+        <div><dt><code>Member[keyof Member]</code></dt><dd class="r"><code>string | number | boolean</code></dd><dd class="c">キーのどれかで取り出したプロパティの型</dd></div>
+      </dl>
+      <p>表の 2 行目と 3 行目は、q01 で学んだインデックスアクセス型です（q01 問4、問8）。<code>[ ]</code> にキーを 1 つ書くと、そのプロパティの型になります。<code>keyof</code> で作ったユニオン型を書くと、それぞれのプロパティの型を <code>|</code> でつないだ型になります。</p>
+      <div class="cmp">
+        <div>
+          <h5>型に keyof を付ける</h5>
+          <pre><code class="language-typescript">// MemberKey という型を作る。Member のキーのどれか
+type MemberKey = keyof Member;</code></pre>
+          <div class="verdict ok">○ Member は型なので、そのまま keyof を付けられます</div>
+        </div>
+        <div>
+          <h5>定数に keyof だけを付ける</h5>
+          <pre><code class="language-typescript">// 定数 DEFAULT_MEMBER を作り、{ name: "ゲスト", points: 0, active: false } を入れる
+const DEFAULT_MEMBER = { name: "ゲスト", points: 0, active: false };
+// DefaultKey という型を作る。DEFAULT_MEMBER のキーのどれか
+type DefaultKey = keyof DEFAULT_MEMBER;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（'DEFAULT_MEMBER' refers to a value, but is being used as a type here. Did you mean 'typeof DEFAULT_MEMBER'?）</div>
+        </div>
+      </div>
+      <p><code>DEFAULT_MEMBER</code> のような定数は値です。<code>keyof</code> は型にしか付けられません。値からキーを取り出すときは、03章 q07 問12 と同じく、先に <code>typeof</code> で型にしてから <code>keyof</code> を付けます。</p>
+      <dl class="eg">
+        <div><dt><code>keyof Member</code></dt><dd class="r"><code>"name" | "points" | "active"</code></dd><dd class="c"><code>Member</code> は型</dd></div>
+        <div><dt><code>keyof typeof DEFAULT_MEMBER</code></dt><dd class="r"><code>"name" | "points" | "active"</code></dd><dd class="c"><code>DEFAULT_MEMBER</code> は値</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>sortField</code> に <code>"email"</code> を入れると、型の確認でエラーになります（Type '"email"' is not assignable to type 'keyof Member'）。<code>Member</code> にないキーだからです。</p>
+      <p class="memo"><b>コツ</b><code>Member</code> にプロパティを足すと、<code>MemberKey</code> にもそのキーが入ります。キーの名前を書くのは、型の 1 か所だけで済みます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/keyof-type-operator">サバイバルTypeScript「keyof型演算子」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+// UserKey という型を作る。User のキーのどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>MemberKey</code> の行と同じ形です。<code>=</code> の右に <code>keyof</code> と型の名前を書きます。前に <code>export</code> を付けます（02章 q01 応用）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">型 ProductKey を keyof Product で作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { code: string; price: number; stock: number };
+
+// ここに型 ProductKey を書く</code></pre>
+      <p>型 <code>ProductKey</code> を作り、<code>export</code> を付けます。<code>ProductKey</code> は、<code>Product</code> のプロパティ名のどれかを表す型です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ProductKey</code> の型</dt><dd class="r"><code>"code" | "price" | "stock"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type Product = { code: string; price: number; stock: number };
+
+// ProductKey という型を作る。Product のキーのどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、<code>keyof</code> の後ろの型が <code>Product</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">型 SettingKey を、定数 SETTINGS のキーとして作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const SETTINGS = { theme: "light", fontSize: 14, beta: false };
+
+// ここに型 SettingKey を書く</code></pre>
+      <p>定数 <code>SETTINGS</code> のキーのどれかを表す型 <code>SettingKey</code> を作り、<code>export</code> を付けます。<code>SETTINGS</code> は値なので、<code>keyof typeof SETTINGS</code> の形で作ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>SettingKey</code> の型</dt><dd class="r"><code>"theme" | "fontSize" | "beta"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export const SETTINGS = { theme: "light", fontSize: 14, beta: false };
+
+// SettingKey という型を作る。SETTINGS のキーのどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめの表の <code>keyof typeof DEFAULT_MEMBER</code> と同じ形です。03章 q07 問12 のサンプルの <code>Shipping</code> の行も同じ形です。<code>SETTINGS</code> には <code>as const</code> が付いていませんが、キーの名前は変わりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">型 ColorName を、定数 COLOR_CODES のキーとして作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const COLOR_CODES = { red: "#ff0000", green: "#00ff00", blue: "#0000ff" } as const;
+
+// ここに型 ColorName を書く</code></pre>
+      <p>定数 <code>COLOR_CODES</code> のキーのどれかを表す型 <code>ColorName</code> を作り、<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ColorName</code> の型</dt><dd class="r"><code>"red" | "green" | "blue"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export const COLOR_CODES = { red: "#ff0000", green: "#00ff00", blue: "#0000ff" } as const;
+
+// ColorName という型を作る。COLOR_CODES のキーのどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形で、定数の名前が <code>COLOR_CODES</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">型 UserOrProductKey を、User と Product のどちらかのプロパティ名として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export type Product = { code: string; price: number; stock: number };
+
+// ここに型 UserOrProductKey を書く</code></pre>
+      <p><code>User</code> のプロパティ名か、<code>Product</code> のプロパティ名のどれかを表す型 <code>UserOrProductKey</code> を作り、<code>export</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserOrProductKey</code> の型</dt><dd class="r"><code>"id" | "name" | "email" | "age" | "code" | "price" | "stock"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// UserOrProductKey という型を作る。User のキーのどれかか、Product のキーのどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯か◯」は、ユニオン型の <code>|</code> でつなぎます。問1 の形の <code>keyof User</code> と、問2 の形の <code>keyof Product</code> を <code>|</code> でつなぎます。<code>keyof</code> は、すぐ後ろの型だけに付きます。<code>keyof (User | Product)</code> とまとめて書くと、両方に共通するキーだけになります。<code>User</code> と <code>Product</code> には同じキーがないので、<code>never</code>（04章 q07 問1）になってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">型 UserValue を、User のすべてのプロパティの値の型のユニオン型として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+// ここに型 UserValue を書く</code></pre>
+      <p><code>User</code> のプロパティの値の型を、すべて <code>|</code> でつないだ型 <code>UserValue</code> を作り、<code>export</code> を付けます。<code>number</code> や <code>string</code> を手で並べずに、<code>keyof</code> を使って作ります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserValue</code> の型</dt><dd class="r"><code>string | number</code></dd><dd class="c">と同じ型であること。id と age は number、name と email は string</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+// UserValue という型を作る。User の、キーのどれかで取り出したプロパティの型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の表の <code>Member[keyof Member]</code> と同じ形です。q01 問8 の <code>(typeof ENDPOINTS)[keyof typeof ENDPOINTS]</code> も同じ形で、こちらは定数から作っていました。<code>User</code> は型なので、<code>typeof</code> は要りません。<code>number</code> と <code>string</code> が 2 つずつ出てきても、ユニオン型には 1 つずつしか残りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">user の key のプロパティを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export function userField() {}</code></pre>
+      <p><code>User</code> の値 <code>user</code> とキー <code>key</code> を受け取り、<code>user</code> のそのプロパティの値を返します。<code>key</code> の型は <code>keyof User</code>、戻り値の型は <code>string | number</code> です。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", email: "y@example.com", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>userField(user, "name")</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>userField(user, "age")</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code> と <code>"id" | "name" | "email" | "age"</code>、戻り値が <code>string | number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 userField を作る。User の user と、User のキーのどれかの key を受け取り、文字列か数値を返す
+export function userField() {
+  // user の key の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>key</code> の型注釈は <code>keyof User</code> と書きます。中身は、03章 q07 問12 のサンプルの <code>fee</code> の行と同じく、<code>[ ]</code> の中にキーの入った引数を書きます。<code>user[key]</code> の型は、問6 の <code>UserValue</code> と同じ <code>string | number</code> です。<code>keyof User</code> のキーはかならず <code>user</code> にあるので、<code>undefined</code> は付きません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">product の key のプロパティを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { code: string; price: number; stock: number };
+
+export function productField() {}</code></pre>
+      <p><code>Product</code> の値 <code>product</code> とキー <code>key</code> を受け取り、<code>product</code> のそのプロパティの値を返します。<code>key</code> の型は <code>keyof Product</code>、戻り値の型は <code>string | number</code> です。</p>
+      <p>テストの <code>product</code> は <code>{ code: "A1", price: 150, stock: 3 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>productField(product, "price")</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+          <div><dt><code>productField(product, "code")</code></dt><dd class="r"><code>"A1"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Product</code> と <code>"code" | "price" | "stock"</code>、戻り値が <code>string | number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 productField を作る。Product の product と、Product のキーのどれかの key を受け取り、文字列か数値を返す
+export function productField() {
+  // product の key の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形で、型が <code>Product</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">SETTINGS の key の値を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const SETTINGS = { theme: "light", fontSize: 14, beta: false };
+
+export function settingValue() {}</code></pre>
+      <p>キー <code>key</code> を受け取り、定数 <code>SETTINGS</code> のその値を返します。<code>key</code> の型は <code>keyof typeof SETTINGS</code>、戻り値の型は <code>string | number | boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>settingValue("fontSize")</code></dt><dd class="r"><code>14</code></dd><dd class="c"></dd></div>
+          <div><dt><code>settingValue("beta")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"theme" | "fontSize" | "beta"</code>、戻り値が <code>string | number | boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 settingValue を作る。SETTINGS のキーのどれかの key を受け取り、文字列か数値か真偽値を返す
+export function settingValue() {
+  // SETTINGS の key の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>key</code> の型注釈は、問3 と同じ <code>keyof typeof SETTINGS</code> です。中身は問7 と同じ形で、<code>[ ]</code> の前が定数の <code>SETTINGS</code> になります。<code>SETTINGS</code> には <code>as const</code> がないので、<code>theme</code> の型は <code>"light"</code> にならずに <code>string</code> です。取り出した値の型は <code>string | number | boolean</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">COLOR_CODES から色の番号を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const COLOR_CODES = { red: "#ff0000", green: "#00ff00", blue: "#0000ff" } as const;
+
+export function colorCode() {}</code></pre>
+      <p>色の名前を受け取り、定数 <code>COLOR_CODES</code> からその色の番号を返します。引数の型は <code>keyof typeof COLOR_CODES</code>、戻り値の型は <code>string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>colorCode("green")</code></dt><dd class="r"><code>"#00ff00"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"red" | "green" | "blue"</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 colorCode を作る。COLOR_CODES のキーのどれかの name を受け取り、文字列を返す
+export function colorCode() {
+  // COLOR_CODES の name の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形です。<code>COLOR_CODES</code> には <code>as const</code> があるので、取り出した値の型は <code>"#ff0000" | "#00ff00" | "#0000ff"</code> です。どれも文字列なので、<code>string</code> の戻り値にそのまま入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">User のプロパティ名を日本語にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export function fieldLabel() {}</code></pre>
+      <p><code>User</code> のプロパティ名を受け取り、日本語の名前を返します。<code>id</code> は <code>"ID"</code>、<code>name</code> は <code>"名前"</code>、<code>email</code> は <code>"メール"</code>、<code>age</code> は <code>"年齢"</code> です。<code>switch</code> で、4 つの場合をすべて書きます。引数の型は <code>keyof User</code>、戻り値の型は <code>string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fieldLabel("id")</code></dt><dd class="r"><code>"ID"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fieldLabel("email")</code></dt><dd class="r"><code>"メール"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fieldLabel("age")</code></dt><dd class="r"><code>"年齢"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"id" | "name" | "email" | "age"</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// 関数 fieldLabel を作る。User のキーのどれかの key を受け取り、文字列を返す
+export function fieldLabel() {
+  // key で場合を分ける
+  //   "id" の場合
+  //     "ID" を返す
+  //   "name" の場合
+  //     "名前" を返す
+  //   "email" の場合
+  //     "メール" を返す
+  //   "age" の場合
+  //     "年齢" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>03章 q04 問1 のサンプルの <code>deliveryFee</code> と同じ <code>switch</code> の形です。<code>switch</code> のかっこには <code>key</code> をそのまま書きます。<code>key</code> の型は 4 つのキーのどれかなので、4 つの <code>case</code> をすべて書けば、どれかの <code>case</code> でかならず <code>return</code> します。そのため <code>default</code> は要りません。1 つでも書き忘れると、型の確認でエラーになります（Function lacks ending return statement and return type does not include 'undefined'.）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">文字列が User のプロパティ名なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：キーの配列の型 <code>(keyof Member)[]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export function isUserKey() {}</code></pre>
+      <p>文字列 <code>text</code> を受け取り、<code>User</code> のプロパティ名のどれかなら <code>true</code>、違えば <code>false</code> を返します。戻り値の型は <code>text is keyof User</code> にして、型ガード関数（05章 q09 問1）にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isUserKey("email")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUserKey("password")</code></dt><dd class="r"><code>false</code></dd><dd class="c">User にない名前</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>true</code> を返したときに、<code>text</code> が <code>"id" | "name" | "email" | "age"</code> に絞り込まれる型ガード関数であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(keyof Member)[]</code><h4>キーの名前を並べた配列の型</h4></div>
+      <p>キーの名前を並べた配列の型は、<code>keyof Member</code> をかっこで囲み、後ろに <code>[]</code> を付けます。要素がユニオン型の配列を、かっこでまとめるのと同じです（03章 q03 問12）。<code>readonly</code> を付けると、読み取り専用の配列になります（02章 q04 問1）。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員 Member という型を作る。name は文字列、points は数値、active は真偽値
+type Member = { name: string; points: number; active: boolean };
+// 表に出す項目 columns を作る。型は Member のキーのどれかの読み取り専用の配列。"name"、"points" を並べた配列を入れる
+const columns: readonly (keyof Member)[] = ["name", "points"];
+// 結果: columns は ["name", "points"]</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>かっこで囲む</h5>
+          <pre><code class="language-typescript">const columns: (keyof Member)[] = ["name", "points"];</code></pre>
+          <div class="verdict ok">○ 要素が Member のキーのどれかの配列です</div>
+        </div>
+        <div>
+          <h5>かっこを付けない</h5>
+          <pre><code class="language-typescript">const columns: keyof Member[] = ["name", "points"];</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Type 'string[]' is not assignable to type 'keyof Member[]'.）</div>
+        </div>
+      </div>
+      <p>かっこがないと、<code>keyof</code> は後ろの <code>Member[]</code> 全体に付きます。<code>Member[]</code> は配列の型なので、<code>length</code> や <code>push</code> のような配列のプロパティ名と番号のどれか、という型になってしまいます。</p>
+      <p class="memo"><b>よくある間違い</b>かっこを付けずに <code>readonly keyof Member[]</code> と書くと、別のエラーも出ます（'readonly' type modifier is only permitted on array and tuple literal types.）。<code>readonly</code> は、<code>(keyof Member)[]</code> のような配列の型の前にだけ付けられます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isUserKey を作る。文字列 text を受け取り、text が User のキーのどれかか（true か false）を返す。戻り値の型は text is keyof User
+export function isUserKey() {
+  // キーの一覧 keys を作る。型は User のキーのどれかの読み取り専用の配列。"id"、"name"、"email"、"age" を並べた配列を入れる
+  // keys の要素のどれかが text と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は、型の確認のときだけに使われ、実行するときには残りません。そのため、<code>keyof User</code> からキーの一覧を値として取り出すことはできません。キーの一覧は、問12 のサンプルの <code>columns</code> と同じ形で、配列として自分で書きます。型を <code>readonly (keyof User)[]</code> にしておくと、<code>User</code> にない名前を書いたときに型の確認で分かります。「要素のどれかが等しいか」は <code>.some()</code>（03章 q07 問9）で、q01 問17 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">keys に並べたプロパティの値を、その順に並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export function valuesOf() {}</code></pre>
+      <p><code>User</code> の値 <code>user</code> と、キーを並べた配列 <code>keys</code> を受け取ります。<code>keys</code> に並べたプロパティの値を、その順に並べた配列を返します。<code>keys</code> の型は <code>readonly (keyof User)[]</code> です。</p>
+      <p>テストの <code>user</code> は <code>{ id: 1, name: "山田", email: "y@example.com", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>valuesOf(user, ["name", "age"])</code></dt><dd class="r"><code>["山田", 30]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>valuesOf(user, [])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">キーがなければ空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code> と <code>readonly ("id" | "name" | "email" | "age")[]</code>、戻り値が <code>(string | number)[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 valuesOf を作る。User の user と、User のキーのどれかの読み取り専用の配列 keys を受け取り、文字列か数値の配列を返す
+export function valuesOf() {
+  // keys の要素を 1 つずつ key として、user の key の値に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>keys</code> の型注釈は、問12 のサンプルの <code>columns</code> と同じ形です。中身は <code>.map()</code>（02章 q04 問5）で、それぞれの <code>key</code> を問7 と同じ形の値に変えます。値の型は <code>string | number</code> なので、戻り値の型は <code>(string | number)[]</code> と、かっこでまとめて書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 人の User で値が違うプロパティ名を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export function differentKeys() {}</code></pre>
+      <p>2 人の <code>User</code>（<code>a</code> と <code>b</code>）を受け取り、値が違うプロパティ名を並べた配列を返します。並びは <code>id</code>、<code>name</code>、<code>email</code>、<code>age</code> の順です。</p>
+      <p>テストの <code>a</code> は <code>{ id: 1, name: "山田", email: "y@example.com", age: 30 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>differentKeys(a, { ...a, age: 31 })</code></dt><dd class="r"><code>["age"]</code></dd><dd class="c">age だけが違う</dd></div>
+          <div><dt><code>differentKeys(a, a)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">違うところがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User</code> と <code>User</code>、戻り値が <code>("id" | "name" | "email" | "age")[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 differentKeys を作る。User の a と User の b を受け取り、User のキーのどれかの配列を返す
+export function differentKeys() {
+  // キーの一覧 keys を作る。型は User のキーのどれかの配列。"id"、"name"、"email"、"age" を並べた配列を入れる
+  // keys の要素を 1 つずつ key として、a の key の値と b の key の値が等しくないものだけを集めた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>キーの一覧は、問12 と同じく配列で書きます。型は <code>(keyof User)[]</code> です。中身は <code>.filter()</code>（02章 q04 問7）で、<code>!==</code> で比べて違うキーだけを残します。一覧を <code>id</code>、<code>name</code>、<code>email</code>、<code>age</code> の順に書けば、結果もその順になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">User の配列を、key の小さい順に並べた新しい配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export function sortByNumberKey() {}</code></pre>
+      <p><code>User</code> の配列 <code>users</code> とキー <code>key</code> を受け取り、<code>key</code> のプロパティの値が小さい順に並べた新しい配列を返します。値が同じなら、元の順のままにします。<code>key</code> の型は <code>"id" | "age"</code> で、値が数値のプロパティだけに絞ってあります。引数の配列は <code>readonly User[]</code> です。</p>
+      <p>テストの <code>users</code> は、<code>{ id: 2, name: "佐藤", email: "s@example.com", age: 41 }</code> と <code>{ id: 1, name: "山田", email: "y@example.com", age: 30 }</code> の順に並んだ配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sortByNumberKey(users, "age")</code> の名前</dt><dd class="r"><code>["山田", "佐藤"]</code></dd><dd class="c">30 歳、41 歳の順</dd></div>
+          <div><dt><code>sortByNumberKey(users, "id")</code> の id</dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly User[]</code> と <code>"id" | "age"</code>、戻り値が <code>User[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sortByNumberKey を作る。User の読み取り専用の配列 users と、"id" か "age" の key を受け取り、User の配列を返す
+export function sortByNumberKey() {
+  // users をコピーした配列を、a の key の値から b の key の値を引いた数で比べ、小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q05 問8 のサンプルの <code>light</code> の行と同じ形です。比べ方の関数の中で、<code>a</code> と <code>b</code> そのものの代わりに、それぞれの <code>key</code> の値を引き算します。<code>key</code> の型が <code>"id" | "age"</code> なので、取り出した値の型は <code>number</code> になり、引き算ができます。<code>key</code> を <code>keyof User</code> にすると、値が <code>string | number</code> になり、型の確認でエラーになります（The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.）。<code>.sort()</code> は、比べた数が 0 のとき順番を変えないので、同じ値は元の順に残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">オブジェクトのキーの数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>object</code> 型</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function keyCount() {}</code></pre>
+      <p>オブジェクトを 1 つ受け取り、キーの数を返します。引数の型は <code>object</code>、戻り値の型は <code>number</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>keyCount({ a: 1, b: 2 })</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>keyCount({})</code></dt><dd class="r"><code>0</code></dd><dd class="c">空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>object</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">object</code><h4>どんなオブジェクトでも入る型</h4></div>
+      <p><code>object</code> は、オブジェクトならどれでも入る型です。プロパティが何かは決めません。配列もオブジェクトの一種なので入ります。数値・文字列・真偽値や、<code>null</code>・<code>undefined</code> は入りません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 order を作る。型は object。{ id: 1, total: 3000 } を入れる
+const order: object = { id: 1, total: 3000 };
+// 在庫の一覧 stocks を作る。型は object。[5, 0, 12] を入れる
+const stocks: object = [5, 0, 12];
+// 結果: order も stocks も、object 型の変数に入る</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>{ id: 1, total: 3000 }</code></dt><dd class="r">入る</dd><dd class="c">オブジェクト</dd></div>
+        <div><dt><code>[5, 0, 12]</code></dt><dd class="r">入る</dd><dd class="c">配列もオブジェクトの一種</dd></div>
+        <div><dt><code>500</code></dt><dd class="r">入らない</dd><dd class="c">Type 'number' is not assignable to type 'object'.</dd></div>
+        <div><dt><code>null</code></dt><dd class="r">入らない</dd><dd class="c">Type 'null' is not assignable to type 'object'.</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>プロパティを取り出す</h5>
+          <pre><code class="language-typescript">const total = order.total;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Property 'total' does not exist on type 'object'.）</div>
+        </div>
+        <div>
+          <h5>キーを並べる</h5>
+          <pre><code class="language-typescript">// names を作り、order のキーを並べた配列を入れる
+const names = Object.keys(order);
+// 結果: names は ["id", "total"]</code></pre>
+          <div class="verdict ok">○ Object.keys() は object 型の値に使えます</div>
+        </div>
+      </div>
+      <p><code>object</code> 型からは、どんなプロパティがあるかが分かりません。そのため、<code>order.total</code> のようにプロパティを取り出すと、型の確認でエラーになります。キーを並べる <code>Object.keys()</code>（02章 q08 問4）や、プロパティを持つかを調べる <code>in</code>（04章 q05 問16）は使えます。</p>
+      <p class="memo"><b>よくある疑問</b>型の名前が <code>Object</code> のように大文字で始まるものもありますが、ここで使うのは小文字の <code>object</code> です。</p>
+      <p class="more">サバイバルTypeScript「object型」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 keyCount を作る。object 型の obj を受け取り、数値を返す
+export function keyCount() {
+  // obj のキーを並べた配列の要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問16 の表の <code>names</code> の行と同じく、<code>Object.keys()</code> でキーを並べた配列を作ります。その配列の <code>.length</code> が、キーの数です。02章 q08 問4 と同じ形で、引数の型だけが <code>object</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">obj に key のプロパティがあれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasOwnKey() {}</code></pre>
+      <p>オブジェクト <code>obj</code> と文字列 <code>key</code> を受け取ります。<code>obj</code> が <code>key</code> という名前のプロパティを持っていれば <code>true</code>、なければ <code>false</code> を返します。<code>key in obj</code> の形を使います。引数の型は <code>object</code> と <code>string</code>、戻り値の型は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasOwnKey({ a: 1 }, "a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasOwnKey({ a: 1 }, "b")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>object</code> と <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasOwnKey を作る。object 型の obj と文字列 key を受け取り、true か false を返す
+export function hasOwnKey() {
+  // obj が key という名前のプロパティを持つか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q05 問16 の <code>in</code> 演算子です。左に調べる名前、右にオブジェクトを書きます。04章では <code>unknown</code> の値を調べたので、先に <code>typeof</code> と <code>null</code> の確かめが要りました。<code>obj</code> の型は <code>object</code> なので、そのまま <code>in</code> を使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">product の keys に並べたプロパティを "code=A1, price=150" の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { code: string; price: number; stock: number };
+
+export function productText() {}</code></pre>
+      <p><code>Product</code> の値 <code>product</code> と、キーを並べた配列 <code>keys</code> を受け取ります。<code>keys</code> の順に「キー=値」の文字列を作り、<code>", "</code> でつないで返します。<code>keys</code> の型は <code>readonly (keyof Product)[]</code> です。</p>
+      <p>テストの <code>product</code> は <code>{ code: "A1", price: 150, stock: 3 }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>productText(product, ["code", "price"])</code></dt><dd class="r"><code>"code=A1, price=150"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Product</code> と <code>readonly ("code" | "price" | "stock")[]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 productText を作る。Product の product と、Product のキーのどれかの読み取り専用の配列 keys を受け取り、文字列を返す
+export function productText() {
+  // keys の要素を 1 つずつ key として、key と product の key の値を埋め込んだ「◯=◯」の文字列に変えた配列を、", " でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じく <code>.map()</code> で、それぞれの <code>key</code> をテンプレートリテラル（01章 q01 問3）の文字列に変えます。できた配列を <code>.join(", ")</code>（02章 q04 問11）でつなぎます。<code>product[key]</code> の型は <code>string | number</code> ですが、テンプレートリテラルにそのまま埋め込めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">型 UserLabels と定数 USER_LABELS を作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>Record&lt;キー, 値&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+// ここに型 UserLabels と定数 USER_LABELS を書く</code></pre>
+      <p>型 <code>UserLabels</code> と定数 <code>USER_LABELS</code> を作り、どちらにも <code>export</code> を付けます。</p>
+      <ol>
+        <li><code>UserLabels</code>：<code>User</code> のプロパティ名をすべてキーにして、値をどれも文字列にしたオブジェクトの型です。<code>Record&lt;keyof User, string&gt;</code> で作ります。</li>
+        <li><code>USER_LABELS</code>：型を <code>UserLabels</code> にした定数です。<code>id</code> は <code>"ID"</code>、<code>name</code> は <code>"名前"</code>、<code>email</code> は <code>"メール"</code>、<code>age</code> は <code>"年齢"</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserLabels</code> の型</dt><dd class="r"><code>{ id: string; name: string; email: string; age: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>USER_LABELS.email</code></dt><dd class="r"><code>"メール"</code></dd><dd class="c"></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Record&lt;keyof Member, string&gt;</code><h4>キーと値の型から、オブジェクトの型を作る</h4></div>
+      <p><code>Record</code> は、TypeScript に最初から用意されている型です。<code>&lt; &gt;</code> の中に、キーの型と値の型を <code>,</code> で区切って渡すと、オブジェクトの型ができます。<code>&lt; &gt;</code> で型を渡す形は、q01 問12 の <code>ReturnType&lt;typeof makeItem&gt;</code> と同じです。キーに <code>keyof</code> で作ったユニオン型を渡すと、そのキーをすべて持つオブジェクトの型になります。ここでは、まねて書ければ十分。くわしくは 07章 q05。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員 Member という型を作る。name は文字列、points は数値
+type Member = { name: string; points: number };
+// MemberHeaders という型を作る。Member のキーをキーに、文字列を値にしたオブジェクトの型
+type MemberHeaders = Record&lt;keyof Member, string&gt;;
+// 見出し headers を作る。型は MemberHeaders。{ name: "氏名", points: "ポイント" } を入れる
+const headers: MemberHeaders = { name: "氏名", points: "ポイント" };
+// 結果: MemberHeaders は { name: string; points: string }、headers.points は "ポイント"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type MemberHeaders = Record&lt;<span class="seg"><i>1</i>keyof Member</span>, <span class="seg"><i>2</i>string</span>&gt;;</pre>
+        <ol>
+          <li><span>キーの型です。<code>"name" | "points"</code> のユニオン型なので、キーは <code>name</code> と <code>points</code> の 2 つになります。</span></li>
+          <li><span>値の型です。どのキーの値も、この型になります。</span></li>
+        </ol>
+      </figure>
+      <p>キーには、リテラル型のユニオン型をそのまま書くこともできます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// ShippingFees という型を作る。"standard" と "express" をキーに、数値を値にしたオブジェクトの型
+type ShippingFees = Record&lt;"standard" | "express", number&gt;;
+// 送料 fees を作る。型は ShippingFees。{ standard: 500, express: 1200 } を入れる
+const fees: ShippingFees = { standard: 500, express: 1200 };
+// 結果: ShippingFees は { standard: number; express: number }、fees.express は 1200</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Record&lt;keyof Member, string&gt;</code></dt><dd class="r"><code>{ name: string; points: string }</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Record&lt;"standard" | "express", number&gt;</code></dt><dd class="r"><code>{ standard: number; express: number }</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Record&lt;string, number&gt;</code></dt><dd class="r"><code>{ [x: string]: number }</code></dd><dd class="c">02章 q08 問1 のインデックス型と同じ</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>キーをすべて書く</h5>
+          <pre><code class="language-typescript">const headers: MemberHeaders = { name: "氏名", points: "ポイント" };</code></pre>
+          <div class="verdict ok">○ name と points の両方があります</div>
+        </div>
+        <div>
+          <h5>キーが足りない</h5>
+          <pre><code class="language-typescript">const headers: MemberHeaders = { name: "氏名" };</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Property 'points' is missing in type '{ name: string; }' but required in type 'MemberHeaders'.）</div>
+        </div>
+      </div>
+      <p class="memo"><b>コツ</b>キーをユニオン型で決めた <code>Record</code> では、キーを 1 つでも書き忘れると型の確認で分かります。<code>Member</code> にプロパティを足したときも、<code>headers</code> に見出しを書き足すのを忘れません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/utility-types/record">サバイバルTypeScript「Record&lt;Keys, Type&gt;」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+// UserLabels という型を作る。User のキーをキーに、文字列を値にしたオブジェクトの型。ほかのファイルから使えるようにする
+
+// 定数 USER_LABELS を作る。型は UserLabels。{ id: "ID", name: "名前", email: "メール", age: "年齢" } を入れる。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問19 の 1 つめのサンプルの <code>MemberHeaders</code> と <code>headers</code> の 2 行と同じ形です。<code>Member</code> が <code>User</code> になります。どちらの行にも、前に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">Product の配列の、key のプロパティの合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { code: string; price: number; stock: number };
+
+export function totalStock() {}</code></pre>
+      <p><code>Product</code> の配列 <code>products</code> とキー <code>key</code> を受け取り、すべての商品の <code>key</code> のプロパティを足した合計を返します。<code>key</code> の型は <code>"price" | "stock"</code> です。引数の配列は <code>readonly Product[]</code> です。</p>
+      <p>テストの <code>products</code> は、<code>{ code: "A1", price: 150, stock: 3 }</code> と <code>{ code: "B2", price: 80, stock: 5 }</code> の 2 つです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>totalStock(products, "stock")</code></dt><dd class="r"><code>8</code></dd><dd class="c">3 + 5</dd></div>
+          <div><dt><code>totalStock(products, "price")</code></dt><dd class="r"><code>230</code></dd><dd class="c">150 + 80</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Product[]</code> と <code>"price" | "stock"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// 関数 totalStock を作る。Product の読み取り専用の配列 products と、"price" か "stock" の key を受け取り、数値を返す
+export function totalStock() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // products から 1 つずつ product に取り出してくり返す
+  //   total に product の key の値を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q01 問5 の合計と同じく、<code>let</code> と <code>+=</code> で足していきます。1 つずつ取り出すのは <code>for-of</code>（01章 q01 問9）です。<code>key</code> の型が <code>"price" | "stock"</code> なので、問15 と同じく <code>product[key]</code> の型は <code>number</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c07-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">User のキーで値を取り出し、並べ替える</span>
+      <span class="q-new">新しく出てくる書き方：<code>.localeCompare()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; email: string; age: number };
+
+export type UserKey = unknown;
+
+export function getField() {}
+
+export function fieldsText() {}
+
+export function sortUsers() {}
+
+export function isUserKey() {}</code></pre>
+      <p><code>User</code> のキーを使う型と関数を、次の 5 つ書きます。</p>
+      <ol>
+        <li><code>UserKey</code>：<code>unknown</code> を書き換えて、<code>keyof</code> で作ります。<code>"id" | "name" | "email" | "age"</code> になります。</li>
+        <li><code>getField(user, key)</code>：<code>key</code> の型は <code>UserKey</code> です。<code>user</code> のそのプロパティの値を返します。戻り値の型は <code>string | number</code> です。</li>
+        <li><code>fieldsText(user, keys)</code>：<code>keys</code> の型は <code>readonly UserKey[]</code> です。<code>"name=山田, age=30"</code> の形にして返します。</li>
+        <li><code>sortUsers(users, key)</code>：<code>key</code> のプロパティの値で、小さい順に並べた新しい配列を返します。文字列のプロパティは辞書順にします。同じ値なら元の順のままです。引数の配列は <code>readonly User[]</code> で、元の配列は変えません。</li>
+        <li><code>isUserKey(text)</code>：<code>text</code> が <code>UserKey</code> のどれかなら <code>true</code> を返します。戻り値の型は <code>text is UserKey</code> です。</li>
+      </ol>
+      <p>テストの <code>users</code> は、<code>{ id: 2, name: "佐藤", email: "sato@example.com", age: 41 }</code>、<code>{ id: 1, name: "山田", email: "yamada@example.com", age: 30 }</code>、<code>{ id: 3, name: "鈴木", email: "suzuki@example.com", age: 30 }</code> の 3 人をこの順に並べた配列です。<code>sato</code> は 1 人目、<code>yamada</code> は 2 人目です。<code>sample</code> は、ほかの <code>User</code> の値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserKey</code> の型</dt><dd class="r"><code>"id" | "name" | "email" | "age"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>getField(sato, "name")</code></dt><dd class="r"><code>"佐藤"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>getField(sato, "age")</code></dt><dd class="r"><code>41</code></dd><dd class="c"></dd></div>
+          <div><dt><code>getField(sample, "password")</code></dt><dd class="r">型の確認でエラーになる</dd><dd class="c">User にない名前は渡せない</dd></div>
+          <div><dt><code>fieldsText(yamada, ["name", "age"])</code></dt><dd class="r"><code>"name=山田, age=30"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fieldsText(yamada, [])</code></dt><dd class="r"><code>""</code></dd><dd class="c">キーがなければ空の文字列</dd></div>
+          <div><dt><code>sortUsers(users, "age")</code> の名前</dt><dd class="r"><code>["山田", "鈴木", "佐藤"]</code></dd><dd class="c">山田と鈴木は同じ 30 歳なので、元の順</dd></div>
+          <div><dt><code>sortUsers(users, "id")</code> の id</dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sortUsers(users, "email")</code> の名前</dt><dd class="r"><code>["佐藤", "鈴木", "山田"]</code></dd><dd class="c">sato、suzuki、yamada の辞書順</dd></div>
+          <div><dt><code>sortUsers(users, "id")</code> を呼んだあとの <code>users</code> の id</dt><dd class="r"><code>[2, 1, 3]</code></dd><dd class="c">元の配列は変えない</dd></div>
+          <div><dt><code>isUserKey("email")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUserKey("password")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>getField</code> は引数が <code>User</code> と <code>UserKey</code>、戻り値が <code>string | number</code> であることを確かめます。<code>fieldsText</code> は引数が <code>User</code> と <code>readonly UserKey[]</code>、戻り値が <code>string</code> です。<code>sortUsers</code> は引数が <code>readonly User[]</code> と <code>UserKey</code>、戻り値が <code>User[]</code> です。<code>isUserKey</code> は引数が <code>string</code> で、<code>UserKey</code> に絞り込む型ガード関数であることを確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.localeCompare()</code><h4>文字列を辞書順で比べる</h4></div>
+      <p>文字列の <code>.localeCompare()</code> は、かっこの中の文字列と辞書順で比べて、数を返します。前の文字列のほうが先ならマイナスの数、後ならプラスの数、同じなら <code>0</code> です。この数の符号は、<code>.sort()</code> の比べ方の関数が返す数と同じ意味です（02章 q05 問8）。そのため、文字列を並べる比べ方の関数にそのまま使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 店舗 shops を作り、"osaka"、"tokyo"、"nagoya" を並べた配列を入れる
+const shops = ["osaka", "tokyo", "nagoya"];
+// sorted を作り、shops をコピーした配列を、a と b を localeCompare で比べた順に並べたものを入れる
+const sorted = [...shops].sort((a, b) =&gt; a.localeCompare(b));
+// 結果: sorted は ["nagoya", "osaka", "tokyo"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"apple".localeCompare("banana")</code></dt><dd class="r"><code>-1</code></dd><dd class="c">apple が先</dd></div>
+        <div><dt><code>"banana".localeCompare("apple")</code></dt><dd class="r"><code>1</code></dd><dd class="c">banana が後</dd></div>
+        <div><dt><code>"apple".localeCompare("apple")</code></dt><dd class="r"><code>0</code></dd><dd class="c">同じ</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>文字列どうしは引き算できません。<code>(a, b) =&gt; a - b</code> は数値の配列だけに使います。文字列の配列を比べ方の関数で並べるときは、<code>.localeCompare()</code> を使います。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。<code>sortUsers</code> の 2 段目の字下げは、比べ方の関数の <code>{ }</code> の中です。</p><pre><code class="language-typescript">// UserKey という型を作る。User のキーのどれか。ほかのファイルから使えるようにする
+export type UserKey = unknown;
+
+// 関数 getField を作る。User の user と、UserKey の key を受け取り、文字列か数値を返す
+export function getField() {
+  // user の key の値を返す
+}
+
+// 関数 fieldsText を作る。User の user と、UserKey の読み取り専用の配列 keys を受け取り、文字列を返す
+export function fieldsText() {
+  // keys の要素を 1 つずつ key として、key と user の key の値を埋め込んだ「◯=◯」の文字列に変えた配列を、", " でつないだ文字列を返す
+}
+
+// 関数 sortUsers を作る。User の読み取り専用の配列 users と、UserKey の key を受け取り、User の配列を返す
+export function sortUsers() {
+  // users をコピーした配列を、次のように a と b を比べた順に並べたものを返す
+  //   x を作り、a の key の値を入れる
+  //   y を作り、b の key の値を入れる
+  //   もし x の型が数値で、y の型が数値なら
+  //     x から y を引いた数を返す
+  //   x を文字列にしたものと、y を文字列にしたものを localeCompare で比べた数を返す
+}
+
+// 関数 isUserKey を作る。文字列 text を受け取り、text が UserKey のどれかか（true か false）を返す。戻り値の型は text is UserKey
+export function isUserKey() {
+  // キーの一覧 keys を作る。型は UserKey の読み取り専用の配列。"id"、"name"、"email"、"age" を並べた配列を入れる
+  // keys の要素のどれかが text と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>UserKey</code> は問1、<code>getField</code> は問7、<code>fieldsText</code> は問18、<code>isUserKey</code> は問12 と同じ形です。<code>sortUsers</code> は、比べ方の関数を <code>{ }</code> のある本体のアロー関数（01章 q01 問20）で書きます。<code>x</code> と <code>y</code> の型は、どちらも <code>string | number</code> です。<code>typeof</code>（03章 q01 問3）で両方が数値と分かったときだけ、引き算ができます。<code>if</code> の後ろでは、<code>x</code> と <code>y</code> の型は <code>string | number</code> のままです。そこで <code>String()</code>（01章 q01 問12）で文字列にしてから、応用のサンプルと同じく <code>.localeCompare()</code> で比べます。同じ値なら 0 になり、元の順に残ります。</p></details>
+    </div>
+  </section>
+</section>

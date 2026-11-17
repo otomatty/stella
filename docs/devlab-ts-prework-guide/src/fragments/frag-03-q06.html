@@ -1,0 +1,877 @@
+<section class="sec" id="c03-q06">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q06 インターセクション型</h2>
+    <p>小さな型を <code>&amp;</code> でつないで使う問題を 20 問解きます。<code>Named &amp; Aged</code> のように <code>&amp;</code> でつないだ型を、インターセクション型と呼びます。つないだ型のプロパティを、すべて持つ型です。<code>Named</code>、<code>Aged</code>、<code>Priced</code>、<code>Timestamped</code>、<code>Identified</code> の 5 つの型は、ファイルにもう書いてあります。問1〜13 は、引数や戻り値に <code>Named &amp; Aged</code> のような型をそのまま書きます。問14〜20 は、インターセクション型に <code>type</code> で名前を付けて export し、その型を使って関数を書きます。引数と戻り値には型注釈を付けます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q06-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">「山田（30）」を返す</span>
+      <span class="q-new">新しく出てくる書き方：インターセクション型 <code>A &amp; B</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Aged = { age: number };
+
+export function introduce() {}</code></pre>
+      <p><code>name</code> と <code>age</code> を両方持つオブジェクトを受け取り、<code>"山田（30）"</code> の形の文字列を返します。引数の型は <code>Named &amp; Aged</code>、戻り値は文字列です。かっこは全角の「（」と「）」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>introduce({ name: "山田", age: 30 })</code></dt><dd class="r"><code>"山田（30）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Named &amp; Aged</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">A &amp; B</code><h4>2 つの型を合わせる</h4></div>
+      <p>オブジェクトの型を <code>&amp;</code> でつなぐと、両方のプロパティをすべて持つ型になります。この型をインターセクション型と呼びます。小さな型を組み合わせて使えるので、同じプロパティを何度も書かずに済みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Coded という型を作る。code は文字列
+type Coded = { code: string };
+// Stocked という型を作る。stock は数値
+type Stocked = { stock: number };
+// 関数 stockLabel を作る。Coded と Stocked を合わせた型の item を受け取り、文字列を返す
+function stockLabel(item: Coded &amp; Stocked): string {
+  // item の code と item の stock を埋め込んだ「◯：在庫◯個」の文字列を返す
+  return `${item.code}：在庫${item.stock}個`;
+}
+// 結果: stockLabel({ code: "A-01", stock: 12 }) は "A-01：在庫12個"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>item: <span class="seg"><i>1</i>Coded</span> <span class="seg c"><i>2</i>&amp;</span> <span class="seg"><i>3</i>Stocked</span></pre>
+        <ol>
+          <li><span>1 つ目の型です。<code>code</code> を持ちます。</span></li>
+          <li><span>型どうしをつなぐ <code>&amp;</code> です。「どちらのプロパティも持つ」という意味です。</span></li>
+          <li><span>2 つ目の型です。<code>stock</code> を持ちます。<code>item</code> は <code>code</code> と <code>stock</code> の両方を使えます。</span></li>
+        </ol>
+      </figure>
+      <p>戻り値の型にも書けます。<code>code</code> と <code>stock</code> を両方持つオブジェクトを返せば、<code>Coded &amp; Stocked</code> になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 makeStock を作る。文字列 code と数値 stock を受け取り、Coded と Stocked を合わせた型のオブジェクトを返す
+function makeStock(code: string, stock: number): Coded &amp; Stocked {
+  // code と stock を持つオブジェクトを返す
+  return { code, stock };
+}
+// 結果: makeStock("B-02", 0) は { code: "B-02", stock: 0 }</code></pre>
+      </div>
+      <p>3 つ以上の型も、<code>Coded &amp; Stocked &amp; Shelved</code> のように <code>&amp;</code> を続けてつなげます。どの値が入るかを、ユニオン型の <code>|</code>（03章 q01）と比べると、違いが分かります。</p>
+      <dl class="eg">
+        <div><dt><code>{ code: "A-01", stock: 12 }</code> を <code>Coded &amp; Stocked</code> に</dt><dd class="r">入れられる</dd><dd class="c">両方のプロパティがある</dd></div>
+        <div><dt><code>{ code: "A-01" }</code> を <code>Coded &amp; Stocked</code> に</dt><dd class="r">型のエラー</dd><dd class="c">stock がない</dd></div>
+        <div><dt><code>{ code: "A-01" }</code> を <code>Coded | Stocked</code> に</dt><dd class="r">入れられる</dd><dd class="c">ユニオン型は、どちらか一方でよい</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>同じ名前のプロパティを、違う型でつなぐとどうなるでしょうか。<code>{ id: string } &amp; { id: number }</code> の <code>id</code> は、文字列でも数値でもある値になります。そんな値はないので、<code>id</code> の型は <code>never</code>（入る値が 1 つもない型）になり、どんな値も入れられません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/intersection">サバイバルTypeScript「インターセクション型」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 introduce を作る。Named と Aged を合わせた型の person を受け取り、文字列を返す
+export function introduce() {
+  // person の name と person の age を埋め込んだ「◯（◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>stockLabel</code> と同じ形です。「Named と Aged を合わせた型」は <code>Named &amp; Aged</code> です。かっこの中に <code>person: Named &amp; Aged</code> と書きます。全角のかっこは、テンプレートリテラルの中にそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q06-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">name と age から Named &amp; Aged を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Aged = { age: number };
+
+export function makePerson() {}</code></pre>
+      <p>名前（文字列）と年齢（数値）をこの順に受け取り、<code>name</code> と <code>age</code> を持つオブジェクトを返します。戻り値の型は <code>Named &amp; Aged</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makePerson("山田", 30)</code></dt><dd class="r"><code>{ name: "山田", age: 30 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>Named &amp; Aged</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makePerson を作る。文字列 name と数値 age を受け取り、Named と Aged を合わせた型のオブジェクトを返す
+export function makePerson() {
+  // name と age を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つ目のサンプルの <code>makeStock</code> と同じ形です。戻り値の型に <code>Named &amp; Aged</code> を書き、省略記法で <code>{ name, age }</code> を返します（02章 q01 問3）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q06-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">Named に id を足した Named &amp; Identified を返す</span>
+      <span class="q-new">新しく出てくる書き方：スプレッド構文でプロパティを足す <code>{ ...x, id }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Identified = { id: number };
+
+export function withId() {}</code></pre>
+      <p><code>Named</code> のオブジェクトと、番号（数値）を受け取ります。受け取ったオブジェクトのプロパティに <code>id</code> を足した、新しいオブジェクトを返します。戻り値の型は <code>Named &amp; Identified</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withId({ name: "山田" }, 3)</code></dt><dd class="r"><code>{ name: "山田", id: 3 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Named</code> と <code>number</code>、戻り値が <code>Named &amp; Identified</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ ...x, id }</code><h4>プロパティを写して、新しいプロパティを足す</h4></div>
+      <p>スプレッド構文（02章 q02 問8）の後ろに、元のオブジェクトにないプロパティを書くと、そのプロパティが加わります。元の型と、足したプロパティの型を合わせたものが、できたオブジェクトの型です。そのため、戻り値をインターセクション型で書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Coded という型を作る。code は文字列
+type Coded = { code: string };
+// Stocked という型を作る。stock は数値
+type Stocked = { stock: number };
+// 関数 withStock を作る。Coded の item と数値 stock を受け取り、Coded と Stocked を合わせた型のオブジェクトを返す
+function withStock(item: Coded, stock: number): Coded &amp; Stocked {
+  // item を広げて、stock を stock にしたものを返す
+  return { ...item, stock };
+}
+// 結果: withStock({ code: "A-01" }, 12) は { code: "A-01", stock: 12 }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>return { <span class="seg"><i>1</i>...item</span>, <span class="seg"><i>2</i>stock</span> };</pre>
+        <ol>
+          <li><span><code>item</code> のプロパティ（<code>code</code>）をすべて写します。</span></li>
+          <li><span><code>stock: stock</code> の省略記法です（02章 q01 問3）。<code>item</code> にない <code>stock</code> が加わります。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある間違い</b>受け取った <code>item</code> の型は <code>Coded</code> なので、<code>item.stock = stock</code> と書くと型のエラーになります。<code>Coded</code> に <code>stock</code> はないからです。新しいオブジェクトを作って返します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withId を作る。Named の x と数値 id を受け取り、Named と Identified を合わせた型のオブジェクトを返す
+export function withId() {
+  // x を広げて、id を id にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>withStock</code> と同じ形です。引数の名前を <code>id</code> にすると、省略記法で <code>{ ...x, id }</code> と書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q06-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">Named に createdAt を足した Named &amp; Timestamped を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Timestamped = { createdAt: Date };
+
+export function stamp() {}</code></pre>
+      <p><code>Named</code> のオブジェクトと、日時（<code>Date</code>、03章 q03 問20）を受け取ります。受け取ったオブジェクトのプロパティに <code>createdAt</code> を足した、新しいオブジェクトを返します。戻り値の型は <code>Named &amp; Timestamped</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>at</code> に <code>new Date("2026-12-01T09:00:00Z")</code>（2026年12月1日 9時 UTC の日時）を使います。</p>
+        <dl class="eg">
+          <div><dt><code>stamp({ name: "メモ" }, at)</code></dt><dd class="r"><code>{ name: "メモ", createdAt: at }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Named</code> と <code>Date</code>、戻り値が <code>Named &amp; Timestamped</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 stamp を作る。Named の x と Date の createdAt を受け取り、Named と Timestamped を合わせた型のオブジェクトを返す
+export function stamp() {
+  // x を広げて、createdAt を createdAt にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じ形です。日時の引数の型は <code>Date</code> です。引数の名前を <code>createdAt</code> にすると、省略記法が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q06-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">「りんご 150円」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Priced = { price: number };
+
+export function priceTag() {}</code></pre>
+      <p><code>name</code> と <code>price</code> を両方持つオブジェクトを受け取り、<code>"りんご 150円"</code> の形の文字列を返します。名前と値段の間は半角スペースです。引数の型は <code>Named &amp; Priced</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceTag({ name: "りんご", price: 150 })</code></dt><dd class="r"><code>"りんご 150円"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Named &amp; Priced</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priceTag を作る。Named と Priced を合わせた型の item を受け取り、文字列を返す
+export function priceTag() {
+  // item の name と item の price を埋め込んだ「◯ ◯円」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>stockLabel</code> と同じ形です。引数の型は <code>Named &amp; Priced</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q06-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">price が limit 以下なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Priced = { price: number };
+
+export function isCheap() {}</code></pre>
+      <p><code>Named &amp; Priced</code> のオブジェクトと、上限の値段 <code>limit</code>（数値）を受け取ります。<code>price</code> が <code>limit</code> 以下なら <code>true</code>、そうでなければ <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isCheap({ name: "りんご", price: 150 }, 200)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isCheap({ name: "メロン", price: 1000 }, 200)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Named &amp; Priced</code> と <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isCheap を作る。Named と Priced を合わせた型の item と数値 limit を受け取り、true か false を返す
+export function isCheap() {
+  // item の price が limit 以下かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「以下」は <code>&lt;=</code> です。比べた結果がそのまま <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q06-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">name と price から Named &amp; Priced を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Priced = { price: number };
+
+export function makeItem() {}</code></pre>
+      <p>名前（文字列）と値段（数値）をこの順に受け取り、<code>name</code> と <code>price</code> を持つオブジェクトを返します。戻り値の型は <code>Named &amp; Priced</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeItem("りんご", 150)</code></dt><dd class="r"><code>{ name: "りんご", price: 150 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>Named &amp; Priced</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeItem を作る。文字列 name と数値 price を受け取り、Named と Priced を合わせた型のオブジェクトを返す
+export function makeItem() {
+  // name と price を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。戻り値の型が <code>Named &amp; Priced</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q06-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">「#3 山田」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Identified = { id: number };
+
+export function idLabel() {}</code></pre>
+      <p><code>id</code> と <code>name</code> を両方持つオブジェクトを受け取り、<code>"#3 山田"</code> の形の文字列を返します。<code>#</code> のすぐ後ろに番号を書き、名前との間は半角スペースです。引数の型は <code>Named &amp; Identified</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>idLabel({ id: 3, name: "山田" })</code></dt><dd class="r"><code>"#3 山田"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Named &amp; Identified</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 idLabel を作る。Named と Identified を合わせた型の x を受け取り、文字列を返す
+export function idLabel() {
+  // x の id と x の name を埋め込んだ「#◯ ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。<code>#</code> は、テンプレートリテラルの中にそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q06-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">age を 1 増やした、新しい Named &amp; Aged を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Aged = { age: number };
+
+export function olderByOne() {}</code></pre>
+      <p><code>Named &amp; Aged</code> のオブジェクトを受け取り、<code>age</code> を 1 増やした新しいオブジェクトを返します。受け取ったオブジェクトは変えません。引数と戻り値の型は、どちらも <code>Named &amp; Aged</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>olderByOne({ name: "山田", age: 30 })</code></dt><dd class="r"><code>{ name: "山田", age: 31 }</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの、元のオブジェクトの <code>age</code></dt><dd class="r"><code>30</code></dd><dd class="c">元は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数と戻り値が、どちらも <code>Named &amp; Aged</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 olderByOne を作る。Named と Aged を合わせた型の person を受け取り、Named と Aged を合わせた型のオブジェクトを返す
+export function olderByOne() {
+  // person を広げて、age を「person の age に 1 を足した数」にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q02 問8 のサンプルの <code>upgrade</code> と同じ形です。<code>{ ...person, age: ◯ }</code> の ◯ に <code>person.age + 1</code> を書きます。<code>person.age++</code> と書くと、元のオブジェクトまで変わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q06-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">createdAt を「2026-12-01」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Timestamped = { createdAt: Date };
+
+export type Identified = { id: number };
+
+export function createdDate() {}</code></pre>
+      <p><code>id</code> と <code>createdAt</code> を両方持つオブジェクトを受け取り、<code>createdAt</code> の日付を <code>"2026-12-01"</code> の形の文字列にして返します。<code>.toISOString()</code>（03章 q03 問20）の結果の、先頭の 10 文字です。引数の型は <code>Identified &amp; Timestamped</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>createdDate({ id: 1, createdAt: new Date("2026-12-01T09:00:00Z") })</code></dt><dd class="r"><code>"2026-12-01"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Identified &amp; Timestamped</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 createdDate を作る。Identified と Timestamped を合わせた型の x を受け取り、文字列を返す
+export function createdDate() {
+  // x の createdAt を ISO 形式の文字列にし、0 文字目から 10 文字目の前までを取り出したものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>テストの日時に <code>.toISOString()</code> を呼ぶと <code>"2026-12-01T09:00:00.000Z"</code> になります。続けて <code>.slice(0, 10)</code> を呼びます（01章 q02 問10）。メソッドを左から順につなげる形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q06-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">name、age、id から Named &amp; Aged &amp; Identified を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Aged = { age: number };
+
+export type Identified = { id: number };
+
+export function makeMember() {}</code></pre>
+      <p>名前（文字列）、年齢（数値）、番号（数値）をこの順に受け取り、<code>name</code>、<code>age</code>、<code>id</code> を持つオブジェクトを返します。戻り値の型は、3 つをつないだ <code>Named &amp; Aged &amp; Identified</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makeMember("山田", 30, 1)</code></dt><dd class="r"><code>{ name: "山田", age: 30, id: 1 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>・<code>number</code>・<code>number</code>、戻り値が <code>Named &amp; Aged &amp; Identified</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makeMember を作る。文字列 name と数値 age と数値 id を受け取り、Named と Aged と Identified を合わせた型のオブジェクトを返す
+export function makeMember() {
+  // name と age と id を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形です。3 つの型は <code>&amp;</code> を続けてつなぎます（問1 の項目）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q06-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">price の合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：型をかっこでまとめる <code>readonly (A &amp; B)[]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Priced = { price: number };
+
+export function totalOf() {}</code></pre>
+      <p><code>Named &amp; Priced</code> のオブジェクトの配列を受け取り、<code>price</code> の合計を返します。配列が空なら <code>0</code> です。引数の型は <code>readonly (Named &amp; Priced)[]</code>、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>totalOf([{ name: "りんご", price: 150 }, { name: "みかん", price: 80 }])</code></dt><dd class="r"><code>230</code></dd><dd class="c">150 + 80</dd></div>
+          <div><dt><code>totalOf([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (Named &amp; Priced)[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(A &amp; B)[]</code><h4>インターセクション型の配列</h4></div>
+      <p>インターセクション型の配列は、<code>&amp;</code> でつないだところをかっこで囲んでから <code>[]</code> を付けます。読み取り専用にするときは、その前に <code>readonly</code>（02章 q04 問1）を付けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Coded という型を作る。code は文字列
+type Coded = { code: string };
+// Stocked という型を作る。stock は数値
+type Stocked = { stock: number };
+// 関数 soldOutCount を作る。Coded と Stocked を合わせた型の読み取り専用の配列 items を受け取り、数値を返す
+function soldOutCount(items: readonly (Coded &amp; Stocked)[]): number {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  let count = 0;
+  // items から 1 つずつ item に取り出してくり返す
+  for (const item of items) {
+    // もし item の stock が 0 と等しいなら
+    if (item.stock === 0) {
+      // count を 1 増やす
+      count++;
+    }
+  }
+  // count を返す
+  return count;
+}
+// 結果: soldOutCount([{ code: "A-01", stock: 12 }, { code: "B-02", stock: 0 }]) は 1</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>(Coded &amp; Stocked)</span><span class="seg c"><i>3</i>[]</span></pre>
+        <ol>
+          <li><span>配列を読み取り専用にします。</span></li>
+          <li><span>要素の型です。かっこで囲んで、<code>Coded &amp; Stocked</code> を 1 つの型にまとめます。</span></li>
+          <li><span>「その型の配列」を表す <code>[]</code> です。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>かっこあり</h5>
+          <pre><code class="language-typescript">readonly (Coded &amp; Stocked)[]</code></pre>
+          <div class="verdict ok">○ 「Coded と Stocked を合わせた型」の配列になります</div>
+        </div>
+        <div>
+          <h5>かっこなし</h5>
+          <pre><code class="language-typescript">readonly Coded &amp; Stocked[]</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>かっこがないと、<code>[]</code> は後ろの <code>Stocked</code> だけに付きます。<code>Coded &amp; Stocked[]</code> は「Coded と、Stocked の配列を合わせた型」という別の型です。<code>readonly</code> まで付けると「'readonly' type modifier is only permitted on array and tuple literal types.」という型のエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 totalOf を作る。Named と Priced を合わせた型の読み取り専用の配列 items を受け取り、数値を返す
+export function totalOf() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   total に item の price を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、問12 のサンプルの <code>soldOutCount</code> と同じ形で <code>readonly (Named &amp; Priced)[]</code> です。「total に item の price を足す」は <code>+=</code> です（01章 q01 問5）。空の配列なら 1 回もくり返さないので、最初に入れた <code>0</code> がそのまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q06-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">いちばん年上の人の name を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Aged = { age: number };
+
+export function oldestName() {}</code></pre>
+      <p><code>Named &amp; Aged</code> のオブジェクトの配列を受け取り、<code>age</code> がいちばん大きい人の <code>name</code> を返します。同じ年齢の人が複数いれば、先に出てきた人です。空の配列なら、エラーを投げます。引数の型は <code>readonly (Named &amp; Aged)[]</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>oldestName([{ name: "山田", age: 30 }, { name: "佐藤", age: 45 }])</code></dt><dd class="r"><code>"佐藤"</code></dd><dd class="c">45 のほうが大きい</dd></div>
+          <div><dt><code>oldestName([])</code></dt><dd class="r">Error を投げる</dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (Named &amp; Aged)[]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 oldestName を作る。Named と Aged を合わせた型の読み取り専用の配列 people を受け取り、文字列を返す
+export function oldestName() {
+  // people の先頭を first に、残りをまとめて rest に取り出す
+  // もし first が undefined と等しいなら
+  //   "配列が空です" というメッセージのエラーを投げる
+  // いちばん年上の人 oldest を入れ直せる変数として作り、first を入れる
+  // rest から 1 つずつ person に取り出してくり返す
+  //   もし person の age が oldest の age より大きいなら
+  //     oldest に person を入れ直す
+  // oldest の name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q07 問18 の <code>cheapestName</code> と同じ形で、比べる向きだけが逆です。引数の型は問12 と同じく、かっこでまとめます。「より大きい」は <code>&gt;</code> です。<code>&gt;=</code> にすると、同じ年齢のときに後の人へ入れ替わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q06-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">型 Product を定義して「#1 りんご 150円」を返す</span>
+      <span class="q-new">新しく出てくる書き方：インターセクション型に名前を付ける <code>type C = A &amp; B</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Priced = { price: number };
+
+export type Identified = { id: number };
+
+// ここに型 Product と関数 productText を書く</code></pre>
+      <p>ここからは、型と関数の両方を自分で書きます。<code>Named</code>、<code>Priced</code>、<code>Identified</code> の 3 つをつないだ型に <code>Product</code> という名前を付け、export します。次に、<code>Product</code> を受け取って <code>"#1 りんご 150円"</code> の形の文字列を返す関数 <code>productText</code> を書きます。こちらも export します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>productText({ id: 1, name: "りんご", price: 150 })</code></dt><dd class="r"><code>"#1 りんご 150円"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Product</code> が <code>Named &amp; Priced &amp; Identified</code> と同じ型であることを確かめます。<code>productText</code> は引数が <code>Product</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">type C = A &amp; B</code><h4>インターセクション型に名前を付ける</h4></div>
+      <p>型エイリアス <code>type</code>（02章 q01 応用）の <code>=</code> の右に、インターセクション型を書けます。何度も使う組み合わせに名前を付けておくと、関数の型注釈が短くなります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Coded という型を作る。code は文字列
+type Coded = { code: string };
+// Stocked という型を作る。stock は数値
+type Stocked = { stock: number };
+// StockItem という型を作る。Coded と Stocked を合わせた型
+type StockItem = Coded &amp; Stocked;
+// 関数 isSoldOut を作る。StockItem の item を受け取り、true か false を返す
+function isSoldOut(item: StockItem): boolean {
+  // item の stock が 0 と等しいかどうか（true か false）を返す
+  return item.stock === 0;
+}
+// 結果: isSoldOut({ code: "B-02", stock: 0 }) は true</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type <span class="seg"><i>1</i>StockItem</span> <span class="seg c"><i>2</i>=</span> <span class="seg"><i>3</i>Coded &amp; Stocked</span>;</pre>
+        <ol>
+          <li><span>新しく付ける型の名前です。</span></li>
+          <li><span>右の型に、左の名前を付けます。</span></li>
+          <li><span>名前を付けるインターセクション型です。<code>StockItem</code> と書いたところは、<code>Coded &amp; Stocked</code> と書いたのと同じ意味になります。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>コツ</b>テストが型を読むので、型にも関数にも <code>export</code> を付けます（02章 q01 応用）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Product という型を作る。Named と Priced と Identified を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 productText を作る。Product の product を受け取り、文字列を返す。ほかのファイルから使えるようにする
+export function productText() {
+  // product の id と product の name と product の price を埋め込んだ「#◯ ◯ ◯円」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問14 のサンプルの <code>StockItem</code> の行と同じ形で、前に <code>export</code> を付けます。3 つの型は <code>&amp;</code> を続けてつなぎます。関数の中身は問8 と問5 を合わせた形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q06-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">型 Member を定義して、18 歳以上の admin なら true を返す</span>
+      <span class="q-new">新しく出てくる書き方：その場で書いたオブジェクトの型とつなぐ <code>A &amp; { b: T }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+export type Aged = { age: number };
+
+// ここに型 Member と関数 isAdultAdmin を書く</code></pre>
+      <p><code>Named</code> と <code>Aged</code> に、<code>role</code>（<code>"admin"</code> か <code>"member"</code>）を持つオブジェクトの型をつないだ型 <code>Member</code> を作り、export します。<code>role</code> の型はリテラル型のユニオン（03章 q02）です。次に、<code>Member</code> を受け取る関数 <code>isAdultAdmin</code> を書きます。<code>role</code> が <code>"admin"</code> で、<code>age</code> が 18 以上なら <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isAdultAdmin({ name: "山田", age: 30, role: "admin" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isAdultAdmin({ name: "佐藤", age: 30, role: "member" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">admin でない</dd></div>
+          <div><dt><code>isAdultAdmin({ name: "鈴木", age: 16, role: "admin" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">18 歳より下</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Member</code> が <code>Named &amp; Aged &amp; { role: "admin" | "member" }</code> と同じ型であることを確かめます。<code>isAdultAdmin</code> は引数が <code>Member</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">A &amp; { b: T }</code><h4>その場で書いたオブジェクトの型とつなぐ</h4></div>
+      <p><code>&amp;</code> でつなげるのは、名前の付いた型だけではありません。<code>{ shelf: "A" | "B" }</code> のように、その場で書いたオブジェクトの型ともつなげます。1 か所でしか使わないプロパティを足すときに便利です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Coded という型を作る。code は文字列
+type Coded = { code: string };
+// ShelfItem という型を作る。Coded と、shelf が "A" か "B" のオブジェクトの型を合わせた型
+type ShelfItem = Coded &amp; { shelf: "A" | "B" };
+// 関数 shelfLabel を作る。ShelfItem の item を受け取り、文字列を返す
+function shelfLabel(item: ShelfItem): string {
+  // item の shelf と item の code を埋め込んだ「棚◯：◯」の文字列を返す
+  return `棚${item.shelf}：${item.code}`;
+}
+// 結果: shelfLabel({ code: "A-01", shelf: "B" }) は "棚B：A-01"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>{ code: "A-01", shelf: "B" }</code> を <code>ShelfItem</code> に</dt><dd class="r">入れられる</dd><dd class="c"></dd></div>
+        <div><dt><code>{ code: "A-01", shelf: "C" }</code> を <code>ShelfItem</code> に</dt><dd class="r">型のエラー</dd><dd class="c">shelf は "A" か "B" だけ</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Member という型を作る。Named と Aged と、role が "admin" か "member" のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 isAdultAdmin を作る。Member の member を受け取り、true か false を返す。ほかのファイルから使えるようにする
+export function isAdultAdmin() {
+  // member の role が "admin" と等しい、かつ member の age が 18 以上かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Member</code> は、問15 のサンプルの <code>ShelfItem</code> と同じ形で、<code>&amp;</code> でつなぐ型が 3 つになります。「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。<code>&amp;</code> 1 つは型をつなぐ記号、<code>&amp;&amp;</code> は条件をつなぐ演算子で、別のものです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q06-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">型 Post を定義して「#1 はじめまして」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Timestamped = { createdAt: Date };
+
+export type Identified = { id: number };
+
+// ここに型 Post と関数 postTitle を書く</code></pre>
+      <p><code>Identified</code> と <code>Timestamped</code> に、<code>title</code>（文字列）を持つオブジェクトの型をつないだ型 <code>Post</code> を作り、export します。次に、<code>Post</code> を受け取って <code>"#1 はじめまして"</code> の形の文字列を返す関数 <code>postTitle</code> を書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>postTitle({ id: 1, createdAt: new Date("2026-12-01T09:00:00Z"), title: "はじめまして" })</code></dt><dd class="r"><code>"#1 はじめまして"</code></dd><dd class="c">createdAt は使わない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Post</code> が <code>Identified &amp; Timestamped &amp; { title: string }</code> と同じ型であることを確かめます。<code>postTitle</code> は引数が <code>Post</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Post という型を作る。Identified と Timestamped と、title が文字列のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 postTitle を作る。Post の post を受け取り、文字列を返す。ほかのファイルから使えるようにする
+export function postTitle() {
+  // post の id と post の title を埋め込んだ「#◯ ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Post</code> は問15 の <code>Member</code> と同じ形です。最後のオブジェクトの型は <code>{ title: string }</code> になります。関数の中身は問8 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q06-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">型 Draft と Published を定義して、publishedAt を足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Draft、型 Published と関数 publish を書く</code></pre>
+      <p>このファイルには、使える型が書いてありません。型を 2 つと関数を 1 つ書き、すべて export します。</p>
+      <ol>
+        <li><code>Draft</code>：<code>title</code>（文字列）を持つオブジェクトの型です。</li>
+        <li><code>Published</code>：<code>Draft</code> に、<code>publishedAt</code>（<code>Date</code>）を持つオブジェクトの型をつないだ型です。</li>
+        <li><code>publish(draft, at)</code>：<code>Draft</code> と日時を受け取り、<code>publishedAt</code> を足した <code>Published</code> を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>at</code> に <code>new Date("2026-12-01T09:00:00Z")</code> を使います。</p>
+        <dl class="eg">
+          <div><dt><code>publish({ title: "お知らせ" }, at)</code></dt><dd class="r"><code>{ title: "お知らせ", publishedAt: at }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Published</code> が <code>Draft &amp; { publishedAt: Date }</code> と同じ型であることを確かめます。<code>publish</code> は引数が <code>Draft</code> と <code>Date</code>、戻り値が <code>Published</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Draft という型を作る。title は文字列。ほかのファイルから使えるようにする
+// Published という型を作る。Draft と、publishedAt が Date のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 publish を作る。Draft の draft と Date の at を受け取り、Published を返す。ほかのファイルから使えるようにする
+export function publish() {
+  // draft を広げて、publishedAt を at にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Draft</code> は、ふつうのオブジェクトの型です（02章 q01 応用）。<code>Published</code> は問15 のサンプルの <code>ShelfItem</code> と同じ形で、自分で作った <code>Draft</code> を <code>&amp;</code> の左に書けます。関数の中身は問3 と同じスプレッド構文です。引数の名前が <code>at</code> なので、省略記法は使わずに <code>publishedAt: at</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q06-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">型 Tagged を定義して、tags の最後に tag を足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+// ここに型 Tagged と関数 addTag を書く</code></pre>
+      <p><code>Named</code> に、<code>tags</code>（文字列の配列）を持つオブジェクトの型をつないだ型 <code>Tagged</code> を作り、export します。次に関数 <code>addTag</code> を書きます。<code>Tagged</code> とタグ（文字列）を受け取り、<code>tags</code> の最後にタグを加えた新しい <code>Tagged</code> を返します。受け取ったオブジェクトも、その <code>tags</code> の配列も変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addTag({ name: "メモ", tags: ["a"] }, "b")</code></dt><dd class="r"><code>{ name: "メモ", tags: ["a", "b"] }</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの、元のオブジェクトの <code>tags</code></dt><dd class="r"><code>["a"]</code></dd><dd class="c">元の配列は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Tagged</code> が <code>Named &amp; { tags: string[] }</code> と同じ型であることを確かめます。<code>addTag</code> は引数が <code>Tagged</code> と <code>string</code>、戻り値が <code>Tagged</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Tagged という型を作る。Named と、tags が文字列の配列のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 addTag を作る。Tagged の x と文字列 tag を受け取り、Tagged を返す。ほかのファイルから使えるようにする
+export function addTag() {
+  // x を広げて、tags を「x の tags の要素すべてと tag をこの順に並べた新しい配列」にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「要素すべてと tag をこの順に並べた新しい配列」は、配列のスプレッド構文 <code>[...x.tags, tag]</code> です（02章 q05 問1）。<code>x.tags.push(tag)</code> を使うと、元の配列まで変わってしまいます。オブジェクトのほうは、問9 と同じく <code>{ ...x, tags: ◯ }</code> の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q06-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">型 Discounted を定義して、値引き後の値段を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Priced = { price: number };
+
+// ここに型 Discounted と関数 finalPrice を書く</code></pre>
+      <p><code>Priced</code> に、<code>discount</code>（値引きの額、数値）を持つオブジェクトの型をつないだ型 <code>Discounted</code> を作り、export します。次に、<code>Discounted</code> を受け取って <code>price</code> から <code>discount</code> を引いた値段を返す関数 <code>finalPrice</code> を書きます。値引きのほうが大きいときは、マイナスにせずに <code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>finalPrice({ price: 1000, discount: 200 })</code></dt><dd class="r"><code>800</code></dd><dd class="c"></dd></div>
+          <div><dt><code>finalPrice({ price: 100, discount: 200 })</code></dt><dd class="r"><code>0</code></dd><dd class="c">-100 にはしない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Discounted</code> が <code>Priced &amp; { discount: number }</code> と同じ型であることを確かめます。<code>finalPrice</code> は引数が <code>Discounted</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Discounted という型を作る。Priced と、discount が数値のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 finalPrice を作る。Discounted の x を受け取り、数値を返す。ほかのファイルから使えるようにする
+export function finalPrice() {
+  // x の price から x の discount を引いた数と、0 の大きい方を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ と ◯ の大きい方」は <code>Math.max()</code> です（01章 q04 問9）。引いた数がマイナスになっても、<code>0</code> のほうが大きいので <code>0</code> が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q06-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">型 Place を定義して、名前と緯度・経度から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Named = { name: string };
+
+// ここに型 Place と関数 place を書く</code></pre>
+      <p><code>Named</code> に、<code>lat</code>（緯度、数値）と <code>lng</code>（経度、数値）を持つオブジェクトの型をつないだ型 <code>Place</code> を作り、export します。次に、名前（文字列）・緯度（数値）・経度（数値）をこの順に受け取り、<code>Place</code> を返す関数 <code>place</code> を書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>place("東京駅", 35.68, 139.76)</code></dt><dd class="r"><code>{ name: "東京駅", lat: 35.68, lng: 139.76 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Place</code> が <code>Named &amp; { lat: number; lng: number }</code> と同じ型であることを確かめます。<code>place</code> は引数が <code>string</code>・<code>number</code>・<code>number</code>、戻り値が <code>Place</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Place という型を作る。Named と、lat が数値で lng が数値のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+
+// 関数 place を作る。文字列 name と数値 lat と数値 lng を受け取り、Place を返す。ほかのファイルから使えるようにする
+export function place() {
+  // name と lat と lng を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>右側のオブジェクトの型には、プロパティを <code>;</code> で区切って 2 つ書きます（<code>{ lat: number; lng: number }</code>）。関数の中身は問11 と同じ省略記法です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c03-q06-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">保存した投稿と、編集した投稿の型</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Post = {
+  title: string;
+  body: string;
+};
+
+export type Meta = {
+  id: number;
+  createdAt: Date;
+};
+
+export type SavedPost = unknown;
+
+export type EditedPost = unknown;
+
+export function savePost() {}
+
+export function editPost() {}</code></pre>
+      <p>投稿の中身を表す型 <code>Post</code> と、保存したときに付く情報を表す型 <code>Meta</code> は、もう書いてあります。型を 2 つと関数を 2 つ書きます。関数の引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>SavedPost</code>：<code>Post</code> と <code>Meta</code> をつないだ型にします。<code>unknown</code> を書き換えます。</li>
+        <li><code>savePost(post, id, createdAt)</code>：<code>post</code> に <code>id</code> と <code>createdAt</code> を足した <code>SavedPost</code> を返します。</li>
+        <li><code>EditedPost</code>：<code>SavedPost</code> に、<code>updatedAt</code>（<code>Date</code>）を持つオブジェクトの型をつないだ型にします。</li>
+        <li><code>editPost(saved, body, updatedAt)</code>：<code>body</code> を書き換え、<code>updatedAt</code> を足した <code>EditedPost</code> を返します。元の <code>saved</code> は変えません。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、<code>created</code> に <code>new Date("2026-12-01T09:00:00Z")</code>、<code>updated</code> に <code>new Date("2026-12-02T18:30:00Z")</code> を使います。<code>saved</code> は、1 行目の <code>savePost</code> の結果です。</p>
+        <dl class="eg">
+          <div><dt><code>savePost({ title: "はじめまして", body: "よろしく" }, 1, created)</code></dt><dd class="r"><code>{ title: "はじめまして", body: "よろしく", id: 1, createdAt: created }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>editPost(saved, "よろしくお願いします", updated)</code></dt><dd class="r"><code>{ title: "はじめまして", body: "よろしくお願いします", id: 1, createdAt: created, updatedAt: updated }</code></dd><dd class="c">body が変わり、updatedAt が加わる</dd></div>
+          <div><dt>呼んだあとの <code>saved.body</code></dt><dd class="r"><code>"よろしく"</code></dd><dd class="c">元は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>SavedPost</code> が <code>Post &amp; Meta</code>、<code>EditedPost</code> が <code>SavedPost &amp; { updatedAt: Date }</code> と同じ型であることを確かめます。<code>savePost</code> は引数が <code>Post</code>・<code>number</code>・<code>Date</code> で戻り値が <code>SavedPost</code>、<code>editPost</code> は引数が <code>SavedPost</code>・<code>string</code>・<code>Date</code> で戻り値が <code>EditedPost</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// SavedPost という型を作る。Post と Meta を合わせた型。ほかのファイルから使えるようにする
+export type SavedPost = unknown;
+
+// EditedPost という型を作る。SavedPost と、updatedAt が Date のオブジェクトの型を合わせた型。ほかのファイルから使えるようにする
+export type EditedPost = unknown;
+
+// 関数 savePost を作る。Post の post と数値 id と Date の createdAt を受け取り、SavedPost を返す
+export function savePost() {
+  // post を広げて、id を id に、createdAt を createdAt にしたものを返す
+}
+
+// 関数 editPost を作る。SavedPost の saved と文字列 body と Date の updatedAt を受け取り、EditedPost を返す
+export function editPost() {
+  // saved を広げて、body を body に、updatedAt を updatedAt にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>SavedPost</code> は問1 の <code>&amp;</code>、<code>EditedPost</code> は問15 のサンプルの <code>ShelfItem</code> と同じ形です。<code>savePost</code> は問3 のスプレッド構文で、加えるプロパティを 2 つ並べます。<code>editPost</code> も同じ形です。<code>body</code> は <code>saved</code> にもあるので、後ろに書いた <code>body</code> が上書きします（02章 q02 問8）。</p></details>
+    </div>
+  </section>
+</section>

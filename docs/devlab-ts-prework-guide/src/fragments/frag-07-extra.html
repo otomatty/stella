@@ -1,0 +1,300 @@
+<section class="sec" id="c07-extra">
+  <div class="sec-h">
+    <span class="eyebrow">07章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。e01 では、型のプロパティを 1 つずつ作り変える Mapped Types を書きます。e02 では、ユニオン型や関数の型から新しい型を作る、組み込みのユーティリティ型を使います。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c07-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">Mapped Types</span>
+      <span class="q-new">新しく出てくる書き方：Mapped Types <code>{ [K in keyof T]: … }</code>、型アサーション <code>値 as 型</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Nullable = unknown;
+export type Flags = unknown;
+export type Getters = unknown;
+
+export function allFlags() {}
+
+export function toNullable() {}</code></pre>
+      <p>型を 3 つと、関数を 2 つ書いて、ほかのファイルから使えるようにします。3 つの型には、型引数 <code>&lt;T&gt;</code> を自分で足します（07章 q06 問8 の <code>Box&lt;T&gt;</code> と同じ書き方）。<code>unknown</code> は書き換えます。</p>
+      <ol>
+        <li><code>Nullable&lt;T&gt;</code>：<code>T</code> のすべてのプロパティの値の型を、「元の型 <code>| null</code>」にした型です。</li>
+        <li><code>Flags&lt;T&gt;</code>：<code>T</code> のすべてのプロパティの値の型を、<code>boolean</code> にした型です。</li>
+        <li><code>Getters&lt;T&gt;</code>：<code>T</code> のすべてのプロパティの値の型を、元の型の値を返す関数（<code>() =&gt; 元の型</code>）にした型です。</li>
+        <li><code>allFlags(obj, value)</code>：<code>obj</code> と同じキーを持ち、値がすべて <code>value</code>（<code>true</code> か <code>false</code>）のオブジェクトを返します。戻り値の型は <code>Flags&lt;T&gt;</code> です。<code>T</code> はオブジェクトに限ります。</li>
+        <li><code>toNullable(obj)</code>：<code>obj</code> と同じ中身のコピーを、<code>Nullable&lt;T&gt;</code> として返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、型 <code>User</code> を <code>{ name: string; age: number }</code> とし、<code>user</code> に <code>{ name: "山田", age: 30 }</code> を入れて使います。</p>
+        <dl class="eg">
+          <div><dt><code>Nullable&lt;User&gt;</code></dt><dd class="r"><code>{ name: string | null; age: number | null }</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>Flags&lt;User&gt;</code></dt><dd class="r"><code>{ name: boolean; age: boolean }</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>Getters&lt;User&gt;</code></dt><dd class="r"><code>{ name: () =&gt; string; age: () =&gt; number }</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>allFlags({ name: "山田", age: 30 }, true)</code></dt><dd class="r"><code>{ name: true, age: true }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>allFlags({}, false)</code></dt><dd class="r"><code>{}</code></dd><dd class="c">キーがない</dd></div>
+          <div><dt><code>toNullable(user)</code></dt><dd class="r"><code>{ name: "山田", age: 30 }</code></dd><dd class="c">user とは別のオブジェクト</dd></div>
+          <div><dt>結果の <code>name</code> に <code>null</code> を入れたあとの <code>user.name</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>allFlags(user, true)</code> の戻り値の型が <code>Flags&lt;User&gt;</code>、<code>toNullable(user)</code> の戻り値の型が <code>Nullable&lt;User&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ [K in keyof T]: … }</code><h4>すべてのプロパティの型を作り変える（Mapped Types）</h4></div>
+      <p><code>keyof T</code>（07章 q02）のプロパティ名を 1 つずつ <code>K</code> に取り出し、それぞれの値の型を <code>:</code> の右に書いた型にした型を作ります。<code>K</code> は自分で付ける名前です。<code>:</code> の右では <code>T[K]</code>（元の値の型）も使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Product を作る。price は数値、stock は数値
+type Product = { price: number; stock: number };
+// 型 ErrorMessages を作る。型変数 T を使い、T のプロパティ名を 1 つずつ K として、値をすべて文字列にした型
+type ErrorMessages&lt;T&gt; = { [K in keyof T]: string };
+// 型 Ranges を作る。型変数 T を使い、T のプロパティ名を 1 つずつ K として、値を { min: T[K]; max: T[K] } にした型
+type Ranges&lt;T&gt; = { [K in keyof T]: { min: T[K]; max: T[K] } };
+// errors を ErrorMessages&lt;Product&gt; として作り、price と stock のメッセージを入れる
+const errors: ErrorMessages&lt;Product&gt; = {
+  price: "価格を入れてください",
+  stock: "在庫は 0 以上です",
+};
+// ranges を Ranges&lt;Product&gt; として作り、price と stock の下限と上限を入れる
+const ranges: Ranges&lt;Product&gt; = { price: { min: 1, max: 99999 }, stock: { min: 0, max: 500 } };
+// 結果: errors の型は { price: string; stock: string }、ranges の型は { price: { min: number; max: number }; stock: { min: number; max: number } }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>{ [<span class="seg"><i>1</i>K</span> in <span class="seg"><i>2</i>keyof T</span>]: <span class="seg"><i>3</i>{ min: T[K]; max: T[K] }</span> }</pre>
+        <ol>
+          <li><span>プロパティ名を 1 つずつ入れる名前です。<code>T</code> と同じく、型の名前として使えます。</span></li>
+          <li><span>取り出すプロパティ名の並びです。<code>Product</code> なら <code>"price" | "stock"</code> です。</span></li>
+          <li><span>それぞれのプロパティの、新しい値の型です。<code>K</code> が <code>"price"</code> のときの <code>T[K]</code> は <code>number</code> です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>ErrorMessages&lt;Product&gt;</code></dt><dd class="r"><code>{ price: string; stock: string }</code></dd><dd class="c">値がすべて string</dd></div>
+        <div><dt><code>Ranges&lt;Product&gt;</code></dt><dd class="r"><code>{ price: { min: number; max: number }; stock: { min: number; max: number } }</code></dd><dd class="c">T[K] は元の値の型</dd></div>
+        <div><dt><code>{ [K in keyof Product]: Product[K] }</code></dt><dd class="r"><code>Product</code></dd><dd class="c">値の型を変えなければ、元と同じ型</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>07章 q03 の <code>Partial&lt;T&gt;</code> は、この書き方で <code>{ [K in keyof T]?: T[K] }</code> と作られています。<code>]</code> の後ろの <code>?</code> で、すべてのプロパティを省略できるようにしています。</p>
+      <p class="more">サバイバルTypeScript「Mapped Types」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">値 as 型</code><h4>型を言い切る（型アサーション）</h4></div>
+      <p>03章 発展問題 e02 で読んだ <code>as</code> を、この問で書きます。<code>as</code> は、「この値はこの型だ」と TypeScript に言い切る書き方です。<code>Object.keys(value)</code> の結果は <code>string[]</code> です（02章 q08 問4）。<code>value</code> が <code>T</code> でも、取り出したキーの型は <code>keyof T</code> になりません。そこで <code>key as keyof T</code> と書いて、<code>T</code> のプロパティ名だと言い切ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 keysOf を作る。型変数 T（オブジェクトに限る）を使い、T の value を受け取り、T のプロパティ名の配列を返す
+function keysOf&lt;T extends object&gt;(value: T): (keyof T)[] {
+  // 結果 result を作り、空の配列を入れる。型は T のプロパティ名の配列
+  const result: (keyof T)[] = [];
+  // value のキーを並べた配列から 1 つずつ key に取り出してくり返す
+  for (const key of Object.keys(value)) {
+    // result の最後に、key を T のプロパティ名と言い切ったものを付け足す
+    result.push(key as keyof T);
+  }
+  // result を返す
+  return result;
+}
+// keys を作り、keysOf に { pen: 12, note: 30 } を渡して呼んだ結果を入れる
+const keys = keysOf({ pen: 12, note: 30 });
+// 結果: keys は ["pen", "note"]。型は ("pen" | "note")[]</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5><code>as</code> を付けない</h5>
+          <pre><code class="language-typescript">result.push(key);</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。<code>string</code> は <code>keyof T</code> に入りません</div>
+        </div>
+        <div>
+          <h5><code>as</code> で言い切る</h5>
+          <pre><code class="language-typescript">result.push(key as keyof T);</code></pre>
+          <div class="verdict ok">○ <code>key</code> を <code>keyof T</code> として扱えます</div>
+        </div>
+      </div>
+      <p>プロパティを 1 つずつ入れて作るオブジェクトにも使います。はじめは中身が空なので、<code>Partial</code>（07章 q03 問1）の変数に入れていきます。すべて入れ終えたら、<code>as</code> で元の型だと言い切ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Stock を作る。pen は数値、note は数値
+type Stock = { pen: number; note: number };
+// 在庫表 draft を作り、空のオブジェクトを入れる。型は Partial&lt;Stock&gt;
+const draft: Partial&lt;Stock&gt; = {};
+// draft の pen に 12 を入れる
+draft.pen = 12;
+// draft の note に 30 を入れる
+draft.note = 30;
+// stock を作り、draft を Stock と言い切ったものを入れる
+const stock = draft as Stock;
+// 結果: stock は { pen: 12, note: 30 }。型は Stock</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>as</code> は言い切るだけで、中身は確かめません。上のサンプルで <code>note</code> を入れ忘れても、型のエラーになりません。<code>as</code> を書くのは、中身が合っていると自分で確かめられる所だけにします。</p>
+      <p class="more">サバイバルTypeScript「型アサーション」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 型 Nullable を作る。型変数 T を使い、T のプロパティ名を 1 つずつ K として、値を「T[K] か null」にした型。ほかのファイルから使えるようにする
+export type Nullable = unknown;
+// 型 Flags を作る。型変数 T を使い、T のプロパティ名を 1 つずつ K として、値をすべて true か false にした型。ほかのファイルから使えるようにする
+export type Flags = unknown;
+// 型 Getters を作る。型変数 T を使い、T のプロパティ名を 1 つずつ K として、値を「何も受け取らず、T[K] を返す関数」にした型。ほかのファイルから使えるようにする
+export type Getters = unknown;
+
+// 関数 allFlags を作る。型変数 T（オブジェクトに限る）を使い、T の obj と、true か false の value を受け取り、Flags&lt;T&gt; を返す
+export function allFlags() {
+  // 結果 result を作り、空のオブジェクトを入れる。型は Partial&lt;Flags&lt;T&gt;&gt;
+  // obj のキーを並べた配列から 1 つずつ key に取り出してくり返す
+  //   result の「key を T のプロパティ名と言い切ったもの」に value を入れる
+  // result を Flags&lt;T&gt; と言い切ったものを返す
+}
+
+// 関数 toNullable を作る。型変数 T（オブジェクトに限る）を使い、T の obj を受け取り、Nullable&lt;T&gt; を返す
+export function toNullable() {
+  // obj を広げた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Nullable</code> は、1 つ目のサンプルの <code>Ranges</code> と同じ形で、<code>:</code> の右が <code>T[K] | null</code> になります。<code>Flags</code> は <code>ErrorMessages</code> と同じ形で、<code>:</code> の右が <code>boolean</code> です。<code>Getters</code> の右は、引数のない関数の型 <code>() =&gt; T[K]</code> です（05章 q07 問1 の関数の型で、かっこの中を空にしたもの）。<code>allFlags</code> は、2 つ目の項目の 2 つのサンプルを合わせた形です。<code>keysOf</code> と同じく <code>Object.keys(obj)</code> を <code>for-of</code> で回し、<code>draft</code> と同じく <code>Partial</code> の変数に入れてから、最後に <code>as Flags&lt;T&gt;</code> で返します。<code>toNullable</code> は <code>{ ...obj }</code> を返すだけです。<code>T</code> の値は、値の型に <code>null</code> を足しただけの <code>Nullable&lt;T&gt;</code> に、そのまま入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c07-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">Exclude・Extract・NonNullable・ReturnType・Awaited</span>
+      <span class="q-new">新しく出てくる書き方：<code>Exclude</code>、<code>Extract</code>、<code>NonNullable</code>、<code>Awaited</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Status = "draft" | "published" | "archived" | "deleted";
+export type AppEvent = { type: "click"; x: number; y: number } | { type: "key"; key: string };
+export type MaybeName = string | null | undefined;
+
+export function createSession(userId: number) {
+  return { userId, token: `t-${userId}`, expiresAt: 0 };
+}
+
+export async function fetchUser(id: number) {
+  await Promise.resolve();
+  return { id, name: "山田" };
+}
+
+export type ActiveStatus = unknown;
+export type ClickEvent = unknown;
+export type Name = unknown;
+export type Session = unknown;
+export type FetchedUser = unknown;
+
+export function isActive() {}</code></pre>
+      <p>型 <code>Status</code>・<code>AppEvent</code>・<code>MaybeName</code> と、関数 <code>createSession</code>・<code>fetchUser</code> は書いてあります。次の 5 つの型を、それぞれのユーティリティ型を使って作ります。型の中身を手で書き並べてはいけません。<code>unknown</code> は書き換えます。</p>
+      <ol>
+        <li><code>ActiveStatus</code>：<code>Status</code> から <code>"archived"</code> と <code>"deleted"</code> を除いた型です（<code>Exclude</code>）。</li>
+        <li><code>ClickEvent</code>：<code>AppEvent</code> のうち、<code>type</code> が <code>"click"</code> のものだけの型です（<code>Extract</code>）。</li>
+        <li><code>Name</code>：<code>MaybeName</code> から <code>null</code> と <code>undefined</code> を除いた型です（<code>NonNullable</code>）。</li>
+        <li><code>Session</code>：<code>createSession</code> の戻り値の型です（<code>ReturnType</code>、07章 q01 問12）。</li>
+        <li><code>FetchedUser</code>：<code>fetchUser</code> の戻り値は Promise（あとで値が届くことを表す値）です。その Promise が解決したあと（値が届いたあと）の値の型です（<code>Awaited</code> と <code>ReturnType</code>）。</li>
+      </ol>
+      <p>最後に関数 <code>isActive(status)</code> を書きます。<code>status</code> が <code>ActiveStatus</code> なら <code>true</code> を返します。戻り値の型は <code>status is ActiveStatus</code> にして、型ガード関数（05章 q09 問1）にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ActiveStatus</code></dt><dd class="r"><code>"draft" | "published"</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>ClickEvent</code></dt><dd class="r"><code>{ type: "click"; x: number; y: number }</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>Name</code></dt><dd class="r"><code>string</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>Session</code></dt><dd class="r"><code>{ userId: number; token: string; expiresAt: number }</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>FetchedUser</code></dt><dd class="r"><code>{ id: number; name: string }</code></dd><dd class="c">この型と同じになるか</dd></div>
+          <div><dt><code>isActive("draft")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isActive("published")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isActive("archived")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>isActive</code> が、<code>ActiveStatus</code> に絞り込む型ガード関数になっていることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Exclude&lt;T, U&gt;</code><h4>ユニオン型から、当てはまるものを除く</h4></div>
+      <p>ユニオン型 <code>T</code> から、<code>U</code> に当てはまるものを除いた型を作ります。除くものが 2 つ以上なら、<code>U</code> にユニオン型を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Payment を作る。"card" か "cash" か "bank" か "points"
+type Payment = "card" | "cash" | "bank" | "points";
+// 型 OnlinePayment を作る。Payment から "cash" を除いた型
+type OnlinePayment = Exclude&lt;Payment, "cash"&gt;;
+// 型 PointPayment を作る。Payment のうち、"points" か "card" に当てはまるものだけを残した型
+type PointPayment = Extract&lt;Payment, "points" | "card"&gt;;
+// 結果: OnlinePayment は "card" | "bank" | "points"、PointPayment は "card" | "points"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Exclude&lt;Payment, "cash"&gt;</code></dt><dd class="r"><code>"card" | "bank" | "points"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Exclude&lt;Payment, "cash" | "bank"&gt;</code></dt><dd class="r"><code>"card" | "points"</code></dd><dd class="c">2 つを除く</dd></div>
+      </dl>
+      <p class="more">サバイバルTypeScript「Exclude」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Extract&lt;T, U&gt;</code><h4>ユニオン型から、当てはまるものだけを残す</h4></div>
+      <p><code>Exclude</code> の反対で、<code>U</code> に当てはまるものだけを残します。上のサンプルの <code>PointPayment</code> がその例です。判別可能なユニオン型（03章 q04 問1）にも使えます。<code>U</code> に <code>{ kind: "post" }</code> と書くと、<code>kind</code> が <code>"post"</code> のオブジェクトの型だけが残ります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 Shipment を作る。kind が "post" で zip（文字列）を持つものか、kind が "store" で storeId（数値）を持つもの
+type Shipment = { kind: "post"; zip: string } | { kind: "store"; storeId: number };
+// 型 PostShipment を作る。Shipment のうち、{ kind: "post" } に当てはまるものだけを残した型
+type PostShipment = Extract&lt;Shipment, { kind: "post" }&gt;;
+// 結果: PostShipment は { kind: "post"; zip: string }</code></pre>
+      </div>
+      <p class="memo"><b>コツ</b>「当てはまる」は、そのプロパティを持っているかで決まります。<code>{ kind: "post"; zip: string }</code> は <code>kind</code> が <code>"post"</code> なので当てはまり、<code>zip</code> も持ったまま残ります。</p>
+      <p class="more">サバイバルTypeScript「Extract」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">NonNullable&lt;T&gt;</code><h4>null と undefined を除く</h4></div>
+      <p>型 <code>T</code> から <code>null</code> と <code>undefined</code> を除いた型を作ります。<code>Exclude&lt;T, null | undefined&gt;</code> と同じ型です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 型 MaybeStock を作る。数値か null か undefined
+type MaybeStock = number | null | undefined;
+// 型 StockCount を作る。MaybeStock から null と undefined を除いた型
+type StockCount = NonNullable&lt;MaybeStock&gt;;
+// 結果: StockCount は number</code></pre>
+      </div>
+      <p class="more">サバイバルTypeScript「NonNullable」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Awaited&lt;T&gt;</code><h4>Promise が解決したあとの値の型</h4></div>
+      <p><code>async</code> の付いた関数は、戻り値が Promise になります。Promise は、あとで値が届くことを表す値です。<code>Promise&lt;X&gt;</code> は「あとで <code>X</code> が届く」という型です。<code>Awaited&lt;Promise&lt;X&gt;&gt;</code> と書くと、届いたあとの値の型 <code>X</code> を取り出せます。<code>async</code> と <code>await</code> は、ここでは読めれば十分です。くわしくは 08章 q01（Promise）と 08章 q02（async と await）で学びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 loadStock を作る。async の付いた関数で、数値 id を受け取る
+async function loadStock(id: number) {
+  // Promise.resolve() が終わるのを待つ
+  await Promise.resolve();
+  // id と、count が 12 のオブジェクトを返す
+  return { id, count: 12 };
+}
+// 型 StockPromise を作る。loadStock の戻り値の型
+type StockPromise = ReturnType&lt;typeof loadStock&gt;;
+// 型 LoadedStock を作る。StockPromise が解決したあとの値の型
+type LoadedStock = Awaited&lt;StockPromise&gt;;
+// 結果: StockPromise は Promise&lt;{ id: number; count: number }&gt;、LoadedStock は { id: number; count: number }</code></pre>
+      </div>
+      <p><code>ReturnType&lt;typeof 関数&gt;</code> は、07章 q01 問12 で出ました。</p>
+      <dl class="eg">
+        <div><dt><code>ReturnType&lt;typeof loadStock&gt;</code></dt><dd class="r"><code>Promise&lt;{ id: number; count: number }&gt;</code></dd><dd class="c">まだ届いていない</dd></div>
+        <div><dt><code>Awaited&lt;ReturnType&lt;typeof loadStock&gt;&gt;</code></dt><dd class="r"><code>{ id: number; count: number }</code></dd><dd class="c">届いたあとの値</dd></div>
+      </dl>
+      <p class="more">サバイバルTypeScript「Awaited」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 型 ActiveStatus を作る。Status から "archived" と "deleted" を除いた型。ほかのファイルから使えるようにする
+export type ActiveStatus = unknown;
+// 型 ClickEvent を作る。AppEvent のうち、{ type: "click" } に当てはまるものだけを残した型。ほかのファイルから使えるようにする
+export type ClickEvent = unknown;
+// 型 Name を作る。MaybeName から null と undefined を除いた型。ほかのファイルから使えるようにする
+export type Name = unknown;
+// 型 Session を作る。createSession の戻り値の型。ほかのファイルから使えるようにする
+export type Session = unknown;
+// 型 FetchedUser を作る。fetchUser の戻り値の型が解決したあとの値の型。ほかのファイルから使えるようにする
+export type FetchedUser = unknown;
+
+// 関数 isActive を作る。Status の status を受け取り、true か false を返す。true のときは status を ActiveStatus に絞り込む
+export function isActive() {
+  // status が "draft" と等しいか、status が "published" と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>ActiveStatus</code> は <code>Exclude</code> のサンプルの <code>OnlinePayment</code> と同じ形で、除くものが 2 つなのでユニオン型で書きます。<code>ClickEvent</code> は <code>PostShipment</code> と、<code>Name</code> は <code>StockCount</code> と同じ形です。<code>Session</code> は <code>ReturnType&lt;typeof createSession&gt;</code> です。<code>FetchedUser</code> は、<code>Awaited</code> のサンプルの 2 行を 1 つにまとめた形です。<code>Awaited</code> の <code>&lt;&gt;</code> の中に、<code>ReturnType&lt;typeof fetchUser&gt;</code> をそのまま書きます。<code>isActive</code> の「true のときは status を ActiveStatus に絞り込む」は、戻り値の型の <code>: status is ActiveStatus</code> です（05章 q09 問1）。「または」は <code>||</code> です。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,1166 @@
+<section class="sec" id="c08-q01">
+  <div class="sec-h">
+    <span class="eyebrow">08章 非同期処理</span>
+    <h2>q01 Promise</h2>
+    <p>Promise を使った関数を 20 個書きます。Promise は「あとで結果が届く値」です。この番号では <code>async</code> と <code>await</code> は使いません（q02 で学びます）。使うのは <code>new Promise</code>、<code>then</code>・<code>catch</code>・<code>finally</code>、<code>Promise.resolve</code>・<code>Promise.reject</code>・<code>Promise.all</code>・<code>Promise.race</code>・<code>Promise.allSettled</code> です。引数と戻り値には型注釈を付けます。戻り値の型は <code>Promise&lt;number&gt;</code> のように、Promise の中身の型まで書きます。失敗させるときは、文字列を使わずに <code>Error</code> を使います。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c08-q01-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">value ですぐに解決する Promise を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Promise&lt;T&gt;</code> <code>Promise.resolve()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function resolveWith() {}</code></pre>
+      <p>文字列を 1 つ受け取り、その文字列ですぐに解決する Promise を返します。「解決する」は、Promise に結果の値が届くことです。戻り値の型は、文字列で解決する Promise（<code>Promise&lt;string&gt;</code>）です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>resolveWith("a")</code></dt><dd class="r"><code>"a"</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Promise&lt;T&gt;</code><h4>あとで結果が届く値（Promise）</h4></div>
+      <p>ここまでの関数は、呼ぶとすぐに結果を返しました。サーバーからデータを取る処理や、決まった時間を待つ処理は、結果が出るまで時間がかかります。このような処理を非同期処理といいます。非同期処理の関数は、結果の代わりに Promise を返します。Promise は「あとで結果が届く入れ物」です。</p>
+      <p>Promise には 3 つの状態があります。作られたときは「待ち」です。あとで結果が届くと「解決」か「失敗」のどちらか 1 つに決まります。解決は、値が届いて成功したことです。失敗は、エラーが届いたことです。失敗は「拒否」（reject）ともいいます。一度決まった状態は、もう変わりません。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 250" role="img" aria-label="呼んだときに返る Promise は待ちの状態。あとで、値が届く解決か、エラーが届く失敗（拒否）のどちらか 1 つに決まる">
+            <text class="s" x="86" y="40" text-anchor="middle">呼んだとき</text>
+            <text class="s" x="472" y="40" text-anchor="middle">あとで（どちらか 1 つ）</text>
+            <rect class="box" x="16" y="88" width="140" height="64" rx="8"/>
+            <text class="m" x="86" y="114" text-anchor="middle">Promise</text>
+            <text class="s" x="86" y="138" text-anchor="middle">待ち</text>
+            <path class="ln-a" d="M160 108 C 250 108, 270 76, 352 76"/><polygon class="hd-a" points="352,70 364,76 352,82"/>
+            <text class="a" x="262" y="72" text-anchor="middle">解決</text>
+            <rect class="box-a" x="368" y="52" width="208" height="48" rx="8"/>
+            <text x="472" y="82" text-anchor="middle">値（500 など）が届く</text>
+            <path class="ln" d="M160 132 C 250 132, 270 164, 352 164"/><polygon class="hd" points="352,158 364,164 352,170"/>
+            <text class="s" x="262" y="190" text-anchor="middle">失敗（拒否）</text>
+            <rect class="box" x="368" y="140" width="208" height="48" rx="8"/>
+            <text x="472" y="170" text-anchor="middle">エラー（Error）が届く</text>
+            <line class="ln" x1="16" y1="222" x2="568" y2="222"/><polygon class="hd" points="568,216 580,222 568,228"/>
+            <text class="s" x="560" y="244" text-anchor="end">時間</text>
+          </svg>
+        </div>
+        <figcaption>関数を呼ぶと、Promise はすぐに返ってきます。そのときはまだ「待ち」です。時間がたつと、値が届く「解決」か、エラーが届く「失敗」のどちらかに決まります。</figcaption>
+      </figure>
+      <p>型は <code>Promise&lt;number&gt;</code> のように、<code>&lt; &gt;</code> の中に「解決したときに届く値の型」を書きます。07章 q06 問8 の <code>Page&lt;T&gt;</code> と同じく、型に型引数を渡す書き方です。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>Promise</span><span class="seg"><i>2</i>&lt;number&gt;</span></pre>
+        <ol>
+          <li><span>あとで結果が届く値の型です。</span></li>
+          <li><span>解決したときに届く値の型です。この型は「数値で解決する Promise」と読みます。</span></li>
+        </ol>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料 shipping を数値で解決する Promise として作り、500 ですぐに解決する Promise を入れる
+const shipping: Promise&lt;number&gt; = Promise.resolve(500);
+// 結果: shipping は 500 で解決する Promise</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>Promise の中の値は、そのままでは使えません。<code>shipping + 100</code> と書くと、<code>Promise&lt;number&gt;</code> と数は足せないという型のエラーになります。届いた値を受け取る書き方は、問5 の <code>then</code> で学びます（q02 では <code>await</code> も学びます）。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Promise.resolve()</code><h4>すぐに解決する Promise を作る</h4></div>
+      <p><code>Promise.resolve(値)</code> は、かっこの中の値ですぐに解決する Promise を作ります。待つ処理がなくても、Promise の形で返したいときに使います。中身の型は、渡した値から決まります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約の状態 status を作り、"予約済み" ですぐに解決する Promise を入れる
+const status = Promise.resolve("予約済み");
+// 結果: status は "予約済み" で解決する Promise。型は Promise&lt;string&gt;</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Promise.resolve(500)</code></dt><dd class="r"><code>500</code> で解決する Promise</dd><dd class="c">型は <code>Promise&lt;number&gt;</code></dd></div>
+        <div><dt><code>Promise.resolve("予約済み")</code></dt><dd class="r"><code>"予約済み"</code> で解決する Promise</dd><dd class="c">型は <code>Promise&lt;string&gt;</code></dd></div>
+      </dl>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/promise">サバイバルTypeScript「Promise」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 resolveWith を作る。文字列 value を受け取り、文字列で解決する Promise を返す
+export function resolveWith() {
+  // value ですぐに解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「文字列で解決する Promise を返す」は、かっこの後ろの <code>: Promise&lt;string&gt;</code> です。「value ですぐに解決する Promise」は、2 つ目の項目のサンプルの <code>status</code> の行と同じ形で、<code>Promise.resolve(value)</code> です。それを <code>return</code> で返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c08-q01-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">message を持つ Error で失敗する Promise を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Promise.reject()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rejectWith() {}</code></pre>
+      <p>文字列 <code>message</code> を受け取り、<code>message</code> をメッセージにした <code>Error</code> で失敗する Promise を返します。この Promise は必ず失敗し、値は届きません。そのため戻り値の型は <code>Promise&lt;never&gt;</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rejectWith("失敗")</code></dt><dd class="r"><code>"失敗"</code> というメッセージのエラーで失敗する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;never&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Promise.reject()</code><h4>すぐに失敗する Promise を作る</h4></div>
+      <p><code>Promise.reject(理由)</code> は、かっこの中の理由ですぐに失敗する Promise を作ります。理由には <code>new Error("…")</code> を渡します（01章 q04 問8）。</p>
+      <p>必ず失敗する Promise は、解決の値が届きません。「ありえない値」を表す <code>never</code>（04章 q07 問1）を使って、型を <code>Promise&lt;never&gt;</code> と書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 outOfStock を作る。文字列 name を受け取り、必ず失敗する Promise を返す
+function outOfStock(name: string): Promise&lt;never&gt; {
+  // name を埋め込んだ「◯は在庫がありません」というメッセージのエラーで失敗する Promise を返す
+  return Promise.reject(new Error(`${name}は在庫がありません`));
+}
+// 結果: outOfStock("ノート") は "ノートは在庫がありません" のエラーで失敗する Promise</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>Promise.reject("在庫がありません")</code> のように文字列を渡すと、ESLint が「理由は Error にする」と知らせます。<code>Error</code> にしておくと、受け取る側が <code>.message</code> でメッセージを読めます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rejectWith を作る。文字列 message を受け取り、必ず失敗する Promise を返す
+export function rejectWith() {
+  // message というメッセージのエラーで失敗する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「必ず失敗する Promise を返す」は <code>: Promise&lt;never&gt;</code> です。中身はサンプルの <code>outOfStock</code> と同じ形です。メッセージは <code>message</code> そのものなので、テンプレートリテラルは要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c08-q01-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">ms ミリ秒たったら解決する Promise を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>setTimeout()</code> <code>new Promise()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function wait() {}</code></pre>
+      <p>数値 <code>ms</code> を受け取り、<code>ms</code> ミリ秒たったら解決する Promise を返します。1000 ミリ秒が 1 秒です。届ける値はないので、戻り値の型は値なしで解決する Promise（<code>Promise&lt;void&gt;</code>）です。<code>void</code> は 04章 q05 問13 で出た「値がない」ことを表す型です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>wait(100)</code></dt><dd class="r">100 ミリ秒たったら解決する</dd><dd class="c">99 ミリ秒の時点では、まだ待ち</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;void&gt;</code> であることも確かめます。テストは本当には待たずに、時計を進める仕組みで時間を早送りして確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">setTimeout()</code><h4>時間がたったら関数を呼ぶように予約する</h4></div>
+      <p><code>setTimeout(関数, ミリ秒)</code> は、決めた時間がたったら関数を呼ぶように予約します。予約したら待たずに、すぐ次の行へ進みます。そのため、あとに書いた行が先に動きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 記録 log を文字列の配列として作り、空の配列を入れる
+const log: string[] = [];
+// 1000 ミリ秒たったら、log の最後に "発送しました" を付け足す関数を呼ぶように予約する
+setTimeout(() =&gt; {
+  log.push("発送しました");
+}, 1000);
+// log の最後に "注文を受けました" を付け足す
+log.push("注文を受けました");
+// 結果: すぐあとの log は ["注文を受けました"]。1 秒たつと ["注文を受けました", "発送しました"]</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>時間</th><th>起きること</th><th>log</th></tr></thead>
+          <tbody>
+            <tr><td>0 ミリ秒</td><td class="j">予約する。すぐに次の行へ進む</td><td>[]</td></tr>
+            <tr><td>0 ミリ秒</td><td class="j">"注文を受けました" を付け足す</td><td>["注文を受けました"]</td></tr>
+            <tr><td>1000 ミリ秒</td><td class="j">予約した関数が呼ばれる</td><td>["注文を受けました", "発送しました"]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">new Promise()</code><h4>Promise を自分で作る</h4></div>
+      <p><code>new Promise(関数)</code> で、新しい Promise を作れます。かっこの中には、Promise を作るときに 1 回だけ呼ばれる関数を渡します。その関数は、引数に <code>resolve</code> を受け取ります。<code>resolve</code> は「この Promise を解決させる関数」です。<code>resolve(値)</code> を呼んだときに、Promise がその値で解決します。呼ぶまでは「待ち」のままです。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>new Promise&lt;number&gt;</span>(<span class="seg"><i>2</i>(resolve) =&gt;</span> { <span class="seg"><i>3</i>resolve(300);</span> })</pre>
+        <ol>
+          <li><span>新しい Promise を作ります。変数に入れるときは、<code>&lt;number&gt;</code> で中身の型を書きます。</span></li>
+          <li><span>Promise を作るときに呼ばれる関数です。<code>resolve</code> を受け取ります。</span></li>
+          <li><span><code>resolve</code> を呼ぶと、Promise が <code>300</code> で解決します。</span></li>
+        </ol>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 手数料 fee を作り、新しい Promise を入れる。作るときに、解決する関数 resolve を受け取り、次のことをする
+const fee = new Promise&lt;number&gt;((resolve) =&gt; {
+  // resolve に 300 を渡して呼ぶ
+  resolve(300);
+});
+// 結果: fee は 300 で解決する Promise</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>&lt;number&gt;</code> を書かずに変数へ入れると、TypeScript は中身の型を決められず、<code>Promise&lt;unknown&gt;</code> になります。関数の戻り値として <code>return</code> するときは、戻り値の型注釈（<code>: Promise&lt;void&gt;</code> など）から決まるので、<code>&lt; &gt;</code> は書かなくてかまいません。値なしで解決するときは、<code>resolve()</code> とかっこの中を空にして呼びます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/promise">サバイバルTypeScript「Promise」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 wait を作る。数値 ms を受け取り、値なしで解決する Promise を返す
+export function wait() {
+  // 新しい Promise を作って返す。作るときに、解決する関数 resolve を受け取り、次のことをする
+  //   ms ミリ秒たったら、resolve を呼ぶように予約する
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「値なしで解決する Promise を返す」は <code>: Promise&lt;void&gt;</code> です。1 行目は <code>return new Promise((resolve) =&gt; { … });</code> の形で、2 つ目の項目のサンプルの <code>fee</code> と同じです。<code>{ }</code> の中で、1 つ目の項目の <code>setTimeout</code> を使います。予約して呼ぶ関数は <code>resolve</code> そのものなので、<code>setTimeout(resolve, ms)</code> と関数を渡せます（02章 q04 問5）。<code>() =&gt; { resolve(); }</code> を渡してもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c08-q01-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">ms ミリ秒たったら value で解決する Promise を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function waitValue() {}</code></pre>
+      <p>文字列 <code>value</code> と数値 <code>ms</code> を受け取ります。<code>ms</code> ミリ秒たったら、<code>value</code> で解決する Promise を返します。問3 と違い、解決するときに値を届けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>waitValue("a", 50)</code></dt><dd class="r">50 ミリ秒たったら <code>"a"</code> で解決する</dd><dd class="c">49 ミリ秒の時点では、まだ待ち</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 waitValue を作る。文字列 value と数値 ms を受け取り、文字列で解決する Promise を返す
+export function waitValue() {
+  // 新しい Promise を作って返す。作るときに、解決する関数 resolve を受け取り、次のことをする
+  //   ms ミリ秒たったら、resolve に value を渡して呼ぶ関数を呼ぶように予約する
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形は問3 と同じです。<code>setTimeout</code> に渡す関数は、問3 の 1 つ目の項目のサンプルと同じくアロー関数にし、その中で <code>resolve(value)</code> を呼びます。値を渡すので、<code>resolve</code> をそのまま渡す書き方は使えません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c08-q01-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">promise の値を 2 倍にした Promise を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.then()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function double() {}</code></pre>
+      <p>数値で解決する Promise を受け取ります。その値を 2 倍にした数で解決する Promise を返します。<code>then</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>double(Promise.resolve(3))</code></dt><dd class="r"><code>6</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;number&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.then()</code><h4>解決したら、届いた値で次のことをする</h4></div>
+      <p><code>promise.then(関数)</code> は、<code>promise</code> が解決したら、届いた値を関数に渡して呼びます。<code>then</code> は新しい Promise を返します。新しい Promise は、関数が返した値で解決します。元の <code>promise</code> は変わりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 小計 subtotal を作り、1000 ですぐに解決する Promise を入れる
+const subtotal = Promise.resolve(1000);
+// 合計 total を作り、subtotal の値を price として受け取り、price に 500 を足した数で解決する Promise を入れる
+const total = subtotal.then((price) =&gt; price + 500);
+// 結果: total は 1500 で解決する Promise</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>subtotal</span>.then(<span class="seg"><i>2</i>(price) =&gt;</span> <span class="seg"><i>3</i>price + 500</span>)</pre>
+        <ol>
+          <li><span>値が届くのを待つ Promise です。</span></li>
+          <li><span>届いた値を受け取る引数です。ここでは <code>1000</code> が入ります。</span></li>
+          <li><span>この関数が返す値です。<code>then</code> が返す新しい Promise は、この値（<code>1500</code>）で解決します。</span></li>
+        </ol>
+      </figure>
+      <p>関数が数を返すので、<code>total</code> の型は <code>Promise&lt;number&gt;</code> になります。関数が文字列を返せば、<code>Promise&lt;string&gt;</code> になります。</p>
+      <dl class="eg">
+        <div><dt><code>Promise.resolve(1000).then((price) =&gt; price + 500)</code></dt><dd class="r"><code>1500</code> で解決する</dd><dd class="c"></dd></div>
+        <div><dt><code>Promise.resolve(1000).then((price) =&gt; `${price}円`)</code></dt><dd class="r"><code>"1000円"</code> で解決する</dd><dd class="c">型は <code>Promise&lt;string&gt;</code></dd></div>
+      </dl>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/promise">サバイバルTypeScript「Promise」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 double を作る。数値で解決する Promise の promise を受け取り、数値で解決する Promise を返す
+export function double() {
+  // promise の値を n として受け取り、n を 2 倍にした数で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数値で解決する Promise の promise」は <code>promise: Promise&lt;number&gt;</code> です。中身は、サンプルの <code>total</code> の行と同じ形です。<code>then</code> に渡す関数を <code>(n) =&gt; n * 2</code> にして、その結果を <code>return</code> で返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c08-q01-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">promise の文字列の文字数で解決する Promise を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lengthOf() {}</code></pre>
+      <p>文字列で解決する Promise を受け取ります。その文字列の文字数で解決する Promise を返します。受け取る Promise と返す Promise で、中身の型が違います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lengthOf(Promise.resolve("abc"))</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>lengthOf(Promise.resolve(""))</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">空の文字列は 0 文字</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;string&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lengthOf を作る。文字列で解決する Promise の promise を受け取り、数値で解決する Promise を返す
+export function lengthOf() {
+  // promise の値を text として受け取り、text の文字数で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。<code>then</code> に渡す関数で <code>text.length</code> を返します（01章 q02 問13）。関数が数を返すので、<code>then</code> の結果は <code>Promise&lt;number&gt;</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c08-q01-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">promise の文字列の前後の空白を取り除く</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function trimmed() {}</code></pre>
+      <p>文字列で解決する Promise を受け取ります。その文字列の前後の空白を取り除いた文字列で解決する Promise を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>trimmed(Promise.resolve("  a "))</code></dt><dd class="r"><code>"a"</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;string&gt;</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 trimmed を作る。文字列で解決する Promise の promise を受け取り、文字列で解決する Promise を返す
+export function trimmed() {
+  // promise の値を text として受け取り、text の前後の空白を取り除いたもので解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。前後の空白を取り除くのは <code>.trim()</code> です（01章 q05 問9）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c08-q01-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">2 つの Promise の値の合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：then の中で Promise を返す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addBoth() {}</code></pre>
+      <p>数値で解決する Promise を 2 つ受け取ります。2 つの値を足した数で解決する Promise を返します。<code>a</code> の <code>then</code> の中で <code>b</code> の <code>then</code> を呼んで書きます。<code>Promise.all</code>（問13）は使いません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addBoth(Promise.resolve(1), Promise.resolve(2))</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;number&gt;</code> と <code>Promise&lt;number&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.then((c) =&gt; priceOf(c))</code><h4>then の中で Promise を返す</h4></div>
+      <p><code>then</code> に渡した関数が Promise を返すと、<code>then</code> が返す Promise は、その Promise が決まるのを待ちます。そして、その Promise と同じ値で解決します。Promise の中に Promise が入った形にはなりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 priceOf を作る。文字列 code を受け取り、数値で解決する Promise を返す
+function priceOf(code: string): Promise&lt;number&gt; {
+  // code が "A" と等しいなら 1200、そうでなければ 800 ですぐに解決する Promise を返す
+  return Promise.resolve(code === "A" ? 1200 : 800);
+}
+// 商品コード code を作り、"A" ですぐに解決する Promise を入れる
+const code = Promise.resolve("A");
+// 価格 price を作り、code の値を c として受け取り、priceOf に c を渡して呼んだ結果の Promise で解決する Promise を入れる
+const price = code.then((c) =&gt; priceOf(c));
+// 結果: price は 1200 で解決する Promise</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>code.then((c) =&gt; priceOf(c))</code></dt><dd class="r"><code>1200</code> で解決する</dd><dd class="c">型は <code>Promise&lt;number&gt;</code>。<code>Promise&lt;Promise&lt;number&gt;&gt;</code> にはならない</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addBoth を作る。数値で解決する Promise の a と b を受け取り、数値で解決する Promise を返す
+export function addBoth() {
+  // a の値を x として受け取り、「b の値を y として受け取り、x に y を足した数で解決する Promise」で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>外側は <code>a.then((x) =&gt; …)</code> です。<code>…</code> の部分に、内側の <code>b.then((y) =&gt; x + y)</code> を書きます。サンプルの <code>price</code> の行と同じく、then の関数が Promise を返す形です。内側の関数の中からも、外側の関数の引数 <code>x</code> を使えます（05章 q08）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c08-q01-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">文字列を数に変換し、数にならなければ失敗させる</span>
+      <span class="q-new">新しく出てくる書き方：then の中でエラーを投げる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseNumber() {}</code></pre>
+      <p>文字列で解決する Promise を受け取ります。<code>then</code> の中で、届いた文字列を <code>Number()</code> で数に変換します。数になれば、その数で解決する Promise を返します。数にならない（<code>NaN</code> になる）ときは、<code>then</code> の中で <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseNumber(Promise.resolve("12"))</code></dt><dd class="r"><code>12</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>parseNumber(Promise.resolve("abc"))</code></dt><dd class="r"><code>Error</code> で失敗する</dd><dd class="c">メッセージは確かめない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;string&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.then((n) =&gt; { throw … })</code><h4>then の中でエラーを投げる</h4></div>
+      <p><code>then</code> に渡した関数の中でエラーを投げると、<code>then</code> が返す Promise は、そのエラーで失敗します。投げたエラーで関数が止まるのは 01章 q04 問8 と同じです。違うのは、エラーが Promise の失敗として届くことです。</p>
+      <p>関数の中に文を何行も書くときは、<code>=&gt;</code> の後ろを <code>{ }</code> にして、値は <code>return</code> で返します（01章 q01 問20）。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 checkedQuantity を作る。数値で解決する Promise の quantity を受け取り、数値で解決する Promise を返す
+function checkedQuantity(quantity: Promise&lt;number&gt;): Promise&lt;number&gt; {
+  // quantity の値を n として受け取り、次のことをする関数が返した値で解決する Promise を返す
+  return quantity.then((n) =&gt; {
+    // もし n が 1 より小さいなら
+    if (n &lt; 1) {
+      // "数量は 1 以上にしてください" というメッセージのエラーを投げる
+      throw new Error("数量は 1 以上にしてください");
+    }
+    // n を返す
+    return n;
+  });
+}
+// 結果: checkedQuantity(Promise.resolve(3)) は 3 で解決する
+// 結果: checkedQuantity(Promise.resolve(0)) は "数量は 1 以上にしてください" のエラーで失敗する</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b>ここで投げたエラーは、関数の外の <code>try</code>・<code>catch</code>（04章 q05 問5）では受け止められません。<code>then</code> の関数は、Promise が解決したあとで呼ばれるからです。失敗した Promise を受け止めるのは、問10 の <code>catch</code> です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseNumber を作る。文字列で解決する Promise の promise を受け取り、数値で解決する Promise を返す
+export function parseNumber() {
+  // promise の値を text として受け取り、次のことをする関数が返した値で解決する Promise を返す
+  //   数 n を作り、text を数値にしたものを入れる
+  //   もし n が NaN なら
+  //     text を埋め込んだ「数ではありません: ◯」というメッセージのエラーを投げる
+  //   n を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形はサンプルの <code>checkedQuantity</code> と同じです。「数値にしたもの」は <code>Number(text)</code>（01章 q08 問16）、「NaN なら」は <code>Number.isNaN(n)</code> です（01章 q04 問11）。<code>n === NaN</code> は、いつも <code>false</code> になるので使えません。メッセージはテストで確かめないので、ほかの文でもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c08-q01-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">失敗したら 0 で解決する Promise にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>.catch()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function recover() {}</code></pre>
+      <p>数値で解決する Promise を受け取ります。成功したら、その値のまま解決します。失敗したら、<code>0</code> で解決する Promise にします。<code>catch</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>recover(Promise.resolve(5))</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">成功はそのまま</dd></div>
+          <div><dt><code>recover(Promise.reject(new Error("x")))</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">失敗を 0 に変える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;number&gt;</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.catch()</code><h4>失敗したら、代わりのことをする</h4></div>
+      <p><code>promise.catch(関数)</code> は、<code>promise</code> が失敗したときだけ関数を呼びます。<code>catch</code> も新しい Promise を返します。新しい Promise は、関数が返した値で解決します。つまり、失敗を成功に変えられます。<code>promise</code> が成功したときは関数を呼ばず、元の値のまま解決します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 feeOrDefault を作る。数値で解決する Promise の fee を受け取り、数値で解決する Promise を返す
+function feeOrDefault(fee: Promise&lt;number&gt;): Promise&lt;number&gt; {
+  // fee が失敗したら、800 で解決する Promise を返す
+  return fee.catch(() =&gt; 800);
+}
+// 結果: feeOrDefault(Promise.resolve(500)) は 500 で解決する
+// 結果: feeOrDefault(Promise.reject(new Error("住所が不明です"))) は 800 で解決する</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Promise.resolve(500).catch(() =&gt; 800)</code></dt><dd class="r"><code>500</code> で解決する</dd><dd class="c">成功なので関数は呼ばれない</dd></div>
+        <div><dt><code>Promise.reject(new Error("住所が不明です")).catch(() =&gt; 800)</code></dt><dd class="r"><code>800</code> で解決する</dd><dd class="c">失敗なので関数が呼ばれる</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 recover を作る。数値で解決する Promise の promise を受け取り、数値で解決する Promise を返す
+export function recover() {
+  // promise が失敗したら、0 で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>サンプルの <code>feeOrDefault</code> の中の行と同じ形です。<code>catch</code> に渡す関数は、何も受け取らずに <code>0</code> を返すアロー関数です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c08-q01-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">成功なら "成功"、失敗ならその理由のメッセージで解決する</span>
+      <span class="q-new">新しく出てくる書き方：<code>.then().catch()</code> のつなぎ方、<code>catch</code> の関数の引数 <code>(error: unknown)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function errorMessage() {}</code></pre>
+      <p>Promise を 1 つ受け取ります。中身の型は問いません。成功したら <code>"成功"</code> で解決します。失敗したら、失敗の理由を見ます。理由が <code>Error</code> ならその <code>message</code> で、<code>Error</code> でなければ <code>"不明なエラー"</code> で解決します。どの場合も、返す Promise は成功します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorMessage(Promise.resolve(1))</code></dt><dd class="r"><code>"成功"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>errorMessage(Promise.reject(new Error("x")))</code></dt><dd class="r"><code>"x"</code> で解決する</dd><dd class="c">Error のメッセージ</dd></div>
+          <div><dt><code>errorMessage(Promise.reject("x"))</code></dt><dd class="r"><code>"不明なエラー"</code> で解決する</dd><dd class="c">理由が Error でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;unknown&gt;</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。<code>Promise&lt;unknown&gt;</code> は「中身の型が分からない Promise」です（<code>unknown</code> は 02章 q01）。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.then().catch()</code><h4>then と catch をつなげる</h4></div>
+      <p><code>then</code> も <code>catch</code> も Promise を返すので、続けて書けます。上から順に、届いた結果が流れていきます。成功は <code>then</code> の関数を通り、<code>catch</code> は飛ばされます。失敗は <code>then</code> を飛ばして、<code>catch</code> の関数に届きます。</p>
+      <p><code>catch</code> の関数は、引数に失敗の理由を受け取ります。理由には、<code>Error</code> でない値が届くこともあります。そのため、引数の型は <code>unknown</code> と書きます。型を書かないと、ESLint が「<code>: unknown</code> にする」と知らせます。<code>instanceof</code> で確かめてから使うのは、04章 q05 問10 の <code>catch (error)</code> と同じです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 orderStatus を作る。数値で解決する Promise の order を受け取り、文字列で解決する Promise を返す
+function orderStatus(order: Promise&lt;number&gt;): Promise&lt;string&gt; {
+  // order の値を id として受け取り、id を埋め込んだ「注文 ◯ を受け付けました」の文字列で解決する Promise にする
+  // それが失敗したら、理由を error で受け取り、error が RangeError から作った値なら "数量が多すぎます"、そうでなければ "受け付けできません" で解決する Promise を返す
+  return order
+    .then((id) =&gt; `注文 ${id} を受け付けました`)
+    .catch((error: unknown) =&gt;
+      error instanceof RangeError ? "数量が多すぎます" : "受け付けできません",
+    );
+}
+// 結果: orderStatus(Promise.resolve(7)) は "注文 7 を受け付けました" で解決する
+// 結果: orderStatus(Promise.reject(new RangeError("数量は 10 個までです"))) は "数量が多すぎます" で解決する
+// 結果: orderStatus(Promise.reject(new Error("在庫がありません"))) は "受け付けできません" で解決する</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 640 210" role="img" aria-label="成功した order は then の関数を通り、catch を飛ばして then の値で解決する。失敗した order は then を飛ばし、catch の関数を通って catch の値で解決する">
+            <text class="m s" x="70" y="30" text-anchor="middle">order</text>
+            <text class="m s" x="230" y="30" text-anchor="middle">.then(…)</text>
+            <text class="m s" x="390" y="30" text-anchor="middle">.catch(…)</text>
+            <text class="s" x="560" y="30" text-anchor="middle">返す Promise</text>
+            <rect class="box" x="10" y="50" width="120" height="44" rx="8"/>
+            <text x="70" y="77" text-anchor="middle">解決（7）</text>
+            <line class="ln-a" x1="134" y1="72" x2="156" y2="72"/><polygon class="hd-a" points="156,66 168,72 156,78"/>
+            <rect class="box-a" x="170" y="50" width="120" height="44" rx="8"/>
+            <text class="a" x="230" y="77" text-anchor="middle">関数を呼ぶ</text>
+            <line class="ln" x1="294" y1="72" x2="316" y2="72"/><polygon class="hd" points="316,66 328,72 316,78"/>
+            <rect class="box" x="330" y="50" width="120" height="44" rx="8"/>
+            <text class="s" x="390" y="77" text-anchor="middle">飛ばす</text>
+            <line class="ln" x1="454" y1="72" x2="476" y2="72"/><polygon class="hd" points="476,66 488,72 476,78"/>
+            <rect class="box-a" x="490" y="50" width="140" height="44" rx="8"/>
+            <text x="560" y="77" text-anchor="middle">then の値で解決</text>
+            <rect class="box" x="10" y="130" width="120" height="44" rx="8"/>
+            <text x="70" y="157" text-anchor="middle">失敗（Error）</text>
+            <line class="ln" x1="134" y1="152" x2="156" y2="152"/><polygon class="hd" points="156,146 168,152 156,158"/>
+            <rect class="box" x="170" y="130" width="120" height="44" rx="8"/>
+            <text class="s" x="230" y="157" text-anchor="middle">飛ばす</text>
+            <line class="ln-a" x1="294" y1="152" x2="316" y2="152"/><polygon class="hd-a" points="316,146 328,152 316,158"/>
+            <rect class="box-a" x="330" y="130" width="120" height="44" rx="8"/>
+            <text class="a" x="390" y="157" text-anchor="middle">関数を呼ぶ</text>
+            <line class="ln" x1="454" y1="152" x2="476" y2="152"/><polygon class="hd" points="476,146 488,152 476,158"/>
+            <rect class="box-a" x="490" y="130" width="140" height="44" rx="8"/>
+            <text x="560" y="157" text-anchor="middle">catch の値で解決</text>
+          </svg>
+        </div>
+        <figcaption>上の段が成功したとき、下の段が失敗したときです。どちらの段でも、関数が呼ばれるのは 1 か所だけです。返す Promise は、どちらの段でも解決します。</figcaption>
+      </figure>
+      <p class="memo"><b>よくある間違い</b>順番を逆にして <code>.catch(…).then(…)</code> と書くと、<code>catch</code> が返した値が、次の <code>then</code> の関数に届きます。失敗したときも <code>then</code> の関数が呼ばれるので、結果が変わります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 errorMessage を作る。中身の型が分からない Promise の promise を受け取り、文字列で解決する Promise を返す
+export function errorMessage() {
+  // promise が解決したら、"成功" で解決する Promise にする
+  // それが失敗したら、理由を error で受け取り、error が Error から作った値なら error のメッセージ、そうでなければ "不明なエラー" で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形はサンプルの <code>orderStatus</code> と同じで、<code>promise.then(…).catch(…)</code> とつなげます。届いた値は使わないので、<code>then</code> の関数は <code>() =&gt; "成功"</code> と何も受け取らずに書けます。<code>catch</code> の関数は <code>(error: unknown) =&gt;</code> で、中は <code>instanceof Error</code> と条件演算子 <code>? :</code> で書きます（01章 q01 問12）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c08-q01-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">成功しても失敗しても log に "done" を足す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.finally()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function logDone() {}</code></pre>
+      <p>数値で解決する Promise と、文字列の配列 <code>log</code> を受け取ります。Promise が成功しても失敗しても、終わったら <code>log</code> に <code>"done"</code> を付け足します。返す Promise の結果は、受け取った Promise と同じにします。成功ならその値で解決し、失敗ならそのまま失敗します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>logDone(Promise.resolve(3), log)</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>logDone(Promise.reject(new Error("x")), log)</code></dt><dd class="r"><code>"x"</code> というメッセージのエラーで失敗する</dd><dd class="c">失敗はそのまま</dd></div>
+          <div><dt>2 回呼んだあとの <code>log</code></dt><dd class="r"><code>["done", "done"]</code></dd><dd class="c">成功でも失敗でも足される</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.finally()</code><h4>成功しても失敗しても、終わったら次のことをする</h4></div>
+      <p><code>promise.finally(関数)</code> は、<code>promise</code> が解決しても失敗しても、決まったあとで関数を呼びます。04章 q05 問19 の <code>finally { }</code> の Promise 版です。関数は何も受け取りません。<code>finally</code> が返す Promise の結果は、元の <code>promise</code> と同じです。関数が値を返しても、結果は変わりません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 記録 log を文字列の配列として作り、空の配列を入れる
+const log: string[] = [];
+// 支払い paid を作り、3000 ですぐに解決する Promise が、成功しても失敗しても、終わったら次のことをする Promise を入れる
+const paid = Promise.resolve(3000).finally(() =&gt; {
+  // log の最後に "レジを閉じる" を付け足す
+  log.push("レジを閉じる");
+});
+// 結果: paid は 3000 で解決する Promise。解決したあとの log は ["レジを閉じる"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Promise.resolve(3000).finally(() =&gt; 99)</code></dt><dd class="r"><code>3000</code> で解決する</dd><dd class="c">関数が返した 99 は使われない</dd></div>
+        <div><dt><code>Promise.reject(new Error("カードが使えません")).finally(…)</code></dt><dd class="r"><code>"カードが使えません"</code> というメッセージのエラーで失敗する</dd><dd class="c">失敗もそのまま</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 logDone を作る。数値で解決する Promise の promise と、文字列の配列 log を受け取り、数値で解決する Promise を返す
+export function logDone() {
+  // promise が、成功しても失敗しても、終わったら次のことをする Promise を返す
+  //   log の最後に "done" を付け足す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>サンプルの <code>paid</code> の行と同じ形で、<code>promise.finally(() =&gt; { … })</code> を返します。「最後に付け足す」は <code>.push()</code> です（02章 q04 問17）。<code>finally</code> の結果は元の Promise と同じなので、成功の値も失敗も、自分で返し直す必要はありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c08-q01-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">すべての値の配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Promise.all()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function allNumbers() {}</code></pre>
+      <p>数値で解決する Promise の配列を受け取ります。すべてが解決したら、値を並べた配列で解決する Promise を返します。値の順番は、渡された配列の順です。1 つでも失敗したら、返す Promise もその失敗で失敗します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>allNumbers([10 ミリ秒後に 1 で解決, Promise.resolve(2)])</code></dt><dd class="r"><code>[1, 2]</code> で解決する</dd><dd class="c">先に終わった 2 が先にはならない</dd></div>
+          <div><dt><code>allNumbers([Promise.resolve(1), Promise.reject(new Error("x"))])</code></dt><dd class="r"><code>"x"</code> というメッセージのエラーで失敗する</dd><dd class="c">1 つでも失敗したら失敗</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Promise.all()</code><h4>すべて解決するのを待つ</h4></div>
+      <p><code>Promise.all(Promise の配列)</code> は、配列の Promise がすべて解決するのを待ちます。すべて解決したら、値を並べた配列で解決します。並びは、渡した配列の順です。終わった順にはなりません。1 つでも失敗すると、ほかを待たずに、その失敗で失敗します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stocks を作り、3 つの Promise がすべて解決したら、値をこの順に並べた配列で解決する Promise を入れる
+const stocks = Promise.all([Promise.resolve(12), Promise.resolve(0), Promise.resolve(5)]);
+// 結果: stocks は [12, 0, 5] で解決する Promise</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 200" role="img" aria-label="300 ミリ秒で 12、100 ミリ秒で 0、200 ミリ秒で 5 が届く 3 つの Promise。Promise.all は、いちばん遅い 300 ミリ秒の時点で [12, 0, 5] で解決する">
+            <text class="s" x="16" y="49">1 つ目</text>
+            <rect class="box" x="80" y="32" width="420" height="26" rx="6"/>
+            <text class="s" x="92" y="50">300 ミリ秒</text>
+            <text class="m" x="508" y="50">12</text>
+            <text class="s" x="16" y="89">2 つ目</text>
+            <rect class="box" x="80" y="72" width="140" height="26" rx="6"/>
+            <text class="s" x="92" y="90">100 ミリ秒</text>
+            <text class="m" x="228" y="90">0</text>
+            <text class="s" x="16" y="129">3 つ目</text>
+            <rect class="box" x="80" y="112" width="280" height="26" rx="6"/>
+            <text class="s" x="92" y="130">200 ミリ秒</text>
+            <text class="m" x="368" y="130">5</text>
+            <line class="ln-a" x1="500" y1="20" x2="500" y2="156"/>
+            <circle class="dot" cx="500" cy="156" r="5"/>
+            <text class="a" x="510" y="184" text-anchor="end">ここで [12, 0, 5] で解決</text>
+          </svg>
+        </div>
+        <figcaption>値が届くまでの時間が違う 3 つの Promise を <code>Promise.all</code> に渡したときです。いちばん遅い 1 つ目が届いたときに解決します。2 つ目が先に届いても、配列の並びは渡した順の <code>[12, 0, 5]</code> です。</figcaption>
+      </figure>
+      <p>Promise の配列の型は <code>Promise&lt;number&gt;[]</code> と書きます（配列の型 <code>T[]</code> は 01章 q08 の応用）。「数値で解決する Promise の配列」と読みます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/promise">サバイバルTypeScript「Promise」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 allNumbers を作る。数値で解決する Promise の配列 promises を受け取り、数値の配列で解決する Promise を返す
+export function allNumbers() {
+  // promises がすべて解決したら、値をこの順に並べた配列で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>promises: Promise&lt;number&gt;[]</code>、戻り値は <code>: Promise&lt;number[]&gt;</code> です。中身はサンプルの <code>stocks</code> の行と同じ形で、配列を書く代わりに <code>promises</code> を渡します。失敗したときの動きは <code>Promise.all</code> がそのまま受け持つので、自分で書く必要はありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c08-q01-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">すべての値の合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.reduce()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumOfAll() {}</code></pre>
+      <p>数値で解決する Promise の配列を受け取ります。すべてが解決したら、値の合計で解決する Promise を返します。配列が空なら <code>0</code> で解決します。<code>Promise.all</code> と <code>then</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumOfAll([Promise.resolve(1), 5 ミリ秒後に 2 で解決])</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>sumOfAll([])</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.reduce()</code><h4>配列の要素を 1 つの値にまとめる</h4></div>
+      <p><code>.reduce(関数, はじめの値)</code> は、配列の要素を前から 1 つずつ取り出して、1 つの値にまとめます。関数は「ここまでの結果」と「取り出した要素」を受け取り、次の「ここまでの結果」を返します。最後の結果が、<code>.reduce()</code> の結果です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 価格 prices を作り、[1200, 800, 500] を入れる
+const prices = [1200, 800, 500];
+// 合計 total を作り、prices の要素を 1 つずつ price として、合計 sum（はじめは 0）に price を足していった結果を入れる
+const total = prices.reduce((sum, price) =&gt; sum + price, 0);
+// 結果: total は 2500</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>prices.reduce(<span class="seg"><i>1</i>(sum, price)</span> =&gt; <span class="seg"><i>2</i>sum + price</span>, <span class="seg c"><i>3</i>0</span>)</pre>
+        <ol>
+          <li><span><code>sum</code> はここまでの結果、<code>price</code> は取り出した要素です。</span></li>
+          <li><span>次の「ここまでの結果」として返す値です。</span></li>
+          <li><span>はじめの値です。最初の <code>sum</code> になります。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>sum（ここまでの結果）</th><th>price（取り出した要素）</th><th>返す値</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>1200</td><td>1200</td></tr>
+            <tr><td>1200</td><td>800</td><td>2000</td></tr>
+            <tr><td>2000</td><td>500</td><td>2500</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある間違い</b>はじめの値 <code>0</code> を書き忘れると、空の配列で <code>TypeError</code> というエラーになります。はじめの値があれば、空の配列ではそのはじめの値が結果になります。</p>
+      <dl class="eg">
+        <div><dt><code>[].reduce((sum, price) =&gt; sum + price, 0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">取り出す要素がないので、はじめの値のまま</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumOfAll を作る。数値で解決する Promise の配列 promises を受け取り、数値で解決する Promise を返す
+export function sumOfAll() {
+  // 「promises がすべて解決したら、値をこの順に並べた配列で解決する Promise」の値を values として受け取り、values の要素を 1 つずつ n として、合計 sum（はじめは 0）に n を足していった結果で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Promise.all(promises)</code>（問13）の後ろに <code>.then((values) =&gt; …)</code> をつなげます（問5）。<code>…</code> の部分は、サンプルの <code>total</code> の行の <code>.reduce()</code> と同じ形です。はじめの値 <code>0</code> を書けば、空の配列でも <code>0</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c08-q01-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">2 つの値を [文字列, 数値] のタプルにして返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pairOf() {}</code></pre>
+      <p>文字列で解決する Promise と、数値で解決する Promise を受け取ります。両方が解決したら、2 つの値を <code>[文字列, 数値]</code> のタプルにして解決する Promise を返します。タプルは、要素の数と並びの型が決まった配列です（02章 q06 問1）。<code>Promise.all</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pairOf(Promise.resolve("a"), Promise.resolve(1))</code></dt><dd class="r"><code>["a", 1]</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Promise&lt;string&gt;</code> と <code>Promise&lt;number&gt;</code>、戻り値が <code>Promise&lt;[string, number]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pairOf を作る。文字列で解決する Promise の a と、数値で解決する Promise の b を受け取り、[文字列, 数値] のタプルで解決する Promise を返す
+export function pairOf() {
+  // a と b がすべて解決したら、値をこの順に並べたタプルで解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は <code>: Promise&lt;[string, number]&gt;</code> です。問13 のサンプルの <code>stocks</code> のように、<code>Promise.all</code> のかっこの中に配列 <code>[a, b]</code> を直接書きます。配列を直接書くと、TypeScript は要素ごとの型をタプルとして覚えます。そのため結果の型が <code>Promise&lt;[string, number]&gt;</code> になり、戻り値の型と合います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c08-q01-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">いちばん早く解決した値を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Promise.race()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fastest() {}</code></pre>
+      <p>文字列で解決する Promise の配列を受け取ります。その中で、いちばん早く解決した Promise の値で解決する Promise を返します。<code>Promise.race</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fastest([50 ミリ秒後に "遅い" で解決, 5 ミリ秒後に "速い" で解決])</code></dt><dd class="r"><code>"速い"</code> で解決する</dd><dd class="c">早く決まったほうが勝つ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Promise.race()</code><h4>いちばん早く決まったものを使う</h4></div>
+      <p><code>Promise.race(Promise の配列)</code> は、配列の中でいちばん早く決まった Promise と同じ結果になります。race は「競走」という意味です。いちばん早いものが解決なら、その値で解決します。いちばん早いものが失敗なら、その失敗で失敗します。ほかの Promise の結果は使われません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 arriveAfter を作る。文字列 name と数値 ms を受け取り、文字列で解決する Promise を返す
+function arriveAfter(name: string, ms: number): Promise&lt;string&gt; {
+  // 新しい Promise を作って返す。作るときに、解決する関数 resolve を受け取り、次のことをする
+  return new Promise((resolve) =&gt; {
+    // ms ミリ秒たったら、resolve に name を渡して呼ぶ関数を呼ぶように予約する
+    setTimeout(() =&gt; {
+      resolve(name);
+    }, ms);
+  });
+}
+// 先着 first を作り、2 つの Promise のうち、いちばん早く決まったものと同じ結果になる Promise を入れる
+const first = Promise.race([arriveAfter("東京倉庫", 300), arriveAfter("大阪倉庫", 100)]);
+// 結果: first は "大阪倉庫" で解決する Promise</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 160" role="img" aria-label="300 ミリ秒で東京倉庫、100 ミリ秒で大阪倉庫が届く 2 つの Promise。Promise.race は、早い 100 ミリ秒の時点で大阪倉庫で解決する">
+            <text class="s" x="16" y="49">東京倉庫</text>
+            <rect class="box" x="96" y="32" width="420" height="26" rx="6"/>
+            <text class="s" x="108" y="50">300 ミリ秒</text>
+            <text class="s" x="16" y="89">大阪倉庫</text>
+            <rect class="box-a" x="96" y="72" width="140" height="26" rx="6"/>
+            <text class="s" x="108" y="90">100 ミリ秒</text>
+            <line class="ln-a" x1="236" y1="20" x2="236" y2="116"/>
+            <circle class="dot" cx="236" cy="116" r="5"/>
+            <text class="a" x="226" y="144">ここで "大阪倉庫" で解決</text>
+          </svg>
+        </div>
+        <figcaption>先に決まった大阪倉庫の Promise が勝ちます。東京倉庫の Promise はそのあとで解決しますが、<code>first</code> の結果は変わりません。</figcaption>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>Promise.race([10 ミリ秒後に失敗, 50 ミリ秒後に 1 で解決])</code></dt><dd class="r">失敗する</dd><dd class="c">いちばん早いものが失敗なら、失敗</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fastest を作る。文字列で解決する Promise の配列 promises を受け取り、文字列で解決する Promise を返す
+export function fastest() {
+  // promises のうち、いちばん早く決まったものと同じ結果になる Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>サンプルの <code>first</code> の行と同じ形です。配列を書く代わりに <code>promises</code> を渡し、<code>return</code> で返します。引数の型は <code>Promise&lt;string&gt;[]</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c08-q01-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">成功した Promise の数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Promise.allSettled()</code> <code>.status</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function settledCount() {}</code></pre>
+      <p>数値で解決する Promise の配列を受け取ります。すべてが決まったら、そのうち成功した Promise の数で解決する Promise を返します。失敗が混じっていても、返す Promise は失敗しません。<code>Promise.allSettled</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>settledCount([Promise.resolve(1), Promise.reject(new Error("x")), Promise.resolve(3)])</code></dt><dd class="r"><code>2</code> で解決する</dd><dd class="c">成功が 2 つ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Promise.allSettled()</code><h4>成功も失敗も、すべて決まるのを待つ</h4></div>
+      <p><code>Promise.allSettled(Promise の配列)</code> は、配列の Promise がすべて決まるのを待ちます。settled は「決まった」という意味です。<code>Promise.all</code> と違い、途中で失敗があっても待ち続けます。そして、1 つずつの結果を並べた配列で解決します。この Promise は失敗しません。</p>
+      <p>結果の 1 つ 1 つは、成功か失敗かで形が違うオブジェクトです。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>元の Promise</th><th>結果のオブジェクト</th><th>型</th></tr></thead>
+          <tbody>
+            <tr><td>12 で解決した</td><td><code>{ status: "fulfilled", value: 12 }</code></td><td><code>PromiseFulfilledResult&lt;number&gt;</code></td></tr>
+            <tr><td>Error で失敗した</td><td><code>{ status: "rejected", reason: Error }</code></td><td><code>PromiseRejectedResult</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>2 つをまとめたユニオン型が <code>PromiseSettledResult&lt;number&gt;</code> です。<code>status</code> の値で、どちらの形かを見分けます。03章 q04 の判別可能なユニオン型と同じ仕組みです。<code>"fulfilled"</code> は成功、<code>"rejected"</code> は失敗という意味です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 結果 results を作り、2 つの Promise がすべて決まったら、1 つずつの結果を並べた配列で解決する Promise を入れる
+const results = Promise.allSettled([
+  Promise.resolve(12),
+  Promise.reject(new Error("倉庫に届きません")),
+]);
+// 状態 statuses を作り、results の値を list として受け取り、list の要素を 1 つずつ r として、r の status に変えた新しい配列で解決する Promise を入れる
+const statuses = results.then((list) =&gt; list.map((r) =&gt; r.status));
+// 結果: statuses は ["fulfilled", "rejected"] で解決する Promise</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Promise.all([Promise.resolve(12), Promise.reject(new Error("倉庫に届きません"))])</code></dt><dd class="r">失敗する</dd><dd class="c">1 つでも失敗すると失敗</dd></div>
+        <div><dt><code>Promise.allSettled([Promise.resolve(12), Promise.reject(new Error("倉庫に届きません"))])</code></dt><dd class="r">結果 2 つの配列で解決する</dd><dd class="c">失敗も結果として並ぶ</dd></div>
+      </dl>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/promise">サバイバルTypeScript「Promise」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 settledCount を作る。数値で解決する Promise の配列 promises を受け取り、数値で解決する Promise を返す
+export function settledCount() {
+  // 「promises がすべて決まったら、1 つずつの結果を並べた配列で解決する Promise」の値を results として受け取り、results の要素を 1 つずつ r として、r の status が "fulfilled" と等しいものだけを集めた新しい配列の、要素の数で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Promise.allSettled(promises)</code> の後ろに <code>.then((results) =&gt; …)</code> をつなげます。サンプルの <code>statuses</code> の行と同じ形です。<code>…</code> の部分は、<code>.filter()</code>（02章 q04 問7）で残したものの <code>.length</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c08-q01-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">成功した値だけの配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.flatMap()</code> <code>.value</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fulfilledValues() {}</code></pre>
+      <p>数値で解決する Promise の配列を受け取ります。すべてが決まったら、成功した Promise の値だけを並べた配列で解決する Promise を返します。並びは元の配列の順です。失敗した Promise は飛ばします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fulfilledValues([Promise.resolve(1), Promise.reject(new Error("x")), Promise.resolve(3)])</code></dt><dd class="r"><code>[1, 3]</code> で解決する</dd><dd class="c">失敗は飛ばす</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.value</code><h4>成功の結果から値を取り出す</h4></div>
+      <p>成功の結果には <code>value</code>、失敗の結果には <code>reason</code> があります。そのため、<code>status</code> を確かめる前の <code>r.value</code> は型のエラーになります。<code>r.status === "fulfilled"</code> が <code>true</code> になる側では、<code>r</code> が成功の結果に絞り込まれ、<code>r.value</code> を使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockText を作る。数値の Promise の結果 r を受け取り、文字列を返す
+function stockText(r: PromiseSettledResult&lt;number&gt;): string {
+  // r の status が "fulfilled" と等しいなら、r の value を埋め込んだ「在庫 ◯ 個」、そうでなければ "取得できません" を返す
+  return r.status === "fulfilled" ? `在庫 ${r.value} 個` : "取得できません";
+}
+// 結果: stockText({ status: "fulfilled", value: 12 }) は "在庫 12 個"
+// 結果: stockText({ status: "rejected", reason: new Error("倉庫に届きません") }) は "取得できません"</code></pre>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.flatMap()</code><h4>要素を配列に変え、それらをつなげる</h4></div>
+      <p><code>.flatMap(関数)</code> は、<code>.map()</code>（02章 q04 問5）と同じく要素を 1 つずつ関数に渡します。違うのは、関数が配列を返すことです。返した配列の中身を、順につなげた 1 つの配列が結果になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// サイズ sizes を作り、["S", "M"] を入れる
+const sizes = ["S", "M"];
+// 品番 codes を作り、sizes の要素を 1 つずつ s として、s に "-赤" と "-青" をつなげた 2 つの文字列の配列に変え、それらをつなげた新しい配列を入れる
+const codes = sizes.flatMap((s) =&gt; [`${s}-赤`, `${s}-青`]);
+// 結果: codes は ["S-赤", "S-青", "M-赤", "M-青"]</code></pre>
+      </div>
+      <p>空の配列 <code>[]</code> を返した要素は、結果に何も残りません。要素 1 つの配列を返せば、その 1 つが残ります。これを使うと、残すか飛ばすかと、何に変えるかを 1 回で書けます。</p>
+      <dl class="eg">
+        <div><dt><code>[1, 2, 3].flatMap((n) =&gt; (n === 2 ? [] : [n]))</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c">2 のときは空の配列なので消える</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fulfilledValues を作る。数値で解決する Promise の配列 promises を受け取り、数値の配列で解決する Promise を返す
+export function fulfilledValues() {
+  // 「promises がすべて決まったら、1 つずつの結果を並べた配列で解決する Promise」の値を results として受け取り、results の要素を 1 つずつ r として、r の status が "fulfilled" と等しいなら r の value だけの配列、そうでなければ空の配列に変え、それらをつなげた新しい配列で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>外側は問17 と同じく <code>Promise.allSettled(promises).then((results) =&gt; …)</code> です。<code>…</code> の部分は <code>results.flatMap((r) =&gt; …)</code> で、中は 1 つ目の項目のサンプルの <code>stockText</code> と同じ条件演算子です。成功なら <code>[r.value]</code>、そうでなければ <code>[]</code> を返します。<code>.filter()</code> で成功だけを残してから <code>.map()</code> で <code>r.value</code> に変えても書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c08-q01-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">失敗の理由のメッセージの配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.reason</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rejectedMessages() {}</code></pre>
+      <p>Promise の配列を受け取ります。すべてが決まったら、失敗した Promise の理由を見て、メッセージの配列で解決する Promise を返します。理由が <code>Error</code> ならその <code>message</code>、<code>Error</code> でなければ <code>"不明なエラー"</code> を並べます。成功した Promise は飛ばします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rejectedMessages([Promise.resolve(1), Promise.reject(new Error("x")), Promise.reject(new Error("y"))])</code></dt><dd class="r"><code>["x", "y"]</code> で解決する</dd><dd class="c">成功は飛ばす</dd></div>
+          <div><dt><code>rejectedMessages([Promise.reject(404)])</code></dt><dd class="r"><code>["不明なエラー"]</code> で解決する</dd><dd class="c">理由が Error でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。引数は、中身の型を問わない Promise の配列（<code>Promise&lt;unknown&gt;[]</code>）にすると、どんな Promise も受け取れます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.reason</code><h4>失敗の結果から理由を取り出す</h4></div>
+      <p>失敗の結果（<code>PromiseRejectedResult</code>）の <code>reason</code> には、失敗の理由が入っています。理由には何でも入りうるので、型は <code>any</code> です。<code>any</code> のまま使うと型の確かめが効かないので、<code>unknown</code> の変数に入れてから <code>instanceof</code> で確かめます。型注釈を書かずに変数に入れると、ESLint が「<code>any</code> を入れている」と知らせます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 reasonText を作る。失敗の結果 result を受け取り、文字列を返す
+function reasonText(result: PromiseRejectedResult): string {
+  // 理由 reason を作り、result の reason を入れる。型は unknown にする
+  const reason: unknown = result.reason;
+  // reason が Error から作った値なら、reason のメッセージを埋め込んだ「理由: ◯」、そうでなければ "原因不明" を返す
+  return reason instanceof Error ? `理由: ${reason.message}` : "原因不明";
+}
+// 結果: reasonText({ status: "rejected", reason: new Error("倉庫に届きません") }) は "理由: 倉庫に届きません"
+// 結果: reasonText({ status: "rejected", reason: 503 }) は "原因不明"</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rejectedMessages を作る。中身の型が分からない Promise の配列 promises を受け取り、文字列の配列で解決する Promise を返す
+export function rejectedMessages() {
+  // 「promises がすべて決まったら、1 つずつの結果を並べた配列で解決する Promise」の値を results として受け取り、results の要素を 1 つずつ r として、次のことをする関数が返した配列に変え、それらをつなげた新しい配列で解決する Promise を返す
+  //   もし r の status が "fulfilled" と等しいなら
+  //     空の配列を返す
+  //   理由 reason を作り、r の reason を入れる。型は unknown にする
+  //   reason が Error から作った値なら reason のメッセージ、そうでなければ "不明なエラー" の、1 つだけの配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>外側は問18 と同じく <code>Promise.allSettled(promises).then((results) =&gt; results.flatMap((r) =&gt; { … }))</code> です。<code>{ }</code> の中に何行も書くので、<code>flatMap</code> の関数は <code>{ }</code> と <code>return</code> を使う形にします。<code>if</code> で成功を先に返すと、その後ろでは <code>r</code> が失敗の結果に絞り込まれ、<code>r.reason</code> を使えます。最後の行は、サンプルの <code>reasonText</code> の 2 行と同じ形で、結果を <code>[ ]</code> で囲みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c08-q01-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">関数を前から順に then でつなぎ、最後の値を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function chainSteps() {}</code></pre>
+      <p>数値 <code>start</code> と、関数の配列 <code>steps</code> を受け取ります。<code>steps</code> の関数は、どれも数値を受け取り、数値で解決する Promise を返します。<code>start</code> から始めて、<code>steps</code> の関数を前から順に <code>then</code> でつなぎます。前の関数の結果が、次の関数に渡ります。最後の関数の結果で解決する Promise を返します。<code>steps</code> が空なら <code>start</code> で解決します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、2 つの関数 <code>addOne</code> と <code>times2</code> を使います。<code>addOne</code> は、受け取った数に 1 を足した数ですぐに解決します。<code>times2</code> は、5 ミリ秒後に、受け取った数を 2 倍にした数で解決します。</p>
+        <dl class="eg">
+          <div><dt><code>chainSteps(1, [addOne, times2])</code></dt><dd class="r"><code>4</code> で解決する</dd><dd class="c">1 + 1 で 2、2 × 2 で 4</dd></div>
+          <div><dt><code>chainSteps(1, [times2, addOne])</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c">1 × 2 で 2、2 + 1 で 3</dd></div>
+          <div><dt><code>chainSteps(7, [])</code></dt><dd class="r"><code>7</code> で解決する</dd><dd class="c">関数がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 chainSteps を作る。数値 start と、関数（数値 n を受け取り、数値で解決する Promise を返す）の配列 steps を受け取り、数値で解決する Promise を返す
+export function chainSteps() {
+  // 今の Promise current を入れ直せる変数として作り、start ですぐに解決する Promise を入れる
+  // steps から 1 つずつ step に取り出してくり返す
+  //   current に、「current の値を n として受け取り、step に n を渡して呼んだ結果の Promise で解決する Promise」を入れ直す
+  // current を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>関数の型は <code>(n: number) =&gt; Promise&lt;number&gt;</code> です（05章 q07 問1）。その配列は、かっこで囲んで <code>((n: number) =&gt; Promise&lt;number&gt;)[]</code> と書きます。かっこがないと「Promise の配列を返す関数」と読まれ、型のエラーになります。<code>current</code> は <code>let</code> で作り、<code>Promise.resolve(start)</code> を入れます（問1）。くり返しの中は <code>current = current.then((n) =&gt; step(n));</code> で、問8 のサンプルの <code>price</code> と同じく then の関数が Promise を返す形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c08-q01-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">待つ・時間切れ・読み込み中の表示・失敗したときの値・合計</span>
+      <span class="q-new">新しく出てくる書き方：<code>new Promise</code> の <code>reject</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function delay() {}
+
+export function timeout() {}
+
+export function withLoading() {}
+
+export function orDefault() {}
+
+export function sumAll() {}</code></pre>
+      <p>5 つの関数を書きます。<code>async</code> と <code>await</code> は使いません。引数と戻り値には型注釈を付けます。<code>timeout</code>・<code>withLoading</code>・<code>orDefault</code> は型変数 <code>T</code>（07章 q06 問1）を使い、受け取った Promise の中身の型に合わせて、戻り値の型が変わるようにします。</p>
+      <ol>
+        <li><code>delay</code>：<code>ms</code> ミリ秒たったら解決する <code>Promise&lt;void&gt;</code> を返します。</li>
+        <li><code>timeout</code>：<code>promise</code> が <code>ms</code> ミリ秒以内に解決したら、その値で解決します。間に合わなければ <code>"タイムアウトしました"</code> というメッセージのエラーで失敗します。<code>Promise.race</code> を使います。</li>
+        <li><code>withLoading</code>：最初に <code>setLoading(true)</code> を呼びます。<code>promise</code> が成功しても失敗しても、終わったら <code>setLoading(false)</code> を呼びます。返す Promise の結果は <code>promise</code> と同じです。画面に「読み込み中」を出し、終わったら消すときに使う形です。</li>
+        <li><code>orDefault</code>：<code>promise</code> が成功したらその値で、失敗したら <code>fallback</code> で解決する Promise を返します。</li>
+        <li><code>sumAll</code>：数値で解決する Promise の配列を受け取り、すべて解決したら合計で解決する <code>Promise&lt;number&gt;</code> を返します。1 つでも失敗したら、その失敗をそのまま返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>delay(100)</code></dt><dd class="r">100 ミリ秒たったら解決する</dd><dd class="c">99 ミリ秒の時点では、まだ待ち</dd></div>
+          <div><dt><code>timeout(50 ミリ秒後に 1 で解決, 100)</code></dt><dd class="r"><code>1</code> で解決する</dd><dd class="c">間に合った</dd></div>
+          <div><dt><code>timeout(200 ミリ秒後に 1 で解決, 100)</code></dt><dd class="r"><code>"タイムアウトしました"</code> というメッセージのエラーで失敗する</dd><dd class="c">100 ミリ秒で失敗する</dd></div>
+          <div><dt><code>withLoading(Promise.resolve("ok"), setLoading)</code></dt><dd class="r"><code>"ok"</code> で解決する</dd><dd class="c">呼んだ直後の記録は <code>[true]</code>、解決したあとは <code>[true, false]</code></dd></div>
+          <div><dt><code>withLoading(Promise.reject(new Error("失敗")), setLoading)</code></dt><dd class="r"><code>"失敗"</code> というメッセージのエラーで失敗する</dd><dd class="c">記録は <code>[true, false]</code></dd></div>
+          <div><dt><code>orDefault(Promise.resolve(5), 0)</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>orDefault(Promise.reject(new Error("x")), 0)</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>sumAll([Promise.resolve(1), Promise.resolve(2), 1 ミリ秒後に 3 で解決])</code></dt><dd class="r"><code>6</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>sumAll([])</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>sumAll([Promise.resolve(1), Promise.reject(new Error("x"))])</code></dt><dd class="r"><code>"x"</code> というメッセージのエラーで失敗する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>delay</code> は引数が <code>number</code>、戻り値が <code>Promise&lt;void&gt;</code> です。<code>timeout</code> は、数値の Promise を渡すと <code>Promise&lt;number&gt;</code>、文字列の Promise を渡すと <code>Promise&lt;string&gt;</code> を返します。<code>withLoading</code> は数値の Promise を渡すと <code>Promise&lt;number&gt;</code>、<code>orDefault(Promise.resolve("a"), "")</code> は <code>Promise&lt;string&gt;</code>、<code>sumAll</code> は <code>Promise&lt;number&gt;</code> を返すことも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(resolve, reject) =&gt;</code><h4>new Promise の中で失敗させる</h4></div>
+      <p><code>new Promise</code> に渡す関数は、2 つ目の引数に <code>reject</code> を受け取れます。<code>reject</code> は「この Promise を失敗させる関数」です。<code>reject(new Error("…"))</code> を呼んだときに、Promise がそのエラーで失敗します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 reserveSeat を作る。数値 left を受け取り、文字列で解決する Promise を返す
+function reserveSeat(left: number): Promise&lt;string&gt; {
+  // 新しい Promise を作って返す。作るときに、解決する関数 resolve と失敗させる関数 reject を受け取り、次のことをする
+  return new Promise((resolve, reject) =&gt; {
+    // もし left が 0 と等しいなら
+    if (left === 0) {
+      // reject に、"満席です" というメッセージのエラーを渡して呼ぶ
+      reject(new Error("満席です"));
+    } else {
+      // そうでなければ、resolve に "予約できました" を渡して呼ぶ
+      resolve("予約できました");
+    }
+  });
+}
+// 結果: reserveSeat(3) は "予約できました" で解決する
+// 結果: reserveSeat(0) は "満席です" のエラーで失敗する
+
+// 関数 expireAfter を作る。数値 ms を受け取り、必ず失敗する Promise を返す
+function expireAfter(ms: number): Promise&lt;never&gt; {
+  // 新しい Promise を作って返す。作るときに、使わない 1 つ目の引数を _、失敗させる関数を reject として受け取り、次のことをする
+  return new Promise((_, reject) =&gt; {
+    // ms ミリ秒たったら、reject に "予約の期限が切れました" というメッセージのエラーを渡して呼ぶ関数を呼ぶように予約する
+    setTimeout(() =&gt; {
+      reject(new Error("予約の期限が切れました"));
+    }, ms);
+  });
+}
+// 結果: expireAfter(3000) は、3000 ミリ秒たったら "予約の期限が切れました" のエラーで失敗する</code></pre>
+      </div>
+      <p><code>expireAfter</code> は <code>resolve</code> を使いません。引数は並びで受け取るので、2 つ目の <code>reject</code> を受け取るには 1 つ目も書く必要があります。使わない引数には <code>_</code> という名前を付けておきます。</p>
+      <p class="memo"><b>よくある疑問</b><code>new Promise</code> で作った Promise を変数に入れるときは、問3 の <code>fee</code> と同じく <code>&lt; &gt;</code> で中身の型を書きます。必ず失敗する Promise なら <code>new Promise&lt;never&gt;(…)</code> です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 delay を作る。数値 ms を受け取り、値なしで解決する Promise を返す
+export function delay() {
+  // 新しい Promise を作って返す。作るときに、解決する関数 resolve を受け取り、次のことをする
+  //   ms ミリ秒たったら、resolve を呼ぶように予約する
+}
+
+// 関数 timeout を作る。型変数 T を使い、T で解決する Promise の promise と数値 ms を受け取り、T で解決する Promise を返す
+export function timeout() {
+  // 期限 timer を作り、必ず失敗する新しい Promise を入れる。作るときに、使わない 1 つ目の引数を _、失敗させる関数を reject として受け取り、次のことをする
+  //   ms ミリ秒たったら、reject に "タイムアウトしました" というメッセージのエラーを渡して呼ぶ関数を呼ぶように予約する
+  // promise と timer のうち、いちばん早く決まったものと同じ結果になる Promise を返す
+}
+
+// 関数 withLoading を作る。型変数 T を使い、T で解決する Promise の promise と、関数 setLoading（true か false の loading を受け取り、何も返さない）を受け取り、T で解決する Promise を返す
+export function withLoading() {
+  // setLoading に true を渡して呼ぶ
+  // promise が、成功しても失敗しても、終わったら次のことをする Promise を返す
+  //   setLoading に false を渡して呼ぶ
+}
+
+// 関数 orDefault を作る。型変数 T を使い、T で解決する Promise の promise と、T の fallback を受け取り、T で解決する Promise を返す
+export function orDefault() {
+  // promise が失敗したら、fallback で解決する Promise を返す
+}
+
+// 関数 sumAll を作る。読み取り専用の、数値で解決する Promise の配列 promises を受け取り、数値で解決する Promise を返す
+export function sumAll() {
+  // 「promises がすべて解決したら、値をこの順に並べた配列で解決する Promise」の値を values として受け取り、values の要素を 1 つずつ n として、合計 sum（はじめは 0）に n を足していった結果で解決する Promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>delay</code> は問3 と同じです。<code>timeout</code> の <code>timer</code> は、サンプルの <code>expireAfter</code> の中身と同じ形を、<code>const timer = new Promise&lt;never&gt;(…)</code> として変数に入れます。最後は問16 と同じく <code>Promise.race([promise, timer])</code> です。<code>timer</code> は値を届けないので、結果の型は <code>Promise&lt;T&gt;</code> のままです。<code>withLoading</code> の <code>setLoading</code> の型は <code>(loading: boolean) =&gt; void</code> で（05章 q07 問1）、残りは問12 と同じ <code>finally</code> です。<code>setLoading(true)</code> は <code>finally</code> の外で、先に呼びます。<code>orDefault</code> は問10 の <code>catch</code>、<code>sumAll</code> は問14 と同じ形です。「読み取り専用の配列」は <code>readonly Promise&lt;number&gt;[]</code> です（02章 q04 問1）。</p></details>
+    </div>
+  </section>
+</section>

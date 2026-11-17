@@ -1,0 +1,833 @@
+<section class="sec" id="c09-q02">
+  <div class="sec-h">
+    <span class="eyebrow">09章 組み込みの API とモジュール</span>
+    <h2>q02 Set</h2>
+    <p>重複を除いたり、2 つの集まりを比べたりする関数を 20 個書き、最後に応用問題に取り組みます。この番号では、TypeScript に最初から用意されている Set を使います。引数と戻り値には型注釈を付けます。型は <code>Set&lt;string&gt;</code> のように書きます。引数の配列や Set は書き換えません。引数の型は <code>string[]</code> や <code>Set&lt;string&gt;</code> と書き、<code>readonly</code> や <code>ReadonlySet</code> は使いません。Set も q01 の Map と同じく、入れた順を覚えています。配列にしたいときは、<code>[...set]</code> のようにスプレッド構文を使います。Set には <code>union</code>（どちらかにあるもの）や <code>intersection</code>（両方にあるもの）といったメソッドもあります。ただし、この課題の設定（ES2022）では使えません。<code>has</code> や <code>add</code> を使って自分で書きます。問18 では、定義済みの型 <code>User</code> を使います。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c09-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">配列から Set を作る</span>
+      <span class="q-new">新しく出てくる書き方：Set の型 <code>Set&lt;T&gt;</code>、<code>new Set()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toSet() {}</code></pre>
+      <p>文字列の配列 <code>items</code> を受け取り、その要素を入れた Set を返します。同じ値は 1 つにまとまります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toSet(["a", "b", "a"])</code></dt><dd class="r"><code>Set { "a", "b" }</code></dd><dd class="c">2 つ目の "a" は入らない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code>、戻り値が <code>Set&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Set&lt;T&gt;</code><h4>同じ値を 1 つずつだけ持つ集まり</h4></div>
+      <p>Set は、値の集まりを入れておく入れ物です。同じ値は 1 つしか入りません。もう入っている値を足しても、何も変わりません。Map と同じく、入れた順を覚えています。Map のキーだけを集めたもの、と考えると分かりやすいです。型は <code>Set&lt;要素の型&gt;</code> と書きます。配列との違いを表にまとめます。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th></th><th>配列</th><th>Set</th></tr></thead>
+          <tbody>
+            <tr><td>型の書き方</td><td><code>string[]</code></td><td><code>Set&lt;string&gt;</code></td></tr>
+            <tr><td>作り方</td><td><code>["東京", "大阪"]</code></td><td><code>new Set(["東京", "大阪"])</code></td></tr>
+            <tr><td>同じ値</td><td>何回でも入る</td><td>1 つだけ入る</td></tr>
+            <tr><td>番号で取り出す</td><td><code>areas[0]</code></td><td>できない</td></tr>
+            <tr><td>入っているか</td><td><code>areas.includes("東京")</code></td><td><code>areas.has("東京")</code>（問8）</td></tr>
+            <tr><td>足す</td><td><code>areas.push("福岡")</code></td><td><code>areas.add("福岡")</code>（問6）</td></tr>
+            <tr><td>取り除く</td><td><code>.filter()</code> で残すものを集める</td><td><code>areas.delete("大阪")</code>（問7）</td></tr>
+            <tr><td>入っている数</td><td><code>areas.length</code></td><td><code>areas.size</code>（問2）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>このページでは、Set の中身を <code>Set { "東京", "大阪" }</code> のように書きます。課題のファイルの例と同じ書き方です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/builtin-api/set">サバイバルTypeScript「Set&lt;T&gt;」</a></p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Set(配列)</code><h4>配列から Set を作る</h4></div>
+      <p>Map と同じく、<code>new</code> を付けて作ります。<code>new Set()</code> のかっこに配列を渡すと、配列の要素を前から順に入れた Set ができます。同じ値は、最初の 1 つだけが残ります。型は、渡した配列から推論されます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文された品名 orders を作り、"ノート" と "ペン" と "ノート" を並べた配列を入れる
+const orders = ["ノート", "ペン", "ノート"];
+// 品名の集まり kinds を作り、orders から作った Set を入れる
+const kinds = new Set(orders);
+// 結果: kinds は Set { "ノート", "ペン" }</code></pre>
+      </div>
+      <p><code>kinds</code> の型は <code>Set&lt;string&gt;</code> です。元の配列 <code>orders</code> は変わりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toSet を作る。文字列の配列 items を受け取り、文字列の Set を返す
+export function toSet() {
+  // items から作った Set を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>items: string[]</code>、戻り値の型は <code>Set&lt;string&gt;</code> です。中身は、問1 のサンプルの <code>kinds</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c09-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">重複を除いた要素の数を返す</span>
+      <span class="q-new">新しく出てくる書き方：Set の <code>.size</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function uniqueCount() {}</code></pre>
+      <p>文字列の配列 <code>items</code> を受け取り、同じ値を 1 つと数えたときの、値の種類の数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>uniqueCount(["a", "b", "a"])</code></dt><dd class="r"><code>2</code></dd><dd class="c">"a" と "b" の 2 種類</dd></div>
+          <div><dt><code>uniqueCount([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.size</code><h4>Set に入っている値の数</h4></div>
+      <p>Map の <code>.size</code>（q01 問6）と同じく、入っている値の数です。かっこは付けません。同じ値は 1 つしか入らないので、値の種類の数になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文された品名 orders を作り、"ノート" と "ペン" と "ノート" を並べた配列を入れる
+const orders = ["ノート", "ペン", "ノート"];
+// 品名の種類の数 kindCount を作り、orders から作った Set に入っている値の数を入れる
+const kindCount = new Set(orders).size;
+// 結果: kindCount は 2</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 uniqueCount を作る。文字列の配列 items を受け取り、数値を返す
+export function uniqueCount() {
+  // items から作った Set に入っている値の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 のサンプルの <code>kindCount</code> の行と同じ形です。作った Set に、続けて <code>.size</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c09-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">同じ値が 2 回以上出てきたら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasDuplicates() {}</code></pre>
+      <p>数値の配列 <code>items</code> を受け取り、同じ値が 2 回以上出てきたら <code>true</code>、どの値も 1 回だけなら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasDuplicates([1, 2, 1])</code></dt><dd class="r"><code>true</code></dd><dd class="c">1 が 2 回</dd></div>
+          <div><dt><code>hasDuplicates([1, 2, 3])</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasDuplicates を作る。数値の配列 items を受け取り、true か false を返す
+export function hasDuplicates() {
+  // items から作った Set に入っている値の数が、items の要素の数と等しくないか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>同じ値があると、Set にしたときに値の数が減ります。Set の <code>.size</code>（問2）と配列の <code>.length</code> を、<code>!==</code> で比べます（01章 q01 問17）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c09-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">重複を除き、小さい順に並べた配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>[...set]</code>（Set を配列にする）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function uniqueSorted() {}</code></pre>
+      <p>数値の配列 <code>items</code> を受け取り、同じ値を 1 つにしてから、小さい順に並べた配列を返します。元の配列は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>uniqueSorted(items)</code></dt><dd class="r"><code>[1, 2, 3, 10]</code></dd><dd class="c"><code>items</code> は <code>[3, 1, 10, 3, 2]</code></dd></div>
+          <div><dt>呼んだあとの <code>items</code></dt><dd class="r"><code>[3, 1, 10, 3, 2]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[...set]</code><h4>Set を配列にする</h4></div>
+      <p>Set は配列ではないので、<code>.sort()</code> や <code>.map()</code> などの配列のメソッドがありません。<code>[ ]</code> の中で <code>...</code> を付けて広げると、入れた順に並べた配列になります。Map の <code>[...stock.keys()]</code>（q01 問7）と同じ書き方です。Set は、<code>.keys()</code> を付けずにそのまま広げられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文された品名 orders を作り、"ノート" と "ペン" と "ノート" を並べた配列を入れる
+const orders = ["ノート", "ペン", "ノート"];
+// 品名の一覧 names を作り、orders から作った Set の値を並べた配列を入れる
+const names = [...new Set(orders)];
+// 結果: names は ["ノート", "ペン"]</code></pre>
+      </div>
+      <p><code>names</code> の型は <code>string[]</code> です。新しい配列なので、そのまま <code>.sort()</code> を呼んでも <code>orders</code> は変わりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 uniqueSorted を作る。数値の配列 items を受け取り、数値の配列を返す
+export function uniqueSorted() {
+  // items から作った Set の値を並べた配列を、小さい順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>names</code> の行に、<code>.sort((a, b) =&gt; a - b)</code> を続けます（02章 q05 問8）。比べる関数を渡さないと、<code>10</code> が <code>2</code> より前に並んでしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c09-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">重複を除いた文字を、出てきた順につないだ文字列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>new Set("文字列")</code>（1 文字ずつの Set）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function uniqueChars() {}</code></pre>
+      <p>文字列 <code>text</code> を受け取り、同じ文字を 1 つにして、出てきた順につないだ文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>uniqueChars("banana")</code></dt><dd class="r"><code>"ban"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>uniqueChars("")</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Set("AAB-112")</code><h4>文字列から、1 文字ずつの Set を作る</h4></div>
+      <p><code>new Set()</code> のかっこには、文字列も渡せます。文字列は 1 文字ずつに分けて入ります。for-of で文字列から 1 文字ずつ取り出すとき（01章 q01 問9）と同じ分け方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品コード code を作り、"AAB-112" を入れる
+const code = "AAB-112";
+// 使われている文字 used を作り、code から作った Set を入れる
+const used = new Set(code);
+// 結果: used は Set { "A", "B", "-", "1", "2" }</code></pre>
+      </div>
+      <p><code>used</code> の型は <code>Set&lt;string&gt;</code> です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 uniqueChars を作る。文字列 text を受け取り、文字列を返す
+export function uniqueChars() {
+  // text から作った Set の値を並べた配列を、"" でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>Set の作り方は問5 のサンプルの <code>used</code>、配列にするのは問4 のサンプルの <code>names</code> と同じ形です。つなぐのは <code>.join("")</code> です（02章 q04 問11）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c09-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">value を足した新しい Set を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.add()</code>、<code>new Set(set)</code>（Set のコピー）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withAdded() {}</code></pre>
+      <p>Set <code>set</code> と値 <code>value</code> を受け取り、<code>value</code> を足した新しい Set を返します。もう入っている値なら、増えません。元の <code>set</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withAdded(set, "b")</code></dt><dd class="r"><code>Set { "a", "b" }</code></dd><dd class="c"><code>set</code> は <code>Set { "a" }</code></dd></div>
+          <div><dt><code>withAdded(set, "a")</code></dt><dd class="r"><code>Set { "a" }</code></dd><dd class="c">もう入っている値は増えない</dd></div>
+          <div><dt>呼んだあとの <code>set</code> の値の数</dt><dd class="r"><code>1</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;string&gt;</code> と <code>string</code>、戻り値が <code>Set&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.add()</code><h4>Set に値を足す</h4></div>
+      <p>かっこに渡した値を、Set の最後に足します。もう入っている値なら、何も変わりません。Map の <code>.set()</code>（q01 問4）と同じく、呼んだ Set そのものを書き換えます。元の Set を残したいときは、<code>new Set()</code> のかっこに Set を渡してコピーしてから足します。Map のコピー <code>new Map(stock)</code>（q01 問4）と同じ形です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料無料の地域 freeAreas を作り、"東京" と "大阪" を並べた配列から作った Set を入れる
+const freeAreas = new Set(["東京", "大阪"]);
+// 来月の送料無料の地域 nextMonth を作り、freeAreas をコピーした Set を入れる
+const nextMonth = new Set(freeAreas);
+// nextMonth に "福岡" を足す
+nextMonth.add("福岡");
+// nextMonth に "東京" を足す
+nextMonth.add("東京");
+// 結果: nextMonth は Set { "東京", "大阪", "福岡" }、freeAreas は Set { "東京", "大阪" } のまま</code></pre>
+      </div>
+      <p>2 回目の <code>"東京"</code> は、もう入っているので増えません。並ぶ順も変わりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withAdded を作る。文字列の Set set と文字列 value を受け取り、文字列の Set を返す
+export function withAdded() {
+  // 結果 result を作り、set をコピーした Set を入れる
+  // result に value を足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 のサンプルの <code>nextMonth</code> と同じ形です。もう入っている値なら <code>.add()</code> は何もしないので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c09-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">value を取り除いた新しい Set を返す</span>
+      <span class="q-new">新しく出てくる書き方：Set の <code>.delete()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withRemoved() {}</code></pre>
+      <p>Set <code>set</code> と値 <code>value</code> を受け取り、<code>value</code> を取り除いた新しい Set を返します。元の <code>set</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withRemoved(set, "a")</code></dt><dd class="r"><code>Set { "b" }</code></dd><dd class="c"><code>set</code> は <code>Set { "a", "b" }</code></dd></div>
+          <div><dt>呼んだあとの <code>set</code> の値の数</dt><dd class="r"><code>2</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;string&gt;</code> と <code>string</code>、戻り値が <code>Set&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.delete()</code><h4>Set から値を取り除く</h4></div>
+      <p>Map の <code>.delete()</code>（q01 問5）と同じです。かっこに渡した値を、呼んだ Set そのものから取り除きます。取り除けたら <code>true</code>、入っていなかったら <code>false</code> を返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料無料の地域 freeAreas を作り、"東京" と "大阪" を並べた配列から作った Set を入れる
+const freeAreas = new Set(["東京", "大阪"]);
+// 来月の送料無料の地域 nextMonth を作り、freeAreas をコピーした Set を入れる
+const nextMonth = new Set(freeAreas);
+// nextMonth から "大阪" を取り除く
+nextMonth.delete("大阪");
+// 結果: nextMonth は Set { "東京" }、freeAreas は Set { "東京", "大阪" } のまま</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withRemoved を作る。文字列の Set set と文字列 value を受け取り、文字列の Set を返す
+export function withRemoved() {
+  // 結果 result を作り、set をコピーした Set を入れる
+  // result から value を取り除く
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 のサンプルの <code>nextMonth</code> と同じ形です。<code>.delete()</code> の結果の <code>true</code> か <code>false</code> は返しません。返すのは <code>result</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c09-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">value があれば取り除き、なければ足した新しい Set を返す</span>
+      <span class="q-new">新しく出てくる書き方：Set の <code>.has()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toggle() {}</code></pre>
+      <p>Set <code>set</code> と値 <code>value</code> を受け取ります。<code>value</code> が入っていれば取り除き、入っていなければ足した、新しい Set を返します。元の <code>set</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toggle(set, "a")</code></dt><dd class="r">空の Set</dd><dd class="c"><code>set</code> は <code>Set { "a" }</code>。入っているので取り除く</dd></div>
+          <div><dt><code>toggle(set, "b")</code></dt><dd class="r"><code>Set { "a", "b" }</code></dd><dd class="c">入っていないので足す</dd></div>
+          <div><dt>呼んだあとの <code>set</code> の値の数</dt><dd class="r"><code>1</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;string&gt;</code> と <code>string</code>、戻り値が <code>Set&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.has()</code><h4>値が入っているかを調べる</h4></div>
+      <p>Map の <code>.has()</code>（q01 問3）と同じです。かっこに渡した値が Set に入っていれば <code>true</code>、なければ <code>false</code> を返します。配列の <code>.includes()</code>（02章 q04 問9）と同じ役目です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料無料の地域 freeAreas を作り、"東京" と "大阪" を並べた配列から作った Set を入れる
+const freeAreas = new Set(["東京", "大阪"]);
+// isFree を作り、freeAreas に "福岡" が入っているか（true か false）を入れる
+const isFree = freeAreas.has("福岡");
+// 結果: isFree は false</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toggle を作る。文字列の Set set と文字列 value を受け取り、文字列の Set を返す
+export function toggle() {
+  // 結果 result を作り、set をコピーした Set を入れる
+  // もし result に value が入っているなら
+    // result から value を取り除く
+  // そうでなければ
+    // result に value を足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「入っているなら」は、問8 のサンプルの <code>isFree</code> の行の右側と同じ形で、<code>if</code> のかっこに書きます。取り除くのは問7、足すのは問6 と同じです。「そうでなければ」は <code>else</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c09-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">a か b のどちらかにある要素の Set を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function union() {}</code></pre>
+      <p>数値の Set <code>a</code> と <code>b</code> を受け取り、どちらかに入っている値を集めた Set を返します。並ぶ順は、<code>a</code> の値を <code>a</code> の順に、その後ろに <code>b</code> にだけある値を <code>b</code> の順に並べます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>union(new Set([1, 2]), new Set([3, 2]))</code></dt><dd class="r"><code>Set { 1, 2, 3 }</code></dd><dd class="c">2 は a にもあるので、a の位置のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;number&gt;</code> と <code>Set&lt;number&gt;</code>、戻り値が <code>Set&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 union を作る。数値の Set a と b を受け取り、数値の Set を返す
+export function union() {
+  // a の値と b の値をこの順に並べた配列から作った Set を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「a の値と b の値をこの順に並べた配列」は、<code>[ ]</code> の中に <code>...a</code> と <code>...b</code> を <code>,</code> で並べて書きます（問4、02章 q05 問1）。その配列を <code>new Set()</code> に渡すと、同じ値は最初の 1 つだけが残るので、順も問題のとおりになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c09-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">a と b の両方にある要素の Set を返す</span>
+      <span class="q-new">新しく出てくる書き方：Set の値をくり返す <code>for (const x of set)</code>、空の Set の型 <code>new Set&lt;number&gt;()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function intersection() {}</code></pre>
+      <p>数値の Set <code>a</code> と <code>b</code> を受け取り、両方に入っている値だけを集めた Set を返します。並ぶ順は <code>a</code> の順です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>intersection(new Set([1, 2, 3]), new Set([3, 1]))</code></dt><dd class="r"><code>Set { 1, 3 }</code></dd><dd class="c">a の順</dd></div>
+          <div><dt><code>intersection(new Set([1]), new Set([2]))</code></dt><dd class="r">空の Set</dd><dd class="c">両方にある値がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;number&gt;</code> と <code>Set&lt;number&gt;</code>、戻り値が <code>Set&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">for (const area of set)</code><h4>Set の値を 1 つずつ取り出す</h4></div>
+      <p>Set は、配列にしなくても、そのまま for-of に渡せます。入れた順に、値が 1 つずつ取り出されます。Map の <code>.values()</code>（q01 問8）と同じ使い方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料無料の地域 freeAreas を作り、"東京" と "大阪" を並べた配列から作った Set を入れる
+const freeAreas = new Set(["東京", "大阪"]);
+// 案内文 notes を文字列の配列として作り、空の配列を入れる
+const notes: string[] = [];
+// freeAreas から 1 つずつ area に取り出してくり返す
+for (const area of freeAreas) {
+  // notes の最後に、area を埋め込んだ「◯は送料無料」の文字列を付け足す
+  notes.push(`${area}は送料無料`);
+}
+// 結果: notes は ["東京は送料無料", "大阪は送料無料"]</code></pre>
+      </div>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Set&lt;number&gt;()</code><h4>空の Set を作るときは、型を渡す</h4></div>
+      <p>空の Map（q01 問11）と同じく、空の <code>new Set()</code> は型を推論できず、<code>Set&lt;unknown&gt;</code> になります。空の Set を作るときは、<code>new Set</code> の後ろの <code>&lt; &gt;</code> に要素の型を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 確認した番号 checked を作り、数値の空の Set を入れる
+const checked = new Set&lt;number&gt;();
+// checked に 101 を足す
+checked.add(101);
+// 結果: checked は Set { 101 }</code></pre>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 intersection を作る。数値の Set a と b を受け取り、数値の Set を返す
+export function intersection() {
+  // 結果 result を作り、数値の空の Set を入れる
+  // a から 1 つずつ n に取り出してくり返す
+    // もし b に n が入っているなら
+      // result に n を足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の Set は問10 の 2 つ目のサンプルの <code>checked</code>、くり返しは 1 つ目のサンプルと同じ形です。「入っているなら」は <code>b.has(n)</code> です（問8）。<code>a</code> を前から見ていくので、<code>a</code> の順になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c09-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">a にあって b にない要素の Set を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function difference() {}</code></pre>
+      <p>数値の Set <code>a</code> と <code>b</code> を受け取り、<code>a</code> に入っていて <code>b</code> に入っていない値だけを集めた Set を返します。並ぶ順は <code>a</code> の順です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>difference(new Set([1, 2, 3]), new Set([2, 4]))</code></dt><dd class="r"><code>Set { 1, 3 }</code></dd><dd class="c">b にだけある 4 は入らない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;number&gt;</code> と <code>Set&lt;number&gt;</code>、戻り値が <code>Set&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 difference を作る。数値の Set a と b を受け取り、数値の Set を返す
+export function difference() {
+  // 結果 result を作り、数値の空の Set を入れる
+  // a から 1 つずつ n に取り出してくり返す
+    // もし b に n が入っていないなら
+      // result に n を足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のヒントと同じ形で、<code>if</code> の条件だけが違います。「入っていない」は、<code>b.has(n)</code> の前に <code>!</code> を付けます（01章 q04）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c09-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">a と b のどちらか一方にだけある要素の Set を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function symmetricDifference() {}</code></pre>
+      <p>数値の Set <code>a</code> と <code>b</code> を受け取り、どちらか一方にだけ入っている値を集めた Set を返します。両方に入っている値は入れません。並ぶ順は、<code>a</code> にだけある値を <code>a</code> の順に、その後ろに <code>b</code> にだけある値を <code>b</code> の順に並べます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>symmetricDifference(new Set([1, 2, 5]), new Set([2, 3]))</code></dt><dd class="r"><code>Set { 1, 5, 3 }</code></dd><dd class="c">a にだけある 1 と 5、その後ろに b にだけある 3</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;number&gt;</code> と <code>Set&lt;number&gt;</code>、戻り値が <code>Set&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 symmetricDifference を作る。数値の Set a と b を受け取り、数値の Set を返す
+export function symmetricDifference() {
+  // 結果 result を作り、数値の空の Set を入れる
+  // a から 1 つずつ n に取り出してくり返す
+    // もし b に n が入っていないなら
+      // result に n を足す
+  // b から 1 つずつ n に取り出してくり返す
+    // もし a に n が入っていないなら
+      // result に n を足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問11 のくり返しを 2 回書きます。2 回目は、<code>a</code> と <code>b</code> の役目を入れ替えます。for-of の <code>const n</code> は、そのくり返しの中だけで使える名前です。2 回目のくり返しでも、同じ <code>n</code> という名前を使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c09-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">a の要素がすべて b にあれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isSubset() {}</code></pre>
+      <p>数値の Set <code>a</code> と <code>b</code> を受け取り、<code>a</code> の値がすべて <code>b</code> に入っていれば <code>true</code>、1 つでも入っていなければ <code>false</code> を返します。<code>a</code> が空なら <code>true</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isSubset(new Set([1, 2]), new Set([1, 2, 3]))</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isSubset(new Set([1, 4]), new Set([1, 2, 3]))</code></dt><dd class="r"><code>false</code></dd><dd class="c">4 が b にない</dd></div>
+          <div><dt><code>isSubset(new Set(), new Set([1]))</code></dt><dd class="r"><code>true</code></dd><dd class="c">a が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;number&gt;</code> と <code>Set&lt;number&gt;</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isSubset を作る。数値の Set a と b を受け取り、true か false を返す
+export function isSubset() {
+  // a の値を並べた配列の要素がすべて、b に入っているか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>Set には <code>.every()</code> がないので、先に <code>[...a]</code> で配列にします（問4）。「要素がすべて」は <code>.every()</code> です（02章 q04 問20）。渡す関数の中で <code>b.has()</code> を呼びます。空の配列の <code>.every()</code> は <code>true</code> を返すので、<code>a</code> が空のときもそのままで合います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c09-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">values の要素がすべて set にあれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasAll() {}</code></pre>
+      <p>文字列の Set <code>set</code> と文字列の配列 <code>values</code> を受け取ります。<code>values</code> の要素がすべて <code>set</code> に入っていれば <code>true</code> を返します。<code>values</code> が空なら <code>true</code> です。権限の一覧に、必要な権限がそろっているかを調べるときなどに使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasAll(permissions, ["read", "write"])</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>permissions</code> は <code>Set { "read", "write" }</code></dd></div>
+          <div><dt><code>hasAll(permissions, ["read", "delete"])</code></dt><dd class="r"><code>false</code></dd><dd class="c">"delete" がない</dd></div>
+          <div><dt><code>hasAll(permissions, [])</code></dt><dd class="r"><code>true</code></dd><dd class="c">values が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;string&gt;</code> と <code>string[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasAll を作る。文字列の Set set と文字列の配列 values を受け取り、true か false を返す
+export function hasAll() {
+  // values の要素がすべて、set に入っているか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じ形です。<code>values</code> はもう配列なので、<code>[...]</code> で広げずに、そのまま <code>.every()</code> を呼べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c09-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">values の要素のどれか 1 つでも set にあれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasAny() {}</code></pre>
+      <p>文字列の Set <code>set</code> と文字列の配列 <code>values</code> を受け取ります。<code>values</code> の要素のどれか 1 つでも <code>set</code> に入っていれば <code>true</code>、1 つも入っていなければ <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasAny(permissions, ["write", "read"])</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>permissions</code> は <code>Set { "read" }</code>。"read" が入っている</dd></div>
+          <div><dt><code>hasAny(permissions, ["write"])</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Set&lt;string&gt;</code> と <code>string[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasAny を作る。文字列の Set set と文字列の配列 values を受け取り、true か false を返す
+export function hasAny() {
+  // values の要素のどれかが、set に入っているか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 の <code>.every()</code> を、「どれか」を表す <code>.some()</code> に変えます（03章 q07 問9）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c09-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">a と b の両方に出てくる文字を、a の順に重複なくつないだ文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function commonChars() {}</code></pre>
+      <p>文字列 <code>a</code> と <code>b</code> を受け取り、両方に出てくる文字を集めて、つないだ文字列を返します。同じ文字は 1 つにします。並ぶ順は、<code>a</code> に出てきた順です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>commonChars("banana", "cabin")</code></dt><dd class="r"><code>"ban"</code></dd><dd class="c">b・a・n が両方にある</dd></div>
+          <div><dt><code>commonChars("abc", "xyz")</code></dt><dd class="r"><code>""</code></dd><dd class="c">同じ文字がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 commonChars を作る。文字列 a と b を受け取り、文字列を返す
+export function commonChars() {
+  // b の文字 inB を作り、b から作った Set を入れる
+  // a から作った Set の値を並べた配列の要素を 1 つずつ char として、inB に char が入っているものだけを集めた新しい配列を、"" でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>文字列から Set を作るのは問5 と同じです。<code>a</code> の Set を広げた配列（問4）に、<code>.filter()</code>（02章 q04 問7）と <code>.join("")</code> を続けます。<code>.filter()</code> に渡す関数の中で <code>inB.has(char)</code> を呼びます。先に <code>a</code> を Set にするので、同じ文字は 1 つになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c09-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">前から見て、2 回目に出てきた最初の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstRepeated() {}</code></pre>
+      <p>文字列の配列 <code>items</code> を前から見ていき、2 回目に出てきた要素のうち、いちばん早く見つかったものを返します。どの要素も 1 回だけなら、<code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstRepeated(["a", "b", "c", "b", "a"])</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">4 番目の "b" が、最初に見つかる 2 回目</dd></div>
+          <div><dt><code>firstRepeated(["a", "b"])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">2 回目がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstRepeated を作る。文字列の配列 items を受け取り、文字列か undefined を返す
+export function firstRepeated() {
+  // 見た要素 seen を作り、文字列の空の Set を入れる
+  // items から 1 つずつ item に取り出してくり返す
+    // もし seen に item が入っているなら
+      // item を返す
+    // seen に item を足す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の Set は <code>new Set&lt;string&gt;()</code> です（問10）。見た要素を <code>seen</code> に足していき、もう入っている要素に出会ったら、その場で <code>return</code> します。くり返しの中で <code>return</code> すると、残りのくり返しも飛ばして関数が終わります。最後まで見つからなければ、くり返しのあとの <code>return undefined;</code> に進みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c09-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">同じ id のユーザーは、最初の 1 人だけを残した配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string };
+
+export function uniqueById() {}</code></pre>
+      <p>ユーザーの配列 <code>users</code> を受け取り、同じ <code>id</code> のユーザーが何人かいれば、最初の 1 人だけを残した配列を返します。順は元の配列のままです。型 <code>User</code> は定義済みです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の 3 人を使います。</p>
+        <pre><code class="language-typescript">[
+  { id: 1, name: "山田" },
+  { id: 2, name: "佐藤" },
+  { id: 1, name: "山田（重複）" },
+]</code></pre>
+        <dl class="eg">
+          <div><dt><code>uniqueById(3 人)</code> の名前</dt><dd class="r"><code>["山田", "佐藤"]</code></dd><dd class="c">id が 1 の 2 人目は残さない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User[]</code>、戻り値が <code>User[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 uniqueById を作る。User の配列 users を受け取り、User の配列を返す
+export function uniqueById() {
+  // 見た id seen を作り、数値の空の Set を入れる
+  // 結果 result を User の配列として作り、空の配列を入れる
+  // users から 1 つずつ user に取り出してくり返す
+    // もし seen に user の id が入っていないなら
+      // seen に user の id を足す
+      // result の最後に user を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>Set に入れるのは、<code>user.id</code> の数値です。オブジェクトは、中身が同じでも別々に作ったものは別の値として扱われます。<code>{ id: 1, … }</code> の 2 人をそのまま Set に入れると、2 人とも入ってしまいます。「入っていない」は問11 と同じく <code>!</code> を付けます。空の配列の作り方は <code>const result: User[] = [];</code> です（02章 q04 問17）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c09-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">投稿のタグを、重複なく出てきた順に並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function allTags() {}</code></pre>
+      <p>投稿の配列 <code>posts</code> を受け取ります。どの投稿も、タグの配列 <code>tags</code> を持っています。すべての投稿のタグを集め、同じタグを 1 つにして、出てきた順に並べた配列を返します。引数の型は <code>{ tags: string[] }[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>allTags([{ tags: ["ts", "js"] }, { tags: ["js", "css"] }, { tags: [] }])</code></dt><dd class="r"><code>["ts", "js", "css"]</code></dd><dd class="c">タグのない投稿もある</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ tags: string[] }[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 allTags を作る。tags が文字列の配列のオブジェクトの配列 posts を受け取り、文字列の配列を返す
+export function allTags() {
+  // 集めたタグ found を作り、文字列の空の Set を入れる
+  // posts から 1 つずつ post に取り出してくり返す
+    // post の tags から 1 つずつ tag に取り出してくり返す
+      // found に tag を足す
+  // found の値を並べた配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>for-of の中に、もう 1 つ for-of を書きます。同じタグは <code>.add()</code> しても増えないので、確かめずに足してかまいません。最後に問4 と同じく <code>[...found]</code> で配列にします。<code>.flatMap()</code>（08章 q01 問18）でタグを 1 つの配列にまとめてから Set にする書き方もできます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c09-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">順番と重複を無視して、a と b が同じ要素の集まりなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sameMembers() {}</code></pre>
+      <p>文字列の配列 <code>a</code> と <code>b</code> を受け取ります。並ぶ順と、同じ値が何回出てくるかは気にせずに、出てくる値の種類が同じなら <code>true</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sameMembers(["a", "b", "a"], ["b", "a"])</code></dt><dd class="r"><code>true</code></dd><dd class="c">どちらも "a" と "b"</dd></div>
+          <div><dt><code>sameMembers(["a", "b"], ["a", "c"])</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sameMembers(["a"], ["a", "b"])</code></dt><dd class="r"><code>false</code></dd><dd class="c">b のほうが 1 種類多い</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code> と <code>string[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sameMembers を作る。文字列の配列 a と b を受け取り、true か false を返す
+export function sameMembers() {
+  // setA を作り、a から作った Set を入れる
+  // setB を作り、b から作った Set を入れる
+  // setA と setB の値の数が等しく、かつ setA の値を並べた配列の要素がすべて setB に入っているか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。後ろの式は問13 と同じ形です。値の数を比べないと、<code>["a"]</code> と <code>["a", "b"]</code> のように、<code>a</code> の値がすべて <code>b</code> にあるだけで <code>true</code> になってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c09-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">配列を集合として扱う</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function unique() {}
+
+export function intersection() {}
+
+export function difference() {}
+
+export function union() {}
+
+export function isSubset() {}</code></pre>
+      <p>配列を集合（重複のない値の集まり）として扱う関数を 5 つ、Set を使って書きます。型変数（07章 q06 問1）を使い、どんな要素の配列にも使えるようにします。戻り値は、<code>isSubset</code> 以外はすべて配列（<code>T[]</code>）にします。引数の配列は書き換えません。Set の <code>union</code> などのメソッドは使えないので、自分で書きます。どの関数も、配列の <code>.includes()</code> をくり返し呼ぶ代わりに、Set の <code>.has()</code> を使います。</p>
+      <ol>
+        <li><code>unique(items)</code>：重複を除いた配列を返します。順は最初に出てきた順です。</li>
+        <li><code>intersection(a, b)</code>：<code>a</code> と <code>b</code> の両方にある要素の配列を返します。<code>a</code> の順で、重複はなくします。</li>
+        <li><code>difference(a, b)</code>：<code>a</code> にあって <code>b</code> にない要素の配列を返します。<code>a</code> の順で、重複はなくします。</li>
+        <li><code>union(a, b)</code>：<code>a</code> か <code>b</code> のどちらかにある要素の配列を返します。<code>a</code> の要素を <code>a</code> の順に、その後ろに <code>b</code> にだけある要素を <code>b</code> の順に並べます。重複はなくします。</li>
+        <li><code>isSubset(a, b)</code>：<code>a</code> の要素がすべて <code>b</code> にあれば <code>true</code> を返します。<code>a</code> が空なら <code>true</code> です。</li>
+      </ol>
+      <p>「説明すること」もあります。要素が 1 万個の配列どうしの <code>intersection</code> を、配列の <code>.includes()</code> で書いた場合と、Set の <code>.has()</code> で書いた場合とで、比べる回数がおよそ何回になるかを考えます。ファイルの「説明すること」のすぐ下に、<code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>unique([3, 1, 3, 2, 1])</code></dt><dd class="r"><code>[3, 1, 2]</code></dd><dd class="c">最初に出てきた順</dd></div>
+          <div><dt><code>unique(["a", "b", "a"])</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">文字列の配列にも使える</dd></div>
+          <div><dt><code>unique([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの元の配列</dt><dd class="r">元のまま</dd><dd class="c"><code>[1, 1, 2]</code> を渡しても <code>[1, 1, 2]</code> のまま</dd></div>
+          <div><dt><code>intersection([5, 1, 3, 1], [1, 2, 3])</code></dt><dd class="r"><code>[1, 3]</code></dd><dd class="c">a の順。1 は 1 つだけ</dd></div>
+          <div><dt><code>intersection(["a"], ["b"])</code></dt><dd class="r"><code>[]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>difference([5, 1, 3, 5], [1, 2])</code></dt><dd class="r"><code>[5, 3]</code></dd><dd class="c">5 は 1 つだけ</dd></div>
+          <div><dt><code>difference([1], [1])</code></dt><dd class="r"><code>[]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>union([3, 1, 3], [2, 1, 4])</code></dt><dd class="r"><code>[3, 1, 2, 4]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>union([], ["a", "a"])</code></dt><dd class="r"><code>["a"]</code></dd><dd class="c">b の中の重複もなくす</dd></div>
+          <div><dt><code>isSubset([1, 2], [3, 2, 1])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isSubset([1, 4], [3, 2, 1])</code></dt><dd class="r"><code>false</code></dd><dd class="c">4 が b にない</dd></div>
+          <div><dt><code>isSubset([], [1])</code></dt><dd class="r"><code>true</code></dd><dd class="c">a が空</dd></div>
+          <div><dt><code>isSubset([1, 1], [1])</code></dt><dd class="r"><code>true</code></dd><dd class="c">a の重複は気にしない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>unique([1, 2])</code> の型が <code>number[]</code>、<code>unique(["a"])</code> の型が <code>string[]</code> であることを確かめます。<code>intersection(["a"], ["b"])</code> は <code>string[]</code>、<code>difference([1], [2])</code> は <code>number[]</code>、<code>union(["a"], ["b"])</code> は <code>string[]</code>、<code>isSubset</code> の戻り値は <code>boolean</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 unique を作る。型変数 T を使い、T の配列 items を受け取り、T の配列を返す
+export function unique() {
+  // items から作った Set の値を並べた配列を返す
+}
+
+// 関数 intersection を作る。型変数 T を使い、T の配列 a と b を受け取り、T の配列を返す
+export function intersection() {
+  // b の要素 inB を作り、b から作った Set を入れる
+  // a の要素を 1 つずつ item として、inB に item が入っているものだけを集めた新しい配列を、unique に渡して呼んだ結果を返す
+}
+
+// 関数 difference を作る。型変数 T を使い、T の配列 a と b を受け取り、T の配列を返す
+export function difference() {
+  // b の要素 inB を作り、b から作った Set を入れる
+  // a の要素を 1 つずつ item として、inB に item が入っていないものだけを集めた新しい配列を、unique に渡して呼んだ結果を返す
+}
+
+// 関数 union を作る。型変数 T を使い、T の配列 a と b を受け取り、T の配列を返す
+export function union() {
+  // a の要素と b の要素をこの順に並べた配列を、unique に渡して呼んだ結果を返す
+}
+
+// 関数 isSubset を作る。型変数 T を使い、T の配列 a と b を受け取り、true か false を返す
+export function isSubset() {
+  // b の要素 inB を作り、b から作った Set を入れる
+  // a の要素がすべて、inB に入っているか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型変数は、関数の名前の後ろに <code>&lt;T&gt;</code> を付け、引数と戻り値の型を <code>T[]</code> にします（07章 q06 問1）。<code>new Set(items)</code> の型は <code>Set&lt;T&gt;</code> と推論されます。<code>unique</code> は問4 のサンプルの <code>names</code> と同じ形です。<code>intersection</code> と <code>difference</code> は、<code>inB</code> を関数の最初に 1 回だけ作り、<code>.filter()</code>（02章 q04 問7）の中で <code>inB.has(item)</code> を呼びます。<code>a</code> の重複は、自分で書いた <code>unique</code> でなくします。<code>union</code> はドリルの問9 と同じ形で、作るものが Set から配列に変わります。<code>isSubset</code> はドリルの問13 と同じ形ですが、<code>a</code> がもう配列なので <code>[...]</code> は要りません。説明することは、要素が 3 個ぐらいの小さい配列で、<code>.includes()</code> が 1 回の呼び出しで要素をいくつ見るかを、紙に書いて数えてから考えます。<code>.has()</code> のしくみは、サバイバルTypeScript の Set のページも参考になります。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,865 @@
+<section class="sec" id="c03-q03">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q03 null と undefined</h2>
+    <p>値がないかもしれない引数やプロパティを扱う関数を 20 個書きます。値がないことは、<code>undefined</code> のほかに <code>null</code> でも表します。<code>string | null</code> のような型の値は、そのまま文字列として使えません。<code>?.</code>（オプショナルチェーン）、<code>??</code>、<code>=== null</code>、<code>=== undefined</code> で、ないときの扱いを書きます。<code>== null</code> のように <code>=</code> が 2 つの比べ方は、lint がエラーにします（<code>eqeqeq</code>）。引数と戻り値の型注釈は、これまでと同じく自分で書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">文字列か undefined を受け取り、文字数を返す</span>
+      <span class="q-new">新しく出てくる書き方：オプショナルチェーン <code>?.</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lengthOrZero() {}</code></pre>
+      <p>文字列か <code>undefined</code> を 1 つ受け取り、文字数を返します。<code>undefined</code> なら <code>0</code> を返します。引数の型は「文字列か undefined」、戻り値の型は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lengthOrZero("abc")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lengthOrZero(undefined)</code></dt><dd class="r"><code>0</code></dd><dd class="c">undefined なら 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | undefined</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">?.</code><h4>値があるときだけ、プロパティやメソッドを使う</h4></div>
+      <p><code>.</code> の代わりに <code>?.</code> と書くと、左の値が <code>undefined</code> のときは、その先を実行しません。式全体が <code>undefined</code> になります。値があるときは、<code>.</code> と同じように動きます。これをオプショナルチェーンと呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 trimCoupon を作る。文字列か undefined の code を受け取り、文字列か undefined を返す
+function trimCoupon(code: string | undefined): string | undefined {
+  // code の前後の空白を取り除いたもの（code が undefined なら undefined）を返す
+  return code?.trim();
+}
+// 結果: trimCoupon("  SALE10 ") は "SALE10"、trimCoupon(undefined) は undefined</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>return <span class="seg"><i>1</i>code</span><span class="seg c"><i>2</i>?.</span><span class="seg"><i>3</i>trim()</span>;</pre>
+        <ol>
+          <li><span><code>undefined</code> かもしれない値です。型は <code>string | undefined</code> です。</span></li>
+          <li><span>左が <code>undefined</code> なら、ここで止まって <code>undefined</code> になります。</span></li>
+          <li><span>左に値があるときだけ実行します。<code>.length</code> のようなプロパティも書けます。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5><code>.</code> で書く</h5>
+          <pre><code class="language-typescript">function trimCoupon(code: string | undefined): string | undefined {
+  return code.trim();
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。code は undefined かもしれません</div>
+        </div>
+        <div>
+          <h5><code>?.</code> で書く</h5>
+          <pre><code class="language-typescript">function trimCoupon(code: string | undefined): string | undefined {
+  return code?.trim();
+}</code></pre>
+          <div class="verdict ok">○ code が undefined なら undefined を返します</div>
+        </div>
+      </div>
+      <p><code>?.</code> の結果は <code>undefined</code> のことがあります。そのまま <code>??</code>（02章 q02 問1）につなげると、ないときに使う値を決められます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 couponLabel を作る。文字列か undefined の code を受け取り、文字列を返す
+function couponLabel(code: string | undefined): string {
+  // code の前後の空白を取り除いたもの（code が undefined なら "クーポンなし"）を返す
+  return code?.trim() ?? "クーポンなし";
+}
+// 結果: couponLabel("  SALE10 ") は "SALE10"、couponLabel(undefined) は "クーポンなし"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>couponLabel("  SALE10 ")</code></dt><dd class="r"><code>"SALE10"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>couponLabel(undefined)</code></dt><dd class="r"><code>"クーポンなし"</code></dd><dd class="c">?. で undefined になり、?? で切り替わる</dd></div>
+        <div><dt><code>couponLabel("   ")</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の文字列は undefined でないので、?? は切り替えない</dd></div>
+      </dl>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining">サバイバルTypeScript「オプショナルチェーン」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lengthOrZero を作る。文字列か undefined の text を受け取り、数値を返す
+export function lengthOrZero() {
+  // text の文字数（text が undefined なら 0）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つめのサンプルの <code>couponLabel</code> と同じ形です。<code>.trim()</code> の代わりに、文字数の <code>.length</code>（01章 q02 問13）を <code>?.</code> の後ろに書きます。<code>??</code> の右は <code>0</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">文字列か null を受け取り、大文字にして返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>null</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function upperOrEmpty() {}</code></pre>
+      <p>文字列か <code>null</code> を 1 つ受け取り、英字を大文字にして返します。<code>null</code> なら空の文字列 <code>""</code> を返します。引数の型は「文字列か null」、戻り値の型は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>upperOrEmpty("abc")</code></dt><dd class="r"><code>"ABC"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>upperOrEmpty(null)</code></dt><dd class="r"><code>""</code></dd><dd class="c">null なら空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">null</code><h4>値がないことを表す、もう 1 つの値</h4></div>
+      <p><code>null</code> も <code>undefined</code> と同じく、値がないことを表す値です。<code>undefined</code> と同じく、型の名前にも使えます。<code>number | null</code> は「数値か null」の型です。<code>null</code> は <code>"null"</code> のような文字列ではありません。引用符を付けずに書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 couponDiscount を作る。文字列 code を受け取り、数値か null を返す
+function couponDiscount(code: string): number | null {
+  // もし code が "SALE10" と等しいなら
+  if (code === "SALE10") {
+    // 100 を返す
+    return 100;
+  }
+  // null を返す
+  return null;
+}
+// 結果: couponDiscount("SALE10") は 100、couponDiscount("ABC") は null</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型に null を書かない</h5>
+          <pre><code class="language-typescript">function couponDiscount(code: string): number {
+  if (code === "SALE10") {
+    return 100;
+  }
+  return null;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。null は number に入れられません</div>
+        </div>
+        <div>
+          <h5>戻り値の型に null を書く</h5>
+          <pre><code class="language-typescript">function couponDiscount(code: string): number | null {
+  if (code === "SALE10") {
+    return 100;
+  }
+  return null;
+}</code></pre>
+          <div class="verdict ok">○ 数値か null を返す関数になります</div>
+        </div>
+      </div>
+      <p><code>?.</code>（問1）と <code>??</code> は、左が <code>null</code> のときも、<code>undefined</code> のときと同じように働きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 rankLabel を作る。文字列か null の rank を受け取り、文字列を返す
+function rankLabel(rank: string | null): string {
+  // rank の前後の空白を取り除いたもの（rank が null なら "一般"）を返す
+  return rank?.trim() ?? "一般";
+}
+// 結果: rankLabel(" gold ") は "gold"、rankLabel(null) は "一般"</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>rank</code> が <code>null</code> のとき、<code>rank?.trim()</code> は <code>undefined</code> になります。<code>null</code> にはなりません。<code>?.</code> が止まったときは、いつも <code>undefined</code> です。そのため、<code>rank?.trim()</code> の型は <code>string | undefined</code> と推論されます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null">サバイバルTypeScript「undefined と null の違い」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 upperOrEmpty を作る。文字列か null の text を受け取り、文字列を返す
+export function upperOrEmpty() {
+  // text を大文字にしたもの（text が null なら空の文字列）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つめのサンプルの <code>rankLabel</code> と同じ形です。<code>.trim()</code> を <code>.toUpperCase()</code>（01章 q02 問18）に、<code>"一般"</code> を <code>""</code> に替えます。引数の型は <code>string | null</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">数値か undefined を受け取り、undefined なら fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function orDefault() {}</code></pre>
+      <p>数値か <code>undefined</code> の <code>value</code> と、数値の <code>fallback</code> を受け取ります。<code>value</code> が <code>undefined</code> なら <code>fallback</code> を、そうでなければ <code>value</code> を返します。<code>value</code> が <code>0</code> のときは、<code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>orDefault(3, 10)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>orDefault(0, 10)</code></dt><dd class="r"><code>0</code></dd><dd class="c">0 は値があるので、そのまま返す</dd></div>
+          <div><dt><code>orDefault(undefined, 10)</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number | undefined</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 orDefault を作る。数値か undefined の value と、数値 fallback を受け取り、数値を返す
+export function orDefault() {
+  // value（なければ fallback）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「（なければ ◯）」は <code>??</code> です（02章 q02 問1）。<code>||</code> で書くと、<code>0</code> のときも <code>fallback</code> になってしまいます。lint もエラーにします。<code>value === undefined ? fallback : value</code> のように条件演算子で書くと、lint が <code>??</code> を使うようにエラーを出します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">名前か null を受け取り、null なら「ゲスト」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nameOrGuest() {}</code></pre>
+      <p>名前（文字列）か <code>null</code> を 1 つ受け取ります。名前があればそのまま、<code>null</code> なら <code>"ゲスト"</code> を返します。戻り値の型は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameOrGuest("山田")</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nameOrGuest(null)</code></dt><dd class="r"><code>"ゲスト"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameOrGuest を作る。文字列か null の name を受け取り、文字列を返す
+export function nameOrGuest() {
+  // name（なければ "ゲスト"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 と同じく <code>??</code> で書きます。<code>??</code> は、左が <code>null</code> のときも右に切り替えます（問2）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">文字列か undefined を受け取り、最初の 1 文字を text?.[0] で取り出して返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>?.[ ]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstLetter() {}</code></pre>
+      <p>文字列か <code>undefined</code> を 1 つ受け取り、最初の 1 文字を返します。<code>undefined</code> のときと空の文字列のときは、<code>undefined</code> を返します。取り出すのは <code>text?.[0]</code> の形で書きます。戻り値の型は「文字列か undefined」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstLetter("abc")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>firstLetter("")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の文字列には最初の文字がない</dd></div>
+          <div><dt><code>firstLetter(undefined)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | undefined</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">?.[1]</code><h4>値があるときだけ、添字で取り出す</h4></div>
+      <p>添字の <code>[ ]</code>（01章 q03 問20）にも、<code>?.</code> を付けられます。左の値が <code>undefined</code> か <code>null</code> なら、取り出さずに <code>undefined</code> になります。配列にも文字列にも使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 secondTag を作る。読み取り専用の文字列の配列か undefined の tags を受け取り、文字列か undefined を返す
+function secondTag(tags: readonly string[] | undefined): string | undefined {
+  // tags の 1 番目の要素（tags が undefined なら undefined）を返す
+  return tags?.[1];
+}
+// 結果: secondTag(["新着", "セール"]) は "セール"、secondTag(["新着"]) は undefined、secondTag(undefined) は undefined</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>return <span class="seg"><i>1</i>tags</span><span class="seg c"><i>2</i>?.</span><span class="seg"><i>3</i>[1]</span>;</pre>
+        <ol>
+          <li><span><code>undefined</code> かもしれない配列です。</span></li>
+          <li><span>左が <code>undefined</code> なら、ここで止まって <code>undefined</code> になります。</span></li>
+          <li><span>左に値があるときだけ、1 番目の要素を取り出します。要素がなければ <code>undefined</code> です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>secondTag(["新着", "セール"])</code></dt><dd class="r"><code>"セール"</code></dd><dd class="c"></dd></div>
+        <div><dt><code>secondTag(["新着"])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">1 番目の要素がない</dd></div>
+        <div><dt><code>secondTag(undefined)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">配列がない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>tags?[1]</code> のように <code>.</code> を落とすと、条件演算子の <code>?</code> と読まれて、書き方のエラーになります。<code>?.</code> の後ろに <code>[ ]</code> を続けます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstLetter を作る。文字列か undefined の text を受け取り、文字列か undefined を返す
+export function firstLetter() {
+  // text の 0 番目の文字（text が undefined なら undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>サンプルの <code>secondTag</code> と同じ形で、取り出す位置が <code>0</code> になります。空の文字列の <code>[0]</code> は <code>undefined</code> なので（01章 q03 問20）、空の文字列の場合を別に書く必要はありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">住所があれば市区町村を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function cityOf() {}</code></pre>
+      <p>オブジェクトを 1 つ受け取ります。<code>address</code>（住所）は、なくてもよいプロパティです。<code>address</code> は、文字列の <code>city</code>（市区町村）を持つオブジェクトです。<code>address</code> があれば <code>city</code> を、なければ <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cityOf({ address: { city: "渋谷区" } })</code></dt><dd class="r"><code>"渋谷区"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>cityOf({})</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">address がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ address?: { city: string } }</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cityOf を作る。オブジェクト user（address はなくてもよい、city が文字列のオブジェクト）を受け取り、文字列か undefined を返す
+export function cityOf() {
+  // user の address の city（user の address がなければ undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、オブジェクトの型の中にオブジェクトの型を書き、<code>address</code> にオプションプロパティの <code>?</code> を付けます（02章 q02 問1）。<code>?.</code> は、ないかもしれない <code>address</code> のすぐ後ろに付けます。<code>user</code> はいつもあるので、<code>user</code> の後ろは <code>.</code> のままです。<code>address</code> がないと、その先の <code>city</code> は読まずに <code>undefined</code> になります（問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">住所があれば市区町村を、なければ「不明」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function cityOrUnknown() {}</code></pre>
+      <p>問6 と同じ形のオブジェクトを受け取ります。<code>address</code> があれば <code>city</code> を、なければ <code>"不明"</code> を返します。戻り値の型は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cityOrUnknown({ address: { city: "渋谷区" } })</code></dt><dd class="r"><code>"渋谷区"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>cityOrUnknown({})</code></dt><dd class="r"><code>"不明"</code></dd><dd class="c">address がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ address?: { city: string } }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cityOrUnknown を作る。オブジェクト user（address はなくてもよい、city が文字列のオブジェクト）を受け取り、文字列を返す
+export function cityOrUnknown() {
+  // user の address の city（user の address がなければ "不明"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 の式の後ろに、<code>??</code> と <code>"不明"</code> をつなげます。問1 の 2 つめのサンプルの <code>couponLabel</code> と同じ並びです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">空の文字列なら null、それ以外はそのまま返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function emptyToNull() {}</code></pre>
+      <p>文字列を 1 つ受け取ります。空の文字列 <code>""</code> なら <code>null</code> を、それ以外はそのまま返します。入力欄が空のときに「値なし」として扱う処理です。戻り値の型は「文字列か null」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>emptyToNull("")</code></dt><dd class="r"><code>null</code></dd><dd class="c"></dd></div>
+          <div><dt><code>emptyToNull("a")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 emptyToNull を作る。文字列 text を受け取り、文字列か null を返す
+export function emptyToNull() {
+  // text が空の文字列と等しいなら null、そうでなければ text を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ なら ◯、そうでなければ ◯」は、条件演算子 <code>? :</code> です（01章 q01 問12）。空の文字列と比べるのは <code>=== ""</code> です。戻り値の型は、問2 のサンプルの <code>couponDiscount</code> と同じく <code>| null</code> を付けて書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">target が何番目にあるかを返す。なければ null</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function indexOrNull() {}</code></pre>
+      <p>文字列の配列 <code>items</code> と、文字列 <code>target</code> を受け取ります。<code>target</code> が <code>items</code> の何番目にあるかを返します。位置は 0 から数えます。見つからないときは、<code>-1</code> の代わりに <code>null</code> を返します。引数の配列は読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>indexOrNull(["a", "b"], "b")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>indexOrNull(["a", "b"], "c")</code></dt><dd class="r"><code>null</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>string</code>、戻り値が <code>number | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 indexOrNull を作る。読み取り専用の文字列の配列 items と文字列 target を受け取り、数値か null を返す
+export function indexOrNull() {
+  // 位置 index を作り、items の中で target がある位置（0 から数える）を入れる
+  // index が -1 と等しいなら null、そうでなければ index を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>位置は、配列の <code>.indexOf()</code> で調べます（02章 q04 問10）。見つからないと <code>-1</code> が返ります。2 行目は、問8 と同じ条件演算子の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">文字列を数値にする。NaN になるなら null</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseOrNull() {}</code></pre>
+      <p>文字列を 1 つ受け取り、<code>Number()</code> で数値にして返します。数値にできず <code>NaN</code>（数でないことを表す値）になるときは、<code>null</code> を返します。戻り値の型は「数値か null」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseOrNull("42")</code></dt><dd class="r"><code>42</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseOrNull("abc")</code></dt><dd class="r"><code>null</code></dd><dd class="c">Number("abc") は NaN</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseOrNull を作る。文字列 text を受け取り、数値か null を返す
+export function parseOrNull() {
+  // 数値 value を作り、text を数値にしたものを入れる
+  // value が NaN なら null、そうでなければ value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>数値にするのは <code>Number()</code> です（01章 q08 問16）。<code>NaN</code> かどうかは <code>Number.isNaN()</code> で調べます（01章 q04 問11）。<code>value === NaN</code> は、いつも <code>false</code> になるので使えません。2 行目は、問8 と同じ条件演算子の形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">null か undefined なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isMissing() {}</code></pre>
+      <p>文字列か <code>null</code> か <code>undefined</code> を 1 つ受け取ります。<code>null</code> か <code>undefined</code> なら <code>true</code>、文字列なら <code>false</code> を返します。空の文字列も文字列なので <code>false</code> です。引数の型は、3 つの型を <code>|</code> で並べて書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isMissing(null)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isMissing(undefined)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isMissing("")</code></dt><dd class="r"><code>false</code></dd><dd class="c">空の文字列は値がある</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null | undefined</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isMissing を作る。文字列か null か undefined の value を受け取り、true か false を返す
+export function isMissing() {
+  // value が null と等しい、または value が undefined と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「等しい」は <code>===</code>、「または」は <code>||</code> です（01章 q01 問15）。<code>value == null</code> と書くと 1 回で両方を調べられますが、lint がエラーにします（<code>eqeqeq</code>）。この課題では <code>===</code> で 2 つを書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">undefined でない要素の数を返す</span>
+      <span class="q-new">新しく出てくる書き方：要素がユニオン型の配列 <code>(string | undefined)[]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countPresent() {}</code></pre>
+      <p>要素が「文字列か undefined」の配列を受け取ります。<code>undefined</code> でない要素の数を返します。引数の配列は読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countPresent(["a", undefined, "b"])</code></dt><dd class="r"><code>2</code></dd><dd class="c">undefined は数えない</dd></div>
+          <div><dt><code>countPresent([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (string | undefined)[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(number | undefined)[]</code><h4>要素がユニオン型の配列</h4></div>
+      <p>配列の要素が「◯ か ◯」のときは、ユニオン型を <code>( )</code> で囲んでから、後ろに <code>[]</code> を付けます。読み取り専用にするときは、前に <code>readonly</code> を付けます（02章 q04 問1）。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 部屋番号の配列 rooms（要素は数値か undefined）を作り、101 と undefined と 203 を入れる
+const rooms: (number | undefined)[] = [101, undefined, 203];
+// 結果: rooms の 1 番目の要素は undefined</code></pre>
+      </div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 roomCount を作る。読み取り専用の配列 rooms（要素は数値か undefined）を受け取り、数値を返す
+function roomCount(rooms: readonly (number | undefined)[]): number {
+  // rooms の要素の数を返す
+  return rooms.length;
+}
+// 結果: roomCount([101, undefined, 203]) は 3</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>rooms: <span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>(number | undefined)</span><span class="seg c"><i>3</i>[]</span></pre>
+        <ol>
+          <li><span>中身を書き換えない配列の印です。</span></li>
+          <li><span>要素 1 つの型です。かっこで 1 つにまとめます。</span></li>
+          <li><span>「その型の要素が並んだ配列」の印です。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>かっこを付けない</h5>
+          <pre><code class="language-typescript">const rooms: number | undefined[] = [101, undefined, 203];</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。「数値、または undefined の配列」という意味になります</div>
+        </div>
+        <div>
+          <h5>かっこを付ける</h5>
+          <pre><code class="language-typescript">const rooms: (number | undefined)[] = [101, undefined, 203];</code></pre>
+          <div class="verdict ok">○ 要素が「数値か undefined」の配列になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>.length</code> は、<code>undefined</code> の要素も 1 つとして数えます。<code>roomCount([101, undefined, 203])</code> は <code>3</code> です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countPresent を作る。読み取り専用の配列 values（要素は文字列か undefined）を受け取り、数値を返す
+export function countPresent() {
+  // values の要素を 1 つずつ value として、value が undefined でないものだけを集めた新しい配列の、要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、2 つめのサンプルの <code>roomCount</code> と同じ形で、要素の型が <code>string | undefined</code> になります。「◯ だけを集めた新しい配列」は <code>.filter()</code> です（02章 q04 問7）。「undefined でない」は <code>!== undefined</code> です。集めた配列に続けて <code>.length</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">null を飛ばして合計する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumNonNull() {}</code></pre>
+      <p>要素が「数値か null」の配列を受け取ります。<code>null</code> を飛ばして、数値だけを合計して返します。数値が 1 つもなければ <code>0</code> を返します。引数の配列は読み取り専用にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumNonNull([1, null, 2])</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumNonNull([null])</code></dt><dd class="r"><code>0</code></dd><dd class="c">数値がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (number | null)[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumNonNull を作る。読み取り専用の配列 values（要素は数値か null）を受け取り、数値を返す
+export function sumNonNull() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // values から 1 つずつ value に取り出してくり返す
+  //   もし value が null でないなら
+  //     total に value を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、問12 と同じくユニオン型を <code>( )</code> で囲みます。「null でない」は <code>!== null</code> です。<code>if</code> の中では <code>value</code> が <code>number</code> として扱われるので、そのまま <code>+=</code> で足せます。<code>if (value)</code> と書くと、lint がエラーにします（<code>strict-boolean-expressions</code>）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">電話番号を返す。undefined でも null でも「なし」</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function phoneText() {}</code></pre>
+      <p>連絡先のオブジェクトを 1 つ受け取ります。<code>phone</code>（電話番号）は、なくてもよいプロパティです。あるときの値は、文字列か <code>null</code> です。電話番号があればそれを返します。<code>phone</code> がないときと <code>null</code> のときは、<code>"なし"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>phoneText({ phone: "090-0000-0000" })</code></dt><dd class="r"><code>"090-0000-0000"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>phoneText({ phone: null })</code></dt><dd class="r"><code>"なし"</code></dd><dd class="c">null</dd></div>
+          <div><dt><code>phoneText({})</code></dt><dd class="r"><code>"なし"</code></dd><dd class="c">phone がない（undefined）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ phone?: string | null }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 phoneText を作る。オブジェクト contact（phone はなくてもよい、文字列か null）を受け取り、文字列を返す
+export function phoneText() {
+  // contact の phone（なければ "なし"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、<code>phone</code> に <code>?</code> を付け、値の型を <code>string | null</code> にします。<code>??</code> は <code>undefined</code> と <code>null</code> のどちらでも右に切り替えるので（問2）、<code>??</code> 1 つで 2 つの場合をまとめて扱えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">担当者の名前を返す。担当者が null なら「未定」</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function managerName() {}</code></pre>
+      <p>チームのオブジェクトを 1 つ受け取ります。<code>manager</code>（担当者）は、文字列の <code>name</code> を持つオブジェクトか <code>null</code> です。<code>manager</code> はいつも書いてあるプロパティで、まだ決まっていないときに <code>null</code> が入ります。<code>manager</code> の <code>name</code> を返し、<code>manager</code> が <code>null</code> なら <code>"未定"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>managerName({ manager: { name: "山田" } })</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>managerName({ manager: null })</code></dt><dd class="r"><code>"未定"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ manager: { name: string } | null }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 managerName を作る。オブジェクト team（manager は、name が文字列のオブジェクトか null）を受け取り、文字列を返す
+export function managerName() {
+  // team の manager の name（team の manager が null なら "未定"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。問7 の <code>address</code> は「ないかもしれない」、この問題の <code>manager</code> は「<code>null</code> かもしれない」です。<code>?.</code> と <code>??</code> は、どちらでも同じように働きます（問2）。引数の型では、<code>manager</code> に <code>?</code> は付けず、値の型を <code>{ name: string } | null</code> にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">null なら undefined に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nullToUndefined() {}</code></pre>
+      <p>文字列か <code>null</code> を 1 つ受け取ります。<code>null</code> なら <code>undefined</code> を、文字列ならそのまま返します。戻り値の型は「文字列か undefined」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nullToUndefined(null)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nullToUndefined("a")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nullToUndefined を作る。文字列か null の value を受け取り、文字列か undefined を返す
+export function nullToUndefined() {
+  // value（なければ undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ <code>??</code> の形で、右に <code>undefined</code> を書きます。<code>??</code> の右には、どんな値でも書けます。<code>value === null ? undefined : value</code> と条件演算子で書くと、lint が <code>??</code> を使うようにエラーを出します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">undefined なら null に変える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function undefinedToNull() {}</code></pre>
+      <p>問16 の反対です。文字列か <code>undefined</code> を 1 つ受け取ります。<code>undefined</code> なら <code>null</code> を、文字列ならそのまま返します。戻り値の型は「文字列か null」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>undefinedToNull(undefined)</code></dt><dd class="r"><code>null</code></dd><dd class="c"></dd></div>
+          <div><dt><code>undefinedToNull("a")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | undefined</code>、戻り値が <code>string | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 undefinedToNull を作る。文字列か undefined の value を受け取り、文字列か null を返す
+export function undefinedToNull() {
+  // value（なければ null）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問16 と同じ形で、<code>??</code> の右が <code>null</code> になります。条件演算子で書くと、問16 と同じく lint がエラーにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">2 つとも null でなければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function bothPresent() {}</code></pre>
+      <p>文字列か <code>null</code> を 2 つ受け取ります。2 つとも <code>null</code> でなければ <code>true</code>、どちらかが <code>null</code> なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>bothPresent("a", "b")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>bothPresent("a", null)</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 つめが null</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null</code> と <code>string | null</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bothPresent を作る。文字列か null の a と、文字列か null の b を受け取り、true か false を返す
+export function bothPresent() {
+  // a が null でない、かつ b が null でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「null でない」は <code>!== null</code>、「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。比べた結果は <code>true</code> か <code>false</code> なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">null でないものだけを半角スペースでつなぐ</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function joinPresent() {}</code></pre>
+      <p>文字列か <code>null</code> を 2 つ受け取ります。2 つとも文字列なら、半角スペース 1 つでつないで返します。片方が <code>null</code> なら、もう片方だけを返します。2 つとも <code>null</code> なら、空の文字列を返します。姓と名をつなぐ処理です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>joinPresent("山田", "太郎")</code></dt><dd class="r"><code>"山田 太郎"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>joinPresent("山田", null)</code></dt><dd class="r"><code>"山田"</code></dd><dd class="c">後ろにスペースを付けない</dd></div>
+          <div><dt><code>joinPresent(null, "太郎")</code></dt><dd class="r"><code>"太郎"</code></dd><dd class="c">前にスペースを付けない</dd></div>
+          <div><dt><code>joinPresent(null, null)</code></dt><dd class="r"><code>""</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null</code> と <code>string | null</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 joinPresent を作る。文字列か null の a と、文字列か null の b を受け取り、文字列を返す
+export function joinPresent() {
+  // もし a が null と等しいなら
+  //   b（なければ空の文字列）を返す
+  // もし b が null と等しいなら
+  //   a を返す
+  // a と b を埋め込んだ「◯ ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「もし ◯ なら ◯ を返す」を 2 つ並べ、どちらにも当たらなかったときを最後に返します。1 つめの <code>if</code> の中は、問4 と同じ <code>??</code> の形です。ここで <code>b</code> も <code>null</code> なら、空の文字列になります。1 つめの <code>if</code> の後ろでは <code>a</code> は <code>string</code>、2 つめの <code>if</code> の後ろでは <code>b</code> も <code>string</code> として扱われます。最後の行はテンプレートリテラルで、<code>${a}</code> と <code>${b}</code> の間に半角スペースを入れます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">最後のログイン日を「2026-12-01」の形にする。null なら「未ログイン」</span>
+      <span class="q-new">新しく出てくる書き方：<code>Date</code> <code>.toISOString()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lastLoginText() {}</code></pre>
+      <p>利用者のオブジェクトを 1 つ受け取ります。<code>lastLoginAt</code>（最後にログインした日時）は、<code>Date</code>（日時を表す値）か <code>null</code> です。日時があれば、<code>.toISOString()</code> で作った文字列の先頭 10 文字を返します。<code>"2026-12-01"</code> のような日付の形になります。<code>null</code> なら <code>"未ログイン"</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastLoginText({ lastLoginAt: new Date("2026-12-01T09:00:00Z") })</code></dt><dd class="r"><code>"2026-12-01"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lastLoginText({ lastLoginAt: null })</code></dt><dd class="r"><code>"未ログイン"</code></dd><dd class="c">一度もログインしていない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ lastLoginAt: Date | null }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Date</code><h4>日時を表す値と、その型</h4></div>
+      <p><code>new Date("…")</code> と書くと、日時を表す値ができます。<code>new</code> は、<code>new Error()</code>（01章 q04 問8）と同じ書き方です。この値の型は <code>Date</code> で、型注釈にも <code>Date</code> と書きます。<code>"2026-04-01T10:30:00Z"</code> の <code>T</code> は日付と時刻の区切り、最後の <code>Z</code> は世界標準時（UTC）の印です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文日時 orderedAt を作り、2026年4月1日 10時30分（世界標準時）の Date を入れる
+const orderedAt = new Date("2026-04-01T10:30:00Z");
+// text を作り、orderedAt を ISO 形式の文字列にしたものを入れる
+const text = orderedAt.toISOString();
+// 結果: text は "2026-04-01T10:30:00.000Z"</code></pre>
+      </div>
+      <p>ここでは、まねて書ければ十分です。</p>
+      <p class="more">09章 q03（Date）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.toISOString()</code><h4>日時を、決まった形の文字列にする</h4></div>
+      <p><code>Date</code> の値を、<code>"2026-04-01T10:30:00.000Z"</code> の形の文字列にします。この形を ISO 形式と呼びます。いつも世界標準時で表すので、どのパソコンで動かしても同じ文字列になります。文字の位置が決まっているので、<code>.slice()</code>（01章 q02 問10）で一部を取り出せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 orderTime を作る。Date の orderedAt を受け取り、文字列を返す
+function orderTime(orderedAt: Date): string {
+  // orderedAt を ISO 形式の文字列にしたものの、11 文字目から 16 文字目の前までを取り出して返す
+  return orderedAt.toISOString().slice(11, 16);
+}
+// 結果: orderTime(new Date("2026-04-01T10:30:00Z")) は "10:30"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>2026-04-01</span><span class="seg c"><i>2</i>T</span><span class="seg"><i>3</i>10:30:00.000</span><span class="seg c"><i>4</i>Z</span></pre>
+        <ol>
+          <li><span>日付です。0 文字目から 9 文字目までの 10 文字です。</span></li>
+          <li><span>日付と時刻の区切りです。10 文字目です。</span></li>
+          <li><span>時刻です。11 文字目から始まり、時・分・秒・ミリ秒（1000 分の 1 秒）の順です。</span></li>
+          <li><span>世界標準時の印です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>orderTime(new Date("2026-04-01T10:30:00Z"))</code></dt><dd class="r"><code>"10:30"</code></dd><dd class="c">11 文字目から 5 文字</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>日本の時刻は、世界標準時より 9 時間進んでいます。<code>new Date("2026-04-01T10:30:00Z")</code> は、日本では 19 時 30 分です。それでも <code>.toISOString()</code> は <code>"10:30"</code> の時刻で表します。</p>
+      <p class="more">09章 q03（Date）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lastLoginText を作る。オブジェクト user（lastLoginAt は Date か null）を受け取り、文字列を返す
+export function lastLoginText() {
+  // user の lastLoginAt を ISO 形式の文字列にしたものの、0 文字目から 10 文字目の前までを取り出したもの（user の lastLoginAt が null なら "未ログイン"）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つめのサンプルの <code>orderTime</code> の式に、問7 と同じく <code>?.</code> と <code>??</code> を組み合わせます。<code>?.</code> は、<code>null</code> かもしれない <code>lastLoginAt</code> のすぐ後ろに 1 つだけ付けます。<code>?.</code> で止まると、その先の <code>.slice()</code> も実行されないので、<code>.slice()</code> の前は <code>.</code> のままでかまいません。取り出す位置は <code>0</code> から <code>10</code> の前までです。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c03-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">プロフィールの自己紹介・会社・メールアドレス</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Profile = {
+  name: string;
+  bio?: string;
+  company: { name: string; department?: string } | null;
+};
+
+export function bioLength() {}
+
+export function departmentOf() {}
+
+export function companyLabel() {}
+
+export function findEmail() {}</code></pre>
+      <p>プロフィールの型 <code>Profile</code> は定義済みです。<code>bio</code>（自己紹介）は、書いていない人もいます。<code>company</code>（会社）は、会社に所属していない人では <code>null</code> です。会社の <code>department</code>（部署）も、ないことがあります。次の 4 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>bioLength(profile)</code>：<code>bio</code> の文字数を返します。<code>bio</code> がなければ <code>0</code> です。<code>?.</code> と <code>??</code> を使って書きます。</li>
+        <li><code>departmentOf(profile)</code>：部署名を返します。会社に所属していないか、部署がなければ <code>"未設定"</code> です。</li>
+        <li><code>companyLabel(profile)</code>：会社と部署があれば <code>"会社名（部署名）"</code>、会社だけなら <code>"会社名"</code>、会社がなければ <code>"フリー"</code> を返します。かっこは全角です。</li>
+        <li><code>findEmail(emails, name)</code>：名前からメールアドレスを探して返します。見つからなければ <code>null</code> を返します。<code>undefined</code> ではありません。<code>emails</code> の型は <code>{ [name: string]: string }</code>、戻り値の型は <code>string | null</code> です。</li>
+      </ol>
+      <p>「説明すること」もあります。このコードで、<code>undefined</code>（<code>bio</code> がない）と <code>null</code>（<code>company</code> がない）がそれぞれ何を表しているかを、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の 3 人のプロフィールを使います。</p>
+        <pre><code class="language-typescript">const full: Profile = {
+  name: "山田",
+  bio: "TypeScriptを勉強中",
+  company: { name: "サンプル商事", department: "開発部" },
+};
+const noDepartment: Profile = { name: "佐藤", company: { name: "サンプル商事" } };
+const freelance: Profile = { name: "鈴木", company: null };</code></pre>
+        <dl class="eg">
+          <div><dt><code>bioLength(full)</code></dt><dd class="r"><code>14</code></dd><dd class="c">"TypeScriptを勉強中" は 14 文字</dd></div>
+          <div><dt><code>bioLength(freelance)</code></dt><dd class="r"><code>0</code></dd><dd class="c">bio がない</dd></div>
+          <div><dt><code>departmentOf(full)</code></dt><dd class="r"><code>"開発部"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>departmentOf(noDepartment)</code></dt><dd class="r"><code>"未設定"</code></dd><dd class="c">部署がない</dd></div>
+          <div><dt><code>departmentOf(freelance)</code></dt><dd class="r"><code>"未設定"</code></dd><dd class="c">会社がない</dd></div>
+          <div><dt><code>companyLabel(full)</code></dt><dd class="r"><code>"サンプル商事（開発部）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>companyLabel(noDepartment)</code></dt><dd class="r"><code>"サンプル商事"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>companyLabel(freelance)</code></dt><dd class="r"><code>"フリー"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>findEmail({ 山田: "yamada@example.com", 佐藤: "sato@example.com" }, "佐藤")</code></dt><dd class="r"><code>"sato@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>findEmail({ 山田: "yamada@example.com", 佐藤: "sato@example.com" }, "鈴木")</code></dt><dd class="r"><code>null</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>bioLength</code>・<code>departmentOf</code>・<code>companyLabel</code> は、引数が <code>Profile</code> です。戻り値は、順に <code>number</code>・<code>string</code>・<code>string</code> です。<code>findEmail</code> は、引数が <code>{ [name: string]: string }</code> と <code>string</code>、戻り値が <code>string | null</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bioLength を作る。Profile の profile を受け取り、数値を返す
+export function bioLength() {
+  // profile の bio の文字数（profile の bio がなければ 0）を返す
+}
+
+// 関数 departmentOf を作る。Profile の profile を受け取り、文字列を返す
+export function departmentOf() {
+  // profile の company の department（profile の company が null なら "未設定"）を返す
+}
+
+// 関数 companyLabel を作る。Profile の profile を受け取り、文字列を返す
+export function companyLabel() {
+  // もし profile の company が null と等しいなら
+  //   "フリー" を返す
+  // profile の company から name と department を取り出す
+  // もし department がなければ
+  //   name を返す
+  // name と department を埋め込んだ「◯（◯）」の文字列を返す
+}
+
+// 関数 findEmail を作る。表 emails（キーは名前の文字列、値は文字列）と文字列 name を受け取り、文字列か null を返す
+export function findEmail() {
+  // emails の name の値（なければ null）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>bioLength</code> は問1、<code>departmentOf</code> は問15 と同じ形です。<code>departmentOf</code> は、<code>company</code> が <code>null</code> のときも、<code>department</code> がないときも、<code>"未設定"</code> になります。<code>companyLabel</code> の 1 つめの <code>if</code> の後ろでは、<code>profile.company</code> はオブジェクトとして扱われます。そのため、分割代入（02章 q03 問1）で <code>name</code> と <code>department</code> を取り出せます。「department がなければ」は <code>=== undefined</code> です。<code>findEmail</code> は、キーで取り出した値が <code>undefined</code> かもしれないので（02章 q08 問1）、問17 と同じく <code>?? null</code> で <code>null</code> に変えます。説明することは、<code>Profile</code> の値を作る行をファイルの下に書いて試してから考えます。<code>bio</code> を書かない行と、<code>company</code> を書かない行で、型の確認がどう言うかを見比べます。試した行は、提出する前に消します。</p></details>
+    </div>
+  </section>
+</section>

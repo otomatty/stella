@@ -1,0 +1,1028 @@
+<section class="sec" id="c04-q08">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q08 文字列の解析</h2>
+    <p>文字列を読み取って、数値や配列に変える関数を 20 個書きます。★総合問題（コマンドの解析）で使う書き方を、少しずつくり返す問題です。文字列を <code>.split()</code> や <code>.slice()</code> で分け、数値に変えます。形がおかしいときは <code>Error</code> を投げます。メッセージは問題文のとおりにします。問題文の <code>&lt;text&gt;</code> のところには、受け取った文字列をそのまま入れます。数値かどうかは <code>Number()</code> と <code>Number.isFinite</code>、整数かどうかは <code>Number.isInteger</code> で確かめます。引数と戻り値の型注釈は、自分で書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q08-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">"key=value" を [key, value] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseKeyValue() {}</code></pre>
+      <p><code>"key=value"</code> の形の文字列を、最初の <code>"="</code> の前と後ろに分けます。2 つの文字列のタプルにして返します。<code>"="</code> が 2 つ以上あっても、分けるのは最初の <code>"="</code> だけです。<code>"="</code> がなければ、<code>"= がありません: &lt;text&gt;"</code> というメッセージの <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseKeyValue("a=1")</code></dt><dd class="r"><code>["a", "1"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseKeyValue("url=a=b")</code></dt><dd class="r"><code>["url", "a=b"]</code></dd><dd class="c">最初の "=" で分ける</dd></div>
+          <div><dt><code>parseKeyValue("abc")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"= がありません: abc"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>[string, string]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseKeyValue を作る。文字列 text を受け取り、[文字列, 文字列] のタプルを返す
+export function parseKeyValue() {
+  // 位置 index を作り、text の中で "=" がある位置を入れる
+  // もし index が -1 と等しいなら
+  //   text を埋め込んだ「= がありません: ◯」というメッセージのエラーを投げる
+  // text の 0 文字目から index 文字目の前まで、text の index + 1 文字目から後ろの順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>位置は <code>.indexOf()</code>（01章 q05 問11）、取り出すのは <code>.slice()</code>（01章 q02 問10）です。戻り値の型 <code>[string, string]</code> はタプルです（02章 q06 問1）。<code>.split("=")</code> を使うと、<code>"url=a=b"</code> が 3 つに分かれてしまいます。そのため、ここでは位置で分けます。メッセージはテンプレートリテラルで作ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q08-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">"1,2,3" を [1, 2, 3] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseNumberList() {}</code></pre>
+      <p>カンマ <code>","</code> で区切った文字列を、数値の配列にします。区切ったそれぞれの部分の、前後の空白は取り除きます。数値にならない部分があれば、<code>"数値ではありません: &lt;その部分&gt;"</code> の <code>Error</code> を投げます。<code>&lt;その部分&gt;</code> には、空白を取り除いたあとの文字列を入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseNumberList("1, 2,3")</code></dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c">前後の空白は取り除く</dd></div>
+          <div><dt><code>parseNumberList("1,x,3")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"数値ではありません: x"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseNumberList を作る。文字列 text を受け取り、数値の配列を返す
+export function parseNumberList() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // text を "," で区切った配列から 1 つずつ part に取り出してくり返す
+  //   trimmed を作り、part の前後の空白を取り除いたものを入れる
+  //   n を作り、trimmed を数値にしたものを入れる
+  //   もし n が有限の数でないなら
+  //     trimmed を埋め込んだ「数値ではありません: ◯」というメッセージのエラーを投げる
+  //   result の最後に n を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>区切るのは <code>.split(",")</code>（02章 q06 問12）、空白を取り除くのは <code>.trim()</code>（01章 q05 問9）です。数値にするのは <code>Number()</code>（01章 q08 問16）、「有限の数でない」は <code>!Number.isFinite(n)</code> です（01章 q04 問12）。<code>result</code> の作り方と付け足し方は、02章 q04 問17 の <code>.push()</code> と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q08-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">"yes" や "no" を true か false にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseYesNo() {}</code></pre>
+      <p><code>"true"</code>・<code>"yes"</code>・<code>"1"</code> なら <code>true</code>、<code>"false"</code>・<code>"no"</code>・<code>"0"</code> なら <code>false</code> を返します。大文字と小文字の違いは問いません。それ以外は <code>"真偽値ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseYesNo("YES")</code></dt><dd class="r"><code>true</code></dd><dd class="c">大文字でもよい</dd></div>
+          <div><dt><code>parseYesNo("0")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseYesNo("maybe")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"真偽値ではありません: maybe"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseYesNo を作る。文字列 text を受け取り、true か false を返す
+export function parseYesNo() {
+  // text を小文字にしたもので場合を分ける
+  //   "true" か "yes" か "1" の場合
+  //     true を返す
+  //   "false" か "no" か "0" の場合
+  //     false を返す
+  //   それ以外の場合
+  //     text を埋め込んだ「真偽値ではありません: ◯」というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>場合分けは <code>switch</code> です（03章 q04 問1）。同じ処理にする case は、<code>case "true":</code> <code>case "yes":</code> のように並べます（04章 q02）。「それ以外の場合」は <code>default:</code> です（04章 q02 問1）。メッセージには、小文字にする前の <code>text</code> を入れます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q08-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">"09:30" を 0 時からの分にする</span>
+      <span class="q-new">新しく出てくる書き方：空の文字列を <code>Number()</code> にすると <code>0</code> になる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseClock() {}</code></pre>
+      <p><code>"09:30"</code> の形の時刻を、0 時から何分たったかの数にして返します。9 時 30 分なら、9 × 60 + 30 で 570 です。<code>":"</code> で 2 つに分けられないときと、時が 0〜23、分が 0〜59 の整数でないときは、<code>"時刻ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseClock("09:30")</code></dt><dd class="r"><code>570</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseClock("0:00")</code></dt><dd class="r"><code>0</code></dd><dd class="c">時は 1 桁でもよい</dd></div>
+          <div><dt><code>parseClock("24:00")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">時が 23 より大きい。メッセージは <code>"時刻ではありません: 24:00"</code></dd></div>
+          <div><dt><code>parseClock("12")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">":" がない。メッセージは <code>"時刻ではありません: 12"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Number("")</code><h4>空の文字列を数値にすると 0 になる</h4></div>
+      <p><code>Number()</code> は、空の文字列 <code>""</code> や空白だけの文字列を <code>0</code> にします。<code>NaN</code>（数ではないことを表す値）にはなりません。<code>0</code> は有限の数で、整数でもあります。そのため、<code>Number.isFinite</code> や <code>Number.isInteger</code> で確かめても通ってしまいます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 入力 input を作り、空の文字列を入れる
+const input = "";
+// 数量 quantity を作り、input を数値にしたものを入れる
+const quantity = Number(input);
+// 結果: quantity は 0</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Number("")</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の文字列</dd></div>
+        <div><dt><code>Number("  ")</code></dt><dd class="r"><code>0</code></dd><dd class="c">空白だけでも 0</dd></div>
+        <div><dt><code>Number(undefined)</code></dt><dd class="r"><code>NaN</code></dd><dd class="c">undefined は NaN</dd></div>
+        <div><dt><code>Number("3個")</code></dt><dd class="r"><code>NaN</code></dd><dd class="c">数字以外がまじっている</dd></div>
+      </dl>
+      <p>区切った配列から既定値つきで取り出すとき（02章 q06 問12）に、この違いが効いてきます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 時刻 time を作り、"10" を入れる
+const time = "10";
+// time を ":" で区切り、0 番目を hour、1 番目を minute として取り出す。ないときは "" にする
+const [hour = "", minute = ""] = time.split(":");
+// 分 m を作り、minute を数値にしたものを入れる
+const m = Number(minute);
+// 結果: hour は "10"、minute は ""、m は 0</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>":"</code> のない <code>"10"</code> でも、<code>m</code> は <code>0</code> になり、エラーになりません。分けた数を確かめるときは、区切った配列の要素の数 <code>.length</code> を見ます。既定値を付けずに <code>parts[1]</code> のように取り出すと、ない要素は <code>undefined</code> で、<code>Number(undefined)</code> は <code>NaN</code> です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseClock を作る。文字列 text を受け取り、数値を返す
+export function parseClock() {
+  // parts を作り、text を ":" で区切った文字列の配列を入れる
+  // 時 hour を作り、parts の 0 番目を数値にしたものを入れる
+  // 分 minute を作り、parts の 1 番目を数値にしたものを入れる
+  // もし parts の要素の数が 2 でない、または hour が整数でない、または minute が整数でない、または hour が 0 より小さい、または hour が 23 より大きい、または minute が 0 より小さい、または minute が 59 より大きいなら
+  //   text を埋め込んだ「時刻ではありません: ◯」というメッセージのエラーを投げる
+  // hour × 60 + minute を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>parts[0]</code> の型は <code>string | undefined</code> ですが、<code>Number()</code> にはそのまま渡せます。「要素の数が 2 でない」は <code>parts.length !== 2</code>、「整数でない」は <code>!Number.isInteger(hour)</code> です（01章 q04 応用）。「または」は <code>||</code> です（01章 q01 問15）。条件が長いときは、<code>||</code> の前で改行してかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q08-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">"2026-12-01" を [2026, 12, 1] にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>.map(Number)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseDateParts() {}</code></pre>
+      <p><code>"2026-12-01"</code> の形の日付を、年・月・日の 3 つの数値のタプルにします。<code>"-"</code> で 3 つに分けられないときと、どれかが整数でないときは、<code>"日付ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseDateParts("2026-12-01")</code></dt><dd class="r"><code>[2026, 12, 1]</code></dd><dd class="c">"01" は 1 になる</dd></div>
+          <div><dt><code>parseDateParts("2026/12/01")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">"-" で分けられない。メッセージは <code>"日付ではありません: 2026/12/01"</code></dd></div>
+          <div><dt><code>parseDateParts("2026-12-xx")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">整数でない。メッセージは <code>"日付ではありません: 2026-12-xx"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>[number, number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.map(Number)</code><h4>文字列の配列を、まとめて数値の配列にする</h4></div>
+      <p><code>.map()</code> には、名前を付けた関数を渡せます（02章 q04 問5）。<code>Number()</code> も関数なので、<code>Number</code> と名前だけを渡せます。要素を 1 つずつ数値にした、新しい配列ができます。<code>.map((s) =&gt; Number(s))</code> と同じ結果です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 金額の文字列の配列 inputs を作り、"1200" と "800" と "50" を入れる
+const inputs = ["1200", "800", "50"];
+// amounts を作り、inputs の要素を 1 つずつ Number に渡して変えた新しい配列を入れる
+const amounts = inputs.map(Number);
+// 結果: amounts は [1200, 800, 50]。型は number[]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>["10", "x"].map(Number)</code></dt><dd class="r"><code>[10, NaN]</code></dd><dd class="c">数値にならない要素は NaN</dd></div>
+      </dl>
+      <p class="memo"><b>型</b>結果の型は <code>number[]</code> で、タプルではありません。<code>const [y, m, d] = …</code> と取り出すと、要素がないかもしれないので、型は <code>number | undefined</code> になります。そのまま <code>[number, number, number]</code> として返すと、型の確認でエラーになります。既定値（02章 q06 問12）を付けると、型が <code>number</code> になります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseDateParts を作る。文字列 text を受け取り、[数値, 数値, 数値] のタプルを返す
+export function parseDateParts() {
+  // parts を作り、text を "-" で区切った文字列の配列を入れる
+  // もし parts の要素の数が 3 でないなら
+  //   text を埋め込んだ「日付ではありません: ◯」というメッセージのエラーを投げる
+  // parts の要素を 1 つずつ Number に渡して変えた新しい配列から、0 番目を y、1 番目を m、2 番目を d として取り出す。ないときは 0 にする
+  // もし y が整数でない、または m が整数でない、または d が整数でないなら
+  //   text を埋め込んだ「日付ではありません: ◯」というメッセージのエラーを投げる
+  // y、m、d の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>取り出す行は、02章 q06 問12 の <code>[hour = "00", minute = "00"]</code> と同じ形で、右側が <code>parts.map(Number)</code> になります。要素が 3 つあることは先に確かめたので、既定値の <code>0</code> が使われることはありません。既定値は、型を <code>number</code> にするために付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q08-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">"10KB" をバイト数にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>.exec()</code>、正規表現の <code>^</code> <code>$</code> <code>( )</code> <code>|</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseByteSize() {}</code></pre>
+      <p><code>"10KB"</code> のような大きさの文字列を、バイト数にして返します。数字の後ろに単位が付いています。単位は <code>B</code>（そのまま）、<code>KB</code>（1024 倍）、<code>MB</code>（1024 × 1024 倍）の 3 つです。この形でないときと、ほかの単位のときは、<code>"大きさではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseByteSize("5B")</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseByteSize("2KB")</code></dt><dd class="r"><code>2048</code></dd><dd class="c">2 × 1024</dd></div>
+          <div><dt><code>parseByteSize("1MB")</code></dt><dd class="r"><code>1048576</code></dd><dd class="c">1024 × 1024</dd></div>
+          <div><dt><code>parseByteSize("3GB")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">知らない単位。メッセージは <code>"大きさではありません: 3GB"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">/…/.exec()</code><h4>正規表現に合わせて、部分ごとに取り出す</h4></div>
+      <p>正規表現は、01章 q05 問18 と q06 問13 で出ました。<code>.exec()</code> は、文字列が正規表現に合えば配列を、合わなければ <code>null</code> を返します。配列の 0 番目は合った部分の全体、1 番目からは <code>( )</code> で囲んだ部分です。</p>
+      <p>正規表現は 09章の発展問題でくわしく扱います。ここでは、この形をまねて書ければ十分です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文 order を作り、"3箱" を入れる
+const order = "3箱";
+// match を作り、order を正規表現 /^(\d+)(個|箱)$/ に合わせた結果を入れる
+const match = /^(\d+)(個|箱)$/.exec(order);
+// 結果: match は ["3箱", "3", "箱"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>/<span class="seg c"><i>1</i>^</span><span class="seg"><i>2</i>(\d+)</span><span class="seg"><i>3</i>(個|箱)</span><span class="seg c"><i>4</i>$</span>/.exec(order)</pre>
+        <ol>
+          <li><span>文字列の先頭を表します。<code>^</code> の前には、何も来てはいけません。</span></li>
+          <li><span><code>\d</code> は数字 1 文字、<code>+</code> は 1 つ以上続くことです（01章 q05 応用）。<code>( )</code> で囲んだので、合った数字が配列の 1 番目に入ります。</span></li>
+          <li><span><code>|</code> は「どちらか」です。「個」か「箱」が、配列の 2 番目に入ります。</span></li>
+          <li><span>文字列の最後を表します。<code>$</code> の後ろには、何も来てはいけません。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>/^(\d+)(個|箱)$/.exec("12個")</code></dt><dd class="r"><code>["12個", "12", "個"]</code></dd><dd class="c"></dd></div>
+        <div><dt><code>/^(\d+)(個|箱)$/.exec("3袋")</code></dt><dd class="r"><code>null</code></dd><dd class="c">単位が違う</dd></div>
+        <div><dt><code>/^(\d+)(個|箱)$/.exec("約3箱")</code></dt><dd class="r"><code>null</code></dd><dd class="c">先頭が数字でない</dd></div>
+        <div><dt><code>/^(\d+)(個|箱)$/.exec("箱")</code></dt><dd class="r"><code>null</code></dd><dd class="c">数字がない</dd></div>
+      </dl>
+      <p><code>null</code> のときを先に <code>if</code> で外すと、そのあとは配列として使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 countOf を作る。文字列 order を受け取り、数値を返す
+function countOf(order: string): number {
+  // match を作り、order を正規表現 /^(\d+)(個|箱)$/ に合わせた結果を入れる
+  const match = /^(\d+)(個|箱)$/.exec(order);
+  // もし match が null と等しいなら
+  if (match === null) {
+    // 「数量ではありません: ◯」というメッセージのエラーを投げる（◯ は order）
+    throw new Error(`数量ではありません: ${order}`);
+  }
+  // count を作り、match の 1 番目を数値にしたものを入れる
+  const count = Number(match[1]);
+  // もし match の 2 番目が "箱" と等しいなら
+  if (match[2] === "箱") {
+    // count × 12 を返す
+    return count * 12;
+  }
+  // count を返す
+  return count;
+}
+// 結果: countOf("3箱") は 36、countOf("5個") は 5</code></pre>
+      </div>
+      <p class="memo"><b>型</b>配列の要素を <code>[ ]</code> で取り出したときと同じく、<code>match[1]</code> の型は <code>string | undefined</code> です。<code>Number()</code> にはそのまま渡せます。<code>===</code> で文字列と比べることもできます。</p>
+      <p class="more">09章 発展問題 e02（正規表現）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseByteSize を作る。文字列 text を受け取り、数値を返す
+export function parseByteSize() {
+  // match を作り、text を「数字の並び」と「B か KB か MB」に分ける正規表現に合わせた結果を入れる
+  // もし match が null と等しいなら
+  //   text を埋め込んだ「大きさではありません: ◯」というメッセージのエラーを投げる
+  // value を作り、match の 1 番目を数値にしたものを入れる
+  // もし match の 2 番目が "KB" と等しいなら
+  //   value × 1024 を返す
+  // もし match の 2 番目が "MB" と等しいなら
+  //   value × 1024 × 1024 を返す
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>正規表現は <code>/^(\d+)(B|KB|MB)$/</code> です。問6 の 2 つ目のサンプルの <code>countOf</code> と同じ形で、<code>( )</code> の中の単位が 3 つになります。<code>^</code> と <code>$</code> があるので、<code>"3GB"</code> のような形は <code>null</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q08-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">"90s"・"5m"・"2h" を秒にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseSeconds() {}</code></pre>
+      <p>時間の文字列を、秒の数にして返します。最後の 1 文字が単位で、<code>s</code> は秒、<code>m</code> は分（60 秒）、<code>h</code> は時間（3600 秒）です。ほかの単位のときと、単位の前が数値でないときは、<code>"時間ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseSeconds("90s")</code></dt><dd class="r"><code>90</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseSeconds("5m")</code></dt><dd class="r"><code>300</code></dd><dd class="c">5 × 60</dd></div>
+          <div><dt><code>parseSeconds("2h")</code></dt><dd class="r"><code>7200</code></dd><dd class="c">2 × 3600</dd></div>
+          <div><dt><code>parseSeconds("3d")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">知らない単位。メッセージは <code>"時間ではありません: 3d"</code></dd></div>
+          <div><dt><code>parseSeconds("xm")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">単位の前が数値でない。メッセージは <code>"時間ではありません: xm"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseSeconds を作る。文字列 text を受け取り、数値を返す
+export function parseSeconds() {
+  // 単位 unit を作り、text の後ろから 1 文字を取り出したものを入れる
+  // value を作り、text の 0 文字目から、後ろから 1 文字目の前までを取り出し、数値にしたものを入れる
+  // もし value が有限の数でないなら
+  //   text を埋め込んだ「時間ではありません: ◯」というメッセージのエラーを投げる
+  // unit で場合を分ける
+  //   "s" の場合
+  //     value を返す
+  //   "m" の場合
+  //     value × 60 を返す
+  //   "h" の場合
+  //     value × 3600 を返す
+  //   それ以外の場合
+  //     text を埋め込んだ「時間ではありません: ◯」というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「後ろから 1 文字」は <code>.slice(-1)</code> です（01章 q05 問4）。「0 文字目から、後ろから 1 文字目の前まで」は <code>.slice(0, -1)</code> で、最後の 1 文字を除いた残りになります。<code>"90s".slice(0, -1)</code> は <code>"90"</code> です。場合分けは問3 と同じく <code>switch</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q08-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">"3-7" を [3, 7] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseRange() {}</code></pre>
+      <p><code>"3-7"</code> の形の範囲を、始まりと終わりの 2 つの数値のタプルにします。数値でないときと、始まりが終わりより大きいときは、<code>"範囲ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseRange("3-7")</code></dt><dd class="r"><code>[3, 7]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseRange("7-3")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">始まりが大きい。メッセージは <code>"範囲ではありません: 7-3"</code></dd></div>
+          <div><dt><code>parseRange("a-b")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">数値でない。メッセージは <code>"範囲ではありません: a-b"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>[number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseRange を作る。文字列 text を受け取り、[数値, 数値] のタプルを返す
+export function parseRange() {
+  // parts を作り、text を "-" で区切った文字列の配列を入れる
+  // 始まり start を作り、parts の 0 番目を数値にしたものを入れる
+  // 終わり end を作り、parts の 1 番目を数値にしたものを入れる
+  // もし parts の要素の数が 2 でない、または start が有限の数でない、または end が有限の数でない、または start が end より大きいなら
+  //   text を埋め込んだ「範囲ではありません: ◯」というメッセージのエラーを投げる
+  // start、end の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。<code>"a-b"</code> は <code>Number("a")</code> が <code>NaN</code> になるので、<code>Number.isFinite</code> で「有限の数でない」と分かります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q08-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">"#ff0000" を [255, 0, 0] にする</span>
+      <span class="q-new">新しく出てくる書き方：正規表現の <code>{3}</code>（文字の数）、<code>Number.parseInt(…, 16)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseHexColor() {}</code></pre>
+      <p><code>"#ff0000"</code> の形の色を、赤・緑・青の 3 つの数値のタプルにします。<code>"#"</code> の後ろの 6 文字を 2 文字ずつに分け、それぞれを 16 進数として読みます。<code>"ff"</code> は 255、<code>"00"</code> は 0 です。16 進数の数字は、0〜9 と a〜f（大文字の A〜F も）です。<code>"#"</code> と 16 進数 6 桁の形でないときは、<code>"色ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseHexColor("#ff0000")</code></dt><dd class="r"><code>[255, 0, 0]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseHexColor("#00ff80")</code></dt><dd class="r"><code>[0, 255, 128]</code></dd><dd class="c">"80" は 128</dd></div>
+          <div><dt><code>parseHexColor("ff0000")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">"#" がない。メッセージは <code>"色ではありません: ff0000"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>[number, number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">\d{3}</code><h4>正規表現で、文字の数を決める</h4></div>
+      <p>正規表現の <code>\d</code> の後ろに <code>{3}</code> を付けると、「数字がちょうど 3 つ」になります。<code>^</code> と <code>$</code>（問6）で前後を挟むと、文字列の全体がその形かどうかを <code>.test()</code>（01章 q06 問13）で調べられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 郵便番号 zip を作り、"105-0011" を入れる
+const zip = "105-0011";
+// isZip を作り、zip が「数字 3 つ、"-"、数字 4 つ」だけでできているか（true か false）を入れる
+const isZip = /^\d{3}-\d{4}$/.test(zip);
+// 結果: isZip は true</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>/^<span class="seg"><i>1</i>\d{3}</span><span class="seg c"><i>2</i>-</span><span class="seg"><i>3</i>\d{4}</span>$/.test(zip)</pre>
+        <ol>
+          <li><span>数字がちょうど 3 つです。</span></li>
+          <li><span>記号のない文字は、その文字そのものを表します。ここでは <code>"-"</code> 1 文字です。</span></li>
+          <li><span>数字がちょうど 4 つです。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>/^\d{3}-\d{4}$/.test("1050011")</code></dt><dd class="r"><code>false</code></dd><dd class="c">"-" がない</dd></div>
+        <div><dt><code>/^\d{3}-\d{4}$/.test("105-00111")</code></dt><dd class="r"><code>false</code></dd><dd class="c">後ろの数字が 5 つ</dd></div>
+        <div><dt><code>/\d{3}/.test("12345")</code></dt><dd class="r"><code>true</code></dd><dd class="c">^ と $ がないと、一部が合えば true</dd></div>
+      </dl>
+      <p><code>[ ]</code>（01章 q05 問18）の中には、<code>0-9</code> のように範囲を並べて書けます。<code>[a-c]</code> は「a か b か c」の 1 文字です。</p>
+      <dl class="eg">
+        <div><dt><code>/^[a-c]{2}$/.test("ab")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        <div><dt><code>/^[a-c]{2}$/.test("ad")</code></dt><dd class="r"><code>false</code></dd><dd class="c">d は a〜c に入らない</dd></div>
+      </dl>
+      <p class="more">09章 発展問題 e02（正規表現）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Number.parseInt(…, 16)</code><h4>16 進数の文字列を数値にする</h4></div>
+      <p><code>Number.parseInt()</code> の 2 つ目の引数は、何進数として読むかです。01章 q04 問11 では、10 進数の <code>10</code> を渡しました。16 進数は、0〜9 の後ろに a〜f を使って、10〜15 を 1 文字で表します。<code>"ff"</code> は 15 × 16 + 15 で 255 です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 16 進数で書いた番号 code を作り、"ff" を入れる
+const code = "ff";
+// num を作り、code を 16 進数として読んだ整数を入れる
+const num = Number.parseInt(code, 16);
+// 結果: num は 255</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Number.parseInt("10", 16)</code></dt><dd class="r"><code>16</code></dd><dd class="c">1 × 16 + 0</dd></div>
+        <div><dt><code>Number.parseInt("0a", 16)</code></dt><dd class="r"><code>10</code></dd><dd class="c">a は 10</dd></div>
+        <div><dt><code>Number.parseInt("FF", 16)</code></dt><dd class="r"><code>255</code></dd><dd class="c">大文字でもよい</dd></div>
+        <div><dt><code>Number.parseInt("10", 10)</code></dt><dd class="r"><code>10</code></dd><dd class="c">10 進数として読む</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseHexColor を作る。文字列 text を受け取り、[数値, 数値, 数値] のタプルを返す
+export function parseHexColor() {
+  // もし text が「"#"、16 進数の数字 6 つ」だけでできていないなら
+  //   text を埋め込んだ「色ではありません: ◯」というメッセージのエラーを投げる
+  // 赤 r を作り、text の 1 文字目から 3 文字目の前までを、16 進数として読んだ整数を入れる
+  // 緑 g を作り、text の 3 文字目から 5 文字目の前までを、16 進数として読んだ整数を入れる
+  // 青 b を作り、text の 5 文字目から 7 文字目の前までを、16 進数として読んだ整数を入れる
+  // r、g、b の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問9 のサンプルの <code>isZip</code> と同じ形の正規表現で、<code>/^#[0-9a-fA-F]{6}$/</code> です。「できていないなら」なので、<code>.test()</code> の結果に <code>!</code> を付けます。2 文字ずつ取り出すのは <code>.slice()</code>、読むのは <code>Number.parseInt(…, 16)</code> です。0 文字目は <code>"#"</code> なので、1 文字目から取り出します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q08-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">"50%" を 0.5 にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseRatio() {}</code></pre>
+      <p><code>"50%"</code> の形の割合を、<code>0.5</code> のような数にして返します。<code>"%"</code> の前の数を 100 で割ります。<code>"%"</code> で終わっていないときと、<code>"%"</code> の前が数値でないときは、<code>"割合ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseRatio("50%")</code></dt><dd class="r"><code>0.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseRatio("100%")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseRatio("50")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">"%" で終わっていない。メッセージは <code>"割合ではありません: 50"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseRatio を作る。文字列 text を受け取り、数値を返す
+export function parseRatio() {
+  // value を作り、text の 0 文字目から、後ろから 1 文字目の前までを取り出し、数値にしたものを入れる
+  // もし text が "%" で終わっていない、または value が有限の数でないなら
+  //   text を埋め込んだ「割合ではありません: ◯」というメッセージのエラーを投げる
+  // value ÷ 100 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>value</code> の行は、問7 の <code>value</code> と同じ <code>.slice(0, -1)</code> です。「<code>"%"</code> で終わっていない」は、<code>.endsWith()</code>（01章 q05 問7）の結果に <code>!</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q08-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">"a=1&amp;b=2" を { a: "1", b: "2" } にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>else</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseQuery() {}</code></pre>
+      <p><code>"a=1&amp;b=2"</code> の形の文字列を、キーと値のオブジェクトにします。<code>"&amp;"</code> で区切った 1 つずつについて、最初の <code>"="</code> の前をキー、後ろを値にします。<code>"="</code> のない部分は、その部分をキーにして、値を空の文字列にします。空の文字列を受け取ったら、空のオブジェクト <code>{}</code> を返します。エラーは投げません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseQuery("a=1&amp;b=2")</code></dt><dd class="r"><code>{ a: "1", b: "2" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseQuery("flag&amp;x=y")</code></dt><dd class="r"><code>{ flag: "", x: "y" }</code></dd><dd class="c">"=" のない flag は値が ""</dd></div>
+          <div><dt><code>parseQuery("")</code></dt><dd class="r"><code>{}</code></dd><dd class="c">空の文字列なら空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>{ [key: string]: string }</code>（02章 q08 問1 のインデックス型）であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">else</code><h4>そうでなければ</h4></div>
+      <p><code>if</code> の条件に合わなかったときだけ、<code>else</code> の <code>{ }</code> を実行します。<code>if</code> と <code>else</code> の <code>{ }</code> は、どちらか一方だけが実行されます。<code>else if</code>（01章 q03 応用）の並びの最後に付けて、「どれにも合わなかったとき」にも使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockLabel を作る。数値 stock を受け取り、文字列を返す
+function stockLabel(stock: number): string {
+  // もし stock が 0 より大きいなら
+  if (stock &gt; 0) {
+    // stock を埋め込んだ「在庫 ◯ 個」の文字列を返す
+    return `在庫 ${stock} 個`;
+  } else {
+    // （そうでなければ）"在庫なし" を返す
+    return "在庫なし";
+  }
+}
+// 結果: stockLabel(3) は "在庫 3 個"、stockLabel(0) は "在庫なし"</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>stockLabel(3)</code></dt><dd class="r"><code>"在庫 3 個"</code></dd><dd class="c">if の { } を実行する</dd></div>
+        <div><dt><code>stockLabel(0)</code></dt><dd class="r"><code>"在庫なし"</code></dd><dd class="c">else の { } を実行する</dd></div>
+      </dl>
+      <p class="more">サバイバルTypeScript「if-else文」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseQuery を作る。文字列 text を受け取り、表（キーは文字列、値は文字列）を返す
+export function parseQuery() {
+  // 結果 result を表（キーは文字列、値は文字列）として作り、空のオブジェクトを入れる
+  // もし text が空の文字列と等しいなら
+  //   result を返す
+  // text を "&amp;" で区切った配列から 1 つずつ pair に取り出してくり返す
+  //   位置 index を作り、pair の中で "=" がある位置を入れる
+  //   もし index が -1 と等しいなら
+  //     result の pair に "" を入れる
+  //   そうでなければ
+  //     result の「pair の 0 文字目から index 文字目の前まで」に、pair の index + 1 文字目から後ろを入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「そうでなければ」は <code>else</code> です。値を入れるのは <code>result[pair] = ""</code> の形です（02章 q08 総合）。<code>"="</code> の位置で分けるのは、問1 と同じです。空の文字列を <code>"&amp;"</code> で区切ると <code>[""]</code> になり、キーが <code>""</code> の組ができてしまいます。そのため、先に空の文字列かどうかを確かめます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q08-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">"a, b ,c" を ["a", "b", "c"] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseCsvLine() {}</code></pre>
+      <p>文字列をカンマ <code>","</code> で区切り、それぞれの前後の空白を取り除いた文字列の配列を返します。カンマがなければ、要素が 1 つの配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseCsvLine("a, b ,c")</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseCsvLine("x")</code></dt><dd class="r"><code>["x"]</code></dd><dd class="c">カンマがない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseCsvLine を作る。文字列 text を受け取り、文字列の配列を返す
+export function parseCsvLine() {
+  // text を "," で区切った配列の要素を 1 つずつ part として、part の前後の空白を取り除いたものに変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>.split(",")</code> の結果に、<code>.map()</code>（02章 q04 問5）を続けます。<code>.map()</code> に渡すのは、<code>part</code> を受け取って <code>part.trim()</code> を返すアロー関数です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q08-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">"1.2.3" を [1, 2, 3] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseVersion() {}</code></pre>
+      <p><code>"1.2.3"</code> の形のバージョンを、3 つの数値のタプルにします。<code>"."</code> で 3 つに分けられないときと、どれかが 0 以上の整数でないときは、<code>"バージョンではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseVersion("1.12.0")</code></dt><dd class="r"><code>[1, 12, 0]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseVersion("1.2")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">2 つにしか分かれない。メッセージは <code>"バージョンではありません: 1.2"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>[number, number, number]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseVersion を作る。文字列 text を受け取り、[数値, 数値, 数値] のタプルを返す
+export function parseVersion() {
+  // parts を作り、text を "." で区切った文字列の配列を入れる
+  // もし parts の要素の数が 3 でないなら
+  //   text を埋め込んだ「バージョンではありません: ◯」というメッセージのエラーを投げる
+  // parts の要素を 1 つずつ Number に渡して変えた新しい配列から、0 番目を major、1 番目を minor、2 番目を patch として取り出す。ないときは 0 にする
+  // もし major、minor、patch のどれかが整数でない、または 0 より小さいなら
+  //   text を埋め込んだ「バージョンではありません: ◯」というメッセージのエラーを投げる
+  // major、minor、patch の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。違うのは、区切る文字が <code>"."</code> なことと、0 より小さい数も外すことです。「どれかが」は、3 つそれぞれの条件を <code>||</code> でつなぎます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q08-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 つのバージョンを比べる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function compareVersions() {}</code></pre>
+      <p><code>"1.2.3"</code> の形のバージョンを 2 つ受け取って比べます。<code>a</code> が古ければ <code>-1</code>、同じなら <code>0</code>、新しければ <code>1</code> を返します。区切った部分は、数値にしてから比べます。左の数から順に比べ、違いが見つかったところで決まります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>compareVersions("1.9.0", "1.10.0")</code></dt><dd class="r"><code>-1</code></dd><dd class="c">9 より 10 が大きい</dd></div>
+          <div><dt><code>compareVersions("2.0.0", "1.99.99")</code></dt><dd class="r"><code>1</code></dd><dd class="c">最初の数で決まる</dd></div>
+          <div><dt><code>compareVersions("1.2.3", "1.2.3")</code></dt><dd class="r"><code>0</code></dd><dd class="c">同じ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>-1 | 0 | 1</code>（01章 q07 問1 のリテラル型のユニオン）であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 compareVersions を作る。文字列 a と文字列 b を受け取り、-1 か 0 か 1 を返す
+export function compareVersions() {
+  // pa を作り、a を "." で区切った配列の要素を 1 つずつ Number に渡して変えた新しい配列を入れる
+  // pb を作り、b を "." で区切った配列の要素を 1 つずつ Number に渡して変えた新しい配列を入れる
+  // i を 0 から、3 より小さい間 1 ずつ増やしながらくり返す
+  //   x を作り、pa の i 番目を入れる。なければ 0 を入れる
+  //   y を作り、pb の i 番目を入れる。なければ 0 を入れる
+  //   もし x が y より小さいなら
+  //     -1 を返す
+  //   もし x が y より大きいなら
+  //     1 を返す
+  // 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>pa</code> と <code>pb</code> は、問5 の <code>.map(Number)</code> です。くり返しは <code>for</code> 文（01章 q01 問5）、「なければ 0」は <code>?? 0</code>（02章 q02 問1）です。戻り値の型は <code>-1 | 0 | 1</code> と書きます。文字列のまま <code>"10"</code> と <code>"9"</code> を比べると、1 文字目の <code>"1"</code> と <code>"9"</code> で決まり、<code>"10"</code> のほうが小さくなってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q08-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">"+"・"-"・"*"・"/" ならそのまま返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseOperator() {}</code></pre>
+      <p>文字列が <code>"+"</code>・<code>"-"</code>・<code>"*"</code>・<code>"/"</code> のどれかなら、そのまま返します。それ以外は <code>"演算子ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。戻り値の型は、4 つの文字列のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseOperator("*")</code></dt><dd class="r"><code>"*"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseOperator("%")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"演算子ではありません: %"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>"+" | "-" | "*" | "/"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseOperator を作る。文字列 text を受け取り、"+" か "-" か "*" か "/" を返す
+export function parseOperator() {
+  // もし text が "+" と等しい、または "-" と等しい、または "*" と等しい、または "/" と等しいなら
+  //   text を返す
+  // text を埋め込んだ「演算子ではありません: ◯」というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数 <code>text</code> の型は <code>string</code> です。そのまま返すと、<code>string</code> は <code>"+" | "-" | "*" | "/"</code> に入れられない、というエラーになります。<code>text === "+" || text === "-"</code> … と比べると、その <code>if</code> の <code>{ }</code> の中では <code>text</code> の型が 4 つのどれかに絞り込まれます（04章 q06）。そのため、そのまま返せます。<code>switch</code> で case を 4 つ並べてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q08-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">"3 + 4" のような式を計算する</span>
+      <span class="q-new">新しく出てくる書き方：<code>.split(/\s+/)</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function evaluate() {}</code></pre>
+      <p><code>"3 + 4"</code> のような「数 演算子 数」の式を計算して返します。3 つは空白で区切られています。前後の空白は無視します。演算子は <code>"+"</code>・<code>"-"</code>・<code>"*"</code>・<code>"/"</code> の 4 つです。3 つに分けられないとき、数値でないとき、知らない演算子のときは、<code>"式ではありません: &lt;text&gt;"</code> の <code>Error</code> を投げます。0 で割るときは、<code>"0で割ることはできません"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>evaluate("3 + 4")</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>evaluate(" 6 / 3 ")</code></dt><dd class="r"><code>2</code></dd><dd class="c">前後の空白は無視する</dd></div>
+          <div><dt><code>evaluate("6 / 0")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"0で割ることはできません"</code></dd></div>
+          <div><dt><code>evaluate("6 ^ 2")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">知らない演算子。メッセージは <code>"式ではありません: 6 ^ 2"</code></dd></div>
+          <div><dt><code>evaluate("x + 1")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">数値でない。メッセージは <code>"式ではありません: x + 1"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.split(/\s+/)</code><h4>空白がいくつ続いても、1 つの区切りとして分ける</h4></div>
+      <p><code>.split()</code>（02章 q06 問12）には、正規表現も渡せます。<code>/\s+/</code> は「空白が 1 つ以上続いたもの」です（01章 q05 応用）。空白が 2 つ続いていても、区切りは 1 つと数えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 住所 address を作り、"東京都  港区 芝公園" を入れる
+const address = "東京都  港区 芝公園";
+// words を作り、address を空白の並びで区切った文字列の配列を入れる
+const words = address.split(/\s+/);
+// 結果: words は ["東京都", "港区", "芝公園"]</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>" " で区切る</h5>
+          <pre><code class="language-typescript">address.split(" ")</code></pre>
+          <div class="verdict ng">✕ ["東京都", "", "港区", "芝公園"]。空白が 2 つ続いた所に "" が入ります</div>
+        </div>
+        <div>
+          <h5>/\s+/ で区切る</h5>
+          <pre><code class="language-typescript">address.split(/\s+/)</code></pre>
+          <div class="verdict ok">○ ["東京都", "港区", "芝公園"]</div>
+        </div>
+      </div>
+      <dl class="eg">
+        <div><dt><code>" 東京都 港区 ".split(/\s+/)</code></dt><dd class="r"><code>["", "東京都", "港区", ""]</code></dd><dd class="c">前と後ろの空白でも区切られる</dd></div>
+        <div><dt><code>" 東京都 港区 ".trim().split(/\s+/)</code></dt><dd class="r"><code>["東京都", "港区"]</code></dd><dd class="c">先に前後の空白を取り除く</dd></div>
+        <div><dt><code>"".split(/\s+/)</code></dt><dd class="r"><code>[""]</code></dd><dd class="c">空の文字列は、要素が 1 つ</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>前や後ろに空白があると、区切った配列の先頭や最後に空の文字列が入ります。先に <code>.trim()</code> で前後の空白を取り除いてから区切ります。</p>
+      <p class="more">09章 発展問題 e02（正規表現）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 evaluate を作る。文字列 text を受け取り、数値を返す
+export function evaluate() {
+  // parts を作り、text の前後の空白を取り除き、空白の並びで区切った文字列の配列を入れる
+  // もし parts の要素の数が 3 でないなら
+  //   text を埋め込んだ「式ではありません: ◯」というメッセージのエラーを投げる
+  // parts の 0 番目を a、1 番目を op、2 番目を b として取り出す。ないときは "" にする
+  // x を作り、a を数値にしたものを入れる
+  // y を作り、b を数値にしたものを入れる
+  // もし x が有限の数でない、または y が有限の数でないなら
+  //   text を埋め込んだ「式ではありません: ◯」というメッセージのエラーを投げる
+  // op で場合を分ける
+  //   "+" の場合
+  //     x と y を足した数を返す
+  //   "-" の場合
+  //     x から y を引いた数を返す
+  //   "*" の場合
+  //     x と y を掛けた数を返す
+  //   "/" の場合
+  //     もし y が 0 と等しいなら
+  //       "0で割ることはできません" というメッセージのエラーを投げる
+  //     x ÷ y を返す
+  //   それ以外の場合
+  //     text を埋め込んだ「式ではありません: ◯」というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、<code>.trim()</code> のあとに、問16 のサンプルの <code>.split(/\s+/)</code> を続けます。取り出す行は、02章 q06 問12 の既定値つきの分割代入です。既定値がないと <code>op</code> の型は <code>string | undefined</code> になり、ESLint が「<code>switch</code> に <code>undefined</code> の case がない」と知らせます。<code>"/"</code> の case の中には、<code>if</code> を書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q08-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">コマンドの最初の単語を小文字にして返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function commandName() {}</code></pre>
+      <p>コマンドの文字列から最初の単語を取り出し、小文字にして返します。単語は空白で区切られています。前後の空白は無視します。空白だけのときと空の文字列のときは、<code>"コマンドがありません"</code> の <code>Error</code> を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>commandName("  ADD 1 2")</code></dt><dd class="r"><code>"add"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>commandName("help")</code></dt><dd class="r"><code>"help"</code></dd><dd class="c">単語が 1 つだけ</dd></div>
+          <div><dt><code>commandName("   ")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">空白だけ。メッセージは <code>"コマンドがありません"</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 commandName を作る。文字列 text を受け取り、文字列を返す
+export function commandName() {
+  // trimmed を作り、text の前後の空白を取り除いたものを入れる
+  // もし trimmed が空の文字列と等しいなら
+  //   "コマンドがありません" というメッセージのエラーを投げる
+  // first を作り、trimmed を空白の並びで区切った文字列の配列の 0 番目を入れる。なければ "" を入れる
+  // first を小文字にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>区切るのは、問16 と同じ <code>.split(/\s+/)</code> です。0 番目は <code>[0]</code> で取り出し、型が <code>string | undefined</code> なので <code>?? ""</code>（02章 q02 問1）を付けます。小文字にするのは <code>.toLowerCase()</code> です（01章 q05 問7）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q08-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">最初の単語より後ろの単語を配列で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function commandArgs() {}</code></pre>
+      <p>コマンドの文字列の、最初の単語より後ろの単語を、配列にして返します。単語の間の空白は、いくつ続いていてもかまいません。後ろの単語がなければ、空の配列を返します。空の文字列のときも、空の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>commandArgs("add  1   2")</code></dt><dd class="r"><code>["1", "2"]</code></dd><dd class="c">空白が続いてもよい</dd></div>
+          <div><dt><code>commandArgs("help")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">後ろの単語がない</dd></div>
+          <div><dt><code>commandArgs("")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 commandArgs を作る。文字列 text を受け取り、文字列の配列を返す
+export function commandArgs() {
+  // words を作り、text の前後の空白を取り除き、空白の並びで区切った文字列の配列を入れる
+  // words の 1 番目から後ろを取り出した配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>配列の <code>.slice(1)</code>（02章 q05 問3）は、1 番目から最後までです。空の文字列を区切ると <code>[""]</code> です（問16）。その <code>.slice(1)</code> は <code>[]</code> なので、空の文字列のときも空の配列になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q08-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">整数なら成功、そうでなければ失敗を値で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function tryParseInt() {}</code></pre>
+      <p>整数の文字列なら <code>{ ok: true, value: 数値 }</code> を返します。そうでなければ <code>{ ok: false, error: "整数ではありません: &lt;text&gt;" }</code> を返します。例外は投げません。成功と失敗を、どちらも値で返す形です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>tryParseInt("12")</code></dt><dd class="r"><code>{ ok: true, value: 12 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>tryParseInt("1.5")</code></dt><dd class="r"><code>{ ok: false, error: "整数ではありません: 1.5" }</code></dd><dd class="c">小数は整数でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>{ ok: true; value: number } | { ok: false; error: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 tryParseInt を作る。文字列 text を受け取り、「true の ok と数値の value を持つオブジェクト」か「false の ok と文字列の error を持つオブジェクト」を返す
+export function tryParseInt() {
+  // n を作り、text を数値にしたものを入れる
+  // もし text が空の文字列でない、かつ n が整数なら
+  //   ok が true、value が n のオブジェクトを返す
+  // ok が false、error が text を埋め込んだ「整数ではありません: ◯」のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は、2 つのオブジェクトの型を <code>|</code> でつないだユニオン型です（02章 q04 問4）。<code>ok</code> の型は、<code>true</code> と <code>false</code> のリテラル型です（01章 q07）。「かつ」は <code>&amp;&amp;</code> です。<code>Number("")</code> は <code>0</code> になるので（問4）、空の文字列は先に外します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q08-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">空でない行だけを配列で返す</span>
+      <span class="q-new">新しく出てくる書き方：改行の文字 <code>"\n"</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nonEmptyLines() {}</code></pre>
+      <p>文字列を改行で区切り、それぞれの行の前後の空白を取り除きます。空になった行は除いて、残った行を配列にして返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nonEmptyLines("a\n\n b \n")</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">空の行は除く</dd></div>
+          <div><dt><code>nonEmptyLines("")</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">"\n"</code><h4>改行を表す文字</h4></div>
+      <p>文字列の中の <code>\n</code> は、改行 1 文字を表します。<code>\</code> と <code>n</code> の 2 文字ではありません。<code>"\n"</code> で区切ると、行ごとの配列になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 宛名 label を作り、1 行目が "山田 太郎"、2 行目が "東京都港区" の文字列を入れる
+const label = "山田 太郎\n東京都港区";
+// lines を作り、label を改行で区切った文字列の配列を入れる
+const lines = label.split("\n");
+// 結果: lines は ["山田 太郎", "東京都港区"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>"a\nb".length</code></dt><dd class="r"><code>3</code></dd><dd class="c">a、改行、b の 3 文字</dd></div>
+        <div><dt><code>"東京都港区\n".split("\n")</code></dt><dd class="r"><code>["東京都港区", ""]</code></dd><dd class="c">最後の改行の後ろは、空の行</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>"/n"</code> と書くと、<code>/</code> と <code>n</code> の 2 文字になります。改行では区切れません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nonEmptyLines を作る。文字列 text を受け取り、文字列の配列を返す
+export function nonEmptyLines() {
+  // 結果 result を文字列の配列として作り、空の配列を入れる
+  // text を改行で区切った配列から 1 つずつ line に取り出してくり返す
+  //   trimmed を作り、line の前後の空白を取り除いたものを入れる
+  //   もし trimmed が空の文字列でないなら
+  //     result の最後に trimmed を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、区切る文字が <code>"\n"</code> になります。「空の文字列でない」は <code>!== ""</code> です。<code>.filter()</code>（02章 q04 問7）で空の行を除いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 -->
+  <section class="q" id="c04-q08-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">コマンドの解析（小さな電卓）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">import { errorMessage } from "./q05-exception";
+import { toNumber } from "./q06-unknown";
+import { assertNever } from "./q07-never";
+
+export type Command = { op: "add" | "sub" | "mul" | "div"; a: number; b: number };
+
+export type RunResult = { ok: true; value: number } | { ok: false; error: string };
+
+export function parseCommand() {}
+
+export function execute() {}
+
+export function run() {}
+
+export function runAll() {}</code></pre>
+      <p><code>"add 3 5"</code> のような文字列のコマンドを読み取って計算する、小さな電卓を作ります。型 <code>Command</code> と <code>RunResult</code> は定義済みです。関数を 4 つ書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>parseCommand(text)</code>：文字列を <code>Command</code> にします。前後の空白を取り除き、空白（いくつ続いてもよい）で区切ります。3 つに区切れないときは <code>"書き方が正しくありません: &lt;text&gt;"</code>、1 つ目が add・sub・mul・div のどれでもないときは <code>"知らない計算です: &lt;1つ目&gt;"</code>、2 つ目か 3 つ目が有限の数値でないときは <code>"数値ではありません: &lt;その文字列&gt;"</code> の <code>Error</code> を投げます。</li>
+        <li><code>execute(command)</code>：計算して結果を返します。<code>switch</code> で <code>op</code> ごとに分けます。div で <code>b</code> が 0 なら、<code>"0で割ることはできません"</code> の <code>Error</code> を投げます。</li>
+        <li><code>run(text)</code>：<code>parseCommand</code> と <code>execute</code> を順に呼びます。成功なら <code>{ ok: true, value }</code> を返します。途中で例外が出たら <code>catch</code> して、<code>{ ok: false, error: メッセージ }</code> を返します。</li>
+        <li><code>runAll(lines)</code>：1 行ずつ <code>run</code> します。成功なら <code>"add 3 5 = 8"</code>（前後の空白を除いた元の行、<code>" = "</code>、結果）、失敗なら <code>"エラー: メッセージ"</code> を並べた配列を返します。引数は <code>readonly string[]</code> です。</li>
+      </ol>
+      <p>前の問題で書いた関数を 3 つ使います。どれも、ファイルの先頭で読み込んであります（02章 q08 総合）。<code>parseCommand</code> の数値の読み取りには q06 の <code>toNumber</code> を使い、<code>null</code> なら <code>"数値ではありません: …"</code> の <code>Error</code> を投げます。<code>execute</code> の <code>switch</code> の <code>default</code> では、q07 の <code>assertNever</code> を使います。<code>run</code> の <code>catch</code> では、q05 の <code>errorMessage</code> でメッセージを取り出します。前の問題が解けていないと、この問題のテストも通りません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseCommand("add 3 5")</code></dt><dd class="r"><code>{ op: "add", a: 3, b: 5 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseCommand("  div   10  -2.5 ")</code></dt><dd class="r"><code>{ op: "div", a: 10, b: -2.5 }</code></dd><dd class="c">空白が続いてもよい</dd></div>
+          <div><dt><code>parseCommand("add 3")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"書き方が正しくありません: add 3"</code></dd></div>
+          <div><dt><code>parseCommand("add 1 2 3")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"書き方が正しくありません: add 1 2 3"</code></dd></div>
+          <div><dt><code>parseCommand("pow 2 3")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"知らない計算です: pow"</code></dd></div>
+          <div><dt><code>parseCommand("add x 3")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"数値ではありません: x"</code></dd></div>
+          <div><dt><code>parseCommand("add 3 Infinity")</code></dt><dd class="r"><code>Error</code></dd><dd class="c">有限の数でない。メッセージは <code>"数値ではありません: Infinity"</code></dd></div>
+          <div><dt><code>execute({ op: "add", a: 3, b: 5 })</code></dt><dd class="r"><code>8</code></dd><dd class="c"></dd></div>
+          <div><dt><code>execute({ op: "sub", a: 3, b: 5 })</code></dt><dd class="r"><code>-2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>execute({ op: "mul", a: 3, b: 5 })</code></dt><dd class="r"><code>15</code></dd><dd class="c"></dd></div>
+          <div><dt><code>execute({ op: "div", a: 10, b: 4 })</code></dt><dd class="r"><code>2.5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>execute({ op: "div", a: 1, b: 0 })</code></dt><dd class="r"><code>Error</code></dd><dd class="c">メッセージは <code>"0で割ることはできません"</code></dd></div>
+          <div><dt><code>run("mul 4 5")</code></dt><dd class="r"><code>{ ok: true, value: 20 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>run("div 1 0")</code></dt><dd class="r"><code>{ ok: false, error: "0で割ることはできません" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>run("hello")</code></dt><dd class="r"><code>{ ok: false, error: "書き方が正しくありません: hello" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>runAll([" add 3 5 ", "sub 1 x", "div 9 3"])</code></dt><dd class="r"><code>["add 3 5 = 8", "エラー: 数値ではありません: x", "div 9 3 = 3"]</code></dd><dd class="c">元の行は前後の空白を除く</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数と戻り値の型も確かめます。<code>parseCommand</code> は <code>string</code> を受け取り <code>Command</code> を、<code>execute</code> は <code>Command</code> を受け取り <code>number</code> を返します。<code>run</code> は <code>string</code> を受け取り <code>RunResult</code> を、<code>runAll</code> は <code>readonly string[]</code> を受け取り <code>string[]</code> を返します。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseCommand を作る。文字列 text を受け取り、Command を返す
+export function parseCommand() {
+  // parts を作り、text の前後の空白を取り除き、空白の並びで区切った文字列の配列を入れる
+  // parts の 0 番目を op、1 番目を aText、2 番目を bText として取り出す。ないときは "" にする
+  // もし parts の要素の数が 3 でないなら
+  //   text を埋め込んだ「書き方が正しくありません: ◯」というメッセージのエラーを投げる
+  // もし op が "add" でない、かつ "sub" でない、かつ "mul" でない、かつ "div" でないなら
+  //   op を埋め込んだ「知らない計算です: ◯」というメッセージのエラーを投げる
+  // a を作り、toNumber に aText を渡して呼んだ結果を入れる
+  // もし a が null と等しいなら
+  //   aText を埋め込んだ「数値ではありません: ◯」というメッセージのエラーを投げる
+  // b を作り、toNumber に bText を渡して呼んだ結果を入れる
+  // もし b が null と等しいなら
+  //   bText を埋め込んだ「数値ではありません: ◯」というメッセージのエラーを投げる
+  // op、a、b を持つオブジェクトを返す
+}
+
+// 関数 execute を作る。Command の command を受け取り、数値を返す
+export function execute() {
+  // op、a、b を作り、command から取り出す
+  // op で場合を分ける
+  //   "add" の場合
+  //     a と b を足した数を返す
+  //   "sub" の場合
+  //     a から b を引いた数を返す
+  //   "mul" の場合
+  //     a と b を掛けた数を返す
+  //   "div" の場合
+  //     もし b が 0 と等しいなら
+  //       "0で割ることはできません" というメッセージのエラーを投げる
+  //     a ÷ b を返す
+  //   それ以外の場合
+  //     assertNever に op を渡して呼んだ結果を返す
+}
+
+// 関数 run を作る。文字列 text を受け取り、RunResult を返す
+export function run() {
+  // 次の中を試す
+  //   ok が true、value が「parseCommand に text を渡して呼んだ結果を、execute に渡して呼んだ結果」のオブジェクトを返す
+  // 例外が投げられたら、投げられたものを error で受け取る
+  //   ok が false、error が errorMessage に error を渡して呼んだ結果のオブジェクトを返す
+}
+
+// 関数 runAll を作る。読み取り専用の文字列の配列 lines を受け取り、文字列の配列を返す
+export function runAll() {
+  // lines のそれぞれの line を、次のようにした新しい配列を返す
+  //   result を作り、run に line を渡して呼んだ結果を入れる
+  //   もし result の ok が true なら
+  //     line の前後の空白を取り除いたものと result の value を埋め込んだ「◯ = ◯」の文字列を返す
+  //   result の error を埋め込んだ「エラー: ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>parseCommand</code> の区切り方と取り出し方は、問16 と同じです。<code>op</code> が 4 つのどれでもないかは、<code>!==</code> を <code>&amp;&amp;</code> でつないで確かめます。その <code>if</code> を抜けたあとは、問15 と同じく <code>op</code> の型が <code>"add" | "sub" | "mul" | "div"</code> に絞り込まれます。そのため、<code>{ op, a, b }</code>（02章 q01 問3）をそのまま <code>Command</code> として返せます。<code>toNumber</code> は <code>number | null</code> を返すので、<code>=== null</code> で確かめると、そのあとは <code>number</code> になります。<code>execute</code> の取り出しは 02章 q03 問1 の分割代入、<code>default</code> は <code>return assertNever(op);</code> です（04章 q07）。<code>run</code> の「次の中を試す」は <code>try</code>、「例外が投げられたら、投げられたものを error で受け取る」は <code>catch (error)</code> です（04章 q05）。<code>runAll</code> は、<code>.map()</code> に <code>{ }</code> のある関数（02章 q04 問19）を渡します。<code>if (result.ok)</code> の中では <code>result.value</code> が、<code>if</code> を抜けたあとは <code>result.error</code> が使えます。</p></details>
+    </div>
+  </section>
+</section>

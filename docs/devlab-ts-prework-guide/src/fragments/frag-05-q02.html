@@ -1,0 +1,832 @@
+<section class="sec" id="c05-q02">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q02 引数と戻り値の型、void</h2>
+    <p>関数を 20 個書きます。どの関数も、引数と戻り値に型注釈を付けます。この番号の前半の関数は、受け取った配列やオブジェクトを書き換えて、値を返しません。何も返さない関数の戻り値の型は <code>void</code> です。配列やオブジェクトを引数に渡すと、関数の中で書き換えた結果が、呼んだ側の値にも残ります。そのため、書き換える引数には <code>readonly</code> を付けません。読むだけの引数には、これまでどおり <code>readonly</code> を付けます。テストは引数の型も確かめるので、問題の説明のとおりにします。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">lines の最後に message を付け足す。何も返さない</span>
+      <span class="q-new">新しく出てくる書き方：戻り値の型 <code>void</code>（くわしく）、参照渡し、書き換える引数の型</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function logTo() {}</code></pre>
+      <p>文字列の配列 <code>lines</code> の最後に、文字列 <code>message</code> を付け足します。値は返しません。引数は文字列の配列 <code>lines</code> と文字列 <code>message</code>、戻り値の型は <code>void</code> です。<code>lines</code> は書き換えるので、<code>readonly</code> を付けません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>logTo(lines, "start")</code></dt><dd class="r"><code>lines</code> が <code>["start"]</code> になる</dd><dd class="c"><code>lines</code> は空の配列から始める</dd></div>
+          <div><dt><code>logTo(lines, "end")</code></dt><dd class="r"><code>lines</code> が <code>["start", "end"]</code> になる</dd><dd class="c">続けて呼ぶと、後ろに増える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code> と <code>string</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">: void</code><h4>何も返さない関数の戻り値の型</h4></div>
+      <p><code>void</code> は 04章 q05 問13 で一度出ました。ここで、くわしく見ます。関数には 2 つの種類があります。1 つは、計算した結果を <code>return</code> で返す関数です。もう 1 つは、受け取った配列やオブジェクトを書き換えるなど、仕事をするだけで値を返さない関数です。値を返さない関数は、戻り値の型を <code>void</code> にします。<code>void</code> は「何も返さない」という意味の型です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 addStockLog を作る。文字列の配列 logs と文字列 item と数値 count を受け取り、何も返さない
+function addStockLog(logs: string[], item: string, count: number): void {
+  // logs の最後に、item と count を埋め込んだ「◯: ◯個」の文字列を付け足す
+  logs.push(`${item}: ${count}個`);
+}
+// 在庫の記録 stockLogs を文字列の配列として作り、空の配列を入れる
+const stockLogs: string[] = [];
+// addStockLog に stockLogs と "りんご" と 3 を渡して呼ぶ
+addStockLog(stockLogs, "りんご", 3);
+// 結果: stockLogs は ["りんご: 3個"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function addStockLog(<span class="seg"><i>1</i>logs: string[]</span>, item: string, count: number)<span class="seg"><i>2</i>: void</span> {</pre>
+        <ol>
+          <li><span>書き換える配列の引数です。書き換えるので <code>readonly</code> を付けません（この問題の 3 つめの項目）。</span></li>
+          <li><span>戻り値の型です。値を返さないので <code>void</code> と書きます。中に <code>return</code> は書きません。</span></li>
+        </ol>
+      </figure>
+      <p>値を返す関数と並べると、違いが分かります。呼び出し方も違います。</p>
+      <div class="cmp">
+        <div>
+          <h5>値を返す関数</h5>
+          <pre><code class="language-typescript">function withTax(price: number): number {
+  return Math.floor(price * 1.1);
+}
+const total = withTax(1000);</code></pre>
+          <div class="verdict ok">○ 呼んだ結果（1100）を変数に入れて使います</div>
+        </div>
+        <div>
+          <h5>何も返さない関数（<code>void</code>）</h5>
+          <pre><code class="language-typescript">function addStockLog(logs: string[], item: string, count: number): void {
+  logs.push(`${item}: ${count}個`);
+}
+addStockLog(stockLogs, "みかん", 5);</code></pre>
+          <div class="verdict ok">○ 呼ぶだけの 1 行にします。結果は stockLogs の中身に残ります</div>
+        </div>
+      </div>
+      <p>値を返さない関数に、ほかの戻り値の型を書くと、型の確認でエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型を <code>string</code> にする</h5>
+          <pre><code class="language-typescript">function addStockLog(logs: string[], item: string, count: number): string {
+  logs.push(`${item}: ${count}個`);
+}</code></pre>
+          <div class="verdict ng">✕ 「値を返していない」として、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>戻り値の型を <code>void</code> にする</h5>
+          <pre><code class="language-typescript">function addStockLog(logs: string[], item: string, count: number): void {
+  logs.push(`${item}: ${count}個`);
+}</code></pre>
+          <div class="verdict ok">○ 何も返さない関数として通ります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>戻り値が <code>void</code> の関数で <code>return logs.length;</code> のように値を返すと、型の確認でエラーになります。値を返したいなら、戻り値の型をその値の型にします。</p>
+      <p class="memo"><b>よくある間違い</b><code>void</code> の関数を呼んだ結果は、使う値ではありません。<code>const done = addStockLog(stockLogs, "みかん", 5);</code> のように変数に入れると、ESLint（コードの書き方を確かめる道具）のエラーになります。呼ぶだけの 1 行にします。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/void-type">サバイバルTypeScript「戻り値がない関数とvoid型」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">参照渡し</code><h4>受け取った配列を書き換えると、呼んだ側の配列も変わる</h4></div>
+      <p>配列やオブジェクトを引数に渡しても、コピーは作られません。関数の中の引数と、呼んだ側の変数は、同じ 1 つの配列を指します。そのため、関数の中で付け足したり書き換えたりすると、呼んだ側から見ても変わっています。このしくみを参照渡しといいます。サンプルの <code>addStockLog</code> が値を返さなくても役に立つのは、このためです。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 196" role="img" aria-label="呼んだ側の変数 stockLogs と、関数の中の引数 logs が、同じ 1 つの配列 [&quot;りんご: 3個&quot;] を指している">
+            <text class="s" x="90" y="30" text-anchor="middle">呼んだ側の変数</text>
+            <rect class="box" x="30" y="42" width="120" height="40" rx="8"/>
+            <text class="m" x="90" y="67" text-anchor="middle">stockLogs</text>
+            <text class="s" x="470" y="30" text-anchor="middle">関数の中の引数</text>
+            <rect class="box" x="410" y="42" width="120" height="40" rx="8"/>
+            <text class="m" x="470" y="67" text-anchor="middle">logs</text>
+            <text class="a" x="280" y="67" text-anchor="middle">同じ配列を指す</text>
+            <path class="ln-a" d="M90 82 V152 H160"/>
+            <polygon class="hd-a" points="170,152 158,146 158,158"/>
+            <path class="ln-a" d="M470 82 V152 H400"/>
+            <polygon class="hd-a" points="390,152 402,146 402,158"/>
+            <rect class="box-a" x="170" y="128" width="220" height="48" rx="8"/>
+            <text class="m" x="280" y="157" text-anchor="middle">["りんご: 3個"]</text>
+          </svg>
+        </div>
+        <figcaption><code>addStockLog(stockLogs, "りんご", 3)</code> を呼ぶと、<code>logs</code> と <code>stockLogs</code> は同じ配列を指します。<code>logs</code> に付け足した文字列は、<code>stockLogs</code> から見ても入っています。</figcaption>
+      </figure>
+      <p>オブジェクトも同じです。受け取ったオブジェクトのプロパティを書き換えると、呼んだ側のオブジェクトも変わります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 markShipped を作る。オブジェクト order（status は文字列）を受け取り、何も返さない
+function markShipped(order: { status: string }): void {
+  // order の status に "発送済み" を入れ直す
+  order.status = "発送済み";
+}
+// 注文 myOrder を作り、status が "受付" のオブジェクトを入れる
+const myOrder = { status: "受付" };
+// markShipped に myOrder を渡して呼ぶ
+markShipped(myOrder);
+// 結果: myOrder.status は "発送済み"</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>myOrder</code> は <code>const</code> で作りましたが、中のプロパティは書き換えられます。<code>const</code> が止めるのは、変数そのものに別の値を入れ直すことだけです。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/pass-by-value">サバイバルTypeScript の教材（pass-by-value）</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">logs: string[]</code><h4>書き換える引数には readonly を付けない</h4></div>
+      <p>02章 q04 問1 では、読むだけの配列の引数に <code>readonly</code> を付けました。<code>readonly</code> の配列には、<code>.push()</code> のような書き換えるメソッドがありません。そのため、書き換える引数に付けると、型の確認でエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>readonly</code> を付ける</h5>
+          <pre><code class="language-typescript">function addStockLog(logs: readonly string[], item: string, count: number): void {
+  logs.push(`${item}: ${count}個`);
+}</code></pre>
+          <div class="verdict ng">✕ readonly の配列には push がないので、エラーになります</div>
+        </div>
+        <div>
+          <h5><code>readonly</code> を付けない</h5>
+          <pre><code class="language-typescript">function addStockLog(logs: string[], item: string, count: number): void {
+  logs.push(`${item}: ${count}個`);
+}</code></pre>
+          <div class="verdict ok">○ 受け取った配列に付け足せます</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b>付けるかどうかは、関数の中でその引数を書き換えるかで決めます。書き換えるなら付けず、読むだけなら付けます。1 つの関数の中で、引数ごとに分けることもあります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 logTo を作る。文字列の配列 lines と文字列 message を受け取り、何も返さない
+export function logTo() {
+  // lines の最後に message を付け足す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問1 のサンプルの <code>addStockLog</code> の 1 行目と同じ形です。引数が 2 つになり、戻り値の型は <code>: void</code> です。「最後に付け足す」は <code>.push()</code> です（02章 q04 問17）。付け足すのは <code>message</code> そのものなので、テンプレートリテラルは要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">target の最後に values をすべて付け足す。何も返さない</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addAll() {}</code></pre>
+      <p>数値の配列 <code>target</code> の最後に、数値の配列 <code>values</code> の要素をすべて、順に付け足します。値は返しません。<code>target</code> は書き換えるので <code>number[]</code> にします。<code>values</code> は読むだけなので <code>readonly number[]</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addAll(target, [1, 2])</code></dt><dd class="r"><code>target</code> が <code>[0, 1, 2]</code> になる</dd><dd class="c"><code>target</code> は <code>[0]</code> から始める</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number[]</code> と <code>readonly number[]</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addAll を作る。数値の配列 target と、読み取り専用の数値の配列 values を受け取り、何も返さない
+export function addAll() {
+  // values から 1 つずつ value に取り出してくり返す
+  //   target の最後に value を付け足す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは <code>for-of</code> です（01章 q01 問9）。付け足すのは、問1 と同じ <code>.push()</code> です。<code>values</code> は読むだけなので、<code>readonly</code> を付けても <code>for-of</code> で取り出せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">配列を空にする。何も返さない</span>
+      <span class="q-new">新しく出てくる書き方：配列の <code>.length = 0</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function clearAll() {}</code></pre>
+      <p>文字列の配列 <code>items</code> を受け取り、中身を空にします。問題のコメントにあるとおり、<code>items.length = 0</code> を使います。値は返しません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>clearAll(items)</code></dt><dd class="r"><code>items</code> が <code>[]</code> になる</dd><dd class="c"><code>items</code> は <code>["a", "b"]</code> から始める</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">配列.length = 0</code><h4>配列の要素の数に 0 を入れて、空にする</h4></div>
+      <p>配列の <code>.length</code> には、数を入れ直せます。入れた数より後ろの要素は消えます。<code>0</code> を入れると、配列は空になります。01章 q08 問10 では、文字列の <code>.length</code> に入れようとしてエラーになりました。文字列の <code>.length</code> は読むだけですが、配列の <code>.length</code> は書き換えられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 買い物かご cart を作り、"りんご" と "みかん" と "ぶどう" を並べた配列を入れる
+const cart = ["りんご", "みかん", "ぶどう"];
+// cart の要素の数に 0 を入れ直す
+cart.length = 0;
+// 結果: cart は []</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>cart.length = 1</code></dt><dd class="r"><code>cart</code> は <code>["りんご"]</code></dd><dd class="c">3 つ入った <code>cart</code> の、前から 1 つだけが残る</dd></div>
+      </dl>
+      <p>関数の中で配列を空にするときに、引数に空の配列を入れ直したくなります。これは、呼んだ側の配列を変えません。</p>
+      <div class="cmp">
+        <div>
+          <h5>引数に <code>[]</code> を入れ直す</h5>
+          <pre><code class="language-typescript">function resetCart(cart: string[], first: string): void {
+  cart = [];
+  cart.push(first);
+}</code></pre>
+          <div class="verdict ng">✕ ESLint のエラーになります。呼んだ側の配列も元のままです</div>
+        </div>
+        <div>
+          <h5><code>.length</code> に 0 を入れる</h5>
+          <pre><code class="language-typescript">function resetCart(cart: string[], first: string): void {
+  cart.length = 0;
+  cart.push(first);
+}</code></pre>
+          <div class="verdict ok">○ 呼んだ側の配列が、first だけの配列になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>なぜ</b><code>cart = []</code> は、引数 <code>cart</code> に、別の新しい配列を入れ直すだけです。呼んだ側の変数は、元の配列を指したままです。そのあとの <code>.push()</code> も、新しい配列のほうに入ります。この課題の ESLint は、引数に値を入れ直すこと自体を止めています（no-param-reassign）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 clearAll を作る。文字列の配列 items を受け取り、何も返さない
+export function clearAll() {
+  // items の要素の数に 0 を入れ直す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>cart.length = 0;</code> の行と同じ形です。書き換えるので、引数に <code>readonly</code> は付けません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">user の name を書き換える。何も返さない</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function rename() {}</code></pre>
+      <p>オブジェクト <code>user</code> の <code>name</code> を、文字列 <code>name</code> に書き換えます。値は返しません。<code>user</code> の型は、<code>name</code> が文字列のオブジェクト <code>{ name: string }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>rename(user, "佐藤")</code></dt><dd class="r"><code>user.name</code> が <code>"佐藤"</code> になる</dd><dd class="c"><code>user</code> は <code>{ name: "山田" }</code> から始める</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string }</code> と <code>string</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 rename を作る。オブジェクト user（name は文字列）と文字列 name を受け取り、何も返さない
+export function rename() {
+  // user の name に name を入れ直す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>markShipped</code> と同じ形です。プロパティへの代入 <code>user.name = …</code> を使います（01章 q08 問10）。引数の名前と、プロパティの名前が同じ <code>name</code> でもかまいません。<code>user.name</code> がプロパティ、<code>name</code> だけなら引数です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">すべての要素を 1 増やす。何も返さない</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function incrementAll() {}</code></pre>
+      <p>数値の配列 <code>counts</code> の、すべての要素を 1 ずつ増やします。新しい配列は作らず、受け取った配列そのものを書き換えます。値は返しません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>incrementAll(counts)</code></dt><dd class="r"><code>counts</code> が <code>[2, 3]</code> になる</dd><dd class="c"><code>counts</code> は <code>[1, 2]</code> から始める</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number[]</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 incrementAll を作る。数値の配列 counts を受け取り、何も返さない
+export function incrementAll() {
+  // i を 0 から、counts の要素の数より小さい間 1 ずつ増やしながらくり返す
+  //   counts の i 番目に、counts の i 番目の値（なければ 0）に 1 を足した数を入れ直す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは <code>for (let i = 0; …; i++)</code> です（01章 q01 問5）。「i 番目に入れ直す」は <code>counts[i] = …</code> です（02章 q05 問16）。「なければ 0」は <code>??</code> です。<code>counts[i] += 1</code> と書くと、<code>counts[i]</code> が <code>undefined</code> かもしれないので、型の確認でエラーになります。<code>for-of</code> で取り出した値に足しても、配列の中身は変わりません。位置 <code>i</code> を使って書き換えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">counter の count を 0 にする。何も返さない</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function resetCounter() {}</code></pre>
+      <p>オブジェクト <code>counter</code> の <code>count</code> を 0 にします。値は返しません。<code>counter</code> の型は <code>{ count: number }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>resetCounter(counter)</code></dt><dd class="r"><code>counter.count</code> が <code>0</code> になる</dd><dd class="c"><code>counter</code> は <code>{ count: 5 }</code> から始める</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ count: number }</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 resetCounter を作る。オブジェクト counter（count は数値）を受け取り、何も返さない
+export function resetCounter() {
+  // counter の count に 0 を入れ直す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。入れ直す値が <code>0</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">flags の key の値を反転する。何も返さない</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toggleFlag() {}</code></pre>
+      <p>表 <code>flags</code> の <code>key</code> の値を反転します。反転とは、<code>true</code> なら <code>false</code>、<code>false</code> なら <code>true</code> にすることです。<code>key</code> が <code>flags</code> になければ、<code>true</code> を入れます。値は返しません。<code>flags</code> の型は、キーが文字列、値が <code>boolean</code> のインデックス型 <code>{ [key: string]: boolean }</code> です（02章 q08 問1）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toggleFlag(flags, "dark")</code></dt><dd class="r"><code>flags.dark</code> が <code>true</code> になる</dd><dd class="c"><code>flags</code> は <code>{ dark: false }</code> から始める</dd></div>
+          <div><dt><code>toggleFlag(flags, "beta")</code></dt><dd class="r"><code>flags</code> が <code>{ dark: true, beta: true }</code> になる</dd><dd class="c"><code>beta</code> はなかったので <code>true</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: boolean }</code> と <code>string</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toggleFlag を作る。表 flags（キーは文字列、値は true か false）と文字列 key を受け取り、何も返さない
+export function toggleFlag() {
+  // flags の key に、flags の key の値（なければ false）の反対を入れる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>キーに値を入れるのは <code>flags[key] = …</code> です（02章 q08 問7）。「なければ false」は <code>?? false</code>、「反対」は <code>!</code> です（01章 q04 応用）。<code>??</code> の部分をかっこで囲んでから <code>!</code> を付けます。<code>!flags[key]</code> とだけ書くと、<code>flags[key]</code> が <code>undefined</code> かもしれないので、ESLint のエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">items の i 番目と j 番目を入れ替える。何も返さない</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function swapInPlace() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の、<code>i</code> 番目と <code>j</code> 番目の要素を入れ替えます。コピーは作らず、受け取った配列そのものを書き換えます。<code>i</code> か <code>j</code> が範囲の外なら、エラーを投げます。値は返しません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>swapInPlace(items, 0, 2)</code></dt><dd class="r"><code>items</code> が <code>["c", "b", "a"]</code> になる</dd><dd class="c"><code>items</code> は <code>["a", "b", "c"]</code> から始める</dd></div>
+          <div><dt><code>swapInPlace(items, 0, 5)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">5 番目の要素はない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code> と <code>number</code> と <code>number</code>、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 swapInPlace を作る。文字列の配列 items と数値 i と数値 j を受け取り、何も返さない
+export function swapInPlace() {
+  // a を作り、items の i 番目を入れる
+  // b を作り、items の j 番目を入れる
+  // もし a が undefined と等しいか、b が undefined と等しいなら
+  //   "範囲外です" というメッセージのエラーを投げる
+  // items の i 番目に b を入れ直す
+  // items の j 番目に a を入れ直す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q05 問16 と同じ手順です。違うのは、コピーを作らずに <code>items</code> そのものを書き換えることと、何も返さないことです。範囲の外の位置を取り出すと <code>undefined</code> になるので、それで範囲の外かを調べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">item がなければ最後に付け足して true、あれば false を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pushUnique() {}</code></pre>
+      <p>文字列 <code>item</code> が、文字列の配列 <code>items</code> になければ、最後に付け足して <code>true</code> を返します。すでにあれば、何もせずに <code>false</code> を返します。この関数は配列を書き換えたうえで、値も返します。値を返すので、戻り値の型は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pushUnique(items, "b")</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>items</code> は <code>["a"]</code> から始める</dd></div>
+          <div><dt><code>pushUnique(items, "a")</code></dt><dd class="r"><code>false</code></dd><dd class="c"><code>"a"</code> はもうある</dd></div>
+          <div><dt>2 回呼んだあとの <code>items</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c"><code>"a"</code> は 2 つにならない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string[]</code> と <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pushUnique を作る。文字列の配列 items と文字列 item を受け取り、true か false を返す
+export function pushUnique() {
+  // もし items に item が含まれるなら
+  //   false を返す
+  // items の最後に item を付け足す
+  // true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>配列に含まれるかは <code>.includes()</code> です（02章 q04 問9）。<code>return false;</code> で関数が終わるので、<code>else</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">value を min 以上 max 以下に収める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function clampValue() {}</code></pre>
+      <p>数値 <code>value</code> を、<code>min</code> 以上 <code>max</code> 以下に収めて返します。<code>min</code> より小さければ <code>min</code>、<code>max</code> より大きければ <code>max</code>、その間ならそのままです。引数は数値 3 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>clampValue(15, 0, 10)</code></dt><dd class="r"><code>10</code></dd><dd class="c">大きすぎるので max</dd></div>
+          <div><dt><code>clampValue(-1, 0, 10)</code></dt><dd class="r"><code>0</code></dd><dd class="c">小さすぎるので min</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> 3 つ、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 clampValue を作る。数値 value と数値 min と数値 max を受け取り、数値を返す
+export function clampValue() {
+  // value と min の大きい方を求め、それと max の小さい方を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q04 問9 と同じ形です。「大きい方」は <code>Math.max()</code>、「小さい方」は <code>Math.min()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">1〜65535 の整数の文字列なら数値、そうでなければ undefined を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parsePort() {}</code></pre>
+      <p>ポート番号の文字列を受け取ります。ポート番号は、通信の窓口を表す番号です。数値にしたとき 1 から 65535 までの整数なら、その数値を返します。そうでなければ <code>undefined</code> を返します。戻り値の型は、数値か <code>undefined</code> のユニオン型です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parsePort("8080")</code></dt><dd class="r"><code>8080</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parsePort("0")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">1 より小さい</dd></div>
+          <div><dt><code>parsePort("abc")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">数値にならない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parsePort を作る。文字列 text を受け取り、数値か undefined を返す
+export function parsePort() {
+  // n を作り、text を数値にしたものを入れる
+  // もし n が整数でない、または n が 1 より小さい、または n が 65535 より大きいなら
+  //   undefined を返す
+  // n を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>数値にするのは <code>Number()</code>（01章 q08 問16）、整数かを調べるのは <code>Number.isInteger()</code>（01章 q04 応用）です。「でない」は <code>!</code>、「または」は <code>||</code> です。<code>Number("abc")</code> は <code>NaN</code> になり、整数ではないので <code>undefined</code> を返せます。戻り値の型は <code>number | undefined</code> と書きます（02章 q04 問4）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">バイト数を「512 B」「1.5 KB」「2.0 MB」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function formatBytes() {}</code></pre>
+      <p>ファイルの大きさ（バイト数）を、読みやすい文字列にして返します。1024 × 1024 以上なら MB、1024 以上なら KB で表します。KB と MB は、小数第 1 位まで書きます。それより小さければ、そのまま B を付けます。数と単位の間には、半角スペースを 1 つ入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>formatBytes(512)</code></dt><dd class="r"><code>"512 B"</code></dd><dd class="c">1024 より小さい</dd></div>
+          <div><dt><code>formatBytes(1536)</code></dt><dd class="r"><code>"1.5 KB"</code></dd><dd class="c">1536 ÷ 1024 = 1.5</dd></div>
+          <div><dt><code>formatBytes(2 * 1024 * 1024)</code></dt><dd class="r"><code>"2.0 MB"</code></dd><dd class="c">ちょうどでも小数第 1 位まで書く</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 formatBytes を作る。数値 bytes を受け取り、文字列を返す
+export function formatBytes() {
+  // もし bytes が 1024 × 1024 以上なら
+  //   bytes ÷ 1024 ÷ 1024 を小数第 1 位までの文字列にしたものを埋め込んだ「◯ MB」の文字列を返す
+  // もし bytes が 1024 以上なら
+  //   bytes ÷ 1024 を小数第 1 位までの文字列にしたものを埋め込んだ「◯ KB」の文字列を返す
+  // bytes を埋め込んだ「◯ B」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>大きい単位から順に調べます。先に 1024 以上かを調べると、2 MB も KB で表してしまいます。小数第 1 位までの文字列にするのは <code>.toFixed(1)</code> です（01章 q03 応用）。<code>2.0</code> のように、0 の桁も残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">合計と平均を { sum, average } で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumAndAverage() {}</code></pre>
+      <p>数値の配列を受け取り、合計 <code>sum</code> と平均 <code>average</code> を持つオブジェクトを返します。空の配列なら、どちらも 0 です。引数は読むだけなので <code>readonly number[]</code> にします。戻り値の型には、オブジェクトの型 <code>{ sum: number; average: number }</code> を書きます（02章 q01 問1）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumAndAverage([1, 2, 3])</code></dt><dd class="r"><code>{ sum: 6, average: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumAndAverage([])</code></dt><dd class="r"><code>{ sum: 0, average: 0 }</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>{ sum: number; average: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumAndAverage を作る。読み取り専用の数値の配列 numbers を受け取り、数値の sum と数値の average を持つオブジェクトを返す
+export function sumAndAverage() {
+  // 合計 sum を入れ直せる変数として作り、0 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   sum に n を足す
+  // もし numbers の要素の数が 0 と等しいなら
+  //   sum が 0、average が 0 のオブジェクトを返す
+  // sum が sum、average が sum ÷ numbers の要素の数のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の配列で割ると <code>0 / 0</code> になり、<code>NaN</code> になってしまいます。そのため、先に要素の数が 0 かを調べます。「sum が sum」のプロパティは、省略して <code>{ sum, … }</code> と書けます（02章 q01 問3）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">引数を受け取らず、何もしない関数</span>
+      <span class="q-new">新しく出てくる書き方：中身が空の関数と、中に書くコメント</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function doNothing() {}</code></pre>
+      <p>引数を受け取らず、何もしない関数を書きます。戻り値の型は <code>void</code> です。中身は空でかまいませんが、中にコメントを 1 行書きます。理由は次の項目で説明します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>doNothing()</code></dt><dd class="r">エラーを投げずに終わる</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>void</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ // コメント }</code><h4>中身が空の関数には、コメントを 1 行書く</h4></div>
+      <p>中身が空の関数は、書き忘れたのか、わざと空にしたのかが見分けられません。そのため、この課題の ESLint は、中身が空の関数をエラーにします（no-empty-function）。中にコメントを 1 行書くと、わざと空にしたことが伝わり、エラーになりません。アロー関数でも同じです。</p>
+      <div class="cmp">
+        <div>
+          <h5>中身が空のまま</h5>
+          <pre><code class="language-typescript">const onCancel = (): void =&gt; {};</code></pre>
+          <div class="verdict ng">✕ ESLint のエラーになります</div>
+        </div>
+        <div>
+          <h5>中にコメントを書く</h5>
+          <pre><code class="language-typescript">const onCancel = (): void =&gt; {
+  // キャンセルのときは、何もしない
+};</code></pre>
+          <div class="verdict ok">○ わざと空にしたことが伝わります</div>
+        </div>
+      </div>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 onCancel を作る。何も受け取らず、何も返さない
+const onCancel = (): void =&gt; {
+  // キャンセルのときは、何もしない
+};
+// onCancel を呼ぶ
+onCancel();
+// 結果: 何も起きず、エラーにもならない</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b>引数を受け取らない関数は、かっこの中を空にして <code>()</code> と書きます。戻り値の型は、かっこの後ろに書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 doNothing を作る。何も受け取らず、何も返さない
+export function doNothing() {
+  // ここに、何もしないことを説明するコメントを 1 行書く
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 のサンプルはアロー関数ですが、この問題は用意してある関数宣言の形のまま書きます。かっこの後ろに <code>: void</code> を書き、<code>{ }</code> の中にコメントを 1 行入れます。コメントの文は自由です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">それぞれの名前に「さん、こんにちは」を付けた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greetAll() {}</code></pre>
+      <p>名前の配列を受け取り、それぞれの名前の後ろに <code>"さん、こんにちは"</code> を付けた新しい配列を返します。受け取った配列は変えません。引数は <code>readonly string[]</code>、戻り値は <code>string[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetAll(["山田", "佐藤"])</code></dt><dd class="r"><code>["山田さん、こんにちは", "佐藤さん、こんにちは"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 greetAll を作る。読み取り専用の文字列の配列 names を受け取り、文字列の配列を返す
+export function greetAll() {
+  // names の要素を 1 つずつ name として、name を埋め込んだ「◯さん、こんにちは」の文字列に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>要素を 1 つずつ変えた新しい配列を作るのは <code>.map()</code> です（02章 q04 問5）。<code>.map()</code> は新しい配列を作るので、引数に <code>readonly</code> を付けたまま使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">{ name, age } を「山田（30歳）」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function describeUser() {}</code></pre>
+      <p>名前 <code>name</code> と年齢 <code>age</code> を持つオブジェクトを受け取り、「名前（年齢歳）」の文字列を返します。かっこは全角の <code>（</code> と <code>）</code> です。引数の型は <code>{ name: string; age: number }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>describeUser({ name: "山田", age: 30 })</code></dt><dd class="r"><code>"山田（30歳）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string; age: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 describeUser を作る。オブジェクト user（name は文字列、age は数値）を受け取り、文字列を返す
+export function describeUser() {
+  // user の name と user の age を埋め込んだ「◯（◯歳）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>テンプレートリテラルに <code>user.name</code> と <code>user.age</code> を埋め込みます（01章 q01 問3）。かっこを半角で書くと、テストの値と合いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">文字列と数値が混ざった配列から、数値だけを集める</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pickNumbers() {}</code></pre>
+      <p>要素が文字列か数値の配列を受け取り、数値の要素だけを、順に集めた新しい配列を返します。引数の型は <code>readonly (string | number)[]</code> です。要素がユニオン型の配列は、ユニオン型をかっこで囲みます（03章 q03 問12）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pickNumbers([1, "a", 2])</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (string | number)[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pickNumbers を作る。読み取り専用の配列 values（要素は文字列か数値）を受け取り、数値の配列を返す
+export function pickNumbers() {
+  // 結果 result を数値の配列として作り、空の配列を入れる
+  // values から 1 つずつ value に取り出してくり返す
+  //   もし value の型が数値なら
+  //     result の最後に value を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「value の型が数値なら」は <code>typeof value === "number"</code> です（03章 q01 問3）。この <code>if</code> の中では <code>value</code> が <code>number</code> に絞り込まれるので、<code>number[]</code> の <code>result</code> に付け足せます。<code>result</code> は関数の中で作った新しい配列なので、書き換えてかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">ミリ秒を「1.5秒」の形にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function secondsText() {}</code></pre>
+      <p>ミリ秒（1000 分の 1 秒）の数を受け取り、秒にして「◯秒」の文字列を返します。秒の数は、小数第 1 位まで書きます。数と「秒」の間に空白は入れません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>secondsText(1500)</code></dt><dd class="r"><code>"1.5秒"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>secondsText(200)</code></dt><dd class="r"><code>"0.2秒"</code></dd><dd class="c">1 秒より短い</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 secondsText を作る。数値 ms を受け取り、文字列を返す
+export function secondsText() {
+  // ms ÷ 1000 を小数第 1 位までの文字列にしたものを埋め込んだ「◯秒」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 の KB の行と同じ形です。割る数が <code>1000</code>、後ろに付けるのが <code>秒</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">最初の要素を返す。空の配列なら fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstOr() {}</code></pre>
+      <p>文字列の配列 <code>items</code> の最初の要素を返します。空の配列なら、代わりに文字列 <code>fallback</code> を返します。<code>items</code> は読むだけなので <code>readonly string[]</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstOr(["a"], "なし")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>firstOr([], "なし")</code></dt><dd class="r"><code>"なし"</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code> と <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstOr を作る。読み取り専用の文字列の配列 items と文字列 fallback を受け取り、文字列を返す
+export function firstOr() {
+  // items の 0 番目の要素を返す。undefined なら fallback を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問3 の <code>secondPrice</code> と同じ形です。取り出す位置が 0 番目、<code>??</code> の右が <code>fallback</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">オブジェクトの値の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumValues() {}</code></pre>
+      <p>キーが文字列、値が数値の表を受け取り、値をすべて足した合計を返します。空のオブジェクトなら 0 です。引数の型は、インデックス型 <code>{ [key: string]: number }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumValues({ a: 1, b: 2 })</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumValues({})</code></dt><dd class="r"><code>0</code></dd><dd class="c">空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumValues を作る。表 values（キーは文字列、値は数値）を受け取り、数値を返す
+export function sumValues() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // values の値を並べた配列から 1 つずつ value に取り出してくり返す
+  //   total に value を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「値を並べた配列」は <code>Object.values()</code> です（02章 q08 問5）。<code>for-of</code> の <code>of</code> の後ろに、そのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c05-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">引数と戻り値の型、void（3 つの関数）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function clamp() {}
+
+export function logLine() {}
+
+export function formatDuration() {}</code></pre>
+      <p>3 つの関数を書きます。引数と戻り値には、型注釈を付けます。</p>
+      <ol>
+        <li><code>clamp(value, min, max)</code>：<code>value</code> を <code>min</code> 以上 <code>max</code> 以下に収めて返します。<code>min</code> が <code>max</code> より大きければ、エラーを投げます。</li>
+        <li><code>logLine(lines, level, message)</code>：<code>lines</code> の最後に <code>"[INFO] message"</code> の形の行を付け足します。<code>level</code> は <code>"info"</code>、<code>"warn"</code>、<code>"error"</code> のどれかです。大文字にして <code>[ ]</code> で囲みます。値は返さず、戻り値の型は <code>void</code> です。<code>lines</code> は書き換えるので、<code>readonly</code> を付けずに <code>string[]</code> にします。</li>
+        <li><code>formatDuration(seconds)</code>：秒の数を「1時間2分3秒」の形にします。0 の単位は書きません。ただし 0 秒なら「0秒」です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>clamp(15, 0, 10)</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+          <div><dt><code>clamp(-5, 0, 10)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>clamp(5, 0, 10)</code></dt><dd class="r"><code>5</code></dd><dd class="c">間にあるのでそのまま</dd></div>
+          <div><dt><code>clamp(5, 10, 0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">min が max より大きい</dd></div>
+          <div><dt><code>logLine(lines, "info", "起動しました")</code></dt><dd class="r"><code>lines</code> が <code>["[INFO] 起動しました"]</code> になる</dd><dd class="c"><code>lines</code> は空の配列から始める</dd></div>
+          <div><dt><code>logLine(lines, "error", "失敗しました")</code></dt><dd class="r"><code>lines</code> が <code>["[INFO] 起動しました", "[ERROR] 失敗しました"]</code> になる</dd><dd class="c">続けて呼ぶ</dd></div>
+          <div><dt><code>formatDuration(3723)</code></dt><dd class="r"><code>"1時間2分3秒"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>formatDuration(125)</code></dt><dd class="r"><code>"2分5秒"</code></dd><dd class="c">0 時間は書かない</dd></div>
+          <div><dt><code>formatDuration(3600)</code></dt><dd class="r"><code>"1時間"</code></dd><dd class="c">0 分と 0 秒は書かない</dd></div>
+          <div><dt><code>formatDuration(3605)</code></dt><dd class="r"><code>"1時間5秒"</code></dd><dd class="c">間の 0 分も書かない</dd></div>
+          <div><dt><code>formatDuration(0)</code></dt><dd class="r"><code>"0秒"</code></dd><dd class="c">全部 0 のときだけ「0秒」</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>clamp</code> は引数が <code>number</code> 3 つ、戻り値が <code>number</code> です。<code>logLine</code> は引数が <code>string[]</code> と <code>"info" | "warn" | "error"</code> と <code>string</code>、戻り値が <code>void</code> です。<code>formatDuration</code> は引数が <code>number</code>、戻り値が <code>string</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 clamp を作る。数値 value と数値 min と数値 max を受け取り、数値を返す
+export function clamp() {
+  // もし min が max より大きいなら
+  //   "min は max 以下にしてください" というメッセージのエラーを投げる
+  // value と min の大きい方を求め、それと max の小さい方を返す
+}
+
+// 関数 logLine を作る。文字列の配列 lines と、"info" か "warn" か "error" の level と、文字列 message を受け取り、何も返さない
+export function logLine() {
+  // lines の最後に、level を大文字にしたものと message を埋め込んだ「[◯] ◯」の文字列を付け足す
+}
+
+// 関数 formatDuration を作る。数値 seconds を受け取り、文字列を返す
+export function formatDuration() {
+  // 時間 h を作り、seconds ÷ 3600 を切り捨てた数を入れる
+  // 分 m を作り、（seconds を 3600 で割った余り）÷ 60 を切り捨てた数を入れる
+  // 秒 s を作り、seconds を 60 で割った余りを入れる
+  // 文字列 text を入れ直せる変数として作り、空の文字列を入れる
+  // もし h が 0 より大きいなら
+  //   text の後ろに、h を埋め込んだ「◯時間」をつなげる
+  // もし m が 0 より大きいなら
+  //   text の後ろに、m を埋め込んだ「◯分」をつなげる
+  // もし s が 0 より大きい、または text が空の文字列と等しいなら
+  //   text の後ろに、s を埋め込んだ「◯秒」をつなげる
+  // text を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>clamp</code> は、問10 の前にエラーを投げる <code>if</code> を足した形です。<code>logLine</code> は問1 のサンプルの <code>addStockLog</code> と同じ形で、<code>level</code> の型はリテラル型のユニオン（01章 q07 問1）、大文字にするのは <code>.toUpperCase()</code> です。<code>formatDuration</code> の「切り捨て」は <code>Math.floor()</code>、「割った余り」は <code>%</code>、「後ろにつなげる」は <code>+=</code> です。最後の <code>if</code> で、まだ何もつなげていないときだけ 0 秒も書きます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,967 @@
+<section class="sec" id="c02-q08">
+  <div class="sec-h">
+    <span class="eyebrow">02章 オブジェクト・配列・タプル</span>
+    <h2>q08 インデックス型</h2>
+    <p>点数表や価格表のように、キーを自由に決められるオブジェクトを扱う関数を 20 個書きます。キーは名前や商品名などの文字列で、値の型はどれも同じです。こういうオブジェクトの型は、インデックス型 <code>{ [name: string]: number }</code> で書きます。<code>scores[name]</code> のようにキーで取り出した値は、そのキーがないかもしれないので <code>undefined</code> になることがあります。<code>??</code> や <code>!== undefined</code> で扱います。キーや値を全部見るときは、<code>Object.keys</code>・<code>Object.values</code>・<code>Object.entries</code> を使います。オブジェクトを変える問題では、元のオブジェクトは書き換えません。新しいオブジェクトを作って返します。引数と戻り値の型注釈は自分で書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c02-q08-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">scores から name の点数を返す（なければ 0）</span>
+      <span class="q-new">新しく出てくる書き方：インデックス型 <code>{ [name: string]: number }</code>、キーで取り出した値は <code>undefined</code> かもしれない</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function scoreOf() {}</code></pre>
+      <p>点数表 <code>scores</code> と名前 <code>name</code> を受け取り、その人の点数を返します。点数表は、キーが名前、値が点数のオブジェクトです。点数表にその名前がなければ、<code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scoreOf({ 山田: 80, 佐藤: 70 }, "山田")</code></dt><dd class="r"><code>80</code></dd><dd class="c"></dd></div>
+          <div><dt><code>scoreOf({ 山田: 80 }, "鈴木")</code></dt><dd class="r"><code>0</code></dd><dd class="c">点数表にない名前</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [name: string]: number }</code> と <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ [key: string]: T }</code><h4>キーを自由に決められるオブジェクトの型</h4></div>
+      <p>02章 q01 のオブジェクトの型 <code>{ name: string; age: number }</code> は、キーの名前が決まっていました。点数表や在庫表は、どんなキーが入るかが前もって決まりません。決まっているのは「キーは文字列、値は数値」ということだけです。このようなオブジェクトの型を、インデックス型といいます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫表 stock を作る。キーは商品名の文字列、値は数値
+const stock: { [item: string]: number } = { ノート: 12, ペン: 0 };
+// 商品名 item を作り、"ノート" を入れる
+const item = "ノート";
+// count を作り、stock の item の値を入れる
+const count = stock[item];
+// 結果: count は 12</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>{ [<span class="seg"><i>1</i>item</span>: <span class="seg"><i>2</i>string</span>]: <span class="seg"><i>3</i>number</span> }</pre>
+        <ol>
+          <li><span>キーにつける名前です。読む人のための名前で、自由に決めてかまいません。</span></li>
+          <li><span>キーの型です。この章では <code>string</code> だけを使います。</span></li>
+          <li><span>値の型です。どのキーの値も、この型になります。</span></li>
+        </ol>
+      </figure>
+      <p>キーで値を取り出すときは、<code>stock[item]</code> のように <code>[ ]</code> の中にキーを書きます。文字列の 1 文字を取り出す <code>text[0]</code>（01章 q03 問20）と同じ形です。<code>[ ]</code> の中には、キーの入った変数をそのまま書けます。</p>
+      <p class="memo"><b>よくある疑問</b><code>[item: string]</code> の <code>item</code> は、型の確認には使われません。テストの型が <code>[name: string]</code> でも、自分の型を <code>[key: string]</code> と書いてかまいません。</p>
+      <p class="more">サバイバルTypeScript「インデックス型」</p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">stock[item] ?? 0</code><h4>取り出した値は undefined かもしれない</h4></div>
+      <p>インデックス型のオブジェクトは、どのキーが入っているかが型からは分かりません。そのため、<code>stock[item]</code> で取り出した値の型は <code>number | undefined</code> になります。ないキーを取り出すと、本当に <code>undefined</code> が返ります。数値として使う前に、<code>??</code>（02章 q02 問1）で代わりの値を決めるか、<code>!== undefined</code> で確かめます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫表 stock を作る。キーは商品名の文字列、値は数値
+const stock: { [item: string]: number } = { ノート: 12, ペン: 0 };
+// 商品名 missing を作り、"消しゴム" を入れる
+const missing = "消しゴム";
+// left を作り、stock の missing の値を入れる。なければ 0 を入れる
+const left = stock[missing] ?? 0;
+// 結果: left は 0</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>そのまま number の変数に入れる</h5>
+          <pre><code class="language-typescript">const left: number = stock[missing];</code></pre>
+          <div class="verdict ng">✕ number | undefined は number に入れられない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>?? で代わりの値を決める</h5>
+          <pre><code class="language-typescript">const left: number = stock[missing] ?? 0;</code></pre>
+          <div class="verdict ok">○ ないときは 0 になるので、型は number です</div>
+        </div>
+      </div>
+      <p>関数の引数にインデックス型を使うときも、同じ書き方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 isInStock を作る。在庫表 stock（キーは商品名の文字列、値は数値）と文字列 item を受け取り、true か false を返す
+function isInStock(stock: { [item: string]: number }, item: string): boolean {
+  // stock の item の値（なければ 0）が 0 より大きいかどうかを返す
+  return (stock[item] ?? 0) &gt; 0;
+}
+// 結果: isInStock({ ノート: 12, ペン: 0 }, "ペン") は false</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>??</code> が代わりの値を使うのは、<code>undefined</code> か <code>null</code> のときだけです。<code>stock["ペン"]</code> のように値が <code>0</code> のときは、<code>0</code> のまま使います。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 scoreOf を作る。点数表 scores（キーは名前の文字列、値は数値）と文字列 name を受け取り、数値を返す
+export function scoreOf() {
+  // scores の name の値を返す。なければ 0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、問1 のサンプルの <code>isInStock</code> と同じ形です。「なければ 0」は、<code>left</code> の行と同じく <code>?? 0</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c02-q08-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">key があれば true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function hasKey() {}</code></pre>
+      <p>表 <code>record</code> とキー <code>key</code> を受け取ります。<code>record</code> にそのキーがあれば <code>true</code>、なければ <code>false</code> を返します。この表の値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasKey({ a: "x" }, "a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>hasKey({ a: "x" }, "b")</code></dt><dd class="r"><code>false</code></dd><dd class="c">ないキー</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: string }</code> と <code>string</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasKey を作る。表 record（キーは文字列、値は文字列）と文字列 key を受け取り、true か false を返す
+export function hasKey() {
+  // record の key の値が undefined でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>ないキーを取り出すと <code>undefined</code> になります（問1）。「undefined でない」は <code>!== undefined</code> です（01章 q01 問17）。比べた結果は <code>true</code> か <code>false</code> なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c02-q08-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">name の点数を score にした、新しいオブジェクトを返す</span>
+      <span class="q-new">新しく出てくる書き方：計算されたプロパティ名 <code>{ [name]: score }</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function setScore() {}</code></pre>
+      <p>点数表 <code>scores</code>、名前 <code>name</code>、点数 <code>score</code> を受け取ります。<code>name</code> の点数を <code>score</code> にした、新しい点数表を返します。名前がまだなければ足し、もうあれば点数を置き換えます。元の <code>scores</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>setScore({ 山田: 80 }, "佐藤", 70)</code></dt><dd class="r"><code>{ 山田: 80, 佐藤: 70 }</code></dd><dd class="c">ない名前は足す</dd></div>
+          <div><dt><code>setScore({ 山田: 80 }, "山田", 90)</code></dt><dd class="r"><code>{ 山田: 90 }</code></dd><dd class="c">ある名前は置き換える</dd></div>
+          <div><dt>呼んだあとの元の点数表</dt><dd class="r"><code>{ 山田: 80 }</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [name: string]: number }</code>・<code>string</code>・<code>number</code>、戻り値が <code>{ [name: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ [item]: 30 }</code><h4>変数の中身をキーにする（計算されたプロパティ名）</h4></div>
+      <p>オブジェクトリテラルの中で、キーを <code>[ ]</code> で囲むと、変数の中身がキーになります。これを計算されたプロパティ名といいます。スプレッド構文 <code>{ ...todo, done: true }</code>（02章 q02 問8）と組み合わせると、元のオブジェクトを書き換えずに、1 つのキーだけを変えた新しいオブジェクトが作れます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫表 stock を作る。キーは商品名の文字列、値は数値
+const stock: { [item: string]: number } = { ノート: 12, ペン: 0 };
+// 商品名 item を作り、"ペン" を入れる
+const item = "ペン";
+// restocked を作り、stock を広げて、item の値を 30 にしたものを入れる
+const restocked = { ...stock, [item]: 30 };
+// 結果: restocked は { ノート: 12, ペン: 30 }。stock は { ノート: 12, ペン: 0 } のまま</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>{ <span class="seg"><i>1</i>...stock</span>, <span class="seg"><i>2</i>[item]</span>: <span class="seg"><i>3</i>30</span> }</pre>
+        <ol>
+          <li><span>元の在庫表のキーと値を、すべて写します。</span></li>
+          <li><span>変数 <code>item</code> の中身の <code>"ペン"</code> がキーになります。同じキーがあれば、後ろに書いたほうの値が残ります。</span></li>
+          <li><span>そのキーの値です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>item</code> が <code>"ペン"</code></dt><dd class="r"><code>{ ノート: 12, ペン: 30 }</code></dd><dd class="c">あるキーは置き換わる</dd></div>
+        <div><dt><code>item</code> が <code>"消しゴム"</code></dt><dd class="r"><code>{ ノート: 12, ペン: 0, 消しゴム: 30 }</code></dd><dd class="c">ないキーは足される</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>[ ] を付けない</h5>
+          <pre><code class="language-typescript">const restocked = { ...stock, item: 30 };</code></pre>
+          <div class="verdict ng">✕ "item" という名前のキーができます。{ ノート: 12, ペン: 0, item: 30 }</div>
+        </div>
+        <div>
+          <h5>[ ] で囲む</h5>
+          <pre><code class="language-typescript">const restocked = { ...stock, [item]: 30 };</code></pre>
+          <div class="verdict ok">○ item の中身の "ペン" がキーになります</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 setScore を作る。点数表 scores（キーは名前の文字列、値は数値）と文字列 name と数値 score を受け取り、点数表（キーは名前の文字列、値は数値）を返す
+export function setScore() {
+  // scores を広げて、name の値を score にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>restocked</code> の行と同じ形です。キーが <code>[name]</code>、値が <code>score</code> になります。戻り値の型は、引数の点数表と同じインデックス型です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c02-q08-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">キーの数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Object.keys()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function keyCount() {}</code></pre>
+      <p>表 <code>record</code> を受け取り、キーがいくつあるかを返します。この表の値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>keyCount({ a: 1, b: 2 })</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>keyCount({})</code></dt><dd class="r"><code>0</code></dd><dd class="c">空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Object.keys()</code><h4>キーを並べた配列を作る</h4></div>
+      <p>オブジェクトを渡すと、そのキーを並べた配列を返します。戻り値の型は <code>string[]</code> です。配列なので、<code>.length</code> や <code>for-of</code> がそのまま使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫表 stock を作る。キーは商品名の文字列、値は数値
+const stock: { [item: string]: number } = { ノート: 12, ペン: 0 };
+// names を作り、stock のキーを並べた配列を入れる
+const names = Object.keys(stock);
+// 結果: names は ["ノート", "ペン"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Object.keys({ ノート: 12, ペン: 0 })</code></dt><dd class="r"><code>["ノート", "ペン"]</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Object.keys({})</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空のオブジェクトなら空の配列</dd></div>
+      </dl>
+      <p class="more">サバイバルTypeScript「オブジェクトをループする方法」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 keyCount を作る。表 record（キーは文字列、値は数値）を受け取り、数値を返す
+export function keyCount() {
+  // record のキーを並べた配列の要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「record のキーを並べた配列」は、問4 のサンプルの <code>names</code> の行と同じ <code>Object.keys(record)</code> です。要素の数は、その後ろに <code>.length</code> を付けます（01章 q08 総合）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c02-q08-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">値の合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Object.values()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumValues() {}</code></pre>
+      <p>表 <code>record</code> を受け取り、すべての値を足した合計を返します。空のオブジェクトなら <code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumValues({ a: 1, b: 2 })</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumValues({})</code></dt><dd class="r"><code>0</code></dd><dd class="c">空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Object.values()</code><h4>値を並べた配列を作る</h4></div>
+      <p>オブジェクトを渡すと、その値を並べた配列を返します。値が数値のインデックス型なら、戻り値の型は <code>number[]</code> です。キーは要らず、値だけを見たいときに使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫表 stock を作る。キーは商品名の文字列、値は数値
+const stock: { [item: string]: number } = { ノート: 12, ペン: 0 };
+// counts を作り、stock の値を並べた配列を入れる
+const counts = Object.values(stock);
+// soldOut を作り、counts に 0 が含まれるかどうか（true か false）を入れる
+const soldOut = counts.includes(0);
+// 結果: counts は [12, 0]、soldOut は true</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Object.values({ ノート: 12, ペン: 0 })</code></dt><dd class="r"><code>[12, 0]</code></dd><dd class="c"></dd></div>
+        <div><dt><code>Object.values({})</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空のオブジェクトなら空の配列</dd></div>
+      </dl>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumValues を作る。表 record（キーは文字列、値は数値）を受け取り、数値を返す
+export function sumValues() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // record の値を並べた配列から 1 つずつ value に取り出してくり返す
+    // total に value を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「record の値を並べた配列」は <code>Object.values(record)</code> です。これを <code>for (const value of …)</code> の <code>of</code> の後ろに書きます。「total に value を足す」は <code>+=</code> です（01章 q01 問5）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c02-q08-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">key の値を 1 増やした、新しいオブジェクトを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function increment() {}</code></pre>
+      <p>集計表 <code>counts</code> とキー <code>key</code> を受け取ります。<code>key</code> の値を 1 増やした、新しい集計表を返します。<code>key</code> がまだなければ、値を <code>1</code> にして足します。元の <code>counts</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>increment({ a: 1 }, "a")</code></dt><dd class="r"><code>{ a: 2 }</code></dd><dd class="c">1 増える</dd></div>
+          <div><dt><code>increment({ a: 1 }, "b")</code></dt><dd class="r"><code>{ a: 1, b: 1 }</code></dd><dd class="c">ないキーは 1 で足す</dd></div>
+          <div><dt>呼んだあとの元の集計表</dt><dd class="r"><code>{ a: 1 }</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code> と <code>string</code>、戻り値が <code>{ [key: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 increment を作る。集計表 counts（キーは文字列、値は数値）と文字列 key を受け取り、集計表（キーは文字列、値は数値）を返す
+export function increment() {
+  // counts を広げて、key の値を「counts の key の値（なければ 0）に 1 を足した数」にしたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>restocked</code> と同じ形です。値のところに <code>(counts[key] ?? 0) + 1</code> を書きます。かっこを付けて、<code>??</code> を先に計算します。ないキーは <code>0</code> として数えるので、<code>1</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c02-q08-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">単語ごとに、出てきた回数を数える</span>
+      <span class="q-new">新しく出てくる書き方：<code>counts[word] = …</code> でキーに値を入れる</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countWords() {}</code></pre>
+      <p>単語の配列 <code>words</code> を受け取り、単語ごとに何回出てきたかを数えたオブジェクトを返します。キーが単語、値が回数です。空の配列なら、空のオブジェクトを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countWords(["a", "b", "a"])</code></dt><dd class="r"><code>{ a: 2, b: 1 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countWords([])</code></dt><dd class="r"><code>{}</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>{ [word: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">empty[name] = 0</code><h4>空のオブジェクトに、キーと値を入れていく</h4></div>
+      <p>空のオブジェクト <code>{}</code> を作り、<code>オブジェクト[キー] = 値</code> でキーと値を 1 つずつ入れていけます。配列の <code>copied[i] = b</code>（02章 q05 問16）と同じ形です。同じキーに入れると、値が置き換わります。</p>
+      <p>空のオブジェクトを作るときは、変数にインデックス型の型注釈を付けます。付けないと、キーのないオブジェクトの型 <code>{}</code> になり、キーを足せません。関数の中で作った新しいオブジェクトに入れていくので、引数のオブジェクトは書き換えません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品名の配列 names を作り、"ノート" と "ペン" と "消しゴム" を入れる
+const names = ["ノート", "ペン", "消しゴム"];
+// 空の在庫表 empty を作る。キーは商品名の文字列、値は数値
+const empty: { [item: string]: number } = {};
+// names から 1 つずつ name に取り出してくり返す
+for (const name of names) {
+  // empty の name に 0 を入れる
+  empty[name] = 0;
+}
+// 結果: empty は { ノート: 0, ペン: 0, 消しゴム: 0 }</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>型注釈を付けない</h5>
+          <pre><code class="language-typescript">const empty = {};
+for (const name of names) {
+  empty[name] = 0;
+}</code></pre>
+          <div class="verdict ng">✕ 型 {} には string のキーで入れられない、というエラーになります</div>
+        </div>
+        <div>
+          <h5>インデックス型を付ける</h5>
+          <pre><code class="language-typescript">const empty: { [item: string]: number } = {};
+for (const name of names) {
+  empty[name] = 0;
+}</code></pre>
+          <div class="verdict ok">○ どんな文字列のキーでも入れられます</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countWords を作る。読み取り専用の文字列の配列 words を受け取り、集計表（キーは単語の文字列、値は数値）を返す
+export function countWords() {
+  // 空の集計表 counts を作る。キーは単語の文字列、値は数値
+  // words から 1 つずつ word に取り出してくり返す
+    // counts の word に、counts の word の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の集計表は、問7 のサンプルの <code>empty</code> の行と同じ形です。くり返しの中は、<code>empty[name] = 0</code> の右側を <code>(counts[word] ?? 0) + 1</code> にします。問6 と同じ式です。初めての単語は <code>0 + 1</code> で <code>1</code>、2 回目は <code>1 + 1</code> で <code>2</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c02-q08-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">文字ごとに、出てきた回数を数える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countChars() {}</code></pre>
+      <p>文字列 <code>text</code> を受け取り、1 文字ずつ、何回出てきたかを数えたオブジェクトを返します。キーが文字、値が回数です。空の文字列なら、空のオブジェクトを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countChars("banana")</code></dt><dd class="r"><code>{ b: 1, a: 3, n: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countChars("")</code></dt><dd class="r"><code>{}</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>{ [char: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countChars を作る。文字列 text を受け取り、集計表（キーは文字の文字列、値は数値）を返す
+export function countChars() {
+  // 空の集計表 counts を作る。キーは文字の文字列、値は数値
+  // text から 1 文字ずつ char に取り出してくり返す
+    // counts の char に、counts の char の値（なければ 0）に 1 を足した数を入れる
+  // counts を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形です。違うのは、配列の代わりに文字列から 1 文字ずつ取り出すところだけです。文字列も <code>for (const char of text)</code> で 1 文字ずつ取り出せます（01章 q01 問9）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c02-q08-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">キーを並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function keysOf() {}</code></pre>
+      <p>表 <code>record</code> を受け取り、キーを並べた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>keysOf({ a: 1, b: 2 })</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 keysOf を作る。表 record（キーは文字列、値は数値）を受け取り、文字列の配列を返す
+export function keysOf() {
+  // record のキーを並べた配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>names</code> の行と同じ <code>Object.keys()</code> です。戻り値の型が <code>string[]</code> なので、そのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c02-q08-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">値がいちばん大きいキーを返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>Object.entries()</code>、<code>Infinity</code> と <code>-Infinity</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function topKey() {}</code></pre>
+      <p>表 <code>record</code> を受け取り、値がいちばん大きいキーを返します。いちばん大きい値が 2 つ以上あるときは、先に出てきたキーを返します。空のオブジェクトなら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>topKey({ a: 1, b: 3, c: 2 })</code></dt><dd class="r"><code>"b"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>topKey({ a: 3, b: 3 })</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">同じなら先に出てきたキー</dd></div>
+          <div><dt><code>topKey({})</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Object.entries()</code><h4>キーと値の組を並べた配列を作る</h4></div>
+      <p>オブジェクトを渡すと、<code>[キー, 値]</code> の組（タプル）を並べた配列を返します。値が数値のインデックス型なら、戻り値の型は <code>[string, number][]</code> です。<code>for-of</code> で取り出すときに、配列の分割代入（02章 q06 問2）で <code>[name, count]</code> と書くと、キーと値を別々の変数で受け取れます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫表 stock を作る。キーは商品名の文字列、値は数値
+const stock: { [item: string]: number } = { ノート: 12, ペン: 0 };
+// 売り切れの商品名 soldOut を作り、空の配列を入れる。型は文字列の配列
+const soldOut: string[] = [];
+// stock のキーと値の組を 1 つずつ [name, count] に取り出してくり返す
+for (const [name, count] of Object.entries(stock)) {
+  // もし count が 0 なら
+  if (count === 0) {
+    // soldOut の最後に name を足す
+    soldOut.push(name);
+  }
+}
+// 結果: soldOut は ["ペン"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>Object.entries({ ノート: 12, ペン: 0 })</code></dt><dd class="r"><code>[["ノート", 12], ["ペン", 0]]</code></dd><dd class="c"></dd></div>
+      </dl>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>回</th><th>name</th><th>count</th><th>soldOut</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>"ノート"</td><td>12</td><td>[]</td></tr>
+            <tr><td>2</td><td>"ペン"</td><td>0</td><td>["ペン"]</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>見つかったときだけ入れ直す変数は、型注釈を付けて <code>undefined</code> から始めます。型を <code>string | undefined</code> にしておくと、あとで文字列を入れ直せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約表 seats を作る。キーは便の名前の文字列、値は空席の数
+const seats: { [flight: string]: number } = { 朝便: 0, 昼便: 4, 夜便: 2 };
+// 空席のある便 open を入れ直せる変数として作り、undefined を入れる。型は文字列か undefined
+let open: string | undefined = undefined;
+// seats のキーと値の組を 1 つずつ [flight, count] に取り出してくり返す
+for (const [flight, count] of Object.entries(seats)) {
+  // もし count が 0 より大きく、open が undefined なら
+  if (count &gt; 0 &amp;&amp; open === undefined) {
+    // open に flight を入れ直す
+    open = flight;
+  }
+}
+// 結果: open は "昼便"</code></pre>
+      </div>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">Infinity</code><code class="tok">-Infinity</code><h4>どの数より大きい数、どの数より小さい数</h4></div>
+      <p><code>Infinity</code> は、どの数よりも大きい数です。<code>-Infinity</code> は、どの数よりも小さい数です。いちばん小さい数を探すときは <code>Infinity</code> から始めると、最初の数で必ず入れ直されます。いちばん大きい数を探すときは、反対に <code>-Infinity</code> から始めます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料の配列 fees を作り、800 と 500 と 650 を入れる
+const fees = [800, 500, 650];
+// いちばん安い送料 cheapest を入れ直せる変数として作り、Infinity を入れる
+let cheapest = Infinity;
+// fees から 1 つずつ fee に取り出してくり返す
+for (const fee of fees) {
+  // もし fee が cheapest より小さいなら
+  if (fee &lt; cheapest) {
+    // cheapest に fee を入れ直す
+    cheapest = fee;
+  }
+}
+// 結果: cheapest は 500</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>fee</th><th>fee &lt; cheapest</th><th>cheapest</th></tr></thead>
+          <tbody>
+            <tr><td class="j">始める前</td><td></td><td>Infinity</td></tr>
+            <tr><td>800</td><td>true</td><td>800</td></tr>
+            <tr><td>500</td><td>true</td><td>500</td></tr>
+            <tr><td>650</td><td>false</td><td>500</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 topKey を作る。表 record（キーは文字列、値は数値）を受け取り、文字列か undefined を返す
+export function topKey() {
+  // いちばん大きいキー top を入れ直せる変数として作り、undefined を入れる。型は文字列か undefined
+  // いちばん大きい値 best を入れ直せる変数として作り、-Infinity を入れる
+  // record のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // もし value が best より大きいなら
+      // top に key を入れ直す
+      // best に value を入れ直す
+  // top を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>top</code> の行は、問10 の 2 つめのサンプルの <code>open</code> の行と同じ形です。くり返しは <code>soldOut</code> のサンプルと同じ <code>for (const [key, value] of Object.entries(record))</code>、比べ方は <code>cheapest</code> のサンプルの向きを逆にします。「より大きい」は <code>&gt;</code> です。<code>&gt;=</code> にすると、同じ値のときに後のキーで入れ直されてしまいます。空のオブジェクトでは一度もくり返さないので、<code>top</code> は <code>undefined</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c02-q08-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">キーと値を入れ替えたオブジェクトを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function invert() {}</code></pre>
+      <p>表 <code>record</code> を受け取り、キーと値を入れ替えた新しいオブジェクトを返します。元の値が新しいキーに、元のキーが新しい値になります。この表の値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>invert({ a: "x", b: "y" })</code></dt><dd class="r"><code>{ x: "a", y: "b" }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: string }</code>、戻り値が <code>{ [value: string]: string }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 invert を作る。表 record（キーは文字列、値は文字列）を受け取り、表（キーは文字列、値は文字列）を返す
+export function invert() {
+  // 空の表 result を作る。キーは文字列、値は文字列
+  // record のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // result の value に key を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>空の表は問7 のサンプルの <code>empty</code> と同じ形で、値の型を <code>string</code> にします。くり返しは問10 の <code>soldOut</code> のサンプルと同じです。中は <code>result[value] = key</code> と、キーと値を逆に書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c02-q08-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">keys に含まれるキーだけを取り出す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function pickKeys() {}</code></pre>
+      <p>表 <code>record</code> とキーの配列 <code>keys</code> を受け取ります。<code>keys</code> に入っているキーだけを取り出した、新しいオブジェクトを返します。<code>record</code> にないキーは無視します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>pickKeys({ a: 1, b: 2, c: 3 }, ["a", "c", "z"])</code></dt><dd class="r"><code>{ a: 1, c: 3 }</code></dd><dd class="c"><code>"z"</code> は record にないので入らない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code> と <code>readonly string[]</code>、戻り値が <code>{ [key: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 pickKeys を作る。表 record（キーは文字列、値は数値）と読み取り専用の文字列の配列 keys を受け取り、表（キーは文字列、値は数値）を返す
+export function pickKeys() {
+  // 空の表 result を作る。キーは文字列、値は数値
+  // keys から 1 つずつ key に取り出してくり返す
+    // value を作り、record の key の値を入れる
+    // もし value が undefined でないなら
+      // result の key に value を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返すのは、<code>keys</code> の配列のほうです。<code>record[key]</code> の型は <code>number | undefined</code> です（問1）。<code>if (value !== undefined)</code> の中では、<code>value</code> の型が <code>number</code> になるので、そのまま <code>result[key] = value</code> と入れられます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c02-q08-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">key を除いた、新しいオブジェクトを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function removeKey() {}</code></pre>
+      <p>表 <code>record</code> とキー <code>key</code> を受け取ります。<code>key</code> を除いた新しいオブジェクトを返します。元の <code>record</code> は書き換えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>removeKey({ a: 1, b: 2 }, "a")</code></dt><dd class="r"><code>{ b: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの元の表</dt><dd class="r"><code>{ a: 1, b: 2 }</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code> と <code>string</code>、戻り値が <code>{ [key: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 removeKey を作る。表 record（キーは文字列、値は数値）と文字列 key を受け取り、表（キーは文字列、値は数値）を返す
+export function removeKey() {
+  // 空の表 result を作る。キーは文字列、値は数値
+  // record のキーと値の組を 1 つずつ [name, value] に取り出してくり返す
+    // もし name が key でないなら
+      // result の name に value を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 の <code>soldOut</code> のサンプルと同じくり返しです。取り出す組の名前を <code>[name, value]</code> にして、引数の <code>key</code> と名前がぶつからないようにします。「key でない」は <code>!==</code> です。新しい <code>result</code> に入れていくので、<code>record</code> は変わりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c02-q08-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">2 つの集計を合わせる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mergeCounts() {}</code></pre>
+      <p>2 つの集計表 <code>a</code> と <code>b</code> を受け取り、1 つにまとめた新しい集計表を返します。両方にあるキーは、値を足します。片方にしかないキーは、その値のまま入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mergeCounts({ a: 1, b: 2 }, { b: 3, c: 4 })</code></dt><dd class="r"><code>{ a: 1, b: 5, c: 4 }</code></dd><dd class="c"><code>b</code> は 2 + 3</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code> と <code>{ [key: string]: number }</code>、戻り値が <code>{ [key: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 mergeCounts を作る。集計表 a と集計表 b（どちらもキーは文字列、値は数値）を受け取り、集計表（キーは文字列、値は数値）を返す
+export function mergeCounts() {
+  // result を作り、a を広げたものを入れる
+  // b のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // result の key に、result の key の値（なければ 0）に value を足した数を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「a を広げたもの」は <code>{ ...a }</code> です。<code>a</code> を写した新しいオブジェクトなので、<code>result</code> に入れても <code>a</code> は変わりません。くり返しの中は、問7 の式の <code>1</code> を <code>value</code> にした形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c02-q08-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">単語を文字数ごとにまとめる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function groupByLength() {}</code></pre>
+      <p>単語の配列 <code>words</code> を受け取り、文字数が同じ単語を 1 つの配列にまとめます。キーは文字数を文字列にしたもの（<code>"1"</code> や <code>"2"</code>）、値は単語の配列です。配列の中の単語は、<code>words</code> に出てきた順に並べます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>groupByLength(["a", "bb", "c"])</code></dt><dd class="r"><code>{ "1": ["a", "c"], "2": ["bb"] }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly string[]</code>、戻り値が <code>{ [length: string]: string[] }</code> であることも確かめます。値の型は配列です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 groupByLength を作る。読み取り専用の文字列の配列 words を受け取り、表（キーは文字列、値は文字列の配列）を返す
+export function groupByLength() {
+  // 空の表 groups を作る。キーは文字列、値は文字列の配列
+  // words から 1 つずつ word に取り出してくり返す
+    // key を作り、word の文字数を文字列にしたものを入れる
+    // groups の key に、groups の key の配列（なければ空の配列）の後ろに word をつなげた配列を入れる
+  // groups を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>数を文字列にするのは <code>String()</code> です（01章 q01 問12）。「◯ の後ろに word をつなげた配列」は、<code>[...items, item]</code>（02章 q05 問1）と同じ形です。ないキーの配列は <code>undefined</code> なので、<code>groups[key] ?? []</code> で空の配列にしてから広げます。<code>[...(groups[key] ?? []), word]</code> のように、かっこで囲みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c02-q08-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">価格表から価格を返す（なければエラー）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function priceOf() {}</code></pre>
+      <p>価格表 <code>prices</code> と商品名 <code>item</code> を受け取り、その商品の価格を返します。価格表にその商品がなければ、Error を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceOf({ りんご: 150 }, "りんご")</code></dt><dd class="r"><code>150</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priceOf({ りんご: 150 }, "メロン")</code></dt><dd class="r">Error を投げる</dd><dd class="c">価格表にない商品</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [item: string]: number }</code> と <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priceOf を作る。価格表 prices（キーは商品名の文字列、値は数値）と文字列 item を受け取り、数値を返す
+export function priceOf() {
+  // price を作り、prices の item の値を入れる
+  // もし price が undefined なら
+    // 「◯ の価格がありません」というメッセージのエラーを投げる（◯ は item）
+  // price を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>エラーは <code>throw new Error(`…`)</code> で投げます（01章 q04 問8）。メッセージは、テンプレートリテラルで <code>item</code> を埋め込みます。<code>if</code> でエラーを投げたあとの行では、<code>price</code> の型が <code>number</code> になります。そのため、<code>?? 0</code> を付けずにそのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c02-q08-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">価格表と注文から合計金額を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function orderTotal() {}</code></pre>
+      <p>価格表 <code>prices</code> と注文 <code>order</code> を受け取り、合計金額を返します。<code>order</code> は、キーが商品名、値が個数のオブジェクトです。商品ごとに「価格 × 個数」を足していきます。価格表にない商品が注文に入っていたら、Error を投げます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>orderTotal({ りんご: 150, みかん: 80 }, { りんご: 2, みかん: 3 })</code></dt><dd class="r"><code>540</code></dd><dd class="c">150 × 2 + 80 × 3</dd></div>
+          <div><dt><code>orderTotal({ りんご: 150 }, { メロン: 1 })</code></dt><dd class="r">Error を投げる</dd><dd class="c">価格表にない商品</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [item: string]: number }</code> と <code>{ [item: string]: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 orderTotal を作る。価格表 prices と注文 order（どちらもキーは商品名の文字列、値は数値）を受け取り、数値を返す
+export function orderTotal() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // order のキーと値の組を 1 つずつ [item, quantity] に取り出してくり返す
+    // price を作り、prices の item の値を入れる
+    // もし price が undefined なら
+      // 「◯ の価格がありません」というメッセージのエラーを投げる（◯ は item）
+    // total に price × quantity を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返すのは <code>order</code> のほうです。くり返しの中の前半は、問16 と同じ形です。後半は、問5 の <code>total</code> に足す行と同じで、足すものが <code>price * quantity</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c02-q08-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">値が min 以上のキーだけを残す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function filterAtLeast() {}</code></pre>
+      <p>表 <code>record</code> と数値 <code>min</code> を受け取ります。値が <code>min</code> 以上のキーだけを残した、新しいオブジェクトを返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>filterAtLeast({ a: 1, b: 5, c: 3 }, 3)</code></dt><dd class="r"><code>{ b: 5, c: 3 }</code></dd><dd class="c">3 ちょうども残す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code> と <code>number</code>、戻り値が <code>{ [key: string]: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 filterAtLeast を作る。表 record（キーは文字列、値は数値）と数値 min を受け取り、表（キーは文字列、値は数値）を返す
+export function filterAtLeast() {
+  // 空の表 result を作る。キーは文字列、値は数値
+  // record のキーと値の組を 1 つずつ [key, value] に取り出してくり返す
+    // もし value が min 以上なら
+      // result の key に value を入れる
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じ形で、<code>if</code> の条件だけが違います。「min 以上」は <code>&gt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c02-q08-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">「キー=値」を「, 」でつないだ文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function entriesText() {}</code></pre>
+      <p>表 <code>record</code> を受け取り、キーと値の組をそれぞれ <code>"キー=値"</code> の文字列にします。それを <code>", "</code>（カンマと空白）でつないだ 1 つの文字列を返します。空のオブジェクトなら、空の文字列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>entriesText({ a: 1, b: 2 })</code></dt><dd class="r"><code>"a=1, b=2"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>entriesText({})</code></dt><dd class="r"><code>""</code></dd><dd class="c">空のオブジェクト</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 entriesText を作る。表 record（キーは文字列、値は数値）を受け取り、文字列を返す
+export function entriesText() {
+  // record のキーと値の組を並べた配列を、それぞれ「key=value」の文字列にした配列にして、", " でつないだものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Object.entries(record)</code> は組の配列なので、後ろに <code>.map()</code>（02章 q04 問5）を続けられます。<code>.map()</code> に渡す関数の引数を <code>([key, value]) =&gt;</code> と書くと、組をキーと値に分けて受け取れます（02章 q06 問9 の分割代入引数）。文字列はテンプレートリテラルで作り、最後に <code>.join(", ")</code>（02章 q04 問11）でつなぎます。空の配列を <code>.join()</code> すると空の文字列になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c02-q08-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">key の値を返す（なければ fallback）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lookupOr() {}</code></pre>
+      <p>表 <code>record</code>、キー <code>key</code>、代わりの文字列 <code>fallback</code> を受け取ります。<code>key</code> の値を返します。<code>key</code> がなければ <code>fallback</code> を返します。この表の値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lookupOr({ ja: "こんにちは" }, "ja", "?")</code></dt><dd class="r"><code>"こんにちは"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lookupOr({ ja: "こんにちは" }, "en", "?")</code></dt><dd class="r"><code>"?"</code></dd><dd class="c">ないキー</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ [key: string]: string }</code>・<code>string</code>・<code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lookupOr を作る。表 record（キーは文字列、値は文字列）と文字列 key と文字列 fallback を受け取り、文字列を返す
+export function lookupOr() {
+  // record の key の値を返す。なければ fallback を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>??</code> の右側が、<code>0</code> の代わりに <code>fallback</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 総合 -->
+  <section class="q" id="c02-q08-a">
+    <header class="q-h">
+      <span class="q-n">総合</span><span class="q-t">在庫の集計</span>
+      <span class="q-new">新しく出てくる書き方：<code>import { sum } from "./q04-array-type"</code>（ほかのファイルの関数を使う）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">import { sum } from "./q04-array-type";
+
+export type Item = {
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+};
+
+export type CategoryTotals = unknown;
+
+export function outOfStock() {}
+
+export function totalByCategory() {}
+
+export function applySale() {}
+
+export function inventoryReport() {}</code></pre>
+      <p>商品の型 <code>Item</code> は定義済みです。在庫を集計する型 1 つと関数 4 つを書きます。引数の配列は <code>readonly Item[]</code> にします。元の配列や商品のオブジェクトは書き換えません。</p>
+      <ol>
+        <li>型 <code>CategoryTotals</code> を、インデックス型で書き直します。キーはカテゴリ名の文字列、値は数値です。</li>
+        <li><code>outOfStock(items)</code> は、在庫が 0 の商品の名前を、配列の順に並べて返します。</li>
+        <li><code>totalByCategory(items)</code> は、カテゴリごとに在庫金額（価格 × 在庫数）を合計し、<code>CategoryTotals</code> で返します。</li>
+        <li><code>applySale(items, category, percentOff)</code> は、<code>category</code> の商品だけを <code>percentOff</code> パーセント引きの価格にした、新しい配列を返します。1 円未満は切り捨てます。ほかのカテゴリの商品は、そのまま入れます。小数の誤差を避けるため、<code>price * (100 - percentOff) / 100</code> の順で計算します。</li>
+        <li><code>inventoryReport(items)</code> は、商品数・在庫切れの数・在庫金額の合計を <code>"商品数 4、在庫切れ 1、在庫金額 24,500円"</code> の形の文字列にして返します。在庫金額は 3 桁ごとにカンマで区切ります。</li>
+      </ol>
+      <p>5. の在庫金額は、q04 の総合問題で書いた <code>sum</code> で合計します。<code>sum</code> は、ファイルの先頭で読み込んであります。q04 の総合問題が解けていないと、この問題のテストも通りません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストでは、次の 4 つの商品を使います。</p>
+        <pre><code class="language-typescript">[
+  { name: "ノート", category: "文具", price: 200, stock: 100 },
+  { name: "ペン", category: "文具", price: 120, stock: 0 },
+  { name: "お茶", category: "飲料", price: 150, stock: 24 },
+  { name: "コーヒー", category: "飲料", price: 180, stock: 5 },
+]</code></pre>
+        <dl class="eg">
+          <div><dt><code>outOfStock(4 つの商品)</code></dt><dd class="r"><code>["ペン"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>outOfStock([])</code></dt><dd class="r"><code>[]</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>totalByCategory(4 つの商品)</code></dt><dd class="r"><code>{ 文具: 20000, 飲料: 4500 }</code></dd><dd class="c">文具は 200 × 100 + 120 × 0</dd></div>
+          <div><dt><code>totalByCategory([])</code></dt><dd class="r"><code>{}</code></dd><dd class="c">空の配列なら空のオブジェクト</dd></div>
+          <div><dt><code>applySale(4 つの商品, "飲料", 15)</code> の価格</dt><dd class="r"><code>[200, 120, 127, 153]</code></dd><dd class="c">お茶は 127.5 を切り捨てて 127</dd></div>
+          <div><dt><code>applySale(4 つの商品, "文具", 10)</code> の価格</dt><dd class="r"><code>[180, 108, 150, 180]</code></dd><dd class="c"></dd></div>
+          <div><dt>呼んだあとの元の商品</dt><dd class="r">元のまま</dd><dd class="c">配列も商品も変えない</dd></div>
+          <div><dt><code>inventoryReport(4 つの商品)</code></dt><dd class="r"><code>"商品数 4、在庫切れ 1、在庫金額 24,500円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>inventoryReport([])</code></dt><dd class="r"><code>"商品数 0、在庫切れ 0、在庫金額 0円"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>CategoryTotals</code> が <code>{ [category: string]: number }</code> であることを確かめます。引数は、<code>outOfStock</code>・<code>totalByCategory</code>・<code>inventoryReport</code> が <code>readonly Item[]</code>、<code>applySale</code> が <code>readonly Item[]</code>・<code>string</code>・<code>number</code> です。戻り値は、順に <code>string[]</code>・<code>CategoryTotals</code>・<code>Item[]</code>・<code>string</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">import { sum } from "…"</code><h4>ほかのファイルが export した関数を使う</h4></div>
+      <p>ほかのファイルで <code>export</code> した関数を、このファイルで使えるようにする書き方です。<code>{ }</code> の中に使う名前を、<code>from</code> の後ろにファイルの場所を書きます。この問題では、ファイルの先頭にもう書いてあります。自分で書き足す必要はありません。<code>sum</code> は、ほかの関数と同じように呼べます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// q04-array-type.ts の sum を、このファイルで使えるようにする
+import { sum } from "./q04-array-type";
+
+// 注文の金額の配列 amounts を作り、1200 と 800 と 500 を入れる
+const amounts = [1200, 800, 500];
+// total を作り、amounts を sum で合計したものを入れる
+const total = sum(amounts);
+// 結果: total は 2500</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>import { <span class="seg"><i>1</i>sum</span> } from <span class="seg"><i>2</i>"./q04-array-type"</span>;</pre>
+        <ol>
+          <li><span>使う関数の名前です。読み込む先のファイルで <code>export</code> している名前と同じにします。</span></li>
+          <li><span>読み込む先のファイルの場所です。<code>./</code> は「このファイルと同じフォルダー」という意味です。<code>.ts</code> は付けません。</span></li>
+        </ol>
+      </figure>
+      <p>ここでは、まねて書ければ十分です。</p>
+      <p class="more">09章 q05（import と export）</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 型 CategoryTotals を作る。キーはカテゴリ名の文字列、値は数値
+export type CategoryTotals = unknown;
+
+// 関数 outOfStock を作る。読み取り専用の Item の配列 items を受け取り、文字列の配列を返す
+export function outOfStock() {
+  // items から在庫が 0 の商品だけを集め、それぞれを名前にした配列を返す
+}
+
+// 関数 totalByCategory を作る。読み取り専用の Item の配列 items を受け取り、CategoryTotals を返す
+export function totalByCategory() {
+  // 空の集計 totals を作る。型は CategoryTotals
+  // items から 1 つずつ item に取り出してくり返す
+    // totals の item.category に、totals の item.category の値（なければ 0）に item.price × item.stock を足した数を入れる
+  // totals を返す
+}
+
+// 関数 applySale を作る。読み取り専用の Item の配列 items と文字列 category と数値 percentOff を受け取り、Item の配列を返す
+export function applySale() {
+  // items のそれぞれの item を、次のようにした新しい配列を返す
+    // もし item.category が category でないなら
+      // item を返す
+    // item を広げて、price を「item.price × (100 から percentOff を引いた数) ÷ 100 の小数点以下を切り捨てた数」にしたものを返す
+}
+
+// 関数 inventoryReport を作る。読み取り専用の Item の配列 items を受け取り、文字列を返す
+export function inventoryReport() {
+  // value を作り、items のそれぞれの price × stock を並べた配列を sum で合計したものを入れる
+  // items の要素の数、outOfStock(items) の要素の数、value を 3 桁ごとにカンマで区切ったものを埋め込んだ「商品数 ◯、在庫切れ ◯、在庫金額 ◯円」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>CategoryTotals</code> は、<code>unknown</code> を問1 のインデックス型に置き換えます。<code>outOfStock</code> は、<code>.filter()</code>（02章 q04 問7）のあとに <code>.map()</code>（02章 q04 問5）を続けます。<code>totalByCategory</code> は問7 と同じ形で、キーが <code>item.category</code>、足すものが <code>item.price * item.stock</code> です。<code>applySale</code> は <code>.map()</code> に <code>{ }</code> のある関数（02章 q04 問19）を渡し、中で <code>if</code> と <code>return</code> を使います。値引きした商品は <code>{ ...item, price: … }</code>（02章 q02 問8）で作り、切り捨ては <code>Math.floor()</code> です（01章 q01 問1）。<code>inventoryReport</code> の金額の区切りは <code>.toLocaleString("ja-JP")</code> です（01章 q02 問12）。在庫切れの数は、自分で書いた <code>outOfStock</code> の結果の <code>.length</code> で数えられます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,1113 @@
+<section class="sec" id="c08-q02">
+  <div class="sec-h">
+    <span class="eyebrow">08章 非同期処理</span>
+    <h2>q02 async と await</h2>
+    <p>ユーザーを取得する非同期の関数を 20 個書きます。この番号では、<code>async</code> と <code>await</code> を使って書きます。型 <code>User</code> と、関数 <code>fetchUser</code>・<code>wait</code> は、ファイルに書いてあります。<code>fetchUser(id)</code> は、<code>id</code> のユーザーで解決する Promise を返します。いない <code>id</code> なら、<code>"ユーザー 9 はいません"</code> のような Error で失敗します。戻り値の型は <code>Promise&lt;number&gt;</code> のように、中身の型まで書きます。async 関数の中では、Promise の結果を <code>await</code> で受け取ります。<code>.then()</code> は使いません。失敗を受け止めるときは <code>try</code>・<code>catch</code> を使います。<code>try</code> の中で Promise を <code>return</code> するときは、<code>return await</code> と書きます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c08-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">fetchUser で取得して、年齢を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>async</code>、戻り値の型 <code>Promise&lt;number&gt;</code>、<code>await</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string; age: number };
+
+const USERS: User[] = [
+  { id: 1, name: "山田", age: 34 },
+  { id: 2, name: "佐藤", age: 19 },
+  { id: 3, name: "鈴木", age: 52 },
+  { id: 4, name: "田中", age: 20 },
+];
+
+// id のユーザーを取得する。いなければ失敗する
+export function fetchUser(id: number): Promise&lt;User&gt; {
+  const user = USERS.find((u) =&gt; u.id === id);
+  return user === undefined
+    ? Promise.reject(new Error(`ユーザー ${id} はいません`))
+    : Promise.resolve(user);
+}
+
+export function getAge() {}</code></pre>
+      <p>問1 から問16 のファイルには、上の <code>User</code>・<code>USERS</code>・<code>fetchUser</code> が書いてあります。<code>fetchUser</code> は、08章 q01 の <code>Promise.resolve()</code>・<code>Promise.reject()</code> で作った、API の代わりの関数です。</p>
+      <p><code>getAge</code> は、<code>id</code> を受け取り、<code>fetchUser</code> でユーザーを取得して、その年齢を返します。年齢がすぐには分からないので、戻り値は「年齢で解決する Promise」です。いない <code>id</code> のときは、<code>fetchUser</code> の失敗がそのまま <code>getAge</code> の失敗になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>getAge(1)</code></dt><dd class="r"><code>34</code> で解決する</dd><dd class="c">山田さんは 34 歳</dd></div>
+          <div><dt><code>getAge(9)</code></dt><dd class="r">失敗する</dd><dd class="c"><code>"ユーザー 9 はいません"</code> の Error</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">async</code><code class="tok">Promise&lt;number&gt;</code><h4>async 関数と、戻り値の型 Promise&lt;T&gt;</h4></div>
+      <p>この番号のサンプルでは、商品を取得する関数 <code>fetchProduct</code> と、待つ関数 <code>wait</code> を使います。<code>fetchProduct</code> は問題の <code>fetchUser</code> と同じ作りで、<code>wait</code> は 08章 q01 問3 と同じものです。</p>
+      <div class="sample"><span class="cap">サンプルで使う関数</span>
+        <pre><code class="language-typescript">// 型 Product を作る。code と name は文字列、price と stock は数値
+type Product = { code: string; name: string; price: number; stock: number };
+
+// 商品の一覧 PRODUCTS を作り、3 つの商品を入れる
+const PRODUCTS: Product[] = [
+  { code: "A1", name: "ノート", price: 120, stock: 30 },
+  { code: "B2", name: "ペン", price: 80, stock: 0 },
+  { code: "C3", name: "消しゴム", price: 60, stock: 15 },
+];
+
+// 関数 fetchProduct を作る。文字列 code を受け取り、Product で解決する Promise を返す
+function fetchProduct(code: string): Promise&lt;Product&gt; {
+  // 商品 product を作り、PRODUCTS から code が等しい商品を探して入れる
+  const product = PRODUCTS.find((p) =&gt; p.code === code);
+  // product が undefined なら「商品 ◯ はありません」の Error で失敗する Promise、そうでなければ product で解決する Promise を返す
+  return product === undefined
+    ? Promise.reject(new Error(`商品 ${code} はありません`))
+    : Promise.resolve(product);
+}
+
+// 関数 wait を作る。数値 ms を受け取り、ms ミリ秒たったら解決する Promise を返す
+function wait(ms: number): Promise&lt;void&gt; {
+  return new Promise((resolve) =&gt; {
+    setTimeout(resolve, ms);
+  });
+}</code></pre>
+      </div>
+      <p><code>function</code> の前に <code>async</code> を付けた関数を、async 関数（非同期の関数）と呼びます。async 関数の中では、次の項目の <code>await</code> が使えます。</p>
+      <p>async 関数は、呼ぶといつも Promise を返します。中で <code>return</code> した値は、すぐには呼んだ側に渡りません。その値で、返した Promise が解決します。そのため、戻り値の型は <code>Promise&lt;T&gt;</code> の形で書きます。<code>T</code> のところには、<code>return</code> する値の型を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 priceOf を作る。文字列 code を受け取り、数値で解決する Promise を返す
+async function priceOf(code: string): Promise&lt;number&gt; {
+  // 商品 product を作り、fetchProduct に code を渡して呼んだ結果を待って入れる
+  const product = await fetchProduct(code);
+  // product の price を返す
+  return product.price;
+}
+// 結果: priceOf("A1") は 120 で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>async</span> function priceOf(<span class="seg"><i>2</i>code: string</span>): <span class="seg"><i>3</i>Promise&lt;number&gt;</span> {</pre>
+        <ol>
+          <li><span><code>function</code> の前に付けると、async 関数になります。アロー関数に付ける形は問5 で出ます。</span></li>
+          <li><span>引数は、ふつうの関数と同じ書き方です。</span></li>
+          <li><span>戻り値の型です。<code>return product.price;</code> は数値なので、「数値で解決する Promise」の <code>Promise&lt;number&gt;</code> になります。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>中で return する値</th><th>戻り値の型</th></tr></thead>
+          <tbody>
+            <tr><td>数値（<code>product.price</code>）</td><td><code>Promise&lt;number&gt;</code></td></tr>
+            <tr><td>文字列（<code>product.name</code>）</td><td><code>Promise&lt;string&gt;</code></td></tr>
+            <tr><td><code>true</code> か <code>false</code></td><td><code>Promise&lt;boolean&gt;</code></td></tr>
+            <tr><td>文字列の配列</td><td><code>Promise&lt;string[]&gt;</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>中身の型だけを書く</h5>
+          <pre><code class="language-typescript">async function priceOf(code: string): number {</code></pre>
+          <div class="verdict ng">✕ 「async 関数の戻り値の型は Promise&lt;T&gt; でなければならない」という型の確認のエラーになります</div>
+        </div>
+        <div>
+          <h5>Promise で包んで書く</h5>
+          <pre><code class="language-typescript">async function priceOf(code: string): Promise&lt;number&gt; {</code></pre>
+          <div class="verdict ok">○ 数値で解決する Promise を返す関数です</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>呼んだ側が受け取るのは Promise です。数値はまだ取り出せていません。<code>priceOf("A1") + 10</code> と書くと、Promise に数を足そうとして、型の確認でエラーになります。呼んだ側も、<code>await</code> か <code>.then()</code> で中身を取り出します。</p>
+      <p class="memo"><b>決まり</b>中で <code>await</code> を 1 つも使わない async 関数は、ESLint が止めます（<code>require-await</code>）。<code>await</code> を使わないなら、<code>async</code> は付けません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/async">サバイバルTypeScript の教材（async）</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">await</code><h4>Promise の結果を待って受け取る</h4></div>
+      <p>Promise の前に <code>await</code> を付けると、その Promise が解決するまで、関数の続きを止めて待ちます。解決したら、その値が <code>await …</code> の場所の値になります。関数の中で <code>await</code> を書けるのは、async 関数の中だけです。</p>
+      <figure class="anat">
+        <pre>const <span class="seg"><i>1</i>product</span> = <span class="seg"><i>2</i>await</span> <span class="seg"><i>3</i>fetchProduct(code)</span>;</pre>
+        <ol>
+          <li><span>解決した値が入ります。型は <code>Product</code> です。</span></li>
+          <li><span>右の Promise が解決するまで、ここで待ちます。</span></li>
+          <li><span>Promise を返す関数を呼びます。型は <code>Promise&lt;Product&gt;</code> です。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>fetchProduct("A1")</code></dt><dd class="r">型は <code>Promise&lt;Product&gt;</code></dd><dd class="c">まだ中身を取り出していない</dd></div>
+        <div><dt><code>await fetchProduct("A1")</code></dt><dd class="r">型は <code>Product</code></dd><dd class="c">中身の商品</dd></div>
+      </dl>
+      <p>08章 q01 問5 では、続きの処理を <code>.then()</code> に渡す関数の中に書きました。<code>await</code> を使うと、同じことを上から順に書けます。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>.then()</code> で書く（08章 q01）</h5>
+          <pre><code class="language-typescript">function priceOf(code: string): Promise&lt;number&gt; {
+  return fetchProduct(code).then((product) =&gt; product.price);
+}</code></pre>
+          <div class="verdict ok">○ 続きは、then に渡す関数の中に書きます</div>
+        </div>
+        <div>
+          <h5><code>await</code> で書く</h5>
+          <pre><code class="language-typescript">async function priceOf(code: string): Promise&lt;number&gt; {
+  const product = await fetchProduct(code);
+  return product.price;
+}</code></pre>
+          <div class="verdict ok">○ 同じ結果です。続きを次の行に書けます</div>
+        </div>
+      </div>
+      <p>どちらも <code>priceOf("A1")</code> は 120 で解決します。取り出す値が増えると、<code>.then()</code> はつなぐ関数が増えていきます。<code>await</code> なら、ふつうの関数と同じように 1 行ずつ書けます。この番号では、<code>await</code> で書きます。</p>
+      <p>次のサンプルで、<code>await</code> がどこで待つのかを確かめます。<code>logs</code> に、動いた順に文字列を付け足していきます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 記録 logs を作り、空の配列を入れる
+const logs: string[] = [];
+// 非同期の関数 checkStock を作る。文字列 code を受け取り、数値で解決する Promise を返す
+async function checkStock(code: string): Promise&lt;number&gt; {
+  // logs の最後に "取得を始める" を付け足す
+  logs.push("取得を始める");
+  // 商品 product を作り、fetchProduct に code を渡して呼んだ結果を待って入れる
+  const product = await fetchProduct(code);
+  // logs の最後に "取得が終わる" を付け足す
+  logs.push("取得が終わる");
+  // product の stock を返す
+  return product.stock;
+}
+// stockPromise を作り、checkStock に "A1" を渡して呼んだ結果を入れる
+const stockPromise = checkStock("A1");
+// logs の最後に "呼んだ側は先へ進む" を付け足す
+logs.push("呼んだ側は先へ進む");
+// 結果: この時点の logs は ["取得を始める", "呼んだ側は先へ進む"]。stockPromise は 30 で解決し、そのとき logs の最後に "取得が終わる" が増える</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>順番</th><th>動く場所</th><th>すること</th><th>logs</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="j">呼んだ側</td><td class="j">checkStock("A1") を呼ぶ</td><td>[]</td></tr>
+            <tr><td>2</td><td class="j">checkStock の中</td><td class="j">"取得を始める" を付け足す</td><td>["取得を始める"]</td></tr>
+            <tr><td>3</td><td class="j">checkStock の中</td><td class="j">await で止まる。呼んだ側に Promise を返す</td><td>["取得を始める"]</td></tr>
+            <tr><td>4</td><td class="j">呼んだ側</td><td class="j">stockPromise に Promise が入る。"呼んだ側は先へ進む" を付け足す</td><td>["取得を始める", "呼んだ側は先へ進む"]</td></tr>
+            <tr><td>5</td><td class="j">checkStock の中</td><td class="j">fetchProduct の Promise が解決し、product にノートの商品が入る。止まった所から続きが動く</td><td>（変わらない）</td></tr>
+            <tr><td>6</td><td class="j">checkStock の中</td><td class="j">"取得が終わる" を付け足す</td><td>["取得を始める", "呼んだ側は先へ進む", "取得が終わる"]</td></tr>
+            <tr><td>7</td><td class="j">checkStock の中</td><td class="j">30 を返す。stockPromise が 30 で解決する</td><td>（変わらない）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>順番 3 で止まるのは、<code>checkStock</code> の中だけです。止まっている間も、呼んだ側は先へ進みます。<code>await</code> の後ろの行は、Promise が解決し、いま動いている処理がひと区切りついてから動きます。そのため、<code>"呼んだ側は先へ進む"</code> が <code>"取得が終わる"</code> より先に入ります。</p>
+      <p>値を受け取らずに、終わるのを待つだけのときもあります。そのときは、<code>await</code> の行の結果を変数に入れません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 delayedNotice を作る。文字列 message を受け取り、文字列で解決する Promise を返す
+async function delayedNotice(message: string): Promise&lt;string&gt; {
+  // wait に 500 を渡して呼んだ結果を待つ
+  await wait(500);
+  // message を埋め込んだ「お知らせ: ◯」の文字列を返す
+  return `お知らせ: ${message}`;
+}
+// 結果: delayedNotice("本日発送") は、500 ミリ秒たってから "お知らせ: 本日発送" で解決する</code></pre>
+      </div>
+      <p><code>await</code> した Promise が失敗すると、関数はその行で止まり、続きの行は動きません。関数が返した Promise も、同じ Error で失敗します。</p>
+      <dl class="eg">
+        <div><dt><code>priceOf("A1")</code></dt><dd class="r"><code>120</code> で解決する</dd><dd class="c"></dd></div>
+        <div><dt><code>priceOf("Z9")</code></dt><dd class="r">失敗する</dd><dd class="c"><code>"商品 Z9 はありません"</code> の Error。<code>return product.price;</code> は動かない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>async</code> を付けていない関数の中で <code>await</code> を書くと、「await を使えるのは async 関数の中（とファイルのいちばん外側）だけ」という型の確認のエラーになります。<code>await</code> を書いたら、その関数に <code>async</code> を付けます。</p>
+      <p class="memo"><b>よくある疑問</b>この失敗を受け止めて、代わりの値を返す書き方は、問13 で出ます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/await">サバイバルTypeScript の教材（await）</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getAge を作る。数値 id を受け取り、数値で解決する Promise を返す
+export function getAge() {
+  // ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  // user の age を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>サンプルの <code>priceOf</code> と同じ形です。<code>function</code> の前に <code>async</code> を足し、戻り値の型は <code>Promise&lt;number&gt;</code> にします。いない <code>id</code> のときの失敗は、何も書かなくても <code>getAge</code> の失敗になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c08-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">取得して、名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getName() {}</code></pre>
+      <p><code>id</code> のユーザーを <code>fetchUser</code> で取得し、名前を返します。戻り値は、名前の文字列で解決する Promise です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>getName(2)</code></dt><dd class="r"><code>"佐藤"</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getName を作る。数値 id を受け取り、文字列で解決する Promise を返す
+export function getName() {
+  // ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  // user の name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、返すプロパティが <code>name</code> になります。文字列を返すので、戻り値の型は <code>Promise&lt;string&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c08-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">取得して、20歳以上なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isAdult() {}</code></pre>
+      <p><code>id</code> のユーザーを取得し、年齢が 20 歳以上なら <code>true</code>、そうでなければ <code>false</code> を返します。戻り値は、<code>true</code> か <code>false</code> で解決する Promise です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isAdult(4)</code></dt><dd class="r"><code>true</code> で解決する</dd><dd class="c">田中さんは 20 歳。ちょうど 20 歳も含む</dd></div>
+          <div><dt><code>isAdult(2)</code></dt><dd class="r"><code>false</code> で解決する</dd><dd class="c">佐藤さんは 19 歳</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;boolean&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 isAdult を作る。数値 id を受け取り、true か false で解決する Promise を返す
+export function isAdult() {
+  // ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  // user の age が 20 以上かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。最後の行は <code>&gt;=</code> で比べた結果をそのまま返すので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c08-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">取得して、あいさつの文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function greetUser() {}</code></pre>
+      <p><code>id</code> のユーザーを取得し、<code>"こんにちは、山田さん"</code> の形のあいさつを返します。名前の部分が、取得したユーザーの名前になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>greetUser(3)</code></dt><dd class="r"><code>"こんにちは、鈴木さん"</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 greetUser を作る。数値 id を受け取り、文字列で解決する Promise を返す
+export function greetUser() {
+  // ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  // user の name を埋め込んだ「こんにちは、◯さん」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。最後の行は、問1 のサンプルの <code>delayedNotice</code> と同じく、テンプレートリテラルに <code>${user.name}</code> を埋め込みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c08-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">async のアロー関数で、名前の文字数を返す</span>
+      <span class="q-new">新しく出てくる書き方：async のアロー関数 <code>async (id: number): Promise&lt;number&gt; =&gt; {</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// 問5 async のアロー関数で書く。export const nameLength = async (id: number): Promise&lt;number&gt; =&gt; … の形で、名前の文字数を返す
+//     例: nameLength(1) → 2 で解決する
+// ここに nameLength をアロー関数で書く</code></pre>
+      <p>ファイルには、関数がまだ書いてありません。<code>export const nameLength = async (id: number): Promise&lt;number&gt; =&gt;</code> の形で、アロー関数を自分で書きます。中では <code>id</code> のユーザーを取得し、名前の文字数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameLength(1)</code></dt><dd class="r"><code>2</code> で解決する</dd><dd class="c">「山田」は 2 文字</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">async (code: string): Promise&lt;number&gt; =&gt; {</code><h4>async のアロー関数</h4></div>
+      <p>アロー関数（01章 q01 問20）にも <code>async</code> を付けられます。付ける場所は、引数のかっこの前です。戻り値の型は、引数のかっこの後ろに <code>: Promise&lt;number&gt;</code> の形で書きます。中で <code>await</code> を使えるのは、<code>async</code> を付けた <code>function</code> と同じです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 stockOf をアロー関数で作る。文字列 code を受け取り、数値で解決する Promise を返す
+const stockOf = async (code: string): Promise&lt;number&gt; =&gt; {
+  // 商品 product を作り、fetchProduct に code を渡して呼んだ結果を待って入れる
+  const product = await fetchProduct(code);
+  // product の stock を返す
+  return product.stock;
+};
+// 結果: stockOf("C3") は 15 で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const stockOf = <span class="seg"><i>1</i>async</span> <span class="seg"><i>2</i>(code: string)</span><span class="seg"><i>3</i>: Promise&lt;number&gt;</span> <span class="seg c"><i>4</i>=&gt;</span> {</pre>
+        <ol>
+          <li><span><code>async</code> は、引数のかっこの前に書きます。</span></li>
+          <li><span>引数です。ふつうのアロー関数と同じ書き方です。</span></li>
+          <li><span>戻り値の型です。かっこの後ろ、<code>=&gt;</code> の前に書きます。</span></li>
+          <li><span>この後ろの <code>{ }</code> が関数の中身です。最後の <code>}</code> の後ろには <code>;</code> を付けます。</span></li>
+        </ol>
+      </figure>
+      <p class="memo"><b>よくある間違い</b><code>const stockOf = (code: string) =&gt; async { … }</code> のように、<code>=&gt;</code> の後ろに <code>async</code> を書くと、文法のエラーになります。<code>async</code> は、いつも引数のかっこの前です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 nameLength をアロー関数で作る。数値 id を受け取り、数値で解決する Promise を返す。ほかのファイルから使えるようにする
+//   ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+//   user の name の文字数を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 のサンプルの <code>stockOf</code> と同じ形で、<code>const</code> の前に <code>export</code> を付けます。「ここに nameLength をアロー関数で書く」の行の下に書きます。文字数は <code>.length</code> です（01章 q02 問13）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c08-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">取得して、years 年後の年齢を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function ageAfter() {}</code></pre>
+      <p>ユーザーの <code>id</code> と、年数 <code>years</code> を受け取ります。ユーザーを取得し、いまの年齢に <code>years</code> を足した数を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ageAfter(2, 5)</code></dt><dd class="r"><code>24</code> で解決する</dd><dd class="c">19 + 5</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 ageAfter を作る。数値 id と数値 years を受け取り、数値で解決する Promise を返す
+export function ageAfter() {
+  // ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  // user の age に years を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、引数が 2 つになります。<code>id</code> が先、<code>years</code> が後ろです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c08-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">2 人を順番に取得して、年齢の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumAges() {}</code></pre>
+      <p><code>a</code> と <code>b</code> の 2 つの <code>id</code> を受け取ります。<code>a</code> のユーザーを <code>await</code> で取得し、そのあとで <code>b</code> のユーザーを <code>await</code> で取得します。2 人の年齢の合計を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumAges(1, 2)</code></dt><dd class="r"><code>53</code> で解決する</dd><dd class="c">34 + 19</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 sumAges を作る。数値 a と数値 b を受け取り、数値で解決する Promise を返す
+export function sumAges() {
+  // 1 人目 first を作り、fetchUser に a を渡して呼んだ結果を待って入れる
+  // 2 人目 second を作り、fetchUser に b を渡して呼んだ結果を待って入れる
+  // first の age と second の age を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の <code>await</code> の行を 2 回書きます。1 行目の <code>await</code> が終わってから、2 行目の取得が始まります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c08-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">2 人の取得を一度に始め、年齢の合計を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>await Promise.all([…])</code> の結果を分割代入で受け取る</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumAgesAtOnce() {}</code></pre>
+      <p>問7 と同じく、2 人の年齢の合計を返します。今度は、<code>a</code> と <code>b</code> の取得を一度に始めます。<code>Promise.all</code> と <code>await</code> で、2 つとも解決するのを待ちます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumAgesAtOnce(3, 4)</code></dt><dd class="r"><code>72</code> で解決する</dd><dd class="c">52 + 20</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">const [first, second] = await Promise.all([…]);</code><h4>いくつかの取得を一度に始めて、まとめて待つ</h4></div>
+      <p><code>Promise.all</code> は、Promise の配列を受け取り、全部が解決したら「値の配列」で解決する Promise を返します（08章 q01 問13）。その Promise を <code>await</code> すると、値の配列が手に入ります。配列の分割代入（02章 q06 問2）で、1 つずつ名前を付けて取り出せます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 setPrice を作る。文字列 a と文字列 b を受け取り、数値で解決する Promise を返す
+async function setPrice(a: string, b: string): Promise&lt;number&gt; {
+  // a と b の商品の取得を一度に始め、両方の結果を待って first と second に取り出す
+  const [first, second] = await Promise.all([fetchProduct(a), fetchProduct(b)]);
+  // first の price と second の price を足した数を返す
+  return first.price + second.price;
+}
+// 結果: setPrice("A1", "C3") は 180 で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const <span class="seg"><i>1</i>[first, second]</span> = <span class="seg"><i>2</i>await</span> Promise.all(<span class="seg"><i>3</i>[fetchProduct(a), fetchProduct(b)]</span>);</pre>
+        <ol>
+          <li><span>解決した値の配列を、前から順に <code>first</code> と <code>second</code> に取り出します。どちらも型は <code>Product</code> です。</span></li>
+          <li><span>2 つの Promise が、両方とも解決するまで待ちます。</span></li>
+          <li><span>2 つの関数を、この行でどちらも呼びます。ここで 2 つの取得が始まります。</span></li>
+        </ol>
+      </figure>
+      <p>問7 のように 1 つずつ <code>await</code> する書き方と、どこが違うかを比べます。取得の始まりと終わりを記録する関数 <code>loggedFetch</code> を使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 記録 logs を作り、空の配列を入れる
+const logs: string[] = [];
+// 非同期の関数 loggedFetch を作る。文字列 code を受け取り、Product で解決する Promise を返す
+async function loggedFetch(code: string): Promise&lt;Product&gt; {
+  // logs の最後に、code を埋め込んだ「開始 ◯」を付け足す
+  logs.push(`開始 ${code}`);
+  // 商品 product を作り、fetchProduct に code を渡して呼んだ結果を待って入れる
+  const product = await fetchProduct(code);
+  // logs の最後に、code を埋め込んだ「終了 ◯」を付け足す
+  logs.push(`終了 ${code}`);
+  // product を返す
+  return product;
+}</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>1 つずつ await する（問7 の形）</h5>
+          <pre><code class="language-typescript">const first = await loggedFetch("A1");
+const second = await loggedFetch("C3");</code></pre>
+          <div class="verdict ok">○ logs は ["開始 A1", "終了 A1", "開始 C3", "終了 C3"]。A1 が終わってから C3 が始まります</div>
+        </div>
+        <div>
+          <h5>Promise.all で一度に始める（問8 の形）</h5>
+          <pre><code class="language-typescript">const [first, second] = await Promise.all([loggedFetch("A1"), loggedFetch("C3")]);</code></pre>
+          <div class="verdict ok">○ logs は ["開始 A1", "開始 C3", "終了 A1", "終了 C3"]。2 つとも始めてから待ちます</div>
+        </div>
+      </div>
+      <p>どちらも合計は 180 です。違うのは、2 つ目の取得がいつ始まるかです。2 つの取得がたがいの結果を使わないなら、一度に始めて同時に待てます。</p>
+      <p class="memo"><b>よくある間違い</b><code>await Promise.all([await fetchProduct(a), await fetchProduct(b)])</code> のように、配列の中にも <code>await</code> を書くと、1 つずつ待つ形に戻ります。ESLint も止めます（<code>await-thenable</code>）。配列の中には、Promise をそのまま並べます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 sumAgesAtOnce を作る。数値 a と数値 b を受け取り、数値で解決する Promise を返す
+export function sumAgesAtOnce() {
+  // a と b のユーザーの取得を一度に始め、両方の結果を待って first と second に取り出す
+  // first の age と second の age を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>setPrice</code> と同じ形です。<code>fetchProduct</code> が <code>fetchUser</code> に、<code>price</code> が <code>age</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c08-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">ids のユーザーを 1 人ずつ順番に取得し、名前の配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：くり返しの中の <code>await</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function namesInOrder() {}</code></pre>
+      <p><code>id</code> の配列 <code>ids</code> を受け取ります。<code>for...of</code> と <code>await</code> で、前から 1 人ずつ取得します。前の人の取得が終わってから、次の人の取得を始めます。取得した人の名前を、<code>ids</code> の順に並べた配列を返します。途中にいない <code>id</code> があれば、全体が失敗します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>namesInOrder([3, 1])</code></dt><dd class="r"><code>["鈴木", "山田"]</code> で解決する</dd><dd class="c">ids の順</dd></div>
+          <div><dt><code>namesInOrder([1, 9])</code></dt><dd class="r">失敗する</dd><dd class="c"><code>"ユーザー 9 はいません"</code> の Error</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">for (const code of codes) { await … }</code><h4>くり返しの中で await して、1 つずつ順番に取得する</h4></div>
+      <p><code>for...of</code>（01章 q01 問9）の中にも <code>await</code> を書けます。<code>await</code> で待っている間は、次のくり返しに進みません。そのため、前の取得が終わってから、次の取得が始まります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 namesOf を作る。読み取り専用の文字列の配列 codes を受け取り、文字列の配列で解決する Promise を返す
+async function namesOf(codes: readonly string[]): Promise&lt;string[]&gt; {
+  // 名前の配列 names を作り、空の配列を入れる
+  const names: string[] = [];
+  // codes から 1 つずつ code に取り出してくり返す
+  for (const code of codes) {
+    // 商品 product を作り、loggedFetch に code を渡して呼んだ結果を待って入れる
+    const product = await loggedFetch(code);
+    // names の最後に product の name を付け足す
+    names.push(product.name);
+  }
+  // names を返す
+  return names;
+}
+// 結果: namesOf(["C3", "A1"]) は ["消しゴム", "ノート"] で解決する</code></pre>
+      </div>
+      <p><code>loggedFetch</code> は問8 の関数です。記録を見ると、1 つずつ順番に取得したことが分かります。</p>
+      <dl class="eg">
+        <div><dt><code>namesOf(["C3", "A1"])</code> の logs</dt><dd class="r"><code>["開始 C3", "終了 C3", "開始 A1", "終了 A1"]</code></dd><dd class="c">C3 が終わってから A1 が始まる</dd></div>
+        <div><dt><code>namesOf(["A1", "Z9", "C3"])</code></dt><dd class="r">失敗する</dd><dd class="c"><code>"商品 Z9 はありません"</code> の Error。logs は <code>["開始 A1", "終了 A1", "開始 Z9"]</code> で、C3 は取得しない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>codes.forEach(async (code) =&gt; { … })</code> のように、<code>.forEach()</code> に async の関数を渡しても、<code>.forEach()</code> は待ちません。取得が終わる前に <code>return names;</code> まで進み、空の配列で解決します。ESLint も、Promise を返す関数を渡すところが違うとして止めます（<code>no-misused-promises</code>）。順番に待つときは <code>for...of</code> を使います。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 namesInOrder を作る。読み取り専用の数値の配列 ids を受け取り、文字列の配列で解決する Promise を返す
+export function namesInOrder() {
+  // 名前の配列 names を作り、空の配列を入れる
+  // ids から 1 つずつ id に取り出してくり返す
+  //   ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  //   names の最後に user の name を付け足す
+  // names を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 のサンプルの <code>namesOf</code> と同じ形です。引数の型は <code>readonly number[]</code>（02章 q04 問1）にします。いない <code>id</code> で失敗したときは、その <code>await</code> の行で関数が止まるので、何も書かなくても全体が失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c08-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">ids のユーザーの取得を map で一度に始め、名前の配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>await Promise.all(ids.map(…))</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function namesAtOnce() {}</code></pre>
+      <p>問9 と同じく、<code>ids</code> の順に名前を並べた配列を返します。今度は、<code>.map()</code> で全員の取得を一度に始めます。<code>Promise.all</code> で、全員が解決するのを待ちます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>namesAtOnce([2, 4])</code></dt><dd class="r"><code>["佐藤", "田中"]</code> で解決する</dd><dd class="c">ids の順</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">await Promise.all(codes.map((code) =&gt; loggedFetch(code)))</code><h4>map で Promise の配列を作り、まとめて待つ</h4></div>
+      <p>配列の要素がいくつあるか分からないときは、問8 のように Promise を 1 つずつ並べて書けません。<code>.map()</code>（02章 q04 問5）で、それぞれの要素を「取得の Promise」に変えた配列を作ります。<code>.map()</code> が関数を呼んだ時点で、全部の取得が始まります。その配列を <code>Promise.all</code> に渡して、<code>await</code> で待ちます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 stockList を作る。読み取り専用の文字列の配列 codes を受け取り、数値の配列で解決する Promise を返す
+async function stockList(codes: readonly string[]): Promise&lt;number[]&gt; {
+  // codes の要素を 1 つずつ code として、loggedFetch に code を渡して呼んだ Promise に変えた配列を作り、すべての結果を待って products に入れる
+  const products = await Promise.all(codes.map((code) =&gt; loggedFetch(code)));
+  // products の要素を 1 つずつ p として、p の stock に変えた新しい配列を返す
+  return products.map((p) =&gt; p.stock);
+}
+// 結果: stockList(["C3", "A1"]) は [15, 30] で解決する</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>codes.map((code) =&gt; loggedFetch(code))</code></dt><dd class="r">型は <code>Promise&lt;Product&gt;[]</code></dd><dd class="c">Promise の配列</dd></div>
+        <div><dt><code>await Promise.all(…)</code></dt><dd class="r">型は <code>Product[]</code></dd><dd class="c">商品の配列。並びは codes の順</dd></div>
+        <div><dt><code>stockList(["C3", "A1"])</code> の logs</dt><dd class="r"><code>["開始 C3", "開始 A1", "終了 C3", "終了 A1"]</code></dd><dd class="c">2 つとも始めてから待つ</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>終わる順番が前後しても、<code>Promise.all</code> の結果は、渡した配列と同じ順に並びます。1 つでも失敗すると、<code>Promise.all</code> 全体が失敗します（08章 q01 問13）。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 namesAtOnce を作る。読み取り専用の数値の配列 ids を受け取り、文字列の配列で解決する Promise を返す
+export function namesAtOnce() {
+  // ids の要素を 1 つずつ id として、fetchUser に id を渡して呼んだ Promise に変えた配列を作り、すべての結果を待って users に入れる
+  // users の要素を 1 つずつ u として、u の name に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のサンプルの <code>stockList</code> と同じ形です。<code>loggedFetch</code> が <code>fetchUser</code> に、<code>stock</code> が <code>name</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c08-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">ids のユーザーを同時に取得し、いちばん年上の人の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function oldestName() {}</code></pre>
+      <p><code>ids</code> のユーザーの取得を一度に始め、全員を取得します。その中で、いちばん年上の人の名前を返します。<code>ids</code> が空の配列なら、<code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>oldestName([1, 3, 4])</code></dt><dd class="r"><code>"鈴木"</code> で解決する</dd><dd class="c">34 歳・52 歳・20 歳のうち、52 歳</dd></div>
+          <div><dt><code>oldestName([])</code></dt><dd class="r"><code>undefined</code> で解決する</dd><dd class="c">ids が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string | undefined&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 oldestName を作る。読み取り専用の数値の配列 ids を受け取り、文字列か undefined で解決する Promise を返す
+export function oldestName() {
+  // ids の要素を 1 つずつ id として、fetchUser に id を渡して呼んだ Promise に変えた配列を作り、すべての結果を待って users に入れる
+  // いちばん年上 oldest を入れ直せる変数として作り、undefined を入れる。型は User か undefined
+  // users から 1 つずつ user に取り出してくり返す
+  //   もし oldest が undefined と等しい、または user の age が oldest の age より大きいなら
+  //     oldest に user を入れ直す
+  // oldest の name（oldest が undefined なら undefined）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問10 と同じ形です。そこから先は、取得した配列を使うふつうの処理で、<code>await</code> は要りません。最後の行はオプショナルチェーン <code>?.</code>（03章 q03 問1）で書けます。<code>ids</code> が空なら <code>users</code> も空なので、<code>oldest</code> は <code>undefined</code> のまま残ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c08-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">ids のユーザーを同時に取得し、年齢の平均を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function averageAge() {}</code></pre>
+      <p><code>ids</code> のユーザーの取得を一度に始め、全員の年齢の平均を返します。<code>ids</code> が空の配列なら、<code>0</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>averageAge([1, 2])</code></dt><dd class="r"><code>26.5</code> で解決する</dd><dd class="c">(34 + 19) ÷ 2</dd></div>
+          <div><dt><code>averageAge([])</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">ids が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 averageAge を作る。読み取り専用の数値の配列 ids を受け取り、数値で解決する Promise を返す
+export function averageAge() {
+  // もし ids の要素の数が 0 と等しいなら
+  //   0 を返す
+  // ids の要素を 1 つずつ id として、fetchUser に id を渡して呼んだ Promise に変えた配列を作り、すべての結果を待って users に入れる
+  // users の age の合計を、users の要素の数で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>取得の行は問10 と同じ形です。合計は <code>.reduce()</code>（08章 q01 問14）か、<code>for...of</code> で足していきます。空の配列のまま割ると <code>0 / 0</code> で <code>NaN</code> になるので、先に <code>0</code> を返しておきます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c08-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">取得できれば名前、失敗したら "不明" を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>try</code> の中の <code>await</code>、<code>return await</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function safeName() {}</code></pre>
+      <p><code>id</code> のユーザーを取得し、名前を返します。いない <code>id</code> で取得に失敗したら、失敗にはせず、<code>"不明"</code> を返します。<code>try</code>・<code>catch</code> で書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>safeName(1)</code></dt><dd class="r"><code>"山田"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>safeName(9)</code></dt><dd class="r"><code>"不明"</code> で解決する</dd><dd class="c">取得は失敗するが、safeName は失敗しない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">try { await … } catch { … }</code><h4>失敗した Promise を try・catch で受け止める</h4></div>
+      <p><code>await</code> した Promise が失敗すると、その行で例外が投げられたのと同じになります（問1）。そのため、04章 q05 問5 の <code>try</code>・<code>catch</code> で受け止められます。<code>try</code> の中の <code>await</code> で失敗すると、<code>catch</code> の中に飛びます。08章 q01 問10 の <code>.catch()</code> と同じ働きを、上から順に書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 productLabel を作る。文字列 code を受け取り、文字列で解決する Promise を返す
+async function productLabel(code: string): Promise&lt;string&gt; {
+  // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+  try {
+    // 商品 product を作り、fetchProduct に code を渡して呼んだ結果を待って入れる
+    const product = await fetchProduct(code);
+    // product の name と price を埋め込んだ「◯（◯円）」の文字列を返す
+    return `${product.name}（${product.price}円）`;
+  } catch {
+    // "取り扱いなし" を返す
+    return "取り扱いなし";
+  }
+}
+// 結果: productLabel("A1") は "ノート（120円）"、productLabel("Z9") は "取り扱いなし" で解決する</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>productLabel("A1")</code></dt><dd class="r"><code>"ノート（120円）"</code> で解決する</dd><dd class="c">取得できたので try の中で返す</dd></div>
+        <div><dt><code>productLabel("Z9")</code></dt><dd class="r"><code>"取り扱いなし"</code> で解決する</dd><dd class="c">await の行で失敗し、catch の中に飛ぶ</dd></div>
+      </dl>
+      <p><code>try</code> の中で、取得した Promise をそのまま返したいときもあります。そのときは、<code>return</code> の後ろにも <code>await</code> を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 findProduct を作る。文字列 code を受け取り、Product か null で解決する Promise を返す
+async function findProduct(code: string): Promise&lt;Product | null&gt; {
+  // 次の中を試す
+  try {
+    // fetchProduct に code を渡して呼んだ結果を待って返す
+    return await fetchProduct(code);
+  } catch {
+    // null を返す
+    return null;
+  }
+}
+// 結果: findProduct("C3") は消しゴムの Product、findProduct("Z9") は null で解決する</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5><code>await</code> を付けずに返す</h5>
+          <pre><code class="language-typescript">try {
+  return fetchProduct(code);
+} catch {
+  return null;
+}</code></pre>
+          <div class="verdict ng">✕ findProduct("Z9") は失敗します。catch に入りません</div>
+        </div>
+        <div>
+          <h5><code>return await</code> で返す</h5>
+          <pre><code class="language-typescript">try {
+  return await fetchProduct(code);
+} catch {
+  return null;
+}</code></pre>
+          <div class="verdict ok">○ findProduct("Z9") は null で解決します</div>
+        </div>
+      </div>
+      <p><code>await</code> がないと、<code>try</code> の中では Promise を返すだけで、失敗を待ちません。失敗するのは <code>try</code> を出たあとなので、<code>catch</code> では捕まえられません。ESLint も、<code>try</code> の中の <code>await</code> のない <code>return</code> を止めます（<code>return-await</code>）。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/statements/exception">サバイバルTypeScript の教材（exception）</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 safeName を作る。数値 id を受け取り、文字列で解決する Promise を返す
+export function safeName() {
+  // 次の中を試す
+  //   ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  //   user の name を返す
+  // 例外が投げられたら
+  //   "不明" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 の 1 つ目のサンプルの <code>productLabel</code> と同じ形です。「次の中を試す」が <code>try {</code>、「例外が投げられたら」が <code>} catch {</code> です。失敗の中身は使わないので、<code>catch</code> の後ろに変数は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c08-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">取得できれば true、失敗したら false を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function userExists() {}</code></pre>
+      <p><code>id</code> のユーザーが取得できれば <code>true</code>、取得に失敗したら <code>false</code> を返します。取得したユーザーの中身は使いません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>userExists(1)</code></dt><dd class="r"><code>true</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>userExists(9)</code></dt><dd class="r"><code>false</code> で解決する</dd><dd class="c">いない id</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;boolean&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 userExists を作る。数値 id を受け取り、true か false で解決する Promise を返す
+export function userExists() {
+  // 次の中を試す
+  //   fetchUser に id を渡して呼んだ結果を待つ
+  //   true を返す
+  // 例外が投げられたら
+  //   false を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 と同じ <code>try</code>・<code>catch</code> の形です。「結果を待つ」は、問1 のサンプルの <code>delayedNotice</code> の <code>await wait(500);</code> と同じく、結果を変数に入れずに <code>await</code> だけを書きます。失敗したときは、その行で <code>catch</code> に飛ぶので、<code>return true;</code> は動きません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c08-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">ids のユーザーを順番に取得し、取得できた人数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countFound() {}</code></pre>
+      <p><code>ids</code> のユーザーを、前から 1 人ずつ順番に取得します。取得できた人数を返します。途中で取得に失敗しても、止めずに最後まで続けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countFound([1, 9, 3, 8])</code></dt><dd class="r"><code>2</code> で解決する</dd><dd class="c">9 と 8 はいない。1 と 3 の 2 人</dd></div>
+          <div><dt><code>countFound([])</code></dt><dd class="r"><code>0</code> で解決する</dd><dd class="c">ids が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 countFound を作る。読み取り専用の数値の配列 ids を受け取り、数値で解決する Promise を返す
+export function countFound() {
+  // 人数 count を入れ直せる変数として作り、0 を入れる
+  // ids から 1 つずつ id に取り出してくり返す
+  //   次の中を試す
+  //     fetchUser に id を渡して呼んだ結果を待つ
+  //     count に 1 を足す
+  //   例外が投げられたら
+  //     何もしない（いない id は数えない）
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 の <code>for...of</code> の中に、問14 の <code>try</code>・<code>catch</code> を入れます。<code>try</code> と <code>catch</code> がくり返しの中にあるので、失敗しても次の <code>id</code> に進みます。<code>catch</code> の中を空の <code>{}</code> にすると、ESLint が止めます（<code>no-empty</code>）。「いない id は数えない」のようなコメントを 1 行書いておくと通ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c08-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">最初に見つかった 20 歳以上の人の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstAdult() {}</code></pre>
+      <p><code>ids</code> のユーザーを、前から 1 人ずつ順番に取得します。最初に見つかった 20 歳以上の人の名前を返します。取得に失敗した <code>id</code> は飛ばします。最後まで見つからなければ、<code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstAdult([2, 9, 4, 1])</code></dt><dd class="r"><code>"田中"</code> で解決する</dd><dd class="c">2 は 19 歳、9 はいない、4 は 20 歳</dd></div>
+          <div><dt><code>firstAdult([2])</code></dt><dd class="r"><code>undefined</code> で解決する</dd><dd class="c">20 歳以上がいない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string | undefined&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 firstAdult を作る。読み取り専用の数値の配列 ids を受け取り、文字列か undefined で解決する Promise を返す
+export function firstAdult() {
+  // ids から 1 つずつ id に取り出してくり返す
+  //   次の中を試す
+  //     ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  //     もし user の age が 20 以上なら
+  //       user の name を返す
+  //   例外が投げられたら
+  //     何もしない（いない id は飛ばす）
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問15 と同じく、<code>for...of</code> の中に <code>try</code>・<code>catch</code> を入れます。見つかったら、<code>try</code> の中でそのまま <code>return</code> します。<code>return</code> すると、くり返しの途中でも関数が終わります。最後の <code>return undefined;</code> は、くり返しの外に書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c08-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">ms ミリ秒待ってから、value を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ms ミリ秒待つ
+export function wait(ms: number): Promise&lt;void&gt; {
+  return new Promise((resolve) =&gt; {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function waitAndReturn() {}</code></pre>
+      <p>問17 から先のファイルには、<code>fetchUser</code> がありません。問17 のファイルには、08章 q01 問3 と同じ <code>wait</code> があります。<code>waitAndReturn</code> は、ミリ秒の数 <code>ms</code> と文字列 <code>value</code> を受け取ります。<code>wait(ms)</code> を <code>await</code> で待ってから、<code>value</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>waitAndReturn(100, "a")</code></dt><dd class="r"><code>"a"</code> で解決する</dd><dd class="c">100 ミリ秒たってから</dd></div>
+        </dl>
+        <p class="memo"><b>時間</b>テストは時間を進める仕組みを使い、99 ミリ秒の時点ではまだ解決していないことと、100 ミリ秒で <code>"a"</code> になることを確かめます。</p>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>string</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 waitAndReturn を作る。数値 ms と文字列 value を受け取り、文字列で解決する Promise を返す
+export function waitAndReturn() {
+  // wait に ms を渡して呼んだ結果を待つ
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>delayedNotice</code> と同じ形です。<code>wait</code> は <code>Promise&lt;void&gt;</code> を返し、中身の値がないので、結果は変数に入れません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c08-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">tasks を前から 1 つずつ呼び、結果の配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：関数の配列の型 <code>readonly (() =&gt; Promise&lt;string&gt;)[]</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function runInOrder() {}</code></pre>
+      <p><code>tasks</code> は、関数の配列です。それぞれの関数は、何も受け取らず、呼ぶと文字列で解決する Promise を返します。<code>tasks</code> を前から 1 つずつ呼び、前の task が終わってから次の task を呼びます。結果の文字列を、順に並べた配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストの task は、呼ばれると記録に「開始 ◯」を足し、少し待ってから「終了 ◯」を足して、◯ の文字列で解決します。</p>
+        <dl class="eg">
+          <div><dt><code>runInOrder([a を返す task, b を返す task])</code></dt><dd class="r"><code>["a", "b"]</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>そのときの記録</dt><dd class="r"><code>["開始 a", "終了 a", "開始 b", "終了 b"]</code></dd><dd class="c">a が終わってから b を呼ぶ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">readonly (() =&gt; Promise&lt;boolean&gt;)[]</code><h4>関数の配列の型</h4></div>
+      <p>関数の型（05章 q07 問1）を、かっこ <code>( )</code> で囲んでから <code>[]</code> を付けると、「その形の関数の配列」の型になります。読み取り専用にするときは、02章 q04 問1 と同じく、前に <code>readonly</code> を付けます。何も受け取らない関数の型は、引数のかっこを空にして <code>() =&gt; …</code> と書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 countReady を作る。読み取り専用の「何も受け取らず、true か false で解決する Promise を返す関数」の配列 checks を受け取り、数値で解決する Promise を返す
+async function countReady(checks: readonly (() =&gt; Promise&lt;boolean&gt;)[]): Promise&lt;number&gt; {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  let count = 0;
+  // checks から 1 つずつ check に取り出してくり返す
+  for (const check of checks) {
+    // もし check を呼んだ結果を待ったものが true なら
+    if (await check()) {
+      // count に 1 を足す
+      count += 1;
+    }
+  }
+  // count を返す
+  return count;
+}
+// 確認の一覧 checks を作り、true で解決する関数、false で解決する関数、true で解決する関数を入れる
+const checks = [
+  () =&gt; Promise.resolve(true),
+  () =&gt; Promise.resolve(false),
+  () =&gt; Promise.resolve(true),
+];
+// 結果: countReady(checks) は 2 で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>checks: <span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>(() =&gt; Promise&lt;boolean&gt;)</span><span class="seg c"><i>3</i>[]</span></pre>
+        <ol>
+          <li><span>読み取り専用の配列にします。</span></li>
+          <li><span>要素の型です。「何も受け取らず、<code>true</code> か <code>false</code> で解決する Promise を返す関数」です。かっこで囲んで、1 つの型にまとめます。</span></li>
+          <li><span>その型の要素が並んだ配列です。</span></li>
+        </ol>
+      </figure>
+      <p>配列から取り出した <code>check</code> は関数なので、<code>check()</code> と呼びます。呼ぶと Promise が返るので、<code>await check()</code> で結果を待ちます。</p>
+      <div class="cmp">
+        <div>
+          <h5>かっこで囲まない</h5>
+          <pre><code class="language-typescript">checks: () =&gt; Promise&lt;boolean&gt;[]</code></pre>
+          <div class="verdict ng">✕ 「Promise の配列を返す関数」1 つの型になります。for...of で回せず、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>かっこで囲む</h5>
+          <pre><code class="language-typescript">checks: readonly (() =&gt; Promise&lt;boolean&gt;)[]</code></pre>
+          <div class="verdict ok">○ 「Promise を返す関数」の配列です</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>かっこで囲まずに <code>readonly () =&gt; Promise&lt;boolean&gt;[]</code> と書くと、<code>readonly</code> は関数の型に付けられないので、文法のエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 runInOrder を作る。読み取り専用の「何も受け取らず、文字列で解決する Promise を返す関数」の配列 tasks を受け取り、文字列の配列で解決する Promise を返す
+export function runInOrder() {
+  // 結果の配列 results を作り、空の配列を入れる
+  // tasks から 1 つずつ task に取り出してくり返す
+  //   results の最後に、task を呼んだ結果を待ったものを付け足す
+  // results を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は、問18 のサンプルの <code>checks</code> の <code>boolean</code> を <code>string</code> に変えたものです。中身は問9 と同じ形で、<code>for...of</code> の中で <code>await task()</code> を待ちます。<code>results.push(await task())</code> のように、待った結果をそのまま <code>.push()</code> に渡せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c08-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">tasks をすべて一度に呼び、結果の配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function runAtOnce() {}</code></pre>
+      <p>問18 と同じ <code>tasks</code> を受け取ります。今度は、すべての task を一度に呼びます。<code>Promise.all</code> で全部を待って、結果の配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>runAtOnce([a を返す task, b を返す task])</code></dt><dd class="r"><code>["a", "b"]</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>そのときの記録の最初の 2 つ</dt><dd class="r"><code>["開始 a", "開始 b"]</code></dd><dd class="c">a が終わる前に b も呼ぶ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 runAtOnce を作る。読み取り専用の「何も受け取らず、文字列で解決する Promise を返す関数」の配列 tasks を受け取り、文字列の配列で解決する Promise を返す
+export function runAtOnce() {
+  // tasks の要素を 1 つずつ task として、task を呼んだ Promise に変えた配列を作り、すべての結果を待って返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 と同じく、<code>.map()</code> で Promise の配列を作って <code>Promise.all</code> に渡します。<code>.map()</code> に渡す関数は、<code>task</code> を受け取って <code>task()</code> を返します。「待って返す」は、問13 のサンプルの <code>findProduct</code> と同じく <code>return await</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c08-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">失敗したところで止めて、それまでの結果を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function untilFailure() {}</code></pre>
+      <p>問18 と同じ <code>tasks</code> を、前から順番に呼びます。どれかの task が失敗したら、そこで止めます。それまでに成功した結果の配列を返します。失敗しても、<code>untilFailure</code> 自体は失敗にしません。失敗した task より後ろの task は呼びません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>untilFailure([a, 失敗する task, c])</code></dt><dd class="r"><code>["a"]</code> で解決する</dd><dd class="c">記録に「開始 c」がない。c は呼ばない</dd></div>
+          <div><dt><code>untilFailure([x, y])</code></dt><dd class="r"><code>["x", "y"]</code> で解決する</dd><dd class="c">失敗がなければ全部</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 untilFailure を作る。読み取り専用の「何も受け取らず、文字列で解決する Promise を返す関数」の配列 tasks を受け取り、文字列の配列で解決する Promise を返す
+export function untilFailure() {
+  // 結果の配列 results を作り、空の配列を入れる
+  // tasks から 1 つずつ task に取り出してくり返す
+  //   次の中を試す
+  //     results の最後に、task を呼んだ結果を待ったものを付け足す
+  //   例外が投げられたら
+  //     くり返しを抜ける
+  // results を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問18 の <code>for...of</code> の中に、問15 と同じく <code>try</code>・<code>catch</code> を入れます。「くり返しを抜ける」は <code>break</code> です（04章 q04 問11）。抜けたあとは、くり返しの後ろの <code>return results;</code> に進みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c08-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">受け取った fetchUser で、1 人・順番に・一度に取得する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { id: number; name: string };
+export type FetchUser = (id: number) =&gt; Promise&lt;User&gt;;
+
+export function getUserName() {}
+
+export function getUsersInOrder() {}
+
+export function getUsersAtOnce() {}
+
+export function getNamesText() {}</code></pre>
+      <p>ユーザーを 1 人取得する非同期の関数 <code>fetchUser</code> を、引数で受け取ります。型は <code>FetchUser</code> で、<code>id</code> を受け取り <code>User</code> で解決する Promise を返す関数です。ドリルと違い、<code>User</code> に <code>age</code> はありません。4 つの関数を、<code>async</code> と <code>await</code> で書きます。</p>
+      <ol>
+        <li><code>getUserName(fetchUser, id)</code>：ユーザーを取得して、名前を返します。</li>
+        <li><code>getUsersInOrder(fetchUser, ids)</code>：<code>ids</code> のユーザーを、<code>for...of</code> と <code>await</code> で 1 人ずつ順番に取得します。前の人の取得が終わってから、次の人の取得を始めます。<code>ids</code> の順のユーザーの配列を返します。</li>
+        <li><code>getUsersAtOnce(fetchUser, ids)</code>：<code>ids</code> のユーザーの取得を一度に始め、<code>Promise.all</code> で全部を待ちます。<code>ids</code> の順のユーザーの配列を返します。</li>
+        <li><code>getNamesText(fetchUser, ids)</code>：<code>getUsersAtOnce</code> を使って取得し、名前を <code>"、"</code> でつないだ文字列を返します。<code>ids</code> が空なら <code>""</code> です。</li>
+      </ol>
+      <p>説明すること：<code>ids</code> が 10 件で、1 件の取得に 1 秒かかるとき、<code>getUsersInOrder</code> と <code>getUsersAtOnce</code> はそれぞれ何秒かかるか。順番に取得しなければならないのは、どんなときか。答えは、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストの <code>fetchUser</code> は、1 なら山田、2 なら佐藤、3 なら鈴木のユーザーで解決し、ほかの <code>id</code> では失敗します。取得の始まりに「開始 ◯」、終わりに「終了 ◯」を記録に足します。</p>
+        <dl class="eg">
+          <div><dt><code>getUserName(fetchUser, 2)</code></dt><dd class="r"><code>"佐藤"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>getUserName(fetchUser, 9)</code></dt><dd class="r">失敗する</dd><dd class="c"><code>"ユーザー 9 はいません"</code> の Error</dd></div>
+          <div><dt><code>getUsersInOrder(fetchUser, [3, 1])</code></dt><dd class="r"><code>[{ id: 3, name: "鈴木" }, { id: 1, name: "山田" }]</code> で解決する</dd><dd class="c">記録は <code>["開始 3", "終了 3", "開始 1", "終了 1"]</code></dd></div>
+          <div><dt><code>getUsersAtOnce(fetchUser, [3, 1, 2])</code></dt><dd class="r">名前が <code>["鈴木", "山田", "佐藤"]</code> の順のユーザーの配列で解決する</dd><dd class="c">記録の最初の 3 つは <code>["開始 3", "開始 1", "開始 2"]</code></dd></div>
+          <div><dt><code>getNamesText(fetchUser, [1, 2])</code></dt><dd class="r"><code>"山田、佐藤"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>getNamesText(fetchUser, [])</code></dt><dd class="r"><code>""</code> で解決する</dd><dd class="c">ids が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>getUserName</code> の引数が <code>FetchUser</code> と <code>number</code>、戻り値が <code>Promise&lt;string&gt;</code> であることを確かめます。<code>getUsersInOrder</code> と <code>getUsersAtOnce</code> の戻り値は <code>Promise&lt;User[]&gt;</code>、<code>getNamesText</code> の戻り値は <code>Promise&lt;string&gt;</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getUserName を作る。FetchUser の fetchUser と数値 id を受け取り、文字列で解決する Promise を返す
+export function getUserName() {
+  // ユーザー user を作り、fetchUser に id を渡して呼んだ結果を待って入れる
+  // user の name を返す
+}
+
+// 非同期の関数 getUsersInOrder を作る。FetchUser の fetchUser と、読み取り専用の数値の配列 ids を受け取り、User の配列で解決する Promise を返す
+export function getUsersInOrder() {
+  // ユーザーの配列 users を作り、空の配列を入れる
+  // ids から 1 つずつ id に取り出してくり返す
+  //   users の最後に、fetchUser に id を渡して呼んだ結果を待ったものを付け足す
+  // users を返す
+}
+
+// 非同期の関数 getUsersAtOnce を作る。FetchUser の fetchUser と、読み取り専用の数値の配列 ids を受け取り、User の配列で解決する Promise を返す
+export function getUsersAtOnce() {
+  // ids の要素を 1 つずつ id として、fetchUser に id を渡して呼んだ Promise に変えた配列を作り、すべての結果を待って返す
+}
+
+// 非同期の関数 getNamesText を作る。FetchUser の fetchUser と、読み取り専用の数値の配列 ids を受け取り、文字列で解決する Promise を返す
+export function getNamesText() {
+  // ユーザーの配列 users を作り、getUsersAtOnce に fetchUser と ids を渡して呼んだ結果を待って入れる
+  // users の要素を 1 つずつ u として u の name に変えた配列を、"、" でつないだ文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の <code>fetchUser</code> は、ドリルの <code>fetchUser</code> と同じように呼べます。型は <code>FetchUser</code> と書きます。<code>getUserName</code> は問2、<code>getUsersInOrder</code> は問18、<code>getUsersAtOnce</code> は問19 と同じ形です。<code>getNamesText</code> の 1 行目は、自分で書いた async 関数も <code>await</code> で待てることを使います。つなぐのは <code>.join()</code> です（02章 q04 問11）。空の配列の <code>.join("、")</code> は <code>""</code> になります。説明することは、問8 の 2 つの記録の並びを見ながら、1 件の取得に 1 秒かかるとして、それぞれ何秒目に最後の取得が終わるかを数えてから考えます。順番が要るときについては、2 つの取得の間にどんなつながりがあるかを考えます。</p></details>
+    </div>
+  </section>
+</section>

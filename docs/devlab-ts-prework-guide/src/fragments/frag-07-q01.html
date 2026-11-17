@@ -1,0 +1,807 @@
+<section class="sec" id="c07-q01">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q01 typeof 型演算子</h2>
+    <p>定数や関数から、<code>typeof</code> で型を作る問題を 20 問解きます。ファイルにある定数と関数は、書き換えません。問1〜13 は型を作る問題です。型を手で書き写さず、かならず <code>typeof</code> を使って値から作ります。こうしておくと、値を直したときに型も一緒に変わります。配列の要素の型は <code>(typeof 配列)[number]</code>、プロパティの型は <code>(typeof オブジェクト)["キー"]</code> で取り出します。問14〜20 は関数を書く問題です。引数と戻り値に型注釈を付け、その型注釈にも <code>typeof</code> を使います。テストは、作った型や関数の型が決められたとおりかを確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q01-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">型 DefaultUser を DEFAULT_USER から作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>type 名前 = typeof 定数</code>（値から型を作る）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const DEFAULT_USER = { name: "ゲスト", age: 0, admin: false };
+
+// ここに型 DefaultUser を書く</code></pre>
+      <p>定数 <code>DEFAULT_USER</code> から、型 <code>DefaultUser</code> を作ります。<code>{ name: string; … }</code> のように手で書き写さず、<code>typeof</code> を使います。テストがこの型を読むので、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>DefaultUser</code> の型</dt><dd class="r"><code>{ name: string; age: number; admin: boolean }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">type T = typeof 定数</code><h4>値から型を作る</h4></div>
+      <p>03章 q07 問10 では、型の位置の <code>typeof</code> を読むだけでした。この番号から、自分で書きます。<code>type 名前 =</code>（02章 q01 の応用）の右に <code>typeof 定数の名前</code> と書くと、その定数の型に名前を付けられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の初期値 DEFAULT_PRODUCT を作り、{ name: "ノート", price: 120, inStock: true } を入れる
+const DEFAULT_PRODUCT = { name: "ノート", price: 120, inStock: true };
+// Product という型を作る。DEFAULT_PRODUCT の型と同じ
+type Product = typeof DEFAULT_PRODUCT;
+// 商品 pen を作る。型は Product。{ name: "ペン", price: 150, inStock: false } を入れる
+const pen: Product = { name: "ペン", price: 150, inStock: false };
+// 結果: Product は { name: string; price: number; inStock: boolean }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>type Product =</span> <span class="seg"><i>2</i>typeof</span> <span class="seg"><i>3</i>DEFAULT_PRODUCT</span>;</pre>
+        <ol>
+          <li><span>作る型の名前です。</span></li>
+          <li><span>「後ろの値の型を取り出す」という印です。型を書く場所に書きます。</span></li>
+          <li><span>型を取り出したい定数の名前です。</span></li>
+        </ol>
+      </figure>
+      <p><code>as const</code> のないオブジェクトでは、プロパティの型は <code>string</code>・<code>number</code>・<code>boolean</code> のような種類の型になります。<code>const</code> の変数でも、プロパティは入れ直せるからです。01章 q03 問1 の <code>const</code> の文字列は、値そのものが型になりました。そこが違います。</p>
+      <dl class="eg">
+        <div><dt><code>typeof DEFAULT_PRODUCT</code></dt><dd class="r"><code>{ name: string; price: number; inStock: boolean }</code></dd><dd class="c">プロパティは種類の型</dd></div>
+        <div><dt><code>DEFAULT_PRODUCT</code> に <code>category: "文具"</code> を足したとき</dt><dd class="r"><code>{ name: string; price: number; inStock: boolean; category: string }</code></dd><dd class="c">型にも category が入る</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>型を手で書き写す</h5>
+          <pre><code class="language-typescript">// Product という型を作る。name は文字列、price は数値、inStock は true か false
+type Product = { name: string; price: number; inStock: boolean };</code></pre>
+          <div class="verdict ng">✕ この番号では使いません。値に category を足しても、型は古いまま残ります</div>
+        </div>
+        <div>
+          <h5><code>typeof</code> で作る</h5>
+          <pre><code class="language-typescript">// Product という型を作る。DEFAULT_PRODUCT の型と同じ
+type Product = typeof DEFAULT_PRODUCT;</code></pre>
+          <div class="verdict ok">○ 値を直すと、型も一緒に変わります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>const kind = typeof DEFAULT_PRODUCT;</code> のように値を書く場所で使うと、03章 q01 問3 の <code>typeof</code> になります。このとき <code>kind</code> は文字列の <code>"object"</code> です。型を取り出す <code>typeof</code> になるのは、<code>type</code> の <code>=</code> の右や、<code>:</code> の後ろに書いたときです。</p>
+      <p class="memo"><b>コツ</b>VS Code で <code>Product</code> にマウスを載せると、取り出した型が表示されます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/typeof-type-operator">サバイバルTypeScript「typeof型演算子」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// DefaultUser という型を作る。DEFAULT_USER の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>Product</code> の行と同じ形です。「ほかのファイルから使えるようにする」は、先頭に <code>export</code> を付けた <code>export type</code>（02章 q01 の応用）です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q01-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">型 Point を ORIGIN から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const ORIGIN = { x: 0, y: 0 };
+
+// ここに型 Point を書く</code></pre>
+      <p>原点を表す定数 <code>ORIGIN</code> から、点の型 <code>Point</code> を作ります。<code>typeof</code> を使い、ほかのファイルから使えるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Point</code> の型</dt><dd class="r"><code>{ x: number; y: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Point という型を作る。ORIGIN の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>x</code> と <code>y</code> の型は <code>number</code> になります。<code>ORIGIN</code> には <code>as const</code> がないので、<code>0</code> にはなりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q01-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">型 Settings を SETTINGS から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const SETTINGS = {
+  theme: "light",
+  fontSize: 14,
+  notifications: { email: true, push: false },
+};
+
+// ここに型 Settings を書く</code></pre>
+      <p>画面の設定を表す定数 <code>SETTINGS</code> から、型 <code>Settings</code> を作ります。<code>notifications</code> の中にもオブジェクトがあります。<code>typeof</code> は、中のオブジェクトの型もまとめて取り出します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Settings</code> の型</dt><dd class="r"><code>{ theme: string; fontSize: number; notifications: { email: boolean; push: boolean } }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Settings という型を作る。SETTINGS の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。中のオブジェクトのために、別の書き方は要りません。<code>theme</code> の型は <code>string</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q01-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">型 Notifications を SETTINGS の notifications から作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>(typeof オブジェクト)["キー"]</code>（プロパティの型を取り出す）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const SETTINGS = {
+  theme: "light",
+  fontSize: 14,
+  notifications: { email: true, push: false },
+};
+
+// ここに型 Notifications を書く</code></pre>
+      <p><code>SETTINGS</code> の <code>notifications</code> プロパティの型を、型 <code>Notifications</code> として作ります。ファイルの問題文にあるとおり、<code>(typeof SETTINGS)["notifications"]</code> の形を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Notifications</code> の型</dt><dd class="r"><code>{ email: boolean; push: boolean }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(typeof SHOP)["address"]</code><h4>プロパティの型を取り出す</h4></div>
+      <p>03章 q07 問10 では、配列の型の後ろに <code>[number]</code> を付けて、要素の型を取り出しました。オブジェクトの型の後ろに <code>["キーの名前"]</code> を付けると、そのプロパティの型を取り出せます。この書き方をインデックスアクセス型と呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 店舗 SHOP を作り、{ name: "本店", address: { city: "大阪", zip: "530-0001" } } を入れる
+const SHOP = { name: "本店", address: { city: "大阪", zip: "530-0001" } };
+// Address という型を作る。SHOP の address プロパティの型
+type Address = (typeof SHOP)["address"];
+// 配送先 delivery を作る。型は Address。{ city: "京都", zip: "600-8001" } を入れる
+const delivery: Address = { city: "京都", zip: "600-8001" };
+// 結果: Address は { city: string; zip: string }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Address = (<span class="seg"><i>1</i>typeof SHOP</span>)<span class="seg"><i>2</i>["address"]</span>;</pre>
+        <ol>
+          <li><span>先に、定数 <code>SHOP</code> の型 <code>{ name: string; address: { city: string; zip: string } }</code> を取り出します。</span></li>
+          <li><span>その型から、<code>address</code> プロパティの型を取り出します。キーの名前は <code>"</code> で囲みます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>(typeof SHOP)["name"]</code></dt><dd class="r"><code>string</code></dd><dd class="c"></dd></div>
+        <div><dt><code>(typeof SHOP)["address"]</code></dt><dd class="r"><code>{ city: string; zip: string }</code></dd><dd class="c">中のオブジェクトの型</dd></div>
+        <div><dt><code>(typeof SHOP)["address"]["city"]</code></dt><dd class="r"><code>string</code></dd><dd class="c">続けて書くと、もっと中まで取り出せる</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>あるキーを書く</h5>
+          <pre><code class="language-typescript">// Address という型を作る。SHOP の address プロパティの型
+type Address = (typeof SHOP)["address"];</code></pre>
+          <div class="verdict ok">○ address は SHOP にあるキーです</div>
+        </div>
+        <div>
+          <h5>ないキーを書く</h5>
+          <pre><code class="language-typescript">// Phone という型を作る。SHOP の phone プロパティの型
+type Phone = (typeof SHOP)["phone"];</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Property 'phone' does not exist on type '{ name: string; address: { city: string; zip: string; }; }'）</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>かっこを省いて <code>typeof SHOP["address"]</code> と書いても、同じ型になります。整形（Prettier）にかけると、<code>(typeof SHOP)["address"]</code> とかっこが付きます。型の位置では、<code>.address</code> のようにドットで取り出す書き方はできません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/type-reuse/indexed-access-types">サバイバルTypeScript「インデックスアクセス型」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Notifications という型を作る。SETTINGS の notifications プロパティの型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>Address</code> の行と同じ形です。<code>[ ]</code> の中には、キーの名前 <code>notifications</code> を <code>"</code> で囲んで書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q01-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">型 Color を COLORS の要素の型として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const COLORS = ["red", "green", "blue"] as const;
+
+// ここに型 Color を書く</code></pre>
+      <p>色の一覧 <code>COLORS</code> から、「要素のどれか」を表す型 <code>Color</code> を作ります。<code>COLORS</code> には <code>as const</code> が付いているので、<code>"red" | "green" | "blue"</code> になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Color</code> の型</dt><dd class="r"><code>"red" | "green" | "blue"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Color という型を作る。COLORS の要素のどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>03章 q07 問10 のサンプルの <code>Size</code> の行と同じ形で、<code>(typeof 配列)[number]</code> を使います。先頭に <code>export</code> を付けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q01-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">型 Level を LEVELS の要素の型として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const LEVELS = [1, 2, 3] as const;
+
+// ここに型 Level を書く</code></pre>
+      <p>レベルの一覧 <code>LEVELS</code> から、「要素のどれか」を表す型 <code>Level</code> を作ります。要素は数ですが、作り方は問5 と同じです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Level</code> の型</dt><dd class="r"><code>1 | 2 | 3</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Level という型を作る。LEVELS の要素のどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。<code>as const</code> が付いているので、要素の型は <code>1 | 2 | 3</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q01-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">型 RoleLabels を ROLE_LABELS から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const ROLE_LABELS = { admin: "管理者", member: "一般" } as const;
+
+// ここに型 RoleLabels を書く</code></pre>
+      <p>役割と表示名の対応 <code>ROLE_LABELS</code> から、型 <code>RoleLabels</code> を作ります。<code>as const</code> が付いているので、プロパティは読み取り専用になり、値もリテラル型（値そのものの型）になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>RoleLabels</code> の型</dt><dd class="r"><code>{ readonly admin: "管理者"; readonly member: "一般" }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// RoleLabels という型を作る。ROLE_LABELS の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>readonly</code> やリテラル型は、自分で書き足しません。<code>as const</code> の付いた値の型を、<code>typeof</code> がそのまま取り出します（03章 q07 問12 の <code>SHIPPING_FEES</code> と同じです）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q01-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">型 Endpoint を ENDPOINTS のすべての値のユニオン型として作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>(typeof オブジェクト)[keyof typeof オブジェクト]</code>（値のどれか、という型）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const ENDPOINTS = { users: "/api/users", rooms: "/api/rooms" } as const;
+
+// ここに型 Endpoint を書く</code></pre>
+      <p>API の URL の一覧 <code>ENDPOINTS</code> から、「値のどれか」を表す型 <code>Endpoint</code> を作ります。キーの名前（<code>"users"</code> など）の型は、03章 q07 問12 の <code>keyof typeof</code> で作れました。ここで作るのは、URL のどれかを表す型です。ファイルの問題文にあるとおり、<code>(typeof ENDPOINTS)[keyof typeof ENDPOINTS]</code> の形を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Endpoint</code> の型</dt><dd class="r"><code>"/api/users" | "/api/rooms"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">(typeof X)[keyof typeof X]</code><h4>オブジェクトの値のどれか、という型を作る</h4></div>
+      <p>問4 の <code>[ ]</code> の中には、ユニオン型も書けます。キーを <code>|</code> でつないで渡すと、それぞれのプロパティの型を <code>|</code> でつないだ型になります。キーのどれかを表す型は、<code>keyof typeof</code>（03章 q07 問12）で作れます。2 つを組み合わせると、「値のどれか」を表す型になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 定数 SHIPPING_FEES を作り、{ standard: 500, express: 1200 } を as const を付けて入れる
+const SHIPPING_FEES = { standard: 500, express: 1200 } as const;
+// Fee という型を作る。SHIPPING_FEES の値のどれか
+type Fee = (typeof SHIPPING_FEES)[keyof typeof SHIPPING_FEES];
+// 送料 fee を作る。型は Fee。1200 を入れる
+const fee: Fee = 1200;
+// 結果: Fee は 500 | 1200</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Fee = <span class="seg"><i>1</i>(typeof SHIPPING_FEES)</span><span class="seg"><i>2</i>[keyof typeof SHIPPING_FEES]</span>;</pre>
+        <ol>
+          <li><span>取り出す元の型 <code>{ readonly standard: 500; readonly express: 1200 }</code> です。</span></li>
+          <li><span>キーのどれか <code>"standard" | "express"</code> です。すべてのキーで、プロパティの型を取り出すことになります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>keyof typeof SHIPPING_FEES</code></dt><dd class="r"><code>"standard" | "express"</code></dd><dd class="c">キーのどれか</dd></div>
+        <div><dt><code>(typeof SHIPPING_FEES)["standard"]</code></dt><dd class="r"><code>500</code></dd><dd class="c">キー 1 つなら、そのプロパティの型</dd></div>
+        <div><dt><code>(typeof SHIPPING_FEES)["standard" | "express"]</code></dt><dd class="r"><code>500 | 1200</code></dd><dd class="c">キーを並べると、値の型も並ぶ</dd></div>
+        <div><dt><code>(typeof SHIPPING_FEES)[keyof typeof SHIPPING_FEES]</code></dt><dd class="r"><code>500 | 1200</code></dd><dd class="c">上と同じ型</dd></div>
+      </dl>
+      <p class="memo"><b>コツ</b><code>SHIPPING_FEES</code> に <code>pickup: 0</code> を足すと、<code>Fee</code> にも <code>0</code> が入ります。キーと値を書き並べなくても、一覧に合わせて型が変わります。</p>
+      <p class="memo"><b>よくある疑問</b><code>as const</code> がないと、値の型は <code>number</code> になります。そのときは <code>Fee</code> も <code>number</code> です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Endpoint という型を作る。ENDPOINTS の値のどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 のサンプルの <code>Fee</code> の行と同じ形です。定数の名前を、2 か所とも <code>ENDPOINTS</code> にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q01-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">型 Version を VERSION から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const VERSION = "1.2.3";
+
+// ここに型 Version を書く</code></pre>
+      <p>版の番号の定数 <code>VERSION</code> から、型 <code>Version</code> を作ります。<code>const</code> で作った文字列なので、型はリテラル型の <code>"1.2.3"</code> になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Version</code> の型</dt><dd class="r"><code>"1.2.3"</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Version という型を作る。VERSION の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>const</code> の文字列の型が値そのものになるのは、01章 q03 問1 で見たとおりです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q01-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">型 MaxSize を MAX_SIZE から作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const MAX_SIZE = 100;
+
+// ここに型 MaxSize を書く</code></pre>
+      <p>上限の定数 <code>MAX_SIZE</code> から、型 <code>MaxSize</code> を作ります。問9 と同じく、<code>const</code> で作った数なので、型は値そのものになります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>MaxSize</code> の型</dt><dd class="r"><code>100</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// MaxSize という型を作る。MAX_SIZE の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形です。型が <code>100</code> になるのは、01章 q03 問2 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q01-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">型 Tag を TAGS の要素の型として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const TAGS = ["new", "sale"];
+
+// ここに型 Tag を書く</code></pre>
+      <p>タグの一覧 <code>TAGS</code> から、要素の型 <code>Tag</code> を作ります。<code>TAGS</code> には <code>as const</code> がありません。そのため、問5 と同じ書き方でも、型は <code>string</code> になります。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Tag</code> の型</dt><dd class="r"><code>string</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Tag という型を作る。TAGS の要素のどれか。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。<code>TAGS</code> の型は <code>string[]</code> なので、要素の型は <code>string</code> です（03章 q07 問10 の表の、<code>as const</code> のない <code>sizes</code> と同じです）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q01-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">型 Item を関数 makeItem の戻り値の型として作る</span>
+      <span class="q-new">新しく出てくる書き方：<code>ReturnType&lt;typeof 関数&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makeItem(name: string, price: number) {
+  return { name, price, createdAt: 0 };
+}
+
+// ここに型 Item を書く</code></pre>
+      <p>関数 <code>makeItem</code> が返すオブジェクトの型を、型 <code>Item</code> として作ります。<code>makeItem</code> には戻り値の型注釈がないので、戻り値の型は推論（01章 q03）で決まっています。ファイルの問題文にあるとおり、<code>ReturnType&lt;typeof makeItem&gt;</code> の形を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Item</code> の型</dt><dd class="r"><code>{ name: string; price: number; createdAt: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">ReturnType&lt;typeof f&gt;</code><h4>関数の戻り値の型を取り出す</h4></div>
+      <p>関数の名前に <code>typeof</code> を付けると、関数の型（05章 q07 問1 の <code>(a: A) =&gt; R</code> の形）を取り出せます。<code>ReturnType</code> は、TypeScript にはじめから用意されている型です。関数の型から、戻り値の型だけを取り出します。取り出す元の関数の型は、<code>&lt; &gt;</code> の中に書きます。<code>&lt; &gt;</code> で型を渡す書き方は、ここでは、まねて書ければ十分。くわしくは 07章 q06。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 makeOrder を作る。文字列の productName と数値の quantity を受け取り、注文のオブジェクトを返す
+function makeOrder(productName: string, quantity: number) {
+  // productName と quantity と、status が "受付" のオブジェクトを返す
+  return { productName, quantity, status: "受付" };
+}
+// Order という型を作る。関数 makeOrder の戻り値の型
+type Order = ReturnType&lt;typeof makeOrder&gt;;
+// 結果: Order は { productName: string; quantity: number; status: string }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Order = <span class="seg"><i>1</i>ReturnType</span>&lt;<span class="seg"><i>2</i>typeof makeOrder</span>&gt;;</pre>
+        <ol>
+          <li><span>「関数の型から、戻り値の型を取り出す」型です。はじめから用意されているので、自分で作りません。</span></li>
+          <li><span>関数 <code>makeOrder</code> の型です。<code>&lt; &gt;</code> の中に書きます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>typeof makeOrder</code></dt><dd class="r"><code>(productName: string, quantity: number) =&gt; { productName: string; quantity: number; status: string }</code></dd><dd class="c">関数の型</dd></div>
+        <div><dt><code>ReturnType&lt;typeof makeOrder&gt;</code></dt><dd class="r"><code>{ productName: string; quantity: number; status: string }</code></dd><dd class="c">戻り値の型だけ</dd></div>
+      </dl>
+      <div class="cmp">
+        <div>
+          <h5>関数の名前をそのまま渡す</h5>
+          <pre><code class="language-typescript">// Order という型を作る。関数 makeOrder の戻り値の型
+type Order = ReturnType&lt;makeOrder&gt;;</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（'makeOrder' refers to a value, but is being used as a type here. Did you mean 'typeof makeOrder'?）</div>
+        </div>
+        <div>
+          <h5><code>typeof</code> を付けて渡す</h5>
+          <pre><code class="language-typescript">// Order という型を作る。関数 makeOrder の戻り値の型
+type Order = ReturnType&lt;typeof makeOrder&gt;;</code></pre>
+          <div class="verdict ok">○ 関数の型を渡すので、型の確認が通ります</div>
+        </div>
+      </div>
+      <p>関数は値なので、<code>&lt; &gt;</code> には関数の名前をそのまま書けません。<code>typeof</code> を付けて、関数の型にしてから渡します。</p>
+      <p class="memo"><b>よくある疑問</b><code>status</code> の型は <code>string</code> になります。オブジェクトのプロパティは入れ直せるので、問1 と同じく種類の型に推論されます。</p>
+      <p class="more">サバイバルTypeScript「ReturnType&lt;T&gt;」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Item という型を作る。関数 makeItem の戻り値の型。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 のサンプルの <code>Order</code> の行と同じ形です。<code>&lt; &gt;</code> の中の関数の名前に、<code>typeof</code> を付けるのを忘れないようにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q01-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">型 ClickHandler を関数 handleClick の型として作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function handleClick(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+// ここに型 ClickHandler を書く</code></pre>
+      <p>関数 <code>handleClick</code> そのものの型を、型 <code>ClickHandler</code> として作ります。引数と戻り値の両方を含む、関数の型です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ClickHandler</code> の型</dt><dd class="r"><code>(x: number, y: number) =&gt; string</code></dd><dd class="c">と同じ型であること</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// ClickHandler という型を作る。関数 handleClick の型と同じ。ほかのファイルから使えるようにする</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 の表の 1 行目の <code>typeof makeOrder</code> と同じく、関数の名前に <code>typeof</code> を付けます。問12 と違って、<code>ReturnType</code> は使いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q01-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">DEFAULT_USER のコピーを返す</span>
+      <span class="q-new">新しく出てくる書き方：型注釈に <code>typeof 定数</code> を書く</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const DEFAULT_USER = { name: "ゲスト", age: 0, admin: false };
+
+export function cloneUser() {}</code></pre>
+      <p>引数は受け取りません。<code>DEFAULT_USER</code> と中身が同じ、別のオブジェクトを返します。戻り値の型注釈は <code>typeof DEFAULT_USER</code> と書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cloneUser()</code></dt><dd class="r"><code>{ name: "ゲスト", age: 0, admin: false }</code></dd><dd class="c">DEFAULT_USER と中身が同じ</dd></div>
+          <div><dt><code>cloneUser() === DEFAULT_USER</code></dt><dd class="r"><code>false</code></dd><dd class="c">別のオブジェクトであること</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数がないこと、戻り値が <code>{ name: string; age: number; admin: boolean }</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">: typeof 定数</code><h4>引数と戻り値の型注釈に typeof を書く</h4></div>
+      <p><code>typeof 定数</code> は、型を書く場所ならどこにでも書けます。引数や戻り値の型注釈の <code>:</code> の後ろに書くと、「その定数と同じ形の値」を受け取る関数や、返す関数になります。<code>type</code> で名前を付けなくても使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 商品の初期値 DEFAULT_PRODUCT を作り、{ name: "ノート", price: 120, inStock: true } を入れる
+const DEFAULT_PRODUCT = { name: "ノート", price: 120, inStock: true };
+
+// 関数 productLabel を作る。typeof DEFAULT_PRODUCT 型の product を受け取り、文字列を返す
+function productLabel(product: typeof DEFAULT_PRODUCT): string {
+  // product の name と price を埋め込んだ「◯（◯円）」の文字列を返す
+  return `${product.name}（${product.price}円）`;
+}
+
+// 関数 newProduct を作る。文字列の name を受け取り、typeof DEFAULT_PRODUCT 型の値を返す
+function newProduct(name: string): typeof DEFAULT_PRODUCT {
+  // name と、price が 0、inStock が false のオブジェクトを返す
+  return { name, price: 0, inStock: false };
+}
+// 結果: productLabel(DEFAULT_PRODUCT) は "ノート（120円）"、newProduct("ペン") は { name: "ペン", price: 0, inStock: false }</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function newProduct(name: string)<span class="seg"><i>1</i>: typeof DEFAULT_PRODUCT</span> {</pre>
+        <ol>
+          <li><span>戻り値の型注釈です。<code>DEFAULT_PRODUCT</code> と同じ形のオブジェクトを返す、という意味です。</span></li>
+        </ol>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>プロパティが足りない</h5>
+          <pre><code class="language-typescript">// name と、price が 0 のオブジェクトを返す
+return { name, price: 0 };</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります（Property 'inStock' is missing in type '{ name: string; price: number; }' but required in type '{ name: string; price: number; inStock: boolean; }'）</div>
+        </div>
+        <div>
+          <h5>プロパティがそろっている</h5>
+          <pre><code class="language-typescript">// name と、price が 0、inStock が false のオブジェクトを返す
+return { name, price: 0, inStock: false };</code></pre>
+          <div class="verdict ok">○ DEFAULT_PRODUCT と同じ形なので、型の確認が通ります</div>
+        </div>
+      </div>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cloneUser を作る。何も受け取らず、typeof DEFAULT_USER 型の値を返す
+export function cloneUser() {
+  // DEFAULT_USER を広げた新しいオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型注釈は、問14 のサンプルの <code>newProduct</code> と同じく、かっこの後ろに <code>: typeof DEFAULT_USER</code> と書きます。中身は 02章 q03 問11 の <code>{ ...obj }</code> です。<code>return DEFAULT_USER;</code> と書くと、同じオブジェクトを返すことになり、「別のオブジェクト」のテストに通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q01-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">点を dx、dy だけ動かした新しい点を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const ORIGIN = { x: 0, y: 0 };
+
+export function movePoint() {}</code></pre>
+      <p>点 1 つと、2 つの数 <code>dx</code>、<code>dy</code> を受け取ります。<code>x</code> に <code>dx</code>、<code>y</code> に <code>dy</code> を足した新しい点を返します。点の型は、引数も戻り値も <code>typeof ORIGIN</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>movePoint({ x: 1, y: 2 }, 3, 4)</code></dt><dd class="r"><code>{ x: 4, y: 6 }</code></dd><dd class="c">1 + 3 と 2 + 4</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ x: number; y: number }</code>・<code>number</code>・<code>number</code>、戻り値が <code>{ x: number; y: number }</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 movePoint を作る。typeof ORIGIN 型の point と数値の dx と数値の dy を受け取り、typeof ORIGIN 型の値を返す
+export function movePoint() {
+  // x が point の x に dx を足した数、y が point の y に dy を足した数のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型注釈は、問14 のサンプルの <code>productLabel</code> の <code>product: typeof DEFAULT_PRODUCT</code> と同じ形です。戻り値は <code>newProduct</code> と同じ形です。返すオブジェクトは <code>{ x: …, y: … }</code> と書き、<code>…</code> に足し算の式を入れます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q01-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">fontSize だけを変えた新しい設定を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const SETTINGS = {
+  theme: "light",
+  fontSize: 14,
+  notifications: { email: true, push: false },
+};
+
+export function withFontSize() {}</code></pre>
+      <p>設定 1 つと、文字の大きさ（数）を受け取ります。<code>fontSize</code> だけを受け取った数に変えた、新しい設定を返します。受け取った設定は変えません。設定の型は、引数も戻り値も <code>typeof SETTINGS</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withFontSize(SETTINGS, 18)</code></dt><dd class="r"><code>{ theme: "light", fontSize: 18, notifications: { email: true, push: false } }</code></dd><dd class="c">fontSize だけが変わる</dd></div>
+          <div><dt>呼んだあとの <code>SETTINGS.fontSize</code></dt><dd class="r"><code>14</code></dd><dd class="c">元の設定は変わらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>typeof SETTINGS</code> と同じ型と <code>number</code>、戻り値が <code>typeof SETTINGS</code> と同じ型であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withFontSize を作る。typeof SETTINGS 型の settings と数値の size を受け取り、typeof SETTINGS 型の値を返す
+export function withFontSize() {
+  // settings のプロパティをすべて写し、fontSize を size にしたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型注釈は問15 と同じ形です。中身は 02章 q02 問8 の <code>{ ...元, 名前: 値 }</code> と同じ形です。<code>settings.fontSize = size;</code> のように書き換えると、元の設定まで変わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q01-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">文字列が COLORS のどれかなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const COLORS = ["red", "green", "blue"] as const;
+
+export function isColor() {}</code></pre>
+      <p>文字列を 1 つ受け取り、<code>COLORS</code> の要素のどれかと等しければ <code>true</code>、どれとも等しくなければ <code>false</code> を返します。戻り値の型は <code>text is (typeof COLORS)[number]</code> にして、型ガード関数（05章 q09 問1）にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isColor("red")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isColor("pink")</code></dt><dd class="r"><code>false</code></dd><dd class="c">COLORS にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>true</code> を返したとき、引数が <code>"red" | "green" | "blue"</code> に絞り込まれる型ガードになっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isColor を作る。文字列の text を受け取り、true か false を返す。戻り値の型は text is (typeof COLORS)[number]
+export function isColor() {
+  // COLORS の要素のどれかが text と等しいか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中身は 03章 q07 問9 の <code>isStatus</code> と同じく、<code>.some()</code> で書きます。<code>.includes()</code> は、引数の型が合わないので使えません。戻り値の型注釈の <code>is</code> の右には、問5 の <code>(typeof 配列)[number]</code> をそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q01-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">次のレベルを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const LEVELS = [1, 2, 3] as const;
+
+export function nextLevel() {}</code></pre>
+      <p>レベルを 1 つ受け取り、<code>LEVELS</code> の並びで次のレベルを返します。1 なら 2、2 なら 3 です。3 には次がないので、3 のまま返します。引数と戻り値の型は、どちらも <code>(typeof LEVELS)[number]</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextLevel(1)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextLevel(3)</code></dt><dd class="r"><code>3</code></dd><dd class="c">次がないので、そのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>1 | 2 | 3</code>、戻り値が <code>1 | 2 | 3</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nextLevel を作る。(typeof LEVELS)[number] 型の level を受け取り、(typeof LEVELS)[number] 型の値を返す
+export function nextLevel() {
+  // 位置 index を作り、LEVELS の中で level がある位置（0 から数える）を入れる
+  // LEVELS の（index + 1）番目の要素を返す。undefined なら level を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>03章 q07 問11 の <code>prevStatus</code> と同じ形で、1 を引く代わりに 1 を足します。3 の位置は 2 なので、3 番目の要素はなく、<code>undefined</code> になります。「undefined なら level」は <code>??</code> です。<code>level + 1</code> を返す書き方は、結果の型が <code>number</code> になるので、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q01-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">ROLE_LABELS からラベルを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const ROLE_LABELS = { admin: "管理者", member: "一般" } as const;
+
+export function roleLabel() {}</code></pre>
+      <p>役割（<code>"admin"</code> か <code>"member"</code>）を受け取り、<code>ROLE_LABELS</code> から表示名を返します。引数の型は <code>keyof typeof ROLE_LABELS</code>、戻り値の型は <code>string</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>roleLabel("admin")</code></dt><dd class="r"><code>"管理者"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>roleLabel("member")</code></dt><dd class="r"><code>"一般"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"admin" | "member"</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 roleLabel を作る。keyof typeof ROLE_LABELS 型の role を受け取り、文字列を返す
+export function roleLabel() {
+  // ROLE_LABELS の role の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>03章 q07 問12 の <code>priorityPoint</code> と同じ形で、<code>[ ]</code> の中に引数を書きます。戻り値の型注釈 <code>: string</code> は省かずに書きます。省くと戻り値は <code>"管理者" | "一般"</code> と推論され、テストに通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q01-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">ENDPOINTS から URL を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const ENDPOINTS = { users: "/api/users", rooms: "/api/rooms" } as const;
+
+export function endpointOf() {}</code></pre>
+      <p>API の名前（<code>"users"</code> か <code>"rooms"</code>）を受け取り、<code>ENDPOINTS</code> から URL を返します。引数の型は <code>keyof typeof ENDPOINTS</code>、戻り値の型は <code>string</code> にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>endpointOf("rooms")</code></dt><dd class="r"><code>"/api/rooms"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"users" | "rooms"</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 endpointOf を作る。keyof typeof ENDPOINTS 型の name を受け取り、文字列を返す
+export function endpointOf() {
+  // ENDPOINTS の name の値を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問19 と同じ形です。戻り値の型注釈 <code>: string</code> も、問19 と同じく省かずに書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c07-q01-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">設定の型と、設定を重ねる関数・テーマの型と見分ける関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const DEFAULT_CONFIG = {
+  host: "localhost",
+  port: 3000,
+  debug: false,
+  features: { chat: true, video: false },
+};
+
+export const THEMES = ["light", "dark", "system"] as const;
+
+export type Config = unknown;
+
+export function mergeConfig() {}
+
+export type Theme = unknown;
+
+export function isTheme() {}</code></pre>
+      <p>型を 2 つと、関数を 2 つ書きます。型は <code>unknown</code> になっているところを書き換えます。</p>
+      <ol>
+        <li>型 <code>Config</code>：<code>typeof</code> を使って、<code>DEFAULT_CONFIG</code> から作ります。</li>
+        <li><code>mergeConfig</code>：オブジェクト <code>partial</code> を 1 つ受け取ります。<code>partial</code> の <code>host</code>（文字列）、<code>port</code>（数）、<code>debug</code>（<code>true</code> か <code>false</code>）は、どれもなくてもかまいません。<code>DEFAULT_CONFIG</code> に <code>partial</code> を重ねた、新しい <code>Config</code> を返します。<code>features</code> は <code>DEFAULT_CONFIG</code> のままです。<code>DEFAULT_CONFIG</code> は変えません。</li>
+        <li>型 <code>Theme</code>：<code>THEMES</code> の要素のどれかを表す型です。<code>"light" | "dark" | "system"</code> になります。</li>
+        <li><code>isTheme</code>：文字列を 1 つ受け取り、<code>Theme</code> のどれかなら <code>true</code> を返します。戻り値の型は <code>text is Theme</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Config</code> の型</dt><dd class="r"><code>{ host: string; port: number; debug: boolean; features: { chat: boolean; video: boolean } }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>mergeConfig({ port: 8080 })</code></dt><dd class="r"><code>{ host: "localhost", port: 8080, debug: false, features: { chat: true, video: false } }</code></dd><dd class="c">port だけが変わる</dd></div>
+          <div><dt><code>mergeConfig({})</code></dt><dd class="r"><code>{ host: "localhost", port: 3000, debug: false, features: { chat: true, video: false } }</code></dd><dd class="c">何も重ねなければ DEFAULT_CONFIG と同じ中身</dd></div>
+          <div><dt><code>mergeConfig({ host: "example.com", debug: true })</code></dt><dd class="r"><code>{ host: "example.com", port: 3000, debug: true, features: { chat: true, video: false } }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>mergeConfig({ port: 1 })</code> のあとの <code>DEFAULT_CONFIG.port</code></dt><dd class="r"><code>3000</code></dd><dd class="c">元の設定は変わらない</dd></div>
+          <div><dt><code>Theme</code> の型</dt><dd class="r"><code>"light" | "dark" | "system"</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>isTheme("dark")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isTheme("blue")</code></dt><dd class="r"><code>false</code></dd><dd class="c">THEMES にない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>mergeConfig</code> の引数が <code>{ host?: string; port?: number; debug?: boolean }</code>、戻り値が <code>Config</code> であることも確かめます。<code>isTheme</code> は、引数が <code>string</code> で、<code>Theme</code> に絞り込む型ガードになっていることを確かめます。</p>
+      </div>
+      <p>ファイルには「説明すること」もあります。型 <code>Config</code> を手で書いた場合と比べて、<code>typeof</code> で作ると何がうれしいかを、ファイルの下に <code>//</code> のコメントで書きます。考えるときは、<code>DEFAULT_CONFIG</code> に <code>timeout: 5000</code> のようなプロパティを足して、<code>Config</code> にマウスを載せてみてください。同じ形の型を手で書いておき、値を直したときにどうなるかも比べてみてください。試したら、<code>DEFAULT_CONFIG</code> は元に戻します。</p>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。字下げした行は、関数の <code>{ }</code> の中に書きます。</p><pre><code class="language-typescript">// Config という型を作る。DEFAULT_CONFIG の型と同じ。ほかのファイルから使えるようにする
+
+// 関数 mergeConfig を作る。オブジェクト partial（host はなくてもよい文字列、port はなくてもよい数値、debug はなくてもよい true か false）を受け取り、Config 型の値を返す。ほかのファイルから使えるようにする
+//   DEFAULT_CONFIG に partial を重ねた新しいオブジェクトを返す
+
+// Theme という型を作る。THEMES の要素のどれか。ほかのファイルから使えるようにする
+
+// 関数 isTheme を作る。文字列の text を受け取り、true か false を返す。戻り値の型は text is Theme。ほかのファイルから使えるようにする
+//   THEMES の要素のどれかが text と等しいか（true か false）を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Config</code> は問1、<code>Theme</code> は問5 と同じ形です。<code>mergeConfig</code> の引数の型は、02章 q02 問1 の <code>名前?: 型</code> を使って書きます。中身は 02章 q03 問10 の <code>{ ...a, ...b }</code> と同じ形で、<code>DEFAULT_CONFIG</code> を先に書きます。<code>features</code> は <code>partial</code> にないので、<code>DEFAULT_CONFIG</code> のものが残ります。<code>isTheme</code> は問17 と同じ形で、<code>is</code> の右に <code>Theme</code> を書きます。</p></details>
+    </div>
+  </section>
+</section>

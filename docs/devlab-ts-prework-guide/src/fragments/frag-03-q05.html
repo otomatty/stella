@@ -1,0 +1,840 @@
+<section class="sec" id="c03-q05">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q05 成功と失敗を表す型</h2>
+    <p>成功と失敗を表す型 <code>Result</code> を使う関数を 20 個書きます。<code>Result</code> は、どのファイルにもはじめから書いてあります。引数と戻り値の型注釈は自分で書きます。この番号では、失敗も値として返します。呼ぶ側は <code>result.ok</code> を見て成功か失敗かを分けてから、<code>value</code> や <code>error</code> を使います。失敗のときの <code>error</code> の文は、問題文に書いたとおりにします。1 文字でも違うと、テストが通りません。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q05-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">成功の Result を作る</span>
+      <span class="q-new">新しく出てくる書き方：成功と失敗を表す型 <code>Result</code>、戻り値の型に <code>Result</code> を書く</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Result = { ok: true; value: number } | { ok: false; error: string };
+
+export function success() {}</code></pre>
+      <p>数値を 1 つ受け取り、その数を <code>value</code> に入れた成功の <code>Result</code> を返します。<code>Result</code> の型は、ファイルの先頭にはじめから書いてあります。この番号の 20 問は、どれも同じ <code>Result</code> を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>success(3)</code></dt><dd class="r"><code>{ ok: true, value: 3 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">Result</code><h4>成功と失敗を 1 つの型で表す</h4></div>
+      <p>処理には、うまくいくときと、うまくいかないときがあります。たとえば座席の予約は、空席が足りなければ失敗です。01章 q04 問8 では、うまくいかないときにエラーを投げました（<code>throw</code>）。エラーを投げると、関数はそこで止まります。値は返しません。</p>
+      <p>もう 1 つのやり方があります。失敗も、値として返すやり方です。成功の形のオブジェクトと、失敗の形のオブジェクトを 1 つずつ決めます。その 2 つを、ユニオン型（q01）でつなぎます。<code>Result</code> は、このやり方のための型です。</p>
+      <figure class="anat">
+        <pre>type Result = { <span class="seg"><i>1</i>ok: true</span>; <span class="seg"><i>2</i>value: number</span> } <span class="seg c"><i>3</i>|</span> { <span class="seg"><i>4</i>ok: false</span>; <span class="seg"><i>5</i>error: string</span> };</pre>
+        <ol>
+          <li><span>成功の印です。型が <code>true</code> なので、<code>true</code> だけを入れられます。<code>true</code> も、01章 q07 問1 の <code>"on"</code> と同じリテラル型（決まった 1 つの値だけを入れられる型）になります。</span></li>
+          <li><span>成功したときの結果の数です。成功の形だけが持ちます。</span></li>
+          <li><span>「どちらか一方」を表すユニオン型の記号です。</span></li>
+          <li><span>失敗の印です。<code>false</code> だけを入れられます。</span></li>
+          <li><span>失敗した理由の文です。失敗の形だけが持ちます。</span></li>
+        </ol>
+      </figure>
+      <p><code>ok</code> は、成功の形にも失敗の形にもあります。<code>value</code> は成功の形だけ、<code>error</code> は失敗の形だけにあります。<code>Result</code> の値は、この 2 つの形のどちらかです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫の確認 checked を Result として作り、ok が true、value が 12 のオブジェクトを入れる
+const checked: Result = { ok: true, value: 12 };
+// 在庫の確認 missing を Result として作り、ok が false、error が "在庫がありません" のオブジェクトを入れる
+const missing: Result = { ok: false, error: "在庫がありません" };
+// 結果: どちらも Result の値として入れられる</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>{ ok: true, value: 12 }</code></dt><dd class="r">入れられる</dd><dd class="c">成功の形</dd></div>
+        <div><dt><code>{ ok: false, error: "在庫がありません" }</code></dt><dd class="r">入れられる</dd><dd class="c">失敗の形</dd></div>
+        <div><dt><code>{ ok: true, error: "在庫がありません" }</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">成功の形は error を持たない</dd></div>
+        <div><dt><code>{ ok: false, value: 12 }</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">失敗の形は value を持たない</dd></div>
+        <div><dt><code>{ ok: true }</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">成功なのに value がない</dd></div>
+      </dl>
+      <p>関数の戻り値を <code>Result</code> にすると、成功も失敗も同じ型で返せます。次のサンプルは、空席が足りなければ失敗を、足りれば残りの席の数を成功として返します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 reserveSeats を作る。数値 left と数値 people を受け取り、Result を返す
+function reserveSeats(left: number, people: number): Result {
+  // もし people が left より大きいなら
+  if (people &gt; left) {
+    // ok が false、error が "空席が足りません" のオブジェクトを返す
+    return { ok: false, error: "空席が足りません" };
+  }
+  // ok が true、value が left から people を引いた数のオブジェクトを返す
+  return { ok: true, value: left - people };
+}
+// 結果: reserveSeats(5, 2) は { ok: true, value: 3 }、reserveSeats(5, 8) は { ok: false, error: "空席が足りません" }</code></pre>
+      </div>
+      <p>エラーを投げるやり方と比べると、次のようになります。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th></th><th>エラーを投げる（01章 q04 問8）</th><th>失敗を値で返す（<code>Result</code>）</th></tr></thead>
+          <tbody>
+            <tr><td>失敗したとき</td><td>関数がそこで止まり、値を返さない</td><td>失敗の形のオブジェクトを返す</td></tr>
+            <tr><td>戻り値の型</td><td><code>number</code>（成功のときの型だけ）</td><td><code>Result</code>（成功と失敗の両方）</td></tr>
+            <tr><td>呼ぶ側</td><td>エラーの受け止め方は 04章で学ぶ</td><td><code>ok</code> を見て、成功か失敗かを分ける</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>なぜ</b>失敗が戻り値の型に出てくるので、呼ぶ側は失敗のことを忘れにくくなります。成功か失敗かを確かめずに <code>value</code> を読むと、型の確認でエラーになります。確かめ方は問4 で学びます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/discriminated-union">サバイバルTypeScript「判別可能なユニオン型」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">): Result</code><h4>戻り値の型に Result を書く</h4></div>
+      <p>オブジェクトを返す関数では、戻り値の型に <code>Result</code> を書きます。書かないと、返したオブジェクトから型が推論されます。そのとき <code>ok: true</code> の <code>true</code> は、<code>boolean</code> として推論されます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 remainingSeats を作る。数値 total と数値 booked を受け取り、Result を返す
+function remainingSeats(total: number, booked: number): Result {
+  // ok が true、value が total から booked を引いた数のオブジェクトを返す
+  return { ok: true, value: total - booked };
+}
+// 結果: remainingSeats(20, 8) は { ok: true, value: 12 }</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型を書かない</h5>
+          <pre><code class="language-typescript">function remainingSeats(total: number, booked: number) {
+  return { ok: true, value: total - booked };
+}</code></pre>
+          <div class="verdict ng">✕ 戻り値の型が { ok: boolean; value: number } になり、Result と合いません</div>
+        </div>
+        <div>
+          <h5>戻り値の型に Result を書く</h5>
+          <pre><code class="language-typescript">function remainingSeats(total: number, booked: number): Result {
+  return { ok: true, value: total - booked };
+}</code></pre>
+          <div class="verdict ok">○ 戻り値の型が Result になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>戻り値の型を書かないと、<code>ok</code> の型が <code>boolean</code> になります。<code>Result</code> の成功の形の <code>ok</code> は <code>true</code> だけなので、型が合いません。テストは戻り値の型が <code>Result</code> であることを確かめるので、型のテストが通りません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 success を作る。数値 value を受け取り、Result を返す
+export function success() {
+  // ok が true、value が value のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問1 のサンプルの <code>remainingSeats</code> の 1 行目と同じ形です。「Result を返す」は、かっこの後ろの <code>: Result</code> です。<code>value: value</code> のように同じ名前が続くときは、省略記法で <code>value</code> の 1 語にします（02章 q01 問3）。<code>value: value</code> のままだと、ESLint でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q05-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">失敗の Result を作る</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function failure() {}</code></pre>
+      <p>文字列を 1 つ受け取り、その文字列を <code>error</code> に入れた失敗の <code>Result</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>failure("だめ")</code></dt><dd class="r"><code>{ ok: false, error: "だめ" }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 failure を作る。文字列 error を受け取り、Result を返す
+export function failure() {
+  // ok が false、error が error のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。<code>ok</code> が <code>false</code> になり、<code>value</code> の代わりに <code>error</code> を持ちます。<code>error: error</code> も、省略記法で <code>error</code> の 1 語にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q05-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">成功なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isOk() {}</code></pre>
+      <p><code>Result</code> を受け取り、成功なら <code>true</code>、失敗なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isOk({ ok: true, value: 1 })</code></dt><dd class="r"><code>true</code></dd><dd class="c">成功</dd></div>
+          <div><dt><code>isOk({ ok: false, error: "x" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">失敗</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isOk を作る。Result の result を受け取り、true か false を返す
+export function isOk() {
+  // result の ok を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「Result の result を受け取り」は、かっこの中の <code>result: Result</code> です。<code>ok</code> は、成功なら <code>true</code>、失敗なら <code>false</code> です。成功と失敗のどちらの形にもあるので、見分けなくても <code>result.ok</code> を読めます。そのまま返すので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q05-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">成功なら value、失敗なら fallback を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>ok</code> で成功と失敗を見分ける（絞り込み）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function valueOr() {}</code></pre>
+      <p><code>Result</code> と数値 <code>fallback</code> を受け取ります。成功なら、その <code>value</code> を返します。失敗なら、代わりに <code>fallback</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>valueOr({ ok: true, value: 5 }, 0)</code></dt><dd class="r"><code>5</code></dd><dd class="c">成功なので value</dd></div>
+          <div><dt><code>valueOr({ ok: false, error: "x" }, 0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">失敗なので fallback</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">if (result.ok)</code><h4>ok で成功と失敗を見分ける</h4></div>
+      <p><code>Result</code> の値は、成功か失敗かが分かるまで <code>value</code> も <code>error</code> も読めません。<code>value</code> は成功の形にしかなく、<code>error</code> は失敗の形にしかないからです。</p>
+      <p><code>if (result.ok)</code> と書くと、<code>{ }</code> の中では <code>result</code> が成功の形として扱われます。そのため <code>result.value</code> が読めます。<code>{ }</code> の中で <code>return</code> すれば、<code>if</code> の後ろに進むのは失敗のときだけです。そこでは <code>result.error</code> が読めます。このように、条件で型をせまくすることを絞り込みと呼びます（q01）。q04 で、<code>kind</code> で形を見分けたのと同じ考え方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockMessage を作る。Result の result を受け取り、文字列を返す
+function stockMessage(result: Result): string {
+  // もし result の ok が true なら
+  if (result.ok) {
+    // result の value を埋め込んだ「在庫は◯個です」の文字列を返す
+    return `在庫は${result.value}個です`;
+  }
+  // result の error を埋め込んだ「確認できません（◯）」の文字列を返す
+  return `確認できません（${result.error}）`;
+}
+// 結果: stockMessage({ ok: true, value: 12 }) は "在庫は12個です"、stockMessage({ ok: false, error: "通信エラー" }) は "確認できません（通信エラー）"</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>result</th><th>result.ok</th><th>進む先</th><th>読めるもの</th></tr></thead>
+          <tbody>
+            <tr><td>{ ok: true, value: 12 }</td><td>true</td><td class="j">if の { } の中</td><td>result.value</td></tr>
+            <tr><td>{ ok: false, error: "通信エラー" }</td><td>false</td><td class="j">if の後ろ</td><td>result.error</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>条件演算子（01章 q01 問12）でも、同じように見分けられます。<code>?</code> の後ろでは成功の形、<code>:</code> の後ろでは失敗の形として扱われます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 stockLabel を作る。Result の result を受け取り、文字列を返す
+function stockLabel(result: Result): string {
+  // result の ok が true なら result の value を埋め込んだ「◯個」、そうでなければ "不明" を返す
+  return result.ok ? `${result.value}個` : "不明";
+}
+// 結果: stockLabel({ ok: true, value: 3 }) は "3個"、stockLabel({ ok: false, error: "通信エラー" }) は "不明"</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>見分けずに読む</h5>
+          <pre><code class="language-typescript">function stockText(result: Result): string {
+  return `在庫は${result.value}個です`;
+}</code></pre>
+          <div class="verdict ng">✕ 型の確認でエラーになります。失敗の形には value がありません</div>
+        </div>
+        <div>
+          <h5>ok で見分けてから読む</h5>
+          <pre><code class="language-typescript">function stockText(result: Result): string {
+  return result.ok ? `在庫は${result.value}個です` : result.error;
+}</code></pre>
+          <div class="verdict ok">○ 成功のときだけ value を読みます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>if (result.ok === true)</code> と書くと、ESLint でエラーになります。<code>result.ok</code> は、それだけで <code>true</code> か <code>false</code> です。比べずに、そのまま条件に書きます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/values-types-variables/discriminated-union">サバイバルTypeScript「判別可能なユニオン型」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 valueOr を作る。Result の result と数値 fallback を受け取り、数値を返す
+export function valueOr() {
+  // result の ok が true なら result の value、そうでなければ fallback を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>stockLabel</code> と同じ、条件演算子の形です。<code>?</code> の後ろでは成功の形として扱われるので、<code>result.value</code> が読めます。サンプルの <code>stockMessage</code> のように <code>if</code> で書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q05-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">失敗なら error、成功なら fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function errorOr() {}</code></pre>
+      <p><code>Result</code> と文字列 <code>fallback</code> を受け取ります。失敗なら、その <code>error</code> を返します。成功なら、代わりに <code>fallback</code> を返します。問4 の反対です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorOr({ ok: false, error: "x" }, "なし")</code></dt><dd class="r"><code>"x"</code></dd><dd class="c">失敗なので error</dd></div>
+          <div><dt><code>errorOr({ ok: true, value: 1 }, "なし")</code></dt><dd class="r"><code>"なし"</code></dd><dd class="c">成功なので fallback</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code> と <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 errorOr を作る。Result の result と文字列 fallback を受け取り、文字列を返す
+export function errorOr() {
+  // result の ok が true なら fallback、そうでなければ result の error を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ条件演算子の形で、<code>?</code> と <code>:</code> の後ろが入れ替わります。<code>:</code> の後ろでは失敗の形として扱われるので、<code>result.error</code> が読めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q05-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">a ÷ b を返す。b が 0 なら失敗</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function safeDivide() {}</code></pre>
+      <p>数値 <code>a</code> と <code>b</code> を受け取り、<code>a ÷ b</code> を成功として返します。<code>b</code> が 0 のときは割り算ができないので、<code>error</code> が <code>"0で割ることはできません"</code> の失敗を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>safeDivide(6, 3)</code></dt><dd class="r"><code>{ ok: true, value: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>safeDivide(1, 0)</code></dt><dd class="r"><code>{ ok: false, error: "0で割ることはできません" }</code></dd><dd class="c">b が 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 safeDivide を作る。数値 a と数値 b を受け取り、Result を返す
+export function safeDivide() {
+  // もし b が 0 と等しいなら
+  //   ok が false、error が "0で割ることはできません" のオブジェクトを返す
+  // ok が true、value が a ÷ b のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>reserveSeats</code> と同じ形です。「等しい」は <code>===</code>、「÷」は <code>/</code> です。<code>error</code> の文は、問題文からそのまま写します。「0」と「で」の間に空白はありません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q05-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">平方根を返す。負の数なら失敗</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function safeSqrt() {}</code></pre>
+      <p>数値を 1 つ受け取り、その平方根を成功として返します。負の数のときは、<code>error</code> が <code>"負の数です"</code> の失敗を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>safeSqrt(9)</code></dt><dd class="r"><code>{ ok: true, value: 3 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>safeSqrt(-1)</code></dt><dd class="r"><code>{ ok: false, error: "負の数です" }</code></dd><dd class="c">負の数</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 safeSqrt を作る。数値 n を受け取り、Result を返す
+export function safeSqrt() {
+  // もし n が 0 より小さいなら
+  //   ok が false、error が "負の数です" のオブジェクトを返す
+  // ok が true、value が n の平方根のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 と同じ形です。平方根は <code>Math.sqrt()</code> です（01章 q04 問8）。01章 q04 問8 では負の数のときにエラーを投げました。ここでは、失敗の <code>Result</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q05-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">文字列を年齢にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parseAge() {}</code></pre>
+      <p>文字列を受け取って数値に変え、年齢として返します。0 以上 150 以下の整数なら成功です。そうでなければ、<code>error</code> が「<code>年齢ではありません: </code> の後ろに受け取った文字列を付けた文」の失敗を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseAge("30")</code></dt><dd class="r"><code>{ ok: true, value: 30 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseAge("abc")</code></dt><dd class="r"><code>{ ok: false, error: "年齢ではありません: abc" }</code></dd><dd class="c">数にならない</dd></div>
+          <div><dt><code>parseAge("1.5")</code></dt><dd class="r"><code>{ ok: false, error: "年齢ではありません: 1.5" }</code></dd><dd class="c">整数でない</dd></div>
+          <div><dt><code>parseAge("200")</code></dt><dd class="r"><code>{ ok: false, error: "年齢ではありません: 200" }</code></dd><dd class="c">150 より大きい</dd></div>
+          <div><dt><code>parseAge("")</code></dt><dd class="r"><code>{ ok: false, error: "年齢ではありません: " }</code></dd><dd class="c">空の文字列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parseAge を作る。文字列 text を受け取り、Result を返す
+export function parseAge() {
+  // 年齢 age を作り、text を数値にしたものを入れる
+  // もし text の前後の空白を取り除いたものが空の文字列、または age が整数でない、または age が 0 より小さい、または age が 150 より大きいなら
+  //   ok が false、error が text を埋め込んだ「年齢ではありません: ◯」のオブジェクトを返す
+  // ok が true、value が age のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数値にしたもの」は <code>Number()</code>（01章 q08 問16）、「整数でない」は <code>!Number.isInteger(age)</code>（01章 q04 の応用）、「または」は <code>||</code> です。<code>Number("")</code> は <code>0</code> になります。そのままでは 0 歳の成功になるので、空の文字列は別に見分けます。<code>"abc"</code> は <code>NaN</code> になり、<code>NaN</code> は整数でないので失敗になります。<code>error</code> の文は、テンプレートリテラルで組み立てます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q05-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">成功なら value を 2 倍にし、失敗ならそのまま返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>if (!result.ok)</code>（失敗なら、先にそのまま返す）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function doubleResult() {}</code></pre>
+      <p><code>Result</code> を受け取ります。成功なら、<code>value</code> を 2 倍にした成功を返します。失敗なら、受け取った失敗をそのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>doubleResult({ ok: true, value: 4 })</code></dt><dd class="r"><code>{ ok: true, value: 8 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>doubleResult({ ok: false, error: "x" })</code></dt><dd class="r"><code>{ ok: false, error: "x" }</code></dd><dd class="c">失敗はそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">if (!result.ok)</code><h4>失敗なら、先にそのまま返す</h4></div>
+      <p><code>!</code> は、<code>true</code> と <code>false</code> を入れ替えます（01章 q04 の応用）。<code>if (!result.ok)</code> は「もし失敗なら」という意味です。</p>
+      <p>失敗の <code>Result</code> は、受け取ったものをそのまま返せます。<code>error</code> の文も、そのまま呼ぶ側に伝わります。失敗のときに先に <code>return</code> すると、<code>if</code> の後ろに進むのは成功のときだけです。そこでは <code>result</code> が成功の形として扱われ、<code>value</code> が読めます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 orderTotal を作る。Result の price と数値 quantity を受け取り、Result を返す
+function orderTotal(price: Result, quantity: number): Result {
+  // もし price の ok が false なら
+  if (!price.ok) {
+    // price をそのまま返す
+    return price;
+  }
+  // ok が true、value が price の value に quantity を掛けた数のオブジェクトを返す
+  return { ok: true, value: price.value * quantity };
+}
+// 結果: orderTotal({ ok: true, value: 300 }, 3) は { ok: true, value: 900 }、orderTotal({ ok: false, error: "価格が未定です" }, 3) は { ok: false, error: "価格が未定です" }</code></pre>
+      </div>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>price</th><th>!price.ok</th><th>返す値</th></tr></thead>
+          <tbody>
+            <tr><td>{ ok: true, value: 300 }</td><td>false</td><td>{ ok: true, value: 900 }</td></tr>
+            <tr><td>{ ok: false, error: "価格が未定です" }</td><td>true</td><td class="j">受け取った price のまま</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>なぜ</b>失敗の <code>Result</code> を作り直さないので、<code>error</code> の文を写しまちがえる心配がありません。失敗を先に片づけると、残りの行は成功のことだけを考えて書けます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 doubleResult を作る。Result の result を受け取り、Result を返す
+export function doubleResult() {
+  // もし result の ok が false なら
+  //   result をそのまま返す
+  // ok が true、value が result の value を 2 倍にした数のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 のサンプルの <code>orderTotal</code> と同じ形です。「false なら」は <code>!result.ok</code> です。「2 倍にした数」は <code>result.value * 2</code> です。問4 の条件演算子で、1 行に書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q05-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">2 つの Result の value を足す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function addResults() {}</code></pre>
+      <p><code>Result</code> を 2 つ（<code>a</code> と <code>b</code>）受け取ります。両方とも成功なら、<code>value</code> を足した数の成功を返します。失敗があれば、<code>a</code>、<code>b</code> の順に見て、先に見つかった失敗を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>addResults({ ok: true, value: 1 }, { ok: true, value: 2 })</code></dt><dd class="r"><code>{ ok: true, value: 3 }</code></dd><dd class="c">両方成功</dd></div>
+          <div><dt><code>addResults({ ok: false, error: "a" }, { ok: false, error: "b" })</code></dt><dd class="r"><code>{ ok: false, error: "a" }</code></dd><dd class="c">両方失敗なら a</dd></div>
+          <div><dt><code>addResults({ ok: true, value: 1 }, { ok: false, error: "b" })</code></dt><dd class="r"><code>{ ok: false, error: "b" }</code></dd><dd class="c">b だけ失敗</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code> と <code>Result</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 addResults を作る。Result の a と Result の b を受け取り、Result を返す
+export function addResults() {
+  // もし a の ok が false なら
+  //   a をそのまま返す
+  // もし b の ok が false なら
+  //   b をそのまま返す
+  // ok が true、value が a の value と b の value を足した数のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 のサンプルの <code>orderTotal</code> の「失敗なら、先にそのまま返す」を 2 回続けます。<code>a</code> を先に見るので、両方とも失敗なら <code>a</code> が返ります。2 つの <code>if</code> を通り過ぎた後ろでは、<code>a</code> も <code>b</code> も成功の形として扱われ、<code>value</code> が読めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q05-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">成功の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countOk() {}</code></pre>
+      <p><code>Result</code> の配列を受け取り、その中の成功がいくつあるかを返します。引数の型は、読み取り専用の <code>Result</code> の配列にします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countOk([{ ok: true, value: 1 }, { ok: false, error: "x" }, { ok: true, value: 2 }])</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countOk([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Result[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countOk を作る。読み取り専用の Result の配列 results を受け取り、数値を返す
+export function countOk() {
+  // results の要素を 1 つずつ result として、result の ok が true のものだけを集めた新しい配列の、要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「読み取り専用の Result の配列」は <code>readonly Result[]</code> です（02章 q04 問1）。「だけを集めた新しい配列」は <code>.filter()</code> です（02章 q04 問7）。コールバックは、<code>result.ok</code> をそのまま返せます。要素の数は <code>.length</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q05-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">最初に見つかった失敗の error を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstError() {}</code></pre>
+      <p><code>Result</code> の配列を前から見て、最初に見つかった失敗の <code>error</code> を返します。失敗が 1 つもなければ <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstError([{ ok: true, value: 1 }, { ok: false, error: "x" }, { ok: false, error: "y" }])</code></dt><dd class="r"><code>"x"</code></dd><dd class="c">先に見つかった x</dd></div>
+          <div><dt><code>firstError([{ ok: true, value: 1 }])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">失敗がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Result[]</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstError を作る。読み取り専用の Result の配列 results を受け取り、文字列か undefined を返す
+export function firstError() {
+  // results から 1 つずつ result に取り出してくり返す
+  //   もし result の ok が false なら
+  //     result の error を返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>戻り値の型は <code>string | undefined</code> です（02章 q04 問4）。くり返しは <code>for-of</code> です。くり返しの途中で <code>return</code> すると、関数はそこで終わります。そのため、2 つめ以降の失敗は見ません。失敗が見つからないままくり返しが終わったら、最後の行で <code>undefined</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q05-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">成功の value だけを合計する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumOk() {}</code></pre>
+      <p><code>Result</code> の配列を受け取り、成功の <code>value</code> だけを足した合計を返します。失敗は数えません。空の配列なら 0 を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumOk([{ ok: true, value: 1 }, { ok: false, error: "x" }, { ok: true, value: 2 }])</code></dt><dd class="r"><code>3</code></dd><dd class="c">失敗は飛ばす</dd></div>
+          <div><dt><code>sumOk([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Result[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumOk を作る。読み取り専用の Result の配列 results を受け取り、数値を返す
+export function sumOk() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // results から 1 つずつ result に取り出してくり返す
+  //   もし result の ok が true なら
+  //     total に result の value を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問1 の <code>sumAll</code> に、問4 のサンプルの <code>stockMessage</code> の <code>if (result.ok)</code> を足した形です。<code>if</code> の <code>{ }</code> の中では成功の形として扱われるので、<code>result.value</code> が読めます。「足す」は <code>+=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q05-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">「成功: 3」か「失敗: エラーの文」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function resultText() {}</code></pre>
+      <p><code>Result</code> を、画面に出す文にして返します。成功なら <code>"成功: "</code> の後ろに <code>value</code> を付けます。失敗なら <code>"失敗: "</code> の後ろに <code>error</code> を付けます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>resultText({ ok: true, value: 3 })</code></dt><dd class="r"><code>"成功: 3"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>resultText({ ok: false, error: "だめ" })</code></dt><dd class="r"><code>"失敗: だめ"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 resultText を作る。Result の result を受け取り、文字列を返す
+export function resultText() {
+  // result の ok が true なら result の value を埋め込んだ「成功: ◯」、そうでなければ result の error を埋め込んだ「失敗: ◯」を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>stockLabel</code> と同じ形で、<code>:</code> の後ろもテンプレートリテラルになります（01章 q01 問3）。<code>成功:</code> の後ろには、半角の空白が 1 つ入ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q05-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">価格を確かめる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function validatePrice() {}</code></pre>
+      <p>価格（数値）を受け取り、使える価格かを確かめます。負の数なら、<code>error</code> が <code>"価格は0以上にしてください"</code> の失敗を返します。整数でなければ、<code>error</code> が <code>"価格は整数にしてください"</code> の失敗を返します。問題がなければ、その価格の成功を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>validatePrice(100)</code></dt><dd class="r"><code>{ ok: true, value: 100 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>validatePrice(-1)</code></dt><dd class="r"><code>{ ok: false, error: "価格は0以上にしてください" }</code></dd><dd class="c">負の数</dd></div>
+          <div><dt><code>validatePrice(1.5)</code></dt><dd class="r"><code>{ ok: false, error: "価格は整数にしてください" }</code></dd><dd class="c">整数でない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 validatePrice を作る。数値 price を受け取り、Result を返す
+export function validatePrice() {
+  // もし price が 0 より小さいなら
+  //   ok が false、error が "価格は0以上にしてください" のオブジェクトを返す
+  // もし price が整数でないなら
+  //   ok が false、error が "価格は整数にしてください" のオブジェクトを返す
+  // ok が true、value が price のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 の形の <code>if</code> を、2 つ続けて並べます。「整数でない」は <code>!Number.isInteger(price)</code> です（01章 q04 の応用）。確かめる順番は、問題文のとおり負の数が先です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q05-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">「50%」の形の文字列を数値にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function parsePercent() {}</code></pre>
+      <p><code>"50%"</code> のような文字列を受け取り、<code>%</code> の前の数を成功として返します。<code>"%"</code> で終わっていないときと、<code>%</code> の前が数値にならないときは、<code>error</code> が「<code>割合ではありません: </code> の後ろに受け取った文字列を付けた文」の失敗を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parsePercent("50%")</code></dt><dd class="r"><code>{ ok: true, value: 50 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parsePercent("12.5%")</code></dt><dd class="r"><code>{ ok: true, value: 12.5 }</code></dd><dd class="c">小数も成功</dd></div>
+          <div><dt><code>parsePercent("50")</code></dt><dd class="r"><code>{ ok: false, error: "割合ではありません: 50" }</code></dd><dd class="c">"%" で終わっていない</dd></div>
+          <div><dt><code>parsePercent("abc%")</code></dt><dd class="r"><code>{ ok: false, error: "割合ではありません: abc%" }</code></dd><dd class="c">数値にならない</dd></div>
+          <div><dt><code>parsePercent("%")</code></dt><dd class="r"><code>{ ok: false, error: "割合ではありません: %" }</code></dd><dd class="c">% の前が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 parsePercent を作る。文字列 text を受け取り、Result を返す
+export function parsePercent() {
+  // 数の部分 body を作り、text の 0 文字目から、後ろから 1 文字目の前までを取り出したものを入れる
+  // 割合 value を作り、body を数値にしたものを入れる
+  // もし text が "%" で終わらない、または body が空の文字列、または value が NaN なら
+  //   ok が false、error が text を埋め込んだ「割合ではありません: ◯」のオブジェクトを返す
+  // ok が true、value が value のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最後の 1 文字を除くのは <code>.slice(0, -1)</code> です（01章 q05 問4）。「"%" で終わらない」は <code>!text.endsWith("%")</code>（01章 q05 問7）、「NaN か」は <code>Number.isNaN()</code>（01章 q04 問11）です。<code>"%"</code> だけのときは <code>body</code> が空の文字列になり、<code>Number("")</code> は <code>0</code> になります。そのため、空の文字列も失敗として見分けます。最後の行の <code>value: value</code> は、省略記法で <code>value</code> の 1 語にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q05-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">成功でも min 未満なら失敗にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function atLeast() {}</code></pre>
+      <p><code>Result</code> と数値 <code>min</code> を受け取ります。成功で、<code>value</code> が <code>min</code> より小さいときは、<code>error</code> が「<code>min</code> の後ろに <code>未満です</code> を付けた文」の失敗にします。それ以外は、受け取った <code>Result</code> をそのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>atLeast({ ok: true, value: 3 }, 5)</code></dt><dd class="r"><code>{ ok: false, error: "5未満です" }</code></dd><dd class="c">3 は 5 より小さい</dd></div>
+          <div><dt><code>atLeast({ ok: true, value: 7 }, 5)</code></dt><dd class="r"><code>{ ok: true, value: 7 }</code></dd><dd class="c">そのまま</dd></div>
+          <div><dt><code>atLeast({ ok: false, error: "x" }, 5)</code></dt><dd class="r"><code>{ ok: false, error: "x" }</code></dd><dd class="c">失敗もそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code> と <code>number</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 atLeast を作る。Result の result と数値 min を受け取り、Result を返す
+export function atLeast() {
+  // もし result の ok が true、かつ result の value が min より小さいなら
+  //   ok が false、error が min を埋め込んだ「◯未満です」のオブジェクトを返す
+  // result をそのまま返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「かつ」は <code>&amp;&amp;</code> です（01章 q02 問16）。<code>&amp;&amp;</code> の右側は、左側が <code>true</code> のときだけ調べます。そのため右側では成功の形として扱われ、<code>result.value</code> が読めます。失敗のときと、<code>min</code> 以上の成功のときは、どちらも最後の行でそのまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q05-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">すべて成功なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function allOk() {}</code></pre>
+      <p><code>Result</code> の配列を受け取り、すべてが成功なら <code>true</code> を返します。1 つでも失敗があれば <code>false</code> です。空の配列は <code>true</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>allOk([{ ok: true, value: 1 }, { ok: true, value: 2 }])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>allOk([{ ok: true, value: 1 }, { ok: false, error: "x" }])</code></dt><dd class="r"><code>false</code></dd><dd class="c">失敗がある</dd></div>
+          <div><dt><code>allOk([])</code></dt><dd class="r"><code>true</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Result[]</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 allOk を作る。読み取り専用の Result の配列 results を受け取り、true か false を返す
+export function allOk() {
+  // results の要素の ok がすべて true か（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「すべて」は <code>.every()</code> です（02章 q04 問20）。コールバックは、問11 と同じく <code>result.ok</code> をそのまま返せます。空の配列では、合わない要素がないので <code>true</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q05-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">すべて成功なら合計の成功、失敗があれば最初の失敗</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function combineAll() {}</code></pre>
+      <p><code>Result</code> の配列を受け取ります。すべてが成功なら、<code>value</code> を合計した数の成功を返します。失敗があれば、前から見て最初の失敗を返します。空の配列なら、<code>value</code> が 0 の成功です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>combineAll([{ ok: true, value: 1 }, { ok: true, value: 2 }])</code></dt><dd class="r"><code>{ ok: true, value: 3 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>combineAll([{ ok: true, value: 1 }, { ok: false, error: "x" }, { ok: false, error: "y" }])</code></dt><dd class="r"><code>{ ok: false, error: "x" }</code></dd><dd class="c">最初の失敗</dd></div>
+          <div><dt><code>combineAll([])</code></dt><dd class="r"><code>{ ok: true, value: 0 }</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly Result[]</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 combineAll を作る。読み取り専用の Result の配列 results を受け取り、Result を返す
+export function combineAll() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // results から 1 つずつ result に取り出してくり返す
+  //   もし result の ok が false なら
+  //     result をそのまま返す
+  //   total に result の value を足す
+  // ok が true、value が total のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 の <code>sumOk</code> の形に、問9 のサンプルの「失敗なら、先にそのまま返す」を組み合わせます。くり返しの中の <code>if</code> の後ろでは、<code>result</code> は成功の形として扱われるので、<code>result.value</code> が読めます。失敗が見つかったところで <code>return</code> するので、2 つめ以降の失敗は見ません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q05-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">first が成功なら first、失敗なら second を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function orElse() {}</code></pre>
+      <p><code>Result</code> を 2 つ（<code>first</code> と <code>second</code>）受け取ります。<code>first</code> が成功なら <code>first</code> を、失敗なら <code>second</code> を返します。<code>second</code> は、成功でも失敗でもそのまま返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>orElse({ ok: true, value: 1 }, { ok: true, value: 2 })</code></dt><dd class="r"><code>{ ok: true, value: 1 }</code></dd><dd class="c">first が成功</dd></div>
+          <div><dt><code>orElse({ ok: false, error: "x" }, { ok: true, value: 2 })</code></dt><dd class="r"><code>{ ok: true, value: 2 }</code></dd><dd class="c">first が失敗なので second</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Result</code> と <code>Result</code>、戻り値が <code>Result</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 orElse を作る。Result の first と Result の second を受け取り、Result を返す
+export function orElse() {
+  // first の ok が true なら first、そうでなければ second を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ条件演算子の形です。新しいオブジェクトは作りません。受け取った <code>first</code> か <code>second</code> を、そのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c03-q05-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">文字列を数値に変え、成功と失敗を値で返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type ParseResult = unknown;
+
+export function parseNumber() {}
+
+export function unwrapOr() {}
+
+export function sumValid() {}</code></pre>
+      <p>型を 1 つと、関数を 3 つ書きます。エラーは投げずに、成功と失敗を値で返します。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>ParseResult</code>：型を作って export します。成功の形は、<code>ok</code> が <code>true</code> で、<code>value</code>（数値）を持ちます。失敗の形は、<code>ok</code> が <code>false</code> で、<code>error</code>（文字列）を持ちます。この 2 つのユニオン型です。<code>unknown</code> を書き換えます。</li>
+        <li><code>parseNumber</code>：文字列 <code>text</code> の前後の空白を取り除いてから、数値に変えます。変えられれば成功を返します。空の文字列のときと、有限の数にならないときは失敗を返します。<code>error</code> は、<code>"数値ではありません: "</code> の後ろに、受け取った <code>text</code> をそのまま付けた文です。空白を取り除く前の文字列を付けます。</li>
+        <li><code>unwrapOr</code>：<code>ParseResult</code> と数値 <code>fallback</code> を受け取ります。成功なら <code>value</code> を、失敗なら <code>fallback</code> を返します。</li>
+        <li><code>sumValid</code>：<code>ParseResult</code> の配列を受け取り、成功の <code>value</code> だけを合計します。引数の型は <code>readonly ParseResult[]</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>parseNumber(" 42 ")</code></dt><dd class="r"><code>{ ok: true, value: 42 }</code></dd><dd class="c">前後の空白を取り除く</dd></div>
+          <div><dt><code>parseNumber("-1.5")</code></dt><dd class="r"><code>{ ok: true, value: -1.5 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseNumber("0")</code></dt><dd class="r"><code>{ ok: true, value: 0 }</code></dd><dd class="c">0 も成功</dd></div>
+          <div><dt><code>parseNumber("abc")</code></dt><dd class="r"><code>{ ok: false, error: "数値ではありません: abc" }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseNumber("12px")</code></dt><dd class="r"><code>{ ok: false, error: "数値ではありません: 12px" }</code></dd><dd class="c">後ろに文字が付いている</dd></div>
+          <div><dt><code>parseNumber("Infinity")</code></dt><dd class="r"><code>{ ok: false, error: "数値ではありません: Infinity" }</code></dd><dd class="c">有限の数でない</dd></div>
+          <div><dt><code>parseNumber("  ")</code></dt><dd class="r"><code>{ ok: false, error: "数値ではありません:   " }</code></dd><dd class="c">空白だけ。error には空白 2 つがそのまま付く</dd></div>
+          <div><dt><code>unwrapOr({ ok: true, value: 3 }, 0)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>unwrapOr({ ok: false, error: "x" }, 0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumValid(["10", "x", " 5 ", ""].map(parseNumber))</code></dt><dd class="r"><code>15</code></dd><dd class="c">成功は 10 と 5 だけ</dd></div>
+          <div><dt><code>sumValid([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>ParseResult</code> が、成功と失敗の 2 つの形のユニオン型であることを確かめます。<code>parseNumber</code> は引数が <code>string</code>、戻り値が <code>ParseResult</code> です。<code>unwrapOr</code> は引数が <code>ParseResult</code> と <code>number</code>、戻り値が <code>number</code> です。<code>sumValid</code> は引数が <code>readonly ParseResult[]</code>、戻り値が <code>number</code> です。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// ParseResult という型を作る。ok が true で value が数値のオブジェクトか、ok が false で error が文字列のオブジェクト
+export type ParseResult = unknown;
+
+// 関数 parseNumber を作る。文字列 text を受け取り、ParseResult を返す
+export function parseNumber() {
+  // 整えた文字列 trimmed を作り、text の前後の空白を取り除いたものを入れる
+  // 数 value を作り、trimmed を数値にしたものを入れる
+  // もし trimmed が空の文字列、または value が有限の数でないなら
+  //   ok が false、error が text を埋め込んだ「数値ではありません: ◯」のオブジェクトを返す
+  // ok が true、value が value のオブジェクトを返す
+}
+
+// 関数 unwrapOr を作る。ParseResult の result と数値 fallback を受け取り、数値を返す
+export function unwrapOr() {
+  // result の ok が true なら result の value、そうでなければ fallback を返す
+}
+
+// 関数 sumValid を作る。読み取り専用の ParseResult の配列 results を受け取り、数値を返す
+export function sumValid() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // results から 1 つずつ result に取り出してくり返す
+  //   もし result の ok が true なら
+  //     total に result の value を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>ParseResult</code> は、問1 の <code>Result</code> と同じ形の型です。<code>parseNumber</code> は問8 の <code>parseAge</code> と同じ形で、「有限の数でない」は <code>!Number.isFinite(value)</code> です（01章 q04 問12）。<code>Number("Infinity")</code> は <code>Infinity</code> になり、<code>NaN</code> ではありません。そのため <code>Number.isNaN()</code> では見分けられません。<code>error</code> に埋め込むのは、空白を取り除く前の <code>text</code> です。<code>unwrapOr</code> は問4、<code>sumValid</code> は問13 と同じ形です。</p></details>
+    </div>
+  </section>
+</section>

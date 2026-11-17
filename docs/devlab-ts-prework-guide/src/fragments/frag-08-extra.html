@@ -1,0 +1,283 @@
+<section class="sec" id="c08-extra">
+  <div class="sec-h">
+    <span class="eyebrow">08章 発展問題（任意）</span>
+    <h2>発展問題</h2>
+    <p>やってもやらなくてもよい、任意の課題です。章の課題とは別に数えます。番号の順に、1 問ずつ確認して提出します。どちらにも「説明すること」があり、ファイルの「説明すること」のすぐ下に <code>//</code> のコメントで書きます。引数と戻り値には型注釈を付けます。型引数（07章 q06）を使い、渡した関数の型に合わせて、戻り値の型が決まるようにします。</p>
+  </div>
+
+  <!-- e01 -->
+  <section class="q" id="c08-e01">
+    <header class="q-h">
+      <span class="q-n">e01</span><span class="q-t">同時に実行する数を制限する</span>
+      <span class="q-new">新しく出てくる書き方：非同期のアロー関数 <code>async () =&gt; { }</code>、取り出し口を分け合う <code>.values()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function mapWithLimit() {}</code></pre>
+      <p><code>Promise.all</code> で 100 件の取得を一度に始めると、相手のサーバーに負担をかけたり、回数の制限に引っかかったりします。同時に実行する数を <code>limit</code> 個までにして、すべての要素を処理する関数 <code>mapWithLimit(items, limit, fn)</code> を書きます。</p>
+      <ol>
+        <li><code>items</code> のそれぞれについて <code>fn(要素)</code> を呼び、結果の配列を <code>items</code> の順で返します。</li>
+        <li>実行中（呼んだが、まだ終わっていない）の <code>fn</code> が、同時に <code>limit</code> 個を超えないようにします。</li>
+        <li>1 つ終わったら、すぐに次の要素の <code>fn</code> を始めます。<code>limit</code> 個ずつ区切って、全部が終わるのを待ってから次の区切りに進む書き方では、テストが通りません。</li>
+        <li><code>fn</code> が 1 つでも失敗したら、その失敗をそのまま投げます。</li>
+        <li><code>limit</code> が 1 より小さいときは、エラーを投げます。</li>
+      </ol>
+      <p>説明すること：「<code>limit</code> 個ずつ区切って <code>Promise.all</code> で待つ」書き方と比べて、どんなときに速くなるか。試すときは、区切って待つ書き方を別の関数で書いてみて、テストと同じ時間の組み合わせで、全部が終わるまでの時間を比べます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>mapWithLimit(["a", "b", "c", "d"], 2, fn)</code></dt><dd class="r"><code>["A", "B", "C", "D"]</code> で解決する</dd><dd class="c">fn は 30・10・20・5 ミリ秒かけて大文字にする。結果は items の順に並ぶ</dd></div>
+          <div><dt><code>mapWithLimit(7 個の要素, 3, 10 ミリ秒かかる fn)</code></dt><dd class="r">7 個の配列で解決する</dd><dd class="c">同時に実行していた数は、いちばん多いときで 3</dd></div>
+          <div><dt><code>mapWithLimit(["a", "b", "c"], 2, fn)</code> を呼んで 10 ミリ秒</dt><dd class="r">a・b・c の順に始まっている</dd><dd class="c">a は 100 ミリ秒、b と c は 10 ミリ秒。b が終わってすぐ c が始まる</dd></div>
+          <div><dt><code>mapWithLimit([1, 2, 3, 4], 2, 3 で失敗する fn)</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "3 は失敗"</dd></div>
+          <div><dt><code>mapWithLimit([1, 2], 2, 同じ fn)</code></dt><dd class="r"><code>[2, 4]</code> で解決する</dd><dd class="c">fn は 2 倍にする</dd></div>
+          <div><dt><code>mapWithLimit([1], 0, fn)</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は Error</dd></div>
+          <div><dt><code>mapWithLimit([], 2, fn)</code></dt><dd class="r"><code>[]</code> で解決する</dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>mapWithLimit([1, 2], 1, (n) =&gt; Promise.resolve(String(n)))</code> の戻り値が <code>Promise&lt;string[]&gt;</code> になることを確かめます。要素の型と、<code>fn</code> が解決する値の型を、<code>&lt;T, R&gt;</code> のように 2 つの型引数で表します。<code>items</code> は <code>readonly T[]</code>、<code>fn</code> は <code>(item: T) =&gt; Promise&lt;R&gt;</code>、戻り値は <code>Promise&lt;R[]&gt;</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">async () =&gt; { }</code><h4>非同期のアロー関数</h4></div>
+      <p>アロー関数（01章 q01 問20）の前にも <code>async</code> を付けられます。中で <code>await</code> を使え、呼ぶと Promise を返します。<code>async function</code> と同じ働きです。関数の中で小さな関数を作るときや、変数に入れておくときに使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 wait を作る。数値の ms を受け取り、値を持たずに解決する Promise（Promise&lt;void&gt;）を返す
+function wait(ms: number): Promise&lt;void&gt; {
+  // 新しい Promise を返す。解決させる関数を resolve で受け取る
+  return new Promise((resolve) =&gt; {
+    // ms ミリ秒たったら resolve を呼ぶ
+    setTimeout(resolve, ms);
+  });
+}
+
+// 非同期の関数 packOrder を作る。文字列の order を受け取り、文字列で解決する Promise を返す（非同期のアロー関数）
+const packOrder = async (order: string): Promise&lt;string&gt; =&gt; {
+  // wait に 10 を渡して呼び、終わるのを待つ
+  await wait(10);
+  // order を埋め込んだ「◯ を梱包しました」を返す
+  return `${order} を梱包しました`;
+};
+// 結果: packOrder("注文1") は、10 ミリ秒たつと "注文1 を梱包しました" で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>async</span> <span class="seg"><i>2</i>(order: string)</span>: <span class="seg"><i>3</i>Promise&lt;string&gt;</span> =&gt; { … }</pre>
+        <ol>
+          <li><span>非同期の関数にする印です。かっこの前に書きます。</span></li>
+          <li><span>受け取る引数です。ふつうのアロー関数と同じです。</span></li>
+          <li><span>戻り値の型です。<code>async</code> 関数なので、<code>Promise&lt;解決する値の型&gt;</code> と書きます。</span></li>
+        </ol>
+      </figure>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">const queue = orders.values();</code><h4>取り出し口を分け合って、作業を同時に進める</h4></div>
+      <p>配列の <code>.values()</code> は、要素を前から 1 つずつ取り出すもの（取り出し口）を返します。<code>for-of</code> に渡すと、配列を渡したときと同じように、要素を 1 つずつ取り出してくり返します。取り出した要素は、もう取り出し口に残りません。同じ取り出し口を 2 つの <code>for-of</code> で使うと、2 つで要素を分け合います。取り出し口が空になると、どちらのくり返しも終わります。04章 q03 問9 の <code>.entries()</code> も同じ取り出し口で、こちらは番号と要素の組を取り出します。</p>
+      <p><code>async</code> 関数は、呼ぶとすぐに動き始め、<code>await</code> のところで止まって、呼んだ側に Promise を返します。止まっている間は、ほかの関数が動けます。そのため、いくつか呼んでから <code>Promise.all</code>（08章 q01 問13）で待つと、それぞれが同時に進みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 packAll を作る。何も受け取らず、文字列の配列で解決する Promise を返す
+async function packAll(): Promise&lt;string[]&gt; {
+  // 注文の列 orders を作り、["注文1", "注文2", "注文3"] を入れる
+  const orders = ["注文1", "注文2", "注文3"];
+  // 記録 packLog を作り、空の配列を入れる
+  const packLog: string[] = [];
+  // 取り出し口 queue を作り、orders の要素を前から 1 つずつ取り出すもの（.values()）を入れる
+  const queue = orders.values();
+  // 関数 staff を作る。文字列の name を受け取り、値を持たずに解決する Promise を返す（非同期のアロー関数）
+  const staff = async (name: string): Promise&lt;void&gt; =&gt; {
+    // queue から 1 つずつ order に取り出してくり返す
+    for (const order of queue) {
+      // packOrder に order を渡して呼び、終わるのを待つ
+      await packOrder(order);
+      // packLog の最後に、name と order を埋め込んだ「◯: ◯」を足す
+      packLog.push(`${name}: ${order}`);
+    }
+  };
+  // staff に "佐藤" を渡して呼んだ Promise と、"鈴木" を渡して呼んだ Promise を並べて Promise.all に渡し、終わるのを待つ
+  await Promise.all([staff("佐藤"), staff("鈴木")]);
+  // packLog を返す
+  return packLog;
+}
+// 結果: packAll() は ["佐藤: 注文1", "鈴木: 注文2", "佐藤: 注文3"] で解決する</code></pre>
+      </div>
+      <p><code>packOrder</code> は、1 つ目の項目のサンプルの関数で、1 件に 10 ミリ秒かかります。2 人が同時に動くので、全部が終わるのは 20 ミリ秒後です。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>時間</th><th>佐藤</th><th>鈴木</th></tr></thead>
+          <tbody>
+            <tr><td>0 ミリ秒</td><td>注文1 を取り出して梱包を始める</td><td>注文2 を取り出して梱包を始める</td></tr>
+            <tr><td>10 ミリ秒</td><td>注文1 を記録し、注文3 を取り出して始める</td><td>注文2 を記録する。取り出し口が空なので終わる</td></tr>
+            <tr><td>20 ミリ秒</td><td>注文3 を記録する。取り出し口が空なので終わる</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>それぞれが orders を回す</h5>
+          <pre><code class="language-typescript">for (const order of orders) {</code></pre>
+          <div class="verdict ng">✕ 2 人とも 3 件すべてを梱包します。記録は 6 件になります</div>
+        </div>
+        <div>
+          <h5>同じ queue を回す</h5>
+          <pre><code class="language-typescript">for (const order of queue) {</code></pre>
+          <div class="verdict ok">○ 1 件ずつ分け合います。記録は 3 件です</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>2 人が同時に動いても、同じ注文を 2 回取り出すことはありません。JavaScript は、一度に 1 つの関数の、<code>await</code> から次の <code>await</code> までだけを実行するからです。<code>for-of</code> が次の要素を取り出す間に、ほかの関数が割り込むことはありません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/asynchronous/promise">サバイバルTypeScript「Promise」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export async function mapWithLimit&lt;T, R&gt;(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) =&gt; Promise&lt;R&gt;,
+): Promise&lt;R[]&gt; {
+  // もし limit が 1 より小さいなら
+  //   "limit は1以上にしてください" というメッセージのエラーを投げる
+  // 結果の配列 results を作り、空の配列を入れる
+  // 取り出し口 queue を作り、items の番号と要素の組を前から 1 つずつ取り出すもの（.entries()）を入れる
+  // 関数 worker を作る。何も受け取らず、値を持たずに解決する Promise を返す（非同期のアロー関数）
+  //   queue から番号と要素の組を 1 つずつ [index, item] に取り出してくり返す
+  //     results の index 番目に、fn に item を渡して呼び、待った値を入れる
+  // 作業者の数 workerCount を作り、limit と items の長さの小さいほうを入れる
+  // worker を workerCount 回呼んだ Promise の配列を Promise.all に渡し、終わるのを待つ
+  // results を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つ目のサンプルの <code>staff</code> が <code>worker</code> に当たります。取り出し口は <code>.values()</code> の代わりに <code>.entries()</code> を使い、番号も一緒に取り出します。番号の位置に結果を入れるので、終わった順に関係なく、<code>items</code> の順に並びます（添字への代入は 02章 q05 問16）。<code>results</code> の型注釈は <code>const results: R[] = []</code> です。小さいほうは <code>Math.min()</code>（01章 q04 問9）、「worker を workerCount 回呼んだ Promise の配列」は <code>Array.from({ length: workerCount }, () =&gt; worker())</code>（02章 q05 問19）で作れます。どれかの <code>fn</code> が失敗すると、その <code>worker</code> の Promise が失敗し、<code>Promise.all</code> もその失敗で失敗します。</p></details>
+    </div>
+  </section>
+
+  <!-- e02 -->
+  <section class="q" id="c08-e02">
+    <header class="q-h">
+      <span class="q-n">e02</span><span class="q-t">同じ取得を 1 回にまとめる（キャッシュ）</span>
+      <span class="q-new">新しく出てくる書き方：<code>Map</code>、Promise を覚えておく、<code>.catch()</code> の中で投げ直す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dedupe() {}</code></pre>
+      <p>画面のあちこちから、同じユーザーの取得が同時に呼ばれると、同じ通信が何度も走ってしまいます。非同期の関数 <code>fn</code> を包んで、同じ <code>key</code> の取得を 1 回にまとめる関数 <code>dedupe</code> を書きます。取得した結果を覚えておいて使い回すことを、キャッシュと呼びます。<code>dedupe(fn)</code> は、<code>fn</code> と同じ形の関数 <code>get(key)</code> を返します。</p>
+      <ol>
+        <li><code>get(key)</code> を呼ぶと、<code>fn(key)</code> の結果を返します。</li>
+        <li>同じ <code>key</code> の <code>fn</code> がまだ終わっていないうちに <code>get(key)</code> が呼ばれたら、<code>fn</code> を呼ばずに、同じ Promise を返します。</li>
+        <li>成功した結果は覚えておき、次からは <code>fn</code> を呼ばずに、その値を返します。</li>
+        <li>失敗した結果は覚えません。次に <code>get(key)</code> が呼ばれたら、もう一度 <code>fn</code> を呼びます。</li>
+        <li><code>key</code> は <code>string</code> か <code>number</code> です。覚えておく場所には <code>Map</code> を使います。</li>
+      </ol>
+      <p>説明すること：失敗した結果も覚えてしまうと、どんな困りごとが起きるか。試すときは、失敗しても覚えたままにする書き方に一時的に変えて、どのテストが通らなくなるかを見ます。試したら元に戻します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <p>テストの <code>fn</code> は、数値の <code>id</code> を受け取り、<code>"ユーザー1"</code> のような文字列で解決します。呼ばれた <code>id</code> を記録しています。</p>
+        <dl class="eg">
+          <div><dt><code>get(1)</code></dt><dd class="r"><code>"ユーザー1"</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt><code>Promise.all([get(1), get(1), get(2), get(1)])</code></dt><dd class="r"><code>["ユーザー1", "ユーザー1", "ユーザー2", "ユーザー1"]</code> で解決する</dd><dd class="c">fn が呼ばれたのは 1 と 2 の 1 回ずつ</dd></div>
+          <div><dt><code>await get(1)</code> のあとで、もう一度 <code>await get(1)</code></dt><dd class="r">fn が呼ばれたのは 1 回</dd><dd class="c">成功した結果を覚えている</dd></div>
+          <div><dt>1 回目だけ失敗する fn で <code>get(1)</code></dt><dd class="r">失敗する</dd><dd class="c">メッセージは "1 の取得に失敗"</dd></div>
+          <div><dt>そのあとの <code>get(1)</code></dt><dd class="r"><code>"ユーザー1"</code> で解決する</dd><dd class="c">失敗は覚えないので、fn がもう一度呼ばれる</dd></div>
+          <div><dt>1 回目だけ失敗する fn で、<code>get(1)</code> を同時に 2 回</dt><dd class="r">どちらも失敗する</dd><dd class="c">fn が呼ばれたのは 1 回</dd></div>
+          <div><dt><code>dedupe((name: string) =&gt; Promise.resolve(name.length))</code> の <code>get("abc")</code></dt><dd class="r"><code>3</code> で解決する</dd><dd class="c">文字列の key</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>テストの <code>fn</code> を渡したとき、<code>dedupe(fn)</code> の型が <code>(key: number) =&gt; Promise&lt;string&gt;</code> になることを確かめます。key の型と、解決する値の型を、<code>&lt;K extends string | number, V&gt;</code> のように 2 つの型引数で表します。<code>extends</code> で、K に使える型を <code>string</code> か <code>number</code> に限ります（07章 q07 問1）。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new Map&lt;K, V&gt;()</code><h4>key ごとに値を覚えておく Map</h4></div>
+      <p><code>Map</code> は、key と値の組を覚えておく入れ物です。<code>new Map&lt;key の型, 値の型&gt;()</code> で空の Map を作ります。<code>.set(key, 値)</code> で覚えさせ、<code>.get(key)</code> で取り出します。覚えていない key を <code>.get()</code> すると <code>undefined</code> です。<code>.has(key)</code> は覚えているかを返し、<code>.delete(key)</code> は消します。ここでは、まねて書ければ十分です。くわしくは 09章 q01 で学びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 値段の表 prices を作り、文字列の key と数値の値を持つ空の Map を入れる
+const prices = new Map&lt;string, number&gt;();
+// prices の "A-1" に 1200 を覚えさせる
+prices.set("A-1", 1200);
+// 値段 a を作り、prices の "A-1" の値を入れる
+const a = prices.get("A-1");
+// 値段 b を作り、prices の "B-9" の値を入れる
+const b = prices.get("B-9");
+// hasBefore を作り、prices が "A-1" を持っているか（true か false）を入れる
+const hasBefore = prices.has("A-1");
+// prices から "A-1" を消す
+prices.delete("A-1");
+// hasAfter を作り、prices が "A-1" を持っているか（true か false）を入れる
+const hasAfter = prices.has("A-1");
+// 結果: a は 1200、b は undefined、hasBefore は true、hasAfter は false</code></pre>
+      </div>
+      <p class="memo"><b>型</b><code>.get()</code> の結果は、覚えていないかもしれないので、<code>値の型 | undefined</code> になります。このサンプルの <code>a</code> と <code>b</code> の型は <code>number | undefined</code> です。使う前に <code>!== undefined</code> で確かめます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/builtin-api/map">サバイバルTypeScript「Map」</a></p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">const pricePromise = loadPrice();</code><h4>Promise を変数に入れて、何度でも待つ</h4></div>
+      <p>Promise は、ふつうの値と同じように、変数や Map に入れておけます。同じ Promise は何度でも <code>await</code> できます。待つたびに処理がやり直されることはありません。まだ終わっていなければ終わるまで待ち、終わっていればすぐに同じ結果になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 呼んだ回数 calls を入れ直せる変数として作り、0 を入れる
+let calls = 0;
+// 関数 loadPrice を作る。何も受け取らず、数値で解決する Promise を返す（アロー関数）
+const loadPrice = (): Promise&lt;number&gt; =&gt; {
+  // calls に 1 を足す
+  calls += 1;
+  // 1200 で解決する Promise を返す
+  return Promise.resolve(1200);
+};
+
+// 非同期の関数 waitTwice を作る。何も受け取らず、数値の配列で解決する Promise を返す
+async function waitTwice(): Promise&lt;number[]&gt; {
+  // 値段の Promise pricePromise を作り、loadPrice を呼んだ Promise を入れる
+  const pricePromise = loadPrice();
+  // 1 回目 first を作り、pricePromise を待った値を入れる
+  const first = await pricePromise;
+  // 2 回目 second を作り、pricePromise を待った値を入れる
+  const second = await pricePromise;
+  // first、second、calls を並べた配列を返す
+  return [first, second, calls];
+}
+// 結果: waitTwice() は [1200, 1200, 1] で解決する</code></pre>
+      </div>
+      <p><code>calls</code> が 1 のままなので、<code>loadPrice</code> は 1 回しか呼ばれていません。2 回目の <code>await</code> は、同じ Promise の結果をもう一度受け取っただけです。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">.catch((error: unknown) =&gt; { …; throw error; })</code><h4>失敗したときだけ何かをして、失敗はそのまま伝える</h4></div>
+      <p><code>.catch()</code>（08章 q01 問10）は、新しい Promise を返します。<code>.catch()</code> に渡した関数の中で投げると、新しい Promise はそのエラーで失敗します。受け取った失敗を投げ直せば（08章 q04 問7）、失敗したときだけ記録や後片付けをして、失敗はそのまま呼んだ側に伝えられます。成功したときは、<code>.catch()</code> に渡した関数は呼ばれず、新しい Promise も同じ値で解決します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 記録 failLog を作り、空の配列を入れる
+const failLog: string[] = [];
+
+// 関数 withFailLog を作る。数値で解決する Promise の promise を受け取り、数値で解決する Promise を返す
+function withFailLog(promise: Promise&lt;number&gt;): Promise&lt;number&gt; {
+  // promise が失敗したら次の関数を呼ぶ、新しい Promise を返す。関数は失敗の理由を error で受け取る
+  return promise.catch((error: unknown) =&gt; {
+    // failLog の最後に "取得に失敗" を足す
+    failLog.push("取得に失敗");
+    // error を投げ直す
+    throw error;
+  });
+}
+// 結果: withFailLog(Promise.reject(new Error("在庫なし"))) は "在庫なし" で失敗し、failLog は ["取得に失敗"] になる</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>withFailLog(Promise.resolve(5))</code></dt><dd class="r"><code>5</code> で解決する</dd><dd class="c">failLog は変わらない</dd></div>
+        <div><dt><code>withFailLog(Promise.reject(new Error("在庫なし")))</code></dt><dd class="r">失敗する</dd><dd class="c">失敗の理由は "在庫なし" のエラーそのもの</dd></div>
+      </dl>
+      <p class="memo"><b>決まり</b><code>.catch()</code> に渡す関数の引数には、<code>(error: unknown)</code> と型注釈を付けます。付けないと <code>any</code> になり、このガイドの設定では ESLint がエラーにします。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function dedupe&lt;K extends string | number, V&gt;(
+  fn: (key: K) =&gt; Promise&lt;V&gt;,
+): (key: K) =&gt; Promise&lt;V&gt; {
+  // 覚えておく場所 cache を作り、K の key と「V で解決する Promise」の値を持つ空の Map を入れる
+  // key を受け取り、次のことをする関数を返す
+  //   覚えていた Promise cached を作り、cache の key の値を入れる
+  //   もし cached が undefined と等しくないなら
+  //     cached を返す
+  //   新しい Promise promise を作り、fn に key を渡して呼んだ Promise が失敗したら次の関数を呼ぶ、新しい Promise を入れる。関数は失敗の理由を error で受け取る
+  //     cache から key を消す
+  //     error を投げ直す
+  //   cache の key に promise を覚えさせる
+  //   promise を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「key を受け取り、次のことをする関数を返す」は、05章 q08 の関数を返す形で、<code>return (key) =&gt; { … };</code> です。<code>key</code> の型は、<code>dedupe</code> の戻り値の型注釈から推論されます。覚えておくのは、<code>fn</code> が返した Promise そのものです。2 つ目のサンプルのように、同じ Promise は何度でも待てます。まだ終わっていないうちに呼ばれても、終わったあとに呼ばれても、同じ Promise を返せば足ります。<code>promise</code> の右側は、3 つ目のサンプルの <code>withFailLog</code> の <code>return</code> の後ろと同じ形で、記録を足す代わりに <code>cache.delete(key)</code> を呼びます。<code>fn(key)</code> の Promise をそのまま覚えると、失敗しても消されずに残ります。<code>async</code> を使わないので、関数の前に <code>async</code> は付けません。</p></details>
+    </div>
+  </section>
+</section>

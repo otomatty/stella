@@ -1,0 +1,901 @@
+<section class="sec" id="c05-q09">
+  <div class="sec-h">
+    <span class="eyebrow">05章 関数</span>
+    <h2>q09 型ガード関数とアサーション関数</h2>
+    <p>値の型を確かめる関数を 20 個書きます。型 <code>User</code>、<code>Admin</code>、<code>Pet</code> は、問題のファイルに書いてあります。「型ガード関数」は、戻り値の型を <code>value is string</code> のように書きます。<code>true</code> を返したとき、呼び出した側で <code>value</code> がその型に絞り込まれます。「アサーション関数」は、戻り値の型を <code>asserts value is string</code> のように書きます。条件に合わなければ、エラーを投げます。テストは、戻り値の型が型ガードやアサーションになっているかも確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c05-q09-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">文字列かを確かめる型ガード関数</span>
+      <span class="q-new">新しく出てくる書き方：型ガード関数 <code>value is string</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isText() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。文字列なら <code>true</code>、それ以外なら <code>false</code> を返します。04章 q06 問1 と同じ働きの関数です。違うのは戻り値の型で、<code>value is string</code> と書きます。引数の型は <code>unknown</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isText("a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isText(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c">数値は文字列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is string</code>（文字列に絞り込む型ガード）になっていることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">value is string</code><h4>true を返したときに型を絞り込む、型ガード関数</h4></div>
+      <p>04章 q06 では、<code>typeof</code> などで確かめると、<code>if</code> の <code>{ }</code> の中で型が狭まることを学びました。これを型の絞り込みと呼びます。確かめる処理を別の関数に分けると、そのままでは絞り込みが起きません。戻り値の型が <code>boolean</code> だと、TypeScript には「<code>true</code> か <code>false</code> が返る」ことしか分からないからです。</p>
+      <p>戻り値の型を <code>引数の名前 is 型</code> と書くと、「<code>true</code> を返したら、この引数はこの型」という約束になります。この形の関数を、型ガード関数と呼びます。呼び出した側の <code>if</code> の <code>{ }</code> の中で、渡した値がその型に絞り込まれます。関数の中身は、ふつうに <code>true</code> か <code>false</code> を返すだけです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Size という型を作る。"S" か "M" か "L" のどれか
+type Size = "S" | "M" | "L";
+// 関数 isSize を作る。文字列 text を受け取り、true か false を返す。true のときは text を Size に絞り込む
+function isSize(text: string): text is Size {
+  // text が "S" と等しい、または "M" と等しい、または "L" と等しいかどうか（true か false）を返す
+  return text === "S" || text === "M" || text === "L";
+}
+// 関数 sizeOrDefault を作る。文字列 input を受け取り、Size を返す
+function sizeOrDefault(input: string): Size {
+  // もし isSize に input を渡して呼んだ結果が true なら
+  if (isSize(input)) {
+    // input を返す
+    return input;
+  }
+  // "M" を返す
+  return "M";
+}
+// 結果: sizeOrDefault("L") は "L"、sizeOrDefault("XL") は "M"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function isSize(<span class="seg"><i>1</i>text: string</span>): <span class="seg"><i>2</i>text</span> <span class="seg"><i>3</i>is</span> <span class="seg"><i>4</i>Size</span></pre>
+        <ol>
+          <li><span>引数です。型は、確かめる前の型（ここでは文字列）を書きます。</span></li>
+          <li><span>絞り込む引数の名前です。1 の引数の名前と同じにします。</span></li>
+          <li><span>「<code>true</code> を返したら、左の引数は右の型」という印です。</span></li>
+          <li><span><code>true</code> のときに絞り込む型です。1 の型より狭い型を書きます。</span></li>
+        </ol>
+      </figure>
+      <p>戻り値の型を <code>boolean</code> にした場合と比べます。どちらも、返す値は同じです。</p>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型を <code>boolean</code> にする</h5>
+          <pre><code class="language-typescript">function isSize(text: string): boolean {
+  return text === "S" || text === "M" || text === "L";
+}
+
+function sizeOrDefault(input: string): Size {
+  if (isSize(input)) {
+    return input;
+  }
+  return "M";
+}</code></pre>
+          <div class="verdict ng">✕ return input が型の確認でエラーになります。input は string のままです</div>
+        </div>
+        <div>
+          <h5>戻り値の型を <code>text is Size</code> にする</h5>
+          <pre><code class="language-typescript">function isSize(text: string): text is Size {
+  return text === "S" || text === "M" || text === "L";
+}
+
+function sizeOrDefault(input: string): Size {
+  if (isSize(input)) {
+    return input;
+  }
+  return "M";
+}</code></pre>
+          <div class="verdict ok">○ { } の中で input が Size になり、そのまま返せます</div>
+        </div>
+      </div>
+      <p>左のエラーは「Type 'string' is not assignable to type 'Size'」です。<code>input</code> が <code>Size</code> だと、TypeScript には分からないからです。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 600 224" role="img" aria-label="string の input を isSize(input) で確かめると、true のときの { } の中では Size、if の後ろでは string のまま">
+            <rect class="box" x="16" y="80" width="140" height="56" rx="8"/>
+            <text class="m" x="86" y="113" text-anchor="middle">string</text>
+            <text class="s" x="86" y="158" text-anchor="middle">input の型</text>
+            <line class="ln" x1="160" y1="108" x2="196" y2="108"/><polygon class="hd" points="196,102 208,108 196,114"/>
+            <rect class="box-a" x="212" y="72" width="180" height="72" rx="8"/>
+            <text class="m" x="302" y="102" text-anchor="middle">isSize(input)</text>
+            <text class="s" x="302" y="126" text-anchor="middle">text is Size</text>
+            <path class="ln-a" d="M396 96 C 424 96, 424 52, 448 52"/><polygon class="hd-a" points="448,46 460,52 448,58"/>
+            <text class="a" x="430" y="40" text-anchor="middle">true</text>
+            <rect class="box-a" x="464" y="24" width="120" height="56" rx="8"/>
+            <text class="m" x="524" y="57" text-anchor="middle">Size</text>
+            <text class="s" x="524" y="100" text-anchor="middle">{ } の中</text>
+            <path class="ln" d="M396 120 C 424 120, 424 164, 448 164"/><polygon class="hd" points="448,158 460,164 448,170"/>
+            <text class="s" x="430" y="192" text-anchor="middle">false</text>
+            <rect class="box" x="464" y="136" width="120" height="56" rx="8"/>
+            <text class="m" x="524" y="169" text-anchor="middle">string</text>
+            <text class="s" x="524" y="214" text-anchor="middle">if の後ろ</text>
+          </svg>
+        </div>
+        <figcaption>04章 q06 問1 の <code>typeof</code> と同じく、<code>true</code> になる <code>{ }</code> の中だけ、<code>input</code> が <code>Size</code> になります。確かめる中身が関数に分かれていても、<code>text is Size</code> の約束で絞り込みが起きます。</figcaption>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>isSize("S")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        <div><dt><code>isSize("XL")</code></dt><dd class="r"><code>false</code></dd><dd class="c">返す値は、ふつうの true か false</dd></div>
+        <div><dt><code>sizeOrDefault("XL")</code></dt><dd class="r"><code>"M"</code></dd><dd class="c">Size でないので "M" を返す</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>is</code> の左には、引数の名前を書きます。引数が <code>text</code> なのに <code>value is Size</code> と書くと、「Cannot find parameter 'value'」というエラーになります。</p>
+      <p class="memo"><b>テスト</b>戻り値の型を <code>boolean</code> にすると、値のテストは通ります。けれど型の確認で、テストのファイルに「Property 'toEqualTypeOf' does not exist on type 'never'」というエラーが出ます。型ガード関数になっていない、という意味です。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/type-guard-functions">サバイバルTypeScript「型ガード関数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isText を作る。型の分からない value を受け取り、true か false を返す。true のときは value を文字列に絞り込む
+export function isText() {
+  // value の型が文字列かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「型の分からない value を受け取り」は <code>value: unknown</code> です。「true か false を返す。true のときは value を文字列に絞り込む」は、問1 のサンプルの <code>isSize</code> と同じ書き方で、<code>: value is string</code> です。中の行は、04章 q06 問1 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c05-q09-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">NaN でない数値かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isNum() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。数値で、しかも <code>NaN</code> でなければ <code>true</code> を返します。<code>NaN</code> の <code>typeof</code> も <code>"number"</code> なので、<code>typeof</code> だけでは足りません。戻り値の型は <code>value is number</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isNum(1)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isNum(NaN)</code></dt><dd class="r"><code>false</code></dd><dd class="c">NaN は除く</dd></div>
+          <div><dt><code>isNum("1")</code></dt><dd class="r"><code>false</code></dd><dd class="c">文字列の "1" は数値ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is number</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isNum を作る。型の分からない value を受け取り、true か false を返す。true のときは value を数値に絞り込む
+export function isNum() {
+  // value の型が数値、かつ value が NaN でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>NaN かどうかは <code>Number.isNaN()</code> です（01章 q04 問11）。「NaN でない」は、前に <code>!</code> を付けます（01章 q04 の応用）。<code>&amp;&amp;</code> の右側では、左側の確かめで <code>value</code> が数値になっています。戻り値の型を書かずにおくと、この関数は <code>boolean</code> と推論され、型のテストが通りません。<code>value is number</code> は自分で書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c05-q09-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">真偽値かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isBool() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。真偽値（<code>true</code> か <code>false</code>）なら <code>true</code> を返します。戻り値の型は <code>value is boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isBool(false)</code></dt><dd class="r"><code>true</code></dd><dd class="c">false も真偽値</dd></div>
+          <div><dt><code>isBool(0)</code></dt><dd class="r"><code>false</code></dd><dd class="c">0 は数値</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is boolean</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isBool を作る。型の分からない value を受け取り、true か false を返す。true のときは value を真偽値に絞り込む
+export function isBool() {
+  // value の型が真偽値かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。真偽値の <code>typeof</code> は <code>"boolean"</code> です（04章 q06 問4）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c05-q09-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">すべての要素が文字列の配列かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isStringArray() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。配列で、すべての要素が文字列なら <code>true</code> を返します。戻り値の型は <code>value is string[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isStringArray(["a", "b"])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isStringArray(["a", 1])</code></dt><dd class="r"><code>false</code></dd><dd class="c">1 が数値</dd></div>
+          <div><dt><code>isStringArray("ab")</code></dt><dd class="r"><code>false</code></dd><dd class="c">配列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is string[]</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isStringArray を作る。型の分からない value を受け取り、true か false を返す。true のときは value を文字列の配列に絞り込む
+export function isStringArray() {
+  // value が配列、かつ value の要素の型がすべて文字列かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>配列かどうかは <code>Array.isArray()</code>（04章 q06 問2）、すべての要素が条件に合うかは <code>.every()</code>（02章 q04 問20）です。<code>&amp;&amp;</code> の右側では <code>value</code> が配列になっているので、<code>.every()</code> を呼べます。<code>.every()</code> に渡す関数の中で、要素の <code>typeof</code> を確かめます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c05-q09-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">null でないかを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPresent() {}</code></pre>
+      <p>文字列か <code>null</code> を受け取ります。<code>null</code> でなければ <code>true</code> を返します。引数の型は <code>string | null</code>、戻り値の型は <code>value is string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPresent("a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPresent(null)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | null</code> で、戻り値の型が <code>value is string</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPresent を作る。文字列か null の value を受け取り、true か false を返す。true のときは value を文字列に絞り込む
+export function isPresent() {
+  // value が null でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「文字列か null の value」は <code>value: string | null</code> です（03章 q03）。<code>!== null</code> で比べた結果を、そのまま返します。<code>is</code> の右の型は、引数の型より狭い型にします。ここでは、<code>string | null</code> から <code>null</code> を除いた <code>string</code> です。引数の型と合わない型を書くと、「A type predicate's type must be assignable to its parameter's type」というエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c05-q09-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">undefined でないかを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isDefinedNumber() {}</code></pre>
+      <p>数値か <code>undefined</code> を受け取ります。<code>undefined</code> でなければ <code>true</code> を返します。<code>0</code> も値があるので <code>true</code> です。引数の型は <code>number | undefined</code>、戻り値の型は <code>value is number</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isDefinedNumber(0)</code></dt><dd class="r"><code>true</code></dd><dd class="c">0 も値がある</dd></div>
+          <div><dt><code>isDefinedNumber(undefined)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number | undefined</code> で、戻り値の型が <code>value is number</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isDefinedNumber を作る。数値か undefined の value を受け取り、true か false を返す。true のときは value を数値に絞り込む
+export function isDefinedNumber() {
+  // value が undefined でないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形で、比べる相手が <code>undefined</code> です。<code>!== undefined</code> で比べるので、<code>0</code> も <code>true</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c05-q09-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">User の形かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { name: string; age: number };
+
+export function isUser() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>null</code> でないオブジェクトで、<code>name</code> が文字列、<code>age</code> が数値なら <code>true</code> を返します。戻り値の型は <code>value is User</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isUser({ name: "山田", age: 30 })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUser({ name: "山田" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">age がない</dd></div>
+          <div><dt><code>isUser(null)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is User</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+export function isUser() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value に "age" というキーがある、かつ value の name の型が文字列、かつ value の age の型が数値かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>04章 q06 問12 のサンプルの、4 つの確かめと同じ形です。それを <code>name</code> と <code>age</code> の 2 つのキーぶんに広げ、6 つを <code>&amp;&amp;</code> でつなぎます。キーごとに「キーがある」「その型が合う」の順に並べてもかまいません。キーがあるかを、型より先に確かめれば動きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c05-q09-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">Admin かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { name: string; age: number };
+
+export type Admin = User &amp; { role: "admin" };
+
+export function isAdmin() {}</code></pre>
+      <p><code>User</code> か <code>Admin</code> を受け取り、<code>Admin</code> なら <code>true</code> を返します。<code>Admin</code> は、<code>User</code> に <code>role: "admin"</code> を足した型です（インターセクション型、03章 q06）。確かめは <code>"role" in user</code> で書きます。引数の名前は <code>user</code>、戻り値の型は <code>user is Admin</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isAdmin({ name: "山田", age: 30, role: "admin" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isAdmin({ name: "佐藤", age: 25 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">role がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>User | Admin</code> で、戻り値の型が <code>user is Admin</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isAdmin を作る。User か Admin の user を受け取り、true か false を返す。true のときは user を Admin に絞り込む
+export function isAdmin() {
+  // user に "role" というキーがあるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>is</code> の左は引数の名前なので、ここでは <code>user</code> と書きます（問1 のよくある間違い）。引数の型が <code>User | Admin</code> と決まっているので、<code>typeof</code> や <code>null</code> の確かめは要りません。<code>in</code> の確かめだけで足ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c05-q09-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">犬かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Pet = { kind: "dog"; bark: string } | { kind: "cat"; meow: string };
+
+export function isDog() {}</code></pre>
+      <p><code>Pet</code> を受け取り、犬なら <code>true</code> を返します。<code>Pet</code> は、<code>kind</code> で見分けられる判別可能なユニオン型です（03章 q04）。戻り値の型は <code>pet is { kind: "dog"; bark: string }</code> です。<code>is</code> の右に、型の名前の代わりにオブジェクトの型をそのまま書きます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isDog({ kind: "dog", bark: "ワン" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isDog({ kind: "cat", meow: "ニャー" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">猫</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Pet</code> で、戻り値の型が <code>pet is { kind: "dog"; bark: string }</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isDog を作る。Pet の pet を受け取り、true か false を返す。true のときは pet を { kind: "dog"; bark: string } に絞り込む
+export function isDog() {
+  // pet の kind が "dog" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>is</code> の右には、<code>{ kind: "dog"; bark: string }</code> をそのまま書きます。<code>kind</code> で見分けるのは、03章 q04 の判別可能なユニオン型と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c05-q09-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">猫かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Pet = { kind: "dog"; bark: string } | { kind: "cat"; meow: string };
+
+export function isCat() {}</code></pre>
+      <p><code>Pet</code> を受け取り、猫なら <code>true</code> を返します。戻り値の型は <code>pet is { kind: "cat"; meow: string }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isCat({ kind: "cat", meow: "ニャー" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isCat({ kind: "dog", bark: "ワン" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">犬</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Pet</code> で、戻り値の型が <code>pet is { kind: "cat"; meow: string }</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isCat を作る。Pet の pet を受け取り、true か false を返す。true のときは pet を { kind: "cat"; meow: string } に絞り込む
+export function isCat() {
+  // pet の kind が "cat" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形で、<code>"dog"</code> が <code>"cat"</code>、<code>bark</code> が <code>meow</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c05-q09-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">配列から文字列だけを集める</span>
+      <span class="q-new">新しく出てくる書き方：<code>.filter()</code> に型ガード関数を渡す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function onlyStrings() {}</code></pre>
+      <p>どんな値でも入る配列を受け取ります。その中から、文字列だけを集めた新しい配列を返します。引数の型は <code>readonly unknown[]</code>、戻り値の型は <code>string[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>onlyStrings(["a", 1, "b"])</code></dt><dd class="r"><code>["a", "b"]</code></dd><dd class="c">1 を除く</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly unknown[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.filter(isBook)</code><h4>.filter() に型ガード関数を渡すと、結果の配列の型も狭まる</h4></div>
+      <p><code>.filter()</code>（02章 q04 問7）に型ガード関数を渡すと、残った要素の型が、<code>is</code> の右の型になります。結果の配列の型も、その型の配列になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Book という型を作る。kind は "book"、title は文字列
+type Book = { kind: "book"; title: string };
+// Food という型を作る。kind は "food"、name は文字列
+type Food = { kind: "food"; name: string };
+// 商品 products を作り、本 2 冊と食品 1 つを入れる。型は読み取り専用の、Book か Food の配列
+const products: readonly (Book | Food)[] = [
+  { kind: "book", title: "TypeScript入門" },
+  { kind: "food", name: "りんご" },
+  { kind: "book", title: "設計の基本" },
+];
+// 関数 isBook を作る。Book か Food の item を受け取り、true か false を返す。true のときは item を Book に絞り込む
+function isBook(item: Book | Food): item is Book {
+  // item の kind が "book" と等しいかどうか（true か false）を返す
+  return item.kind === "book";
+}
+// 本 books を作り、products から、isBook が true になるものだけを残した新しい配列を入れる
+const books = products.filter(isBook);
+// 書名 titles を作り、books のそれぞれを title だけにした新しい配列を入れる
+const titles = books.map((book) =&gt; book.title);
+// 結果: titles は ["TypeScript入門", "設計の基本"]</code></pre>
+      </div>
+      <p><code>.filter(isBook)</code> のように、関数の名前だけを渡します。かっこを付けて <code>isBook()</code> と書くと、その場で呼ぶことになるので付けません。<code>books</code> の型は <code>Book[]</code> になるので、<code>book.title</code> を読めます。</p>
+      <p>型ガード関数に名前を付けずに、その場でアロー関数として書くこともできます。かっこの後ろに <code>: item is Food</code> を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 食品 foods を作り、products から、kind が "food" のものだけを残した新しい配列を入れる。渡す関数は、true のときに item を Food に絞り込む型ガード関数にする
+const foods = products.filter((item): item is Food =&gt; item.kind === "food");
+// 名前 names を作り、foods のそれぞれを name だけにした新しい配列を入れる
+const names = foods.map((food) =&gt; food.name);
+// 結果: names は ["りんご"]</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>products.filter(<span class="seg"><i>1</i>(item)</span>: <span class="seg"><i>2</i>item is Food</span> =&gt; <span class="seg"><i>3</i>item.kind === "food"</span>)</pre>
+        <ol>
+          <li><span>アロー関数の引数です。型は <code>.filter()</code> の配列から決まるので、書きません。</span></li>
+          <li><span>戻り値の型です。問1 の型ガード関数と同じ形で、<code>true</code> のときに <code>item</code> を <code>Food</code> に絞り込みます。</span></li>
+          <li><span>返す値です。<code>true</code> か <code>false</code> になる式を書きます。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>products.filter(isBook)</code> の型</dt><dd class="r"><code>Book[]</code></dd><dd class="c">型ガード関数を渡した</dd></div>
+        <div><dt><code>products.filter((item): item is Food =&gt; item.kind === "food")</code> の型</dt><dd class="r"><code>Food[]</code></dd><dd class="c">その場で書いた型ガード関数</dd></div>
+        <div><dt><code>products.filter((item): boolean =&gt; item.kind === "book")</code> の型</dt><dd class="r"><code>(Book | Food)[]</code></dd><dd class="c">戻り値が boolean なので狭まらない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>TypeScript 5.5 から、<code>(item) =&gt; item.kind === "book"</code> のような簡単な条件なら、<code>: item is Book</code> を書かなくても型ガードだと推論されます。けれど、問2 の <code>NaN</code> の確かめのように、推論されない条件もあります。結果の型が狭まらないときは、<code>is</code> を自分で書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 onlyStrings を作る。読み取り専用の、型の分からない値の配列 values を受け取り、文字列の配列を返す
+export function onlyStrings() {
+  // values から、value の型が文字列のものだけを残した新しい配列を返す。渡す関数は、true のときに value を文字列に絞り込む型ガード関数にする
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「読み取り専用の、型の分からない値の配列」は <code>readonly unknown[]</code> です（02章 q04 問1）。中の行は、問11 の 2 つ目のサンプルの <code>foods</code> の行と同じ形です。<code>: value is string</code> を付けたアロー関数を <code>.filter()</code> に渡し、条件は問1 と同じ <code>typeof</code> にします。問1 の <code>isText</code> のような型ガード関数をこのファイルに書いて、名前を渡してもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c05-q09-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">配列から undefined を除く</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function definedOnly() {}</code></pre>
+      <p>数値か <code>undefined</code> が入った配列を受け取ります。<code>undefined</code> を除いた、数値だけの新しい配列を返します。引数の型は <code>readonly (number | undefined)[]</code>、戻り値の型は <code>number[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>definedOnly([1, undefined, 2])</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly (number | undefined)[]</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 definedOnly を作る。読み取り専用の、数値か undefined の配列 values を受け取り、数値の配列を返す
+export function definedOnly() {
+  // values から、value が undefined でないものだけを残した新しい配列を返す。渡す関数は、true のときに value を数値に絞り込む型ガード関数にする
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数値か undefined の配列」は <code>(number | undefined)[]</code> です（03章 q03）。前に <code>readonly</code> を付けます。中の行は問11 と同じ形で、絞り込む型が <code>number</code>、条件が問6 と同じ <code>!== undefined</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c05-q09-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">配列の中の User の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { name: string; age: number };
+
+export function countUsers() {}</code></pre>
+      <p>どんな値でも入る配列を受け取ります。その中で、<code>User</code> の形をしたものがいくつあるかを返します。<code>User</code> の形かを確かめる型ガード関数を、このファイルの中に自分で書いて使います。引数の型は <code>readonly unknown[]</code>、戻り値の型は <code>number</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countUsers([{ name: "山田", age: 30 }, "x", { name: "佐藤" }])</code></dt><dd class="r"><code>1</code></dd><dd class="c">"x" は文字列、{ name: "佐藤" } は age がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly unknown[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 looksLikeUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+function looksLikeUser() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value に "age" というキーがある、かつ value の name の型が文字列、かつ value の age の型が数値かどうか（true か false）を返す
+}
+
+// 関数 countUsers を作る。読み取り専用の、型の分からない値の配列 values を受け取り、数値を返す
+export function countUsers() {
+  // values から、looksLikeUser が true になるものだけを残した新しい配列の、要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>looksLikeUser</code> は、問7 の <code>isUser</code> と同じ関数です。テストからは使わないので、<code>export</code> は付けません。名前は自由です。<code>.filter()</code> に関数の名前を渡すのは、問11 の 1 つ目のサンプルの <code>books</code> の行と同じ形です。要素の数は <code>.length</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c05-q09-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">文字列でなければエラーを投げるアサーション関数</span>
+      <span class="q-new">新しく出てくる書き方：アサーション関数 <code>asserts value is string</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function assertText() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。文字列でなければ、<code>"文字列ではありません"</code> というメッセージのエラーを投げます。文字列なら、何もせずに終わります。戻り値の型は <code>asserts value is string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assertText(1)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "文字列ではありません"</dd></div>
+          <div><dt><code>assertText("a")</code></dt><dd class="r">エラーを投げない</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>asserts value is string</code>（文字列に絞り込むアサーション）になっていることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">asserts value is string</code><h4>エラーを投げずに戻ったら型を絞り込む、アサーション関数</h4></div>
+      <p>型ガード関数は、<code>true</code> か <code>false</code> を返し、<code>if</code> の中で型を絞り込みました。アサーション関数は、値を返しません。条件に合わなければ、エラーを投げます。エラーを投げずに戻ってきたら、「条件に合っていた」と分かります。そのため、呼んだ行より下では、ずっと型が絞り込まれます。</p>
+      <p>戻り値の型は、型ガード関数の形の前に <code>asserts</code> を付けて、<code>asserts 引数の名前 is 型</code> と書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Size という型を作る。"S" か "M" か "L" のどれか
+type Size = "S" | "M" | "L";
+// 関数 assertSize を作る。文字列 text を受け取り、何も返さない。エラーを投げずに戻ったときは text を Size に絞り込む
+function assertSize(text: string): asserts text is Size {
+  // もし text が "S" と等しくない、かつ "M" と等しくない、かつ "L" と等しくないなら
+  if (text !== "S" &amp;&amp; text !== "M" &amp;&amp; text !== "L") {
+    // "サイズは S か M か L です" というメッセージのエラーを投げる
+    throw new Error("サイズは S か M か L です");
+  }
+}
+// 関数 orderSize を作る。文字列 input を受け取り、Size を返す
+function orderSize(input: string): Size {
+  // assertSize に input を渡して呼ぶ
+  assertSize(input);
+  // input を返す
+  return input;
+}
+// 結果: orderSize("M") は "M"、orderSize("XL") は "サイズは S か M か L です" というメッセージのエラーを投げる</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>function assertSize(text: string): <span class="seg"><i>1</i>asserts</span> <span class="seg"><i>2</i>text is Size</span></pre>
+        <ol>
+          <li><span>「この関数がエラーを投げずに戻ったら」という印です。</span></li>
+          <li><span>問1 の型ガード関数と同じ形です。引数 <code>text</code> を <code>Size</code> に絞り込みます。</span></li>
+        </ol>
+      </figure>
+      <p>戻り値の型を <code>void</code>（何も返さない型、04章 q05 問13）にした場合と比べます。どちらも、合わない値ではエラーを投げます。</p>
+      <div class="cmp">
+        <div>
+          <h5>戻り値の型を <code>void</code> にする</h5>
+          <pre><code class="language-typescript">function assertSize(text: string): void {
+  if (text !== "S" &amp;&amp; text !== "M" &amp;&amp; text !== "L") {
+    throw new Error("サイズは S か M か L です");
+  }
+}
+
+function orderSize(input: string): Size {
+  assertSize(input);
+  return input;
+}</code></pre>
+          <div class="verdict ng">✕ return input が型の確認でエラーになります。input は string のままです</div>
+        </div>
+        <div>
+          <h5>戻り値の型を <code>asserts text is Size</code> にする</h5>
+          <pre><code class="language-typescript">function assertSize(text: string): asserts text is Size {
+  if (text !== "S" &amp;&amp; text !== "M" &amp;&amp; text !== "L") {
+    throw new Error("サイズは S か M か L です");
+  }
+}
+
+function orderSize(input: string): Size {
+  assertSize(input);
+  return input;
+}</code></pre>
+          <div class="verdict ok">○ assertSize(input); の次の行から、input が Size になります</div>
+        </div>
+      </div>
+      <p>型ガード関数とアサーション関数の違いを、表にまとめます。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th></th><th>型ガード関数</th><th>アサーション関数</th></tr></thead>
+          <tbody>
+            <tr><td>戻り値の型</td><td><code>text is Size</code></td><td><code>asserts text is Size</code></td></tr>
+            <tr><td>関数が返すもの</td><td><code>true</code> か <code>false</code></td><td>何も返さない。合わなければエラーを投げる</td></tr>
+            <tr><td>呼び方</td><td><code>if (isSize(input)) { … }</code></td><td><code>assertSize(input);</code> の 1 行</td></tr>
+            <tr><td>絞り込まれる場所</td><td><code>if</code> の <code>{ }</code> の中</td><td>呼んだ行より下のすべて</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある間違い</b>アサーション関数の中で <code>return true;</code> と書くと、「Type 'boolean' is not assignable to type 'void'」というエラーになります。アサーション関数は値を返しません。合わないときに <code>throw</code> するだけです。</p>
+      <p class="memo"><b>よくある間違い</b><code>const assertSize = (text: string): asserts text is Size =&gt; { … };</code> のようにアロー関数で書くと、呼んだ行で「Assertions require every name in the call target to be declared with an explicit type annotation.」というエラーになります。アサーション関数は、問題のファイルのとおり <code>function</code> で書きます。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/functions/assertion-functions">サバイバルTypeScript「アサーション関数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 assertText を作る。型の分からない value を受け取り、何も返さない。エラーを投げずに戻ったときは value を文字列に絞り込む
+export function assertText() {
+  // もし value の型が文字列でないなら
+  //   "文字列ではありません" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「何も返さない。エラーを投げずに戻ったときは value を文字列に絞り込む」は、問14 のサンプルの <code>assertSize</code> と同じ書き方で、<code>: asserts value is string</code> です。「型が文字列でない」は <code>typeof value !== "string"</code> です。エラーを投げるのは、01章 q04 問8 の <code>throw new Error()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c05-q09-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">undefined ならエラーを投げるアサーション関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function assertDefined() {}</code></pre>
+      <p>文字列か <code>undefined</code> を受け取ります。<code>undefined</code> なら、<code>"値がありません"</code> というメッセージのエラーを投げます。引数の型は <code>string | undefined</code>、戻り値の型は <code>asserts value is string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assertDefined(undefined)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "値がありません"</dd></div>
+          <div><dt><code>assertDefined("a")</code></dt><dd class="r">エラーを投げない</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string | undefined</code> で、戻り値の型が <code>asserts value is string</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 assertDefined を作る。文字列か undefined の value を受け取り、何も返さない。エラーを投げずに戻ったときは value を文字列に絞り込む
+export function assertDefined() {
+  // もし value が undefined と等しいなら
+  //   "値がありません" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 と同じ形です。引数の型は <code>string | undefined</code>、<code>if</code> の条件は <code>=== undefined</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c05-q09-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">User の形でなければエラーを投げるアサーション関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { name: string; age: number };
+
+export function assertUser() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>User</code> の形でなければ、<code>"User ではありません"</code> というメッセージのエラーを投げます。<code>User</code> の形は、問7 と同じです。戻り値の型は <code>asserts value is User</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>assertUser({})</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "User ではありません"</dd></div>
+          <div><dt><code>assertUser({ name: "山田", age: 30 })</code></dt><dd class="r">エラーを投げない</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>asserts value is User</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 looksLikeUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+function looksLikeUser() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value に "age" というキーがある、かつ value の name の型が文字列、かつ value の age の型が数値かどうか（true か false）を返す
+}
+
+// 関数 assertUser を作る。型の分からない value を受け取り、何も返さない。エラーを投げずに戻ったときは value を User に絞り込む
+export function assertUser() {
+  // もし looksLikeUser に value を渡して呼んだ結果が false なら
+  //   "User ではありません" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>looksLikeUser</code> は問13 と同じです。「呼んだ結果が false なら」は、前に <code>!</code> を付けて <code>if (!looksLikeUser(value))</code> と書きます。<code>looksLikeUser</code> を作らずに、問7 の 6 つの確かめ全体を <code>!( )</code> で囲んで、<code>if</code> の条件に書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c05-q09-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">User の形ならそれを、そうでなければ null を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { name: string; age: number };
+
+export function toUserOrNull() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>User</code> の形なら、受け取った値をそのまま返します。そうでなければ <code>null</code> を返します。<code>User</code> の形かを確かめる型ガード関数を、このファイルの中に自分で書いて使います。引数の型は <code>unknown</code>、戻り値の型は <code>User | null</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toUserOrNull({ name: "山田", age: 30 })</code></dt><dd class="r"><code>{ name: "山田", age: 30 }</code></dd><dd class="c">中身が同じオブジェクト</dd></div>
+          <div><dt><code>toUserOrNull("x")</code></dt><dd class="r"><code>null</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code>、戻り値が <code>User | null</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 looksLikeUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+function looksLikeUser() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value に "age" というキーがある、かつ value の name の型が文字列、かつ value の age の型が数値かどうか（true か false）を返す
+}
+
+// 関数 toUserOrNull を作る。型の分からない value を受け取り、User か null を返す
+export function toUserOrNull() {
+  // looksLikeUser に value を渡して呼んだ結果が true なら value、そうでなければ null を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>looksLikeUser</code> は問13 と同じです。中の行は、条件演算子 <code>? :</code>（01章 q01 問12）で書きます。<code>?</code> の後ろでは <code>value</code> が <code>User</code> に絞り込まれているので、そのまま返せます。「User か null を返す」は <code>: User | null</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c05-q09-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">「@」を含む文字列かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isEmailLike() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。文字列で、<code>"@"</code> を含んでいれば <code>true</code> を返します。メールアドレスらしいかを、ざっと確かめる関数です。戻り値の型は <code>value is string</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isEmailLike("a@example.com")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isEmailLike("example.com")</code></dt><dd class="r"><code>false</code></dd><dd class="c">@ がない</dd></div>
+          <div><dt><code>isEmailLike(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c">文字列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is string</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isEmailLike を作る。型の分からない value を受け取り、true か false を返す。true のときは value を文字列に絞り込む
+export function isEmailLike() {
+  // value の型が文字列、かつ value に "@" が含まれるかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「含まれるか」は <code>.includes()</code> です（01章 q01 問16）。<code>&amp;&amp;</code> の右側では、左側の確かめで <code>value</code> が文字列になっているので、<code>.includes()</code> を呼べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c05-q09-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">座標の形かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPoint() {}</code></pre>
+      <p>どんな値でも 1 つ受け取ります。<code>x</code> と <code>y</code> のプロパティがあり、どちらも数値のオブジェクトなら <code>true</code> を返します。戻り値の型は <code>value is { x: number; y: number }</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPoint({ x: 1, y: 2 })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPoint({ x: 1 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">y がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>unknown</code> で、戻り値の型が <code>value is { x: number; y: number }</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPoint を作る。型の分からない value を受け取り、true か false を返す。true のときは value を { x: number; y: number } に絞り込む
+export function isPoint() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "x" というキーがある、かつ value に "y" というキーがある、かつ value の x の型が数値、かつ value の y の型が数値かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じ形で、キーが <code>"x"</code> と <code>"y"</code>、型がどちらも <code>"number"</code> です。<code>is</code> の右には、問9 と同じく、オブジェクトの型をそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c05-q09-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">色の名前かを確かめる型ガード関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isColorName() {}</code></pre>
+      <p>文字列を受け取ります。<code>"red"</code>、<code>"green"</code>、<code>"blue"</code> のどれかなら <code>true</code> を返します。引数の型は <code>string</code>、戻り値の型は <code>value is "red" | "green" | "blue"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isColorName("red")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isColorName("pink")</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 つのどれでもない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> で、戻り値の型が <code>value is "red" | "green" | "blue"</code> になっていることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isColorName を作る。文字列 value を受け取り、true か false を返す。true のときは value を "red" か "green" か "blue" のどれかに絞り込む
+export function isColorName() {
+  // value が "red" と等しい、または "green" と等しい、または "blue" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>isSize</code> と同じ形です。<code>is</code> の右には、リテラル型のユニオン（01章 q07 問1）をそのまま書きます。型に名前を付けずに、<code>"red" | "green" | "blue"</code> と並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c05-q09-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">User を確かめる関数と、JSON から User の配列を読む関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type User = { name: string; age: number };
+
+export function isString() {}
+
+export function isUser() {}
+
+export function isUserArray() {}
+
+export function assertIsUser() {}
+
+export function parseUsers() {}</code></pre>
+      <p>型ガード関数 3 つと、アサーション関数 1 つと、それらを使って JSON を読む関数 1 つを書きます。前の関数を、後ろの関数の中で使えます。</p>
+      <ol>
+        <li><code>isString(value)</code>：文字列なら <code>true</code> を返します。戻り値の型は <code>value is string</code> です。</li>
+        <li><code>isUser(value)</code>：<code>null</code> でないオブジェクトで、<code>name</code> が文字列、<code>age</code> が数値なら <code>true</code> を返します。戻り値の型は <code>value is User</code> です。</li>
+        <li><code>isUserArray(value)</code>：配列で、すべての要素が <code>isUser</code> を満たせば <code>true</code> を返します。空の配列も <code>true</code> です。戻り値の型は <code>value is User[]</code> です。</li>
+        <li><code>assertIsUser(value)</code>：<code>User</code> でなければ、<code>"User ではありません"</code> というメッセージのエラーを投げます。戻り値の型は <code>asserts value is User</code> です。</li>
+        <li><code>parseUsers(json)</code>：JSON の文字列を読みます。読んだ結果が <code>User</code> の配列なら、それを返します。そうでなければ、<code>"User の配列ではありません"</code> というメッセージのエラーを投げます。<code>JSON.parse()</code> の結果は、いったん <code>unknown</code> の変数に入れてから、<code>isUserArray</code> で確かめます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isString("a")</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isString(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUser({ name: "山田", age: 30 })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUser({ name: "山田", age: "30" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">age が文字列</dd></div>
+          <div><dt><code>isUser({ name: "山田" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">age がない</dd></div>
+          <div><dt><code>isUser(null)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUser("山田")</code></dt><dd class="r"><code>false</code></dd><dd class="c">オブジェクトではない</dd></div>
+          <div><dt><code>isUserArray([{ name: "山田", age: 30 }])</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUserArray([])</code></dt><dd class="r"><code>true</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>isUserArray([{ name: "山田", age: 30 }, { name: "佐藤" }])</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 つ目に age がない</dd></div>
+          <div><dt><code>isUserArray({ name: "山田", age: 30 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">配列ではない</dd></div>
+          <div><dt><code>assertIsUser({ name: "山田" })</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "User ではありません"</dd></div>
+          <div><dt><code>assertIsUser({ name: "山田", age: 30 })</code></dt><dd class="r">エラーを投げない</dd><dd class="c"></dd></div>
+          <div><dt><code>parseUsers('[{"name":"山田","age":30}]')</code></dt><dd class="r"><code>[{ name: "山田", age: 30 }]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>parseUsers('[{"name":"山田"}]')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "User の配列ではありません"。age がない</dd></div>
+          <div><dt><code>parseUsers('{"name":"山田","age":30}')</code></dt><dd class="r">エラーを投げる</dd><dd class="c">メッセージは "User の配列ではありません"。配列ではない</dd></div>
+        </dl>
+        <ul>
+          <li><code>unknown</code> の変数を <code>if (isUser(value))</code> で確かめると、<code>{ }</code> の中で <code>value</code> が <code>User</code> に絞り込まれることも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b><code>isString</code>・<code>isUser</code>・<code>isUserArray</code> は、引数が <code>unknown</code> で、戻り値の型がそれぞれ <code>value is string</code>・<code>value is User</code>・<code>value is User[]</code> です。<code>assertIsUser</code> は、引数が <code>unknown</code> で、戻り値の型が <code>asserts value is User</code> です。<code>parseUsers</code> は、引数が <code>string</code>、戻り値が <code>User[]</code> です。どれもテストで確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isString を作る。型の分からない value を受け取り、true か false を返す。true のときは value を文字列に絞り込む
+export function isString() {
+  // value の型が文字列かどうか（true か false）を返す
+}
+
+// 関数 isUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+export function isUser() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value に "age" というキーがある、かつ value の name の型が文字列、かつ value の age の型が数値かどうか（true か false）を返す
+}
+
+// 関数 isUserArray を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User の配列に絞り込む
+export function isUserArray() {
+  // value が配列、かつ value の要素がすべて isUser で true になるかどうか（true か false）を返す
+}
+
+// 関数 assertIsUser を作る。型の分からない value を受け取り、何も返さない。エラーを投げずに戻ったときは value を User に絞り込む
+export function assertIsUser() {
+  // もし isUser に value を渡して呼んだ結果が false なら
+  //   "User ではありません" というメッセージのエラーを投げる
+}
+
+// 関数 parseUsers を作る。文字列 json を受け取り、User の配列を返す
+export function parseUsers() {
+  // 値 data を作り、型を unknown にして、json を JSON として読んだ結果を入れる
+  // もし isUserArray に data を渡して呼んだ結果が false なら
+  //   "User の配列ではありません" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>isString</code> は問1、<code>isUser</code> は問7 と同じです。<code>isUserArray</code> は問4 と同じ形で、<code>.every()</code> に <code>isUser</code> の名前をそのまま渡します（問11 の 1 つ目のサンプルの <code>.filter(isBook)</code> と同じ渡し方）。<code>assertIsUser</code> は問16 と同じ形で、確かめに <code>isUser</code> を使います。<code>parseUsers</code> の 1 行目は、04章 q06 問20 のサンプルと同じ形です。エラーを投げる <code>if</code> の後ろでは、<code>data</code> が <code>User[]</code> に絞り込まれています。<code>return</code> で早めに抜けたときと同じです（03章 q05 問9）。そのため、最後の行で <code>data</code> をそのまま返せます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,955 @@
+<section class="sec" id="c03-q04">
+  <div class="sec-h">
+    <span class="eyebrow">03章 ユニオン型とそのほかの型</span>
+    <h2>q04 判別可能なユニオン型</h2>
+    <p>図形や支払い方法のように、いくつかの形を持つ値を扱う関数を 20 個書きます。どの形にも <code>kind</code> や <code>method</code> のような同じ名前のプロパティがあり、その値で形を見分けられます。この値を調べて形を見分けてから、その形にだけあるプロパティを使います。問1〜11 は、ファイルに書いてある型 <code>Shape</code>・<code>Payment</code>・<code>Notice</code> を使います。問12〜20 は、型を自分で作って <code>export</code> し、その型を使って関数を書きます。<code>switch</code> を使うときは、すべての場合の <code>case</code> を書きます。引数と戻り値には型注釈を付けます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c03-q04-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">図形の面積を返す</span>
+      <span class="q-new">新しく出てくる書き方：判別可能なユニオン型、<code>switch</code> / <code>case</code>、<code>Math.PI</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "rect"; width: number; height: number };
+
+export function shapeArea() {}</code></pre>
+      <p><code>Shape</code> は、円・正方形・長方形のどれかを表す型です。<code>kind</code> の値で、どの図形かが分かります。図形を 1 つ受け取り、面積を返します。円は「円周率 × 半径 × 半径」、正方形は「1 辺 × 1 辺」、長方形は「横 × 縦」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shapeArea({ kind: "circle", radius: 1 })</code></dt><dd class="r"><code>3.141592653589793</code></dd><dd class="c">円周率とほぼ同じ数であること</dd></div>
+          <div><dt><code>shapeArea({ kind: "square", size: 3 })</code></dt><dd class="r"><code>9</code></dd><dd class="c">3 × 3</dd></div>
+          <div><dt><code>shapeArea({ kind: "rect", width: 2, height: 5 })</code></dt><dd class="r"><code>10</code></dd><dd class="c">2 × 5</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">{ kind: "a" } | { kind: "b" }</code><h4>判別可能なユニオン型</h4></div>
+      <p>オブジェクトの型を <code>|</code> でつなぐと、「どれか 1 つの形」を表す型になります。どの形にも同じ名前のプロパティを置き、形ごとに違うリテラル型（01章 q07）を書きます。このプロパティの値を見れば、どの形かが分かります。このような型を、判別可能なユニオン型と呼びます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Delivery という型を作る。「kind は "store"」か「kind は "home"、distance は数値」のどちらか
+type Delivery = { kind: "store" } | { kind: "home"; distance: number };
+
+// 関数 deliveryFee を作る。Delivery の delivery を受け取り、数値を返す
+function deliveryFee(delivery: Delivery): number {
+  // もし delivery の kind が "store" と等しいなら
+  if (delivery.kind === "store") {
+    // 0 を返す
+    return 0;
+  }
+  // delivery の distance に 50 を掛けた数を返す
+  return delivery.distance * 50;
+}
+// 結果: deliveryFee({ kind: "store" }) は 0、deliveryFee({ kind: "home", distance: 12 }) は 600</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Delivery = <span class="seg"><i>1</i>{ kind: "store" }</span> <span class="seg c"><i>2</i>|</span> <span class="seg"><i>3</i>{ kind: "home"; distance: number }</span>;</pre>
+        <ol>
+          <li><span>1 つめの形です。店で受け取るので、距離はありません。</span></li>
+          <li><span>「または」を表す <code>|</code> です。03章 q01 のユニオン型と同じ記号です。</span></li>
+          <li><span>2 つめの形です。家に届けるので、<code>distance</code>（距離）を持ちます。どちらの形にも <code>kind</code> があり、値が <code>"store"</code> と <code>"home"</code> で違います。</span></li>
+        </ol>
+      </figure>
+      <p>判別するプロパティの値を <code>===</code> で比べると、TypeScript は形を絞り込みます（03章 q01 の絞り込み）。サンプルの <code>if</code> の中では、<code>delivery</code> は店の形です。<code>if</code> の中で <code>return</code> したので、その後ろの行に来るのは家の形だけです。だから <code>delivery.distance</code> が使えます。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 640 184" role="img" aria-label="shape の kind を調べると、circle、square、rect の 3 つの形に分かれる。circle のところでは radius が使える">
+            <rect class="box" x="8" y="62" width="164" height="60" rx="8"/>
+            <text class="m" x="90" y="88" text-anchor="middle">shape: Shape</text>
+            <text class="s" x="90" y="110" text-anchor="middle">3 つの形のどれか</text>
+            <line class="ln" x1="172" y1="92" x2="204" y2="92"/>
+            <line class="ln" x1="204" y1="30" x2="204" y2="154"/>
+            <line class="ln-a" x1="204" y1="30" x2="348" y2="30"/><polygon class="hd-a" points="348,24 360,30 348,36"/>
+            <line class="ln" x1="204" y1="92" x2="348" y2="92"/><polygon class="hd" points="348,86 360,92 348,98"/>
+            <line class="ln" x1="204" y1="154" x2="348" y2="154"/><polygon class="hd" points="348,148 360,154 348,160"/>
+            <text class="m a" x="212" y="22">kind が "circle"</text>
+            <text class="m s" x="212" y="84">kind が "square"</text>
+            <text class="m s" x="212" y="146">kind が "rect"</text>
+            <rect class="box-a" x="362" y="10" width="272" height="40" rx="8"/>
+            <text class="m" x="372" y="35">{ kind: "circle"; radius }</text>
+            <rect class="box" x="362" y="72" width="272" height="40" rx="8"/>
+            <text class="m" x="372" y="97">{ kind: "square"; size }</text>
+            <rect class="box" x="362" y="134" width="272" height="40" rx="8"/>
+            <text class="m" x="372" y="159">{ kind: "rect"; width; height }</text>
+          </svg>
+        </div>
+        <figcaption>問1 の <code>Shape</code> です。<code>kind</code> の値で、3 つの形のどれなのかが決まります。<code>kind</code> が <code>"circle"</code> だと分かった所では、<code>shape</code> は円の形として扱われ、<code>radius</code> が使えます。</figcaption>
+      </figure>
+      <div class="cmp">
+        <div>
+          <h5>形を見分けずに使う</h5>
+          <pre><code class="language-typescript">function deliveryFee(delivery: Delivery): number {
+  return delivery.distance * 50;
+}</code></pre>
+          <div class="verdict ng">エラー。店の形には distance がない</div>
+        </div>
+        <div>
+          <h5>kind で見分けてから使う</h5>
+          <pre><code class="language-typescript">function deliveryFee(delivery: Delivery): number {
+  if (delivery.kind === "store") {
+    return 0;
+  }
+  return delivery.distance * 50;
+}</code></pre>
+          <div class="verdict ok">通る。残りは家の形だけ</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>見分ける前の <code>delivery</code> は、店の形かもしれません。だから <code>delivery.distance</code> と書くと、型の確認で「<code>{ kind: "store"; }</code> に <code>distance</code> はない」というエラーになります。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">switch (…) { case …: }</code><h4>値で場合を分ける</h4></div>
+      <p><code>switch</code> は、1 つの値で場合を分ける文です。<code>switch</code> の後ろのかっこに、調べる値を書きます。<code>{ }</code> の中に <code>case 値:</code> を並べます。調べる値と等しい <code>case</code> を探し、その下の行を実行します。判別可能なユニオン型では、判別するプロパティの値で場合を分けるときによく使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Delivery という型を作る。「kind は "store"」か「kind は "home"、distance は数値」か「kind は "express"、distance は数値、fee は数値」のどれか
+type Delivery =
+  | { kind: "store" }
+  | { kind: "home"; distance: number }
+  | { kind: "express"; distance: number; fee: number };
+
+// 関数 deliveryFee を作る。Delivery の delivery を受け取り、数値を返す
+function deliveryFee(delivery: Delivery): number {
+  // delivery の kind で場合を分ける
+  switch (delivery.kind) {
+    // "store" の場合
+    case "store":
+      // 0 を返す
+      return 0;
+    // "home" の場合
+    case "home":
+      // delivery の distance に 50 を掛けた数を返す
+      return delivery.distance * 50;
+    // "express" の場合
+    case "express":
+      // delivery の distance に 50 を掛け、delivery の fee を足した数を返す
+      return delivery.distance * 50 + delivery.fee;
+  }
+}
+// 結果: deliveryFee({ kind: "home", distance: 12 }) は 600、deliveryFee({ kind: "express", distance: 12, fee: 300 }) は 900</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>switch (delivery.kind)</span> {
+  <span class="seg"><i>2</i>case "store":</span>
+    <span class="seg"><i>3</i>return 0;</span>
+  case "home":
+    return delivery.distance * 50;
+  …
+}</pre>
+        <ol>
+          <li><span>かっこの中が、調べる値です。ここでは <code>delivery</code> の <code>kind</code> です。</span></li>
+          <li><span>「調べる値が <code>"store"</code> のとき」を表します。最後に <code>:</code> を付けます。</span></li>
+          <li><span>その場合にする処理です。<code>return</code> で関数を抜けるので、下の <code>case</code> には進みません。</span></li>
+        </ol>
+      </figure>
+      <p><code>case</code> の下でも絞り込みが効きます。<code>case "home":</code> の下では、<code>delivery</code> は家の形として扱われます。だから <code>delivery.distance</code> が使えます。</p>
+      <p class="memo"><b>すべての case を書く</b>この課題の ESLint は、<code>case</code> が足りない <code>switch</code> をエラーにします。サンプルから <code>case "express":</code> を消すと、「Switch is not exhaustive. Cases not matched: "express"」と出ます。同時に、型の確認でも「関数の最後に <code>return</code> がない」というエラーになります。すべての <code>case</code> で <code>return</code> していれば、<code>switch</code> の後ろに <code>return</code> は要りません。<code>kind</code> が 3 つのどれかしかないことを、TypeScript が知っているからです。</p>
+      <p>ここでは、まねて書ければ十分です。</p>
+      <p class="more">04章 q02（switch文）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">Math.PI</code><h4>円周率</h4></div>
+      <p><code>Math.PI</code> は円周率（約 3.14）を表す数です。関数ではないので、かっこを付けません。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 丸いラベルの直径 diameter を作り、4 を入れる
+const diameter = 4;
+// 周りの長さ edge を作り、Math.PI × diameter を入れる
+const edge = Math.PI * diameter;
+// 結果: edge は 12.566370614359172</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b>円周率を使う計算は、答えが割り切れない数になります。そのため、テストは「ほぼ同じ数か」で確かめます。<code>Math.PI</code> を使えば、細かい桁は気にしなくてかまいません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function shapeArea(shape: Shape): number {
+  // shape の kind で場合を分ける
+    // "circle" の場合
+      // Math.PI × shape の radius × shape の radius を返す
+    // "square" の場合
+      // shape の size と shape の size を掛けた数を返す
+    // "rect" の場合
+      // shape の width と shape の height を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 2 つめのサンプルの <code>switch</code> と同じ形です。調べる値が <code>shape.kind</code> になり、<code>case</code> が <code>"circle"</code>・<code>"square"</code>・<code>"rect"</code> の 3 つになります。<code>case "circle":</code> の下では <code>shape.radius</code>、<code>case "square":</code> の下では <code>shape.size</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c03-q04-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">図形の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "rect"; width: number; height: number };
+
+export function shapeName() {}</code></pre>
+      <p>図形を 1 つ受け取り、名前を返します。円なら <code>"円"</code>、正方形なら <code>"正方形"</code>、長方形なら <code>"長方形"</code> です。戻り値の型は、3 つの名前のリテラル型のユニオン <code>"円" | "正方形" | "長方形"</code> にします（01章 q07）。テストはこの型を確かめるので、<code>string</code> と書くと失敗します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shapeName({ kind: "circle", radius: 1 })</code></dt><dd class="r"><code>"円"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shapeName({ kind: "square", size: 1 })</code></dt><dd class="r"><code>"正方形"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>shapeName({ kind: "rect", width: 1, height: 2 })</code></dt><dd class="r"><code>"長方形"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>、戻り値が <code>"円" | "正方形" | "長方形"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function shapeName(shape: Shape): "円" | "正方形" | "長方形" {
+  // shape の kind で場合を分ける
+    // "circle" の場合
+      // "円" を返す
+    // "square" の場合
+      // "正方形" を返す
+    // "rect" の場合
+      // "長方形" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ <code>switch</code> の形で、返す値が文字列になります。戻り値の型は、かっこの後ろに <code>: "円" | "正方形" | "長方形"</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c03-q04-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">図形の周りの長さを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "rect"; width: number; height: number };
+
+export function shapePerimeter() {}</code></pre>
+      <p>図形を 1 つ受け取り、周りの長さを返します。円は「2 × 円周率 × 半径」、正方形は「1 辺 × 4」、長方形は「(横 + 縦) × 2」です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>shapePerimeter({ kind: "circle", radius: 1 })</code></dt><dd class="r"><code>6.283185307179586</code></dd><dd class="c">2 × 円周率とほぼ同じ数であること</dd></div>
+          <div><dt><code>shapePerimeter({ kind: "square", size: 3 })</code></dt><dd class="r"><code>12</code></dd><dd class="c">3 × 4</dd></div>
+          <div><dt><code>shapePerimeter({ kind: "rect", width: 2, height: 3 })</code></dt><dd class="r"><code>10</code></dd><dd class="c">(2 + 3) × 2</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function shapePerimeter(shape: Shape): number {
+  // shape の kind で場合を分ける
+    // "circle" の場合
+      // 2 × Math.PI × shape の radius を返す
+    // "square" の場合
+      // shape の size に 4 を掛けた数を返す
+    // "rect" の場合
+      // shape の width と shape の height を足し、2 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ <code>switch</code> の形です。長方形は、足し算を先にするので <code>( )</code> で囲んでから <code>* 2</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c03-q04-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">円なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "rect"; width: number; height: number };
+
+export function isRound() {}</code></pre>
+      <p>図形を 1 つ受け取り、円なら <code>true</code>、それ以外なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isRound({ kind: "circle", radius: 1 })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isRound({ kind: "square", size: 1 })</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isRound(shape: Shape): boolean {
+  // shape の kind が "circle" と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>図形の中身は使わないので、<code>switch</code> は要りません。<code>shape.kind === "circle"</code> の結果は <code>true</code> か <code>false</code> なので、そのまま返せます（01章 q02 問1 の <code>isFreeShipping</code> と同じ形）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c03-q04-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">大きさを k 倍した、新しい図形を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "rect"; width: number; height: number };
+
+export function scaleShape() {}</code></pre>
+      <p>図形と数値 <code>k</code> を受け取ります。長さをすべて <code>k</code> 倍した、新しい図形を返します。<code>kind</code> は元の図形と同じにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>scaleShape({ kind: "circle", radius: 1 }, 3)</code></dt><dd class="r"><code>{ kind: "circle", radius: 3 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>scaleShape({ kind: "square", size: 3 }, 2)</code></dt><dd class="r"><code>{ kind: "square", size: 6 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>scaleShape({ kind: "rect", width: 1, height: 2 }, 2)</code></dt><dd class="r"><code>{ kind: "rect", width: 2, height: 4 }</code></dd><dd class="c">横と縦の両方を 2 倍</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Shape</code> と <code>number</code>、戻り値が <code>Shape</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function scaleShape(shape: Shape, k: number): Shape {
+  // shape の kind で場合を分ける
+    // "circle" の場合
+      // kind が "circle"、radius が shape の radius に k を掛けた数のオブジェクトを返す
+    // "square" の場合
+      // kind が "square"、size が shape の size に k を掛けた数のオブジェクトを返す
+    // "rect" の場合
+      // kind が "rect"、width が shape の width に k を掛けた数、height が shape の height に k を掛けた数のオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ <code>switch</code> の形で、<code>case</code> ごとにオブジェクトリテラル（02章 q01 問3）を返します。返すオブジェクトにも <code>kind</code> を書きます。<code>kind</code> がないと <code>Shape</code> のどの形にも当てはまらず、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c03-q04-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">支払い方法を表示する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Payment =
+  | { method: "cash" }
+  | { method: "card"; cardNumber: string }
+  | { method: "bank"; bankName: string };
+
+export function paymentLabel() {}</code></pre>
+      <p><code>Payment</code> は支払い方法を表す型です。ここでは <code>method</code> の値で形を見分けます。支払い方法を 1 つ受け取り、表示する文字列を返します。現金は「現金」、カードは「カード（末尾1234）」のようにカード番号の最後の 4 文字を入れます。振込は「振込（みらい銀行）」のように銀行名を入れます。かっこは全角です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>paymentLabel({ method: "cash" })</code></dt><dd class="r"><code>"現金"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>paymentLabel({ method: "card", cardNumber: "4111111111111234" })</code></dt><dd class="r"><code>"カード（末尾1234）"</code></dd><dd class="c">最後の 4 文字</dd></div>
+          <div><dt><code>paymentLabel({ method: "bank", bankName: "みらい銀行" })</code></dt><dd class="r"><code>"振込（みらい銀行）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Payment</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function paymentLabel(payment: Payment): string {
+  // payment の method で場合を分ける
+    // "cash" の場合
+      // "現金" を返す
+    // "card" の場合
+      // payment の cardNumber の後ろから 4 文字を取り出したものを埋め込んだ「カード（末尾◯）」の文字列を返す
+    // "bank" の場合
+      // payment の bankName を埋め込んだ「振込（◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ <code>switch</code> の形で、調べる値が <code>payment.method</code> になります。後ろから 4 文字は <code>.slice(-4)</code> です（01章 q05 問4）。全角のかっこは、テンプレートリテラルの中にそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c03-q04-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">カードか振込なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Payment =
+  | { method: "cash" }
+  | { method: "card"; cardNumber: string }
+  | { method: "bank"; bankName: string };
+
+export function needsConfirmation() {}</code></pre>
+      <p>支払い方法を 1 つ受け取ります。カードか振込なら、確認が要るので <code>true</code> を返します。現金なら <code>false</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>needsConfirmation({ method: "cash" })</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>needsConfirmation({ method: "bank", bankName: "みらい銀行" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Payment</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function needsConfirmation(payment: Payment): boolean {
+  // payment の method が "cash" と等しくないかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>支払い方法は 3 つしかないので、「カードか振込」は「現金でない」と同じです。等しくないことは <code>!==</code> で比べます（01章 q01 問17）。問4 と同じく、比べた結果をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c03-q04-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">カードならカード番号の末尾 4 桁を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Payment =
+  | { method: "cash" }
+  | { method: "card"; cardNumber: string }
+  | { method: "bank"; bankName: string };
+
+export function lastFour() {}</code></pre>
+      <p>支払い方法を 1 つ受け取ります。カードなら、カード番号の最後の 4 文字を返します。それ以外なら <code>undefined</code> を返します。戻り値の型は <code>string | undefined</code> です（02章 q04 問4）。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastFour({ method: "card", cardNumber: "4111111111111234" })</code></dt><dd class="r"><code>"1234"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lastFour({ method: "cash" })</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">カードではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Payment</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function lastFour(payment: Payment): string | undefined {
+  // もし payment の method が "card" と等しいなら
+    // payment の cardNumber の後ろから 4 文字を取り出して返す
+  // undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 の 1 つめのサンプルの <code>if</code> と同じ形です。<code>if</code> の中では <code>payment</code> がカードの形に絞り込まれるので、<code>payment.cardNumber</code> が使えます。<code>if</code> の外に <code>return undefined;</code> を書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c03-q04-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">お知らせを表示する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Notice =
+  | { type: "info"; message: string }
+  | { type: "warning"; message: string; level: number }
+  | { type: "error"; message: string; code: number };
+
+export function noticeText() {}</code></pre>
+      <p><code>Notice</code> はお知らせを表す型です。ここでは <code>type</code> という名前のプロパティで形を見分けます。お知らせを 1 つ受け取り、表示する文字列を返します。情報は「[情報] 本文」、注意は「[注意Lv2] 本文」のように <code>level</code> を入れます。エラーは「[エラー500] 本文」のように <code>code</code> を入れます。<code>[</code> と <code>]</code> は半角で、その後ろに半角スペースを 1 つ入れます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>noticeText({ type: "info", message: "更新しました" })</code></dt><dd class="r"><code>"[情報] 更新しました"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>noticeText({ type: "warning", message: "容量が少ない", level: 2 })</code></dt><dd class="r"><code>"[注意Lv2] 容量が少ない"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>noticeText({ type: "error", message: "失敗", code: 500 })</code></dt><dd class="r"><code>"[エラー500] 失敗"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Notice</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function noticeText(notice: Notice): string {
+  // notice の type で場合を分ける
+    // "info" の場合
+      // notice の message を埋め込んだ「[情報] ◯」の文字列を返す
+    // "warning" の場合
+      // notice の level と notice の message を埋め込んだ「[注意Lv◯] ◯」の文字列を返す
+    // "error" の場合
+      // notice の code と notice の message を埋め込んだ「[エラー◯] ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ <code>switch</code> の形で、調べる値が <code>notice.type</code> になります。<code>message</code> は 3 つの形のどれにもあります。<code>level</code> は <code>case "warning":</code> の下、<code>code</code> は <code>case "error":</code> の下でだけ使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c03-q04-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">重大なお知らせなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Notice =
+  | { type: "info"; message: string }
+  | { type: "warning"; message: string; level: number }
+  | { type: "error"; message: string; code: number };
+
+export function isSerious() {}</code></pre>
+      <p>お知らせを 1 つ受け取り、重大なら <code>true</code> を返します。エラーはいつも重大です。注意は <code>level</code> が 3 以上なら重大です。情報は重大ではありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isSerious({ type: "info", message: "x" })</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isSerious({ type: "warning", message: "x", level: 2 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">level が 3 より小さい</dd></div>
+          <div><dt><code>isSerious({ type: "warning", message: "x", level: 3 })</code></dt><dd class="r"><code>true</code></dd><dd class="c">level が 3 ちょうども重大</dd></div>
+          <div><dt><code>isSerious({ type: "error", message: "x", code: 500 })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Notice</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function isSerious(notice: Notice): boolean {
+  // notice の type で場合を分ける
+    // "info" の場合
+      // false を返す
+    // "warning" の場合
+      // notice の level が 3 以上かどうか（true か false）を返す
+    // "error" の場合
+      // true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ <code>switch</code> の形です。「3 以上」は <code>&gt;= 3</code> です（01章 q01 問7）。<code>case "warning":</code> の下では、比べた結果をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c03-q04-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">エラーならエラーの番号を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Notice =
+  | { type: "info"; message: string }
+  | { type: "warning"; message: string; level: number }
+  | { type: "error"; message: string; code: number };
+
+export function errorCode() {}</code></pre>
+      <p>お知らせを 1 つ受け取ります。エラーなら <code>code</code> を返します。それ以外なら <code>undefined</code> を返します。戻り値の型は <code>number | undefined</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>errorCode({ type: "error", message: "x", code: 404 })</code></dt><dd class="r"><code>404</code></dd><dd class="c"></dd></div>
+          <div><dt><code>errorCode({ type: "info", message: "x" })</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">エラーではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Notice</code>、戻り値が <code>number | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">export function errorCode(notice: Notice): number | undefined {
+  // notice の type が "error" と等しいなら notice の code、そうでなければ undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ なら ◯、そうでなければ ◯」は、条件演算子 <code>? :</code> で書けます（01章 q01 問12）。<code>?</code> の後ろでも絞り込みが効くので、<code>notice.code</code> が使えます。問8 のように <code>if</code> で書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c03-q04-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">型 Animal を作り、動物の鳴き声を返す</span>
+      <span class="q-new">新しく出てくる書き方：判別可能なユニオン型を自分で作る</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Animal と関数 cry を書く</code></pre>
+      <p>この問から、型も自分で作ります。ファイルには型も関数もありません。</p>
+      <ol>
+        <li>型 <code>Animal</code> を作って <code>export</code> します。犬 <code>{ kind: "dog"; name: 文字列 }</code> か、猫 <code>{ kind: "cat"; name: 文字列 }</code> のどちらかです。</li>
+        <li>関数 <code>cry(animal: Animal)</code> を書いて <code>export</code> します。犬なら「ポチ: ワン」、猫なら「ミケ: ニャー」のように、名前と鳴き声を返します。<code>:</code> は半角で、後ろに半角スペースを 1 つ入れます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Animal</code> の型</dt><dd class="r"><code>{ kind: "dog"; name: string } | { kind: "cat"; name: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>cry({ kind: "dog", name: "ポチ" })</code></dt><dd class="r"><code>"ポチ: ワン"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>cry({ kind: "cat", name: "ミケ" })</code></dt><dd class="r"><code>"ミケ: ニャー"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Animal</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">export type A = { … } | { … };</code><h4>判別可能なユニオン型を自分で作る</h4></div>
+      <p>問1 の <code>Shape</code> と同じ形の型を、自分で書きます。<code>type 名前 =</code>（02章 q01 の応用）の右に、オブジェクトの型を <code>|</code> でつないで並べます。どの形にも、見分けるためのプロパティを同じ名前で置き、形ごとに違う値のリテラル型を書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Member という型を作る。「rank は "gold"、name は文字列、discount は数値」か「rank は "normal"、name は文字列」のどちらか。ほかのファイルから使えるようにする
+export type Member =
+  { rank: "gold"; name: string; discount: number } | { rank: "normal"; name: string };
+
+// 関数 memberLabel を作る。Member の member を受け取り、文字列を返す
+function memberLabel(member: Member): string {
+  // 割引 rate を作り、member の rank が "gold" と等しいなら member の discount、そうでなければ 0 を入れる
+  const rate = member.rank === "gold" ? member.discount : 0;
+  // member の name と rate を埋め込んだ「◯様（割引◯%）」の文字列を返す
+  return `${member.name}様（割引${rate}%）`;
+}
+// 結果: memberLabel({ rank: "gold", name: "佐藤", discount: 10 }) は "佐藤様（割引10%）"</code></pre>
+      </div>
+      <p>どの形にもあるプロパティは、見分ける前でも使えます。サンプルの <code>name</code> は 2 つの形の両方にあるので、<code>member.name</code> はそのまま書けます。<code>discount</code> は金の会員の形にしかないので、<code>rank</code> を確かめてから使います。</p>
+      <p class="memo"><b>よくある疑問</b>型が長くなると、整形（Prettier）が <code>=</code> の後ろで改行します。形が多いと、問1 の <code>Shape</code> のように <code>|</code> を行の先頭に置いた形にもなります。どちらも同じ型です。</p>
+      <p class="memo"><b>よくある間違い</b>見分けるプロパティの値を <code>rank: string</code> のように書くと、値で形を見分けられません。<code>rank: "gold"</code> のように、値そのものをリテラル型で書きます。テストも型の中身を比べるので、<code>string</code> では失敗します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Animal という型を作る。「kind は "dog"、name は文字列」か「kind は "cat"、name は文字列」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 cry を作る。Animal の animal を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   鳴き声 voice を作り、animal の kind が "dog" と等しいなら "ワン"、そうでなければ "ニャー" を入れる
+//   animal の name と voice を埋め込んだ「◯: ◯」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は、問12 のサンプルの <code>Member</code> と同じ形で、<code>export type Animal =</code> と書きます。関数は <code>export function cry(animal: Animal): string { }</code> の形です。<code>voice</code> の行は、サンプルの <code>rate</code> の行と同じ形です。<code>name</code> は犬にも猫にもあるので、<code>animal.name</code> はそのまま使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c03-q04-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">型 Vehicle を作り、乗れる人数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Vehicle と関数 capacity を書く</code></pre>
+      <ol>
+        <li>型 <code>Vehicle</code> を作って <code>export</code> します。車 <code>{ type: "car"; seats: 数値 }</code> か、自転車 <code>{ type: "bike" }</code> のどちらかです。</li>
+        <li>関数 <code>capacity(vehicle: Vehicle)</code> を書いて <code>export</code> します。乗れる人数を返します。車は <code>seats</code>、自転車は <code>1</code> です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Vehicle</code> の型</dt><dd class="r"><code>{ type: "car"; seats: number } | { type: "bike" }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>capacity({ type: "car", seats: 5 })</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>capacity({ type: "bike" })</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Vehicle</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Vehicle という型を作る。「type は "car"、seats は数値」か「type は "bike"」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 capacity を作る。Vehicle の vehicle を受け取り、数値を返す。ほかのファイルから使えるようにする
+//   vehicle の type が "car" と等しいなら vehicle の seats、そうでなければ 1 を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問12 と同じ形です。見分けるプロパティの名前が <code>type</code> ですが、オブジェクトの型の中ならプロパティの名前に使えます。自転車の形は <code>{ type: "bike" }</code> だけです。関数は、条件演算子の結果をそのまま <code>return</code> します（問11 と同じ形）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c03-q04-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">型 UserAction を作り、操作を表示する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 UserAction と関数 actionText を書く</code></pre>
+      <ol>
+        <li>型 <code>UserAction</code> を作って <code>export</code> します。クリック <code>{ kind: "click"; x: 数値; y: 数値 }</code> か、キー入力 <code>{ kind: "key"; key: 文字列 }</code> のどちらかです。</li>
+        <li>関数 <code>actionText(event: UserAction)</code> を書いて <code>export</code> します。引数の名前は <code>event</code> です。クリックなら「click(10, 20)」、キー入力なら「key(Enter)」の形の文字列を返します。かっこは半角で、<code>,</code> の後ろに半角スペースを 1 つ入れます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>UserAction</code> の型</dt><dd class="r"><code>{ kind: "click"; x: number; y: number } | { kind: "key"; key: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>actionText({ kind: "click", x: 10, y: 20 })</code></dt><dd class="r"><code>"click(10, 20)"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>actionText({ kind: "key", key: "Enter" })</code></dt><dd class="r"><code>"key(Enter)"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>UserAction</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// UserAction という型を作る。「kind は "click"、x は数値、y は数値」か「kind は "key"、key は文字列」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 actionText を作る。UserAction の event を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   もし event の kind が "click" と等しいなら
+//     event の x と event の y を埋め込んだ「click(◯, ◯)」の文字列を返す
+//   event の key を埋め込んだ「key(◯)」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問12 と同じ形です。関数は、問1 の 1 つめのサンプルの <code>if</code> と同じ形です。<code>if</code> の後ろに来るのはキー入力の形だけなので、<code>event.key</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c03-q04-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">型 Media を作り、画像や動画の情報を表示する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Media と関数 mediaInfo を書く</code></pre>
+      <ol>
+        <li>型 <code>Media</code> を作って <code>export</code> します。画像 <code>{ type: "image"; width: 数値; height: 数値 }</code> か、動画 <code>{ type: "video"; seconds: 数値 }</code> のどちらかです。</li>
+        <li>関数 <code>mediaInfo(media: Media)</code> を書いて <code>export</code> します。画像なら「画像 100×200」、動画なら「動画 90秒」の形の文字列を返します。<code>×</code> は掛け算の記号です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Media</code> の型</dt><dd class="r"><code>{ type: "image"; width: number; height: number } | { type: "video"; seconds: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>mediaInfo({ type: "image", width: 100, height: 200 })</code></dt><dd class="r"><code>"画像 100×200"</code></dd><dd class="c">横 × 縦</dd></div>
+          <div><dt><code>mediaInfo({ type: "video", seconds: 90 })</code></dt><dd class="r"><code>"動画 90秒"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Media</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Media という型を作る。「type は "image"、width は数値、height は数値」か「type は "video"、seconds は数値」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 mediaInfo を作る。Media の media を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   もし media の type が "image" と等しいなら
+//     media の width と media の height を埋め込んだ「画像 ◯×◯」の文字列を返す
+//   media の seconds を埋め込んだ「動画 ◯秒」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 と同じ形です。<code>×</code> と <code>秒</code> は、テンプレートリテラルの中にそのまま書きます。<code>×</code> の前後にスペースは入れません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c03-q04-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">型 ApiResponse を作り、応答を表示する</span>
+      <span class="q-new">新しく出てくる書き方：<code>true</code> / <code>false</code> のリテラル型で見分ける</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 ApiResponse と関数 responseText を書く</code></pre>
+      <ol>
+        <li>型 <code>ApiResponse</code> を作って <code>export</code> します。成功 <code>{ ok: true; data: 文字列 }</code> か、失敗 <code>{ ok: false; status: 数値 }</code> のどちらかです。</li>
+        <li>関数 <code>responseText(response: ApiResponse)</code> を書いて <code>export</code> します。成功なら <code>data</code> をそのまま返します。失敗なら「エラー 404」のように、<code>status</code> を入れた文字列を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ApiResponse</code> の型</dt><dd class="r"><code>{ ok: true; data: string } | { ok: false; status: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>responseText({ ok: true, data: "こんにちは" })</code></dt><dd class="r"><code>"こんにちは"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>responseText({ ok: false, status: 404 })</code></dt><dd class="r"><code>"エラー 404"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>ApiResponse</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">ok: true</code><h4><code>true</code> / <code>false</code> のリテラル型で見分ける</h4></div>
+      <p>型の位置に <code>true</code> と書くと、「<code>true</code> という値だけ」を表すリテラル型になります。<code>false</code> も同じです。見分けるプロパティの型を <code>true</code> と <code>false</code> にすると、2 つの形を見分けられます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Stock という型を作る。「inStock は true、count は数値」か「inStock は false、arrival は文字列」のどちらか
+type Stock = { inStock: true; count: number } | { inStock: false; arrival: string };
+
+// 関数 stockText を作る。Stock の stock を受け取り、文字列を返す
+function stockText(stock: Stock): string {
+  // stock の inStock が true なら「在庫 ◯個」、そうでなければ「◯入荷予定」の文字列を返す
+  return stock.inStock ? `在庫 ${stock.count}個` : `${stock.arrival}入荷予定`;
+}
+// 結果: stockText({ inStock: true, count: 8 }) は "在庫 8個"、stockText({ inStock: false, arrival: "5月10日" }) は "5月10日入荷予定"</code></pre>
+      </div>
+      <p><code>stock.inStock</code> は <code>true</code> か <code>false</code> なので、そのまま条件に書けます。<code>?</code> の後ろでは在庫ありの形、<code>:</code> の後ろでは在庫なしの形に絞り込まれます。</p>
+      <div class="cmp">
+        <div>
+          <h5>true と比べる</h5>
+          <pre><code class="language-typescript">return stock.inStock === true
+  ? `在庫 ${stock.count}個`
+  : `${stock.arrival}入荷予定`;</code></pre>
+          <div class="verdict ng">ESLint のエラー</div>
+        </div>
+        <div>
+          <h5>そのまま条件に書く</h5>
+          <pre><code class="language-typescript">return stock.inStock
+  ? `在庫 ${stock.count}個`
+  : `${stock.arrival}入荷予定`;</code></pre>
+          <div class="verdict ok">通る</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>stock.inStock === true</code> と書くと、型の確認は通ります。でも、この課題の ESLint が「boolean の値を boolean と比べる必要はない」というエラーを出します。<code>true</code> か <code>false</code> の値は、そのまま条件に書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// ApiResponse という型を作る。「ok は true、data は文字列」か「ok は false、status は数値」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 responseText を作る。ApiResponse の response を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   response の ok が true なら response の data、そうでなければ response の status を埋め込んだ「エラー ◯」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は、問16 のサンプルの <code>Stock</code> と同じ形です。関数は、サンプルの <code>return</code> の行と同じ形です。成功のときは、テンプレートリテラルを使わずに <code>response.data</code> をそのまま返せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c03-q04-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">型 Account を作り、契約の種類を表示する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Account と関数 accountText を書く</code></pre>
+      <ol>
+        <li>型 <code>Account</code> を作って <code>export</code> します。無料 <code>{ plan: "free" }</code> か、有料 <code>{ plan: "paid"; until: 文字列 }</code> のどちらかです。<code>until</code> は有料の期限です。</li>
+        <li>関数 <code>accountText(account: Account)</code> を書いて <code>export</code> します。無料なら「無料」、有料なら「有料（2026-12-31まで）」のように期限を入れた文字列を返します。かっこは全角です。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Account</code> の型</dt><dd class="r"><code>{ plan: "free" } | { plan: "paid"; until: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>accountText({ plan: "free" })</code></dt><dd class="r"><code>"無料"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>accountText({ plan: "paid", until: "2026-12-31" })</code></dt><dd class="r"><code>"有料（2026-12-31まで）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Account</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Account という型を作る。「plan は "free"」か「plan は "paid"、until は文字列」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 accountText を作る。Account の account を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   account の plan が "free" と等しいなら "無料"、そうでなければ account の until を埋め込んだ「有料（◯まで）」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問12 と同じ形で、無料の形は <code>{ plan: "free" }</code> だけです。関数は問13 と同じく、条件演算子の結果をそのまま返します。<code>:</code> の後ろでは有料の形に絞り込まれるので、<code>account.until</code> が使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c03-q04-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">型 Token を作り、式の部品を文字にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Token と関数 tokenText を書く</code></pre>
+      <ol>
+        <li>型 <code>Token</code> を作って <code>export</code> します。計算式の部品を表す型で、数 <code>{ type: "number"; value: 数値 }</code>、足す記号 <code>{ type: "plus" }</code>、引く記号 <code>{ type: "minus" }</code> のどれかです。</li>
+        <li>関数 <code>tokenText(token: Token)</code> を書いて <code>export</code> します。数なら <code>value</code> を文字列にしたもの、足す記号なら <code>"+"</code>、引く記号なら <code>"-"</code> を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Token</code> の型</dt><dd class="r"><code>{ type: "number"; value: number } | { type: "plus" } | { type: "minus" }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>tokenText({ type: "number", value: 3 })</code></dt><dd class="r"><code>"3"</code></dd><dd class="c">文字列の "3" を返す</dd></div>
+          <div><dt><code>tokenText({ type: "plus" })</code></dt><dd class="r"><code>"+"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>tokenText({ type: "minus" })</code></dt><dd class="r"><code>"-"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Token</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Token という型を作る。「type は "number"、value は数値」か「type は "plus"」か「type は "minus"」のどれか。ほかのファイルから使えるようにする
+
+// 関数 tokenText を作る。Token の token を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   token の type で場合を分ける
+//     "number" の場合
+//       token の value を文字列にしたものを返す
+//     "plus" の場合
+//       "+" を返す
+//     "minus" の場合
+//       "-" を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>形が 3 つあるので、問1 の <code>switch</code> の形が書きやすいです。型は、問1 の 2 つめのサンプルの <code>Delivery</code> のように、3 つの形を <code>|</code> でつなぎます。数値を文字列にするのは <code>String()</code> です（01章 q01 問12）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c03-q04-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">型 Contact を作り、連絡先を表示する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Contact と関数 contactText を書く</code></pre>
+      <ol>
+        <li>型 <code>Contact</code> を作って <code>export</code> します。メール <code>{ by: "email"; address: 文字列 }</code> か、電話 <code>{ by: "phone"; number: 文字列 }</code> のどちらかです。</li>
+        <li>関数 <code>contactText(contact: Contact)</code> を書いて <code>export</code> します。メールなら「メール: a@example.com」、電話なら「電話: 090-0000-0000」の形の文字列を返します。<code>:</code> は半角で、後ろに半角スペースを 1 つ入れます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Contact</code> の型</dt><dd class="r"><code>{ by: "email"; address: string } | { by: "phone"; number: string }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>contactText({ by: "email", address: "a@example.com" })</code></dt><dd class="r"><code>"メール: a@example.com"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>contactText({ by: "phone", number: "090-0000-0000" })</code></dt><dd class="r"><code>"電話: 090-0000-0000"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Contact</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Contact という型を作る。「by は "email"、address は文字列」か「by は "phone"、number は文字列」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 contactText を作る。Contact の contact を受け取り、文字列を返す。ほかのファイルから使えるようにする
+//   contact の by が "email" と等しいなら contact の address を埋め込んだ「メール: ◯」の文字列、そうでなければ contact の number を埋め込んだ「電話: ◯」の文字列を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型は問12 と同じ形です。電話の形のプロパティの名前は <code>number</code> です。型の名前と同じつづりですが、プロパティの名前に使えます。型は <code>number: string</code>（電話番号は文字列）と書きます。関数は問17 と同じく、条件演算子の結果をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c03-q04-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">型 Reading を作り、温度を摂氏にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Reading と関数 toCelsius を書く</code></pre>
+      <ol>
+        <li>型 <code>Reading</code> を作って <code>export</code> します。温度計の読み取り値を表す型で、摂氏 <code>{ unit: "C"; value: 数値 }</code> か、華氏 <code>{ unit: "F"; value: 数値 }</code> のどちらかです。</li>
+        <li>関数 <code>toCelsius(reading: Reading)</code> を書いて <code>export</code> します。温度を摂氏にして、小数第 1 位までに四捨五入して返します。摂氏ならそのままです。華氏は「(値 − 32) × 5 ÷ 9」で摂氏にします。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Reading</code> の型</dt><dd class="r"><code>{ unit: "C"; value: number } | { unit: "F"; value: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>toCelsius({ unit: "F", value: 212 })</code></dt><dd class="r"><code>100</code></dd><dd class="c">(212 − 32) × 5 ÷ 9</dd></div>
+          <div><dt><code>toCelsius({ unit: "F", value: 98.6 })</code></dt><dd class="r"><code>37</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toCelsius({ unit: "C", value: 25 })</code></dt><dd class="r"><code>25</code></dd><dd class="c">摂氏はそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>Reading</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Reading という型を作る。「unit は "C"、value は数値」か「unit は "F"、value は数値」のどちらか。ほかのファイルから使えるようにする
+
+// 関数 toCelsius を作る。Reading の reading を受け取り、数値を返す。ほかのファイルから使えるようにする
+//   摂氏 celsius を作り、reading の unit が "C" と等しいなら reading の value、そうでなければ (reading の value − 32) × 5 ÷ 9 を入れる
+//   celsius に 10 を掛けて四捨五入し、10 で割った数を返す</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つの形は、どちらも <code>value</code> を持っています。形で変わるのは計算のしかただけです。<code>celsius</code> の行は、問12 のサンプルの <code>rate</code> の行と同じ形です。華氏の計算と四捨五入は、01章 q04 問20 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c03-q04-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">図形の型 Shape と、面積・説明を返す関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Shape = unknown;
+
+export function area() {}
+
+export function describeShape() {}</code></pre>
+      <p>図形の型を作り、その型を使う関数を 2 つ書きます。引数と戻り値には型注釈を付けます。<code>switch</code> を使うときは、すべての <code>kind</code> の <code>case</code> を書きます。</p>
+      <ol>
+        <li><code>Shape</code>：3 つの図形のどれかを表す型です。<code>kind</code> で見分けられるようにします。円は <code>kind</code> が <code>"circle"</code> で <code>radius</code>（半径）を持ちます。長方形は <code>kind</code> が <code>"rect"</code> で <code>width</code> と <code>height</code> を持ちます。三角形は <code>kind</code> が <code>"triangle"</code> で <code>base</code>（底辺）と <code>height</code> を持ちます。どれも数値です。<code>unknown</code> を書き換えます。</li>
+        <li><code>area(shape)</code>：面積を返します。円は「円周率 × 半径 × 半径」、長方形は「横 × 縦」、三角形は「底辺 × 高さ ÷ 2」です。</li>
+        <li><code>describeShape(shape)</code>：「円（半径 2）」「長方形（3 × 4）」「三角形（底辺 3・高さ 4）」の形の説明を返します。かっこは全角です。長方形の <code>×</code> の前後には半角スペースを入れます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>Shape</code> の型</dt><dd class="r"><code>{ kind: "circle"; radius: number } | { kind: "rect"; width: number; height: number } | { kind: "triangle"; base: number; height: number }</code></dd><dd class="c">と同じ型であること</dd></div>
+          <div><dt><code>area({ kind: "circle", radius: 1 })</code></dt><dd class="r"><code>3.141592653589793</code></dd><dd class="c">円周率とほぼ同じ数であること</dd></div>
+          <div><dt><code>area({ kind: "rect", width: 3, height: 4 })</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+          <div><dt><code>area({ kind: "triangle", base: 3, height: 4 })</code></dt><dd class="r"><code>6</code></dd><dd class="c">3 × 4 ÷ 2</dd></div>
+          <div><dt><code>area({ kind: "circle", width: 3 })</code></dt><dd class="r">型の確認でエラー</dd><dd class="c">円に <code>width</code> は書けないこと</dd></div>
+          <div><dt><code>describeShape({ kind: "circle", radius: 2 })</code></dt><dd class="r"><code>"円（半径 2）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeShape({ kind: "rect", width: 3, height: 4 })</code></dt><dd class="r"><code>"長方形（3 × 4）"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>describeShape({ kind: "triangle", base: 3, height: 4 })</code></dt><dd class="r"><code>"三角形（底辺 3・高さ 4）"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>area</code> と <code>describeShape</code> は、どちらも引数が <code>Shape</code> です。戻り値は <code>area</code> が <code>number</code>、<code>describeShape</code> が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Shape という型を作る。「kind は "circle"、radius は数値」か「kind は "rect"、width は数値、height は数値」か「kind は "triangle"、base は数値、height は数値」のどれか。ほかのファイルから使えるようにする
+export type Shape = unknown;
+
+// 関数 area を作る。Shape の shape を受け取り、数値を返す
+export function area() {
+  // shape の kind で場合を分ける
+    // "circle" の場合
+      // Math.PI × shape の radius × shape の radius を返す
+    // "rect" の場合
+      // shape の width と shape の height を掛けた数を返す
+    // "triangle" の場合
+      // shape の base と shape の height を掛け、2 で割った数を返す
+}
+
+// 関数 describeShape を作る。Shape の shape を受け取り、文字列を返す
+export function describeShape() {
+  // shape の kind で場合を分ける
+    // "circle" の場合
+      // shape の radius を埋め込んだ「円（半径 ◯）」の文字列を返す
+    // "rect" の場合
+      // shape の width と shape の height を埋め込んだ「長方形（◯ × ◯）」の文字列を返す
+    // "triangle" の場合
+      // shape の base と shape の height を埋め込んだ「三角形（底辺 ◯・高さ ◯）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Shape</code> は、<code>unknown</code> を消して、問1 の <code>Shape</code> と同じ形で書きます。正方形の代わりに三角形が入ります。オブジェクトの型をきちんと書けば、円に <code>width</code> を書いたときに型の確認でエラーになります。2 つの関数は、どちらも問1 と同じ <code>switch</code> の形です。<code>area</code> の三角形と円は問1・問3 の計算と同じ考え方で、<code>describeShape</code> は問9 と同じく <code>case</code> ごとにテンプレートリテラルを返します。</p></details>
+    </div>
+  </section>
+</section>

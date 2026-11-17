@@ -1,0 +1,793 @@
+<section class="sec" id="c07-q06">
+  <div class="sec-h">
+    <span class="eyebrow">07章 型の再利用とジェネリクス</span>
+    <h2>q06 型変数（ジェネリクス）</h2>
+    <p>どんな型の値や配列にも使える関数を、型変数（<code>&lt;T&gt;</code> など）を使って 20 個書きます。<code>any</code> や <code>unknown</code> は使いません。テストは、数値の配列を渡せば <code>number</code>、文字列の配列を渡せば <code>string</code> のように、渡した型に合わせて戻り値の型が変わるかを確かめます。引数の配列は <code>readonly T[]</code> にします。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c07-q06-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">受け取った値をそのまま返す</span>
+      <span class="q-new">新しく出てくる書き方：型変数 <code>&lt;T&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function identity() {}</code></pre>
+      <p>受け取った値を、そのまま返します。どんな型の値でも受け取れるようにします。戻り値の型は、受け取った値と同じ型になるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>identity(nums)</code></dt><dd class="r"><code>nums</code></dd><dd class="c">nums は <code>[1, 2]</code>。同じ配列がそのまま返る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>number[]</code> の <code>nums</code> を渡すと戻り値が <code>number[]</code>、文字列を渡すと戻り値が <code>string</code> になることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">&lt;T&gt;</code><h4>型を引数のように受け取る（型変数）</h4></div>
+      <p>関数は、値を引数で受け取ります。同じように、型も引数のように受け取れます。関数の名前の後ろに <code>&lt;T&gt;</code> と書くと、受け取った型を <code>T</code> という名前で使えます。この <code>T</code> を型変数といいます。型変数を使う書き方を、ジェネリクスといいます。</p>
+      <figure class="anat">
+        <pre>function first<span class="seg"><i>1</i>&lt;T&gt;</span>(<span class="seg"><i>2</i>items: T[]</span>)<span class="seg"><i>3</i>: T</span></pre>
+        <ol>
+          <li><span>型変数です。この関数は型を 1 つ受け取り、それを <code>T</code> と呼びます。名前は自由ですが、Type の頭文字の <code>T</code> がよく使われます。</span></li>
+          <li><span>引数 <code>items</code> の型は「<code>T</code> の配列」です。<code>number[]</code> の <code>number</code> のところに <code>T</code> を書いた形です。</span></li>
+          <li><span>戻り値の型は <code>T</code> です。「配列の要素と同じ型の値を返す」という意味になります。</span></li>
+        </ol>
+      </figure>
+      <p><code>T</code> が何の型になるかは、呼ぶたびに決まります。TypeScript が、渡した値の型を見て自動で決めます。次の表の <code>prices</code> は <code>number[]</code>、<code>names</code> は <code>string[]</code>、<code>flags</code> は <code>boolean[]</code> の変数です。</p>
+      <div class="scroll-t">
+        <table>
+          <thead><tr><th>呼び出し</th><th>渡した配列の型</th><th><code>T</code></th><th>戻り値の型</th></tr></thead>
+          <tbody>
+            <tr><td><code>first(prices)</code></td><td><code>number[]</code></td><td><code>number</code></td><td><code>number</code></td></tr>
+            <tr><td><code>first(names)</code></td><td><code>string[]</code></td><td><code>string</code></td><td><code>string</code></td></tr>
+            <tr><td><code>first(flags)</code></td><td><code>boolean[]</code></td><td><code>boolean</code></td><td><code>boolean</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>関数は 1 つだけ書けば、どの型の配列にも使えます。そのうえ、戻り値の型が、渡した配列の要素の型になります。</p>
+      <p>この課題では、引数の配列を <code>readonly T[]</code> にします。空の配列もあるので、要素を 1 つ取り出す関数は、戻り値を <code>T | undefined</code> にします。次のサンプルは、2 番目の要素を返す関数です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 secondOf を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+function secondOf&lt;T&gt;(items: readonly T[]): T | undefined {
+  // items の 1 番目の要素を返す
+  return items[1];
+}
+// 値段 price を作り、secondOf に [1200, 980] を渡した結果を入れる
+const price = secondOf([1200, 980]);
+// 担当者 staff を作り、secondOf に ["佐藤", "鈴木"] を渡した結果を入れる
+const staff = secondOf(["佐藤", "鈴木"]);
+// 結果: price は 980 で型は number | undefined、staff は "鈴木" で型は string | undefined</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>unknown で受け取る</h5>
+          <pre><code class="language-typescript">function secondOf(items: readonly unknown[]): unknown {
+  return items[1];
+}
+const price = secondOf([1200, 980]);
+price.toFixed();</code></pre>
+          <div class="verdict ng">✕ 戻り値が unknown になり、数値として使うと型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5>型変数で受け取る</h5>
+          <pre><code class="language-typescript">function secondOf&lt;T&gt;(items: readonly T[]): T | undefined {
+  return items[1];
+}
+const price = secondOf([1200, 980]);</code></pre>
+          <div class="verdict ok">○ 戻り値が number | undefined になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>呼ぶときに <code>secondOf&lt;number&gt;(prices)</code> のように <code>&lt; &gt;</code> の中に型を書いて、<code>T</code> を自分で決めることもできます。渡した値から決まるときは、書かなくてかまいません。</p>
+      <p class="more"><a href="https://typescriptbook.jp/reference/generics">サバイバルTypeScript「ジェネリクス」</a>、<a href="https://typescriptbook.jp/reference/generics/type-variables">「型変数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 identity を作る。型変数 T を使い、T の value を受け取り、T を返す
+export function identity() {
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「型変数 T を使い」は、関数の名前の後ろ、<code>(</code> の前の <code>&lt;T&gt;</code> になります。「T の value」は <code>value: T</code>、「T を返す」はかっこの後ろの <code>: T</code> です。問1 のサンプルの <code>secondOf</code> の 1 行目と同じ並びで、引数の型が <code>T</code> の配列から <code>T</code> そのものに変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c07-q06-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">最初の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstOf() {}</code></pre>
+      <p>配列の最初の要素を返します。空の配列なら <code>undefined</code> を返します。どんな型の配列でも受け取れるように、型変数を使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstOf([3, 1])</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>number[]</code> を渡すと戻り値が <code>number | undefined</code>、<code>string[]</code> を渡すと <code>string | undefined</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstOf を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+export function firstOf() {
+  // items の 0 番目の要素を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>secondOf</code> と同じ形で、取り出す位置だけが違います。この課題の設定では、<code>items[0]</code> の型は <code>T | undefined</code> です。戻り値の型を <code>T</code> だけにすると、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c07-q06-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">最後の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lastOf() {}</code></pre>
+      <p>配列の最後の要素を返します。空の配列なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastOf(["a", "b"])</code></dt><dd class="r"><code>"b"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lastOf([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>string[]</code> を渡すと戻り値が <code>string | undefined</code>、空の <code>number[]</code> を渡すと <code>number | undefined</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lastOf を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+export function lastOf() {
+  // items の（要素の数 − 1）番目の要素を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問2 と同じ形です。中の行は、02章 q04 問4 と同じく <code>[ ]</code> の中に <code>items.length - 1</code> を書きます。空の配列では <code>-1</code> 番目になり、要素がないので <code>undefined</code> が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c07-q06-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">値を 1 つだけ持つ配列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function wrapInArray() {}</code></pre>
+      <p>受け取った値を 1 つだけ入れた配列を返します。どんな型の値でも受け取れるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>wrapInArray("a")</code></dt><dd class="r"><code>["a"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>数値を渡すと戻り値が <code>number[]</code>、<code>number[]</code> を渡すと <code>number[][]</code>（数値の配列の配列）になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 wrapInArray を作る。型変数 T を使い、T の value を受け取り、T の配列を返す
+export function wrapInArray() {
+  // value だけを入れた配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「T の配列を返す」は、かっこの後ろの <code>: T[]</code> です。返す値は <code>[value]</code> です。<code>number[]</code> を渡したときは <code>T</code> が <code>number[]</code> に決まるので、戻り値の型は <code>number[][]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c07-q06-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">value を times 個並べた配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function repeatValue() {}</code></pre>
+      <p>値 <code>value</code> と数値 <code>times</code> を受け取ります。<code>value</code> を <code>times</code> 個並べた配列を返します。<code>value</code> はどんな型でも受け取れるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>repeatValue("x", 3)</code></dt><dd class="r"><code>["x", "x", "x"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列を渡すと、戻り値が <code>string[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 repeatValue を作る。型変数 T を使い、T の value と数値の times を受け取り、T の配列を返す
+export function repeatValue() {
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // i を 0 から、times より小さい間 1 ずつ増やしながらくり返す
+  //   result の最後に value を付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>02章 q04 問18 の <code>repeatItem</code> と同じ形で、<code>string</code> が <code>T</code> に変わります。「T の配列として作り」は <code>const result: T[] = [];</code> です。関数の中でも、型注釈に <code>T</code> を使えます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c07-q06-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">2 つの値を [a, b] のタプルにする</span>
+      <span class="q-new">新しく出てくる書き方：型変数を 2 つ使う <code>&lt;A, B&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function makePair() {}</code></pre>
+      <p>2 つの値 <code>a</code> と <code>b</code> を受け取り、<code>[a, b]</code> のタプルを返します。<code>a</code> と <code>b</code> は別々の型でもよいので、型変数を 2 つ使います。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>makePair("a", 1)</code></dt><dd class="r"><code>["a", 1]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列と数値を渡すと、戻り値が <code>[string, number]</code> になることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">&lt;A, B&gt;</code><h4>型変数を 2 つ使う</h4></div>
+      <p>型変数は、<code>,</code> で区切って 2 つ以上並べられます。それぞれに別の型が決まります。名前は自由ですが、<code>A</code> と <code>B</code>、<code>T</code> と <code>U</code>、キーと値なら <code>K</code> と <code>V</code> などがよく使われます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 entryOf を作る。型変数 K と V を使い、K の key と V の value を受け取り、key が K で value が V のオブジェクトを返す
+function entryOf&lt;K, V&gt;(key: K, value: V): { key: K; value: V } {
+  // key に key、value に value を入れたオブジェクトを返す
+  return { key, value };
+}
+// 在庫 stock を作り、entryOf に "A-001" と 30 を渡した結果を入れる
+const stock = entryOf("A-001", 30);
+// 結果: stock は { key: "A-001", value: 30 } で、型は { key: string; value: number }</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>entryOf("A-001", 30)</code></dt><dd class="r"><code>{ key: "A-001", value: 30 }</code></dd><dd class="c">K は string、V は number に決まる</dd></div>
+        <div><dt><code>entryOf(7, true)</code></dt><dd class="r"><code>{ key: 7, value: true }</code></dd><dd class="c">K は number、V は boolean に決まる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>型変数を 1 つにして <code>entryOf&lt;T&gt;(key: T, value: T)</code> と書くと、<code>key</code> と <code>value</code> が同じ型でなければなりません。<code>"A-001"</code> と <code>30</code> を渡すと、型の確認でエラーになります。別々の型を受け取りたいときは、型変数も別々にします。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 makePair を作る。型変数 A と B を使い、A の a と B の b を受け取り、[A, B] のタプルを返す
+export function makePair() {
+  // a、b の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問6 のサンプルの <code>entryOf</code> の 1 行目と同じ並びです。戻り値の型は、オブジェクトの型のところがタプルの型 <code>[A, B]</code> に変わります。タプルを返す書き方は、02章 q06 問1 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c07-q06-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">タプル [a, b] を [b, a] にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function swapPair() {}</code></pre>
+      <p>2 つの要素のタプル <code>[a, b]</code> を受け取り、順番を入れ替えた <code>[b, a]</code> を返します。2 つの要素は別々の型でもかまいません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>swapPair(["a", 1])</code></dt><dd class="r"><code>[1, "a"]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>[string, number]</code> のタプルを渡すと、戻り値が <code>[number, string]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 swapPair を作る。型変数 A と B を使い、読み取り専用の [A, B] のタプル pair を受け取り、[B, A] のタプルを返す
+export function swapPair() {
+  // pair の 0 番目を a、1 番目を b として取り出す
+  // b、a の順に並べたタプルを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型変数は問6 と同じく <code>&lt;A, B&gt;</code> です。「読み取り専用の [A, B] のタプル」は <code>readonly [A, B]</code> で、02章 q04 問1 の <code>readonly</code> をタプルの前に付けた形です。取り出す行は、02章 q06 問2 の <code>const [city, days]</code> の行と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c07-q06-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">型 Box&lt;T&gt; を作って export し、boxOf で Box を作る</span>
+      <span class="q-new">新しく出てくる書き方：型エイリアスの型変数 <code>type Box&lt;T&gt; =</code>、型に型を渡す <code>Box&lt;T&gt;</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Box と関数 boxOf を書く</code></pre>
+      <p>ファイルには関数の形がありません。型と関数を自分で書きます。</p>
+      <ol>
+        <li><code>Box&lt;T&gt;</code>：<code>value</code> というプロパティを 1 つ持つオブジェクトの型です。<code>value</code> の型は <code>T</code> です。<code>export</code> を付けます。</li>
+        <li><code>boxOf(value)</code>：受け取った値を <code>value</code> に入れた <code>Box</code> を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>boxOf(5)</code></dt><dd class="r"><code>{ value: 5 }</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Box&lt;number&gt;</code> が <code>{ value: number }</code> と同じ型であることを確かめます。<code>string[]</code> を渡した <code>boxOf</code> の戻り値が <code>Box&lt;string[]&gt;</code> になることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">type Page&lt;T&gt; =</code><h4>型エイリアスに型変数を付ける</h4></div>
+      <p>型エイリアス <code>type</code>（02章 q01 応用）の名前の後ろにも、<code>&lt;T&gt;</code> を書けます。こうすると、型を受け取って、新しい型を作れます。使うときは <code>Page&lt;string&gt;</code> のように、<code>&lt; &gt;</code> の中に型を渡します。q03 問1 の <code>Partial&lt;Options&gt;</code> と同じ書き方です。<code>Partial</code> も、型を受け取る型です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Page という型を作る。型変数 T を使い、items は読み取り専用の T の配列、total は数値
+type Page&lt;T&gt; = { items: readonly T[]; total: number };
+// 会員の名前のページ memberPage を Page&lt;string&gt; として作り、items に ["佐藤", "鈴木"]、total に 2 を入れる
+const memberPage: Page&lt;string&gt; = { items: ["佐藤", "鈴木"], total: 2 };
+// 結果: memberPage の items は ["佐藤", "鈴木"]、total は 2</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>type Page<span class="seg"><i>1</i>&lt;T&gt;</span> = { items: <span class="seg"><i>2</i>readonly T[]</span>; total: number };</pre>
+        <ol>
+          <li><span>型変数です。関数の <code>&lt;T&gt;</code>（問1）と同じく、型を 1 つ受け取って <code>T</code> と呼びます。</span></li>
+          <li><span>受け取った型を使う場所です。<code>Page&lt;string&gt;</code> なら、ここが <code>readonly string[]</code> になります。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>Page&lt;string&gt;</code></dt><dd class="r"><code>{ items: readonly string[]; total: number }</code></dd><dd class="c">T が string になる</dd></div>
+        <div><dt><code>Page&lt;number&gt;</code></dt><dd class="r"><code>{ items: readonly number[]; total: number }</code></dd><dd class="c">T が number になる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>型変数のある型を、<code>&lt; &gt;</code> を付けずに <code>const memberPage: Page = …</code> と書くと、型の確認でエラーになります。<code>Page</code> は、型を 1 つ渡さないと使えません。</p>
+    </article>
+    <article class="item">
+      <div class="item-h"><code class="tok">Page&lt;T&gt;</code><h4>関数の型変数を、型エイリアスに渡す</h4></div>
+      <p>関数の型注釈の中でも、<code>Page&lt;T&gt;</code> のように、関数の型変数 <code>T</code> を型エイリアスに渡せます。関数を呼んで <code>T</code> が <code>number</code> に決まると、戻り値の型は <code>Page&lt;number&gt;</code> になります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 pageOf を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、Page&lt;T&gt; を返す
+function pageOf&lt;T&gt;(items: readonly T[]): Page&lt;T&gt; {
+  // items に items、total に items の要素の数を入れたオブジェクトを返す
+  return { items, total: items.length };
+}
+// 在庫のページ stockPage を作り、pageOf に [30, 0, 12] を渡した結果を入れる
+const stockPage = pageOf([30, 0, 12]);
+// 結果: stockPage は { items: [30, 0, 12], total: 3 } で、型は Page&lt;number&gt;</code></pre>
+      </div>
+      <p class="more"><a href="https://typescriptbook.jp/reference/generics/type-variables">サバイバルTypeScript「型変数」</a></p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Box という型を作る。型変数 T を使い、value は T。ほかのファイルから使えるようにする
+
+// 関数 boxOf を作る。型変数 T を使い、T の value を受け取り、Box&lt;T&gt; を返す。ほかのファイルから使えるようにする
+export function boxOf() {
+  // value に value を入れたオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型の行は、問8 のサンプルの <code>Page</code> の行と同じ形で、プロパティが <code>value</code> の 1 つだけになります。前に <code>export</code> を付けます。<code>boxOf</code> は、2 つめのサンプルの <code>pageOf</code> と同じ形で、戻り値の型が <code>Box&lt;T&gt;</code> になります。返すオブジェクトは、プロパティの省略記法（02章 q01 問3）で <code>{ value }</code> と書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c07-q06-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">{ value: T } から value を取り出す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function unboxed() {}</code></pre>
+      <p><code>value</code> というプロパティを持つオブジェクトを受け取り、<code>value</code> の値を返します。<code>value</code> の型は何でもかまいません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>unboxed({ value: "a" })</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>{ value: number[] }</code> のオブジェクトを渡すと、戻り値が <code>number[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 unboxed を作る。型変数 T を使い、value が T のオブジェクト box を受け取り、T を返す
+export function unboxed() {
+  // box の value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の型は <code>{ value: T }</code> です。オブジェクトの型の中にも <code>T</code> を書けます。<code>{ value: number[] }</code> を渡すと、TypeScript が <code>value</code> の型から <code>T</code> を <code>number[]</code> に決めます。このファイルには問8 の <code>Box</code> がないので、型はそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c07-q06-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">逆順にした新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function reversedCopy() {}</code></pre>
+      <p>配列を逆の順に並べた、新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>reversedCopy([1, 2, 3])</code></dt><dd class="r"><code>[3, 2, 1]</code></dd><dd class="c"></dd></div>
+          <div><dt>渡した配列（呼んだあと）</dt><dd class="r"><code>[1, 2, 3]</code></dd><dd class="c">元のまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>number[]</code> を渡すと、戻り値が <code>number[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 reversedCopy を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、T の配列を返す
+export function reversedCopy() {
+  // items をコピーした配列を、逆の順に並べたものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、02章 q05 問11 の <code>latestFirst</code> の行と同じ形です。読み取り専用の配列には <code>.reverse()</code> がないので、<code>items.reverse()</code> と書くと型の確認でエラーになります。先に <code>[...items]</code> でコピーします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c07-q06-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">index 番目の要素を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nth() {}</code></pre>
+      <p>配列と番号 <code>index</code> を受け取り、<code>index</code> 番目の要素を返します。<code>index</code> がマイナスの数なら、後ろから数えます。<code>-1</code> が最後の要素です。範囲の外なら <code>undefined</code> を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nth(["a", "b", "c"], 0)</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nth(["a", "b", "c"], -1)</code></dt><dd class="r"><code>"c"</code></dd><dd class="c">後ろから 1 つめ</dd></div>
+          <div><dt><code>nth(["a", "b", "c"], 5)</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">範囲の外</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>string[]</code> を渡すと、戻り値が <code>string | undefined</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nth を作る。型変数 T を使い、読み取り専用の T の配列 items と数値の index を受け取り、T か undefined を返す
+export function nth() {
+  // index が 0 より小さいなら items の（要素の数 + index）番目、そうでなければ items の index 番目の要素を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「◯ なら △、そうでなければ □」は、条件演算子 <code>? :</code> です（01章 q01 問12）。要素が 3 つで <code>index</code> が <code>-1</code> なら、<code>3 + (-1)</code> で 2 番目になります。範囲の外の番号では、要素がないので <code>undefined</code> が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c07-q06-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">先頭から n 個の新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function takeFirst() {}</code></pre>
+      <p>配列と数値 <code>n</code> を受け取り、先頭から <code>n</code> 個の要素を並べた新しい配列を返します。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>takeFirst([1, 2, 3], 2)</code></dt><dd class="r"><code>[1, 2]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>number[]</code> を渡すと、戻り値が <code>number[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 takeFirst を作る。型変数 T を使い、読み取り専用の T の配列 items と数値の n を受け取り、T の配列を返す
+export function takeFirst() {
+  // items の 0 番目から n 番目の前までを取り出した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、02章 q05 問17 と同じく <code>.slice(0, n)</code> です。読み取り専用の配列にも <code>.slice()</code> は使えます。結果は新しい配列なので、型は <code>T[]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c07-q06-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">target と同じ要素の数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countOf() {}</code></pre>
+      <p>配列と値 <code>target</code> を受け取り、<code>target</code> と同じ要素がいくつあるかを返します。比べるときは <code>===</code> を使います。文字列の配列から数値を探すような呼び出しは、型の確認でエラーになるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countOf(["a", "b", "a"], "a")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countOf([1, 2, 1], 1)</code></dt><dd class="r"><code>2</code></dd><dd class="c">数値の配列にも使える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>文字列の配列と数値 <code>1</code> を渡す <code>countOf(words, 1)</code> が、型の確認でエラーになることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countOf を作る。型変数 T を使い、読み取り専用の T の配列 items と T の target を受け取り、数値を返す
+export function countOf() {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   もし item が target と等しいなら
+  //     count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、04章 q03 問2 の <code>countMatches</code> と同じ形です。<code>target</code> の型も <code>T</code> にするのがポイントです。<code>items</code> が文字列の配列なら <code>T</code> は <code>string</code> に決まるので、<code>target</code> に数値を渡すと型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c07-q06-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">value が含まれていれば true</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function includesValue() {}</code></pre>
+      <p>配列に <code>value</code> が含まれていれば <code>true</code>、なければ <code>false</code> を返します。数値の配列から文字列を探すような呼び出しは、型の確認でエラーになるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>includesValue([1, 2], 2)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>includesValue(["a"], "b")</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>includesValue([1, 2], "2")</code> が、型の確認でエラーになることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 includesValue を作る。型変数 T を使い、読み取り専用の T の配列 items と T の value を受け取り、true か false を返す
+export function includesValue() {
+  // items に value が含まれるか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、02章 q04 問9 と同じく <code>.includes()</code> です。<code>value</code> の型を <code>T</code> にするのは、問13 と同じ理由です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c07-q06-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">value と同じ要素をすべて除いた新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function withoutValue() {}</code></pre>
+      <p>配列から、<code>value</code> と同じ要素をすべて除いた新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>withoutValue([1, 2, 1], 1)</code></dt><dd class="r"><code>[2]</code></dd><dd class="c">1 が 2 つとも除かれる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>number[]</code> を渡すと、戻り値が <code>number[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 withoutValue を作る。型変数 T を使い、読み取り専用の T の配列 items と T の value を受け取り、T の配列を返す
+export function withoutValue() {
+  // items から、要素 item が value と等しくないものだけを残した新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、02章 q05 問13 と同じく、<code>.filter()</code> の条件を「<code>value</code> と等しくない」（<code>!==</code>）にします。<code>.filter()</code> の結果は新しい配列で、型は <code>T[]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c07-q06-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">value が最後に出てくる番号</span>
+      <span class="q-new">新しく出てくる書き方：配列の <code>.lastIndexOf()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lastIndexOfValue() {}</code></pre>
+      <p>配列の中で、<code>value</code> が最後に出てくる位置（0 から数える）を返します。見つからなければ <code>-1</code> を返します。文字列の配列から数値を探すような呼び出しは、型の確認でエラーになるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lastIndexOfValue(["a", "b", "a"], "a")</code></dt><dd class="r"><code>2</code></dd><dd class="c">"a" は 0 番目と 2 番目にある</dd></div>
+          <div><dt><code>lastIndexOfValue([1], 2)</code></dt><dd class="r"><code>-1</code></dd><dd class="c">見つからない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>lastIndexOfValue(["a"], 1)</code> が、型の確認でエラーになることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.lastIndexOf()</code><h4>配列の中で、最後にある位置を探す</h4></div>
+      <p>かっこの中の値が、配列の中で最後に出てくる位置を返します。見つからなければ <code>-1</code> を返します。前から探す <code>.indexOf()</code>（02章 q04 問10）の、後ろから探す版です。文字列の <code>.lastIndexOf()</code>（01章 q05 問16）と同じ名前で、配列にも使えます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 訪問した店舗 visits を作り、["渋谷店", "新宿店", "渋谷店"] を入れる
+const visits = ["渋谷店", "新宿店", "渋谷店"];
+// 位置 lastPos を作り、visits の中で "渋谷店" が最後にある位置（0 から数える）を入れる
+const lastPos = visits.lastIndexOf("渋谷店");
+// 結果: lastPos は 2</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>visits.indexOf("渋谷店")</code></dt><dd class="r"><code>0</code></dd><dd class="c">前から探すと 0 番目</dd></div>
+        <div><dt><code>visits.lastIndexOf("渋谷店")</code></dt><dd class="r"><code>2</code></dd><dd class="c">後ろから探すと 2 番目</dd></div>
+        <div><dt><code>visits.lastIndexOf("池袋店")</code></dt><dd class="r"><code>-1</code></dd><dd class="c">見つからない</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>位置は、後ろから探しても 0 番目から数えた番号です。後ろから数えた番号にはなりません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lastIndexOfValue を作る。型変数 T を使い、読み取り専用の T の配列 items と T の value を受け取り、数値を返す
+export function lastIndexOfValue() {
+  // items の中で value が最後にある位置（0 から数える）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、問16 のサンプルの <code>lastPos</code> の行と同じ形です。見つからないときの <code>-1</code> は <code>.lastIndexOf()</code> がそのまま返すので、<code>if</code> は要りません。<code>value</code> の型を <code>T</code> にするのは、問13 と同じ理由です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c07-q06-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">value を length 個並べた新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function filledWith() {}</code></pre>
+      <p>数値 <code>length</code> と値 <code>value</code> を、この順に受け取ります。<code>value</code> を <code>length</code> 個並べた新しい配列を返します。<code>value</code> はどんな型でも受け取れるようにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>filledWith(3, 0)</code></dt><dd class="r"><code>[0, 0, 0]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>filledWith(2, words)</code> のように <code>string[]</code> を渡すと、戻り値が <code>string[][]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 filledWith を作る。型変数 T を使い、数値の length と T の value を受け取り、T の配列を返す
+export function filledWith() {
+  // 長さ length で、どの番号でも value を並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>中の行は、02章 q05 問19 と同じく <code>Array.from()</code> で、長さのオブジェクトは <code>{ length }</code> と書きます。関数が返す値が <code>T</code> なので、できる配列の型は <code>T[]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c07-q06-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">型 Maybe&lt;T&gt; を作って export し、orElse で null なら fallback を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">// ここに型 Maybe と関数 orElse を書く</code></pre>
+      <p>ファイルには関数の形がありません。型と関数を自分で書きます。</p>
+      <ol>
+        <li><code>Maybe&lt;T&gt;</code>：<code>T</code> か <code>null</code> の型です。<code>export</code> を付けます。</li>
+        <li><code>orElse(value, fallback)</code>：<code>value</code> が <code>null</code> なら <code>fallback</code> を、そうでなければ <code>value</code> を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>orElse(null, 5)</code></dt><dd class="r"><code>5</code></dd><dd class="c">null なので fallback</dd></div>
+          <div><dt><code>orElse("a", "b")</code></dt><dd class="r"><code>"a"</code></dd><dd class="c">null でないのでそのまま</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>Maybe&lt;string&gt;</code> が <code>string | null</code> と同じ型であることを確かめます。<code>Maybe&lt;number&gt;</code> の値と数値を渡した <code>orElse</code> の戻り値が <code>number</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Maybe という型を作る。型変数 T を使い、T か null。ほかのファイルから使えるようにする
+
+// 関数 orElse を作る。型変数 T を使い、Maybe&lt;T&gt; の value と T の fallback を受け取り、T を返す。ほかのファイルから使えるようにする
+export function orElse() {
+  // value（なければ fallback）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>型の行は、問8 の <code>Box</code> と同じく <code>type</code> の名前の後ろに <code>&lt;T&gt;</code> を付けます。中身はユニオン型の <code>T | null</code> です（03章 q03 問2）。引数 <code>value</code> の型は、型変数を渡した <code>Maybe&lt;T&gt;</code> です。「（なければ ◯）」は <code>??</code> です（02章 q02 問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c07-q06-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">2 つの配列の同じ番号どうしを [a, b] のタプルにした配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function zip() {}</code></pre>
+      <p>2 つの配列を受け取ります。同じ番号の要素どうしを <code>[1 つめの要素, 2 つめの要素]</code> のタプルにして、それを並べた配列を返します。長さは短いほうに合わせます。2 つの配列の要素は、別々の型でもかまいません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>zip([1, 2], ["a", "b", "c"])</code></dt><dd class="r"><code>[[1, "a"], [2, "b"]]</code></dd><dd class="c">短いほうの 2 つに合わせる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>number[]</code> と <code>string[]</code> を渡すと、戻り値が <code>[number, string][]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 zip を作る。型変数 A と B を使い、読み取り専用の A の配列 a と、読み取り専用の B の配列 b を受け取り、[A, B] のタプルの配列を返す
+export function zip() {
+  // 結果 result を [A, B] のタプルの配列として作り、空の配列を入れる
+  // 長さ length を作り、a の要素の数と b の要素の数の小さいほうを入れる
+  // i を 0 から、length より小さい間 1 ずつ増やしながらくり返す
+  //   x を作り、a の i 番目の要素を入れる
+  //   y を作り、b の i 番目の要素を入れる
+  //   もし x が undefined でない、かつ y が undefined でないなら
+  //     result の最後に、x、y の順に並べたタプルを付け足す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しは、04章 q03 問16 の <code>zipSum</code> と同じ形です。「[A, B] のタプルの配列」は <code>[A, B][]</code> です。<code>a[i]</code> の型は <code>A | undefined</code> なので、そのまま <code>[a[i], b[i]]</code> を付け足すと、型の確認でエラーになります。<code>A</code> がどんな型かは分からないので、<code>?? 0</code> のような代わりの値も決められません。そこで <code>x</code> と <code>y</code> に入れて、<code>undefined</code> でないことを <code>if</code> で確かめてから付け足します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c07-q06-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">item が含まれていれば除き、なければ末尾に足した新しい配列</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toggleItem() {}</code></pre>
+      <p>配列に <code>item</code> が含まれていれば、<code>item</code> を除いた新しい配列を返します。含まれていなければ、末尾に <code>item</code> を足した新しい配列を返します。渡された配列は変えません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toggleItem(["a", "b"], "a")</code></dt><dd class="r"><code>["b"]</code></dd><dd class="c">含まれているので除く</dd></div>
+          <div><dt><code>toggleItem(["a", "b"], "c")</code></dt><dd class="r"><code>["a", "b", "c"]</code></dd><dd class="c">含まれていないので末尾に足す</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>string[]</code> を渡すと、戻り値が <code>string[]</code> になることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toggleItem を作る。型変数 T を使い、読み取り専用の T の配列 items と T の item を受け取り、T の配列を返す
+export function toggleItem() {
+  // もし items に item が含まれるなら
+  //   items から、要素 x が item と等しくないものだけを残した新しい配列を返す
+  // items の要素すべてと item をこの順に並べた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「含まれるなら」は問14 の <code>.includes()</code>、除く行は問15 と同じ <code>.filter()</code> です。<code>.filter()</code> の関数の引数は、<code>item</code> と名前がぶつからないように <code>x</code> にします。最後の行は、02章 q05 問1 と同じく <code>[...items, item]</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c07-q06-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">型変数（ジェネリクス）を使った first・last・repeat・pair・Box</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function first() {}
+
+export function last() {}
+
+export function repeat() {}
+
+export function pair() {}
+
+export type Box = unknown;
+
+export function box() {}
+
+export function unbox() {}</code></pre>
+      <p>関数を 6 つと、型を 1 つ書きます。どれも型変数を使い、<code>any</code> や <code>unknown</code> は使いません。</p>
+      <ol>
+        <li><code>first(items)</code>：最初の要素を返します。空の配列なら <code>undefined</code> です。</li>
+        <li><code>last(items)</code>：最後の要素を返します。空の配列なら <code>undefined</code> です。</li>
+        <li><code>repeat(value, times)</code>：<code>value</code> を <code>times</code> 個並べた配列を返します。</li>
+        <li><code>pair(a, b)</code>：<code>[a, b]</code> のタプルを返します。<code>a</code> と <code>b</code> は別々の型でもよいので、型変数を 2 つ使います。</li>
+        <li><code>Box&lt;T&gt;</code>：<code>{ value: T }</code> の型です。<code>unknown</code> を書き換えます。<code>box(value)</code> は <code>value</code> を入れた <code>Box</code> を作り、<code>unbox(box)</code> は中の値を返します。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>first([3, 1, 2])</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>last(["a", "b"])</code></dt><dd class="r"><code>"b"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>first([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>last([])</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>repeat("x", 3)</code></dt><dd class="r"><code>["x", "x", "x"]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>repeat(0, 0)</code></dt><dd class="r"><code>[]</code></dd><dd class="c">0 個なら空の配列</dd></div>
+          <div><dt><code>pair("a", 1)</code></dt><dd class="r"><code>["a", 1]</code></dd><dd class="c"></dd></div>
+          <div><dt><code>box(5)</code></dt><dd class="r"><code>{ value: 5 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>unbox({ value: "a" })</code></dt><dd class="r"><code>"a"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>first</code> と <code>last</code> は、<code>number[]</code> を渡すと <code>number | undefined</code>、<code>string[]</code> を渡すと <code>string | undefined</code> を返すことを確かめます。<code>repeat</code> は、数値を渡すと <code>number[]</code>、文字列を渡すと <code>string[]</code> を返すことを確かめます。<code>pair</code> は、文字列と数値を渡すと <code>[string, number]</code>、数値と <code>string[]</code> を渡すと <code>[number, string[]]</code> を返すことを確かめます。<code>Box&lt;number&gt;</code> が <code>{ value: number }</code> と同じ型であること、文字列を渡した <code>box</code> が <code>Box&lt;string&gt;</code> を返すこと、<code>Box&lt;number&gt;</code> を渡した <code>unbox</code> が <code>number</code> を返すことも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 first を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+export function first() {
+  // items の 0 番目の要素を返す
+}
+
+// 関数 last を作る。型変数 T を使い、読み取り専用の T の配列 items を受け取り、T か undefined を返す
+export function last() {
+  // items の（要素の数 − 1）番目の要素を返す
+}
+
+// 関数 repeat を作る。型変数 T を使い、T の value と数値の times を受け取り、T の配列を返す
+export function repeat() {
+  // 結果 result を T の配列として作り、空の配列を入れる
+  // i を 0 から、times より小さい間 1 ずつ増やしながらくり返す
+  //   result の最後に value を付け足す
+  // result を返す
+}
+
+// 関数 pair を作る。型変数 A と B を使い、A の a と B の b を受け取り、[A, B] のタプルを返す
+export function pair() {
+  // a、b の順に並べたタプルを返す
+}
+
+// Box という型を作る。型変数 T を使い、value は T。ほかのファイルから使えるようにする
+export type Box = unknown;
+
+// 関数 box を作る。型変数 T を使い、T の value を受け取り、Box&lt;T&gt; を返す
+export function box() {
+  // value に value を入れたオブジェクトを返す
+}
+
+// 関数 unbox を作る。型変数 T を使い、Box&lt;T&gt; の boxed を受け取り、T を返す
+export function unbox() {
+  // boxed の value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>first</code> は問2、<code>last</code> は問3、<code>repeat</code> は問5、<code>pair</code> は問6、<code>Box</code> と <code>box</code> は問8 と同じ形です。<code>Box</code> は、<code>export type Box = unknown;</code> の名前の後ろに <code>&lt;T&gt;</code> を付け、<code>unknown</code> を、<code>value</code> が <code>T</code> のオブジェクトの型に書き換えます。<code>unbox</code> は問9 と同じ形で、引数の型を <code>Box&lt;T&gt;</code> にします。引数の名前は自由です。関数 <code>box</code> と同じ名前を避けて、<code>boxed</code> などにすると読みやすくなります。</p></details>
+    </div>
+  </section>
+</section>

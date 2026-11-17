@@ -1,0 +1,1088 @@
+<section class="sec" id="c04-q02">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q02 switch文</h2>
+    <p>決まった値ごとに答えを変える関数を 20 個書きます。どれも switch 文で書きます。switch は 03章 q04 で、<code>shape.kind</code> のような共通のプロパティで場合を分けるときに出ました。この番号では、数値や文字列の値そのもので場合を分けます。引数と戻り値の型注釈は自分で書きます。引数がリテラル型のユニオン（<code>"free" | "pro" | "team"</code> のような型）なら、すべての値の case を書きます。引数が <code>number</code> や <code>string</code> なら、どの case にも当たらないときの <code>default</code> を書きます。同じ答えにしたい値は、<code>case 3: case 4: case 5:</code> のように case を並べてまとめます。switch の形は、問1 でまとめて説明します。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q02-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">0〜6 を "日"〜"土" にする</span>
+      <span class="q-new">新しく出てくる書き方：<code>default</code>（あわせて switch の形、<code>return</code> と <code>break</code>、case を並べる書き方を整理します）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dayName() {}</code></pre>
+      <p>曜日の番号を受け取り、曜日の 1 文字を返します。0 が <code>"日"</code>、1 が <code>"月"</code>、2 が <code>"火"</code>、3 が <code>"水"</code>、4 が <code>"木"</code>、5 が <code>"金"</code>、6 が <code>"土"</code> です。0〜6 でなければ <code>"?"</code> を返します。引数は数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dayName(0)</code></dt><dd class="r"><code>"日"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayName(1)</code></dt><dd class="r"><code>"月"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayName(6)</code></dt><dd class="r"><code>"土"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayName(7)</code></dt><dd class="r"><code>"?"</code></dd><dd class="c">0〜6 ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">switch / case</code><h4>値で場合を分ける（形のおさらい）</h4></div>
+      <p>switch は、1 つの値を、いくつかの決まった値と順に比べる文です。03章 q04 では <code>shape.kind</code> で場合を分けました。数値や文字列の値そのものでも、同じように書けます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 deliveryLabel を作る。数値 code を受け取り、文字列を返す
+function deliveryLabel(code: number): string {
+  // code で場合を分ける
+  switch (code) {
+    // 1 の場合
+    case 1:
+      // "通常便" を返す
+      return "通常便";
+    // 2 の場合
+    case 2:
+      // "速達" を返す
+      return "速達";
+    // それ以外の場合
+    default:
+      // "不明" を返す
+      return "不明";
+  }
+}
+// 結果: deliveryLabel(2) は "速達"、deliveryLabel(9) は "不明"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>switch (<span class="seg"><i>1</i>code</span>) {
+  <span class="seg"><i>2</i>case 1:</span>
+    <span class="seg"><i>3</i>return "通常便";</span>
+  <span class="seg"><i>4</i>default:</span>
+    return "不明";
+}</pre>
+        <ol>
+          <li><span>比べる値です。かっこの中に書きます。</span></li>
+          <li><span><code>case</code> と、比べる相手の値です。最後に <code>:</code> を付けます。</span></li>
+          <li><span>値が同じだったときの処理です。<code>return</code> で値を返すと、そこで関数が終わります。</span></li>
+          <li><span>どの case にも当たらなかったときに進む場所です。次の項目で説明します。</span></li>
+        </ol>
+      </figure>
+      <p>switch は、次の順で進みます。</p>
+      <ol class="steps">
+        <li><b>値を出す</b><span>かっこの中の <code>code</code> の値を出します。</span></li>
+        <li><b>上から比べる</b><span>case の値と、上から順に <code>===</code> で比べます。</span></li>
+        <li><b>そこから進む</b><span>同じだった case の下の処理を実行します。</span></li>
+        <li><b>抜ける</b><span><code>return</code> か <code>break</code> で switch を抜けます。</span></li>
+      </ol>
+      <p class="memo"><b>よくある間違い</b>比べるときは <code>===</code> と同じで、型も同じでないと当たりません。<code>code</code> が <code>number</code> なのに <code>case "1":</code> と書くと、型の確認でエラーになります。数値の case は、引用符で囲まずに書きます。</p>
+      <p class="more">サバイバルTypeScript「switch文」</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">default:</code><h4>どの case にも当たらないとき</h4></div>
+      <p><code>default:</code> の下には、どの case にも当たらなかったときの処理を書きます。「それ以外の場合」にあたります。ふつうは switch のいちばん最後に置きます。</p>
+      <p>引数が <code>number</code> や <code>string</code> のときは、書いた case 以外の値も来ます。<code>default</code> がないと、どの case にも当たらなかった値で、関数が何も返さずに終わってしまいます。そのため、型の確認でエラーになります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>default</code> を書かない</h5>
+          <pre><code class="language-typescript">function deliveryLabel(code: number): string {
+  switch (code) {
+    case 1:
+      return "通常便";
+    case 2:
+      return "速達";
+  }
+}</code></pre>
+          <div class="verdict ng">✕ 3 などのとき何も返さないので、型の確認でエラーになります</div>
+        </div>
+        <div>
+          <h5><code>default</code> を書く</h5>
+          <pre><code class="language-typescript">function deliveryLabel(code: number): string {
+  switch (code) {
+    case 1:
+      return "通常便";
+    case 2:
+      return "速達";
+    default:
+      return "不明";
+  }
+}</code></pre>
+          <div class="verdict ok">○ どの数でも、必ず文字列を返します</div>
+        </div>
+      </div>
+      <p>引数がリテラル型のユニオンなら、来る値が決まっています。すべての値の case を書けば、<code>default</code> は要りません。03章 q04 と同じです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 boxLabel を作る。"S" か "M" か "L" の size を受け取り、文字列を返す
+function boxLabel(size: "S" | "M" | "L"): string {
+  // size で場合を分ける
+  switch (size) {
+    // "S" の場合
+    case "S":
+      // "60サイズ" を返す
+      return "60サイズ";
+    // "M" の場合
+    case "M":
+      // "80サイズ" を返す
+      return "80サイズ";
+    // "L" の場合
+    case "L":
+      // "100サイズ" を返す
+      return "100サイズ";
+  }
+}
+// 結果: boxLabel("M") は "80サイズ"</code></pre>
+      </div>
+      <p class="memo"><b>決まり</b>ユニオン型の値で case を 1 つでも書き忘れると、ESLint がエラーにします（<code>switch-exhaustiveness-check</code>）。たとえば上の <code>case "L":</code> を消すと、「<code>"L"</code> の case がない」と知らせます。型の確認でも、何も返さない場合があるとしてエラーになります。</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">return と break</code><h4>case の処理を終えて抜ける</h4></div>
+      <p>switch は、当たった case から下へ進みます。次の <code>case</code> の行に来ても止まりません。そのため、case の処理の最後には、抜けるための文を書きます。</p>
+      <p><code>return</code> は、値を返して関数ごと終わります。この番号の問題は、どれも <code>return</code> で書けます。</p>
+      <p><code>break</code> は、switch だけを抜けて、switch の後ろの行に進みます。関数は続きます。値を変数に入れておき、switch の後ろでまとめて返すときに使います。<code>break</code> は、くり返しを途中で抜けるときにも使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 pointRate を作る。"gold" か "silver" か "bronze" の rank を受け取り、数値を返す
+function pointRate(rank: "gold" | "silver" | "bronze"): number {
+  // 還元率 rate を入れ直せる変数として作り、1 を入れる
+  let rate = 1;
+  // rank で場合を分ける
+  switch (rank) {
+    // "gold" の場合
+    case "gold":
+      // rate に 5 を入れ直す
+      rate = 5;
+      // switch を抜ける
+      break;
+    // "silver" の場合
+    case "silver":
+      // rate に 3 を入れ直す
+      rate = 3;
+      // switch を抜ける
+      break;
+    // "bronze" の場合
+    case "bronze":
+      // switch を抜ける
+      break;
+  }
+  // rate を返す
+  return rate;
+}
+// 結果: pointRate("gold") は 5、pointRate("bronze") は 1</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5><code>break</code> を書き忘れる</h5>
+          <pre><code class="language-typescript">    case "gold":
+      rate = 5;
+    case "silver":
+      rate = 3;
+      break;</code></pre>
+          <div class="verdict ng">✕ "gold" のあと "silver" の処理まで進み、rate が 3 になります。ESLint もエラーにします</div>
+        </div>
+        <div>
+          <h5><code>break</code> を書く</h5>
+          <pre><code class="language-typescript">    case "gold":
+      rate = 5;
+      break;
+    case "silver":
+      rate = 3;
+      break;</code></pre>
+          <div class="verdict ok">○ "gold" なら rate は 5 のまま switch を抜けます</div>
+        </div>
+      </div>
+      <p class="memo"><b>決まり</b>処理を書いた case のあとに、<code>return</code> も <code>break</code> もなく次の case が続くと、ESLint がエラーにします（<code>no-fallthrough</code>）。</p>
+      <p class="more">04章 q04（while文と break・continue）</p>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">case 1: case 2:</code><h4>同じ処理の case をまとめる</h4></div>
+      <p>case の下に何も書かずに、次の case を続けて書けます。すると、並べた値のどれでも、同じ処理に進みます。前の項目の「下へ進む」しくみを使った書き方です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 areaFee を作る。数値 area を受け取り、数値を返す
+function areaFee(area: number): number {
+  // area で場合を分ける
+  switch (area) {
+    // 1 か 2 の場合
+    case 1:
+    case 2:
+      // 500 を返す
+      return 500;
+    // 3 か 4 か 5 の場合
+    case 3:
+    case 4:
+    case 5:
+      // 800 を返す
+      return 800;
+    // それ以外の場合
+    default:
+      // 1200 を返す
+      return 1200;
+  }
+}
+// 結果: areaFee(2) は 500、areaFee(4) は 800、areaFee(9) は 1200</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>areaFee(1)</code></dt><dd class="r"><code>500</code></dd><dd class="c"><code>case 1:</code> に当たり、そのまま <code>case 2:</code> の下へ進む</dd></div>
+        <div><dt><code>areaFee(5)</code></dt><dd class="r"><code>800</code></dd><dd class="c"><code>case 5:</code> に当たる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>中身のない case は、何も処理をしないので、<code>break</code> がなくても ESLint のエラーになりません。並べる case は、数の順でなくてもかまいません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dayName を作る。数値 day を受け取り、文字列を返す
+export function dayName() {
+  // day で場合を分ける
+  //   0 の場合
+  //     "日" を返す
+  //   1 の場合
+  //     "月" を返す
+  //   2 の場合
+  //     "火" を返す
+  //   3 の場合
+  //     "水" を返す
+  //   4 の場合
+  //     "木" を返す
+  //   5 の場合
+  //     "金" を返す
+  //   6 の場合
+  //     "土" を返す
+  //   それ以外の場合
+  //     "?" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>サンプルの <code>deliveryLabel</code> と同じ形で、case が 7 つに増えます。「day で場合を分ける」は <code>switch (day) { }</code>、「0 の場合」は <code>case 0:</code>、「それ以外の場合」は <code>default:</code> です。case の値は数値なので、<code>"0"</code> のように引用符で囲みません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q02-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">月から季節を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function seasonOfMonth() {}</code></pre>
+      <p>月（1〜12）を受け取り、季節を返します。3〜5 月は <code>"春"</code>、6〜8 月は <code>"夏"</code>、9〜11 月は <code>"秋"</code>、12・1・2 月は <code>"冬"</code> です。1〜12 でなければ、エラーを投げます。引数は数値です。戻り値は 4 つの季節だけなので、リテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>seasonOfMonth(4)</code></dt><dd class="r"><code>"春"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOfMonth(8)</code></dt><dd class="r"><code>"夏"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOfMonth(9)</code></dt><dd class="r"><code>"秋"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>seasonOfMonth(1)</code></dt><dd class="r"><code>"冬"</code></dd><dd class="c">12・1・2 月は冬</dd></div>
+          <div><dt><code>seasonOfMonth(13)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">1〜12 ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>"春" | "夏" | "秋" | "冬"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 seasonOfMonth を作る。数値 month を受け取り、"春" か "夏" か "秋" か "冬" を返す
+export function seasonOfMonth() {
+  // month で場合を分ける
+  //   3 か 4 か 5 の場合
+  //     "春" を返す
+  //   6 か 7 か 8 の場合
+  //     "夏" を返す
+  //   9 か 10 か 11 の場合
+  //     "秋" を返す
+  //   12 か 1 か 2 の場合
+  //     "冬" を返す
+  //   それ以外の場合
+  //     "月は 1〜12 にしてください" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「3 か 4 か 5 の場合」は、問1 のサンプルの <code>areaFee</code> と同じく、<code>case 3:</code> <code>case 4:</code> <code>case 5:</code> と並べます。並べる順は自由なので、<code>case 12:</code> <code>case 1:</code> <code>case 2:</code> と書けます。エラーは <code>throw new Error("…")</code> です（01章 q04 問8）。<code>throw</code> で関数が終わるので、<code>default</code> に <code>return</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q02-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">op が "+"、"-"、"*"、"/" のどれかで、a と b を計算する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function calc() {}</code></pre>
+      <p>数 <code>a</code>、記号 <code>op</code>、数 <code>b</code> の順に受け取り、<code>op</code> の計算をした結果を返します。<code>op</code> は <code>"+"</code>、<code>"-"</code>、<code>"*"</code>、<code>"/"</code> のどれかです。<code>op</code> の型は、この 4 つのリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>calc(6, "+", 3)</code></dt><dd class="r"><code>9</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calc(6, "-", 3)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calc(6, "*", 3)</code></dt><dd class="r"><code>18</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calc(6, "/", 3)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、<code>"+" | "-" | "*" | "/"</code>、<code>number</code> の順で、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 calc を作る。数値 a と "+" か "-" か "*" か "/" の op と数値 b を受け取り、数値を返す
+export function calc() {
+  // op で場合を分ける
+  //   "+" の場合
+  //     a と b を足した数を返す
+  //   "-" の場合
+  //     a から b を引いた数を返す
+  //   "*" の場合
+  //     a に b を掛けた数を返す
+  //   "/" の場合
+  //     a を b で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>boxLabel</code> と同じ形です。<code>op</code> はユニオン型なので、4 つの case をすべて書けば <code>default</code> は要りません。<code>case "+":</code> のように、case の値は引用符で囲んだ文字列です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q02-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">HTTP のステータスコードを説明の文字列にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function httpMessage() {}</code></pre>
+      <p>Web のサーバーが返す番号（ステータスコード）を受け取り、意味を表す文字列を返します。200 は <code>"OK"</code>、201 は <code>"Created"</code>、404 は <code>"Not Found"</code>、500 は <code>"Internal Server Error"</code> です。それ以外は <code>"Unknown"</code> を返します。引数は数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>httpMessage(200)</code></dt><dd class="r"><code>"OK"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>httpMessage(201)</code></dt><dd class="r"><code>"Created"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>httpMessage(404)</code></dt><dd class="r"><code>"Not Found"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>httpMessage(500)</code></dt><dd class="r"><code>"Internal Server Error"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>httpMessage(418)</code></dt><dd class="r"><code>"Unknown"</code></dd><dd class="c">決めていない番号</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 httpMessage を作る。数値 code を受け取り、文字列を返す
+export function httpMessage() {
+  // code で場合を分ける
+  //   200 の場合
+  //     "OK" を返す
+  //   201 の場合
+  //     "Created" を返す
+  //   404 の場合
+  //     "Not Found" を返す
+  //   500 の場合
+  //     "Internal Server Error" を返す
+  //   それ以外の場合
+  //     "Unknown" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。テストの 418 のように、case に書いていない番号は <code>default</code> に進みます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q02-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">プラン "free"、"pro"、"team" の利用人数の上限を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function planLimit() {}</code></pre>
+      <p>料金プランの名前を受け取り、何人まで使えるかを返します。<code>"free"</code> は 1、<code>"pro"</code> は 10、<code>"team"</code> は 100 です。引数の型は、3 つのプラン名のリテラル型のユニオンにします。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>planLimit("free")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>planLimit("pro")</code></dt><dd class="r"><code>10</code></dd><dd class="c"></dd></div>
+          <div><dt><code>planLimit("team")</code></dt><dd class="r"><code>100</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"free" | "pro" | "team"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 planLimit を作る。"free" か "pro" か "team" の plan を受け取り、数値を返す
+export function planLimit() {
+  // plan で場合を分ける
+  //   "free" の場合
+  //     1 を返す
+  //   "pro" の場合
+  //     10 を返す
+  //   "team" の場合
+  //     100 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>boxLabel</code> と同じ形で、返す値が数値になります。3 つのプランの case をすべて書くので、<code>default</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q02-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">"red"、"green"、"blue" を "#ff0000"、"#00ff00"、"#0000ff" にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function colorHex() {}</code></pre>
+      <p>色の名前を受け取り、Web で色を表すカラーコードの文字列を返します。<code>"red"</code> は <code>"#ff0000"</code>、<code>"green"</code> は <code>"#00ff00"</code>、<code>"blue"</code> は <code>"#0000ff"</code> です。引数の型は、3 つの色の名前のリテラル型のユニオンにします。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>colorHex("red")</code></dt><dd class="r"><code>"#ff0000"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>colorHex("green")</code></dt><dd class="r"><code>"#00ff00"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>colorHex("blue")</code></dt><dd class="r"><code>"#0000ff"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"red" | "green" | "blue"</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 colorHex を作る。"red" か "green" か "blue" の color を受け取り、文字列を返す
+export function colorHex() {
+  // color で場合を分ける
+  //   "red" の場合
+  //     "#ff0000" を返す
+  //   "green" の場合
+  //     "#00ff00" を返す
+  //   "blue" の場合
+  //     "#0000ff" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>boxLabel</code> と同じ形です。戻り値の型はテストのとおり <code>string</code> にします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q02-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">方角 "N"、"E"、"S"、"W" を、左に90度回った方角にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function turnLeft() {}</code></pre>
+      <p>方角を受け取り、そこから左に 90 度向きを変えた方角を返します。北 <code>"N"</code> の左は西 <code>"W"</code>、西の左は南 <code>"S"</code>、南の左は東 <code>"E"</code>、東の左は北 <code>"N"</code> です。引数も戻り値も、4 つの方角のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>turnLeft("N")</code></dt><dd class="r"><code>"W"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnLeft("W")</code></dt><dd class="r"><code>"S"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnLeft("S")</code></dt><dd class="r"><code>"E"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>turnLeft("E")</code></dt><dd class="r"><code>"N"</code></dd><dd class="c">ひと回りして北に戻る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"N" | "E" | "S" | "W"</code>、戻り値も <code>"N" | "E" | "S" | "W"</code> であることを確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 turnLeft を作る。"N" か "E" か "S" か "W" の direction を受け取り、"N" か "E" か "S" か "W" を返す
+export function turnLeft() {
+  // direction で場合を分ける
+  //   "N" の場合
+  //     "W" を返す
+  //   "W" の場合
+  //     "S" を返す
+  //   "S" の場合
+  //     "E" を返す
+  //   "E" の場合
+  //     "N" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>boxLabel</code> と同じ形です。引数と戻り値に、同じユニオン型を書きます。case はどの順に並べてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q02-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">1〜5 をローマ数字 "I"〜"V" にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function romanDigit() {}</code></pre>
+      <p>1〜5 の数を受け取り、ローマ数字の文字列を返します。1 は <code>"I"</code>、2 は <code>"II"</code>、3 は <code>"III"</code>、4 は <code>"IV"</code>、5 は <code>"V"</code> です。それ以外の数なら、空の文字列 <code>""</code> を返します。引数は数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>romanDigit(1)</code></dt><dd class="r"><code>"I"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>romanDigit(4)</code></dt><dd class="r"><code>"IV"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>romanDigit(5)</code></dt><dd class="r"><code>"V"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>romanDigit(6)</code></dt><dd class="r"><code>""</code></dd><dd class="c">1〜5 ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 romanDigit を作る。数値 n を受け取り、文字列を返す
+export function romanDigit() {
+  // n で場合を分ける
+  //   1 の場合
+  //     "I" を返す
+  //   2 の場合
+  //     "II" を返す
+  //   3 の場合
+  //     "III" を返す
+  //   4 の場合
+  //     "IV" を返す
+  //   5 の場合
+  //     "V" を返す
+  //   それ以外の場合
+  //     "" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形です。引数が <code>number</code> なので、<code>default</code> を書きます。空の文字列は、引用符を 2 つ続けた <code>""</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q02-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">成績 "A"、"B"、"C"、"D"、"F" を 4、3、2、1、0 にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function gradePoint() {}</code></pre>
+      <p>成績の文字を受け取り、点数に直して返します。<code>"A"</code> は 4、<code>"B"</code> は 3、<code>"C"</code> は 2、<code>"D"</code> は 1、<code>"F"</code> は 0 です。引数の型は、5 つの成績のリテラル型のユニオンにします。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>gradePoint("A")</code></dt><dd class="r"><code>4</code></dd><dd class="c"></dd></div>
+          <div><dt><code>gradePoint("B")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>gradePoint("F")</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"A" | "B" | "C" | "D" | "F"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 gradePoint を作る。"A" か "B" か "C" か "D" か "F" の grade を受け取り、数値を返す
+export function gradePoint() {
+  // grade で場合を分ける
+  //   "A" の場合
+  //     4 を返す
+  //   "B" の場合
+  //     3 を返す
+  //   "C" の場合
+  //     2 を返す
+  //   "D" の場合
+  //     1 を返す
+  //   "F" の場合
+  //     0 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形で、case が 5 つになります。テストに出ない <code>"C"</code> と <code>"D"</code> の case も書きます。書き忘れると ESLint がエラーにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q02-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">単位 "mm"、"cm"、"m"、"km" が何メートルかを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function metersPer() {}</code></pre>
+      <p>長さの単位を受け取り、その単位の 1 つ分が何メートルかを返します。<code>"mm"</code> は 0.001、<code>"cm"</code> は 0.01、<code>"m"</code> は 1、<code>"km"</code> は 1000 です。引数の型は、4 つの単位のリテラル型のユニオンにします。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>metersPer("mm")</code></dt><dd class="r"><code>0.001</code></dd><dd class="c"></dd></div>
+          <div><dt><code>metersPer("cm")</code></dt><dd class="r"><code>0.01</code></dd><dd class="c"></dd></div>
+          <div><dt><code>metersPer("m")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>metersPer("km")</code></dt><dd class="r"><code>1000</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"mm" | "cm" | "m" | "km"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 metersPer を作る。"mm" か "cm" か "m" か "km" の unit を受け取り、数値を返す
+export function metersPer() {
+  // unit で場合を分ける
+  //   "mm" の場合
+  //     0.001 を返す
+  //   "cm" の場合
+  //     0.01 を返す
+  //   "m" の場合
+  //     1 を返す
+  //   "km" の場合
+  //     1000 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。小数は <code>0.001</code> のように、そのまま書けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q02-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">サイズ "S"、"M"、"L"、"XL" を 1、2、3、4 にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sizeOrder() {}</code></pre>
+      <p>服のサイズを受け取り、小さい順の番号を返します。<code>"S"</code> は 1、<code>"M"</code> は 2、<code>"L"</code> は 3、<code>"XL"</code> は 4 です。引数の型は、4 つのサイズのリテラル型のユニオンにします。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sizeOrder("S")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sizeOrder("L")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sizeOrder("XL")</code></dt><dd class="r"><code>4</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"S" | "M" | "L" | "XL"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sizeOrder を作る。"S" か "M" か "L" か "XL" の size を受け取り、数値を返す
+export function sizeOrder() {
+  // size で場合を分ける
+  //   "S" の場合
+  //     1 を返す
+  //   "M" の場合
+  //     2 を返す
+  //   "L" の場合
+  //     3 を返す
+  //   "XL" の場合
+  //     4 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。<code>"M"</code> はテストに出ませんが、case は書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q02-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">"月"〜"金" は "平日"、"土" と "日" は "週末"、それ以外は Error を投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function dayKind() {}</code></pre>
+      <p>曜日の 1 文字を受け取ります。<code>"月"</code>、<code>"火"</code>、<code>"水"</code>、<code>"木"</code>、<code>"金"</code> なら <code>"平日"</code>、<code>"土"</code> と <code>"日"</code> なら <code>"週末"</code> を返します。曜日でない文字なら、エラーを投げます。引数は文字列です。戻り値は 2 つの言葉だけなので、リテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>dayKind("月")</code></dt><dd class="r"><code>"平日"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayKind("金")</code></dt><dd class="r"><code>"平日"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayKind("土")</code></dt><dd class="r"><code>"週末"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayKind("日")</code></dt><dd class="r"><code>"週末"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>dayKind("祝")</code></dt><dd class="r">エラーを投げる</dd><dd class="c">曜日ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>"平日" | "週末"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 dayKind を作る。文字列 day を受け取り、"平日" か "週末" を返す
+export function dayKind() {
+  // day で場合を分ける
+  //   "月" か "火" か "水" か "木" か "金" の場合
+  //     "平日" を返す
+  //   "土" か "日" の場合
+  //     "週末" を返す
+  //   それ以外の場合
+  //     day を埋め込んだ「曜日ではありません: ◯」というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じく、case を並べてまとめます。値が文字列なので、<code>case "月":</code> のように引用符で囲みます。引数が <code>string</code> なので、<code>default</code> でエラーを投げます。メッセージはテンプレートリテラルで組み立てます。テストはメッセージの中身までは確かめないので、決まった文字列でもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q02-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">月が第何四半期かを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function quarterOf() {}</code></pre>
+      <p>月（1〜12）を受け取り、1 年を 3 か月ずつ 4 つに分けたうちの何番目（第何四半期）かを返します。1〜3 月は 1、4〜6 月は 2、7〜9 月は 3、10〜12 月は 4 です。1〜12 でなければ、エラーを投げます。引数は数値です。戻り値は 1〜4 だけなので、数のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>quarterOf(1)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>quarterOf(5)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>quarterOf(9)</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>quarterOf(12)</code></dt><dd class="r"><code>4</code></dd><dd class="c"></dd></div>
+          <div><dt><code>quarterOf(0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">1〜12 ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>1 | 2 | 3 | 4</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 quarterOf を作る。数値 month を受け取り、1 か 2 か 3 か 4 を返す
+export function quarterOf() {
+  // month で場合を分ける
+  //   1 か 2 か 3 の場合
+  //     1 を返す
+  //   4 か 5 か 6 の場合
+  //     2 を返す
+  //   7 か 8 か 9 の場合
+  //     3 を返す
+  //   10 か 11 か 12 の場合
+  //     4 を返す
+  //   それ以外の場合
+  //     "月は 1〜12 にしてください" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 と同じ形で、返す値が数になります。戻り値の型は <code>1 | 2 | 3 | 4</code> と書きます。<code>number</code> と書くと、型のテストが通りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q02-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">気分 "happy"、"sad"、"angry" を "😊"、"😢"、"😠" にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function moodEmoji() {}</code></pre>
+      <p>気分を表す英語を受け取り、絵文字を返します。<code>"happy"</code> は <code>"😊"</code>、<code>"sad"</code> は <code>"😢"</code>、<code>"angry"</code> は <code>"😠"</code> です。引数も戻り値も、3 つの値のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>moodEmoji("happy")</code></dt><dd class="r"><code>"😊"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moodEmoji("sad")</code></dt><dd class="r"><code>"😢"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>moodEmoji("angry")</code></dt><dd class="r"><code>"😠"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"happy" | "sad" | "angry"</code>、戻り値が <code>"😊" | "😢" | "😠"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 moodEmoji を作る。"happy" か "sad" か "angry" の mood を受け取り、"😊" か "😢" か "😠" を返す
+export function moodEmoji() {
+  // mood で場合を分ける
+  //   "happy" の場合
+  //     "😊" を返す
+  //   "sad" の場合
+  //     "😢" を返す
+  //   "angry" の場合
+  //     "😠" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 と同じく、引数と戻り値の両方にユニオン型を書きます。絵文字も、ふつうの文字と同じく引用符で囲んだ文字列です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q02-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">拡張子からファイルの種類を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function fileKind() {}</code></pre>
+      <p>ファイル名の最後に付く拡張子（<code>"png"</code> など、点は付けない）を受け取り、ファイルの種類を返します。<code>"png"</code>、<code>"jpg"</code>、<code>"gif"</code> は <code>"画像"</code>、<code>"mp4"</code>、<code>"mov"</code> は <code>"動画"</code>、<code>"pdf"</code>、<code>"docx"</code> は <code>"文書"</code> です。それ以外は <code>"その他"</code> を返します。引数は文字列です。戻り値は 4 つの言葉のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>fileKind("jpg")</code></dt><dd class="r"><code>"画像"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fileKind("mov")</code></dt><dd class="r"><code>"動画"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fileKind("pdf")</code></dt><dd class="r"><code>"文書"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>fileKind("zip")</code></dt><dd class="r"><code>"その他"</code></dd><dd class="c">どれにも当たらない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>"画像" | "動画" | "文書" | "その他"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 fileKind を作る。文字列 extension を受け取り、"画像" か "動画" か "文書" か "その他" を返す
+export function fileKind() {
+  // extension で場合を分ける
+  //   "png" か "jpg" か "gif" の場合
+  //     "画像" を返す
+  //   "mp4" か "mov" の場合
+  //     "動画" を返す
+  //   "pdf" か "docx" の場合
+  //     "文書" を返す
+  //   それ以外の場合
+  //     "その他" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 のサンプルの <code>areaFee</code> と同じ形で、case の値が文字列になります。「それ以外の場合」は <code>default:</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q02-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">英小文字1文字が a、e、i、o、u なら "母音"、それ以外は "子音"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function letterKind() {}</code></pre>
+      <p>英字の小文字 1 文字を受け取ります。<code>"a"</code>、<code>"e"</code>、<code>"i"</code>、<code>"o"</code>、<code>"u"</code> のどれかなら <code>"母音"</code>、それ以外は <code>"子音"</code> を返します。引数は文字列です。戻り値は 2 つの言葉のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>letterKind("a")</code></dt><dd class="r"><code>"母音"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>letterKind("u")</code></dt><dd class="r"><code>"母音"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>letterKind("b")</code></dt><dd class="r"><code>"子音"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>"母音" | "子音"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 letterKind を作る。文字列 char を受け取り、"母音" か "子音" を返す
+export function letterKind() {
+  // char で場合を分ける
+  //   "a" か "e" か "i" か "o" か "u" の場合
+  //     "母音" を返す
+  //   それ以外の場合
+  //     "子音" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問15 と同じ形で、まとめる case が 5 つの母音だけになります。子音は数が多いので、case には書かずに <code>default</code> に任せます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q02-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">信号 "red"、"yellow"、"green" を "止まれ"、"注意"、"進め" にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function signalAction() {}</code></pre>
+      <p>信号の色を受け取り、することを返します。<code>"red"</code> は <code>"止まれ"</code>、<code>"yellow"</code> は <code>"注意"</code>、<code>"green"</code> は <code>"進め"</code> です。引数も戻り値も、3 つの値のリテラル型のユニオンにします。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>signalAction("red")</code></dt><dd class="r"><code>"止まれ"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signalAction("yellow")</code></dt><dd class="r"><code>"注意"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>signalAction("green")</code></dt><dd class="r"><code>"進め"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"red" | "yellow" | "green"</code>、戻り値が <code>"止まれ" | "注意" | "進め"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 signalAction を作る。"red" か "yellow" か "green" の light を受け取り、"止まれ" か "注意" か "進め" を返す
+export function signalAction() {
+  // light で場合を分ける
+  //   "red" の場合
+  //     "止まれ" を返す
+  //   "yellow" の場合
+  //     "注意" を返す
+  //   "green" の場合
+  //     "進め" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問14 と同じ形です。引数も戻り値もユニオン型で、<code>default</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q02-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">キーの番号 13 は "Enter"、27 は "Escape"、32 は "Space"、それ以外は "Other"</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function keyName() {}</code></pre>
+      <p>キーボードのキーの番号を受け取り、キーの名前を返します。13 は <code>"Enter"</code>、27 は <code>"Escape"</code>、32 は <code>"Space"</code> です。それ以外は <code>"Other"</code> を返します。引数は数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>keyName(13)</code></dt><dd class="r"><code>"Enter"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>keyName(27)</code></dt><dd class="r"><code>"Escape"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>keyName(32)</code></dt><dd class="r"><code>"Space"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>keyName(65)</code></dt><dd class="r"><code>"Other"</code></dd><dd class="c">決めていない番号</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 keyName を作る。数値 code を受け取り、文字列を返す
+export function keyName() {
+  // code で場合を分ける
+  //   13 の場合
+  //     "Enter" を返す
+  //   27 の場合
+  //     "Escape" を返す
+  //   32 の場合
+  //     "Space" を返す
+  //   それ以外の場合
+  //     "Other" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q02-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">星座 "牡羊"、"獅子"、"射手" は "火"、"牡牛"、"乙女"、"山羊" は "地" を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function elementOf() {}</code></pre>
+      <p>星座の名前を受け取り、星座を分けるグループの名前を返します。<code>"牡羊"</code>、<code>"獅子"</code>、<code>"射手"</code> は <code>"火"</code>、<code>"牡牛"</code>、<code>"乙女"</code>、<code>"山羊"</code> は <code>"地"</code> です。引数の型は、6 つの星座のリテラル型のユニオンにします。戻り値は <code>"火" | "地"</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>elementOf("牡羊")</code></dt><dd class="r"><code>"火"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>elementOf("射手")</code></dt><dd class="r"><code>"火"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>elementOf("乙女")</code></dt><dd class="r"><code>"地"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"牡羊" | "獅子" | "射手" | "牡牛" | "乙女" | "山羊"</code>、戻り値が <code>"火" | "地"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 elementOf を作る。"牡羊" か "獅子" か "射手" か "牡牛" か "乙女" か "山羊" の sign を受け取り、"火" か "地" を返す
+export function elementOf() {
+  // sign で場合を分ける
+  //   "牡羊" か "獅子" か "射手" の場合
+  //     "火" を返す
+  //   "牡牛" か "乙女" か "山羊" の場合
+  //     "地" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>case を並べる書き方（問15）は、ユニオン型の引数でも使えます。6 つの値がすべて、どれかの case に入っていれば <code>default</code> は要りません。1 つでも抜けると ESLint がエラーにします。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q02-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">優先度 "high"、"middle"、"low" を 3、2、1 にする</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function priorityWeight() {}</code></pre>
+      <p>作業の優先度を受け取り、重みの数を返します。<code>"high"</code> は 3、<code>"middle"</code> は 2、<code>"low"</code> は 1 です。引数の型は、3 つの優先度のリテラル型のユニオンにします。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priorityWeight("high")</code></dt><dd class="r"><code>3</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priorityWeight("middle")</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>priorityWeight("low")</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>"high" | "middle" | "low"</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priorityWeight を作る。"high" か "middle" か "low" の priority を受け取り、数値を返す
+export function priorityWeight() {
+  // priority で場合を分ける
+  //   "high" の場合
+  //     3 を返す
+  //   "middle" の場合
+  //     2 を返す
+  //   "low" の場合
+  //     1 を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問5 と同じ形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c04-q02-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">switch文（3 つの関数）</span>
+      <span class="q-new">新しく出てくる書き方：case の中を <code>{ }</code> で囲む（case の中で変数を作る）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function daysInMonth() {}
+
+export function weekdayName() {}
+
+export function calculate() {}</code></pre>
+      <p>3 つの関数を、switch 文で書きます。引数と戻り値の型注釈も書きます。</p>
+      <ol>
+        <li><code>daysInMonth(year, month)</code>：その年のその月が何日あるかを返します。4・6・9・11 月は 30 日、1・3・5・7・8・10・12 月は 31 日です。2 月は、うるう年なら 29 日、そうでなければ 28 日です。<code>month</code> が 1〜12 でなければ、エラーを投げます。</li>
+        <li><code>weekdayName(day)</code>：曜日の番号（0 が日曜、6 が土曜）を <code>"日"</code>〜<code>"土"</code> にします。0〜6 でなければ、エラーを投げます。</li>
+        <li><code>calculate(a, operator, b)</code>：<code>operator</code> は <code>"+"</code>、<code>"-"</code>、<code>"*"</code>、<code>"/"</code> のどれかです。計算した結果を返します。<code>"/"</code> で <code>b</code> が 0 なら、エラーを投げます。</li>
+      </ol>
+      <p>うるう年は、4 で割り切れる年です。ただし、100 で割り切れる年はうるう年ではありません。さらに、400 で割り切れる年はうるう年です。たとえば 2024 年と 2000 年はうるう年、2026 年と 1900 年はうるう年ではありません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>daysInMonth(2026, 1)</code></dt><dd class="r"><code>31</code></dd><dd class="c"></dd></div>
+          <div><dt><code>daysInMonth(2026, 4)</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt><code>daysInMonth(2026, 11)</code></dt><dd class="r"><code>30</code></dd><dd class="c"></dd></div>
+          <div><dt><code>daysInMonth(2026, 12)</code></dt><dd class="r"><code>31</code></dd><dd class="c"></dd></div>
+          <div><dt><code>daysInMonth(2024, 2)</code></dt><dd class="r"><code>29</code></dd><dd class="c">4 で割り切れる</dd></div>
+          <div><dt><code>daysInMonth(2026, 2)</code></dt><dd class="r"><code>28</code></dd><dd class="c">4 で割り切れない</dd></div>
+          <div><dt><code>daysInMonth(1900, 2)</code></dt><dd class="r"><code>28</code></dd><dd class="c">100 で割り切れて、400 では割り切れない</dd></div>
+          <div><dt><code>daysInMonth(2000, 2)</code></dt><dd class="r"><code>29</code></dd><dd class="c">400 で割り切れる</dd></div>
+          <div><dt><code>daysInMonth(2026, 0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">1〜12 ではない</dd></div>
+          <div><dt><code>daysInMonth(2026, 13)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">1〜12 ではない</dd></div>
+          <div><dt><code>weekdayName(0)</code></dt><dd class="r"><code>"日"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>weekdayName(3)</code></dt><dd class="r"><code>"水"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>weekdayName(6)</code></dt><dd class="r"><code>"土"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>weekdayName(7)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0〜6 ではない</dd></div>
+          <div><dt><code>calculate(3, "+", 4)</code></dt><dd class="r"><code>7</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calculate(3, "-", 4)</code></dt><dd class="r"><code>-1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calculate(3, "*", 4)</code></dt><dd class="r"><code>12</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calculate(3, "/", 4)</code></dt><dd class="r"><code>0.75</code></dd><dd class="c"></dd></div>
+          <div><dt><code>calculate(1, "/", 0)</code></dt><dd class="r">エラーを投げる</dd><dd class="c">0 で割る</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>daysInMonth</code> は引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> です。<code>weekdayName</code> は引数が <code>number</code>、戻り値が <code>string</code> です。<code>calculate</code> は引数が <code>number</code>、<code>"+" | "-" | "*" | "/"</code>、<code>number</code> の順で、戻り値が <code>number</code> です。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">case 1: { }</code><h4>case の中で変数を作る</h4></div>
+      <p>case の下で <code>const</code> や <code>let</code> の変数を作るときは、その case の処理を <code>{ }</code> で囲みます。switch の <code>{ }</code> は、すべての case で 1 つの場所です。囲まないと、作った変数がほかの case からも見えてしまいます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 shippingFee を作る。数値 zone と数値 total と true か false の isMember を受け取り、数値を返す
+function shippingFee(zone: number, total: number, isMember: boolean): number {
+  // zone で場合を分ける
+  switch (zone) {
+    // 1 の場合（中を { } で囲む）
+    case 1: {
+      // free を作り、「total が 5000 以上、かつ isMember が true」、または total が 10000 以上かどうか（true か false）を入れる
+      const free = (total &gt;= 5000 &amp;&amp; isMember) || total &gt;= 10000;
+      // free なら 0、そうでなければ 500 を返す
+      return free ? 0 : 500;
+    }
+    // それ以外の場合
+    default:
+      // 1200 を返す
+      return 1200;
+  }
+}
+// 結果: shippingFee(1, 6000, true) は 0、shippingFee(1, 6000, false) は 500、shippingFee(2, 6000, true) は 1200</code></pre>
+      </div>
+      <p>コメントの「 」でくくった条件は、コードではかっこ <code>( )</code> で囲みます。<code>&amp;&amp;</code>（01章 q02 問16）と <code>||</code>（01章 q01 問15）を 1 つの式で使うときは、先に計算したいほうをかっこで囲むと読みやすくなります。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>{ }</code> で囲まない</h5>
+          <pre><code class="language-typescript">    case 1:
+      const free = (total &gt;= 5000 &amp;&amp; isMember) || total &gt;= 10000;
+      return free ? 0 : 500;</code></pre>
+          <div class="verdict ng">✕ ESLint がエラーにします（no-case-declarations）</div>
+        </div>
+        <div>
+          <h5><code>{ }</code> で囲む</h5>
+          <pre><code class="language-typescript">    case 1: {
+      const free = (total &gt;= 5000 &amp;&amp; isMember) || total &gt;= 10000;
+      return free ? 0 : 500;
+    }</code></pre>
+          <div class="verdict ok">○ free は、この case の中だけで使えます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある疑問</b>変数を作らない case は、囲まなくてかまいません。<code>if</code> や <code>throw</code> を書くだけなら、問1 のサンプルと同じ形で書けます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 daysInMonth を作る。数値 year と数値 month を受け取り、数値を返す
+export function daysInMonth() {
+  // month で場合を分ける
+  //   4 か 6 か 9 か 11 の場合
+  //     30 を返す
+  //   2 の場合（中を { } で囲む）
+  //     leap を作り、「year を 4 で割った余りが 0 と等しい、かつ year を 100 で割った余りが 0 と等しくない」、または year を 400 で割った余りが 0 と等しいかどうか（true か false）を入れる
+  //     leap なら 29、そうでなければ 28 を返す
+  //   1 か 3 か 5 か 7 か 8 か 10 か 12 の場合
+  //     31 を返す
+  //   それ以外の場合
+  //     "月は 1〜12 にしてください" というメッセージのエラーを投げる
+}
+
+// 関数 weekdayName を作る。数値 day を受け取り、文字列を返す
+export function weekdayName() {
+  // day で場合を分ける
+  //   0 の場合
+  //     "日" を返す
+  //   1 の場合
+  //     "月" を返す
+  //   2 の場合
+  //     "火" を返す
+  //   3 の場合
+  //     "水" を返す
+  //   4 の場合
+  //     "木" を返す
+  //   5 の場合
+  //     "金" を返す
+  //   6 の場合
+  //     "土" を返す
+  //   それ以外の場合
+  //     "曜日の番号は 0〜6 にしてください" というメッセージのエラーを投げる
+}
+
+// 関数 calculate を作る。数値 a と "+" か "-" か "*" か "/" の operator と数値 b を受け取り、数値を返す
+export function calculate() {
+  // operator で場合を分ける
+  //   "+" の場合
+  //     a と b を足した数を返す
+  //   "-" の場合
+  //     a から b を引いた数を返す
+  //   "*" の場合
+  //     a に b を掛けた数を返す
+  //   "/" の場合
+  //     もし b が 0 と等しいなら
+  //       "0 では割れません" というメッセージのエラーを投げる
+  //     a を b で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>daysInMonth</code> は、問2 や問13 と同じく case を並べます。2 月の case は、サンプルの <code>shippingFee</code> の <code>case 1: { }</code> と同じ形です。「割った余り」は <code>%</code>（01章 q01 問3）、「leap なら 29、そうでなければ 28」は条件演算子 <code>? :</code>（01章 q01 問12）です。<code>weekdayName</code> は問1 の <code>dayName</code> と同じ形で、<code>default</code> がエラーを投げる形に変わります。<code>calculate</code> は問3 と同じ形で、<code>"/"</code> の case の中に <code>if</code> を書きます。<code>if</code> の <code>{ }</code> のあとに、割った数を返す <code>return</code> を続けます。</p></details>
+    </div>
+  </section>
+</section>

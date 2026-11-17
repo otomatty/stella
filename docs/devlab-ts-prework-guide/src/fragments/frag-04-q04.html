@@ -1,0 +1,996 @@
+<section class="sec" id="c04-q04">
+  <div class="sec-h">
+    <span class="eyebrow">04章 文と例外</span>
+    <h2>q04 while文と break・continue</h2>
+    <p>何回くり返すかが先に分からない処理を、関数で 20 個書きます。引数と戻り値の型注釈は自分で書きます。くり返しには <code>while</code> 文を使います。中身を少なくとも 1 回は実行したいときは、<code>do-while</code> 文を使います。くり返しを途中で抜けるときは <code>break</code>、その回の残りを飛ばすときは <code>continue</code> を使います。引数には値を入れ直せません。変えたい値は、<code>let</code> の変数に写してから使います（01章 q01 問11）。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c04-q04-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">1 以上の整数の桁数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countDigits() {}</code></pre>
+      <p>1 以上の整数 <code>n</code> の桁数を返します。12345 なら 5 桁です。文字列にはせず、<code>while</code> 文で 10 で割っていきます。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>countDigits(12345)</code></dt><dd class="r"><code>5</code></dd><dd class="c"></dd></div>
+          <div><dt><code>countDigits(9)</code></dt><dd class="r"><code>1</code></dd><dd class="c">1 桁</dd></div>
+          <div><dt><code>countDigits(10)</code></dt><dd class="r"><code>2</code></dd><dd class="c">一の位の 0 も 1 桁に数える</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 countDigits を作る。数値 n を受け取り、数値を返す
+export function countDigits() {
+  // 残り rest を入れ直せる変数として作り、引数 n を写す
+  // 桁数 count を入れ直せる変数として作り、0 を入れる
+  // rest が 0 より大きい間くり返す
+  //   rest ÷ 10 を切り捨てた数を、rest に入れ直す
+  //   count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q01 問11 の <code>digitSum</code> と同じ形です。切り捨ては <code>Math.floor()</code> です（01章 q01 問1）。10 で割って切り捨てるたびに、桁が 1 つ減ります。12345 なら 1234、123、12、1、0 と 5 回くり返して終わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c04-q04-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">偶数の間 2 で割り続け、奇数になった値を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>/=</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function halveUntilOdd() {}</code></pre>
+      <p>整数 <code>n</code> が偶数の間、2 で割り続けます。奇数になったら、その値を返します。<code>n</code> が 0 のときは 0 を返します。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>halveUntilOdd(40)</code></dt><dd class="r"><code>5</code></dd><dd class="c">40、20、10、5 と割っていく</dd></div>
+          <div><dt><code>halveUntilOdd(7)</code></dt><dd class="r"><code>7</code></dd><dd class="c">初めから奇数</dd></div>
+          <div><dt><code>halveUntilOdd(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">/=</code><h4>割った数を入れ直す</h4></div>
+      <p><code>price /= 4</code> は、<code>price = price / 4</code> と同じです。<code>price</code> を 4 で割った数を、<code>price</code> に入れ直します。01章 q01 で出た <code>+=</code>・<code>*=</code> と、q01 の応用で出た <code>-=</code> の仲間です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 値段 price を入れ直せる変数として作り、12000 を入れる
+let price = 12000;
+// price を 4 で割る
+price /= 4;
+// 結果: price は 3000</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>let n = 9; n /= 2;</code></dt><dd class="r"><code>n は 4.5</code></dd><dd class="c">割り切れないと小数になる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>割り切れないときは小数になります。整数にしたいときは、<code>Math.floor()</code>（01章 q01 問1）で切り捨てます。この問題では偶数だけを 2 で割るので、いつも割り切れます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 halveUntilOdd を作る。数値 n を受け取り、数値を返す
+export function halveUntilOdd() {
+  // もし n が 0 と等しいなら
+  //   0 を返す
+  // 値 value を入れ直せる変数として作り、引数 n を写す
+  // value を 2 で割った余りが 0 と等しい間くり返す
+  //   value を 2 で割る
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「value を 2 で割る」は、問2 のサンプルの <code>price</code> の行と同じ <code>/=</code> です。「2 で割った余りが 0」は <code>value % 2 === 0</code> です。0 は 2 で割っても 0 のままで、いつまでも偶数です。先に 0 を返しておかないと、くり返しが終わりません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c04-q04-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">n 以上で最小の、2 の累乗を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function powerOfTwoAtLeast() {}</code></pre>
+      <p><code>n</code> 以上の数のうち、いちばん小さい 2 の累乗を返します。2 の累乗は、1 に 2 を何回か掛けた数（1、2、4、8、16…）です。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>powerOfTwoAtLeast(5)</code></dt><dd class="r"><code>8</code></dd><dd class="c"></dd></div>
+          <div><dt><code>powerOfTwoAtLeast(8)</code></dt><dd class="r"><code>8</code></dd><dd class="c">8 そのものが 2 の累乗</dd></div>
+          <div><dt><code>powerOfTwoAtLeast(1)</code></dt><dd class="r"><code>1</code></dd><dd class="c">1 も 2 の累乗（2 を 0 回掛けた数）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 powerOfTwoAtLeast を作る。数値 n を受け取り、数値を返す
+export function powerOfTwoAtLeast() {
+  // 値 value を入れ直せる変数として作り、1 を入れる
+  // value が n より小さい間くり返す
+  //   value に 2 を掛ける
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q01 問11 の <code>while</code> のサンプル（<code>price</code> を 2 倍にしていくもの）と同じ形です。「value に 2 を掛ける」は <code>*=</code> です。8 のときは、<code>value</code> が 8 になった時点で「8 より小さい」が <code>false</code> になり、8 が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c04-q04-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">0 になるまでの手順の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function stepsToZero() {}</code></pre>
+      <p>0 以上の整数 <code>n</code> を、0 になるまで変えていきます。偶数なら 2 で割り、奇数なら 1 を引きます。0 になるまでに何回変えたかを返します。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>stepsToZero(14)</code></dt><dd class="r"><code>6</code></dd><dd class="c">14、7、6、3、2、1、0 と 6 回変わる</dd></div>
+          <div><dt><code>stepsToZero(1)</code></dt><dd class="r"><code>1</code></dd><dd class="c"></dd></div>
+          <div><dt><code>stepsToZero(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">初めから 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 stepsToZero を作る。数値 n を受け取り、数値を返す
+export function stepsToZero() {
+  // 値 value を入れ直せる変数として作り、引数 n を写す
+  // 手順の数 steps を入れ直せる変数として作り、0 を入れる
+  // value が 0 より大きい間くり返す
+  //   もし value を 2 で割った余りが 0 と等しいなら
+  //     value を 2 で割る
+  //   そうでなければ
+  //     value から 1 を引く
+  //   steps を 1 増やす
+  // steps を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「value を 2 で割る」は問2 の <code>/=</code>、「value から 1 を引く」は <code>-=</code> です（q01 応用）。<code>if</code> と <code>else</code> の代わりに、条件演算子 <code>? :</code>（01章 q01 問12）で 1 行にしてもかまいません。<code>steps</code> を増やす行は <code>if</code> の外に書きます。どちらの場合も 1 回と数えるからです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c04-q04-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">1 + 2 + … + k が limit 以下になる、いちばん大きい k を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function maxCountWithin() {}</code></pre>
+      <p>1 から順に、1 + 2 + 3 + … と足していきます。合計が <code>limit</code> を超えない範囲で、いちばん大きい <code>k</code> を返します。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>maxCountWithin(10)</code></dt><dd class="r"><code>4</code></dd><dd class="c">1 + 2 + 3 + 4 = 10 で、ちょうど limit</dd></div>
+          <div><dt><code>maxCountWithin(9)</code></dt><dd class="r"><code>3</code></dd><dd class="c">4 まで足すと 10 になり、9 を超える</dd></div>
+          <div><dt><code>maxCountWithin(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">1 も足せない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 maxCountWithin を作る。数値 limit を受け取り、数値を返す
+export function maxCountWithin() {
+  // 足した数 k を入れ直せる変数として作り、0 を入れる
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // total に k + 1 を足した数が limit 以下の間くり返す
+  //   k を 1 増やす
+  //   total に k を足す
+  // k を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>次の数を足しても <code>limit</code> を超えないかを、足す前に確かめます。条件は <code>total + (k + 1) &lt;= limit</code> です。足してから確かめると、超えた回の分だけ <code>k</code> が 1 大きくなります。「以下」は <code>&lt;=</code> です（01章 q01 問5）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c04-q04-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">0 以上の整数の桁を逆に並べた数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function reverseNumber() {}</code></pre>
+      <p>0 以上の整数の桁を、逆の順番に並べた数を返します。文字列にせず、数のまま計算します。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>reverseNumber(123)</code></dt><dd class="r"><code>321</code></dd><dd class="c"></dd></div>
+          <div><dt><code>reverseNumber(1230)</code></dt><dd class="r"><code>321</code></dd><dd class="c">先頭に来る 0 は、数にすると消える</dd></div>
+          <div><dt><code>reverseNumber(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 reverseNumber を作る。数値 n を受け取り、数値を返す
+export function reverseNumber() {
+  // 残り rest を入れ直せる変数として作り、引数 n を写す
+  // 結果 result を入れ直せる変数として作り、0 を入れる
+  // rest が 0 より大きい間くり返す
+  //   result に 10 を掛けて、rest を 10 で割った余りを足した数を、result に入れ直す
+  //   rest ÷ 10 を切り捨てた数を、rest に入れ直す
+  // result を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>rest % 10</code> は、<code>rest</code> のいちばん下の桁です。<code>result</code> に 10 を掛けると桁が 1 つ上がり、空いた一の位にその桁を足せます。1230 なら、<code>result</code> は 0、3、32、321 と変わります。<code>%</code> は <code>+</code> より先に計算されます。それでも整形の確認（Prettier）は、<code>result * 10 + (rest % 10)</code> のようにかっこで囲んだ形にそろえます。初めからかっこを付けて書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c04-q04-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">素数なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isPrime() {}</code></pre>
+      <p><code>n</code> が素数なら <code>true</code>、そうでなければ <code>false</code> を返します。素数は、1 とその数でしか割り切れない 2 以上の整数です。2 から順に <code>i</code> を増やし、<code>i × i</code> が <code>n</code> 以下の間、<code>n</code> が <code>i</code> で割り切れるかを調べます。引数は数値 1 つ、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isPrime(2)</code></dt><dd class="r"><code>true</code></dd><dd class="c">いちばん小さい素数</dd></div>
+          <div><dt><code>isPrime(13)</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isPrime(15)</code></dt><dd class="r"><code>false</code></dd><dd class="c">3 で割り切れる</dd></div>
+          <div><dt><code>isPrime(1)</code></dt><dd class="r"><code>false</code></dd><dd class="c">2 より小さい</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPrime を作る。数値 n を受け取り、true か false を返す
+export function isPrime() {
+  // もし n が 2 より小さいなら
+  //   false を返す
+  // 割る数 i を入れ直せる変数として作り、2 を入れる
+  // i × i が n 以下の間くり返す
+  //   もし n を i で割った余りが 0 と等しいなら
+  //     false を返す
+  //   i を 1 増やす
+  // true を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しの中で <code>return</code> すると、その場で関数が終わります。くり返しも、そこで止まります。最後まで割り切れなければ、くり返しの後の <code>true</code> を返す行まで進みます。2 のときは、<code>2 * 2</code> が 2 より大きいので 1 回もくり返さず、<code>true</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c04-q04-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">n より大きい、最小の素数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function nextPrime() {}</code></pre>
+      <p><code>n</code> より大きい数のうち、いちばん小さい素数を返します。<code>n</code> そのものが素数でも、<code>n</code> は含みません。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nextPrime(13)</code></dt><dd class="r"><code>17</code></dd><dd class="c">14、15、16 は素数でない</dd></div>
+          <div><dt><code>nextPrime(1)</code></dt><dd class="r"><code>2</code></dd><dd class="c"></dd></div>
+          <div><dt><code>nextPrime(2)</code></dt><dd class="r"><code>3</code></dd><dd class="c">2 そのものは含まない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isPrimeNumber を作る。数値 k を受け取り、true か false を返す
+function isPrimeNumber() {
+  // 問7 と同じ手順で、k が素数か（true か false）を返す
+}
+
+// 関数 nextPrime を作る。数値 n を受け取り、数値を返す
+export function nextPrime() {
+  // 候補 candidate を入れ直せる変数として作り、n + 1 を入れる
+  // candidate が素数でない間くり返す
+  //   candidate を 1 増やす
+  // candidate を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問7 で書いた手順を、<code>export</code> を付けない関数として同じファイルに書きます。<code>nextPrime</code> の中から、その関数を呼びます。「素数でない」は、<code>!</code> で結果を反対にします（01章 q04 応用）。条件は <code>!isPrimeNumber(candidate)</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c04-q04-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">2 つの正の整数の最小公倍数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function lcm() {}</code></pre>
+      <p>2 つの正の整数 <code>a</code> と <code>b</code> の最小公倍数を返します。最小公倍数は、<code>a</code> でも <code>b</code> でも割り切れる数のうち、いちばん小さい数です。<code>a</code> の倍数を小さい順に調べ、<code>b</code> で割り切れたら止めます。引数は数値 2 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>lcm(4, 6)</code></dt><dd class="r"><code>12</code></dd><dd class="c">4、8、12 と調べて、12 が 6 で割り切れる</dd></div>
+          <div><dt><code>lcm(3, 5)</code></dt><dd class="r"><code>15</code></dd><dd class="c"></dd></div>
+          <div><dt><code>lcm(6, 3)</code></dt><dd class="r"><code>6</code></dd><dd class="c">6 が初めから 3 で割り切れる</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 lcm を作る。数値 a と数値 b を受け取り、数値を返す
+export function lcm() {
+  // 値 value を入れ直せる変数として作り、a を入れる
+  // value を b で割った余りが 0 と等しくない間くり返す
+  //   value に a を足す
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>value</code> に <code>a</code> を足していくと、<code>a</code> の倍数が小さい順にできます。「等しくない」は <code>!==</code> です（01章 q01 問17）。条件は <code>value % b !== 0</code> になります。割り切れた時点で条件が <code>false</code> になり、くり返しが終わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c04-q04-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">1〜n の合計を返す（3 の倍数は飛ばす）</span>
+      <span class="q-new">新しく出てくる書き方：<code>continue</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumSkipThrees() {}</code></pre>
+      <p>1 から <code>n</code> までの整数を足した合計を返します。ただし、3 の倍数は足さずに飛ばします。飛ばすところは <code>continue</code> で書きます。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumSkipThrees(6)</code></dt><dd class="r"><code>12</code></dd><dd class="c">1 + 2 + 4 + 5。3 と 6 を飛ばす</dd></div>
+          <div><dt><code>sumSkipThrees(2)</code></dt><dd class="r"><code>3</code></dd><dd class="c">1 + 2</dd></div>
+          <div><dt><code>sumSkipThrees(0)</code></dt><dd class="r"><code>0</code></dd><dd class="c">1 回もくり返さない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">continue</code><h4>この回の残りを飛ばし、次の回に進む</h4></div>
+      <p><code>continue;</code> を実行すると、その回の残りの行を飛ばします。<code>while</code> 文では、そのまま条件の確認に戻ります。条件が <code>true</code> なら、次の回が始まります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 日 day を入れ直せる変数として作り、0 を入れる
+let day = 0;
+// 席の合計 seats を入れ直せる変数として作り、0 を入れる
+let seats = 0;
+// day が 7 より小さい間くり返す
+while (day &lt; 7) {
+  // day を 1 増やす
+  day++;
+  // もし day が 4 と等しいなら
+  if (day === 4) {
+    // この回の残りを飛ばし、次の回に進む
+    continue;
+  }
+  // seats に 20 を足す
+  seats += 20;
+}
+// 結果: 1 日 20 席の予約枠を 7 日分足す。4 日目は休館日で飛ばすので、seats は 120</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 236" role="img" aria-label="continue を実行すると、その下の seats += 20 の行を通らずに、while の条件の確認に戻る">
+            <rect class="box" x="16" y="13" width="160" height="26" rx="6"/>
+            <text class="m" x="24" y="32">while (day &lt; 7) {</text>
+            <text class="m" x="41" y="62">day++;</text>
+            <text class="m" x="41" y="92">if (day === 4) {</text>
+            <rect class="box-a" x="50" y="103" width="92" height="26" rx="6"/>
+            <text class="m a" x="58" y="122">continue;</text>
+            <text class="m" x="41" y="152">}</text>
+            <text class="m" x="41" y="182">seats += 20;</text>
+            <text class="s" x="156" y="182">← 4 日目はここを通らない</text>
+            <text class="m" x="24" y="212">}</text>
+            <path class="ln-a" d="M142 116 H330 V26 H190"/>
+            <polygon class="hd-a" points="190,20 178,26 190,32"/>
+            <text class="a" x="344" y="62">continue</text>
+            <text class="s" x="344" y="84">条件の確認に戻る</text>
+            <text class="s" x="344" y="104">（day &lt; 7 を確かめ直す）</text>
+          </svg>
+        </div>
+        <figcaption><code>continue</code> を実行すると、下の行を飛ばして <code>while</code> の条件に戻ります。条件が <code>true</code> なら、次の回の <code>day++</code> から始まります。</figcaption>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>day</th><th>day === 4</th><th>したこと</th><th>seats</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>false</td><td class="j">20 を足す</td><td>20</td></tr>
+            <tr><td>2</td><td>false</td><td class="j">20 を足す</td><td>40</td></tr>
+            <tr><td>3</td><td>false</td><td class="j">20 を足す</td><td>60</td></tr>
+            <tr><td>4</td><td>true</td><td class="j">continue で飛ばす</td><td>60</td></tr>
+            <tr><td>5</td><td>false</td><td class="j">20 を足す</td><td>80</td></tr>
+            <tr><td>6</td><td>false</td><td class="j">20 を足す</td><td>100</td></tr>
+            <tr><td>7</td><td>false</td><td class="j">20 を足す</td><td>120</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>day</code> が 7 になった後は、条件 <code>day &lt; 7</code> が <code>false</code> になり、くり返しが終わります。</p>
+      <p class="memo"><b>よくある間違い</b>数を増やす行を <code>continue</code> の後ろに置くと、飛ばした回では数が増えません。条件がずっと <code>true</code> のままになり、くり返しが終わりません。サンプルの <code>day++</code> のように、<code>continue</code> より前で増やします。</p>
+      <p class="more">JavaScript Primer「ループと反復処理」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumSkipThrees を作る。数値 n を受け取り、数値を返す
+export function sumSkipThrees() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // 数 i を入れ直せる変数として作り、0 を入れる
+  // i が n より小さい間くり返す
+  //   i を 1 増やす
+  //   もし i を 3 で割った余りが 0 と等しいなら
+  //     この回の残りを飛ばし、次の回に進む
+  //   total に i を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問10 のサンプルの <code>day</code> と <code>seats</code> と同じ形です。<code>day === 4</code> の代わりに、3 の倍数かどうか（<code>i % 3 === 0</code>）を調べます。<code>i</code> を増やす行は、<code>continue</code> より前に置きます。<code>i</code> が <code>n</code> になった回まで足すので、条件は「<code>n</code> より小さい間」で足ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c04-q04-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">limit より大きい最初の要素の番号を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>break</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstIndexOver() {}</code></pre>
+      <p>数値の配列 <code>numbers</code> の中で、<code>limit</code> より大きい最初の要素が何番目かを返します。番号は 0 から数えます。見つかったら、<code>break</code> でくり返しを抜けます。見つからなければ <code>-1</code> を返します。引数は読み取り専用の数値の配列と数値、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstIndexOver([1, 5, 10], 4)</code></dt><dd class="r"><code>1</code></dd><dd class="c">5 が最初。10 は調べない</dd></div>
+          <div><dt><code>firstIndexOver([1, 2], 4)</code></dt><dd class="r"><code>-1</code></dd><dd class="c">4 より大きい要素がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">break</code><h4>くり返しを途中で抜ける</h4></div>
+      <p><code>break;</code> を実行すると、条件が <code>true</code> のままでも、くり返しをそこで終わります。続きは、くり返しの後の行から進みます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 在庫 stock を入れ直せる変数として作り、10 を入れる
+let stock = 10;
+// 日数 days を入れ直せる変数として作り、0 を入れる
+let days = 0;
+// days が 7 より小さい間くり返す
+while (days &lt; 7) {
+  // もし stock が 3 より小さいなら
+  if (stock &lt; 3) {
+    // くり返しを抜ける
+    break;
+  }
+  // stock から 3 を引く
+  stock -= 3;
+  // days を 1 増やす
+  days++;
+}
+// 結果: 1 日 3 個ずつ売り、在庫が足りなくなったら止める。days は 3、stock は 1</code></pre>
+      </div>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 262" role="img" aria-label="break を実行すると、条件の確認には戻らず、くり返しの後の行へ進む">
+            <rect class="box" x="16" y="13" width="168" height="26" rx="6"/>
+            <text class="m" x="24" y="32">while (days &lt; 7) {</text>
+            <text class="m" x="41" y="62">if (stock &lt; 3) {</text>
+            <rect class="box-a" x="50" y="73" width="66" height="26" rx="6"/>
+            <text class="m a" x="58" y="92">break;</text>
+            <text class="m" x="41" y="122">}</text>
+            <text class="m" x="41" y="152">stock -= 3;</text>
+            <text class="m" x="41" y="182">days++;</text>
+            <text class="m" x="24" y="212">}</text>
+            <rect class="box" x="16" y="223" width="144" height="26" rx="6"/>
+            <text class="s" x="24" y="241">くり返しの後の行</text>
+            <path class="ln-a" d="M116 86 H330 V236 H174"/>
+            <polygon class="hd-a" points="174,230 162,236 174,242"/>
+            <text class="a" x="344" y="132">break</text>
+            <text class="s" x="344" y="154">くり返しの後へ進む</text>
+            <text class="s" x="344" y="174">（days &lt; 7 は確かめない）</text>
+          </svg>
+        </div>
+        <figcaption><code>break</code> を実行すると、条件の確認に戻らず、くり返しの外へ出ます。<code>stock -= 3</code> と <code>days++</code> も、その回は通りません。</figcaption>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>stock（調べる前）</th><th>stock &lt; 3</th><th>したこと</th><th>days</th></tr></thead>
+          <tbody>
+            <tr><td>10</td><td>false</td><td class="j">3 を引く</td><td>1</td></tr>
+            <tr><td>7</td><td>false</td><td class="j">3 を引く</td><td>2</td></tr>
+            <tr><td>4</td><td>false</td><td class="j">3 を引く</td><td>3</td></tr>
+            <tr><td>1</td><td>true</td><td class="j">break で抜ける</td><td>3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="memo"><b>よくある疑問</b>くり返しの中で <code>return</code> しても、くり返しは止まります。<code>return</code> は関数ごと終わります。<code>break</code> はくり返しだけを抜けて、関数の続きの行へ進みます。</p>
+      <p class="more">JavaScript Primer「ループと反復処理」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstIndexOver を作る。読み取り専用の数値の配列 numbers と数値 limit を受け取り、数値を返す
+export function firstIndexOver() {
+  // 見つけた番号 found を入れ直せる変数として作り、-1 を入れる
+  // 番号 i を入れ直せる変数として作り、0 を入れる
+  // i が numbers の要素の数より小さい間くり返す
+  //   もし numbers の i 番目の要素（なければ -Infinity）が limit より大きいなら
+  //     found に i を入れ直す
+  //     くり返しを抜ける
+  //   i を 1 増やす
+  // found を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「くり返しを抜ける」は、問11 のサンプルの <code>break</code> です。<code>numbers[i]</code> の型は <code>number | undefined</code> です（02章 q04）。そのままでは <code>limit</code> と比べられず、型の確認でエラーになります。<code>numbers[i] ?? -Infinity</code> のように、ないときの値を決めてから比べます（<code>??</code> は 02章 q02 問1、<code>-Infinity</code> は 02章 q08 問10）。見つからないときは、<code>found</code> が <code>-1</code> のまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c04-q04-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">先頭に続く「0」の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function leadingZeros() {}</code></pre>
+      <p>文字列の先頭から続く <code>"0"</code> の数を返します。途中や後ろにある <code>"0"</code> は数えません。引数は文字列 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>leadingZeros("000120")</code></dt><dd class="r"><code>3</code></dd><dd class="c">後ろの 0 は数えない</dd></div>
+          <div><dt><code>leadingZeros("120")</code></dt><dd class="r"><code>0</code></dd><dd class="c">先頭が 0 でない</dd></div>
+          <div><dt><code>leadingZeros("000")</code></dt><dd class="r"><code>3</code></dd><dd class="c">全部が 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 leadingZeros を作る。文字列 text を受け取り、数値を返す
+export function leadingZeros() {
+  // 個数 count を入れ直せる変数として作り、0 を入れる
+  // text の count 番目の文字が "0" と等しい間くり返す
+  //   count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>count</code> は、数えた数と、次に調べる位置を兼ねます。「text の count 番目の文字」は添字 <code>text[count]</code> です（01章 q03 問20）。<code>"000"</code> のように最後まで 0 のときは、<code>text[3]</code> に文字がなく <code>undefined</code> になります。<code>"0"</code> と等しくないので、そこでくり返しが終わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c04-q04-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">先頭の「0」を取り除く</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function trimZeros() {}</code></pre>
+      <p>文字列の先頭に続く <code>"0"</code> を取り除いて返します。全部が <code>"0"</code> のときは、<code>"0"</code> を 1 つだけ残します。引数は文字列 1 つ、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>trimZeros("00120")</code></dt><dd class="r"><code>"120"</code></dd><dd class="c">後ろの 0 は残す</dd></div>
+          <div><dt><code>trimZeros("000")</code></dt><dd class="r"><code>"0"</code></dd><dd class="c">全部が 0 なら 1 つ残す</dd></div>
+          <div><dt><code>trimZeros("5")</code></dt><dd class="r"><code>"5"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 trimZeros を作る。文字列 text を受け取り、文字列を返す
+export function trimZeros() {
+  // 始まり start を入れ直せる変数として作り、0 を入れる
+  // start が（text の文字数 − 1）より小さく、かつ text の start 番目の文字が "0" と等しい間くり返す
+  //   start を 1 増やす
+  // text の start 文字目から後ろを取り出したものを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 の数え方に、「最後の 1 文字までは進めない」という条件を足します。2 つの条件は <code>&amp;&amp;</code> でつなぎます（01章 q02 問16）。<code>"000"</code> なら <code>start</code> は 2 で止まり、<code>.slice(2)</code> は <code>"0"</code> です。取り出すのは <code>.slice()</code> です（01章 q02 問10）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c04-q04-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">各桁を足すことを、1 桁になるまでくり返した値を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function digitalRoot() {}</code></pre>
+      <p>0 以上の整数の各桁を足します。その結果がまだ 2 桁以上なら、また各桁を足します。1 桁になるまでくり返した値を返します。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>digitalRoot(9875)</code></dt><dd class="r"><code>2</code></dd><dd class="c">9875、29、11、2 と変わる</dd></div>
+          <div><dt><code>digitalRoot(7)</code></dt><dd class="r"><code>7</code></dd><dd class="c">初めから 1 桁</dd></div>
+          <div><dt><code>digitalRoot(10)</code></dt><dd class="r"><code>1</code></dd><dd class="c">1 + 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 digitalRoot を作る。数値 n を受け取り、数値を返す
+export function digitalRoot() {
+  // 値 value を入れ直せる変数として作り、引数 n を写す
+  // value が 10 以上の間くり返す
+  //   合計 sum を入れ直せる変数として作り、0 を入れる
+  //   残り rest を入れ直せる変数として作り、value を写す
+  //   rest が 0 より大きい間くり返す
+  //     sum に、rest を 10 で割った余りを足す
+  //     rest ÷ 10 を切り捨てた数を、rest に入れ直す
+  //   value に sum を入れ直す
+  // value を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>くり返しの中に、もう 1 つくり返しを書きます。内側は、01章 q01 問11 の <code>digitSum</code> と同じ形です。<code>sum</code> と <code>rest</code> は、外側の 1 回ごとに作り直します。「10 以上」は、2 桁以上ということです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c04-q04-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">0 以上の整数を 2 進数で書いたときの桁数を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>do-while</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function bitLength() {}</code></pre>
+      <p>0 以上の整数を 2 進数で書いたときの桁数を返します。2 進数は、0 と 1 だけで数を表す書き方です。10 は 2 進数で 1010 なので、4 桁です。0 は 1 桁とします。引数は数値 1 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>bitLength(10)</code></dt><dd class="r"><code>4</code></dd><dd class="c">2 進数で 1010</dd></div>
+          <div><dt><code>bitLength(1)</code></dt><dd class="r"><code>1</code></dd><dd class="c">2 進数で 1</dd></div>
+          <div><dt><code>bitLength(0)</code></dt><dd class="r"><code>1</code></dd><dd class="c">2 進数で 0</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">do { } while ()</code><h4>中身を 1 回やってから、条件を確かめる</h4></div>
+      <p><code>while</code> 文は、中身の前に条件を確かめます。<code>do-while</code> 文は、先に中身を 1 回やり、そのあとで条件を確かめます。条件が初めから <code>false</code> でも、中身は 1 回だけ実行されます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 残りの件数 rest を入れ直せる変数として作り、14 を入れる
+let rest = 14;
+// ページ数 pages を入れ直せる変数として作り、0 を入れる
+let pages = 0;
+// 次の中身を 1 回やってから、rest が 0 より大きい間くり返す
+do {
+  // pages を 1 増やす
+  pages++;
+  // rest から 6 を引く
+  rest -= 6;
+} while (rest &gt; 0);
+// 結果: 1 ページに 6 件ずつ載せると、pages は 3</code></pre>
+      </div>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>do</span> { pages++; rest -= 6; } <span class="seg"><i>2</i>while (rest &gt; 0)</span><span class="seg c"><i>3</i>;</span></pre>
+        <ol>
+          <li><span>ここから中身が始まります。条件はまだ確かめません。</span></li>
+          <li><span>中身のあとで確かめる条件です。<code>true</code> なら、もう一度 <code>do</code> から始めます。</span></li>
+          <li><span>最後に <code>;</code> を付けます。<code>while</code> 文には付けません。</span></li>
+        </ol>
+      </figure>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>pages（増やした後）</th><th>rest（引いた後）</th><th>rest &gt; 0</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>8</td><td>true</td></tr>
+            <tr><td>2</td><td>2</td><td>true</td></tr>
+            <tr><td>3</td><td>-4</td><td>false</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>件数が 0 のときを比べます。<code>while</code> 文では 1 回もくり返さず、ページ数が 0 になります。<code>do-while</code> 文なら、件数が 0 でも 1 ページ目を数えます。</p>
+      <div class="cmp">
+        <div>
+          <h5><code>while</code> 文</h5>
+          <pre><code class="language-typescript">let rest = 0;
+let pages = 0;
+while (rest &gt; 0) {
+  pages++;
+  rest -= 6;
+}
+// 結果: pages は 0</code></pre>
+          <div class="verdict ng">✕ 条件が初めから false なので、中身を 1 回もやりません</div>
+        </div>
+        <div>
+          <h5><code>do-while</code> 文</h5>
+          <pre><code class="language-typescript">let rest = 0;
+let pages = 0;
+do {
+  pages++;
+  rest -= 6;
+} while (rest &gt; 0);
+// 結果: pages は 1</code></pre>
+          <div class="verdict ok">○ 中身を 1 回やってから条件を確かめるので、1 になります</div>
+        </div>
+      </div>
+      <p class="more">JavaScript Primer「ループと反復処理」</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 bitLength を作る。数値 n を受け取り、数値を返す
+export function bitLength() {
+  // 残り rest を入れ直せる変数として作り、引数 n を写す
+  // 桁数 count を入れ直せる変数として作り、0 を入れる
+  // 次の中身を 1 回やってから、rest が 0 より大きい間くり返す
+  //   rest ÷ 2 を切り捨てた数を、rest に入れ直す
+  //   count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問15 のサンプルの <code>pages</code> と同じ <code>do-while</code> の形です。問1 の 10 で割る代わりに、2 で割って切り捨てます。割るたびに、2 進数の桁が 1 つ減ります。10 なら 5、2、1、0 と 4 回です。0 のときも中身を 1 回やるので、<code>count</code> は 1 になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c04-q04-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">text をつなげていき、ちょうど length 文字にして返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function repeatToLength() {}</code></pre>
+      <p>文字列 <code>text</code> を何回もつなげて、ちょうど <code>length</code> 文字の文字列にして返します。長くなった分は切ります。<code>text</code> が空の文字列なら、空の文字列を返します。引数は文字列と数値、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>repeatToLength("ab", 5)</code></dt><dd class="r"><code>"ababa"</code></dd><dd class="c">"ababab" の 6 文字から 1 文字切る</dd></div>
+          <div><dt><code>repeatToLength("abc", 3)</code></dt><dd class="r"><code>"abc"</code></dd><dd class="c">1 回でちょうど 3 文字</dd></div>
+          <div><dt><code>repeatToLength("", 3)</code></dt><dd class="r"><code>""</code></dd><dd class="c">text が空</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>number</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 repeatToLength を作る。文字列 text と数値 length を受け取り、文字列を返す
+export function repeatToLength() {
+  // もし text が空の文字列なら
+  //   空の文字列を返す
+  // 結果 result を入れ直せる変数として作り、空の文字列を入れる
+  // result の文字数が length より小さい間くり返す
+  //   result の後ろに text をつなげた文字列を、result に入れ直す
+  // result の 0 文字目から length 文字目の前までを取り出して返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>text</code> が空だと、つなげても <code>result</code> が長くなりません。くり返しが終わらなくなるので、先に空の文字列を返します。つなげる行は、テンプレートリテラルで <code>`${result}${text}`</code> と書きます。最後に <code>.slice(0, length)</code> で、長すぎる分を切ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c04-q04-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">n を d で割り切れなくなるまで割り、割れた回数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function divisibleTimes() {}</code></pre>
+      <p>整数 <code>n</code> を、<code>d</code> で割り切れなくなるまで割ります。何回割れたかを返します。<code>d</code> は 2 以上です。引数は数値 2 つ、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>divisibleTimes(48, 2)</code></dt><dd class="r"><code>4</code></dd><dd class="c">48、24、12、6、3 と 4 回割れる</dd></div>
+          <div><dt><code>divisibleTimes(81, 3)</code></dt><dd class="r"><code>4</code></dd><dd class="c">81、27、9、3、1</dd></div>
+          <div><dt><code>divisibleTimes(7, 2)</code></dt><dd class="r"><code>0</code></dd><dd class="c">1 回も割れない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 divisibleTimes を作る。数値 n と数値 d を受け取り、数値を返す
+export function divisibleTimes() {
+  // 値 value を入れ直せる変数として作り、引数 n を写す
+  // 回数 count を入れ直せる変数として作り、0 を入れる
+  // value が 0 と等しくなく、かつ value を d で割った余りが 0 と等しい間くり返す
+  //   value を d で割る
+  //   count を 1 増やす
+  // count を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「value を d で割る」は、問2 と同じ <code>/=</code> です。0 は何で割っても 0 で、余りも 0 です。<code>value !== 0</code> がないと、<code>n</code> が 0 のときにくり返しが終わりません。テストに 0 はありませんが、止まらない関数にしないために入れておきます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c04-q04-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">正の数だけを合計する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function sumPositives() {}</code></pre>
+      <p>数値の配列から、正の数（0 より大きい数）だけを合計して返します。0 以下の数は、<code>continue</code> で飛ばします。引数は読み取り専用の数値の配列、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumPositives([3, -1, 0, 5])</code></dt><dd class="r"><code>8</code></dd><dd class="c">-1 と 0 を飛ばす</dd></div>
+          <div><dt><code>sumPositives([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly number[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumPositives を作る。読み取り専用の数値の配列 numbers を受け取り、数値を返す
+export function sumPositives() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし n が 0 以下なら
+  //     この回の残りを飛ばし、次の回に進む
+  //   total に n を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>for-of</code> の中でも <code>continue</code> を使えます（問10）。<code>for-of</code> では、<code>continue</code> のあと次の要素に進みます。数を増やす行がないので、問10 のように止まらなくなる心配はありません。「以下」は <code>&lt;=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c04-q04-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">2 回目に出てきた最初の文字を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function firstRepeatedChar() {}</code></pre>
+      <p>文字列を先頭から 1 文字ずつ見ていきます。前にも出てきた文字に初めて会ったら、その文字を返します。見つかったら、<code>break</code> でくり返しを抜けます。そういう文字がなければ <code>undefined</code> を返します。引数は文字列 1 つ、戻り値は文字列か <code>undefined</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>firstRepeatedChar("abcbd")</code></dt><dd class="r"><code>"b"</code></dd><dd class="c">4 文字目の b が 2 回目</dd></div>
+          <div><dt><code>firstRepeatedChar("abc")</code></dt><dd class="r"><code>undefined</code></dd><dd class="c">同じ文字がない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>string | undefined</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 firstRepeatedChar を作る。文字列 text を受け取り、文字列か undefined を返す
+export function firstRepeatedChar() {
+  // 見た文字 seen を入れ直せる変数として作り、空の文字列を入れる
+  // 見つけた文字 found を入れ直せる変数として作り、undefined を入れる。型は文字列か undefined
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   もし seen に c が含まれるなら
+  //     found に c を入れ直す
+  //     くり返しを抜ける
+  //   seen の後ろに c をつなげた文字列を、seen に入れ直す
+  // found を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>found</code> の行は、02章 q08 問10 のサンプルの <code>open</code> と同じ形です。「含まれるなら」は <code>.includes()</code> です（01章 q01 問16）。<code>"abcbd"</code> では、4 文字目の <code>b</code> のとき <code>seen</code> が <code>"abc"</code> です。<code>b</code> が含まれるので、そこで抜けます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c04-q04-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">0 以上の整数の各桁を、上の桁から並べた配列を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.unshift()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function digitsOf() {}</code></pre>
+      <p>0 以上の整数の各桁を、上の桁から順に並べた配列を返します。0 のときは <code>[0]</code> です。<code>do-while</code> 文で書きます。引数は数値 1 つ、戻り値は数値の配列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>digitsOf(305)</code></dt><dd class="r"><code>[3, 0, 5]</code></dd><dd class="c">真ん中の 0 も入れる</dd></div>
+          <div><dt><code>digitsOf(0)</code></dt><dd class="r"><code>[0]</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>number[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.unshift()</code><h4>配列の先頭に要素を付け足す</h4></div>
+      <p><code>.push()</code>（02章 q04 問17）の反対で、かっこの中の値を配列の先頭に付け足します。新しい配列は作らず、その配列そのものが変わります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 注文番号の配列 orders を作り、102 と 103 を入れる
+const orders = [102, 103];
+// orders の先頭に、急ぎの注文 101 を付け足す
+orders.unshift(101);
+// 結果: orders は [101, 102, 103]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>[2, 3].unshift(1)</code></dt><dd class="r"><code>3</code></dd><dd class="c">付け足したあとの要素の数を返す</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>.unshift()</code> が返すのは要素の数で、配列ではありません。<code>number[]</code> を返す関数で <code>return orders.unshift(101);</code> と書くと、型の確認でエラーになります。付け足してから、配列の変数を返します。</p>
+      <p class="memo"><b>決まり</b><code>.push()</code> と同じく、引数で受け取った <code>readonly</code> の配列には <code>.unshift()</code> できません。付け足すのは、関数の中で自分で作った配列だけです。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 digitsOf を作る。数値 n を受け取り、数値の配列を返す
+export function digitsOf() {
+  // 桁 digits を数値の配列として作り、空の配列を入れる
+  // 残り rest を入れ直せる変数として作り、引数 n を写す
+  // 次の中身を 1 回やってから、rest が 0 より大きい間くり返す
+  //   digits の先頭に、rest を 10 で割った余りを付け足す
+  //   rest ÷ 10 を切り捨てた数を、rest に入れ直す
+  // digits を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「数値の配列として作り、空の配列を入れる」は <code>const digits: number[] = []</code> です（02章 q04 問17）。いちばん下の桁から取り出すので、先頭に付け足していくと上の桁から並びます。くり返しは問15 の <code>do-while</code> です。0 のときも中身を 1 回やるので、<code>[0]</code> になります。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c04-q04-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">2 進数の文字列・初めて超える累乗・負の数までの合計</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function toBinary() {}
+
+export function firstPowerOver() {}
+
+export function sumUntilNegative() {}</code></pre>
+      <p>3 つの関数を書きます。引数と戻り値には型注釈を付けます。</p>
+      <ol>
+        <li><code>toBinary</code>：0 以上の整数を、2 進数の文字列にします。<code>while</code> 文で 2 で割っていき、割った余りを前につなげます。<code>toString(2)</code> は使いません。負の数か、整数でない数なら <code>Error</code> を投げます。</li>
+        <li><code>firstPowerOver</code>：<code>base</code>、<code>base × base</code>、<code>base × base × base</code>…と順に作り、<code>limit</code> を初めて超えた値を返します。<code>base</code> が 2 より小さいときは <code>Error</code> を投げます。</li>
+        <li><code>sumUntilNegative</code>：配列の先頭から順に足していきます。負の数が出たら、そこで止めます（<code>break</code>）。0 は飛ばします（<code>continue</code>）。足した数の合計と、足した個数を <code>{ sum, count }</code> の形で返します。引数は読み取り専用の数値の配列です。</li>
+      </ol>
+      <p><code>sumUntilNegative([3, 0, 4, -1, 5])</code> では、次のように進みます。</p>
+      <div class="scroll-t">
+        <table class="trace">
+          <thead><tr><th>要素</th><th>したこと</th><th>sum</th><th>count</th></tr></thead>
+          <tbody>
+            <tr><td>3</td><td class="j">足す</td><td>3</td><td>1</td></tr>
+            <tr><td>0</td><td class="j">飛ばす</td><td>3</td><td>1</td></tr>
+            <tr><td>4</td><td class="j">足す</td><td>7</td><td>2</td></tr>
+            <tr><td>-1</td><td class="j">止める</td><td>7</td><td>2</td></tr>
+            <tr><td>5</td><td class="j">調べない</td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>toBinary(10)</code></dt><dd class="r"><code>"1010"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toBinary(1)</code></dt><dd class="r"><code>"1"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toBinary(0)</code></dt><dd class="r"><code>"0"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toBinary(255)</code></dt><dd class="r"><code>"11111111"</code></dd><dd class="c"></dd></div>
+          <div><dt><code>toBinary(-1)</code></dt><dd class="r"><code>Error</code></dd><dd class="c">負の数なので Error を投げる</dd></div>
+          <div><dt><code>toBinary(1.5)</code></dt><dd class="r"><code>Error</code></dd><dd class="c">整数でないので Error を投げる</dd></div>
+          <div><dt><code>firstPowerOver(2, 100)</code></dt><dd class="r"><code>128</code></dd><dd class="c">64 は 100 以下、128 で初めて超える</dd></div>
+          <div><dt><code>firstPowerOver(3, 9)</code></dt><dd class="r"><code>27</code></dd><dd class="c">9 はちょうど limit で、超えていない</dd></div>
+          <div><dt><code>firstPowerOver(10, 0)</code></dt><dd class="r"><code>10</code></dd><dd class="c">base そのものがもう超えている</dd></div>
+          <div><dt><code>firstPowerOver(1, 10)</code></dt><dd class="r"><code>Error</code></dd><dd class="c">base が 2 より小さいので Error を投げる</dd></div>
+          <div><dt><code>sumUntilNegative([3, 0, 4, -1, 5])</code></dt><dd class="r"><code>{ sum: 7, count: 2 }</code></dd><dd class="c"></dd></div>
+          <div><dt><code>sumUntilNegative([1, 2, 3])</code></dt><dd class="r"><code>{ sum: 6, count: 3 }</code></dd><dd class="c">負の数がない</dd></div>
+          <div><dt><code>sumUntilNegative([-1, 2])</code></dt><dd class="r"><code>{ sum: 0, count: 0 }</code></dd><dd class="c">先頭で止まる</dd></div>
+          <div><dt><code>sumUntilNegative([])</code></dt><dd class="r"><code>{ sum: 0, count: 0 }</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b><code>toBinary</code> は引数が <code>number</code>、戻り値が <code>string</code> です。<code>firstPowerOver</code> は引数が <code>number</code> と <code>number</code>、戻り値が <code>number</code> です。<code>sumUntilNegative</code> は引数が <code>readonly number[]</code>、戻り値が <code>{ sum: number; count: number }</code> です。どれも型を確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 toBinary を作る。数値 n を受け取り、文字列を返す
+export function toBinary() {
+  // もし n が整数でないか、n が 0 より小さいなら
+  //   "0 以上の整数を渡してください" というメッセージのエラーを投げる
+  // もし n が 0 と等しいなら
+  //   "0" を返す
+  // 残り rest を入れ直せる変数として作り、引数 n を写す
+  // 結果 result を入れ直せる変数として作り、空の文字列を入れる
+  // rest が 0 より大きい間くり返す
+  //   rest を 2 で割った余りの後ろに result をつなげた文字列を、result に入れ直す
+  //   rest ÷ 2 を切り捨てた数を、rest に入れ直す
+  // result を返す
+}
+
+// 関数 firstPowerOver を作る。数値 base と数値 limit を受け取り、数値を返す
+export function firstPowerOver() {
+  // もし base が 2 より小さいなら
+  //   "base は 2 以上にしてください" というメッセージのエラーを投げる
+  // 値 value を入れ直せる変数として作り、base を入れる
+  // value が limit 以下の間くり返す
+  //   value に base を掛ける
+  // value を返す
+}
+
+// 関数 sumUntilNegative を作る。読み取り専用の数値の配列 numbers を受け取り、数値の sum と数値の count を持つオブジェクトを返す
+export function sumUntilNegative() {
+  // 合計 sum を入れ直せる変数として作り、0 を入れる
+  // 個数 count を入れ直せる変数として作り、0 を入れる
+  // numbers から 1 つずつ n に取り出してくり返す
+  //   もし n が 0 より小さいなら
+  //     くり返しを抜ける
+  //   もし n が 0 と等しいなら
+  //     この回の残りを飛ばし、次の回に進む
+  //   sum に n を足す
+  //   count を 1 増やす
+  // sum と count を持つオブジェクトを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>toBinary</code> の最初の条件は、<code>!Number.isInteger(n)</code> と <code>n &lt; 0</code> を <code>||</code> でつなぎます（01章 q04 応用、01章 q01 問15）。余りを前につなげる行は、01章 q05 問14 の <code>reversed</code> と同じ形で、テンプレートリテラルで書きます。10 なら余りが 0、1、0、1 の順に出て、前につなげると <code>"1010"</code> になります。0 は 1 回もくり返さないので、先に <code>"0"</code> を返します。<code>firstPowerOver</code> は、01章 q01 問11 の <code>price</code> のサンプルと同じ形です。「以下の間」なので、ちょうど <code>limit</code> の値でも、もう 1 回掛けます。<code>sumUntilNegative</code> は、問11 の <code>break</code> と問18 の <code>continue</code> を、1 つの <code>for-of</code> の中で使います。負の数を調べる <code>if</code> を先に書きます。返すオブジェクトは、省略記法 <code>{ sum, count }</code> で書けます（02章 q01 問3）。</p></details>
+    </div>
+  </section>
+</section>

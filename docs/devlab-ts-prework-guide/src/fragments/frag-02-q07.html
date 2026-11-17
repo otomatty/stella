@@ -1,0 +1,876 @@
+<section class="sec" id="c02-q07">
+  <div class="sec-h">
+    <span class="eyebrow">02章 オブジェクト・配列・タプル</span>
+    <h2>q07 構造的型付け</h2>
+    <p>関数を 20 個書きます。引数と戻り値には型注釈を付けます。ファイルには <code>Cat</code>・<code>Dog</code>・<code>Robot</code> などの型が、最初から書いてあります。引数の型には、関数が本当に使うプロパティだけを書きます。名前しか使わないなら <code>{ name: string }</code> です。こうしておくと、名前の違う型でも、そのプロパティを持っていれば同じ関数に渡せます。この仕組みを構造的型付けと呼びます。テストは、引数の型がその形になっているかも確かめます。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c02-q07-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">name を返す（Cat でも Robot でも渡せる）</span>
+      <span class="q-new">新しく出てくる書き方：構造的型付け（使うプロパティだけを引数の型に書く）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Cat = { name: string; age: number; meow: string };
+
+export type Robot = { name: string; version: number };
+
+export function nameOf() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>name</code> を返します。<code>Cat</code> と <code>Robot</code> は、持っているプロパティが違います。でも、どちらも <code>name</code> を持っています。引数の型には <code>Cat</code> も <code>Robot</code> も使いません。<code>{ name: string }</code> と書きます。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameOf(cat)</code></dt><dd class="r"><code>"ミケ"</code></dd><dd class="c"><code>cat</code> は Cat 型の <code>{ name: "ミケ", age: 3, meow: "ニャー" }</code></dd></div>
+          <div><dt><code>nameOf(robot)</code></dt><dd class="r"><code>"R2"</code></dd><dd class="c"><code>robot</code> は Robot 型の <code>{ name: "R2", version: 2 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">x: { email: string }</code><h4>構造的型付け（形が合えば渡せる）</h4></div>
+      <p>TypeScript は、引数に渡せるかどうかを、オブジェクトの形で決めます。形とは、どんなプロパティを、どんな型で持っているかです。型の名前は見ません。これを構造的型付けと呼びます。</p>
+      <p>引数の型に、関数が使うプロパティだけを書いておきます。すると、そのプロパティを持つオブジェクトなら、どの型でも渡せます。ほかのプロパティを持っていてもかまいません。</p>
+      <figure class="fig">
+        <div class="scroll">
+          <svg viewBox="0 0 560 232" role="img" aria-label="Member と Shop は、どちらも email: string を持っているので、引数の型 { email: string } に渡せる">
+            <rect class="box" x="16" y="12" width="200" height="108" rx="8"/>
+            <text class="s" x="30" y="34">Member</text>
+            <rect class="box-a" x="24" y="65" width="184" height="24" rx="4"/>
+            <text class="m" x="32" y="58">name: string</text>
+            <text class="m" x="32" y="82">email: string</text>
+            <text class="m" x="32" y="108">points: number</text>
+            <rect class="box" x="16" y="136" width="200" height="86" rx="8"/>
+            <text class="s" x="30" y="158">Shop</text>
+            <rect class="box-a" x="24" y="167" width="184" height="24" rx="4"/>
+            <text class="m" x="32" y="184">email: string</text>
+            <text class="m" x="32" y="210">address: string</text>
+            <path class="ln-a" d="M220 77 C 284 77, 284 108, 336 108"/>
+            <polygon class="hd-a" points="336,102 348,108 336,114"/>
+            <path class="ln-a" d="M220 179 C 284 179, 284 124, 336 124"/>
+            <polygon class="hd-a" points="336,118 348,124 336,130"/>
+            <rect class="box-a" x="352" y="88" width="192" height="56" rx="8"/>
+            <text class="m" x="448" y="121" text-anchor="middle">{ email: string }</text>
+            <text class="s" x="448" y="168" text-anchor="middle">mailTo の引数の型</text>
+          </svg>
+        </div>
+        <figcaption><code>Member</code> も <code>Shop</code> も <code>email: string</code> を持っているので、<code>mailTo</code> に渡せます。<code>name</code> や <code>address</code> は、あっても使われないだけです。</figcaption>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 会員 Member という型を作る。name は文字列、email は文字列、points は数値
+type Member = { name: string; email: string; points: number };
+// 取引先 Shop という型を作る。email は文字列、address は文字列
+type Shop = { email: string; address: string };
+
+// 関数 mailTo を作る。email（文字列）を持つオブジェクト x を受け取り、文字列を返す
+function mailTo(x: { email: string }): string {
+  // x の email を埋め込んだ「宛先: ◯」の文字列を返す
+  return `宛先: ${x.email}`;
+}
+
+// 会員 member を作り、Member 型の値を入れる
+const member: Member = { name: "佐藤", email: "sato@example.com", points: 120 };
+// 取引先 shop を作り、Shop 型の値を入れる
+const shop: Shop = { email: "info@shop.example", address: "大阪市" };
+// 文 toMember を作り、mailTo に member を渡して呼んだ結果を入れる
+const toMember = mailTo(member);
+// 文 toShop を作り、mailTo に shop を渡して呼んだ結果を入れる
+const toShop = mailTo(shop);
+// 結果: toMember は "宛先: sato@example.com"、toShop は "宛先: info@shop.example"</code></pre>
+      </div>
+      <p>引数の型を <code>Member</code> にすると、どうなるかを比べます。</p>
+      <div class="cmp">
+        <div>
+          <h5>引数の型を <code>Member</code> にする</h5>
+          <pre><code class="language-typescript">function mailTo(x: Member): string {
+  return `宛先: ${x.email}`;
+}
+// mailTo に shop を渡して呼ぶ
+mailTo(shop);</code></pre>
+          <div class="verdict ng">✕ Shop には name と points がないので、エラーになります</div>
+        </div>
+        <div>
+          <h5>使うプロパティだけを書く</h5>
+          <pre><code class="language-typescript">function mailTo(x: { email: string }): string {
+  return `宛先: ${x.email}`;
+}
+// mailTo に shop を渡して呼ぶ
+mailTo(shop);</code></pre>
+          <div class="verdict ok">○ email があるので渡せます。member も渡せます</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>関数の中で使えるのは、引数の型に書いたプロパティだけです。<code>x: { email: string }</code> の関数の中で <code>x.points</code> と書くと、エラーになります。使うプロパティは、すべて型に書きます。</p>
+      <p class="memo"><b>コツ</b>先に、関数の中で使うプロパティを数えます。<code>name</code> だけなら <code>{ name: string }</code>、<code>width</code> と <code>height</code> なら <code>{ width: number; height: number }</code> です。</p>
+      <p class="memo"><b>テスト</b>この番号のテストは、引数の型が問題の形と同じかを確かめます。引数の型を <code>Cat</code> や <code>Cat | Robot</code> にすると、テストは通りません。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameOf を作る。name（文字列）を持つオブジェクト x を受け取り、文字列を返す
+export function nameOf() {
+  // x の name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「name（文字列）を持つオブジェクト x」は <code>x: { name: string }</code> です。問1 のサンプルの <code>mailTo</code> と同じ形です。「x の name」は <code>x.name</code> です（q01 問1）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c02-q07-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">name の文字数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Dog = { name: string; age: number; breed: string };
+
+export function nameLength() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>name</code> が何文字かを返します。使うのは <code>name</code> だけなので、引数の型は問1 と同じく <code>{ name: string }</code> です。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>nameLength(dog)</code></dt><dd class="r"><code>2</code></dd><dd class="c"><code>dog</code> は Dog 型の <code>{ name: "ポチ", age: 5, breed: "柴" }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 nameLength を作る。name（文字列）を持つオブジェクト x を受け取り、数値を返す
+export function nameLength() {
+  // x の name の文字数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の書き方は問1 と同じです。文字数は <code>.length</code> です（01章 q02 問13）。<code>x.name</code> の後ろに続けて書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c02-q07-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">来年の年齢を返す（Cat でも Dog でも渡せる）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Cat = { name: string; age: number; meow: string };
+
+export type Dog = { name: string; age: number; breed: string };
+
+export function ageNextYear() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>age</code> に 1 を足した数を返します。<code>Cat</code> にも <code>Dog</code> にも <code>age</code> があります。使うのは <code>age</code> だけなので、引数の型は <code>{ age: number }</code> です。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>ageNextYear(cat)</code></dt><dd class="r"><code>4</code></dd><dd class="c"><code>cat</code> の age は 3</dd></div>
+          <div><dt><code>ageNextYear(dog)</code></dt><dd class="r"><code>6</code></dd><dd class="c"><code>dog</code> の age は 5</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ age: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 ageNextYear を作る。age（数値）を持つオブジェクト x を受け取り、数値を返す
+export function ageNextYear() {
+  // x の age に 1 を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「age（数値）を持つオブジェクト x」は <code>x: { age: number }</code> です。<code>name</code> は使わないので、型にも書きません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c02-q07-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">age が years より大きければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Dog = { name: string; age: number; breed: string };
+
+export function isOlderThan() {}</code></pre>
+      <p>オブジェクトと数値 <code>years</code> を受け取ります。オブジェクトの <code>age</code> が <code>years</code> より大きければ <code>true</code>、そうでなければ <code>false</code> を返します。同じなら <code>false</code> です。引数は 2 つで、1 つめの型は <code>{ age: number }</code>、2 つめは数値です。戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isOlderThan(dog, 3)</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>dog</code> の age は 5</dd></div>
+          <div><dt><code>isOlderThan(dog, 5)</code></dt><dd class="r"><code>false</code></dd><dd class="c">同じ数は大きくない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ age: number }</code> と <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isOlderThan を作る。age（数値）を持つオブジェクト x と、数値 years を受け取り、true か false を返す
+export function isOlderThan() {
+  // x の age が years より大きいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は <code>,</code> で区切って 2 つ並べます。「より大きい」は <code>&gt;</code> です。比べた結果をそのまま返すので、<code>if</code> は要りません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c02-q07-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">width × height を返す（Box でも Paper でも渡せる）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Box = { width: number; height: number; depth: number };
+
+export type Paper = { width: number; height: number };
+
+export function faceArea() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>width</code> と <code>height</code> を掛けた数（面の広さ）を返します。<code>Box</code> には奥行きの <code>depth</code> もありますが、使いません。引数の型は <code>{ width: number; height: number }</code> です。戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>faceArea(box)</code></dt><dd class="r"><code>200</code></dd><dd class="c"><code>box</code> は Box 型の <code>{ width: 10, height: 20, depth: 30 }</code></dd></div>
+          <div><dt><code>faceArea(paper)</code></dt><dd class="r"><code>62370</code></dd><dd class="c"><code>paper</code> は Paper 型の <code>{ width: 210, height: 297 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ width: number; height: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 faceArea を作る。width（数値）と height（数値）を持つオブジェクト x を受け取り、数値を返す
+export function faceArea() {
+  // x の width と x の height を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>プロパティが 2 つの型は、q01 と同じく <code>;</code> で区切って書きます。<code>depth</code> は使わないので、型に書きません。掛け算は <code>*</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c02-q07-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">width と height が同じなら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Box = { width: number; height: number; depth: number };
+
+export type Paper = { width: number; height: number };
+
+export function isSquareShape() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>width</code> と <code>height</code> が同じなら <code>true</code>、違えば <code>false</code> を返します。引数の型は問5 と同じ <code>{ width: number; height: number }</code> です。戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isSquareShape(box)</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>box</code> は <code>{ width: 10, height: 10, depth: 30 }</code></dd></div>
+          <div><dt><code>isSquareShape(paper)</code></dt><dd class="r"><code>false</code></dd><dd class="c"><code>paper</code> は <code>{ width: 210, height: 297 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ width: number; height: number }</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isSquareShape を作る。width（数値）と height（数値）を持つオブジェクト x を受け取り、true か false を返す
+export function isSquareShape() {
+  // x の width と x の height が等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の書き方は問5 と同じです。「等しい」は <code>===</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c02-q07-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">税込価格を返す（Product でも Service でも渡せる）</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { name: string; price: number; stock: number };
+
+export type Service = { name: string; price: number; hours: number };
+
+export function priceWithTax() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>price</code> に、10% の税を足した税込価格を返します。税額の 1 円未満は切り捨てます。<code>Product</code>（商品）にも <code>Service</code>（サービス）にも <code>price</code> があります。引数の型は <code>{ price: number }</code>、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceWithTax(product)</code></dt><dd class="r"><code>165</code></dd><dd class="c"><code>product</code> は <code>{ name: "りんご", price: 150, stock: 10 }</code></dd></div>
+          <div><dt><code>priceWithTax(service)</code></dt><dd class="r"><code>3300</code></dd><dd class="c"><code>service</code> は <code>{ name: "相談", price: 3000, hours: 1 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ price: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priceWithTax を作る。price（数値）を持つオブジェクト x を受け取り、数値を返す
+export function priceWithTax() {
+  // 税額 tax を作り、x の price × 0.1 を切り捨てた数を入れる
+  // x の price と tax を足した数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>01章 q01 問1 の <code>addTax</code> と同じ計算です。<code>price</code> が <code>x.price</code> に変わります。切り捨ては <code>Math.floor()</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c02-q07-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">price が 0 なら true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { name: string; price: number; stock: number };
+
+export type Service = { name: string; price: number; hours: number };
+
+export function isFree() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>price</code> が 0 なら <code>true</code>、そうでなければ <code>false</code> を返します。引数の型は <code>{ price: number }</code>、戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>isFree(service)</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>service</code> は <code>{ name: "無料相談", price: 0, hours: 1 }</code></dd></div>
+          <div><dt><code>isFree(product)</code></dt><dd class="r"><code>false</code></dd><dd class="c"><code>product</code> は <code>{ name: "りんご", price: 150, stock: 10 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ price: number }</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 isFree を作る。price（数値）を持つオブジェクト x を受け取り、true か false を返す
+export function isFree() {
+  // x の price が 0 と等しいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数の書き方は問7 と同じです。「0 と等しい」は <code>=== 0</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c02-q07-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">「名前: 価格円」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { name: string; price: number; stock: number };
+
+export type Service = { name: string; price: number; hours: number };
+
+export function priceLabel() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>name</code> と <code>price</code> を使って、<code>"りんご: 150円"</code> のような文字列を返します。<code>:</code> の後ろには半角スペースが 1 つ入ります。使うのは 2 つなので、引数の型は <code>{ name: string; price: number }</code> です。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>priceLabel(product)</code></dt><dd class="r"><code>"りんご: 150円"</code></dd><dd class="c"><code>product</code> は <code>{ name: "りんご", price: 150, stock: 10 }</code></dd></div>
+          <div><dt><code>priceLabel(service)</code></dt><dd class="r"><code>"相談: 3000円"</code></dd><dd class="c"><code>service</code> は <code>{ name: "相談", price: 3000, hours: 1 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string; price: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 priceLabel を作る。name（文字列）と price（数値）を持つオブジェクト x を受け取り、文字列を返す
+export function priceLabel() {
+  // x の name と x の price を埋め込んだ「◯: ◯円」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>埋め込んだ文字列は、テンプレートリテラルで作ります。問1 のサンプルの <code>mailTo</code> の <code>return</code> の行と同じ形で、埋め込むものが 2 つになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c02-q07-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">「名前（年齢歳）」を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Cat = { name: string; age: number; meow: string };
+
+export type Dog = { name: string; age: number; breed: string };
+
+export function introduce() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>name</code> と <code>age</code> を使って、<code>"ミケ（3歳）"</code> のような文字列を返します。かっこは全角の <code>（ ）</code> です。引数の型は <code>{ name: string; age: number }</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>introduce(cat)</code></dt><dd class="r"><code>"ミケ（3歳）"</code></dd><dd class="c"><code>cat</code> は <code>{ name: "ミケ", age: 3, meow: "ニャー" }</code></dd></div>
+          <div><dt><code>introduce(dog)</code></dt><dd class="r"><code>"ポチ（5歳）"</code></dd><dd class="c"><code>dog</code> は <code>{ name: "ポチ", age: 5, breed: "柴" }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string; age: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 introduce を作る。name（文字列）と age（数値）を持つオブジェクト x を受け取り、文字列を返す
+export function introduce() {
+  // x の name と x の age を埋め込んだ「◯（◯歳）」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形です。テンプレートリテラルの中に、全角のかっこと「歳」をそのまま書きます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c02-q07-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">年上の方の名前を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Cat = { name: string; age: number; meow: string };
+
+export type Dog = { name: string; age: number; breed: string };
+
+export function olderName() {}</code></pre>
+      <p>オブジェクトを 2 つ（<code>a</code> と <code>b</code>）受け取り、<code>age</code> が大きい方の <code>name</code> を返します。同じ年齢なら <code>a</code> の名前を返します。2 つの引数の型は、どちらも <code>{ name: string; age: number }</code> です。戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>olderName(cat, dog)</code></dt><dd class="r"><code>"ポチ"</code></dd><dd class="c">ミケは 3 歳、ポチは 5 歳</dd></div>
+          <div><dt><code>olderName(dog, cat)</code></dt><dd class="r"><code>"ポチ"</code></dd><dd class="c">順番を変えても、年上はポチ</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が 2 つとも <code>{ name: string; age: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 olderName を作る。name（文字列）と age（数値）を持つオブジェクト a と、同じ形のオブジェクト b を受け取り、文字列を返す
+export function olderName() {
+  // もし b の age が a の age より大きいなら
+  //   b の name を返す
+  // a の name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つの引数に、同じ型 <code>{ name: string; age: number }</code> を書きます。「同じ年齢なら a」なので、<code>b</code> が大きいときだけ <code>b</code> の名前を返します。条件演算子 <code>? :</code>（01章 q01 問12）で 1 行に書いてもかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c02-q07-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">price の合計を返す（Product と Service が混ざった配列も渡せる）</span>
+      <span class="q-new">新しく出てくる書き方：<code>readonly { price: number }[]</code>（オブジェクトの配列の型）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { name: string; price: number; stock: number };
+
+export type Service = { name: string; price: number; hours: number };
+
+export function totalPrice() {}</code></pre>
+      <p>オブジェクトの配列を受け取り、それぞれの <code>price</code> を足した合計を返します。配列には <code>Product</code> と <code>Service</code> が混ざっていてもかまいません。空の配列なら 0 です。引数の型は <code>readonly { price: number }[]</code>、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>totalPrice([product, service])</code></dt><dd class="r"><code>3150</code></dd><dd class="c">りんご 150 と相談 3000</dd></div>
+          <div><dt><code>totalPrice([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly { price: number }[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">readonly { stock: number }[]</code><h4>オブジェクトの配列の型</h4></div>
+      <p>配列の型は、<code>number[]</code> のように、要素の型の後ろに <code>[]</code> を付けて書きました（01章 q08）。要素がオブジェクトのときも同じです。オブジェクトの型の後ろに <code>[]</code> を付けます。前に付けた <code>readonly</code> は、関数の中で配列を書き換えないという印です（q04 問1）。</p>
+      <figure class="anat">
+        <pre><span class="seg"><i>1</i>readonly</span> <span class="seg"><i>2</i>{ stock: number }</span><span class="seg c"><i>3</i>[]</span></pre>
+        <ol>
+          <li><span>配列を書き換えない印です。</span></li>
+          <li><span>要素 1 つの型です。<code>stock</code> を持つオブジェクトです。</span></li>
+          <li><span>それが並んだ配列、という意味です。</span></li>
+        </ol>
+      </figure>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 本 Book という型を作る。title は文字列、stock は数値
+type Book = { title: string; stock: number };
+// 文具 Pen という型を作る。name は文字列、color は文字列、stock は数値
+type Pen = { name: string; color: string; stock: number };
+
+// 関数 countInStock を作る。stock（数値）を持つオブジェクトの読み取り専用の配列 items を受け取り、数値を返す
+function countInStock(items: readonly { stock: number }[]): number {
+  // 件数 count を入れ直せる変数として作り、0 を入れる
+  let count = 0;
+  // items から 1 つずつ item に取り出してくり返す
+  for (const item of items) {
+    // もし item の stock が 0 より大きいなら
+    if (item.stock &gt; 0) {
+      // count に 1 を足す
+      count += 1;
+    }
+  }
+  // count を返す
+  return count;
+}
+
+// 本 book を作り、Book 型の値を入れる
+const book: Book = { title: "TypeScript入門", stock: 3 };
+// 文具 pen を作り、Pen 型の値を入れる
+const pen: Pen = { name: "ボールペン", color: "黒", stock: 0 };
+// 在庫のある数 inStock を作り、countInStock に book と pen を並べた配列を渡して呼んだ結果を入れる
+const inStock = countInStock([book, pen]);
+// 結果: inStock は 1</code></pre>
+      </div>
+      <p class="memo"><b>よくある疑問</b><code>Book</code> と <code>Pen</code> は違う型ですが、同じ配列に入れて渡せます。どちらも <code>stock</code> を持っているからです。問1 の構造的型付けが、配列の要素 1 つずつに当てはまります。</p>
+      <p class="memo"><b>よくある間違い</b>最後の <code>[]</code> を忘れると、オブジェクト 1 つの型になります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 totalPrice を作る。price（数値）を持つオブジェクトの読み取り専用の配列 items を受け取り、数値を返す
+export function totalPrice() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   total に item の price を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は、問12 のサンプルの <code>countInStock</code> の引数と同じ形で、<code>stock</code> が <code>price</code> に変わります。「total に ◯ を足す」は <code>+=</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c02-q07-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">name を並べた配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Cat = { name: string; age: number; meow: string };
+
+export type Dog = { name: string; age: number; breed: string };
+
+export type Robot = { name: string; version: number };
+
+export function namesOf() {}</code></pre>
+      <p>オブジェクトの配列を受け取り、それぞれの <code>name</code> を同じ順に並べた配列を返します。<code>Cat</code>・<code>Dog</code>・<code>Robot</code> が混ざった配列も渡せます。引数の型は <code>readonly { name: string }[]</code>、戻り値は文字列の配列 <code>string[]</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>namesOf([cat, dog, robot])</code></dt><dd class="r"><code>["ミケ", "ポチ", "R2"]</code></dd><dd class="c">Cat・Dog・Robot が混ざっている</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly { name: string }[]</code>、戻り値が <code>string[]</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 namesOf を作る。name（文字列）を持つオブジェクトの読み取り専用の配列 items を受け取り、文字列の配列を返す
+export function namesOf() {
+  // items の要素を 1 つずつ item として、item の name に変えた新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>引数は問12 と同じ形で、<code>price: number</code> が <code>name: string</code> に変わります。要素を 1 つずつ変えた配列を作るのは <code>.map()</code> です（q04 問5）。「文字列の配列を返す」は <code>: string[]</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c02-q07-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">周りの長さを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Box = { width: number; height: number; depth: number };
+
+export type Paper = { width: number; height: number };
+
+export function perimeterOf() {}</code></pre>
+      <p>受け取ったオブジェクトの周りの長さを返します。計算は <code>(width + height) × 2</code> です。引数の型は <code>{ width: number; height: number }</code>、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>perimeterOf(paper)</code></dt><dd class="r"><code>14</code></dd><dd class="c"><code>paper</code> は <code>{ width: 3, height: 4 }</code></dd></div>
+          <div><dt><code>perimeterOf(box)</code></dt><dd class="r"><code>4</code></dd><dd class="c"><code>box</code> は <code>{ width: 1, height: 1, depth: 9 }</code>。depth は使わない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ width: number; height: number }</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 perimeterOf を作る。width（数値）と height（数値）を持つオブジェクト x を受け取り、数値を返す
+export function perimeterOf() {
+  // x の width と x の height を足した数に、2 を掛けた数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>足し算を先にするので、<code>( )</code> で囲んでから <code>* 2</code> を書きます。かっこがないと、<code>height * 2</code> が先に計算されます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c02-q07-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">横長・縦長・正方形のどれかを返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Box = { width: number; height: number; depth: number };
+
+export type Paper = { width: number; height: number };
+
+export function orientation() {}</code></pre>
+      <p><code>width</code> が <code>height</code> より大きければ <code>"横長"</code>、小さければ <code>"縦長"</code>、同じなら <code>"正方形"</code> を返します。引数の型は <code>{ width: number; height: number }</code> です。戻り値の型は、3 つの文字列のどれかを表す <code>"横長" | "縦長" | "正方形"</code> にします。<code>string</code> にすると、テストは通りません。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>orientation(paper)</code></dt><dd class="r"><code>"縦長"</code></dd><dd class="c"><code>paper</code> は <code>{ width: 210, height: 297 }</code></dd></div>
+          <div><dt><code>orientation(box)</code></dt><dd class="r"><code>"横長"</code></dd><dd class="c"><code>box</code> は <code>{ width: 30, height: 20, depth: 10 }</code></dd></div>
+          <div><dt><code>orientation({ width: 1, height: 1 })</code></dt><dd class="r"><code>"正方形"</code></dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ width: number; height: number }</code>、戻り値が <code>"横長" | "縦長" | "正方形"</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 orientation を作る。width（数値）と height（数値）を持つオブジェクト x を受け取り、"横長" か "縦長" か "正方形" を返す
+export function orientation() {
+  // もし x の width が x の height より大きいなら
+  //   "横長" を返す
+  // もし x の width が x の height より小さいなら
+  //   "縦長" を返す
+  // "正方形" を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「"横長" か "縦長" か "正方形" を返す」は、戻り値の型を <code>"横長" | "縦長" | "正方形"</code> と書きます（01章 q07 問1）。<code>if</code> の中で <code>return</code> すると、そこで関数が終わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c02-q07-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">name が max 文字より長ければ true を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Robot = { name: string; version: number };
+
+export type Product = { name: string; price: number; stock: number };
+
+export function hasLongName() {}</code></pre>
+      <p>オブジェクトと数値 <code>max</code> を受け取ります。<code>name</code> の文字数が <code>max</code> より多ければ <code>true</code>、そうでなければ <code>false</code> を返します。<code>Robot</code> と <code>Product</code> は似ていない型ですが、どちらも <code>name</code> を持っています。1 つめの引数の型は <code>{ name: string }</code>、2 つめは数値です。戻り値は <code>boolean</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>hasLongName(robot, 3)</code></dt><dd class="r"><code>false</code></dd><dd class="c"><code>robot</code> の name は <code>"R2"</code>（2 文字）</dd></div>
+          <div><dt><code>hasLongName(product, 3)</code></dt><dd class="r"><code>true</code></dd><dd class="c"><code>product</code> の name は <code>"ゴールデンデリシャス"</code>（10 文字）</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ name: string }</code> と <code>number</code>、戻り値が <code>boolean</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 hasLongName を作る。name（文字列）を持つオブジェクト x と、数値 max を受け取り、true か false を返す
+export function hasLongName() {
+  // x の name の文字数が max より大きいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問2 の文字数と、問4 の「より大きい」を組み合わせた形です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c02-q07-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">age の平均を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Cat = { name: string; age: number; meow: string };
+
+export type Dog = { name: string; age: number; breed: string };
+
+export function averageAge() {}</code></pre>
+      <p>オブジェクトの配列を受け取り、<code>age</code> の平均を返します。空の配列なら 0 を返します。引数の型は <code>readonly { age: number }[]</code>、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>averageAge([cat, dog])</code></dt><dd class="r"><code>4</code></dd><dd class="c">3 歳と 5 歳の平均</dd></div>
+          <div><dt><code>averageAge([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly { age: number }[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 averageAge を作る。age（数値）を持つオブジェクトの読み取り専用の配列 items を受け取り、数値を返す
+export function averageAge() {
+  // もし items の要素の数が 0 と等しいなら
+  //   0 を返す
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   total に item の age を足す
+  // total を items の要素の数で割った数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>合計までは問12 と同じ形です。要素の数は <code>.length</code> です。先に空の配列を確かめないと、0 で割ることになり、<code>NaN</code>（数ではないことを表す値）が返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c02-q07-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">いちばん安いものの name を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>[first, ...rest]</code>（分割代入で残りをまとめる）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Product = { name: string; price: number; stock: number };
+
+export type Service = { name: string; price: number; hours: number };
+
+export function cheapestName() {}</code></pre>
+      <p>オブジェクトの配列を受け取り、<code>price</code> がいちばん小さいものの <code>name</code> を返します。同じ価格のものが複数あれば、先に出てきた方を返します。空の配列なら、エラーを投げます。引数の型は <code>readonly { name: string; price: number }[]</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>cheapestName([service, product])</code></dt><dd class="r"><code>"りんご"</code></dd><dd class="c">相談 3000、りんご 150</dd></div>
+          <div><dt><code>cheapestName([])</code></dt><dd class="r">Error を投げる</dd><dd class="c">空の配列</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly { name: string; price: number }[]</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">[first, ...rest]</code><h4>先頭と、残りをまとめて取り出す</h4></div>
+      <p>配列の分割代入（q06 問2）で、最後の名前の前に <code>...</code> を付けます。すると、そこに「残りの要素をまとめた配列」が入ります。先頭を特別に扱い、残りをくり返すときに便利です。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 予約待ちの名前の配列 waiting を作り、"佐藤"、"鈴木"、"高橋" を入れる
+const waiting = ["佐藤", "鈴木", "高橋"];
+// waiting の先頭を next に、残りをまとめて others に取り出す
+const [next, ...others] = waiting;
+// 結果: next は "佐藤"、others は ["鈴木", "高橋"]</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>["佐藤", "鈴木", "高橋"]</code></dt><dd class="r">先頭は <code>"佐藤"</code>、残りは <code>["鈴木", "高橋"]</code></dd><dd class="c"></dd></div>
+        <div><dt><code>["佐藤"]</code></dt><dd class="r">先頭は <code>"佐藤"</code>、残りは <code>[]</code></dd><dd class="c">残りがなければ空の配列</dd></div>
+        <div><dt><code>[]</code></dt><dd class="r">先頭は <code>undefined</code>、残りは <code>[]</code></dd><dd class="c">先頭もない</dd></div>
+      </dl>
+      <p>配列は空かもしれません。そのため、先頭の <code>next</code> の型は <code>string | undefined</code> になります。残りの <code>others</code> は、空でも <code>[]</code> なので <code>string[]</code> です。先頭を使う前に、<code>undefined</code> でないかを確かめます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 関数 firstGuest を作る。文字列の読み取り専用の配列 names を受け取り、文字列を返す
+function firstGuest(names: readonly string[]): string {
+  // names の先頭を head に、残りをまとめて rest に取り出す
+  const [head, ...rest] = names;
+  // もし head が undefined と等しいなら
+  if (head === undefined) {
+    // "予約がありません" というメッセージのエラーを投げる
+    throw new Error("予約がありません");
+  }
+  // head と rest の要素の数を埋め込んだ「◯さん（ほか◯人）」の文字列を返す
+  return `${head}さん（ほか${rest.length}人）`;
+}
+// 結果: firstGuest(["佐藤", "鈴木", "高橋"]) は "佐藤さん（ほか2人）"</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b><code>...</code> を付けられるのは、いちばん最後の名前だけです。<code>[...others, last]</code> と書くとエラーになります。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 cheapestName を作る。name（文字列）と price（数値）を持つオブジェクトの読み取り専用の配列 items を受け取り、文字列を返す
+export function cheapestName() {
+  // items の先頭を first に、残りをまとめて rest に取り出す
+  // もし first が undefined と等しいなら
+  //   "配列が空です" というメッセージのエラーを投げる
+  // いちばん安いもの cheapest を入れ直せる変数として作り、first を入れる
+  // rest から 1 つずつ item に取り出してくり返す
+  //   もし item の price が cheapest の price より小さいなら
+  //     cheapest に item を入れ直す
+  // cheapest の name を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>最初の 3 行は、問18 の 2 つめのサンプルの <code>firstGuest</code> と同じ形です。<code>undefined</code> を確かめたあとなら、<code>first</code> をそのまま使えます。「より小さい」は <code>&lt;</code> です。<code>&lt;=</code> にすると、同じ価格のときに後のものへ入れ替わってしまいます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c02-q07-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">width × height の合計を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Box = { width: number; height: number; depth: number };
+
+export type Paper = { width: number; height: number };
+
+export function sumArea() {}</code></pre>
+      <p>オブジェクトの配列を受け取り、それぞれの <code>width × height</code> を足した合計を返します。<code>Box</code> と <code>Paper</code> が混ざった配列も渡せます。引数の型は <code>readonly { width: number; height: number }[]</code>、戻り値は数値です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sumArea([box, paper])</code></dt><dd class="r"><code>7</code></dd><dd class="c"><code>box</code> は <code>{ width: 2, height: 3, depth: 4 }</code>、<code>paper</code> は <code>{ width: 1, height: 1 }</code>。6 + 1</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>readonly { width: number; height: number }[]</code>、戻り値が <code>number</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sumArea を作る。width（数値）と height（数値）を持つオブジェクトの読み取り専用の配列 items を受け取り、数値を返す
+export function sumArea() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // items から 1 つずつ item に取り出してくり返す
+  //   total に、item の width と item の height を掛けた数を足す
+  // total を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問12 と同じ形です。足すものが <code>item.price</code> から、<code>item.width</code> と <code>item.height</code> を掛けた数に変わります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c02-q07-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">「width × height」の文字列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Paper = { width: number; height: number };
+
+export function sizeText() {}</code></pre>
+      <p>受け取ったオブジェクトの <code>width</code> と <code>height</code> を使って、<code>"210 × 297"</code> のような文字列を返します。<code>×</code> は全角のかけ算の記号で、前後に半角スペースが 1 つずつ入ります。引数の型は <code>{ width: number; height: number }</code>、戻り値は文字列です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>sizeText(paper)</code></dt><dd class="r"><code>"210 × 297"</code></dd><dd class="c"><code>paper</code> は <code>{ width: 210, height: 297 }</code></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>{ width: number; height: number }</code>、戻り値が <code>string</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 関数 sizeText を作る。width（数値）と height（数値）を持つオブジェクト x を受け取り、文字列を返す
+export function sizeText() {
+  // x の width と x の height を埋め込んだ「◯ × ◯」の文字列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形です。<code>×</code> は、問題文のコメントからコピーすると打ち間違えません。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c02-q07-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">大きさの型 Size と、面積の関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export type Rect = { width: number; height: number };
+export type Photo = { url: string; width: number; height: number };
+export type Banner = { text: string; color: string; width: number; height: number };
+
+export type Size = unknown;
+
+export function area() {}
+
+export function totalArea() {}
+
+export function isLandscape() {}</code></pre>
+      <p><code>Rect</code>（長方形）・<code>Photo</code>（写真）・<code>Banner</code>（広告の帯）は、名前も使い道も違う型です。でも、どれも <code>width</code> と <code>height</code> を持っています。次の 4 つを書きます。</p>
+      <ol>
+        <li>大きさを表す型 <code>Size</code> を、<code>width</code>（数値）と <code>height</code>（数値）を持つオブジェクトの型として書きます。<code>unknown</code> を書き換えます。</li>
+        <li><code>area(size)</code>：面積（<code>width × height</code>）を返します。</li>
+        <li><code>totalArea(sizes)</code>：面積の合計を返します。引数の型は <code>readonly Size[]</code> です。空の配列なら 0 です。</li>
+        <li><code>isLandscape(size)</code>：横長（<code>width</code> が <code>height</code> より大きい）なら <code>true</code> を返します。同じなら <code>false</code> です。</li>
+      </ol>
+      <p>3 つの関数の引数の型には、どれも <code>Size</code> を使います。<code>Rect</code>・<code>Photo</code>・<code>Banner</code> のどれでも渡せるようにします。</p>
+      <p>最後に、次の 2 つを、ファイルの下に <code>//</code> のコメントで説明します。「<code>Photo</code> は <code>Size</code> を使って定義していないのに、なぜ <code>area</code> に渡せるのか」「<code>area({ url: "a.png", width: 10, height: 20 })</code> のように、オブジェクトを直接書いて渡すとエラーになる。それはなぜか」。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt><code>area(rect)</code></dt><dd class="r"><code>12</code></dd><dd class="c"><code>rect</code> は <code>{ width: 3, height: 4 }</code></dd></div>
+          <div><dt><code>area(photo)</code></dt><dd class="r"><code>2073600</code></dd><dd class="c"><code>photo</code> は <code>{ url: "team.png", width: 1920, height: 1080 }</code></dd></div>
+          <div><dt><code>area(banner)</code></dt><dd class="r"><code>180000</code></dd><dd class="c"><code>banner</code> は <code>{ text: "募集中", color: "red", width: 300, height: 600 }</code></dd></div>
+          <div><dt><code>totalArea([rect, photo, banner])</code></dt><dd class="r"><code>2253612</code></dd><dd class="c">12 + 2073600 + 180000</dd></div>
+          <div><dt><code>totalArea([])</code></dt><dd class="r"><code>0</code></dd><dd class="c">空の配列</dd></div>
+          <div><dt><code>isLandscape(photo)</code></dt><dd class="r"><code>true</code></dd><dd class="c">1920 が 1080 より大きい</dd></div>
+          <div><dt><code>isLandscape(banner)</code></dt><dd class="r"><code>false</code></dd><dd class="c">縦長</dd></div>
+          <div><dt><code>isLandscape({ width: 5, height: 5 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">同じ長さは横長ではない</dd></div>
+          <div><dt><code>Size</code> の型</dt><dd class="r"><code>{ width: number; height: number }</code></dd><dd class="c"></dd></div>
+          <div><dt>引数の型</dt><dd class="r"><code>Size</code>、<code>readonly Size[]</code>、<code>Size</code></dd><dd class="c">area、totalArea、isLandscape の順</dd></div>
+          <div><dt>戻り値の型</dt><dd class="r"><code>number</code>、<code>number</code>、<code>boolean</code></dd><dd class="c">area、totalArea、isLandscape の順</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// Size という型を作る。width は数値、height は数値
+export type Size = unknown;
+
+// 関数 area を作る。Size 型の size を受け取り、数値を返す
+export function area() {
+  // size の width と size の height を掛けた数を返す
+}
+
+// 関数 totalArea を作る。Size 型の読み取り専用の配列 sizes を受け取り、数値を返す
+export function totalArea() {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // sizes から 1 つずつ size に取り出してくり返す
+  //   total に、area に size を渡して呼んだ結果を足す
+  // total を返す
+}
+
+// 関数 isLandscape を作る。Size 型の size を受け取り、true か false を返す
+export function isLandscape() {
+  // size の width が size の height より大きいかどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>Size</code> は、q01 の応用と同じく <code>type</code> で書きます。引数の型に <code>Size</code> と書くのは、問5 の <code>{ width: number; height: number }</code> に名前を付けて使うのと同じです。<code>readonly Size[]</code> は、問12 の配列の型の中身を <code>Size</code> にした形です。説明のコメントは、実際に試してから書きます。まず <code>Photo</code> 型の変数を作って <code>area</code> に渡し、エラーにならないことを確かめます。次に、同じ中身を <code>area( )</code> のかっこの中に直接書いて、エラーのメッセージを読みます。2 つの違いを比べてから書きます。</p></details>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,1032 @@
+<section class="sec" id="c08-q03">
+  <div class="sec-h">
+    <span class="eyebrow">08章 非同期処理</span>
+    <h2>q03 fetch</h2>
+    <p>サーバー（API）と通信する関数を 20 個書きます。通信には <code>fetch</code> を使い、待つところは <code>async</code> と <code>await</code>（q02）で書きます。引数と戻り値には型注釈を付けます。定数 <code>API</code>、型 <code>User</code>・<code>Todo</code>、型ガード関数 <code>isUser</code>・<code>isTodo</code> は、問題のファイルに定義済みです。テストでは <code>fetch</code> を差し替えるので、本物の通信はしません。<code>fetch</code> に渡した URL や設定（2 つ目の引数）も、テストで確かめます。<code>res.json()</code> の結果は、<code>unknown</code> の変数に入れてから、型ガード関数で確かめて使います。「<code>HTTP 404</code> の Error」は、数字の部分を <code>res.status</code> にしたメッセージの Error のことです。</p>
+  </div>
+
+  <!-- 問1 -->
+  <section class="q" id="c08-q03-1">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>1</span><span class="q-t">url を fetch して、ステータスコードを返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>fetch()</code> <code>res.status</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const API = "https://api.example.com";
+
+export function getStatus() {}</code></pre>
+      <p>URL を 1 つ受け取り、そのサーバーに <code>fetch</code> で取得を頼みます。サーバーが返したステータスコード（結果を表す 3 桁の数）を返します。引数は文字列 1 つ、戻り値は数値で解決する Promise（<code>Promise&lt;number&gt;</code>）です。テストでは本物のサーバーには通信しません。<code>fetch</code> を、決まった応答を返す偽物に差し替えてから、関数を呼びます。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 404 を返したとき、<code>getStatus(`${API}/a`)</code></dt><dd class="r"><code>404</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li><code>fetch</code> に、<code>`${API}/a`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">fetch(url)</code><h4>URL のサーバーに取得を頼む</h4></div>
+      <p><code>fetch</code> は、ブラウザや Node.js に組み込まれた関数です。かっこの中の URL のサーバーに、リクエスト（頼みごと）を送ります。戻り値は Promise です。サーバーから応答が届くと、応答のオブジェクト（<code>Response</code>）で解決します。<code>await</code>（q02 問1）で待つと、応答を受け取れます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 stockStatus を作る。文字列 itemId を受け取り、数値で解決する Promise を返す
+async function stockStatus(itemId: string): Promise&lt;number&gt; {
+  // 応答 res を作り、itemId を埋め込んだ在庫の URL を fetch して、その結果を待って入れる
+  const res = await fetch(`https://shop.example.com/stock/${itemId}`);
+  // res のステータスコードを返す
+  return res.status;
+}
+// 結果: サーバーが 200 を返したとき、stockStatus("A-100") は 200 で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>const <span class="seg"><i>1</i>res</span> = <span class="seg"><i>2</i>await</span> <span class="seg"><i>3</i>fetch(url)</span>;</pre>
+        <ol>
+          <li><span>届いた応答を入れる変数です。応答（response）なので、<code>res</code> という名前がよく使われます。</span></li>
+          <li><span>応答が届くまで待ちます。<code>await</code> を書かないと、<code>res</code> に入るのは Promise のままです。</span></li>
+          <li><span>サーバーに頼む部分です。戻り値は、応答で解決する Promise です。</span></li>
+        </ol>
+      </figure>
+    </article>
+
+    <article class="item">
+      <div class="item-h"><code class="tok">res.status</code><h4>ステータスコードを読む</h4></div>
+      <p>応答の <code>status</code> には、サーバーが返したステータスコードが数値で入っています。結果を表す 3 桁の数で、よく出るのは次のものです。</p>
+      <dl class="eg">
+        <div><dt><code>200</code></dt><dd class="r">成功</dd><dd class="c">頼んだとおりに返せた</dd></div>
+        <div><dt><code>201</code></dt><dd class="r">作成した</dd><dd class="c">送ったデータで新しく作った</dd></div>
+        <div><dt><code>400</code></dt><dd class="r">頼み方が正しくない</dd><dd class="c">送ったデータに足りないものがある、など</dd></div>
+        <div><dt><code>404</code></dt><dd class="r">見つからない</dd><dd class="c">その URL のものがない</dd></div>
+        <div><dt><code>500</code></dt><dd class="r">サーバーの中のエラー</dd><dd class="c">サーバーの側で問題が起きた</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>テストは本物のサーバーに通信しません。テストは <code>vi.stubGlobal</code> で <code>fetch</code> を偽物に差し替えます。偽物の <code>fetch</code> は、テストが用意した応答（たとえばステータスコード 404 の <code>Response</code>）をそのまま返します。そのため <code>api.example.com</code> が実在しなくても、テストは毎回同じ結果になります。偽物は渡された引数も覚えているので、どの URL を頼んだかもテストで確かめられます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getStatus を作る。文字列 url を受け取り、数値で解決する Promise を返す
+export function getStatus() {
+  // 応答 res を作り、url を fetch して、その結果を待って入れる
+  // res のステータスコードを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「非同期の関数」は <code>function</code> の前の <code>async</code>（q02 問1）、「数値で解決する Promise を返す」は <code>: Promise&lt;number&gt;</code>（q01 問1）です。中の 2 行は、問1 のサンプルの <code>stockStatus</code> と同じ形です。<code>fetch</code> には <code>url</code> だけを渡します。2 つ目の引数を書くと、「<code>url</code> だけを渡した」というテストの確かめに合いません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問2 -->
+  <section class="q" id="c08-q03-2">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>2</span><span class="q-t">url を fetch して、res.ok を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>res.ok</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function isOk() {}</code></pre>
+      <p>URL を <code>fetch</code> して、成功したかどうか（<code>res.ok</code>）を返します。引数は文字列 1 つ、戻り値は <code>true</code> か <code>false</code> で解決する Promise（<code>Promise&lt;boolean&gt;</code>）です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 200 を返したとき、<code>isOk(`${API}/a`)</code></dt><dd class="r"><code>true</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 500 を返したとき、<code>isOk(`${API}/a`)</code></dt><dd class="r"><code>false</code> で解決する</dd><dd class="c">サーバーの中のエラー</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;boolean&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">res.ok</code><h4>成功したかどうかを読む</h4></div>
+      <p>応答の <code>ok</code> は、ステータスコードが 200 から 299 のとき <code>true</code>、それ以外のとき <code>false</code> です。数を比べなくても、成功したかどうかが分かります。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 reserveMessage を作る。文字列 date を受け取り、文字列で解決する Promise を返す
+async function reserveMessage(date: string): Promise&lt;string&gt; {
+  // 応答 res を作り、date を埋め込んだ予約の URL を fetch して、その結果を待って入れる
+  const res = await fetch(`https://shop.example.com/reservations/${date}`);
+  // もし res が ok でないなら
+  if (!res.ok) {
+    // "予約できません" を返す
+    return "予約できません";
+  }
+  // "予約できます" を返す
+  return "予約できます";
+}
+// 結果: サーバーが 200 を返したとき "予約できます"、409 を返したとき "予約できません" で解決する</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt>ステータスコードが <code>200</code> のときの <code>res.ok</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+        <div><dt>ステータスコードが <code>201</code> のときの <code>res.ok</code></dt><dd class="r"><code>true</code></dd><dd class="c">200 から 299 は true</dd></div>
+        <div><dt>ステータスコードが <code>404</code> のときの <code>res.ok</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+        <div><dt>ステータスコードが <code>500</code> のときの <code>res.ok</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b><code>fetch</code> の Promise は、サーバーが 404 や 500 を返しても失敗しません。応答が届けば、その応答で解決します。失敗するのは、サーバーにつながらないなど、通信そのものができなかったときです（問20）。そのため、成功したかどうかは <code>res.ok</code> で確かめます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 isOk を作る。文字列 url を受け取り、true か false で解決する Promise を返す
+export function isOk() {
+  // 応答 res を作り、url を fetch して、その結果を待って入れる
+  // res が ok かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問1 と同じ形で、返すものが <code>res.status</code> から <code>res.ok</code> に変わります。<code>res.ok</code> はもう <code>true</code> か <code>false</code> なので、<code>if</code> は要りません。戻り値の型は <code>Promise&lt;boolean&gt;</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問3 -->
+  <section class="q" id="c08-q03-3">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>3</span><span class="q-t">url を fetch して、本文を文字列で返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>res.text()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getText() {}</code></pre>
+      <p>URL を <code>fetch</code> して、応答の本文を文字列として読み、その文字列を返します。引数は文字列 1 つ、戻り値は文字列で解決する Promise（<code>Promise&lt;string&gt;</code>）です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>"こんにちは"</code> を返したとき、<code>getText(`${API}/hello`)</code></dt><dd class="r"><code>"こんにちは"</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li><code>fetch</code> に、<code>`${API}/hello`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">res.text()</code><h4>本文を文字列として読む</h4></div>
+      <p>応答の中身を、本文（ボディ）と呼びます。<code>res.text()</code> は、本文を文字列として読みます。本文を読むのにも時間がかかるので、戻り値は文字列で解決する Promise です。<code>await</code> で待ってから使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 noticeText を作る。文字列で解決する Promise を返す
+async function noticeText(): Promise&lt;string&gt; {
+  // 応答 res を作り、お知らせの URL を fetch して、その結果を待って入れる
+  const res = await fetch("https://shop.example.com/notice");
+  // res の本文を文字列として読み、その結果を待って返す
+  return await res.text();
+}
+// 結果: サーバーが本文 "本日は全品 10% 引きです" を返したとき、noticeText() は "本日は全品 10% 引きです" で解決する</code></pre>
+      </div>
+      <p class="memo"><b>よくある間違い</b>本文は 1 回しか読めません。<code>res.text()</code> のあとで、同じ <code>res</code> の <code>res.text()</code> や <code>res.json()</code> を呼ぶと、<code>TypeError</code> で失敗します。読んだ結果は変数に入れて使い回します。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getText を作る。文字列 url を受け取り、文字列で解決する Promise を返す
+export function getText() {
+  // 応答 res を作り、url を fetch して、その結果を待って入れる
+  // res の本文を文字列として読み、その結果を待って返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問3 のサンプルの <code>noticeText</code> と同じ形で、<code>fetch</code> に渡すのが <code>url</code> になります。「その結果を待って返す」は <code>return await</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問4 -->
+  <section class="q" id="c08-q03-4">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>4</span><span class="q-t">url を fetch して、本文を JSON として読んだ結果を返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>res.json()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getJson() {}</code></pre>
+      <p>URL を <code>fetch</code> して、応答の本文を JSON として読み、その値を返します。どんな形の値が来るかは分からないので、戻り値の型は <code>Promise&lt;unknown&gt;</code> にします。引数は文字列 1 つです。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>{"a":1}</code> を返したとき、<code>getJson(`${API}/a`)</code></dt><dd class="r"><code>{ a: 1 }</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;unknown&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">res.json()</code><h4>本文を JSON として読む</h4></div>
+      <p><code>res.json()</code> は、本文を JSON として読み、値にします。<code>JSON.parse()</code>（04章 q05 問5）と同じ働きです。戻り値は Promise で、中身の型は <code>any</code>（型の確認をしない型）です。<code>any</code> のまま使うと、型の確認が効きません。そこで、<code>unknown</code>（02章 q01）の変数に入れてから、確かめて使います。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 非同期の関数 memberData を作る。数値 id を受け取り、型の分からない値で解決する Promise を返す
+async function memberData(id: number): Promise&lt;unknown&gt; {
+  // 応答 res を作り、id を埋め込んだ会員の URL を fetch して、その結果を待って入れる
+  const res = await fetch(`https://shop.example.com/members/${id}`);
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  const data: unknown = await res.json();
+  // data を返す
+  return data;
+}
+// 結果: サーバーが本文 {"id":7,"name":"佐藤"} を返したとき、memberData(7) は { id: 7, name: "佐藤" } で解決する</code></pre>
+      </div>
+      <div class="cmp">
+        <div>
+          <h5>型を書かない</h5>
+          <pre><code class="language-typescript">const data = await res.json();</code></pre>
+          <div class="verdict ng">✕ lint で「Unsafe assignment of an `any` value」というエラーになります</div>
+        </div>
+        <div>
+          <h5>unknown にする</h5>
+          <pre><code class="language-typescript">const data: unknown = await res.json();</code></pre>
+          <div class="verdict ok">○ 確かめてから使う値になります</div>
+        </div>
+      </div>
+      <p class="memo"><b>よくある間違い</b>本文が JSON として読めない文字列のときは、<code>res.json()</code> の Promise が <code>SyntaxError</code> で失敗します。この失敗を受け止めるのは問20 です。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getJson を作る。文字列 url を受け取り、型の分からない値で解決する Promise を返す
+export function getJson() {
+  // 応答 res を作り、url を fetch して、その結果を待って入れる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問4 のサンプルの <code>memberData</code> と同じ形です。「型の分からない値で解決する Promise」は <code>Promise&lt;unknown&gt;</code>、「型を unknown にして」は変数の名前の後ろの <code>: unknown</code> です。</p></details>
+    </div>
+  </section>
+
+  <!-- 問5 -->
+  <section class="q" id="c08-q03-5">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>5</span><span class="q-t">ok でなければ「HTTP 404」の Error を投げる</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getJsonOrThrow() {}</code></pre>
+      <p>問4 の <code>getJson</code> と同じく、本文を JSON として読んだ値を返します。ただし <code>res.ok</code> が <code>false</code> なら、本文は読まずにエラーを投げます。メッセージは <code>"HTTP 404"</code> のように、<code>HTTP</code> の後ろにステータスコードを付けたものです。引数は文字列 1 つ、戻り値は <code>Promise&lt;unknown&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>{"a":1}</code> を返したとき、<code>getJsonOrThrow(`${API}/a`)</code></dt><dd class="r"><code>{ a: 1 }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 404 を返したとき、<code>getJsonOrThrow(`${API}/a`)</code></dt><dd class="r"><code>"HTTP 404"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;unknown&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getJsonOrThrow を作る。文字列 url を受け取り、型の分からない値で解決する Promise を返す
+export function getJsonOrThrow() {
+  // 応答 res を作り、url を fetch して、その結果を待って入れる
+  // もし res が ok でないなら
+  //   res のステータスコードを埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>「もし res が ok でないなら」は、問2 のサンプルの <code>if (!res.ok)</code> と同じです。メッセージは、テンプレートリテラル（01章 q01 問3）で <code>`HTTP ${res.status}`</code> と書きます。エラーを投げるのは <code>throw new Error(…)</code>（01章 q04 問8）です。async 関数の中で投げると、返す Promise がそのエラーで失敗します（q02）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問6 -->
+  <section class="q" id="c08-q03-6">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>6</span><span class="q-t">ユーザーを取得し、isUser で確かめて返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const API = "https://api.example.com";
+
+export type User = { id: number; name: string };
+
+export function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &amp;&amp;
+    value !== null &amp;&amp;
+    "id" in value &amp;&amp;
+    typeof value.id === "number" &amp;&amp;
+    "name" in value &amp;&amp;
+    typeof value.name === "string"
+  );
+}
+
+export function getUser() {}</code></pre>
+      <p>id を受け取り、<code>`${API}/users/${id}`</code> を取得します。<code>res.ok</code> が <code>false</code> なら <code>"HTTP 404"</code> の形の Error を投げます。本文の JSON を、定義済みの <code>isUser</code> で確かめます。<code>User</code> の形なら返し、違えば <code>"ユーザーの形が違います"</code> の Error を投げます。引数は数値 1 つ、戻り値は <code>Promise&lt;User&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>{"id":1,"name":"山田"}</code> を返したとき、<code>getUser(1)</code></dt><dd class="r"><code>{ id: 1, name: "山田" }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが本文 <code>{"id":1}</code> を返したとき、<code>getUser(1)</code></dt><dd class="r"><code>"ユーザーの形が違います"</code> の Error で失敗する</dd><dd class="c">name がない</dd></div>
+          <div><dt>サーバーが 404 を返したとき、<code>getUser(1)</code></dt><dd class="r"><code>"HTTP 404"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li><code>fetch</code> に、<code>`${API}/users/1`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;User&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getUser を作る。数値 id を受け取り、User で解決する Promise を返す
+export function getUser() {
+  // 応答 res を作り、API と id を埋め込んだ URL（`${API}/users/${id}`）を fetch して、その結果を待って入れる
+  // もし res が ok でないなら
+  //   res のステータスコードを埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし isUser に data を渡して呼んだ結果が false なら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>前半は問5 と同じ形です。<code>ok</code> の確かめを先にします。404 のときの本文 <code>{}</code> も <code>User</code> の形ではないので、順番が逆だと <code>"ユーザーの形が違います"</code> になってしまいます。<code>isUser</code> の確かめは <code>if (!isUser(data))</code> です。エラーを投げる <code>if</code> の後ろでは、<code>data</code> が <code>User</code> に絞り込まれているので、そのまま返せます（05章 q09 応用の <code>parseUsers</code> と同じ）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問7 -->
+  <section class="q" id="c08-q03-7">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>7</span><span class="q-t">404 なら null を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getUserOrNull() {}</code></pre>
+      <p>問6 と同じく <code>`${API}/users/${id}`</code> を取得します。ステータスコードが 404 なら、エラーにせずに <code>null</code> を返します。それ以外で <code>res.ok</code> が <code>false</code> なら、<code>"HTTP 500"</code> の形の Error を投げます。<code>ok</code> なら、<code>isUser</code> で確かめて <code>User</code> を返します。形が違えば <code>"ユーザーの形が違います"</code> の Error です。型 <code>User</code> と <code>isUser</code> は、問6 と同じものが定義済みです。引数は数値 1 つ、戻り値は <code>Promise&lt;User | null&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 404 を返したとき、<code>getUserOrNull(9)</code></dt><dd class="r"><code>null</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが本文 <code>{"id":2,"name":"佐藤"}</code> を返したとき、<code>getUserOrNull(2)</code></dt><dd class="r"><code>{ id: 2, name: "佐藤" }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 500 を返したとき、<code>getUserOrNull(2)</code></dt><dd class="r"><code>"HTTP 500"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li><code>getUserOrNull(9)</code> で、<code>fetch</code> に <code>`${API}/users/9`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;User | null&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getUserOrNull を作る。数値 id を受け取り、User か null で解決する Promise を返す
+export function getUserOrNull() {
+  // 応答 res を作り、API と id を埋め込んだ URL（`${API}/users/${id}`）を fetch して、その結果を待って入れる
+  // もし res のステータスコードが 404 と等しいなら
+  //   null を返す
+  // もし res が ok でないなら
+  //   res のステータスコードを埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし isUser に data を渡して呼んだ結果が false なら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問6 に、404 の確かめを 1 つ足した形です。404 も <code>ok</code> でないので、404 の確かめは <code>ok</code> の確かめより先に書きます。「User か null で解決する Promise」は <code>Promise&lt;User | null&gt;</code> です（<code>null</code> とのユニオンは 03章 q03 問2）。</p></details>
+    </div>
+  </section>
+
+  <!-- 問8 -->
+  <section class="q" id="c08-q03-8">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>8</span><span class="q-t">ユーザーの配列を取得して返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>.every()</code> に型ガード関数を渡す</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getUsers() {}</code></pre>
+      <p><code>`${API}/users`</code> を取得し、<code>User</code> の配列を返します。本文が配列でないときと、<code>User</code> の形でない要素が 1 つでもあるときは、<code>"ユーザーの形が違います"</code> の Error を投げます。型 <code>User</code> と <code>isUser</code> は定義済みです。引数はありません。戻り値は <code>Promise&lt;User[]&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>[{"id":1,"name":"山田"}]</code> を返したとき、<code>getUsers()</code></dt><dd class="r"><code>[{ id: 1, name: "山田" }]</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが本文 <code>{"id":1,"name":"山田"}</code> を返したとき、<code>getUsers()</code></dt><dd class="r"><code>"ユーザーの形が違います"</code> の Error で失敗する</dd><dd class="c">配列ではない</dd></div>
+          <div><dt>サーバーが本文 <code>[{"id":1,"name":"山田"},{"id":2}]</code> を返したとき、<code>getUsers()</code></dt><dd class="r"><code>"ユーザーの形が違います"</code> の Error で失敗する</dd><dd class="c">2 つ目に name がない</dd></div>
+        </dl>
+        <ul>
+          <li><code>fetch</code> に、<code>`${API}/users`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;User[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">.every(isProduct)</code><h4>.every() に型ガード関数を渡すと、配列の型が狭まる</h4></div>
+      <p><code>Array.isArray()</code>（04章 q06 問2）で確かめると、<code>unknown</code> の値は <code>any[]</code> になります。配列だとは分かっても、要素の型は分からないままです。そのまま返すと、lint の「Unsafe return of a value of type `any[]`」というエラーになります。続けて <code>.every()</code>（02章 q04 問20）に型ガード関数の名前を渡して確かめると、配列の型がその型の配列に狭まります。名前の渡し方は <code>.filter(isBook)</code>（05章 q09 問11）と同じです。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Product という型を作る。name は文字列、price は数値
+type Product = { name: string; price: number };
+// 関数 isProduct を作る。型の分からない value を受け取り、true か false を返す。true のときは value を Product に絞り込む
+function isProduct(value: unknown): value is Product {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "name" というキーがある、かつ value の name の型が文字列、かつ value に "price" というキーがある、かつ value の price の型が数値かどうか（true か false）を返す
+  return (
+    typeof value === "object" &amp;&amp;
+    value !== null &amp;&amp;
+    "name" in value &amp;&amp;
+    typeof value.name === "string" &amp;&amp;
+    "price" in value &amp;&amp;
+    typeof value.price === "number"
+  );
+}
+// 関数 totalPrice を作る。型の分からない data を受け取り、数値を返す
+function totalPrice(data: unknown): number {
+  // もし data が配列でない、または data の要素がすべて isProduct で true になるわけではないなら
+  if (!Array.isArray(data) || !data.every(isProduct)) {
+    // "商品の形が違います" というメッセージのエラーを投げる
+    throw new Error("商品の形が違います");
+  }
+  // data の price を、0 から順に足した合計を返す
+  return data.reduce((sum, product) =&gt; sum + product.price, 0);
+}
+// 結果: totalPrice([{ name: "ノート", price: 150 }, { name: "ペン", price: 120 }]) は 270、totalPrice([{ name: "ノート" }]) はエラーを投げる</code></pre>
+      </div>
+      <dl class="eg">
+        <div><dt><code>if (Array.isArray(data))</code> の中の <code>data</code> の型</dt><dd class="r"><code>any[]</code></dd><dd class="c">要素の型が分からない</dd></div>
+        <div><dt><code>if (Array.isArray(data) &amp;&amp; data.every(isProduct))</code> の中の <code>data</code> の型</dt><dd class="r"><code>Product[]</code></dd><dd class="c">型ガード関数で狭まった</dd></div>
+      </dl>
+      <p>エラーを投げる <code>if</code> の後ろでは、<code>data</code> は <code>Product[]</code> です。そのため <code>product.price</code> を数値として読めます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getUsers を作る。User の配列で解決する Promise を返す
+export function getUsers() {
+  // 応答 res を作り、API を埋め込んだ URL（`${API}/users`）を fetch して、その結果を待って入れる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし data が配列でない、または data の要素がすべて isUser で true になるわけではないなら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>3 行目は、問8 のサンプルの <code>totalPrice</code> の <code>if</code> と同じ形で、<code>isProduct</code> が <code>isUser</code> になります。「または」は <code>||</code> です。<code>||</code> の右側では、<code>data</code> がもう配列になっているので <code>.every()</code> を呼べます。<code>isUser</code> には、かっこを付けずに名前だけを渡します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問9 -->
+  <section class="q" id="c08-q03-9">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>9</span><span class="q-t">TODO のタイトルの配列を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const API = "https://api.example.com";
+
+export type Todo = { id: number; title: string; done: boolean };
+
+export function isTodo(value: unknown): value is Todo {
+  return (
+    typeof value === "object" &amp;&amp;
+    value !== null &amp;&amp;
+    "id" in value &amp;&amp;
+    typeof value.id === "number" &amp;&amp;
+    "title" in value &amp;&amp;
+    typeof value.title === "string" &amp;&amp;
+    "done" in value &amp;&amp;
+    typeof value.done === "boolean"
+  );
+}
+
+export function getTodoTitles() {}</code></pre>
+      <p><code>`${API}/todos`</code> を取得し、TODO（やること）のタイトルだけを並べた配列を返します。本文が配列でないときと、<code>Todo</code> の形でない要素があるときは、<code>"TODO の形が違います"</code> の Error を投げます。型 <code>Todo</code> と型ガード関数 <code>isTodo</code> は定義済みです。戻り値は <code>Promise&lt;string[]&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが <code>[{ id: 1, title: "買い物", done: false }, { id: 2, title: "掃除", done: true }]</code> の JSON を返したとき、<code>getTodoTitles()</code></dt><dd class="r"><code>["買い物", "掃除"]</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが <code>[{ id: 1, title: "買い物" }]</code> の JSON を返したとき、<code>getTodoTitles()</code></dt><dd class="r"><code>"TODO の形が違います"</code> の Error で失敗する</dd><dd class="c">done がない</dd></div>
+        </dl>
+        <ul>
+          <li><code>fetch</code> に、<code>`${API}/todos`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getTodoTitles を作る。文字列の配列で解決する Promise を返す
+export function getTodoTitles() {
+  // 応答 res を作り、API を埋め込んだ URL（`${API}/todos`）を fetch して、その結果を待って入れる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし data が配列でない、または data の要素がすべて isTodo で true になるわけではないなら
+  //   "TODO の形が違います" というメッセージのエラーを投げる
+  // data のそれぞれを title だけにした新しい配列を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>途中までは問8 と同じ形で、確かめに使うのが <code>isTodo</code> になります。最後の行は <code>.map()</code>（02章 q04 問5）です。<code>if</code> の後ろでは <code>data</code> が <code>Todo[]</code> なので、<code>.map()</code> に渡すアロー関数の中で <code>title</code> を読めます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問10 -->
+  <section class="q" id="c08-q03-10">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>10</span><span class="q-t">done が true の TODO の数を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function countDone() {}</code></pre>
+      <p><code>`${API}/todos`</code> を取得し、<code>done</code> が <code>true</code> の TODO がいくつあるかを返します。形が違えば <code>"TODO の形が違います"</code> の Error を投げます。型 <code>Todo</code> と <code>isTodo</code> は問9 と同じものが定義済みです。戻り値は <code>Promise&lt;number&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが <code>[{ id: 1, title: "買い物", done: false }, { id: 2, title: "掃除", done: true }]</code> の JSON を返したとき、<code>countDone()</code></dt><dd class="r"><code>1</code> で解決する</dd><dd class="c">掃除だけが済み</dd></div>
+          <div><dt>サーバーが本文 <code>"todos"</code>（JSON の文字列）を返したとき、<code>countDone()</code></dt><dd class="r"><code>"TODO の形が違います"</code> の Error で失敗する</dd><dd class="c">配列ではない</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 countDone を作る。数値で解決する Promise を返す
+export function countDone() {
+  // 応答 res を作り、API を埋め込んだ URL（`${API}/todos`）を fetch して、その結果を待って入れる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし data が配列でない、または data の要素がすべて isTodo で true になるわけではないなら
+  //   "TODO の形が違います" というメッセージのエラーを投げる
+  // data から、done が true のものだけを残した新しい配列の、要素の数を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問9 と同じ形で、最後の行だけが違います。「◯ のものだけを残した新しい配列」は <code>.filter()</code>（02章 q04 問7）、「要素の数」は <code>.length</code> です。<code>todo.done</code> はもう <code>true</code> か <code>false</code> なので、<code>=== true</code> と比べなくてかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 問11 -->
+  <section class="q" id="c08-q03-11">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>11</span><span class="q-t">キーワードでユーザーを検索する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function searchUsers() {}</code></pre>
+      <p>キーワードを受け取り、<code>`${API}/users?q=キーワード`</code> を取得して、<code>User</code> の配列を返します。キーワードは、<code>encodeURIComponent</code> で URL に入れられる形に変換してから埋め込みます。形が違えば <code>"ユーザーの形が違います"</code> の Error を投げます。型 <code>User</code> と <code>isUser</code> は定義済みです。引数は文字列 1 つ、戻り値は <code>Promise&lt;User[]&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>[{"id":1,"name":"山田"}]</code> を返したとき、<code>searchUsers("山田 太郎")</code></dt><dd class="r"><code>[{ id: 1, name: "山田" }]</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li>このとき <code>fetch</code> に、<code>`${API}/users?q=%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E`</code> だけを渡して呼んだことも確かめます。日本語と空白が変換されています。</li>
+        </ul>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;User[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 searchUsers を作る。文字列 keyword を受け取り、User の配列で解決する Promise を返す
+export function searchUsers() {
+  // 応答 res を作り、API と、keyword を URL に入れられる形に変換したものを埋め込んだ URL（`${API}/users?q=…`）を fetch して、その結果を待って入れる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし data が配列でない、または data の要素がすべて isUser で true になるわけではないなら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問8 と同じ形で、URL だけが違います。「URL に入れられる形に変換したもの」は <code>encodeURIComponent(keyword)</code>（05章 q06 応用）で、これをテンプレートリテラルの <code>${ }</code> に入れます。<code>encodeURIComponent()</code> は空白を <code>%20</code> にするので、テストの URL と合います。</p></details>
+    </div>
+  </section>
+
+  <!-- 問12 -->
+  <section class="q" id="c08-q03-12">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>12</span><span class="q-t">ページを指定して TODO を取得する</span>
+      <span class="q-new">新しく出てくる書き方：<code>new URLSearchParams()</code> <code>.toString()</code></span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getTodosPage() {}</code></pre>
+      <p>ページの番号と、1 ページの件数を受け取ります。<code>`${API}/todos?page=2&amp;per_page=10`</code> の形の URL で取得し、<code>Todo</code> の配列を返します。<code>?</code> の後ろ（クエリ）は、<code>URLSearchParams</code> で作ります。形が違えば <code>"TODO の形が違います"</code> の Error を投げます。型 <code>Todo</code> と <code>isTodo</code> は定義済みです。引数は数値 2 つ、戻り値は <code>Promise&lt;Todo[]&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>[{"id":11,"title":"a","done":false}]</code> を返したとき、<code>getTodosPage(2, 10)</code></dt><dd class="r"><code>[{ id: 11, title: "a", done: false }]</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li>このとき <code>fetch</code> に、<code>`${API}/todos?page=2&amp;per_page=10`</code> だけを渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>number</code>、戻り値が <code>Promise&lt;Todo[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">new URLSearchParams({ … })</code><code class="tok">.toString()</code><h4>URL のクエリを組み立てる</h4></div>
+      <p>URL の <code>?</code> の後ろの部分を、クエリと呼びます。<code>URLSearchParams</code> は、クエリを組み立てるオブジェクトです。<code>new</code> で作るときに <code>{ キー: 値 }</code> のオブジェクトを渡すと、<code>キー=値</code> の組を <code>&amp;</code> でつないだ形にしてくれます。日本語や空白は、URL に入れられる形に変換されます。<code>.toString()</code> で、その文字列を取り出します。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// 送料の条件 query を作り、prefecture が "大阪"、weight が 2 を文字列にしたものの URLSearchParams を入れる
+const query = new URLSearchParams({ prefecture: "大阪", weight: String(2) });
+// URL の文字列 url を作り、送料の URL の "?" の後ろに、query を文字列にしたものをつなげて入れる
+const url = `https://shop.example.com/shipping?${query.toString()}`;
+// 結果: url は "https://shop.example.com/shipping?prefecture=%E5%A4%A7%E9%98%AA&amp;weight=2"</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>new URLSearchParams({ <span class="seg"><i>1</i>prefecture: "大阪"</span>, <span class="seg"><i>2</i>weight: String(2)</span> })</pre>
+        <ol>
+          <li><span>キーと値の組です。<code>,</code> で区切って並べます。並べた順に <code>&amp;</code> でつながります。</span></li>
+          <li><span>値は文字列にします。数値をそのまま渡すと、型の確認で「Type 'number' is not assignable to type 'string'.」というエラーになります。<code>String()</code>（01章 q01 問20）で文字列にします。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>new URLSearchParams({ page: "2", per_page: "10" }).toString()</code></dt><dd class="r"><code>"page=2&amp;per_page=10"</code></dd><dd class="c">組を &amp; でつなぐ</dd></div>
+        <div><dt><code>new URLSearchParams({ q: "山田 太郎" }).toString()</code></dt><dd class="r"><code>"q=%E5%B1%B1%E7%94%B0+%E5%A4%AA%E9%83%8E"</code></dd><dd class="c">空白は + になる</dd></div>
+      </dl>
+      <p class="memo"><b>よくある疑問</b>問11 の <code>encodeURIComponent()</code> も日本語を変換しますが、空白の変換が違います。<code>encodeURIComponent()</code> は <code>%20</code>、<code>URLSearchParams</code> は <code>+</code> にします。どちらもサーバーには空白として伝わります。問11 のテストは <code>%20</code> を確かめるので、問11 は <code>encodeURIComponent()</code> で書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getTodosPage を作る。数値 page と数値 perPage を受け取り、Todo の配列で解決する Promise を返す
+export function getTodosPage() {
+  // クエリ query を作り、page が page を文字列にしたもの、per_page が perPage を文字列にしたものの URLSearchParams を入れる
+  // 応答 res を作り、API を埋め込んだ URL（`${API}/todos`）の "?" の後ろに、query を文字列にしたものをつなげた URL を fetch して、その結果を待って入れる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし data が配列でない、または data の要素がすべて isTodo で true になるわけではないなら
+  //   "TODO の形が違います" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目と 2 行目は、問12 のサンプルの <code>query</code> と <code>url</code> の行と同じ形です。キーは <code>page</code> と <code>per_page</code> の順に並べます。順番が逆だと、URL の並びがテストと合いません。残りは問9 と同じ確かめ方で、最後は <code>data</code> をそのまま返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問13 -->
+  <section class="q" id="c08-q03-13">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>13</span><span class="q-t">body を JSON で POST し、ステータスコードを返す</span>
+      <span class="q-new">新しく出てくる書き方：<code>fetch</code> の 2 つ目の引数（<code>method</code>・<code>headers</code>・<code>body</code>）</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function postJson() {}</code></pre>
+      <p>URL と、送る値 <code>body</code> を受け取ります。<code>body</code> を JSON の文字列にして、URL に POST（新しく作る頼み）で送ります。返すのは、応答のステータスコードです。<code>fetch</code> の 2 つ目の引数は <code>{ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }</code> にします。<code>body</code> はどんな値でもよいので、型は <code>unknown</code> です。戻り値は <code>Promise&lt;number&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 201 を返したとき、<code>postJson(`${API}/logs`, { level: "info" })</code></dt><dd class="r"><code>201</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li>このとき <code>fetch</code> に、<code>`${API}/logs`</code> と <code>{ method: "POST", headers: { "Content-Type": "application/json" }, body: '{"level":"info"}' }</code> を渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>unknown</code>、戻り値が <code>Promise&lt;number&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">新しい書き方</h3>
+    <article class="item">
+      <div class="item-h"><code class="tok">fetch(url, { method, headers, body })</code><h4>頼み方の設定を付けて送る</h4></div>
+      <p><code>fetch</code> の 2 つ目の引数に、頼み方の設定をオブジェクトで渡せます。省くと、取得（GET）の頼みになります。データを送るときは、<code>method</code>・<code>headers</code>・<code>body</code> の 3 つを書きます。</p>
+      <div class="sample"><span class="cap">サンプル</span>
+        <pre><code class="language-typescript">// Order という型を作る。itemId は文字列、count は数値
+type Order = { itemId: string; count: number };
+// 非同期の関数 sendOrder を作る。Order の order を受け取り、true か false で解決する Promise を返す
+async function sendOrder(order: Order): Promise&lt;boolean&gt; {
+  // 応答 res を作り、注文の URL に、次の設定で fetch して、その結果を待って入れる
+  const res = await fetch("https://shop.example.com/orders", {
+    // method は "POST"
+    method: "POST",
+    // headers は、"Content-Type" が "application/json" のオブジェクト
+    headers: { "Content-Type": "application/json" },
+    // body は、order を JSON の文字列にしたもの
+    body: JSON.stringify(order),
+  });
+  // res が ok かどうか（true か false）を返す
+  return res.ok;
+}
+// 結果: sendOrder({ itemId: "A-100", count: 2 }) は本文 {"itemId":"A-100","count":2} を POST で送り、サーバーが 201 を返したとき true で解決する</code></pre>
+      </div>
+      <figure class="anat">
+        <pre>fetch(url, { <span class="seg"><i>1</i>method: "POST"</span>, <span class="seg"><i>2</i>headers: { "Content-Type": "application/json" }</span>, <span class="seg"><i>3</i>body: JSON.stringify(order)</span> })</pre>
+        <ol>
+          <li><span>頼みの種類（HTTP メソッド）です。<code>"POST"</code> は「送ったデータで新しく作ってほしい」という頼みです。</span></li>
+          <li><span>ヘッダー（頼みに付ける説明書き）です。<code>"Content-Type"</code> は本文の形式を表し、<code>"application/json"</code> は「本文は JSON」という意味です。キーに <code>-</code> が入るので、<code>" "</code> で囲みます。</span></li>
+          <li><span>送る本文です。本文は文字列で送るので、<code>JSON.stringify()</code>（04章 q07 問1）で JSON の文字列にします。</span></li>
+        </ol>
+      </figure>
+      <dl class="eg">
+        <div><dt><code>"GET"</code></dt><dd class="r">取得する</dd><dd class="c">2 つ目の引数を省いたとき。問1 から問12</dd></div>
+        <div><dt><code>"POST"</code></dt><dd class="r">新しく作る</dd><dd class="c">問13・問14</dd></div>
+        <div><dt><code>"PATCH"</code></dt><dd class="r">一部を書き換える</dd><dd class="c">問15</dd></div>
+        <div><dt><code>"DELETE"</code></dt><dd class="r">消す</dd><dd class="c">問16</dd></div>
+      </dl>
+      <p class="memo"><b>よくある間違い</b>テストは、2 つ目の引数のオブジェクトを丸ごと比べます。問題にないキー（<code>method: "GET"</code> など）を足すと、テストに通りません。キーの名前も値も、大文字と小文字まで問題のとおりに書きます。</p>
+    </article>
+
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 postJson を作る。文字列 url と型の分からない body を受け取り、数値で解決する Promise を返す
+export function postJson() {
+  // 応答 res を作り、url に、次の設定で fetch して、その結果を待って入れる
+  //   method は "POST"
+  //   headers は、"Content-Type" が "application/json" のオブジェクト
+  //   body は、body を JSON の文字列にしたもの
+  // res のステータスコードを返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>sendOrder</code> と同じ形です。<code>fetch</code> に渡すのが <code>url</code>、<code>JSON.stringify()</code> に渡すのが引数の <code>body</code> になります。設定のキーの <code>body</code> と引数の <code>body</code> は同じ名前ですが、値が <code>JSON.stringify(body)</code> なので省略記法は使えません。最後は問1 と同じく <code>res.status</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問14 -->
+  <section class="q" id="c08-q03-14">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>14</span><span class="q-t">TODO を作り、作られた Todo を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function createTodo() {}</code></pre>
+      <p>タイトルを受け取り、<code>`${API}/todos`</code> に <code>{ title, done: false }</code> を JSON で POST します。設定は問13 と同じ 3 つです。<code>res.ok</code> が <code>false</code> なら <code>"HTTP 400"</code> の形の Error を投げます。<code>ok</code> なら、応答の本文を <code>isTodo</code> で確かめて返します。形が違えば <code>"TODO の形が違います"</code> の Error です。型 <code>Todo</code> と <code>isTodo</code> は定義済みです。引数は文字列 1 つ、戻り値は <code>Promise&lt;Todo&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 201 で本文 <code>{"id":5,"title":"買い物","done":false}</code> を返したとき、<code>createTodo("買い物")</code></dt><dd class="r"><code>{ id: 5, title: "買い物", done: false }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 400 を返したとき、<code>createTodo("")</code></dt><dd class="r"><code>"HTTP 400"</code> の Error で失敗する</dd><dd class="c">頼み方が正しくない</dd></div>
+          <div><dt>サーバーが 201 で本文 <code>{"id":5}</code> を返したとき、<code>createTodo("a")</code></dt><dd class="r"><code>"TODO の形が違います"</code> の Error で失敗する</dd><dd class="c">title と done がない</dd></div>
+        </dl>
+        <ul>
+          <li><code>createTodo("買い物")</code> で、<code>fetch</code> に <code>`${API}/todos`</code> と <code>{ method: "POST", headers: { "Content-Type": "application/json" }, body: '{"title":"買い物","done":false}' }</code> を渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;Todo&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 createTodo を作る。文字列 title を受け取り、Todo で解決する Promise を返す
+export function createTodo() {
+  // 応答 res を作り、API を埋め込んだ URL（`${API}/todos`）に、次の設定で fetch して、その結果を待って入れる
+  //   method は "POST"
+  //   headers は、"Content-Type" が "application/json" のオブジェクト
+  //   body は、title と、done が false のオブジェクトを JSON の文字列にしたもの
+  // もし res が ok でないなら
+  //   res のステータスコードを埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし isTodo に data を渡して呼んだ結果が false なら
+  //   "TODO の形が違います" というメッセージのエラーを投げる
+  // data を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>前半は問13、後半は問6 と同じ形です。送るオブジェクトは、プロパティの省略記法（02章 q01 問3）で <code>{ title, done: false }</code> と書けます。本文は文字列で比べられるので、キーは <code>title</code>、<code>done</code> の順に並べます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問15 -->
+  <section class="q" id="c08-q03-15">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>15</span><span class="q-t">TODO の done を PATCH で書き換える</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function updateTodo() {}</code></pre>
+      <p>TODO の id と、新しい <code>done</code> の値を受け取ります。<code>`${API}/todos/${id}`</code> に <code>{ done }</code> を JSON で送り、<code>res.ok</code> を返します。一部を書き換える頼みなので、<code>method</code> は <code>"PATCH"</code> にします。<code>headers</code> と <code>body</code> の書き方は問13 と同じです。引数は数値と <code>boolean</code>、戻り値は <code>Promise&lt;boolean&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 200 を返したとき、<code>updateTodo(3, true)</code></dt><dd class="r"><code>true</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li>このとき <code>fetch</code> に、<code>`${API}/todos/3`</code> と <code>{ method: "PATCH", headers: { "Content-Type": "application/json" }, body: '{"done":true}' }</code> を渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>number</code> と <code>boolean</code>、戻り値が <code>Promise&lt;boolean&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 updateTodo を作る。数値 id と true か false の done を受け取り、true か false で解決する Promise を返す
+export function updateTodo() {
+  // 応答 res を作り、API と id を埋め込んだ URL（`${API}/todos/${id}`）に、次の設定で fetch して、その結果を待って入れる
+  //   method は "PATCH"
+  //   headers は、"Content-Type" が "application/json" のオブジェクト
+  //   body は、done を持つオブジェクトを JSON の文字列にしたもの
+  // res が ok かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>問13 のサンプルの <code>sendOrder</code> と同じ形で、<code>method</code> が <code>"PATCH"</code> になります。「done を持つオブジェクト」は省略記法で <code>{ done }</code> です。最後は問2 と同じく <code>res.ok</code> を返します。</p></details>
+    </div>
+  </section>
+
+  <!-- 問16 -->
+  <section class="q" id="c08-q03-16">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>16</span><span class="q-t">TODO を DELETE で消す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function deleteTodo() {}</code></pre>
+      <p>TODO の id を受け取り、<code>`${API}/todos/${id}`</code> を <code>method</code> が <code>"DELETE"</code> の頼みで呼んで、<code>res.ok</code> を返します。送る本文はないので、2 つ目の引数は <code>{ method: "DELETE" }</code> だけにします。引数は数値 1 つ、戻り値は <code>Promise&lt;boolean&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 200 を返したとき、<code>deleteTodo(3)</code></dt><dd class="r"><code>true</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 404 を返したとき、<code>deleteTodo(9)</code></dt><dd class="r"><code>false</code> で解決する</dd><dd class="c">消す TODO が見つからない</dd></div>
+        </dl>
+        <ul>
+          <li><code>deleteTodo(3)</code> で、<code>fetch</code> に <code>`${API}/todos/3`</code> と <code>{ method: "DELETE" }</code> を渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>number</code>、戻り値が <code>Promise&lt;boolean&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 deleteTodo を作る。数値 id を受け取り、true か false で解決する Promise を返す
+export function deleteTodo() {
+  // 応答 res を作り、API と id を埋め込んだ URL（`${API}/todos/${id}`）に、method が "DELETE" の設定で fetch して、その結果を待って入れる
+  // res が ok かどうか（true か false）を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>2 つ目の引数は <code>{ method: "DELETE" }</code> の 1 つだけです。<code>headers</code> や <code>body</code> を足すと、テストの比べ方に合いません。404 のときも <code>fetch</code> は失敗しないので、<code>res.ok</code> の <code>false</code> がそのまま返ります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問17 -->
+  <section class="q" id="c08-q03-17">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>17</span><span class="q-t">トークンを付けて取得する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getWithToken() {}</code></pre>
+      <p>URL とトークン（ログインした人を表す合言葉の文字列）を受け取ります。ヘッダー <code>Authorization</code> に <code>"Bearer トークン"</code> を付けて取得し、本文の文字列を返します。<code>Authorization</code> は「だれが頼んでいるか」をサーバーに伝えるヘッダーです。2 つ目の引数は <code>{ headers: { Authorization: … } }</code> だけにします。引数は文字列 2 つ、戻り値は <code>Promise&lt;string&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>"ひみつ"</code> を返したとき、<code>getWithToken(`${API}/me`, "abc")</code></dt><dd class="r"><code>"ひみつ"</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li>このとき <code>fetch</code> に、<code>`${API}/me`</code> と <code>{ headers: { Authorization: "Bearer abc" } }</code> を渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>引数が <code>string</code> と <code>string</code>、戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getWithToken を作る。文字列 url と文字列 token を受け取り、文字列で解決する Promise を返す
+export function getWithToken() {
+  // 応答 res を作り、url に、次の設定で fetch して、その結果を待って入れる
+  //   headers は、Authorization が "Bearer " の後ろに token を埋め込んだ文字列のオブジェクト
+  // res の本文を文字列として読み、その結果を待って返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>設定は問13 の <code>headers</code> と同じ形で、キーが <code>Authorization</code> になります。このキーには <code>-</code> がないので、<code>" "</code> で囲まなくてかまいません。値はテンプレートリテラルで <code>`Bearer ${token}`</code> と書きます。<code>Bearer</code> の後ろの空白を忘れないようにします。最後は問3 と同じです。</p></details>
+    </div>
+  </section>
+
+  <!-- 問18 -->
+  <section class="q" id="c08-q03-18">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>18</span><span class="q-t">すべての URL を同時に取得する</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getAllTexts() {}</code></pre>
+      <p>URL の配列を受け取り、すべてを同時に取得します。それぞれの本文の文字列を、URL と同じ順に並べた配列を返します。待つのは <code>Promise.all</code> を使います。引数は読み取り専用の文字列の配列（<code>readonly string[]</code>）、戻り値は <code>Promise&lt;string[]&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 1 回目に本文 <code>"a"</code>、2 回目に本文 <code>"b"</code> を返したとき、<code>getAllTexts([`${API}/a`, `${API}/b`])</code></dt><dd class="r"><code>["a", "b"]</code> で解決する</dd><dd class="c"></dd></div>
+        </dl>
+        <ul>
+          <li><code>fetch</code> に渡した URL が、<code>`${API}/a`</code>、<code>`${API}/b`</code> の順であることも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string[]&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getAllTexts を作る。読み取り専用の文字列の配列 urls を受け取り、文字列の配列で解決する Promise を返す
+export function getAllTexts() {
+  // 応答の配列 responses を作り、urls のそれぞれを fetch した Promise の配列を、Promise.all ですべて待って入れる
+  // responses のそれぞれの本文を文字列として読んだ Promise の配列を、Promise.all ですべて待って返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>どちらの行も、<code>.map()</code> で Promise の配列を作ってから <code>Promise.all</code> で待つ形です（q02 問10）。1 行目は <code>urls.map((url) =&gt; fetch(url))</code>、2 行目は <code>responses.map((res) =&gt; res.text())</code> を <code>Promise.all()</code> に渡します。<code>urls.map(fetch)</code> と関数の名前だけを渡すと、<code>.map()</code> が渡す 2 つ目の値（番号）が <code>fetch</code> の設定の位置に入るので、型の確認でエラーになります。</p></details>
+    </div>
+  </section>
+
+  <!-- 問19 -->
+  <section class="q" id="c08-q03-19">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>19</span><span class="q-t">最初に ok だった本文を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getFirstOk() {}</code></pre>
+      <p>URL の配列を受け取り、前から順番に 1 つずつ取得します。最初に <code>res.ok</code> が <code>true</code> だったものの本文の文字列を返します。それより後ろの URL は取得しません。どれも <code>ok</code> でなければ、<code>"取得できませんでした"</code> の Error を投げます。引数は <code>readonly string[]</code>、戻り値は <code>Promise&lt;string&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが 1 回目に 404、2 回目に本文 <code>"b"</code> を返したとき、<code>getFirstOk([`${API}/a`, `${API}/b`, `${API}/c`])</code></dt><dd class="r"><code>"b"</code> で解決する</dd><dd class="c">2 つ目が最初の ok</dd></div>
+          <div><dt>サーバーが 500 を返したとき、<code>getFirstOk([`${API}/a`])</code></dt><dd class="r"><code>"取得できませんでした"</code> の Error で失敗する</dd><dd class="c">ok が 1 つもない</dd></div>
+        </dl>
+        <ul>
+          <li>1 つ目の例で、<code>fetch</code> を 2 回だけ呼んだことも確かめます。3 つ目の URL は取得しません。</li>
+        </ul>
+        <p class="memo"><b>型</b>戻り値が <code>Promise&lt;string&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getFirstOk を作る。読み取り専用の文字列の配列 urls を受け取り、文字列で解決する Promise を返す
+export function getFirstOk() {
+  // urls から 1 つずつ url に取り出してくり返す
+  //   応答 res を作り、url を fetch して、その結果を待って入れる
+  //   もし res が ok なら
+  //     res の本文を文字列として読み、その結果を待って返す
+  // "取得できませんでした" というメッセージのエラーを投げる
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>for...of</code> の中で <code>await</code> すると、1 つ終わってから次に進みます（q02 問9）。<code>ok</code> が見つかったら、<code>return</code> でくり返しの途中から抜けます（q02 問16）。だから後ろの URL は取得しません。くり返しが最後まで終わったら、ok が 1 つもなかったので、エラーを投げます。</p></details>
+    </div>
+  </section>
+
+  <!-- 問20 -->
+  <section class="q" id="c08-q03-20">
+    <header class="q-h">
+      <span class="q-n"><small>問</small>20</span><span class="q-t">どこで失敗しても undefined を返す</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export function getJsonSafe() {}</code></pre>
+      <p>URL の本文を JSON として読んだ値を返します。うまくいかないときは、エラーにせずに <code>undefined</code> を返します。うまくいかないのは、次の 3 つのときです。</p>
+      <ol>
+        <li>通信そのものができない。このとき <code>fetch</code> の Promise が失敗します。</li>
+        <li><code>res.ok</code> が <code>false</code>。<code>fetch</code> は失敗しないので、自分で確かめます。</li>
+        <li>本文が JSON として読めない。このとき <code>res.json()</code> の Promise が失敗します。</li>
+      </ol>
+      <p>引数は文字列 1 つ、戻り値は <code>Promise&lt;unknown&gt;</code> です。</p>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>{"a":1}</code> を返したとき、<code>getJsonSafe(`${API}/a`)</code></dt><dd class="r"><code>{ a: 1 }</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>通信ができず、<code>fetch</code> が <code>TypeError("Failed to fetch")</code> で失敗したとき、<code>getJsonSafe(`${API}/a`)</code></dt><dd class="r"><code>undefined</code> で解決する</dd><dd class="c">1 つ目のとき</dd></div>
+          <div><dt>サーバーが 500 を返したとき、<code>getJsonSafe(`${API}/a`)</code></dt><dd class="r"><code>undefined</code> で解決する</dd><dd class="c">2 つ目のとき</dd></div>
+          <div><dt>サーバーが本文 <code>"JSON ではない"</code>（ただの文字列）を返したとき、<code>getJsonSafe(`${API}/a`)</code></dt><dd class="r"><code>undefined</code> で解決する</dd><dd class="c">3 つ目のとき</dd></div>
+        </dl>
+        <p class="memo"><b>型</b>引数が <code>string</code>、戻り値が <code>Promise&lt;unknown&gt;</code> であることも確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getJsonSafe を作る。文字列 url を受け取り、型の分からない値で解決する Promise を返す
+export function getJsonSafe() {
+  // 次の中を試す。例外が投げられたら、catch の中に飛ぶ
+  //   応答 res を作り、url を fetch して、その結果を待って入れる
+  //   もし res が ok でないなら
+  //     undefined を返す
+  //   値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  //   data を返す
+  // （例外が投げられたら）undefined を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>try { } catch { }</code>（04章 q05 問5）の <code>try</code> の中で <code>await</code> すると、待った Promise の失敗を <code>catch</code> で受け止められます（q02 問13）。1 つ目と 3 つ目は <code>catch</code> に飛び、2 つ目は <code>if</code> で返します。エラーの中身は使わないので、<code>catch</code> の後ろの <code>(error)</code> は書かなくてかまいません。</p></details>
+    </div>
+  </section>
+
+  <!-- 応用 -->
+  <section class="q" id="c08-q03-a">
+    <header class="q-h">
+      <span class="q-n">応用</span><span class="q-t">ユーザーと投稿の API を呼ぶ関数</span>
+      <span class="q-new">新しい書き方はありません。</span>
+    </header>
+    <div class="task">
+      <pre><code class="language-typescript">export const API_URL = "https://api.example.com";
+
+export type User = { id: number; name: string };
+export type NewPost = { userId: number; title: string };
+
+export function getJson() {}
+
+export function isUser() {}
+
+export function getUser() {}
+
+export function searchUsers() {}
+
+export function createPost() {}</code></pre>
+      <p>ユーザーと投稿の API（<code>API_URL</code>）を呼ぶ関数を 5 つ書きます。<code>async</code> と <code>await</code> を使います。前の関数を、後ろの関数の中で使えます。このファイルでは <code>isUser</code> も自分で書きます。</p>
+      <ol>
+        <li><code>getJson(url)</code>：<code>url</code> を <code>fetch</code> します。<code>res.ok</code> が <code>false</code> なら、<code>"HTTP 404"</code> の形（数字はステータスコード）の Error を投げます。<code>ok</code> なら <code>res.json()</code> の結果を返します。戻り値の型は <code>Promise&lt;unknown&gt;</code> です。</li>
+        <li><code>isUser(value)</code>：<code>value</code> が <code>{ id: number; name: string }</code> の形なら <code>true</code> を返します。戻り値の型は <code>value is User</code> です。</li>
+        <li><code>getUser(id)</code>：<code>getJson</code> で <code>`${API_URL}/users/${id}`</code> を取得し、<code>User</code> の形なら返します。違えば <code>"ユーザーの形が違います"</code> の Error を投げます。</li>
+        <li><code>searchUsers(keyword)</code>：<code>`${API_URL}/users?q=キーワード`</code> を取得し、<code>User</code> の配列を返します。キーワードは <code>encodeURIComponent</code> で変換します。配列でないときと、<code>User</code> でない要素があるときは、<code>"ユーザーの形が違います"</code> の Error を投げます。</li>
+        <li><code>createPost(post)</code>：<code>`${API_URL}/posts`</code> に、<code>post</code> を JSON で POST します。設定は問13 と同じ 3 つです。<code>res.ok</code> が <code>false</code> なら <code>"HTTP 400"</code> の形の Error を投げます。<code>ok</code> なら、作られた投稿の id（応答の <code>{ id: number }</code> の <code>id</code>）を返します。応答に数値の <code>id</code> がなければ、<code>"投稿の形が違います"</code> の Error を投げます。</li>
+      </ol>
+      <div class="lbl-block">
+        <span class="lbl">テストで確かめる値</span>
+        <dl class="eg">
+          <div><dt>サーバーが本文 <code>{"a":1}</code> を返したとき、<code>getJson(`${API_URL}/a`)</code></dt><dd class="r"><code>{ a: 1 }</code> で解決する</dd><dd class="c"><code>fetch</code> に URL だけを渡す</dd></div>
+          <div><dt>サーバーが 404 を返したとき、<code>getJson(`${API_URL}/a`)</code></dt><dd class="r"><code>"HTTP 404"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 500 を返したとき、<code>getJson(`${API_URL}/a`)</code></dt><dd class="r"><code>"HTTP 500"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+          <div><dt><code>isUser({ id: 1, name: "山田" })</code></dt><dd class="r"><code>true</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUser({ id: "1", name: "山田" })</code></dt><dd class="r"><code>false</code></dd><dd class="c">id が文字列</dd></div>
+          <div><dt><code>isUser({ id: 1 })</code></dt><dd class="r"><code>false</code></dd><dd class="c">name がない</dd></div>
+          <div><dt><code>isUser(null)</code></dt><dd class="r"><code>false</code></dd><dd class="c"></dd></div>
+          <div><dt><code>isUser("山田")</code></dt><dd class="r"><code>false</code></dd><dd class="c">オブジェクトではない</dd></div>
+          <div><dt>サーバーが本文 <code>{"id":1,"name":"山田"}</code> を返したとき、<code>getUser(1)</code></dt><dd class="r"><code>{ id: 1, name: "山田" }</code> で解決する</dd><dd class="c"><code>fetch</code> に <code>`${API_URL}/users/1`</code> だけを渡す</dd></div>
+          <div><dt>サーバーが本文 <code>{"id":1}</code> を返したとき、<code>getUser(1)</code></dt><dd class="r"><code>"ユーザーの形が違います"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 404 を返したとき、<code>getUser(1)</code></dt><dd class="r"><code>"HTTP 404"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが本文 <code>[{"id":1,"name":"山田"}]</code> を返したとき、<code>searchUsers("山田 太郎")</code></dt><dd class="r"><code>[{ id: 1, name: "山田" }]</code> で解決する</dd><dd class="c"><code>fetch</code> に <code>`${API_URL}/users?q=%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E`</code> だけを渡す</dd></div>
+          <div><dt>サーバーが本文 <code>{"id":1,"name":"山田"}</code> を返したとき、<code>searchUsers("a")</code></dt><dd class="r"><code>"ユーザーの形が違います"</code> の Error で失敗する</dd><dd class="c">配列ではない</dd></div>
+          <div><dt>サーバーが本文 <code>[{"id":1,"name":"山田"},{"id":2}]</code> を返したとき、<code>searchUsers("a")</code></dt><dd class="r"><code>"ユーザーの形が違います"</code> の Error で失敗する</dd><dd class="c">2 つ目に name がない</dd></div>
+          <div><dt>サーバーが 201 で本文 <code>{"id":10,"userId":1,"title":"はじめての投稿"}</code> を返したとき、<code>createPost(post)</code></dt><dd class="r"><code>10</code> で解決する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 400 を返したとき、<code>createPost(post)</code></dt><dd class="r"><code>"HTTP 400"</code> の Error で失敗する</dd><dd class="c"></dd></div>
+          <div><dt>サーバーが 200 で本文 <code>{"ok":true}</code> を返したとき、<code>createPost(post)</code></dt><dd class="r"><code>"投稿の形が違います"</code> の Error で失敗する</dd><dd class="c">id がない</dd></div>
+        </dl>
+        <ul>
+          <li><code>createPost</code> の例の <code>post</code> は、<code>{ userId: 1, title: "はじめての投稿" }</code> です。</li>
+          <li><code>createPost</code> の 1 つ目の例で、<code>fetch</code> に <code>`${API_URL}/posts`</code> と <code>{ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(post) }</code> を渡して呼んだことも確かめます。</li>
+        </ul>
+        <p class="memo"><b>型</b><code>getJson</code> の戻り値が <code>Promise&lt;unknown&gt;</code>、<code>isUser</code> が <code>User</code> に絞り込む型ガード関数、<code>getUser</code> の戻り値が <code>Promise&lt;User&gt;</code>、<code>searchUsers</code> の戻り値が <code>Promise&lt;User[]&gt;</code> であることを確かめます。<code>createPost</code> は、引数が <code>NewPost</code>、戻り値が <code>Promise&lt;number&gt;</code> であることを確かめます。</p>
+      </div>
+    </div>
+    <div class="hints">
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// 非同期の関数 getJson を作る。文字列 url を受け取り、型の分からない値で解決する Promise を返す
+export function getJson() {
+  // 応答 res を作り、url を fetch して、その結果を待って入れる
+  // もし res が ok でないなら
+  //   res のステータスコードを埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // data を返す
+}
+
+// 関数 isUser を作る。型の分からない value を受け取り、true か false を返す。true のときは value を User に絞り込む
+export function isUser() {
+  // value の型を表す文字列が "object" と等しい、かつ value が null でない、かつ value に "id" というキーがある、かつ value の id の型が数値、かつ value に "name" というキーがある、かつ value の name の型が文字列かどうか（true か false）を返す
+}
+
+// 非同期の関数 getUser を作る。数値 id を受け取り、User で解決する Promise を返す
+export function getUser() {
+  // 値 data を作り、API_URL と id を埋め込んだ URL（`${API_URL}/users/${id}`）を getJson に渡して呼んだ結果を待って入れる
+  // もし isUser に data を渡して呼んだ結果が false なら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}
+
+// 非同期の関数 searchUsers を作る。文字列 keyword を受け取り、User の配列で解決する Promise を返す
+export function searchUsers() {
+  // 値 data を作り、API_URL と、keyword を URL に入れられる形に変換したものを埋め込んだ URL を getJson に渡して呼んだ結果を待って入れる
+  // もし data が配列でない、または data の要素がすべて isUser で true になるわけではないなら
+  //   "ユーザーの形が違います" というメッセージのエラーを投げる
+  // data を返す
+}
+
+// 非同期の関数 createPost を作る。NewPost の post を受け取り、数値で解決する Promise を返す
+export function createPost() {
+  // 応答 res を作り、API_URL を埋め込んだ URL（`${API_URL}/posts`）に、次の設定で fetch して、その結果を待って入れる
+  //   method は "POST"
+  //   headers は、"Content-Type" が "application/json" のオブジェクト
+  //   body は、post を JSON の文字列にしたもの
+  // もし res が ok でないなら
+  //   res のステータスコードを埋め込んだ「HTTP ◯」というメッセージのエラーを投げる
+  // 値 data を作り、型を unknown にして、res の本文を JSON として読んだ結果を待って入れる
+  // もし data の型を表す文字列が "object" と等しくない、または data が null と等しい、または data に "id" というキーがない、または data の id の型が数値でないなら
+  //   "投稿の形が違います" というメッセージのエラーを投げる
+  // data の id を返す
+}</code></pre></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p><code>getJson</code> は問5 と同じです。<code>isUser</code> は、問6 のファイルに定義済みの <code>isUser</code> と同じ形です（05章 q09 問7）。<code>getUser</code> と <code>searchUsers</code> は、<code>getJson</code> を <code>await</code> で待つと、<code>ok</code> の確かめを書き直さずに済みます。<code>getJson</code> の戻り値が <code>Promise&lt;unknown&gt;</code> なので、<code>data</code> の型は自然に <code>unknown</code> になります。後ろは問6・問11 と同じ確かめ方です。<code>createPost</code> の前半は問14 と同じです。<code>id</code> の確かめは、<code>typeof</code>・<code>=== null</code>・<code>in</code>（04章 q05 問16）を <code>||</code> でつなぎます。エラーを投げる <code>if</code> の後ろでは <code>data.id</code> が <code>number</code> に絞り込まれているので、そのまま返せます。</p></details>
+    </div>
+  </section>
+</section>
