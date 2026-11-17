@@ -1,4 +1,7 @@
+import { type ReactElement, createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { VscodeHandoffHint } from "../components/learner/VscodeHandoffHint";
 
 const mocks = vi.hoisted(() => ({ toast: vi.fn(), dismiss: vi.fn(), apiFetch: vi.fn() }));
 vi.mock("sonner", () => ({ toast: Object.assign(mocks.toast, { dismiss: mocks.dismiss }) }));
@@ -64,12 +67,29 @@ describe("VS Code への引き継ぎ", () => {
     expect(mocks.toast).toHaveBeenCalledWith(
       "VS Code で課題を開きました",
       expect.objectContaining({
+        description: createElement(VscodeHandoffHint),
         duration: 15_000,
         cancel: { label: "閉じる", onClick: expect.any(Function) },
+        classNames: {
+          toast: "flex-wrap",
+          content: "basis-full!",
+          cancelButton: "ml-auto!",
+        },
       }),
     );
     expect(storage.setItem).toHaveBeenCalledWith(key, "1");
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("案内の説明に進め方の1行だけを描画する", async () => {
+    await openInVscode({ taskId: "task" });
+    visibility("hidden");
+    visibility("visible");
+    const options = mocks.toast.mock.calls[0]?.[1] as { description: ReactElement };
+    const html = renderToStaticMarkup(options.description);
+    expect(html).toContain("右側の『進め方』から始めましょう");
+    expect(html).not.toContain("課題文が出ないときは");
+    expect(html).not.toContain("<ol");
   });
 
   it("遅れて離れたら入手の案内を消し、visibilitychange で戻ったとき案内する", async () => {
