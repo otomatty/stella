@@ -1,0 +1,48 @@
+{
+  "id": "devlab-ts-ch00/u00-setup/q01",
+  "title": "00章 q01 環境の確認の問題",
+  "kind": "basic",
+  "pattern": "devlab-ts-setup",
+  "skills": {
+    "uses": [],
+    "assesses": [
+      "devlab-ts-setup"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-hello",
+      "title": "環境の確認（練習）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 15,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

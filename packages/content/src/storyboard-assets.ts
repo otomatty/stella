@@ -126,7 +126,12 @@ export function storyboardAssets(
       if (!ref.startsWith("clip:")) continue;
       const parsed = clipReference(ref.slice(5));
       if (parsed?.id !== id || !clip.marks[parsed.mark]) continue;
-      images[ref] = { width: clip.width, height: clip.height, regions: clip.regions, url: "" };
+      images[ref] = {
+        width: clip.width,
+        height: clip.height,
+        regions: clip.regions,
+        url: "",
+      };
       clips[ref] = clip;
       hashes[ref] = digest(bytes, Buffer.from(videoContentHash(video, options.freshVideoHashes)));
     }

@@ -1,3 +1,4 @@
+import type { CodeState } from "../../src/scene-code.js";
 import { existsSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { speechOf } from "../../src/narration.js";
@@ -14,7 +15,7 @@ import {
 } from "../../src/video-storyboard.js";
 export interface SceneCacheInput<
   S extends Scene | TextScene = Scene | TextScene,
-  T = BoardState | ViewState,
+  T = BoardState | ViewState | CodeState,
 > {
   version: number;
   board: S extends TextScene ? undefined : Board;
@@ -77,7 +78,6 @@ export function sceneVideoSourceHash(input: {
         ...storyboard.scenes.map((s) =>
           s.beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings)),
         ),
-        [speechOf({ text: input.takeaway.trim() }, readings)],
       ],
       timing: SCENE_TIMING,
     }),

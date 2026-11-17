@@ -159,7 +159,7 @@ export function viewHtml(input: SceneHtmlInput): string {
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
   const heading = (scene: typeof input.scene | undefined) =>
     scene
-      ? `<span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "まとめ" : ""}</span> ${safe(scene.title)}`
+      ? `<span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "問題へ" : ""}</span> ${safe(scene.title)}`
       : "";
   const sameTitle =
     input.previous?.role === input.scene.role &&

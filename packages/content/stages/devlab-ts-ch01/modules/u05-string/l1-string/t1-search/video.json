@@ -1,0 +1,248 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "探す場所と、真偽か位置かに合わせて文字列の操作を選べる。",
+    "stuck": "先頭の一致と途中の一致、位置の 0 と見つからない -1 を混同する。",
+    "points": [
+      "startsWith と endsWith で、先頭と末尾が一致するか調べる。",
+      "indexOf と lastIndexOf で、最初と最後に見つかった位置を調べる。",
+      "位置は 0 から数え、見つからないときは -1 になる。"
+    ],
+    "leaveOut": [
+      "slice と charAt による取り出し",
+      "大文字小文字のそろえ方",
+      "問6・問7・問11・問16 の答えのコード"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "注文番号を見分ける",
+      "code": ["// 注文番号は ORD-42-JP", "// 先頭と末尾が決まりに合う？"],
+      "beats": [
+        {
+          "say": "注文番号が決まりに合うか、どう調べますか。",
+          "type": [0]
+        },
+        {
+          "say": "先頭と末尾を、コードで確かめてみましょう。",
+          "type": [1]
+        }
+      ]
+    },
+    {
+      "id": "ends",
+      "kind": "code",
+      "role": "point",
+      "title": "先頭と末尾を調べる",
+      "code": [
+        "// 注文番号 order を作り、\"ORD-42-JP\" を入れる",
+        "const order = \"ORD-42-JP\";",
+        "// head を作り、order が \"ORD-\" で始まるかを入れる",
+        "const head = order.startsWith(\"ORD-\");",
+        "// tail を作り、order が \"-JP\" で終わるかを入れる",
+        "const tail = order.endsWith(\"-JP\");"
+      ],
+      "beats": [
+        {
+          "say": "メソッドは、値に対する操作の名前です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "startsWith は、指定した文字列で始まるか調べます。",
+          "speech": "スターツウィズは、指定した文字列で始まるか調べます。",
+          "type": [2, 3]
+        },
+        {
+          "say": "結果は、真か偽かを表す値です。",
+          "calc": {
+            "on": "head",
+            "expr": "\"ORD-42-JP\".startsWith(\"ORD-\")",
+            "result": "true"
+          }
+        },
+        {
+          "say": "endsWith は、指定した文字列で終わるか調べます。",
+          "speech": "エンズウィズは、指定した文字列で終わるか調べます。",
+          "type": [4, 5]
+        },
+        {
+          "say": "末尾が一致するので、こちらも真になります。",
+          "calc": {
+            "on": "tail",
+            "expr": "\"ORD-42-JP\".endsWith(\"-JP\")",
+            "result": "true"
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["head", "tail"]
+      },
+      "point": 1
+    },
+    {
+      "id": "positions",
+      "kind": "code",
+      "role": "point",
+      "title": "最初と最後の位置",
+      "code": [
+        "// 棚番号 shelf を作り、\"A-B-C\" を入れる",
+        "const shelf = \"A-B-C\";",
+        "// first を作り、最初の \"-\" の位置を入れる",
+        "const first = shelf.indexOf(\"-\");",
+        "// last を作り、最後の \"-\" の位置を入れる",
+        "const last = shelf.lastIndexOf(\"-\");"
+      ],
+      "beats": [
+        {
+          "say": "棚番号の区切りが、どこにあるか調べます。",
+          "type": [0, 1]
+        },
+        {
+          "say": "indexOf は、最初に見つかった位置を返します。",
+          "speech": "インデックスオブは、最初に見つかった位置を返します。",
+          "type": [2, 3]
+        },
+        {
+          "say": "文字の位置は、先頭をゼロとして数えます。",
+          "set": {
+            "first": "1"
+          },
+          "focus": [3]
+        },
+        {
+          "say": "lastIndexOf は、最後に見つかった位置を返します。",
+          "speech": "ラストインデックスオブは、最後に見つかった位置を返します。",
+          "type": [4, 5]
+        },
+        {
+          "say": "後ろの区切りは、位置が三です。",
+          "calc": {
+            "on": "last",
+            "expr": "\"A-B-C\".lastIndexOf(\"-\")",
+            "result": "3"
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["first", "last"]
+      },
+      "point": 2
+    },
+    {
+      "id": "missing",
+      "kind": "code",
+      "role": "point",
+      "title": "ゼロとマイナス一は違う",
+      "code": [
+        "// 棚番号 shelf を作り、\"A-B\" を入れる",
+        "const shelf = \"A-B\";",
+        "// found を作り、\"A\" が見つかる位置を入れる",
+        "const found = shelf.indexOf(\"A\");",
+        "// missing を作り、\"#\" が見つかる位置を入れる",
+        "const missing = shelf.indexOf(\"#\");",
+        "// ゼロを見つからない印だと考えるのは誤り",
+        "// found は 0 だから、見つからない？"
+      ],
+      "beats": [
+        {
+          "say": "文字を箱に並べ、位置の番号を付けてみます。",
+          "type": [0, 1],
+          "set": {
+            "位置0": "A"
+          }
+        },
+        {
+          "say": "区切りが一、その次の文字が二です。",
+          "set": {
+            "位置1": "-",
+            "位置2": "B"
+          }
+        },
+        {
+          "say": "先頭が見つかったとき、返る位置はゼロです。",
+          "type": [2, 3],
+          "set": {
+            "found": "0"
+          }
+        },
+        {
+          "say": "見つからないときは、マイナス一になります。",
+          "type": [4, 5],
+          "set": {
+            "missing": "-1"
+          }
+        },
+        {
+          "say": "ゼロを見つからない印にしないでください。",
+          "type": [6, 7],
+          "mark": [
+            {
+              "line": 7,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "最後から探す場合も、見つからなければマイナス一です。",
+          "part": {
+            "line": 5,
+            "text": "indexOf"
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["位置0", "位置1", "位置2", "found", "missing"]
+      },
+      "point": 3
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "問6 で先頭を調べる",
+      "code": ["export function isHashtag(text: string): boolean {", "  // ここに書く", "}"],
+      "beats": [
+        {
+          "say": "問六では、先頭がシャープかを調べる関数を書きます。",
+          "type": [0, 1, 2]
+        },
+        {
+          "say": "先頭がシャープなら、真を返します。",
+          "row": [0]
+        },
+        {
+          "say": "末尾だけがシャープなら、偽を返します。",
+          "row": [1]
+        },
+        {
+          "say": "探す場所と、真偽か位置かで書き方を選びます。",
+          "focus": [0]
+        },
+        {
+          "say": "startsWith を使って、書いてみましょう。",
+          "speech": "スターツウィズを使って、書いてみましょう。",
+          "focus": [1]
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "isHashtag(\"#agora\")",
+            "result": "true"
+          },
+          {
+            "call": "isHashtag(\"agora#\")",
+            "result": "false"
+          }
+        ]
+      }
+    }
+  ]
+}

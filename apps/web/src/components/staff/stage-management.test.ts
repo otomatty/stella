@@ -213,7 +213,7 @@ describe("staffMapContents", () => {
     extra("python-basics", "Python", "node-api-basics", "Python 入門"),
     extra("python-z", "Python", "python-basics", "Z 続編"),
     extra("devops", "DevOps", "python-basics"),
-    extra("devlab-ts-prework", "開発ラボG"),
+    extra("devlab-ts-ch00", "開発ラボG"),
     extra("aws", "AWS資格", "dev-env-basics"),
     extra("archived", "C#", undefined),
   ];

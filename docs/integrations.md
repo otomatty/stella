@@ -121,7 +121,7 @@ PUT と GET の応答は、下の本文と同じ形 (省略した項目は `null
 {
   "stages": [
     {
-      "slug": "devlab-ts-prework",
+      "slug": "devlab-ts-ch01",
       "due_at": "2026-12-10T09:00:00+09:00",
       "message": "期限までに事前課題に取り組んでください。",
       "exempt": true
@@ -261,7 +261,7 @@ staff のユーザー管理・成績台帳・割り当て一覧は `groupId` ク
     "email": "applicant@example.test", "displayName": "応募者の例",
     "lastActiveDate": "2026-11-16",
     "stages": [{
-      "slug": "devlab-ts-prework", "status": "started",
+      "slug": "devlab-ts-ch01", "status": "started",
       "startedAt": "2026-11-01T00:00:00.000Z", "clearedAt": null,
       "progressUrl": "/task-manual-completion?userId=sample-profile&stageId=sample-stage",
       "units": [{ "id": "sample-unit", "title": "はじめの単元", "tasks": [{

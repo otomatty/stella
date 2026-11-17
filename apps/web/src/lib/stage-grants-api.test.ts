@@ -5,7 +5,9 @@ vi.mock("./api-client", () => ({
   apiFetch: (...args: unknown[]) => apiFetch(...args),
 }));
 
-const { listStageGrantLearners, updateStageGrants } = await import("./stage-grants-api");
+const { listStageGrantLearners, listStageGrantDescendants, updateStageGrants } = await import(
+  "./stage-grants-api"
+);
 
 beforeEach(() => apiFetch.mockReset());
 
@@ -73,10 +75,35 @@ describe("updateStageGrants", () => {
       stage_id: "stage id",
       counts: { learners: 2, assigned: 1, unassigned: 1, exempted: 0 },
       ancestor_grants: [],
+      descendant_grants: [],
+      descendant_removals: [],
     });
     expect(apiFetch).toHaveBeenCalledWith(`/api/stage-grants/${encodeURIComponent("stage id")}`, {
       method: "PATCH",
       body: { add: ["a"], remove: ["b"] },
     });
+  });
+});
+
+it("続きの一覧を中断可能なリクエストで取得する", async () => {
+  const stages = [{ id: "ch1", slug: "ch1", title: "第1章" }];
+  apiFetch.mockResolvedValueOnce({ stages });
+  const signal = new AbortController().signal;
+  await expect(listStageGrantDescendants("stage id", signal)).resolves.toEqual({ stages });
+  expect(apiFetch).toHaveBeenCalledWith("/api/stage-grants/stage%20id/descendants", { signal });
+});
+
+it.each([true, false])("descendants=%s を送り、続きの変更を返す", async (descendants) => {
+  const changes = {
+    descendant_grants: [{ stage_id: "ch1", profile_ids: ["a"] }],
+    descendant_removals: [{ stage_id: "ch2", profile_ids: ["b"] }],
+  };
+  apiFetch.mockResolvedValueOnce(changes);
+  await expect(
+    updateStageGrants("stage id", { add: ["a"], remove: ["b"], descendants }),
+  ).resolves.toMatchObject(changes);
+  expect(apiFetch).toHaveBeenCalledWith("/api/stage-grants/stage%20id", {
+    method: "PATCH",
+    body: { add: ["a"], remove: ["b"], descendants },
   });
 });

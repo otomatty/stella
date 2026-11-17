@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u05-string@3",
+  "contentHash": "560bf747ce29827b9b7218e2c218b155b7f2ecce4914745c12d8020fffa5feda",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-string/doc.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/knowledge.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t1-search/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t2-pick/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t3-tidy-replace/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

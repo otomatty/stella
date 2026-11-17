@@ -1,3 +1,4 @@
+import { codeFontCss } from "./lib/scene-code-html.js";
 import { createHash } from "node:crypto";
 import { storyboardAssets, extractClipFrames } from "./lib/storyboard-assets.js";
 /** 場面ごとの動画。CLI とデプロイの動画生成で共用する。 */
@@ -87,7 +88,10 @@ export function argumentsOf(args: string[]) {
       const value = args[++i];
       if (!value || value.startsWith("--") || value.split(",").some((id) => !id.trim()))
         throw new Error("--refresh-audio にカンマ区切りの場面のidを指定してください");
-      refreshAudio.push(...value.split(",").map((id) => id.trim()));
+      const ids = value.split(",").map((id) => id.trim());
+      if (ids.includes("summary"))
+        throw new Error("summary の場面は廃止されました。--refresh-audio には指定できません");
+      refreshAudio.push(...ids);
     } else if (a === "--tts") {
       const name = args[++i];
       if (!["gemini", "openjtalk", "fake"].includes(name))
@@ -182,6 +186,8 @@ function sceneGenerationCode(): Record<string, string> {
     "./lib/scene-cache.ts",
     "./lib/scene-html.ts",
     "./lib/scene-view-html.ts",
+    "./lib/scene-code-html.ts",
+    "../src/scene-code.ts",
     "./lib/scene-encode.ts",
     "./lib/storyboard-assets.ts",
     "./lib/ffmpeg.ts",
@@ -201,7 +207,7 @@ function sceneGenerationCode(): Record<string, string> {
       files.map((file) => [file, readFileSync(new URL(file, import.meta.url), "utf8")]),
     ),
     // フォントの実体も含める。インストール先の絶対パスは含めない。
-    font: sceneFontCss.replace(
+    font: (sceneFontCss + codeFontCss).replace(
       /url\(([^)]+)\)/g,
       (_match, url: string) =>
         `url(${createHash("sha256")
@@ -289,7 +295,9 @@ export async function buildSceneTopic(
                 b.clip ? [`clip:${b.clip}`] : b.image ? [b.image] : [],
               ),
             ]
-          : boards[scene.board].nodes.flatMap((n) => (n.art ? [`art:${n.art}`] : [])),
+          : scene.kind === "code"
+            ? []
+            : boards[scene.board].nodes.flatMap((n) => (n.art ? [`art:${n.art}`] : [])),
       );
       const previous = states[i - 1];
       if (scene.kind === "view" && previous?.kind === "view") refs.add(previous.end.image);
@@ -299,14 +307,36 @@ export async function buildSceneTopic(
       };
     };
     const stillOverflows = new Set<string>();
-    const load = async (i: number) => {
+    const boundaryFrames = new Map<number, string>();
+    const load = async (i: number): Promise<string> => {
       const { scene, timing, sourceIndex } = sequence[i];
+      let previousFrame: string | undefined;
+      if (
+        i > 0 &&
+        scene.kind !== "text" &&
+        (scene.kind === "code" || sequence[i - 1].scene.kind === "code")
+      ) {
+        previousFrame = boundaryFrames.get(i);
+        if (!previousFrame) {
+          await load(i - 1);
+          await page.evaluate(
+            (t) => (window as unknown as ScenePageWindow).__setTime(t),
+            sequence[i - 1].timing.duration - 1 / 30,
+          );
+          previousFrame = `data:image/png;base64,${(await page.screenshot()).toString("base64")}`;
+          boundaryFrames.set(i, previousFrame);
+        }
+      }
       const html =
         scene.kind === "text"
           ? textSceneHtml(scene)
           : sceneHtml({
-              board: scene.kind === "view" ? { cols: 1, rows: 1, nodes: [] } : boards[scene.board],
+              board:
+                scene.kind === "view" || scene.kind === "code"
+                  ? { cols: 1, rows: 1, nodes: [] }
+                  : boards[scene.board],
               scene,
+              previousFrame,
               state: states[sourceIndex],
               images: sceneAssets(sourceIndex).images,
               previousView:
@@ -418,9 +448,9 @@ export async function buildSceneTopic(
       assets.context.clips,
       {
         title: pcms[0][0].length / AUDIO_RATE,
-        summary: pcms[pcms.length - 1][0].length / AUDIO_RATE,
       },
     );
+    boundaryFrames.clear();
     const clips: string[] = [],
       reports: unknown[] = [];
     for (let i = 0; i < sequence.length; i++) {
@@ -437,7 +467,7 @@ export async function buildSceneTopic(
         board:
           scene.kind === "text"
             ? undefined
-            : scene.kind === "view"
+            : scene.kind === "view" || scene.kind === "code"
               ? { cols: 1, rows: 1, nodes: [] }
               : boards[scene.board],
         start: scene.kind === "text" ? undefined : states[sourceIndex].start,
@@ -488,10 +518,10 @@ export async function buildSceneTopic(
           ...(sfxWav ? { sfxWav } : {}),
         });
         const pending = join(work, `clip-${i}.mp4`);
-        const shots = await encodeScene(page, timing.duration, audio, pending);
+        const shots = await encodeScene(page, timing.duration, audio, pending, timing.fadeOut);
         await page.evaluate(
           (t) => (window as unknown as ScenePageWindow).__setTime(t),
-          timing.duration,
+          timing.fadeOut?.start ?? timing.duration,
         );
         const poster = join(work, `poster-${i}.png`);
         await page.screenshot({ path: poster });
@@ -565,7 +595,7 @@ export async function buildSceneVideos(args: string[]) {
         );
         if (!storyboard)
           throw new Error(`絵コンテの検査エラー: ${issues.map((i) => i.message).join(" / ")}`);
-        return ["title", ...storyboard.scenes.map((scene) => scene.id), "summary"];
+        return ["title", ...storyboard.scenes.map((scene) => scene.id)];
       }),
     );
     for (const id of options.refreshAudio)

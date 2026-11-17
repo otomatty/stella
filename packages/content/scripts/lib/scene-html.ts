@@ -1,3 +1,5 @@
+import { codeHtml } from "./scene-code-html.js";
+import type { CodeSceneState } from "../../src/scene-code.js";
 import { viewHtml } from "./scene-view-html.js";
 import type { ViewImage } from "../../src/scene-view.js";
 /** 時刻から全属性を再計算する場面。時計・CSS transition・外部通信を使わない。 */
@@ -46,8 +48,10 @@ export interface SceneHtmlInput {
   board: Board;
   images?: Record<string, ViewImage>;
   previousView?: ViewSceneState;
+  /** code の前後だけ、直前の場面の最終コマを重ねてクロスフェードする。 */
+  previousFrame?: string;
   scene: Scene;
-  state: SceneState | ViewSceneState;
+  state: SceneState | ViewSceneState | CodeSceneState;
   timing: SceneTimeline;
   index: number;
   total: number;
@@ -70,39 +74,27 @@ function textRuntime(scene: TextScene) {
   const win = window as unknown as ScenePageWindow;
   const content = document.getElementById("text-scene") as HTMLElement;
   const white = document.getElementById("white") as HTMLElement;
-  const summary = scene.id === "summary";
-  const fadeOut = summary ? 0.6 : 0.4;
+  const fadeOut = 0.4;
   const clamp = (value: number) => Math.max(0, Math.min(1, value));
   win.__busyRanges = [
     [0, 0.4],
     [scene.duration - fadeOut, scene.duration],
   ];
   win.__setTime = async (time) => {
-    content.style.opacity = String(
-      clamp(Math.min(time / 0.4, summary ? 1 : (scene.duration - time) / fadeOut)),
-    );
-    white.style.opacity = String(
-      clamp(summary ? (time - (scene.duration - fadeOut)) / fadeOut : 1 - time / 0.4),
-    );
+    content.style.opacity = String(clamp(Math.min(time / 0.4, (scene.duration - time) / fadeOut)));
+    white.style.opacity = String(clamp(1 - time / 0.4));
   };
   win.__overflows = () => {
-    if (summary) {
-      const text = content.querySelector("h1") as HTMLElement;
-      const lineHeight = Number.parseFloat(getComputedStyle(text).lineHeight);
-      return text.scrollHeight > lineHeight * 3 + 1 ? ["まとめの文が3行に収まりません"] : [];
-    }
     return content.scrollHeight > 900 ? ["タイトルが画面に収まりません"] : [];
   };
   win.__setTime(0);
 }
-/** タイトルとまとめは中央の文を読むため、音声があっても字幕を重ねない。 */
+/** タイトルは中央の文を読むため、音声があっても字幕を重ねない。 */
 export function textSceneHtml(scene: TextScene): string {
   const data = JSON.stringify(scene).replace(/</g, "\\u003c");
-  const summary = scene.id === "summary";
   return `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
   *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}
   body{display:flex;align-items:center;justify-content:center}#text-scene{width:1680px;text-align:center;overflow-wrap:anywhere;opacity:0}#text-scene header{font-size:32px;color:#5C5C66;margin-bottom:24px}#text-scene h1{font-size:80px;font-weight:700;line-height:1.4;margin:0}#accent{width:96px;height:6px;background:#E62F9A;margin:40px auto 0}#white{position:absolute;inset:0;background:white;pointer-events:none}
-  ${summary ? "#text-scene{width:1500px;max-width:1500px;word-break:normal;line-break:strict;text-wrap:balance}#text-scene h1{font-size:56px;line-height:1.5}" : ""}
   </style><main id="text-scene">${scene.header ? `<header>${escapeHtml(scene.header)}</header>` : ""}<h1>${escapeHtml(scene.title)}</h1><div id="accent"></div></main><div id="white"></div><script>(${textRuntime.toString()})(${data});</script></html>`;
 }
 function runtime(
@@ -406,8 +398,29 @@ function mark(): string {
   return `<g class="mark">${(["check", "cross", "question", "redo"] as const).map((kind, i) => `<g data-kind="${kind}"><circle r="28" fill="${["#16A34A", "#E5342B", "#5C5C66", "#E62F9A"][i]}" stroke="white" stroke-width="3"/><g fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${symbols[kind]}</g></g>`).join("")}</g>`;
 }
 export function sceneHtml(input: SceneHtmlInput): string {
-  if (input.scene.kind === "view") return viewHtml(input);
-  return boardHtml(input as BoardHtmlInput);
+  const html =
+    input.scene.kind === "view"
+      ? viewHtml(input)
+      : input.scene.kind === "code"
+        ? codeHtml(input)
+        : boardHtml(input as BoardHtmlInput);
+  if (!input.previousFrame) return html;
+  const overlay = `<img id="previous-code-frame" src="${escapeHtml(input.previousFrame)}" style="position:absolute;inset:0;width:1920px;height:1080px;z-index:3;pointer-events:none">`;
+  return html
+    .replace("<script>", `${overlay}<script>`)
+    .replace("</html>", `<script>(${codeTransitionRuntime.toString()})();</script></html>`);
+}
+/** イラストと同じ0.4秒のクロスフェード。既存のview/board同士には適用しない。 */
+function codeTransitionRuntime() {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const overlay = document.getElementById("previous-code-frame") as HTMLImageElement;
+  win.__busyRanges.push([0, 0.4]);
+  win.__setTime = async (time) => {
+    await setTime(time);
+    overlay.style.opacity = String(Math.max(0, Math.min(1, 1 - time / 0.4)));
+  };
+  win.__setTime(0);
 }
 function boardHtml(input: BoardHtmlInput): string {
   const toneColor = (tone?: "blue" | "violet") =>
@@ -443,7 +456,7 @@ function boardHtml(input: BoardHtmlInput): string {
     .join("");
   const heading = (s: Scene | undefined) =>
     s
-      ? `<span>${s.role === "point" ? `要点 ${s.point}` : s.role === "recap" ? "まとめ" : ""}</span> ${escapeHtml(s.title)}`
+      ? `<span>${s.role === "point" ? `要点 ${s.point}` : s.role === "recap" ? "問題へ" : ""}</span> ${escapeHtml(s.title)}`
       : "";
   const { previous: _previous, ...renderInput } = input;
   const sameTitle =

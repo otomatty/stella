@@ -1,0 +1,26 @@
+{
+  "format": 2,
+  "title": "開発ラボG 第1部 01章 値・型・変数",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "値・型・変数の書き方を手元で確かめます。問題を 1 問ずつ確認して提出します。",
+  "header": "開発ラボG 事前課題 第1部",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["devlab-ts-ch00"],
+  "plannedHours": 16.0,
+  "environment": "ts-test-01",
+  "canDo": "値・型・変数を使い、テストと型の確認が通るコードを書けます。",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "u01-let-const": "q01 letとconst",
+    "u02-type-annotation": "q02 型注釈",
+    "u03-type-inference": "q03 型推論",
+    "u04-number": "q04 number型",
+    "u05-string": "q05 string型",
+    "u06-boolean": "q06 boolean型",
+    "u07-literal-types": "q07 リテラル型",
+    "u08-remove-any": "q08 any をなくす",
+    "u99-problems": "01章の問題"
+  }
+}

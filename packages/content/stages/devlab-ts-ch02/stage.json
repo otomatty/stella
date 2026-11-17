@@ -1,0 +1,18 @@
+{
+  "format": 2,
+  "title": "開発ラボG 第1部 02章 オブジェクト・配列・タプル",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "オブジェクト・配列・タプルの書き方を手元で確かめます。問題を 1 問ずつ確認して提出します。",
+  "header": "開発ラボG 事前課題 第1部",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["devlab-ts-ch01"],
+  "plannedHours": 11.5,
+  "environment": "ts-test-01",
+  "canDo": "オブジェクト・配列・タプルを使い、テストと型の確認が通るコードを書けます。",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "u99-problems": "02章の問題"
+  }
+}

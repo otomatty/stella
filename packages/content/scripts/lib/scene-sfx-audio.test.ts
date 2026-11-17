@@ -27,7 +27,7 @@ it.skipIf(!hasFfmpeg)(
       const cues: SceneSfxCue[] = [
         { kind: "title", at: 0.1 },
         { kind: "switch", at: 1.8 },
-        { kind: "summary", at: 2.5 },
+        { kind: "title", at: 2.5 },
       ];
       const sfxWav = join(root, "sfx.wav");
       writeNarrationWav(

@@ -1,0 +1,243 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "空白と英字をそろえる操作と、一部か全部を置き換える操作を選べる。",
+    "stuck": "trim が途中の空白も消す、replace がすべてを置き換えると思ってしまう。",
+    "points": [
+      "trim と toLowerCase で、前後の空白と英字の大きさをそろえる。",
+      "replaceAll は一致をすべて、文字列を渡した replace は最初だけ置き換える。",
+      "replace に /[0-9]/g を渡すと、数字をすべて置き換えられる。"
+    ],
+    "leaveOut": [
+      "正規表現の詳しい文法",
+      "slice による取り出し",
+      "問9・問10・問18 と応用の答えのコード"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "入力の表記をそろえる",
+      "code": ["// 会員の入力は \"  Sales Desk  \"", "// 前後の空白と英字の大きさをそろえるには？"],
+      "beats": [
+        {
+          "say": "入力された部署名は、表記がばらばらです。",
+          "type": [0]
+        },
+        {
+          "say": "空白や英字を、どうそろえればよいでしょうか。",
+          "type": [1]
+        }
+      ]
+    },
+    {
+      "id": "tidy",
+      "kind": "code",
+      "role": "point",
+      "title": "空白と英字をそろえる",
+      "code": [
+        "// 入力 input を作り、\"  Sales Desk  \" を入れる",
+        "const input = \"  Sales Desk  \";",
+        "// trimmed を作り、input の前後の空白を取って入れる",
+        "const trimmed = input.trim();",
+        "// lower を作り、trimmed を小文字にして入れる",
+        "const lower = trimmed.toLowerCase();"
+      ],
+      "beats": [
+        {
+          "say": "trim は、前後の空白を取り除きます。",
+          "speech": "トリムは、前後の空白を取り除きます。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "途中の空白は、残ったままです。",
+          "calc": {
+            "on": "trimmed",
+            "expr": "input.trim()",
+            "result": "\"Sales Desk\""
+          }
+        },
+        {
+          "say": "toLowerCase は、英字を小文字にします。",
+          "speech": "トゥーローワーケースは、英字を小文字にします。",
+          "type": [4, 5]
+        },
+        {
+          "say": "小文字にそろえた文字列が、新しい箱に入ります。",
+          "calc": {
+            "on": "lower",
+            "expr": "trimmed.toLowerCase()",
+            "result": "\"sales desk\""
+          }
+        },
+        {
+          "say": "元の文字列は、変わりません。",
+          "set": {
+            "input": "\"  Sales Desk  \""
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["input", "trimmed", "lower"]
+      },
+      "point": 1
+    },
+    {
+      "id": "replace",
+      "kind": "code",
+      "role": "point",
+      "title": "最初だけか全部か",
+      "code": [
+        "// 商品コード code を作り、\"A-1-B-2\" を入れる",
+        "const code = \"A-1-B-2\";",
+        "// first を作り、最初の \"-\" を \"\" に変えて入れる",
+        "const first = code.replace(\"-\", \"\");",
+        "// all を作り、すべての \"-\" を \"\" に変えて入れる",
+        "const all = code.replaceAll(\"-\", \"\");",
+        "// replace ですべて消えると考えるのは誤り",
+        "// first は \"A1B2\" になる？"
+      ],
+      "beats": [
+        {
+          "say": "置き換えは、探す文字と代わりの文字を指定します。",
+          "type": [0, 1]
+        },
+        {
+          "say": "replace に文字列を渡すと、最初だけを変えます。",
+          "speech": "リプレイスに文字列を渡すと、最初だけを変えます。",
+          "type": [2, 3]
+        },
+        {
+          "say": "空の文字列に置き換えると、その部分が消えます。",
+          "calc": {
+            "on": "first",
+            "expr": "code.replace(\"-\", \"\")",
+            "result": "\"A1-B-2\""
+          }
+        },
+        {
+          "say": "replaceAll は、見つかったすべてを変えます。",
+          "speech": "リプレイスオールは、見つかったすべてを変えます。",
+          "type": [4, 5],
+          "set": {
+            "all": "\"A1B2\""
+          }
+        },
+        {
+          "say": "最初だけと全部を、取り違えないようにしましょう。",
+          "type": [6, 7],
+          "mark": [
+            {
+              "line": 7,
+              "kind": "cross"
+            }
+          ]
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["first", "all"]
+      },
+      "point": 2
+    },
+    {
+      "id": "digits",
+      "kind": "code",
+      "role": "point",
+      "title": "数字をまとめて探す",
+      "code": [
+        "// 商品コード code を作り、\"A-1-B-2\" を入れる",
+        "const code = \"A-1-B-2\";",
+        "// noDigits を作り、数字をすべて \"\" に変えて入れる",
+        "const noDigits = code.replace(/[0-9]/g, \"\");"
+      ],
+      "beats": [
+        {
+          "say": "正規表現は、探す文字の種類や並びを表す書き方です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "数字をまとめて探す形を、書いてみます。",
+          "type": [2, 3]
+        },
+        {
+          "say": "角かっこのゼロから九は、数字一文字を表します。",
+          "part": {
+            "line": 3,
+            "text": "[0-9]"
+          }
+        },
+        {
+          "say": "末尾のジーで、見つかったものすべてを扱います。",
+          "part": {
+            "line": 3,
+            "text": "g"
+          }
+        },
+        {
+          "say": "数字だけが消え、ハイフンは残ります。",
+          "calc": {
+            "on": "noDigits",
+            "expr": "code.replace(/[0-9]/g, \"\")",
+            "result": "\"A--B-\""
+          }
+        },
+        {
+          "say": "まずは、この形をまねて書ければ十分です。",
+          "focus": [3]
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["noDigits"]
+      },
+      "point": 3
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "問18 で母音を取り除く",
+      "code": ["export function removeVowels(text: string): string {", "  // ここに書く", "}"],
+      "beats": [
+        {
+          "say": "問十八では、英字の母音を取り除く関数を書きます。",
+          "type": [0, 1, 2]
+        },
+        {
+          "say": "この入力では、イーとアイを取り除いて返します。",
+          "row": [0]
+        },
+        {
+          "say": "すべてが母音なら、空の文字列を返します。",
+          "row": [1]
+        },
+        {
+          "say": "探す文字の指定を、数字から母音に変えてみます。",
+          "focus": [0]
+        },
+        {
+          "say": "replace と正規表現を使って、書いてみましょう。",
+          "speech": "リプレイスと正規表現を使って、書いてみましょう。",
+          "focus": [1]
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "removeVowels(\"typescript\")",
+            "result": "\"typscrpt\""
+          },
+          {
+            "call": "removeVowels(\"aeiou\")",
+            "result": "\"\""
+          }
+        ]
+      }
+    }
+  ]
+}

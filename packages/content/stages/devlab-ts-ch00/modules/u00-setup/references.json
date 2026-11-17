@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch00/u00-setup@2",
+  "contentHash": "b1f226a7836aae7a0bc9ac4035c294d27b6161c4799d498dfe63da9e344cf15c",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q01/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の練習の課題。手元の確認と提出のしかたを確かめる",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/doc.md",
+      "sourceRefs": [],
+      "usedFor": "既存の練習課題の進め方・ルールを説明する独自教材。コードは自分で書き、確認して提出する順番を確かめる。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "既存の練習課題の進め方・ルールを説明する独自教材。コードは自分で書き、確認して提出する順番を確かめる。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t1-rules/slides.md",
+      "sourceRefs": [],
+      "usedFor": "既存の練習課題の進め方・ルールを説明する独自教材。コードは自分で書き、確認して提出する順番を確かめる。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u06-boolean@1",
+  "contentHash": "765b392b1159d29924b90af7647c53f0894518a21d9b0175e639542cbdb3cc4f",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-boolean/doc.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+      ],
+      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-boolean/knowledge.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+      ],
+      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-boolean/t1-combine-conditions/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+      ],
+      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

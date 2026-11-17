@@ -25,11 +25,14 @@ function fails(edit: (s: BoardStoryboard) => void, path: string) {
   ).toBe(true);
 }
 describe("絵コンテ", () => {
-  it.each(["title", "summary"])("自動の場面と同じid (%s) を絵コンテに書かせない", (id) => {
-    fails((s) => {
-      s.scenes[0].id = id;
-    }, "scenes[0].id");
-  });
+  it.each(["title", "summary"])(
+    "自動タイトル・廃止した場面のid (%s) を絵コンテに書かせない",
+    (id) => {
+      fails((s) => {
+        s.scenes[0].id = id;
+      }, "scenes[0].id");
+    },
+  );
   it("試作は本文を変えずに検査を通る", () => {
     expect(parseStoryboard(sample).storyboard).toEqual(sample);
   });
@@ -552,4 +555,156 @@ it("同じクリップで始まる次の view は直前の最後のコマを引�
   });
   if (states[2].kind !== "view") throw new Error("view expected");
   expect(states[2].start.lastFrame).toBeUndefined();
+});
+
+describe("コードの場面の検査", () => {
+  const codeVideo = () => ({
+    ...fresh(),
+    scenes: ["hook", "point", "recap"].map((role, i) => ({
+      id: `code-${i}`,
+      kind: "code",
+      role,
+      ...(role === "point" ? { point: 1 } : {}),
+      title: "名前と値",
+      code: ["// 価格を作る", "const price = 1200;"],
+      panel: { kind: "values", items: ["price"] },
+      beats: [{ say: "価格に名前を付けます。", type: [0, 1], set: { price: "1200" } }],
+    })),
+    brief: { ...fresh().brief, points: ["名前と値"] },
+  });
+  it("数直線の6文を受け付け、ほかの場面では数直線の動きを拒む", () => {
+    const json = codeVideo();
+    Object.assign(json.scenes[1], {
+      panel: { kind: "numberLine", from: 18, to: 21, items: ["points"] },
+      beats: [
+        { say: "コードを書きます。", type: [0, 1] },
+        { say: "点を置きます。", plot: { at: 19.8, label: "19.8" } },
+        { say: "間にあります。", range: [19, 20] },
+        { say: "切り捨てます。", snap: { to: 19, label: "切り捨て" } },
+        { say: "二十ではありません。", tick: [{ at: 20, kind: "cross" }] },
+        { say: "値を入れます。", set: { points: "19" } },
+      ],
+    });
+    expect(parseStoryboard(json).storyboard).toBeDefined();
+    for (const kind of ["board", "view"]) {
+      const other = fresh();
+      Object.assign(other.scenes[0], { kind });
+      Object.assign(other.scenes[0].beats[0], {
+        plot: { at: 19.8, label: "19.8" },
+        range: [19, 20],
+        snap: { to: 19, label: "切り捨て" },
+        tick: [{ at: 20, kind: "cross" }],
+      });
+      const { issues } = parseStoryboard(other);
+      for (const key of ["plot", "range", "snap", "tick"])
+        expect(issues.some((i) => i.path === `scenes[0].beats[0].${key}`)).toBe(true);
+    }
+  });
+  it("boardなしで受け付け、既存の状態APIにつなぐ", () => {
+    const json = codeVideo();
+    delete (json as { boards?: unknown }).boards;
+    const { storyboard } = parseStoryboard(json);
+    expect(storyboard).toBeDefined();
+    if (!storyboard) return;
+    expect(storyboardStates(storyboard)[0]).toMatchObject({
+      kind: "code",
+      start: { visible: [], values: {} },
+      end: { visible: [0, 1], values: { price: "1200" } },
+    });
+  });
+  it.each([
+    { code: Array(15).fill("a") },
+    { code: ["あ".repeat(41)] },
+    { code: ["a".repeat(81)] },
+    { code: [null] },
+    { show: "true" },
+    { panel: { kind: "unknown" } },
+    { panel: { kind: "values", items: ["price", "price"] } },
+    { panel: { kind: "calls", rows: [{ call: 1, result: "2" }] } },
+  ])("不正な場面を拒む: %j", (change) => {
+    const json = codeVideo();
+    Object.assign(json.scenes[0], change);
+    expect(parseStoryboard(json).storyboard).toBeUndefined();
+  });
+  it.each([
+    { type: [-1] },
+    { type: [2] },
+    { type: [0.5] },
+    { type: ["1"] },
+    { type: [1, 1] },
+    { type: [] },
+    { focus: [2] },
+    { clear: [2] },
+    { part: { line: 1, text: "missing" } },
+    { part: null },
+    { set: { missing: "1" } },
+    { set: { price: 1 } },
+    { set: {} },
+    { calc: { on: "missing", expr: "1+2", result: "3" } },
+    { calc: { on: "price", result: "3" } },
+    { row: [0] },
+    { mark: [{ line: 1, kind: "question" }] },
+    { mark: [{ line: 2, kind: "cross" }] },
+    { type: [1], clear: [1] },
+    { calc: { on: "price", expr: "1+2", result: "3" }, set: { price: "3" } },
+  ])("不正な動きを拒む: %j", (change) => {
+    const json = codeVideo();
+    Object.assign(json.scenes[0].beats[0], change);
+    expect(parseStoryboard(json).storyboard).toBeUndefined();
+  });
+  it("callsは存在する行だけを出せ、valuesの動きは使えない", () => {
+    const json = codeVideo();
+    Object.assign(json.scenes[0], {
+      panel: { kind: "calls", rows: [{ call: "addTax(980)", result: "1078", note: "税額は98円" }] },
+      beats: [{ say: "結果を確かめます。", row: [0] }],
+    });
+    expect(parseStoryboard(json).storyboard).toBeDefined();
+    Object.assign(json.scenes[0].beats[0], { row: [1] });
+    expect(parseStoryboard(json).storyboard).toBeUndefined();
+    Object.assign(json.scenes[0].beats[0], { row: [0], set: { price: "1" } });
+    expect(parseStoryboard(json).storyboard).toBeUndefined();
+  });
+  it("出ていない行の強調・印と、絵が変わらない文を拒む", () => {
+    for (const action of [
+      { focus: [1] },
+      { part: { line: 1, text: "=" } },
+      { mark: [{ line: 1, kind: "cross" }] },
+      {},
+    ]) {
+      const json = codeVideo();
+      Object.assign(json.scenes[0], { beats: [{ say: "名前を確かめます。", ...action }] });
+      expect(parseStoryboard(json).storyboard).toBeUndefined();
+    }
+    const json = codeVideo();
+    json.scenes[0].beats.push(structuredClone(json.scenes[0].beats[0]));
+    expect(parseStoryboard(json).issues.some((i) => i.message.includes("空振り"))).toBe(true);
+  });
+  it("半角80文字・全角40文字と空行を受け付ける", () => {
+    const json = codeVideo();
+    json.scenes[0].code = ["a".repeat(80), "あ".repeat(40), ""];
+    expect(parseStoryboard(json).storyboard).toBeDefined();
+  });
+});
+
+it("空行だけの打ち込みや、暗くなる行のないfocusは空振りにする", () => {
+  const base = {
+    schema: 1,
+    brief: { goal: "名前を付ける", stuck: "名前と値", points: ["名前"], leaveOut: ["関数"] },
+    scenes: ["hook", "point", "recap"].map((role, i) => ({
+      id: `code-${i}`,
+      kind: "code",
+      role,
+      ...(role === "point" ? { point: 1 } : {}),
+      title: "名前",
+      code: ["const price = 1200;"],
+      beats: [{ say: "名前を付けます。", type: [0] }],
+    })),
+  };
+  expect(parseStoryboard(base).storyboard).toBeDefined();
+  const blank = structuredClone(base);
+  blank.scenes[0].code = [""];
+  expect(parseStoryboard(blank).issues.some((i) => i.message.includes("空振り"))).toBe(true);
+  const focused = structuredClone(base);
+  Object.assign(focused.scenes[0], { show: true, beats: [{ say: "名前を見ます。", focus: [0] }] });
+  expect(parseStoryboard(focused).issues.some((i) => i.message.includes("空振り"))).toBe(true);
 });

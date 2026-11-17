@@ -248,10 +248,24 @@ export function formatRosterChangeSummary(diff: StageRosterDiff): string {
   return `変更 ${count} 件: ${parts.join(" · ")}`;
 }
 
+/** 続きの取得失敗時は、このステージだけ保存できるようにする。 */
+export function stageGrantDescendantSaveState(
+  descendantCount: number | null,
+  failed: boolean,
+  includeDescendants: boolean,
+): { saveDisabled: boolean; descendants: boolean } {
+  return {
+    saveDisabled: descendantCount === null && !failed,
+    descendants: !failed && includeDescendants && (descendantCount ?? 0) > 0,
+  };
+}
+
 export function formatStageGrantSavedMessage(
   stageTitle: string,
   ancestorGrants: readonly { stage_id: string; profile_ids: readonly string[] }[],
   stageTitleOf?: (stageId: string) => string | undefined,
+  descendantGrants: readonly { stage_id: string; profile_ids: readonly string[] }[] = [],
+  descendantRemovals: readonly { stage_id: string; profile_ids: readonly string[] }[] = [],
 ): string {
   const head = `「${stageTitle}」の割り当てを保存しました。`;
   const idsByStage = new Map<string, Set<string>>();
@@ -272,6 +286,15 @@ export function formatStageGrantSavedMessage(
     const name = stageTitleOf?.(stageId) ?? "前の Extra ステージ";
     extras.push(`前のステージ「${name}」にも ${count} 人を割り当てました。`);
   }
+  const addedStages = new Set(
+    descendantGrants.filter((row) => row.profile_ids.length > 0).map((row) => row.stage_id),
+  );
+  const removedStages = new Set(
+    descendantRemovals.filter((row) => row.profile_ids.length > 0).map((row) => row.stage_id),
+  );
+  if (addedStages.size > 0) extras.push(`続きの ${addedStages.size} ステージにも割り当てました。`);
+  if (removedStages.size > 0)
+    extras.push(`続きの ${removedStages.size} ステージからも割り当てを外しました。`);
   if (extras.length === 0) return head;
   return `${head}${extras.join("")}`;
 }

@@ -2,6 +2,8 @@
  * 安定 UUID だけを削除し、CMS の別 ID のステージは残す。
  * seed (`export-seed-sql.ts`) がこの一覧のステージを消す。 */
 export const RETIRED_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
+  // 開発ラボG 第1部は章別の10ステージと任意の発展問題へ分割 (2026-11)。
+  { tenantId: "ses", slug: "devlab-ts-prework" },
   { tenantId: "ses", slug: "it-basics" },
   { tenantId: "ses", slug: "modern-css-basics" },
   { tenantId: "ses", slug: "page-composition-basics" },

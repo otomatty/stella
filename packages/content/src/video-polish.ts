@@ -182,7 +182,9 @@ kinds は上記6種類から選び、reason は日本語にしてください。
           picture:
             scene.kind === "view"
               ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
-              : pictureOf(boards[scene.board], beat as Beat),
+              : scene.kind === "code"
+                ? JSON.stringify(beat)
+                : pictureOf(boards[scene.board], beat as Beat),
         })),
       })),
     },

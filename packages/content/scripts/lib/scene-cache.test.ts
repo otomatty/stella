@@ -50,7 +50,7 @@ describe("場面キャッシュ", () => {
       sceneCacheHash({ ...input, code: { ...input.code, "../src/scene-sfx.ts": "new timbre" } }),
     ).not.toBe(hash);
   });
-  it.each([0, 1])("文字場面%sの読み・音声・声の変更でキャッシュを変える", (i) => {
+  it.each([0])("文字場面%sの読み・音声・声の変更でキャッシュを変える", (i) => {
     const { scene, timing } = sceneVideoSequence([], [], { title: "STELLA", takeaway: "VS Code" })[
       i
     ];
@@ -263,13 +263,12 @@ describe("配信前の新方式ハッシュ", () => {
     ).toBe(before);
   });
   it.each(["STELLA", "VS Code"])(
-    "文字場面だけにある%sの読みを直しても配信ハッシュが変わる",
+    "%sの読みの変更は、タイトルで読む場合だけ配信ハッシュを変える",
     (word) => {
       const p = input();
       const before = sceneVideoSourceHash(p);
-      expect(
-        sceneVideoSourceHash({ ...p, readings: { ...p.readings, [word]: "別の読み" } }),
-      ).not.toBe(before);
+      const after = sceneVideoSourceHash({ ...p, readings: { ...p.readings, [word]: "別の読み" } });
+      expect(after === before).toBe(word === "VS Code");
     },
   );
   it("headerだけにある語の読みは配信ハッシュに影響しない", () => {

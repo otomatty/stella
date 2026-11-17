@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u04-number@1",
+  "contentHash": "64926cbadb79663e9860cb408d09b9c03057b6617802a424d79c2272e65207f1",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-number/doc.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/knowledge.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t1-math-tools/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t2-throw/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t3-parse-number/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}
