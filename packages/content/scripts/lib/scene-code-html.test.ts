@@ -574,3 +574,146 @@ it("数直線の点の出現・移動・区間・矢印・目盛りの印・値�
   await window.__setTime(0);
   expect(panel()).not.toContain("<circle");
 });
+
+it("等幅のコード・値・呼び出し表で合字を無効にする", () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "operators",
+    role: "hook",
+    title: "入力する記号",
+    code: ["// <= >= !== をそのまま見せる"],
+    beats: [{ say: "記号を見ます。", type: [0] }],
+  };
+  const html = sceneHtml({
+    board: { cols: 1, rows: 1, nodes: [] },
+    scene,
+    state: codeSceneState(scene),
+    timing: sceneTimelines([scene], [[3]])[0],
+    index: 0,
+    total: 1,
+  });
+  // font の一括指定より後で、子要素のフォント指定にも適用する。
+  expect(html).toContain(
+    '#code,#code *,#panel,#panel *{font-variant-ligatures: none;font-feature-settings: "liga" 0, "calt" 0}',
+  );
+  expect(html.indexOf("font-variant-ligatures: none")).toBeGreaterThan(
+    html.indexOf(".call-row code{font:"),
+  );
+});
+
+it.each([
+  { kind: "plot", at: 0 },
+  { kind: "plot", at: 4 },
+  { kind: "snap", at: 0 },
+  { kind: "snap", at: 4 },
+  { kind: "tick", at: 0 },
+  { kind: "tick", at: 4 },
+] as const)("数直線の端でも札と印をパネル内に収める: $kind / $at", async ({ kind, at }) => {
+  const label = `${at} <= 3 は false`;
+  const scene: CodeScene = {
+    kind: "code",
+    id: "edge",
+    role: "hook",
+    title: "端の札",
+    code: ["// 境目を確かめる"],
+    panel: { kind: "numberLine", from: 0, to: 4 },
+    beats:
+      kind === "plot"
+        ? [{ say: "点を置きます。", plot: { at, label } }]
+        : kind === "snap"
+          ? [
+              { say: "点を置きます。", plot: { at, label: String(at) } },
+              { say: "丸めます。", snap: { to: at, label } },
+            ]
+          : [{ say: "印を付けます。", tick: [{ at, kind: "cross" }] }],
+  };
+  const timing = sceneTimelines([scene], [scene.beats.map(() => 3)])[0];
+  const html = sceneHtml({
+    board: { cols: 1, rows: 1, nodes: [] },
+    scene,
+    state: codeSceneState(scene),
+    timing,
+    index: 0,
+    total: 1,
+  });
+  const attribute = (tag: string, name: string) =>
+    new RegExp(`(?:^| )${name}="([^"]*)"`).exec(tag)?.[1] ?? "";
+  const makeElement = (initial: Record<string, string>) => ({
+    attrs: initial,
+    setAttribute(name: string, value: string) {
+      this.attrs[name] = value;
+    },
+    getAttribute(name: string) {
+      return this.attrs[name];
+    },
+  });
+  type Label = ReturnType<typeof makeElement> & {
+    text: string;
+    offset: number;
+    getBBox: () => { x: number; width: number };
+    classList: { contains: (name: string) => boolean };
+    parentNode: { insertBefore: (node: ReturnType<typeof makeElement>) => void };
+  };
+  let labels: Label[] = [];
+  let box = makeElement({});
+  const leaders: ReturnType<typeof makeElement>[] = [];
+  const panel = {
+    innerHTML: "",
+    querySelector: () => ({
+      querySelectorAll: () => {
+        labels = [
+          ...panel.innerHTML.matchAll(/<text class="(number-line-[^"]+)"([^>]*)>([^<]*)<\/text>/g),
+        ]
+          .filter((m) => /-(point-label|snap-label|tick)$/.test(m[1]))
+          .map(([, name, attrs, text]) => {
+            const item = {
+              ...makeElement({
+                x: attribute(attrs, "x"),
+                "font-size": attribute(attrs, "font-size"),
+              }),
+              text: text.replace(/&lt;/g, "<").replace(/&gt;/g, ">"),
+              offset: name === "number-line-point-label" ? 48 + (at / 4) * 610 : 0,
+              classList: { contains: (className: string) => name === className },
+              parentNode: {
+                insertBefore: (node: ReturnType<typeof makeElement>) => leaders.push(node),
+              },
+              getBBox() {
+                // 実寸を模し、文字サイズ・座標を変えたら幅と位置も変わる。
+                const width = Array.from(this.text).length * Number(this.attrs["font-size"]);
+                return { x: Number(this.attrs.x) - width / 2, width };
+              },
+            };
+            return item;
+          });
+        return labels;
+      },
+      querySelector: () => {
+        box = makeElement({});
+        return box;
+      },
+    }),
+  };
+  const window = {} as ScenePageWindow;
+  runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+    window,
+    document: {
+      getElementById: (id: string) => (id === "panel" ? panel : { innerHTML: "", style: {} }),
+      createElementNS: () => makeElement({}),
+    },
+  });
+  await window.__setTime(timing.beats[timing.beats.length - 1].end);
+  expect(labels.length).toBeGreaterThan(0);
+  for (const text of labels) {
+    const bounds = text.getBBox();
+    expect(bounds.x + text.offset).toBeGreaterThanOrEqual(8);
+    expect(bounds.x + text.offset + bounds.width).toBeLessThanOrEqual(698);
+  }
+  if (kind !== "tick") {
+    expect(leaders.some((leader) => leader.attrs["stroke-width"] === "1")).toBe(true);
+    const pointX = 48 + (at / 4) * 610;
+    expect(Number(box.attrs.x) + pointX).toBeGreaterThanOrEqual(8);
+    expect(Number(box.attrs.x) + pointX + Number(box.attrs.width)).toBeLessThanOrEqual(698);
+    // 札を寄せても点そのものの座標を変えない。
+    expect(panel.innerHTML).toContain(`translate(${pointX} 262)`);
+  }
+});

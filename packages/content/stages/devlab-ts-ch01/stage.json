@@ -8,7 +8,7 @@
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["devlab-ts-ch00"],
-  "plannedHours": 12.75,
+  "plannedHours": 13.75,
   "environment": "ts-test-01",
   "canDo": "値・型・変数を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@2",
-  "contentHash": "f33d4befe6c07991467d1252f2e7931fab3c0c5b42dceb86da187b707e7ec1e4",
+  "unitId": "devlab-ts-ch01/u01-let-const@5",
+  "contentHash": "b146dd16d2c63824945132670d6e2df72d1339912e99c3c8307790faf678dd18",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -72,6 +72,136 @@
         "SRC-typescriptbook-values-types-variables-string"
       ],
       "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t1-let-for/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-statements-for-of"
+      ],
+      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t2-count-direction/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-statements-for-of"
+      ],
+      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t3-each-char/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-statements-for-of",
+        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-values-types-variables-string"
+      ],
+      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/doc.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-statements-for-of",
+        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-values-types-variables-string"
+      ],
+      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/knowledge.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-statements-for-of",
+        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-values-types-variables-string"
+      ],
+      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/doc.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-functions-function-declaration"
+      ],
+      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/knowledge.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-functions-function-declaration"
+      ],
+      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t1-while/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-statements-if-else"
+      ],
+      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t2-choose/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-statements-if-else"
+      ],
+      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t3-split-functions/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-functions-function-declaration"
+      ],
+      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

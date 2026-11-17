@@ -117,6 +117,56 @@ function runtime(data: CodeRenderData, frame: typeof codeFrame, captionAt: typeo
         : panel?.kind === "calls"
           ? `<div class="calls-heading">呼び出し → 結果</div>${panel.rows.map((row, i) => (f.rows.includes(i) ? `<div class="call-row" style="opacity:${f.newRows.includes(i) ? f.valueProgress : 1}"><code>${safe(row.call)}</code><strong>${safe(row.result)}</strong><small>${safe(row.note ?? "")}</small></div>` : "")).join("")}`
           : "");
+    // SVG の文字の実寸で端の札を内側へ寄せる。点と目盛りの位置は動かさない。
+    const svg = element("panel").querySelector?.<SVGSVGElement>(".number-line");
+    if (svg) {
+      const pointX =
+        panel?.kind === "numberLine" && f.numberLine?.point
+          ? 48 + ((f.numberLine.point.at - panel.from) / (panel.to - panel.from)) * 610
+          : 0;
+      for (const text of svg.querySelectorAll<SVGTextElement>(
+        ".number-line-point-label,.number-line-snap-label,.number-line-tick",
+      )) {
+        const point = text.classList.contains("number-line-point-label");
+        const snap = text.classList.contains("number-line-snap-label");
+        const offset = point ? pointX : 0;
+        const padding = point ? 12 : 0;
+        let bounds = text.getBBox();
+        const available = 706 - 16 - padding * 2;
+        if (bounds.width > available) {
+          text.setAttribute(
+            "font-size",
+            String((Number(text.getAttribute("font-size")) * available) / bounds.width),
+          );
+          bounds = text.getBBox();
+        }
+        const shift = Math.max(
+          8 - (bounds.x + offset - padding),
+          Math.min(0, 698 - (bounds.x + offset + bounds.width + padding)),
+        );
+        const anchor = Number(text.getAttribute("x"));
+        text.setAttribute("x", String(anchor + shift));
+        if (point) {
+          const box = svg.querySelector(".number-line-point-label-box");
+          box?.setAttribute("x", String(bounds.x + shift - padding));
+          box?.setAttribute("width", String(bounds.width + padding * 2));
+        }
+        if (shift !== 0) {
+          const leader = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          leader.setAttribute("class", "number-line-label-leader");
+          leader.setAttribute(
+            "d",
+            point
+              ? `M ${anchor + shift} -194 L 0 -16`
+              : `M ${anchor + shift} ${snap ? 138 : 238} L ${anchor} ${snap ? 160 : 248}`,
+          );
+          leader.setAttribute("stroke", "#5749db");
+          leader.setAttribute("stroke-width", "1");
+          leader.setAttribute("fill", "none");
+          text.parentNode?.insertBefore(leader, text);
+        }
+      }
+    }
     // フォントを読み込んだブラウザーの実寸で、名前の帯と値の収まりを決める。
     const boxes = [...(element("panel").querySelectorAll?.<HTMLElement>(".value-box") ?? [])];
     const names = boxes.flatMap((box) => {
@@ -232,5 +282,6 @@ export function codeHtml(input: SceneHtmlInput): string {
   #panel{flex:1;min-width:0;max-height:100%;display:flex;flex-direction:column;gap:16px;justify-content:center;overflow:hidden}
   .number-line{width:100%;height:auto;flex-shrink:0;overflow:hidden;margin-bottom:32px}
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;flex-shrink:0;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace;white-space:nowrap}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content.stacked{flex-direction:column;align-items:flex-end;gap:4px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap;flex-shrink:0}.value-content small{font-size:22px;white-space:nowrap;flex-shrink:0}.answer{display:flex;align-items:center;flex-shrink:0}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}
+  #code,#code *,#panel,#panel *{font-variant-ligatures: none;font-feature-settings: "liga" 0, "calt" 0}
   </style><div id="card"><div id="heading"><span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "問題へ" : "つかみ"}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});</script></html>`;
 }

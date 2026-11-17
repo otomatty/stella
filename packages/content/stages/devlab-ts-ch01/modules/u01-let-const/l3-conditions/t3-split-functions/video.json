@@ -1,0 +1,297 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "小さな関数を作って呼び、前の計算結果を次に使う順番を説明できる。",
+    "stuck": "関数を作るだけで実行したと思い、値を更新する順番も混同する。",
+    "points": [
+      "アロー関数を const で作り、名前で呼ぶ。",
+      "文字列の padStart は足りない長さを先頭で埋める。",
+      "引き算も含め、前の結果に名前を付けて次の計算に使う。"
+    ],
+    "leaveOut": [
+      "while と四捨五入は別の動画で扱う",
+      "関数の型の詳しい説明",
+      "問19・問20・応用の答えのコード"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "注文番号をそろえたい",
+      "code": [
+        "// 注文番号は 7 と 42",
+        "// 表示はどちらも 5 文字にそろえたい",
+        "// 同じ整形を何度も書くのでしょうか"
+      ],
+      "beats": [
+        {
+          "say": "注文番号を、五文字にそろえて表示します。",
+          "type": [0]
+        },
+        {
+          "say": "一桁でも二桁でも、先頭をゼロで埋めたいです。",
+          "type": [1]
+        },
+        {
+          "say": "同じ整形を、何度も書くのでしょうか。",
+          "type": [2]
+        }
+      ]
+    },
+    {
+      "id": "arrow",
+      "kind": "code",
+      "role": "point",
+      "title": "小さな関数に名前を付ける",
+      "code": [
+        "// 関数 toYen を作る。price を受け取り、円を付けて返す",
+        "const toYen = (price: number) => `${price}円`;",
+        "// 表示 label を作り、toYen に 500 を渡した結果を入れる",
+        "const label = toYen(500);"
+      ],
+      "beats": [
+        {
+          "say": "アロー関数は、関数を短く作る書き方です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "矢印の左で引数を受け取り、右の値を返します。",
+          "part": {
+            "line": 1,
+            "text": "=>"
+          }
+        },
+        {
+          "say": "式が一つなら、波かっこと return を省けます。",
+          "speech": "式が一つなら、波かっことリターンを省けます。",
+          "part": {
+            "line": 1,
+            "text": "`${price}円`"
+          }
+        },
+        {
+          "say": "作った関数は、名前の後ろにかっこを付けて呼びます。",
+          "type": [2, 3]
+        },
+        {
+          "say": "五百を渡すと、円を付けた文字列が戻ります。",
+          "calc": {
+            "on": "label",
+            "expr": "toYen(500)",
+            "result": "\"500円\""
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["label"]
+      },
+      "point": 1
+    },
+    {
+      "id": "pad",
+      "kind": "code",
+      "role": "point",
+      "title": "先頭を埋める関数",
+      "code": [
+        "// 関数 orderCode を作る。n を文字列にし、前を 0 で埋める",
+        "const orderCode = (n: number) => String(n).padStart(5, \"0\");",
+        "// 注文番号 label を作り、orderCode に 42 を渡す",
+        "const label = orderCode(42);"
+      ],
+      "beats": [
+        {
+          "say": "padStart は、先頭を埋めるメソッドです。",
+          "speech": "パッドスタートは、先頭を埋めるメソッドです。",
+          "type": [0, 1]
+        },
+        {
+          "say": "数値は、先に String で文字列に変えます。",
+          "speech": "数値は、先にストリングで文字列に変えます。",
+          "part": {
+            "line": 1,
+            "text": "String(n)"
+          }
+        },
+        {
+          "say": "五文字に足りない分を、ゼロで埋めます。",
+          "part": {
+            "line": 1,
+            "text": ".padStart(5, \"0\")"
+          }
+        },
+        {
+          "say": "四十二を渡すと、先頭にゼロが三つ付きます。",
+          "type": [2, 3],
+          "calc": {
+            "on": "label",
+            "expr": "orderCode(42)",
+            "result": "\"00042\""
+          }
+        },
+        {
+          "say": "すでに長さが足りていれば、そのまま返します。",
+          "set": {
+            "label": "\"12345\""
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["label"]
+      },
+      "point": 2
+    },
+    {
+      "id": "mistake",
+      "kind": "code",
+      "role": "point",
+      "title": "数値のまま埋めない",
+      "code": ["// 数値の 42 の先頭を埋めようとする", "const label = (42).padStart(5, \"0\");"],
+      "beats": [
+        {
+          "say": "数値には、そのまま桁を埋める操作を使えません。",
+          "type": [0, 1]
+        },
+        {
+          "say": "String で文字列にしてから、整形しましょう。",
+          "speech": "ストリングで文字列にしてから、整形しましょう。",
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ]
+        }
+      ],
+      "point": 2
+    },
+    {
+      "id": "sequence",
+      "kind": "code",
+      "role": "point",
+      "title": "前の結果を次に使う",
+      "code": [
+        "// 入金後の残高 credited を作り、3000 と 500 を足す",
+        "const credited = 3000 + 500;",
+        "// 残高 balance を作り、credited から 1200 を引く",
+        "const balance = credited - 1200;",
+        "// 表示 label を作り、toYen に balance を渡す",
+        "const label = toYen(balance);"
+      ],
+      "beats": [
+        {
+          "say": "計算を組み立てるときは、順番を決めます。",
+          "type": [0, 1],
+          "calc": {
+            "on": "credited",
+            "expr": "3000 + 500",
+            "result": "3500"
+          }
+        },
+        {
+          "say": "引き算は、ハイフンの記号で書きます。",
+          "type": [2, 3],
+          "part": {
+            "line": 3,
+            "text": "-"
+          }
+        },
+        {
+          "say": "前の計算結果から、支払う金額を引きます。",
+          "calc": {
+            "on": "balance",
+            "expr": "3500 - 1200",
+            "result": "2300"
+          }
+        },
+        {
+          "say": "その結果を、先ほど作った関数に渡せます。",
+          "type": [4, 5],
+          "calc": {
+            "on": "label",
+            "expr": "toYen(2300)",
+            "result": "\"2300円\""
+          }
+        },
+        {
+          "say": "二つの値を更新するときも、古い値を先に控えます。",
+          "focus": [1, 3]
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["credited", "balance", "label"]
+      },
+      "point": 3
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "問19・問20・応用へ",
+      "code": [
+        "export function fibonacci(n: number): number {",
+        "  // ここに書く",
+        "}",
+        "export function secondsToClock(seconds: number): string {",
+        "  // ここに書く",
+        "}",
+        "export function checkout(",
+        "  price: number, quantity: number, coupon: number",
+        "): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "問十九は、前の二つから次の数を作ります。",
+          "type": [0, 1, 2],
+          "row": [0]
+        },
+        {
+          "say": "問二十は、秒数を時刻の形にそろえます。",
+          "type": [3, 4, 5],
+          "row": [1]
+        },
+        {
+          "say": "五十九秒なら、時と分はゼロです。",
+          "row": [2]
+        },
+        {
+          "say": "応用は、値引き後の金額で送料を決めます。",
+          "type": [6, 7, 8, 9, 10],
+          "row": [3]
+        },
+        {
+          "say": "アロー関数や引き算を使って、書いてみましょう。",
+          "focus": [1, 4, 9]
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "fibonacci(10)",
+            "result": "55"
+          },
+          {
+            "call": "secondsToClock(3723)",
+            "result": "\"01:02:03\""
+          },
+          {
+            "call": "secondsToClock(59)",
+            "result": "\"00:00:59\""
+          },
+          {
+            "call": "checkout(1000, 5, 100)",
+            "result": "5400",
+            "note": "値引き後は 4900 円"
+          }
+        ]
+      }
+    }
+  ]
+}

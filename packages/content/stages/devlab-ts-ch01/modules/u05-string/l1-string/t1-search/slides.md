@@ -3,8 +3,8 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 id: 1-5-1
 title: 文字列を探す
 takeaway: "探したい場所と、真偽か位置かに合わせて書き方を選びます。"
-introduces: ["メソッド", "startsWith", "endsWith", "indexOf", "lastIndexOf", "boolean"]
-requires: ["const", "変数", "文字列", "string", "引数", "戻り値", "型注釈", "number"]
+introduces: ["startsWith", "endsWith", "indexOf", "lastIndexOf"]
+requires: ["メソッド", "boolean", "const", "変数", "文字列", "string", "引数", "戻り値", "型注釈", "number"]
 header: "開発ラボG 事前課題 第1部"
 ---
 
