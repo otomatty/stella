@@ -1,0 +1,275 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "値と return を読み、定数と関数の戻り値に推論される型を説明できる。",
+    "stuck": "型注釈を消すと型もなくなると考え、何を省けるか判断できない。",
+    "points": [
+      "const と let は値から型が決まり、export const で定数を公開できる。",
+      "引数の型を残して戻り値の型を省くと、return から型が決まる。",
+      "複数の return は型をまとめ、undefined も候補になる。"
+    ],
+    "leaveOut": [
+      "関数の引数の型が必要な理由の解答",
+      "添字と else if の説明",
+      "問1から応用までの答えのコード"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "型を書かない送料",
+      "code": ["// 送料を500円と決める", "// 値だけ書いてもよい？", "// 型はどこで決まる？"],
+      "beats": [
+        {
+          "say": "送料を500円と決めて、名前を付けたいです。",
+          "type": [0]
+        },
+        {
+          "say": "型を書くところを省くと、どうなるでしょうか。",
+          "type": [1]
+        },
+        {
+          "say": "値と型の関係を、確かめてみましょう。",
+          "type": [2]
+        }
+      ]
+    },
+    {
+      "id": "infer",
+      "kind": "code",
+      "role": "point",
+      "title": "値から型を決め、外から使う",
+      "code": [
+        "// 送料 SHIPPING_FEE を作り、500を入れる",
+        "const SHIPPING_FEE = 500;",
+        "// 店名 shopName を入れ直せる変数として作る",
+        "let shopName = \"本店\";",
+        "// 数を入れ直す間違い",
+        "shopName = 100;",
+        "// 注文の上限 MAX_ORDER を作り、外から使えるようにする",
+        "export const MAX_ORDER = 10;",
+        "// 営業中か IS_OPEN を作り、falseを入れる",
+        "export const IS_OPEN = false;"
+      ],
+      "beats": [
+        {
+          "say": "型推論は、値などから型が自動で決まる仕組みです。",
+          "type": [0, 1]
+        },
+        {
+          "say": "値そのものの型を、リテラル型と呼びます。",
+          "set": {
+            "SHIPPING_FEE": "500"
+          }
+        },
+        {
+          "say": "let の店名の型は、文字列を表す string です。",
+          "type": [2, 3],
+          "set": {
+            "shopName": "string"
+          },
+          "speech": "レットの店名の型は、文字列を表すストリングです。"
+        },
+        {
+          "say": "型注釈がなくても、数を入れると型のエラーです。",
+          "type": [4, 5],
+          "mark": [
+            {
+              "line": 5,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "export を付けると、外から使える定数になります。",
+          "speech": "エクスポートを付けると、外から使える定数になります。",
+          "type": [6, 7],
+          "set": {
+            "MAX_ORDER": "10"
+          }
+        },
+        {
+          "say": "false は真偽値で、定数の型も false です。",
+          "speech": "フォルスは真偽値で、定数の型もフォルスです。",
+          "type": [8, 9],
+          "set": {
+            "IS_OPEN": "false"
+          }
+        }
+      ],
+      "point": 1,
+      "panel": {
+        "kind": "values",
+        "items": ["SHIPPING_FEE", "shopName", "MAX_ORDER", "IS_OPEN"]
+      }
+    },
+    {
+      "id": "return-type",
+      "kind": "code",
+      "role": "point",
+      "title": "返す値から型が決まる",
+      "code": [
+        "// 関数 withShipping を作り、価格を受け取る",
+        "function withShipping(price: number) {",
+        "  // 価格に送料500を足して返す",
+        "  return price + 500;",
+        "  // 関数はここまで",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "関数も、戻り値の型を推論に任せられます。",
+          "type": [0, 1]
+        },
+        {
+          "say": "引数の型は残し、戻り値の型だけ省きます。",
+          "part": {
+            "line": 1,
+            "text": "price: number"
+          }
+        },
+        {
+          "say": "数の計算を返すので、戻り値の型は number です。",
+          "speech": "数の計算を返すので、戻り値の型はナンバーです。",
+          "type": [2, 3, 4, 5],
+          "set": {
+            "戻り値の型": "number"
+          }
+        }
+      ],
+      "point": 2,
+      "panel": {
+        "kind": "values",
+        "items": ["戻り値の型"]
+      }
+    },
+    {
+      "id": "many",
+      "kind": "code",
+      "role": "point",
+      "title": "二つの return がある",
+      "code": [
+        "// 関数 sizeLabel を作り、重さを受け取る",
+        "function sizeLabel(weight: number) {",
+        "  // 重さが2より小さいなら",
+        "  if (weight < 2) {",
+        "    // 小という文字を返す",
+        "    return \"小\";",
+        "  // 条件の中はここまで",
+        "  }",
+        "  // 大という文字を返す",
+        "  return \"大\";",
+        "  // 関数はここまで",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "条件によって、別々の文字を返す例です。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "重さが2より小さいと、ここで関数が終わります。",
+          "type": [4, 5, 6, 7]
+        },
+        {
+          "say": "残りの場合は、大という文字を返します。",
+          "type": [8, 9, 10, 11]
+        },
+        {
+          "say": "型は二つを縦棒でつないだ、どちらかの型です。",
+          "set": {
+            "戻り値の型": "\"小\" | \"大\""
+          }
+        }
+      ],
+      "point": 3,
+      "panel": {
+        "kind": "values",
+        "items": ["戻り値の型"]
+      }
+    },
+    {
+      "id": "missing",
+      "kind": "code",
+      "role": "point",
+      "title": "値がない場合も型に入る",
+      "code": [
+        "// 関数 pointOf を作り、価格と会員かどうかを受け取る",
+        "function pointOf(price: number, isMember: boolean) {",
+        "  // 会員ならポイントを返す",
+        "  if (isMember) {",
+        "    // 100円ごとのポイントを返す",
+        "    return Math.floor(price / 100);",
+        "  // 条件の中はここまで",
+        "  }",
+        "  // 値がないことを返す",
+        "  return undefined;",
+        "  // 関数はここまで",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "undefined は、値がないことを表す値です。",
+          "speech": "アンディファインドは、値がないことを表す値です。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "会員なら、数のポイントを返します。",
+          "type": [4, 5, 6, 7]
+        },
+        {
+          "say": "会員でないときは、値がないことを返します。",
+          "type": [8, 9, 10, 11]
+        },
+        {
+          "say": "戻り値の型にも、数と値なしの両方が入ります。",
+          "set": {
+            "戻り値の型": "number | undefined"
+          }
+        }
+      ],
+      "point": 3,
+      "panel": {
+        "kind": "values",
+        "items": ["戻り値の型"]
+      }
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "問5で戻り値の型を省く",
+      "code": [
+        "// テストから使う関数を作る",
+        "export function double(n: number) {",
+        "  // ここに書く",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "問5では、戻り値の型を省いた関数を書きます。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "4 を渡すと、8 が返ります。",
+          "row": [0]
+        },
+        {
+          "say": "型推論に戻り値の型を任せて、書いてみましょう。",
+          "focus": [2]
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "double(4)",
+            "result": "8"
+          }
+        ]
+      }
+    }
+  ]
+}

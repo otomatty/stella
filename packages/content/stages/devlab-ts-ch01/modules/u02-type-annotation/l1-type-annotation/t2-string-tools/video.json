@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "文字列の取り出しと加工、数の表示、条件の組合せの結果を説明できる。",
+    "stuck": "文字数とメソッドを混同し、必要な文字や表示を作れない。",
+    "points": [
+      "length と slice で長さと一部を調べる。",
+      "repeat と toUpperCase と toLocaleString で表示を作る。",
+      "条件を && でつなぐと、両方が true のときだけ true になる。"
+    ],
+    "leaveOut": [
+      "負の位置を使う slice",
+      "絵文字の文字数",
+      "型推論の詳細",
+      "問1から応用までの答えのコード"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "商品ラベルを整える",
+      "code": [
+        "// 商品コードは abc-12",
+        "// 印刷するのは先頭の地域だけ",
+        "// どんな道具が使える？"
+      ],
+      "beats": [
+        {
+          "say": "商品コードから、必要な部分だけ印刷したいです。",
+          "type": [0]
+        },
+        {
+          "say": "文字数や取り出す場所は、どう調べるのでしょうか。",
+          "type": [1]
+        },
+        {
+          "say": "表示を整える道具を、順に見ていきましょう。",
+          "type": [2]
+        }
+      ]
+    },
+    {
+      "id": "pick",
+      "kind": "code",
+      "role": "point",
+      "title": "長さと一部を取り出す",
+      "code": [
+        "// 商品コード code を作り、\"TKY-0012\" を入れる",
+        "const code = \"TKY-0012\";",
+        "// 文字数 size を作る",
+        "const size = code.length;",
+        "// 地域 area を作り、0番目から3番目の前までを入れる",
+        "const area = code.slice(0, 3);",
+        "// かっこを付けた間違い",
+        "code.length();"
+      ],
+      "beats": [
+        {
+          "say": "商品コードを、名前に入れます。",
+          "type": [0, 1],
+          "set": {
+            "code": "\"TKY-0012\""
+          }
+        },
+        {
+          "say": "length は文字数で、かっこを付けません。",
+          "speech": "レングスは文字数で、かっこを付けません。",
+          "type": [2, 3],
+          "set": {
+            "size": "8"
+          }
+        },
+        {
+          "say": "slice は、文字列の一部を取り出します。",
+          "speech": "スライスは、文字列の一部を取り出します。",
+          "type": [4, 5]
+        },
+        {
+          "say": "番号は0からで、終わりの3番目は含みません。",
+          "part": {
+            "line": 5,
+            "text": "0, 3"
+          },
+          "set": {
+            "area": "\"TKY\""
+          }
+        },
+        {
+          "say": "length にかっこを付けると、型のエラーです。",
+          "speech": "レングスにかっこを付けると、型のエラーです。",
+          "type": [6, 7],
+          "mark": [
+            {
+              "line": 7,
+              "kind": "cross"
+            }
+          ]
+        }
+      ],
+      "point": 1,
+      "panel": {
+        "kind": "values",
+        "items": ["code", "size", "area"]
+      }
+    },
+    {
+      "id": "display",
+      "kind": "code",
+      "role": "point",
+      "title": "繰り返す道具と大文字にする道具",
+      "code": [
+        "// 評価 rating を作り、星を4回つなげる",
+        "const rating = \"★\".repeat(4);",
+        "// 商品コード code を作り、小文字のコードを入れる",
+        "const code = \"abc-12\";",
+        "// upper を作り、大文字にした文字列を入れる",
+        "const upper = code.toUpperCase();"
+      ],
+      "beats": [
+        {
+          "say": "メソッドは、値の後ろに付けて使う道具です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "repeat は、指定した回数だけ文字をつなげます。",
+          "speech": "リピートは、指定した回数だけ文字をつなげます。",
+          "set": {
+            "rating": "\"★★★★\""
+          }
+        },
+        {
+          "say": "大文字にそろえたい商品コードを用意します。",
+          "type": [2, 3],
+          "set": {
+            "code": "\"abc-12\""
+          }
+        },
+        {
+          "say": "toUpperCase は、英字を大文字にします。",
+          "speech": "トゥーアッパーケースは、英字を大文字にします。",
+          "type": [4, 5],
+          "set": {
+            "upper": "\"ABC-12\""
+          }
+        }
+      ],
+      "point": 2,
+      "panel": {
+        "kind": "values",
+        "items": ["rating", "code", "upper"]
+      }
+    },
+    {
+      "id": "locale",
+      "kind": "code",
+      "role": "point",
+      "title": "金額を表示する文字列にする",
+      "code": [
+        "// 売上 sales を作り、2500000 を入れる",
+        "const sales = 2500000;",
+        "// 表示 text を作り、日本の書き方で区切った文字列を入れる",
+        "const text = sales.toLocaleString(\"ja-JP\");"
+      ],
+      "beats": [
+        {
+          "say": "売上の数は、表示用の文字列にもできます。",
+          "type": [0, 1],
+          "set": {
+            "sales": "2500000"
+          }
+        },
+        {
+          "say": "toLocaleString は、地域の書き方にそろえます。",
+          "speech": "トゥーロケールストリングは、地域の書き方にそろえます。",
+          "type": [2, 3]
+        },
+        {
+          "say": "日本を指定すると、3桁ごとのカンマが付きます。",
+          "part": {
+            "line": 3,
+            "text": "\"ja-JP\""
+          },
+          "set": {
+            "text": "\"2,500,000\""
+          }
+        }
+      ],
+      "point": 2,
+      "panel": {
+        "kind": "values",
+        "items": ["sales", "text"]
+      }
+    },
+    {
+      "id": "both",
+      "kind": "code",
+      "role": "point",
+      "title": "条件を組み合わせる",
+      "code": [
+        "// 在庫 stock を作り、3を入れる",
+        "const stock = 3;",
+        "// 支払済み isPaid を作り、trueを入れる",
+        "const isPaid = true;",
+        "// 出荷できるか ready を作る",
+        "const ready = stock > 0 && isPaid;",
+        "// 未払いの場合の出荷判定 unpaidReady を作る",
+        "const unpaidReady = stock > 0 && false;"
+      ],
+      "beats": [
+        {
+          "say": "在庫があり、支払済みなら出荷する例です。",
+          "type": [0, 1],
+          "set": {
+            "stock": "3"
+          }
+        },
+        {
+          "say": "支払済みという条件も、用意します。",
+          "type": [2, 3],
+          "set": {
+            "isPaid": "true"
+          }
+        },
+        {
+          "say": "アンパサンド二つは、両方が真かを調べます。",
+          "type": [4, 5],
+          "set": {
+            "ready": "true"
+          }
+        },
+        {
+          "say": "片方でも偽なら、全体も偽になります。",
+          "type": [6, 7],
+          "set": {
+            "unpaidReady": "false"
+          }
+        }
+      ],
+      "point": 3,
+      "panel": {
+        "kind": "values",
+        "items": ["stock", "isPaid", "ready", "unpaidReady"]
+      }
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "問4で文字列の道具を使う",
+      "code": [
+        "// テストから使う関数を作る",
+        "export function repeatText(text: string, times: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "問4では、受け取った文字を指定の回数つなげます。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "ab を3回なら、6文字になります。",
+          "row": [0]
+        },
+        {
+          "say": "0回なら、何もない空の文字列になります。",
+          "row": [1]
+        },
+        {
+          "say": "文字列のメソッドを使って、書いてみましょう。",
+          "focus": [2]
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "repeatText(\"ab\", 3)",
+            "result": "\"ababab\""
+          },
+          {
+            "call": "repeatText(\"x\", 0)",
+            "result": "\"\""
+          }
+        ]
+      }
+    }
+  ]
+}

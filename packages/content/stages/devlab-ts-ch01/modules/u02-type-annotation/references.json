@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u02-type-annotation@1",
+  "contentHash": "b8eb8e780628696a7ae502f146a26587bb9a30e0d8a666b25da3c2b7396bd901",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-type-annotation/doc.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
+      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t1-write-types/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
+      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t2-string-tools/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
+      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/knowledge.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
+      "usedFor": "型注釈の理解の自己確認用の独自問題。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

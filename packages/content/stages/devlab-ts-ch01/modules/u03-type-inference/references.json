@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u03-type-inference@1",
+  "contentHash": "58a980f573382d2b604363711d6a8fb6827677097170b2c3a9ed4ea4b513797c",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-type-inference/doc.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t1-inference/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t2-index-elseif/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/knowledge.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の理解の自己確認用の独自問題。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}
