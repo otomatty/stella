@@ -1,0 +1,285 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "any を具体的な型に変え、名前の誤りや読み取り専用の値への代入に気付ける。",
+    "stuck": "動くように見えるコードで、なぜ型を直すのか分からない。",
+    "points": [
+      "any を具体的な型に直すと、値の操作の間違いが見つかる。",
+      "プロパティへの代入と読み取りを区別し、Number で文字列を数値に変える。",
+      "number[] は数値の配列の型で、length は要素の数を表す。"
+    ],
+    "leaveOut": [
+      "問1〜20と総合問題の答えのコード",
+      "配列の詳しい操作",
+      "オブジェクトの設計",
+      "unknown と any の比較"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "金額の表示で止まりました",
+      "code": [
+        "// 送料を文字列にして表示したいです",
+        "// 型の確認は通ったのに、実行すると止まります",
+        "// 間違いを、もっと早く見つけられますか？"
+      ],
+      "beats": [
+        {
+          "say": "送料を表示するコードが、実行すると止まります。",
+          "type": [0]
+        },
+        {
+          "say": "型の確認は、何も教えてくれませんでした。",
+          "type": [1]
+        },
+        {
+          "say": "間違いを早く見つけるには、どうすればよいでしょうか。",
+          "type": [2]
+        }
+      ]
+    },
+    {
+      "id": "any",
+      "kind": "code",
+      "role": "point",
+      "title": "any を具体的な型にする",
+      "code": [
+        "// 送料 fee を受け取り、表示用の文字列を返す",
+        "function feeLabel(fee: any): any {",
+        "  // メソッドの名前を間違えている",
+        "  return fee.toFixd(0);",
+        "}",
+        "// 数値を受け取り、文字列を返す型に直す",
+        "function feeLabel(fee: number): string {",
+        "  // つづりを直して返す",
+        "  return fee.toFixed(0);",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "any は、どんな値でもよいという型です。",
+          "speech": "エニーは、どんな値でもよいという型です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "このつづりの間違いも、型の確認を通ってしまいます。",
+          "type": [2, 3, 4],
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "受け取る値と、返す値の型を具体的に決めます。",
+          "clear": [1, 2, 3, 4]
+        },
+        {
+          "say": "数値と決めると、間違った名前に気付けます。",
+          "type": [5, 6]
+        },
+        {
+          "say": "正しい名前に直すと、文字列が返ります。",
+          "type": [7, 8, 9],
+          "calc": {
+            "on": "label",
+            "expr": "feeLabel(500)",
+            "result": "\"500\""
+          }
+        }
+      ],
+      "point": 1,
+      "panel": {
+        "kind": "values",
+        "items": ["label"]
+      }
+    },
+    {
+      "id": "property",
+      "kind": "code",
+      "role": "point",
+      "title": "プロパティは、読むか書くか",
+      "code": [
+        "// 商品コード code を作り、\"P-8\" を入れる",
+        "const code = \"P-8\";",
+        "// プロパティに値を入れようとしている",
+        "code.length = 8;",
+        "// 文字数 count を作り、length を読む",
+        "const count = code.length;"
+      ],
+      "beats": [
+        {
+          "say": "点の右側に書く名前を、プロパティと呼びます。",
+          "type": [0, 1]
+        },
+        {
+          "say": "イコールを書くと、そこへ値を入れる形になります。",
+          "type": [2, 3]
+        },
+        {
+          "say": "文字列の文字数には、値を入れられません。",
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "読むだけなら、文字数を取り出せます。",
+          "clear": [2, 3]
+        },
+        {
+          "say": "この商品コードの文字数は、三です。",
+          "type": [4, 5],
+          "set": {
+            "count": "3"
+          }
+        }
+      ],
+      "point": 2,
+      "panel": {
+        "kind": "values",
+        "items": ["count"]
+      }
+    },
+    {
+      "id": "number",
+      "kind": "code",
+      "role": "point",
+      "title": "文字列から数値へ",
+      "code": [
+        "// 入力 input を作り、\"120\" を入れる",
+        "const input = \"120\";",
+        "// 個数 quantity を作り、数値に直して入れる",
+        "const quantity = Number(input);"
+      ],
+      "beats": [
+        {
+          "say": "入力が文字列でも、計算では数値が必要です。",
+          "type": [0, 1],
+          "set": {
+            "input": "\"120\""
+          }
+        },
+        {
+          "say": "Number は、値を数値に変える書き方です。",
+          "speech": "ナンバーは、値を数値に変える書き方です。",
+          "type": [2, 3]
+        },
+        {
+          "say": "文字列ではなく、数値の百二十が入ります。",
+          "calc": {
+            "on": "quantity",
+            "expr": "Number(\"120\")",
+            "result": "120"
+          }
+        }
+      ],
+      "point": 2,
+      "panel": {
+        "kind": "values",
+        "items": ["input", "quantity"]
+      }
+    },
+    {
+      "id": "array",
+      "kind": "code",
+      "role": "point",
+      "title": "並んだ数の型と件数",
+      "code": [
+        "// 価格 prices を数値の配列として作る",
+        "const prices: number[] = [300, 500, 200];",
+        "// 件数 count を作り、要素の数を入れる",
+        "const count = prices.length;"
+      ],
+      "beats": [
+        {
+          "say": "配列は、値を順番に並べたものです。",
+          "type": [0, 1]
+        },
+        {
+          "say": "数値の配列の型は、number に角かっこを付けます。",
+          "speech": "数値の配列の型は、ナンバーに角かっこを付けます。",
+          "part": {
+            "line": 1,
+            "text": "number[]"
+          }
+        },
+        {
+          "say": "配列の length は、並んでいる値の数です。",
+          "speech": "配列のレングスは、並んでいる値の数です。",
+          "type": [2, 3]
+        },
+        {
+          "say": "価格の合計ではなく、件数の三が入ります。",
+          "set": {
+            "count": "3"
+          }
+        }
+      ],
+      "point": 3,
+      "panel": {
+        "kind": "values",
+        "items": ["count"]
+      }
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "別の業務例で、型を直す",
+      "code": [
+        "// 予約者の名前 guest の型が広すぎる",
+        "const guest: any = \"佐藤\";",
+        "// 受け取る値に合う型に直す",
+        "const guest: string = \"佐藤\";",
+        "// 文字数 size を作る",
+        "const size: number = guest.length;"
+      ],
+      "beats": [
+        {
+          "say": "問題では、any の型を直していきます。",
+          "speech": "問題では、エニーの型を直していきます。",
+          "type": [0, 1],
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "この業務例なら、名前は文字列と決められます。",
+          "clear": [0, 1]
+        },
+        {
+          "say": "具体的な型に直し、残ったエラーも読みます。",
+          "type": [2, 3],
+          "mark": [
+            {
+              "line": 3,
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "any を具体的な型に変えて、書いてみましょう。",
+          "speech": "エニーを具体的な型に変えて、書いてみましょう。",
+          "type": [4, 5],
+          "set": {
+            "size": "2"
+          }
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["size"]
+      }
+    }
+  ]
+}

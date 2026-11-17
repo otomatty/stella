@@ -8,7 +8,7 @@
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["dev-env-basics"],
-  "plannedHours": 0.5,
+  "plannedHours": 0.75,
   "environment": "ts-test-01",
   "canDo": "環境の確認を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",

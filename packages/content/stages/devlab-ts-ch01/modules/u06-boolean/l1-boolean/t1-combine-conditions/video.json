@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "比べる式を論理演算子で組み合わせ、boolean を返す関数を読める。",
+    "stuck": "true と false を返すために、すべて if で分けようとする。",
+    "points": [
+      "比較の結果は boolean なので、そのまま return できる。",
+      "かつ・または・でないを組み合わせて条件を書く。",
+      "正規表現の test は合う部分があれば true を返す。"
+    ],
+    "leaveOut": ["問1〜20と応用問題の答えのコード", "正規表現の詳しい文法", "短絡評価の仕組み"]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "予約を受け付けますか？",
+      "code": [
+        "// 空席は 2 席あります",
+        "// 今日は休業日です",
+        "// 予約を受け付けてよいでしょうか？"
+      ],
+      "beats": [
+        {
+          "say": "空席があれば、いつでも予約できるでしょうか。",
+          "type": [0]
+        },
+        {
+          "say": "休業日かどうかも、確かめたいですね。",
+          "type": [1]
+        },
+        {
+          "say": "二つの条件を、どうまとめればよいでしょうか。",
+          "type": [2]
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "kind": "code",
+      "role": "point",
+      "title": "比べた結果を返す",
+      "code": [
+        "// 予約できる席数かを調べる関数を作る",
+        "function hasSeats(seats: number): boolean {",
+        "  // seats が 0 より大きいかを返す",
+        "  return seats > 0;",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "比べる式の結果は、真か偽の値になります。",
+          "type": [0, 1]
+        },
+        {
+          "say": "boolean は、真か偽を表す型です。",
+          "speech": "ブーリアンは、真か偽を表す型です。",
+          "part": {
+            "line": 1,
+            "text": "boolean"
+          }
+        },
+        {
+          "say": "その式を、そのまま返せます。",
+          "type": [2, 3, 4]
+        },
+        {
+          "say": "席数が二なら、ゼロより大きいので真です。",
+          "plot": {
+            "at": 2,
+            "label": "空席 2"
+          }
+        },
+        {
+          "say": "ゼロなら偽になり、空席がないと分かります。",
+          "plot": {
+            "at": 0,
+            "label": "空席 0"
+          }
+        }
+      ],
+      "point": 1,
+      "panel": {
+        "kind": "numberLine",
+        "from": 0,
+        "to": 3
+      }
+    },
+    {
+      "id": "mistake",
+      "kind": "code",
+      "role": "point",
+      "title": "数値をそのまま返さない",
+      "code": [
+        "// 真か偽を返す関数を作る",
+        "function hasBoxes(boxes: number): boolean {",
+        "  // 数値をそのまま返そうとしている",
+        "  return boxes;",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "戻り値を真か偽に決めた場合を見ます。",
+          "type": [0, 1]
+        },
+        {
+          "say": "数値をそのまま返すと、型のエラーになります。",
+          "type": [2, 3, 4],
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "ゼロより大きいかなど、比べる式にします。",
+          "focus": [3]
+        }
+      ],
+      "point": 1
+    },
+    {
+      "id": "combine",
+      "kind": "code",
+      "role": "point",
+      "title": "かつ・または・でない",
+      "code": [
+        "// 空席があり、休業日でなければ予約できる",
+        "const canBook = 2 > 0 && !true;",
+        "// 会員か招待客なら割引を使える",
+        "const discount = false || true;"
+      ],
+      "beats": [
+        {
+          "say": "かつは、両方が真のときだけ真です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "でないは、真と偽を入れ替えます。",
+          "part": {
+            "line": 1,
+            "text": "!"
+          }
+        },
+        {
+          "say": "休業日なので、予約できるかの答えは偽です。",
+          "calc": {
+            "on": "canBook",
+            "expr": "true && false",
+            "result": "false"
+          }
+        },
+        {
+          "say": "またはは、どちらかが真なら真です。",
+          "type": [2, 3]
+        },
+        {
+          "say": "会員でなくても、招待客なら割引を使えます。",
+          "calc": {
+            "on": "discount",
+            "expr": "false || true",
+            "result": "true"
+          }
+        }
+      ],
+      "point": 2,
+      "panel": {
+        "kind": "values",
+        "items": ["canBook", "discount"]
+      }
+    },
+    {
+      "id": "pattern",
+      "kind": "code",
+      "role": "point",
+      "title": "合う文字が含まれるか",
+      "code": [
+        "// 予約番号 booking を作り、\"R-24\" を入れる",
+        "const booking = \"R-24\";",
+        "// 数字を含むかを hasNumber に入れる",
+        "const hasNumber = /\\d/.test(booking);"
+      ],
+      "beats": [
+        {
+          "say": "正規表現は、探す文字の形を表す書き方です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "この形は、数字を一文字探します。",
+          "type": [2, 3],
+          "part": {
+            "line": 3,
+            "text": "/\\d/"
+          }
+        },
+        {
+          "say": "test は、合う部分があれば真を返します。",
+          "speech": "テストは、合う部分があれば真を返します。",
+          "set": {
+            "hasNumber": "true"
+          }
+        },
+        {
+          "say": "文字列全体が数字でなくても、真になります。",
+          "focus": [3]
+        }
+      ],
+      "point": 3,
+      "panel": {
+        "kind": "values",
+        "items": ["hasNumber"]
+      }
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "q06 の問1へ",
+      "code": [
+        "// 真か偽を返す関数の形",
+        "export function isPositive(n: number): boolean {",
+        "  // ここに書く",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "問題では、正の数かどうかを返します。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "三を渡すと、真が返ります。",
+          "row": [0]
+        },
+        {
+          "say": "ゼロを渡すと、偽が返ります。",
+          "row": [1]
+        },
+        {
+          "say": "return と比べる式を使って、書いてみましょう。",
+          "speech": "リターンと比べる式を使って、書いてみましょう。",
+          "focus": [2]
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "isPositive(3)",
+            "result": "true"
+          },
+          {
+            "call": "isPositive(0)",
+            "result": "false"
+          }
+        ]
+      }
+    }
+  ]
+}

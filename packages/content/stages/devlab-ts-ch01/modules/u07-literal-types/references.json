@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u07-literal-types@1",
+  "contentHash": "dfbee99b13d9cb916462f8af6c9f60fb438a740b5b54fb2c70c095fd4ea3b3ee",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-literal-types/doc.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
+      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-literal-types/knowledge.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
+      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-literal-types/t1-fixed-values/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
+      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}
