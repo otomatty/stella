@@ -8,6 +8,7 @@ export const SCENE_TIMING = {
   highlightHold: 1.5,
   tail: 1.2,
   fps: 30,
+  fadeOut: 0.8,
 } as const;
 export interface TimedBeat {
   start: number;
@@ -22,11 +23,13 @@ export interface SceneTimeline {
   start: number;
   duration: number;
   beats: TimedBeat[];
+  /** 最後の絵コンテ場面だけ、通常の余韻のあとに追加する。 */
+  fadeOut?: { start: number; duration: number };
 }
 /** 絵コンテには書かない、ビルドが追加する文字だけの場面。 */
 export interface TextScene {
   kind: "text";
-  id: "title" | "summary";
+  id: "title";
   title: string;
   header?: string;
   duration: number;
@@ -41,7 +44,7 @@ export function sceneSpeeches(
   scene: Scene | TextScene,
   readings: Record<string, string>,
 ): string[] {
-  // ponytail: タイトル・まとめの読みは読み辞書まかせ。記号の多い takeaway を読み分けるなら video.json に読みの上書きを足す
+  // タイトルの読みも読み辞書を通す。
   const beats: { say: string; speech?: string }[] =
     scene.kind === "text" ? [{ say: scene.title }] : scene.beats;
   return beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings));
@@ -61,19 +64,12 @@ export function sceneVideoSequence(
     duration: 2.6,
   };
   const timings = sceneTimelines(scenes, durations, clips);
-  const summary: TextScene = {
-    kind: "text",
-    id: "summary",
-    title: topic.takeaway.trim(),
-    header: "まとめ",
-    duration: 4,
-  };
   const textTiming = (scene: TextScene): SceneTimeline => {
     const speech =
       textDurations?.[scene.id] ??
       estimateSpeechSeconds(sceneSpeeches(scene, topic.readings ?? {})[0]);
-    const lead = scene.id === "title" ? 0.6 : 0.8;
-    const tail = scene.id === "title" ? 0.8 : 1.4;
+    const lead = 0.6;
+    const tail = 0.8;
     scene.duration =
       Math.ceil((Math.max(scene.duration, lead + speech + tail) - 1e-9) * SCENE_TIMING.fps) /
       SCENE_TIMING.fps;
@@ -84,7 +80,13 @@ export function sceneVideoSequence(
     };
   };
   const titleTiming = textTiming(title);
-  const summaryTiming = textTiming(summary);
+  const last = timings.at(-1);
+  if (last) {
+    last.fadeOut = { start: last.duration, duration: SCENE_TIMING.fadeOut };
+    last.duration =
+      Math.ceil((last.duration + SCENE_TIMING.fadeOut - 1e-9) * SCENE_TIMING.fps) /
+      SCENE_TIMING.fps;
+  }
   return [
     { scene: title, timing: titleTiming, sourceIndex: -1 },
     ...scenes.map((scene, i) => ({
@@ -92,14 +94,6 @@ export function sceneVideoSequence(
       timing: { ...timings[i], start: timings[i].start + title.duration },
       sourceIndex: i,
     })),
-    {
-      scene: summary,
-      timing: {
-        ...summaryTiming,
-        start: title.duration + timings.reduce((sum, timing) => sum + timing.duration, 0),
-      },
-      sourceIndex: -1,
-    },
   ];
 }
 /** 場面内の時刻で、読み上げ中の文だけを返す。操作・強調の待ち時間には出さない。 */

@@ -63,6 +63,7 @@ import {
   writeNarrationWav,
   toPosterJpeg,
 } from "./lib/ffmpeg.js";
+import { encodeScene } from "./lib/scene-encode.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
 import { createTtsProvider, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
 const videoFile = new URL("../src/__fixtures__/board-video.json", import.meta.url);
@@ -85,7 +86,7 @@ afterEach(() => {
 });
 describe("場面音声の作り直し", () => {
   it.each(["topic", "cue"] as const)(
-    "%s方式でタイトル・まとめも辞書を通して1回ずつ合成する",
+    "%s方式でタイトルだけを辞書を通して合成し、takeawayは合成しない",
     async (unit) => {
       const readings = { STELLA: "ステラ", "Ctrl + S（Mac は ⌘ + S）": "保存のキーを押します" };
       const sequence = sceneVideoSequence([], [], {
@@ -107,9 +108,8 @@ describe("場面音声の作り直し", () => {
       }
       expect(vi.mocked(synthesizeCached).mock.calls.map((call) => [call[1], call[3]])).toEqual([
         ["ステラ", true],
-        ["保存のキーを押します", true],
       ]);
-      expect(unit === "topic" ? decodePcm : decodeTrimmedPcm).toHaveBeenCalledTimes(2);
+      expect(unit === "topic" ? decodePcm : decodeTrimmedPcm).toHaveBeenCalledTimes(1);
     },
   );
   it.each(["topic", "cue"] as const)("%s方式の文字場面も長さが異常なら失敗する", async (unit) => {
@@ -132,6 +132,7 @@ describe("場面音声の作り直し", () => {
       ["--refresh-audio"],
       ["--refresh-audio", "--tts"],
       ["--refresh-audio", "hook,"],
+      ["--refresh-audio", "title,summary"],
       ["--refresh-audio", ""],
       ["--stills", "--refresh-audio", "hook"],
       ["--refresh-audio", "hook", "--stills"],
@@ -283,7 +284,7 @@ describe("はみ出しがある場合の書き出し", () => {
           expect(synthesizeCached).not.toHaveBeenCalled();
           if (stills) {
             const count = sample.scenes.reduce((n, scene) => n + scene.beats.length, 0);
-            expect(screenshot).toHaveBeenCalledTimes(count + 3);
+            expect(screenshot).toHaveBeenCalledTimes(count + 2);
             expect(events.at(-2)).toContain("contact-sheet.png");
             expect(events.at(-1)).toContain("文字のはみ出し");
             for (const scene of sample.scenes) expect(events.at(-1)).toContain(`${scene.id}: 読む`);
@@ -448,10 +449,10 @@ describe("音声モデルと日次上限", () => {
       expect(synthesizeCached).not.toHaveBeenCalled();
       const screenshots = page.screenshot.mock.calls.map(([args]) => args.path);
       expect(screenshots[0]).toContain("scene-1-beat-1.png");
-      expect(screenshots).toContain(join(dir, `scene-${storyboard.scenes.length + 2}-beat-1.png`));
+      expect(screenshots).toContain(join(dir, `scene-${storyboard.scenes.length + 1}-beat-1.png`));
       expect(existsSync(stale)).toBe(false);
       expect(screenshots).toHaveLength(
-        2 * (storyboard.scenes.reduce((n, s) => n + s.beats.length, 0) + 3),
+        2 * (storyboard.scenes.reduce((n, s) => n + s.beats.length, 0) + 2),
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -485,7 +486,7 @@ describe("音声モデルと日次上限", () => {
           "--tts",
           name,
           "--refresh-audio",
-          "title,summary",
+          "title",
           "--tts-model",
           "alternate-model",
           "--out",
@@ -498,26 +499,25 @@ describe("音声モデルと日次上限", () => {
         expect(report.scenes.map((s: { id: string }) => s.id)).toEqual([
           "title",
           ...storyboard.scenes.map((s) => s.id),
-          "summary",
         ]);
         expect(report.scenes[0]).toMatchObject({ id: "title", startSec: 0, durationSec: 2.6 });
         expect(report.scenes[1].startSec).toBe(2.6);
-        const summarySpeech = estimateSpeechSeconds(
-          "ウェブで読み、ブイエスコードで課題を書きます。",
-        );
-        const summaryDuration =
-          Math.ceil((0.8 + Math.round(summarySpeech * AUDIO_RATE) / AUDIO_RATE + 1.4 - 1e-9) * 30) /
-          30;
-        expect(report.scenes.at(-1)).toMatchObject({ id: "summary", durationSec: summaryDuration });
-        expect(report.scenes.at(-1).startSec).toBeCloseTo(report.durationSec - summaryDuration);
+        const encodes = vi.mocked(encodeScene).mock.calls;
+        expect(encodes.slice(0, -1).every((call) => call[4] === undefined)).toBe(true);
+        const lastFade = encodes.at(-1)?.[4];
+        expect(lastFade?.duration).toBe(0.8);
+        expect(lastFade?.start).toBeCloseTo(report.scenes.at(-1).durationSec - 0.8);
+        expect(report.scenes.at(-1).id).toBe(storyboard.scenes.at(-1)?.id);
         expect(report.durationSec).toBeCloseTo(
           report.scenes.reduce((n: number, s: { durationSec: number }) => n + s.durationSec, 0),
         );
-        expect(synthesizeCached).toHaveBeenCalledTimes(storyboard.scenes.length + 2);
+        expect(synthesizeCached).toHaveBeenCalledTimes(storyboard.scenes.length + 1);
         const calls = vi.mocked(synthesizeCached).mock.calls;
         expect(calls[0][1]).toBe(topics[0].title);
-        expect(calls.at(-1)?.[1]).toBe("ウェブで読み、ブイエスコードで課題を書きます。");
-        expect(calls.map((call) => call[3])).toEqual([true, false, false, false, true]);
+        expect(
+          calls.some((call) => call[1] === "ウェブで読み、ブイエスコードで課題を書きます。"),
+        ).toBe(false);
+        expect(calls.map((call) => call[3])).toEqual([true, false, false, false]);
         const wavs = vi
           .mocked(writeNarrationWav)
           .mock.calls.filter(([file]) => /audio-\d+\.wav$/.test(file));
@@ -525,20 +525,19 @@ describe("音声モデルと日次上限", () => {
         expect(wavs.at(-1)?.[2][0].startSec).toBe(0.8);
         for (const call of wavs) expect(call[2][0].pcm.length).toBeGreaterThan(0);
         expect(toPosterJpeg).toHaveBeenCalledExactlyOnceWith(
-          join(contentRoot, "dist/video-cache/scenes", report.scenes.at(-2).hash, "poster.png"),
+          join(contentRoot, "dist/video-cache/scenes", report.scenes.at(-1).hash, "poster.png"),
           expect.stringContaining("poster.jpg"),
         );
         expect(readFileSync(join(root, "out/fixture/first/captions.vtt"), "utf8")).toBe(
           "WEBVTT\n\nNOTE 字幕は動画に焼き込み済み\n\n",
         );
-        expect(encodeNarration).toHaveBeenCalledTimes(storyboard.scenes.length + 2);
+        expect(encodeNarration).toHaveBeenCalledTimes(storyboard.scenes.length + 1);
         const sfxWavs = vi
           .mocked(writeNarrationWav)
           .mock.calls.filter(([file]) => /sfx-\d+\.wav$/.test(file));
-        expect(sfxWavs).toHaveLength(2);
+        expect(sfxWavs).toHaveLength(1);
         for (const [i, call] of vi.mocked(encodeNarration).mock.calls.entries()) {
-          const sfx =
-            i === 0 ? sfxWavs[0] : i === storyboard.scenes.length + 1 ? sfxWavs[1] : undefined;
+          const sfx = i === 0 ? sfxWavs[0] : undefined;
           expect(call[2]).toEqual({ preventSilence: true, ...(sfx ? { sfxWav: sfx[0] } : {}) });
           if (sfx) {
             expect(sfx[1]).toBe(report.scenes[i].durationSec);

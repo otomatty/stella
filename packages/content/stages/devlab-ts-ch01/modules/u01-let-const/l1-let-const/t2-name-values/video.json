@@ -201,7 +201,9 @@
         "const points = Math.floor(1980 / 100);"
       ],
       "panel": {
-        "kind": "values",
+        "kind": "numberLine",
+        "from": 18,
+        "to": 21,
         "items": ["points"]
       },
       "beats": [
@@ -213,27 +215,25 @@
         {
           "say": "まず、1980 を 100 で割ると、19.8 です。",
           "focus": [1],
-          "calc": {
-            "on": "points",
-            "expr": "1980 / 100",
-            "result": "19.8"
-          }
+          "plot": { "at": 19.8, "label": "19.8" }
         },
         {
-          "say": "Math.floor で切り捨てて、19 になります。",
-          "speech": "マスドットフロアで切り捨てて、十九になります。",
-          "calc": {
-            "on": "points",
-            "expr": "Math.floor(19.8)",
-            "result": "19"
-          }
+          "say": "19.8 は、19 と 20 の間にあります。",
+          "range": [19, 20]
+        },
+        {
+          "say": "Math.floor は、小さいほうの 19 に切り捨てます。",
+          "speech": "マスドットフロアは、小さいほうの十九に切り捨てます。",
+          "snap": { "to": 19, "label": "切り捨て" }
         },
         {
           "say": "四捨五入ではないので、20 にはなりません。",
-          "part": {
-            "line": 1,
-            "text": "Math.floor"
-          }
+          "tick": [{ "at": 20, "kind": "cross" }]
+        },
+        {
+          "say": "points には、19 が入ります。",
+          "speech": "ポインツには、十九が入ります。",
+          "set": { "points": "19" }
         }
       ]
     },

@@ -88,7 +88,10 @@ export function argumentsOf(args: string[]) {
       const value = args[++i];
       if (!value || value.startsWith("--") || value.split(",").some((id) => !id.trim()))
         throw new Error("--refresh-audio にカンマ区切りの場面のidを指定してください");
-      refreshAudio.push(...value.split(",").map((id) => id.trim()));
+      const ids = value.split(",").map((id) => id.trim());
+      if (ids.includes("summary"))
+        throw new Error("summary の場面は廃止されました。--refresh-audio には指定できません");
+      refreshAudio.push(...ids);
     } else if (a === "--tts") {
       const name = args[++i];
       if (!["gemini", "openjtalk", "fake"].includes(name))
@@ -445,7 +448,6 @@ export async function buildSceneTopic(
       assets.context.clips,
       {
         title: pcms[0][0].length / AUDIO_RATE,
-        summary: pcms[pcms.length - 1][0].length / AUDIO_RATE,
       },
     );
     boundaryFrames.clear();
@@ -516,10 +518,10 @@ export async function buildSceneTopic(
           ...(sfxWav ? { sfxWav } : {}),
         });
         const pending = join(work, `clip-${i}.mp4`);
-        const shots = await encodeScene(page, timing.duration, audio, pending);
+        const shots = await encodeScene(page, timing.duration, audio, pending, timing.fadeOut);
         await page.evaluate(
           (t) => (window as unknown as ScenePageWindow).__setTime(t),
-          timing.duration,
+          timing.fadeOut?.start ?? timing.duration,
         );
         const poster = join(work, `poster-${i}.png`);
         await page.screenshot({ path: poster });
@@ -593,7 +595,7 @@ export async function buildSceneVideos(args: string[]) {
         );
         if (!storyboard)
           throw new Error(`絵コンテの検査エラー: ${issues.map((i) => i.message).join(" / ")}`);
-        return ["title", ...storyboard.scenes.map((scene) => scene.id), "summary"];
+        return ["title", ...storyboard.scenes.map((scene) => scene.id)];
       }),
     );
     for (const id of options.refreshAudio)

@@ -10,7 +10,7 @@ import { viewFrame } from "./scene-view.js";
 import { storyboardStates, type VideoStoryboard, type ViewScene } from "./video-storyboard.js";
 
 describe.each([24000, 48000])("%sHzの効果音", (rate) => {
-  it.each(["switch", "title", "summary"] as const)(
+  it.each(["switch", "title"] as const)(
     "%sは決定的で、指定の長さ・ピーク・滑らかな両端を持つ",
     (kind) => {
       const pcm = synthesizeSceneSfx(kind, rate);
@@ -63,7 +63,6 @@ it("文字場面だけに0.1秒のチャイムを足し、boardや同名の通�
   const entries = sceneVideoSequence([], [], { title: "タイトル", takeaway: "まとめ" });
   expect(entries.map(({ scene, timing }) => sceneSfxCues(scene, timing))).toEqual([
     [{ kind: "title", at: 0.1 }],
-    [{ kind: "summary", at: 0.1 }],
   ]);
   expect(
     sceneSfxCues({ id: "title", title: "図解", role: "hook", board: "main", beats: [] }, timing),

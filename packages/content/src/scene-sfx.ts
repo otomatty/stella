@@ -3,7 +3,7 @@ import type { Scene } from "./video-storyboard.js";
 
 /** 正規化済みの読み上げに足す音量。素材や乱数を使わず、毎回同じPCMを作る。 */
 export const SCENE_SFX_PEAK_DBFS = -24;
-export const SCENE_SFX_SECONDS = { switch: 0.28, title: 0.9, summary: 1.1 } as const;
+export const SCENE_SFX_SECONDS = { switch: 0.28, title: 0.9 } as const;
 export type SceneSfxKind = keyof typeof SCENE_SFX_SECONDS;
 export interface SceneSfxCue {
   kind: SceneSfxKind;
@@ -51,10 +51,6 @@ export function synthesizeSceneSfx(kind: SceneSfxKind, sampleRate: number): Int1
       samples[i] = Math.sin(2 * Math.PI * phase) * envelope(t, duration, 0.075, 0.025);
     } else if (kind === "title") {
       samples[i] = (sine(880, t) + 0.5 * sine(1320, t)) * envelope(t, duration, 0.23);
-    } else {
-      samples[i] =
-        sine(660, t) * envelope(t, duration, 0.28) +
-        0.7 * sine(880, t - 0.18) * envelope(t - 0.18, duration - 0.18, 0.26);
     }
     peak = Math.max(peak, Math.abs(samples[i]));
   }

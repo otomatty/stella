@@ -78,7 +78,6 @@ export function sceneVideoSourceHash(input: {
         ...storyboard.scenes.map((s) =>
           s.beats.map((b) => speechOf({ text: b.say, speech: b.speech }, readings)),
         ),
-        [speechOf({ text: input.takeaway.trim() }, readings)],
       ],
       timing: SCENE_TIMING,
     }),

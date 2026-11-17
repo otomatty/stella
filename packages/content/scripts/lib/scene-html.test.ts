@@ -52,59 +52,17 @@ it("文字だけのタイトルは字幕なしで中央に出し、前後0.4秒�
   expect(window.__busyRanges[1][1]).toBe(2.6);
   expect(window.__overflows()).toEqual([]);
 });
-it.each(["Webで読み、VS Codeで課題を書き、確認して提出します。"])(
-  "まとめはtakeaway (%s) を中央に出し、3行の検査と白へのフェードを行う",
-  async (takeaway) => {
-    const scene = sceneVideoSequence(
-      [],
-      [],
-      { title: "学ぶ流れ", takeaway },
-      {},
-      { title: 1, summary: 1 },
-    ).at(-1)?.scene;
-    if (scene?.kind !== "text") throw new Error("文字の場面ではありません");
-    const html = textSceneHtml(scene);
-    expect(html).toContain(`<h1>${takeaway}</h1>`);
-    expect(html).toContain("<header>まとめ</header>");
-    expect(html).toContain("font-size:32px;color:#5C5C66");
-    expect(html).toContain("max-width:1500px");
-    expect(html).toContain("font-size:56px;line-height:1.5");
-    expect(html).toContain("word-break:normal;line-break:strict;text-wrap:balance");
-    expect(html).not.toContain('id="caption"');
-    const text = { scrollHeight: 252 };
-    const content = { style: { opacity: "" }, querySelector: () => text };
-    const white = { style: { opacity: "" } };
-    const window = {} as ScenePageWindow;
-    runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
-      window,
-      document: { getElementById: (id: string) => (id === "white" ? white : content) },
-      getComputedStyle: () => ({ lineHeight: "84px" }),
-    });
-    expect(window.__busyRanges).toEqual([
-      [0, 0.4],
-      [3.4, 4],
-    ]);
-    for (const [time, opacity, whiteOpacity] of [
-      [0, 0, 0],
-      [0.2, 0.5, 0],
-      [0.4, 1, 0],
-      [2, 1, 0],
-      [3.4, 1, 0],
-      [3.7, 1, 0.5],
-      [4, 1, 1],
-      [5, 1, 1],
-      [0, 0, 0],
-    ]) {
-      await window.__setTime(time);
-      expect(Number(content.style.opacity)).toBeCloseTo(opacity);
-      expect(Number(white.style.opacity)).toBeCloseTo(whiteOpacity);
-    }
-    expect(window.__overflows()).toEqual([]);
-    text.scrollHeight = 336;
-    expect(window.__overflows()).toEqual(["まとめの文が3行に収まりません"]);
-  },
-);
-it.each(["title", "summary"] as const)(
+it("takeawayを文字場面として追加しない", () => {
+  const sequence = sceneVideoSequence([], [], {
+    title: "学ぶ流れ",
+    takeaway: "確認して提出します。",
+  });
+  expect(sequence.map(({ scene }) => scene.id)).toEqual(["title"]);
+  expect(
+    textSceneHtml(sequence[0].scene as import("../../src/scene-timeline.js").TextScene),
+  ).not.toContain("確認して提出します。");
+});
+it.each(["title"] as const)(
   "%sは長い読み上げでも字幕を出さず、伸びた末尾でフェードする",
   async (id) => {
     const entry = sceneVideoSequence(
@@ -114,7 +72,6 @@ it.each(["title", "summary"] as const)(
       {},
       {
         title: 6.013,
-        summary: 7.017,
       },
     ).find((entry) => entry.scene.id === id);
     if (entry?.scene.kind !== "text") throw new Error("文字の場面ではありません");
@@ -130,14 +87,12 @@ it.each(["title", "summary"] as const)(
     await window.__setTime(entry.timing.beats[0].end);
     expect(Number(content.style.opacity)).toBe(1);
     expect(Number(white.style.opacity)).toBe(0);
-    const fade = id === "title" ? 0.4 : 0.6;
+    const fade = 0.4;
     expect(window.__busyRanges[1][0]).toBeCloseTo(entry.timing.duration - fade);
     await window.__setTime(entry.timing.duration - fade / 2);
-    expect(Number(id === "title" ? content.style.opacity : white.style.opacity)).toBeCloseTo(0.5);
+    expect(Number(content.style.opacity)).toBeCloseTo(0.5);
     await window.__setTime(entry.timing.duration);
-    expect(Number(id === "title" ? content.style.opacity : white.style.opacity)).toBeCloseTo(
-      id === "title" ? 0 : 1,
-    );
+    expect(Number(content.style.opacity)).toBeCloseTo(0);
   },
 );
 describe.each(["view", "board"] as const)("%s のタイトル札と字幕", (kind) => {
@@ -252,7 +207,7 @@ describe.each(["view", "board"] as const)("%s のタイトル札と字幕", (kin
     expect(html).toContain("top:24px;left:50%;transform:translateX(-50%)");
     expect(html).toContain("white-space:nowrap;z-index:1;opacity:0;height:80px");
     expect(html).toContain("#white{position:absolute;inset:0;z-index:2;");
-    expect(titlePage(undefined, "recap").html).toContain('<div id="heading"><span>まとめ</span>');
+    expect(titlePage(undefined, "recap").html).toContain('<div id="heading"><span>問題へ</span>');
     if (kind === "board") {
       expect(html).toContain('id="diagram" viewBox="0 170 1920 760"');
       expect(html).toContain("top:170px;width:1920px;height:760px");

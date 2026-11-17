@@ -74,39 +74,27 @@ function textRuntime(scene: TextScene) {
   const win = window as unknown as ScenePageWindow;
   const content = document.getElementById("text-scene") as HTMLElement;
   const white = document.getElementById("white") as HTMLElement;
-  const summary = scene.id === "summary";
-  const fadeOut = summary ? 0.6 : 0.4;
+  const fadeOut = 0.4;
   const clamp = (value: number) => Math.max(0, Math.min(1, value));
   win.__busyRanges = [
     [0, 0.4],
     [scene.duration - fadeOut, scene.duration],
   ];
   win.__setTime = async (time) => {
-    content.style.opacity = String(
-      clamp(Math.min(time / 0.4, summary ? 1 : (scene.duration - time) / fadeOut)),
-    );
-    white.style.opacity = String(
-      clamp(summary ? (time - (scene.duration - fadeOut)) / fadeOut : 1 - time / 0.4),
-    );
+    content.style.opacity = String(clamp(Math.min(time / 0.4, (scene.duration - time) / fadeOut)));
+    white.style.opacity = String(clamp(1 - time / 0.4));
   };
   win.__overflows = () => {
-    if (summary) {
-      const text = content.querySelector("h1") as HTMLElement;
-      const lineHeight = Number.parseFloat(getComputedStyle(text).lineHeight);
-      return text.scrollHeight > lineHeight * 3 + 1 ? ["まとめの文が3行に収まりません"] : [];
-    }
     return content.scrollHeight > 900 ? ["タイトルが画面に収まりません"] : [];
   };
   win.__setTime(0);
 }
-/** タイトルとまとめは中央の文を読むため、音声があっても字幕を重ねない。 */
+/** タイトルは中央の文を読むため、音声があっても字幕を重ねない。 */
 export function textSceneHtml(scene: TextScene): string {
   const data = JSON.stringify(scene).replace(/</g, "\\u003c");
-  const summary = scene.id === "summary";
   return `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
   *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}
   body{display:flex;align-items:center;justify-content:center}#text-scene{width:1680px;text-align:center;overflow-wrap:anywhere;opacity:0}#text-scene header{font-size:32px;color:#5C5C66;margin-bottom:24px}#text-scene h1{font-size:80px;font-weight:700;line-height:1.4;margin:0}#accent{width:96px;height:6px;background:#E62F9A;margin:40px auto 0}#white{position:absolute;inset:0;background:white;pointer-events:none}
-  ${summary ? "#text-scene{width:1500px;max-width:1500px;word-break:normal;line-break:strict;text-wrap:balance}#text-scene h1{font-size:56px;line-height:1.5}" : ""}
   </style><main id="text-scene">${scene.header ? `<header>${escapeHtml(scene.header)}</header>` : ""}<h1>${escapeHtml(scene.title)}</h1><div id="accent"></div></main><div id="white"></div><script>(${textRuntime.toString()})(${data});</script></html>`;
 }
 function runtime(
@@ -468,7 +456,7 @@ function boardHtml(input: BoardHtmlInput): string {
     .join("");
   const heading = (s: Scene | undefined) =>
     s
-      ? `<span>${s.role === "point" ? `要点 ${s.point}` : s.role === "recap" ? "まとめ" : ""}</span> ${escapeHtml(s.title)}`
+      ? `<span>${s.role === "point" ? `要点 ${s.point}` : s.role === "recap" ? "問題へ" : ""}</span> ${escapeHtml(s.title)}`
       : "";
   const { previous: _previous, ...renderInput } = input;
   const sameTitle =

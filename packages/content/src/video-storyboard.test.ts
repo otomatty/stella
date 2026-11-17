@@ -25,11 +25,14 @@ function fails(edit: (s: BoardStoryboard) => void, path: string) {
   ).toBe(true);
 }
 describe("絵コンテ", () => {
-  it.each(["title", "summary"])("自動の場面と同じid (%s) を絵コンテに書かせない", (id) => {
-    fails((s) => {
-      s.scenes[0].id = id;
-    }, "scenes[0].id");
-  });
+  it.each(["title", "summary"])(
+    "自動タイトル・廃止した場面のid (%s) を絵コンテに書かせない",
+    (id) => {
+      fails((s) => {
+        s.scenes[0].id = id;
+      }, "scenes[0].id");
+    },
+  );
   it("試作は本文を変えずに検査を通る", () => {
     expect(parseStoryboard(sample).storyboard).toEqual(sample);
   });
@@ -568,6 +571,34 @@ describe("コードの場面の検査", () => {
       beats: [{ say: "価格に名前を付けます。", type: [0, 1], set: { price: "1200" } }],
     })),
     brief: { ...fresh().brief, points: ["名前と値"] },
+  });
+  it("数直線の6文を受け付け、ほかの場面では数直線の動きを拒む", () => {
+    const json = codeVideo();
+    Object.assign(json.scenes[1], {
+      panel: { kind: "numberLine", from: 18, to: 21, items: ["points"] },
+      beats: [
+        { say: "コードを書きます。", type: [0, 1] },
+        { say: "点を置きます。", plot: { at: 19.8, label: "19.8" } },
+        { say: "間にあります。", range: [19, 20] },
+        { say: "切り捨てます。", snap: { to: 19, label: "切り捨て" } },
+        { say: "二十ではありません。", tick: [{ at: 20, kind: "cross" }] },
+        { say: "値を入れます。", set: { points: "19" } },
+      ],
+    });
+    expect(parseStoryboard(json).storyboard).toBeDefined();
+    for (const kind of ["board", "view"]) {
+      const other = fresh();
+      Object.assign(other.scenes[0], { kind });
+      Object.assign(other.scenes[0].beats[0], {
+        plot: { at: 19.8, label: "19.8" },
+        range: [19, 20],
+        snap: { to: 19, label: "切り捨て" },
+        tick: [{ at: 20, kind: "cross" }],
+      });
+      const { issues } = parseStoryboard(other);
+      for (const key of ["plot", "range", "snap", "tick"])
+        expect(issues.some((i) => i.path === `scenes[0].beats[0].${key}`)).toBe(true);
+    }
   });
   it("boardなしで受け付け、既存の状態APIにつなぐ", () => {
     const json = codeVideo();

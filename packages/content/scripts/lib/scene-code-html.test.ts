@@ -191,6 +191,8 @@ it("callsの行を出し、コードや値に含むHTMLを実行しない", () =
     index: 1,
     total: 3,
   });
+  expect(html).toContain("<span>問題へ</span>");
+  expect(html).not.toContain("<span>まとめ</span>");
   expect(html.match(/<\/script>/g)).toHaveLength(1);
   expect(html).not.toContain("</script><img>");
 });
@@ -311,4 +313,132 @@ it("codeの前後では直前の最終コマを0.4秒でクロスフェードす
   expect(overlay.style.opacity).toBe("0");
   expect(times).toContain(0.4);
   expect(window.__busyRanges).toEqual([[0, 0.4]]);
+});
+
+it("数直線の点の出現・移動・区間・矢印・目盛りの印・値の箱を描く", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "floor",
+    role: "point",
+    point: 1,
+    title: "切り捨て",
+    code: ["const points = Math.floor(19.8);"],
+    panel: { kind: "numberLine", from: 18, to: 21, items: ["points"] },
+    beats: [
+      { say: "点を置きます。", plot: { at: 19.8, label: "<19.8>" } },
+      { say: "間です。", range: [19, 20] },
+      { say: "切り捨てます。", snap: { to: 19, label: "<切り捨て>" } },
+      {
+        say: "二十ではありません。",
+        tick: [
+          { at: 20, kind: "cross" },
+          { at: 19, kind: "check" },
+        ],
+      },
+      { say: "値を入れます。", set: { points: "19" } },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[3, 3, 3, 3, 3]])[0];
+  const html = sceneHtml({
+    board: { cols: 1, rows: 1, nodes: [] },
+    scene,
+    state: codeSceneState(scene),
+    timing,
+    index: 0,
+    total: 1,
+  });
+  const elements = new Map(
+    ["code", "panel", "caption", "card"].map((id) => [id, { innerHTML: "", style: {} }]),
+  );
+  const window = {} as ScenePageWindow;
+  runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+    window,
+    document: { getElementById: (id: string) => elements.get(id) },
+  });
+  const panel = () => elements.get("panel")?.innerHTML ?? "";
+  expect(panel()).toContain('font-size="36"');
+  expect(html).toContain("margin-bottom:32px");
+  expect(panel()).not.toContain("<circle");
+  await window.__setTime(timing.beats[0].start);
+  expect(panel()).toContain('<g opacity="0"');
+  await window.__setTime(timing.beats[0].start + 1);
+  expect(Number(/translate\(([^ ]+) 262\)/.exec(panel())?.[1])).toBeCloseTo(414);
+  expect(panel()).toContain("&lt;19.8&gt;");
+  await window.__setTime(timing.beats[1].start + 1);
+  expect(panel()).toContain('height="24"');
+  expect(panel()).toContain('y="250"');
+  await window.__setTime(timing.beats[2].start + 0.5);
+  expect(Number(/translate\(([^ ]+) 262\)/.exec(panel())?.[1])).toBeCloseTo(271.6666667);
+  expect(panel()).toContain('marker-end="url(#snap-arrow)"');
+  expect(panel()).toContain("&lt;切り捨て&gt;");
+  await window.__setTime(timing.beats[4].start + 1);
+  expect(Number(/translate\(([^ ]+) 262\)/.exec(panel())?.[1])).toBeCloseTo(251.3333333);
+  expect(panel()).toContain('font-weight="800"');
+  expect(panel()).toContain('fill="#e5342b">✕');
+  expect(panel()).toContain('fill="#16a34a">○');
+  expect(panel()).toContain('class="value-box active"');
+  expect(panel()).toContain(">19</strong>");
+  // ブラウザーを使わず、出力された座標とフォントサイズから余裕を持った矩形で検査する。
+  // テキストは上1em・下0.3em・1文字1emとして実際より広めに見積もる。
+  const assertSeparated = (markup: string) => {
+    const boxes: { name: string; left: number; right: number; top: number; bottom: number }[] = [];
+    const attr = (tag: string, name: string) =>
+      Number(new RegExp(`${name}="([^" ]+)"`).exec(tag)?.[1]);
+    const point = /translate\(([^ ]+) ([^)]+)\)/.exec(markup);
+    for (const match of markup.matchAll(
+      /<text class="(number-line-[^"]+)"([^>]*)>([^<]*)<\/text>/g,
+    )) {
+      const [, name, tag, escaped] = match;
+      const font = attr(tag, "font-size");
+      const text = escaped.replace(/&(?:lt|gt|amp|quot);/g, "x");
+      const x = attr(tag, "x") + (name === "number-line-point-label" ? Number(point?.[1]) : 0);
+      const y = attr(tag, "y") + (name === "number-line-point-label" ? Number(point?.[2]) : 0);
+      boxes.push({
+        name,
+        left: x - (text.length * font) / 2,
+        right: x + (text.length * font) / 2,
+        top: y - font,
+        bottom: y + font * 0.3,
+      });
+    }
+    const arrow = /class="number-line-arrow" d="M ([^ ]+) ([^ ]+) H ([^"]+)"/.exec(markup);
+    if (arrow) {
+      // 線幅4px × markerHeight 6。矢じりを含む矩形。
+      boxes.push({
+        name: "arrow",
+        left: Math.min(Number(arrow[1]), Number(arrow[3])) - 4,
+        right: Math.max(Number(arrow[1]), Number(arrow[3])) + 4,
+        top: Number(arrow[2]) - 12,
+        bottom: Number(arrow[2]) + 12,
+      });
+    }
+    for (let i = 0; i < boxes.length; i++) {
+      for (const b of boxes.slice(i + 1)) {
+        const a = boxes[i];
+        expect(
+          a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,
+          `${a.name} と ${b.name} が重なっています`,
+        ).toBe(true);
+      }
+    }
+    const pointBox = /class="number-line-point-label-box"([^>]*)/.exec(markup)?.[1];
+    if (pointBox) {
+      const bottom = attr(pointBox, "y") + Number(point?.[2]) + attr(pointBox, "height");
+      expect(bottom).toBeLessThan(100); // 矢印の札の領域より上に収まる。
+    }
+  };
+  for (const beat of timing.beats) {
+    for (let elapsed = 0; elapsed <= 1.1; elapsed += 0.1) {
+      await window.__setTime(beat.start + elapsed);
+      assertSeparated(panel());
+    }
+  }
+  expect(panel()).toContain('r="14"');
+  expect(panel()).toContain('font-size="30" font-weight="700"');
+  expect(panel()).toContain('font-size="40"');
+  expect(panel()).toContain('font-size="26"');
+  const labelX = Number(/class="number-line-snap-label" x="([^"]+)"/.exec(panel())?.[1]);
+  expect(labelX).toBeCloseTo((414 + 251.3333333) / 2);
+  await window.__setTime(0);
+  expect(panel()).not.toContain("<circle");
 });

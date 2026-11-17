@@ -390,7 +390,7 @@ export function parseStoryboard(
       s = obj(value, p);
     str(s.id, `${p}.id`);
     if (s.id === "title") error(`${p}.id`, "title は自動で入るタイトルの場面に使うidです");
-    if (s.id === "summary") error(`${p}.id`, "summary は自動で入るまとめの場面に使うidです");
+    if (s.id === "summary") error(`${p}.id`, "summary は廃止した場面のidなので使えません");
     str(s.title, `${p}.title`, 16);
     if (s.kind !== undefined && s.kind !== "board" && s.kind !== "view" && s.kind !== "code")
       error(`${p}.kind`, "board・view・codeから選んでください");
@@ -408,7 +408,7 @@ export function parseStoryboard(
     else if (s.point !== undefined) error(`${p}.point`, "pointの場面だけに指定してください");
     if (s.reset !== undefined && typeof s.reset !== "boolean")
       error(`${p}.reset`, "真偽値にしてください");
-    arr(s.beats, `${p}.beats`, 1, 5).forEach((value, j) => {
+    arr(s.beats, `${p}.beats`, 1, s.kind === "code" ? 6 : 5).forEach((value, j) => {
       const q = `${p}.beats[${j}]`,
         beat = obj(value, q);
       str(beat.say, `${q}.say`, 40);
@@ -420,6 +420,10 @@ export function parseStoryboard(
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
+      if (s.kind !== "code")
+        for (const key of ["plot", "range", "snap", "tick"])
+          if (beat[key] !== undefined)
+            error(`${q}.${key}`, `${key}はnumberLineパネルだけに指定できます`);
       if (s.kind === "code") return;
       if (s.kind === "view") {
         if (beat.image !== undefined) str(beat.image, `${q}.image`);

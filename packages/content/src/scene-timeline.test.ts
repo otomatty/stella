@@ -18,7 +18,7 @@ const scenes = [0, 1, 2].map(
     beats: [{ say: "文です。" }, { say: "次です。" }],
   }),
 );
-it("短い読み上げは2.6秒のタイトルと4秒のまとめに収め、絵コンテの文と場面を保つ", () => {
+it("タイトルと絵コンテの文・場面を保ち、最後の余韻に0.8秒のフェードを足す", () => {
   const durations = [
     [1, 2],
     [1, 2],
@@ -34,37 +34,31 @@ it("短い読み上げは2.6秒のタイトルと4秒のまとめに収め、絵
       takeaway: "Webで読み、VS Codeで書きます。",
     },
     {},
-    { title: 1, summary: 1.5 },
+    { title: 1 },
   );
   expect(sequence[0]).toEqual({
     scene: { kind: "text", id: "title", title: "学ぶ流れ", header: "開発環境", duration: 2.6 },
     timing: { start: 0, duration: 2.6, beats: [{ start: 0.6, end: 1.6, say: "学ぶ流れ" }] },
     sourceIndex: -1,
   });
-  for (const [i, entry] of sequence.slice(1, -1).entries()) {
+  for (const [i, entry] of sequence.slice(1).entries()) {
     expect(entry.scene).toBe(scenes[i]);
     expect(entry.sourceIndex).toBe(i);
-    expect(entry.timing).toEqual({ ...original[i], start: original[i].start + 2.6 });
+    expect(entry.timing).toEqual({
+      ...original[i],
+      start: original[i].start + 2.6,
+      ...(i === scenes.length - 1
+        ? {
+            duration: Math.round((original[i].duration + 0.8) * 30) / 30,
+            fadeOut: { start: original[i].duration, duration: 0.8 },
+          }
+        : {}),
+    });
   }
-  expect(sequence.at(-2)?.scene).toBe(scenes.at(-1));
-  const storyboardDuration = original.reduce((n, t) => n + t.duration, 0);
-  expect(sequence.at(-1)).toEqual({
-    scene: {
-      kind: "text",
-      id: "summary",
-      title: "Webで読み、VS Codeで書きます。",
-      header: "まとめ",
-      duration: 4,
-    },
-    timing: {
-      start: storyboardDuration + 2.6,
-      duration: 4,
-      beats: [{ start: 0.8, end: 2.3, say: "Webで読み、VS Codeで書きます。" }],
-    },
-    sourceIndex: -1,
-  });
+  expect(sequence.at(-1)?.scene).toBe(scenes.at(-1));
+  expect(sequence.map((entry) => entry.scene.id)).toEqual(["title", "0", "1", "2"]);
   expect(sequence.reduce((n, e) => n + e.timing.duration, 0)).toBeCloseTo(
-    storyboardDuration + 2.6 + 4,
+    original.reduce((n, t) => n + t.duration, 0) + 2.6 + 0.8,
   );
 });
 it.each([0.2, 1.2, 1.8, 5, 5.013])("読み上げ%s秒から長さを決め、30fpsへ切り上げる", (speech) => {
@@ -75,13 +69,9 @@ it.each([0.2, 1.2, 1.8, 5, 5.013])("読み上げ%s秒から長さを決め、30f
     {},
     {
       title: speech,
-      summary: speech,
     },
   );
-  for (const [i, minimum, lead, tail, fade] of [
-    [0, 2.6, 0.6, 0.8, 0.4],
-    [1, 4, 0.8, 1.4, 0.6],
-  ]) {
+  for (const [i, minimum, lead, tail, fade] of [[0, 2.6, 0.6, 0.8, 0.4]]) {
     const { timing, scene } = sequence[i];
     const expected = Math.max(minimum, lead + speech + tail);
     expect(timing.duration).toBeGreaterThanOrEqual(expected - 1e-9);
@@ -92,8 +82,28 @@ it.each([0.2, 1.2, 1.8, 5, 5.013])("読み上げ%s秒から長さを決め、30f
     expect(timing.beats[0].end).toBeCloseTo(lead + speech);
     expect(timing.duration - fade).toBeGreaterThan(timing.beats[0].end);
   }
-  expect(sequence[1].timing.start).toBe(sequence[0].timing.duration);
+  expect(sequence).toHaveLength(1);
 });
+it.each([0.013, 1.2, 5.017])(
+  "最後の読み上げ%s秒の通常の余韻の後に、24フレームのフェードを置く",
+  (speech) => {
+    const scene = scenes[0];
+    const original = sceneTimelines([scene], [[speech, speech]])[0];
+    const sequence = sceneVideoSequence([scene], [[speech, speech]], {
+      title: "タイトル",
+      takeaway: "読まない",
+    });
+    const last = sequence[1].timing;
+    expect(last.fadeOut).toEqual({ start: original.duration, duration: 0.8 });
+    if (!last.fadeOut) throw new Error("フェードがありません");
+    expect(last.fadeOut.start - last.beats[1].end).toBeGreaterThanOrEqual(
+      SCENE_TIMING.between + SCENE_TIMING.tail - 1e-9,
+    );
+    expect(last.duration).toBeCloseTo(original.duration + 0.8);
+    expect(last.duration * 30).toBeCloseTo(Math.round(last.duration * 30));
+    expect(sequence[0].timing.fadeOut).toBeUndefined();
+  },
+);
 it("見積もりにも読み辞書を使い、headerは読み上げに含めない", () => {
   const topic = { title: "STELLA", header: "読まない見出し", takeaway: "Ctrl + S（Mac は ⌘ + S）" };
   const readings = {
@@ -101,10 +111,7 @@ it("見積もりにも読み辞書を使い、headerは読み上げに含めな�
     "Ctrl + S（Mac は ⌘ + S）": "保存のショートカットキーを押します",
   };
   const sequence = sceneVideoSequence([], [], { ...topic, readings });
-  expect(sequence.map(({ scene }) => sceneSpeeches(scene, readings))).toEqual([
-    [readings.STELLA],
-    [readings["Ctrl + S（Mac は ⌘ + S）"]],
-  ]);
+  expect(sequence.map(({ scene }) => sceneSpeeches(scene, readings))).toEqual([[readings.STELLA]]);
   expect(sequence[0].timing.duration).toBeGreaterThan(
     sceneVideoSequence([], [], topic)[0].timing.duration,
   );

@@ -30,6 +30,7 @@ export async function encodeScene(
   duration: number,
   audio: string,
   out: string,
+  fadeOut?: { start: number; duration: number },
 ): Promise<number> {
   const ranges = await page.evaluate(() => (window as unknown as ScenePageWindow).__busyRanges);
   const work = mkdtempSync(join(dirname(out), "frames-"));
@@ -72,7 +73,9 @@ export async function encodeScene(
       "-map",
       "1:a:0",
       "-vf",
-      "fps=30",
+      fadeOut
+        ? `fps=30,fade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}:color=0xf7f7f9`
+        : "fps=30",
       "-frames:v",
       String(Math.round(duration * 30)),
       "-c:v",
@@ -83,8 +86,16 @@ export async function encodeScene(
       "20",
       "-pix_fmt",
       "yuv420p",
-      "-c:a",
-      "copy",
+      ...(fadeOut
+        ? [
+            "-af",
+            `afade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}`,
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+          ]
+        : ["-c:a", "copy"]),
       "-t",
       String(duration),
       "-r",

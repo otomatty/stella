@@ -9,6 +9,10 @@ export interface CodeBeat {
   part?: { line: number; text: string };
   set?: Record<string, string>;
   calc?: { on: string; expr: string; result: string };
+  plot?: { at: number; label: string };
+  range?: [number, number];
+  snap?: { to: number; label: string };
+  tick?: { at: number; kind: "cross" | "check" }[];
   row?: number[];
   mark?: { line: number; kind: "cross" | "check" }[];
   clear?: number[];
@@ -23,6 +27,7 @@ export interface CodeScene {
   show?: boolean;
   panel?:
     | { kind: "values"; items: string[] }
+    | { kind: "numberLine"; from: number; to: number; items?: string[] }
     | { kind: "calls"; rows: { call: string; result: string; note?: string }[] };
   beats: CodeBeat[];
 }
@@ -31,6 +36,12 @@ export interface CodeState {
   values: Record<string, string>;
   rows: number[];
   marks: Record<number, "cross" | "check">;
+  numberLine?: {
+    point?: { at: number; label: string };
+    range?: [number, number];
+    arrow?: { from: number; to: number; label: string };
+    ticks: Record<number, "cross" | "check">;
+  };
 }
 export interface CodeSceneState {
   kind: "code";
@@ -44,6 +55,7 @@ export function codeSceneState(scene: CodeScene): CodeSceneState {
     values: {},
     rows: [],
     marks: {},
+    ...(scene.panel?.kind === "numberLine" ? { numberLine: { ticks: {} } } : {}),
   };
   let current = start;
   const beats = scene.beats.map((beat) => {
@@ -59,6 +71,20 @@ export function codeSceneState(scene: CodeScene): CodeSceneState {
     current.values = { ...current.values, ...beat.set };
     if (beat.calc) current.values = { ...current.values, [beat.calc.on]: beat.calc.result };
     current.rows = [...new Set([...current.rows, ...(beat.row ?? [])])].sort((a, b) => a - b);
+    if (scene.panel?.kind === "numberLine") {
+      current.numberLine ??= { ticks: {} };
+      const line = current.numberLine;
+      if (beat.plot) {
+        line.point = { ...beat.plot };
+        delete line.arrow;
+      }
+      if (beat.range) line.range = [...beat.range];
+      if (beat.snap && line.point) {
+        line.arrow = { from: line.point.at, ...beat.snap };
+        line.point = { at: beat.snap.to, label: String(beat.snap.to) };
+      }
+      for (const tick of beat.tick ?? []) line.ticks[tick.at] = tick.kind;
+    }
     for (const mark of beat.mark ?? []) current.marks[mark.line] = mark.kind;
     return { before, after: structuredClone(current) };
   });
@@ -98,10 +124,24 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
   const names = new Set<string>();
   let rowCount = 0;
   if (input.panel !== undefined) {
-    if (!panel || !["values", "calls"].includes(String(panel.kind)))
-      error(`${path}.panel`, "values・callsのパネルにしてください");
-    else if (panel.kind === "values") {
-      for (const [i, v] of list(panel.items, `${path}.panel.items`).entries()) {
+    if (!panel || !["values", "calls", "numberLine"].includes(String(panel.kind)))
+      error(`${path}.panel`, "values・calls・numberLineのパネルにしてください");
+    else if (panel.kind === "values" || panel.kind === "numberLine") {
+      if (panel.kind === "numberLine") {
+        if (
+          !Number.isInteger(panel.from) ||
+          !Number.isInteger(panel.to) ||
+          Number(panel.from) >= Number(panel.to) ||
+          Number(panel.to) - Number(panel.from) > 7
+        )
+          error(`${path}.panel`, "from < to の整数で、目盛りは2〜8個にしてください");
+      }
+      const items =
+        panel.kind === "numberLine" &&
+        (panel.items === undefined || (Array.isArray(panel.items) && panel.items.length === 0))
+          ? []
+          : list(panel.items, `${path}.panel.items`);
+      for (const [i, v] of items.entries()) {
         text(v, `${path}.panel.items[${i}]`);
         if (typeof v === "string") {
           if (names.has(v)) error(`${path}.panel.items[${i}]`, "名前が重複しています");
@@ -128,13 +168,64 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       error(p, "存在する行の0始まりの番号にしてください");
   };
   const box = (v: unknown, p: string) => {
-    if (panel?.kind !== "values" || typeof v !== "string" || !names.has(v))
-      error(p, "valuesパネルの存在する箱の名前にしてください");
+    if (
+      (panel?.kind !== "values" && panel?.kind !== "numberLine") ||
+      typeof v !== "string" ||
+      !names.has(v)
+    )
+      error(p, "values・numberLineパネルの存在する箱の名前にしてください");
   };
   if (!Array.isArray(input.beats)) return issues;
+  let plotted = false;
+  const position = (v: unknown, p: string, integer = false) => {
+    if (
+      typeof v !== "number" ||
+      !Number.isFinite(v) ||
+      (integer && !Number.isInteger(v)) ||
+      v < Number(panel?.from) ||
+      v > Number(panel?.to)
+    )
+      error(p, "数直線の範囲内の数にしてください（目盛り・区間の端は整数）");
+  };
   input.beats.forEach((b, i) => {
     if (!obj(b)) return;
     const p = `${path}.beats[${i}]`;
+    for (const key of ["plot", "range", "snap", "tick"] as const) {
+      const value = b[key];
+      if (value === undefined) continue;
+      if (panel?.kind !== "numberLine")
+        error(`${p}.${key}`, `${key}はnumberLineパネルだけに指定できます`);
+      if (key === "range") {
+        if (!Array.isArray(value) || value.length !== 2)
+          error(`${p}.range`, "2つの整数にしてください");
+        else {
+          value.forEach((v, j) => {
+            position(v, `${p}.range[${j}]`, true);
+          });
+          if (Number(value[0]) >= Number(value[1]))
+            error(`${p}.range`, "小さい整数から順に指定してください");
+        }
+      } else if (key === "tick") {
+        list(value, `${p}.tick`, 8).forEach((v, j) => {
+          const q = `${p}.tick[${j}]`;
+          if (!obj(v)) {
+            error(q, "オブジェクトにしてください");
+            return;
+          }
+          position(v.at, `${q}.at`, true);
+          if (v.kind !== "cross" && v.kind !== "check")
+            error(`${q}.kind`, "cross・checkから選んでください");
+        });
+      } else {
+        if (!obj(value)) error(`${p}.${key}`, "オブジェクトにしてください");
+        else {
+          position(value[key === "plot" ? "at" : "to"], `${p}.${key}`, key === "snap");
+          text(value.label, `${p}.${key}.label`);
+        }
+        if (key === "snap" && !plotted) error(`${p}.snap`, "前の文でplotを指定してください");
+      }
+    }
+    if (b.plot !== undefined) plotted = true;
     for (const key of ["type", "focus", "clear", "row"] as const) {
       if (b[key] === undefined) continue;
       if (key === "row" && panel?.kind !== "calls")
@@ -270,6 +361,27 @@ export function codeFrame(
           ? after.marks[n]
           : undefined,
     })),
+    numberLine: after.numberLine
+      ? {
+          ...after.numberLine,
+          point: after.numberLine.point
+            ? {
+                ...after.numberLine.point,
+                label:
+                  beat?.snap && elapsed < 1 && before.numberLine?.point
+                    ? before.numberLine.point.label
+                    : after.numberLine.point.label,
+                at:
+                  beat?.snap && before.numberLine?.point
+                    ? before.numberLine.point.at +
+                      (after.numberLine.point.at - before.numberLine.point.at) *
+                        (1 - (1 - clamp(elapsed / 1)) ** 3)
+                    : after.numberLine.point.at,
+              }
+            : undefined,
+          opacity: beat?.plot ? clamp(elapsed / 0.4) : 1,
+        }
+      : undefined,
     part: beat?.part,
     values: after.values,
     oldValues: before.values,

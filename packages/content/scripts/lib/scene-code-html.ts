@@ -73,9 +73,31 @@ function runtime(data: CodeRenderData, frame: typeof codeFrame, captionAt: typeo
       }
     }
     const panel = scene.panel;
+    const numberLine =
+      panel?.kind === "numberLine"
+        ? (() => {
+            const x = (n: number) => 48 + ((n - panel.from) / (panel.to - panel.from)) * 610;
+            const line = f.numberLine;
+            const arrow = line?.arrow;
+            // 札・矢印・印・数字を別の高さに置き、移動中も互いに重ねない。
+            return `<svg class="number-line" viewBox="0 0 706 350" aria-label="数直線">
+        <defs><marker id="snap-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5749db"/></marker></defs>
+        ${line?.range ? `<rect class="number-line-range" x="${x(line.range[0])}" y="250" width="${x(line.range[1]) - x(line.range[0])}" height="24" rx="8" fill="#5749db" opacity="0.15"/>` : ""}
+        <path d="M 24 262 H 682" stroke="#5c5c66" stroke-width="4"/>
+        ${Array.from({ length: panel.to - panel.from + 1 }, (_, i) => {
+          const n = panel.from + i,
+            mark = line?.ticks[n];
+          return `<path d="M ${x(n)} 250 V 274" stroke="#5c5c66" stroke-width="3"/><text class="number-line-number" x="${x(n)}" y="314" text-anchor="middle" font-size="36" font-weight="${arrow?.to === n ? 800 : 500}" fill="${arrow?.to === n ? "#5749db" : "#16161a"}">${n}</text>${mark ? `<text class="number-line-tick" x="${x(n)}" y="234" text-anchor="middle" font-size="40" font-weight="700" fill="${mark === "cross" ? "#e5342b" : "#16a34a"}">${mark === "cross" ? "✕" : "○"}</text>` : ""}`;
+        }).join("")}
+        ${arrow ? `<path class="number-line-arrow" d="M ${x(arrow.from)} 164 H ${x(arrow.to)}" stroke="#5749db" stroke-width="4" marker-end="url(#snap-arrow)"/><text class="number-line-snap-label" x="${(x(arrow.from) + x(arrow.to)) / 2}" y="130" text-anchor="middle" font-size="26" fill="#5749db">${safe(arrow.label)}</text>` : ""}
+        ${line?.point ? `<g opacity="${line.opacity}" transform="translate(${x(line.point.at)} 262)"><circle r="14" fill="#5749db"/><rect class="number-line-point-label-box" x="-56" y="-242" width="112" height="48" rx="8" fill="#eeeafc"/><text class="number-line-point-label" x="0" y="-208" text-anchor="middle" font-size="30" font-weight="700" fill="#5749db">${safe(line.point.label)}</text></g>` : ""}
+      </svg>`;
+          })()
+        : "";
     element("panel").innerHTML =
-      panel?.kind === "values"
-        ? panel.items
+      numberLine +
+      (panel?.kind === "values" || panel?.kind === "numberLine"
+        ? (panel.items ?? [])
             .map((name) => {
               const active = f.activeValues.includes(name),
                 calc = f.calc?.on === name ? f.calc : undefined;
@@ -94,7 +116,7 @@ function runtime(data: CodeRenderData, frame: typeof codeFrame, captionAt: typeo
             .join("")
         : panel?.kind === "calls"
           ? `<div class="calls-heading">呼び出し → 結果</div>${panel.rows.map((row, i) => (f.rows.includes(i) ? `<div class="call-row" style="opacity:${f.newRows.includes(i) ? f.valueProgress : 1}"><code>${safe(row.call)}</code><strong>${safe(row.result)}</strong><small>${safe(row.note ?? "")}</small></div>` : "")).join("")}`
-          : "";
+          : "");
     element("caption").innerHTML = `<span>${safe(captionAt(timing, time))}</span>`;
     const fade = Math.max(0, Math.min(1, time / 0.4));
     element("card").style.opacity = String(fade);
@@ -180,6 +202,7 @@ export function codeHtml(input: SceneHtmlInput): string {
   .line{height:${lineHeight}px;position:relative;white-space:pre;padding-right:38px}.source{white-space:pre}.mark{position:absolute;right:0;top:0;font:700 34px/${lineHeight}px sans-serif}.part{border-bottom:3px solid #b6a9ff}.numbered{position:relative}.numbered:after{content:'1';position:absolute;right:-10px;top:-16px;width:20px;height:20px;border-radius:50%;background:#5749db;color:white;text-align:center;font:500 14px/20px sans-serif}
   .hljs-keyword,.hljs-literal{color:#c4a5ff}.hljs-number{color:#ffcd91}.hljs-string,.hljs-template-variable{color:#b5e39c}.hljs-title,.hljs-type{color:#96d4ff}.hljs-comment{color:#a0a0ac}.hljs-built_in,.hljs-params{color:#f4dfa3}
   #panel{flex:1;min-width:0;max-height:100%;display:flex;flex-direction:column;gap:16px;justify-content:center;overflow:hidden}
+  .number-line{width:100%;height:auto;flex-shrink:0;overflow:hidden;margin-bottom:32px}
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;max-width:48%;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap}.value-content small{font-size:22px;white-space:nowrap}.answer{display:flex;align-items:center}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}
-  </style><div id="card"><div id="heading"><span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "まとめ" : "つかみ"}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});</script></html>`;
+  </style><div id="card"><div id="heading"><span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "問題へ" : "つかみ"}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});</script></html>`;
 }
