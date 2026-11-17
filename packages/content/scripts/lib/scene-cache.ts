@@ -1,3 +1,4 @@
+import type { CodeState } from "../../src/scene-code.js";
 import { existsSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { speechOf } from "../../src/narration.js";
@@ -14,7 +15,7 @@ import {
 } from "../../src/video-storyboard.js";
 export interface SceneCacheInput<
   S extends Scene | TextScene = Scene | TextScene,
-  T = BoardState | ViewState,
+  T = BoardState | ViewState | CodeState,
 > {
   version: number;
   board: S extends TextScene ? undefined : Board;

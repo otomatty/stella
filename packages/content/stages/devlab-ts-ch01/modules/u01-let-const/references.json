@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch01/u01-let-const@1",
+  "contentHash": "f3dcf9cc6159d4db91fa7e7eada30c9c266b10a5604a775a22fd2aa484bce25a",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-let-const/t2-name-values/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "const による変数宣言と再代入の制限、整数・小数と数値の計算の概念を参照。説明・価格と送料のサンプル・Math.floor の補足・コードの場面の台本は教材用に独自作成し、問1の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/doc.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "const による変数宣言と再代入の制限、整数・小数と数値の計算の概念を参照。説明とコード例、Math.floor の補足は教材用に独自作成",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/knowledge.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "const と数値の計算を背景に、計算結果と小数点以下の切り捨てを確認する知識問題2問を独自作成",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+import { codeHtml } from "./scene-code-html.js";
+import type { CodeSceneState } from "../../src/scene-code.js";
 import { viewHtml } from "./scene-view-html.js";
 import type { ViewImage } from "../../src/scene-view.js";
 /** 時刻から全属性を再計算する場面。時計・CSS transition・外部通信を使わない。 */
@@ -46,8 +48,10 @@ export interface SceneHtmlInput {
   board: Board;
   images?: Record<string, ViewImage>;
   previousView?: ViewSceneState;
+  /** code の前後だけ、直前の場面の最終コマを重ねてクロスフェードする。 */
+  previousFrame?: string;
   scene: Scene;
-  state: SceneState | ViewSceneState;
+  state: SceneState | ViewSceneState | CodeSceneState;
   timing: SceneTimeline;
   index: number;
   total: number;
@@ -406,8 +410,29 @@ function mark(): string {
   return `<g class="mark">${(["check", "cross", "question", "redo"] as const).map((kind, i) => `<g data-kind="${kind}"><circle r="28" fill="${["#16A34A", "#E5342B", "#5C5C66", "#E62F9A"][i]}" stroke="white" stroke-width="3"/><g fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${symbols[kind]}</g></g>`).join("")}</g>`;
 }
 export function sceneHtml(input: SceneHtmlInput): string {
-  if (input.scene.kind === "view") return viewHtml(input);
-  return boardHtml(input as BoardHtmlInput);
+  const html =
+    input.scene.kind === "view"
+      ? viewHtml(input)
+      : input.scene.kind === "code"
+        ? codeHtml(input)
+        : boardHtml(input as BoardHtmlInput);
+  if (!input.previousFrame) return html;
+  const overlay = `<img id="previous-code-frame" src="${escapeHtml(input.previousFrame)}" style="position:absolute;inset:0;width:1920px;height:1080px;z-index:3;pointer-events:none">`;
+  return html
+    .replace("<script>", `${overlay}<script>`)
+    .replace("</html>", `<script>(${codeTransitionRuntime.toString()})();</script></html>`);
+}
+/** イラストと同じ0.4秒のクロスフェード。既存のview/board同士には適用しない。 */
+function codeTransitionRuntime() {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const overlay = document.getElementById("previous-code-frame") as HTMLImageElement;
+  win.__busyRanges.push([0, 0.4]);
+  win.__setTime = async (time) => {
+    await setTime(time);
+    overlay.style.opacity = String(Math.max(0, Math.min(1, 1 - time / 0.4)));
+  };
+  win.__setTime(0);
 }
 function boardHtml(input: BoardHtmlInput): string {
   const toneColor = (tone?: "blue" | "violet") =>

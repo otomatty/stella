@@ -1,3 +1,10 @@
+export type { CodeScene, CodeBeat } from "./scene-code.js";
+import {
+  codeSceneState,
+  validateCodeScene,
+  type CodeScene,
+  type CodeSceneState,
+} from "./scene-code.js";
 /** 絵コンテの契約・状態遷移。I/O と描画に依存しない。 */
 import { parseVideoArt, type VideoArt } from "./video-art.js";
 import { SHOT_ID, type ShotRegion } from "./video-shots.js";
@@ -113,7 +120,7 @@ export interface ViewScene {
   image: string;
   beats: ViewBeat[];
 }
-export type Scene = BoardScene | ViewScene;
+export type Scene = BoardScene | ViewScene | CodeScene;
 export interface StoryboardContext {
   clips?: Record<string, ClipInfo>;
   shots: Record<string, { width: number; height: number; regions: Record<string, ShotRegion> }>;
@@ -193,12 +200,20 @@ export interface ViewSceneState {
   end: ViewState;
 }
 export function storyboardStates(storyboard: BoardStoryboard): SceneState[];
-export function storyboardStates(storyboard: VideoStoryboard): (SceneState | ViewSceneState)[];
-export function storyboardStates(storyboard: VideoStoryboard): (SceneState | ViewSceneState)[] {
-  const states: (SceneState | ViewSceneState)[] = [];
+export function storyboardStates(
+  storyboard: VideoStoryboard,
+): (SceneState | ViewSceneState | CodeSceneState)[];
+export function storyboardStates(
+  storyboard: VideoStoryboard,
+): (SceneState | ViewSceneState | CodeSceneState)[] {
+  const states: (SceneState | ViewSceneState | CodeSceneState)[] = [];
   const boards = storyboard.boards ?? {};
   let lastBoard: { name: string; end: BoardState } | undefined;
   for (const scene of storyboard.scenes) {
+    if (scene.kind === "code") {
+      states.push(codeSceneState(scene));
+      continue;
+    }
     if (scene.kind === "view") {
       const previous = states.at(-1);
       const start: ViewState = {
@@ -377,10 +392,15 @@ export function parseStoryboard(
     if (s.id === "title") error(`${p}.id`, "title は自動で入るタイトルの場面に使うidです");
     if (s.id === "summary") error(`${p}.id`, "summary は自動で入るまとめの場面に使うidです");
     str(s.title, `${p}.title`, 16);
-    if (s.kind !== undefined && s.kind !== "board" && s.kind !== "view")
-      error(`${p}.kind`, "board・viewから選んでください");
+    if (s.kind !== undefined && s.kind !== "board" && s.kind !== "view" && s.kind !== "code")
+      error(`${p}.kind`, "board・view・codeから選んでください");
     if (s.kind === "view") str(s.image, `${p}.image`);
-    else str(s.board, `${p}.board`);
+    else if (s.kind !== "code") str(s.board, `${p}.board`);
+    if (s.kind === "code") {
+      const codeIssues = validateCodeScene(s, p);
+      issues.push(...codeIssues);
+      if (codeIssues.length) usable = false;
+    }
     if (typeof s.role !== "string" || !["hook", "point", "recap"].includes(s.role))
       error(`${p}.role`, "hook・point・recapから選んでください");
     if (s.role === "point")
@@ -400,6 +420,7 @@ export function parseStoryboard(
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
+      if (s.kind === "code") return;
       if (s.kind === "view") {
         if (beat.image !== undefined) str(beat.image, `${q}.image`);
         if (beat.clip !== undefined) {
@@ -510,6 +531,7 @@ export function parseStoryboard(
       validateView(s, i, sb, context, issues);
       return;
     }
+    if (s.kind === "code") return;
     if (!Object.hasOwn(sb.boards ?? {}, s.board)) {
       error(`${p}.board`, "存在しない図解です");
       return;
@@ -548,12 +570,15 @@ export function parseStoryboard(
   const analysisBoards: Record<string, Board> = Object.fromEntries([
     ...Object.entries(sb.boards ?? {}),
     ...sb.scenes
-      .filter((s): s is BoardScene => s.kind !== "view" && !Object.hasOwn(sb.boards ?? {}, s.board))
+      .filter(
+        (s): s is BoardScene =>
+          s.kind !== "view" && s.kind !== "code" && !Object.hasOwn(sb.boards ?? {}, s.board),
+      )
       .map((s) => [s.board, { cols: 1, rows: 1, nodes: [] } satisfies Board]),
   ]);
   const states = storyboardStates({ ...sb, boards: analysisBoards });
   sb.scenes.forEach((s, i) => {
-    if (s.kind === "view") return;
+    if (s.kind === "view" || s.kind === "code") return;
     const sceneState = states[i] as SceneState;
     s.beats.forEach((b, j) => {
       const q = `scenes[${i}].beats[${j}]`,
@@ -585,6 +610,7 @@ export function parseStoryboard(
   if (
     last >= 0 &&
     finalScene.kind !== "view" &&
+    finalScene.kind !== "code" &&
     analysisBoards[finalScene.board].nodes.some(
       (n) => !(states[last] as SceneState).end.visible.includes(n.id),
     )
