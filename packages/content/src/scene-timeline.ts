@@ -116,7 +116,10 @@ export function sceneTitleOpacity(time: number): number {
 /** 別アプリの窓は入れ替え、それ以外はクロスフェード。 */
 export function viewTransition(from: string | undefined, to: string): number {
   if (!from || from === to) return 0;
-  const group = (s: string) => /^(?:shot|clip):(web|vscode)\//.exec(s)?.[1];
+  const group = (s: string) => {
+    const app = /^(?:shot|clip):(web|guide|vscode)\//.exec(s)?.[1];
+    return app === "guide" ? "web" : app;
+  };
   return group(from) && group(to) && group(from) !== group(to) ? 1 : 0.4;
 }
 /** フレーム境界へ丸め、連結のたびに端数が蓄積しないようにする。 */

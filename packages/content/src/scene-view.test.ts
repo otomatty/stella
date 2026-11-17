@@ -80,13 +80,14 @@ images["art:art"] = {
 };
 
 describe("Windows のウィンドウ枠", () => {
-  function render(image: string) {
+  function render(image: string, browserAddress?: string) {
     const { sb, state, timing, input } = setup();
     state.start.image = image;
     state.beats[0].after = { ...state.start, zoom: "top" };
     const images = {
       [image]: {
         url: "file:///tmp/window.png",
+        browserAddress,
         width: 1600,
         height: 1000,
         regions: { top: [100, 100, 100, 100] as [number, number, number, number] },
@@ -172,6 +173,22 @@ describe("Windows のウィンドウ枠", () => {
       expect(zoomed).not.toContain("data-browser-chrome");
     },
   );
+  it("guide のクリップには章のアドレスと書き方ガイドのタブを固定した位置に出す", async () => {
+    const address = "claude.ai/artifact/7ZJi5iYUv8931w41FMt4jy";
+    const page = render("clip:guide/c01-q05-1#eg", address);
+    const initial = await page.at(0),
+      zoomed = await page.at(1.6);
+    for (const html of [initial, zoomed]) {
+      expect(html).toContain('data-browser-chrome="true"');
+      expect(html).toContain('height="80"');
+      expect(html).toContain('fill="#303036">書き方ガイド</text>');
+      expect(html).toContain(address);
+      expect(html).not.toContain("stella.saedgewell.workers.dev");
+    }
+    expect(viewFrame(page.input, 0).box).toEqual(
+      viewFrame(render("clip:web/same#eg").input, 0).box,
+    );
+  });
   it("art には枠線もブラウザーもキャプションボタンも付けない", async () => {
     const html = await render("art:art").at(0);
     expect(html).not.toMatch(/data-caption-buttons|data-window-border|data-browser-chrome/);

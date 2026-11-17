@@ -102,6 +102,18 @@ bun run --filter=@stella/content video:art -- <トピックのパス> --only rea
 bun run --filter=@stella/content video:art -- <トピックのパス> --only write --ref read   # 絵柄の手本を指定する (既存の画像・作成対象と別の名前)
 ```
 
+ガイドの操作も `packages/content/clips/guide.json`（配列、1 定義 = 1 本）で作れます。
+`id: "guide/<名前>"`、`page: "guide-01.html"`、`steps`、`regions` を指定します。
+`steps` は `{ "mark": "eg", "do": "rows", "to": "#c01-q05-1 dl.eg" }` の形です。
+動きは `scroll`（寄せる）、`focus`（周囲を暗くする）、`open`（ヒントを開く）、`lines`（行を順に強調）です。
+`type` は色を保ってコードを打ち込み、`reveal` は部品図の番号・対比の子要素・表の行を順に出します。
+`rows` は呼び出し→結果→注記の順、`wait` は `to` の代わりに `seconds` を指定して止めます。
+`bun run --filter=@stella/content video:guide-clips` で録画します（絞り込みは `-- guide/c01-`）。
+`PLAYWRIGHT_CHROMIUM_PATH` で Chromium を指定でき、元のページは `file://` で開きます。
+`regions` は名前とセレクタの組で、同じ要素または包含関係にある対象を操作した最後の mark の終了時に画面内の位置を採寸します。スクロール後もその mark の座標を使ってください。操作対象と関係しない領域は最後の画面で採寸します。
+動画では「書き方ガイド」のタブと章の Artifact アドレスを付け、Web との間はクロスフェード、VS Code との間は窓を入れ替えます。
+「画面は実際に撮ったものだけ」の規則どおり、元のページを録画中に動かすだけで、内容は描き直しません。
+
 - クリップは `packages/content/clips/<組>/<名前>.json` に書きます。`video` は `packages/content` からの相対パス (`stages/` または `clips/` の下だけ)、`width`・`height` は 1600×1000、`fps` は 30、`duration` は秒数、`marks` は `{ "open": [開始秒, 終了秒] }`、`regions` はピクセルの `[x, y, 幅, 高さ]` です。`source` に収録元を残します
 - 既存の収録の区間を使うときは、`video` に元の `screen.mp4` のパスを指定し、`marks` に使う区間を書きます。動画をコピーする必要はありません
 - VS Code の新しい操作は **Windows の手元で撮ります**。撮り方と未撮影の操作は [手元での収録の手引き](../../docs/video-local-recording.md) を参照してください

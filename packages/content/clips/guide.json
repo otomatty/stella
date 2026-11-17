@@ -1,0 +1,31 @@
+[
+  {
+    "id": "guide/c01-q05-1",
+    "page": "guide-01.html",
+    "steps": [
+      { "mark": "open", "do": "scroll", "to": "#c01-q05-1" },
+      { "mark": "task", "do": "focus", "to": "#c01-q05-1 .task" },
+      { "mark": "eg", "do": "rows", "to": "#c01-q05-1 dl.eg" },
+      { "mark": "hint1", "do": "open", "to": "#c01-q05-1 details.hint:nth-of-type(1)" },
+      { "mark": "skeleton", "do": "lines", "to": "#c01-q05-1 details.hint:nth-of-type(1) pre" }
+    ],
+    "regions": {
+      "task": "#c01-q05-1 .task",
+      "eg": "#c01-q05-1 dl.eg",
+      "hint1": "#c01-q05-1 details.hint:nth-of-type(1)"
+    }
+  },
+  {
+    "id": "guide/c01-q05-item",
+    "page": "guide-01.html",
+    "steps": [
+      { "mark": "open", "do": "scroll", "to": "#c01-q05-10 .item" },
+      { "mark": "sample", "do": "type", "to": "#c01-q05-10 .sample pre" },
+      { "mark": "parts", "do": "reveal", "to": "#c01-q05-10 figure.anat" }
+    ],
+    "regions": {
+      "sample": "#c01-q05-10 .sample pre",
+      "parts": "#c01-q05-10 figure.anat"
+    }
+  }
+]
