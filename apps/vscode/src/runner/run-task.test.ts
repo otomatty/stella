@@ -11,6 +11,7 @@ import {
   findTaskRoot,
   importedEditableFiles,
   loadTask,
+  normalizeTaskRoot,
   runTask,
   saveRunResult,
   unmetNeed,
@@ -20,6 +21,24 @@ import { parsePorcelainZ, type StepDefinition } from "./steps.js";
 const execFileAsync = promisify(execFile);
 
 const NODE = process.execPath;
+
+describe("normalizeTaskRoot", () => {
+  it.each([
+    ["c:\\Users\\a\\task", "C:\\Users\\a\\task"],
+    ["c:/Users/a/task", "C:/Users/a/task"],
+    ["C:\\Users\\a\\task", "C:\\Users\\a\\task"],
+    ["\\\\server\\share\\task", "\\\\server\\share\\task"],
+    ["/home/a/task", "/home/a/task"],
+  ])("win32 では先頭のドライブ文字だけを大文字にする: %s", (root, expected) => {
+    expect(normalizeTaskRoot(root, "win32")).toBe(expected);
+  });
+
+  it.each(["linux", "darwin"] as const)("%s ではパスを変えない", (platform) => {
+    for (const root of ["c:\\x", "/home/a/task"]) {
+      expect(normalizeTaskRoot(root, platform)).toBe(root);
+    }
+  });
+});
 
 async function makeTask(files: Record<string, string>): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), "stella-task-"));
