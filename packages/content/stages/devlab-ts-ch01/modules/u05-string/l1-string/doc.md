@@ -1,7 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 ---
-# レッスン1-5 q05 string型
+# レッスン5-1 q05 string型
 
 ## このレッスンの目標
 
@@ -15,7 +15,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 この単元には課題を置いていません。
 q01〜q04 までの書き方を使います。迷ったらその番号のガイドも読み返してください。
 
-## 1-5-1 文字列を探す
+## 5-1-1 文字列を探す
 
 > **探したい場所と、真偽か位置かに合わせて書き方を選びます。**
 
@@ -74,7 +74,7 @@ console.log(last);
 文字列の表記の背景は[サバイバルTypeScript「string型」](https://typescriptbook.jp/reference/values-types-variables/string)を参照してください。
 ここでの操作の説明と業務サンプルは、書き方ガイドの内容です。
 
-## 1-5-2 位置で取り出す
+## 5-1-2 位置で取り出す
 
 > **後ろから取り出すなら slice の負の位置、指定の一文字なら charAt を使います。**
 
@@ -121,7 +121,7 @@ console.log(building);
 文字列自体の書き方は[サバイバルTypeScript「文字列リテラル」](https://typescriptbook.jp/reference/values-types-variables/string#文字列リテラル)で確認できます。
 位置から取り出す例は、書き方ガイドに合わせた教材のサンプルです。
 
-## 1-5-3 整える・置き換える
+## 5-1-3 整える・置き換える
 
 > **空白や大文字小文字をそろえ、置き換える範囲を選びます。**
 

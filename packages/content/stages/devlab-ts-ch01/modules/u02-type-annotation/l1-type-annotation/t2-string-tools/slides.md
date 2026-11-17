@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
-id: 1-2-2
+id: 2-1-2
 title: 文字列の道具
 takeaway: "文字列の長さや一部を調べ、加工や条件の組合せに使えます。"
 introduces: ["length", "repeat", "toUpperCase", "toLocaleString", "&&"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-2-2 文字列の道具
+# 2-1-2 文字列の道具
 
 <!-- ノート: 文字列の長さや一部を調べ、加工や条件の組合せに使えます。 -->
 

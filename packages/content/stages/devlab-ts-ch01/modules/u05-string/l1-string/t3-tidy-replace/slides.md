@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-string]
-id: 1-5-3
+id: 5-1-3
 title: 整える・置き換える
 takeaway: "空白や大文字小文字をそろえ、置き換える範囲を選びます。"
 introduces: ["trim", "toLowerCase", "replaceAll", "replace", "正規表現"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-5-3 整える・置き換える
+# 5-1-3 整える・置き換える
 
 <!-- ノート: コードと値の動きから、整える・置き換える書き方を確かめます。 -->
 

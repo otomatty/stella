@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-inference]
-id: 1-3-2
+id: 3-1-2
 title: 添字と else if
 takeaway: "文字の位置と条件の順番を確かめ、数は桁数を決めて表示できます。"
 introduces: ["添字", "else if", "toFixed"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-3-2 添字と else if
+# 3-1-2 添字と else if
 
 <!-- ノート: 文字の位置と条件の順番を確かめ、数は桁数を決めて表示できます。 -->
 

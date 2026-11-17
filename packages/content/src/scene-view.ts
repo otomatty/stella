@@ -5,12 +5,10 @@ import type { ShotRegion } from "./video-shots.js";
 
 export const SHOT_GROUPS: Record<string, { label: string; chromeHeight: number }> = {
   web: { label: "Webアプリ", chromeHeight: 80 },
-  guide: { label: "書き方ガイド", chromeHeight: 80 },
   vscode: { label: "VS Code", chromeHeight: 0 },
 };
 export interface ViewImage {
   url: string;
-  browserAddress?: string;
   /** mark を30fpsで取り出したコマ。最後は区間の終端より前のコマ。 */
   frames?: string[];
   width: number;

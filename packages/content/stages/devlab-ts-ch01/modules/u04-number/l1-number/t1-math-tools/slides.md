@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-4-1
+id: 4-1-1
 title: 計算の道具
 takeaway: "型注釈で数の入口と出口を決め、目的に合う計算の道具を選べます。"
 introduces: ["Math.abs", "絶対値", "累乗", "**", "平方根", "Math.sqrt", "Math.min", "Math.max", "Math.hypot"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-4-1 計算の道具
+# 4-1-1 計算の道具
 
 <!-- ノート: 型注釈で数の入口と出口を決め、目的に合う計算の道具を選べます。 -->
 

@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-4-2
+id: 4-1-2
 title: エラーを投げる
 takeaway: "受け付けない値は throw new Error で止め、! で条件を反対にできます。"
 introduces: ["throw", "new Error", "!"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-4-2 エラーを投げる
+# 4-1-2 エラーを投げる
 
 <!-- ノート: 受け付けない値は throw new Error で止め、! で条件を反対にできます。 -->
 

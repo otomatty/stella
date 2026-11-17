@@ -2,7 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-statements-for-of, SRC-typescriptbook-statements-if-else, SRC-typescriptbook-values-types-variables-string]
 ---
 
-# レッスン1-1 くり返しで値を変える
+# レッスン1-2 くり返しで値を変える
 
 ## このレッスンの目標
 
@@ -10,7 +10,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typesc
 - [ ] 数える向きと回数を変え、ゼロ回のときの動きを説明できる
 - [ ] 文字を一つずつ取り出し、条件やつなぐ順番を読める
 
-## 1-1-5 入れ直す変数とくり返し
+## 1-2-1 入れ直す変数とくり返し
 
 > **入れ直す変数を let で作り、for でくり返すと、値を少しずつ変えられます。**
 
@@ -97,7 +97,7 @@ console.log(price);
 
 参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[for-of文](https://typescriptbook.jp/reference/statements/for-of)。説明・積立と価格の例は教材用に独自作成しています。
 
-## 1-1-6 数え方を変える
+## 1-2-2 数え方を変える
 
 > **for の開始値・条件・更新をそろえると、逆向きや指定回数のくり返しを書けます。**
 
@@ -190,7 +190,7 @@ console.log(points);
 
 参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[for-of文](https://typescriptbook.jp/reference/statements/for-of)。説明・便の履歴と印の例は教材用に独自作成しています。
 
-## 1-1-7 1 文字ずつ見る
+## 1-2-3 1 文字ずつ見る
 
 > **for-of で文字を取り出し、条件を調べたり、つなぐ順を変えたりできます。**
 
@@ -310,3 +310,171 @@ console.log(label);
 - サバイバルTypeScript [for-of文](https://typescriptbook.jp/reference/statements/for-of)
 - サバイバルTypeScript [if-else文](https://typescriptbook.jp/reference/statements/if-else)
 - サバイバルTypeScript [string型](https://typescriptbook.jp/reference/values-types-variables/string)
+
+## 問題ごとのヒント
+
+このレッスンの書き方で解く問題のヒントです。ほかの問題のヒントは、その書き方のレッスンにあります。
+
+### 問 5 1 から n までの合計を返す
+
+**テストで確かめる値**
+
+- `sumTo(10)` は `55`（1 + 2 + … + 10）
+- `sumTo(1)` は `1`
+- `sumTo(0)` は `0`
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function sumTo(n: number): number {
+  // 合計 total を入れ直せる変数として作り、0 を入れる
+  // i を 1 から n まで 1 ずつ増やしながらくり返す
+  //   total に i を足す
+  // total を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+問5 のサンプル（積み立て）と同じ形です。くり返す終わりが 3 ではなく `n`、足すのが 5000 ではなく `i` になります。
+
+### 問 6 n の階乗を返す
+
+**テストで確かめる値**
+
+- `factorial(5)` は `120`
+- `factorial(1)` は `1`
+- `factorial(0)` は `1`
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function factorial(n: number): number {
+  // 結果 result を入れ直せる変数として作り、1 を入れる
+  // i を 2 から n まで 1 ずつ増やしながらくり返す
+  //   result に i を掛ける
+  // result を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+「掛ける」は `*=` です。`result` を 0 から始めると、何を掛けても 0 のままです。`n` が 0 や 1 のときは、くり返しの中は 1 回も実行されず、1 を返します。
+
+### 問 7 n から 1 まで数えて、最後に「発射」を付ける
+
+**テストで確かめる値**
+
+- `countDown(3)` は `"3, 2, 1, 発射"`
+- `countDown(1)` は `"1, 発射"`
+- `countDown(0)` は `"発射"`（数は 1 つもありません）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function countDown(n: number): string {
+  // 文 text を入れ直せる変数として作り、空の文字列を入れる
+  // i を n から 1 まで 1 ずつ減らしながらくり返す
+  //   text の後ろに、i と ", " をつなげる
+  // text の後ろに "発射" をつなげた文字列を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+減らしながらくり返すのは、問7 の `i--` のサンプルと同じ形です。`i` と `", "` をつなげた文字列は、テンプレートリテラルで作ります。
+
+### 問 8 base の exponent 乗を返す
+
+**テストで確かめる値**
+
+- `power(2, 10)` は `1024`
+- `power(5, 0)` は `1`
+- `power(3, 3)` は `27`（3 × 3 × 3）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function power(base: number, exponent: number): number {
+  // 結果 result を入れ直せる変数として作り、1 を入れる
+  // i を 0 から、exponent より小さい間 1 ずつ増やしながらくり返す
+  //   result に base を掛ける
+  // result を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+くり返しは、問8 のサンプル（`"ok "` を 3 回つなげる）と同じ形です。「より小さい」は `<` です。
+
+### 問 9 text の中に char が何回出てくるかを返す
+
+**テストで確かめる値**
+
+- `countChar("banana", "a")` は `3`
+- `countChar("banana", "z")` は `0`（1 つもない）
+- `countChar("", "a")` は `0`（空の文字列）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function countChar(text: string, char: string): number {
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   もし c が char と等しいなら
+  //     count を 1 増やす
+  // count を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+「1 文字ずつ取り出してくり返す」は `for-of`、「もし〜なら」は `if`、「等しい」は `===`、「1 増やす」は `++` です。
+
+### 問 10 文字列を逆順にして返す
+
+**テストで確かめる値**
+
+- `reverseText("abc")` は `"cba"`
+- `reverseText("あいう")` は `"ういあ"`（日本語も同じ）
+- `reverseText("")` は `""`（空の文字列は空のまま）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function reverseText(text: string): string {
+  // 結果 result を入れ直せる変数として作り、空の文字列を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   c の後ろに result をつなげた文字列を、result に入れ直す
+  // result を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+「c の後ろに result をつなげる」は、問10 のサンプルの `reversed` の行と同じ形です。つなぐ順番を逆にすると、元の並びのままになります。
+
+### 問 16 母音の数を返す
+
+**テストで確かめる値**
+
+- `countVowels("education")` は `5`
+- `countVowels("rhythm")` は `0`（母音がない）
+- `countVowels("")` は `0`
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function countVowels(text: string): number {
+  // 母音 vowels を作り、"aeiou" を入れる
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   もし vowels に c が含まれるなら
+  //     count を 1 増やす
+  // count を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+「vowels に c が含まれる」は、問16 のサンプルの `hasAt` の行と同じく `.includes()` を使います。問9 と同じ形で、条件だけが違います。

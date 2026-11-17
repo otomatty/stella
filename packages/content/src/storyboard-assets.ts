@@ -13,25 +13,6 @@ import {
   type VideoStoryboard,
 } from "./video-storyboard.js";
 
-/** docs/devlab-ts-prework-guide/README.md の「公開先」。ブラウザーのアドレス欄用。 */
-export const GUIDE_ADDRESSES: Record<string, string> = {
-  "01": "claude.ai/artifact/7ZJi5iYUv8931w41FMt4jy",
-  "02": "claude.ai/artifact/4wjk432sjZaGyASSenuS8X",
-  "03": "claude.ai/artifact/JGMp5nvpXxY3RPCKwWJwzS",
-  "04": "claude.ai/artifact/Ad8VaUe4rDUu25FMyB56Ur",
-  "05": "claude.ai/artifact/Nbk1traThMM7bKy3Q4pjtV",
-  "06": "claude.ai/artifact/1uw2AmJc5nri6JL3HzPnVz",
-  "07": "claude.ai/artifact/Vjo1wZMtdrH9UM4RzJerYH",
-  "08": "claude.ai/artifact/Jx9b63d3U6exjjNcGr5GFi",
-  "09": "claude.ai/artifact/NbwTkaPZFmUV8fBN13aucz",
-};
-export function guideAddress(source: unknown): string {
-  const chapter =
-    typeof source === "string" ? /(?:^|\/)guide-(0[1-9])\.html$/.exec(source)?.[1] : undefined;
-  if (!chapter) throw new Error(`ガイドの source から章を特定できません: ${String(source)}`);
-  return GUIDE_ADDRESSES[chapter];
-}
-
 /** OS ごとの相対パスで、変更検知の対象内に収まることを確かめる。 */
 export function clipVideoPath(root: string, input: string, id: string, path = paths): string {
   const video = path.resolve(root, input);
@@ -150,7 +131,6 @@ export function storyboardAssets(
         height: clip.height,
         regions: clip.regions,
         url: "",
-        ...(id.startsWith("guide/") ? { browserAddress: guideAddress(meta.source) } : {}),
       };
       clips[ref] = clip;
       hashes[ref] = digest(bytes, Buffer.from(videoContentHash(video, options.freshVideoHashes)));

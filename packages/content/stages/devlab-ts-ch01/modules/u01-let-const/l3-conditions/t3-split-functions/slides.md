@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number, SRC-typescriptbook-values-types-variables-string, SRC-typescriptbook-functions-function-declaration]
-id: 1-1-10
+id: 1-3-3
 title: 関数を分けて使う
 takeaway: "小さな関数に名前を付けて呼ぶと、計算や整形を順番に組み立てられます。"
 introduces: ["アロー関数", "=>", ".padStart()", "-"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-10 関数を分けて使う
+# 1-3-3 関数を分けて使う
 
 <!-- ノート: 小さな関数に名前を付けて呼ぶと、計算や整形を順番に組み立てられます。 -->
 

@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-statements-for-of, SRC-typescriptbook-statements-if-else, SRC-typescriptbook-values-types-variables-string]
-id: 1-1-7
+id: 1-2-3
 title: 1 文字ずつ見る
 takeaway: "for-of で文字を取り出し、条件を調べたり、つなぐ順を変えたりできます。"
 introduces: ["for-of", "if", "===", ".includes()", "メソッド", "文字列の連結"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-7 1 文字ずつ見る
+# 1-2-3 1 文字ずつ見る
 
 <!-- ノート: for-of で文字を取り出し、条件を調べたり、つなぐ順を変えたりできます。 -->
 

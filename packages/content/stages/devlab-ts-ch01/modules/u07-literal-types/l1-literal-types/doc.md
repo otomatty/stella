@@ -1,7 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-literal-types]
 ---
-# レッスン1-7 q07 決まった値だけを受け付ける型
+# レッスン7-1 q07 決まった値だけを受け付ける型
 
 ## このレッスンの目標
 
@@ -12,7 +12,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-literal-types]
 実装は「01章の問題」の q07 のファイルで行います。
 知識問題は理解の自己確認です。選考の判定には使いません。
 
-## 1-7-1 決まった値だけを受け付ける型
+## 7-1-1 決まった値だけを受け付ける型
 
 > **リテラル型で候補を決め、条件に合った値をその場で返します。**
 

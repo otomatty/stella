@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-string]
-id: 1-5-1
+id: 5-1-1
 title: 文字列を探す
 takeaway: "探したい場所と、真偽か位置かに合わせて書き方を選びます。"
 introduces: ["startsWith", "endsWith", "indexOf", "lastIndexOf"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-5-1 文字列を探す
+# 5-1-1 文字列を探す
 
 <!-- ノート: コードと値の動きから、文字列を探す書き方を確かめます。 -->
 

@@ -2,7 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number, SRC-typescriptbook-values-types-variables-string, SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-statements-if-else, SRC-typescriptbook-functions-function-declaration]
 ---
 
-# レッスン1-1 条件を確かめ、関数を組み立てる
+# レッスン1-3 条件を確かめ、関数を組み立てる
 
 ## このレッスンの目標
 
@@ -10,7 +10,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typesc
 - [ ] 条件で値を選び、文字列への変換と四捨五入の結果を説明できる
 - [ ] 小さな関数を作って呼び、計算を順番に組み立てられる
 
-## 1-1-8 回数の決まらないくり返し
+## 1-3-1 回数の決まらないくり返し
 
 > **while は条件を先に確かめ、true の間だけ値を変えながらくり返します。**
 
@@ -89,7 +89,7 @@ console.log(pendingLabel("発送待ち"));
 
 参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)・[if-else文](https://typescriptbook.jp/reference/statements/if-else)。変数・数値・条件の概念を参照しています。while の動きと発送の例は、書き方ガイドを素材に教材用に独自作成しています。
 
-## 1-1-9 条件で選ぶ
+## 1-3-2 条件で選ぶ
 
 > **条件で値を選び、文字列への変換や四捨五入をして返せます。**
 
@@ -172,7 +172,7 @@ console.log(score, rating);
 
 参考: サバイバルTypeScript [boolean型](https://typescriptbook.jp/reference/values-types-variables/boolean)・[if-else文](https://typescriptbook.jp/reference/statements/if-else)・[string型](https://typescriptbook.jp/reference/values-types-variables/string)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。型と値の概念を参照しています。条件演算子・丸めの説明と予約・受付の例は、書き方ガイドを素材に独自作成しています。
 
-## 1-1-10 関数を分けて使う
+## 1-3-3 関数を分けて使う
 
 > **小さな関数に名前を付けて呼ぶと、計算や整形を順番に組み立てられます。**
 
@@ -288,228 +288,7 @@ console.log(balance, deposit);
 
 ## 問題ごとのヒント
 
-### 問 1 税込価格を返す
-
-**テストで確かめる値**
-
-- `addTax(1000)` は `1100`（税額は 100 円）
-- `addTax(980)` は `1078`（税額は 98 円）
-- `addTax(5)` は `5`（税額は 0.5 円。切り捨てると 0 円）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function addTax(price: number): number {
-  // 税額 tax を作り、price × 0.1 を切り捨てた数を入れる
-  // price と tax を足した数を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-× は `*`、切り捨ては `Math.floor()` です。1 行目は、問1 のサンプルの `points` の行と同じ形です。
-
-### 問 2 割り勘で 1 人が払う金額を返す
-
-**テストで確かめる値**
-
-- `splitBill(10000, 3)` は `3400`（1 人 3333.33… 円を、100 円単位に切り上げ）
-- `splitBill(9000, 3)` は `3000`（割り切れるときは、そのまま）
-- `splitBill(1000, 4)` は `300`（1 人 250 円を切り上げ）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function splitBill(total: number, people: number): number {
-  // 1 人分 perPerson を作り、total ÷ people を入れる
-  // perPerson ÷ 100 を切り上げ、100 を掛けた数を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-÷ は `/`、切り上げは `Math.ceil()` です。100 で割ってから切り上げ、100 を掛けると、100 円単位の切り上げになります。
-
-### 問 3 分を「◯時間◯分」の文字列にする
-
-**テストで確かめる値**
-
-- `minutesToText(125)` は `"2時間5分"`
-- `minutesToText(60)` は `"1時間0分"`
-- `minutesToText(45)` は `"0時間45分"`
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function minutesToText(minutes: number): string {
-  // 時間 hours を作り、minutes ÷ 60 を切り捨てた数を入れる
-  // 分 rest を作り、minutes を 60 で割った余りを入れる
-  // hours と rest を埋め込んだ「◯時間◯分」の文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-1 行目と 2 行目は、問3 のサンプルの `packs` と `left` の行と同じ形です。3 行目はテンプレートリテラルで作ります。
-
-### 問 4 3 つの数の平均を返す
-
-**テストで確かめる値**
-
-- `average3(1, 2, 6)` は `3`（9 ÷ 3）
-- `average3(10, 20, 30)` は `20`（60 ÷ 3）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function average3(a: number, b: number, c: number): number {
-  // 合計 total を作り、a と b と c を足した数を入れる
-  // total ÷ 3 を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-`a + b + c / 3` と 1 行で書くと、`c / 3` が先に計算されます。合計を先に変数に入れておけば、この間違いは起きません。
-
-### 問 5 1 から n までの合計を返す
-
-**テストで確かめる値**
-
-- `sumTo(10)` は `55`（1 + 2 + … + 10）
-- `sumTo(1)` は `1`
-- `sumTo(0)` は `0`
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function sumTo(n: number): number {
-  // 合計 total を入れ直せる変数として作り、0 を入れる
-  // i を 1 から n まで 1 ずつ増やしながらくり返す
-  //   total に i を足す
-  // total を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-問5 のサンプル（積み立て）と同じ形です。くり返す終わりが 3 ではなく `n`、足すのが 5000 ではなく `i` になります。
-
-### 問 6 n の階乗を返す
-
-**テストで確かめる値**
-
-- `factorial(5)` は `120`
-- `factorial(1)` は `1`
-- `factorial(0)` は `1`
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function factorial(n: number): number {
-  // 結果 result を入れ直せる変数として作り、1 を入れる
-  // i を 2 から n まで 1 ずつ増やしながらくり返す
-  //   result に i を掛ける
-  // result を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「掛ける」は `*=` です。`result` を 0 から始めると、何を掛けても 0 のままです。`n` が 0 や 1 のときは、くり返しの中は 1 回も実行されず、1 を返します。
-
-### 問 7 n から 1 まで数えて、最後に「発射」を付ける
-
-**テストで確かめる値**
-
-- `countDown(3)` は `"3, 2, 1, 発射"`
-- `countDown(1)` は `"1, 発射"`
-- `countDown(0)` は `"発射"`（数は 1 つもありません）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function countDown(n: number): string {
-  // 文 text を入れ直せる変数として作り、空の文字列を入れる
-  // i を n から 1 まで 1 ずつ減らしながらくり返す
-  //   text の後ろに、i と ", " をつなげる
-  // text の後ろに "発射" をつなげた文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-減らしながらくり返すのは、問7 の `i--` のサンプルと同じ形です。`i` と `", "` をつなげた文字列は、テンプレートリテラルで作ります。
-
-### 問 8 base の exponent 乗を返す
-
-**テストで確かめる値**
-
-- `power(2, 10)` は `1024`
-- `power(5, 0)` は `1`
-- `power(3, 3)` は `27`（3 × 3 × 3）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function power(base: number, exponent: number): number {
-  // 結果 result を入れ直せる変数として作り、1 を入れる
-  // i を 0 から、exponent より小さい間 1 ずつ増やしながらくり返す
-  //   result に base を掛ける
-  // result を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-くり返しは、問8 のサンプル（`"ok "` を 3 回つなげる）と同じ形です。「より小さい」は `<` です。
-
-### 問 9 text の中に char が何回出てくるかを返す
-
-**テストで確かめる値**
-
-- `countChar("banana", "a")` は `3`
-- `countChar("banana", "z")` は `0`（1 つもない）
-- `countChar("", "a")` は `0`（空の文字列）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function countChar(text: string, char: string): number {
-  // 数 count を入れ直せる変数として作り、0 を入れる
-  // text から 1 文字ずつ c に取り出してくり返す
-  //   もし c が char と等しいなら
-  //     count を 1 増やす
-  // count を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「1 文字ずつ取り出してくり返す」は `for-of`、「もし〜なら」は `if`、「等しい」は `===`、「1 増やす」は `++` です。
-
-### 問 10 文字列を逆順にして返す
-
-**テストで確かめる値**
-
-- `reverseText("abc")` は `"cba"`
-- `reverseText("あいう")` は `"ういあ"`（日本語も同じ）
-- `reverseText("")` は `""`（空の文字列は空のまま）
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function reverseText(text: string): string {
-  // 結果 result を入れ直せる変数として作り、空の文字列を入れる
-  // text から 1 文字ずつ c に取り出してくり返す
-  //   c の後ろに result をつなげた文字列を、result に入れ直す
-  // result を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「c の後ろに result をつなげる」は、問10 のサンプルの `reversed` の行と同じ形です。つなぐ順番を逆にすると、元の並びのままになります。
+このレッスンの書き方で解く問題のヒントです。ほかの問題のヒントは、その書き方のレッスンにあります。
 
 ### 問 11 各桁の数字の合計を返す
 
@@ -632,31 +411,6 @@ export function shippingFee(subtotal: number, isMember: boolean): number {
 **ヒント 2 コードへの直し方**
 
 「以上」は `>=`、「または」は `||` です。「isMember が true」は、`isMember` とだけ書きます。
-
-### 問 16 母音の数を返す
-
-**テストで確かめる値**
-
-- `countVowels("education")` は `5`
-- `countVowels("rhythm")` は `0`（母音がない）
-- `countVowels("")` は `0`
-
-**ヒント 1 日本語の手順**
-
-```ts
-export function countVowels(text: string): number {
-  // 母音 vowels を作り、"aeiou" を入れる
-  // 数 count を入れ直せる変数として作り、0 を入れる
-  // text から 1 文字ずつ c に取り出してくり返す
-  //   もし vowels に c が含まれるなら
-  //     count を 1 増やす
-  // count を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「vowels に c が含まれる」は、問16 のサンプルの `hasAt` の行と同じく `.includes()` を使います。問9 と同じ形で、条件だけが違います。
 
 ### 問 17 n が 1 になるまでの手順の数を返す
 

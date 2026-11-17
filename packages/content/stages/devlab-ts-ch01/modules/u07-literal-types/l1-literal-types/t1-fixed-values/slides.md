@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-literal-types]
-id: 1-7-1
+id: 7-1-1
 title: 決まった値だけを受け付ける型
 takeaway: "リテラル型で候補を決め、条件に合った値をその場で返します。"
 introduces: []
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-7-1 決まった値だけを受け付ける型
+# 7-1-1 決まった値だけを受け付ける型
 
 <!-- ノート: リテラル型は決まった値だけを受け付ける型です。if の中で return するとそこで関数が終わります。const で作る文字列の型はその値です。let は string に広がるので、狭い戻り値に入れるときは型注釈も使えます。 -->
 

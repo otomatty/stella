@@ -193,3 +193,91 @@ lint はコードが決まりに合うかを確かめる検査で、`prefer-temp
 - [サバイバルTypeScript: letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)
 - [サバイバルTypeScript: number型](https://typescriptbook.jp/reference/values-types-variables/number)
 - [サバイバルTypeScript: string型](https://typescriptbook.jp/reference/values-types-variables/string)
+
+## 問題ごとのヒント
+
+このレッスンの書き方で解く問題のヒントです。ほかの問題のヒントは、その書き方のレッスンにあります。
+
+### 問 1 税込価格を返す
+
+**テストで確かめる値**
+
+- `addTax(1000)` は `1100`（税額は 100 円）
+- `addTax(980)` は `1078`（税額は 98 円）
+- `addTax(5)` は `5`（税額は 0.5 円。切り捨てると 0 円）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function addTax(price: number): number {
+  // 税額 tax を作り、price × 0.1 を切り捨てた数を入れる
+  // price と tax を足した数を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+× は `*`、切り捨ては `Math.floor()` です。1 行目は、問1 のサンプルの `points` の行と同じ形です。
+
+### 問 2 割り勘で 1 人が払う金額を返す
+
+**テストで確かめる値**
+
+- `splitBill(10000, 3)` は `3400`（1 人 3333.33… 円を、100 円単位に切り上げ）
+- `splitBill(9000, 3)` は `3000`（割り切れるときは、そのまま）
+- `splitBill(1000, 4)` は `300`（1 人 250 円を切り上げ）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function splitBill(total: number, people: number): number {
+  // 1 人分 perPerson を作り、total ÷ people を入れる
+  // perPerson ÷ 100 を切り上げ、100 を掛けた数を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+÷ は `/`、切り上げは `Math.ceil()` です。100 で割ってから切り上げ、100 を掛けると、100 円単位の切り上げになります。
+
+### 問 3 分を「◯時間◯分」の文字列にする
+
+**テストで確かめる値**
+
+- `minutesToText(125)` は `"2時間5分"`
+- `minutesToText(60)` は `"1時間0分"`
+- `minutesToText(45)` は `"0時間45分"`
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function minutesToText(minutes: number): string {
+  // 時間 hours を作り、minutes ÷ 60 を切り捨てた数を入れる
+  // 分 rest を作り、minutes を 60 で割った余りを入れる
+  // hours と rest を埋め込んだ「◯時間◯分」の文字列を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+1 行目と 2 行目は、問3 のサンプルの `packs` と `left` の行と同じ形です。3 行目はテンプレートリテラルで作ります。
+
+### 問 4 3 つの数の平均を返す
+
+**テストで確かめる値**
+
+- `average3(1, 2, 6)` は `3`（9 ÷ 3）
+- `average3(10, 20, 30)` は `20`（60 ÷ 3）
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function average3(a: number, b: number, c: number): number {
+  // 合計 total を作り、a と b と c を足した数を入れる
+  // total ÷ 3 を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+`a + b + c / 3` と 1 行で書くと、`c / 3` が先に計算されます。合計を先に変数に入れておけば、この間違いは起きません。

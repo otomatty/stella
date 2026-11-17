@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-statements-for-of]
-id: 1-1-6
+id: 1-2-2
 title: 数え方を変える
 takeaway: "for の開始値・条件・更新をそろえると、逆向きや指定回数のくり返しを書けます。"
 introduces: [">=", "--", "<"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-6 数え方を変える
+# 1-2-2 数え方を変える
 
 <!-- ノート: for の開始値・条件・更新をそろえると、逆向きや指定回数のくり返しを書けます。 -->
 

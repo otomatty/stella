@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
-id: 1-6-1
+id: 6-1-1
 title: 条件を組み合わせて返す
 takeaway: "比べた結果を組み合わせると、条件をそのまま返せます。"
 introduces: ["test"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-6-1 条件を組み合わせて返す
+# 6-1-1 条件を組み合わせて返す
 
 <!-- ノート: 比較は真か偽を作ります。かつは両方、またははどちらかが真なら真です。でないは真偽を逆にします。正規表現の test は、合う部分が含まれるかを調べます。 -->
 

@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number, SRC-typescriptbook-values-types-variables-string, SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-statements-if-else]
-id: 1-1-9
+id: 1-3-2
 title: 条件で選ぶ
 takeaway: "条件で値を選び、文字列への変換や四捨五入をして返せます。"
 introduces: ["条件演算子", "String()", "Math.round", "boolean", "||"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-9 条件で選ぶ
+# 1-3-2 条件で選ぶ
 
 <!-- ノート: 条件で値を選び、文字列への変換や四捨五入をして返せます。 -->
 

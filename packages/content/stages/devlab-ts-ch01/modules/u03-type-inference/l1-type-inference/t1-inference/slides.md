@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-inference]
-id: 1-3-1
+id: 3-1-1
 title: 型が自動で決まる
 takeaway: "値や return から型が決まり、戻り値の型注釈を省けます。"
 introduces: ["型推論", "export const", "リテラル型", "ユニオン型", "undefined"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-3-1 型が自動で決まる
+# 3-1-1 型が自動で決まる
 
 <!-- ノート: 値や return から型が決まり、戻り値の型注釈を省けます。 -->
 

@@ -70,12 +70,12 @@ function runtime(
         return `<g data-caption-buttons="${group}" fill="none" stroke="${color}" stroke-width="${buttonWidth / 46}">${icons.map((icon, i) => `<g transform="translate(${x + buttonWidth * (i + 0.5) - size / 2} ${y + (height - size) / 2})">${icon}</g>`).join("")}</g>`;
       };
       const browserChrome =
-        group === "web" || group === "guide"
+        group === "web"
           ? `<g data-browser-chrome="true" transform="translate(${box.x} ${top})">
         <rect width="${box.w}" height="80" fill="white"/>
         <rect width="${box.w}" height="40" fill="#E8EAED"/>
         <path d="M8 40V14Q8 6 16 6H248Q256 6 256 14V40" fill="white"/>
-        <text x="24" y="28" font-size="16" fill="#303036">${group === "guide" ? "書き方ガイド" : "STELLA"}</text>
+        <text x="24" y="28" font-size="16" fill="#303036">STELLA</text>
         <path d="M234 18L242 26M242 18L234 26" fill="none" stroke="#5C5C66" stroke-width="1"/>
         ${captionButtons(box.w - 138, 0, 138, 40, "#303036")}
         <g transform="translate(22 60)" fill="none" stroke="#5C5C66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -84,7 +84,7 @@ function runtime(
           <path d="M88 -4A7 7 0 1 0 88 4M88 -10V-4H82"/>
         </g>
         <rect x="128" y="46" width="${box.w - 144}" height="28" rx="14" fill="#F1F3F4"/>
-        <text x="144" y="65" font-size="15" fill="#5C5C66">${group === "guide" ? safe(data.images[id].browserAddress ?? "") : "stella.saedgewell.workers.dev"}</text>
+        <text x="144" y="65" font-size="15" fill="#5C5C66">stella.saedgewell.workers.dev</text>
         <path d="M0 79.5H${box.w}" stroke="#C8C8CE" stroke-width="1"/>
       </g>`
           : "";

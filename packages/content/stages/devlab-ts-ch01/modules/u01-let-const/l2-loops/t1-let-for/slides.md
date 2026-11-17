@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-statements-for-of]
-id: 1-1-5
+id: 1-2-1
 title: 入れ直す変数とくり返し
 takeaway: "入れ直す変数を let で作り、for でくり返すと、値を少しずつ変えられます。"
 introduces: ["let", "再代入", "for", "<=", "++", "+=", "*=", "true", "false"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-5 入れ直す変数とくり返し
+# 1-2-1 入れ直す変数とくり返し
 
 <!-- ノート: 入れ直す変数を let で作り、for でくり返すと、値を少しずつ変えられます。 -->
 

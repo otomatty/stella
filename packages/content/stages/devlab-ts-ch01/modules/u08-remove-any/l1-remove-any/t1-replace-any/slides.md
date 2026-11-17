@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-any]
-id: 1-8-1
+id: 8-1-1
 title: any をなくす
 takeaway: "any を具体的な型に直すと、値の使い方の間違いを見つけられます。"
 introduces: ["any", "プロパティ", "Number()", "配列", "number[]"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-8-1 any をなくす
+# 8-1-1 any をなくす
 
 <!-- ノート: any はどんな値でもよい型です。具体的な型に直すと名前の誤りにも気付けます。プロパティは点の右の名前です。Number は数値に変えます。number[] は数値の配列で、length は要素の数です。 -->
 

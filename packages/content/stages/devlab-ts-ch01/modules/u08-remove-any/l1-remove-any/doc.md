@@ -1,7 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-any]
 ---
-# レッスン1-8 q08 any をなくす
+# レッスン8-1 q08 any をなくす
 
 ## このレッスンの目標
 
@@ -12,7 +12,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-any]
 実装は「01章の問題」の q08 のファイルで行います。
 知識問題は理解の自己確認です。選考の判定には使いません。
 
-## 1-8-1 any をなくす
+## 8-1-1 any をなくす
 
 > **any を具体的な型に直すと、値の使い方の間違いを見つけられます。**
 

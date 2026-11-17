@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
-id: 1-2-1
+id: 2-1-1
 title: 型注釈を自分で書く
 takeaway: "引数は名前の後ろ、戻り値はかっこの後ろに型を書きます。"
 introduces: []
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-2-1 型注釈を自分で書く
+# 2-1-1 型注釈を自分で書く
 
 <!-- ノート: 引数は名前の後ろ、戻り値はかっこの後ろに型を書きます。 -->
 

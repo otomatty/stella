@@ -2,7 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
 ---
 
-# レッスン1-4 number型
+# レッスン4-1 number型
 
 ## このレッスンの目標
 
@@ -10,7 +10,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-number]
 - [ ] エラーで処理を止める場面と、真偽値の反転を説明できる
 - [ ] 整数の取り出しと、NaN・有限の数・整数の確認ができる
 
-## 1-4-1 計算の道具
+## 4-1-1 計算の道具
 
 > **型注釈で数の入口と出口を決め、目的に合う計算の道具を選べます。**
 
@@ -110,7 +110,7 @@ console.log(seats);
 
 参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。説明と業務の例は教材用に独自作成しています。
 
-## 1-4-2 エラーを投げる
+## 4-1-2 エラーを投げる
 
 > **受け付けない値は throw new Error で止め、! で条件を反対にできます。**
 
@@ -164,7 +164,7 @@ console.log(isUnpaid, other);
 
 参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。説明と業務の例は教材用に独自作成しています。
 
-## 1-4-3 文字列から数を取り出す
+## 4-1-3 文字列から数を取り出す
 
 > **文字列から整数を取り出し、NaN・有限の数・整数を区別できます。**
 

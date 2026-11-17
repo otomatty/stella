@@ -2,14 +2,14 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-inference]
 ---
 
-# レッスン1-3 型推論
+# レッスン3-1 型推論
 
 ## このレッスンの目標
 
 - [ ] 値や return から推論された型を説明できる
 - [ ] 添字と条件の順番を確かめ、数の表示を作れる
 
-## 1-3-1 型が自動で決まる
+## 3-1-1 型が自動で決まる
 
 > **値や return から型が決まり、戻り値の型注釈を省けます。**
 
@@ -123,7 +123,7 @@ console.log(pointOf(1980, true), pointOf(1980, false));
 
 参考: サバイバルTypeScript [型推論](https://typescriptbook.jp/reference/values-types-variables/type-inference)。説明と例は教材用に独自作成しています。
 
-## 1-3-2 添字と else if
+## 3-1-2 添字と else if
 
 > **文字の位置と条件の順番を確かめ、数は桁数を決めて表示できます。**
 

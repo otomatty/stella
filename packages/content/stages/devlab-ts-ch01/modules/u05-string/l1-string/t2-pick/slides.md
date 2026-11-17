@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-string]
-id: 1-5-2
+id: 5-1-2
 title: 位置で取り出す
 takeaway: "後ろから取り出すなら slice の負の位置、指定の一文字なら charAt を使います。"
 introduces: ["slice", "charAt"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-5-2 位置で取り出す
+# 5-1-2 位置で取り出す
 
 <!-- ノート: コードと値の動きから、位置で取り出す書き方を確かめます。 -->
 

@@ -215,37 +215,3 @@ it("Windows と POSIX のパスで content 外・変更検知の対象外を拒�
       expect(clipVideoPath(root, input, "fixture", path)).toBe(path.resolve(root, input));
   }
 });
-
-it("guide の章は source から選び、mark の画像に公開アドレスを引き継ぐ", () => {
-  const root = mkdtempSync(join(tmpdir(), "stella-guide-assets-"));
-  try {
-    mkdirSync(join(root, "clips/guide"), { recursive: true });
-    writeFileSync(join(root, "clips/guide/sample.mp4"), "fixture");
-    const metadata = {
-      source: "docs/devlab-ts-prework-guide/pages/guide-02.html",
-      video: "clips/guide/sample.mp4",
-      width: 1600,
-      height: 1000,
-      fps: 30,
-      duration: 2,
-      marks: { open: [0, 2] },
-      regions: {},
-    };
-    writeFileSync(join(root, "clips/guide/sample.json"), JSON.stringify(metadata));
-    const ref = "clip:guide/sample#open";
-    const sb = { scenes: [{ kind: "view", image: ref, beats: [] }] };
-    const first = storyboardAssets(root, root, sb);
-    expect(first.images[ref].browserAddress).toBe("claude.ai/artifact/4wjk432sjZaGyASSenuS8X");
-    expect(first.images[ref].width).toBe(1600);
-    metadata.source = "docs/devlab-ts-prework-guide/pages/guide-09.html";
-    writeFileSync(join(root, "clips/guide/sample.json"), JSON.stringify(metadata));
-    const second = storyboardAssets(root, root, sb);
-    expect(second.images[ref].browserAddress).toBe("claude.ai/artifact/NbwTkaPZFmUV8fBN13aucz");
-    expect(second.hashes[ref]).not.toBe(first.hashes[ref]);
-    metadata.source = "unknown";
-    writeFileSync(join(root, "clips/guide/sample.json"), JSON.stringify(metadata));
-    expect(() => storyboardAssets(root, root, sb)).toThrow("章を特定");
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});

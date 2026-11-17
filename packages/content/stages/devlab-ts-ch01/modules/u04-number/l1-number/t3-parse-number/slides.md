@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-4-3
+id: 4-1-3
 title: 文字列から数を取り出す
 takeaway: "文字列から整数を取り出し、NaN・有限の数・整数を区別できます。"
 introduces: ["Number.parseInt", "NaN", "Number.isNaN", "Number.isFinite", "Infinity", "Number.isInteger"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-4-3 文字列から数を取り出す
+# 4-1-3 文字列から数を取り出す
 
 <!-- ノート: 文字列から整数を取り出し、NaN・有限の数・整数を区別できます。 -->
 

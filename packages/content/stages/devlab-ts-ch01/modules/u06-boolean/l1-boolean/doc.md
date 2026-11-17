@@ -1,7 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
 ---
-# レッスン1-6 q06 条件を組み合わせて返す
+# レッスン6-1 q06 条件を組み合わせて返す
 
 ## このレッスンの目標
 
@@ -12,7 +12,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbo
 実装は「01章の問題」の q06 のファイルで行います。
 知識問題は理解の自己確認です。選考の判定には使いません。
 
-## 1-6-1 条件を組み合わせて返す
+## 6-1-1 条件を組み合わせて返す
 
 > **比べた結果を組み合わせると、条件をそのまま返せます。**
 

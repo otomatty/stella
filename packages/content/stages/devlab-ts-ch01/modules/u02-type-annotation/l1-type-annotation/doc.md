@@ -2,14 +2,14 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
 ---
 
-# レッスン1-2 型注釈
+# レッスン2-1 型注釈
 
 ## このレッスンの目標
 
 - [ ] 引数と戻り値に型注釈を書ける
 - [ ] 文字列の道具と条件の組合せの結果を説明できる
 
-## 1-2-1 型注釈を自分で書く
+## 2-1-1 型注釈を自分で書く
 
 > **引数は名前の後ろ、戻り値はかっこの後ろに型を書きます。**
 
@@ -57,7 +57,7 @@ console.log(isFreeShipping(6000), isFreeShipping(3000));
 
 参考: サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)。説明と例は教材用に独自作成しています。
 
-## 1-2-2 文字列の道具
+## 2-1-2 文字列の道具
 
 > **文字列の長さや一部を調べ、加工や条件の組合せに使えます。**
 

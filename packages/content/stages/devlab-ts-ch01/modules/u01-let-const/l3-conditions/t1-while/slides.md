@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number, SRC-typescriptbook-statements-if-else]
-id: 1-1-8
+id: 1-3-1
 title: 回数の決まらないくり返し
 takeaway: "while は条件を先に確かめ、true の間だけ値を変えながらくり返します。"
 introduces: ["while", ">", "!=="]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-8 回数の決まらないくり返し
+# 1-3-1 回数の決まらないくり返し
 
 <!-- ノート: while は条件を先に確かめ、true の間だけ値を変えながらくり返します。 -->
 
