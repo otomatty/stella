@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u05-string@1",
-  "contentHash": "e89848341cf6ac6be15ac9ffee0968310ea9b4c3ad3251a404e27f960d0f04da",
+  "unitId": "devlab-ts-ch01/u05-string@2",
+  "contentHash": "1bf24762f93766521599274acefa046b3b907880ea14421e75c609f679d925db",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-string/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型・文字列の表記の背景。操作の説明・業務サンプル・問題別ヒントは既存の書き方ガイドを教材内で再利用し、知識問題は自己確認用に独自作成",
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -15,39 +15,31 @@
     {
       "contentId": "l1-string/knowledge.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型・文字列の表記の背景。操作の説明・業務サンプル・問題別ヒントは既存の書き方ガイドを教材内で再利用し、知識問題は自己確認用に独自作成",
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-string/t1-read-problem/slides.md",
+      "contentId": "l1-string/t1-search/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型・文字列の表記の背景。操作の説明・業務サンプル・問題別ヒントは既存の書き方ガイドを教材内で再利用し、知識問題は自己確認用に独自作成",
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-string/t2-search/slides.md",
+      "contentId": "l1-string/t2-pick/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型・文字列の表記の背景。操作の説明・業務サンプル・問題別ヒントは既存の書き方ガイドを教材内で再利用し、知識問題は自己確認用に独自作成",
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-string/t3-pick/slides.md",
+      "contentId": "l1-string/t3-tidy-replace/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型・文字列の表記の背景。操作の説明・業務サンプル・問題別ヒントは既存の書き方ガイドを教材内で再利用し、知識問題は自己確認用に独自作成",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-string/t4-tidy-replace/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型・文字列の表記の背景。操作の説明・業務サンプル・問題別ヒントは既存の書き方ガイドを教材内で再利用し、知識問題は自己確認用に独自作成",
+      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

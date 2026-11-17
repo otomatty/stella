@@ -57,7 +57,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 <details>
 <summary>解答</summary>
 
-**A, B, C** — 文字列を渡した replace は最初だけ、replaceAll はすべての一致を置き換えます。正規表現の g も、すべての一致を扱います。
+**A, B, C** — 文字列を渡した replace は最初だけ、replaceAll はすべての一致を置き換えます。正規表現は、探す文字の種類や並びを表す書き方です。g も、すべての一致を扱います。
 
 </details>
 

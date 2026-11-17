@@ -135,6 +135,138 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
   expect(window.__overflows()).toHaveLength(1);
 });
 
+it.each([
+  { kind: "values", expr: "short", result: "123", stacked: false, size: 38, overflow: false },
+  {
+    kind: "values",
+    expr: `\`\${item}を\${count}冊注文しました\``,
+    result: '"ノートを3冊注文しました"',
+    stacked: true,
+    size: 26,
+    overflow: false,
+  },
+  {
+    kind: "numberLine",
+    expr: "long expression",
+    result: "1234567890",
+    stacked: true,
+    size: 38,
+    overflow: false,
+  },
+  { kind: "values", result: "12345678901234567890", stacked: false, size: 22, overflow: true },
+  { kind: "numberLine", result: "123456789012345", stacked: false, size: 26, overflow: false },
+] as const)("値の箱の実寸に応じて配置と文字サイズを決める: $kind / $result", async (test) => {
+  const expr = "expr" in test ? test.expr : undefined;
+  const scene: CodeScene = {
+    kind: "code",
+    id: "fit",
+    role: "hook",
+    title: "値を見る",
+    code: ["// 値"],
+    panel:
+      test.kind === "values"
+        ? { kind: "values", items: ["x", "longName"] }
+        : { kind: "numberLine", from: 0, to: 1, items: ["x", "longName"] },
+    beats: [
+      {
+        say: "値を見ます。",
+        ...(expr ? { calc: { on: "x", expr, result: test.result } } : { set: { x: test.result } }),
+      },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[3]])[0];
+  const html = sceneHtml({
+    board: { cols: 1, rows: 1, nodes: [] },
+    scene,
+    state: codeSceneState(scene),
+    timing,
+    index: 0,
+    total: 1,
+  });
+  // DOM の実寸を模した測定値。文字サイズの変更後も幅を再計算する。
+  const result = {
+    style: {} as Record<string, string>,
+    getBoundingClientRect: () => ({
+      width: test.result.length * Number.parseInt(result.style.fontSize ?? "38", 10),
+    }),
+  };
+  const answer = {
+    getBoundingClientRect: () => ({
+      width: result.getBoundingClientRect().width + (expr ? 20 : 0),
+    }),
+  };
+  const classes = new Set<string>();
+  const content = {
+    id: "value-content",
+    clientWidth: 432,
+    clientHeight: 200,
+    clientLeft: 0,
+    clientTop: 0,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    classList: { add: (name: string) => classes.add(name) },
+    querySelector: (selector: string) =>
+      selector === "strong"
+        ? result
+        : selector === ".answer"
+          ? expr
+            ? answer
+            : null
+          : expr
+            ? { getBoundingClientRect: () => ({ width: expr.length * 14 }) }
+            : null,
+  };
+  const names = [40, 170].map((width) => ({
+    style: {} as Record<string, string>,
+    getBoundingClientRect: () => ({ width }),
+  }));
+  const boxes = names.map((name) => ({
+    querySelector: (selector: string) => (selector === ".name" ? name : content),
+  }));
+  const panel = { innerHTML: "", querySelectorAll: () => boxes };
+  const node = { textContent: test.result };
+  const window = {} as ScenePageWindow;
+  runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+    window,
+    NodeFilter: { SHOW_TEXT: 4 },
+    document: {
+      getElementById: (id: string) => (id === "panel" ? panel : { innerHTML: "", style: {} }),
+      querySelectorAll: () => [content],
+      createTreeWalker: () => {
+        let visited = false;
+        return {
+          currentNode: node,
+          nextNode: () => {
+            if (visited) return false;
+            visited = true;
+            return true;
+          },
+        };
+      },
+      createRange: () => ({
+        selectNodeContents: () => undefined,
+        getClientRects: () => [
+          {
+            left: 16,
+            right: 16 + answer.getBoundingClientRect().width,
+            top: 12,
+            bottom: 60,
+            width: answer.getBoundingClientRect().width,
+            height: 48,
+          },
+        ],
+      }),
+    },
+  });
+  await window.__setTime(timing.beats[0].start + 1.5);
+  expect(classes.has("stacked")).toBe(test.stacked);
+  expect(Number.parseInt(result.style.fontSize ?? "38", 10)).toBe(test.size);
+  expect(names.map((name) => name.style.width)).toEqual(["170px", "170px"]);
+  expect(window.__overflows().length > 0).toBe(test.overflow);
+  if (test.overflow)
+    expect(window.__overflows()[0]).toContain("コードの場面で文字がはみ出しています");
+  expect(html).toContain(".value-content.stacked{flex-direction:column;align-items:flex-end;");
+});
+
 it("短いコードは36pxまで拡大し、枠を内容に合わせて中央に置く", () => {
   const render = (code: string[]) => {
     const scene: CodeScene = {

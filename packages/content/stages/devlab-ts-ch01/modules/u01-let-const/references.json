@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@1",
-  "contentHash": "b8fddd859282d61f7d4c6b37adaf9922f932b94bc3f3b1c41eee1b6c71f7cf09",
+  "unitId": "devlab-ts-ch01/u01-let-const@2",
+  "contentHash": "f33d4befe6c07991467d1252f2e7931fab3c0c5b42dceb86da187b707e7ec1e4",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -18,10 +18,13 @@
     {
       "contentId": "l1-let-const/doc.md",
       "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-typescriptbook-functions-function-declaration",
+        "SRC-typescriptbook-values-types-variables-number",
         "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-values-types-variables-number"
+        "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "const による変数宣言と再代入の制限、整数・小数と数値の計算の概念を参照。説明とコード例、Math.floor の補足は教材用に独自作成",
+      "usedFor": "関数の形と型注釈、const、数値の計算と文字列の概念を参照。説明・業務のサンプル・丸めの補足は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -29,10 +32,46 @@
     {
       "contentId": "l1-let-const/knowledge.md",
       "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-typescriptbook-functions-function-declaration",
+        "SRC-typescriptbook-values-types-variables-number",
         "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-values-types-variables-number"
+        "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "const と数値の計算を背景に、計算結果と小数点以下の切り捨てを確認する知識問題2問を独自作成",
+      "usedFor": "関数の形と型注釈、const、数値の計算と文字列の概念を参照。説明・業務のサンプル・知識問題5問・丸めの補足は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t1-read-problem/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-typescriptbook-functions-function-declaration"
+      ],
+      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t3-divide-ceil/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-let-and-const"
+      ],
+      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t4-remainder-template/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-string"
+      ],
+      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

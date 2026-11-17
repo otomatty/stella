@@ -1,0 +1,273 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "関数の引数と戻り値の型、テストの値を読み、中に書く場所を選べる。",
+    "stuck": "関数を初めて見て、どこが入力でどこが出力か分からない。",
+    "points": [
+      "関数は、受け取る値と返す値の型を外側に書くまとまり。",
+      "呼び出すと引数に値が入り、return の値が戻る。",
+      "問題では関数の形とテストの値を読み、関数の中だけを書く。"
+    ],
+    "leaveOut": [
+      "const による変数宣言と計算",
+      "型注釈や export の詳しい仕組み",
+      "繰り返しと条件分岐",
+      "問1の答えのコード"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "code",
+      "role": "hook",
+      "title": "注文数を確かめたい",
+      "code": ["// 注文した数は 3 個", "// 数を受け取る処理は、どこに書く？"],
+      "beats": [
+        {
+          "say": "注文した数を、コードで確かめたいですね。",
+          "type": [0]
+        },
+        {
+          "say": "この形の、どこに処理を書けばよいでしょうか。",
+          "type": [1]
+        }
+      ]
+    },
+    {
+      "id": "shape",
+      "kind": "code",
+      "role": "point",
+      "title": "外側の形を読む",
+      "code": [
+        "// 注文数を受け取り、その数を返す関数を作る",
+        "export function confirmedQuantity(quantity: number): number {",
+        "  // 受け取った数を返す",
+        "  return quantity;",
+        "  // 関数の中身はここまで",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "関数は、値を受け取り、値を返すまとまりです。",
+          "type": [0, 1]
+        },
+        {
+          "say": "function は、関数を作る印です。",
+          "part": {
+            "line": 1,
+            "text": "function"
+          },
+          "speech": "ファンクションは、関数を作る印です。"
+        },
+        {
+          "say": "関数の名前は、confirmedQuantity です。",
+          "part": {
+            "line": 1,
+            "text": "confirmedQuantity"
+          },
+          "speech": "関数の名前は、コンファームド・クオンティティーです。"
+        },
+        {
+          "say": "引数は、受け取る値に付けた名前です。",
+          "part": {
+            "line": 1,
+            "text": "quantity"
+          }
+        },
+        {
+          "say": "型注釈は値の種類を示し、number は数値です。",
+          "part": {
+            "line": 1,
+            "text": "quantity: number"
+          },
+          "speech": "型注釈は値の種類を示し、ナンバーは数値です。"
+        },
+        {
+          "say": "かっこの後ろの型は、返す値の種類です。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          }
+        }
+      ],
+      "point": 1
+    },
+    {
+      "id": "call",
+      "kind": "code",
+      "role": "point",
+      "title": "引数から戻り値へ",
+      "code": [
+        "// 注文数を受け取り、その数を返す関数を作る",
+        "export function confirmedQuantity(quantity: number): number {",
+        "  // 受け取った数を返す",
+        "  return quantity;",
+        "  // 関数の中身はここまで",
+        "}",
+        "// 3 を渡して関数を呼ぶ",
+        "confirmedQuantity(3);"
+      ],
+      "beats": [
+        {
+          "say": "戻り値は、関数が返す値のことです。",
+          "type": [0, 1, 4, 5]
+        },
+        {
+          "say": "名前の後ろのかっこに、渡す値を書きます。",
+          "type": [6, 7]
+        },
+        {
+          "say": "呼び出すと、引数の箱に 3 が入ります。",
+          "set": {
+            "quantity": "3"
+          },
+          "part": {
+            "line": 7,
+            "text": "3"
+          }
+        },
+        {
+          "say": "return は、右の値を返して関数を終えます。",
+          "type": [2, 3],
+          "speech": "リターンは、右の値を返して関数を終えます。"
+        },
+        {
+          "say": "呼んだ場所に、戻り値の 3 が戻ります。",
+          "calc": {
+            "on": "戻り値",
+            "expr": "quantity",
+            "result": "3"
+          },
+          "focus": [7]
+        }
+      ],
+      "panel": {
+        "kind": "values",
+        "items": ["quantity", "戻り値"]
+      },
+      "point": 2
+    },
+    {
+      "id": "mistake",
+      "kind": "code",
+      "role": "point",
+      "title": "型に合う値を渡す",
+      "code": [
+        "// 文字で書いた注文数を渡す間違い",
+        "confirmedQuantity(\"3\");",
+        "// 数値の注文数を渡す",
+        "confirmedQuantity(3);"
+      ],
+      "beats": [
+        {
+          "say": "引用符で囲むと、文字列という文字の値です。",
+          "type": [0, 1]
+        },
+        {
+          "say": "数値を受け取る場所へ文字を渡すと、エラーです。",
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "数値の 3 を、そのまま渡します。",
+          "type": [2, 3]
+        }
+      ],
+      "point": 2
+    },
+    {
+      "id": "read",
+      "kind": "code",
+      "role": "point",
+      "title": "形とテストを読む",
+      "code": [
+        "// 問1の関数を、別のファイルからも使える形で作る",
+        "export function addTax(price: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "export は、別のファイルから使えるようにします。",
+          "type": [0, 1],
+          "speech": "エクスポートは、別のファイルから使えるようにします。"
+        },
+        {
+          "say": "テストは、決めた値で結果を確かめるものです。",
+          "type": [2, 3]
+        },
+        {
+          "say": "問題では、受け取る価格の型を読みます。",
+          "part": {
+            "line": 1,
+            "text": "price: number"
+          }
+        },
+        {
+          "say": "返す金額も、数値だと分かります。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          }
+        }
+      ],
+      "point": 3
+    },
+    {
+      "id": "recap",
+      "kind": "code",
+      "role": "recap",
+      "title": "問1の中を書く",
+      "code": [
+        "// 問1は価格を受け取り、税込の金額を返す",
+        "export function addTax(price: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "beats": [
+        {
+          "say": "問1 は、この関数の中だけを書きます。",
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "1000 を渡すと、1100 が期待されます。",
+          "row": [0]
+        },
+        {
+          "say": "980 を渡すと、1078 が期待されます。",
+          "row": [1]
+        },
+        {
+          "say": "5 を渡すと、5 が期待されます。",
+          "row": [2]
+        },
+        {
+          "say": "引数と戻り値を読み、return を書いてみましょう。",
+          "focus": [2],
+          "speech": "引数と戻り値を読み、リターンを書いてみましょう。"
+        }
+      ],
+      "panel": {
+        "kind": "calls",
+        "rows": [
+          {
+            "call": "addTax(1000)",
+            "result": "1100"
+          },
+          {
+            "call": "addTax(980)",
+            "result": "1078"
+          },
+          {
+            "call": "addTax(5)",
+            "result": "5"
+          }
+        ]
+      }
+    }
+  ]
+}
