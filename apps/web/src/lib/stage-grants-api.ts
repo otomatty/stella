@@ -58,6 +58,7 @@ export interface StageGrantLearnerQuery {
 }
 
 export interface StageGrantDiff {
+  descendants?: boolean;
   add?: string[];
   remove?: string[];
   exempt?: string[];
@@ -68,6 +69,8 @@ export interface UpdatedStageGrants {
   stage_id: string;
   counts: StageGrantLearnerCounts;
   ancestor_grants: StageAncestorGrant[];
+  descendant_grants: StageAncestorGrant[];
+  descendant_removals: StageAncestorGrant[];
 }
 
 function stageGrantLearnerQuery(params: StageGrantLearnerQuery): string {
@@ -94,6 +97,19 @@ export async function listStageGrantLearners(
   );
 }
 
+export interface StageGrantDescendant {
+  id: string;
+  slug: string;
+  title: string;
+}
+
+export function listStageGrantDescendants(stageId: string, signal?: AbortSignal) {
+  return apiFetch<{ stages: StageGrantDescendant[] }>(
+    `/api/stage-grants/${encodeURIComponent(stageId)}/descendants`,
+    { signal },
+  );
+}
+
 /** 割り当ての差分 (追加・削除・前提の免除) を保存する。 */
 export async function updateStageGrants(
   stageId: string,
@@ -107,6 +123,8 @@ export async function updateStageGrants(
     stage_id: body.stage_id ?? stageId,
     counts: body.counts ?? { learners: 0, assigned: 0, unassigned: 0, exempted: 0 },
     ancestor_grants: Array.isArray(body.ancestor_grants) ? body.ancestor_grants : [],
+    descendant_grants: Array.isArray(body.descendant_grants) ? body.descendant_grants : [],
+    descendant_removals: Array.isArray(body.descendant_removals) ? body.descendant_removals : [],
   };
 }
 

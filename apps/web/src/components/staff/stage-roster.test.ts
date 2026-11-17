@@ -11,6 +11,7 @@ import {
   setRosterAssigned,
   setRosterExempted,
   stageGrantRoleLabel,
+  stageGrantDescendantSaveState,
   toggleVisibleAssignments,
   visibleAssignmentState,
   type RosterLocalFilter,
@@ -241,6 +242,26 @@ describe("変更だけと免除タブ", () => {
 });
 
 describe("保存の文言", () => {
+  it("続きへの追加・解除を実際に変更したステージ数で伝える", () => {
+    expect(
+      formatStageGrantSavedMessage(
+        "第0章",
+        [],
+        undefined,
+        [
+          { stage_id: "ch1", profile_ids: ["a"] },
+          { stage_id: "ch1", profile_ids: ["b"] },
+          { stage_id: "empty", profile_ids: [] },
+        ],
+        [{ stage_id: "ch2", profile_ids: ["c"] }],
+      ),
+    ).toBe(
+      "「第0章」の割り当てを保存しました。続きの 1 ステージにも割り当てました。続きの 1 ステージからも割り当てを外しました。",
+    );
+    expect(formatStageGrantSavedMessage("第0章", [], undefined, [], [])).toBe(
+      "「第0章」の割り当てを保存しました。",
+    );
+  });
   it("祖先が無ければステージ名だけ、名前が不明なら前の Extra ステージと書く", () => {
     expect(formatStageGrantSavedMessage("DevOps", [])).toBe("「DevOps」の割り当てを保存しました。");
     expect(
@@ -268,5 +289,39 @@ describe("stageGrantRoleLabel", () => {
     ["unknown", null],
   ])("%s のバッジは %s", (role, label) => {
     expect(stageGrantRoleLabel(role)).toBe(label);
+  });
+});
+
+describe("続きの取得状態と保存", () => {
+  it("初回と再読み込みで、まだ結果が無い間は保存を止める", () => {
+    expect(stageGrantDescendantSaveState(null, false, true)).toEqual({
+      saveDisabled: true,
+      descendants: false,
+    });
+  });
+
+  it("404 などで取得に失敗しても、このステージだけ保存できる", () => {
+    expect(stageGrantDescendantSaveState(null, true, true)).toEqual({
+      saveDisabled: false,
+      descendants: false,
+    });
+  });
+
+  it("失敗時は以前の一覧やチェックが残っていても、続きには保存しない", () => {
+    expect(stageGrantDescendantSaveState(3, true, true)).toEqual({
+      saveDisabled: false,
+      descendants: false,
+    });
+  });
+
+  it.each([
+    { count: 3, checked: true, descendants: true },
+    { count: 3, checked: false, descendants: false },
+    { count: 0, checked: true, descendants: false },
+  ])("取得成功後は件数とチェックに従う: %j", ({ count, checked, descendants }) => {
+    expect(stageGrantDescendantSaveState(count, false, checked)).toEqual({
+      saveDisabled: false,
+      descendants,
+    });
   });
 });

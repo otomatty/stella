@@ -74,8 +74,15 @@ const deleteGrants = vi.fn(() => ({ kind: "delete" }));
 const deleted: { table: unknown; where: unknown }[] = [];
 const conflictIgnored: { stageId: string; profileId: string }[] = [];
 const unlockRows: { stageId: string; userId: string; via: string }[] = [];
-const stageCatalog: { id: string; slug: string; title?: string; prerequisites: string | null }[] =
-  [];
+const stageCatalog: {
+  id: string;
+  slug: string;
+  title?: string;
+  prerequisites: string | null;
+  audience?: string;
+  status?: string;
+  tenantId?: string;
+}[] = [];
 const enrollmentRows: { userId: string; stageId: string; status: string }[] = [];
 const certificateRows: { userId: string; stageId: string; revoked: boolean }[] = [];
 const unlockInserted: {
@@ -287,7 +294,15 @@ const mockDb = {
       return selectWithLimit(stageLookup);
     }
     if (table === "stages") {
-      return selectWhereOnly(async () => stageCatalog.map((row) => ({ ...row })));
+      return selectWhereOnly(async () =>
+        stageCatalog
+          .filter(
+            (row) =>
+              !keys.includes("status") ||
+              (row.status === "published" && row.audience === "granted"),
+          )
+          .map((row) => ({ ...row })),
+      );
     }
     if (table === "enrollments") {
       return selectWhereOnly(async (where) => readEnrollmentRows(where));
@@ -298,7 +313,7 @@ const mockDb = {
     if (keys.includes("userId")) {
       return selectWhereOnly(unlockSelect);
     }
-    if (keys.includes("profileId")) {
+    if (table === "stage_grants" || keys.includes("profileId")) {
       return selectWhereOnly(grantSelect);
     }
     if (keys.includes("display_name")) {
@@ -1584,6 +1599,7 @@ describe("PATCH /api/stage-grants/:stageId", () => {
     grantSelect.mockResolvedValue([]);
     profileLookup.mockReset();
     profileLookup.mockResolvedValue([{ id: "seed-learner", role: "student", disabled: false }]);
+    stageCatalog.length = 0;
     unlockRows.length = 0;
     unlockSelect.mockClear();
     deleted.length = 0;
@@ -1702,6 +1718,8 @@ describe("PATCH /api/stage-grants/:stageId", () => {
       stage_id: "stage-granted-1",
       counts: { learners: 1, assigned: 1, unassigned: 0, exempted: 0 },
       ancestor_grants: [],
+      descendant_grants: [],
+      descendant_removals: [],
     });
     expect(batchGrants).toHaveBeenCalledTimes(1);
     expect(writtenRows()).toEqual([
@@ -1903,16 +1921,277 @@ describe("PATCH /api/stage-grants/:stageId", () => {
     );
   });
 
-  it("300 人を一度に足せる", async () => {
+  function seedDescendants() {
+    // 一覧では孫が先にあっても、学習順では子が先。
+    stageCatalog.push(
+      {
+        id: "grandchild",
+        slug: "grandchild",
+        title: "第2章",
+        prerequisites: '["child"]',
+        audience: "granted",
+        status: "published",
+        tenantId: "ses",
+      },
+      {
+        id: "child",
+        slug: "child",
+        title: "第1章",
+        prerequisites: '["custom-basics"]',
+        audience: "granted",
+        status: "published",
+        tenantId: "ses",
+      },
+      {
+        id: "optional",
+        slug: "optional",
+        title: "発展",
+        prerequisites: '["custom-basics", "child"]',
+        audience: "granted",
+        status: "published",
+        tenantId: "ses",
+      },
+      {
+        id: "draft",
+        slug: "draft",
+        title: "草稿",
+        prerequisites: '["custom-basics"]',
+        audience: "granted",
+        status: "draft",
+        tenantId: "ses",
+      },
+      {
+        id: "catalog",
+        slug: "catalog",
+        title: "Basic",
+        prerequisites: '["custom-basics"]',
+        audience: "catalog",
+        status: "published",
+        tenantId: "ses",
+      },
+      {
+        id: "retired",
+        slug: "devlab-ts-prework",
+        title: "退役",
+        prerequisites: '["custom-basics"]',
+        audience: "granted",
+        status: "published",
+        tenantId: "ses",
+      },
+      {
+        id: "behind-draft",
+        slug: "behind-draft",
+        title: "草稿の続き",
+        prerequisites: '["draft"]',
+        audience: "granted",
+        status: "published",
+        tenantId: "ses",
+      },
+    );
+  }
+
+  it("続きの公開中の Extra だけを深さ順に返す。重複・循環は止める", async () => {
+    seedDescendants();
+    stageCatalog.push({
+      id: "stage-granted-1",
+      slug: "custom-basics",
+      title: "起点",
+      prerequisites: '["grandchild"]',
+      audience: "granted",
+      status: "published",
+    });
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1/descendants", {
+      token: "t",
+    });
+    expect(res.status).toBe(200);
+    expect(await json(res)).toEqual({
+      stages: [
+        { id: "child", slug: "child", title: "第1章" },
+        { id: "optional", slug: "optional", title: "発展" },
+        { id: "grandchild", slug: "grandchild", title: "第2章" },
+      ],
+    });
+  });
+
+  it("続きの読み取りも既存の権限とステージ検査に従う", async () => {
+    caller = { ...caller, role: "student" };
+    expect(
+      (await request(app, env, "/api/stage-grants/stage-granted-1/descendants", { token: "t" }))
+        .status,
+    ).toBe(403);
+    caller = { ...caller, role: "admin" };
+    stageLookup.mockResolvedValueOnce([]);
+    expect(
+      (await request(app, env, "/api/stage-grants/missing/descendants", { token: "t" })).status,
+    ).toBe(404);
+    stageLookup.mockResolvedValueOnce([{ ...grantedStage, audience: "catalog" }]);
+    expect(
+      (await request(app, env, "/api/stage-grants/catalog/descendants", { token: "t" })).status,
+    ).toBe(400);
+  });
+
+  it("続きにも追加し、既存の組は飛ばす。免除は起点だけ", async () => {
+    seedDescendants();
+    grantSelect.mockImplementation(async (where?: unknown) => {
+      const ids = stageIdsInSketch(sqlSketch(where));
+      return [{ stageId: "child", profileId: "seed-learner" }].filter(
+        (row) => !ids || ids.has(row.stageId),
+      );
+    });
+    const res = await patch({ add: ["seed-learner"], exempt: ["seed-learner"], descendants: true });
+    expect(res.status).toBe(200);
+    const body = await json<{ descendant_grants: unknown[]; descendant_removals: unknown[] }>(res);
+    expect(body.descendant_grants).toEqual([
+      { stage_id: "optional", profile_ids: ["seed-learner"] },
+      { stage_id: "grandchild", profile_ids: ["seed-learner"] },
+    ]);
+    expect(body.descendant_removals).toEqual([]);
+    expect(
+      writtenRows()
+        .filter((row) => row.profileId)
+        .map((row) => row.stageId),
+    ).toEqual(["stage-granted-1", "optional", "grandchild"]);
+    expect(writtenRows().filter((row) => row.userId)).toEqual([
+      expect.objectContaining({ stageId: "stage-granted-1", userId: "seed-learner", via: "staff" }),
+    ]);
+    expect(batchGrants).toHaveBeenCalledTimes(1);
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          descendant_grants: body.descendant_grants,
+          descendant_removals: [],
+        }),
+      }),
+    );
+  });
+
+  it("続きの新規行は、そのステージの既存の案内を引き継ぐ", async () => {
+    seedDescendants();
+    grantSelect.mockImplementation(async (where?: unknown) => {
+      const ids = stageIdsInSketch(sqlSketch(where));
+      return [
+        {
+          stageId: "child",
+          profileId: "other",
+          source_name: "案内元",
+          due_at: "2026-12-01T00:00:00Z",
+          message: "第1章の案内です",
+        },
+      ].filter((row) => !ids || ids.has(row.stageId));
+    });
+    expect((await patch({ add: ["seed-learner"], descendants: true })).status).toBe(200);
+    expect(writtenRows()).toContainEqual(
+      expect.objectContaining({
+        stageId: "child",
+        profileId: "seed-learner",
+        sourceName: "案内元",
+        dueAt: "2026-12-01T00:00:00Z",
+        message: "第1章の案内です",
+      }),
+    );
+    expect(writtenRows().filter((row) => row.profileId === "other")).toEqual([]);
+  });
+
+  it("起点が割当済みでも、add を指定した人は続きに割り当てる", async () => {
+    seedDescendants();
+    grantSelect.mockImplementation(async (where?: unknown) => {
+      const ids = stageIdsInSketch(sqlSketch(where));
+      return [{ stageId: "stage-granted-1", profileId: "seed-learner" }].filter(
+        (row) => !ids || ids.has(row.stageId),
+      );
+    });
+    const res = await patch({ add: ["seed-learner"], descendants: true });
+    expect(res.status).toBe(200);
+    expect(writtenRows().map((row) => row.stageId)).toEqual(["child", "optional", "grandchild"]);
+  });
+
+  it("remove は続きの割り当てと staff の免除も外す。unexempt は起点だけ", async () => {
+    seedDescendants();
+    grantSelect.mockImplementation(async (where?: unknown) => {
+      const ids = stageIdsInSketch(sqlSketch(where));
+      return ["stage-granted-1", "child"]
+        .map((stageId) => ({ stageId, profileId: "seed-learner" }))
+        .filter((row) => !ids || ids.has(row.stageId));
+    });
+    const res = await patch({ remove: ["seed-learner"], unexempt: ["other"], descendants: true });
+    expect(res.status).toBe(200);
+    const body = await json<{ descendant_removals: unknown[] }>(res);
+    expect(body.descendant_removals).toEqual([
+      { stage_id: "child", profile_ids: ["seed-learner"] },
+    ]);
+    for (const id of ["child", "optional", "grandchild"]) {
+      expect(
+        deleted.some(
+          (op) =>
+            op.table === stageGrants &&
+            sqlSketch(op.where) ===
+              sqlSketch(
+                and(eq(stageGrants.stageId, id), inArray(stageGrants.profileId, ["seed-learner"])),
+              ),
+        ),
+      ).toBe(true);
+      expect(
+        deleted.some(
+          (op) =>
+            op.table === stageUnlocks &&
+            sqlSketch(op.where) ===
+              sqlSketch(
+                and(
+                  eq(stageUnlocks.stageId, id),
+                  eq(stageUnlocks.via, "staff"),
+                  inArray(stageUnlocks.userId, ["seed-learner"]),
+                ),
+              ),
+        ),
+      ).toBe(true);
+    }
+    expect(batchGrants).toHaveBeenCalledTimes(1);
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ descendant_removals: body.descendant_removals }),
+      }),
+    );
+  });
+
+  it.each([undefined, false])("descendants=%s なら続きは変えない", async (descendants) => {
+    seedDescendants();
+    const res = await patch({ add: ["seed-learner"], descendants });
+    expect(res.status).toBe(200);
+    expect(writtenRows().map((row) => row.stageId)).toEqual(["stage-granted-1"]);
+    expect(await json(res)).toMatchObject({ descendant_grants: [], descendant_removals: [] });
+  });
+
+  it("続きが無ければ一覧・追加・削除は空", async () => {
+    const listed = await request(app, env, "/api/stage-grants/stage-granted-1/descendants", {
+      token: "t",
+    });
+    expect(await json(listed)).toEqual({ stages: [] });
+    const res = await patch({ add: ["seed-learner"], descendants: true });
+    expect(res.status).toBe(200);
+    expect(await json(res)).toMatchObject({ descendant_grants: [], descendant_removals: [] });
+  });
+
+  it("descendants が真偽値でなければ 400", async () => {
+    expect((await patch({ add: ["seed-learner"], descendants: "true" })).status).toBe(400);
+    expect(batchGrants).not.toHaveBeenCalled();
+  });
+
+  it("300 人を続きにも一度の batch で足せる", async () => {
+    seedDescendants();
     const ids = Array.from({ length: 300 }, (_, index) => `learner-${index}`);
     profileLookup.mockResolvedValue(
       ids.map((id) => ({ id, role: "student" as const, disabled: false })),
     );
-    const res = await patch({ add: ids });
+    const res = await patch({ add: ids, descendants: true });
     expect(res.status).toBe(200);
     expect(batchGrants).toHaveBeenCalledTimes(1);
     const body = await json<{ counts: { assigned: number } }>(res);
     expect(body.counts.assigned).toBe(300);
+    expect(writtenRows().filter((row) => row.profileId)).toHaveLength(1200);
     expect(recordAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),

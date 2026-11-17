@@ -35,6 +35,8 @@ import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { Check, Circle, Dot, Search, X } from "@/lib/icons";
 import {
   listStageGrantLearners,
+  listStageGrantDescendants,
+  type StageGrantDescendant,
   updateStageGrants,
   type StageGrantLearnerCounts,
   type StageGrantLearnerDetail,
@@ -53,6 +55,7 @@ import {
   setRosterAssigned,
   setRosterExempted,
   stageGrantRoleLabel,
+  stageGrantDescendantSaveState,
   toggleVisibleAssignments,
   visibleAssignmentState,
   type RosterLocalFilter,
@@ -110,6 +113,10 @@ export function StageGrantEditor({
   const [error, setError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [pending, setPending] = useState<StageRosterPending>(new Map());
+  const [descendants, setDescendants] = useState<StageGrantDescendant[] | null>(null);
+  const [includeDescendants, setIncludeDescendants] = useState(true);
+  const [descendantsError, setDescendantsError] = useState(false);
+  const [descendantsRetry, setDescendantsRetry] = useState(0);
   const [saving, setSaving] = useState(false);
   // レイアウトの切り替えで子が作り直されても、すべての保存が終わるまで操作を止める。
   const [guidanceSaveCount, setGuidanceSaveCount] = useState(0);
@@ -144,6 +151,9 @@ export function StageGrantEditor({
       setPrereqDone(false);
       setExemptedOnly(false);
       setNotDone(false);
+      setDescendants(null);
+      setIncludeDescendants(true);
+      setDescendantsError(false);
       setPending(new Map());
       setLearners([]);
       setPage(null);
@@ -156,6 +166,21 @@ export function StageGrantEditor({
       setEpoch((n) => n + 1);
     }
   }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: descendantsRetry は再読み込みボタンで取得をやり直すための依存。
+  useEffect(() => {
+    if (!open || stageId === null) return;
+    const ac = new AbortController();
+    setDescendantsError(false);
+    void listStageGrantDescendants(stageId, ac.signal)
+      .then((data) => {
+        if (!ac.signal.aborted) setDescendants(data.stages);
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setDescendantsError(true);
+      });
+    return () => ac.abort();
+  }, [open, stageId, descendantsRetry]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(queryText), 300);
@@ -301,13 +326,27 @@ export function StageGrantEditor({
       });
   };
 
+  const descendantSaveState = stageGrantDescendantSaveState(
+    descendants?.length ?? null,
+    descendantsError,
+    includeDescendants,
+  );
+
   const save = () => {
-    if (stageId === null || savingRef.current || guidanceBusy || changeCount === 0) return;
+    if (
+      stageId === null ||
+      savingRef.current ||
+      guidanceBusy ||
+      descendantSaveState.saveDisabled ||
+      changeCount === 0
+    )
+      return;
     const id = ++saveIdRef.current;
     const epochAtSave = epochRef.current;
     const savedStageId = stageId;
     const titleAtSave = page?.stage.title ?? stageTitle;
     const payload = {
+      descendants: descendantSaveState.descendants,
       ...(diff.add.length > 0 ? { add: diff.add } : {}),
       ...(diff.remove.length > 0 ? { remove: diff.remove } : {}),
       ...(diff.exempt.length > 0 ? { exempt: diff.exempt } : {}),
@@ -318,7 +357,13 @@ export function StageGrantEditor({
     void updateStageGrants(savedStageId, payload)
       .then((saved) => {
         toast.success(
-          formatStageGrantSavedMessage(titleAtSave, saved.ancestor_grants, stageTitleOf),
+          formatStageGrantSavedMessage(
+            titleAtSave,
+            saved.ancestor_grants,
+            stageTitleOf,
+            saved.descendant_grants,
+            saved.descendant_removals,
+          ),
         );
         onSaved();
         if (epochRef.current !== epochAtSave) return;
@@ -379,6 +424,34 @@ export function StageGrantEditor({
     onAssigned,
     onExempted,
     onSave: save,
+    saveDisabled: descendantSaveState.saveDisabled,
+    descendantControl: descendantsError ? (
+      <p role="alert" className="text-sm text-destructive">
+        続きのステージを取得できませんでした。このステージだけに保存します。
+        <Button variant="ghost" onClick={() => setDescendantsRetry((n) => n + 1)}>
+          再読み込み
+        </Button>
+      </p>
+    ) : descendants && descendants.length > 0 ? (
+      <div className="mb-2 text-sm">
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={includeDescendants}
+            disabled={saving || guidanceBusy}
+            onChange={(event) => setIncludeDescendants(event.target.checked)}
+          />
+          続きの {descendants.length} ステージにもまとめて割り当てる（外すときも、まとめて外す）
+        </label>
+        <p className="mt-1 text-[11px] text-ink-3">
+          {descendants
+            .slice(0, 3)
+            .map((row) => row.title)
+            .join("、")}
+          {descendants.length > 3 ? `、ほか ${descendants.length - 3} 件` : ""}
+        </p>
+      </div>
+    ) : null,
     onClose: requestClose,
     listFooter,
     guidanceEditor: groupId ? (
@@ -688,18 +761,20 @@ function SaveButton({
   saving,
   onSave,
   full,
+  disabled,
 }: {
   changeCount: number;
   saving: boolean;
   onSave: () => void;
   full?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <Button
       type="button"
       variant="primary"
       className={full ? "h-12 w-full" : undefined}
-      disabled={changeCount === 0 || saving}
+      disabled={changeCount === 0 || saving || disabled}
       onClick={onSave}
     >
       {saving ? "保存中…" : `保存（${changeCount} 件）`}
@@ -742,6 +817,8 @@ function PcRoster({
   onClose,
   listFooter,
   guidanceEditor,
+  descendantControl,
+  saveDisabled,
 }: {
   completionStageId: string | null;
   stageLabel: string;
@@ -773,6 +850,8 @@ function PcRoster({
   onClose: () => void;
   listFooter: React.ReactNode;
   guidanceEditor: React.ReactNode;
+  descendantControl: React.ReactNode;
+  saveDisabled: boolean;
 }) {
   const tabs: { id: PcStatus; label: string; count: number }[] = [
     { id: "all", label: "すべて", count: counts?.learners ?? 0 },
@@ -934,27 +1013,35 @@ function PcRoster({
           </Table>
         </ListRegion>
       </div>
-      <div className="flex shrink-0 flex-wrap items-end justify-between gap-3 border-t px-6 py-4">
-        <div className="min-w-0">
-          <p className="text-[13px] text-ink-2">{summary}</p>
-          <p className="mt-1 text-[11px] text-ink-4">
-            前のステージが Extra
-            のときは、それも一緒に割り当てます。外したユーザーは前提の免除も外れます。
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={changeCount === 0 || saving}
-            onClick={onClear}
-          >
-            変更を取り消す
-          </Button>
-          <Button type="button" variant="outline" onClick={onClose}>
-            閉じる
-          </Button>
-          <SaveButton changeCount={changeCount} saving={saving} onSave={onSave} />
+      <div className="shrink-0 border-t px-6 py-4">
+        {descendantControl}
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] text-ink-2">{summary}</p>
+            <p className="mt-1 text-[11px] text-ink-4">
+              前のステージが Extra
+              のときは、それも一緒に割り当てます。外したユーザーは前提の免除も外れます。
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={changeCount === 0 || saving}
+              onClick={onClear}
+            >
+              変更を取り消す
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              閉じる
+            </Button>
+            <SaveButton
+              changeCount={changeCount}
+              saving={saving}
+              onSave={onSave}
+              disabled={saveDisabled}
+            />
+          </div>
         </div>
       </div>
     </>
@@ -1023,6 +1110,8 @@ function MobileRoster({
   onClose,
   listFooter,
   guidanceEditor,
+  descendantControl,
+  saveDisabled,
 }: {
   completionStageId: string | null;
   stageLabel: string;
@@ -1059,6 +1148,8 @@ function MobileRoster({
   onClose: () => void;
   listFooter: React.ReactNode;
   guidanceEditor: React.ReactNode;
+  descendantControl: React.ReactNode;
+  saveDisabled: boolean;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -1230,7 +1321,14 @@ function MobileRoster({
       </div>
       <div className="shrink-0 border-t px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <p className="mb-2 text-[12px] text-ink-3">{summary}</p>
-        <SaveButton changeCount={changeCount} saving={saving} onSave={onSave} full />
+        {descendantControl}
+        <SaveButton
+          changeCount={changeCount}
+          saving={saving}
+          onSave={onSave}
+          disabled={saveDisabled}
+          full
+        />
       </div>
     </div>
   );

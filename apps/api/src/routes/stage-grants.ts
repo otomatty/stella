@@ -6,9 +6,12 @@ import { integrationGroupFilter } from "../lib/integrations.js";
  *     + 前提をクリア済みのユーザー + ユーザーピッカー用一覧
  *   GET /api/stage-grants/:stageId/learners … 1 ステージのユーザーを検索・絞り込み・50 人ずつ返す。
  *   PUT /api/stage-grants/:stageId … `{ profile_ids, unlocked_profile_ids? }` で grant を置換。
- *   PATCH /api/stage-grants/:stageId … `{ add, remove, exempt, unexempt }` の差分を 1 回の batch で書く。
+ *   GET /api/stage-grants/:stageId/descendants … 公開中の続きの Extra を前提の深さ順に返す。
+ *   PATCH /api/stage-grants/:stageId … `{ add, remove, exempt, unexempt, descendants? }` の差分を 1 回の batch で書く。
  *     応答は `{ stage_id, profile_ids, unlocked_profile_ids, ancestor_grants }`。ancestor_grants は
  *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
+ *     descendants: true では続きにも追加・削除し、descendant_grants / descendant_removals を返す。
+ *     免除・免除の解除は起点だけ。
  *
  * `unlocked_profile_ids` は、割り当てたユーザーのうち前提を免除する人 (`stage_unlocks.via = staff`)。
  * 指定すると、そのステージの staff の行のうち指定に無い人だけを消し、指定された人を足す
@@ -25,6 +28,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
  */
 
 import { Hono } from "hono";
+import { RETIRED_STAGES } from "@stella/shared/curriculum/retired-stages";
 import { sql, and, eq, inArray, notInArray } from "drizzle-orm";
 
 import type { Db } from "../db/client.js";
@@ -179,6 +183,36 @@ async function loadGrantedPrerequisites(db: Db, start: GrantStageNode): Promise<
     for (const next of neighborSlugs(row)) {
       if (!visited.has(next)) queue.push(next);
     }
+  }
+  return found;
+}
+
+/** 前提を逆にたどる。深さごとに既存の一覧順を保ち、循環・重複を除く。 */
+async function loadGrantedDescendants(db: Db, start: GrantStageNode) {
+  const rows = await db
+    .select({
+      id: stages.id,
+      slug: stages.slug,
+      title: stages.title,
+      prerequisites: stages.prerequisites,
+      tenantId: stages.tenantId,
+      status: stages.status,
+    })
+    .from(stages)
+    .where(and(eq(stages.status, "published"), eq(stages.audience, "granted")));
+  const retired = new Set(RETIRED_STAGES.map((row) => `${row.tenantId}\0${row.slug}`));
+  const candidates = rows.filter((row) => !retired.has(`${row.tenantId}\0${row.slug}`));
+  const visited = new Set([start.slug]);
+  let frontier = new Set([start.slug]);
+  const found: typeof rows = [];
+  while (frontier.size > 0) {
+    const next = candidates.filter(
+      (row) =>
+        !visited.has(row.slug) && prerequisiteSlugsFromRow(row).some((slug) => frontier.has(slug)),
+    );
+    frontier = new Set(next.map((row) => row.slug));
+    for (const row of next) visited.add(row.slug);
+    found.push(...next);
   }
   return found;
 }
@@ -731,14 +765,31 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
   }
 });
 
+stageGrantsRoute.get("/api/stage-grants/:stageId/descendants", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireCanManageStageGrants(caller);
+    const stage = await loadGrantStage(db, c.req.param("stageId"));
+    const descendants = await loadGrantedDescendants(db, stage);
+    return c.json({ stages: descendants.map(({ id, slug, title }) => ({ id, slug, title })) });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireCanManageStageGrants(caller);
     const stageId = c.req.param("stageId");
-    const parsed = parseStageGrantDiff(await c.req.json());
+    const body: unknown = await c.req.json();
+    const parsed = parseStageGrantDiff(body);
     if (!parsed.ok) throw new ApiError(parsed.error, 400);
 
+    const descendantsRequested = (body as { descendants?: unknown }).descendants;
+    if (descendantsRequested !== undefined && typeof descendantsRequested !== "boolean") {
+      throw new ApiError("descendants は真偽値で指定してください", 400);
+    }
     const stage = await loadGrantStage(db, stageId);
     const [profileRows, grantRows, unlockRows] = await Promise.all([
       db
@@ -776,17 +827,40 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
         );
       }
     }
+    const descendants =
+      descendantsRequested === true ? await loadGrantedDescendants(db, stage) : [];
+    const descendantIds = descendants.map((row) => row.id);
+    const existingDescendants = await loadExistingGrantKeys(db, descendantIds);
+    const descendantRows = ancestorGrantRows(descendantIds, parsed.value.add, existingDescendants);
+    const descendantRemovalRows = descendantIds.flatMap((descendantId) =>
+      plan.removed
+        .filter((profileId) => existingDescendants.has(`${descendantId}\0${profileId}`))
+        .map((profileId) => ({ stageId: descendantId, profileId })),
+    );
     const statements = planStageGrantWriteStatements(db, {
       stageId,
       grantedBy: caller.id,
       grantRows: await inheritGrantGuidance(db, [
         ...plan.added.map((profileId) => ({ stageId, profileId })),
         ...ancestorRows,
+        ...descendantRows,
       ]),
       removeProfileIds: plan.removed,
       deleteStaffUserIds: plan.deleteStaffIds,
       exemptUserIds: plan.exempted,
     });
+    for (const descendant of descendants) {
+      statements.push(
+        ...planStageGrantWriteStatements(db, {
+          stageId: descendant.id,
+          grantedBy: caller.id,
+          grantRows: [],
+          removeProfileIds: plan.removed,
+          deleteStaffUserIds: plan.removed,
+          exemptUserIds: [],
+        }),
+      );
+    }
     const [first, ...rest] = statements;
     if (first) await db.batch([first, ...rest]);
 
@@ -797,6 +871,8 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
     const next = assignmentAfterDiff(assigned, staffUnlocks, plan);
     const counts = countStageGrantLearners(profileRows, next.assigned, next.staffUnlocks);
     const ancestorGrants = groupAncestorGrants(ancestorRows);
+    const descendantGrants = groupAncestorGrants(descendantRows);
+    const descendantRemovals = groupAncestorGrants(descendantRemovalRows);
     await recordAudit(db, caller, {
       action: "stage_grants_update",
       targetType: "stage",
@@ -807,10 +883,22 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
         exempted: plan.exempted,
         unexempted: plan.unexempted,
         ...(ancestorGrants.length > 0 ? { ancestor_grants: ancestorGrants } : {}),
+        ...(descendantsRequested === true
+          ? {
+              descendant_grants: descendantGrants,
+              descendant_removals: descendantRemovals,
+            }
+          : {}),
       },
       ip: clientIp(c),
     });
-    return c.json({ stage_id: stageId, counts, ancestor_grants: ancestorGrants });
+    return c.json({
+      stage_id: stageId,
+      counts,
+      ancestor_grants: ancestorGrants,
+      descendant_grants: descendantGrants,
+      descendant_removals: descendantRemovals,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }
