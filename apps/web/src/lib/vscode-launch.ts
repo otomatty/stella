@@ -13,8 +13,10 @@
  */
 
 import { buildVscodeLessonUri, buildVscodeTaskUri } from "@stella/shared/vscode/uris";
+import { createElement } from "react";
 import { toast } from "sonner";
 
+import { VscodeHandoffHint } from "../components/learner/VscodeHandoffHint";
 import { apiFetch } from "./api-client";
 
 /** VS Code の入手先 (公式)。 */
@@ -42,8 +44,7 @@ function showHandoffHint(): void {
   }
   if (next === undefined) return;
   toast("VS Code で課題を開きました", {
-    description:
-      "VS Code の右側の課題文のパネルにある『進め方』を見てください。課題文が出ないときは、次を確かめます: 拡張機能のインストールを尋ねられたら、発行元が saedgewell の STELLA を入れる / 初めてのときは学習フォルダーを選ぶ / 『信頼しますか』と聞かれたら、自分の学習フォルダーなら信頼する",
+    description: createElement(VscodeHandoffHint),
     duration: 15_000,
     cancel: { label: "閉じる", onClick: () => undefined },
   });
