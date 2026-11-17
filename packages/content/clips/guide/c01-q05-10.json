@@ -1,0 +1,22 @@
+{
+  "source": "docs/devlab-ts-prework-guide/pages/guide-01.html",
+  "video": "clips/guide/c01-q05-10.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 10.37,
+  "marks": {
+    "task": [0, 1.22],
+    "values": [1.22, 3.54],
+    "examples": [3.54, 6.57],
+    "hint": [6.57, 8],
+    "procedure": [8, 10.32]
+  },
+  "regions": {
+    "task": [215, 499, 1170, 390],
+    "values": [239, 777, 1122, 88],
+    "examples": [215, 48, 1170, 40],
+    "hint": [215, 123, 1170, 313],
+    "procedure": [238, 261, 1124, 152]
+  }
+}

@@ -62,7 +62,16 @@ export function parseGuideClips(input: unknown, pages: ReadonlySet<string>): Gui
       if (step.do === "wait") {
         if (typeof step.seconds !== "number" || !Number.isFinite(step.seconds) || step.seconds <= 0)
           return fail(at, "seconds は正の有限数にしてください");
-      } else if (!selector(step.to)) return fail(at, "to にセレクタが必要です");
+      } else {
+        if (!selector(step.to)) return fail(at, "to にセレクタが必要です");
+        // 行の帯と文字の打ち込みは pre 専用。対象のタグを明記し、
+        // 段落を選ぶ誤りをブラウザーの起動前に検出する。
+        if (
+          (step.do === "lines" || step.do === "type") &&
+          !/(?:^|[\s>+~])pre(?:(?:[.#:]|\[)[^\s>+~,]*)?\s*$/u.test(step.to)
+        )
+          return fail(at, `${step.do} は末尾に pre を指定してください: ${step.to}`);
+      }
     }
     if (
       !record(clip.regions) ||

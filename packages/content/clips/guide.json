@@ -3,29 +3,587 @@
     "id": "guide/c01-q05-1",
     "page": "guide-01.html",
     "steps": [
-      { "mark": "open", "do": "scroll", "to": "#c01-q05-1" },
-      { "mark": "task", "do": "focus", "to": "#c01-q05-1 .task" },
-      { "mark": "eg", "do": "rows", "to": "#c01-q05-1 dl.eg" },
-      { "mark": "hint1", "do": "open", "to": "#c01-q05-1 details.hint:nth-of-type(1)" },
-      { "mark": "skeleton", "do": "lines", "to": "#c01-q05-1 details.hint:nth-of-type(1) pre" }
+      {
+        "mark": "open",
+        "do": "scroll",
+        "to": "#c01-q05-1"
+      },
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-1 .task"
+      },
+      {
+        "mark": "eg",
+        "do": "rows",
+        "to": "#c01-q05-1 dl.eg"
+      },
+      {
+        "mark": "hint1",
+        "do": "open",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "skeleton",
+        "do": "lines",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1) pre"
+      },
+      {
+        "mark": "empty",
+        "do": "focus",
+        "to": "#c01-q05-1 .task dl.eg > div:nth-child(2) > dt"
+      },
+      {
+        "mark": "function",
+        "do": "focus",
+        "to": "#c01-q05-1 .task pre"
+      },
+      {
+        "mark": "description",
+        "do": "focus",
+        "to": "#c01-q05-1 .task > p"
+      },
+      {
+        "mark": "argument",
+        "do": "focus",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1) summary"
+      },
+      {
+        "mark": "shape-open",
+        "do": "open",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "signature",
+        "do": "focus",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1) pre"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-1 .task dl.eg"
+      },
+      {
+        "mark": "normal",
+        "do": "focus",
+        "to": "#c01-q05-1 .task dl.eg > div:nth-child(1) > dt"
+      },
+      {
+        "mark": "zero",
+        "do": "focus",
+        "to": "#c01-q05-1 .task dl.eg > div:nth-child(2) > dd.r"
+      },
+      {
+        "mark": "result-type",
+        "do": "focus",
+        "to": "#c01-q05-1 .task > p"
+      },
+      {
+        "mark": "hint-focus",
+        "do": "focus",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-1 details.hint:nth-of-type(1) pre"
+      },
+      {
+        "mark": "hint2",
+        "do": "open",
+        "to": "#c01-q05-1 details.hint:nth-of-type(2)"
+      },
+      {
+        "mark": "hint2-lines",
+        "do": "focus",
+        "to": "#c01-q05-1 details.hint:nth-of-type(2) p"
+      }
     ],
     "regions": {
       "task": "#c01-q05-1 .task",
       "eg": "#c01-q05-1 dl.eg",
-      "hint1": "#c01-q05-1 details.hint:nth-of-type(1)"
+      "hint1": "#c01-q05-1 details.hint:nth-of-type(1)",
+      "empty": "#c01-q05-1 .task dl.eg > div:nth-child(2) > dt",
+      "function": "#c01-q05-1 .task pre",
+      "description": "#c01-q05-1 .task > p",
+      "argument": "#c01-q05-1 details.hint:nth-of-type(1) summary",
+      "shape-open": "#c01-q05-1 details.hint:nth-of-type(1)",
+      "signature": "#c01-q05-1 details.hint:nth-of-type(1) pre",
+      "values": "#c01-q05-1 .task dl.eg",
+      "normal": "#c01-q05-1 .task dl.eg > div:nth-child(1) > dt",
+      "zero": "#c01-q05-1 .task dl.eg > div:nth-child(2) > dd.r",
+      "result-type": "#c01-q05-1 .task > p",
+      "hint-focus": "#c01-q05-1 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-1 details.hint:nth-of-type(1) pre",
+      "hint2": "#c01-q05-1 details.hint:nth-of-type(2)",
+      "hint2-lines": "#c01-q05-1 details.hint:nth-of-type(2) p"
+    }
+  },
+  {
+    "id": "guide/c01-q05-1-recap",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "recap-shape",
+        "do": "focus",
+        "to": "#c01-q05-1 .task pre"
+      },
+      {
+        "mark": "recap-values",
+        "do": "rows",
+        "to": "#c01-q05-1 .task dl.eg"
+      }
+    ],
+    "regions": {
+      "recap-shape": "#c01-q05-1 .task pre",
+      "recap-values": "#c01-q05-1 .task dl.eg"
     }
   },
   {
     "id": "guide/c01-q05-item",
     "page": "guide-01.html",
     "steps": [
-      { "mark": "open", "do": "scroll", "to": "#c01-q05-10 .item" },
-      { "mark": "sample", "do": "type", "to": "#c01-q05-10 .sample pre" },
-      { "mark": "parts", "do": "reveal", "to": "#c01-q05-10 figure.anat" }
+      {
+        "mark": "open",
+        "do": "scroll",
+        "to": "#c01-q05-10 .item"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-10 .sample pre"
+      },
+      {
+        "mark": "parts",
+        "do": "reveal",
+        "to": "#c01-q05-10 figure.anat"
+      }
     ],
     "regions": {
       "sample": "#c01-q05-10 .sample pre",
       "parts": "#c01-q05-10 figure.anat"
+    }
+  },
+  {
+    "id": "guide/c01-q05-6",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-6 .task"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-6 .task dl.eg"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-6 .item .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-6 .item dl.eg"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-6 details.hint:nth-of-type(1)"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-6 .task",
+      "values": "#c01-q05-6 .task dl.eg",
+      "sample": "#c01-q05-6 .item .sample pre",
+      "examples": "#c01-q05-6 .item dl.eg",
+      "hint": "#c01-q05-6 details.hint:nth-of-type(1)"
+    }
+  },
+  {
+    "id": "guide/c01-q05-7",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-7 .task"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-7 .item:nth-of-type(1) .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "focus",
+        "to": "#c01-q05-7 .item:nth-of-type(1) > p"
+      },
+      {
+        "mark": "lower",
+        "do": "type",
+        "to": "#c01-q05-7 .item:nth-of-type(2) .sample pre"
+      },
+      {
+        "mark": "lower-lines",
+        "do": "lines",
+        "to": "#c01-q05-7 .item:nth-of-type(2) .sample pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-7 .task",
+      "sample": "#c01-q05-7 .item:nth-of-type(1) .sample pre",
+      "examples": "#c01-q05-7 .item:nth-of-type(1) > p",
+      "lower": "#c01-q05-7 .item:nth-of-type(2) .sample pre",
+      "lower-lines": "#c01-q05-7 .item:nth-of-type(2) .sample pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-11",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-11 .task"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-11 .item .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-11 .item dl.eg"
+      },
+      {
+        "mark": "not-found",
+        "do": "focus",
+        "to": "#c01-q05-11 .item dl.eg > div:last-child > dd.r"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-11 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-11 details.hint:nth-of-type(1) pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-11 .task",
+      "sample": "#c01-q05-11 .item .sample pre",
+      "examples": "#c01-q05-11 .item dl.eg",
+      "not-found": "#c01-q05-11 .item dl.eg > div:last-child > dd.r",
+      "hint": "#c01-q05-11 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-11 details.hint:nth-of-type(1) pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-16",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-16 .task"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-16 .task dl.eg"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-16 .item .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-16 .item dl.eg"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-16 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-16 details.hint:nth-of-type(1) pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-16 .task",
+      "values": "#c01-q05-16 .task dl.eg",
+      "sample": "#c01-q05-16 .item .sample pre",
+      "examples": "#c01-q05-16 .item dl.eg",
+      "hint": "#c01-q05-16 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-16 details.hint:nth-of-type(1) pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-4",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-4 .task"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-4 .task dl.eg"
+      },
+      {
+        "mark": "new",
+        "do": "focus",
+        "to": "#c01-q05-4 .item-h"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-4 .item .sample pre"
+      },
+      {
+        "mark": "sample-line",
+        "do": "lines",
+        "to": "#c01-q05-4 .item .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-4 .item dl.eg"
+      },
+      {
+        "mark": "memo",
+        "do": "focus",
+        "to": "#c01-q05-4 .item .memo"
+      },
+      {
+        "mark": "compare",
+        "do": "focus",
+        "to": "#c01-q05-4 .item dl.eg > div:last-child > dt"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-4 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-4 details.hint:nth-of-type(1) pre"
+      },
+      {
+        "mark": "recap",
+        "do": "focus",
+        "to": "#c01-q05-4 details.hint:nth-of-type(1) pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-4 .task",
+      "values": "#c01-q05-4 .task dl.eg",
+      "new": "#c01-q05-4 .item-h",
+      "sample": "#c01-q05-4 .item .sample pre",
+      "sample-line": "#c01-q05-4 .item .sample pre",
+      "examples": "#c01-q05-4 .item dl.eg",
+      "memo": "#c01-q05-4 .item .memo",
+      "compare": "#c01-q05-4 .item dl.eg > div:last-child > dt",
+      "hint": "#c01-q05-4 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-4 details.hint:nth-of-type(1) pre",
+      "recap": "#c01-q05-4 details.hint:nth-of-type(1) pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-4-values",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "recap-values",
+        "do": "rows",
+        "to": "#c01-q05-4 .task dl.eg"
+      }
+    ],
+    "regions": {
+      "recap-values": "#c01-q05-4 .task dl.eg"
+    }
+  },
+  {
+    "id": "guide/c01-q05-19",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-19 .task"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-19 .task dl.eg"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-19 .item .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-19 .item dl.eg"
+      },
+      {
+        "mark": "explanation",
+        "do": "focus",
+        "to": "#c01-q05-19 .item > p:not(.memo)"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-19 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-19 details.hint:nth-of-type(1) pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-19 .task",
+      "values": "#c01-q05-19 .task dl.eg",
+      "sample": "#c01-q05-19 .item .sample pre",
+      "examples": "#c01-q05-19 .item dl.eg",
+      "explanation": "#c01-q05-19 .item > p:not(.memo)",
+      "hint": "#c01-q05-19 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-19 details.hint:nth-of-type(1) pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-9",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-9 .task"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-9 .task dl.eg"
+      },
+      {
+        "mark": "description",
+        "do": "focus",
+        "to": "#c01-q05-9 .task > p"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-9 .item .sample pre"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-9 .item dl.eg"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-9 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-9 details.hint:nth-of-type(1) pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-9 .task",
+      "values": "#c01-q05-9 .task dl.eg",
+      "description": "#c01-q05-9 .task > p",
+      "sample": "#c01-q05-9 .item .sample pre",
+      "examples": "#c01-q05-9 .item dl.eg",
+      "hint": "#c01-q05-9 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-9 details.hint:nth-of-type(1) pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-10",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-10 .task"
+      },
+      {
+        "mark": "values",
+        "do": "rows",
+        "to": "#c01-q05-10 .task dl.eg"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-10 .item dl.eg"
+      },
+      {
+        "mark": "hint",
+        "do": "open",
+        "to": "#c01-q05-10 details.hint:nth-of-type(1)"
+      },
+      {
+        "mark": "procedure",
+        "do": "lines",
+        "to": "#c01-q05-10 details.hint:nth-of-type(1) pre"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-10 .task",
+      "values": "#c01-q05-10 .task dl.eg",
+      "examples": "#c01-q05-10 .item dl.eg",
+      "hint": "#c01-q05-10 details.hint:nth-of-type(1)",
+      "procedure": "#c01-q05-10 details.hint:nth-of-type(1) pre"
+    }
+  },
+  {
+    "id": "guide/c01-q05-18",
+    "page": "guide-01.html",
+    "steps": [
+      {
+        "mark": "task",
+        "do": "focus",
+        "to": "#c01-q05-18 .task"
+      },
+      {
+        "mark": "sample",
+        "do": "type",
+        "to": "#c01-q05-18 .item .sample pre"
+      },
+      {
+        "mark": "parts",
+        "do": "reveal",
+        "to": "#c01-q05-18 figure.anat"
+      },
+      {
+        "mark": "examples",
+        "do": "rows",
+        "to": "#c01-q05-18 .item dl.eg"
+      }
+    ],
+    "regions": {
+      "task": "#c01-q05-18 .task",
+      "sample": "#c01-q05-18 .item .sample pre",
+      "parts": "#c01-q05-18 figure.anat",
+      "examples": "#c01-q05-18 .item dl.eg"
     }
   }
 ]

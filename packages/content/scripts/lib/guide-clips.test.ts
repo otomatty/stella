@@ -17,7 +17,11 @@ describe("ガイドクリップの定義", () => {
     const steps = GUIDE_ACTIONS.map((action) =>
       action === "wait"
         ? { mark: action, do: action, seconds: 1 }
-        : { mark: action, do: action, to: "#target" },
+        : {
+            mark: action,
+            do: action,
+            to: action === "lines" || action === "type" ? "#target pre" : "#target",
+          },
     );
     expect(parseGuideClips([{ ...input[0], steps }], pages)[0].steps).toEqual(steps);
     expect(input).toEqual(fresh());
@@ -79,7 +83,31 @@ describe("ガイドクリップの定義", () => {
     clip.steps.push(...clip.steps);
     expect(() => parseGuideClips([clip], pages)).toThrow("guide/c01-q05-1 step[1]");
   });
-  it("実際の見本2本の定義とページの存在を検証する", () => {
+  it.each(["lines", "type"])("%s は pre 以外の対象を録画前に拒否する", (action) => {
+    for (const to of ["#question .task > p", "#question details.hint p", "#target", "pre p"]) {
+      const steps = [{ mark: "description", do: action, to }];
+      expect(() => parseGuideClips([{ ...fresh()[0], steps }], pages)).toThrow(
+        `guide/c01-q05-1 step[0]: ${action} は末尾に pre を指定してください: ${to}`,
+      );
+    }
+  });
+  it.each(["lines", "type"])("%s は pre のクラスや擬似クラスも受け付ける", (action) => {
+    for (const to of [
+      "pre",
+      "#question .sample pre",
+      "details.hint > pre",
+      "pre.code",
+      "pre:first-child",
+    ]) {
+      const steps = [{ mark: "sample", do: action, to }];
+      expect(parseGuideClips([{ ...fresh()[0], steps }], pages)[0].steps).toEqual(steps);
+    }
+  });
+  it("段落の強調には focus を指定できる", () => {
+    const steps = [{ mark: "description", do: "focus", to: "#question .task > p" }];
+    expect(parseGuideClips([{ ...fresh()[0], steps }], pages)[0].steps).toEqual(steps);
+  });
+  it("実際の全13本の定義とページの存在を検証する", () => {
     const input = JSON.parse(
       readFileSync(new URL("../../clips/guide.json", import.meta.url), "utf8"),
     );
@@ -88,7 +116,18 @@ describe("ガイドクリップの定義", () => {
     );
     expect(parseGuideClips(input, existing).map((d) => d.id)).toEqual([
       "guide/c01-q05-1",
+      "guide/c01-q05-1-recap",
       "guide/c01-q05-item",
+      "guide/c01-q05-6",
+      "guide/c01-q05-7",
+      "guide/c01-q05-11",
+      "guide/c01-q05-16",
+      "guide/c01-q05-4",
+      "guide/c01-q05-4-values",
+      "guide/c01-q05-19",
+      "guide/c01-q05-9",
+      "guide/c01-q05-10",
+      "guide/c01-q05-18",
     ]);
   });
 });

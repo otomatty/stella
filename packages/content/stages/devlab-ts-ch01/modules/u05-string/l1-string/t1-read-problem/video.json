@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "関数の形、テストの値、日本語の手順の順に読み、型注釈を書く場所を説明できる。",
+    "stuck": "空の関数を見ても、引数や型をどこに書くか分からない。",
+    "points": [
+      "関数の説明から引数と戻り値の型を読み、型注釈を自分で書く。",
+      "テストの値を入力と結果の組で読む。",
+      "ヒント 1 の日本語を一行ずつコードに直し、迷った行はヒント 2 で確かめる。"
+    ],
+    "leaveOut": ["問 1 の実装の完成形", "型推論の仕組み", "文字コードや絵文字の文字数"]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "title": "空の関数から始める",
+      "role": "hook",
+      "kind": "view",
+      "image": "clip:guide/c01-q05-1#task",
+      "beats": [
+        {
+          "say": "空の関数を見て、何を足せばよいか迷いますか。",
+          "clip": "guide/c01-q05-1#task",
+          "zoom": "task",
+          "spot": ["task"]
+        },
+        {
+          "say": "まず、入力を変えると結果がどう変わるか見ます。",
+          "clip": "guide/c01-q05-1#eg",
+          "zoom": "eg",
+          "spot": ["eg"]
+        },
+        {
+          "say": "何も入っていない文字列も、確かめる値の一つです。",
+          "clip": "guide/c01-q05-1#empty",
+          "zoom": "empty",
+          "spot": ["empty"]
+        }
+      ]
+    },
+    {
+      "id": "shape",
+      "title": "関数の形を読む",
+      "role": "point",
+      "kind": "view",
+      "image": "clip:guide/c01-q05-1#function",
+      "beats": [
+        {
+          "say": "関数の名前は決まっていて、中身を書いていきます。",
+          "clip": "guide/c01-q05-1#function",
+          "zoom": "function",
+          "spot": ["function"]
+        },
+        {
+          "say": "説明から、受け取る値と返す値の種類を読みます。",
+          "clip": "guide/c01-q05-1#description",
+          "zoom": "description",
+          "spot": ["description"]
+        },
+        {
+          "say": "引数の名前と型注釈も、自分で足す番号です。",
+          "clip": "guide/c01-q05-1#argument",
+          "zoom": "argument",
+          "spot": ["argument"]
+        },
+        {
+          "say": "ヒントの骨組みで、書く位置を確かめられます。",
+          "clip": "guide/c01-q05-1#shape-open",
+          "zoom": "shape-open",
+          "spot": ["shape-open"]
+        },
+        {
+          "say": "かっこの中が引数、閉じた後ろが戻り値の型です。",
+          "clip": "guide/c01-q05-1#signature",
+          "zoom": "signature",
+          "spot": ["signature"]
+        }
+      ],
+      "point": 1
+    },
+    {
+      "id": "values",
+      "title": "入力と結果を一組で読む",
+      "role": "point",
+      "kind": "view",
+      "image": "clip:guide/c01-q05-1#values",
+      "beats": [
+        {
+          "say": "テストは、呼び出した結果が右の値になるか確かめます。",
+          "clip": "guide/c01-q05-1#values",
+          "zoom": "values",
+          "spot": ["values"]
+        },
+        {
+          "say": "一つ目は、渡した文字列と返す数値の組です。",
+          "clip": "guide/c01-q05-1#normal",
+          "zoom": "normal",
+          "spot": ["normal"]
+        },
+        {
+          "say": "空の文字列でも、返すのは文字列ではなく数値です。",
+          "clip": "guide/c01-q05-1#zero",
+          "zoom": "zero",
+          "spot": ["zero"]
+        },
+        {
+          "say": "結果の型も説明に戻って、合っているか確かめます。",
+          "clip": "guide/c01-q05-1#result-type",
+          "zoom": "result-type",
+          "spot": ["result-type"]
+        }
+      ],
+      "point": 2
+    },
+    {
+      "id": "translate",
+      "title": "日本語を一行ずつ直す",
+      "role": "point",
+      "kind": "view",
+      "image": "clip:guide/c01-q05-1#hint-focus",
+      "beats": [
+        {
+          "say": "困ったら、日本語でやることを示したヒントを読みます。",
+          "clip": "guide/c01-q05-1#hint-focus",
+          "zoom": "hint-focus",
+          "spot": ["hint-focus"]
+        },
+        {
+          "say": "一行ずつ読み、その行に合う書き方へ直します。",
+          "clip": "guide/c01-q05-1#procedure",
+          "zoom": "procedure",
+          "spot": ["procedure"]
+        },
+        {
+          "say": "書き方を思い出せない行は、ヒント二で確かめます。",
+          "clip": "guide/c01-q05-1#hint2",
+          "zoom": "hint2",
+          "spot": ["hint2"]
+        },
+        {
+          "say": "文字数を調べる書き方には、かっこを付けません。",
+          "clip": "guide/c01-q05-1#hint2-lines",
+          "zoom": "hint2-lines",
+          "spot": ["hint2-lines"]
+        }
+      ],
+      "point": 3
+    },
+    {
+      "id": "recap",
+      "title": "読む順に戻る",
+      "role": "recap",
+      "kind": "view",
+      "image": "clip:guide/c01-q05-1-recap#recap-shape",
+      "beats": [
+        {
+          "say": "最初に関数の形を読み、引数と型を決めます。",
+          "clip": "guide/c01-q05-1-recap#recap-shape",
+          "zoom": "recap-shape",
+          "spot": ["recap-shape"]
+        },
+        {
+          "say": "次にテストの値を見て、欲しい結果を確かめます。",
+          "clip": "guide/c01-q05-1-recap#recap-values",
+          "zoom": "recap-values",
+          "spot": ["recap-values"]
+        },
+        {
+          "say": "最後に、日本語の手順を一行ずつコードに直します。",
+          "clip": "guide/c01-q05-1#hint1",
+          "zoom": "hint1",
+          "spot": ["hint1"]
+        },
+        {
+          "say": "書いたら手元で確認し、結果が違えば読み直します。",
+          "clip": "guide/c01-q05-1#skeleton",
+          "zoom": "hint1",
+          "spot": ["hint1"]
+        }
+      ]
+    }
+  ]
+}

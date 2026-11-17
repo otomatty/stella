@@ -1,0 +1,16 @@
+{
+  "source": "docs/devlab-ts-prework-guide/pages/guide-01.html",
+  "video": "clips/guide/c01-q05-1-recap.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 3.57,
+  "marks": {
+    "recap-shape": [0, 1.22],
+    "recap-values": [1.22, 3.53]
+  },
+  "regions": {
+    "recap-shape": [239, 499, 1122, 81],
+    "recap-values": [239, 753, 1122, 88]
+  }
+}
