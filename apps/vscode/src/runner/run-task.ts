@@ -301,9 +301,18 @@ function resolveRunProblem(
   return { ok: true, problem: { id: found.id, source: files.source, test: files.test } };
 }
 
+/**
+ * VS Code の fsPath は Windows でドライブ文字を小文字で返す。
+ * 大文字のパスと混ざって Vitest が二重に読み込まれないよう、実行時は大文字にそろえる。
+ */
+export function normalizeTaskRoot(root: string, platform: NodeJS.Platform): string {
+  return platform === "win32" ? root.replace(/^[a-z]:/i, (drive) => drive.toUpperCase()) : root;
+}
+
 export async function runTask(options: RunTaskOptions): Promise<RunResult> {
-  const { root, manifest } = options;
+  const { manifest } = options;
   const platform = options.platform ?? process.platform;
+  const root = normalizeTaskRoot(options.root, platform);
   const env = childEnv(options.env ?? process.env);
   const log = options.log ?? (() => undefined);
   const startedAt = (options.now ?? (() => new Date()))();
