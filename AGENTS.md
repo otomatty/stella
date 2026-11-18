@@ -16,7 +16,7 @@ STELLA is a Learning Management System (LMS) monorepo using **Bun workspaces**. 
 | `@stella/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js runners (extension grader WebView)。擬似言語 (`fe-pseudo`) は `src/fe-pseudo/` で JS に落として QuickJS に相乗り。対応構文は `src/fe-pseudo/SYNTAX.md` |
 | `@stella/content` | `packages/content` | 教材の正本。ステージは `stages/<slug>/stage.json`。執筆ルールは `packages/content/CLAUDE.md`。導入手順（新しいステージが既定）は `packages/content/ADDING_STAGE.md` |
 
-ロールは `student` / `admin` の 2 つ、画面のロールは `learner` / `admin` の 2 つ。migration 0073 で `learner_instructors` を削除し、0074 で `instructor` を `admin` に統合した。migration 0082 で `platform_admin` を `admin` に統合した。招待・ロール変更は受講者と管理者だけを選べ、招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。受講者に見せる「講師の確認待ち」「講師に相談」と、課題の状態 `instructor-pending`・支援の種類 `instructor` は残す。講師専用のダッシュボードと `/students` は削除した。
+ロールは `student` / `admin` の 2 つ、画面のロールは `learner` / `admin` の 2 つ。migration 0073 で `learner_instructors` を削除し、0074 で `instructor` を `admin` に統合した。migration 0082 で `platform_admin` を `admin` に統合した。ロール変更と無効化は、呼び出した本人がいまも有効な管理者であることを UPDATE の条件で確かめる (同時に互いを降格・無効化しても管理者が 0 人にならない)。招待・ロール変更は受講者と管理者だけを選べ、招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。受講者に見せる「講師の確認待ち」「講師に相談」と、課題の状態 `instructor-pending`・支援の種類 `instructor` は残す。講師専用のダッシュボードと `/students` は削除した。
 
 ### Running services (default: real data)
 
@@ -129,7 +129,7 @@ Linting is **Biome** (`biome.json`), not ESLint. `bun run lint` は `biome ci .`
 
 ### Testing
 
-Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **322 ファイル / 4680 件** (スキップ7件を含む。`bun run test` で確認)。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **322 ファイル / 4684 件** (スキップ7件を含む。`bun run test` で確認)。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
 
 カバレッジは `bun run test:coverage`（v8）。**閾値は置いていない** — 落とすためではなく手薄な場所を見えるようにするためで、数字は CI のジョブサマリに出る。
 

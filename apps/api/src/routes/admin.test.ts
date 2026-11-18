@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { getDb } from "../db/client.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
-import { adminRoute } from "./admin.js";
+import { adminRoute, updateProfileAsAdmin } from "./admin.js";
 
 describe("ユーザー管理", () => {
   const SECRET = "admin-test-secret";
@@ -112,6 +113,63 @@ describe("ユーザー管理", () => {
     expect(change.status).toBe(200);
     expect(target.get("taken")).toEqual({ role: "student", disabled: 1 });
   });
+
+  it.each([
+    { operation: "降格", changes: { role: "student" } },
+    { operation: "無効化", changes: { disabled: true } },
+  ] as const)(
+    "互いを$operation すると後続の更新を拒否し、有効な管理者が1人残る",
+    async ({ changes }) => {
+      db.sqlite.prepare("UPDATE profiles SET role = 'admin' WHERE id = ?").run("taken");
+      const drizzle = getDb(env);
+      const profile = db.sqlite.prepare("SELECT role, disabled FROM profiles WHERE id = ?");
+
+      expect(await updateProfileAsAdmin(drizzle, "admin", "taken", changes)).toBe(true);
+      expect(await updateProfileAsAdmin(drizzle, "taken", "admin", changes)).toBe(false);
+      expect(profile.get("admin")).toEqual({ role: "admin", disabled: 0 });
+      expect(
+        db.sqlite.prepare("SELECT id FROM profiles WHERE role = 'admin' AND disabled = 0").all(),
+      ).toEqual([{ id: "admin" }]);
+    },
+  );
+
+  it.each([
+    {
+      path: "role",
+      changes: { role: "admin" },
+      revoke: "UPDATE profiles SET disabled = 1 WHERE id = 'admin'",
+    },
+    {
+      path: "disable",
+      changes: { disabled: true },
+      revoke: "UPDATE profiles SET role = 'student' WHERE id = 'admin'",
+    },
+  ])(
+    "$path の書き込み直前に権限を失うと 409 を返し、対象と監査ログはそのまま",
+    async ({ path, changes, revoke }) => {
+      const auditCount = db.sqlite.prepare("SELECT count(*) AS n FROM audit_logs");
+      const before = auditCount.get();
+      const prepare = db.binding.prepare.bind(db.binding);
+      db.binding.prepare = (sql) => {
+        // 認可と対象の確認を通ったあと、UPDATE の直前に別の操作が完了した状態を作る。
+        if (/^update "profiles"/i.test(sql)) db.sqlite.exec(revoke);
+        return prepare(sql);
+      };
+      const res = await request(app, env, `/api/admin/users/${path}`, {
+        method: "POST",
+        token: await token(),
+        body: JSON.stringify({ userId: "taken", ...changes }),
+      });
+      expect(res.status).toBe(409);
+      expect(await json(res)).toEqual({
+        error: "権限が変わったため、操作できませんでした。画面を読み込み直してください",
+      });
+      expect(
+        db.sqlite.prepare("SELECT role, disabled FROM profiles WHERE id = ?").get("taken"),
+      ).toEqual({ role: "student", disabled: 0 });
+      expect(auditCount.get()).toEqual(before);
+    },
+  );
 
   it("存在しないユーザーは 404", async () => {
     const res = await request(app, env, "/api/admin/users/disable", {
