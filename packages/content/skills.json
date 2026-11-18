@@ -460,6 +460,10 @@
     "title": "一覧で下書きを見分ける"
   },
   {
+    "id": "devlab-training-records-api",
+    "title": "週報の記録を API で返す"
+  },
+  {
     "id": "devlab-training-confirmed-total",
     "title": "週報の集計ルールを変える"
   }

@@ -4827,6 +4827,86 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-hono-routing-20261118",
+      "title": "Routing",
+      "publisher": "Hono",
+      "url": "https://hono.dev/docs/api/routing",
+      "section": "Path Parameter",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "研修第4単元の解説・課題の対象版との対応を確認する。"
+      }
+    },
+    {
+      "id": "SRC-hono-request-20261118",
+      "title": "HonoRequest",
+      "publisher": "Hono",
+      "url": "https://hono.dev/docs/api/request",
+      "section": "param() / json()",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "研修第4単元の解説・課題の対象版との対応を確認する。"
+      }
+    },
+    {
+      "id": "SRC-hono-context-20261118",
+      "title": "Context",
+      "publisher": "Hono",
+      "url": "https://hono.dev/docs/api/context",
+      "section": "json()",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "研修第4単元の解説・課題の対象版との対応を確認する。"
+      }
+    },
+    {
+      "id": "SRC-hono-testing-20261118",
+      "title": "Testing",
+      "publisher": "Hono",
+      "url": "https://hono.dev/docs/guides/testing",
+      "section": "Request and Response",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "研修第4単元の解説・課題の対象版との対応を確認する。"
+      }
     }
   ]
 }

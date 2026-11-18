@@ -1,22 +1,39 @@
 import js from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";
 import reactHooks from "eslint-plugin-react-hooks";
-import globals from "globals";
+import tseslint from "typescript-eslint";
 
+// 型を使う規則 (strictTypeChecked) で、any・as による言い切り・@ts-ignore などの逃げを止める。
+// 課題のファイルにコメントで規則を切る書き方 (eslint-disable) は効かないようにする。
 export default defineConfig([
-  globalIgnores([".stella/", "coverage/", "dist/"]),
+  globalIgnores([
+    ".stella/",
+    "coverage/",
+    "dist/",
+    "eslint.config.js",
+    "vitest.config.js",
+  ]),
   {
-    files: ["**/*.{js,jsx}"],
-    plugins: { js },
-    extends: ["js/recommended"],
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}", "vitest.setup.ts"],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.strictTypeChecked,
+      tseslint.configs.stylisticTypeChecked,
+      reactHooks.configs.flat.recommended,
+    ],
+    linterOptions: { noInlineConfig: true },
     languageOptions: {
-      globals: globals.browser,
-      parserOptions: { ecmaFeatures: { jsx: true } },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
-  },
-  reactHooks.configs.flat.recommended,
-  {
-    files: ["*.config.js", "vitest.setup.js", "tests/**/*.{js,jsx}"],
-    languageOptions: { globals: globals.node },
+    rules: {
+      // テンプレートリテラルに数値を埋め込むのは許す。
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        { allowNumber: true },
+      ],
+    },
   },
 ]);

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-training/u04-records-api@1",
+  "contentHash": "79271c876d605c544920471442a584d83b75672e5634cb588e285df36336d078",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-weekly-report/doc.md",
+      "sourceRefs": [
+        "SRC-hono-routing-20261118",
+        "SRC-hono-request-20261118",
+        "SRC-hono-context-20261118",
+        "SRC-hono-testing-20261118"
+      ],
+      "usedFor": "ルート、パスの入力、JSON の応答、手元のテストの説明。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft",
+      "environmentRef": "devlab-hono-ts-01@1"
+    },
+    {
+      "contentId": "l1-weekly-report/knowledge.md",
+      "sourceRefs": [
+        "SRC-hono-routing-20261118",
+        "SRC-hono-context-20261118",
+        "SRC-hono-testing-20261118"
+      ],
+      "usedFor": "HTTP メソッド、エラー応答、確定後の一覧の確認を問う。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft",
+      "environmentRef": "devlab-hono-ts-01@1"
+    },
+    {
+      "contentId": "tasks/records-api/README.md",
+      "sourceRefs": [
+        "SRC-hono-routing-20261118",
+        "SRC-hono-request-20261118",
+        "SRC-hono-context-20261118",
+        "SRC-hono-testing-20261118"
+      ],
+      "usedFor": "週報を題材とした独自課題の API 契約と確認方法。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft",
+      "environmentRef": "devlab-hono-ts-01@1"
+    }
+  ]
+}

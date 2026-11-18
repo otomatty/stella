@@ -1278,16 +1278,16 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     }
   });
 
-  it("開発ラボGの研修は前提なしで、課題4つの合格で修了する", () => {
+  it("開発ラボGの研修は前提なしで、課題5つの合格で修了する", () => {
     const training = stages.find((stage) => stage.id === "devlab-training");
     expect(training).toMatchObject({
       parent: "devlab-ts-ch09",
       audience: "granted",
       completion: "tasks",
-      duration: 24,
+      duration: 30,
     });
     expect(training?.prerequisites ?? []).toEqual([]);
-    expect(training?.sections).toHaveLength(4);
+    expect(training?.sections).toHaveLength(5);
     for (const section of training?.sections ?? []) {
       expect(section.lessons.map((lesson) => lesson.type)).toEqual(["text", "quiz", "text"]);
     }

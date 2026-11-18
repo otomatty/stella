@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-training/u05-confirmed-total@1",
+  "contentHash": "edd795d301fc083b2fbf8047d23175a8ddb1dd5b8f508cab6b8fc22bd8fbac3c",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-weekly-report/doc.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。一覧を保ちながら集計ルールを変更し、入力・操作・表示結果を報告できることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-weekly-report/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。一覧を保ちながら集計ルールを変更し、入力・操作・表示結果を報告できることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/confirmed-total/README.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。一覧を保ちながら集計ルールを変更し、入力・操作・表示結果を報告できることを扱う。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft",
+      "environmentRef": "devlab-react-ts-01@1"
+    }
+  ]
+}
