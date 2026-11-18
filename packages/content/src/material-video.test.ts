@@ -8,11 +8,17 @@ import {
   summarizeVideoError,
   videoKeyHash,
   videoKeys,
+  videoManifestKey,
+  type VideoManifest,
   type VideoState,
 } from "./material-video.js";
 
 describe("教材動画の配信", () => {
   const failure = { stageSlug: "dev-env-basics", id: "0-1-1", reason: "最初の理由\n詳細" };
+  it("同じトピック ID でもステージごとに異なる manifest キーを作る", () => {
+    expect(videoManifestKey("dev-env-basics", "0-1-1")).toBe("dev-env-basics/0-1-1");
+    expect(videoManifestKey("devlab-ts-ch00", "0-1-1")).toBe("devlab-ts-ch00/0-1-1");
+  });
   it("同じトピックの 2 件目の失敗は捨て、最初の理由を残す", () => {
     const first = mergeVideoFailure(undefined, failure);
     expect(first).toEqual({ stageSlug: failure.stageSlug, error: "最初の理由" });
@@ -21,14 +27,19 @@ describe("教材動画の配信", () => {
   it("成功と同じ ID の失敗は例外にする", () => {
     const success = { ...videoKeys(failure.stageSlug, failure.id, "hash"), durationSec: 30 };
     expect(() => mergeVideoFailure(success, failure)).toThrow(
-      `レッスン ID が重複しています: ${failure.id}`,
+      "レッスン ID が重複しています: dev-env-basics/0-1-1",
     );
   });
-  it("別ステージの同じ ID の失敗は例外にする", () => {
-    const first = mergeVideoFailure(undefined, failure);
-    expect(() => mergeVideoFailure(first, { ...failure, stageSlug: "another-stage" })).toThrow(
-      `レッスン ID が重複しています: ${failure.id}`,
-    );
+  it("別ステージの同じ ID の失敗は別々の項目に記録する", () => {
+    const manifest: VideoManifest = {};
+    for (const item of [failure, { ...failure, stageSlug: "devlab-ts-ch00", reason: "別の理由" }]) {
+      const key = videoManifestKey(item.stageSlug, item.id);
+      manifest[key] = mergeVideoFailure(manifest[key], item);
+    }
+    expect(manifest).toEqual({
+      "dev-env-basics/0-1-1": { stageSlug: "dev-env-basics", error: "最初の理由" },
+      "devlab-ts-ch00/0-1-1": { stageSlug: "devlab-ts-ch00", error: "別の理由" },
+    });
   });
   it("失敗理由は先頭行を使い、省略記号を含めて 200 文字までにする", () => {
     expect(summarizeVideoError("失敗\r\n詳細")).toBe("失敗");
