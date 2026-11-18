@@ -527,7 +527,7 @@ describe("layoutRadialSkillTree", () => {
       const layout = layoutRadialSkillTree([
         node({
           id: "dev-env-basics",
-          title: "開発環境とWebの入口",
+          title: "STELLAの使い方",
           category: "基礎",
           state: "cleared",
         }),

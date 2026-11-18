@@ -218,7 +218,7 @@ describe("教材 seed の再実行", () => {
         "select id, format, environment, duration_hours from stages where slug = 'dev-env-basics'",
       )
       .get() as { id: string; format: number; environment: string; duration_hours: number };
-    expect(stage).toMatchObject({ format: 2, duration_hours: 4, environment: "static-web-02" });
+    expect(stage).toMatchObject({ format: 2, duration_hours: 2.5, environment: "static-web-02" });
     db.prepare(
       "insert into enrollments (id, tenant_id, user_id, stage_id, status, required, enrolled_at) values ('en-format2', 'ses', 'u-format2', ?, 'active', 0, 1)",
     ).run(stage.id);
@@ -235,6 +235,7 @@ describe("教材 seed の再実行", () => {
     expect((await request(app, env, url, { token: otherToken })).status).toBe(404);
     const list = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
     const taskId = "dev-env-basics/u02-first-task/q01-first-page";
+    expect(list.tasks.map((task) => task.id)).toEqual([taskId]);
     const task = list.tasks.find((task) => task.id === taskId);
     expect(task).toBeDefined();
     if (!task) throw new Error(`seed した課題が一覧にありません: ${taskId}`);

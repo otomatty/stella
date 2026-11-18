@@ -198,7 +198,7 @@ describe("staffMapContents", () => {
   const extra = (id: string, category: string, parent_id?: string, title = id) =>
     stage({ id, slug: id, title, category, parent_id, audience: "granted" });
   const catalog = [
-    stage({ id: "dev-env-basics", title: "開発環境とWebの入口" }),
+    stage({ id: "dev-env-basics", title: "STELLAの使い方" }),
     stage({ id: "html", category: "フロントエンド", parent_id: "dev-env-basics" }),
     stage({
       id: "node-api-basics",

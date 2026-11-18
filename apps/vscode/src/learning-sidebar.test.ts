@@ -23,7 +23,7 @@ const catalog: CatalogStage[] = [
   },
   {
     id: "stage-1",
-    title: "開発環境とWebの入口",
+    title: "STELLAの使い方",
     sections: [
       {
         id: "unit-1",

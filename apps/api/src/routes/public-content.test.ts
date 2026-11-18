@@ -22,7 +22,7 @@ function setup(): void {
     INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES
       ('ses', 'SES', 0, 1, 0, 1, 1);
     INSERT INTO stages (id, tenant_id, slug, title, description, status, audience, format, prerequisites, created_at, updated_at) VALUES
-      ('root', 'ses', 'dev-env-basics', '開発環境とWebの入口', 'ROOT_DESCRIPTION', 'published', 'catalog', 2, NULL, 1, 1),
+      ('root', 'ses', 'dev-env-basics', 'STELLAの使い方', 'ROOT_DESCRIPTION', 'published', 'catalog', 2, NULL, 1, 1),
       ('locked', 'ses', 'html-css-basics', 'HTMLとCSS', NULL, 'published', 'catalog', 2, '["dev-env-basics"]', 1, 1),
       ('granted', 'ses', 'salesforce-dev-basics', 'Salesforce', NULL, 'published', 'granted', 2, NULL, 1, 1),
       ('draft', 'ses', 'draft-course', '下書き', NULL, 'draft', 'catalog', 2, NULL, 1, 1),
@@ -75,7 +75,7 @@ describe("GET /api/public/units", () => {
       {
         id: "u00",
         title: "U00 開始と事前確認",
-        stage_title: "開発環境とWebの入口",
+        stage_title: "STELLAの使い方",
         lessons: [
           { id: "u00-slides", title: "学習の進め方", type: "slides", duration_label: "3分" },
           { id: "u00-doc", title: "0-1 まとめ", type: "text", duration_label: "10分" },
@@ -84,7 +84,7 @@ describe("GET /api/public/units", () => {
       {
         id: "u01",
         title: "U01 VS Code の準備",
-        stage_title: "開発環境とWebの入口",
+        stage_title: "STELLAの使い方",
         lessons: [{ id: "u01-doc", title: "1-1 まとめ", type: "text", duration_label: "10分" }],
       },
     ]);
@@ -120,7 +120,7 @@ describe("GET /api/public/lessons/:id", () => {
       total_pages: null,
       unit_id: "u00",
       unit_title: "U00 開始と事前確認",
-      stage_title: "開発環境とWebの入口",
+      stage_title: "STELLAの使い方",
     });
   });
 

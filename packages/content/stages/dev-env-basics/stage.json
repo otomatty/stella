@@ -1,22 +1,20 @@
 {
   "format": 2,
-  "title": "開発環境とWebの入口",
+  "title": "STELLAの使い方",
   "category": "基礎",
   "color": "slate",
-  "description": "【準備中】VS Code と STELLA 拡張を準備し、課題のファイルを編集・保存して、確認・提出できるようになるためのステージです。",
-  "header": "開発環境とWebの入口",
+  "description": "【準備中】STELLAで学ぶ流れを知り、VS CodeとSTELLA拡張を準備して、最初の課題を確認・提出します。",
+  "header": "STELLAの使い方",
   "tenantId": "ses",
   "prerequisites": [],
-  "plannedHours": 4,
+  "plannedHours": 2.5,
   "environment": "static-web-02",
   "pdfByOs": true,
-  "canDo": "VS Codeで課題を開き、ファイルを編集・保存して、確認・提出できる",
+  "canDo": "VS Codeで課題を開き、編集・保存して、確認・提出し、結果を読める",
   "theme": "開発を始める力",
   "modules": {
     "u00-start": "STELLAで学ぶ流れ",
     "u01-vscode-setup": "VS CodeとSTELLA拡張の準備",
-    "u02-first-task": "はじめての課題を出す",
-    "u03-files": "ファイルとフォルダーの操作",
-    "u04-check-a": "確認A"
+    "u02-first-task": "はじめての課題を出す"
   }
 }

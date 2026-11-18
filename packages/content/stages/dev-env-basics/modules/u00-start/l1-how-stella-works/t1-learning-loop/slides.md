@@ -4,7 +4,7 @@ title: STELLAで学ぶ流れ
 takeaway: "STELLA では、Web で読み、VS Code で課題を書き、確認して提出します。"
 introduces: ["STELLA", "レッスン", "知識問題", "課題"]
 requires: []
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: []
 ---
 <!-- _class: lead -->

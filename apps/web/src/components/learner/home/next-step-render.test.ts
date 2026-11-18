@@ -13,7 +13,7 @@ const dev = node({
   id: "dev",
   state: "cleared",
   visibility: "full",
-  title: "開発環境とWebの入口",
+  title: "STELLAの使い方",
   category: "基礎",
 });
 const html = node({
@@ -82,7 +82,7 @@ describe("NextStep first-stage", () => {
       createElement(NextStepCard, { ...handlers, guide, loading: false }),
     );
     expect(markup).toContain("はじめの一歩");
-    expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
+    expect(markup).toContain("『STELLAの使い方』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
     expect(markup).toContain("ツリーで見る");
   });
@@ -92,7 +92,7 @@ describe("NextStep first-stage", () => {
       createElement(NextStepBar, { ...handlers, guide, loading: false, onExpand: noop }),
     );
     expect(markup).toContain("はじめの一歩");
-    expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
+    expect(markup).toContain("『STELLAの使い方』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
   });
 });

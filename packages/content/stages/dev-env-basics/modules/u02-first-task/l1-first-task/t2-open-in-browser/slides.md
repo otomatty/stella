@@ -4,7 +4,7 @@ title: "ブラウザーで表示する"
 takeaway: "保存した HTML をブラウザーで開き、直したら保存して再読み込みします。"
 introduces: ["ブラウザー", "再読み込み", "ドラッグ", "エクスプローラー"]
 requires: ["HTML", "保存", "VS Code"]
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: ["SRC-mdn-html-20261005", "SRC-dev-env-editor-20261107"]
 ---
 <!-- _class: lead -->

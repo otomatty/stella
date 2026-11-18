@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "html-css-basics/u99-coming-soon@1",
+  "contentHash": "2e2f32ad0a1f1901b40261ca84ca1e7bdfb25f4086a9bd92cf3d15d39af0e84c",
+  "environmentRef": "static-web-02@1",
+  "uses": [
+    {
+      "contentId": "l1-about/doc.md",
+      "sourceRefs": [],
+      "usedFor": "今後公開する学習範囲についての独自の案内。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-about/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "続きの教材で扱う HTML と CSS の役割を確かめる独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

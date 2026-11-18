@@ -4,7 +4,7 @@ title: "提出して結果を見る"
 takeaway: "手元の確認が通ったら提出し、AI の確認と必要に応じた講師の確認の結果を読みます。"
 introduces: ["AI の一次レビュー", "ヒント", "支援付き"]
 requires: ["課題", "保存", "課題文のパネル", "コマンドパレット"]
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: []
 ---
 <!-- _class: lead -->
