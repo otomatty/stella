@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 16 16" refX="16" refY="8"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L16 8 L0 16 Z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <path d="M628 156 H780" fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M628 264 H780" fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M628 372 H780" fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="128" y="112" width="480" height="88" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="800" y="112" width="272" height="88" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="128" y="220" width="480" height="88" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="800" y="220" width="272" height="88" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="128" y="328" width="480" height="88" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="800" y="328" width="272" height="88" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+
+  <text x="368" y="152" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">true &amp;&amp; false</text>
+  <text x="368" y="180" text-anchor="middle" fill="#5C5C66"
+        font-family="'Noto Sans JP', sans-serif" font-size="20" font-weight="400">両方が <tspan font-family="'Geist Mono', monospace" font-weight="500">true</tspan> のときだけ <tspan font-family="'Geist Mono', monospace" font-weight="500">true</tspan></text>
+  <text x="936" y="164" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">false</text>
+  <text x="368" y="260" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">true || false</text>
+  <text x="368" y="288" text-anchor="middle" fill="#5C5C66"
+        font-family="'Noto Sans JP', sans-serif" font-size="20" font-weight="400">どちらかが <tspan font-family="'Geist Mono', monospace" font-weight="500">true</tspan> なら <tspan font-family="'Geist Mono', monospace" font-weight="500">true</tspan></text>
+  <text x="936" y="272" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">true</text>
+  <text x="368" y="368" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">!true</text>
+  <text x="368" y="396" text-anchor="middle" fill="#5C5C66"
+        font-family="'Noto Sans JP', sans-serif" font-size="20" font-weight="400">反対にする</text>
+  <text x="936" y="380" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">false</text>
+</svg>

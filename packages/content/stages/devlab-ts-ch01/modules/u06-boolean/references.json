@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u06-boolean@1",
-  "contentHash": "765b392b1159d29924b90af7647c53f0894518a21d9b0175e639542cbdb3cc4f",
+  "unitId": "devlab-ts-ch01/u06-boolean@2",
+  "contentHash": "2fce1a24eb012130f19b14bc0d5f113dbbc3723d59a6f048ba02f1d553b3f910",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -32,9 +32,33 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
       ],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "真偽と値の扱いの概念を参照。予約条件、真偽の組み合わせ、戻り値の比較の図と、空席のコード例を教材用に独自作成。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-boolean/t1-combine-conditions/assets/booking-conditions.svg",
+      "sourceRefs": [],
+      "usedFor": "空席と休業日の二つの条件から予約を考える図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-boolean/t1-combine-conditions/assets/combine-booleans.svg",
+      "sourceRefs": [],
+      "usedFor": "三つの記号で真偽を組み合わせた結果の対応図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-boolean/t1-combine-conditions/assets/return-comparison.svg",
+      "sourceRefs": [],
+      "usedFor": "数値と比べた結果を返す書き方の違いの比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]

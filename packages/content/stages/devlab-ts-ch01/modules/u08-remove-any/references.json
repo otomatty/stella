@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u08-remove-any@1",
-  "contentHash": "e4f2594811ee8c94aea061d651705247e8ec9158863127783e7febdddb5e49b3",
+  "unitId": "devlab-ts-ch01/u08-remove-any@2",
+  "contentHash": "37d76fe77e572b9faa8517473d021cb0bd0e9bbddeee10d564dcd324117b4e15",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -23,9 +23,33 @@
     {
       "contentId": "l1-remove-any/t1-replace-any/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "any の概念を参照。型の確認と実行の結果、名前の誤りの検出、配列の要素数の図と、数値に変換するコード例を教材用に独自作成。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t1-replace-any/assets/passes-then-stops.svg",
+      "sourceRefs": [],
+      "usedFor": "型の確認を通ったあとに実行が止まる流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t1-replace-any/assets/any-vs-concrete.svg",
+      "sourceRefs": [],
+      "usedFor": "型によって名前の打ち間違いに気付けるかの比較図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t1-replace-any/assets/number-array.svg",
+      "sourceRefs": [],
+      "usedFor": "数値を並べた配列の型と要素の数を示す対応図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]

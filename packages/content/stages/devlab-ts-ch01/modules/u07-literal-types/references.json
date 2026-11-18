@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u07-literal-types@1",
-  "contentHash": "2111360723a892ee73ec8397623e96d30f57991ff8fc2e4a501736e02d17efcd",
+  "unitId": "devlab-ts-ch01/u07-literal-types@2",
+  "contentHash": "e1f428861bd9327d27615372a4a36622c40c498bb39cf3c2285821d6547ec52d",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -23,9 +23,33 @@
     {
       "contentId": "l1-literal-types/t1-fixed-values/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "リテラル型の概念を参照。支払い方法の候補と型による確認、変数の作り方による型の違いの図と、支払い表示のコード例を教材用に独自作成。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-literal-types/t1-fixed-values/assets/payment-typo.svg",
+      "sourceRefs": [],
+      "usedFor": "決まった支払い方法と打ち間違えた入力の対比図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-literal-types/t1-fixed-values/assets/literal-type-gate.svg",
+      "sourceRefs": [],
+      "usedFor": "候補にある値と候補外の値を渡したときの流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-literal-types/t1-fixed-values/assets/const-vs-let-literal.svg",
+      "sourceRefs": [],
+      "usedFor": "変数の作り方による型と戻り値の違いの比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]
