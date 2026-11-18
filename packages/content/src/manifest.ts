@@ -27,6 +27,7 @@ import {
   referencesMarkdown,
 } from "./source-references.js";
 import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
+import { isIslandWithoutRequirements } from "../../shared/src/skill-map/islands.js";
 import { sortNatural } from "./natural-order.mjs";
 import { parseQuiz } from "./parse-quiz.js";
 import { parseKnowledge } from "./parse-knowledge.js";
@@ -337,8 +338,7 @@ function readStageConfig(stageDir: string, slug: string): StageConfig & { tenant
     );
   }
   if (audience === "granted") {
-    const listed = (raw.prerequisites ?? []).map((p) => p.trim());
-    if (listed.length === 0) {
+    if (!raw.prerequisites?.length && !isIslandWithoutRequirements(raw.category)) {
       throw new Error(
         `stages/${slug}/stage.json の audience が granted のときは prerequisites を 1 つ以上書いてください。`,
       );
@@ -758,8 +758,7 @@ function lineParentSlug(stage: Stage): string | undefined {
  * catalog が granted を prerequisites / parent に持つと、他の受講者が永久ロックされ、
  * ロック理由から名前が漏れる。これは禁止のまま。
  *
- * granted が granted を親にすることは許す。代わりに、線の親を順にたどって catalog ステージに
- * 着くことを検査する。granted だけで閉じている、または未知の slug に当たる鎖は落とす。
+ * granted の線の親をたどると catalog ステージか、表示条件の無い同じ島の根に着くことを検査する。
  * 循環で止まらないよう訪問済みで打ち切る (循環そのものは `assertPrerequisiteCycles`)。
  */
 function assertGrantedAudienceGraph(stages: Stage[]): void {
@@ -787,20 +786,29 @@ function assertGrantedAudienceGraph(stages: Stage[]): void {
     if (stage.audience !== "granted") continue;
     const visited = new Set<string>();
     let slug: string | undefined = stage.id;
-    let reachedCatalog = false;
+    let reachedRoot = false;
     while (slug && !visited.has(slug)) {
       visited.add(slug);
       const node = bySlug.get(slug);
       if (!node) break;
-      if (node.audience !== "granted") {
-        reachedCatalog = true;
+      const parent = lineParentSlug(node);
+      if (
+        node.audience !== "granted" ||
+        (parent === undefined &&
+          node.category === stage.category &&
+          isIslandWithoutRequirements(node.category))
+      ) {
+        reachedRoot = true;
         break;
       }
-      slug = lineParentSlug(node);
+      slug = parent;
     }
-    if (!reachedCatalog) {
+    if (!reachedRoot) {
+      const islandRoot = isIslandWithoutRequirements(stage.category)
+        ? "同じ島の前提なしステージか "
+        : "";
       throw new Error(
-        `stages/${stage.id}/stage.json の granted ステージは、線の親をたどると catalog ステージに着く必要があります。`,
+        `stages/${stage.id}/stage.json の granted ステージは、線の親をたどると ${islandRoot}catalog ステージに着く必要があります。`,
       );
     }
   }
@@ -835,7 +843,7 @@ export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): 
   }
 
   assertPrerequisiteTargets(stages);
-  // 閉じた granted 鎖は、循環より先に「catalog に着かない」として落とす。
+  // 閉じた granted 鎖は、循環より先に「有効な根に着かない」として落とす。
   assertGrantedAudienceGraph(stages);
   assertPrerequisiteCycles(stages);
 

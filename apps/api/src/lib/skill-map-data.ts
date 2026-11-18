@@ -260,7 +260,7 @@ export async function loadSkillMapSource(
     caller,
     clearedStageIds,
     enrolledStageIds,
-    selectableActiveStages(mapStages, clearedStageIds, unlockedStageIds),
+    selectableActiveStages(mapStages, clearedStageIds, unlockedStageIds, enrolledStageIds),
   );
 
   return {
@@ -359,6 +359,7 @@ export function selectableActiveStages(
   mapStages: SkillMapStage[],
   clearedStageIds: Set<string>,
   unlockedStageIds: Set<string>,
+  enrolledStageIds?: Set<string>,
 ): (stageId: string) => boolean {
   let allowed: Set<string> | undefined;
   return (stageId: string): boolean => {
@@ -366,6 +367,7 @@ export function selectableActiveStages(
       const base = evaluateSkillMap({
         stages: mapStages,
         clearedStageIds,
+        ...(enrolledStageIds ? { enrolledStageIds } : {}),
         ...(unlockedStageIds.size > 0 ? { unlockedStageIds } : {}),
       });
       allowed = new Set(

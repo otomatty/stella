@@ -792,7 +792,8 @@ describe("layoutRadialSkillTree", () => {
         ["terraform-basics", "DevOps", "devops-basics"],
         ["kubernetes-basics", "DevOps", "networking-ops-basics"],
         ["salesforce-dev-basics", "Salesforce案件", "sql-basics"],
-        ["devlab-ts-ch00", "開発ラボG", "dev-env-basics"],
+        ["devlab-ts-ch00", "開発ラボG"],
+        ["devlab-ts-ch01", "開発ラボG", "devlab-ts-ch00"],
       ];
       return rows.map(([id, category, parentId]) =>
         node({
@@ -931,6 +932,21 @@ describe("layoutRadialSkillTree", () => {
       expect(byKey.get("Salesforce案件")?.anchorId).toBe("sql-basics");
       expect(byKey.get("DevOps")?.anchorId).toBe("python-basics");
       expect(byKey.get("AWS資格")?.anchorId).toBeUndefined();
+    });
+
+    it("親の無い開発ラボG の 00 章は島の根になり、島内にだけ線を引く", () => {
+      const layout = layoutRadialSkillTree(currentCurriculum());
+      const entry = posOf(layout, "devlab-ts-ch00");
+      const island = layout.islands.find((i) => i.key === "開発ラボG");
+      expect(island).toBeDefined();
+      expect(island?.anchorId).toBeUndefined();
+      expect(entry.sector).toBe("開発ラボG");
+      expect(entry.ring).toBe(0);
+      expect(
+        layout.edges
+          .filter((edge) => edge.fromId === entry.instanceId || edge.toId === entry.instanceId)
+          .map((edge) => [edge.fromId, edge.toId]),
+      ).toEqual([["devlab-ts-ch00", "devlab-ts-ch01"]]);
     });
   });
 

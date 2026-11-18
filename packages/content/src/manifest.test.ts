@@ -775,10 +775,43 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
     });
   });
 
-  it("granted は前提を 1 つ以上必須", () => {
-    withStages({ "x-basics": { audience: "granted" } }, (root) => {
-      expect(() => buildContentManifest(root)).toThrow(/granted.*prerequisites/);
-    });
+  it.each([{ category: "Python", prerequisites: [] }, { category: "プログラミング" }])(
+    "表示条件の無い島以外の granted は前提を 1 つ以上必須 ($category)",
+    (config) => {
+      withStages({ "x-basics": { audience: "granted", ...config } }, (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/granted.*prerequisites/);
+      });
+    },
+  );
+
+  it("表示条件の無い島の granted は前提なしにでき、同じ島の線の親になれる", () => {
+    const extra = { audience: "granted", category: "開発ラボG" };
+    withStages(
+      {
+        "lab-start": { ...extra, prerequisites: [] },
+        "lab-next": { ...extra, prerequisites: ["lab-start"] },
+      },
+      (root) => {
+        const { stages } = buildContentManifest(root);
+        const entry = stages.find((stage) => stage.id === "lab-start");
+        expect(entry?.audience).toBe("granted");
+        expect(entry?.prerequisites).toBeUndefined();
+        expect(entry?.parent).toBeUndefined();
+        expect(stages.find((stage) => stage.id === "lab-next")?.parent).toBe("lab-start");
+      },
+    );
+  });
+
+  it("表示条件のある島の granted は、別の島の根で線を終えられない", () => {
+    withStages(
+      {
+        "lab-start": { audience: "granted", category: "開発ラボG", prerequisites: [] },
+        "python-start": { audience: "granted", category: "Python", prerequisites: ["lab-start"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/catalog ステージに着く必要があります/);
+      },
+    );
   });
 
   it("catalog が granted を prerequisites に書くと落ちる", () => {
@@ -1245,9 +1278,13 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     }
   });
 
-  it("dev-env-basics だけが前提なしの入口になる", () => {
-    expect(stages.filter((c) => (c.prerequisites ?? []).length === 0).map((c) => c.id)).toEqual([
-      "dev-env-basics",
-    ]);
+  it("前提なしの入口は Basic の dev-env-basics と開発ラボG の 00 章", () => {
+    const roots = stages.filter((stage) => !stage.prerequisites?.length);
+    expect(roots.map((stage) => stage.id)).toEqual(["dev-env-basics", "devlab-ts-ch00"]);
+    expect(roots.find((stage) => stage.id === "devlab-ts-ch00")).toMatchObject({
+      audience: "granted",
+      category: "開発ラボG",
+    });
+    expect(roots.every((stage) => stage.parent === undefined)).toBe(true);
   });
 });

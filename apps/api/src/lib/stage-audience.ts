@@ -7,6 +7,7 @@
 
 import { and, eq, inArray } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
+import { isIslandWithoutRequirements } from "@stella/shared/skill-map/islands";
 
 import type { Db } from "../db/client.js";
 import { enrollments, stageGrants, stages } from "../db/schema.js";
@@ -102,17 +103,24 @@ export function filterStagesByAudience<T extends AudienceStageRow>(
 
 /**
  * 親 slug が残った行に無い granted 星を落とす (島フィルタ後の孤児)。
+ * 表示条件の無い島の前提なしの星は根として残す。
  * granted どうしの多段の鎖では、直接の親が同じ処理で落ちた子も残さない。
  * 落とすものが無くなるまで繰り返す。catalog は常に残す。
  */
-export function dropOrphanGrantedStages<T extends AudienceStageRow>(rows: T[]): T[] {
+export function dropOrphanGrantedStages<T extends AudienceStageRow & { category?: string | null }>(
+  rows: T[],
+): T[] {
   let current = rows;
   for (;;) {
     const slugSet = new Set(current.map((row) => row.slug));
     const next = current.filter((row) => {
       if (isCatalogAudience(row.audience)) return true;
       const parent = parentSlugFromRow(row);
-      return parent !== undefined && slugSet.has(parent);
+      if (parent !== undefined) return slugSet.has(parent);
+      return (
+        isIslandWithoutRequirements(row.category) &&
+        (!row.prerequisites || /^[ \t\r\n]*\[[ \t\r\n]*\][ \t\r\n]*$/.test(row.prerequisites))
+      );
     });
     if (next.length === current.length) return next;
     current = next;

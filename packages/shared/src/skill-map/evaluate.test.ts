@@ -237,6 +237,89 @@ describe("evaluateSkillMap — 視界", () => {
   });
 });
 
+describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
+  const lab = { category: "開発ラボG", audience: "granted" } as const;
+  const stages = [
+    stage("root"),
+    stage("dev-env-basics", ["root"]),
+    stage("devlab-ts-ch00", ["dev-env-basics"], lab),
+    stage("devlab-ts-ch01", ["devlab-ts-ch00"], lab),
+    stage("devlab-ts-ch02", ["devlab-ts-ch01"], lab),
+    stage("devlab-ts-extra", ["devlab-ts-ch00"], lab),
+  ];
+  const ch00 = id("devlab-ts-ch00");
+  const ch01 = id("devlab-ts-ch01");
+  const ch02 = id("devlab-ts-ch02");
+  const extra = id("devlab-ts-extra");
+
+  it("前提なしの 00 章は最初から unlocked・full になり、続きは伏せる", () => {
+    const r = evaluateSkillMap({
+      stages: stages.map((s) => (s.id === ch00 ? { ...s, prerequisites: [] } : s)),
+      clearedStageIds: new Set(),
+    });
+    expect(r.states.get(ch00)).toBe("unlocked");
+    expect(r.visibility.get(ch00)).toBe("full");
+    expect(r.nextStageIds).toContain(ch00);
+    for (const stageId of [ch01, ch02, extra]) {
+      expect(r.visibility.get(stageId)).toBe("hidden");
+    }
+  });
+
+  it("未クリアなら入口だけを見せ、島外の前提を解放条件に残す", () => {
+    const r = evaluateSkillMap({ stages, clearedStageIds: new Set() });
+    expect(r.visibility.get(ch00)).toBe("full");
+    expect(r.states.get(ch00)).toBe("locked");
+    expect(r.lockReasons.get(ch00)).toEqual([
+      { stageId: id("dev-env-basics"), label: "dev-env-basics のステージ" },
+    ]);
+    for (const stageId of [ch01, ch02, extra]) {
+      expect(r.visibility.get(stageId)).toBe("hidden");
+    }
+  });
+
+  it("00 章をクリアすると 01 章と発展問題を見せる", () => {
+    const r = evaluateSkillMap({ stages, clearedStageIds: new Set([ch00]) });
+    expect(r.states.get(ch00)).toBe("cleared");
+    for (const stageId of [ch00, ch01, extra]) {
+      expect(r.visibility.get(stageId)).toBe("full");
+    }
+    expect(r.visibility.get(ch02)).toBe("hidden");
+  });
+
+  it("島内の前提が未了でも開始済みの章は見せる", () => {
+    const input = { stages, clearedStageIds: new Set<string>() };
+    const focused = evaluateSkillMap({ ...input, activeStageId: ch01 });
+    const enrolled = evaluateSkillMap({ ...input, enrolledStageIds: new Set([ch01]) });
+    expect(focused.states.get(ch01)).toBe("active");
+    for (const r of [focused, enrolled]) {
+      expect(r.visibility.get(ch01)).toBe("full");
+      expect(r.visibility.get(ch02)).toBe("hidden");
+      expect(r.visibility.get(extra)).toBe("hidden");
+    }
+  });
+
+  it("島外の星までの距離は非表示になった島内の星を経由しても変わらない", () => {
+    const input = {
+      stages: [...stages, stage("outside", ["devlab-ts-ch01"]), stage("far", ["outside"])],
+      clearedStageIds: new Set<string>(),
+      unlockedStageIds: new Set([ch02]),
+    };
+    const ordinary = evaluateSkillMap({
+      ...input,
+      stages: input.stages.map((s) =>
+        s.category === lab.category ? { ...s, category: "通常の島" } : s,
+      ),
+    });
+    const gradual = evaluateSkillMap(input);
+    expect(gradual.visibility.get(ch01)).toBe("hidden");
+    expect(ordinary.visibility.get(id("outside"))).toBe("edge");
+    expect(ordinary.visibility.get(id("far"))).toBe("hidden");
+    for (const s of input.stages.filter((s) => s.category !== lab.category)) {
+      expect(gradual.visibility.get(s.id)).toBe(ordinary.visibility.get(s.id));
+    }
+  });
+});
+
 describe("evaluateSkillMap — 壊れたデータ", () => {
   it("未知 slug の前提は「決してクリアされない前提」として locked のまま残す", () => {
     const stages = [stage("a"), stage("b", ["a", "does-not-exist"])];
