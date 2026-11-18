@@ -171,6 +171,10 @@ const revealOneAtATimeCategories = new Set(
   SKILL_MAP_ISLANDS.filter((island) => island.revealOneAtATime).map((island) => island.category),
 );
 
+export function isRevealOneAtATimeIsland(category: string | null): boolean {
+  return category !== null && revealOneAtATimeCategories.has(category);
+}
+
 /** 視界の段: この距離までが `full`。 */
 const FULL_DISTANCE = 1;
 /** 視界の段: この距離までが `fog`。full と同じ上限にして通常の範囲を空にする。 */
@@ -384,7 +388,7 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
   const visibility = new Map<string, SkillMapVisibility>();
   for (const stage of stages) {
     // 島外の星への最短距離を保つため、島内の段階表示は距離を計算したあとで適用する。
-    if (revealOneAtATimeCategories.has(stage.category)) {
+    if (isRevealOneAtATimeIsland(stage.category)) {
       const islandPrerequisitesCleared = (prereqIds.get(stage.id) ?? []).every(
         (id) => stageById.get(id)?.category !== stage.category || clearedStageIds.has(id),
       );

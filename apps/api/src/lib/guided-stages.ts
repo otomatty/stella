@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
+import { evaluateSkillMap, isRevealOneAtATimeIsland } from "@stella/shared/skill-map/evaluate";
 import { filterIslandStages } from "@stella/shared/skill-map/islands";
 import type { GuidedStagesResponse } from "@stella/shared/stage-grants/types";
 import { evaluateSkillMapFor, isLockReasonNameVisible } from "../routes/skill-map.js";
@@ -21,7 +21,12 @@ import { countedProblemIds, readTaskDefinition } from "./task-problem-submission
 /** 割り当ての件数によらず、ステージ・課題・問題をそれぞれまとめて読む。 */
 export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedStagesResponse> {
   const grants = await db
-    .select({ stage_id: stageGrants.stageId, title: stages.title, ...guidanceColumns })
+    .select({
+      stage_id: stageGrants.stageId,
+      title: stages.title,
+      category: stages.category,
+      ...guidanceColumns,
+    })
     .from(stageGrants)
     .innerJoin(stages, eq(stages.id, stageGrants.stageId))
     .where(
@@ -43,9 +48,17 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     clearedStageIds: source.clearedStageIds,
     unlockedStageIds: source.unlockedStageIds,
   });
-  // 状態の評価は全割り当てで行うが、名前の公開は普段のツリーの視界にそろえる。
+  // 前提名の公開と、段階表示の島で案内するステージの範囲を普段のツリーにそろえる。
   const ordinarySource = await loadSkillMapSource(db, caller);
   const ordinaryMap = evaluateSkillMapFor(ordinarySource);
+  const visibleGrants = grants.filter(({ stage_id, category }) => {
+    if (source.clearedStageIds.has(stage_id)) return false;
+    if (isRevealOneAtATimeIsland(category)) {
+      return ordinaryMap.visibility.get(stage_id) === "full";
+    }
+    return true;
+  });
+  if (visibleGrants.length === 0) return { stages: [] };
   const taskRows = await db
     .select({
       stageId: sections.stageId,
@@ -116,27 +129,25 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     progress.set(row.stageId, entry);
   }
   return {
-    stages: grants
-      .filter((grant) => !source.clearedStageIds.has(grant.stage_id))
-      .map((grant) => {
-        const id = grant.stage_id;
-        const enrolled = source.enrolledStageIds?.has(id) ?? false;
-        const available = visibleIds.has(id) && evaluated.states.get(id) === "unlocked";
-        const p = progress.get(id);
-        const reasons = enrolled || available ? [] : (evaluated.lockReasons.get(id) ?? []);
-        const namedReasons = reasons.filter(
-          (reason) => reason.stageId !== undefined && isLockReasonNameVisible(ordinaryMap, reason),
-        );
-        return {
-          ...grant,
-          status: enrolled ? "in-progress" : available ? "available" : "locked",
-          prerequisite_titles: namedReasons.map((reason) => reason.label),
-          prerequisites_withheld: namedReasons.length < reasons.length,
-          progress:
-            p && p.problems > 0
-              ? { unit: "problems", passed: p.passedProblems, total: p.problems }
-              : { unit: "tasks", passed: p?.passedTasks ?? 0, total: p?.tasks ?? 0 },
-        };
-      }),
+    stages: visibleGrants.map(({ category: _category, ...grant }) => {
+      const id = grant.stage_id;
+      const enrolled = source.enrolledStageIds?.has(id) ?? false;
+      const available = visibleIds.has(id) && evaluated.states.get(id) === "unlocked";
+      const reasons = enrolled || available ? [] : (evaluated.lockReasons.get(id) ?? []);
+      const p = progress.get(id);
+      const namedReasons = reasons.filter(
+        (reason) => reason.stageId !== undefined && isLockReasonNameVisible(ordinaryMap, reason),
+      );
+      return {
+        ...grant,
+        status: enrolled ? "in-progress" : available ? "available" : "locked",
+        prerequisite_titles: namedReasons.map((reason) => reason.label),
+        prerequisites_withheld: namedReasons.length < reasons.length,
+        progress:
+          p && p.problems > 0
+            ? { unit: "problems", passed: p.passedProblems, total: p.problems }
+            : { unit: "tasks", passed: p?.passedTasks ?? 0, total: p?.tasks ?? 0 },
+      };
+    }),
   };
 }

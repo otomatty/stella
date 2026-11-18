@@ -205,6 +205,80 @@ describe("割り当ての案内 (実 SQLite)", () => {
   });
 });
 
+it("開発ラボGの案内はスキルツリーで見える章だけを返し、ほかの島の案内は残す", async () => {
+  await db.insert(stages).values(
+    [
+      { id: "devlab-ts-ch00", title: "00章", category: "開発ラボG", prerequisites: "[]" },
+      {
+        id: "devlab-ts-ch01",
+        title: "01章",
+        category: "開発ラボG",
+        prerequisites: '["devlab-ts-ch00"]',
+      },
+      {
+        id: "devlab-ts-ch02",
+        title: "02章",
+        category: "開発ラボG",
+        prerequisites: '["devlab-ts-ch01"]',
+      },
+      {
+        id: "devlab-ts-extra",
+        title: "発展問題",
+        category: "開発ラボG",
+        prerequisites: '["devlab-ts-ch00"]',
+      },
+      {
+        id: "aws-first",
+        title: "AWS 基礎",
+        category: "AWS資格",
+        prerequisites: '["sample-basic"]',
+      },
+      {
+        id: "aws-next",
+        title: "AWS 応用",
+        category: "AWS資格",
+        prerequisites: '["aws-first"]',
+      },
+    ].map<typeof stages.$inferInsert>((stage) => ({
+      ...stage,
+      slug: stage.id,
+      audience: "granted",
+      status: "published",
+    })),
+  );
+  await grant();
+  for (const id of [
+    "devlab-ts-ch00",
+    "devlab-ts-ch01",
+    "devlab-ts-ch02",
+    "devlab-ts-extra",
+    "aws-first",
+    "aws-next",
+  ]) {
+    await grant("learner", id);
+  }
+
+  const statuses = async () =>
+    Object.fromEntries((await mine()).stages.map((stage) => [stage.stage_id, stage.status]));
+  const otherStages = { extra: "locked", "aws-first": "locked", "aws-next": "locked" };
+  expect(await statuses()).toEqual({ ...otherStages, "devlab-ts-ch00": "available" });
+
+  await db
+    .insert(enrollments)
+    .values({ userId: "learner", stageId: "devlab-ts-ch00", status: "completed" });
+  const afterCompletion = {
+    ...otherStages,
+    "devlab-ts-ch01": "available",
+    "devlab-ts-extra": "available",
+  };
+  expect(await statuses()).toEqual(afterCompletion);
+
+  await db
+    .insert(enrollments)
+    .values({ userId: "learner", stageId: "devlab-ts-ch02", status: "active" });
+  expect(await statuses()).toEqual({ ...afterCompletion, "devlab-ts-ch02": "in-progress" });
+});
+
 async function task(
   id: string,
   problemIds: string[] = [],
