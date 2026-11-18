@@ -446,5 +446,21 @@
   {
     "id": "csharp-final-spec",
     "title": "短い仕様から検証の順番とログを決めて実装する"
+  },
+  {
+    "id": "devlab-training-record-label",
+    "title": "作業記録1件を読む"
+  },
+  {
+    "id": "devlab-training-week-total",
+    "title": "指定した週の合計を出す"
+  },
+  {
+    "id": "devlab-training-confirm-record",
+    "title": "一覧で下書きを見分ける"
+  },
+  {
+    "id": "devlab-training-confirmed-total",
+    "title": "週報の集計ルールを変える"
   }
 ]

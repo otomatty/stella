@@ -7,7 +7,7 @@ import type {
   IntegrationStageInput,
 } from "@stella/shared/integrations/types";
 import { readIntegrationProgress, readIntegrationEvents } from "../lib/integration-read.js";
-import { parentSlugFromRow } from "../lib/stage-audience.js";
+import { hasNoIslandPrerequisites, parentSlugFromRow } from "../lib/stage-audience.js";
 import { inviteUser } from "../lib/auth-users.js";
 import {
   applyGroupStageStatements,
@@ -340,7 +340,7 @@ integrationsRoute.put(
     for (const setting of settings) {
       let row = stageRows.get(setting.slug);
       const visited = new Set<string>([setting.slug]);
-      while (row) {
+      while (row && !hasNoIslandPrerequisites(row)) {
         const parentSlug = parentSlugFromRow(row);
         if (!parentSlug || visited.has(parentSlug)) break;
         visited.add(parentSlug);

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-training/u03-confirm-record@2",
+  "contentHash": "8d087e71612e0334175aa267a2b0221c46606b4a1d6cc1a614650d5cb965600f",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-weekly-report/doc.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。一覧で状態を表示し、操作した記録の ID を更新処理に渡せることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-weekly-report/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。一覧で状態を表示し、操作した記録の ID を更新処理に渡せることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/confirm-record/README.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。一覧で状態を表示し、操作した記録の ID を更新処理に渡せることを扱う。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft",
+      "environmentRef": "react-test-01@1"
+    }
+  ]
+}

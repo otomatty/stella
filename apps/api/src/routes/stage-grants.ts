@@ -50,7 +50,11 @@ import {
 } from "../lib/authz.js";
 import { chunk } from "../lib/enrollment-bulk.js";
 import { loadClearedStageIdsByUser } from "../lib/skill-map-data.js";
-import { loadGrantedStages, parentSlugFromRow } from "../lib/stage-audience.js";
+import {
+  hasNoIslandPrerequisites,
+  loadGrantedStages,
+  parentSlugFromRow,
+} from "../lib/stage-audience.js";
 import {
   ancestorGrantRows,
   assignmentAfterDiff,
@@ -85,6 +89,7 @@ interface GrantStageNode {
   id: string;
   slug: string;
   audience: string | null;
+  category: string | null;
   parent: string | null;
   prerequisites: string | null;
 }
@@ -136,6 +141,7 @@ function cleanIdList(value: unknown, label: string): string[] {
 
 /** 線の親を先に、続けて prerequisites の slug。重複は除く。 */
 function neighborSlugs(row: GrantStageNode): string[] {
+  if (hasNoIslandPrerequisites(row)) return [];
   const slugs: string[] = [];
   const seen = new Set<string>();
   const parent = parentSlugFromRow(row);
@@ -171,6 +177,7 @@ async function loadGrantedPrerequisites(db: Db, start: GrantStageNode): Promise<
         id: stages.id,
         slug: stages.slug,
         audience: stages.audience,
+        category: stages.category,
         parent: stages.parent,
         prerequisites: stages.prerequisites,
       })
@@ -393,6 +400,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
         id: stages.id,
         slug: stages.slug,
         audience: stages.audience,
+        category: stages.category,
         parent: stages.parent,
         prerequisites: stages.prerequisites,
       })

@@ -34,6 +34,17 @@ export function parentSlugFromRow(row: AudienceStageRow): string | undefined {
   return undefined;
 }
 
+/** 表示条件のない島では、前提のない星の親はツリー上の配置だけに使う。 */
+export function hasNoIslandPrerequisites(row: {
+  category?: string | null;
+  prerequisites: string | null;
+}): boolean {
+  return (
+    isIslandWithoutRequirements(row.category) &&
+    (!row.prerequisites || /^[ \t\r\n]*\[[ \t\r\n]*\][ \t\r\n]*$/.test(row.prerequisites))
+  );
+}
+
 /** caller に割り当てられた `audience = granted` ステージ id。 */
 export async function loadGrantedStageIds(db: Db, profileId: string): Promise<Set<string>> {
   const rows = await db
@@ -115,12 +126,9 @@ export function dropOrphanGrantedStages<T extends AudienceStageRow & { category?
     const slugSet = new Set(current.map((row) => row.slug));
     const next = current.filter((row) => {
       if (isCatalogAudience(row.audience)) return true;
+      if (hasNoIslandPrerequisites(row)) return true;
       const parent = parentSlugFromRow(row);
-      if (parent !== undefined) return slugSet.has(parent);
-      return (
-        isIslandWithoutRequirements(row.category) &&
-        (!row.prerequisites || /^[ \t\r\n]*\[[ \t\r\n]*\][ \t\r\n]*$/.test(row.prerequisites))
-      );
+      return parent !== undefined && slugSet.has(parent);
     });
     if (next.length === current.length) return next;
     current = next;

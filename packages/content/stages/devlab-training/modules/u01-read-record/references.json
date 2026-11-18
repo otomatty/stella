@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-training/u01-read-record@2",
+  "contentHash": "1e882f6485a1ebcab1bffcd91e9a7943e06a0d23cece1d0d0b17511af24ab560",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-weekly-report/doc.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。記録から作業名を読み、0分と未入力を区別して表示できることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-weekly-report/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。記録から作業名を読み、0分と未入力を区別して表示できることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/record-label/README.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。記録から作業名を読み、0分と未入力を区別して表示できることを扱う。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}
