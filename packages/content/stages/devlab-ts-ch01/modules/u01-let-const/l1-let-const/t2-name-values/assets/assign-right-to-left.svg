@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <rect x="152" y="112" width="896" height="104" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+
+  <path d="M500 184 H568 M616 184 H772" fill="none" stroke="#5C5C66" stroke-width="2"/>
+  <path d="M532 184 V264 M696 184 V264" fill="none" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="412" y="168" textLength="376" lengthAdjust="spacingAndGlyphs"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500"
+        fill="#0E0E10">const total = price + 500;</text>
+
+  <g fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2">
+    <rect x="152" y="264" width="408" height="124" rx="12"/>
+    <rect x="640" y="264" width="408" height="124" rx="12"/>
+  </g>
+
+  <g color="#E62F9A">
+    <path d="M628 324 H584" stroke="currentColor" stroke-width="2.5"/>
+    <path d="M588 316 L572 324 L588 332 Z" fill="currentColor"/>
+  </g>
+
+  <g text-anchor="middle" font-family="'Noto Sans JP', sans-serif">
+    <g fill="#0E0E10" font-size="24" font-weight="600">
+      <text x="356" y="316">② 左の名前に入れる</text>
+      <text x="844" y="316">① 右側を先に計算</text>
+    </g>
+    <g fill="#5C5C66" font-size="20">
+      <text x="356" y="352"><tspan font-family="'Geist Mono', monospace">total</tspan> は <tspan font-family="'Geist Mono', monospace">1700</tspan></text>
+      <text x="844" y="352" font-family="'Geist Mono', 'Noto Sans JP', monospace">1200 + 500 → 1700</text>
+    </g>
+  </g>
+</svg>

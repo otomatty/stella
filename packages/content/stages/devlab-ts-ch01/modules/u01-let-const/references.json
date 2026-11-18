@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@5",
-  "contentHash": "088a5752e2b8ab7632316e8d20348f964ac5d09fa4760ca973ff69ebaa4bc3c8",
+  "unitId": "devlab-ts-ch01/u01-let-const@6",
+  "contentHash": "a78696922e6139424d3764e4397119db89aef2c12edb322e06e70a0008a557c0",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -10,9 +10,33 @@
         "SRC-typescriptbook-values-types-variables-let-and-const",
         "SRC-typescriptbook-values-types-variables-number"
       ],
-      "usedFor": "const による変数宣言と再代入の制限、整数・小数と数値の計算の概念を参照。説明・価格と送料のサンプル・Math.floor の補足・コードの場面の台本は教材用に独自作成し、問1の解答コードは示さない",
+      "usedFor": "const による変数宣言と再代入の制限、数値の計算の概念を参照。税込価格、代入、切り捨ての図と、価格と送料のコード例・コードの場面の台本を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t2-name-values/assets/price-and-tax.svg",
+      "sourceRefs": [],
+      "usedFor": "本の価格と税の割合から税込価格を考える図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t2-name-values/assets/assign-right-to-left.svg",
+      "sourceRefs": [],
+      "usedFor": "右側の計算結果を左側の名前に入れる順番の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t2-name-values/assets/floor-flow.svg",
+      "sourceRefs": [],
+      "usedFor": "割り算で得た小数から整数へ切り捨てる流れの図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -49,9 +73,33 @@
         "SRC-typescriptbook-values-types-variables-type-annotation",
         "SRC-typescriptbook-functions-function-declaration"
       ],
-      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "usedFor": "関数宣言と型注釈の概念を参照。テストの値の流れ、関数の形、数値と文字列の違いの図と、注文数のコード例・コードの場面の台本を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t1-read-problem/assets/test-black-box.svg",
+      "sourceRefs": [],
+      "usedFor": "テストで確かめる渡す値と返ってくる値の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t1-read-problem/assets/function-signature.svg",
+      "sourceRefs": [],
+      "usedFor": "関数の名前と引数と戻り値の型を対応づける図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t1-read-problem/assets/number-vs-string.svg",
+      "sourceRefs": [],
+      "usedFor": "数値と文字列を数値の引数に渡したときの比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -60,9 +108,33 @@
         "SRC-typescriptbook-values-types-variables-number",
         "SRC-typescriptbook-values-types-variables-let-and-const"
       ],
-      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "usedFor": "数値の計算と const で値に名前を付ける概念を参照。箱詰め・切り上げ・計算順の図と、箱数のコード例・コードの場面の台本を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t3-divide-ceil/assets/boxes-leftover.svg",
+      "sourceRefs": [],
+      "usedFor": "商品を十二本ずつ箱に詰めるときの残りの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t3-divide-ceil/assets/floor-ceil-number-line.svg",
+      "sourceRefs": [],
+      "usedFor": "割った値の切り捨てと切り上げを示す数直線",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t3-divide-ceil/assets/divide-first.svg",
+      "sourceRefs": [],
+      "usedFor": "足し算と割り算の順番による計算結果の比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -71,9 +143,33 @@
         "SRC-typescriptbook-values-types-variables-number",
         "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "usedFor": "数値の余りと文字列の概念を参照。卵のパック詰め、余りの埋め込み、文字列を囲む記号の図と、残りを知らせる文のコード例・コードの場面の台本を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t4-remainder-template/assets/egg-packs-leftover.svg",
+      "sourceRefs": [],
+      "usedFor": "卵を四個ずつパックに詰めるときの残りの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t4-remainder-template/assets/remainder-to-message.svg",
+      "sourceRefs": [],
+      "usedFor": "割り算の余りを文に埋め込むまでの流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t4-remainder-template/assets/backtick-vs-quote.svg",
+      "sourceRefs": [],
+      "usedFor": "文を囲む記号でできる文字列が変わる様子の比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
