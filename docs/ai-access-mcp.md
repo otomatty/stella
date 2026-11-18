@@ -42,11 +42,58 @@
 ## 認証
 
 - コネクターが求める OAuth 2.1 (authorization code + PKCE、動的クライアント登録、`/.well-known` のメタデータ) で接続する。受講者のログインは既存の Google ログイン (Better Auth のセッション) を使い、同意画面で「何を読めるか」「何を記録するか」を示す。
-- MCP のアクセストークンは MCP 専用にする。D1 に SHA-256 ハッシュで保存し (連携トークンと同じ扱い)、`/mcp` だけが受け付ける。
+- MCP のアクセストークンは MCP 専用にする。KV にハッシュだけを保存し、`/api/mcp` だけが受け付ける。
 - **Better Auth のセッショントークンを MCP に渡さない。** `verifyToken` (`apps/api/src/lib/authz.ts`) はセッショントークンをどの API でも受け付けるので、渡すと AI が同じトークンで `POST /api/submissions` を呼べる。逆に、MCP のトークンは `verifyToken` で受け付けない。
 - 無効化・削除した受講者のトークンは、次の呼び出しから使えない。受講者は設定画面で、接続している AI の一覧を見て解除できる。
-- MCP は受講者の Web のオリジン (`https://stella.saedgewell.workers.dev/mcp`) で出す。Web の Worker (`apps/web/worker`) のプロキシに `/mcp` と `/.well-known/*` を足す。
-- 実装の方式は決めていない。いまの `better-auth` 1.7.22 に同梱のプラグインには、MCP・OAuth provider が無い。候補は (a) `@better-auth/oauth-provider`、(b) `@cloudflare/workers-oauth-provider`、(c) D1 を使う最小の自前実装。小さく試してから決める。
+- MCP は受講者の Web のオリジン (`https://stella.saedgewell.workers.dev/api/mcp`) で出す。Web の Worker (`apps/web/worker`) は `/api/*` をすでに中継しているので、足すのは `/.well-known` の 2 つのパスだけ (下の「本番に要るもの」)。
+- 実装は `@cloudflare/workers-oauth-provider` を使う (2026-11-19 に試作で確かめた。下の「認証の試作の結果」)。
+
+## 認証の試作の結果 (2026-11-19)
+
+`@cloudflare/workers-oauth-provider` 1.2.4 と `@modelcontextprotocol/sdk` 1.32.2 で、最小の MCP (ツール 2 つ) を API に載せて確かめた。試作のコードは捨てた。
+
+### 決めたこと
+
+- `@cloudflare/workers-oauth-provider` を使う。トークン・認可コード・クライアントの secret は KV にハッシュだけを置く。動的クライアント登録 (DCR)・Client ID Metadata Documents (CIMD)・PKCE (S256)・メタデータ・更新トークンの入れ替え・失効 (RFC 7009) を持つ。
+- `@better-auth/oauth-provider` は使わない。手元とテストでは Better Auth を切って開発用トークンを使っており、ログインも Google だけなので、認可の流れを手元で通せない。peer が `better-auth ^1.7.26` で、本体の更新も要る。
+- 自前の実装はしない (リダイレクト先の検証や PKCE を自分で書く危険に見合わない)。
+- 同意の画面は API がサーバーで HTML を返す (`/api/oauth/authorize`)。ライブラリの同意の補助 (`describeConsent`・`beginConsent`・`approveConsent`・`denyConsent`) が、1 回限りのハンドル・Cookie・フレームの拒否を受け持つ。利用者は既存の `getCaller` で決める。
+
+### 確かめたこと
+
+- `export default` (`fetch` と cron の `scheduled`) を包まずに、Hono のルートから `OAuthAuthorizationServer.fetch()` と `OAuthResourceServer.fetch()` を呼べる。
+- MCP の公式 SDK のクライアントで、401 → メタデータの発見 → DCR → 同意 → PKCE のコード交換 → `tools/list` → `tools/call` まで通った。トランスポートは SDK の `WebStandardStreamableHTTPServerTransport` (ステートレス。Durable Object は要らない)。
+- MCP のアクセストークンは `/api/enrollments/mine` と `POST /api/submissions` で 401。開発用トークンは `/api/mcp` で 401。無効にした受講者は `/api/mcp` で 403 (呼び出しのたびに `profiles` を引く)。
+- 更新トークンでの更新と、失効が通った。
+- 手元の `http://127.0.0.1:8787` を issuer にできる (HTTP を許すのはループバックだけ)。
+- バンドルは gzip で 857 KiB → 1,049 KiB。
+
+### 本番に要るもの
+
+| もの | 内容 |
+| --- | --- |
+| KV の namespace | バインディング `OAUTH_KV`。Cloudflare のアカウントに作り、`apps/api/wrangler.toml` に id を書く (人の作業)。 |
+| 互換フラグ | `global_fetch_strictly_public` (CIMD の外向きの fetch のため)。`compatibility_date` は今のままでよい。 |
+| Web の Worker の中継 | 既存の `/api/*` に加えて、`/.well-known/oauth-authorization-server` と `/.well-known/oauth-protected-resource/api/mcp` を、URL を変えずに API へ渡す。 |
+| パス | 認可 `/api/oauth/authorize`、トークンと失効 `/api/oauth/token`、登録 `/api/oauth/register`、MCP `/api/mcp`。issuer は Web のオリジン。 |
+
+### KV の回数 (無料枠は 1 日に書き込み 1,000 回・読み取り 10 万回)
+
+| 操作 | 書き込み | 読み取り |
+| --- | --- | --- |
+| 初めての接続 (登録 → 同意 → コード交換) | 5 (ほかに削除 1・一覧 1) | 6 |
+| アクセストークンの更新 1 回 | 2 | 2 |
+| MCP の呼び出し 1 回 | 0 | 1 |
+
+アクセストークンの寿命が既定の 1 時間だと、使っている間は 1 時間ごとに 2 回書く (50 人が 8 時間使うと 800 回)。寿命を 8 時間にすると 1 人 1 日 2〜4 回で済む。解除は KV のトークンを消し、無効にした受講者は呼び出しのたびに弾くので、寿命を延ばしても止める速さは変わらない。
+
+### 確かめていないこと
+
+- 本番の Cookie のセッション (Better Auth) での同意。
+- 未ログインで認可の URL を開いたときの、ログインしてから戻る流れ。
+- Claude・ChatGPT の実際のコネクターからの接続 (公開の HTTPS が要る)。
+- CIMD のクライアントでの認可 (メタデータに対応を出すところまで確かめた)。
+- 受講者の接続の一覧と解除 (`listUserGrants(userId)`・`revokeGrant(grantId, userId)` がある)。
 
 ## 記録
 
@@ -82,7 +129,7 @@ MCP の `instructions` とツールの説明文に、次を書く。AI への依
 ## 進める順番
 
 1. CLI の廃止 (済み)。
-2. 認証の方式を小さく試して決める。
+2. 認証の方式を試して決める (済み。`@cloudflare/workers-oauth-provider`)。
 3. MCP・記録・設定画面の接続の管理を作る。
 4. 公開の単元 (`/start`) に、接続の手順を足す。
 5. 受講者が使えることを確かめてから、AI チャットを消す (`AIChatBot.tsx`・`useAiChat.ts`・`routes/chat.ts`・チャット用のプロバイダーとプロンプト)。提出の AI 一次レビューは残す。
@@ -90,7 +137,8 @@ MCP の `instructions` とツールの説明文に、次を書く。AI への依
 
 ## まだ決めていないこと
 
-- 認証の実装の方式。
+- KV の namespace をだれがいつ作るか。無料枠のままにするか。
+- 未ログインで認可の URL を開いたときの誘導 (ログインのあとに認可へ戻す方法)。
 - ChatGPT で使えるプラン。
 - `get_task` で starter・tests を返すか (最初の版は課題文だけ)。
 - 管理者向けの集計の画面。
