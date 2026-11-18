@@ -1,6 +1,6 @@
 # 書き方ガイドの断片を書く担当への指示書
 
-TypeScript の選考の事前課題（STELLA の `devlab-ts-ch00`〜`devlab-ts-ch09` と `devlab-ts-extra` ステージ）に、応募者が読む「書き方ガイド」を章ごとの HTML ページで作っている。あなたは、ある章のある番号（q01 など、約 21 問）を担当し、HTML の断片ファイルを 1 つ書いて終わる。ページへの組み込みとハイライトの焼き込みは `npm run build` で行う。公開は claude.ai の Artifact で手作業で行う。
+TypeScript の選考の事前課題（STELLA の `devlab-ts-ch00`〜`devlab-ts-ch09` ステージ。発展問題は 01〜09章の最後の単元 `u100-extra`）に、応募者が読む「書き方ガイド」を章ごとの HTML ページで作っている。あなたは、ある章のある番号（q01 など、約 21 問）を担当し、HTML の断片ファイルを 1 つ書いて終わる。ページへの組み込みとハイライトの焼き込みは `npm run build` で行う。公開は claude.ai の Artifact で手作業で行う。
 
 ## 触ってよいもの
 
@@ -10,7 +10,7 @@ TypeScript の選考の事前課題（STELLA の `devlab-ts-ch00`〜`devlab-ts-c
 ## 置き場所
 
 - 断片：`docs/devlab-ts-prework-guide/src/fragments/`。以下のパスはリポジトリのルートからの相対パス。
-- 課題：`packages/content/stages/devlab-ts-ch<章2桁>/modules/u99-problems/tasks/chapter/`（発展問題は `packages/content/stages/devlab-ts-extra/modules/u<章2桁>-<名前>/tasks/extra/`）
+- 課題：`packages/content/stages/devlab-ts-ch<章2桁>/modules/u99-problems/tasks/chapter/`（発展問題は `packages/content/stages/devlab-ts-ch<章2桁>/modules/u100-extra/tasks/extra/`）
   - `README.md`：番号ごとのルールと、教材（サバイバルTypeScript）のリンク
   - `starter/src/<id>.ts`：問題文とスターター（応募者が見るもの）
   - `tests/<id>.test.ts`：テストの値

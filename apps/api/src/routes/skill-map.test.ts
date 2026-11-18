@@ -197,13 +197,13 @@ describe("GET /api/skill-map/mine", () => {
     const ch00 = "devlab-ts-ch00";
     const ch01 = "devlab-ts-ch01";
     const ch02 = "devlab-ts-ch02";
-    const extra = "devlab-ts-extra";
+    const parallelChapter = "devlab-ts-test-parallel";
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       stages: [
         labStage(ch00, "dev-env-basics"),
         labStage(ch01, ch00),
         labStage(ch02, ch01),
-        labStage(extra, ch00),
+        labStage(parallelChapter, ch00),
       ],
       clearedStageIds: new Set([ch00]),
       unlockedStageIds: new Set([ch02]),
@@ -214,7 +214,7 @@ describe("GET /api/skill-map/mine", () => {
     const { skill_map: map } = (await res.json()) as {
       skill_map: { stages: StagePayload[]; next_stage_ids: string[]; stage_count: number };
     };
-    expect(map.stages.map((s) => s.id)).toEqual([ch00, ch01, extra]);
+    expect(map.stages.map((s) => s.id)).toEqual([ch00, ch01, parallelChapter]);
     expect(map.next_stage_ids).not.toContain(ch02);
     expect(map.stage_count).toBe(4);
 

@@ -222,8 +222,8 @@ it("開発ラボGの案内はスキルツリーで見える章だけを返し、
         prerequisites: '["devlab-ts-ch01"]',
       },
       {
-        id: "devlab-ts-extra",
-        title: "発展問題",
+        id: "devlab-ts-test-parallel",
+        title: "架空の並行章",
         category: "開発ラボG",
         prerequisites: '["devlab-ts-ch00"]',
       },
@@ -251,7 +251,7 @@ it("開発ラボGの案内はスキルツリーで見える章だけを返し、
     "devlab-ts-ch00",
     "devlab-ts-ch01",
     "devlab-ts-ch02",
-    "devlab-ts-extra",
+    "devlab-ts-test-parallel",
     "aws-first",
     "aws-next",
   ]) {
@@ -269,7 +269,7 @@ it("開発ラボGの案内はスキルツリーで見える章だけを返し、
   const afterCompletion = {
     ...otherStages,
     "devlab-ts-ch01": "available",
-    "devlab-ts-extra": "available",
+    "devlab-ts-test-parallel": "available",
   };
   expect(await statuses()).toEqual(afterCompletion);
 

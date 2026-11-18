@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch07/u100-extra@1",
+  "contentHash": "f3dba1973ad3dd6fac4af5cdb51d60c18f2b7305e6b146daa7f342459b539282",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-type-reuse-mapped-types",
+        "SRC-typescriptbook-type-reuse-utility-types-exclude",
+        "SRC-typescriptbook-type-reuse-utility-types-extract",
+        "SRC-typescriptbook-type-reuse-utility-types-nonnullable",
+        "SRC-typescriptbook-type-reuse-utility-types-return-type",
+        "SRC-typescriptbook-type-reuse-utility-types-awaited"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の型の再利用とジェネリクスの範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

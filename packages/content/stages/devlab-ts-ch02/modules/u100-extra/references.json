@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch02/u100-extra@1",
+  "contentHash": "94fd18e3e0f61424f54f62272febe48c8a0f2c6a7c158e38a6a043d8b5db5e9c",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-object-readonly-vs-const",
+        "SRC-typescriptbook-values-types-variables-array-readonly-array",
+        "SRC-typescriptbook-values-types-variables-object-how-to-loop-an-object"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

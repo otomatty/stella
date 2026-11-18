@@ -245,12 +245,12 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
     stage("devlab-ts-ch00", ["dev-env-basics"], lab),
     stage("devlab-ts-ch01", ["devlab-ts-ch00"], lab),
     stage("devlab-ts-ch02", ["devlab-ts-ch01"], lab),
-    stage("devlab-ts-extra", ["devlab-ts-ch00"], lab),
+    stage("devlab-ts-test-parallel", ["devlab-ts-ch00"], lab),
   ];
   const ch00 = id("devlab-ts-ch00");
   const ch01 = id("devlab-ts-ch01");
   const ch02 = id("devlab-ts-ch02");
-  const extra = id("devlab-ts-extra");
+  const parallelChapter = id("devlab-ts-test-parallel");
 
   it("前提なしの 00 章は最初から unlocked・full になり、続きは伏せる", () => {
     const r = evaluateSkillMap({
@@ -260,7 +260,7 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
     expect(r.states.get(ch00)).toBe("unlocked");
     expect(r.visibility.get(ch00)).toBe("full");
     expect(r.nextStageIds).toContain(ch00);
-    for (const stageId of [ch01, ch02, extra]) {
+    for (const stageId of [ch01, ch02, parallelChapter]) {
       expect(r.visibility.get(stageId)).toBe("hidden");
     }
   });
@@ -272,15 +272,15 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
     expect(r.lockReasons.get(ch00)).toEqual([
       { stageId: id("dev-env-basics"), label: "dev-env-basics のステージ" },
     ]);
-    for (const stageId of [ch01, ch02, extra]) {
+    for (const stageId of [ch01, ch02, parallelChapter]) {
       expect(r.visibility.get(stageId)).toBe("hidden");
     }
   });
 
-  it("00 章をクリアすると 01 章と発展問題を見せる", () => {
+  it("00 章をクリアすると 01 章と並行する章を見せる", () => {
     const r = evaluateSkillMap({ stages, clearedStageIds: new Set([ch00]) });
     expect(r.states.get(ch00)).toBe("cleared");
-    for (const stageId of [ch00, ch01, extra]) {
+    for (const stageId of [ch00, ch01, parallelChapter]) {
       expect(r.visibility.get(stageId)).toBe("full");
     }
     expect(r.visibility.get(ch02)).toBe("hidden");
@@ -294,7 +294,7 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
     for (const r of [focused, enrolled]) {
       expect(r.visibility.get(ch01)).toBe("full");
       expect(r.visibility.get(ch02)).toBe("hidden");
-      expect(r.visibility.get(extra)).toBe("hidden");
+      expect(r.visibility.get(parallelChapter)).toBe("hidden");
     }
   });
 
