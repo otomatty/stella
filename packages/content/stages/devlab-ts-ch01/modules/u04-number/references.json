@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u04-number@1",
-  "contentHash": "64926cbadb79663e9860cb408d09b9c03057b6617802a424d79c2272e65207f1",
+  "unitId": "devlab-ts-ch01/u04-number@2",
+  "contentHash": "e019241e99d35b665869ec85bfb0225c14aaa55296a37558202dc3aae4941f08",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-number/t1-math-tools/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "usedFor": "number型の概念を参照。在庫のずれと上限・下限に合う道具を、独自の図とコード例で説明。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -31,7 +31,7 @@
     {
       "contentId": "l1-number/t2-throw/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "usedFor": "number型の概念を参照。予約人数の確認を例に、エラーで処理を止める流れと ! の働きを説明。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -39,9 +39,81 @@
     {
       "contentId": "l1-number/t3-parse-number/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "usedFor": "number型の概念を参照。注文数の取り出しと NaN・有限の数・整数の区別を、独自の図とコード例で説明。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t1-math-tools/assets/stock-gap.svg",
+      "sourceRefs": [],
+      "usedFor": "実際の在庫数と予定数のずれの大きさを示す数直線",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t1-math-tools/assets/purpose-to-tool.svg",
+      "sourceRefs": [],
+      "usedFor": "ゼロからの距離と上下限を守る計算の道具の対応図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t1-math-tools/assets/upper-limit-min.svg",
+      "sourceRefs": [],
+      "usedFor": "上限を守るときに二つの道具が選ぶ値を比べる図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t2-throw/assets/negative-count.svg",
+      "sourceRefs": [],
+      "usedFor": "マイナスの予約人数が届いたときの処理の流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t2-throw/assets/throw-stops.svg",
+      "sourceRefs": [],
+      "usedFor": "予約の人数を確かめて処理を止めるか決める分岐図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t2-throw/assets/return-vs-throw.svg",
+      "sourceRefs": [],
+      "usedFor": "文字列を返す場合とエラーを投げる場合の比較図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t3-parse-number/assets/text-to-number.svg",
+      "sourceRefs": [],
+      "usedFor": "注文数の文字列から計算に使う数値を取り出す流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t3-parse-number/assets/number-kinds.svg",
+      "sourceRefs": [],
+      "usedFor": "数値の型と有限の数と整数の範囲を示す入れ子の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t3-parse-number/assets/nan-compare.svg",
+      "sourceRefs": [],
+      "usedFor": "数にできなかった値を二通りの書き方で調べる比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]

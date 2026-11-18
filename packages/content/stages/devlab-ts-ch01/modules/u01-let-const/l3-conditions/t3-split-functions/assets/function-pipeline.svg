@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+<svg viewBox="0 0 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
   <defs>
     <marker id="arrow" viewBox="0 0 16 16" refX="16" refY="8"
             markerWidth="8" markerHeight="8" orient="auto">
@@ -7,30 +7,37 @@
     </marker>
   </defs>
 
+  <!-- 短い箱と下の補足が 400 のキャンバスの中央に収まるように置く。 -->
   <g stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)">
-    <path d="M164 240 H188"/>
-    <path d="M396 240 H420"/>
-    <path d="M564 240 H588"/>
-    <path d="M940 240 H964"/>
+    <path d="M180 176 H220"/>
+    <path d="M396 176 H436"/>
+    <path d="M572 176 H612"/>
+    <path d="M916 176 H956"/>
   </g>
 
-  <g fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2">
-    <rect x="48" y="172" width="104" height="136" rx="12"/>
-    <rect x="432" y="172" width="120" height="136" rx="12"/>
+  <g fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5">
+    <rect x="64" y="128" width="104" height="96" rx="12"/>
+    <rect x="448" y="128" width="112" height="96" rx="12"/>
   </g>
   <g fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2">
-    <rect x="200" y="112" width="184" height="256" rx="8"/>
-    <rect x="600" y="112" width="328" height="256" rx="8"/>
+    <rect x="232" y="128" width="152" height="96" rx="8"/>
+    <rect x="624" y="128" width="280" height="96" rx="8"/>
   </g>
-  <rect x="976" y="172" width="176" height="136" rx="12"
+  <rect x="968" y="128" width="168" height="96" rx="12"
         fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
 
-  <g text-anchor="middle" font-family="'Geist Mono', monospace"
-     fill="#0E0E10" font-size="24" font-weight="500">
-    <text x="100" y="248">42</text>
-    <text x="292" y="248">String()</text>
-    <text x="492" y="248">"42"</text>
-    <text x="764" y="248">.padStart(5, "0")</text>
-    <text x="1064" y="248">"00042"</text>
+  <g text-anchor="middle" font-family="'Geist Mono', monospace" fill="#0E0E10" font-size="24" font-weight="500">
+    <text x="116" y="184">42</text>
+    <text x="308" y="184">String()</text>
+    <text x="504" y="184">"42"</text>
+    <text x="764" y="184">.padStart(5, "0")</text>
+    <text x="1052" y="184">"00042"</text>
+  </g>
+  <g text-anchor="middle" font-family="'Noto Sans JP', sans-serif" fill="#5C5C66" font-size="20">
+    <text x="116" y="264">値</text>
+    <text x="308" y="264">関数</text>
+    <text x="504" y="264">値</text>
+    <text x="764" y="264">関数</text>
+    <text x="1052" y="264">値</text>
   </g>
 </svg>

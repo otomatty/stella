@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+<svg viewBox="0 88 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
   <defs>
     <marker id="arrow" viewBox="0 0 16 16" refX="16" refY="8"
             markerWidth="8" markerHeight="8" orient="auto">
@@ -11,23 +11,24 @@
     </marker>
   </defs>
 
-  <!-- 点の位置は、2.4 と 2.5 を読み分けられるよう間隔を広げる -->
-  <path d="M128 240 H1072" stroke="#B7B7BE" stroke-width="2"/>
-  <path d="M208 228 V252 M992 228 V252" stroke="#5C5C66" stroke-width="2"/>
-  <path d="M208 128 V216 M496 128 V136 M496 176 V232
-           M600 248 V304 M600 344 V352 M992 296 V352"
-        fill="none" stroke="#B7B7BE" stroke-width="2"/>
-  <circle cx="496" cy="240" r="8" fill="#0E0E10"/>
-  <circle cx="600" cy="240" r="8" fill="#0E0E10"/>
+  <!-- 2 と 3 の間隔は両段とも 800。2.4 は左から 320、2.5 は 400。 -->
+  <path d="M152 172 H1048 M152 332 H1048" stroke="#B7B7BE" stroke-width="2"/>
+  <path d="M200 160 V184 M1000 160 V184 M200 320 V344 M1000 320 V344"
+        stroke="#5C5C66" stroke-width="2"/>
+  <path d="M200 136 V152 M520 136 V160 M600 296 V320 M1000 296 V312"
+        stroke="#B7B7BE" stroke-width="1.5"/>
+  <circle cx="520" cy="172" r="8" fill="#0E0E10"/>
+  <circle cx="600" cy="332" r="8" fill="#0E0E10"/>
 
-  <path d="M496 120 H208" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
-  <path d="M600 360 H992" stroke="#E62F9A" stroke-width="2" marker-end="url(#arrow-accent)"/>
+  <path d="M520 128 H200" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M600 288 H1000" stroke="#E62F9A" stroke-width="2" marker-end="url(#arrow-accent)"/>
 
-  <g text-anchor="middle" font-family="'Geist Mono', monospace" fill="#0E0E10"
-     font-size="24" font-weight="500">
-    <text x="208" y="280">2</text>
-    <text x="496" y="164">2.4</text>
-    <text x="600" y="332">2.5</text>
-    <text x="992" y="280">3</text>
+  <g text-anchor="middle" font-family="'Geist Mono', monospace" fill="#0E0E10" font-size="28" font-weight="500">
+    <text x="200" y="220">2</text>
+    <text x="520" y="220">2.4</text>
+    <text x="1000" y="220">3</text>
+    <text x="200" y="380">2</text>
+    <text x="600" y="380">2.5</text>
+    <text x="1000" y="380">3</text>
   </g>
 </svg>
