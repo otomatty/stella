@@ -12,11 +12,7 @@
 import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
-import {
-  STEP_STATUS_LABELS,
-  type RunOutcome,
-  type StepStatus,
-} from "@stella/shared/tasks/run-result";
+import type { RunOutcome } from "@stella/shared/tasks/run-result";
 import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
@@ -29,6 +25,18 @@ import {
   problemSource,
   type ProblemState,
 } from "./task-problems.js";
+import {
+  barWidth,
+  countTests,
+  remainingSteps,
+  RUN_SUMMARY_CSS,
+  shortStepLabel,
+  STEP_MARKS,
+  stepChips,
+  type StepSummary,
+  testBar,
+  type TestCounts,
+} from "./task-run-summary.js";
 
 /** 課題文のパネルが開けるコマンド。WebView の `enableCommandUris` にも同じものを渡す。 */
 export const GUIDE_COMMANDS = [
@@ -82,30 +90,12 @@ export async function resolveEditFiles(root: string, manifest: TaskManifest): Pr
   };
 }
 
-interface GuideTestCounts {
-  passed: number;
-  total: number;
-}
-
-interface GuideStep {
-  label: string;
-  status: StepStatus;
-  tests?: GuideTestCounts;
-}
-
 interface GuideRun {
   outcome: Exclude<RunOutcome, "cancelled">;
-  steps: GuideStep[];
-  tests?: GuideTestCounts;
+  steps: StepSummary[];
+  tests?: TestCounts;
   errorSummary?: string;
 }
-
-const STEP_MARKS: Record<StepStatus, string> = {
-  passed: "✓",
-  failed: "✗",
-  error: "!",
-  skipped: "–",
-};
 
 /** この課題の前回の確認の結果。無い・読めない・別の課題の結果なら undefined。 */
 export async function readLastRun(root: string, taskId: string): Promise<GuideRun | undefined> {
@@ -118,24 +108,21 @@ export async function readLastRun(root: string, taskId: string): Promise<GuideRu
     if (outcome !== "passed" && outcome !== "failed" && outcome !== "error") return undefined;
 
     const tests = { passed: 0, total: 0 };
-    const steps: GuideStep[] = [];
+    const steps: StepSummary[] = [];
     for (const step of raw.steps) {
       if (typeof step.status !== "string" || !Object.hasOwn(STEP_MARKS, step.status))
         return undefined;
-      const counts = { passed: 0, total: 0 };
-      for (const test of step.tests ?? []) {
-        if (test.status === "skipped") continue;
-        if (test.status !== "passed" && test.status !== "failed") return undefined;
-        counts.total++;
-        if (test.status === "passed") counts.passed++;
-      }
+      if (
+        step.tests?.some(
+          ({ status }) => status !== "passed" && status !== "failed" && status !== "skipped",
+        )
+      )
+        return undefined;
+      const counts = countTests(step.tests);
       tests.total += counts.total;
       tests.passed += counts.passed;
       steps.push({
-        label: step.label
-          .trimEnd()
-          .replace(/(?:\([^()]*\)|（[^（）]*）)$/, "")
-          .trimEnd(),
+        label: shortStepLabel(step.label),
         status: step.status,
         ...(counts.total > 0 ? { tests: counts } : {}),
       });
@@ -239,33 +226,8 @@ function firstRunInstructions(manifest: TaskManifest): string {
   return `<p class="first">${lines.join("")}</p>`;
 }
 
-function barWidth(passed: number, total: number): string {
-  return total > 0 ? ((100 * passed) / total).toFixed(1) : "0";
-}
-
-function testBar({ passed, total }: GuideTestCounts): string {
-  const wide = total > 40;
-  const bars = wide
-    ? `<i class="p" style="width:${barWidth(passed, total)}%"></i>`
-    : '<i class="p"></i>'.repeat(passed) + "<i></i>".repeat(total - passed);
-  return `<p class="tests-line"><span>テスト</span><span class="tbar${wide ? " wide" : ""}" role="img" aria-label="テスト ${total} 件中 ${passed} 件が通りました">${bars}</span><span class="count">${passed} / ${total}</span></p>`;
-}
-
-function stepChips(steps: GuideStep[]): string {
-  const chips = steps.map(
-    ({ label, status }) =>
-      `<li class="chip ${status}"><b aria-label="${STEP_STATUS_LABELS[status]}">${STEP_MARKS[status]}</b>${escapeHtml(label)}</li>`,
-  );
-  return `<ul class="chips">${chips.join("")}</ul>`;
-}
-
-function remainingSteps(steps: GuideStep[]): string {
-  const remaining = steps
-    .filter((step) => step.status === "failed")
-    .map(({ label, tests }) => {
-      const failed = tests ? tests.total - tests.passed : 0;
-      return escapeHtml(failed > 0 ? `${label} ${failed} 件` : label);
-    });
+function remainingStepsHtml(steps: StepSummary[]): string {
+  const remaining = remainingSteps(steps);
   return remaining.length > 0 ? `<p class="rest">残り: ${remaining.join(" ・ ")}</p>` : "";
 }
 
@@ -302,7 +264,7 @@ function taskNowCard(input: TaskGuideInput): string {
     case "passed": {
       const figure = (lastRun.tests ? testBar(lastRun.tests) : "") + stepChips(lastRun.steps);
       if (lastRun.outcome === "failed") {
-        return `<div class="now-card failed"><p class="now-title">✗ 直すところがあります</p>${figure}${remainingSteps(lastRun.steps)}<p>直して保存し、もう一度提出します。</p><p class="actions">${submit} ${consultLink(root)}</p></div>`;
+        return `<div class="now-card failed"><p class="now-title">✗ 直すところがあります</p>${figure}${remainingStepsHtml(lastRun.steps)}<p>直して保存し、もう一度提出します。</p><p class="actions">${submit} ${consultLink(root)}</p></div>`;
       }
       return `<div class="now-card passed"><p class="now-title">✓ 確認はすべて通りました</p>${figure}<p>「提出する」を押して、振り返りを書いて送ります。</p><p class="actions">${submit}</p></div>`;
     }
@@ -516,43 +478,7 @@ export const GUIDE_CSS = `
       text-decoration: none;
     }
     .button:hover { background: var(--vscode-button-hoverBackground); }
-    .first, .rest { font-size: 0.9em; color: var(--vscode-descriptionForeground); }
-    .tests-line { display: flex; align-items: center; gap: 0.6rem; font-variant-numeric: tabular-nums; }
-    .tbar { display: inline-flex; gap: 3px; flex: 1; max-width: 220px; }
-    .tbar i { flex: 1; height: 8px; border-radius: 2px; background: var(--vscode-panel-border); }
-    .tbar i.p { background: var(--vscode-testing-iconPassed); }
-    .tbar.wide {
-      display: block;
-      height: 8px;
-      border-radius: 2px;
-      background: var(--vscode-panel-border);
-      overflow: hidden;
-    }
-    .tbar.wide i { display: block; height: 100%; border-radius: 0; }
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      margin: 0.5rem 0;
-      padding: 0;
-      list-style: none;
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0 0.55rem;
-      border-radius: 999px;
-      border: 1px solid var(--vscode-panel-border);
-      font-size: 0.88em;
-      white-space: nowrap;
-    }
-    .chip.passed b { color: var(--vscode-testing-iconPassed); }
-    .chip.failed { border-color: var(--vscode-testing-iconFailed); }
-    .chip.failed b { color: var(--vscode-testing-iconFailed); }
-    .chip.error { border-color: var(--vscode-editorWarning-foreground); }
-    .chip.error b { color: var(--vscode-editorWarning-foreground); }
-    .chip.skipped { color: var(--vscode-descriptionForeground); }
+    .first, .rest { font-size: 0.9em; color: var(--vscode-descriptionForeground); }${RUN_SUMMARY_CSS}
     .all-steps { margin-top: 0.6rem; }
     .all-steps summary { cursor: pointer; }
     .pbar {

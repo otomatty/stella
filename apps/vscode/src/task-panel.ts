@@ -1,6 +1,6 @@
 /**
  * 「課題を確認する」の結果パネル。スクリプトは動かさず、HTML だけを描く。
- * 合格時は提出、不合格時は講師への相談を案内する。
+ * 先頭に確認の要約と提出のボタンを置き、直すところのある手順を先に出す。
  * 出典の HTTP(S) リンクと、許可した再実行・ログ表示のコマンドだけを使う。
  * 課題文 (README.md) を OS のタブ付きで開くパネル (先頭に「進め方」) も、ここに置く。
  *
@@ -16,7 +16,7 @@ import {
   RUN_OUTCOME_LABELS,
   type RunResult,
   type RunStepResult,
-  STEP_STATUS_LABELS,
+  type TestCaseResult,
 } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
@@ -36,6 +36,18 @@ import {
   stripLeadingTitle,
   type TaskGuideInput,
 } from "./task-guide.js";
+import {
+  countTests,
+  remainingSteps,
+  RUN_SUMMARY_CSS,
+  shortStepLabel,
+  STEP_MARKS,
+  stepChips,
+  type StepSummary,
+  testBar,
+  type TestCounts,
+} from "./task-run-summary.js";
+import { expectedActual } from "./task-test-message.js";
 
 /** 左の列 (1 列目) でテキストのファイルを開いているか。 */
 function hasLeftEditor(): boolean {
@@ -86,32 +98,46 @@ export function referencesHtml(references: readonly PublicSourceReference[] | un
   return `<section class="references"><h2>参照元</h2><ul>${references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}<p>${escapeHtml(ref.usedFor)}</p><details><summary>出典の詳細</summary><p>資料: ${escapeHtml(ref.documentVersion)} / 確認日: ${escapeHtml(ref.checkedAt)} / 環境: ${escapeHtml(ref.environmentRef)}</p><p>${escapeHtml(SOURCE_AUTHORSHIP_LABELS[ref.authorship] ?? ref.authorship)} / ${escapeHtml(SOURCE_REUSE_LABELS[ref.reuse] ?? ref.reuse)}</p></details>${attributionHtml(ref)}</li>`).join("")}</ul></section>`;
 }
 
-function renderStep(step: RunStepResult): string {
+function renderFailedTest(test: TestCaseResult): string {
+  const file = test.file ? ` <span class="file">${escapeHtml(test.file)}</span>` : "";
+  const message = test.message ?? "";
+  const comparison = message ? expectedActual(message) : undefined;
+  const fullMessage =
+    message && (!comparison || /[\r\n]/.test(message)) ? `<pre>${escapeHtml(message)}</pre>` : "";
+  const values = comparison
+    ? `<dl class="expected-actual"><dt>期待</dt><dd class="expected">${escapeHtml(comparison.expected)}</dd><dt>実際</dt><dd class="actual">${escapeHtml(comparison.actual)}</dd></dl>`
+    : "";
+  const details =
+    comparison && fullMessage
+      ? `<details><summary>メッセージの全文</summary>${fullMessage}</details>`
+      : fullMessage;
+  return `<div class="test-fail"><p class="test-name">${escapeHtml(test.name)}${file}</p>${values}${details}</div>`;
+}
+
+function renderPassedTests(tests: readonly TestCaseResult[] = []): string {
+  const others = tests.filter((test) => test.status !== "failed");
+  if (others.length === 0) return "";
+  const skipped = others.filter((test) => test.status === "skipped").length;
+  return `<details><summary>通ったテスト ${others.length - skipped} 件${skipped ? `・省略 ${skipped} 件` : ""}</summary><ul class="tests ok">${others
+    .map((test) => `<li>${STEP_MARKS[test.status]} ${escapeHtml(test.name)}</li>`)
+    .join("")}</ul></details>`;
+}
+
+function renderStep(step: RunStepResult, counts: TestCounts): string {
   const parts: string[] = [
     `<section class="step ${step.status}">`,
-    `<h3><span class="badge ${step.status}">${STEP_STATUS_LABELS[step.status]}</span> ${escapeHtml(step.label)} <span class="time">${seconds(step.durationMs)}</span></h3>`,
+    `<h3><span class="mark">${STEP_MARKS[step.status]}</span> ${escapeHtml(step.label)} <span class="time">${seconds(step.durationMs)}</span>${step.tests?.length ? testBar(counts, true) : ""}</h3>`,
     `<p>${escapeHtml(step.summary)}</p>`,
   ];
-  const tests = step.tests ?? [];
-  const failed = tests.filter((t) => t.status === "failed");
-  const others = tests.filter((t) => t.status !== "failed");
-  if (failed.length > 0) {
+  const failed = step.tests?.filter((test) => test.status === "failed") ?? [];
+  const expandedLimit = 5;
+  parts.push(...failed.slice(0, expandedLimit).map(renderFailedTest));
+  if (failed.length > expandedLimit) {
     parts.push(
-      `<ol class="tests">${failed
-        .map(
-          (t) =>
-            `<li><strong>✗ ${escapeHtml(t.name)}</strong>${t.file ? ` <span class="file">${escapeHtml(t.file)}</span>` : ""}${t.message ? `<pre>${escapeHtml(t.message)}</pre>` : ""}</li>`,
-        )
-        .join("")}</ol>`,
+      `<details><summary>ほかに直すテスト ${failed.length - expandedLimit} 件</summary>${failed.slice(expandedLimit).map(renderFailedTest).join("")}</details>`,
     );
   }
-  if (others.length > 0) {
-    parts.push(
-      `<ul class="tests ok">${others
-        .map((t) => `<li>${t.status === "passed" ? "✓" : "－"} ${escapeHtml(t.name)}</li>`)
-        .join("")}</ul>`,
-    );
-  }
+  parts.push(renderPassedTests(step.tests));
   if (step.lint && step.lint.length > 0) {
     parts.push(
       `<ul class="lint">${step.lint
@@ -134,6 +160,10 @@ function renderStep(step: RunStepResult): string {
   }
   parts.push(`</section>`);
   return parts.join("\n");
+}
+
+function renderPassedStep(step: RunStepResult): string {
+  return `<li class="${step.status}"><div class="row"><b>${STEP_MARKS[step.status]}</b><span class="step-name">${escapeHtml(step.label)}</span><span class="step-summary">${escapeHtml(step.summary)}</span><span class="time">${seconds(step.durationMs)}</span></div>${renderPassedTests(step.tests)}</li>`;
 }
 
 /** 外へのリンク。https の URL だけをリンクにし、それ以外は文字のまま出す。 */
@@ -163,28 +193,48 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const versions = Object.entries(result.toolVersions)
     .map(([tool, version]) => `${tool} ${version}`)
     .join(" / ");
-  // 課題の外からの環境診断は、課題を探さずにもう一度診断する。
-  const retryCommand = input.standalone ? "stella.diagnoseEnvironment" : "stella.submitTask";
-  const commandArgs = input.root ? `?${encodeURIComponent(JSON.stringify([input.root]))}` : "";
+  const commandArgs = input.root
+    ? `?${escapeHtml(encodeURIComponent(JSON.stringify([input.root])))}`
+    : "";
   const consultArgs =
     input.root && result.problemId
-      ? `?${encodeURIComponent(JSON.stringify([input.root, result.problemId]))}`
+      ? `?${escapeHtml(encodeURIComponent(JSON.stringify([input.root, result.problemId])))}`
       : commandArgs;
-  const action = canSubmit(result)
-    ? `<a href="command:stella.submitTask${commandArgs}">提出</a>`
-    : `<a href="command:stella.consultTask${consultArgs}">講師に相談</a>`;
-  const passedLine = result.problemId
-    ? "この問題は通りました。提出すると次の問題を開きます。"
-    : "手元の確認はすべて通りました。";
-  const footer = input.standalone
-    ? ""
-    : result.outcome === "cancelled"
-      ? `<p class="next">途中で止めたので、結果は残していません。もう一度確認してください。</p>`
-      : canSubmit(result)
-        ? `<p class="next">${passedLine}</p>`
-        : result.outcome === "error"
-          ? `<p class="next">環境の問題は、教材の「困ったときの案内」を見るか、講師に相談してください。直したら、もう一度「提出する」を押してください。</p>`
-          : `<p class="next">直したら、保存してもう一度「提出する」を押してください。まだ何も送っていません。</p>`;
+  const { outcome } = result;
+  const steps: StepSummary[] = [];
+  const repairs: string[] = [];
+  const passedSteps: string[] = [];
+  for (const step of result.steps) {
+    const tests = countTests(step.tests);
+    steps.push({ label: shortStepLabel(step.label), status: step.status, tests });
+    if (step.status === "failed" || step.status === "error") {
+      repairs.push(renderStep(step, tests));
+    } else {
+      passedSteps.push(renderPassedStep(step));
+    }
+  }
+  const summaryLines = {
+    failed: [...remainingSteps(steps), "まだ何も送っていません"].filter(Boolean).join(" ・ "),
+    error: input.standalone ? "" : "まだ何も送っていません",
+    passed:
+      !input.standalone && result.problemId
+        ? "この問題は通りました。提出すると次の問題を開きます。"
+        : "手元の確認はすべて通りました。",
+    cancelled: "途中で止めたので、結果は残していません。",
+  };
+  const summaryLine = summaryLines[outcome];
+  const action = input.standalone
+    ? `<a class="button" href="command:stella.diagnoseEnvironment">もう一度確認する</a>`
+    : `<a class="button" href="command:stella.submitTask${commandArgs}">提出する</a>`;
+  const links = [
+    !input.standalone && outcome !== "cancelled" && !canSubmit(result)
+      ? `<a href="command:stella.consultTask${consultArgs}">講師に相談</a>`
+      : "",
+    `<a href="command:stella.showRunLog">実行ログを表示</a>`,
+    input.standalone
+      ? ""
+      : `<a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`,
+  ];
   const problemLine = result.problemId
     ? `<p class="meta">問題 <code>${escapeHtml(result.problemId)}</code></p>`
     : "";
@@ -193,12 +243,12 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     `<p class="meta">${input.standalone ? "" : `${TASK_KIND_LABELS[manifest.kind]} ・ `}${escapeHtml(runner.label)}</p>`,
     problemLine,
     referencesHtml(manifest.references),
-    `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
-    ...result.steps.map(renderStep),
+    `<div class="summary ${outcome}"><span class="summary-mark" aria-hidden="true">${STEP_MARKS[outcome === "cancelled" ? "skipped" : outcome]}</span><div class="summary-text"><p class="summary-title">${RUN_OUTCOME_LABELS[outcome]}</p>${summaryLine ? `<p class="summary-sub">${summaryLine}</p>` : ""}</div>${action}</div>`,
+    stepChips(steps),
+    ...repairs,
+    passedSteps.length ? `<ul class="passed-steps">${passedSteps.join("\n")}</ul>` : "",
     ciClaimHtml(result.ci, manifest.ci?.workflow),
-    footer,
-    !input.standalone && result.outcome !== "cancelled" ? `<p class="links">${action}</p>` : "",
-    `<p class="links"><a href="command:${retryCommand}${input.standalone ? "" : commandArgs}">${input.standalone ? "もう一度確認する" : "提出する"}</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
+    `<p class="links">${links.filter(Boolean).join(" ・ ")}</p>`,
     `<p class="hint">${escapeHtml(result.platform)}${versions ? ` ・ ${escapeHtml(versions)}` : ""} ・ ${seconds(result.durationMs)}</p>`,
   ].join("\n");
   return { title: manifest.title, body };
@@ -249,18 +299,101 @@ export function buildTaskPanelHtml(input: TaskPanelInput): string {
     a { color: var(--vscode-textLink-foreground); }
     .meta, .hint, .time, .rule { color: var(--vscode-descriptionForeground); }
     .hint, .time { font-size: 0.9em; }
-    .outcome { font-weight: 600; font-size: 1.1em; }
-    .outcome.passed { color: var(--vscode-testing-iconPassed); }
-    .outcome.failed { color: var(--vscode-testing-iconFailed); }
-    .outcome.error { color: var(--vscode-editorWarning-foreground); }
-    .outcome.cancelled { color: var(--vscode-descriptionForeground); }
+    .summary {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      padding: 0.7rem 0.9rem;
+      border-radius: 6px;
+      margin: 0.8rem 0 0.5rem;
+      border: 1px solid var(--vscode-panel-border);
+      border-left-width: 3px;
+      background: var(--vscode-textBlockQuote-background);
+    }
+    .summary.passed { border-left-color: var(--vscode-testing-iconPassed); }
+    .summary.failed { border-left-color: var(--vscode-testing-iconFailed); }
+    .summary.error { border-left-color: var(--vscode-editorWarning-foreground); }
+    .summary-mark {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 15px;
+      color: var(--vscode-editor-background);
+      background: var(--vscode-descriptionForeground);
+      flex: none;
+    }
+    .summary.passed .summary-mark { background: var(--vscode-testing-iconPassed); }
+    .summary.failed .summary-mark { background: var(--vscode-testing-iconFailed); }
+    .summary.error .summary-mark { background: var(--vscode-editorWarning-foreground); }
+    .summary-text { flex: 1; min-width: 150px; }
+    .summary p { margin: 0; }
+    .summary-title { font-weight: 600; font-size: 1.15em; }
+    .summary-sub { color: var(--vscode-descriptionForeground); font-size: 0.9em; }
+    .button {
+      display: inline-block;
+      padding: 0.3rem 0.9rem;
+      border-radius: 3px;
+      color: var(--vscode-button-foreground);
+      background: var(--vscode-button-background);
+      text-decoration: none;
+    }
+    .button:hover { background: var(--vscode-button-hoverBackground); }
     .step {
       margin: 0.75rem 0;
       padding: 0.6rem 0.9rem;
       border: 1px solid var(--vscode-panel-border);
+      border-left-width: 3px;
       border-radius: 4px;
     }
+    .step.failed { border-left-color: var(--vscode-testing-iconFailed); }
+    .step.error { border-left-color: var(--vscode-editorWarning-foreground); }
+    .step h3 { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .step h3 .tests-line { flex: 1 1 9rem; max-width: 17rem; margin-inline-start: auto; }
+    .step.failed .mark { color: var(--vscode-testing-iconFailed); }
+    .step.error .mark { color: var(--vscode-editorWarning-foreground); }
     .step p { margin: 0.25rem 0; }
+    .test-fail {
+      margin: 0.5rem 0;
+      padding: 0.45rem 0.7rem;
+      border-radius: 4px;
+      background: var(--vscode-textCodeBlock-background);
+    }
+    .test-fail .test-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+    .test-name::before { content: "✗ "; color: var(--vscode-testing-iconFailed); }
+    .test-name .file { font-weight: normal; color: var(--vscode-descriptionForeground); }
+    .test-fail pre, .expected-actual { font-size: 0.9em; }
+    .test-fail pre {
+      margin: 0.3rem 0 0;
+      padding: 0;
+      background: transparent;
+      color: var(--vscode-testing-iconFailed);
+    }
+    .expected-actual {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.1rem 0.7rem;
+      margin: 0.3rem 0 0;
+    }
+    .expected-actual dt { color: var(--vscode-descriptionForeground); }
+    .expected-actual dd {
+      margin: 0;
+      font-family: var(--vscode-editor-font-family);
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+    .expected-actual .expected { color: var(--vscode-testing-iconPassed); }
+    .expected-actual .actual { color: var(--vscode-testing-iconFailed); }
+    .passed-steps { list-style: none; padding: 0; margin: 0.6rem 0; }
+    .passed-steps > li { padding: 0.28rem 0.2rem; border-bottom: 1px solid var(--vscode-panel-border); }
+    .passed-steps .row { display: flex; gap: 0.6rem; align-items: baseline; }
+    .passed-steps b { color: var(--vscode-testing-iconPassed); }
+    .passed-steps li.skipped b { color: var(--vscode-descriptionForeground); }
+    .passed-steps .time { white-space: nowrap; }
+    .step-summary { color: var(--vscode-descriptionForeground); font-size: 0.9em; flex: 1; }
+    .step-name, .step-summary { overflow-wrap: anywhere; min-width: 0; }
     .badge {
       display: inline-block;
       padding: 0 0.4rem;
@@ -268,12 +401,10 @@ export function buildTaskPanelHtml(input: TaskPanelInput): string {
       font-size: 0.85em;
       border: 1px solid currentColor;
     }
-    .badge.passed { color: var(--vscode-testing-iconPassed); }
     .badge.failed { color: var(--vscode-testing-iconFailed); }
-    .badge.error { color: var(--vscode-editorWarning-foreground); }
     .badge.skipped { color: var(--vscode-descriptionForeground); }
     ul, ol { padding-left: 1.4rem; }
-    .tests.ok { color: var(--vscode-descriptionForeground); }
+    .tests.ok { color: var(--vscode-descriptionForeground); }${RUN_SUMMARY_CSS}
   </style>
 </head>
 <body>
