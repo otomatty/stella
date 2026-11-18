@@ -819,7 +819,12 @@ export const SkillTree = ({
     const obstacles = [{ left: visibleView.width - 52, top: 8, width: 44, height: 120 }];
     if (showIslandChips && visibleIslands.length > 0) {
       const width = Math.min(460, visibleView.width - 72);
-      obstacles.push({ left: visibleView.width - 52 - width, top: 8, width, height: 72 });
+      obstacles.push({
+        left: visibleView.width - 52 - width,
+        top: chipsTop ?? 8,
+        width,
+        height: 72,
+      });
     }
     return placeOverviewCards(ordered, obstacles, visibleView).map((card) => ({
       ...card,
@@ -833,6 +838,7 @@ export const SkillTree = ({
     activeInfo,
     showIslandChips,
     visibleIslands.length,
+    chipsTop,
   ]);
   const markers = useMemo(
     () =>
@@ -873,7 +879,7 @@ export const SkillTree = ({
         ? [
             {
               left: Math.max(0, visibleView.width - 52 - chipsW),
-              top: 8,
+              top: chipsTop ?? 8,
               width: chipsW,
               height: visibleIslands.length > 0 ? 56 : 0,
             },
@@ -904,6 +910,7 @@ export const SkillTree = ({
     showIslandChips,
     placeHeadings,
     isOverview,
+    chipsTop,
   ]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
