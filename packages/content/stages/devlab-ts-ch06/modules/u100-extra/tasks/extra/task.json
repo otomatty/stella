@@ -1,0 +1,63 @@
+{
+  "id": "devlab-ts-ch06/u100-extra/extra",
+  "title": "06章 クラスの発展問題",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch06",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05"
+    ],
+    "assesses": [
+      "devlab-ts-ch06"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "e01-abstract-class",
+      "title": "抽象クラス（発展問題）"
+    },
+    {
+      "id": "e02-static-getter",
+      "title": "static、getter・setter、メソッドチェーン（発展問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-object-oriented-class-abstract-class",
+    "SRC-typescriptbook-object-oriented-class-static-fields",
+    "SRC-typescriptbook-object-oriented-class-static-methods",
+    "SRC-typescriptbook-object-oriented-class-return-this-type"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

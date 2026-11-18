@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch05/u100-extra@1",
+  "contentHash": "4879e1d050a000da1e48f1e0c45002ac864cbe5a28e6f0043f81c78a4f89e99a",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/extra/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-functions-overload-functions",
+        "SRC-typescriptbook-functions-function-type-declaration"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の発展問題の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

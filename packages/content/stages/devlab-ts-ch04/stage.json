@@ -8,11 +8,12 @@
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["devlab-ts-ch03"],
-  "plannedHours": 11.5,
+  "plannedHours": 12.5,
   "environment": "ts-test-01",
   "canDo": "文と例外を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "04章の問題"
+    "u99-problems": "04章の問題",
+    "u100-extra": "04章の発展問題"
   }
 }

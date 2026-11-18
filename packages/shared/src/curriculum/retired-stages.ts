@@ -4,6 +4,8 @@
 export const RETIRED_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
   // 開発ラボG 第1部は章別の10ステージと任意の発展問題へ分割 (2026-11)。
   { tenantId: "ses", slug: "devlab-ts-prework" },
+  // 開発ラボG の発展問題は各章のステージの最後の単元へ移した (2026-11)。
+  { tenantId: "ses", slug: "devlab-ts-extra" },
   { tenantId: "ses", slug: "it-basics" },
   { tenantId: "ses", slug: "modern-css-basics" },
   { tenantId: "ses", slug: "page-composition-basics" },
