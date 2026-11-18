@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u03-type-inference@1",
-  "contentHash": "0289e414bddfe908be2873c6fd21814496f098d7a48a4e0b0756c8c0cf5501ee",
+  "unitId": "devlab-ts-ch01/u03-type-inference@2",
+  "contentHash": "289c9a3f04e1adc6efb26212b68367aa2feb52c11ab243c69eca7705d5fe32de",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -15,7 +15,7 @@
     {
       "contentId": "l1-type-inference/t1-inference/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
-      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "店名と送料を例にした型推論と入れ直しの説明",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-type-inference/t2-index-elseif/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
-      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "注文番号の添字と配送サイズの条件を確かめる順番の説明",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -34,6 +34,54 @@
       "usedFor": "型推論の理解の自己確認用の独自問題。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t1-inference/assets/annotation-omitted.svg",
+      "sourceRefs": [],
+      "usedFor": "店名を入れるときに型を書く場合と省く場合の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t1-inference/assets/inference-from-value.svg",
+      "sourceRefs": [],
+      "usedFor": "店名と送料の値からそれぞれの型が決まる流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t1-inference/assets/inferred-type-checks.svg",
+      "sourceRefs": [],
+      "usedFor": "型を省いた店名に別の値を入れ直した結果の比較",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t2-index-elseif/assets/first-char-question.svg",
+      "sourceRefs": [],
+      "usedFor": "注文番号の先頭の文字が何番かを考えるための図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t2-index-elseif/assets/string-index.svg",
+      "sourceRefs": [],
+      "usedFor": "注文番号の各文字と添字および存在しない位置の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t2-index-elseif/assets/else-if-order.svg",
+      "sourceRefs": [],
+      "usedFor": "配送サイズを決める二つの条件と判定順の分岐図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]

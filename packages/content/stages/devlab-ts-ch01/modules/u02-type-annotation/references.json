@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u02-type-annotation@1",
-  "contentHash": "b0c0f6470c1949fb592cdf689504ba52db82b39013df2e3765bbb14081aa0e0d",
+  "unitId": "devlab-ts-ch01/u02-type-annotation@2",
+  "contentHash": "813721e093cf8129dde69a6b23afd2a17d3038620bb5181ed9715a8d9f64cf17",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -15,7 +15,7 @@
     {
       "contentId": "l1-type-annotation/t1-write-types/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
-      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "配送ラベルを例にした型注釈の位置と引数の順番の説明",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-type-annotation/t2-string-tools/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
-      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "商品コードを例にした文字数・切り出し・大文字化の説明",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -34,6 +34,54 @@
       "usedFor": "型注釈の理解の自己確認用の独自問題。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t1-write-types/assets/label-inputs.svg",
+      "sourceRefs": [],
+      "usedFor": "配送ラベルに使う宛先と日数の受け渡しの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t1-write-types/assets/where-to-write-types.svg",
+      "sourceRefs": [],
+      "usedFor": "引数と戻り値の型を書く位置を示した対応図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t1-write-types/assets/argument-order.svg",
+      "sourceRefs": [],
+      "usedFor": "配送ラベルの引数の順番と呼び出した結果の比較",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t2-string-tools/assets/code-first-three.svg",
+      "sourceRefs": [],
+      "usedFor": "商品コードから印刷する先頭三文字の位置の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t2-string-tools/assets/string-tools.svg",
+      "sourceRefs": [],
+      "usedFor": "商品コードの文字数・切り出し・大文字化の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t2-string-tools/assets/length-no-parens.svg",
+      "sourceRefs": [],
+      "usedFor": "文字数を読むときのかっこの有無と結果の比較",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]
