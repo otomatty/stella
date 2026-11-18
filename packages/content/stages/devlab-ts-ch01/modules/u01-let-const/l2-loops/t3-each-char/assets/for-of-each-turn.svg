@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 16 16" refX="16" refY="8"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L16 8 L0 16 Z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <g fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M172 212 V176 H724"/>
+    <path d="M296 332 V352 H724"/>
+  </g>
+
+  <rect x="120" y="224" width="104" height="96" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="244" y="224" width="104" height="96" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="736" y="112" width="344" height="128" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="736" y="288" width="344" height="128" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+
+  <text x="172" y="280" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">A</text>
+  <text x="296" y="280" text-anchor="middle" fill="#0E0E10"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500">B</text>
+  <text x="908" y="168" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">1 周目</text>
+  <text x="908" y="344" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">2 周目</text>
+  <text x="908" y="200" text-anchor="middle" fill="#5C5C66"
+        font-family="'Noto Sans JP', sans-serif" font-size="20" font-weight="400"><tspan font-family="'Geist Mono', monospace" font-weight="500">c</tspan> は <tspan font-family="'Geist Mono', monospace" font-weight="500">&quot;A&quot;</tspan></text>
+  <text x="908" y="376" text-anchor="middle" fill="#5C5C66"
+        font-family="'Noto Sans JP', sans-serif" font-size="20" font-weight="400"><tspan font-family="'Geist Mono', monospace" font-weight="500">c</tspan> は <tspan font-family="'Geist Mono', monospace" font-weight="500">&quot;B&quot;</tspan></text>
+</svg>

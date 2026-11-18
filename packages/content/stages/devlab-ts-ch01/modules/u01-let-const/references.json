@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u01-let-const@6",
-  "contentHash": "a78696922e6139424d3764e4397119db89aef2c12edb322e06e70a0008a557c0",
+  "contentHash": "a0049ebf2c6df555a0ae3556475da8e4b3f8234c182a9f0e4ee81abeee6c8231",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -178,9 +178,33 @@
         "SRC-typescriptbook-values-types-variables-let-and-const",
         "SRC-typescriptbook-statements-for-of"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "let による再代入とくり返しの概念を参照。積立額の変化、for の実行順、const と let の比較図と、積立のコード例を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t1-let-for/assets/savings-steps.svg",
+      "sourceRefs": [],
+      "usedFor": "毎月五千円ずつ足した三か月分の積立額の流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t1-let-for/assets/for-cycle.svg",
+      "sourceRefs": [],
+      "usedFor": "開始から条件を確かめて中身をくり返す流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t1-let-for/assets/const-vs-let-reassign.svg",
+      "sourceRefs": [],
+      "usedFor": "変数の作り方による値の入れ直しの違いの比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -189,9 +213,33 @@
         "SRC-typescriptbook-values-types-variables-let-and-const",
         "SRC-typescriptbook-statements-for-of"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "くり返しの開始値・条件・更新の概念を参照。発送便の残り、for の三つの部分、条件による回数の比較図と、便の番号のコード例を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t2-count-direction/assets/countdown-steps.svg",
+      "sourceRefs": [],
+      "usedFor": "残りの発送便が三便から一便ずつ減っていく流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t2-count-direction/assets/for-three-parts.svg",
+      "sourceRefs": [],
+      "usedFor": "開始値と条件と更新の書き方を対応づける図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t2-count-direction/assets/less-than-vs-less-equal.svg",
+      "sourceRefs": [],
+      "usedFor": "ゼロから数えるときの条件とくり返す回数の比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -202,9 +250,33 @@
         "SRC-typescriptbook-statements-if-else",
         "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "くり返し・条件・文字列の概念を参照。注文番号の一文字ずつの取り出し方、代入と比較の違いの図と、文字を表示するコード例を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t3-each-char/assets/string-as-cells.svg",
+      "sourceRefs": [],
+      "usedFor": "注文番号を先頭から一文字ずつ取り出す図解",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t3-each-char/assets/for-of-each-turn.svg",
+      "sourceRefs": [],
+      "usedFor": "くり返しの一周目と二周目に取り出す文字の対応図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t3-each-char/assets/assign-vs-equal.svg",
+      "sourceRefs": [],
+      "usedFor": "条件に書くときの代入と等しさを調べる記号の比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {

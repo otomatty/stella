@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>for の進み方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<!-- SVG内のスタイルはすべて presentation attribute で書く。
+     この SVG 要素だけが抽出されて単体で描画されるため、CSSクラスやvar()は効かない。 -->
+<!-- 図にタイトルは入れない(タイトルはスライド側が持つ)。
+     viewBoxは幅1200固定、高さと原点(minY)は本体を描き終えてから
+     style-guide.md の手順で決める。 -->
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 16 16" refX="16" refY="8"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L16 8 L0 16 Z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <g fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M284 192 H348"/>
+    <path d="M676 192 H820"/>
+    <path d="M976 256 V328"/>
+    <path d="M820 388 H744 V232 H600"/>
+    <path d="M512 284 V340"/>
+  </g>
+
+  <path d="M512 112 L664 192 L512 272 L360 192 Z"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <rect x="80" y="140" width="192" height="104" rx="20"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="832" y="140" width="288" height="104" rx="8"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="832" y="340" width="288" height="96" rx="8"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="416" y="352" width="192" height="80" rx="20"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+
+  <text x="748" y="172" text-anchor="middle" fill="#5C5C66"
+        font-family="'Geist Mono', monospace" font-size="20" font-weight="400">true</text>
+  <text x="532" y="320" text-anchor="start" fill="#5C5C66"
+        font-family="'Geist Mono', monospace" font-size="20" font-weight="400">false</text>
+  <text x="176" y="184" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">開始</text>
+  <text x="176" y="216" text-anchor="middle" fill="#5C5C66"
+        font-family="'Geist Mono', monospace" font-size="20" font-weight="400">let i = 1</text>
+  <text x="512" y="184" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">条件</text>
+  <text x="512" y="216" text-anchor="middle" fill="#5C5C66"
+        font-family="'Geist Mono', monospace" font-size="20" font-weight="400">i &lt;= 3</text>
+  <text x="976" y="200" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">中身</text>
+  <text x="976" y="380" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">更新</text>
+  <text x="976" y="412" text-anchor="middle" fill="#5C5C66"
+        font-family="'Geist Mono', monospace" font-size="20" font-weight="400">i++</text>
+  <text x="512" y="400" text-anchor="middle" fill="#0E0E10"
+        font-family="'Noto Sans JP', sans-serif" font-size="24" font-weight="600">終わり</text>
+</svg>
+</body>
+</html>
