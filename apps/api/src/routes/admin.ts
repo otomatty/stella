@@ -2,8 +2,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
 /**
  * 管理 API (ユーザー管理)。
  *
- * 呼び出し元は admin または platform_admin であることを必須とする。
- * platform_admin は他の管理者から無効化・降格されない。
+ * 呼び出し元は admin であることを必須とする。
  *
  *   GET  /api/admin/users          一覧
  *   POST /api/admin/users/invite   招待 (Google ログイン)
@@ -40,7 +39,7 @@ import { ApiError, errorResponse, getCaller, requireAdmin, type Caller } from ".
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
 
-/** ユーザー管理用: admin | platform_admin + caller 解決。 */
+/** ユーザー管理用: admin + caller 解決。 */
 async function requireAdminCtx(c: Context<{ Bindings: Env }>): Promise<{ caller: Caller; db: Db }> {
   const { caller, db } = await getCaller(c);
   requireAdmin(caller);
@@ -56,16 +55,6 @@ async function requireTarget(db: Db, targetId: string): Promise<{ id: string; ro
     .limit(1);
   if (!rows[0]) throw new ApiError("対象ユーザーが見つかりません", 404);
   return rows[0];
-}
-
-/** platform_admin は SQL/seed 専用。非 platform_admin からの role/disable を拒否。 */
-function rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(
-  caller: Caller,
-  targetRole: string,
-): void {
-  if (targetRole === "platform_admin" && caller.role !== "platform_admin") {
-    throw new ApiError("platform_admin は操作できません", 403);
-  }
 }
 
 // ---------------------------------------------------------------
@@ -166,8 +155,7 @@ adminRoute.post("/api/admin/users/role", async (c) => {
     if (userId === caller.id) {
       return c.json({ error: "自分自身のロールは変更できません" }, 400);
     }
-    const target = await requireTarget(db, userId);
-    rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
+    await requireTarget(db, userId);
     await db.update(profiles).set({ role: body.role }).where(eq(profiles.id, userId));
     await recordAudit(db, caller, {
       action: "user_role_change",
@@ -195,8 +183,7 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
       return c.json({ error: "disabled は真偽値である必要があります" }, 400);
     }
     if (userId === caller.id) return c.json({ error: "自分自身は無効化できません" }, 400);
-    const target = await requireTarget(db, userId);
-    rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
+    await requireTarget(db, userId);
 
     await db.update(profiles).set({ disabled: body.disabled }).where(eq(profiles.id, userId));
     await recordAudit(db, caller, {
@@ -229,7 +216,6 @@ adminRoute.post("/api/admin/users/delete", async (c) => {
     if (!userId) return c.json({ error: "userId は必須です" }, 400);
     if (userId === caller.id) return c.json({ error: "自分自身は削除できません" }, 400);
     const target = await requireTarget(db, userId);
-    rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
     if (target.role !== "student") {
       return c.json({ error: "削除できるのは受講者だけです" }, 400);
     }

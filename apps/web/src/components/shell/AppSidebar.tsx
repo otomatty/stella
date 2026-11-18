@@ -82,7 +82,7 @@ export const AppSidebar = ({
         <SidebarGroup className="p-0">
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarMenu>
-            {navForRole(role, profileRole).map((link) => {
+            {navForRole(role).map((link) => {
               const count = counts?.[link.id];
               const showBadge = typeof count === "number" && count > 0;
               const Icon = link.icon;

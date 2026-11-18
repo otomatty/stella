@@ -1362,19 +1362,17 @@ describe("GET /api/skill-map/staff", () => {
     expect(res.status).toBe(401);
   });
 
-  it("受講者は 403、講師と管理者は 200", async () => {
+  it("受講者は 403、管理者は 200", async () => {
     CALLER.role = "student";
     const student = await staffGet("/api/skill-map/staff");
     expect(student.status).toBe(403);
     const denied = (await student.json()) as { error: string };
     expect(denied.error).toBe("権限がありません");
 
-    for (const role of ["admin", "platform_admin"] as const) {
-      CALLER.role = role;
-      const res = await staffGet("/api/skill-map/staff");
-      expect(res.status).toBe(200);
-      expect(res.headers.get("Cache-Control")).toBe("private, no-store");
-    }
+    CALLER.role = "admin";
+    const res = await staffGet("/api/skill-map/staff");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
   it("draft・published・archived が status 付きで載り、退役ステージは載らない", async () => {

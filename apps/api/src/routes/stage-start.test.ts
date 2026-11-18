@@ -316,22 +316,19 @@ describe("POST /api/stages/:id/staff-enroll", () => {
     vi.mocked(loadStaffEnrollableStage).mockResolvedValue({ id: "stage-c", slug: "stage-c" });
   });
 
-  it.each(["admin", "platform_admin"] as const)(
-    "%s は前提未完了・霧の星でも確認用に登録できる",
-    async (role) => {
-      caller = { ...BASE_CALLER, role };
-      const res = await staffEnroll();
-      expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({
-        enrollment: { id: "enr-stage-c" },
-        created: true,
-        reactivated: false,
-      });
-      expect(loadStaffEnrollableStage).toHaveBeenCalledWith({}, "stage-c");
-      expect(startSelfEnrollment).toHaveBeenCalledWith({}, caller, "stage-c");
-      expect(loadSkillMapSource).not.toHaveBeenCalled();
-    },
-  );
+  it.each(["admin"] as const)("%s は前提未完了・霧の星でも確認用に登録できる", async (role) => {
+    caller = { ...BASE_CALLER, role };
+    const res = await staffEnroll();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      enrollment: { id: "enr-stage-c" },
+      created: true,
+      reactivated: false,
+    });
+    expect(loadStaffEnrollableStage).toHaveBeenCalledWith({}, "stage-c");
+    expect(startSelfEnrollment).toHaveBeenCalledWith({}, caller, "stage-c");
+    expect(loadSkillMapSource).not.toHaveBeenCalled();
+  });
 
   it("受講者は 403 で登録しない", async () => {
     caller = { ...BASE_CALLER };

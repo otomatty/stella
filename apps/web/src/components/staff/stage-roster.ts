@@ -404,6 +404,6 @@ export function composeRosterRows(args: {
 
 /** 割り当て一覧で表示するロールのバッジ。 */
 export function stageGrantRoleLabel(role: string | undefined): string | null {
-  if (role === "admin" || role === "platform_admin") return "管理者";
+  if (role === "admin") return "管理者";
   return null;
 }

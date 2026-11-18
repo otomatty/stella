@@ -28,7 +28,7 @@ import type { OsName } from "../markdown/os-blocks.js";
 // ---------------------------------------------------------------
 
 export type StageStatus = "draft" | "published" | "archived";
-export type ProfileRole = "student" | "admin" | "platform_admin";
+export type ProfileRole = "student" | "admin";
 
 export type StageColor = "indigo" | "green" | "amber" | "slate";
 

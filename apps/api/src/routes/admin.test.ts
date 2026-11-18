@@ -91,6 +91,28 @@ describe("ユーザー管理", () => {
     expect(row).toEqual({ role: "student" });
   });
 
+  it("管理者は別の管理者を無効化し、受講者に変更できる", async () => {
+    db.sqlite.prepare("UPDATE profiles SET role = 'admin' WHERE id = ?").run("taken");
+    const adminToken = await token();
+    const target = db.sqlite.prepare("SELECT role, disabled FROM profiles WHERE id = ?");
+
+    const disable = await request(app, env, "/api/admin/users/disable", {
+      method: "POST",
+      token: adminToken,
+      body: JSON.stringify({ userId: "taken", disabled: true }),
+    });
+    expect(disable.status).toBe(200);
+    expect(target.get("taken")).toEqual({ role: "admin", disabled: 1 });
+
+    const change = await request(app, env, "/api/admin/users/role", {
+      method: "POST",
+      token: adminToken,
+      body: JSON.stringify({ userId: "taken", role: "student" }),
+    });
+    expect(change.status).toBe(200);
+    expect(target.get("taken")).toEqual({ role: "student", disabled: 1 });
+  });
+
   it("存在しないユーザーは 404", async () => {
     const res = await request(app, env, "/api/admin/users/disable", {
       method: "POST",
@@ -104,7 +126,6 @@ describe("ユーザー管理", () => {
 const SECRET = "admin-delete-test-secret";
 const ADMIN = "33333333-3333-4333-8333-333333333333";
 const INSTRUCTOR = "44444444-4444-4444-8444-444444444444";
-const PLATFORM = "66666666-6666-4666-8666-666666666666";
 const LEARNER = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
 const SUB_A = "sub-learner-a";
@@ -140,7 +161,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
      VALUES (?, ?, ?, ?, ?, 0, 1)`;
     run(profile, ADMIN, "ses", "admin", "管理者", "admin@example.com");
     run(profile, INSTRUCTOR, "ses", "admin", "講師", "staff@example.com");
-    run(profile, PLATFORM, "ses", "platform_admin", "基盤", "platform@example.com");
     run(profile, LEARNER, "ses", "student", "受講者太郎", "Learner@Example.com");
     run(profile, OTHER, "ses", "student", "別の受講者", "other@example.com");
 
@@ -455,14 +475,6 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
       { userId: INSTRUCTOR, confirmEmail: "staff@example.com" },
       400,
       "削除できるのは受講者だけです",
-    );
-  });
-
-  it("platform_admin は管理者から削除できない", async () => {
-    await expectRejected(
-      { userId: PLATFORM, confirmEmail: "platform@example.com" },
-      403,
-      "platform_admin は操作できません",
     );
   });
 

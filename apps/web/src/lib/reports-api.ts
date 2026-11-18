@@ -1,7 +1,7 @@
 /**
  * 管理レポートのデータアクセス層 (Issue #75)。
  *
- * 読み取り専用。 認可はサーバ側で admin / platform_admin のみ。
+ * 読み取り専用。 認可はサーバ側で admin のみ。
  */
 
 import type {

@@ -6,7 +6,7 @@
 
 ## 認証と運用
 
-`platform_admin` が `/admin/integrations` で外部アプリごとにクライアントを作り、
+管理者が `/admin/integrations` で外部アプリごとにクライアントを作り、
 必要な scope だけを選びます。トークンは作成・再発行の応答と、その直後の画面でだけ表示されます。
 外部アプリのサーバーの secret に保存し、ブラウザ・ソースコード・ログへ含めないでください。
 以後の一覧には先頭の識別部分だけが表示されます。STELLA の DB に保存するのは SHA-256 ハッシュです。
@@ -207,7 +207,7 @@ Cloudflare のレート制限バインディングを使うため、厳密な全
 staff のユーザー管理・成績台帳・割り当て一覧は `groupId` クエリで絞り込みます。
 選択肢は `GET /api/admin/integration-groups` (staff のみ)。
 グループでの絞り込みは既存の権限や受講者だけの集計条件に追加します。
-クライアント管理の `/api/admin/integrations` とその配下は `platform_admin` のみです。
+クライアント管理の `/api/admin/integrations` とその配下は 管理者のみが利用できます。
 
 ## 判断したこと (PR 記載用)
 
@@ -230,7 +230,7 @@ staff のユーザー管理・成績台帳・割り当て一覧は `groupId` ク
 
 ローカル D1 に0079まで適用し、API `http://127.0.0.1:8787` と Web `http://localhost:5173` を起動します。
 
-1. `platform_admin` でログインし、`http://localhost:5173/admin/integrations` を開く。
+1. 管理者でログインし、`http://localhost:5173/admin/integrations` を開く。
 2. 名前と `groups:write` を選んで作成する。トークンをコピーし、表示を閉じる。再読み込みで先頭部分だけになることを確認する。
 3. コピーしたトークンで `/me` と `PUT /groups/sample:term-1` を呼び、「グループを見る」でキー・名前・人数を確認する。
 4. scope を外して保存し、PUT が403になることを確認する。停止で `/me` が401、復帰で200になることを確認する。

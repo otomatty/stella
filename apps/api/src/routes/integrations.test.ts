@@ -39,7 +39,6 @@ describe("外部連携の境界 (実 SQLite)", () => {
   let db: ReturnType<typeof sqliteD1>;
   let env: Env;
   let app: ReturnType<typeof mountTestApp>["app"];
-  let platformToken: string;
   let adminToken: string;
   let studentToken: string;
   beforeEach(async () => {
@@ -47,8 +46,8 @@ describe("外部連携の境界 (実 SQLite)", () => {
     db.sqlite.exec(`
       INSERT INTO tenants (id, name, active_count, active, created_at, updated_at) VALUES ('ses', 'fixture', 0, 1, 1, 1);
       INSERT INTO profiles (id, tenant_id, role, display_name, email, created_at) VALUES
-      ('platform', 'ses', 'platform_admin', 'システム管理の例', 'platform@example.test', 1),
       ('admin', 'ses', 'admin', '管理の例', 'admin@example.test', 1),
+      ('other-admin', 'ses', 'admin', '別の管理者の例', 'other-admin@example.test', 1),
       ('inside', 'ses', 'student', '受講者の例A', 'inside@example.test', 1),
       ('outside', 'ses', 'student', '受講者の例B', 'outside@example.test', 1);
     `);
@@ -63,7 +62,6 @@ describe("外部連携の境界 (実 SQLite)", () => {
       skillMapRoute,
     ).app;
     app.route("/", integrationsRoute);
-    platformToken = await signAccessToken(SECRET, "platform", "platform@example.test");
     adminToken = await signAccessToken(SECRET, "admin", "admin@example.test");
     studentToken = await signAccessToken(SECRET, "inside", "inside@example.test");
   });
@@ -71,7 +69,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
   const create = async (scopes: IntegrationScope[] = ["groups:write"]) => {
     const res = await request(app, env, ROOT, {
       method: "POST",
-      token: platformToken,
+      token: adminToken,
       body: JSON.stringify({ name: "テスト連携", scopes }),
     });
     expect(res.status).toBe(201);
@@ -86,7 +84,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
   const patch = (id: string, body: object) =>
     request(app, env, `${ROOT}/${id}`, {
       method: "PATCH",
-      token: platformToken,
+      token: adminToken,
       body: JSON.stringify(body),
     });
   it("発行・疎通・冪等な作成と名前変更。DB・一覧・監査に平文を持たない", async () => {
@@ -102,7 +100,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
     });
     const stored = JSON.stringify(db.sqlite.prepare("select * from integration_clients").all());
     expect(stored).not.toContain(a.token);
-    const list = await request(app, env, ROOT, { token: platformToken });
+    const list = await request(app, env, ROOT, { token: adminToken });
     const listed = await list.text();
     expect(listed).not.toContain(a.token);
     expect(listed).not.toContain("tokenHash");
@@ -121,13 +119,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
   it("無し・不正・停止・古いトークンは同じ401。Cookie・管理者セッションも使えない", async () => {
     const a = await create();
     await patch(a.client.id, { enabled: false });
-    for (const token of [
-      undefined,
-      "wrong",
-      `stella_int_${"f".repeat(64)}`,
-      a.token,
-      platformToken,
-    ]) {
+    for (const token of [undefined, "wrong", `stella_int_${"f".repeat(64)}`, a.token, adminToken]) {
       const res = await request(app, env, `${API}/me`, {
         token,
         headers: { Cookie: "better-auth.session_token=example" },
@@ -137,7 +129,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
     }
     await patch(a.client.id, { enabled: true });
     const rotate = await request(app, env, `${ROOT}/${a.client.id}/rotate`, {
-      token: platformToken,
+      token: adminToken,
       method: "POST",
     });
     const fresh = await json<{ token: string }>(rotate);
@@ -225,24 +217,21 @@ describe("外部連携の境界 (実 SQLite)", () => {
     );
     expect(res.status).toBe(404);
   });
-  it("platform_adminだけが一覧・作成・停止・再発行・scope変更・グループ閲覧を使える", async () => {
+  it("管理者は一覧・作成・停止・再発行・scope変更・グループ閲覧を使え、受講者は403", async () => {
     const a = await create();
-    for (const token of [adminToken, studentToken]) {
-      for (const [path, method, body] of [
-        [ROOT, "GET", undefined],
-        [ROOT, "POST", { name: "拒否", scopes: [] }],
-        [`${ROOT}/${a.client.id}`, "PATCH", { enabled: false }],
-        [`${ROOT}/${a.client.id}/rotate`, "POST", undefined],
-        [`${ROOT}/${a.client.id}`, "PATCH", { scopes: [] }],
-        [`${ROOT}/${a.client.id}/groups`, "GET", undefined],
-      ] as const) {
-        const res = await request(app, env, path, {
-          method,
-          token,
-          body: body ? JSON.stringify(body) : undefined,
-        });
-        expect(res.status).toBe(403);
-      }
+    for (const [path, method, body, adminStatus] of [
+      [ROOT, "GET", undefined, 200],
+      [ROOT, "POST", { name: "別の連携", scopes: [] }, 201],
+      [`${ROOT}/${a.client.id}`, "PATCH", { enabled: false }, 200],
+      [`${ROOT}/${a.client.id}/rotate`, "POST", undefined, 200],
+      [`${ROOT}/${a.client.id}`, "PATCH", { scopes: [] }, 200],
+      [`${ROOT}/${a.client.id}/groups`, "GET", undefined, 200],
+    ] as const) {
+      const options = { method, body: body ? JSON.stringify(body) : undefined };
+      expect((await request(app, env, path, { ...options, token: studentToken })).status).toBe(403);
+      expect((await request(app, env, path, { ...options, token: adminToken })).status).toBe(
+        adminStatus,
+      );
     }
     expect(
       (await request(app, env, "/api/admin/integration-groups", { token: adminToken })).status,

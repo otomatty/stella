@@ -1,4 +1,3 @@
-import type { ProfileRole } from "@stella/shared/cms/types";
 /**
  * サイドバーのナビ定義。 ロールごとの並びと、 権限による出し分けだけを持つ。
  *
@@ -68,12 +67,11 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
+    { id: "integrations", label: "外部連携", icon: Shield },
   ],
 };
 
 /** 表示するナビ項目。 */
-export function navForRole(role: Role, profileRole?: ProfileRole): NavItem[] {
-  return role === "admin" && profileRole === "platform_admin"
-    ? [...NAV[role], { id: "integrations", label: "外部連携", icon: Shield }]
-    : NAV[role];
+export function navForRole(role: Role): NavItem[] {
+  return NAV[role];
 }

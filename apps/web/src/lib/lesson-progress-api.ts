@@ -100,7 +100,7 @@ export async function upsertProgressBatch(
 
 /**
  * 管理者向け: 進捗行を取得する (可視化のデータ経路)。
- * 認可はサーバ側で admin / platform_admin に限定される。
+ * 認可はサーバ側で admin に限定される。
  */
 export async function fetchAllLessonProgress(): Promise<
   Array<{ userId: string; lessonId: string; entry: LessonProgressEntry }>

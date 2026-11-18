@@ -8,6 +8,7 @@ describe("navForRole", () => {
     const items = ids("learner");
     expect(items).not.toContain("users");
     expect(items).not.toContain("audit");
+    expect(items).not.toContain("integrations");
   });
 
   it("受講者の先頭はホーム = スキルツリー。ステージ一覧はツリーへ集約したので出さない", () => {
@@ -29,6 +30,10 @@ describe("navForRole", () => {
     const admin = ids("admin");
     expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
     expect(ids("learner")).not.toContain("review-queue");
+  });
+
+  it("外部連携は管理者の監査ログの直後に出す", () => {
+    expect(ids("admin").slice(-2)).toEqual(["audit", "integrations"]);
   });
 
   it("Extra の割当はステージの画面にまとめたので、別ナビは出さない", () => {

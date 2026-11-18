@@ -51,7 +51,6 @@ describe("resolveUiRole", () => {
 describe("staffHomeLabel", () => {
   it("names the screen the staff member returns to", () => {
     expect(staffHomeLabel("admin")).toBe("管理画面に戻る");
-    expect(staffHomeLabel("platform_admin")).toBe("管理画面に戻る");
   });
 });
 

@@ -3,7 +3,7 @@
  *
  *   - `verifyToken` … セッション (Cookie / VS Code の Bearer) から利用者を決める
  *   - `getCaller`   … 利用者 + profiles から caller の role を解決
- *   - `requireAdmin` … caller が staff (admin / platform_admin) であることを保証
+ *   - `requireAdmin` … caller が staff (admin) であることを保証
  */
 
 import { and, asc, eq, inArray } from "drizzle-orm";
@@ -122,7 +122,7 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
 }
 
 /** staff のロール。通知の宛先なども、この一覧だけを使う。 */
-export const STAFF_ROLES = ["admin", "platform_admin"] as const satisfies readonly ProfileRole[];
+export const STAFF_ROLES = ["admin"] as const satisfies readonly ProfileRole[];
 
 export function isStaffRole(role: ProfileRole): boolean {
   return (STAFF_ROLES as readonly ProfileRole[]).includes(role);
@@ -151,7 +151,7 @@ export function requireCanManageStageGrants(caller: Caller): void {
  * 自己開始・腕試し・発見教材は同じ顔ぶれにそろえる
  * (片方だけ開けると「受けられないのに始められる」がねじれる)。
  */
-export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
+export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin"];
 
 export function canTakeSkillCheck(role: ProfileRole): boolean {
   return SKILL_CHECK_ROLES.includes(role);

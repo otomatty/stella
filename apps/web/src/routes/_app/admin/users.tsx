@@ -9,11 +9,5 @@ export const Route = createFileRoute("/_app/admin/users")({
 
 function UsersPage() {
   const s = useAppShell();
-  return (
-    <UsersAdmin
-      currentUserId={s.currentUserId}
-      currentUserRole={s.profileRole ?? null}
-      backendEnabled={s.backendEnabled}
-    />
-  );
+  return <UsersAdmin currentUserId={s.currentUserId} backendEnabled={s.backendEnabled} />;
 }

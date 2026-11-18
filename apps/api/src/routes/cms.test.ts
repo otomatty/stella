@@ -179,7 +179,7 @@ describe("GET /api/cms/stages (カタログの秘匿)", () => {
 });
 
 describe("GET /api/cms/stages/:id (受講登録のある受講者だけ)", () => {
-  it.each(["admin", "platform_admin", "student"] as const)(
+  it.each(["admin", "student"] as const)(
     "%s には管理者のときだけ video_issue を返す (null も明示する)",
     async (role) => {
       asRole(role);

@@ -1,7 +1,7 @@
 /**
  * 分析ダッシュボード API (旧 get_tenant_analytics RPC / Issue #28)。
  *
- * 集計はサーバ側で行い、 admin / platform_admin のみ実行できる。 データは件数が
+ * 集計はサーバ側で行い、 admin のみ実行できる。 データは件数が
  * 限られるため、 取得後に JS で集計する (旧 SQL 集計と等価)。
  */
 

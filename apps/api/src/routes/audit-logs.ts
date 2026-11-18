@@ -1,7 +1,7 @@
 /**
  * 監査ログ API (旧 audit_logs 直 SELECT + RLS の置き換え / Issue #27)。
  *
- * 読み取り専用。 旧 RLS は「admin / platform_admin のみ SELECT、 append-only」。
+ * 読み取り専用。 旧 RLS は「admin のみ SELECT、 append-only」。
  * アプリ層で requireAdmin を行う。 記録は管理 API 側で行う。
  */
 
