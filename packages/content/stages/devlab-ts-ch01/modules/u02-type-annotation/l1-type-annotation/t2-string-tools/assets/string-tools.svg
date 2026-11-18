@@ -19,5 +19,5 @@
   <text x="916" y="328" text-anchor="middle" font-family="'Geist Mono', 'Noto Sans JP', monospace" font-size="24" font-weight="500" fill="#0E0E10">.toUpperCase()</text>
   <text x="916" y="176" text-anchor="middle" font-family="'Geist Mono', 'Noto Sans JP', monospace" font-size="20" font-weight="400" fill="#5C5C66">文字数 → 8</text>
   <text x="916" y="268" text-anchor="middle" font-family="'Geist Mono', 'Noto Sans JP', monospace" font-size="20" font-weight="400" fill="#5C5C66">一部 → &quot;TKY&quot;</text>
-  <text x="916" y="360" text-anchor="middle" font-family="'Geist Mono', 'Noto Sans JP', monospace" font-size="20" font-weight="400" fill="#5C5C66">大文字に → &quot;TKY-0012&quot;</text>
+  <text x="916" y="360" text-anchor="middle" font-family="'Geist Mono', 'Noto Sans JP', monospace" font-size="20" font-weight="400" fill="#5C5C66">英字を大文字にする</text>
 </svg>

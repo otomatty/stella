@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u05-string@3",
-  "contentHash": "560bf747ce29827b9b7218e2c218b155b7f2ecce4914745c12d8020fffa5feda",
+  "unitId": "devlab-ts-ch01/u05-string@4",
+  "contentHash": "b21c2689b8466e184a99cd00da0264f1fb43d58707625ada0a0de37d8161fa83",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-string/t1-search/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "注文番号の先頭と末尾の一致、見つかった位置を調べる書き方の説明。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -31,7 +31,7 @@
     {
       "contentId": "l1-string/t2-pick/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "予約番号や部屋番号から、位置を指定して文字を取り出す書き方の説明。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -39,9 +39,81 @@
     {
       "contentId": "l1-string/t3-tidy-replace/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "入力の前後の空白と英字の大きさをそろえ、文字の置き換え範囲を選ぶ書き方の説明。",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t1-search/assets/order-head-tail.svg",
+      "sourceRefs": [],
+      "usedFor": "注文番号の先頭と末尾を下線で示した文字列の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t1-search/assets/search-methods.svg",
+      "sourceRefs": [],
+      "usedFor": "探す方向と答え方で四つの操作を選び分ける図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t1-search/assets/index-of-positions.svg",
+      "sourceRefs": [],
+      "usedFor": "最初と最後のハイフンが見つかった位置を示す図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t2-pick/assets/ticket-last-three.svg",
+      "sourceRefs": [],
+      "usedFor": "予約番号から使う後ろ三文字を点線で囲んだ図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t2-pick/assets/slice-negative.svg",
+      "sourceRefs": [],
+      "usedFor": "前後から数えた位置と末尾までの取り出し範囲の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t2-pick/assets/charat-negative.svg",
+      "sourceRefs": [],
+      "usedFor": "負の位置を指定して文字を取り出す操作の比較図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t3-tidy-replace/assets/messy-input.svg",
+      "sourceRefs": [],
+      "usedFor": "部署名の入力と空白や大文字小文字をそろえた値の図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t3-tidy-replace/assets/trim-lower-pipeline.svg",
+      "sourceRefs": [],
+      "usedFor": "前後の空白を除いて英字を小文字にそろえる流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t3-tidy-replace/assets/replace-vs-replaceall.svg",
+      "sourceRefs": [],
+      "usedFor": "最初の置き換えと全件の置き換えで残る文字の比較図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]
