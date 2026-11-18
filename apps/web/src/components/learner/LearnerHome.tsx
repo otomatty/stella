@@ -1,17 +1,10 @@
 /**
  * 受講者のホーム — **スキルツリーが主役** の 1 画面。
  *
- * 盤面 (スキルツリー) が画面いっぱいに広がり、その上に浮かぶガイドのカードが
- * 「次にやること」を 1 つだけ大きく言う。盤面は「それがツリーのどこか」を見せる。
- * ステージ一覧と別ページのスキルツリーはここへ集約した — 受講中の星は盤面の上で開き
- * (「続きから」「レッスン一覧」)、まだ始めていない星もその場で始められる。
- *
- * ## ガイドは浮かぶカード
- *
- * PC では左上、スマホ・タブレットでは下端に浮かぶ (右下の AI ボタンには掛けない)。
- * 畳むと「次にやること」の 1 行と主ボタンだけになり、盤面を広く見られる。既定は PC で
- * 開き、スマホ・タブレットでは畳む。PC で開いている間は、カードの陰を盤面の
- * 「見えている範囲」から外す (`insetLeft`) — 寄せた星がカードの下に隠れないように。
+ * 盤面 (スキルツリー) が画面いっぱいに広がり、「あなたの状況」と「次にやること」の
+ * カードがその上に浮かぶ。PC では左上に縦に並べ、スマホ・タブレットでは上端と下端に出す。
+ * 表示の切り替えはスマホ・タブレットでは「あなたの状況」のすぐ下に置く。
+ * PC ではカードの陰を盤面の「見えている範囲」から外す (`insetLeft`)。
  *
  * ## 前の版から変えたこと
  *
@@ -26,11 +19,8 @@
  * 何をどの順でガイドに並べるかは `@/lib/home-guide` (純関数) が決める。
  */
 
-import { useGuidedStages } from "@/hooks/useGuidedStages";
-import { GuidedStageCard, GuidedStageLines, GuidedStagesLoadError } from "./home/GuidedStages";
-import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { useFirstSteps } from "@/hooks/useFirstSteps";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -55,12 +45,10 @@ import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
 import { DiscoveryDialog } from "@/components/learner/discovery/DiscoveryDialog";
-import { SubmissionHistory } from "@/components/learner/SubmissionHistory";
 import { HomeHud } from "@/components/learner/home/HomeHud";
 import {
   GuideSection,
   LaterSteps,
-  NextStepBar,
   NextStepCard,
   type GuideActiveStage,
   type GuideHandlers,
@@ -77,15 +65,17 @@ import { SkillLanes } from "@/components/learner/tree/SkillLanes";
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
 import { buildHomeGuide, homeGuideStageInput } from "@/lib/home-guide";
-import { AlertTriangle, ChevronDown, ChevronUp, Compass, ListTree, Sparkles } from "@/lib/icons";
+import { Compass, ListTree, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
 import { openInVscode } from "@/lib/vscode-launch";
 
-/** PC で開いたガイドのカードが覆う幅 (左の余白 16px + 幅 360px + 右の余白 16px)。 */
+/** PC でカードが覆う幅 (左の余白 16px + 幅 360px + 右の余白 16px)。 */
 const GUIDE_INSET_PX = 392;
+const FLOATING_CARD_CLASS =
+  "pointer-events-auto rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md";
 
 interface LearnerHomeProps {
   setPage: (page: string) => void;
@@ -119,7 +109,6 @@ export const LearnerHome = ({
 }: LearnerHomeProps) => {
   const navigate = useNavigate();
   const firstSteps = useFirstSteps(undefined, backendEnabled);
-  const guided = useGuidedStages(currentUserId);
   const progressMap = useLessonProgressMap();
   // 取得に失敗すると一覧は空になる (= 「見直す」が黙って消える) ので、失敗も受け取って出す。
   const { submissions, error: submissionsError } = useMySubmissions(true);
@@ -387,15 +376,11 @@ export const LearnerHome = ({
       firstStageFocusAttempted.current = true;
       setPendingFocusId(stageId);
       setHomeView("tree");
-      if (!isDesktop) setExpandedPref(false);
       return;
     }
     if (!treeRef.current?.focusStage(stageId)) {
       toast("この星はまだツリーに見えていません");
-      return;
     }
-    // スマホ・タブレットでは開いたカードが盤面の下半分を覆うので、畳んで星を見せる。
-    if (!isDesktop) setExpandedPref(false);
   };
 
   const handlers: GuideHandlers = {
@@ -480,35 +465,12 @@ export const LearnerHome = ({
     reviewError ? `今日の復習の取得に失敗しました: ${reviewError}` : null,
     submissionsError ? `提出履歴の取得に失敗しました: ${submissionsError}` : null,
     skillMap.error && nodes.length > 0
-      ? `スキルツリーの更新に失敗しました: ${skillMap.error}`
+      ? `ステージ一覧の更新に失敗しました: ${skillMap.error}`
       : null,
     stageQueue.error ? `次にやるリストの更新に失敗しました: ${stageQueue.error}` : null,
   ].filter((e): e is string => e !== null);
 
-  /**
-   * ガイドのカードを開いているか。既定は PC (lg 以上) で開き、スマホ・タブレットでは
-   * 畳む (下端に浮くカードが盤面を覆わないように)。押したあとは選んだ方を保つ。
-   */
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const [expandedPref, setExpandedPref] = useState<boolean | null>(null);
-  const expanded = expandedPref ?? isDesktop;
-  const [guidedTarget, setGuidedTarget] = useState<string | null>(null);
-  useEffect(() => {
-    if (!expanded || !guidedTarget) return;
-    const frame = requestAnimationFrame(() => {
-      const card = document.getElementById(`guided-stage-${guidedTarget}`);
-      card?.scrollIntoView({ block: "nearest" });
-      card?.focus({ preventScroll: true });
-      setGuidedTarget(null);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [expanded, guidedTarget]);
-  const beginGuidedStage = async (id: string) => {
-    const seq = ++startSeqRef.current;
-    await startGuidedStage(id);
-    await Promise.all([guided.refetch(), refetchStages(), skillMap.refetch()]);
-    if (mountedRef.current && seq === startSeqRef.current) openStage(id);
-  };
   const loadingMap = backendEnabled && skillMap.map === null && !skillMap.error;
 
   // 切り替え先の盤面と視界が描かれてから、控えていた星へ一度だけ寄せる。
@@ -538,18 +500,39 @@ export const LearnerHome = ({
     skillMap.error,
   ]);
 
+  const showViewToggle =
+    backendEnabled && !loadingMap && !(nodes.length === 0 && (skillMap.loading || skillMap.error));
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  const topControlsRef = useRef<HTMLDivElement>(null);
+  const [chipsTop, setChipsTop] = useState<number>();
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    const controls = topControlsRef.current;
+    if (isDesktop || !showViewToggle || !board || !controls) return;
+
+    const measure = () => {
+      setChipsTop(controls.getBoundingClientRect().bottom - board.getBoundingClientRect().top + 8);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(controls);
+    return () => observer.disconnect();
+  }, [isDesktop, showViewToggle]);
+
   return (
-    <div className="relative h-[calc(100dvh-var(--shell-header-height))] overflow-hidden">
-      {/* 盤面は画面いっぱい。ガイドはこの上に浮かぶ。 */}
-      <div className="absolute inset-0">
+    <div className="relative h-[calc(100dvh-var(--shell-header-height))] overflow-hidden [container-type:size]">
+      <div ref={boardRef} className="tree-board absolute inset-0">
         {!backendEnabled ? (
           <BoardMessage>
-            スキルツリーは実データ（API）に接続しているときだけ表示します。
+            ステージ一覧は実データ（API）に接続しているときだけ表示します。
           </BoardMessage>
         ) : loadingMap || (skillMap.loading && nodes.length === 0) ? (
           <BoardMessage>
             <span role="status" aria-live="polite">
-              スキルツリーを読み込んでいます…
+              ステージ一覧を読み込んでいます…
             </span>
           </BoardMessage>
         ) : skillMap.error && nodes.length === 0 ? (
@@ -559,11 +542,73 @@ export const LearnerHome = ({
               再読み込み
             </Button>
           </BoardMessage>
-        ) : (
-          <>
+        ) : homeView === "tree" ? (
+          <SkillTree
+            overview
+            nodes={nodes}
+            islandCaption={islandCaption}
+            currentUserId={currentUserId}
+            activeStageId={serverActiveStageId}
+            queuedStageIds={stageQueue.queue}
+            onResumeStage={resumeStage}
+            onStartStage={startStage}
+            onQueueStage={(stageId) =>
+              void stageQueue
+                .add(stageId)
+                .catch((err: unknown) =>
+                  toast.error(err instanceof Error ? err.message : "キューへの追加に失敗しました"),
+                )
+            }
+            onSkillCheck={setCheckStageId}
+            onOpenStage={openStage}
+            revealDev={revealDev}
+            // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
+            initialFocusStageId={firstStageId ? null : serverActiveStageId}
+            activeInfo={activeInfo}
+            handleRef={treeRef}
+            // PC でカードの陰は「見えている範囲」から外す。
+            insetLeft={isDesktop ? GUIDE_INSET_PX : 0}
+            chipsTop={isDesktop ? undefined : chipsTop}
+            // 全面なので角丸と枠は要らない。
+            className="h-full w-full rounded-none border-0"
+          />
+        ) : null}
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 inset-y-3 z-20 grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_fit-content(45cqh)] gap-2 lg:inset-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-3">
+        <div ref={topControlsRef} className="z-10 flex flex-col items-start gap-2">
+          <section
+            aria-label="あなたの状況"
+            className={cn(
+              FLOATING_CARD_CLASS,
+              "ml-3 flex w-[calc(100%-4.25rem)] shrink-0 flex-col gap-2 px-3 py-2 sm:w-[380px] lg:ml-0 lg:w-full lg:gap-3 lg:p-4",
+            )}
+          >
+            <h1 className="text-[15px] font-semibold tracking-tight max-sm:truncate sm:break-words">
+              おかえりなさい、{studentName}さん
+            </h1>
+            {backendEnabled ? (
+              <HomeHud
+                profile={skillMap.profile}
+                focusBonus={skillMap.map?.focus_bonus ?? null}
+                cleared={
+                  skillMap.map
+                    ? {
+                        count: skillMap.map.cleared_count,
+                        // 分母は配信対象の総数 (視界が広がるたびに増えないように)。
+                        total: skillMap.map.stage_count ?? nodes.length,
+                      }
+                    : null
+                }
+                loading={skillMap.loading}
+              />
+            ) : null}
+          </section>
+
+          {showViewToggle ? (
             <fieldset
               aria-label="表示"
-              className="absolute left-3 top-3 z-10 flex h-9 items-center rounded-full border border-border bg-white/[0.86] p-0.5 shadow-sm backdrop-blur-md dark:bg-[rgba(12,14,24,0.78)] lg:left-[392px] lg:top-4"
+              className="pointer-events-auto ml-3 flex h-9 w-max shrink-0 items-center rounded-full border border-border bg-white/[0.86] p-0.5 shadow-sm backdrop-blur-md dark:bg-[rgba(12,14,24,0.78)] lg:absolute lg:left-[376px] lg:top-0 lg:ml-0"
             >
               {(["tree", "lanes"] as const).map((view) => {
                 const Icon = view === "tree" ? Compass : ListTree;
@@ -589,261 +634,127 @@ export const LearnerHome = ({
                 );
               })}
             </fieldset>
-            {homeView === "lanes" ? (
-              <SkillLanes
-                nodes={nodes}
-                islandCaption={islandCaption}
-                activeStageId={serverActiveStageId}
-                queuedStageIds={stageQueue.queue}
-                revealDev={revealDev}
-                activeInfo={activeInfo}
-                insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
-                onResumeStage={resumeStage}
-                onStartStage={startStage}
-                onQueueStage={(stageId) =>
-                  void stageQueue
-                    .add(stageId)
-                    .catch((err: unknown) =>
-                      toast.error(
-                        err instanceof Error ? err.message : "キューへの追加に失敗しました",
-                      ),
-                    )
-                }
-                onSkillCheck={setCheckStageId}
-                onOpenStage={openStage}
-                onShowInTree={showInTree}
-                className="h-full w-full"
-              />
-            ) : (
-              <SkillTree
-                overview
-                nodes={nodes}
-                islandCaption={islandCaption}
-                currentUserId={currentUserId}
-                activeStageId={serverActiveStageId}
-                queuedStageIds={stageQueue.queue}
-                onResumeStage={resumeStage}
-                onStartStage={startStage}
-                onQueueStage={(stageId) =>
-                  void stageQueue
-                    .add(stageId)
-                    .catch((err: unknown) =>
-                      toast.error(
-                        err instanceof Error ? err.message : "キューへの追加に失敗しました",
-                      ),
-                    )
-                }
-                onSkillCheck={setCheckStageId}
-                onOpenStage={openStage}
-                revealDev={revealDev}
-                // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
-                initialFocusStageId={firstStageId ? null : serverActiveStageId}
-                activeInfo={activeInfo}
-                handleRef={treeRef}
-                // PC で開いたカードの陰は「見えている範囲」から外す。
-                insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
-                // 全面なので角丸と枠は要らない。
-                className="h-full w-full rounded-none border-0"
-              />
-            )}
-          </>
-        )}
-      </div>
+          ) : null}
+        </div>
 
-      <aside
-        aria-label="次にやること"
-        className={cn(
-          "absolute z-20 flex flex-col overflow-hidden rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md",
-          // スマホ: 下端。右下の AI / 開発者モードのボタンに掛からないよう右を空ける。
-          "bottom-3 left-3 right-[5.5rem]",
-          // タブレット: 下端の左に、幅を決めて浮かべる。
-          "sm:right-auto sm:w-[380px]",
-          // PC: 左上。
-          "lg:bottom-auto lg:left-4 lg:top-4 lg:w-[360px]",
-          expanded ? "max-h-[70%] lg:max-h-[calc(100%-2rem)]" : "",
-        )}
-      >
-        {expanded ? (
-          <>
-            <header className="flex shrink-0 flex-col gap-3 px-4 pt-4">
-              <div className="flex items-start gap-2">
-                <h1 className="min-w-0 flex-1 text-[15px] font-semibold tracking-tight">
-                  おかえりなさい、{studentName}さん
-                </h1>
+        {/* スマホ・タブレットでは上下のカードの間で道のりをスクロールする。 */}
+        {showViewToggle && homeView === "lanes" ? (
+          <SkillLanes
+            nodes={nodes}
+            islandCaption={islandCaption}
+            activeStageId={serverActiveStageId}
+            queuedStageIds={stageQueue.queue}
+            revealDev={revealDev}
+            activeInfo={activeInfo}
+            insetLeft={isDesktop ? GUIDE_INSET_PX : 0}
+            onResumeStage={resumeStage}
+            onStartStage={startStage}
+            onQueueStage={(stageId) =>
+              void stageQueue
+                .add(stageId)
+                .catch((err: unknown) =>
+                  toast.error(err instanceof Error ? err.message : "キューへの追加に失敗しました"),
+                )
+            }
+            onSkillCheck={setCheckStageId}
+            onOpenStage={openStage}
+            onShowInTree={showInTree}
+            className="pointer-events-auto row-start-2 h-full w-full max-lg:pb-2 max-lg:pt-1 lg:absolute lg:-inset-4 lg:row-auto lg:h-auto lg:w-auto"
+          />
+        ) : null}
+
+        <aside
+          aria-label="次にやること"
+          className={cn(
+            FLOATING_CARD_CLASS,
+            "z-10 row-start-3 ml-3 flex max-h-full min-h-0 w-[calc(100%-6.25rem)] flex-col self-start overflow-hidden sm:w-[380px] lg:col-start-1 lg:row-start-2 lg:ml-0 lg:w-full",
+          )}
+        >
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
+            {errors.map((message) => (
+              <p key={message} className="text-[12px] text-destructive">
+                {message}
+              </p>
+            ))}
+
+            {focusLost ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-warning-soft px-3 py-2">
+                <span className="text-[11.5px] text-ink-2">
+                  進行中のステージが見つかりません。別のステージを選び直してください。
+                </span>
                 <Button
-                  size="icon-sm"
+                  size="sm"
                   variant="ghost"
-                  className="-mr-1.5 -mt-1 shrink-0"
-                  aria-label="次にやることを畳む"
-                  aria-expanded
-                  onClick={() => setExpandedPref(false)}
+                  onClick={() =>
+                    void skillMap
+                      .setActiveStage(null)
+                      .catch((err: unknown) =>
+                        toast.error(
+                          err instanceof Error ? err.message : "ステージの切り替えに失敗しました",
+                        ),
+                      )
+                  }
                 >
-                  {/* 下に浮くとき (スマホ・タブレット) は下へ、左上に浮くとき (PC) は上へ畳む。 */}
-                  <ChevronDown size={14} className="lg:hidden" />
-                  <ChevronUp size={14} className="hidden lg:block" />
+                  フォーカスを外す
                 </Button>
               </div>
-              {backendEnabled ? (
-                <HomeHud
-                  profile={skillMap.profile}
-                  focusBonus={skillMap.map?.focus_bonus ?? null}
-                  cleared={
-                    skillMap.map
-                      ? {
-                          count: skillMap.map.cleared_count,
-                          // 分母は配信対象の総数 (視界が広がるたびに増えないように)。
-                          total: skillMap.map.stage_count ?? nodes.length,
-                        }
-                      : null
-                  }
-                  loading={skillMap.loading}
-                />
-              ) : null}
-            </header>
+            ) : null}
 
-            <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-4 pt-4">
-              {errors.map((message) => (
-                <p key={message} className="text-[12px] text-destructive">
-                  {message}
-                </p>
-              ))}
+            <UnlockNotice
+              openStageIds={openStageIds}
+              titleOf={(id) => nodeById.get(id)?.title ?? stageById(id)?.title}
+              ready={Boolean(skillMap.map)}
+              // 自分で切り替えた現在地は「新しく開いた星」ではない。
+              activeStageId={serverActiveStageId}
+              discoveries={discoveries}
+              // 記憶は利用者ごと (共有端末で前の人の「見た」を引き継がない)。
+              userId={currentUserId}
+            />
 
-              {focusLost ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-warning-soft px-3 py-2">
-                  <span className="text-[11.5px] text-ink-2">
-                    進行中のステージが見つかりません。別のステージを選び直してください。
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      void skillMap
-                        .setActiveStage(null)
-                        .catch((err: unknown) =>
-                          toast.error(
-                            err instanceof Error ? err.message : "ステージの切り替えに失敗しました",
-                          ),
-                        )
-                    }
-                  >
-                    フォーカスを外す
-                  </Button>
-                </div>
-              ) : null}
+            <NextStepCard guide={guide} loading={loadingMap} {...stepContext} />
 
-              <UnlockNotice
-                openStageIds={openStageIds}
-                titleOf={(id) => nodeById.get(id)?.title ?? stageById(id)?.title}
-                ready={Boolean(skillMap.map)}
-                // 自分で切り替えた現在地は「新しく開いた星」ではない。
-                activeStageId={serverActiveStageId}
-                discoveries={discoveries}
-                // 記憶は利用者ごと (共有端末で前の人の「見た」を引き継がない)。
-                userId={currentUserId}
-              />
+            <LaterSteps steps={later} {...stepContext} />
 
-              <NextStepCard guide={guide} loading={loadingMap} {...stepContext} />
-
-              {guided.stages.length > 0 || guided.error ? (
-                <section
-                  aria-label="案内されたステージ"
-                  data-testid="guide-guided-stages"
-                  className="flex flex-col gap-2"
-                >
-                  <h2 className="text-xs font-bold text-ink-3">案内されたステージ</h2>
-                  {guided.error ? (
-                    <GuidedStagesLoadError message={guided.error} onRetry={guided.refetch} />
-                  ) : null}
-                  {guided.stages.map((stage) => (
-                    <GuidedStageCard
-                      key={stage.stage_id}
-                      stage={stage}
-                      onStart={beginGuidedStage}
-                      onOpen={openStage}
-                    />
-                  ))}
-                </section>
-              ) : null}
-
-              <LaterSteps steps={later} {...stepContext} />
-
-              {discoveries.length > 0 ? (
-                <GuideSection title="発見教材" meta={`${discoveries.length} 件`}>
-                  <ul className="flex flex-col gap-1.5">
-                    {discoveries.map((d) => (
-                      <li key={d.id}>
-                        <button
-                          type="button"
-                          onClick={() => setOpenDiscoveryId(d.id)}
-                          title={d.description}
-                          className="flex w-full items-start gap-2 rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-left hover:border-brand"
-                        >
-                          <Sparkles size={12} className="mt-0.5 shrink-0 text-brand" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-[12.5px] font-medium leading-snug">
-                              {d.title}
-                            </span>
-                            <span className="mt-0.5 block text-[10.5px] text-ink-3">
-                              {nodeById.get(d.stage_id)?.title ?? "ステージ"} の脇で発見 ·{" "}
-                              {d.question_count} 問{d.passed ? " · 合格済み" : ""}
-                            </span>
+            {discoveries.length > 0 ? (
+              <GuideSection title="発見教材" meta={`${discoveries.length} 件`}>
+                <ul className="flex flex-col gap-1.5">
+                  {discoveries.map((d) => (
+                    <li key={d.id}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenDiscoveryId(d.id)}
+                        title={d.description}
+                        className="flex w-full items-start gap-2 rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-left hover:border-brand"
+                      >
+                        <Sparkles size={12} className="mt-0.5 shrink-0 text-brand" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[12.5px] font-medium leading-snug">
+                            {d.title}
                           </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </GuideSection>
-              ) : null}
-
-              {stageQueue.queue.length > 0 ? (
-                <StageQueuePanel
-                  queue={stageQueue.queue}
-                  stageById={stageById}
-                  onReorder={(ids) => void stageQueue.reorder(ids).catch(() => undefined)}
-                  onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
-                  onStart={requestStart}
-                />
-              ) : null}
-
-              {submissions.length > 0 ? (
-                <SubmissionHistory onOpenSubmission={onOpenSubmission} />
-              ) : null}
-            </div>
-          </>
-        ) : (
-          <>
-            {/* 畳んでいても取得の失敗は見えるようにする (中身は開いたカードに出す)。 */}
-            {errors.length > 0 ? (
-              <div role="alert" className="border-b border-border bg-warning-soft">
-                <button
-                  type="button"
-                  onClick={() => setExpandedPref(true)}
-                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[11.5px] text-ink-2"
-                >
-                  <AlertTriangle size={12} className="shrink-0 text-warning" />
-                  読み込めなかった情報があります。開いて確認してください。
-                </button>
-              </div>
+                          <span className="mt-0.5 block text-[10.5px] text-ink-3">
+                            {nodeById.get(d.stage_id)?.title ?? "ステージ"} の脇で発見 ·{" "}
+                            {d.question_count} 問{d.passed ? " · 合格済み" : ""}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </GuideSection>
             ) : null}
-            {guided.error ? (
-              <GuidedStagesLoadError message={guided.error} onRetry={guided.refetch} />
+
+            {stageQueue.queue.length > 0 ? (
+              <StageQueuePanel
+                queue={stageQueue.queue}
+                stageById={stageById}
+                onReorder={(ids) => void stageQueue.reorder(ids).catch(() => undefined)}
+                onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
+                onStart={requestStart}
+              />
             ) : null}
-            <GuidedStageLines
-              stages={guided.stages}
-              onExpand={(id) => {
-                setGuidedTarget(id);
-                setExpandedPref(true);
-              }}
-            />
-            <NextStepBar
-              guide={guide}
-              loading={loadingMap}
-              onExpand={() => setExpandedPref(true)}
-              {...stepContext}
-            />
-          </>
-        )}
-      </aside>
+          </div>
+        </aside>
+      </div>
 
       <SkillCheckDialog
         stageId={checkStageId}

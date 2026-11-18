@@ -476,7 +476,7 @@ async function runAutoComplete(
         userId,
         type: "stage_cleared",
         title: `${stage.title} をクリアしました`,
-        body: "修了証が発行されました。スキルツリーで次のステージが解放されています。",
+        body: "修了証が発行されました。ステージ一覧で次のステージが解放されています。",
         payload: { stage_id: stage.id },
       });
     } catch (e) {

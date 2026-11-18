@@ -709,7 +709,7 @@ export function StageNotFoundNotice({ setPage }: { setPage: (p: string) => void 
     <NotFoundNotice
       title="ステージが見つかりません"
       description="このステージは削除されたか、 現在の受講対象に含まれていません。"
-      backLabel="スキルツリーに戻る"
+      backLabel="ステージ一覧に戻る"
       onBack={() => setPage("dash")}
     />
   );
@@ -739,7 +739,7 @@ export function EmptyStagesNotice({ setPage }: { setPage: (p: string) => void })
         className="text-[12.5px] text-brand underline underline-offset-2"
         onClick={() => setPage("dash")}
       >
-        スキルツリーに戻る
+        ステージ一覧に戻る
       </button>
     </div>
   );
