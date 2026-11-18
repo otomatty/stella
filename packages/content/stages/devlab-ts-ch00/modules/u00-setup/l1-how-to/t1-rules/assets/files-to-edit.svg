@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <rect x="64" y="112" width="1072" height="280" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="104" y="196" width="312" height="144" rx="12"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <g fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2">
+    <rect x="444" y="196" width="312" height="144" rx="12"/>
+    <rect x="784" y="196" width="312" height="144" rx="12"/>
+  </g>
+  <g text-anchor="middle" font-family="'Noto Sans JP', sans-serif">
+    <g fill="#0E0E10" font-size="24" font-weight="600">
+      <text x="600" y="164">課題のフォルダー</text>
+      <text x="260" y="256"><tspan font-family="'Geist Mono', monospace" font-weight="500">src/</tspan> 問題のファイル</text>
+      <text x="600" y="256"><tspan font-family="'Geist Mono', monospace" font-weight="500">tests/</tspan> テスト</text>
+      <text x="940" y="256">設定ファイル</text>
+    </g>
+    <g fill="#5C5C66" font-size="20">
+      <text x="260" y="292">ここに書く</text>
+      <text x="600" y="292">書き換えない</text>
+      <text x="940" y="292">書き換えない</text>
+    </g>
+  </g>
+</svg>

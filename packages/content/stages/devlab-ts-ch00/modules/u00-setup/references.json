@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch00/u00-setup@2",
-  "contentHash": "b1f226a7836aae7a0bc9ac4035c294d27b6161c4799d498dfe63da9e344cf15c",
+  "unitId": "devlab-ts-ch00/u00-setup@3",
+  "contentHash": "4f807e1df70e9632d33752b98ad50b82514f7ee5181530fb6ce93ff92c1a75df",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -31,7 +31,39 @@
     {
       "contentId": "l1-how-to/t1-rules/slides.md",
       "sourceRefs": [],
-      "usedFor": "既存の練習課題の進め方・ルールを説明する独自教材。コードは自分で書き、確認して提出する順番を確かめる。",
+      "usedFor": "問題を書く場所と、確認から提出までの順番と守るルール",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t1-rules/assets/files-to-edit.svg",
+      "sourceRefs": [],
+      "usedFor": "課題のフォルダーで編集する場所とそのままにする場所",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t1-rules/assets/one-problem-cycle.svg",
+      "sourceRefs": [],
+      "usedFor": "一問ずつ書いて確認し提出して次の問題へ進む流れ",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t1-rules/assets/file-name-parts.svg",
+      "sourceRefs": [],
+      "usedFor": "問題のファイル名に含まれる番号と問の番号と名前",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-how-to/t1-rules/assets/rules-do-dont.svg",
+      "sourceRefs": [],
+      "usedFor": "課題での生成AIの使い方と書き換えを禁止するファイル",
       "authorship": "original",
       "reuse": "original",
       "reviewStatus": "draft"

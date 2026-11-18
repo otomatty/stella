@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>問題のファイル名の読み方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- SVG内のスタイルはすべて presentation attribute で書く。
+     この SVG 要素だけが抽出されて単体で描画されるため、CSSクラスやvar()は効かない。 -->
+<!-- 図にタイトルは入れない(タイトルはスライド側が持つ)。
+     viewBoxは幅1200固定、高さと原点(minY)は本体を描き終えてから
+     style-guide.md の手順で決める。 -->
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <rect x="128" y="112" width="944" height="104" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+
+  <!-- 等幅のファイル名のうち、q01、01、add-tax に下線を引く。 -->
+  <text x="600" y="168" text-anchor="middle"
+        font-family="'Geist Mono', monospace" font-size="24" font-weight="500"
+        fill="#0E0E10">src/q01-01-add-tax.ts</text>
+  <path d="M504 184 H548 M564 184 H592 M608 184 H708"
+        fill="none" stroke="#5C5C66" stroke-width="2"/>
+  <path d="M528 184 V244 H392 V272 M576 184 V244 H600 V272 M660 184 V244 H808 V272"
+        fill="none" stroke="#B7B7BE" stroke-width="2"/>
+
+  <g fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2">
+    <rect x="304" y="272" width="176" height="104" rx="12"/>
+    <rect x="512" y="272" width="176" height="104" rx="12"/>
+    <rect x="720" y="272" width="176" height="104" rx="12"/>
+  </g>
+  <g text-anchor="middle" font-family="'Noto Sans JP', sans-serif"
+     fill="#0E0E10" font-size="24" font-weight="600">
+    <text x="392" y="332">番号</text>
+    <text x="600" y="332">問の番号</text>
+    <text x="808" y="332">名前</text>
+  </g>
+</svg>
+</body>
+</html>
