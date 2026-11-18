@@ -213,7 +213,7 @@ describe("staffMapContents", () => {
     extra("python-basics", "Python", "node-api-basics", "Python 入門"),
     extra("python-z", "Python", "python-basics", "Z 続編"),
     extra("devops", "DevOps", "python-basics"),
-    extra("devlab-ts-ch00", "開発ラボG"),
+    extra("devlab-ts-ch00", "開発ラボG", "dev-env-basics"),
     extra("aws", "AWS資格", "dev-env-basics"),
     extra("archived", "C#", undefined),
   ];
@@ -265,7 +265,11 @@ describe("staffMapContents", () => {
       routeKey: "Python",
     });
     expect(island("開発ラボG")?.visibility).toBe("割り当てのみ");
-    expect(island("開発ラボG")?.prerequisite).toBeNull();
+    expect(island("開発ラボG")?.prerequisite).toEqual({
+      id: "dev-env-basics",
+      title: "STELLAの使い方",
+      routeKey: "基礎",
+    });
     expect(island("AWS資格")?.visibility).toBe("入口 クリア後");
     expect(island("Python")?.next).toEqual([{ key: "DevOps", visibility: "Python 入門 クリア後" }]);
   });

@@ -529,13 +529,14 @@ describe("layoutRadialSkillTree", () => {
           id: "dev-env-basics",
           title: "STELLAの使い方",
           category: "基礎",
-          state: "cleared",
+          state: "unlocked",
         }),
         node({
           id: "lab-g",
           title: "開発ラボG",
           category: "開発ラボG",
           parent_id: "dev-env-basics",
+          state: "locked",
         }),
       ]);
       expect(layout.sectors.map((s) => s.key)).not.toContain("開発ラボG");
@@ -792,7 +793,7 @@ describe("layoutRadialSkillTree", () => {
         ["terraform-basics", "DevOps", "devops-basics"],
         ["kubernetes-basics", "DevOps", "networking-ops-basics"],
         ["salesforce-dev-basics", "Salesforce案件", "sql-basics"],
-        ["devlab-ts-ch00", "開発ラボG"],
+        ["devlab-ts-ch00", "開発ラボG", "dev-env-basics"],
         ["devlab-ts-ch01", "開発ラボG", "devlab-ts-ch00"],
       ];
       return rows.map(([id, category, parentId]) =>
@@ -934,7 +935,7 @@ describe("layoutRadialSkillTree", () => {
       expect(byKey.get("AWS資格")?.anchorId).toBeUndefined();
     });
 
-    it("親の無い開発ラボG の 00 章は島の根になり、島内にだけ線を引く", () => {
+    it("本土の親を持つ開発ラボG の 00 章は島の根になり、島内にだけ線を引く", () => {
       const layout = layoutRadialSkillTree(currentCurriculum());
       const entry = posOf(layout, "devlab-ts-ch00");
       const island = layout.islands.find((i) => i.key === "開発ラボG");

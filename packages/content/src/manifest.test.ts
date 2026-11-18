@@ -1305,12 +1305,14 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     }
   });
 
-  it("前提なしの入口は Basic の dev-env-basics と開発ラボG の 00 章", () => {
+  it("入口は dev-env-basics で、開発ラボGの00章もそのクリアを求める", () => {
     const roots = stages.filter((stage) => !stage.prerequisites?.length && !stage.parent);
-    expect(roots.map((stage) => stage.id)).toEqual(["dev-env-basics", "devlab-ts-ch00"]);
-    expect(roots.find((stage) => stage.id === "devlab-ts-ch00")).toMatchObject({
+    expect(roots.map((stage) => stage.id)).toEqual(["dev-env-basics"]);
+    expect(stages.find((stage) => stage.id === "devlab-ts-ch00")).toMatchObject({
       audience: "granted",
       category: "開発ラボG",
+      prerequisites: ["dev-env-basics"],
+      parent: "dev-env-basics",
     });
     expect(roots.every((stage) => stage.parent === undefined)).toBe(true);
   });

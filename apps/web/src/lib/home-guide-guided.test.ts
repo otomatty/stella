@@ -33,6 +33,36 @@ const input = {
 };
 
 describe("案内の枠が割り当てを受け持つので通常のガイドから分ける", () => {
+  it("00章がロック中の開発ラボG応募者には最初にSTELLAの使い方を案内する", () => {
+    const applicantNodes: SkillMapStageNode[] = [
+      { id: "dev-env-basics", title: "STELLAの使い方", state: "unlocked", visibility: "full" },
+      {
+        id: "devlab-ts-ch00",
+        title: "00章",
+        audience: "granted",
+        state: "locked",
+        visibility: "full",
+        lock_reasons: ["STELLAの使い方"],
+      },
+    ];
+    const ordinary = homeGuideStageInput(
+      {
+        ...map,
+        stages: applicantNodes,
+        next_stage_ids: ["dev-env-basics"],
+        unguided_next_stage_ids: ["dev-env-basics"],
+      },
+      applicantNodes,
+    );
+    expect(
+      buildHomeGuide({
+        ...input,
+        stageAudienceById: { "devlab-ts-ch00": "granted" },
+        ...ordinary,
+      }).steps,
+    ).toEqual([{ kind: "first-stage", stageId: "dev-env-basics" }]);
+  });
+
   it.each([false, true])(
     "案内されたステージの受講登録 %s でも最初の研修を名指しする",
     (enrolled) => {
