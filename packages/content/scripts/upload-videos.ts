@@ -17,6 +17,7 @@ import {
   serializeVideoManifest,
   videoKeyHash,
   videoKeys,
+  videoManifestKey,
   type VideoManifest,
   type VideoState,
 } from "../src/material-video.js";
@@ -57,15 +58,16 @@ export async function uploadVideos(args: string[]): Promise<void> {
     const { reports, failures } = await buildVideos(
       args.filter((arg) => arg !== "--remote"),
       (plan) => {
-        if (seen.has(plan.id)) throw new Error(`レッスン ID が重複しています: ${plan.id}`);
-        seen.add(plan.id);
+        const key = videoManifestKey(plan.stageSlug, plan.id);
+        if (seen.has(key)) throw new Error(`レッスン ID が重複しています: ${key}`);
+        seen.add(key);
         const keys = videoKeys(plan.stageSlug, plan.id, plan.sourceHash);
         if (!hasVideo(state, keys)) {
           pending.push(plan);
           return false;
         }
-        if (manifest[plan.id]) throw new Error(`レッスン ID が重複しています: ${plan.id}`);
-        manifest[plan.id] = { ...keys, durationSec: state.durations[videoKeyHash(keys.video)] };
+        if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
+        manifest[key] = { ...keys, durationSec: state.durations[videoKeyHash(keys.video)] };
         return true;
       },
     );
@@ -99,12 +101,14 @@ export async function uploadVideos(args: string[]): Promise<void> {
       }
       for (const f of files) state.objects[videoKeyHash(f.key)] = statSync(f.file).size;
       state.durations[videoKeyHash(keys.video)] = report.durationSec;
-      if (manifest[plan.id]) throw new Error(`レッスン ID が重複しています: ${plan.id}`);
-      manifest[plan.id] = { ...keys, durationSec: report.durationSec };
+      const key = videoManifestKey(plan.stageSlug, plan.id);
+      if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
+      manifest[key] = { ...keys, durationSec: report.durationSec };
     }
     const successCount = Object.keys(manifest).length;
     for (const failure of failures) {
-      manifest[failure.id] = mergeVideoFailure(manifest[failure.id], failure);
+      const key = videoManifestKey(failure.stageSlug, failure.id);
+      manifest[key] = mergeVideoFailure(manifest[key], failure);
     }
     await r2.put(STATE_KEY, new TextEncoder().encode(JSON.stringify(state)), "application/json");
     mkdirSync(dirname(manifestFile), { recursive: true });

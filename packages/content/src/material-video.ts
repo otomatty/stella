@@ -33,7 +33,11 @@ export interface VideoManifestFailure {
   stageSlug: string;
   error: string;
 }
+/** キーは videoManifestKey が返す `<slug>/<トピックID>`。 */
 export type VideoManifest = Record<string, VideoManifestEntry | VideoManifestFailure>;
+
+/** トピック ID はステージの中でだけ一意なので、manifest のキーにはステージを含める。 */
+export const videoManifestKey = (stageSlug: string, id: string): string => `${stageSlug}/${id}`;
 
 /** 管理者に出す理由は先頭の 1 行、最大 200 文字 (省略記号を含む)。 */
 export function summarizeVideoError(reason: string): string {
@@ -41,14 +45,16 @@ export function summarizeVideoError(reason: string): string {
   return chars.length > 200 ? `${chars.slice(0, 199).join("")}…` : chars.join("");
 }
 
-/** 同じトピックの失敗は最初の理由を残し、成功や別ステージとの ID 衝突は拒否する。 */
+/** 同じトピックの失敗は最初の理由を残し、同じキーに成功があれば例外にする。 */
 export function mergeVideoFailure(
   existing: VideoManifest[string] | undefined,
   failure: { stageSlug: string; id: string; reason: string },
 ): VideoManifestFailure {
   if (existing) {
     if ("error" in existing && existing.stageSlug === failure.stageSlug) return existing;
-    throw new Error(`レッスン ID が重複しています: ${failure.id}`);
+    throw new Error(
+      `レッスン ID が重複しています: ${videoManifestKey(failure.stageSlug, failure.id)}`,
+    );
   }
   return { stageSlug: failure.stageSlug, error: summarizeVideoError(failure.reason) };
 }

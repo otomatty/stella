@@ -114,7 +114,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - 生成だけの確認: `bun run content:video -- dev-env-basics --tts fake` → `dist/video/`。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。`fake` は音声の代わりに仮の音を作ります。日本語の音声を鍵なしで確かめる場合は `--tts openjtalk` と `pip install pyopenjtalk-prebuilt "numpy<2"` を使います
 - 配信: `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2)。本物の音声は `--tts gemini` (`GEMINI_API_KEY`)、本番 R2 は `--remote`。R2 の資格情報・公開バケットは PDF と同じです
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。旧版は削除しません
-- `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
+- `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
 - CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です
 - Gemini は新方式では場面ごと、スライド版ではトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分けます。429 で 1 日の上限に当たったらすぐ止めます。
 - 動画が一部失敗してもデプロイは続け、できた動画は公開し、失敗したトピックは前の版を残します。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直します (成功分は台帳で生成を省きます)。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れます (管理者の画面に出します)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のままです。

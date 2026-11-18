@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 
 import { buildContentManifest, listCodingRuleScopes } from "@stella/content";
 import type { QuizSeed } from "@stella/content";
-import type { VideoManifest } from "../../content/src/material-video.js";
+import { videoManifestKey, type VideoManifest } from "../../content/src/material-video.js";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
@@ -378,8 +378,8 @@ function emitLesson(
 ) {
   const id = lessonUuid(tenantId, stageId, lesson.id);
   // 台本を削除したら解除。manifest が無い／対象外なら既存値を保持する。
-  // トピック ID はステージ間で重なり得るので、絞り込んだ sync の別ステージを使わない。
-  const videoEntry = videoManifest?.[lesson.id];
+  // ステージ slug とトピック ID の組で、自分のステージの項目を引く。
+  const videoEntry = videoManifest?.[videoManifestKey(stageId, lesson.id)];
   const manifestVideo = videoEntry && "video" in videoEntry ? videoEntry.video : undefined;
   const videoFailure =
     videoEntry && "error" in videoEntry && videoEntry.stageSlug === stageId

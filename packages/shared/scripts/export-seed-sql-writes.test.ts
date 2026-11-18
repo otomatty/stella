@@ -21,6 +21,7 @@ import {
   MAX_CHUNK_BYTES,
   splitSqlStatements,
 } from "../../../apps/api/scripts/lib/d1-remote.js";
+import { videoKeys, videoManifestKey } from "../../content/src/material-video.js";
 
 /**
  * seed を流し直したときに D1 へ書く行数。
@@ -161,15 +162,18 @@ describe("seed の書き込み行数", () => {
       const db = migratedDb();
       const file = join(pdfDir, "video-manifest.json");
       const path = `lesson-video/ses/${COURSE}/${LESSON}/hash.mp4`;
+      const otherStage = "devlab-ts-ch00";
+      const otherVideo = videoKeys(otherStage, LESSON, "other");
       writeFileSync(
         file,
         JSON.stringify({
-          [LESSON]: {
+          [videoManifestKey(COURSE, LESSON)]: {
             video: path,
             captions: path.replace(".mp4", ".vtt"),
             poster: path.replace(".mp4", ".jpg"),
             durationSec: 30,
           },
+          [videoManifestKey(otherStage, LESSON)]: { ...otherVideo, durationSec: 30 },
         }),
       );
       const narrated = (manifest: Manifest) => {
@@ -199,6 +203,11 @@ describe("seed の書き込み行数", () => {
         const withVideo = await exportSql(narrated, file);
         apply(db, withVideo);
         expect(current()).toBe(path);
+        expect(
+          db
+            .prepare("select video_path from lessons where id = ?")
+            .get(stableUuid(`lesson:ses:${otherStage}:${LESSON}`)),
+        ).toEqual({ video_path: otherVideo.video });
         expect(apply(db, withVideo)).toEqual({});
         const withoutManifest = await exportSql(narrated);
         expect(apply(db, withoutManifest)).toEqual({});
@@ -207,6 +216,8 @@ describe("seed の書き込み行数", () => {
         writeFileSync(file, "{}");
         expect(apply(db, await exportSql(narrated, file))).toEqual({});
         expect(current()).toBe(path);
+        writeFileSync(file, JSON.stringify({ [LESSON]: videoKeys(COURSE, LESSON, "legacy") }));
+        expect(apply(db, await exportSql(narrated, file))).toEqual({});
         const removed = await exportSql(withoutNarration);
         expect(total(apply(db, removed))).toBe(1);
         expect(current()).toBeNull();
@@ -241,7 +252,12 @@ describe("seed の書き込み行数", () => {
       try {
         writeFileSync(
           file,
-          JSON.stringify({ [LESSON]: { stageSlug: COURSE, error: "読み上げの失敗 '理由'" } }),
+          JSON.stringify({
+            [videoManifestKey(COURSE, LESSON)]: {
+              stageSlug: COURSE,
+              error: "読み上げの失敗 '理由'",
+            },
+          }),
         );
         const failed = await exportSql(mutate(true), file);
         apply(db, failed);
@@ -259,7 +275,10 @@ describe("seed の書き込み行数", () => {
           { stageSlug: "another-stage", error: "別の理由" },
           { video: "lesson-video/ses/another-stage/other/hash.mp4" },
         ]) {
-          writeFileSync(file, JSON.stringify(entry ? { [LESSON]: entry } : {}));
+          writeFileSync(
+            file,
+            JSON.stringify(entry ? { [videoManifestKey(COURSE, LESSON)]: entry } : {}),
+          );
           expect(apply(db, await exportSql(mutate(true), file))).toEqual({});
           expect(current()).toEqual({
             video_path: "old.mp4",
@@ -269,7 +288,12 @@ describe("seed の書き込み行数", () => {
         writeFileSync(
           file,
           JSON.stringify({
-            [LESSON]: { video: path, captions: "c.vtt", poster: "p.jpg", durationSec: 30 },
+            [videoManifestKey(COURSE, LESSON)]: {
+              video: path,
+              captions: "c.vtt",
+              poster: "p.jpg",
+              durationSec: 30,
+            },
           }),
         );
         const succeeded = await exportSql(mutate(true), file);
@@ -638,7 +662,7 @@ it(
       const lessonId = "sample-public-slides";
       const video = `lesson-video/ses/${COURSE}/${lessonId}/hash.mp4`;
       const file = join(root, "video-manifest.json");
-      writeFileSync(file, JSON.stringify({ [lessonId]: { video } }));
+      writeFileSync(file, JSON.stringify({ [videoManifestKey(COURSE, lessonId)]: { video } }));
       writeFileSync(join(topic, "video.json"), "{}");
       writeFileSync(join(topic, "narration.json"), "{}");
       const manifest = () => real.buildContentManifest(join(root, "stages"));
