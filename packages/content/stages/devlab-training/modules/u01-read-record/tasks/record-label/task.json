@@ -1,0 +1,55 @@
+{
+  "id": "devlab-training/u01-read-record/record-label",
+  "title": "作業名と時間を表示する",
+  "kind": "basic",
+  "pattern": "devlab-training-record-label",
+  "skills": {
+    "uses": [],
+    "assesses": [
+      "devlab-training-record-label"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [],
+    "rubric": [
+      {
+        "id": "record-label",
+        "criterion": "0分と未入力を区別し、渡された記録の値を使って表示文字列を組み立てている。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 240,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "src/records.ts",
+    "src/demo.ts"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

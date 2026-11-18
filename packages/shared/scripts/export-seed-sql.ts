@@ -197,10 +197,15 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
   const theme = stage.theme ? `'${esc(stage.theme)}'` : "null";
   const parent = stage.parent ? `'${esc(stage.parent)}'` : "null";
   const audience = stage.audience === "granted" ? "'granted'" : "'catalog'";
+  const completionColumns =
+    stage.completion === "tasks"
+      ? ["require_all_lessons", "require_quiz_pass", "require_assignment_pass"]
+      : [];
+  const completionValues =
+    stage.completion === "tasks" ? (isSqlite ? ", 0, 0, 1" : ", false, false, true") : "";
   lines.push(
-    `insert into ${isSqlite ? "" : "public."}stages (id, tenant_id, slug, title, category, color, thumbnail_path, icon_path, duration_hours, description, instructor_name, status, prerequisites, parent, can_do, theme, audience, format, environment${isSqlite ? ", created_at, updated_at" : ""}) values ('${stageUuid}', '${esc(tenantId)}', '${slug}', '${esc(stage.title)}', ${stage.category ? `'${esc(stage.category)}'` : "null"}, ${stage.color ? `'${esc(stage.color)}'` : "null"}, ${stage.thumbnailPath ? `'${esc(stage.thumbnailPath)}'` : "null"}, ${stage.iconPath ? `'${esc(stage.iconPath)}'` : "null"}, ${stage.duration ?? "null"}, ${stage.description ? `'${esc(stage.description)}'` : "null"}, ${stage.enrolledBy ? `'${esc(stage.enrolledBy)}'` : "null"}, 'published', ${prerequisites}, ${parent}, ${canDo}, ${theme}, ${audience}, ${stage.format ?? 1}, ${stage.format === 2 ? strLit(stage.environment ?? "") : "null"}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (tenant_id, slug) ${doUpdate("stages", ["title", "category", "color", "thumbnail_path", "icon_path", "duration_hours", "description", "instructor_name", "status", "prerequisites", "parent", "can_do", "theme", "audience", "format", "environment"], { touch: "updated_at" })};`,
+    `insert into ${isSqlite ? "" : "public."}stages (id, tenant_id, slug, title, category, color, thumbnail_path, icon_path, duration_hours, description, instructor_name, status, prerequisites, parent, can_do, theme, audience, format, environment${completionColumns.length ? `, ${completionColumns.join(", ")}` : ""}${isSqlite ? ", created_at, updated_at" : ""}) values ('${stageUuid}', '${esc(tenantId)}', '${slug}', '${esc(stage.title)}', ${stage.category ? `'${esc(stage.category)}'` : "null"}, ${stage.color ? `'${esc(stage.color)}'` : "null"}, ${stage.thumbnailPath ? `'${esc(stage.thumbnailPath)}'` : "null"}, ${stage.iconPath ? `'${esc(stage.iconPath)}'` : "null"}, ${stage.duration ?? "null"}, ${stage.description ? `'${esc(stage.description)}'` : "null"}, ${stage.enrolledBy ? `'${esc(stage.enrolledBy)}'` : "null"}, 'published', ${prerequisites}, ${parent}, ${canDo}, ${theme}, ${audience}, ${stage.format ?? 1}, ${stage.format === 2 ? strLit(stage.environment ?? "") : "null"}${completionValues}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (tenant_id, slug) ${doUpdate("stages", ["title", "category", "color", "thumbnail_path", "icon_path", "duration_hours", "description", "instructor_name", "status", "prerequisites", "parent", "can_do", "theme", "audience", "format", "environment", ...completionColumns], { touch: "updated_at" })};`,
   );
-
   // stage 行は slug で upsert し、セクション配下はステージ id がこの seed の安定
   // UUID と一致するときだけ upsert する（CMS 由来のランダム ID ステージは
   // メタデータだけ更新し、ツリーは触らない）。GitHub が正本なので、安定 UUID

@@ -1,0 +1,8 @@
+{
+  "plannedHours": 6,
+  "skills": {
+    "uses": ["devlab-training-record-label"],
+    "assesses": ["devlab-training-week-total"]
+  },
+  "reuses": []
+}

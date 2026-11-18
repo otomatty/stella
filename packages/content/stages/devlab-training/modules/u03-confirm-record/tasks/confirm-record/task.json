@@ -1,0 +1,61 @@
+{
+  "id": "devlab-training/u03-confirm-record/confirm-record",
+  "title": "一覧から下書きを確定する",
+  "kind": "basic",
+  "pattern": "devlab-training-confirm-record",
+  "skills": {
+    "uses": [
+      "devlab-training-week-total"
+    ],
+    "assesses": [
+      "devlab-training-confirm-record"
+    ]
+  },
+  "runner": "react-test",
+  "environment": "react-test-01",
+  "submit": {
+    "files": [
+      "src/RecordList.jsx"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [],
+    "rubric": [
+      {
+        "id": "confirm-record",
+        "criterion": "クリックした行の ID を既存の確定処理に渡し、その行の状態に応じてボタンを表示している。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 360,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vite.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "index.html",
+    "src/main.jsx",
+    "src/App.jsx",
+    "src/records.js",
+    "src/sum-week.js",
+    "src/format-record.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

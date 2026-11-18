@@ -518,6 +518,44 @@ describe("外部連携の境界 (実 SQLite)", () => {
       enrollment: { stage_id: "extra2", user_id: "inside" },
     });
   });
+  it("配置用の親がある研修は単独で割り当て、免除なしで始められる", async () => {
+    const a = await setupWrite();
+    const orm = getDb(env);
+    await orm
+      .update(stages)
+      .set({ category: "開発ラボG", parent: "sample-other", prerequisites: "[]" })
+      .where(eq(stages.id, "extra"));
+    await orm.update(stages).set({ category: "開発ラボG" }).where(eq(stages.id, "extra2"));
+
+    const configure = await write(a.token, "stages", { stages: [{ slug: "sample-extra" }] });
+    expect(configure.status).toBe(200);
+    expect(
+      db.sqlite.prepare("select stage_id, exempt from integration_group_stages").all(),
+    ).toEqual([{ stage_id: "extra", exempt: 0 }]);
+
+    const readMap = async () => {
+      const response = await request(app, env, "/api/skill-map/mine?tiers=7", {
+        token: studentToken,
+      });
+      expect(response.status).toBe(200);
+      const json = (await response.json()) as { skill_map: { stages: { id: string }[] } };
+      return json.skill_map.stages;
+    };
+    expect(await readMap()).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "extra" })]),
+    );
+    await orm.insert(stageGrants).values({ stageId: "extra", profileId: "inside" });
+    const stagesForLearner = await readMap();
+    expect(stagesForLearner).toContainEqual(
+      expect.objectContaining({ id: "extra", state: "unlocked", visibility: "full" }),
+    );
+    expect(stagesForLearner.some(({ id }) => id === "extra2")).toBe(false);
+    const start = await request(app, env, "/api/stages/extra/start", {
+      token: studentToken,
+      method: "POST",
+    });
+    expect(start.status).toBe(200);
+  });
   it("catalog の親は一緒に指定しなくても通る", async () => {
     const a = await setupWrite();
     expect((await write(a.token, "stages", { stages: [setting] })).status).toBe(200);

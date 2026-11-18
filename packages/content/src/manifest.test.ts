@@ -976,7 +976,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "claude-code-team",
       "claude-cowork-basics",
     ];
-    expect(stages).toHaveLength(42);
+    expect(stages).toHaveLength(43);
     for (const slug of placeholders) {
       const stage = stages.find((c) => c.id === slug);
       expect(stage, slug).toBeDefined();
@@ -1232,6 +1232,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "devlab-ts-ch08",
       "devlab-ts-ch09",
       "devlab-ts-extra",
+      "devlab-training",
       "csharp-foundations",
       "python-basics",
       "python-testing-ci-basics",
@@ -1278,8 +1279,23 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     }
   });
 
+  it("開発ラボGの研修は前提なしで、課題4つの合格で修了する", () => {
+    const training = stages.find((stage) => stage.id === "devlab-training");
+    expect(training).toMatchObject({
+      parent: "devlab-ts-ch09",
+      audience: "granted",
+      completion: "tasks",
+      duration: 24,
+    });
+    expect(training?.prerequisites ?? []).toEqual([]);
+    expect(training?.sections).toHaveLength(4);
+    for (const section of training?.sections ?? []) {
+      expect(section.lessons.map((lesson) => lesson.type)).toEqual(["text", "quiz", "text"]);
+    }
+  });
+
   it("前提なしの入口は Basic の dev-env-basics と開発ラボG の 00 章", () => {
-    const roots = stages.filter((stage) => !stage.prerequisites?.length);
+    const roots = stages.filter((stage) => !stage.prerequisites?.length && !stage.parent);
     expect(roots.map((stage) => stage.id)).toEqual(["dev-env-basics", "devlab-ts-ch00"]);
     expect(roots.find((stage) => stage.id === "devlab-ts-ch00")).toMatchObject({
       audience: "granted",

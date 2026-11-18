@@ -1,0 +1,23 @@
+{
+  "format": 2,
+  "title": "開発ラボG 研修",
+  "category": "開発ラボG",
+  "color": "indigo",
+  "description": "小さな週報アプリを使い、作業記録の表示から週の集計ルールの変更までを確かめます。4つの個人演習の合格で修了です。",
+  "header": "開発ラボG 研修",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": [],
+  "parent": "devlab-ts-ch09",
+  "plannedHours": 24,
+  "environment": "ts-test-01",
+  "completion": "tasks",
+  "canDo": "既存の TypeScript と React のコードを読み、週報の集計と表示を業務ルールに合わせて変え、動作を確かめることができる。",
+  "theme": "開発ラボG の選考",
+  "modules": {
+    "u01-read-record": "作業記録1件を読む",
+    "u02-week-total": "指定した週の合計を出す",
+    "u03-confirm-record": "一覧で下書きを見分ける",
+    "u04-confirmed-total": "週報の集計ルールを変える"
+  }
+}

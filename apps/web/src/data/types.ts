@@ -116,6 +116,8 @@ export interface Stage {
    * 未設定なら `prerequisites` の先頭を親に倒す (評価器 `parentSlugOf`)。
    */
   parent?: string;
+  /** 教材の seed が課題だけを修了条件にする指定。 */
+  completion?: "tasks";
   /** 到達説明。「このスキルを身につけた人は◯◯ができる」のホバー表示に使う 1 文。 */
   canDo?: string;
   /** まだ見えないスキルに見せるテーマ名。視界外のステージはタイトルの代わりにこれだけが見える。 */

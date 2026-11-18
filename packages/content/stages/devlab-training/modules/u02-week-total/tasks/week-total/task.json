@@ -1,0 +1,58 @@
+{
+  "id": "devlab-training/u02-week-total/week-total",
+  "title": "指定した週の合計を出す",
+  "kind": "basic",
+  "pattern": "devlab-training-week-total",
+  "skills": {
+    "uses": [
+      "devlab-training-record-label"
+    ],
+    "assesses": [
+      "devlab-training-week-total"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [],
+    "rubric": [
+      {
+        "id": "week-total",
+        "criterion": "受講者が書いたテストは対象週だけの場合と別の週の記録を加えた場合を比較し、合計が変わらないことを確かめている。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [],
+  "estimatedMinutes": 360,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "src/records.ts",
+    "src/format-record.ts",
+    "src/demo.ts"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

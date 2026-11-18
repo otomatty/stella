@@ -34,6 +34,8 @@ export interface ExerciseRef {
 export interface StageConfig {
   format?: 1 | 2;
   plannedHours?: number;
+  /** 全課題の合格を修了条件にする (format 2)。 */
+  completion?: "tasks";
   environment?: string;
   title: string;
   category?: string;
@@ -65,9 +67,10 @@ export interface StageConfig {
    */
   prerequisites?: string[];
   /**
-   * スキルツリーで線を引く親 (slug)。`prerequisites` のうちの 1 つ。線・配置・視界は
-   * この 1 本で決まり、解放条件は `prerequisites` 全部 (AND) のまま。
-   * 前提が 2 つ以上なら必須、1 つなら省略可 (その 1 つが親)、0 なら書けない。
+   * スキルツリーで線を引く親 (slug)。線・配置・視界はこの 1 本で決まり、
+   * 解放条件は `prerequisites` 全部 (AND)。
+   * 前提が 2 つ以上ならそのうち 1 つを必ず指定し、1 つなら省略できる。
+   * 表示条件のない島の granted は、前提なしで同じ島の granted を配置用の親にできる。
    * `appearances` を持つステージは扇ごとの親を `appearancePrerequisites` に書くので、これは書けない。
    */
   parent?: string;

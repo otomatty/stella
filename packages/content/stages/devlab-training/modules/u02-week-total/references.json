@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-training/u02-week-total@2",
+  "contentHash": "0d948a8011154606865fa280f0d8b52b7f55fb17a9e68cef6fa718c19bae3c97",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-weekly-report/doc.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。指定した週の作業時間を合計し、別の週を加えても変わらないことをテストで示せることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-weekly-report/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。指定した週の作業時間を合計し、別の週を加えても変わらないことをテストで示せることを扱う。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/week-total/README.md",
+      "sourceRefs": [],
+      "usedFor": "週報アプリの独自教材。指定した週の作業時間を合計し、別の週を加えても変わらないことをテストで示せることを扱う。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

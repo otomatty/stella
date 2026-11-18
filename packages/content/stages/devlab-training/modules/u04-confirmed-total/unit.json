@@ -1,0 +1,8 @@
+{
+  "plannedHours": 8,
+  "skills": {
+    "uses": ["devlab-training-confirm-record"],
+    "assesses": ["devlab-training-confirmed-total"]
+  },
+  "reuses": []
+}

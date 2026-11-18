@@ -314,7 +314,11 @@ function readStageConfig(stageDir: string, slug: string): StageConfig & { tenant
           `stages/${slug}/stage.json の parent は appearances と併用できません (扇ごとの親は appearancePrerequisites に書きます)。`,
         );
       }
-      if (!listed.includes(raw.parent.trim())) {
+      const allowPlacementOnly =
+        raw.audience === "granted" &&
+        listed.length === 0 &&
+        isIslandWithoutRequirements(raw.category);
+      if (!listed.includes(raw.parent.trim()) && !allowPlacementOnly) {
         throw new Error(
           `stages/${slug}/stage.json の parent は prerequisites に含めてください: ${raw.parent}`,
         );
@@ -324,6 +328,11 @@ function readStageConfig(stageDir: string, slug: string): StageConfig & { tenant
         `stages/${slug}/stage.json の prerequisites が 2 つ以上なので、線を引く 1 つを parent に指定してください。`,
       );
     }
+  }
+  if (raw.completion !== undefined && (raw.format !== 2 || raw.completion !== "tasks")) {
+    throw new Error(
+      `stages/${slug}/stage.json の completion には format 2 で tasks を指定できます。`,
+    );
   }
   for (const field of ["canDo", "theme"] as const) {
     const value = raw[field];
@@ -534,26 +543,24 @@ function buildOneStage(
         });
       }
 
-      const key = lessonKey(topicIds);
-      if (config.format === 2 && !key)
-        throw new Error(`${slug}/${moduleDir}/${lessonDir}: トピックが必要です`);
-
+      const topicKey = lessonKey(topicIds);
       const docFile = join(lessonPath, "doc.md");
+      const docSource = readFileSync(docFile, "utf8").replace(/\r\n/g, "\n");
+      // スライドを持たない format 2 のまとめと知識問題には、単元とレッスンのディレクトリを使う。
+      const textOnly = config.format === 2 && !topicKey;
+      const key = textOnly ? `${moduleDir}-${lessonDir}` : topicKey;
+      const lessonTitle = textOnly
+        ? (docSource.match(/^# (.+)$/m)?.[1] ?? moduleTitles[moduleDir] ?? lessonDir)
+        : key;
       lessons.push({
         id: `doc-${key}`,
-        title: `${key} まとめ`,
+        title: `${lessonTitle} まとめ`,
         type: "text",
         duration: "10分",
         status: "todo",
         ...(publicUnit ? { public: true } : {}),
         markdown: dropPracticeLink(
-          rewriteImagePaths(
-            slug,
-            renderContent(
-              readFileSync(docFile, "utf8").replace(/\r\n/g, "\n"),
-              `${lessonDir}/doc.md`,
-            ),
-          ),
+          rewriteImagePaths(slug, renderContent(docSource, `${lessonDir}/doc.md`)),
         ),
       });
 
@@ -568,7 +575,7 @@ function buildOneStage(
         const quizLessonId = `quiz-${key}`;
         lessons.push({
           id: quizLessonId,
-          title: `${key} 確認クイズ`,
+          title: `${lessonTitle} 確認クイズ`,
           type: "quiz",
           duration: quizDuration(questions.length),
           status: "todo",
@@ -659,6 +666,10 @@ function buildOneStage(
     );
   }
 
+  if (config.completion === "tasks" && !tasks.some((task) => !task.variantOf)) {
+    throw new Error(`stages/${slug}/stage.json の completion: tasks には課題が必要です。`);
+  }
+
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
   const thumbnail = resolveThumbnail(stageDir, slug, config);
   const icon = resolveIcon(stageDir, slug);
@@ -674,6 +685,7 @@ function buildOneStage(
   return {
     stage: {
       id: slug,
+      ...(config.completion ? { completion: config.completion } : {}),
       ...(config.format === 2 ? { format: 2 as const, environment: config.environment } : {}),
       ...(config.plannedHours === undefined ? {} : { duration: config.plannedHours }),
       title: config.title,
@@ -784,6 +796,14 @@ function assertGrantedAudienceGraph(stages: Stage[]): void {
 
   for (const stage of stages) {
     if (stage.audience !== "granted") continue;
+    if (stage.parent && !stage.prerequisites?.length) {
+      const parent = bySlug.get(stage.parent);
+      if (parent?.category !== stage.category || parent?.audience !== "granted") {
+        throw new Error(
+          `stages/${stage.id}/stage.json の配置用の parent は同じ島の granted ステージを指定してください。`,
+        );
+      }
+    }
     const visited = new Set<string>();
     let slug: string | undefined = stage.id;
     let reachedRoot = false;

@@ -49,6 +49,8 @@ packages/content/stages/<slug>/
 
 単元は **モジュール** に対応します。`stage.json` に `"format": 2`・`plannedHours`（正の時間数）・`environment`（環境台帳の ID）を書きます。見本は `stages/dev-env-basics/` です。format を省略したステージは従来の読み込み・seed・PDFのままです。
 
+スライドを作らないレッスンは `doc.md` と `knowledge.md` を置きます。まとめと知識問題の ID には単元とレッスンのディレクトリ名を使います。ステージで `"completion": "tasks"` を指定すると、配布した全課題の合格が修了条件になります。まとめの閲覧や知識問題の合格は任意です。
+
 ```text
 modules/<unit>/
   unit.json              # plannedHours、skills.uses / assesses、reuses（学習フォルダー内の成果物パス）
@@ -277,7 +279,7 @@ cp packages/content/templates/stage.json packages/content/stages/<slug>/stage.js
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |
 | `prerequisites` | slug の配列 | **ハードロック（解放条件）**。挙げたステージを全部クリアするまで、このステージは開けない。見た目の複製 (`appearances`) で扇ごとに前提を分けるときは和集合を書き、組は `appearancePrerequisites` へ |
-| `parent` | slug | **線を引く親**。`prerequisites` のうちの 1 つ。ツリーの線・配置・霧の距離はこの 1 本で決まる（1 つの星に線は 1 本しか入らない）。前提が 2 つ以上なら**必須**、1 つなら省略可（その 1 つが親）、0 なら書けない。線の無い前提も解放条件としては効き、ロック中の星の「解放条件」に名前で出る |
+| `parent` | slug | **線を引く親**。`prerequisites` のうちの 1 つ。ツリーの線・配置・霧の距離はこの 1 本で決まる（1 つの星に線は 1 本しか入らない）。前提が 2 つ以上なら**必須**、1 つなら省略可（その 1 つが親）、表示条件のない島の `granted` では、前提が 0 でも同じ島の `granted` を配置用の親にできる。線の無い前提も解放条件としては効き、ロック中の星の「解放条件」に名前で出る |
 | `canDo` | 1 文 | ホバーの到達説明「このスキルを身につけた人は◯◯ができる」 |
 | `theme` | 短い語 | まだ見えていないスキルに、タイトルの代わりに見せるテーマ名。手前の星の「解放条件」に、このステージ名の代わりとして並ぶのもこの語 |
 | `audience` | `"catalog"` / `"granted"` | スキルツリーの掲載範囲。省略 = `catalog`（全受講者。Basic = 新18ステージ）。`granted` = Extra。講師・管理者がステージ管理 (`/stages`) の盤面で割り当てたユーザーだけに星が出る |
