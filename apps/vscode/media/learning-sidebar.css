@@ -69,6 +69,28 @@ progress::-webkit-progress-value {
   background: var(--vscode-progressBar-background);
   border-radius: 2px;
 }
+.segments {
+  display: flex;
+  gap: 3px;
+  list-style: none;
+  padding: 0;
+  margin: 7px 0 0;
+}
+.segments li {
+  flex: 1;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--vscode-widget-border, var(--vscode-input-background));
+}
+.segments .done {
+  background: var(--vscode-testing-iconPassed);
+}
+.segments .here {
+  background: var(--vscode-focusBorder);
+}
+.segments .wait {
+  background: var(--vscode-editorWarning-foreground);
+}
 .next-step {
   margin: 22px 0 24px;
   padding: 14px;
@@ -153,10 +175,11 @@ h1 {
   background: var(--vscode-list-hoverBackground);
   color: var(--vscode-list-hoverForeground, var(--vscode-foreground));
 }
-.current .lesson-link {
+.lesson.current .lesson-link {
   background: var(--vscode-list-inactiveSelectionBackground);
   color: var(--vscode-list-inactiveSelectionForeground, var(--vscode-foreground));
   border-color: var(--vscode-contrastActiveBorder, transparent);
+  box-shadow: inset 3px 0 0 var(--vscode-focusBorder);
 }
 .step-number {
   display: grid;
@@ -182,20 +205,67 @@ h1 {
   font-size: 13px;
   line-height: 1.6;
 }
+.lesson.current .lesson-title {
+  font-weight: 700;
+}
 .lesson-meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 2px 8px;
   margin-top: 4px;
   color: var(--vscode-descriptionForeground);
-  font-size: 10px;
+  font-size: 11px;
 }
-.web-label {
+.lesson-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.kind-icon,
+.web-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.web-icon {
   color: var(--vscode-textLink-foreground);
 }
-.current-label {
-  width: 100%;
-  color: var(--vscode-textLink-foreground);
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pill-color) 16%, transparent);
+  color: var(--vscode-foreground);
+  font-size: 11px;
+}
+.pill::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--pill-color);
+}
+.pill-neutral {
+  --pill-color: var(--vscode-descriptionForeground);
+}
+.pill-info {
+  --pill-color: var(--vscode-focusBorder);
+}
+.pill-wait {
+  --pill-color: var(--vscode-editorWarning-foreground);
+}
+.pill-fail {
+  --pill-color: var(--vscode-testing-iconFailed);
+}
+.pill-pass {
+  --pill-color: var(--vscode-testing-iconPassed);
+}
+.next-step > .pill {
+  margin-top: 6px;
 }
 footer {
   display: flex;
@@ -301,10 +371,7 @@ footer {
 .loading-count {
   width: 48px;
 }
-.loading-progress {
-  height: 4px;
-  margin-top: 7px;
-  border-radius: 2px;
+.segments .skeleton {
   background: var(--skeleton-muted);
 }
 .loading-next-step {
@@ -328,6 +395,7 @@ footer {
 }
 .hint .skeleton,
 .lesson-meta .skeleton,
+.loading-pill .skeleton,
 .loading-footer .skeleton {
   background: var(--skeleton-muted);
 }
@@ -367,10 +435,10 @@ footer {
   width: 30px;
 }
 .loading-status {
-  width: 24px;
+  width: 50px;
 }
-.loading-web {
-  width: 62px;
+.loading-pill {
+  --pill-color: var(--vscode-descriptionForeground);
 }
 .loading-active .lesson-link {
   border-color: var(--skeleton-edge);
@@ -379,18 +447,13 @@ footer {
     var(--vscode-list-inactiveSelectionBackground, var(--vscode-foreground)) 24%,
     var(--vscode-sideBar-background)
   );
+  box-shadow: inset 3px 0 0 var(--skeleton-edge);
 }
 .loading-active .step-number {
   background: transparent;
 }
 .loading-active .loading-title > .skeleton {
   background: color-mix(in srgb, var(--vscode-foreground) 16%, var(--vscode-sideBar-background));
-}
-.loading-active .loading-status {
-  width: 68px;
-}
-.loading-current {
-  width: 104px;
 }
 .loading-map {
   width: 104px;
