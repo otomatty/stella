@@ -23,12 +23,18 @@ function isWithinRoot(root: string, file: string): boolean {
   );
 }
 
-function resolveDiagnosticFile(root: string, file: string): string | undefined {
+export function resolveDiagnosticFile(root: string, file: string): string | undefined {
   if (!file || file.includes("\0") || path.isAbsolute(file) || path.win32.isAbsolute(file)) {
     return undefined;
   }
   const resolved = path.resolve(root, file);
   return isWithinRoot(root, resolved) ? resolved : undefined;
+}
+
+export async function readTestSource(root: string, file: string): Promise<string> {
+  return readFileInRoot(root, path.relative(root, file), MAX_TEST_FILE_BYTES)
+    .then((bytes) => bytes.toString("utf8"))
+    .catch(() => "");
 }
 
 function positionIndex(value: number): number {
@@ -105,9 +111,7 @@ async function collectDiagnostics(
       if (!file) continue;
       let testSource = testSources.get(file);
       if (testSource === undefined) {
-        testSource = await readFileInRoot(root, path.relative(root, file), MAX_TEST_FILE_BYTES)
-          .then((bytes) => bytes.toString("utf8"))
-          .catch(() => "");
+        testSource = await readTestSource(root, file);
         testSources.set(file, testSource);
       }
       const line = findTestLine(testSource, test.name);

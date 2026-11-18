@@ -46,6 +46,7 @@ import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskDiagnostics } from "./task-diagnostics.js";
 import { registerTaskHelp } from "./task-help.js";
 import { registerTaskStatus } from "./task-status.js";
+import { registerTaskTests } from "./task-tests.js";
 import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
 import { openDistributedTask, registerTaskOpening } from "./open-task.js";
 import { showSubmissionForm } from "./submission-form.js";
@@ -328,6 +329,7 @@ export function activate(context: vscode.ExtensionContext): void {
   registerLearningSidebar(context, auth);
   registerTaskCommands(context, auth);
   registerTaskDiagnostics(context);
+  registerTaskTests(context);
   // 課題パネルのヒント・解答例・解説・レビューの結果 (#36)。
   registerTaskHelp(context);
   // 開いている課題の「課題を確認する」「課題文」をステータスバーとエディターの右上に出す。
