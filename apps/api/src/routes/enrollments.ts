@@ -3,7 +3,7 @@
  *
  * アプリ層認可 (旧 RLS の置き換え):
  *   - 受講者は自分の enrollment のみ read … GET /api/enrollments/mine
- *   - admin / platform_admin は read … 他ルートは requireAdmin
+ *   - admin は read … 他ルートは requireAdmin
  *
  * ## Phase 3b: 割当は退役した
  *

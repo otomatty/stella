@@ -49,7 +49,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
       { id: "student2", displayName: "受講者2", role: "student" },
       { id: "staff", displayName: "講師", role: "admin" },
       { id: "admin", displayName: "管理者", role: "admin" },
-      { id: "platform_admin", displayName: "運営", role: "platform_admin" },
+      { id: "other-admin", displayName: "運営", role: "admin" },
     ]);
     await db.insert(stages).values([
       { id: "stage", slug: "stage", title: "未公開のステージ", status: "draft" },
@@ -159,72 +159,64 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
     expect((await getDetail()).status).toBe(404);
   });
 
-  it.each(["admin", "platform_admin"])(
-    "%s は詳細で課題文・観点・規則だけを本文で読める",
-    async (role) => {
-      await prepareDetail();
-      await db.insert(taskPrivate).values({
-        taskId: detailId,
-        files: JSON.stringify({
-          "review.md": encode("日本語のレビューの観点"),
-          "hints.md": encode("SECRET_HINT"),
-          "solution/index.js": encode("SECRET_SOLUTION"),
-          "explanation.md": encode("SECRET_EXPLANATION"),
-          "variants/answer.js": encode("SECRET_VARIANT"),
-        }),
-      });
-      await db.insert(codingRules).values({
-        id: "known",
-        scope: "common",
-        position: 0,
-        title: "規則名",
-        statement: "規則の本文",
-        appliesTo: "all",
-        introducedIn: "first",
-        contentHash: "hash",
-      });
-      const response = await getDetail(role);
-      expect(response.status).toBe(200);
-      const result = await json<StaffTaskDetail>(response);
-      expect(result).toMatchObject({
-        task: {
-          id: detailId,
-          title: "課題の詳細",
-          kind: "basic",
-          pattern: "page",
-          skills: { uses: ["use"], assesses: ["assess"] },
-          estimatedMinutes: 20,
-          lessonId: "detail-lesson",
-          contentHash: "a".repeat(64),
-          parentTaskId: null,
-          manifest: { ...manifest, checks: { lint: false, format: false }, protected: [] },
-        },
-        stage: { id: "stage", slug: "stage", title: "未公開のステージ" },
-        section: { id: "first", title: "単元1" },
-        sourcePath: "packages/content/stages/stage/modules/unit/tasks/q01",
-        readme: "# 日本語の課題文\n",
-        reviewNotes: "日本語のレビューの観点",
-        codingRules: [
-          { id: "known", title: "規則名", statement: "規則の本文", required: true },
-          { id: "missing", title: "missing", statement: "", required: false },
-        ],
-        counts: emptyCounts,
-        helpOpens: { hints: [], solution: 0, explanation: 0 },
-        revisions: [],
-        variants: [],
-      });
-      const serialized = JSON.stringify(result);
-      for (const text of [
-        "SECRET_HINT",
-        "SECRET_SOLUTION",
-        "SECRET_EXPLANATION",
-        "SECRET_VARIANT",
-      ]) {
-        expect(serialized).not.toContain(text);
-        expect(serialized).not.toContain(encode(text));
-      }
-    },
-  );
+  it.each(["admin"])("%s は詳細で課題文・観点・規則だけを本文で読める", async (role) => {
+    await prepareDetail();
+    await db.insert(taskPrivate).values({
+      taskId: detailId,
+      files: JSON.stringify({
+        "review.md": encode("日本語のレビューの観点"),
+        "hints.md": encode("SECRET_HINT"),
+        "solution/index.js": encode("SECRET_SOLUTION"),
+        "explanation.md": encode("SECRET_EXPLANATION"),
+        "variants/answer.js": encode("SECRET_VARIANT"),
+      }),
+    });
+    await db.insert(codingRules).values({
+      id: "known",
+      scope: "common",
+      position: 0,
+      title: "規則名",
+      statement: "規則の本文",
+      appliesTo: "all",
+      introducedIn: "first",
+      contentHash: "hash",
+    });
+    const response = await getDetail(role);
+    expect(response.status).toBe(200);
+    const result = await json<StaffTaskDetail>(response);
+    expect(result).toMatchObject({
+      task: {
+        id: detailId,
+        title: "課題の詳細",
+        kind: "basic",
+        pattern: "page",
+        skills: { uses: ["use"], assesses: ["assess"] },
+        estimatedMinutes: 20,
+        lessonId: "detail-lesson",
+        contentHash: "a".repeat(64),
+        parentTaskId: null,
+        manifest: { ...manifest, checks: { lint: false, format: false }, protected: [] },
+      },
+      stage: { id: "stage", slug: "stage", title: "未公開のステージ" },
+      section: { id: "first", title: "単元1" },
+      sourcePath: "packages/content/stages/stage/modules/unit/tasks/q01",
+      readme: "# 日本語の課題文\n",
+      reviewNotes: "日本語のレビューの観点",
+      codingRules: [
+        { id: "known", title: "規則名", statement: "規則の本文", required: true },
+        { id: "missing", title: "missing", statement: "", required: false },
+      ],
+      counts: emptyCounts,
+      helpOpens: { hints: [], solution: 0, explanation: 0 },
+      revisions: [],
+      variants: [],
+    });
+    const serialized = JSON.stringify(result);
+    for (const text of ["SECRET_HINT", "SECRET_SOLUTION", "SECRET_EXPLANATION", "SECRET_VARIANT"]) {
+      expect(serialized).not.toContain(text);
+      expect(serialized).not.toContain(encode(text));
+    }
+  });
 
   it.each([undefined, 1])(
     "元の定義のenvironmentがID文字列でも配布物のmanifestを返す (schemaVersion=%s)",
@@ -309,7 +301,7 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
     await db.insert(taskProgress).values([
       { userId: "student1", taskId: detailId, status: "passed", contentHash: "hash" },
       { userId: "student2", taskId: detailId, status: "instructor-pending", contentHash: "hash" },
-      ...["admin", "platform_admin"].map((userId) => ({
+      ...["admin", "other-admin"].map((userId) => ({
         userId,
         taskId: detailId,
         status: "passed" as const,
@@ -326,34 +318,33 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
         lastRunAt: new Date(),
       })),
     );
-    const helpRows = ["student1", "student2", "staff", "admin", "platform_admin"].flatMap(
-      (userId) =>
-        ["old", "new"].flatMap((contentHash) => [
-          {
-            userId,
-            taskId: detailId,
-            item: "hint" as const,
-            level: 1,
-            contentHash,
-            privateHash: "private",
-          },
-          {
-            userId,
-            taskId: detailId,
-            item: "solution" as const,
-            level: 0,
-            contentHash,
-            privateHash: "private",
-          },
-          {
-            userId,
-            taskId: detailId,
-            item: "explanation" as const,
-            level: 0,
-            contentHash,
-            privateHash: "private",
-          },
-        ]),
+    const helpRows = ["student1", "student2", "staff", "admin", "other-admin"].flatMap((userId) =>
+      ["old", "new"].flatMap((contentHash) => [
+        {
+          userId,
+          taskId: detailId,
+          item: "hint" as const,
+          level: 1,
+          contentHash,
+          privateHash: "private",
+        },
+        {
+          userId,
+          taskId: detailId,
+          item: "solution" as const,
+          level: 0,
+          contentHash,
+          privateHash: "private",
+        },
+        {
+          userId,
+          taskId: detailId,
+          item: "explanation" as const,
+          level: 0,
+          contentHash,
+          privateHash: "private",
+        },
+      ]),
     );
     for (const row of helpRows) await db.insert(taskHelpOpens).values(row);
     await db.insert(taskHelpOpens).values({
@@ -489,12 +480,9 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
     expect(await response.json()).toEqual({ error: "ステージが見つかりません" });
   });
 
-  it.each(["admin", "platform_admin"])(
-    "%s は受講登録なしで未公開のステージを読める",
-    async (role) => {
-      expect((await get(role)).status).toBe(200);
-    },
-  );
+  it.each(["admin"])("%s は受講登録なしで未公開のステージを読める", async (role) => {
+    expect((await get(role)).status).toBe(200);
+  });
 
   it("単元・課題順に返し、非アクティブ・類題・別ステージを除き、supportと類題数を返す", async () => {
     const result = await getTasks();

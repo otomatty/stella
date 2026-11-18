@@ -2,13 +2,9 @@ import { describe, expect, it } from "vitest";
 import { isAssignableProfileRole, isProfileRole, validateInviteUsersRequest } from "./types.js";
 
 describe("profile roles", () => {
-  it("recognizes platform_admin as a profile role but not assignable", () => {
-    expect(isProfileRole("platform_admin")).toBe(true);
+  it("廃止したプラットフォーム管理者ロール (platform_admin) はロールとしても割当先としても認めない", () => {
+    expect(isProfileRole("platform_admin")).toBe(false);
     expect(isAssignableProfileRole("platform_admin")).toBe(false);
-    expect(isAssignableProfileRole("admin")).toBe(true);
-  });
-
-  it("rejects platform_admin in invite validation", () => {
     const result = validateInviteUsersRequest({
       invites: [{ email: "a@example.com", displayName: "A", role: "platform_admin" }],
     });

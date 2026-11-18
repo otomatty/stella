@@ -393,7 +393,7 @@ describe("GET /api/stage-grants", () => {
     expect(body.stages[0]?.slug).toBe("custom-basics");
   });
 
-  it.each(["admin", "platform_admin"])("古い GET でも %s を選べる", async (role) => {
+  it.each(["admin"])("古い GET でも %s を選べる", async (role) => {
     learnerSelect.mockResolvedValue([person("staff", "スタッフ", role)]);
     const res = await request(app, env, "/api/stage-grants", { token: "t" });
     expect(res.status).toBe(200);
@@ -593,7 +593,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(recordAudit).toHaveBeenCalled();
   });
 
-  it.each(["admin", "platform_admin"])("PUT でも %s を割り当てて免除できる", async (role) => {
+  it.each(["admin"])("PUT でも %s を割り当てて免除できる", async (role) => {
     profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
     const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
       token: "t",
@@ -1359,24 +1359,21 @@ describe("GET /api/stage-grants/:stageId/learners", () => {
     expect(prereq.status).toBe(400);
   });
 
-  it.each(["admin", "platform_admin"])(
-    "/learners は %s の role と selectable を返す",
-    async (role) => {
-      learnerSelect.mockResolvedValue([person("staff", "スタッフ", role)]);
-      const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
-        token: "t",
-      });
-      expect(res.status).toBe(200);
-      const body = await json<{ learners: unknown[]; counts: { learners: number }; total: number }>(
-        res,
-      );
-      expect(body.learners).toEqual([
-        expect.objectContaining({ id: "staff", role, selectable: true }),
-      ]);
-      expect(body.counts.learners).toBe(1);
-      expect(body.total).toBe(1);
-    },
-  );
+  it.each(["admin"])("/learners は %s の role と selectable を返す", async (role) => {
+    learnerSelect.mockResolvedValue([person("staff", "スタッフ", role)]);
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1/learners", {
+      token: "t",
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{ learners: unknown[]; counts: { learners: number }; total: number }>(
+      res,
+    );
+    expect(body.learners).toEqual([
+      expect.objectContaining({ id: "staff", role, selectable: true }),
+    ]);
+    expect(body.counts.learners).toBe(1);
+    expect(body.total).toBe(1);
+  });
 
   it("名前とメールを、全角半角と大文字小文字を無視して検索する", async () => {
     const ada = new URLSearchParams({ q: "  ＡＤＡ " });
@@ -1680,7 +1677,7 @@ describe("PATCH /api/stage-grants/:stageId", () => {
     expect(recordAudit).not.toHaveBeenCalled();
   });
 
-  it.each(["admin", "platform_admin"])("PATCH で %s を追加・免除できる", async (role) => {
+  it.each(["admin"])("PATCH で %s を追加・免除できる", async (role) => {
     profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
     const res = await patch({ add: ["teacher"], exempt: ["teacher"] });
     expect(res.status).toBe(200);
@@ -1696,7 +1693,7 @@ describe("PATCH /api/stage-grants/:stageId", () => {
     );
   });
 
-  it.each(["admin", "platform_admin"])("PATCH で割当済みの %s を免除できる", async (role) => {
+  it.each(["admin"])("PATCH で割当済みの %s を免除できる", async (role) => {
     profileLookup.mockResolvedValue([{ id: "teacher", role, disabled: false }]);
     grantSelect.mockResolvedValue([{ profileId: "teacher" }]);
     const res = await patch({ exempt: ["teacher"] });

@@ -20,7 +20,7 @@ const publicClient = (r: typeof integrationClients.$inferSelect) => ({
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,
 });
-// フィルターの選択肢は staff 全員が読む。クライアントの管理は platform_admin のみ。
+// フィルターの選択肢の取得とクライアントの管理は管理者のみ。
 adminIntegrationsRoute.get("/api/admin/integration-groups", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -34,7 +34,7 @@ adminIntegrationsRoute.use("/api/admin/integrations/*", async (c, next) => {
   c.header("Cache-Control", "no-store");
   try {
     const { caller } = await getCaller(c);
-    if (caller.role !== "platform_admin") throw new ApiError("権限がありません", 403);
+    requireAdmin(caller);
     await next();
   } catch (err) {
     return errorResponse(c, err);

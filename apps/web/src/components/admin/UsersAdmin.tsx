@@ -40,28 +40,21 @@ import { UsersAdminDemo } from "./users-admin/UsersAdminDemo";
 
 interface Props {
   currentUserId: string | null;
-  currentUserRole: ProfileRole | null;
   backendEnabled: boolean;
 }
 
-export function UsersAdmin({ currentUserId, currentUserRole, backendEnabled }: Props) {
+export function UsersAdmin({ currentUserId, backendEnabled }: Props) {
   if (!backendEnabled) {
     return <UsersAdminDemo />;
   }
-  return <UsersAdminLive currentUserId={currentUserId} currentUserRole={currentUserRole} />;
+  return <UsersAdminLive currentUserId={currentUserId} />;
 }
 
 // ---------------------------------------------------------------
 // 実データ版
 // ---------------------------------------------------------------
 
-function UsersAdminLive({
-  currentUserId,
-  currentUserRole,
-}: {
-  currentUserId: string | null;
-  currentUserRole: ProfileRole | null;
-}) {
+function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
   const [groupId, setGroupId] = useState("");
   const { profiles, loading, error, refetch } = useProfiles(true, groupId);
   const [query, setQuery] = useState("");
@@ -83,7 +76,6 @@ function UsersAdminLive({
     const c: Record<ProfileRole, number> = {
       student: 0,
       admin: 0,
-      platform_admin: 0,
     };
     for (const p of visibleProfiles) c[p.role]++;
     return c;
@@ -218,7 +210,7 @@ function UsersAdminLive({
             </TableHeader>
             <TableBody>
               {filtered.map((p) => {
-                const manageable = canManageUserRow(p, currentUserId, currentUserRole);
+                const manageable = canManageUserRow(p, currentUserId);
                 return (
                   <TableRow key={p.id} className={p.disabled ? "opacity-60" : undefined}>
                     <TableCell>
@@ -255,13 +247,7 @@ function UsersAdminLive({
                           size="icon-sm"
                           disabled={!manageable || busyId === p.id}
                           onClick={() => setMenuId((id) => (id === p.id ? null : p.id))}
-                          title={
-                            manageable
-                              ? "操作"
-                              : p.id === currentUserId
-                                ? "自分自身は変更できません"
-                                : "platform_admin は変更できません"
-                          }
+                          title={manageable ? "操作" : "自分自身は変更できません"}
                         >
                           <MoreHorizontal size={13} />
                         </Button>
@@ -300,17 +286,8 @@ function UsersAdminLive({
   );
 }
 
-/** 非 platform_admin は platform_admin 行の role/disable を触れない (SQL/seed 専用ロール)。 */
-function canManageUserRow(
-  profile: AdminProfileRow,
-  currentUserId: string | null,
-  currentUserRole: ProfileRole | null,
-): boolean {
-  if (profile.id === currentUserId) return false;
-  if (profile.role === "platform_admin" && currentUserRole !== "platform_admin") {
-    return false;
-  }
-  return true;
+function canManageUserRow(profile: AdminProfileRow, currentUserId: string | null): boolean {
+  return profile.id !== currentUserId;
 }
 
 function FilterChip({

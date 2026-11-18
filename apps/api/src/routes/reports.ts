@@ -6,7 +6,7 @@
  * まとめて書き出す」ことを目的とする。 列定義は `@stella/shared/admin/reports` に置き、
  * CSV 化はフロント (`lib/csv`) が行う (アプリ内の他の CSV 出力と同じ経路)。
  *
- * 認可は admin / platform_admin のみ。
+ * 認可は admin のみ。
  */
 
 import { Hono } from "hono";

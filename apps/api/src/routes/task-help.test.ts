@@ -194,58 +194,55 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     });
 
   describe("講師・管理者の教材確認", () => {
-    const staff = async (role: "admin" | "platform_admin" = "admin") => {
-      await db.update(profiles).set({ role }).where(eq(profiles.id, "learner"));
+    const staff = async () => {
+      await db.update(profiles).set({ role: "admin" }).where(eq(profiles.id, "learner"));
     };
 
-    it.each(["admin", "platform_admin"] as const)(
-      "%s は全素材を条件なしで開け、記録せず、その応答だけに本文を返す",
-      async (role) => {
-        await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
-        // ロール変更前に開いた履歴があっても GET では本文を出さない。
-        expect((await ok(await open("hint", 1))).viewer).toBe("learner");
-        const recorded = await opens();
-        await staff(role);
-        const available = {
-          viewer: "staff",
-          hints: [
-            { level: 1, state: "available" },
-            { level: 2, state: "available" },
-          ],
-          solution: { state: "available" },
-          explanation: { state: "available" },
-          autoOpen: [],
-        };
-        const body = await ok(await help());
-        expect(body).toMatchObject(available);
-        expect(leaked(body, ...Object.values(MARK))).toEqual([]);
-        for (const level of [2, 1]) {
-          const opened = await ok(await open("hint", level));
-          expect(opened.hints[level - 1]).toMatchObject({
-            state: "opened",
-            markdown: level === 1 ? MARK.hint1 : MARK.hint2,
-          });
-          expect(opened.solution).toEqual({ state: "available" });
-        }
-        const solved = await ok(await open("solution"));
-        expect(solved.solution).toEqual({
+    it("管理者は全素材を条件なしで開け、記録せず、その応答だけに本文を返す", async () => {
+      await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
+      // ロール変更前に開いた履歴があっても GET では本文を出さない。
+      expect((await ok(await open("hint", 1))).viewer).toBe("learner");
+      const recorded = await opens();
+      await staff();
+      const available = {
+        viewer: "staff",
+        hints: [
+          { level: 1, state: "available" },
+          { level: 2, state: "available" },
+        ],
+        solution: { state: "available" },
+        explanation: { state: "available" },
+        autoOpen: [],
+      };
+      const body = await ok(await help());
+      expect(body).toMatchObject(available);
+      expect(leaked(body, ...Object.values(MARK))).toEqual([]);
+      for (const level of [2, 1]) {
+        const opened = await ok(await open("hint", level));
+        expect(opened.hints[level - 1]).toMatchObject({
           state: "opened",
-          files: [{ path: "index.html", content: PRIVATE_FILES["solution/index.html"] }],
+          markdown: level === 1 ? MARK.hint1 : MARK.hint2,
         });
-        const explained = await ok(await open("explanation"));
-        expect(explained.explanation).toEqual({
-          state: "opened",
-          markdown: expect.stringContaining(MARK.explanation),
-        });
-        expect(explained.solution).toEqual({ state: "available" });
-        for (const response of [solved, explained])
-          expect(leaked(response, MARK.review, MARK.variant)).toEqual([]);
-        const refreshed = await ok(await help());
-        expect(refreshed).toMatchObject(available);
-        expect(leaked(refreshed, ...Object.values(MARK))).toEqual([]);
-        expect(await opens()).toEqual(recorded);
-      },
-    );
+        expect(opened.solution).toEqual({ state: "available" });
+      }
+      const solved = await ok(await open("solution"));
+      expect(solved.solution).toEqual({
+        state: "opened",
+        files: [{ path: "index.html", content: PRIVATE_FILES["solution/index.html"] }],
+      });
+      const explained = await ok(await open("explanation"));
+      expect(explained.explanation).toEqual({
+        state: "opened",
+        markdown: expect.stringContaining(MARK.explanation),
+      });
+      expect(explained.solution).toEqual({ state: "available" });
+      for (const response of [solved, explained])
+        expect(leaked(response, MARK.review, MARK.variant)).toEqual([]);
+      const refreshed = await ok(await help());
+      expect(refreshed).toMatchObject(available);
+      expect(leaked(refreshed, ...Object.values(MARK))).toEqual([]);
+      expect(await opens()).toEqual(recorded);
+    });
 
     it("never でも解答例と解説を開け、行を追加しない", async () => {
       await setup("basic", { hintLevels: 2, solutionUnlock: "never" });

@@ -10,7 +10,7 @@
  *     受講者側に残す (draft を受講登録しても中身は見えない)。
  *   - sections/lessons/assignments の read は published か staff。
  *   - quizzes (CMS 編集) と listAssignments は staff のみ。
- *   - 書き込みはすべて admin / platform_admin。 子要素は親が存在することを確かめる。
+ *   - 書き込みはすべて admin。 子要素は親が存在することを確かめる。
  *
  * 返却形は旧 DB 行 (snake_case) に合わせ、 フロントのマッパー (@stella/shared/cms/types) を無変更に保つ。
  */

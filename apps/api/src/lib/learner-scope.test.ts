@@ -23,7 +23,7 @@ describe("learnerOnly (実SQLite)", () => {
       },
       { id: "staff", tenantId: "ses", displayName: "講師", role: "admin" },
       { id: "admin", tenantId: "ses", displayName: "管理者", role: "admin" },
-      { id: "platform-admin", tenantId: "ses", displayName: "運営", role: "platform_admin" },
+      { id: "other-admin", tenantId: "ses", displayName: "運営", role: "admin" },
     ]);
   });
   afterEach(() => database.sqlite.close());
@@ -43,15 +43,13 @@ describe("learnerOnly (実SQLite)", () => {
   it.each(["column", "sql"])("%s: null の提出を残し、講師・管理者の提出を除く", async (kind) => {
     const db = getDb({ DB: database.binding } as Env);
     await db.insert(submissions).values(
-      [null, "student", "disabled-student", "staff", "admin", "platform-admin"].map(
-        (studentId) => ({
-          id: studentId ?? "unknown",
-          studentId,
-          code: "",
-          stageTitle: "",
-          assignmentTitle: "",
-        }),
-      ),
+      [null, "student", "disabled-student", "staff", "admin", "other-admin"].map((studentId) => ({
+        id: studentId ?? "unknown",
+        studentId,
+        code: "",
+        stageTitle: "",
+        assignmentTitle: "",
+      })),
     );
     const query = db
       .select({ id: submissions.id })

@@ -10,7 +10,7 @@
  *
  * アプリ層認可:
  *   - 定義 (作成 / 更新 / 削除) は admin 以上。 受講登録の運用ルールそのものだから
- *   - 参照は staff (admin / platform_admin)
+ *   - 参照は staff (admin)
  *
  * 設計の要点は `@stella/shared/enrollment/preset` のヘッダを参照。 期限は絶対日付ではなく
  * 基準日からのオフセットで持つ。

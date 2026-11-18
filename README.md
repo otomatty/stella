@@ -182,7 +182,7 @@ wrangler d1 execute stella-db --local --command \
 
 #### ロール昇格（SQL）
 
-Admin / プラットフォーム管理を検証するとき（`apps/api` で実行）:
+管理者の画面を検証するとき（`apps/api` で実行）:
 
 ```bash
 cd apps/api
@@ -190,13 +190,9 @@ cd apps/api
 # 管理者
 wrangler d1 execute stella-db --local --command \
   "update profiles set role='admin' where email='you@example.com'"
-
-# プラットフォーム管理者（他の管理者から無効化・降格されない。招待 UI からは付与不可）
-wrangler d1 execute stella-db --local --command \
-  "update profiles set role='platform_admin' where email='you@example.com'"
 ```
 
-ロールは `student` / `admin` / `platform_admin` の 3 つ、画面のロールは `learner` / `admin` の 2 つ。招待・ロール変更で選べるのは受講者と管理者。招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。
+ロールは `student` / `admin` の 2 つ、画面のロールは `learner` / `admin` の 2 つ。招待・ロール変更で選べるのは受講者と管理者。招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。
 
 昇格後はブラウザをリロードしてロールを反映させる。
 認可は `/api/me` の `profiles.role` を参照するため、ロール変更だけの再ログインは不要。
@@ -319,7 +315,7 @@ bun run r2:orphans -- --delete  # 一覧に出た孤児を削除
 ```
 
 API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/admin/r2/orphans/cleanup`、
-`admin` / `platform_admin`）の薄いラッパ。1 リクエストの走査件数には上限があり、超える場合は
+`admin`）の薄いラッパ。1 リクエストの走査件数には上限があり、超える場合は
 `next_cursor` を返す（CLI はカーソルを辿って全件走査する）。分割走査になったときは
 「DB 行に対する実体なし判定」だけスキップする（そのページに出なかっただけの参照と区別できないため）。
 走査・削除とも保存済みの `tenant/ses/` 配下に限定し、
@@ -333,7 +329,7 @@ API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/ad
 ### 講師添削 (Issue #8)
 
 受講者が `assignment` 型レッスンからコードを提出すると、 管理者の「添削待ち」キューに表示されます。
-実データ経路では Google ログイン後に `admin`（または `platform_admin`）へロール昇格したアカウントでキューを開く。
+実データ経路では Google ログイン後に `admin` へロール昇格したアカウントでキューを開く。
 AI 下書き (`POST /api/review-draft`) は API キー未設定時はルールベースのヒューリスティックにフォールバックする。
 
 - DB 永続化 (D1 設定時): `submissions` テーブル (`/api/submissions` 経由、 ログインが必要)
@@ -394,7 +390,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
   列定義は `@stella/shared/admin/reports` に集約しており、 プレビュー表と CSV は同じ変換を通ります。
 - API: `GET /api/reports/:type?from=&to=&limit=&offset=` (from/to は ISO 日時 または `YYYY-MM-DD` · inclusive。
   日付だけを渡した場合はアプリ基準 TZ の日境界として解釈します)。
-  `admin` / `platform_admin` のみ。
+  `admin` のみ。
 - 件数 (`total`) は各テーブルの `COUNT` で数えるため、 取得上限で明細が欠けることはありません
   (成績は小テストと課題を提出日時で併合するため、 ページ確定に必要な分だけ各表から読みます)。
 - 出力は **CSV のみ** です (Issue #75 の受け入れ基準に合わせたスコープ。 Excel 形式は未対応)。

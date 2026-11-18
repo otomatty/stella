@@ -36,7 +36,6 @@ const MAX_NAME_LENGTH = 50;
 const ROLE_LABELS: Record<string, string> = {
   student: "受講者",
   admin: "管理者",
-  platform_admin: "プラットフォーム管理者",
 };
 
 interface SettingsPageProps {

@@ -9,7 +9,7 @@ import type { ProfileRole } from "../cms/types.js";
 
 export type { ProfileRole };
 
-export const PROFILE_ROLES: readonly ProfileRole[] = ["student", "admin", "platform_admin"];
+export const PROFILE_ROLES: readonly ProfileRole[] = ["student", "admin"];
 
 export const ASSIGNABLE_PROFILE_ROLES = ["student", "admin"] as const;
 export type AssignableProfileRole = (typeof ASSIGNABLE_PROFILE_ROLES)[number];
@@ -61,7 +61,7 @@ export function isValidEmail(value: string): boolean {
 }
 
 export function isProfileRole(value: unknown): value is ProfileRole {
-  return value === "student" || value === "admin" || value === "platform_admin";
+  return value === "student" || value === "admin";
 }
 
 export function isAssignableProfileRole(value: unknown): value is AssignableProfileRole {
