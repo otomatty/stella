@@ -93,6 +93,10 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "stella.showLastResult",
+        "title": "STELLA: 前回の確認の結果を表示する"
+      },
+      {
         "command": "stella.diagnoseEnvironment",
         "title": "STELLA: 開発環境を診断する"
       },

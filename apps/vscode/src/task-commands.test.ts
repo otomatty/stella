@@ -1,15 +1,19 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExtensionContext } from "vscode";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthExpiredError } from "./api.js";
 import { AuthStore } from "./auth.js";
 import { hashFile } from "./runner/files.js";
 import { buildTaskGuideHtml, type TaskGuideInput } from "./task-guide.js";
+import { onDidFinishTaskCheck, onDidStartTaskCheck } from "./task-run-events.js";
 
 const state = vi.hoisted(() => ({
   handlers: new Map<string, () => Promise<void> | void>(),
   trusted: true,
+  cancelProgress: false,
   activeFile: undefined as string | undefined,
   folders: [] as string[],
   warningChoice: undefined as string | undefined,
@@ -45,8 +49,21 @@ const vscodeMock = vi.hoisted(() => ({
 }));
 
 vi.mock("vscode", () => ({
-  EventEmitter: class {
-    event = vi.fn();
+  EventEmitter: class<T> {
+    private listeners = new Set<(value: T) => void>();
+    event = (listener: (value: T) => void) => {
+      this.listeners.add(listener);
+      return { dispose: () => this.listeners.delete(listener) };
+    };
+    fire(value: T) {
+      for (const listener of this.listeners) {
+        try {
+          listener(value);
+        } catch {
+          // VS Code の EventEmitter はほかのリスナーへの通知を続ける。
+        }
+      }
+    }
   },
   Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }), parse: (url: string) => url },
   env: { openExternal: vscodeMock.openExternal },
@@ -80,7 +97,14 @@ vi.mock("vscode", () => ({
     },
     withProgress: (options: unknown, task: (p: unknown, t: unknown) => Promise<unknown>) => {
       vscodeMock.progress(options);
-      return task({}, { onCancellationRequested: vi.fn() });
+      return task(
+        {},
+        {
+          onCancellationRequested: (cancel: () => void) => {
+            if (state.cancelProgress) cancel();
+          },
+        },
+      );
     },
   },
   workspace: {
@@ -133,9 +157,13 @@ vi.mock("./catalog.js", () => ({ getCachedCatalog: vscodeMock.getCachedCatalog }
 
 vi.mock("./runner/run-task.js", async (importOriginal) => {
   const original = await importOriginal<typeof import("./runner/run-task.js")>();
-  return { ...original, runTask: vi.fn(original.runTask) };
+  return {
+    ...original,
+    runTask: vi.fn(original.runTask),
+    saveRunResult: vi.fn(original.saveRunResult),
+  };
 });
-const { runTask } = await import("./runner/run-task.js");
+const { runTask, saveRunResult } = await import("./runner/run-task.js");
 const { registerTaskCommands } = await import("./task-commands.js");
 
 async function makeTask(
@@ -167,6 +195,8 @@ const staticTask = {
   },
 };
 
+let context: ExtensionContext;
+
 beforeEach(() => {
   vi.clearAllMocks();
   vscodeMock.showInformationMessage.mockResolvedValue(undefined);
@@ -178,6 +208,7 @@ beforeEach(() => {
   apiRequest.mockResolvedValue({});
   state.handlers.clear();
   state.trusted = true;
+  state.cancelProgress = false;
   state.activeFile = undefined;
   state.folders = [];
   state.warningChoice = undefined;
@@ -185,7 +216,12 @@ beforeEach(() => {
   state.dirtyDocs = [];
   state.readmeRoot = undefined;
   const auth = new AuthStore({ get: vscodeMock.getSecret } as never);
-  registerTaskCommands({ subscriptions: [] } as never, auth);
+  context = { subscriptions: [] } as unknown as ExtensionContext;
+  registerTaskCommands(context, auth);
+});
+
+afterEach(() => {
+  for (const item of context.subscriptions) item?.dispose();
 });
 
 async function run(command: string, ...args: unknown[]): Promise<void> {
@@ -455,6 +491,8 @@ describe("提出後の案内", () => {
     if (openReadme) {
       state.readmeRoot = root;
       await writeDistribution(root);
+      apiRequest.mockResolvedValueOnce({ status: "local-passed" });
+      await run("stella.showTaskReadme", root);
     }
     await actions.submit({ explanation: "振り返り" });
     return root;
@@ -476,6 +514,9 @@ describe("提出後の案内", () => {
           { reveal: false },
         ),
       );
+      expect(
+        apiRequest.mock.calls.filter(([url]) => String(url).startsWith("/api/tasks/help?")),
+      ).toHaveLength(2);
     },
   );
 
@@ -677,7 +718,11 @@ describe("課題文のパネル・ステータスバー・エディターの右�
       },
       {},
     );
-    expect(vscodeMock.setCurrentTask).toHaveBeenCalledWith({ root, title: "見出しを変える" });
+    expect(vscodeMock.setCurrentTask).toHaveBeenCalledWith({
+      root,
+      title: "見出しを変える",
+      taskId: staticTask.id,
+    });
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
@@ -696,6 +741,18 @@ describe("課題文のパネル・ステータスバー・エディターの右�
     });
     expect(readGuide()).toHaveProperty("taskStatus", "submitted");
     expect(buildTaskGuideHtml({ ...readGuide(), os: "windows" })).not.toContain("レビューの所見");
+  });
+
+  it("明示的に課題文を開くと 30 秒以内でも状態を取得し直す", async () => {
+    const { root } = await trainingTask();
+    await writeDistribution(root);
+    apiRequest.mockResolvedValueOnce({ status: "submitted" });
+    await run("stella.showTaskReadme", root);
+    expect(readGuide()).toHaveProperty("taskStatus", "submitted");
+    apiRequest.mockResolvedValueOnce({ status: "passed" });
+    await run("stella.showTaskReadme", root);
+    expect(apiRequest).toHaveBeenCalledTimes(2);
+    expect(readGuide()).toHaveProperty("taskStatus", "passed");
   });
 
   it.each(["未接続", "通信失敗", "認証切れ", "未知の状態"] as const)(
@@ -1047,6 +1104,9 @@ describe("問題つきの課題", () => {
 
   it("未確認の問題を実行し、編集中のファイルが変わっても確認した問題を送る", async () => {
     const root = await problemRoot();
+    const started = vi.fn();
+    const finished = vi.fn();
+    context.subscriptions.push(onDidStartTaskCheck(started), onDidFinishTaskCheck(finished));
     const resultFile = path.join(root, ".stella", "problem-runs", "q01-add.json");
     const passed = JSON.parse(await readFile(resultFile, "utf8"));
     await unlink(resultFile);
@@ -1063,6 +1123,18 @@ describe("問題つきの課題", () => {
     await run("stella.submitTask", { scheme: "file", fsPath: source });
     expect(runTask).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ problem: "q01-add" }),
+    );
+    expect(started).toHaveBeenCalledExactlyOnceWith({
+      root,
+      taskId: passed.taskId,
+      problemId: "q01-add",
+    });
+    expect(finished).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        root,
+        result: expect.objectContaining({ problemId: "q01-add" }),
+        saved: true,
+      }),
     );
     expect(apiRequest).toHaveBeenCalledWith(
       "/api/submissions",
@@ -1223,4 +1295,168 @@ describe("stella.diagnoseEnvironment", () => {
     await run("stella.diagnoseEnvironment");
     expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
   });
+});
+
+describe("確認の開始と終了のイベント", () => {
+  async function taskRoot(): Promise<string> {
+    const root = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
+    state.folders = [root];
+    return root;
+  }
+
+  function observe(root: string) {
+    const start = vi.fn();
+    const finish = vi.fn(() => ({
+      panelOpened: vscodeMock.showTaskPanel.mock.calls.length > 0,
+      savedOnDisk: existsSync(path.join(root, ".stella", "last-run.json")),
+    }));
+    context.subscriptions.push(
+      onDidStartTaskCheck(() => {
+        throw new Error("リスナーのエラー");
+      }),
+      onDidStartTaskCheck(start),
+      onDidFinishTaskCheck(() => {
+        throw new Error("リスナーのエラー");
+      }),
+      onDidFinishTaskCheck(finish),
+    );
+    return { start, finish };
+  }
+
+  it.each(["stella.runTask", "stella.submitTask"])(
+    "%s は実行前と保存直後に発火する",
+    async (command) => {
+      const root = await taskRoot();
+      await writeDistribution(root);
+      const { start, finish } = observe(root);
+      await run(command, root);
+      expect(start).toHaveBeenCalledExactlyOnceWith({ root, taskId: staticTask.id });
+      expect(start).toHaveBeenCalledBefore(vi.mocked(runTask));
+      expect(finish).toHaveBeenCalledExactlyOnceWith({
+        root,
+        manifest: expect.objectContaining({ id: staticTask.id }),
+        result: expect.objectContaining({ outcome: "passed" }),
+        saved: true,
+      });
+      expect(finish).toHaveReturnedWith({ panelOpened: false, savedOnDisk: true });
+      expect(vscodeMock.showTaskPanel).toHaveBeenCalledOnce();
+      expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
+    },
+  );
+
+  it("中断は保存せずに終了を知らせる", async () => {
+    const root = await taskRoot();
+    const { start, finish } = observe(root);
+    state.cancelProgress = true;
+    await run("stella.runTask", root);
+    expect(start).toHaveBeenCalledOnce();
+    expect(saveRunResult).not.toHaveBeenCalled();
+    expect(finish).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        root,
+        result: expect.objectContaining({ outcome: "cancelled" }),
+        saved: false,
+      }),
+    );
+    expect(finish).toHaveBeenCalledBefore(vscodeMock.showInformationMessage);
+  });
+
+  it("保存失敗でも通知より前に終了を知らせる", async () => {
+    const root = await taskRoot();
+    const { finish } = observe(root);
+    vi.mocked(saveRunResult).mockRejectedValueOnce(new Error("書き込めません"));
+    await run("stella.runTask", root);
+    expect(finish).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        root,
+        result: expect.objectContaining({ outcome: "passed" }),
+        saved: false,
+      }),
+    );
+    expect(finish).toHaveReturnedWith({ panelOpened: false, savedOnDisk: false });
+    expect(finish).toHaveBeenCalledBefore(vscodeMock.showWarningMessage);
+  });
+
+  it("実行が予期せず失敗したときも終了を知らせる", async () => {
+    const root = await taskRoot();
+    const { finish } = observe(root);
+    vi.mocked(runTask).mockRejectedValueOnce(new Error("実行できません"));
+    await run("stella.runTask", root);
+    expect(finish).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        root,
+        result: expect.objectContaining({ outcome: "error" }),
+        saved: false,
+      }),
+    );
+    expect(finish).toHaveBeenCalledBefore(vscodeMock.showErrorMessage);
+  });
+
+  it("環境診断では発火しない", async () => {
+    const root = await taskRoot();
+    const { start, finish } = observe(root);
+    state.cancelProgress = true;
+    await run("stella.diagnoseEnvironment");
+    expect(runTask).toHaveBeenCalledOnce();
+    expect(start).not.toHaveBeenCalled();
+    expect(finish).not.toHaveBeenCalled();
+  });
+});
+
+describe("stella.showLastResult", () => {
+  const noRun = "まだ確認していません。「提出する」か「課題を確認する」を実行してください";
+
+  it.each(["課題フォルダー", "開いているファイル"])(
+    "%s から保存済みの結果を開く",
+    async (source) => {
+      const root = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
+      state.folders = [root];
+      await run("stella.runTask", root);
+      const saved = JSON.parse(await readFile(path.join(root, ".stella", "last-run.json"), "utf8"));
+      await writeFile(
+        path.join(root, ".stella", "task.json"),
+        JSON.stringify({ ...staticTask, title: "新しい題名" }),
+      );
+      vscodeMock.showTaskPanel.mockClear();
+      vi.mocked(runTask).mockClear();
+      state.activeFile =
+        source === "開いているファイル" ? path.join(root, "index.html") : undefined;
+      await run("stella.showLastResult", state.activeFile ? undefined : root);
+      expect(vscodeMock.showTaskPanel).toHaveBeenCalledExactlyOnceWith({
+        kind: "result",
+        root,
+        manifest: expect.objectContaining({ title: "新しい題名" }),
+        result: saved,
+      });
+      expect(runTask).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["未確認", "別の課題", "不正な形式", "不正な表示項目", "ワークスペースの外"])(
+    "%s なら案内だけ出す",
+    async (reason) => {
+      const root = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
+      state.folders = [root];
+      if (reason === "別の課題" || reason === "不正な表示項目" || reason === "ワークスペースの外") {
+        await run("stella.runTask", root);
+        const file = path.join(root, ".stella", "last-run.json");
+        if (reason === "ワークスペースの外") {
+          state.folders = [];
+        } else {
+          const saved = JSON.parse(await readFile(file, "utf8"));
+          if (reason === "別の課題") saved.taskId = "different/task";
+          else saved.steps[0].logTail = { invalid: true };
+          await writeFile(file, JSON.stringify(saved));
+        }
+      }
+      if (reason === "不正な形式")
+        await writeFile(path.join(root, ".stella", "last-run.json"), "{}");
+      vscodeMock.showTaskPanel.mockClear();
+      vi.mocked(runTask).mockClear();
+      await run("stella.showLastResult", root);
+      expect(vscodeMock.showInformationMessage).toHaveBeenLastCalledWith(noRun);
+      expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+      expect(runTask).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -12,7 +12,7 @@
 import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
-import type { RunOutcome } from "@stella/shared/tasks/run-result";
+import type { RunOutcome, RunResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
@@ -31,7 +31,6 @@ import {
   remainingSteps,
   RUN_SUMMARY_CSS,
   shortStepLabel,
-  STEP_MARKS,
   stepChips,
   type StepSummary,
   testBar,
@@ -90,54 +89,88 @@ export async function resolveEditFiles(root: string, manifest: TaskManifest): Pr
   };
 }
 
-interface GuideRun {
+export interface GuideRun {
   outcome: Exclude<RunOutcome, "cancelled">;
   steps: StepSummary[];
   tests?: TestCounts;
   errorSummary?: string;
 }
 
-/** この課題の前回の確認の結果。無い・読めない・別の課題の結果なら undefined。 */
-export async function readLastRun(root: string, taskId: string): Promise<GuideRun | undefined> {
+/** 課題フォルダーに保存した、この課題の前回の結果。 */
+export async function readLastResult(root: string, taskId: string): Promise<RunResult | undefined> {
   try {
     const raw: unknown = JSON.parse(
       new TextDecoder().decode(await readFileInRoot(root, ".stella/last-run.json", 1024 * 1024)),
     );
-    if (!isRunResult(raw) || raw.taskId !== taskId) return undefined;
-    const { outcome } = raw;
-    if (outcome !== "passed" && outcome !== "failed" && outcome !== "error") return undefined;
-
-    const tests = { passed: 0, total: 0 };
-    const steps: StepSummary[] = [];
-    for (const step of raw.steps) {
-      if (typeof step.status !== "string" || !Object.hasOwn(STEP_MARKS, step.status))
-        return undefined;
-      if (
-        step.tests?.some(
-          ({ status }) => status !== "passed" && status !== "failed" && status !== "skipped",
-        )
+    if (
+      !isRunResult(raw) ||
+      raw.taskId !== taskId ||
+      typeof raw.outcome !== "string" ||
+      !Object.hasOwn(RUNNERS, raw.runner) ||
+      Object.values(raw.toolVersions).some((value) => typeof value !== "string")
+    )
+      return undefined;
+    // 提出用の検証に加え、結果パネルが使う任意の表示項目も確かめる。
+    if (
+      raw.steps.some(
+        (step) =>
+          typeof step.status !== "string" ||
+          step.tests?.some(
+            ({ status, file, message }) =>
+              typeof status !== "string" ||
+              (file !== undefined && typeof file !== "string") ||
+              (message !== undefined && typeof message !== "string"),
+          ) ||
+          (step.logTail !== undefined && typeof step.logTail !== "string") ||
+          (step.files !== undefined &&
+            (!Array.isArray(step.files) || step.files.some((file) => typeof file !== "string"))) ||
+          (step.lint !== undefined &&
+            (!Array.isArray(step.lint) ||
+              step.lint.some(
+                (finding) =>
+                  !finding ||
+                  typeof finding.file !== "string" ||
+                  typeof finding.line !== "number" ||
+                  typeof finding.column !== "number" ||
+                  (finding.ruleId !== null && typeof finding.ruleId !== "string") ||
+                  typeof finding.message !== "string" ||
+                  (finding.severity !== "error" && finding.severity !== "warning"),
+              ))),
       )
-        return undefined;
-      const counts = countTests(step.tests);
-      tests.total += counts.total;
-      tests.passed += counts.passed;
-      steps.push({
-        label: shortStepLabel(step.label),
-        status: step.status,
-        ...(counts.total > 0 ? { tests: counts } : {}),
-      });
-    }
-    const errorSummary =
-      outcome === "error" ? raw.steps.find((step) => step.status === "error")?.summary : undefined;
-    return {
-      outcome,
-      steps,
-      ...(tests.total > 0 ? { tests } : {}),
-      ...(errorSummary === undefined ? {} : { errorSummary }),
-    };
+    )
+      return undefined;
+    return raw;
   } catch {
     return undefined;
   }
+}
+
+/** 課題文とステータスバーに出す、前回の確認の要約。 */
+export async function readLastRun(root: string, taskId: string): Promise<GuideRun | undefined> {
+  const raw = await readLastResult(root, taskId);
+  if (!raw || raw.outcome === "cancelled") return undefined;
+  const { outcome } = raw;
+
+  const tests = { passed: 0, total: 0 };
+  const steps: StepSummary[] = [];
+  for (const step of raw.steps) {
+    const counts = countTests(step.tests);
+    tests.total += counts.total;
+    tests.passed += counts.passed;
+    steps.push({
+      label: shortStepLabel(step.label),
+      status: step.status,
+      ...(counts.total > 0 ? { tests: counts } : {}),
+    });
+  }
+  const errorSummary =
+    outcome === "error" ? raw.steps.find((step) => step.status === "error")?.summary : undefined;
+  return {
+    outcome,
+    steps,
+    ...(tests.total > 0 ? { tests } : {}),
+    ...(errorSummary === undefined ? {} : { errorSummary }),
+  };
 }
 
 export interface TaskGuideInput {

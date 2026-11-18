@@ -16,16 +16,14 @@
 
 import { homedir } from "node:os";
 import path from "node:path";
-import { TASK_STATUSES, type TaskStatus } from "@stella/shared/tasks/catalog";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
-import type { TaskHelpResponse } from "@stella/shared/tasks/help";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { canSubmit, type RunOutcome, type RunResult } from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
-import { apiRequest, apiSession } from "./api.js";
-import type { AuthStore } from "./auth.js";
+import { apiSession } from "./api.js";
+import { type AuthStore, onDidChangeAuthSession } from "./auth.js";
 import { getCachedCatalog } from "./catalog.js";
 import { stellaUrl } from "./config.js";
 import { sendLocalRunReport } from "./local-run-report.js";
@@ -47,7 +45,7 @@ import {
   sendTaskSubmission,
   SUBMIT_AGAIN,
 } from "./task-submission.js";
-import { readLastRun, resolveEditFiles } from "./task-guide.js";
+import { readLastResult, resolveEditFiles } from "./task-guide.js";
 import {
   onTaskReadmeVisible,
   showTaskPanel,
@@ -66,6 +64,8 @@ import {
   sendProblemSubmission,
   type ProblemState,
 } from "./task-problems.js";
+import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
+import { getTaskState, refreshTaskState, registerTaskState } from "./task-state.js";
 import { setCurrentTask } from "./task-status.js";
 import { registerSubmissionForms, showSubmissionForm } from "./submission-form.js";
 import type { SubmissionDraft } from "./submission-form-view.js";
@@ -73,7 +73,7 @@ import { refreshLearningSidebar } from "./tree.js";
 
 let running = false;
 let submitting = false;
-let readmeAuth: AuthStore;
+export { helpUrl } from "./task-state.js";
 
 export function workspaceRoots(): string[] {
   return (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
@@ -382,6 +382,9 @@ async function checkTask(
       manifest,
       options.forSubmission ? options.openPath : requestedProblemPath(root, options.requested),
     );
+    const problem = selection?.id;
+    const startedAt = Date.now();
+    startTaskCheck({ root, taskId: manifest.id, ...(problem ? { problemId: problem } : {}) });
     const result = await runTask({
       root,
       manifest,
@@ -389,7 +392,29 @@ async function checkTask(
       signal,
       log,
       ci,
-      ...(selection ? { problem: selection.id } : {}),
+      ...(problem ? { problem } : {}),
+    }).catch((error: unknown) => {
+      finishTaskCheck({
+        root,
+        manifest,
+        saved: false,
+        result: {
+          schemaVersion: 1,
+          taskId: manifest.id,
+          runner: manifest.runner,
+          outcome: signal.aborted ? "cancelled" : "error",
+          startedAt: new Date(startedAt).toISOString(),
+          durationMs: Date.now() - startedAt,
+          platform: process.platform,
+          toolVersions: {},
+          steps: [],
+          files: [],
+          protected: [],
+          manifestSha256,
+          ...(problem ? { problemId: problem } : {}),
+        },
+      });
+      throw error;
     });
     if (receipt?.taskId === manifest.id) result.taskContentHash = receipt.contentHash;
     // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
@@ -398,6 +423,7 @@ async function checkTask(
         await saveRunResult(root, result);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        finishTaskCheck({ root, manifest, result, saved: false });
         output.appendLine(`結果を保存できませんでした: ${message}`);
         void vscode.window.showWarningMessage(
           `確認の結果を .stella/last-run.json に保存できませんでした: ${message}`,
@@ -405,6 +431,7 @@ async function checkTask(
         return;
       }
     }
+    finishTaskCheck({ root, manifest, result, saved: result.outcome !== "cancelled" });
     const panel = { kind: "result" as const, manifest, result, root };
     if (!options.forSubmission || result.outcome === "failed" || result.outcome === "error") {
       showTaskPanel(panel);
@@ -588,6 +615,7 @@ async function submitTaskCommand(
             });
           if (problem) await sendProblemConsultation(root, problem.id, notes, session);
           else await sendTaskSubmission(root, mode, notes, session);
+          if (!manifest.problems) void refreshTaskState(root, manifest.id, { forceLms: true });
           refreshLearningSidebar();
           if (taskReadmeRoot() === root) {
             void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
@@ -665,58 +693,23 @@ async function submitProblemTask(
 /** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
 const README_MAX_BYTES = 1024 * 1024;
 
-export function helpUrl(taskId: string, contentHash: string): string {
-  return `/api/tasks/help?${new URLSearchParams({ taskId, contentHash })}`;
-}
-
-async function fetchTaskStatus(
-  root: string,
-  taskId: string,
-  session: number | undefined,
-): Promise<TaskStatus | undefined> {
-  if (session === undefined) return undefined;
-  const controller = new AbortController();
-  const { signal } = controller;
-  const request = async () => {
-    const receipt = await readDistribution(root);
-    if (receipt?.taskId !== taskId || !(await readmeAuth.getToken())) return undefined;
-    signal.throwIfAborted();
-    const help = await apiRequest<Pick<TaskHelpResponse, "status"> | null>(
-      helpUrl(taskId, receipt.contentHash),
-      { session, signal },
-    );
-    return TASK_STATUSES.find((status) => status === help?.status);
-  };
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      request(),
-      new Promise<undefined>((resolve) => {
-        timer = setTimeout(() => {
-          controller.abort();
-          resolve(undefined);
-        }, 4_000);
-      }),
-    ]);
-  } catch {
-    return undefined;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 /**
  * 課題文 (README.md) のパネルを描く。課題の定義を読めれば、先頭に「進め方」(編集する
  * ファイル・確認・提出のリンクと、前回の確認と課題の状態から決めた「いまやること」) を置く。
  * `reveal: false` は中身を新しくするだけで、ステータスバーの課題は
  * 変えない — 確認の間に受講者が別の課題のファイルへ移っていれば、そちらが今の課題のため。
  */
-async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}): Promise<void> {
-  const shown = (title: string, problems?: ProblemState[]) => {
+async function renderTaskReadme(
+  root: string,
+  options: { reveal?: boolean } = {},
+  refresh: { forceLms?: boolean; skipLms?: boolean } = {},
+): Promise<void> {
+  const shown = (title: string, problems?: ProblemState[], taskId?: string) => {
     if (options.reveal === false) return;
     setCurrentTask({
       root,
       title,
+      ...(taskId ? { taskId } : {}),
       ...(problems
         ? {
             problemProgress: {
@@ -738,16 +731,16 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
   }
   const { manifest } = loaded;
   const session = apiSession();
-  const [edit, lastRun, problems, taskStatus] = await Promise.all([
+  const [edit, problems] = await Promise.all([
     resolveEditFiles(root, manifest),
-    readLastRun(root, manifest.id),
     manifest.problems?.length
       ? fetchProblemResults(manifest.id)
           .catch(() => undefined)
           .then((server) => loadProblemStates(root, manifest, server))
       : undefined,
-    manifest.problems ? undefined : fetchTaskStatus(root, manifest.id, session),
+    refreshTaskState(root, manifest.id, manifest.problems ? { skipLms: true } : refresh),
   ]);
+  const { lastRun, lmsStatus } = getTaskState(root, manifest.id) ?? {};
   showTaskReadme(
     {
       title: manifest.title,
@@ -759,12 +752,14 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
         edit,
         ...(lastRun ? { lastRun } : {}),
         ...(problems ? { problems } : {}),
-        ...(taskStatus && session === apiSession() ? { taskStatus } : {}),
+        ...(lmsStatus && !refresh.skipLms && session === apiSession()
+          ? { taskStatus: lmsStatus }
+          : {}),
       },
     },
     options,
   );
-  shown(manifest.title, problems);
+  shown(manifest.title, problems, manifest.problems ? undefined : manifest.id);
 }
 
 /** 課題文 (README.md) を OS のタブ付きで表示する。フォルダーの信頼は問わない。 */
@@ -777,12 +772,27 @@ async function showTaskReadmeCommand(requested?: unknown): Promise<void> {
     return;
   }
   try {
-    await renderTaskReadme(root);
+    await renderTaskReadme(root, {}, { forceLms: true });
   } catch (e) {
     void vscode.window.showErrorMessage(
       `課題文を表示できませんでした: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
+}
+
+async function showLastResultCommand(requested?: unknown): Promise<void> {
+  const root = await requestedTaskRoot(requested);
+  const loaded = root ? await loadTask(root) : undefined;
+  if (loaded?.ok) {
+    const result = await readLastResult(loaded.root, loaded.manifest.id);
+    if (result) {
+      showTaskPanel({ kind: "result", root: loaded.root, manifest: loaded.manifest, result });
+      return;
+    }
+  }
+  void vscode.window.showInformationMessage(
+    "まだ確認していません。「提出する」か「課題を確認する」を実行してください",
+  );
 }
 
 /**
@@ -808,11 +818,16 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
 }
 
 export function registerTaskCommands(context: vscode.ExtensionContext, auth: AuthStore): void {
-  readmeAuth = auth;
+  registerTaskState(context, auth);
   registerSubmissionForms(context);
   const output = vscode.window.createOutputChannel("STELLA 実行ログ");
   context.subscriptions.push(
     output,
+    onDidChangeAuthSession(() => {
+      const root = taskReadmeRoot();
+      if (root)
+        void renderTaskReadme(root, { reveal: false }, { skipLms: true }).catch(() => undefined);
+    }),
     onTaskReadmeVisible((root) => {
       void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
     }),
@@ -827,6 +842,9 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
     ),
     vscode.commands.registerCommand("stella.diagnoseEnvironment", () => diagnoseCommand(output)),
     vscode.commands.registerCommand("stella.showRunLog", () => output.show(true)),
+    vscode.commands.registerCommand("stella.showLastResult", (root?: unknown) =>
+      showLastResultCommand(root),
+    ),
     vscode.commands.registerCommand("stella.showTaskReadme", (root?: unknown) =>
       showTaskReadmeCommand(root),
     ),
