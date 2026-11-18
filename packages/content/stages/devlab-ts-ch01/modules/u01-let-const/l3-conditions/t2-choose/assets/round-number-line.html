@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>2.4 と 2.5 の四捨五入</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<!-- SVG のスタイルは presentation attribute で記述する。 -->
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 16 16" refX="16" refY="8"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L16 8 L0 16 Z" fill="#5C5C66"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 16 16" refX="16" refY="8"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L16 8 L0 16 Z" fill="#E62F9A"/>
+    </marker>
+  </defs>
+
+  <!-- 点の位置は、2.4 と 2.5 を読み分けられるよう間隔を広げる -->
+  <path d="M128 240 H1072" stroke="#B7B7BE" stroke-width="2"/>
+  <path d="M208 228 V252 M992 228 V252" stroke="#5C5C66" stroke-width="2"/>
+  <path d="M208 128 V216 M496 128 V136 M496 176 V232
+           M600 248 V304 M600 344 V352 M992 296 V352"
+        fill="none" stroke="#B7B7BE" stroke-width="2"/>
+  <circle cx="496" cy="240" r="8" fill="#0E0E10"/>
+  <circle cx="600" cy="240" r="8" fill="#0E0E10"/>
+
+  <path d="M496 120 H208" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M600 360 H992" stroke="#E62F9A" stroke-width="2" marker-end="url(#arrow-accent)"/>
+
+  <g text-anchor="middle" font-family="'Geist Mono', monospace" fill="#0E0E10"
+     font-size="24" font-weight="500">
+    <text x="208" y="280">2</text>
+    <text x="496" y="164">2.4</text>
+    <text x="600" y="332">2.5</text>
+    <text x="992" y="280">3</text>
+  </g>
+</svg>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u01-let-const@6",
-  "contentHash": "a0049ebf2c6df555a0ae3556475da8e4b3f8234c182a9f0e4ee81abeee6c8231",
+  "contentHash": "6bf01c65af0bc131136e5a936140c2fac7ea2134e94df32717127ae163b9846e",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -342,9 +342,33 @@
         "SRC-typescriptbook-values-types-variables-number",
         "SRC-typescriptbook-statements-if-else"
       ],
-      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "usedFor": "変数と条件の概念を参照し、発送で在庫が減る流れと、while の条件・更新の図とコード例を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t1-while/assets/stock-until-zero.svg",
+      "sourceRefs": [],
+      "usedFor": "発送のたびに残りの在庫が減って止まるまでの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t1-while/assets/while-cycle.svg",
+      "sourceRefs": [],
+      "usedFor": "条件を先に確かめてからくり返す処理の流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t1-while/assets/while-needs-update.svg",
+      "sourceRefs": [],
+      "usedFor": "値を変える処理と表示だけの処理の結果を比べる図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -356,9 +380,33 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-statements-if-else"
       ],
-      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "usedFor": "真偽・条件・数値・文字列の概念を参照し、会員表示の分岐、条件演算子の各部分、四捨五入の境目の図とコード例を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t2-choose/assets/member-branch.svg",
+      "sourceRefs": [],
+      "usedFor": "会員かどうかによって表示先が分かれる流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t2-choose/assets/conditional-operator-parts.svg",
+      "sourceRefs": [],
+      "usedFor": "条件演算子の条件と選ぶ値を下線で対応させた図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t2-choose/assets/round-number-line.svg",
+      "sourceRefs": [],
+      "usedFor": "二つの小数が四捨五入で向かう先を示す数直線",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     },
     {
@@ -369,9 +417,33 @@
         "SRC-typescriptbook-values-types-variables-string",
         "SRC-typescriptbook-functions-function-declaration"
       ],
-      "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
+      "usedFor": "関数・変数・数値・文字列の概念を参照し、注文番号の整形の流れと数値への適用との対比、円を付ける関数のコード例を教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t3-split-functions/assets/reuse-one-step.svg",
+      "sourceRefs": [],
+      "usedFor": "同じ手順で二つの注文番号の先頭をそろえる図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t3-split-functions/assets/function-pipeline.svg",
+      "sourceRefs": [],
+      "usedFor": "数値を文字列に変えて注文番号に整える流れの図",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-conditions/t3-split-functions/assets/padstart-needs-string.svg",
+      "sourceRefs": [],
+      "usedFor": "数値のままと文字列にしてからの結果を比べる図",
+      "authorship": "original",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]

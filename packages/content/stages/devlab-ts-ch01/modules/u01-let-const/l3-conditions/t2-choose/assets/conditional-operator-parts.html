@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>条件演算子の各部分の役割</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<!-- SVG のスタイルは presentation attribute で記述する。 -->
+<svg viewBox="0 80 1200 400" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <rect x="128" y="112" width="944" height="104" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+
+  <path d="M348 184 H444" fill="none" stroke="#E62F9A" stroke-width="2"/>
+  <path d="M552 184 H648 M756 184 H852" fill="none" stroke="#5C5C66" stroke-width="2"/>
+  <path d="M396 184 V276 M600 184 V276 M804 184 V276"
+        fill="none" stroke="#B7B7BE" stroke-width="2"/>
+
+  <g text-anchor="middle" font-family="'Geist Mono', 'Noto Sans JP', monospace"
+     fill="#0E0E10" font-size="24" font-weight="500">
+    <text x="396" y="168">member</text>
+    <text x="496" y="168">?</text>
+    <text x="600" y="168">"特典"</text>
+    <text x="704" y="168">:</text>
+    <text x="804" y="168">"一般"</text>
+  </g>
+
+  <g fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2">
+    <rect x="296" y="276" width="200" height="104" rx="12"/>
+    <rect x="508" y="276" width="184" height="104" rx="12"/>
+    <rect x="704" y="276" width="200" height="104" rx="12"/>
+  </g>
+  <g text-anchor="middle" font-family="'Noto Sans JP', sans-serif">
+    <g fill="#0E0E10" font-size="24" font-weight="600">
+      <text x="396" y="320">条件</text>
+      <text x="600" y="336"><tspan font-family="'Geist Mono', monospace" font-weight="500">true</tspan> のとき</text>
+      <text x="804" y="336"><tspan font-family="'Geist Mono', monospace" font-weight="500">false</tspan> のとき</text>
+    </g>
+    <text x="396" y="352" fill="#5C5C66" font-size="20"><tspan font-family="'Geist Mono', monospace">true</tspan> か <tspan font-family="'Geist Mono', monospace">false</tspan></text>
+  </g>
+</svg>
+</body>
+</html>
