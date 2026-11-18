@@ -106,6 +106,7 @@ export function evaluateSkillMapFor(source: SkillMapSource) {
     stages: source.stages,
     clearedStageIds: source.clearedStageIds,
     ...(source.activeStageId ? { activeStageId: source.activeStageId } : {}),
+    ...(source.enrolledStageIds ? { enrolledStageIds: source.enrolledStageIds } : {}),
     ...(source.unlockedStageIds ? { unlockedStageIds: source.unlockedStageIds } : {}),
   });
 }
@@ -373,7 +374,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     };
 
     /**
-     * 応答に載せる星の id。開発者表示ではすべて、通常は `hidden` (3 歩以上) を落とす。
+     * 応答に載せる星の id。開発者表示ではすべて、通常は `hidden` を落とす。
      * 段を知らない画面 (`ghostStars` が偽) には `edge` も配らない。
      *
      * **幽霊ノード (`edge`) はここでは落とさない。** 線は親の側からも子の側からも
@@ -406,7 +407,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     const payload: SkillMapStagePayload[] = source.stages.flatMap((stage) => {
       const state = result.states.get(stage.id) ?? "locked";
       const visibility = visibilityOf(stage.id);
-      // 3 歩以上先と、線を引けない幽霊は存在ごと出さない (上の `delivered` を参照)。
+      // 配信対象外の星は存在ごと出さない (上の `delivered` を参照)。
       if (!delivered.has(stage.id)) return [];
       const base: SkillMapStagePayload = {
         id: stage.id,
@@ -506,6 +507,8 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
       caller,
       visible.map((row) => row.id),
     );
+    // 前提の免除があっても、通常表示で伏せた章は候補の ID にも載せない。
+    const nextStageIds = result.nextStageIds.filter((id) => delivered.has(id));
 
     return c.json({
       // 入口のバックフィルで **この呼び出しが新しくクリアにした** ステージ。画面は
@@ -524,11 +527,9 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           /** 本人が既に合格したか (道の上に「合格済み」の印を出すため)。 */
           passed: passedIds.has(row.id),
         })),
-        next_stage_ids: result.nextStageIds,
+        next_stage_ids: nextStageIds,
         // #201: 通常の道の案内には、割り当てられた Extra を含めない。
-        unguided_next_stage_ids: result.nextStageIds.filter(
-          (id) => !source.guidedStageIds?.has(id),
-        ),
+        unguided_next_stage_ids: nextStageIds.filter((id) => !source.guidedStageIds?.has(id)),
         has_unguided_enrollment: [...(source.enrolledStageIds ?? [])].some(
           (id) => !source.guidedStageIds?.has(id),
         ),

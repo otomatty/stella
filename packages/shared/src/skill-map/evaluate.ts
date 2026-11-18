@@ -126,6 +126,8 @@ export interface SkillMapInput {
   clearedStageIds: Set<string>;
   /** いま進めている星。1 つだけ (受講者が同時に複数を進めていても代表を 1 つ選ぶ)。 */
   activeStageId?: string;
+  /** 受講中の星。段階表示の島では、代表の星以外も表示する。 */
+  enrolledStageIds?: Set<string>;
   /** 飛び級 (腕試し合格) で開いた星。前提を満たしていなくても `unlocked` にする。 */
   unlockedStageIds?: Set<string>;
 }
@@ -163,6 +165,15 @@ export interface SkillMapResult {
 }
 
 import { appearancePrerequisitesOf } from "./appearances.js";
+import { SKILL_MAP_ISLANDS } from "./islands.js";
+
+const revealOneAtATimeCategories = new Set(
+  SKILL_MAP_ISLANDS.filter((island) => island.revealOneAtATime).map((island) => island.category),
+);
+
+export function isRevealOneAtATimeIsland(category: string | null): boolean {
+  return category !== null && revealOneAtATimeCategories.has(category);
+}
 
 /** 視界の段: この距離までが `full`。 */
 const FULL_DISTANCE = 1;
@@ -288,7 +299,7 @@ function resolveIds(slugs: readonly string[], idBySlug: Map<string, string>): st
  * 計算量は O(V + E)。ステージ数は 2 桁なので素朴な実装で足りる。
  */
 export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
-  const { stages, clearedStageIds, activeStageId, unlockedStageIds } = input;
+  const { stages, clearedStageIds, activeStageId, enrolledStageIds, unlockedStageIds } = input;
 
   // slug → id。同じ slug が複数あれば後勝ち (テナント内で slug は一意という前提)。
   const idBySlug = new Map<string, string>();
@@ -376,6 +387,20 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
 
   const visibility = new Map<string, SkillMapVisibility>();
   for (const stage of stages) {
+    // 島外の星への最短距離を保つため、島内の段階表示は距離を計算したあとで適用する。
+    if (isRevealOneAtATimeIsland(stage.category)) {
+      const islandPrerequisitesCleared = (prereqIds.get(stage.id) ?? []).every(
+        (id) => stageById.get(id)?.category !== stage.category || clearedStageIds.has(id),
+      );
+      const state = states.get(stage.id);
+      const visible =
+        state === "cleared" ||
+        state === "active" ||
+        enrolledStageIds?.has(stage.id) ||
+        islandPrerequisitesCleared;
+      visibility.set(stage.id, visible ? "full" : "hidden");
+      continue;
+    }
     visibility.set(stage.id, visibilityForDistance(distance.get(stage.id)));
   }
 

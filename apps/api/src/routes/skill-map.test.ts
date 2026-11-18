@@ -185,6 +185,48 @@ describe("GET /api/skill-map/mine", () => {
     expect(stages.get("id-f")).toBeUndefined();
   });
 
+  it("開発ラボG の未到達の章は通常の応答から落とし、開発者表示には載せる", async () => {
+    const labStage = (slug: string, prerequisite: string) => ({
+      id: slug,
+      slug,
+      title: slug,
+      category: "開発ラボG",
+      prerequisites: [prerequisite],
+      audience: "granted" as const,
+    });
+    const ch00 = "devlab-ts-ch00";
+    const ch01 = "devlab-ts-ch01";
+    const ch02 = "devlab-ts-ch02";
+    const extra = "devlab-ts-extra";
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        labStage(ch00, "dev-env-basics"),
+        labStage(ch01, ch00),
+        labStage(ch02, ch01),
+        labStage(extra, ch00),
+      ],
+      clearedStageIds: new Set([ch00]),
+      unlockedStageIds: new Set([ch02]),
+    });
+
+    const res = await get("/api/skill-map/mine");
+    expect(res.status).toBe(200);
+    const { skill_map: map } = (await res.json()) as {
+      skill_map: { stages: StagePayload[]; next_stage_ids: string[]; stage_count: number };
+    };
+    expect(map.stages.map((s) => s.id)).toEqual([ch00, ch01, extra]);
+    expect(map.next_stage_ids).not.toContain(ch02);
+    expect(map.stage_count).toBe(4);
+
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const devStages = await fetchStages();
+    expect(devStages.get(ch02)).toMatchObject({
+      visibility: "hidden",
+      slug: ch02,
+      parent_id: ch01,
+    });
+  });
+
   it("段を申告しない画面には幽霊ノードを配らない (旧画面が誤描画しないように)", async () => {
     const res = await getLegacy("/api/skill-map/mine");
     const body = (await res.json()) as { skill_map: { stages: StagePayload[] } };

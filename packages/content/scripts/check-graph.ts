@@ -4,10 +4,8 @@
  *
  *   bun run scripts/check-graph.ts
  *
- * 検査の中身は manifest ビルド (`buildContentManifest`) がそのまま持っている
- * (`readStageConfig` の型検査と `assertPrerequisiteGraph` の未知 slug / 自己参照 /
- * 循環検出)。ここはそれを **CI のゲートから呼ぶための入口** で、判定を書き直さない —
- * 検査が 2 か所にあると、片方だけ直して「seed は通るのに CI は落ちる」が起きる。
+ * 型・参照先・自己参照・循環の検査は manifest ビルド (`buildContentManifest`) を使う。
+ * ここでは実教材全体を読み、catalog の根が `ENTRY_STAGE_SLUG` だけであることも検査する。
  *
  * 前提はスキルツリーのハードロックなので、綴り違いや循環をそのまま D1 へ流すと
  * 「誰も開けないステージ」が黙って生まれる。実行時 (評価器) は安全側に locked で倒すだけで
@@ -17,10 +15,18 @@
  * Node の型ストリップでは解決できないため (build.mjs から spawn せず、package.json の
  * `check:ci` で並べて呼ぶ)。
  */
-import { buildContentManifest } from "../src/manifest.js";
+import { buildContentManifest, ENTRY_STAGE_SLUG } from "../src/manifest.js";
 
 try {
   const { stages } = buildContentManifest();
+  const catalogRoots = stages
+    .filter((stage) => stage.audience !== "granted" && !stage.prerequisites?.length)
+    .map((stage) => stage.id);
+  if (catalogRoots.length !== 1 || catalogRoots[0] !== ENTRY_STAGE_SLUG) {
+    throw new Error(
+      `catalog で前提なしにできるステージは ${ENTRY_STAGE_SLUG} だけです (検出: ${catalogRoots.join(", ") || "なし"})。`,
+    );
+  }
   const withPrereq = stages.filter((c) => (c.prerequisites?.length ?? 0) > 0).length;
   console.log(
     `前提グラフ: ${stages.length} ステージ (前提つき ${withPrereq} 件) — 未知 slug・自己参照・循環なし`,

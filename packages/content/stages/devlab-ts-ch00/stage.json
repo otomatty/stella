@@ -7,7 +7,7 @@
   "header": "開発ラボG 事前課題 第1部",
   "tenantId": "ses",
   "audience": "granted",
-  "prerequisites": ["dev-env-basics"],
+  "prerequisites": [],
   "plannedHours": 0.75,
   "environment": "ts-test-01",
   "canDo": "環境の確認を使い、テストと型の確認が通るコードを書けます。",
