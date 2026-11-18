@@ -17,7 +17,7 @@ import {
   readFileInRoot,
   sha256Hex,
 } from "./runner/files.js";
-import { loadTask } from "./runner/run-task.js";
+import { type LoadedTask, loadTask } from "./runner/run-task.js";
 import { taskBundleUrl } from "./task-bundle-url.js";
 
 export interface SubmissionNotes {
@@ -78,12 +78,23 @@ export async function prepareTaskSubmission(
 ): Promise<TaskSubmissionInput> {
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+  if (bundle.manifest.id !== loaded.manifest.id) throw new Error("課題の配布データが一致しません");
+  return { ...(await prepareLocalTaskSubmission(loaded, mode)), ...notes };
+}
+
+export const SUBMIT_AGAIN = "保存して、もう一度「提出する」を押してください";
+
+/** 前回の結果を再利用するときと、フォームから送る直前に同じ照合を行う。 */
+export async function prepareLocalTaskSubmission(
+  loaded: Extract<LoadedTask, { ok: true }>,
+  mode: "submit" | "consult",
+): Promise<Omit<TaskSubmissionInput, keyof SubmissionNotes>> {
+  const { root } = loaded;
   const raw = JSON.parse(
     new TextDecoder().decode(await readFileInRoot(root, ".stella/last-run.json", 1024 * 1024)),
   );
   if (!isRunResult(raw) || raw.taskId !== loaded.manifest.id)
     throw new Error("この課題の実行結果がありません。先に課題を確認してください");
-  if (bundle.manifest.id !== loaded.manifest.id) throw new Error("課題の配布データが一致しません");
   const result: RunResult = raw;
   if (mode === "submit" && !canSubmit(result))
     throw new Error("手元の確認がすべて通ってから提出してください");
@@ -119,7 +130,7 @@ export async function prepareTaskSubmission(
         (f) => !result.protected.some((r) => r.path === f.path && r.sha256 === f.sha256),
       ))
   )
-    throw new Error("確認後にファイルが変わっています。保存してもう一度確認してください");
+    throw new Error(`確認後にファイルが変わっています。${SUBMIT_AGAIN}`);
   const receipt = await readDistribution(root);
   if (!receipt)
     throw new Error("配布した課題の記録がありません。LMS から配布した課題を開いてください");
@@ -127,7 +138,11 @@ export async function prepareTaskSubmission(
     receipt.taskId !== loaded.manifest.id ||
     (result.taskContentHash && result.taskContentHash !== receipt.contentHash)
   )
-    throw new Error("確認した課題の版が変わっています。もう一度確認してください");
+    throw new Error(
+      mode === "consult"
+        ? "確認した課題の版が変わっています。もう一度確認してください"
+        : "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+    );
   return {
     taskId: loaded.manifest.id,
     contentHash: result.taskContentHash ?? receipt.contentHash,
@@ -135,7 +150,6 @@ export async function prepareTaskSubmission(
     files,
     localResult: result,
     protected: protectedHashes,
-    ...notes,
   };
 }
 export async function sendTaskSubmission(

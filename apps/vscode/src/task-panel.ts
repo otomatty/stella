@@ -164,7 +164,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     .map(([tool, version]) => `${tool} ${version}`)
     .join(" / ");
   // 課題の外からの環境診断は、課題を探さずにもう一度診断する。
-  const retryCommand = input.standalone ? "stella.diagnoseEnvironment" : "stella.runTask";
+  const retryCommand = input.standalone ? "stella.diagnoseEnvironment" : "stella.submitTask";
   const commandArgs = input.root ? `?${encodeURIComponent(JSON.stringify([input.root]))}` : "";
   const consultArgs =
     input.root && result.problemId
@@ -183,8 +183,8 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
       : canSubmit(result)
         ? `<p class="next">${passedLine}</p>`
         : result.outcome === "error"
-          ? `<p class="next">環境の問題は、教材の「困ったときの案内」を見るか、講師に相談してください。直したら、もう一度確認してください。</p>`
-          : `<p class="next">直したら、保存してもう一度確認してください。</p>`;
+          ? `<p class="next">環境の問題は、教材の「困ったときの案内」を見るか、講師に相談してください。直したら、もう一度「提出する」を押してください。</p>`
+          : `<p class="next">直したら、保存してもう一度「提出する」を押してください。まだ何も送っていません。</p>`;
   const problemLine = result.problemId
     ? `<p class="meta">問題 <code>${escapeHtml(result.problemId)}</code></p>`
     : "";
@@ -198,7 +198,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     ciClaimHtml(result.ci, manifest.ci?.workflow),
     footer,
     !input.standalone && result.outcome !== "cancelled" ? `<p class="links">${action}</p>` : "",
-    `<p class="links"><a href="command:${retryCommand}${input.standalone ? "" : commandArgs}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
+    `<p class="links"><a href="command:${retryCommand}${input.standalone ? "" : commandArgs}">${input.standalone ? "もう一度確認する" : "提出する"}</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
     `<p class="hint">${escapeHtml(result.platform)}${versions ? ` ・ ${escapeHtml(versions)}` : ""} ・ ${seconds(result.durationMs)}</p>`,
   ].join("\n");
   return { title: manifest.title, body };
@@ -282,7 +282,8 @@ ${body}
 </html>`;
 }
 
-export function showTaskPanel(input: TaskPanelInput): void {
+export function showTaskPanel(input: TaskPanelInput, options: { reveal?: boolean } = {}): void {
+  if (!currentPanel && options.reveal === false) return;
   const html = buildTaskPanelHtml(input);
   const title = input.kind === "result" ? `確認: ${input.manifest.title}` : "課題の定義";
   if (!currentPanel) {
@@ -290,7 +291,6 @@ export function showTaskPanel(input: TaskPanelInput): void {
       enableScripts: false,
       localResourceRoots: [],
       enableCommandUris: [
-        "stella.runTask",
         "stella.diagnoseEnvironment",
         "stella.showRunLog",
         "stella.submitTask",
@@ -303,7 +303,7 @@ export function showTaskPanel(input: TaskPanelInput): void {
     });
   } else {
     currentPanel.title = title;
-    currentPanel.reveal(sideColumn(), true);
+    if (options.reveal !== false) currentPanel.reveal(sideColumn(), true);
   }
   currentPanel.webview.html = html;
 }

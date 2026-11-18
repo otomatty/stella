@@ -5,6 +5,7 @@
  * ここからエディター API は読まない。
  */
 
+import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
 import { canSubmit, type RunResult } from "@stella/shared/tasks/run-result";
@@ -16,15 +17,20 @@ import {
 } from "@stella/shared/tasks/submission";
 import { apiRequest } from "./api.js";
 import {
-  hashFile,
   hashFiles,
   LIMITS,
   listFiles,
   matchPatterns,
   readFileInRoot,
+  sha256Hex,
 } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
-import { readDistribution, readRecordedSupport, type SubmissionNotes } from "./task-submission.js";
+import {
+  readDistribution,
+  readRecordedSupport,
+  SUBMIT_AGAIN,
+  type SubmissionNotes,
+} from "./task-submission.js";
 
 /** 未提出、手元の確認が合格、サーバーに提出済み。 */
 export type ProblemWorkStatus = "not-submitted" | "local-passed" | "submitted";
@@ -184,7 +190,7 @@ export async function loadProblemStates(
   return states;
 }
 
-const RECHECK = "確認し直してください";
+const RECHECK = `確認後にファイルが変わっています。${SUBMIT_AGAIN}`;
 
 /**
  * 1 問の提出本文。問題 ID、そのファイル 1 つ、`.stella/problem-runs/<id>.json` の結果。
@@ -226,14 +232,14 @@ async function prepareProblemInput(
     throw new Error("手元の確認がすべて通ってから提出してください");
   if (mode === "consult" && canSubmit(result))
     throw new Error("手元の確認が通っています。「提出」を使ってください");
+  const bytes = await readFileInRoot(root, source, LIMITS.fileBytes);
   if (mode === "submit") {
-    const hashed = await hashFile(root, source, LIMITS.fileBytes);
     const recorded = result.files;
     const sameFile =
       recorded.length === 1 &&
-      recorded[0]?.path === hashed.path &&
-      recorded[0]?.sha256 === hashed.sha256 &&
-      recorded[0]?.bytes === hashed.bytes;
+      recorded[0]?.path === source &&
+      recorded[0]?.sha256 === sha256Hex(normalizeForHash(bytes)) &&
+      recorded[0]?.bytes === bytes.byteLength;
     if (!sameFile) throw new Error(RECHECK);
     const recordedImports = result.importedFiles;
     if (recordedImports) {
@@ -272,8 +278,11 @@ async function prepareProblemInput(
     receipt.taskId !== manifest.id ||
     (result.taskContentHash && result.taskContentHash !== receipt.contentHash)
   )
-    throw new Error("確認した課題の版が変わっています。もう一度確認してください");
-  const bytes = await readFileInRoot(root, source, LIMITS.fileBytes);
+    throw new Error(
+      mode === "consult"
+        ? "確認した課題の版が変わっています。もう一度確認してください"
+        : "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+    );
   return {
     taskId: manifest.id,
     contentHash: result.taskContentHash ?? receipt.contentHash,

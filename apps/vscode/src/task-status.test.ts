@@ -104,15 +104,15 @@ const editor = (file: string | undefined) =>
 const inTask = () => state.executeCommand.mock.calls.at(-1);
 
 describe("ステータスバーの課題のボタン", () => {
-  it("課題フォルダーのファイルを開くと「課題を確認する」「課題文」を出し、課題フォルダーを渡す", async () => {
+  it("課題フォルダーのファイルを開くと「提出する」「課題文」を出し、課題フォルダーを渡す", async () => {
     state.activeFile = path.join(root, "index.html");
     registerTaskStatus(context);
     await state.editorListener?.(editor(state.activeFile));
     const [run, readme] = state.items;
     expect(run?.visible).toBe(true);
-    expect(run?.text).toContain("課題を確認する");
+    expect(run?.text).toBe("$(cloud-upload) 提出する");
     expect(run?.tooltip).toContain("最初のページを作る");
-    expect(run?.command).toMatchObject({ command: "stella.runTask", arguments: [root] });
+    expect(run?.command).toMatchObject({ command: "stella.submitTask", arguments: [root] });
     expect(readme?.command).toMatchObject({
       command: "stella.showTaskReadme",
       arguments: [root],

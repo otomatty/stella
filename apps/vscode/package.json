@@ -102,7 +102,8 @@
       },
       {
         "command": "stella.submitTask",
-        "title": "STELLA: 課題を提出する"
+        "title": "STELLA: 課題を提出する",
+        "icon": "$(cloud-upload)"
       },
       {
         "command": "stella.consultTask",
@@ -129,14 +130,19 @@
     "menus": {
       "editor/title": [
         {
-          "command": "stella.runTask",
+          "command": "stella.submitTask",
           "when": "stella.inTask && resourceScheme == file",
           "group": "navigation@1"
         },
         {
-          "command": "stella.showTaskReadme",
+          "command": "stella.runTask",
           "when": "stella.inTask && resourceScheme == file",
           "group": "navigation@2"
+        },
+        {
+          "command": "stella.showTaskReadme",
+          "when": "stella.inTask && resourceScheme == file",
+          "group": "navigation@3"
         }
       ]
     },

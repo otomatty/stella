@@ -1,10 +1,10 @@
 /**
  * いま取り組んでいる課題を、ステータスバーとエディターの右上のボタンに出す。
  *
- * - ステータスバー: 「課題を確認する」と「課題文」。問題つきの課題は `12/20 問` も出す。
- *   コマンドパレットを知らなくても、画面の下から確認と課題文 (進め方) に戻れるようにする。
+ * - ステータスバー: 「提出する」と「課題文」。問題つきの課題は `12/20 問` も出す。
+ *   コマンドパレットを知らなくても、画面の下から提出と課題文 (進め方) に戻れるようにする。
  * - コンテキストキー `stella.inTask`: 開いているファイルが課題フォルダーの中なら true。
- *   エディターの右上の「課題を確認する」「課題文を表示する」のボタンの表示条件 (package.json)。
+ *   エディターの右上の「課題を提出する」「課題を確認する」「課題文を表示する」のボタンの表示条件 (package.json)。
  *
  * 課題は、開いているファイルの課題フォルダー (ワークスペースの中だけ) で決める。課題文や
  * 結果のパネル (テキストのエディターではない) に移ったときは、直前の課題を出したままにする。
@@ -24,7 +24,7 @@ export interface CurrentTask {
 
 let current: CurrentTask | undefined;
 let inTask = false;
-let runItem: vscode.StatusBarItem | undefined;
+let submitItem: vscode.StatusBarItem | undefined;
 let readmeItem: vscode.StatusBarItem | undefined;
 let progressItem: vscode.StatusBarItem | undefined;
 /** 開いているファイルが変わるたびに増やし、古い問い合わせの結果で上書きしない。 */
@@ -45,18 +45,18 @@ async function taskRootOfFile(file: string): Promise<string | null> {
 
 function render(): void {
   void vscode.commands.executeCommand("setContext", "stella.inTask", inTask);
-  if (!runItem || !readmeItem || !progressItem) return;
+  if (!submitItem || !readmeItem || !progressItem) return;
   if (!current) {
-    runItem.hide();
+    submitItem.hide();
     readmeItem.hide();
     progressItem.hide();
     return;
   }
-  runItem.text = "$(beaker) 課題を確認する";
-  runItem.tooltip = `「${current.title}」を手元で確認します (STELLA: 課題を確認する)`;
-  runItem.command = {
-    command: "stella.runTask",
-    title: "課題を確認する",
+  submitItem.text = "$(cloud-upload) 提出する";
+  submitItem.tooltip = `「${current.title}」を確認して提出します。通らなければ何も送りません`;
+  submitItem.command = {
+    command: "stella.submitTask",
+    title: "提出する",
     arguments: [current.root],
   };
   readmeItem.text = "$(book) 課題文";
@@ -79,7 +79,7 @@ function render(): void {
   } else {
     progressItem.hide();
   }
-  runItem.show();
+  submitItem.show();
   readmeItem.show();
 }
 
@@ -129,8 +129,12 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
 }
 
 export function registerTaskStatus(context: vscode.ExtensionContext): void {
-  runItem = vscode.window.createStatusBarItem("stella.runTask", vscode.StatusBarAlignment.Left, 50);
-  runItem.name = "STELLA: 課題を確認する";
+  submitItem = vscode.window.createStatusBarItem(
+    "stella.submitTask",
+    vscode.StatusBarAlignment.Left,
+    50,
+  );
+  submitItem.name = "STELLA: 提出する";
   readmeItem = vscode.window.createStatusBarItem(
     "stella.showTaskReadme",
     vscode.StatusBarAlignment.Left,
@@ -144,7 +148,7 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
   );
   progressItem.name = "STELLA: 問題の件数";
   context.subscriptions.push(
-    runItem,
+    submitItem,
     readmeItem,
     progressItem,
     vscode.window.onDidChangeActiveTextEditor((editor) => followEditor(editor)),
@@ -153,7 +157,7 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     ),
     {
       dispose: () => {
-        runItem = undefined;
+        submitItem = undefined;
         readmeItem = undefined;
         progressItem = undefined;
         current = undefined;

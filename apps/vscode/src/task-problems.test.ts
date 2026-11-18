@@ -206,7 +206,7 @@ describe("問題の提出", () => {
     );
   });
 
-  it("ファイルが変わっていたら提出せず、確認し直してください、と言う", async () => {
+  it("ファイルが変わっていたら提出せず、保存して、もう一度「提出する」を押してください、と言う", async () => {
     const root = await makeRoot();
     const run = await passedRun(root, "q01-add");
     await mkdir(path.join(root, ".stella", "problem-runs"));
@@ -216,7 +216,24 @@ describe("問題の提出", () => {
     );
     await writeFile(path.join(root, "src", "q01-add.ts"), "export const add = 2;\n");
     await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
-      "確認し直してください",
+      "保存して、もう一度「提出する」を押してください",
+    );
+  });
+
+  it("課題の版が変わっていたらもう一度提出するよう案内する", async () => {
+    const root = await makeRoot();
+    const run = await passedRun(root, "q01-add");
+    await mkdir(path.join(root, ".stella", "problem-runs"));
+    await writeFile(
+      path.join(root, ".stella", "problem-runs", "q01-add.json"),
+      JSON.stringify(run),
+    );
+    await writeFile(
+      path.join(root, ".stella", "distribution.json"),
+      JSON.stringify({ taskId: manifest.id, contentHash: "cd".repeat(32) }),
+    );
+    await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
+      "確認した課題の版が変わっています。もう一度「提出する」を押してください",
     );
   });
 
@@ -249,7 +266,7 @@ describe("問題の提出", () => {
       else await rm(importedPath);
 
       await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
-        "確認し直してください",
+        "保存して、もう一度「提出する」を押してください",
       );
     },
   );

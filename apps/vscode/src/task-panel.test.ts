@@ -2,7 +2,13 @@ import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunResult } from "@stella/shared/tasks/run-result";
 import { describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { buildTaskPanelHtml, buildTaskReadmeHtml, showTaskReadme } from "./task-panel.js";
+import { GUIDE_COMMANDS } from "./task-guide.js";
+import {
+  buildTaskPanelHtml,
+  buildTaskReadmeHtml,
+  showTaskPanel,
+  showTaskReadme,
+} from "./task-panel.js";
 
 vi.mock("vscode", () => ({
   window: { createWebviewPanel: vi.fn() },
@@ -122,8 +128,33 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("直すところがあります");
     expect(html).toContain("src/filter.js:8:5");
     expect(html.indexOf("✗")).toBeLessThan(html.indexOf("✓ 空配列"));
-    expect(html).toContain('href="command:stella.runTask"');
+    expect(html).toContain('href="command:stella.submitTask">提出する</a>');
     expect(html).toContain("v22.22.0");
+  });
+
+  it("提出前の合格結果は開いているパネルだけを更新する", () => {
+    const createPanel = vi.mocked(vscode.window.createWebviewPanel);
+    const panel = {
+      title: "",
+      reveal: vi.fn(),
+      onDidDispose: vi.fn(),
+      webview: { html: "" },
+    };
+    createPanel.mockReturnValueOnce(panel as unknown as vscode.WebviewPanel);
+    const passed = {
+      kind: "result" as const,
+      manifest,
+      result: result({ outcome: "passed", steps: [] }),
+    };
+    showTaskPanel(passed, { reveal: false });
+    expect(createPanel).not.toHaveBeenCalled();
+    showTaskPanel({ ...passed, result: result() });
+    showTaskPanel(passed, { reveal: false });
+    expect(createPanel).toHaveBeenCalledTimes(1);
+    expect(panel.reveal).not.toHaveBeenCalled();
+    expect(panel.webview.html).toContain("手元の確認はすべて通りました。");
+    panel.onDidDispose.mock.calls[0]?.[0]();
+    createPanel.mockClear();
   });
 
   it("問題の確認では、その問題と次へ進む案内を出す", () => {
@@ -165,11 +196,11 @@ describe("buildTaskPanelHtml", () => {
     expect(html).not.toContain("command:stella.consultTask");
   });
 
-  it("もう一度確認するリンクは課題フォルダーを渡す (パネルからはファイルを探せないため)", () => {
+  it("提出するリンクは課題フォルダーを渡す (パネルからはファイルを探せないため)", () => {
     const root = "/home/me/web-training/course/unit/q01";
     const html = buildTaskPanelHtml({ kind: "result", manifest, result: result(), root });
     expect(html).toContain(
-      `href="command:stella.runTask?${encodeURIComponent(JSON.stringify([root]))}">もう一度確認する`,
+      `href="command:stella.submitTask?${encodeURIComponent(JSON.stringify([root]))}">提出する`,
     );
   });
 
@@ -181,7 +212,7 @@ describe("buildTaskPanelHtml", () => {
     });
     expect(html).toContain("講師に相談してください");
     expect(html).toContain("command:stella.consultTask");
-    expect(html).not.toContain("command:stella.submitTask");
+    expect(html).toContain("直したら、もう一度「提出する」を押してください。");
   });
 
   it("中断した実行は結果を残さないと伝える", () => {
@@ -202,7 +233,8 @@ describe("buildTaskPanelHtml", () => {
       standalone: true,
     });
     expect(html).toContain('href="command:stella.diagnoseEnvironment"');
-    expect(html).not.toContain('href="command:stella.runTask"');
+    expect(html).toContain(">もう一度確認する</a>");
+    expect(html).not.toContain("command:stella.submitTask");
   });
 
   it("CI と公開の課題は、控えた実行・公開先・コミットを出す (リンクは https だけ)", () => {
@@ -293,6 +325,12 @@ describe("課題文のパネル", () => {
     vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
     showTaskReadme({ title: "課題B", markdown: "B の本文", root: "/b" });
     expect(panel.webview.html).toContain("B の本文");
+    expect(vscode.window.createWebviewPanel).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.any(Object),
+      { enableScripts: false, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
+    );
     // 課題 A の確認のあとの描き直しが、読み込みを待つ間に B へ切り替わったパネルに届く。
     showTaskReadme({ title: "課題A", markdown: "A の本文", root: "/a" }, { reveal: false });
     expect(panel.webview.html).toContain("B の本文");
@@ -321,7 +359,15 @@ describe("課題文のパネル", () => {
     it("見出しの下に進め方を置き、課題文の同じ見出しは重ねない", () => {
       expect(html.match(/最初のページを作る<\/h1>/g)).toHaveLength(1);
       expect(html).toContain('<p class="meta">基礎 ・ HTML の確認</p>');
-      expect(html.indexOf("進め方")).toBeLessThan(html.indexOf('<h2 class="readme-title">課題文'));
+      const sections = [
+        '<ol class="stepper">',
+        '<div class="now-card none">',
+        '<details class="all-steps"><summary>進め方をすべて見る</summary>',
+        '<p class="help">',
+        '<h2 class="readme-title">課題文',
+      ].map((section) => html.indexOf(section));
+      expect(sections.every((index) => index >= 0)).toBe(true);
+      expect(sections).toEqual([...sections].sort((a, b) => a - b));
       expect(html.indexOf('<h2 class="readme-title">課題文')).toBeLessThan(
         html.indexOf("エクスプローラーで"),
       );
@@ -336,6 +382,30 @@ describe("課題文のパネル", () => {
         "command:stella.runTask",
       );
       expect(html).not.toMatch(/<script/i);
+      expect(html).toContain("default-src 'none'; style-src 'unsafe-inline'; img-src data:");
+    });
+
+    it("前回の結果は課題文の上の枠に件数と手順だけを表示する", () => {
+      const failed = buildTaskReadmeHtml({
+        title: staticManifest.title,
+        markdown,
+        guide: {
+          root,
+          manifest: staticManifest,
+          edit: { files: [], missing: [] },
+          lastRun: {
+            outcome: "failed",
+            steps: [{ label: "<テスト>", status: "failed", tests: { total: 2, passed: 1 } }],
+            tests: { total: 2, passed: 1 },
+          },
+        },
+      });
+      const body = failed.slice(failed.indexOf("<body>"));
+      expect(body).toMatch(/class="now-card failed".*テスト 2 件中 1 件が通りました/);
+      expect(body).toContain("残り: &lt;テスト&gt; 1 件");
+      expect(body).not.toContain("<テスト>");
+      expect(body.match(/class="button"/g)).toHaveLength(1);
+      expect(body.indexOf("残り")).toBeLessThan(body.indexOf('<h2 class="readme-title">課題文'));
     });
   });
 });
