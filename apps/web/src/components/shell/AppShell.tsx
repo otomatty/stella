@@ -244,7 +244,7 @@ export function AppShell() {
   // 開いているときだけクライアント側で自分のステージに絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
-  const pendingReviewCount = usePendingReviewCount();
+  const pendingReviewCount = usePendingReviewCount(effectiveRole === "admin");
   // 人の件数・AI の状態はほかの講師や AI の非同期の結果で変わるので、staff のあいだは取り直す (#34)。
   useSubmissionsAutoRefresh(backendEnabled && effectiveRole === "admin");
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
