@@ -1,0 +1,44 @@
+import { useState } from "react";
+import { RecordList } from "../provided/RecordList";
+import { records } from "../provided/records";
+import { sumWeek } from "./sum-week";
+import type { WorkRecord } from "../provided/types";
+
+interface AppProps {
+  initialRecords?: readonly WorkRecord[];
+}
+
+export function App({ initialRecords = records }: AppProps) {
+  const [workRecords, setWorkRecords] = useState(initialRecords);
+  const weeks = [...new Set(workRecords.map((record) => record.week))].sort();
+  const [week, setWeek] = useState(weeks[0] ?? "");
+  const weekRecords = workRecords.filter((record) => record.week === week);
+
+  function confirmRecord(id: string) {
+    setWorkRecords((current) =>
+      current.map((record) =>
+        record.id === id ? { ...record, status: "confirmed" } : record,
+      ),
+    );
+  }
+
+  return (
+    <main>
+      <h1>週報</h1>
+      <label htmlFor="week">対象週</label>
+      <select
+        id="week"
+        value={week}
+        onChange={(event) => {
+          setWeek(event.target.value);
+        }}
+      >
+        {weeks.map((value) => (
+          <option key={value}>{value}</option>
+        ))}
+      </select>
+      <p>確定分の合計：{sumWeek(workRecords, week)}分</p>
+      <RecordList records={weekRecords} onConfirm={confirmRecord} />
+    </main>
+  );
+}

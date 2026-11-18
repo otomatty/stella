@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-training/u02-week-total@2",
-  "contentHash": "0d948a8011154606865fa280f0d8b52b7f55fb17a9e68cef6fa718c19bae3c97",
+  "unitId": "devlab-training/u02-week-total@3",
+  "contentHash": "bc095fa058efc9cb6ae6d167cd3c1ce954d28706c02b20948582e406f1f9d050",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

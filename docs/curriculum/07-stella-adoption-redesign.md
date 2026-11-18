@@ -347,6 +347,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
   - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
   - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。2026-11-16にAPIの主教材をExpressと決めたため(#220の案A)、テンプレートは#224(バックエンド3ステージ)でExpressに作り直し、それまではHonoのままとする。作り直しでは、ポートを開かずに試せる今の利点、特にWindowsのファイアウォールの確認が出ないことを保てるかを、supertestが127.0.0.1のその場限りのポートで動く方式などで確かめる。
+  - 2026-11-18決定で、開発ラボGの事前課題はTypeScriptを中心に扱い、Honoは研修(`devlab-training`)の第4単元で扱う。研修のHonoとReactの課題は`ts-test`で型と動作を確かめる。Honoは研修のstarterで固定し、`app.request()`でポートを開かずにテストする。
 - **Windows・macOS:** npmの解決(`npm-cli.js`をNode.jsで直接起動)、PATHの探索(`.exe`・`.com`だけ)、時間切れ・中断での停止(`taskkill /T /F`)、長いパスと日本語のパスを、OSを差し替えた単体テストで確かめた。実機での確認は残っている。確認項目は`apps/vscode/samples/README.md`。
 
 - **課題の配布(#31):** APIから課題を受け取り、学習フォルダーへ配る(§4.4)。`apps/vscode/src/open-task.ts`・`task-distribution.ts`・`training-folder.ts`。

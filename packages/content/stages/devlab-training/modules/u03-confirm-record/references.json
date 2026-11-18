@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-training/u03-confirm-record@2",
-  "contentHash": "8d087e71612e0334175aa267a2b0221c46606b4a1d6cc1a614650d5cb965600f",
+  "unitId": "devlab-training/u03-confirm-record@3",
+  "contentHash": "3a9d94dedee4267656dffe495072a36706d9e08cea1a7570b07a939d51362674",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -27,7 +27,7 @@
       "authorship": "original-exercise",
       "reuse": "original",
       "reviewStatus": "draft",
-      "environmentRef": "react-test-01@1"
+      "environmentRef": "devlab-react-ts-01@1"
     }
   ]
 }

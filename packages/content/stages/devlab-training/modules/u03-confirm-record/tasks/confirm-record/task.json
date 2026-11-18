@@ -11,11 +11,12 @@
       "devlab-training-confirm-record"
     ]
   },
-  "runner": "react-test",
-  "environment": "react-test-01",
+  "runner": "ts-test",
+  "environment": "devlab-react-ts-01",
   "submit": {
     "files": [
-      "src/RecordList.jsx"
+      "src/**/*.ts",
+      "src/**/*.tsx"
     ],
     "explanation": false,
     "debuggingRecord": false
@@ -41,18 +42,20 @@
   "protected": [
     "package.json",
     "package-lock.json",
-    "vite.config.js",
-    "vitest.setup.js",
+    "vitest.config.js",
+    "vitest.setup.ts",
     "eslint.config.js",
     ".prettierrc.json",
     ".prettierignore",
     "tests/**",
     "index.html",
-    "src/main.jsx",
-    "src/App.jsx",
-    "src/records.js",
-    "src/sum-week.js",
-    "src/format-record.js"
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/records.ts",
+    "src/sum-week.ts",
+    "src/format-record.ts",
+    "tsconfig.json",
+    "src/types.ts"
   ],
   "checks": {
     "lint": true,

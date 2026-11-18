@@ -1,0 +1,68 @@
+{
+  "id": "devlab-training/u04-records-api/records-api",
+  "title": "週報の記録を API で返す",
+  "kind": "basic",
+  "pattern": "devlab-training-records-api",
+  "skills": {
+    "uses": [
+      "devlab-training-week-total"
+    ],
+    "assesses": [
+      "devlab-training-records-api"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "devlab-hono-ts-01",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [],
+    "rubric": [
+      {
+        "id": "route-contract",
+        "criterion": "入力の形式と記録の有無を調べ、仕様どおりの状態コードと JSON を返している。",
+        "required": true
+      },
+      {
+        "id": "reuse-week-total",
+        "criterion": "週の合計に配布済みの sumWeek を使い、確定では指定した ID の記録を更新している。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-hono-routing-20261118",
+    "SRC-hono-request-20261118",
+    "SRC-hono-context-20261118",
+    "SRC-hono-testing-20261118"
+  ],
+  "estimatedMinutes": 360,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "src/types.ts",
+    "src/records.ts",
+    "src/sum-week.ts"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

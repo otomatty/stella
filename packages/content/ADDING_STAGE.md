@@ -118,6 +118,8 @@ modules/<unit>/
 
 `bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。runner ごとのひな形 (道具の版・lockfile・テストと lint・整形の設定・`task.json` に写す項目) は `templates/runners/<runner>/` にあり、使い方は同じフォルダーの README です。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
 
+開発ラボG 研修の React 課題は `ts-test` を使います。`tsconfig.json` に `.ts` と `.tsx` を含め、`tsc --noEmit` のあとに Vitest と jsdom で画面を確かめます。提出には `src/**/*.ts` と `src/**/*.tsx` を指定し、テストと設定は `protected` に入れます。Hono の課題も `ts-test` を使い、Hono の版は研修の starter と環境台帳に記録します。
+
 課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。ヒント・解答例 (`private/solution/`)・解説 (`private/explanation.md`) は、解放条件を満たした受講者が拡張の課題パネルで開いたときだけ `/api/tasks/help` が返し、開いたことを記録します (提出は「支援付き」になります。罰ではなく記録です)。`private/review.md` はどの条件でも受講者へ返しません。予備の類題 (`private/variants/`) は親の課題の素材に入れず、類題ごとに別の課題として入り、出題した受講者にだけ配ります (下の「予備の類題」)。非公開の素材 (`private/` と `hints.md`) は合わせて配布一式と同じ大きさまでです (D1 の 1 行に収めるため)。
 
 LMS は7状態と「VS Code で開く」を表示します。課題文のレッスンにも同じボタンが出ます (seed が `tasks.lesson_id` で結ぶ)。拡張は学習フォルダー (既定は `~/web-training`。受講者が初回に選ぶ) の `<ステージ>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。
