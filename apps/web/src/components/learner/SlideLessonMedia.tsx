@@ -6,10 +6,12 @@ import { VideoViewer } from "./VideoViewer";
 export function SlideLessonMedia({
   lessonId,
   videoPath,
+  onComplete,
   children,
 }: {
   lessonId: string;
   videoPath?: string | null;
+  onComplete?: () => void;
   children?: ReactNode;
 }) {
   const [mode, setMode] = useState("video");
@@ -40,6 +42,7 @@ export function SlideLessonMedia({
           captionsPath={videoPath.replace(/\.mp4$/, ".vtt")}
           posterPath={videoPath.replace(/\.mp4$/, ".jpg")}
           recordProgress={false}
+          onComplete={onComplete}
         />
       ) : (
         children

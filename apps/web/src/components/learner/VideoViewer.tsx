@@ -4,9 +4,8 @@
  * - R2 上の mp4 を直接 src に渡し、 ネイティブ controls を活用
  * - 再生速度プリセット (0.75〜2.0x) を独自 UI で
  * - キーボードショートカット (Space / ←→ / J L / M / F)
- * - 前回視聴位置からの自動再開 (`watchedSec`)
- * - `timeupdate` を 250ms デバウンスして localStorage に保存
- * - 90% 視聴で `onComplete()`
+ * - 動画レッスンは前回視聴位置 (`watchedSec`) から自動再開し、`timeupdate` を 250ms デバウンスして保存
+ * - 動画レッスンは 90% 視聴で完了。受講者のスライド動画は 90% 視聴または再生終了で `onComplete()`
  * - 再生終了で「次のレッスンへ」オーバーレイ (既定は 5 秒で自動遷移 / 取り消し可)
  * - 読み込み失敗時のリトライ + ダウンロード fallback
  */
@@ -37,7 +36,7 @@ interface Props {
   totalSec?: number;
   captionsPath?: string;
   posterPath?: string;
-  /** スライド動画・公開教材は動画から進捗や完了を書き込まない。 */
+  /** false なら再生位置を保存・復元せず、完了は onComplete が渡されたときだけ通知する。 */
   recordProgress?: boolean;
   onComplete?: () => void;
   /** 再生終了後に案内する次のレッスン名。 次が無いステージ末尾では null。 */
@@ -52,6 +51,12 @@ const COMPLETION_THRESHOLD = 0.9;
 /** 再生終了から自動で次へ進むまでの秒数。 */
 const AUTO_ADVANCE_SEC = 5;
 
+export function reachesVideoCompletion(currentTime: number, duration: number): boolean {
+  return (
+    Number.isFinite(duration) && duration > 0 && currentTime >= duration * COMPLETION_THRESHOLD
+  );
+}
+
 export function VideoViewer({
   lessonId,
   videoPath,
@@ -64,6 +69,7 @@ export function VideoViewer({
   onAdvanceNext,
 }: Props) {
   const { entry, recordWatchTime, markComplete } = useLessonProgress(lessonId);
+  const isCompleted = entry?.completed === true;
   // サーバ進捗の取り込みが決着するまで再開位置は確定しない。
   const ready = useProgressReady();
 
@@ -81,7 +87,7 @@ export function VideoViewer({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const completedRef = useRef<boolean>(entry?.completed === true);
+  const completedRef = useRef(isCompleted);
   const lastSaveRef = useRef<number>(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumedRef = useRef(false);
@@ -142,17 +148,28 @@ export function VideoViewer({
     [recordProgress, recordWatchTime, duration, totalSec, markComplete, onComplete],
   );
 
+  const completeSlideVideo = useCallback(() => {
+    if (recordProgress || !onComplete || isCompleted || completedRef.current) return;
+    completedRef.current = true;
+    onComplete();
+    flushNow();
+  }, [recordProgress, onComplete, isCompleted]);
+
   const onTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
     const sec = v.currentTime;
+    if (!recordProgress) {
+      if (reachesVideoCompletion(sec, v.duration)) completeSlideVideo();
+      return;
+    }
     lastSaveRef.current = sec;
     if (saveTimerRef.current) return;
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
       flushSave(lastSaveRef.current);
     }, SAVE_DEBOUNCE_MS);
-  }, [flushSave]);
+  }, [recordProgress, completeSlideVideo, flushSave]);
 
   const onPauseOrEnded = useCallback(() => {
     setIsPlaying(false);
@@ -169,10 +186,11 @@ export function VideoViewer({
   // カウントダウンも始める (見直しのために再生を再開したら取り消す)。
   const handleEnded = useCallback(() => {
     onPauseOrEnded();
+    completeSlideVideo();
     if (!canAdvance) return;
     setShowNextOverlay(true);
     setCountdown(autoAdvance ? AUTO_ADVANCE_SEC : null);
-  }, [onPauseOrEnded, canAdvance, autoAdvance]);
+  }, [onPauseOrEnded, completeSlideVideo, canAdvance, autoAdvance]);
 
   const onPlay = useCallback(() => {
     setIsPlaying(true);
@@ -326,7 +344,6 @@ export function VideoViewer({
     onComplete?.();
   }, [markComplete, onComplete]);
 
-  const isCompleted = entry?.completed === true;
   const watched = entry?.watchedSec ?? 0;
   const dur = duration || totalSec || 0;
   const pct = dur > 0 ? Math.min(100, Math.round((watched / dur) * 100)) : 0;
@@ -498,22 +515,30 @@ export function VideoViewer({
         </button>
       </div>
 
-      {recordProgress ? (
+      {recordProgress || onComplete ? (
         <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2.5 text-[11.5px] text-ink-3">
-          <span className="inline-flex items-center gap-1.5">
-            {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-            視聴 {Math.round(watched)} / {Math.round(dur) || "?"} 秒{" "}
-            <span className="font-display font-bold text-ink-2">({pct}%)</span>
-          </span>
-          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
-            <div
-              className={cn("h-full", isCompleted ? "bg-success" : "sf-gradient-bg")}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          {recordProgress ? (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+                視聴 {Math.round(watched)} / {Math.round(dur) || "?"} 秒{" "}
+                <span className="font-display font-bold text-ink-2">({pct}%)</span>
+              </span>
+              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
+                <div
+                  className={cn("h-full", isCompleted ? "bg-success" : "sf-gradient-bg")}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </>
+          ) : null}
           <div className="flex-1" />
           {!isCompleted ? (
-            <Button size="sm" variant="accent" onClick={handleMarkComplete}>
+            <Button
+              size="sm"
+              variant="accent"
+              onClick={recordProgress ? handleMarkComplete : completeSlideVideo}
+            >
               <Check size={13} /> 完了にする
             </Button>
           ) : (

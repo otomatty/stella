@@ -183,7 +183,7 @@ export const LessonPlayer = ({
     if (lessonObj) markComplete();
   };
 
-  // 滞在時間を学習時間として積む。 動画は VideoViewer が実再生秒数を記録するので除外
+  // 滞在時間を学習時間として積む。 動画レッスンは VideoViewer が実再生秒数を記録するので除外
   // (両方が同じ watched_sec を書くと二重計上になる)。
   useStudyTime(lessonObj?.id ?? "", Boolean(lessonObj) && lessonObj?.type !== "video");
 
@@ -501,6 +501,7 @@ export const LessonPlayer = ({
                       key={lessonObj.id}
                       lessonId={lessonObj.id}
                       videoPath={lessonObj.videoPath}
+                      onComplete={handleMarkComplete}
                     >
                       {lessonObj.markdown ? (
                         <MarkdownSlides
