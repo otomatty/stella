@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u08-tools@1",
+  "contentHash": "06c2ab8c4d19341e60a0bdc872cfe61e24120a3ff9ac5dcc4d398cef89ec2f45",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-resource/knowledge.md",
+      "sourceRefs": ["SRC-mcp-resources-spec-20260728"],
+      "usedFor": "「利用者が選んだ座席図を読む」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-ambiguous-id/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-define-tools-20261031"],
+      "usedFor": "「同姓の貸出先を確定する」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-tool-pages/knowledge.md",
+      "sourceRefs": ["SRC-mcp-tools-spec-20260728"],
+      "usedFor": "「新しい MCP ツールが一覧に見当たらない」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

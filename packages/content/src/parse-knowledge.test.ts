@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseKnowledge } from "./parse-knowledge.js";
+import { parseKnowledge, readKnowledgeMetadata } from "./parse-knowledge.js";
 
 const question = (kind: string, answer: string, options = "- A. 正しい\n- B. 誤り") =>
   `## 知識問題\n\n### Q1. 保存しますか？\n<!-- kind: ${kind}; skills: preview-changes -->\n${options}\n<details>\n<summary>解答</summary>\n\n**${answer}** — 保存してから表示を確認します。\n\n</details>`;
@@ -22,5 +22,18 @@ describe("knowledge.md", () => {
     question("single", "A").replace("**A**", "**A, A**"),
   ])("不正な種別・選択肢・正解・スキルは投入しない", (source) => {
     expect(() => parseKnowledge(source)).toThrow();
+  });
+});
+describe("knowledge.md の表示", () => {
+  it.each(["0", "-5", "1.5", "120分", "9007199254740992"])(
+    "無効な所要時間 %s は拒否する",
+    (minutes) => {
+      expect(() => readKnowledgeMetadata(`---\ndurationMinutes: ${minutes}\n---\n本文`)).toThrow(
+        "durationMinutes",
+      );
+    },
+  );
+  it("空の題ではまとめを省略できない", () => {
+    expect(() => readKnowledgeMetadata('---\ntitle: ""\n---\n本文')).toThrow("title");
   });
 });

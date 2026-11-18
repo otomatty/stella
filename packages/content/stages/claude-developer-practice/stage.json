@@ -1,0 +1,25 @@
+{
+  "format": 2,
+  "title": "Claude Developer 実務一問一答",
+  "category": "Anthropic認定資格",
+  "color": "amber",
+  "description": "8領域、各3問の一問一答です。実務で出会う場面を読み、対応を一つ選んで採点すると、その場で理由と基礎教材の復習先を確認できます。",
+  "header": "Claude Developer 実務一問一答",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["claude-developer-foundations"],
+  "plannedHours": 2,
+  "environment": "node-test-01",
+  "canDo": "24の実務場面で対応を選び、判断の決め手を説明できる",
+  "theme": "資格で示すAI開発力",
+  "modules": {
+    "u01-workflows": "エージェントとワークフロー",
+    "u02-integration": "アプリへの組み込み",
+    "u03-claude-code": "Claude Code",
+    "u04-evaluation": "評価とデバッグ",
+    "u05-optimization": "モデル選択と最適化",
+    "u06-context": "プロンプトとコンテキスト",
+    "u07-safety": "セキュリティと安全性",
+    "u08-tools": "ツールと MCP"
+  }
+}

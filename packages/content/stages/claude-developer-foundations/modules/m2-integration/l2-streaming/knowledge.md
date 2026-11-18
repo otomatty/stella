@@ -68,6 +68,6 @@ sourceRefs: [SRC-claude-docs-streaming-20261031, SRC-claude-docs-errors-long-req
 <details>
 <summary>解答</summary>
 
-**A** — finalMessage() は中でストリーミングを使い、messages.create と同じ形の応答を返します。C は長く待つ通信が切られるおそれがあります。
+**A** — finalMessage() は中でストリーミングを使い、messages.create と同じ形の応答を返します。長い処理をストリーミングなしで待つと、応答の前に通信が切れる場合があります。
 
 </details>

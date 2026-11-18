@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-anthropic-effective-agents-20261031, SRC-claude-docs-cost-intelligence-20261031]
+sourceRefs: [SRC-anthropic-effective-agents-20261031, SRC-claude-docs-cost-intelligence-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 ## 知識問題
 
@@ -70,5 +70,20 @@ sourceRefs: [SRC-anthropic-effective-agents-20261031, SRC-claude-docs-cost-intel
 <summary>解答</summary>
 
 **A, B** — 基準がはっきりしないと、繰り返しても良くなりません。
+
+</details>
+
+### Q6. 申請書の数量照合は 6 秒、担当部署の照合は 4 秒で、同じ申請書から同時に始められます。両方に通ったときだけ 3 秒で受付票を作ります。この条件で最短の呼び出し順を選んでください。
+<!-- kind: single; skills: claude-workflows -->
+
+- A. 数量、部署、受付票を順に処理する
+- B. 数量と部署を同時に始め、一方が合格した時点で受付票を作る
+- C. 数量と部署を同時に始め、両方の結果をコードで確かめてから受付票を作る
+- D. 数量を 2 回同時に照合し、結果が一致した時点で受付票を作る
+
+<details>
+<summary>解答</summary>
+
+**C** — 2 件の照合がそろうまで 6 秒、受付票に 3 秒で計 9 秒です。順に処理すると 13 秒かかります。片方で発行を始めると、もう一方の不合格を見落とします。数量を 2 回確かめても、部署の照合は済みません。
 
 </details>

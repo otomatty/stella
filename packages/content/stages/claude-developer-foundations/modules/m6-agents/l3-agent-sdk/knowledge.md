@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-code-agent-loop-20261031, SRC-claude-code-agent-loop-control-20261031, SRC-claude-code-sdk-subagents-20261031, SRC-claude-code-sdk-subagents-create-20261031, SRC-claude-code-sdk-sessions-20261031]
+sourceRefs: [SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-code-agent-loop-20261031, SRC-claude-code-agent-loop-control-20261031, SRC-claude-code-sdk-subagents-20261031, SRC-claude-code-sdk-subagents-create-20261031, SRC-claude-code-sdk-sessions-20261031, SRC-claude-sdk-hooks-20261118, SRC-claude-developer-guide-v11-20261118]
 ---
 ## 知識問題
 
@@ -71,5 +71,34 @@ sourceRefs: [SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-code-agent-
 <summary>解答</summary>
 
 **A** — 新しく query を呼ぶと、前の会話を持たずに始まります。元を残して別のやり方を試すなら fork を使います。
+
+</details>
+
+### Q6. 注文調査のセッション X が `error_max_turns` で終了しました。同じフォルダーで後から請求調査 Y が完了しています。X の記録は保存済みで、続行の予算もあります。注文担当に返す処理を選んでください。
+<!-- kind: single; skills: claude-agent-sdk -->
+
+- A. 最後に使ったツールの出力を最終回答として表示する
+- B. 中断を記録し、残りの作業に合うターン数を設定して X の ID で再開する
+- C. 回数の上限を増やし、`continue: true` で直近のセッションから続ける
+- D. X の `result` を Y の最終回答の後ろに付けて担当に返す
+
+<details>
+<summary>解答</summary>
+
+**B** — ツールが値を返しても、回数上限で止まった X には最終回答がありません。直近のセッションを再開すると請求調査 Y が選ばれます。請求調査の回答を流用すると、注文担当に別件の情報を渡してしまいます。
+
+</details>
+
+### Q7. 出荷ツールの記録に「未承認」「実行成功」が順に残りました。未承認の荷物を出荷する関数が呼ばれないことを確かめる変更はどれですか？
+<!-- kind: single; skills: claude-agent-sdk -->
+
+- A. 完了後のフックで承認を調べ、未承認が含まれるログを保存する
+- B. 指示に承認が必要と明記し、返答が「確認しました」を含むか検査する
+- C. 実行前のフックと実行側で承認を照合し、未承認ケースで出荷関数の呼び出しが 0 回と検査する
+
+<details>
+<summary>解答</summary>
+
+**C** — この要件は、副作用を起こす処理より前に条件を強制して初めて満たせます。完了後のログは事後の調査に使えます。「確認しました」という回答文から、未承認の出荷を止めたかは判断できません。
 
 </details>

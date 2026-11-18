@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u05-optimization@1",
+  "contentHash": "816a3cd5b2243a2b2c2a1d8ba3452e54bfe2c31ebe1169bf242eba9916755b6c",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-two-sentences/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-latency-20261031"],
+      "usedFor": "「最初の文字と読み終わりを測る」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-precision/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-cost-intelligence-20261031"],
+      "usedFor": "「部品照合に二段階の処理を使う」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-token-cost/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-choosing-model-20261031"],
+      "usedFor": "「席予約の案内で費用を見積もる」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

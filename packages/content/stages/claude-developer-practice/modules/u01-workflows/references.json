@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u01-workflows@1",
+  "contentHash": "42eb8ebc4bdf9185cec348eb7165d2c0a8e927865733de1fd25e4ccbeb21f7e2",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-after-approval/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-sdk-sessions-20261031"],
+      "usedFor": "「校正を翌日に再開する」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-survey-cover/knowledge.md",
+      "sourceRefs": ["SRC-anthropic-effective-agents-20261031"],
+      "usedFor": "「アンケートを二つの観点で読む」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-inspection/knowledge.md",
+      "sourceRefs": ["SRC-anthropic-effective-agents-defs-20261031"],
+      "usedFor": "「写真から点検箇所を絞る」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

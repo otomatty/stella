@@ -147,9 +147,29 @@ function stableUuid(key: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+// 3 ステージへの分割で模試へ移ったレッスン。配布済みのリンク、解答、資料の版を
+// 引き継ぐため、これらの UUID には引き続き元のステージの名前を使う。
+const transferredExamLessons = new Set([
+  "9-1-1",
+  "doc-9-1",
+  "quiz-9-1",
+  "10-3-1",
+  "doc-10-3",
+  "quiz-10-3",
+  "10-4-1",
+  "doc-10-4",
+  "quiz-10-4",
+]);
+
+function lessonNamespace(stageId: string, lessonId: string): string {
+  return stageId === "claude-developer-mock-exam" && transferredExamLessons.has(lessonId)
+    ? "claude-developer-foundations"
+    : stageId;
+}
+
 /** レッスン ID はステージ内で一意。セクションをキーに含めると移動時に履歴が切れる。 */
 function lessonUuid(tenantId: string, stageId: string, lessonId: string): string {
-  return stableUuid(`lesson:${tenantId}:${stageId}:${lessonId}`);
+  return stableUuid(`lesson:${tenantId}:${lessonNamespace(stageId, lessonId)}:${lessonId}`);
 }
 
 /** 以前の section 込みキー。初回 seed で進捗を新 UUID へ付け替えるために残す。 */
@@ -165,6 +185,8 @@ function legacyLessonUuid(
 const stageIdMap = new Map<string, string>();
 const sectionIdMap = new Map<string, string>();
 const emittedAssignments = new Set<string>();
+const emittedLessonUuids = new Set<string>();
+const stagesToPrune: { stageUuid: string; sectionUuids: string[]; lessonUuids: string[] }[] = [];
 
 /** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
@@ -214,7 +236,6 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
   const sectionUuids: string[] = [];
   const lessonUuids: string[] = [];
   const lessonIdRemaps: { from: string; to: string }[] = [];
-  const seenLessonIds = new Set<string>();
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
     const sectionUuid = stableUuid(`section:${tenantId}:${stage.id}:${section.id}`);
@@ -231,11 +252,11 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
     );
     for (let j = 0; j < section.lessons.length; j++) {
       const lesson = section.lessons[j];
-      if (seenLessonIds.has(lesson.id)) {
+      const newLessonUuid = lessonUuid(tenantId, stage.id, lesson.id);
+      if (emittedLessonUuids.has(newLessonUuid)) {
         throw new Error(`duplicate lesson id "${lesson.id}" in stage ${stage.id}`);
       }
-      seenLessonIds.add(lesson.id);
-      const newLessonUuid = lessonUuid(tenantId, stage.id, lesson.id);
+      emittedLessonUuids.add(newLessonUuid);
       const oldLessonUuid = legacyLessonUuid(tenantId, stage.id, section.id, lesson.id);
       lessonUuids.push(newLessonUuid);
       if (oldLessonUuid !== newLessonUuid) {
@@ -268,7 +289,7 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
   }
 
   emitLessonIdRemap(lessonIdRemaps);
-  emitPrune(stageUuid, sectionUuids, lessonUuids);
+  stagesToPrune.push({ stageUuid, sectionUuids, lessonUuids });
 }
 
 function sqlIn(ids: string[]): string {
@@ -335,8 +356,8 @@ function emitLessonIdRemap(pairs: { from: string; to: string }[]) {
  * A」という取り残しを防ぐ (CMS が勝った場合はこの insert が no-op になり、CMS 側の
  * リビジョンが最新のまま)。残る極小の交錯パターンでも、次の seed が本文を正本へ
  * 戻すと同時にリビジョンも追い付くので恒久的な食い違いにはならない。
- * 本文リテラルが 2 回入るため文が大きくなるが、最大教材 (~31KB) でも seed-d1.ts の
- * 1 文 100KB 制限に収まる。超えたら chunkStatements が throw して気づける。
+ * 照合した本文はその行から読む。本文を SQL に二度埋め込むと、出典の多い教材で D1 の
+ * 1 文 100KB 制限を超える。クイズの履歴には解答を含む別の正本を使用する。
  */
 function emitLessonRevision(
   tenantId: Tenant["id"],
@@ -355,14 +376,13 @@ function emitLessonRevision(
   lines.push(
     `delete from lesson_revisions where lesson_id = '${id}' and source_hash = 'pre-versioning';`,
   );
-  const lessonGuard = guardLessonMarkdown
-    ? `where exists (select 1 from lessons l where l.id = '${id}' and l.markdown = '${esc(source)}')`
-    : `where exists (select 1 from lessons l where l.id = '${id}')`;
+  const literal = sqStr(source);
+  const snapshot = guardLessonMarkdown ? "l.markdown" : literal;
   lines.push(
     [
       "insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_by, created_at)",
-      `select '${id}', coalesce((select max(r.revision) from lesson_revisions r where r.lesson_id = '${id}'), 0) + 1, '${hash}', '${esc(source)}', 'seed', null, ${nowExpr()}`,
-      lessonGuard,
+      `select '${id}', coalesce((select max(r.revision) from lesson_revisions r where r.lesson_id = '${id}'), 0) + 1, '${hash}', ${snapshot}, 'seed', null, ${nowExpr()}`,
+      `from lessons l where l.id = '${id}'${guardLessonMarkdown ? ` and l.markdown = ${literal}` : ""}`,
       `and coalesce((${latestHash}), '') <> '${hash}';`,
     ].join(" "),
   );
@@ -455,7 +475,8 @@ function emitQuiz(
   quiz: Pick<QuizSeed, "lessonId" | "passScore" | "questions" | "source">,
 ) {
   const id = lessonUuid(tenantId, stageId, quiz.lessonId);
-  const quizUuid = stableUuid(`quiz:${tenantId}:${stageId}:${quiz.lessonId}`);
+  const namespace = lessonNamespace(stageId, quiz.lessonId);
+  const quizUuid = stableUuid(`quiz:${tenantId}:${namespace}:${quiz.lessonId}`);
   const legacyQuizUuid = stableUuid(`quiz:${tenantId}:${quiz.lessonId}`);
 
   lines.push(
@@ -482,7 +503,7 @@ function emitQuiz(
   const optionIds: string[] = [];
   for (let i = 0; i < quiz.questions.length; i++) {
     const q = quiz.questions[i];
-    const qUuid = stableUuid(`quiz-q:${tenantId}:${stageId}:${quiz.lessonId}:${i}`);
+    const qUuid = stableUuid(`quiz-q:${tenantId}:${namespace}:${quiz.lessonId}:${i}`);
     questionIds.push(qUuid);
     if (isSqlite) {
       const optionPreds: string[] = [];
@@ -490,7 +511,7 @@ function emitQuiz(
       for (let j = 0; j < q.options.length; j++) {
         const o = q.options[j];
         if (o === undefined) continue;
-        const oUuid = stableUuid(`quiz-o:${tenantId}:${stageId}:${quiz.lessonId}:${i}:${j}`);
+        const oUuid = stableUuid(`quiz-o:${tenantId}:${namespace}:${quiz.lessonId}:${i}:${j}`);
         optionUuids.push(oUuid);
         const correct = o.isCorrect ? "1" : "0";
         optionPreds.push(
@@ -515,7 +536,7 @@ function emitQuiz(
     );
     for (let j = 0; j < q.options.length; j++) {
       const o = q.options[j];
-      const oUuid = stableUuid(`quiz-o:${tenantId}:${stageId}:${quiz.lessonId}:${i}:${j}`);
+      const oUuid = stableUuid(`quiz-o:${tenantId}:${namespace}:${quiz.lessonId}:${i}:${j}`);
       optionIds.push(oUuid);
       lines.push(
         [
@@ -588,7 +609,7 @@ function emitPdfMaterials() {
     const lessonId = lessonUuid(e.tenantId, e.stageSlug, e.lessonId);
     // OS を分けない PDF の ID は従来のまま (既存の行と版履歴を引き継ぐ)。
     const materialId = stableUuid(
-      `lesson-material-pdf:${e.tenantId}:${e.stageSlug}:${e.lessonId}${e.os ? `:${e.os}` : ""}`,
+      `lesson-material-pdf:${e.tenantId}:${lessonNamespace(e.stageSlug, e.lessonId)}:${e.lessonId}${e.os ? `:${e.os}` : ""}`,
     );
     current.set(lessonId, [...(current.get(lessonId) ?? []), materialId]);
     lines.push(
@@ -616,6 +637,10 @@ function emitPdfMaterials() {
 }
 
 for (const c of content.stages) emitStage("ses", c);
+// 移したレッスンを先に新しい section へ結ぶ。元のステージを先に prune すると
+// ステージの走査順によって受験記録や進捗まで消してしまう。
+for (const { stageUuid, sectionUuids, lessonUuids } of stagesToPrune)
+  emitPrune(stageUuid, sectionUuids, lessonUuids);
 
 const skillRegistry = JSON.parse(
   readFileSync(new URL("../../content/skills.json", import.meta.url), "utf8"),

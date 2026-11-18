@@ -30,6 +30,18 @@ function stableUuid(key: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+function applyMigrations(db: DatabaseSync, before?: string) {
+  const directory = fileURLToPath(new URL("../../../apps/api/drizzle", import.meta.url));
+  db.exec("pragma foreign_keys = off");
+  for (const file of readdirSync(directory)
+    .filter((file) => file.endsWith(".sql"))
+    .sort()) {
+    if (file === before) break;
+    db.exec(readFileSync(join(directory, file), "utf8"));
+  }
+  db.exec("pragma foreign_keys = on");
+}
+
 /** seed-d1 と同じく stdout をファイルへ直接書く。Windows の大きな pipe 出力も避ける。 */
 function exportSql(contentOnly = false, extraEnv: Record<string, string> = {}): string {
   const dir = mkdtempSync(join(tmpdir(), "stella-seed-test-"));
@@ -63,6 +75,118 @@ describe("export-seed-sql (sqlite)", () => {
   it("教材ステージを upsert する", () => {
     expect(sql).toContain("'salesforce-dev-basics'");
   });
+
+  it("Claude 講座の分割で旧レッスンの履歴と受験記録を引き継ぎ、割り当ては1回だけ配る", () => {
+    const original = "claude-developer-foundations";
+    const stageId = stableUuid(`course:ses:${original}`);
+    const migration = "0083_split_claude_developer_stages";
+    const sqlite = new DatabaseSync(":memory:");
+    try {
+      applyMigrations(sqlite, `${migration}.sql`);
+      sqlite.exec(`
+        insert into tenants (id, name, created_at, updated_at) values ('ses', 'テスト', 1, 1);
+        insert into profiles (id, tenant_id, role, display_name, created_at)
+          values ('assigned','ses','student','受講者',1), ('other','ses','student','別の受講者',1);
+        insert into stages (id, tenant_id, slug, title, audience, status, created_at, updated_at)
+          values ('${stageId}', 'ses', '${original}', '旧講座', 'granted', 'published', 1, 1);
+        insert into stage_grants (id, tenant_id, stage_id, profile_id, granted_by, granted_at, source_name, message)
+          values ('original-grant','ses','${stageId}','assigned','staff',7,'研修','受験に向けて');
+        insert into enrollments (id, tenant_id, stage_id, user_id, enrolled_at)
+          values ('original-enrollment','ses','${stageId}','assigned',8);
+      `);
+      const originalLessons: string[] = [];
+      for (const group of ["9-1", "10-3", "10-4"]) {
+        const module = group === "9-1" ? "m9-mock-exam" : "m10-final-review";
+        const section = stableUuid(`section:ses:${original}:${module}`);
+        sqlite
+          .prepare(`insert or ignore into sections (id, stage_id, title, created_at)
+          values (?, ?, '分割前', 1)`)
+          .run(section, stageId);
+        for (const [key, type] of [
+          [`${group}-1`, "slides"],
+          [`doc-${group}`, "text"],
+          [`quiz-${group}`, "quiz"],
+        ] as const) {
+          const lesson = stableUuid(`lesson:ses:${original}:${key}`);
+          originalLessons.push(lesson);
+          sqlite
+            .prepare(`insert into lessons (id, section_id, title, type, created_at, updated_at)
+            values (?, ?, '旧レッスン', ?, 1, 1)`)
+            .run(lesson, section, type);
+          sqlite
+            .prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+            values (?, 'ses', 'assigned', ?, 1, 1)`)
+            .run(`progress-${key}`, lesson);
+          if (type === "quiz") {
+            const quiz = stableUuid(`quiz:ses:${original}:${key}`);
+            sqlite
+              .prepare(
+                "insert into quizzes (id, lesson_id, created_at, updated_at) values (?, ?, 1, 1)",
+              )
+              .run(quiz, lesson);
+            sqlite
+              .prepare(`insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, submitted_at)
+              values (?, 'ses', ?, 'assigned', 4, 5, 1, 1)`)
+              .run(`attempt-${key}`, quiz);
+          }
+        }
+      }
+      sqlite.exec(
+        readFileSync(
+          new URL(`../../../apps/api/drizzle/${migration}.sql`, import.meta.url),
+          "utf8",
+        ),
+      );
+      expect(
+        sqlite
+          .prepare(
+            "select count(*) as n from stages where status = 'draft' and audience = 'granted'",
+          )
+          .get(),
+      ).toEqual({ n: 2 });
+      sqlite.exec(sql);
+      const grants =
+        sqlite.prepare(`select s.slug from stage_grants g join stages s on s.id = g.stage_id
+        where g.profile_id = 'assigned' and g.granted_by = 'staff' and g.granted_at = 7
+        and g.source_name = '研修' and g.message = '受験に向けて' and s.status = 'published' order by s.slug`);
+      expect(grants.all().map((row) => row.slug)).toEqual([
+        original,
+        "claude-developer-mock-exam",
+        "claude-developer-practice",
+      ]);
+      const progress =
+        sqlite.prepare(`select p.lesson_id from lesson_progress p join lessons l on l.id = p.lesson_id
+        join sections u on u.id = l.section_id join stages s on s.id = u.stage_id
+        where p.user_id = 'assigned' and p.completed = 1 and s.slug = 'claude-developer-mock-exam'`);
+      expect(
+        progress
+          .all()
+          .map((row) => row.lesson_id)
+          .sort(),
+      ).toEqual(originalLessons.sort());
+      expect(
+        sqlite
+          .prepare(`select count(*) as n from quiz_attempts a join quizzes q on q.id = a.quiz_id
+        join lessons l on l.id = q.lesson_id join sections u on u.id = l.section_id join stages s on s.id = u.stage_id
+        where a.user_id = 'assigned' and a.passed = 1 and s.slug = 'claude-developer-mock-exam'`)
+          .get(),
+      ).toEqual({ n: 3 });
+      sqlite.exec(
+        "delete from stage_grants where profile_id = 'assigned' and stage_id in (select id from stages where slug = 'claude-developer-practice')",
+      );
+      sqlite.exec(sql);
+      expect(grants.all().map((row) => row.slug)).toEqual([original, "claude-developer-mock-exam"]);
+      expect(
+        sqlite.prepare("select id from stage_grants where profile_id = 'other'").all(),
+      ).toEqual([]);
+      expect(sqlite.prepare("select id from enrollments where user_id = 'assigned'").all()).toEqual(
+        [{ id: "original-enrollment" }],
+      );
+      expect(sqlite.prepare("pragma foreign_key_check").all()).toEqual([]);
+    } finally {
+      sqlite.close();
+    }
+  }, 120_000);
 
   it("デモステージは seed せず、安定 UUID だけ削除する", () => {
     const webFundamentals = stableUuid("course:ses:web-fundamentals");
@@ -368,18 +492,10 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("既存 DB の退役ステージと子レコードを削除し、再利用するステージの登録・修了証と CMS ステージを保持する", () => {
-    const root = fileURLToPath(new URL("../../..", import.meta.url));
     const stageId = (slug: string) => stableUuid(`course:ses:${slug}`);
     const db = new DatabaseSync(":memory:");
     try {
-      const migrations = join(root, "apps/api/drizzle");
-      db.exec("pragma foreign_keys = off");
-      for (const file of readdirSync(migrations)
-        .filter((file) => file.endsWith(".sql"))
-        .sort()) {
-        db.exec(readFileSync(join(migrations, file), "utf8"));
-      }
-      db.exec("pragma foreign_keys = on");
+      applyMigrations(db);
       db.exec(sql);
       db.exec(`insert into profiles (id, tenant_id, role, display_name, created_at)
       values ('upgrade-learner', 'ses', 'student', '受講者', 1)`);

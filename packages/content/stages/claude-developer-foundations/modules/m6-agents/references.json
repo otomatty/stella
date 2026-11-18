@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m6-agents@3",
-  "contentHash": "4f39eca8117f1457779b71d7bd914ec7b8ea0c49a56f08cdf5842804dc4efe78",
+  "unitId": "claude-developer-foundations/m6-agents@5",
+  "contentHash": "a4ee0cb92e666466c855f060235f5cb3a470e526b91855f256da8773b6bc9c56",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -30,23 +30,29 @@
       "contentId": "l1-agentic-systems/doc.md",
       "sourceRefs": [
         "SRC-anthropic-effective-agents-defs-20261031",
-        "SRC-anthropic-effective-agents-20261031"
+        "SRC-anthropic-effective-agents-20261031",
+        "SRC-claude-managed-agents-20261118",
+        "SRC-claude-code-agent-sdk-overview-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン6-1の2トピック(手順を決めるもの・単純な作りから始める)の読み物と、ワークフローとエージェントの表・3 つの原則・記事の時期の注記",
+      "usedFor": "レッスン6-1の2トピック(手順を決めるもの・単純な作りから始める)の読み物と、ワークフローとエージェントの表・3 つの原則・記事の時期の注記。実行ホスト・調査時間・ループの制御要件から、Managed Agents と自前の実装を選ぶ事例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-agentic-systems/knowledge.md",
       "sourceRefs": [
         "SRC-anthropic-effective-agents-defs-20261031",
-        "SRC-anthropic-effective-agents-20261031"
+        "SRC-anthropic-effective-agents-20261031",
+        "SRC-claude-managed-agents-20261118",
+        "SRC-claude-code-agent-sdk-overview-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "ワークフローとエージェントの違い、エージェントが向く仕事、最初に試すもの、エージェントの注意を問う自作問題の正答と解説",
+      "usedFor": "ワークフローとエージェントの違い、エージェントが向く仕事、最初に試すもの、エージェントの注意を問う自作問題の正答と解説。実行ホスト・調査時間・ループの制御要件から、Managed Agents と自前の実装を選ぶ事例",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-workflows/t1-chaining/slides.md",
@@ -96,23 +102,25 @@
       "sourceRefs": [
         "SRC-anthropic-effective-agents-20261031",
         "SRC-anthropic-effective-agents-defs-20261031",
-        "SRC-claude-docs-cost-intelligence-20261031"
+        "SRC-claude-docs-cost-intelligence-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン6-2の5トピック(連鎖・ルーティング・並列化・指揮役と作業役・評価役と生成役)の読み物と、形を組み合わせる考え方",
+      "usedFor": "レッスン6-2の5トピック(連鎖・ルーティング・並列化・指揮役と作業役・評価役と生成役)の読み物と、形を組み合わせる考え方。校正の所要時間と段の依存関係から、並列・直列の可否を判定する事例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-workflows/knowledge.md",
       "sourceRefs": [
         "SRC-anthropic-effective-agents-20261031",
-        "SRC-claude-docs-cost-intelligence-20261031"
+        "SRC-claude-docs-cost-intelligence-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "ワークフローの 5 つの形の見分け方と、評価役と生成役が向く目安を問う自作問題の正答と解説",
+      "usedFor": "ワークフローの 5 つの形の見分け方と、評価役と生成役が向く目安を問う自作問題の正答と解説。校正の所要時間と段の依存関係から、並列・直列の可否を判定する事例",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-agent-sdk/t1-agent-loop/slides.md",
@@ -156,12 +164,14 @@
         "SRC-claude-code-agent-loop-control-20261031",
         "SRC-claude-code-sdk-subagents-20261031",
         "SRC-claude-code-sdk-subagents-create-20261031",
-        "SRC-claude-code-sdk-sessions-20261031"
+        "SRC-claude-code-sdk-sessions-20261031",
+        "SRC-claude-sdk-hooks-20261118",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン6-3の3トピック(ループ・サブエージェント・セッション)の読み物と、止める条件・任せる利点・受け継ぐもの・戻り方の表",
+      "usedFor": "レッスン6-3の3トピック(ループ・サブエージェント・セッション)の読み物と、止める条件・任せる利点・受け継ぐもの・戻り方の表。セッションごとの結果・回数上限から再開先を決め、ツール実行前のフックと照合結果から副作用を検査する事例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-agent-sdk/knowledge.md",
@@ -171,12 +181,14 @@
         "SRC-claude-code-agent-loop-control-20261031",
         "SRC-claude-code-sdk-subagents-20261031",
         "SRC-claude-code-sdk-subagents-create-20261031",
-        "SRC-claude-code-sdk-sessions-20261031"
+        "SRC-claude-code-sdk-sessions-20261031",
+        "SRC-claude-sdk-hooks-20261118",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "Agent SDK と Client SDK の違い、結果の確かめ方、費用の上限、サブエージェントが受け取るもの、セッションの再開を問う自作問題の正答と解説",
+      "usedFor": "Agent SDK と Client SDK の違い、結果の確かめ方、費用の上限、サブエージェントが受け取るもの、セッションの再開を問う自作問題の正答と解説。セッションごとの結果・回数上限から再開先を決め、ツール実行前のフックと照合結果から副作用を検査する事例",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/q01-router/README.md",
