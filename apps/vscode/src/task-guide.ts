@@ -46,6 +46,7 @@ export const GUIDE_COMMANDS = [
   "stella.showTaskHelp",
   "stella.showTaskReadme",
   "stella.showRunLog",
+  "stella.openWalkthrough",
 ] as const;
 type GuideCommand = (typeof GUIDE_COMMANDS)[number];
 
@@ -414,7 +415,8 @@ export function buildTaskGuideHtml(input: TaskGuideInput): string {
     "<li><strong>課題文を読む</strong> — 下の課題文で、作るものと、確かめられる条件を読みます。</li>",
     "<li><strong>ファイルを編集して保存する</strong></li>",
     "<li><strong>提出する</strong> — 確認が自動で走り、通ったら振り返りを書いて送ります。AI と講師のレビューで合格すると、この課題は完了です。レビューの結果は Web に通知が届き、「レビューの結果」でも読めます。</li>",
-    `</ol><p>確認だけしたいときは、エディターの右上のビーカーか「${link("stella.runTask", [input.root], "STELLA: 課題を確認する")}」を使います。</p></details>`,
+    `</ol><p>確認だけしたいときは、エディターの右上のビーカーか「${link("stella.runTask", [input.root], "STELLA: 課題を確認する")}」を使います。</p>`,
+    `<p>はじめての方は「${link("stella.openWalkthrough", [], "課題の進め方を見る")}」をどうぞ。</p></details>`,
     helpLine(input),
     "</section>",
   ].join("\n");

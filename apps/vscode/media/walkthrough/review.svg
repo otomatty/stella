@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300">
+  <title>課題文の進行バーの最後の段</title>
+  <g stroke="var(--vscode-widget-border, var(--vscode-foreground))">
+    <rect x="20" y="20" width="440" height="260" rx="10" fill="var(--vscode-editorWidget-background)"/>
+    <path d="M20 44h440 M20 251h440 M56 44v207 M126 44v207 M280 44v207" fill="none"/>
+    <rect x="31" y="59" width="14" height="14" rx="3" fill="none"/>
+    <rect x="31" y="84" width="14" height="14" rx="3" fill="none"/>
+  </g>
+  <text x="91" y="70" fill="var(--vscode-foreground)" font-family="var(--vscode-font-family)"
+        font-size="12" text-anchor="middle">学習ガイド</text>
+  <g fill="var(--vscode-editorWidget-background)"
+     stroke="var(--vscode-widget-border, var(--vscode-foreground))" stroke-width="2">
+    <path d="M303 82h123"/>
+    <circle cx="303" cy="82" r="6"/>
+    <circle cx="344" cy="82" r="6"/>
+    <circle cx="385" cy="82" r="6"/>
+  </g>
+  <circle cx="426" cy="82" r="8" fill="var(--vscode-button-background)"
+          stroke="var(--vscode-focusBorder)" stroke-width="2"/>
+  <text x="426" y="111" fill="var(--vscode-foreground)" font-family="var(--vscode-font-family)"
+        font-size="12" text-anchor="middle">レビュー</text>
+</svg>

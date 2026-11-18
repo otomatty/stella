@@ -216,7 +216,10 @@ beforeEach(() => {
   state.dirtyDocs = [];
   state.readmeRoot = undefined;
   const auth = new AuthStore({ get: vscodeMock.getSecret } as never);
-  context = { subscriptions: [] } as unknown as ExtensionContext;
+  context = {
+    extension: { id: "test-publisher.test-extension" },
+    subscriptions: [],
+  } as unknown as ExtensionContext;
   registerTaskCommands(context, auth);
 });
 
@@ -229,6 +232,20 @@ async function run(command: string, ...args: unknown[]): Promise<void> {
     ...args,
   );
 }
+
+it("stella.openWalkthrough は呼ばれたときに拡張の ID でウォークスルーを開く", async () => {
+  expect(vscodeMock.executeCommand).not.toHaveBeenCalledWith(
+    "workbench.action.openWalkthrough",
+    expect.anything(),
+    expect.anything(),
+  );
+  await run("stella.openWalkthrough");
+  expect(vscodeMock.executeCommand).toHaveBeenCalledWith(
+    "workbench.action.openWalkthrough",
+    "test-publisher.test-extension#stella.gettingStarted",
+    false,
+  );
+});
 
 describe("stella.submitTask", () => {
   const passingHtml = "<h1>今日の学習予定</h1>";

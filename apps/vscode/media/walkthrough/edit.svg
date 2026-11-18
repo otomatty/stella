@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300">
+  <title>左のエディターで編集するコード</title>
+  <g stroke="var(--vscode-widget-border, var(--vscode-foreground))">
+    <rect x="20" y="20" width="440" height="260" rx="10" fill="var(--vscode-editorWidget-background)"/>
+    <path d="M20 44h440 M20 251h440 M56 44v207 M126 44v207 M280 44v207" fill="none"/>
+    <rect x="31" y="59" width="14" height="14" rx="3" fill="none"/>
+    <rect x="31" y="84" width="14" height="14" rx="3" fill="none"/>
+  </g>
+  <text x="91" y="70" fill="var(--vscode-foreground)" font-family="var(--vscode-font-family)"
+        font-size="12" text-anchor="middle">学習ガイド</text>
+  <g fill="none" stroke="var(--vscode-focusBorder)" stroke-width="2">
+    <rect x="133" y="51" width="143" height="193" rx="4"/>
+    <path d="M148 101h66 M158 115h88 M158 129h55 M158 143h73 M148 157h24"
+          stroke-linecap="round"/>
+  </g>
+  <text x="148" y="77" fill="var(--vscode-foreground)" font-family="var(--vscode-font-family)"
+        font-size="12">編集するファイル</text>
+</svg>

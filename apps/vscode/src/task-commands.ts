@@ -848,6 +848,13 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
     vscode.commands.registerCommand("stella.showTaskReadme", (root?: unknown) =>
       showTaskReadmeCommand(root),
     ),
+    vscode.commands.registerCommand("stella.openWalkthrough", () =>
+      vscode.commands.executeCommand(
+        "workbench.action.openWalkthrough",
+        `${context.extension.id}#stella.gettingStarted`,
+        false,
+      ),
+    ),
     vscode.commands.registerCommand("stella.openTaskFile", (root: unknown, rel: unknown) =>
       openTaskFileCommand(root, rel).catch((e: unknown) => {
         void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));

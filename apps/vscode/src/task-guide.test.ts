@@ -12,6 +12,7 @@ vi.mock("vscode", () => ({
 
 import {
   buildTaskGuideHtml,
+  GUIDE_COMMANDS,
   opensAsText,
   readLastRun,
   resolveEditFiles,
@@ -177,6 +178,15 @@ describe("readLastRun", () => {
 });
 
 describe("buildTaskGuideHtml", () => {
+  it("「進め方をすべて見る」の最後にウォークスルーへのリンクを出す", () => {
+    const html = buildTaskGuideHtml(guide());
+    const details = html.match(/<details class="all-steps">[\s\S]*?<\/details>/)?.[0];
+    expect(details).toMatch(
+      /<p>はじめての方は「<a href="command:stella\.openWalkthrough">課題の進め方を見る<\/a>」をどうぞ。<\/p><\/details>$/,
+    );
+    expect(GUIDE_COMMANDS).toContain("stella.openWalkthrough");
+  });
+
   it("4 段の進行バーと畳んだ 3 行の手順を出し、唯一の主ボタンは提出する", () => {
     const input = guide();
     const html = buildTaskGuideHtml(input);
@@ -503,6 +513,7 @@ describe("buildTaskGuideHtml", () => {
     expect(html).not.toContain("説明");
     expect(html).not.toContain("修正記録");
     expect(html).not.toContain("ファイルを編集して保存する");
+    expect(html).not.toContain("command:stella.openWalkthrough");
     expect(commandArgs(html, "stella.openTaskFile")).toEqual([
       [input.root, "src/q01-add.ts"],
       [input.root, "src/q02-sub.ts"],
