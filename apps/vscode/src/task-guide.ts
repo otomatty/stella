@@ -2,13 +2,14 @@
  * 課題を開いたときに見せる「進め方」と、編集するファイルの割り出し。
  *
  * 課題を開くと、左に編集するファイル (`submit.files` に当たるファイル)、右に課題文のパネルを
- * 並べる。パネルの先頭に、課題文を読む → 編集して保存 → 提出、の進行バーを出し、
- * いまやることを前回の確認の結果 (`.stella/last-run.json`) から示す。
+ * 並べる。パネルの先頭に、課題文を読む → 編集して保存 → 提出 → レビューの進行バーを出し、
+ * 前回の確認の結果と LMS の課題の状態から、いまやることを示す。
  *
  * パネルはスクリプトを動かさない。リンクは、このファイルが組み立てる固定のコマンド
  * (`GUIDE_COMMANDS`) だけで、引数 (課題フォルダー・ファイル) はコマンドの側で改めて検証する。
  */
 
+import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
 import {
@@ -36,6 +37,7 @@ export const GUIDE_COMMANDS = [
   "stella.submitTask",
   "stella.consultTask",
   "stella.showTaskHelp",
+  "stella.showTaskReadme",
   "stella.showRunLog",
 ] as const;
 type GuideCommand = (typeof GUIDE_COMMANDS)[number];
@@ -156,6 +158,7 @@ export interface TaskGuideInput {
   manifest: TaskManifest;
   edit: EditFiles;
   lastRun?: GuideRun;
+  taskStatus?: TaskStatus;
   /** 問題つきの課題の、問題ごとの状態。未指定なら一覧を未提出として出す。 */
   problems?: ProblemState[];
   os: OsName;
@@ -306,6 +309,44 @@ function taskNowCard(input: TaskGuideInput): string {
   }
 }
 
+const GUIDE_STEPS = ["課題文を読む", "編集して保存", "提出", "レビュー"];
+
+function taskProgress(input: TaskGuideInput): { step: number; card: string } {
+  const { taskStatus, lastRun, root } = input;
+  const review = link("stella.showTaskHelp", [root], "レビューの結果を見る");
+  switch (taskStatus) {
+    case "passed":
+    case "ai-passed": {
+      const suffix = taskStatus === "ai-passed" ? " (AI で合格)" : "";
+      return {
+        step: GUIDE_STEPS.length,
+        card: `<div class="now-card passed"><p class="now-title">✓ 合格しました${suffix}</p><p>この課題は完了です。</p><p class="actions">${review}</p></div>`,
+      };
+    }
+    case "submitted":
+    case "instructor-pending": {
+      const body =
+        taskStatus === "submitted"
+          ? "結果は、ふつう数分で届きます。ここと Web の通知に出ます。"
+          : "講師が確認しています。結果は、ここと Web の通知に出ます。";
+      const refresh = link("stella.showTaskReadme", [root], "表示を更新する");
+      return {
+        step: 3,
+        card: `<div class="now-card review"><p class="now-title">… ${TASK_STATUS_LABELS[taskStatus]}</p><p>${body}</p><p class="actions">${review} ${refresh}</p></div>`,
+      };
+    }
+    case "resubmit":
+      if (!lastRun || lastRun.outcome === "passed") {
+        return {
+          step: 1,
+          card: `<div class="now-card failed"><p class="now-title">✗ 再提出になりました</p><p>レビューの結果を見て直し、保存してもう一度提出します。</p><p class="actions">${submitButton(root)} ${review} ${consultLink(root)}</p></div>`,
+        };
+      }
+  }
+  const outcome = lastRun?.outcome;
+  return { step: outcome === "error" || outcome === "passed" ? 2 : 1, card: taskNowCard(input) };
+}
+
 function guideProblems(input: TaskGuideInput): ProblemState[] | undefined {
   const listed = input.manifest.problems;
   if (!listed?.length) return undefined;
@@ -364,12 +405,16 @@ function buildProblemGuideHtml(input: TaskGuideInput, items: ProblemState[]): st
 export function buildTaskGuideHtml(input: TaskGuideInput): string {
   const problems = guideProblems(input);
   if (problems) return buildProblemGuideHtml(input, problems);
-  const outcome = input.lastRun?.outcome;
-  const submitting = outcome === "error" || outcome === "passed";
+  const { step, card } = taskProgress(input);
+  const steps = GUIDE_STEPS.map((label, i) => {
+    if (i < step) return `<li class="done">${label}</li>`;
+    if (i === step) return `<li class="now" aria-current="step">${label}</li>`;
+    return `<li>${label}</li>`;
+  }).join("");
   return [
     '<section class="guide" aria-label="この課題の進め方">',
-    `<ol class="stepper"><li class="done">課題文を読む</li>${submitting ? '<li class="done">編集して保存</li><li class="now" aria-current="step">提出</li>' : '<li class="now" aria-current="step">編集して保存</li><li>提出</li>'}</ol>`,
-    taskNowCard(input),
+    `<ol class="stepper">${steps}</ol>`,
+    card,
     '<details class="all-steps"><summary>進め方をすべて見る</summary><ol>',
     "<li><strong>課題文を読む</strong> — 下の課題文で、作るものと、確かめられる条件を読みます。</li>",
     "<li><strong>ファイルを編集して保存する</strong></li>",
@@ -457,6 +502,7 @@ export const GUIDE_CSS = `
     }
     .now-card.failed { border-left-color: var(--vscode-testing-iconFailed); }
     .now-card.error { border-left-color: var(--vscode-editorWarning-foreground); }
+    .now-card.review { border-left-color: var(--vscode-editorWarning-foreground); }
     .now-card.passed { border-left-color: var(--vscode-testing-iconPassed); }
     .now-card p { margin: 0.3rem 0; }
     .now-title { font-weight: 600; font-size: 1.05em; }

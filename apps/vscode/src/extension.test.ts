@@ -48,8 +48,11 @@ vi.mock("./open-task.js", () => ({
 }));
 
 import { apiRequest } from "./api.js";
+import { AuthStore } from "./auth.js";
 import { activate } from "./extension.js";
 import { taskBundleUrl } from "./task-bundle-url.js";
+import { registerTaskCommands } from "./task-commands.js";
+import { registerLearningSidebar } from "./tree.js";
 
 const taskId = "dev-env-basics/u02-first-task/q01-first-page";
 const bundleUrl = `http://127.0.0.1:8787/api/tasks/bundle?${new URLSearchParams({ taskId, extension: extensionPackage.version })}`;
@@ -84,6 +87,13 @@ beforeEach(() => {
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+it("課題コマンドと学習ガイドに同じ認証ストアを渡す", () => {
+  const auth = vi.mocked(registerLearningSidebar).mock.lastCall?.[1];
+  expect(auth).toBeInstanceOf(AuthStore);
+  expect(vi.mocked(registerTaskCommands).mock.lastCall?.[0]).toBe(context);
+  expect(vi.mocked(registerTaskCommands).mock.lastCall?.[1]).toBe(auth);
+});
 
 function dispatch(code?: string): void {
   if (!state.handler) throw new Error("URI handler not registered");

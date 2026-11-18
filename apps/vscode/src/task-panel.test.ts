@@ -6,6 +6,7 @@ import { GUIDE_COMMANDS } from "./task-guide.js";
 import {
   buildTaskPanelHtml,
   buildTaskReadmeHtml,
+  onTaskReadmeVisible,
   showTaskPanel,
   showTaskReadme,
 } from "./task-panel.js";
@@ -321,6 +322,7 @@ describe("課題文のパネル", () => {
       webview: { html: "" },
       reveal: vi.fn(),
       onDidDispose: vi.fn(),
+      onDidChangeViewState: vi.fn(),
     };
     vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
     showTaskReadme({ title: "課題B", markdown: "B の本文", root: "/b" });
@@ -339,6 +341,60 @@ describe("課題文のパネル", () => {
     showTaskReadme({ title: "課題B", markdown: "B の新しい本文", root: "/b" }, { reveal: false });
     expect(panel.webview.html).toContain("B の新しい本文");
     expect(panel.reveal).not.toHaveBeenCalled();
+    panel.onDidDispose.mock.calls[0]?.[0]();
+  });
+
+  it("非表示から戻った課題を通知し、同じ課題は 30 秒に 1 回にする", () => {
+    const panel = {
+      title: "",
+      visible: true,
+      webview: { html: "" },
+      reveal: vi.fn(),
+      onDidDispose: vi.fn(),
+      onDidChangeViewState: vi.fn(),
+    };
+    const setVisible = (visible: boolean) => {
+      panel.visible = visible;
+      panel.onDidChangeViewState.mock.calls[0]?.[0]({ webviewPanel: panel });
+    };
+    const listener = vi.fn();
+    const subscription = onTaskReadmeVisible(listener);
+    const now = vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
+    try {
+      showTaskReadme({ title: "課題A", markdown, root: "/a" });
+      setVisible(true);
+      setVisible(false);
+      expect(listener).not.toHaveBeenCalled();
+      setVisible(true);
+      expect(listener.mock.calls).toEqual([["/a"]]);
+
+      now.mockReturnValue(29_999);
+      setVisible(false);
+      setVisible(true);
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      showTaskReadme({ title: "課題B", markdown, root: "/b" });
+      setVisible(false);
+      setVisible(true);
+      expect(listener.mock.calls).toEqual([["/a"], ["/b"]]);
+
+      now.mockReturnValue(30_000);
+      showTaskReadme({ title: "課題A", markdown, root: "/a" });
+      setVisible(false);
+      setVisible(true);
+      expect(listener.mock.calls).toEqual([["/a"], ["/b"], ["/a"]]);
+
+      subscription.dispose();
+      now.mockReturnValue(60_000);
+      setVisible(false);
+      setVisible(true);
+      expect(listener).toHaveBeenCalledTimes(3);
+    } finally {
+      panel.onDidDispose.mock.calls[0]?.[0]();
+      subscription.dispose();
+      now.mockRestore();
+    }
   });
 
   describe("進め方つき", () => {

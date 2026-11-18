@@ -314,8 +314,18 @@ export function showTaskPanel(input: TaskPanelInput, options: { reveal?: boolean
 
 const README_VIEW_TYPE = "stella.taskReadme";
 let readmePanel: vscode.WebviewPanel | undefined;
-/** 課題文のパネルが出している課題フォルダー (確認のあとに「いまここ」を描き直すため)。 */
+/** 課題文のパネルが出している課題フォルダー。 */
 let readmeRoot: string | undefined;
+let readmeVisibleListener: ((root: string) => void) | undefined;
+
+export function onTaskReadmeVisible(listener: (root: string) => void): vscode.Disposable {
+  readmeVisibleListener = listener;
+  return {
+    dispose: () => {
+      if (readmeVisibleListener === listener) readmeVisibleListener = undefined;
+    },
+  };
+}
 
 export interface TaskReadmeInput {
   title: string;
@@ -403,13 +413,14 @@ export function showTaskReadme(
   input: TaskReadmeInput & { root?: string },
   options: { reveal?: boolean } = {},
 ): void {
-  // 確認のあとの描き直しは、同じ課題を出しているパネルだけを新しくする。読み込みを待つ間に
+  // 背景の描き直しは、同じ課題を出しているパネルだけを新しくする。読み込みを待つ間に
   // 受講者がパネルを閉じた・別の課題の課題文に切り替えたなら、作り直しも上書きもしない
   // (確かめるのは書き込む直前のここ。呼び出し元の確認は読み込みより前なので間に合わない)。
   if (options.reveal === false && (!readmePanel || readmeRoot !== input.root)) return;
   const html = buildTaskReadmeHtml(input);
   const title = `課題: ${input.title}`;
   const beside = hasLeftEditor();
+  readmeRoot = input.root;
   if (!readmePanel) {
     readmePanel = vscode.window.createWebviewPanel(
       README_VIEW_TYPE,
@@ -424,11 +435,23 @@ export function showTaskReadme(
       readmePanel = undefined;
       readmeRoot = undefined;
     });
+    let wasVisible = readmePanel.visible;
+    const refreshedAt = new Map<string, number>();
+    readmePanel.onDidChangeViewState(({ webviewPanel }) => {
+      const becameVisible = webviewPanel.visible && !wasVisible;
+      wasVisible = webviewPanel.visible;
+      const root = readmeRoot;
+      if (!becameVisible || !root || !readmeVisibleListener) return;
+      const now = Date.now();
+      const previous = refreshedAt.get(root);
+      if (previous !== undefined && now - previous < 30_000) return;
+      refreshedAt.set(root, now);
+      readmeVisibleListener(root);
+    });
   } else {
     readmePanel.title = title;
     if (options.reveal !== false)
       readmePanel.reveal(beside ? vscode.ViewColumn.Two : vscode.ViewColumn.Active, beside);
   }
-  readmeRoot = input.root;
   readmePanel.webview.html = html;
 }

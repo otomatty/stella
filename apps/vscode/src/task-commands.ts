@@ -4,8 +4,8 @@
  * - STELLA: 課題を確認する   … 開いているファイルの課題フォルダーで runner を実行する
  * - STELLA: 開発環境を診断する … Node.js・npm・Git の版を確かめる
  * - STELLA: 実行ログを表示する … 道具の出力をそのまま見る
- * - STELLA: 課題文を表示する   … README.md を OS のタブ付きで読む (ファイルを読むだけ)。
- *                               先頭に「進め方」と、編集するファイルを開くリンクを出す
+ * - STELLA: 課題文を表示する   … README.md を OS のタブ付きで読み、先頭の「進め方」に
+ *                               編集するファイルを開くリンクと課題の状態を出す
  *
  * 課題文のパネル・ステータスバー・エディターの右上のボタンからは、課題フォルダー (または
  * そのファイル) を引数で受け取る。受け取った場所は、ワークスペースの中の課題フォルダーか
@@ -16,13 +16,16 @@
 
 import { homedir } from "node:os";
 import path from "node:path";
+import { TASK_STATUSES, type TaskStatus } from "@stella/shared/tasks/catalog";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
+import type { TaskHelpResponse } from "@stella/shared/tasks/help";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { canSubmit, type RunOutcome, type RunResult } from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
-import { apiSession } from "./api.js";
+import { apiRequest, apiSession } from "./api.js";
+import type { AuthStore } from "./auth.js";
 import { getCachedCatalog } from "./catalog.js";
 import { stellaUrl } from "./config.js";
 import { sendLocalRunReport } from "./local-run-report.js";
@@ -45,7 +48,12 @@ import {
   SUBMIT_AGAIN,
 } from "./task-submission.js";
 import { readLastRun, resolveEditFiles } from "./task-guide.js";
-import { showTaskPanel, showTaskReadme, taskReadmeRoot } from "./task-panel.js";
+import {
+  onTaskReadmeVisible,
+  showTaskPanel,
+  showTaskReadme,
+  taskReadmeRoot,
+} from "./task-panel.js";
 import {
   chooseProblem,
   fetchProblemResults,
@@ -61,9 +69,11 @@ import {
 import { setCurrentTask } from "./task-status.js";
 import { registerSubmissionForms, showSubmissionForm } from "./submission-form.js";
 import type { SubmissionDraft } from "./submission-form-view.js";
+import { refreshLearningSidebar } from "./tree.js";
 
 let running = false;
 let submitting = false;
+let readmeAuth: AuthStore;
 
 export function workspaceRoots(): string[] {
   return (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
@@ -402,7 +412,7 @@ async function checkTask(
       showTaskPanel(panel, { reveal: false });
     }
     notify(result.outcome, output, options.forSubmission);
-    // 課題文のパネルを開いていれば、「いまここ」を新しい結果で描き直す (前面には出さない)。
+    // 課題文のパネルを開いていれば、「いまやること」を新しい結果で描き直す (前面には出さない)。
     if (result.outcome !== "cancelled" && taskReadmeRoot() === root)
       void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
     // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
@@ -578,6 +588,10 @@ async function submitTaskCommand(
             });
           if (problem) await sendProblemConsultation(root, problem.id, notes, session);
           else await sendTaskSubmission(root, mode, notes, session);
+          refreshLearningSidebar();
+          if (taskReadmeRoot() === root) {
+            void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
+          }
           // 課題一覧の応答から作ったカタログにだけ ID がある。配布記録には含まれない。
           const lesson = getCachedCatalog()
             .flatMap((stage) => stage.sections.flatMap((section) => section.lessons))
@@ -619,6 +633,7 @@ async function submitProblemTask(
   states: readonly ProblemState[],
 ): Promise<void> {
   const response = await sendProblemSubmission(root, problemId, apiSession());
+  refreshLearningSidebar();
   setCurrentTask({
     root,
     title: manifest.title,
@@ -650,10 +665,50 @@ async function submitProblemTask(
 /** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
 const README_MAX_BYTES = 1024 * 1024;
 
+export function helpUrl(taskId: string, contentHash: string): string {
+  return `/api/tasks/help?${new URLSearchParams({ taskId, contentHash })}`;
+}
+
+async function fetchTaskStatus(
+  root: string,
+  taskId: string,
+  session: number | undefined,
+): Promise<TaskStatus | undefined> {
+  if (session === undefined) return undefined;
+  const controller = new AbortController();
+  const { signal } = controller;
+  const request = async () => {
+    const receipt = await readDistribution(root);
+    if (receipt?.taskId !== taskId || !(await readmeAuth.getToken())) return undefined;
+    signal.throwIfAborted();
+    const help = await apiRequest<Pick<TaskHelpResponse, "status"> | null>(
+      helpUrl(taskId, receipt.contentHash),
+      { session, signal },
+    );
+    return TASK_STATUSES.find((status) => status === help?.status);
+  };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      request(),
+      new Promise<undefined>((resolve) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          resolve(undefined);
+        }, 4_000);
+      }),
+    ]);
+  } catch {
+    return undefined;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * 課題文 (README.md) のパネルを描く。課題の定義を読めれば、先頭に「進め方」(編集する
- * ファイル・確認・提出のリンクと、前回の確認の結果から決めた「いまやること」) を置く。
- * `reveal: false` (確認のあとの描き直し) は中身を新しくするだけで、ステータスバーの課題は
+ * ファイル・確認・提出のリンクと、前回の確認と課題の状態から決めた「いまやること」) を置く。
+ * `reveal: false` は中身を新しくするだけで、ステータスバーの課題は
  * 変えない — 確認の間に受講者が別の課題のファイルへ移っていれば、そちらが今の課題のため。
  */
 async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}): Promise<void> {
@@ -682,16 +737,16 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
     return;
   }
   const { manifest } = loaded;
-  const [edit, lastRun, problems] = await Promise.all([
+  const session = apiSession();
+  const [edit, lastRun, problems, taskStatus] = await Promise.all([
     resolveEditFiles(root, manifest),
     readLastRun(root, manifest.id),
     manifest.problems?.length
-      ? loadProblemStates(
-          root,
-          manifest,
-          await fetchProblemResults(manifest.id).catch(() => undefined),
-        )
-      : Promise.resolve(undefined),
+      ? fetchProblemResults(manifest.id)
+          .catch(() => undefined)
+          .then((server) => loadProblemStates(root, manifest, server))
+      : undefined,
+    manifest.problems ? undefined : fetchTaskStatus(root, manifest.id, session),
   ]);
   showTaskReadme(
     {
@@ -704,6 +759,7 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
         edit,
         ...(lastRun ? { lastRun } : {}),
         ...(problems ? { problems } : {}),
+        ...(taskStatus && session === apiSession() ? { taskStatus } : {}),
       },
     },
     options,
@@ -711,7 +767,7 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
   shown(manifest.title, problems);
 }
 
-/** 課題文 (README.md) を OS のタブ付きで表示する。ファイルを読むだけなので信頼は問わない。 */
+/** 課題文 (README.md) を OS のタブ付きで表示する。フォルダーの信頼は問わない。 */
 async function showTaskReadmeCommand(requested?: unknown): Promise<void> {
   const root = await requestedTaskRoot(requested);
   if (!root) {
@@ -751,11 +807,15 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
   });
 }
 
-export function registerTaskCommands(context: vscode.ExtensionContext): void {
+export function registerTaskCommands(context: vscode.ExtensionContext, auth: AuthStore): void {
+  readmeAuth = auth;
   registerSubmissionForms(context);
   const output = vscode.window.createOutputChannel("STELLA 実行ログ");
   context.subscriptions.push(
     output,
+    onTaskReadmeVisible((root) => {
+      void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
+    }),
     vscode.commands.registerCommand("stella.submitTask", (root?: unknown) =>
       submitTaskCommand(output, "submit", root),
     ),

@@ -325,7 +325,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(auth.watchExternalChanges());
   const grader = initGraderHost(context.extensionUri);
   registerLearningSidebar(context, auth);
-  registerTaskCommands(context);
+  registerTaskCommands(context, auth);
   // 課題パネルのヒント・解答例・解説・レビューの結果 (#36)。
   registerTaskHelp(context);
   // 開いている課題の「課題を確認する」「課題文」をステータスバーとエディターの右上に出す。

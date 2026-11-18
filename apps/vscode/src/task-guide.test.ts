@@ -177,11 +177,11 @@ describe("readLastRun", () => {
 });
 
 describe("buildTaskGuideHtml", () => {
-  it("3 段の進行バーと畳んだ手順を出し、唯一の主ボタンは提出する", () => {
+  it("4 段の進行バーと畳んだ 3 行の手順を出し、唯一の主ボタンは提出する", () => {
     const input = guide();
     const html = buildTaskGuideHtml(input);
     expect(html).toContain(
-      '<ol class="stepper"><li class="done">課題文を読む</li><li class="now" aria-current="step">編集して保存</li><li>提出</li></ol>',
+      '<ol class="stepper"><li class="done">課題文を読む</li><li class="now" aria-current="step">編集して保存</li><li>提出</li><li>レビュー</li></ol>',
     );
     expect(html).toContain('<details class="all-steps"><summary>進め方をすべて見る</summary><ol>');
     expect(html.split('<details class="all-steps">')[1]?.match(/<li>/g)).toHaveLength(3);
@@ -247,6 +247,75 @@ describe("buildTaskGuideHtml", () => {
         ...links,
       ]);
       expect(html.match(/class="button"/g)).toHaveLength(1);
+    },
+  );
+
+  it.each([
+    ["passed", "✓ 合格しました"],
+    ["ai-passed", "✓ 合格しました (AI で合格)"],
+  ] as const)("%s は 4 段とも済みにしてレビューを見るリンクを出す", (taskStatus, title) => {
+    const input = guide({ taskStatus, lastRun: { outcome: "failed", steps: [] } });
+    const html = buildTaskGuideHtml(input);
+    expect(html.match(/<li class="done">/g)).toHaveLength(4);
+    expect(html).not.toContain('aria-current="step"');
+    expect(html).toContain(`<div class="now-card passed"><p class="now-title">${title}</p>`);
+    expect(html).toContain("この課題は完了です。");
+    expect(html).toContain("レビューの結果を見る");
+    expect(commandArgs(html, "stella.showTaskHelp")).toEqual([[input.root], [input.root]]);
+    expect(commandArgs(html, "stella.submitTask")).toEqual([]);
+  });
+
+  it.each([
+    ["submitted", "AI が確認中", "結果は、ふつう数分で届きます。ここと Web の通知に出ます。"],
+    [
+      "instructor-pending",
+      "講師の確認待ち",
+      "講師が確認しています。結果は、ここと Web の通知に出ます。",
+    ],
+  ] as const)("%s はレビューの段と結果・更新のリンクを出す", (taskStatus, label, body) => {
+    const input = guide({ taskStatus, lastRun: { outcome: "passed", steps: [] } });
+    const html = buildTaskGuideHtml(input);
+    expect(html).toContain(
+      '<li class="done">提出</li><li class="now" aria-current="step">レビュー</li>',
+    );
+    expect(html).toContain(`<div class="now-card review"><p class="now-title">… ${label}</p>`);
+    expect(html).toContain(body);
+    expect(html).toContain("レビューの結果を見る");
+    expect(html).toContain("表示を更新する");
+    expect(commandArgs(html, "stella.showTaskHelp")).toEqual([[input.root], [input.root]]);
+    expect(commandArgs(html, "stella.showTaskReadme")).toEqual([[input.root]]);
+    expect(commandArgs(html, "stella.submitTask")).toEqual([]);
+  });
+
+  it.each([undefined, "passed"] as const)("再提出で前回が %s のときは修正を案内する", (outcome) => {
+    const input = guide({
+      taskStatus: "resubmit",
+      ...(outcome ? { lastRun: { outcome, steps: [] } } : {}),
+    });
+    const html = buildTaskGuideHtml(input);
+    expect(html).toContain('<li class="now" aria-current="step">編集して保存</li>');
+    expect(html).toContain(
+      '<div class="now-card failed"><p class="now-title">✗ 再提出になりました</p>',
+    );
+    expect(html).toContain("レビューの結果を見て直し、保存してもう一度提出します。");
+    const actions = /<p class="actions">(.*?)<\/p>/.exec(html)?.[1] ?? "";
+    expect(commandArgs(actions, "stella.submitTask")).toEqual([[input.root]]);
+    expect(commandArgs(actions, "stella.showTaskHelp")).toEqual([[input.root]]);
+    expect(commandArgs(actions, "stella.consultTask")).toEqual([[input.root]]);
+  });
+
+  it.each([
+    ["resubmit", "failed"],
+    ["resubmit", "error"],
+    ["not-started", "failed"],
+    ["local-passed", "passed"],
+  ] as const)(
+    "%s で前回が %s のときは手元の結果だけの場合と同じ表示になる",
+    (taskStatus, outcome) => {
+      const lastRun = { outcome, steps: [] };
+      expect(buildTaskGuideHtml(guide({ taskStatus, lastRun }))).toBe(
+        buildTaskGuideHtml(guide({ lastRun })),
+      );
     },
   );
 
