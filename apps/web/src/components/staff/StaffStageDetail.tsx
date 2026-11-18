@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { SkeletonRows } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -125,7 +125,7 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
         ← ステージ管理
       </Link>
       {loading ? (
-        <SkeletonRows />
+        <StaffStageDetailSkeleton />
       ) : error ? (
         <div className="space-y-3">
           <p role="alert" className="text-sm text-danger">
@@ -268,6 +268,136 @@ function WaitingCount({ count }: { count: number }) {
   );
 }
 
+const TASK_TABLE_HEADINGS = [
+  "課題",
+  "種別",
+  "目安 (分)",
+  "着手",
+  "提出",
+  "合格",
+  "確認待ち",
+  "ヒント / 解答例",
+  "類題",
+] as const;
+
+function TaskTableHeader() {
+  return (
+    <TableHeader>
+      <TableRow>
+        {TASK_TABLE_HEADINGS.map((title, index) => (
+          <TableHead
+            key={title}
+            className={(index >= 2 && index <= 6) || index === 8 ? "text-right" : ""}
+          >
+            {title}
+          </TableHead>
+        ))}
+      </TableRow>
+    </TableHeader>
+  );
+}
+
+function StaffStageDetailSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="読み込み中"
+      className="space-y-5"
+    >
+      <div aria-hidden="true" className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-5 w-16 max-w-full rounded-full" />
+          <Skeleton className="h-5 w-12 max-w-full rounded-full" />
+        </div>
+        <Skeleton className="h-7 w-80 max-w-full" />
+        <Skeleton className="h-3.5 w-40 max-w-full" />
+        <Skeleton className="h-4 w-[28rem] max-w-full" />
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-8 w-36 max-w-full rounded-md" />
+          <Skeleton className="h-8 w-40 max-w-full rounded-md" />
+          <Skeleton className="h-8 w-28 max-w-full rounded-md" />
+        </div>
+      </div>
+      <Card aria-hidden="true" className="flex flex-wrap gap-x-8 gap-y-3 p-4">
+        <Skeleton className="h-4 w-20 max-w-full" />
+        <Skeleton className="h-4 w-20 max-w-full" />
+        <Skeleton className="h-4 w-24 max-w-full" />
+        <Skeleton className="h-4 w-28 max-w-full" />
+      </Card>
+      <div aria-hidden="true">
+        <div className="inline-flex max-w-full items-center gap-1 overflow-x-auto border-b border-border -mb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {[
+            { tab: "tasks", width: "w-14" },
+            { tab: "outline", width: "w-10" },
+            { tab: "learners", width: "w-10" },
+            { tab: "materials", width: "w-14" },
+          ].map(({ tab, width }) => (
+            <div key={tab} className="shrink-0 px-3.5 py-2">
+              <Skeleton className={`h-4 max-w-full ${width}`} />
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 min-w-0 space-y-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex max-w-full flex-col gap-1">
+              <Skeleton className="h-3.5 w-8 max-w-full" />
+              <Skeleton className="h-8 w-24 max-w-full" />
+            </div>
+            <div className="flex min-w-0 max-w-full flex-col gap-1">
+              <Skeleton className="h-3.5 w-24 max-w-full" />
+              <Skeleton className="h-10 w-64 max-w-full" />
+            </div>
+            <div className="flex max-w-full items-center gap-2 py-1.5">
+              <Skeleton className="size-4 max-w-full shrink-0" />
+              <Skeleton className="h-3.5 w-48 max-w-full" />
+            </div>
+          </div>
+          <Card className="min-w-0">
+            <Table>
+              <TaskTableHeader />
+              <TableBody>
+                {["first-unit", "second-unit"].map((unit) => (
+                  <Fragment key={unit}>
+                    <TableRow className="bg-sunken">
+                      <TableCell colSpan={9}>
+                        <Skeleton className="h-4 w-64 max-w-full" />
+                      </TableCell>
+                    </TableRow>
+                    {["first-task", "second-task"].map((task) => (
+                      <TableRow key={task}>
+                        <TableCell>
+                          <Skeleton className="h-4 w-48 max-w-full" />
+                          <Skeleton className="mt-1.5 h-3 w-14 max-w-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-10 max-w-full" />
+                        </TableCell>
+                        {TASK_TABLE_HEADINGS.slice(2, 7).map((title) => (
+                          <TableCell key={title} className="text-right">
+                            <Skeleton className="ml-auto h-4 w-6 max-w-full" />
+                          </TableCell>
+                        ))}
+                        <TableCell className="min-w-48">
+                          <Skeleton className="h-3.5 w-40 max-w-full" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="ml-auto h-4 w-6 max-w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TasksTab({
   sections,
   slug,
@@ -328,28 +458,7 @@ function TasksTab({
       </div>
       <Card className="min-w-0">
         <Table>
-          <TableHeader>
-            <TableRow>
-              {[
-                "課題",
-                "種別",
-                "目安 (分)",
-                "着手",
-                "提出",
-                "合格",
-                "確認待ち",
-                "ヒント / 解答例",
-                "類題",
-              ].map((title, index) => (
-                <TableHead
-                  key={title}
-                  className={(index >= 2 && index <= 6) || index === 8 ? "text-right" : ""}
-                >
-                  {title}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+          <TaskTableHeader />
           <TableBody>
             {matches
               .filter((section) => !filtering || section.visible.length > 0)
