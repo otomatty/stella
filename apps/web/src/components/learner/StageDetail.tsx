@@ -30,10 +30,11 @@ import type { StageCompletion } from "@stella/shared/cms/types";
 import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { StageThumb } from "@/components/common/StageThumb";
 import { StageMaterialsDialog } from "@/components/learner/StageMaterialsDialog";
-import { TaskList } from "./TaskList";
+import { TaskList, TaskRowsSkeleton } from "./TaskList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import type { Stage, Lesson, LessonStatus, LessonType } from "@/data/types";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
@@ -495,3 +496,106 @@ const LessonRow = ({
     </button>
   );
 };
+
+const SKELETON_META = ["enrolled-by", "lesson-count", "duration"] as const;
+const SKELETON_SECTIONS = ["first-section", "second-section"] as const;
+const SKELETON_LESSONS = ["first-lesson", "second-lesson", "third-lesson"] as const;
+const SKELETON_CRITERIA = ["first-criterion", "second-criterion", "third-criterion"] as const;
+
+/** 受講者のステージ詳細を読んでいる間。読み込み後の外枠だけを出す。 */
+export function StageDetailSkeleton({ onBack }: { onBack: () => void }) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
+      >
+        <ChevronLeft size={14} />
+        <span>スキルツリーに戻る</span>
+      </button>
+      <div role="status" aria-busy="true" aria-live="polite" aria-label="読み込み中">
+        <div
+          aria-hidden="true"
+          className="grid gap-6 items-start grid-cols-1 lg:grid-cols-[1fr_320px]"
+        >
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="h-5 w-20 max-w-full rounded-full" />
+              <Skeleton className="h-3 w-10 max-w-full" />
+            </div>
+            <Skeleton className="h-8 w-96 max-w-full mb-2.5" />
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              {SKELETON_META.map((key) => (
+                <Skeleton key={key} className="h-4 w-20 max-w-full" />
+              ))}
+            </div>
+            <div className="mb-7 max-w-[720px] space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+            <section className="border border-border rounded-lg mb-6">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="font-semibold text-sm">単元の課題</h2>
+                <Skeleton className="h-8 w-24 max-w-full" />
+              </div>
+              <TaskRowsSkeleton />
+            </section>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>シラバス</CardTitle>
+                <CardActions>
+                  <Skeleton className="h-3 w-16 max-w-full" />
+                </CardActions>
+              </CardHeader>
+              {SKELETON_SECTIONS.map((section) => (
+                <div key={section}>
+                  <div className="flex items-center px-4 py-3 border-b border-border bg-sunken">
+                    <Skeleton className="h-3.5 w-48 max-w-full" />
+                    <Skeleton className="ml-auto h-3 w-12 max-w-full" />
+                  </div>
+                  {SKELETON_LESSONS.map((lesson) => (
+                    <div key={lesson} className="flex items-start gap-2.5 px-4 py-2.5">
+                      <Skeleton className="size-4 max-w-full rounded-full shrink-0" />
+                      <div>
+                        <Skeleton className="h-3.5 w-64 max-w-full" />
+                        <Skeleton className="mt-1.5 h-2.5 w-20 max-w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </Card>
+          </div>
+          <div className="sticky top-[88px]">
+            <Card className="mb-4">
+              <div className="relative border-b border-border" style={{ aspectRatio: "16 / 10" }}>
+                <Skeleton className="absolute inset-0 rounded-none" />
+              </div>
+              <CardContent>
+                <Skeleton className="h-3 w-20 max-w-full mb-2" />
+                <Skeleton className="h-9 w-20 max-w-full" />
+                <Skeleton className="h-2 w-full mt-2 mb-4 rounded-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="mt-2 h-10 w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>修了条件</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2.5">
+                {SKELETON_CRITERIA.map((key) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <Skeleton className="size-3.5 max-w-full rounded-full shrink-0" />
+                    <Skeleton className="h-3.5 w-32 max-w-full" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

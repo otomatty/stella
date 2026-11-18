@@ -3,6 +3,7 @@ import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
 import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api-client";
 import { taskProblemCountLabel, taskStatusLabel } from "@/lib/task-row";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
@@ -108,7 +109,7 @@ export function TaskList({
           {error}
         </p>
       ) : !loaded ? (
-        <p className="p-4 text-sm text-ink-3">課題を読み込んでいます</p>
+        <TaskRowsSkeleton />
       ) : tasks.length === 0 ? (
         <p className="p-4 text-sm text-ink-3">課題は準備中です</p>
       ) : (
@@ -148,6 +149,31 @@ export function TaskList({
         })
       )}
     </section>
+  );
+}
+
+const TASK_ROW_KEYS = ["first-task", "second-task"] as const;
+
+/** 課題一覧の読み込み中。課題の行と同じ外枠を 2 行出す。 */
+export function TaskRowsSkeleton() {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite" aria-label="課題を読み込んでいます">
+      <div aria-hidden="true">
+        {TASK_ROW_KEYS.map((row) => (
+          <div key={row} className="p-4 border-b border-border last:border-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-48">
+                <Skeleton className="h-4 w-56 max-w-full" />
+                <Skeleton className="mt-1.5 h-3 w-32 max-w-full" />
+              </div>
+              <Skeleton className="h-6 w-20 max-w-full rounded" />
+              <Skeleton className="h-7 w-20 max-w-full" />
+              <Skeleton className="h-8 w-28 max-w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

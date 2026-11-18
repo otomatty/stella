@@ -26,6 +26,8 @@ export interface AppShellValue {
   studentName: string;
   studentInitials: string;
   stagesError: string | null;
+  /** いま見ている側のステージ一覧を読んでいる間 true */
+  stagesLoading: boolean;
   /**
    * 受講中ステージの一覧を取り直す (Phase 3b)。
    *

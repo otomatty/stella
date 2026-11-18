@@ -2,7 +2,7 @@ import { createFileRoute, type SearchSchemaInput } from "@tanstack/react-router"
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { StageNotFoundNotice, EmptyStagesNotice } from "@/components/shell/AppShell";
 import { RoleGuard } from "@/components/shell/RoleGuard";
-import { StageDetail } from "@/components/learner/StageDetail";
+import { StageDetail, StageDetailSkeleton } from "@/components/learner/StageDetail";
 
 import { StaffStageDetail } from "@/components/staff/StaffStageDetail";
 import { parseStaffStageTab } from "@/components/staff/staff-stage-detail";
@@ -39,8 +39,10 @@ function StageDetailPage() {
             s.onOpenAIBot();
           }}
         />
+      ) : s.stagesLoading ? (
+        <StageDetailSkeleton onBack={() => s.setPage("dash")} />
       ) : s.stages.length === 0 ? (
-        // ステージ取得前 (リロード直後) と受講ステージゼロはこの表示 (旧挙動どおり)
+        // 読み込み後に受講ステージが無いとき (旧挙動どおり)。見つからない表示も読み込み後だけ。
         <EmptyStagesNotice setPage={s.setPage} />
       ) : (
         <StageNotFoundNotice setPage={s.setPage} />

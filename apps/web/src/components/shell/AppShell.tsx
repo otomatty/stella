@@ -237,6 +237,7 @@ export function AppShell() {
   );
 
   const stageError = effectiveRole === "learner" ? enrolledStages.error : browseStages.error;
+  const stagesLoading = effectiveRole === "learner" ? enrolledStages.loading : browseStages.loading;
   // 自己開始 (Phase 3b) で受講登録が増えたときに、いま見ている側の一覧だけを取り直す。
   const refetchStages = effectiveRole === "learner" ? enrolledStages.refetch : browseStages.refetch;
   // 検索 API は staff にすべてのステージ (draft 含む) を返すため、 staff が受講者シェルを
@@ -572,6 +573,7 @@ export function AppShell() {
     studentName: effectiveUser.name,
     studentInitials: effectiveUser.initials,
     stagesError: stageError,
+    stagesLoading,
     refetchStages,
     onOpenSubmission: openSubmissionResult,
     profileRole: profile?.role,
