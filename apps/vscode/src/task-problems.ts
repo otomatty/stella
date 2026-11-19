@@ -4,6 +4,7 @@
  * 画面 (コマンド・パネル) がこのファイルの結果を表示する。
  */
 
+import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
 import { canSubmit, type RunResult } from "@stella/shared/tasks/run-result";
@@ -15,15 +16,20 @@ import {
 } from "@stella/shared/tasks/submission";
 import { apiRequest } from "./api.js";
 import {
-  hashFile,
   hashFiles,
   LIMITS,
   listFiles,
   matchPatterns,
   readFileInRoot,
+  sha256Hex,
 } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
-import { readDistribution, readRecordedSupport, type SubmissionNotes } from "./task-submission.js";
+import {
+  readDistribution,
+  readRecordedSupport,
+  SUBMIT_AGAIN,
+  type SubmissionNotes,
+} from "./task-submission.js";
 
 /** 未提出、手元の確認が合格、サーバーに提出済み。 */
 export type ProblemWorkStatus = "not-submitted" | "local-passed" | "submitted";
@@ -93,6 +99,12 @@ export function problemForPath(manifest: TaskManifest, rel: string): TaskProblem
   return problems.find((problem) => problemSource(manifest, problem.id) === normalized);
 }
 
+export function problemForTestPath(manifest: TaskManifest, rel: string): TaskProblem | undefined {
+  const plan = RUNNERS[manifest.runner].plan;
+  const normalized = rel.replaceAll("\\", "/");
+  return manifest.problems?.find((problem) => problemFiles(plan, problem.id)?.test === normalized);
+}
+
 /** 提出済みでない最初の問題。全部提出済みなら undefined。 */
 export function nextUnsubmittedProblem(states: readonly ProblemState[]): ProblemState | undefined {
   return states.find((state) => state.status !== "submitted");
@@ -104,7 +116,7 @@ export function problemFileToOpen(states: readonly ProblemState[]): string | und
 }
 
 /**
- * 確認・提出する問題。開いているファイルが問題のソースならそれ。
+ * 確認・提出する問題。開いているファイルが問題のソースかテストならそれ。
  * そうでなければ次の未提出。全部提出済みなら 1 問目。
  */
 export function chooseProblem(
@@ -113,7 +125,7 @@ export function chooseProblem(
   manifest: TaskManifest,
 ): ProblemState | undefined {
   if (openPath) {
-    const fromFile = problemForPath(manifest, openPath);
+    const fromFile = problemForPath(manifest, openPath) ?? problemForTestPath(manifest, openPath);
     const found = fromFile ? states.find((state) => state.id === fromFile.id) : undefined;
     if (found) return found;
   }
@@ -183,7 +195,7 @@ export async function loadProblemStates(
   return states;
 }
 
-const RECHECK = "確認し直してください";
+const RECHECK = `確認後にファイルが変わっています。${SUBMIT_AGAIN}`;
 
 /**
  * 1 問の提出本文。問題 ID、そのファイル 1 つ、`.stella/problem-runs/<id>.json` の結果。
@@ -225,14 +237,14 @@ async function prepareProblemInput(
     throw new Error("手元の確認がすべて通ってから提出してください");
   if (mode === "consult" && canSubmit(result))
     throw new Error("手元の確認が通っています。「提出」を使ってください");
+  const bytes = await readFileInRoot(root, source, LIMITS.fileBytes);
   if (mode === "submit") {
-    const hashed = await hashFile(root, source, LIMITS.fileBytes);
     const recorded = result.files;
     const sameFile =
       recorded.length === 1 &&
-      recorded[0]?.path === hashed.path &&
-      recorded[0]?.sha256 === hashed.sha256 &&
-      recorded[0]?.bytes === hashed.bytes;
+      recorded[0]?.path === source &&
+      recorded[0]?.sha256 === sha256Hex(normalizeForHash(bytes)) &&
+      recorded[0]?.bytes === bytes.byteLength;
     if (!sameFile) throw new Error(RECHECK);
     const recordedImports = result.importedFiles;
     if (recordedImports) {
@@ -271,8 +283,11 @@ async function prepareProblemInput(
     receipt.taskId !== manifest.id ||
     (result.taskContentHash && result.taskContentHash !== receipt.contentHash)
   )
-    throw new Error("確認した課題の版が変わっています。もう一度確認してください");
-  const bytes = await readFileInRoot(root, source, LIMITS.fileBytes);
+    throw new Error(
+      mode === "consult"
+        ? "確認した課題の版が変わっています。もう一度確認してください"
+        : "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+    );
   return {
     taskId: manifest.id,
     contentHash: result.taskContentHash ?? receipt.contentHash,

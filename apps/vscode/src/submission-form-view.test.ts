@@ -66,6 +66,8 @@ describe("提出の振り返りテンプレート", () => {
     expect(html).not.toContain("<script>alert");
     expect(html).not.toContain('name="support"');
     expect(html).toContain("下書きを保存");
+    expect(html).toContain("この内容で提出する");
+    expect(html).toContain("✓ 確認はすべて通りました</p><h1>");
     expect(html).toContain("script-src 'nonce-test'");
   });
 });

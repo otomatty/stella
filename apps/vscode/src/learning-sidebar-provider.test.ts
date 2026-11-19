@@ -108,10 +108,17 @@ describe("学習サイドバーと拡張の接続", () => {
     await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
     expect(h.html).toContain('aria-busy="true"');
     expect(h.html).toContain('class="loading-layout"');
+    expect(h.html).toContain('<ol class="segments"><li class="skeleton"></li>');
+    expect(h.html).toContain('<span class="kind-icon skeleton"></span>');
+    expect(h.html).not.toContain('class="current-label"');
+    expect(h.html).not.toMatch(/\bstyle\s*=|<style\b/i);
     expect(h.view.webview.html).toBe(initialDocument);
     finish(catalog);
     await refreshing;
     expect(h.html).toContain('aria-busy="false"');
+    expect(h.html).toContain(
+      '<ol class="segments" role="img" aria-label="1 件中 0 件完了"><li class="here"></li></ol>',
+    );
     expect(h.view.webview.html).toBe(initialDocument);
   });
 
@@ -140,6 +147,8 @@ describe("学習サイドバーと拡張の接続", () => {
       ),
     );
     expect(h.html).toContain('aria-current="page"');
+    expect(h.html).toContain('<li class="lesson current">');
+    expect(h.html).toContain('<span class="sr-only">いま開いている教材</span>');
   });
 
   it("未知の ID、任意のコマンド、古い表示からのメッセージを実行しない", async () => {
