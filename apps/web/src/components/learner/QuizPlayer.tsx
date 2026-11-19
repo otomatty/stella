@@ -423,7 +423,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
               確認する
             </Button>
           </div>
-          {/* sm 未満: 画面下部固定のアクションバー。 右端は AI FAB (right-6 + w-12 = 72px)
+          {/* sm 未満: 画面下部固定のアクションバー。 右端は開発者モード FAB (right-6 + w-12 = 72px)
               の指定席なので、 誤タップ防止の間隔 16px を足した 88px を空けて左側いっぱいを使う。
               FAB は動かさず、 バーが FAB の台座に見えるよう背景は全幅に敷く。 */}
           <div className="fixed inset-x-0 bottom-0 z-[80] border-t border-border bg-card sm:hidden">

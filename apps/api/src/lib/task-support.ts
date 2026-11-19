@@ -2,8 +2,8 @@
  * 課題ごとの支援の記録と、手元の確認の要約 (#38・07 §6.5)。
  *
  * - 手元の確認は受講者・課題ごとに回数だけを持つ (`task_local_runs`)。
- * - 支援の記録は、提出に添えた支援・相談・人のレビュー・サーバーの記録 (`task_support_events`) を
- *   課題ごとに束ねて返す。正本が既にあるもの (相談・レビュー) は写さず、読むときに束ねる。
+ * - 支援の記録は、提出に添えた支援・相談・人のレビュー・ヒント・解答例・解説を開いた記録
+ *   (`task_help_opens`) を課題ごとに束ねて返す。
  */
 
 import { and, desc, eq, exists, inArray, isNull, lt, lte, sql } from "drizzle-orm";
@@ -14,11 +14,8 @@ import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
 import { helpOpenDetail, helpSupportKind } from "@stella/shared/tasks/help";
 import {
   isConsultSupportDetail,
-  RECORDED_SUPPORT_KINDS,
   type EvidenceLevel,
-  type RecordedSupportKind,
   type SupportRecordEvent,
-  type SupportRecordKind,
   type TaskSupportRecord,
 } from "@stella/shared/tasks/support-record";
 import type { Db } from "../db/client.js";
@@ -32,7 +29,6 @@ import {
   taskFixedStartUses,
   taskHelpOpens,
   taskLocalRuns,
-  taskSupportEvents,
   tasks,
 } from "../db/schema.js";
 import { fixedStartUsesOf } from "./task-fixed-start.js";
@@ -104,35 +100,8 @@ export function localRunUpsert(
 }
 
 /**
- * サーバーが見た支援を 1 件残す。種類は `RECORDED_SUPPORT_KINDS` に限る。
- *
- * ここでは種類しか確かめない。呼び出し側は、課題が有効で、受講者が
- * 読める課題であること (`canAccessTasks`) を先に確かめ、ID はサーバーで引き直した値を渡す。
- * 受講者が送った課題 ID をそのまま渡すと、他人の課題の水準を「支援付き」にできてしまう。
- */
-export async function recordSupportEvent(
-  db: Db,
-  event: {
-    userId: string;
-    taskId: string;
-    kind: RecordedSupportKind;
-    detail?: string;
-  },
-) {
-  if (!(RECORDED_SUPPORT_KINDS as readonly string[]).includes(event.kind))
-    throw new Error(`unknown support kind: ${event.kind}`);
-  await db.insert(taskSupportEvents).values({
-    userId: event.userId,
-    taskId: event.taskId,
-    kind: event.kind,
-    detail: event.detail?.slice(0, DETAIL_MAX) ?? null,
-    createdAt: new Date(),
-  });
-}
-
-/**
  * 提出の申告 (`support_log`) と相談の提出のほかに、この提出より前に支援を受けていたか。
- * サーバーの記録 (AI チャットなど)、同じ課題での講師への相談、固定した開始点の受け取り
+ * 同じ課題での講師への相談、固定した開始点の受け取り
  * (この課題の開始点と、この課題の実装を含む後の課題の開始点、#31)、ヒント・解答例・解説を
  * 開いた記録 (#36。合格後に開いたものも、その後の提出には数える) を数える。
  * 人のレビューは数えない — 再提出の指摘を受けて直すのは通常の流れで、支援付きにすると
@@ -142,18 +111,6 @@ export async function hasRecordedSupport(
   db: Db,
   row: { studentId: string; taskId: string; submittedAt: Date },
 ): Promise<boolean> {
-  const [recorded] = await db
-    .select({ one: sql`1` })
-    .from(taskSupportEvents)
-    .where(
-      and(
-        eq(taskSupportEvents.userId, row.studentId),
-        eq(taskSupportEvents.taskId, row.taskId),
-        lte(taskSupportEvents.createdAt, row.submittedAt),
-      ),
-    )
-    .limit(1);
-  if (recorded) return true;
   const [fixedStart] = await db
     .select({ one: sql`1` })
     .from(taskFixedStartUses)
@@ -259,7 +216,7 @@ export async function loadTaskSupport(
     stageTitle: stages.title,
     order: sql<number>`${sections.order} * 100000 + ${tasks.order}`,
   };
-  const [stageTasks, submitted, reviews, recorded, runs, evidence, opens] = await Promise.all([
+  const [stageTasks, submitted, reviews, runs, evidence, opens] = await Promise.all([
     scope.stageId
       ? db
           .select(meta)
@@ -291,19 +248,6 @@ export async function loadTaskSupport(
       .where(
         and(where, eq(submissionReviews.source, "human"), eq(submissions.studentId, scope.userId)),
       ),
-    db
-      .select({
-        ...meta,
-        kind: taskSupportEvents.kind,
-        taskKind: tasks.kind,
-        detail: taskSupportEvents.detail,
-        at: taskSupportEvents.createdAt,
-      })
-      .from(taskSupportEvents)
-      .innerJoin(tasks, eq(tasks.id, taskSupportEvents.taskId))
-      .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(and(where, eq(taskSupportEvents.userId, scope.userId))),
     db
       .select({ ...meta, run: taskLocalRuns })
       .from(taskLocalRuns)
@@ -423,13 +367,6 @@ export async function loadTaskSupport(
       at: v.at.toISOString(),
       source: "submission",
       detail: VERDICT_LABELS[v.verdict],
-    });
-  for (const e of recorded)
-    push(recordOf({ ...e, kind: e.taskKind }), {
-      kind: e.kind as SupportRecordKind,
-      at: e.at.toISOString(),
-      source: "recorded",
-      ...(e.detail ? { detail: e.detail } : {}),
     });
   for (const { run, ...m } of runs) {
     recordOf(m).localRuns = {

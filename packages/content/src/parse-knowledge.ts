@@ -16,6 +16,30 @@ export function readKnowledgeMetadata(source: string): {
   return { title, durationMinutes: Number(minutes) };
 }
 
+/** 区切りを探すときだけフェンス内を空白に置き換え、元の本文と位置をそろえる。 */
+function maskFencedCode(source: string): string {
+  let fence: string | undefined;
+  return source
+    .split("\n")
+    .map((line) => {
+      const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+      const run = marker?.[1] ?? "";
+      if (!fence) {
+        if (!marker || (run[0] === "`" && marker[2].includes("`"))) return line;
+        fence = run;
+      } else if (
+        marker &&
+        run[0] === fence[0] &&
+        run.length >= fence.length &&
+        /^[ \t]*$/.test(marker[2])
+      ) {
+        fence = undefined;
+      }
+      return " ".repeat(line.length);
+    })
+    .join("\n");
+}
+
 /** knowledge.md: 各設問に種別とスキルを明示する。旧 practice.md の parser は変えない。 */
 export function parseKnowledge(source: string): QuizQuestionSeed[] {
   const blocks = source.replace(/\r\n/g, "\n").split(/^### /m).slice(1);
@@ -27,10 +51,11 @@ export function parseKnowledge(source: string): QuizQuestionSeed[] {
       throw new Error(`knowledge.md: 設問の見出しを確認してください: ${block.slice(0, 50)}`);
     const question = `knowledge.md: Q${prompt[1]}`;
     const content = block.slice(prompt[0].length);
-    const details = /^<details\b[^>]*>/im.exec(content);
+    const delimiters = maskFencedCode(content);
+    const details = /^<details\b[^>]*>/im.exec(delimiters);
     if (!details) throw new Error(`${question} の解答を <details> に書いてください`);
     const beforeDetails = content.slice(0, details.index);
-    const rows = [...beforeDetails.matchAll(/^- ([A-Z])\. ([^\n]+)$/gm)];
+    const rows = [...delimiters.slice(0, details.index).matchAll(/^- ([A-Z])\. ([^\n]+)$/gm)];
     const first = rows[0];
     const last = rows.at(-1);
     if (!first || !last) throw new Error(`${question} の選択肢は <details> より前に書いてください`);
@@ -41,8 +66,9 @@ export function parseKnowledge(source: string): QuizQuestionSeed[] {
       /^[ \t]*<!--[ \t]*kind:[ \t]*(single|multiple|boolean);[ \t]*skills:[ \t]*([^>\n]+?)[ \t]*-->[ \t]*$/m.exec(
         bodySource,
       );
-    const afterDetails = content.slice(details.index + details[0].length);
-    const detailsEnd = /^<\/details[ \t]*>/im.exec(afterDetails);
+    const answerStart = details.index + details[0].length;
+    const afterDetails = content.slice(answerStart);
+    const detailsEnd = /^<\/details[ \t]*>/im.exec(delimiters.slice(answerStart));
     const answer =
       detailsEnd &&
       /\*\*([A-Z](?:\s*,\s*[A-Z])*)\*\*\s*—\s*([\s\S]*)/.exec(

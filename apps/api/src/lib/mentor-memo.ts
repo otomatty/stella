@@ -24,6 +24,7 @@ import {
   type MentorMemoOutput,
   type MentorMemoView,
   parseMentorMemoOutput,
+  readMemoSupport,
   STUMBLE_SIGNALS,
   type StumbleSignal,
 } from "@stella/shared/mentoring/weekly-memo";
@@ -35,7 +36,6 @@ import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
 import {
   isConsultSupportDetail,
   type EvidenceLevel,
-  RECORDED_SUPPORT_KINDS,
   type SupportRecordKind,
 } from "@stella/shared/tasks/support-record";
 import { and, asc, desc, eq, exists, gte, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
@@ -56,7 +56,6 @@ import {
   taskHelpOpens,
   taskLocalRuns,
   taskProgress,
-  taskSupportEvents,
   tasks,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
@@ -261,7 +260,6 @@ export async function leaseMentorMemo(
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const LEVEL_RANK: Record<EvidenceLevel, number> = { supported: 0, independent: 1, retained: 2 };
-const SERVER_SUPPORT_KINDS: readonly string[] = RECORDED_SUPPORT_KINDS;
 const DECLARED_SUPPORT_KINDS: readonly string[] = SUPPORT_KINDS;
 
 /**
@@ -288,7 +286,6 @@ export async function collectMemoMaterial(
     evidence,
     stumbles,
     streaks,
-    recorded,
     fixedStarts,
     helpOpens,
     aiResults,
@@ -373,16 +370,6 @@ export async function collectMemoMaterial(
       )
       .orderBy(desc(taskLocalRuns.failureStreak))
       .limit(5),
-    db
-      .select({ kind: taskSupportEvents.kind })
-      .from(taskSupportEvents)
-      .where(
-        and(
-          eq(taskSupportEvents.userId, learner.id),
-          gte(taskSupportEvents.createdAt, from),
-          lt(taskSupportEvents.createdAt, to),
-        ),
-      ),
     // 固定した開始点の受け取り。受け取りの正本はこの表で、提出の支援記録に載るのはその写し
     // (サーバーの写しか拡張の記録)。提出していなくても、受け取った週の支援に数える。
     db
@@ -487,8 +474,6 @@ export async function collectMemoMaterial(
   const add = (kind: SupportRecordKind) => {
     support[kind] = (support[kind] ?? 0) + 1;
   };
-  for (const e of recorded)
-    if (SERVER_SUPPORT_KINDS.includes(e.kind)) add(e.kind as SupportRecordKind);
   if (fixedStarts.length > 0) support["fixed-start"] = fixedStarts.length;
   // 開いた記録は段ごと (解答例・解説はそれぞれ) に最初の 1 回を、開いた時刻の週に数える
   // (`loadTaskSupport` と同じ。版を変えて開き直した分は重ねない)。提出に写った同じ記録は数えない。
@@ -518,7 +503,7 @@ export async function collectMemoMaterial(
       const key = `${e.kind}|${at.toISOString()}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      add(e.kind as SupportRecordKind);
+      add(e.kind);
     }
   }
 
@@ -843,7 +828,9 @@ export function mentorMemoView(row: MemoRow, learnerName: string): MentorMemoVie
     suggestedAction: row.suggestedAction,
     actionReason: row.actionReason,
     messageDraft: row.messageDraft,
-    material: row.material ?? null,
+    material: row.material
+      ? { ...row.material, support: readMemoSupport(row.material.support) }
+      : null,
     model: row.model,
     promptVersion: row.promptVersion,
     generatedAt: row.generatedAt?.toISOString() ?? null,

@@ -24,7 +24,6 @@ import {
   taskProgress,
   taskFixedStartUses,
   taskHelpOpens,
-  taskSupportEvents,
   tasks,
   tenants,
 } from "../db/schema.js";
@@ -39,7 +38,7 @@ import {
   runMentorMemoCron,
 } from "../lib/mentor-memo.js";
 import { notifyStumbles } from "../lib/stumble-alerts.js";
-import { MENTOR_MEMO_PROMPT_VERSION } from "../lib/mentor-memo-prompt.js";
+import { buildMentorMemoPrompt, MENTOR_MEMO_PROMPT_VERSION } from "../lib/mentor-memo-prompt.js";
 import { helpSupportEvents } from "../lib/task-help.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -283,20 +282,6 @@ async function seedWeek() {
       createdAt: at("2026-10-13T00:00:00Z"),
     },
   ]);
-  await db.insert(taskSupportEvents).values([
-    {
-      userId: "learner",
-      taskId: "practice",
-      kind: "ai-chat",
-      createdAt: at("2026-10-06T05:00:00Z"),
-    },
-    {
-      userId: "learner",
-      taskId: "practice",
-      kind: "ai-chat",
-      createdAt: at("2026-10-13T05:00:00Z"),
-    },
-  ]);
   await db.insert(taskLocalRuns).values({
     userId: "learner",
     taskId: "practice",
@@ -477,7 +462,7 @@ describe("週次の育成メモを書く (cron)", () => {
       },
       stumbles: { idle: 1 },
       failureStreaks: [{ title: "はじめてのページ", streak: 4 }],
-      support: { hint: 1, "ai-chat": 1, consult: 1 },
+      support: { hint: 1, consult: 1 },
       reviews: {
         aiConfirmed: 0,
         aiEscalated: 1,
@@ -687,13 +672,13 @@ describe("週次の育成メモを書く (cron)", () => {
     });
     await runMentorMemoCron(env, db, () => NOW.getTime());
     const [memo] = await memoRows();
-    expect(memo?.material?.support).toEqual({ hint: 1, "ai-chat": 1, consult: 1, solution: 1 });
+    expect(memo?.material?.support).toEqual({ hint: 1, consult: 1, solution: 1 });
     expect(memo?.material?.activity).toMatchObject({ activeDays: 4, submissions: 2 });
   });
 
   it("材料を集められないまま試行の上限に達したら、作れなかったメモとして終える", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    database.sqlite.exec("drop table task_support_events");
+    database.sqlite.exec("drop table task_help_opens");
     let at = NOW.getTime();
     for (let i = 1; i < MAX_MEMO_ATTEMPTS; i++) {
       expect(await runMentorMemoCron(env, db, () => at)).toEqual(["retry"]);
@@ -708,7 +693,7 @@ describe("週次の育成メモを書く (cron)", () => {
       leaseId: null,
       summary: null,
     });
-    expect(memo?.lastError).toContain("task_support_events");
+    expect(memo?.lastError).toContain("task_help_opens");
     // 終えたメモはもう取らない。
     expect(await runMentorMemoCron(env, db, () => at + 15 * MIN)).toEqual([]);
     // 講師の画面には「作れなかった」として出し、対応は受け付けない。
@@ -916,6 +901,24 @@ describe("講師の画面 (GET /api/mentor-memos)", () => {
     expect(JSON.stringify(body)).not.toContain("leaseId");
     const other = await json<List>(await list("teacher", "?week=2026-09-28"));
     expect(other.memos).toEqual([]);
+  });
+
+  it("保存済みの材料にある旧種別や未知の種別は API と AI の入力から除く", async () => {
+    database.sqlite.exec(`
+      update mentor_memos
+      set material = json_set(material, '$.support."ai-chat"', 3, '$.support.obsolete', 2)
+    `);
+    const [saved] = await memoRows();
+    expect(saved?.material?.support).toMatchObject({ "ai-chat": 3, obsolete: 2 });
+    if (!saved?.material) throw new Error("メモの材料がありません");
+
+    const response = await list("teacher");
+    expect(response.status).toBe(200);
+    const { memos } = await json<List>(response);
+    expect(memos[0]?.material?.support).toEqual({ hint: 1, consult: 1 });
+    const prompt = JSON.stringify(buildMentorMemoPrompt(saved.material).messages);
+    expect(prompt).toContain("hint");
+    expect(prompt).not.toMatch(/ai-chat|obsolete/);
   });
 
   it("別の講師も同じメモを読み、受講者本人は読めない", async () => {

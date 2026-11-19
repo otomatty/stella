@@ -29,15 +29,6 @@ function StageDetailPage() {
           setPage={s.setPage}
           onOpenLesson={(lessonId) => s.onOpenLesson(target, lessonId)}
           onOpenSubmission={s.onOpenSubmission}
-          onAskAiAboutTask={(task) => {
-            s.setAIContext({
-              kind: "task",
-              taskId: task.id,
-              taskTitle: task.title,
-              stageTitle: target.title,
-            });
-            s.onOpenAIBot();
-          }}
         />
       ) : s.stagesLoading ? (
         <StageDetailSkeleton onBack={() => s.setPage("dash")} />

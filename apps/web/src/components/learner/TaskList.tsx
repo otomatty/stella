@@ -13,12 +13,9 @@ import { TaskSupportSummary } from "./TaskSupportSummary";
 
 export function TaskList({
   stageId,
-  onAskAi,
   onLoaded,
 }: {
   stageId: string;
-  /** 課題の文脈で AI チャットを開く。相談は支援の記録に残る (#38)。 */
-  onAskAi?: (task: { id: string; title: string }) => void;
   /**
    * 課題の一覧を読み終えたとき (取り直しのたび。失敗は空の一覧)。ステージ詳細が
    * 「課題に取り組む」と修了条件の表示に使う — 同じ一覧を二度取りに行かない。
@@ -132,15 +129,6 @@ export function TaskList({
                   {taskStatusLabel(task)}
                   {task.manual_passed ? "（引き継ぎ）" : ""}
                 </span>
-                {onAskAi && !task.aiChatDisabled ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onAskAi({ id: task.id, title: task.title })}
-                  >
-                    AI に相談
-                  </Button>
-                ) : null}
                 {handheld ? null : <OpenInVscodeButton taskId={task.id} />}
               </div>
               {record ? <TaskSupportSummary record={record} /> : null}
