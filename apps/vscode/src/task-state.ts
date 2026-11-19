@@ -24,6 +24,11 @@ const didChange = new vscode.EventEmitter<string | undefined>();
 export const onDidChangeTaskState = didChange.event;
 let auth: AuthStore | undefined;
 
+/** 問題ごとの保存済みの結果を、課題のファイルを開いたときに読み直せるようにする。 */
+export function notifyProblemTaskOpened(root: string): void {
+  didChange.fire(root);
+}
+
 export function helpUrl(taskId: string, contentHash: string): string {
   return `/api/tasks/help?${new URLSearchParams({ taskId, contentHash })}`;
 }

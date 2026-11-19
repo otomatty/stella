@@ -16,7 +16,12 @@ import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { fetchProblemResults, loadProblemStates, problemCountLabel } from "./task-problems.js";
-import { getTaskState, onDidChangeTaskState, refreshTaskState } from "./task-state.js";
+import {
+  getTaskState,
+  notifyProblemTaskOpened,
+  onDidChangeTaskState,
+  refreshTaskState,
+} from "./task-state.js";
 
 export interface CurrentTask {
   root: string;
@@ -160,6 +165,7 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
     const title = loaded.ok ? loaded.manifest.title : path.basename(root);
     let problemProgress: CurrentTask["problemProgress"];
     if (loaded.ok && loaded.manifest.problems?.length) {
+      notifyProblemTaskOpened(root);
       try {
         const states = await loadProblemStates(
           root,

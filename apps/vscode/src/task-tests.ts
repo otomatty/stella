@@ -1,10 +1,12 @@
 import path from "node:path";
-import type { RunResult, TestCaseResult } from "@stella/shared/tasks/run-result";
+import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import type { RunResult, RunStepResult, TestCaseResult } from "@stella/shared/tasks/run-result";
 import * as vscode from "vscode";
 import { findTestLine } from "./find-test-line.js";
 import { loadTask } from "./runner/run-task.js";
 import { readTestSource, resolveDiagnosticFile } from "./task-diagnostics.js";
 import { readLastResult } from "./task-guide.js";
+import { problemForTestPath, problemSource, readProblemRun } from "./task-problems.js";
 import { onDidFinishTaskCheck } from "./task-run-events.js";
 import { onDidChangeTaskState } from "./task-state.js";
 import { expectedActual } from "./task-test-message.js";
@@ -26,15 +28,15 @@ interface TestGroup {
   cases: Map<string, TestEntry>;
 }
 
-async function collectTests(root: string, result: RunResult, existing?: vscode.TestItem) {
+async function collectTests(root: string, steps: RunStepResult[], existing?: vscode.TestItem) {
   const groups = new Map<string, TestGroup>();
   let count = 0;
   existing?.children.forEach((child) => {
     count += child.children.size || 1;
   });
-  for (const step of result.steps) {
+  for (const step of steps) {
     for (const test of step.tests ?? []) {
-      const name = test.file ?? "";
+      const name = typeof test.file === "string" ? test.file : "";
       const file = resolveDiagnosticFile(root, name);
       const groupId = file ? itemId(root, name) : "";
       const parent = file ? existing?.children.get(groupId) : existing;
@@ -128,6 +130,7 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
   const inWorkspace = (root: string) =>
     Boolean(vscode.workspace.getWorkspaceFolder(vscode.Uri.file(root)));
   const pending = new Map<string, { tail: Promise<void> }>();
+  const manifests = new WeakMap<vscode.TestItem, TaskManifest>();
 
   function getController(): vscode.TestController {
     if (controller) return controller;
@@ -136,22 +139,43 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
       "課題を確認する",
       vscode.TestRunProfileKind.Run,
       async (request) => {
-        const roots = new Set<string>();
+        const selected = new Map<vscode.TestItem, vscode.TestItem[]>();
         if (request.include) {
-          for (let item of request.include) {
-            while (item.parent) item = item.parent;
-            if (tests.items.get(item.id) === item) roots.add(item.id);
+          for (const item of request.include) {
+            let task = item;
+            while (task.parent) task = task.parent;
+            if (tests.items.get(task.id) !== task) continue;
+            const items = selected.get(task);
+            if (items) items.push(item);
+            else selected.set(task, [item]);
           }
         } else if (tests.items.size === 1) {
           tests.items.forEach((item) => {
-            roots.add(item.id);
+            selected.set(item, [item]);
           });
         } else if (tests.items.size > 1) {
           void vscode.window.showInformationMessage(
             "確認する課題を、テストビューで選んでから実行してください",
           );
         }
-        for (const root of roots) await vscode.commands.executeCommand("stella.runTask", root);
+        for (const [task, items] of selected) {
+          const root = task.id;
+          const manifest = manifests.get(task);
+          if (!manifest?.problems || items.includes(task)) {
+            await vscode.commands.executeCommand("stella.runTask", root);
+            continue;
+          }
+          const sources = new Set<string | null>();
+          for (const item of items) {
+            const problem =
+              item.uri && problemForTestPath(manifest, path.relative(root, item.uri.fsPath));
+            sources.add(problem ? problemSource(manifest, problem.id) : null);
+          }
+          for (const source of sources) {
+            const target = source ? vscode.Uri.file(path.join(root, source)) : root;
+            await vscode.commands.executeCommand("stella.runTask", target);
+          }
+        }
       },
       true,
     );
@@ -200,11 +224,12 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
         const partial = result.problemId !== undefined;
         const groups = await collectTests(
           root,
-          result,
+          result.steps,
           partial ? tests.items.get(root) : undefined,
         );
         if (!active()) return;
         const { task, cases } = updateItems(tests, root, manifest.title, groups, partial);
+        manifests.set(task, manifest);
         const run = tests.createTestRun(new vscode.TestRunRequest([task]), "手元の確認", false);
         try {
           for (const [item, test] of cases) {
@@ -225,10 +250,25 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
       return enqueue(root, async (tests, active) => {
         const loaded = await loadTask(root);
         if (!loaded.ok || !active()) return;
-        const result = await readLastResult(root, loaded.manifest.id);
-        if (!result || !hasTests(result) || !active()) return;
-        const groups = await collectTests(root, result);
-        if (active()) updateItems(tests, root, loaded.manifest.title, groups, false);
+        const { manifest } = loaded;
+        const steps: RunStepResult[] = [];
+        if (manifest.problems) {
+          for (const { id } of manifest.problems) {
+            const result = await readProblemRun(root, manifest.id, id);
+            if (!active()) return;
+            if (result && hasTests(result))
+              steps.push(...result.steps.filter((step) => step.tests));
+          }
+        } else {
+          const result = await readLastResult(root, manifest.id);
+          if (result && hasTests(result)) steps.push(...result.steps);
+        }
+        if (steps.length === 0 || !active()) return;
+        const groups = await collectTests(root, steps);
+        if (active()) {
+          const { task } = updateItems(tests, root, manifest.title, groups, false);
+          manifests.set(task, manifest);
+        }
       });
     }),
   );

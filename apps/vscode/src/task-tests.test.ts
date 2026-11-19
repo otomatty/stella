@@ -218,11 +218,20 @@ function children(item?: TestItem): TestItem[] {
   return result;
 }
 
-async function savePrevious(runResult: RunResult) {
-  await mkdir(path.join(root, ".stella"), { recursive: true });
-  const problems = [{ id: "q01", title: "練習問題" }];
+async function savePrevious(...runs: (RunResult & { problemId: string })[]) {
+  await mkdir(path.join(root, ".stella/problem-runs"), { recursive: true });
+  const problems = ["q01", "q02", "q03"].map((id) => ({ id, title: id }));
   await writeFile(path.join(root, ".stella/task.json"), JSON.stringify({ ...manifest, problems }));
-  await writeFile(path.join(root, ".stella/last-run.json"), JSON.stringify(runResult));
+  for (const run of runs) {
+    await writeFile(
+      path.join(root, `.stella/problem-runs/${run.problemId}.json`),
+      JSON.stringify(run),
+    );
+  }
+}
+
+function problemRun(problemId: string, tests: TestCaseResult[]) {
+  return { ...result([testStep(tests)]), problemId };
 }
 
 const noTests: RunStepResult = {
@@ -399,20 +408,70 @@ describe("課題のテストビュー", () => {
   it("読める前回の結果から確認済みの 1 問の項目だけを復元する", async () => {
     await state.taskChanged?.(root);
     expect(items.size).toBe(0);
-    await savePrevious(result([noTests]));
+    await savePrevious({ ...result([noTests]), problemId: "q01" });
     await state.taskChanged?.(root);
     expect(items.size).toBe(0);
-    await savePrevious(
-      result([testStep([testCase("previous", sampleFile)])], { problemId: "q01" }),
-    );
+    await savePrevious(problemRun("q01", [testCase("previous", sampleFile)]));
     await state.taskChanged?.();
     expect(items.size).toBe(0);
     await state.taskChanged?.(root);
     expect(children(children(items.get(root))[0]).map((item) => item.label)).toEqual(["previous"]);
     expect(state.createRun).not.toHaveBeenCalled();
-    await savePrevious(result([testStep([testCase("changed")])]));
+    await savePrevious(problemRun("q01", [testCase("changed")]));
     await state.taskChanged?.(root);
     expect(children(items.get(root)).map((item) => item.label)).toEqual([sampleFile]);
+  });
+
+  it("保存済みの問題を合わせて復元し、全体で 500 件まで項目を用意する", async () => {
+    await savePrevious(
+      problemRun(
+        "q01",
+        Array.from({ length: 300 }, (_, i) => testCase(`first ${i}`, "tests/q01.test.ts")),
+      ),
+      problemRun(
+        "q02",
+        Array.from({ length: 250 }, (_, i) => testCase(`second ${i}`, "tests/q02.test.ts")),
+      ),
+    );
+    await state.taskChanged?.(root);
+    const files = children(items.get(root));
+    expect(files.map((file) => file.label)).toEqual(["q01.test.ts", "q02.test.ts"]);
+    expect(files.map((file) => children(file).length)).toEqual([300, 200]);
+    expect(state.createRun).not.toHaveBeenCalled();
+  });
+
+  it("選択したテストやファイルの問題を重複なく順に確認し、課題を選んだときは課題を渡す", async () => {
+    await savePrevious(
+      problemRun("q01", [testCase("first", "tests/q01.test.ts")]),
+      problemRun("q02", [testCase("second", "tests/q02.test.ts")]),
+    );
+    await state.taskChanged?.(root);
+    const task = items.get(root);
+    if (!task) throw new Error("課題の項目がありません");
+    const [first, second] = children(task);
+    const [firstTest] = children(first);
+    const uri = (id: string) => ({ fsPath: path.join(root, "src", `${id}.ts`), scheme: "file" });
+
+    await runProfile({ include: [firstTest] });
+    expect(state.execute).toHaveBeenCalledExactlyOnceWith("stella.runTask", uri("q01"));
+
+    state.execute.mockClear();
+    let releaseFirst: () => void = () => undefined;
+    const pending = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    state.execute.mockReturnValueOnce(pending);
+    const running = runProfile({ include: [second, firstTest, first] });
+    expect(state.execute).toHaveBeenCalledExactlyOnceWith("stella.runTask", uri("q02"));
+    releaseFirst();
+    await running;
+    expect(state.execute.mock.calls).toEqual([
+      ["stella.runTask", uri("q02")],
+      ["stella.runTask", uri("q01")],
+    ]);
+    state.execute.mockClear();
+    await runProfile({ include: [task] });
+    expect(state.execute).toHaveBeenCalledExactlyOnceWith("stella.runTask", root);
   });
 
   it("選択されたテストから課題をたどり、課題のパスだけを一度ずつ順に実行する", async () => {

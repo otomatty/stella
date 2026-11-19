@@ -89,7 +89,12 @@ vi.mock("vscode", () => ({
 import { AuthStore } from "./auth.js";
 import { loadTask } from "./runner/run-task.js";
 import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
-import { getTaskState, refreshTaskState, registerTaskState } from "./task-state.js";
+import {
+  getTaskState,
+  onDidChangeTaskState,
+  refreshTaskState,
+  registerTaskState,
+} from "./task-state.js";
 import { registerTaskStatus, setCurrentTask } from "./task-status.js";
 
 let workspace = "";
@@ -161,7 +166,7 @@ describe("ステータスバーの課題のボタン", () => {
     expect(state.items[2]?.visible).toBe(false);
   });
 
-  it("問題つきの課題は提出済みの件数を出す", async () => {
+  it("問題つきの課題は保存済みの結果の読み込みを知らせ、提出済みの件数を出す", async () => {
     const problemRoot = path.join(workspace, "extra", "unit", "calc");
     await mkdir(path.join(problemRoot, ".stella"), { recursive: true });
     await writeFile(
@@ -198,8 +203,11 @@ describe("ステータスバーの課題のボタン", () => {
       taskPassed: false,
     });
     state.activeFile = path.join(problemRoot, "src", "q01-add.ts");
+    const taskChanged = vi.fn();
+    context.subscriptions.push(onDidChangeTaskState(taskChanged));
     registerTaskStatus(context);
     await state.editorListener?.(editor(state.activeFile));
+    expect(taskChanged).toHaveBeenCalledExactlyOnceWith(problemRoot);
     expect(state.items[2]?.visible).toBe(true);
     expect(state.items[2]?.text).toBe("1/2 問");
     startTaskCheck({ root: problemRoot, taskId: "extra/unit/calc", problemId: "q01-add" });

@@ -106,6 +106,7 @@ function finish(
   outcome: RunResult["outcome"] = "failed",
   saved = true,
   taskRoot = root,
+  problemId?: string,
 ): Promise<unknown[]> {
   finishTaskCheck({
     root: taskRoot,
@@ -124,6 +125,7 @@ function finish(
       files: [],
       protected: [],
       manifestSha256: "hash",
+      problemId,
     },
   });
   return Promise.all(state.updates.splice(0));
@@ -304,6 +306,40 @@ describe("確認結果の診断", () => {
     );
     expect([...state.diagnostics.keys()]).toEqual([path.join(other, "src.ts")]);
     expect(state.created).toHaveBeenCalledTimes(1);
+  });
+
+  it("別の問題の合格では診断を残し、同じ問題の合格ではソース・テスト・結果にあるファイルの診断を消す", async () => {
+    const source = "src/q01.ts";
+    const test = "tests/q01.test.ts";
+    const shared = "src/shared.ts";
+    const steps = [
+      step("typecheck", "型の確認", { lint: [lint(source), lint(test), lint(shared)] }),
+    ];
+    await finish(steps, "failed", true, root, "q01");
+    await finish([], "passed", true, root, "q02");
+    expect(forFile(source)).toHaveLength(1);
+    expect(forFile(test)).toHaveLength(1);
+    expect(forFile(shared)).toHaveLength(1);
+    await finish(
+      [step("format", "整形", { files: [shared], status: "passed" })],
+      "passed",
+      true,
+      root,
+      "q01",
+    );
+    expect(state.diagnostics.size).toBe(0);
+  });
+
+  it("診断の読み込み中に別の問題の結果が届いても、元の問題の診断を残す", async () => {
+    const test = "tests/q01.test.ts";
+    const steps = [
+      step("test", "テスト", { tests: [{ name: "case", file: test, status: "failed" }] }),
+    ];
+    await Promise.all([
+      finish(steps, "failed", true, root, "q01"),
+      finish([], "passed", true, root, "q02"),
+    ]);
+    expect(forFile(test)).toHaveLength(1);
   });
 
   it("開始・中断・保存に失敗した確認では診断を変えない", async () => {

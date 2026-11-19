@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type { RunResult } from "@stella/shared/tasks/run-result";
 import type { ExtensionContext } from "vscode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthExpiredError } from "./api.js";
@@ -9,6 +10,7 @@ import { AuthStore } from "./auth.js";
 import { hashFile } from "./runner/files.js";
 import { buildTaskGuideHtml, type TaskGuideInput } from "./task-guide.js";
 import { onDidFinishTaskCheck, onDidStartTaskCheck } from "./task-run-events.js";
+import { prepareLocalTaskSubmission } from "./task-submission.js";
 
 const state = vi.hoisted(() => ({
   handlers: new Map<string, () => Promise<void> | void>(),
@@ -163,7 +165,7 @@ vi.mock("./runner/run-task.js", async (importOriginal) => {
     saveRunResult: vi.fn(original.saveRunResult),
   };
 });
-const { runTask, saveRunResult } = await import("./runner/run-task.js");
+const { loadTask, runTask, saveRunResult } = await import("./runner/run-task.js");
 const { registerTaskCommands } = await import("./task-commands.js");
 
 async function makeTask(
@@ -988,6 +990,72 @@ describe("stella.runTask (CI と公開の課題)", () => {
     await run("stella.runTask");
     expect(inputOptions(0).value).toBe(runUrl);
   });
+
+  it.each(["ci-deploy", "git-record"] as const)(
+    "%s の提出はファイルが変わっていなくても確認を実行する",
+    async (runner) => {
+      const task =
+        runner === "ci-deploy"
+          ? ciTask
+          : {
+              ...ciTask,
+              runner,
+              ci: undefined,
+              git: { checks: [{ type: "learning-folder-root" }] },
+            };
+      const contentHash = "ab".repeat(32);
+      const root = await makeTask(task, {
+        [WORKFLOW]: "name: Deploy\n",
+        ".stella/distribution.json": JSON.stringify({ taskId: task.id, contentHash }),
+      });
+      state.folders = [root];
+      const previous: RunResult = {
+        schemaVersion: 1,
+        taskId: task.id,
+        runner,
+        outcome: "passed",
+        startedAt: "2026-11-01T00:00:00.000Z",
+        durationMs: 1,
+        platform: process.platform,
+        toolVersions: {},
+        steps: [],
+        files: [await hashFile(root, WORKFLOW)],
+        protected: [],
+        manifestSha256: (await hashFile(root, ".stella/task.json")).sha256,
+        taskContentHash: contentHash,
+        ...(runner === "ci-deploy" ? { ci: { runUrl, deployUrl, commit: "a".repeat(40) } } : {}),
+      };
+      await saveRunResult(root, previous);
+      const loaded = await loadTask(root);
+      if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+      await expect(prepareLocalTaskSubmission(loaded, "submit")).resolves.toMatchObject({
+        localResult: previous,
+      });
+
+      const newRunUrl = "https://github.com/yamada/web-deploy/actions/runs/123457";
+      state.inputs = [newRunUrl, deployUrl];
+      vi.mocked(runTask).mockImplementationOnce(async ({ ci }) => ({
+        ...previous,
+        ...(ci ? { ci: { ...ci, commit: "b".repeat(40) } } : {}),
+      }));
+      await run("stella.submitTask", root);
+
+      expect(runTask).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          root,
+          ci: runner === "ci-deploy" ? { runUrl: newRunUrl, deployUrl } : undefined,
+        }),
+      );
+      if (runner === "ci-deploy") {
+        expect(vscodeMock.showInputBox).toHaveBeenCalledTimes(2);
+        expect(inputOptions(0).value).toBe(runUrl);
+        expect(inputOptions(1).value).toBe(deployUrl);
+      } else {
+        expect(vscodeMock.showInputBox).not.toHaveBeenCalled();
+      }
+      expect(vscodeMock.showSubmissionForm).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 const problemTask = {
@@ -1053,6 +1121,51 @@ describe("問題つきの課題", () => {
     state.activeFile = path.join(root, "src", "q01-add.ts");
     return root;
   }
+
+  it.each([
+    ["問題のファイル URI", "src/q01-add.ts", "src/q02-sub.ts", "q01-add"],
+    ["テストファイル URI", "tests/q01-add.test.ts", "src/q02-sub.ts", "q01-add"],
+    ["課題フォルダーのパス", null, "src/q01-add.ts", "q01-add"],
+    ["課題フォルダーの URI", ".", "tests/q01-add.test.ts", "q01-add"],
+    ["問題と無関係なファイル URI", "README.md", "src/q01-add.ts", "q02-sub"],
+    ["課題フォルダーで対象のエディターが無い", null, undefined, "q02-sub"],
+    ["引数なし", undefined, "src/q01-add.ts", "q02-sub"],
+    ["前回の結果が無い問題の URI", "src/q02-sub.ts", "src/q01-add.ts", undefined],
+  ])("前回の結果を %s から開く", async (_label, uriPath, activePath, expectedProblem) => {
+    const root = await problemRoot();
+    await mkdir(path.join(root, "tests"));
+    await writeFile(path.join(root, "tests", "q01-add.test.ts"), "");
+    const runs = path.join(root, ".stella", "problem-runs");
+    if (expectedProblem) {
+      const older = JSON.parse(await readFile(path.join(runs, "q01-add.json"), "utf8"));
+      await writeFile(
+        path.join(runs, "q02-sub.json"),
+        JSON.stringify({ ...older, problemId: "q02-sub", startedAt: "2026-11-07T00:00:00Z" }),
+      );
+    }
+    state.activeFile = activePath ? path.join(root, activePath) : undefined;
+    const requested = uriPath
+      ? { scheme: "file", fsPath: path.join(root, uriPath) }
+      : uriPath === null
+        ? root
+        : undefined;
+    await run("stella.showLastResult", requested);
+    if (expectedProblem) {
+      expect(vscodeMock.showTaskPanel).toHaveBeenCalledExactlyOnceWith({
+        kind: "result",
+        root,
+        manifest: expect.objectContaining({ id: problemTask.id }),
+        result: expect.objectContaining({ problemId: expectedProblem }),
+      });
+    } else {
+      expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+      expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+        "まだ確認していません。「提出する」か「課題を確認する」を実行してください",
+      );
+    }
+    expect(runTask).not.toHaveBeenCalled();
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
 
   it("課題文は問題ごとの状態を取得する", async () => {
     const root = await problemRoot();

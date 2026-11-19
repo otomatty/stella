@@ -1,5 +1,7 @@
 import path from "node:path";
+import { problemFiles } from "@stella/shared/tasks/problems";
 import type { RunResult, TestCaseResult } from "@stella/shared/tasks/run-result";
+import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { findTestLine } from "./find-test-line.js";
 import { readFileInRoot } from "./runner/files.js";
@@ -128,11 +130,11 @@ async function collectDiagnostics(
 
 export function registerTaskDiagnostics(context: vscode.ExtensionContext): void {
   let collection: vscode.DiagnosticCollection | undefined;
-  const pending = new Map<string, Set<string>>();
+  const pending = new Map<string, { tail: Promise<void>; edits: Set<Set<string>> }>();
 
   context.subscriptions.push(
     { dispose: () => pending.clear() },
-    onDidFinishTaskCheck(async ({ root, result, saved }) => {
+    onDidFinishTaskCheck(async ({ root, manifest, result, saved }) => {
       if (!saved || result.outcome === "cancelled") return;
       if (!collection) {
         const diagnostics = vscode.languages.createDiagnosticCollection("stella");
@@ -141,8 +143,9 @@ export function registerTaskDiagnostics(context: vscode.ExtensionContext): void 
           vscode.workspace.onDidChangeTextDocument(({ document: { uri }, contentChanges }) => {
             if (contentChanges.length === 0 || uri.scheme !== "file") return;
             if (diagnostics.has(uri)) diagnostics.delete(uri);
-            for (const [root, edited] of pending) {
-              if (isWithinRoot(root, uri.fsPath)) edited.add(uri.fsPath);
+            for (const [root, queue] of pending) {
+              if (!isWithinRoot(root, uri.fsPath)) continue;
+              for (const edited of queue.edits) edited.add(uri.fsPath);
             }
           }),
         );
@@ -150,21 +153,58 @@ export function registerTaskDiagnostics(context: vscode.ExtensionContext): void 
       }
 
       const taskRoot = path.resolve(root);
+      const diagnostics = collection;
+      const queue = pending.get(taskRoot) ?? {
+        tail: Promise.resolve(),
+        edits: new Set<Set<string>>(),
+      };
+      pending.set(taskRoot, queue);
       const edited = new Set<string>();
-      pending.set(taskRoot, edited);
-      const byFile = await collectDiagnostics(taskRoot, result);
-      // ファイルを読んでいる間に、新しい結果や編集が届くことがある。
-      if (pending.get(taskRoot) !== edited) return;
-      pending.delete(taskRoot);
-
-      const entries = new Map<string, [vscode.Uri, vscode.Diagnostic[] | undefined]>();
-      collection.forEach((uri) => {
-        if (isWithinRoot(taskRoot, uri.fsPath)) entries.set(uri.fsPath, [uri, undefined]);
-      });
-      for (const [file, diagnostics] of byFile) {
-        if (!edited.has(file)) entries.set(file, [vscode.Uri.file(file), diagnostics]);
+      // 課題全体の結果は以前の更新を置き換え、問題ごとの結果は到着順に反映する。
+      if (result.problemId === undefined) queue.edits.clear();
+      queue.edits.add(edited);
+      const active = () => pending.get(taskRoot) === queue && queue.edits.has(edited);
+      const next = queue.tail
+        .catch(() => undefined)
+        .then(async () => {
+          if (!active()) return;
+          const byFile = await collectDiagnostics(taskRoot, result);
+          if (!active()) return;
+          const entries = new Map<string, [vscode.Uri, vscode.Diagnostic[] | undefined]>();
+          if (result.problemId === undefined) {
+            diagnostics.forEach((uri) => {
+              if (isWithinRoot(taskRoot, uri.fsPath)) entries.set(uri.fsPath, [uri, undefined]);
+            });
+          } else {
+            const clear = (name: string) => {
+              const file = resolveDiagnosticFile(taskRoot, name);
+              if (!file) return;
+              const uri = vscode.Uri.file(file);
+              if (diagnostics.has(uri)) entries.set(file, [uri, undefined]);
+            };
+            const files = problemFiles(RUNNERS[manifest.runner].plan, result.problemId);
+            if (files) {
+              clear(files.source);
+              clear(files.test);
+            }
+            for (const step of result.steps) {
+              for (const finding of step.lint ?? []) clear(finding.file);
+              for (const file of step.files ?? []) clear(file);
+              for (const test of step.tests ?? []) if (test.file) clear(test.file);
+            }
+          }
+          for (const [file, findings] of byFile) {
+            if (!edited.has(file)) entries.set(file, [vscode.Uri.file(file), findings]);
+          }
+          diagnostics.set([...entries.values()]);
+        });
+      queue.tail = next;
+      try {
+        await next;
+      } finally {
+        queue.edits.delete(edited);
+        if (pending.get(taskRoot) === queue && queue.tail === next) pending.delete(taskRoot);
       }
-      collection.set([...entries.values()]);
     }),
   );
 }

@@ -100,6 +100,12 @@ export function problemForPath(manifest: TaskManifest, rel: string): TaskProblem
   return problems.find((problem) => problemSource(manifest, problem.id) === normalized);
 }
 
+export function problemForTestPath(manifest: TaskManifest, rel: string): TaskProblem | undefined {
+  const plan = RUNNERS[manifest.runner].plan;
+  const normalized = rel.replaceAll("\\", "/");
+  return manifest.problems?.find((problem) => problemFiles(plan, problem.id)?.test === normalized);
+}
+
 /** 提出済みでない最初の問題。全部提出済みなら undefined。 */
 export function nextUnsubmittedProblem(states: readonly ProblemState[]): ProblemState | undefined {
   return states.find((state) => state.status !== "submitted");

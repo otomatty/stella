@@ -59,6 +59,8 @@ import {
   nextUnsubmittedProblem,
   prepareProblemSubmission,
   problemCountLabel,
+  problemForPath,
+  problemForTestPath,
   readProblemRun,
   sendProblemConsultation,
   sendProblemSubmission,
@@ -520,8 +522,9 @@ async function submitTaskCommand(
       const openPath = requestedProblemPath(root, requestedRoot);
       let selection = await selectTaskProblem(root, manifest, openPath);
       if (manifest.problems?.length && !selection) throw new Error("提出する問題がありません");
+      const plan = RUNNERS[manifest.runner].plan;
       const previous =
-        dirtyTaskDocuments(root).length > 0
+        plan === "git" || plan === "ci" || dirtyTaskDocuments(root).length > 0
           ? undefined
           : await (selection
               ? prepareProblemSubmission(root, selection.id, [])
@@ -780,13 +783,36 @@ async function showTaskReadmeCommand(requested?: unknown): Promise<void> {
   }
 }
 
+async function readLastProblemResult(root: string, manifest: TaskManifest, requested: unknown) {
+  const target =
+    isFileUri(requested) && path.relative(root, requested.fsPath) === "" ? undefined : requested;
+  const file =
+    typeof requested === "string" || isFileUri(requested)
+      ? requestedProblemPath(root, target)
+      : undefined;
+  const problem = file && (problemForPath(manifest, file) ?? problemForTestPath(manifest, file));
+  if (problem) return readProblemRun(root, manifest.id, problem.id);
+
+  let latest: RunResult | undefined;
+  for (const { id } of manifest.problems ?? []) {
+    const result = await readProblemRun(root, manifest.id, id);
+    if (result && (!latest || Date.parse(result.startedAt) > Date.parse(latest.startedAt))) {
+      latest = result;
+    }
+  }
+  return latest;
+}
+
 async function showLastResultCommand(requested?: unknown): Promise<void> {
   const root = await requestedTaskRoot(requested);
   const loaded = root ? await loadTask(root) : undefined;
   if (loaded?.ok) {
-    const result = await readLastResult(loaded.root, loaded.manifest.id);
+    const { root, manifest } = loaded;
+    const result = manifest.problems
+      ? await readLastProblemResult(root, manifest, requested)
+      : await readLastResult(root, manifest.id);
     if (result) {
-      showTaskPanel({ kind: "result", root: loaded.root, manifest: loaded.manifest, result });
+      showTaskPanel({ kind: "result", root, manifest, result });
       return;
     }
   }
