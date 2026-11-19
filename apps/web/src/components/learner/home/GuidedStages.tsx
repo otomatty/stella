@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
 
 export function GuidedStageCard({
   stage,
+  hideAction = false,
   onStart,
   onOpen,
 }: {
   stage: GuidedStage;
+  hideAction?: boolean;
   onStart: (id: string) => Promise<void>;
   onOpen: (id: string) => void;
 }) {
@@ -18,7 +20,6 @@ export function GuidedStageCard({
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const card = guidedStageCard(stage);
-  const deadline = guidedDeadline(stage.due_at);
   const start = async () => {
     if (busyRef.current) return;
     busyRef.current = true;
@@ -44,12 +45,7 @@ export function GuidedStageCard({
         <p className="text-xs text-ink-3">{stage.source_name} からの案内</p>
       ) : null}
       <h3 className="text-sm font-bold">{stage.title}</h3>
-      {deadline ? (
-        <p className={cn("text-xs", deadline.urgent ? "font-bold text-danger" : "text-ink-2")}>
-          {deadline.days > 0 && deadline.urgent ? "期限間近：" : ""}
-          {deadline.text}
-        </p>
-      ) : null}
+      <GuidedDeadline dueAt={stage.due_at} />
       <p className="text-xs text-ink-2">{card.progress}</p>
       <Progress
         value={card.percent}
@@ -66,7 +62,7 @@ export function GuidedStageCard({
           {error}
         </p>
       ) : null}
-      {card.button ? (
+      {card.button && !hideAction ? (
         <Button
           size="sm"
           disabled={busy}
@@ -76,6 +72,17 @@ export function GuidedStageCard({
         </Button>
       ) : null}
     </article>
+  );
+}
+
+export function GuidedDeadline({ dueAt }: { dueAt: string | null }) {
+  const deadline = guidedDeadline(dueAt);
+  if (!deadline) return null;
+  return (
+    <p className={cn("text-xs", deadline.urgent ? "font-bold text-danger" : "text-ink-2")}>
+      {deadline.days > 0 && deadline.urgent ? "期限間近：" : ""}
+      {deadline.text}
+    </p>
   );
 }
 

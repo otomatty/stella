@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { GuidedStage } from "@stella/shared/stage-grants/types";
 import type { SkillMapMine, SkillMapStageNode } from "./skill-map-api";
-import { buildHomeGuide, homeGuideStageInput } from "./home-guide";
+import { buildHomeGuide, homeGuideStageInput, pickGuidedStage } from "./home-guide";
 import { buildTodayPlan } from "./today-plan";
 
 const nodes: SkillMapStageNode[] = [
@@ -28,9 +29,44 @@ const map: SkillMapMine = {
 const input = {
   plan: buildTodayPlan({ srsDueCount: 0 }),
   activeWithoutLesson: false,
+  hasVisibleExtra: false,
   reviewDone: false,
   stageAudienceById: { guided: "granted" as const },
 };
+
+const chapter = (number: string, status: GuidedStage["status"]): GuidedStage => ({
+  stage_id: `devlab-ts-ch${number}`,
+  title: `${number}章`,
+  status,
+  source_name: "開発ラボG",
+  due_at: null,
+  message: null,
+  prerequisite_titles: [],
+  progress: { unit: "problems", passed: 0, total: 12 },
+});
+
+describe("案内されたステージを選ぶ", () => {
+  const available = { ...chapter("00", "available"), due_at: "2026-11-20T14:59:59Z" };
+  const later = { ...chapter("01", "in-progress"), due_at: "2026-12-01T14:59:59Z" };
+  const sooner = { ...chapter("02", "in-progress"), due_at: "2026-11-30T14:59:59Z" };
+  const tied = { ...sooner, stage_id: "tie" };
+  const noDeadline = chapter("03", "in-progress");
+  const locked = { ...available, status: "locked" as const };
+
+  it("進行中を優先し、同じ状態は期限順、期限なしは最後、同じ期限はAPI順", () => {
+    expect(pickGuidedStage([available, noDeadline], null)).toBe(noDeadline);
+    expect(pickGuidedStage([noDeadline, later, sooner, tied], null)).toBe(sooner);
+    expect(pickGuidedStage([tied, sooner], null)).toBe(tied);
+    expect(pickGuidedStage([chapter("01", "available"), available], null)).toBe(available);
+  });
+
+  it("ロック中、案内なし、現在地あり、現在地の応答前は選ばない", () => {
+    expect(pickGuidedStage([locked], null)).toBeUndefined();
+    expect(pickGuidedStage([], null)).toBeUndefined();
+    expect(pickGuidedStage([available], "dev-env-basics")).toBeUndefined();
+    expect(pickGuidedStage([later], undefined)).toBeUndefined();
+  });
+});
 
 describe("案内の枠が割り当てを受け持つので通常のガイドから分ける", () => {
   it("00章がロック中の開発ラボG応募者には最初にSTELLAの使い方を案内する", () => {
@@ -58,6 +94,7 @@ describe("案内の枠が割り当てを受け持つので通常のガイドか�
       buildHomeGuide({
         ...input,
         stageAudienceById: { "devlab-ts-ch00": "granted" },
+        guidedStage: pickGuidedStage([chapter("00", "locked")], null),
         ...ordinary,
       }).steps,
     ).toEqual([{ kind: "first-stage", stageId: "dev-env-basics" }]);
@@ -143,5 +180,91 @@ describe("案内の枠が割り当てを受け持つので通常のガイドか�
       startableStageIds: ["basic", "guided"],
     });
     expect(homeGuideStageInput({ ...old, has_enrollment: true }, nodes).hasEnrollment).toBe(true);
+  });
+});
+
+describe("開発ラボGの応募者と研修受講者のホーム", () => {
+  const training = ["html-css-basics", "js-basics"];
+  const choose = { kind: "choose", welcome: false, stageIds: training };
+  const continuedPlan = (stageTitle: string, nextLessonTitle: string) =>
+    buildTodayPlan({
+      srsDueCount: 0,
+      activeStage: { stageTitle, nextLessonTitle, remainingLessons: 1 },
+    });
+
+  it.each([
+    ["dev-env-basics", "STELLAの使い方", "VS Codeの準備", chapter("00", "locked")],
+    [
+      "html-css-basics",
+      "HTML/CSS",
+      "HTMLの要素",
+      { ...chapter("00", "available"), title: "資格のステージ" },
+    ],
+  ] as const)(
+    "%s の現在地がある間は、既存の続きだけを出す",
+    (activeId, title, lesson, assignment) => {
+      const plan = continuedPlan(title, lesson);
+      expect(
+        buildHomeGuide({
+          ...input,
+          hasEnrollment: true,
+          startableStageIds: training,
+          guidedStage: pickGuidedStage([assignment], activeId),
+          plan,
+        }).steps,
+      ).toEqual([{ kind: "plan", item: plan.items[0] }]);
+    },
+  );
+
+  it.each(["00", "01"])("%s章が開いたら、先頭から開始し、そのあとに研修の選択を出す", (number) => {
+    const stage = chapter(number, "available");
+    expect(
+      buildHomeGuide({
+        ...input,
+        hasEnrollment: true,
+        startableStageIds: training,
+        guidedStage: pickGuidedStage([stage], null),
+      }).steps,
+    ).toEqual([{ kind: "start-guided", stage }, choose]);
+  });
+
+  it("進行中の00章にレッスンが残っていれば続き、そのあとに研修の選択を出す", () => {
+    const plan = continuedPlan("00章", "事前課題の進め方");
+    expect(
+      buildHomeGuide({
+        ...input,
+        hasEnrollment: true,
+        startableStageIds: training,
+        guidedStage: pickGuidedStage([chapter("00", "in-progress")], null),
+        plan,
+      }).steps,
+    ).toEqual([{ kind: "plan", item: plan.items[0] }, choose]);
+  });
+
+  it("進行中の00章に課題が残っていれば仕上げ、そのあとに研修の選択を出す", () => {
+    expect(
+      buildHomeGuide({
+        ...input,
+        hasEnrollment: true,
+        startableStageIds: training,
+        guidedStage: pickGuidedStage([chapter("00", "in-progress")], null),
+        activeWithoutLesson: true,
+      }).steps,
+    ).toEqual([{ kind: "wrapup" }, choose]);
+  });
+
+  it("前提免除で00章を始められるときも、そのあとにSTELLAの使い方を残す", () => {
+    const stage = chapter("00", "available");
+    expect(
+      buildHomeGuide({
+        ...input,
+        hasEnrollment: false,
+        startableStageIds: ["dev-env-basics"],
+        guidedStage: pickGuidedStage([stage], null),
+      }).steps,
+    ).toEqual([
+      { kind: "start-guided", stage },
+      { kind: "first-stage", stageId: "dev-env-basics" },
+    ]);
   });
 });

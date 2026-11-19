@@ -33,6 +33,24 @@ describe("案内カードの描画", () => {
     expect(html).toContain('role="progressbar"');
     expect(html).toContain("始める");
   });
+  it.each(["available", "in-progress"] as const)(
+    "ガイドに出した %s のカードはボタンだけを外す",
+    (status) => {
+      const due_at = new Date(Date.now() + 2 * 86_400_000).toISOString();
+      const html = renderToStaticMarkup(
+        createElement(GuidedStageCard, {
+          stage: { ...stage, status, due_at },
+          hideAction: true,
+          ...handlers,
+        }),
+      );
+      expect(html).not.toContain("<button");
+      expect(html).toContain("架空の研修室 からの案内");
+      expect(html).toContain("期限間近：");
+      expect(html).toContain("0/1292 問");
+      expect(html).toContain("&lt;script&gt;example&lt;/script&gt;");
+    },
+  );
   it("長い案内も改行を保って全文を出し、行数で切らない", () => {
     const message = `${"架空の案内です。".repeat(50)}\n案内の最後です。`;
     const html = renderToStaticMarkup(

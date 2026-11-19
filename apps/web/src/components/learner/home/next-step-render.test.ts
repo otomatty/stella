@@ -51,6 +51,9 @@ function noop(): void {
 
 const handlers = {
   activeStage: null,
+  onStartGuidedStage: noop,
+  startingGuidedStage: false,
+  guidedStartError: null,
   nodeOf: (id: string) => nodes.get(id),
   onStartStage: noop,
   onStartReview: noop,
@@ -94,6 +97,108 @@ describe("NextStep first-stage", () => {
     expect(markup).toContain("はじめの一歩");
     expect(markup).toContain("『STELLAの使い方』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
+  });
+});
+
+describe("案内されたステージの開始", () => {
+  const guide: HomeGuide = {
+    steps: [
+      {
+        kind: "start-guided",
+        stage: {
+          stage_id: "devlab-ts-ch00",
+          title: "00章",
+          status: "available",
+          source_name: "開発ラボG",
+          message: "案内の文は枠に表示する",
+          due_at: new Date(Date.now() + 2 * 86_400_000).toISOString(),
+          prerequisite_titles: [],
+          progress: { unit: "problems", passed: 0, total: 12 },
+        },
+      },
+    ],
+    idle: "empty",
+  };
+
+  it("カードには名前・案内元・期限間近の表示と開始ボタンを出す", () => {
+    const markup = renderToStaticMarkup(
+      createElement(NextStepCard, { ...handlers, guide, loading: false }),
+    );
+    expect(markup).toContain("『00章』を始めましょう");
+    expect(markup).toContain("開発ラボG からの案内");
+    expect(markup).toContain("期限間近：");
+    expect(markup).toContain("font-bold text-danger");
+    expect(markup).toContain("始める</button>");
+    expect(markup).not.toContain("案内の文は枠に表示する");
+  });
+
+  it("畳んだ帯と「そのあと」にも名前と開始ボタンを出す", () => {
+    const bar = renderToStaticMarkup(
+      createElement(NextStepBar, { ...handlers, guide, loading: false, onExpand: noop }),
+    );
+    const later = renderToStaticMarkup(
+      createElement(LaterSteps, { ...handlers, steps: guide.steps }),
+    );
+    for (const markup of [bar, later]) {
+      expect(markup).toContain("『00章』を始めましょう");
+      expect(markup).toContain("始める</button>");
+    }
+  });
+
+  it("開始中はボタンを無効にし、開始に失敗したら文字で伝える", () => {
+    const busy = renderToStaticMarkup(
+      createElement(NextStepCard, {
+        ...handlers,
+        guide,
+        loading: false,
+        startingGuidedStage: true,
+      }),
+    );
+    expect(busy).toContain('disabled=""');
+    expect(busy).toContain("開始しています…");
+
+    const guidedStartError = {
+      stageId: "devlab-ts-ch00",
+      message: "ステージを始められませんでした",
+    };
+    const cardProps = { ...handlers, guide, loading: false, guidedStartError };
+    for (const markup of [
+      renderToStaticMarkup(createElement(NextStepCard, cardProps)),
+      renderToStaticMarkup(createElement(NextStepBar, { ...cardProps, onExpand: noop })),
+      renderToStaticMarkup(
+        createElement(LaterSteps, { ...handlers, steps: guide.steps, guidedStartError }),
+      ),
+    ]) {
+      expect(markup).toContain('role="alert"');
+      expect(markup).toContain(guidedStartError.message);
+    }
+  });
+
+  it("進行中の00章の続きには進捗とレッスン一覧を出す", () => {
+    const markup = renderToStaticMarkup(
+      createElement(NextStepCard, {
+        ...handlers,
+        activeStage: { id: "devlab-ts-ch00", title: "00章", progress: 42, lessonsCount: 3 },
+        guide: {
+          steps: [
+            {
+              kind: "plan",
+              item: {
+                kind: "lesson",
+                title: "事前課題の進め方",
+                reason: "00章の続きです",
+                minutes: 15,
+              },
+            },
+          ],
+          idle: "empty",
+        },
+        loading: false,
+      }),
+    );
+    expect(markup).toContain("続きから");
+    expect(markup).toContain("42%");
+    expect(markup).toContain("レッスン一覧");
   });
 });
 
