@@ -175,3 +175,73 @@ jobs:
       - name: Dump API log on failure
         if: failure()
         run: cat /tmp/wrangler-dev.log
+
+  e2e:
+    if: inputs.scope != 'code' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      WRANGLER_SEND_METRICS: "false"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # ローカル D1 と API の準備は core-loop と合わせる。Web の preview 用に CORS を追加する。
+      - name: Prepare .dev.vars
+        run: |
+          cp apps/api/.dev.vars.example apps/api/.dev.vars
+          sed -i '/^ALLOWED_ORIGINS=/s/\r\?$/,http:\/\/127.0.0.1:4173,http:\/\/localhost:4173/' apps/api/.dev.vars
+
+      - name: Migrate + seed local D1
+        run: |
+          bun run db:migrate
+          bun run db:seed
+
+      - name: Start API (wrangler dev)
+        run: |
+          nohup bun run dev:api > /tmp/wrangler-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8787/api/healthz > /dev/null; then
+              echo "API ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "API が 60 秒以内に起動しませんでした"; cat /tmp/wrangler-dev.log; exit 1
+
+      - name: Install Japanese fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Install Chromium
+        working-directory: apps/web
+        run: bunx playwright install --with-deps chromium
+
+      - name: Browser E2E
+        run: bun run --filter=@stella/web e2e
+
+      - name: Upload E2E failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-failure
+          path: |
+            apps/web/test-results/
+            apps/web/playwright-report/
+
+      - name: Upload screenshot baselines
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-screenshots
+          path: apps/web/e2e/__screenshots__/
+          if-no-files-found: ignore
