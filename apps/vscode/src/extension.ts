@@ -41,7 +41,6 @@ import {
 } from "./grader.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
-import { openLessonDoc } from "./lesson-doc.js";
 import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskDiagnostics } from "./task-diagnostics.js";
 import { registerTaskHelp } from "./task-help.js";
@@ -373,13 +372,6 @@ export function activate(context: vscode.ExtensionContext): void {
         await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
       },
     ),
-    vscode.commands.registerCommand("stella.openLessonDoc", (node?: LessonNode) => {
-      if (!node?.id || !node.stageId) {
-        void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
-        return;
-      }
-      openLessonDoc(node);
-    }),
     vscode.commands.registerCommand("stella.grade", async () => {
       try {
         const run = await gradeActiveExercise();

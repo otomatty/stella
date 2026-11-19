@@ -1,0 +1,18 @@
+{
+  "format": 2,
+  "title": "Claude Developer 模擬試験",
+  "category": "Anthropic認定資格",
+  "color": "amber",
+  "description": "8領域を出題する70問の模擬試験を120分で解きます。予備演習で弱点を確かめ、本番形式の採点後は迷った場面から復習先を選びます。",
+  "header": "Claude Developer 模擬試験",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["claude-developer-practice"],
+  "plannedHours": 3,
+  "environment": "node-test-01",
+  "canDo": "初見の実務場面で条件を読み、制限時間内に設計を選んで理由を説明できる",
+  "theme": "資格で示すAI開発力",
+  "modules": {
+    "m9-mock-exam": "模擬試験の準備と本番演習"
+  }
+}

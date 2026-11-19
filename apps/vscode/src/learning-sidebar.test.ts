@@ -138,6 +138,26 @@ describe("学習サイドバー", () => {
   });
 
   it.each([
+    ["text", "まとめ"],
+    ["slides", "スライド"],
+  ] as const)("%s は一覧でも次の操作でも Web へ案内する", (type, title) => {
+    const html = renderUnit([lesson("material", { type, title })]);
+    expect(html).toContain('<span class="sr-only">Web で受講</span>');
+    expect(html).toContain(
+      'id="next-step-action" class="primary" data-action="open" data-lesson="material">Web で進める</button>',
+    );
+  });
+
+  it("旧形式の演習は VS Code へ案内する", () => {
+    const html = renderUnit([lesson("exercise", { type: "code" })]);
+    expect(html).not.toContain('<span class="sr-only">Web で受講</span>');
+    expect(html).toContain("VS Code で演習を開いて進めます。");
+    expect(html).toContain(
+      'id="next-step-action" class="primary" data-action="open" data-lesson="exercise">演習を開く</button>',
+    );
+  });
+
+  it.each([
     ["slides", "スライド", "<rect"],
     ["text", "まとめ", '<path d="M3.5'],
     ["code", "演習", '<path d="M6 4.5'],
@@ -242,9 +262,10 @@ describe("学習サイドバー", () => {
   });
 
   it("未接続・取得失敗・教材なしでも次の操作を示す", () => {
-    expect(renderLearningSidebar({ kind: "disconnected" }, assets)).toContain(
-      'data-action="connect"',
-    );
+    const disconnected = renderLearningSidebar({ kind: "disconnected" }, assets);
+    expect(disconnected).toContain('data-action="connect"');
+    expect(disconnected).toContain("<h1>課題に取り組む</h1>");
+    expect(disconnected).toContain("教材は Web で開きます。");
     expect(renderLearningSidebar({ kind: "error", message: "<失敗>" }, assets)).toContain(
       "&lt;失敗&gt;",
     );

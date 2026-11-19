@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-structured-outputs-20261031, SRC-claude-docs-structured-considerations-20261031, SRC-claude-docs-prompting-20261031]
+sourceRefs: [SRC-claude-docs-structured-outputs-20261031, SRC-claude-docs-structured-considerations-20261031, SRC-claude-docs-prompting-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 # レッスン4-2 出力の形を決める
 
@@ -69,6 +69,20 @@ function readJson(message) {
 ```
 
 `enum` の文字列は、大文字と小文字の違いまでは保証されません(空白のあとの語の先頭が変わることがあります)。大文字と小文字を区別しない値を選ぶか、読むときにそろえます。
+
+### 演習　購買担当の承認欄に何を残すか
+
+社内の購入申請を読み、`approved`（承認済みか）と `approver`（承認者名か `null`）を台帳に入れます。この台帳は承認済みの申請に承認者名を必須とします。各行を「登録」「再取得」「人が原文を確認」に分け、判断に使った欄を一つ示してください。
+
+| 申請 | 停止理由 | 応答の本文 |
+| --- | --- | --- |
+| 31 | `end_turn` | `{"approved":false,"approver":null}` |
+| 32 | `max_tokens` | `{"approved":true,"approver":"佐` |
+| 33 | `end_turn` | `{"approved":true,"approver":null}` |
+
+31 は登録できます。32 は上限に達したのでその回の出力を捨て、出力の枠を増やして再取得します。33 は JSON として読め、項目の型も合います。ただし承認者を特定できません。承認を取り消したり名前を補ったりせず、人が原文を確かめます。構造化出力を使っても、項目どうしが業務の条件を満たすかはアプリで判定します。
+
+条件を一つ変えてみましょう。承認印の無い仮申請も保存できる台帳で、33 を通常の承認済み申請と混同しないためには、どんな状態を設けますか。「承認者確認待ち」として仮保存し、確定した申請だけを発注に回せれば条件を満たします。
 
 ## 4-2-3 してほしい形で頼む
 

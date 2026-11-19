@@ -16,7 +16,7 @@ import type { RunOutcome, RunResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
-import { escapeHtml } from "./lesson-doc.js";
+import { escapeHtml } from "./markdown-html.js";
 import { listFiles, matchPatterns, readFileInRoot } from "./runner/files.js";
 import {
   nextUnsubmittedProblem,

@@ -27,7 +27,7 @@ import {
   SOURCE_REUSE_LABELS,
 } from "@stella/shared/tasks/source-reference";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
-import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
+import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./markdown-html.js";
 import {
   buildTaskGuideHtml,
   GUIDE_COMMANDS,

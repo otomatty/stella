@@ -1,0 +1,8 @@
+{
+  "plannedHours": 0.25,
+  "skills": {
+    "uses": [],
+    "assesses": ["claude-api-errors", "claude-files-and-media"]
+  },
+  "reuses": []
+}

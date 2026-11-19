@@ -561,6 +561,20 @@
       "when": 1794873600005,
       "tag": "0082_merge_platform_admin_into_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "6",
+      "when": 1794960000000,
+      "tag": "0083_split_claude_developer_stages",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "6",
+      "when": 1795046400000,
+      "tag": "0084_drop_stage_queue",
+      "breakpoints": true
     }
   ]
 }

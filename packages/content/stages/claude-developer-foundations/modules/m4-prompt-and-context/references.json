@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m4-prompt-and-context@3",
-  "contentHash": "63335e772a7ad704b34f3ba651f3abb1a3ecb784dc249534c90cd707f5b9df4d",
+  "unitId": "claude-developer-foundations/m4-prompt-and-context@5",
+  "contentHash": "c2ab3fcf1135835d78377993ebacd0fb1bce85ce7360fa00d1235c1f4df3e543",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -43,23 +43,27 @@
       "contentId": "l1-prompting/doc.md",
       "sourceRefs": [
         "SRC-claude-docs-prompting-20261031",
-        "SRC-anthropic-context-engineering-20261031"
+        "SRC-anthropic-context-engineering-20261031",
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン4-1の4トピック(具体的な指示・例・XML のタグ・長い資料の並べ方)の読み物と、指示の対比・資料の包み方の例",
+      "usedFor": "レッスン4-1の4トピック(具体的な指示・例・XML のタグ・長い資料の並べ方)の読み物と、指示の対比・資料の包み方の例。根拠付き回答と資料にない問いを組にした指示の改訂・比較、情報を直接渡す場合と検索する場合の判断",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-prompting/knowledge.md",
       "sourceRefs": [
         "SRC-claude-docs-prompting-20261031",
-        "SRC-anthropic-context-engineering-20261031"
+        "SRC-anthropic-context-engineering-20261031",
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "理由を添えた指示、例の選び方、タグでの区切り、長い資料の並べ方と引用を問う自作問題の正答と解説",
+      "usedFor": "理由を添えた指示、例の選び方、タグでの区切り、長い資料の並べ方と引用を問う自作問題の正答と解説。根拠付き回答と資料にない問いを組にした指示の改訂・比較、情報を直接渡す場合と検索する場合の判断",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-output-format/t1-structured-outputs/slides.md",
@@ -93,24 +97,26 @@
       "sourceRefs": [
         "SRC-claude-docs-structured-outputs-20261031",
         "SRC-claude-docs-structured-considerations-20261031",
-        "SRC-claude-docs-prompting-20261031"
+        "SRC-claude-docs-prompting-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン4-2の3トピック(構造化出力・読む前の確認・出力の書き方)の読み物と、使えるスキーマの表・stop_reason の扱いの表・prefill の扱い",
+      "usedFor": "レッスン4-2の3トピック(構造化出力・読む前の確認・出力の書き方)の読み物と、使えるスキーマの表・stop_reason の扱いの表・prefill の扱い。取得し直す応答と業務の確認に回す値を、停止理由・原文・項目間の条件で判断する自作事例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-output-format/knowledge.md",
       "sourceRefs": [
         "SRC-claude-docs-structured-outputs-20261031",
         "SRC-claude-docs-structured-considerations-20261031",
-        "SRC-claude-docs-prompting-20261031"
+        "SRC-claude-docs-prompting-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "スキーマを渡す場所、使えない制限、読む前の確認、prefill、出力の書き方の指示を問う自作問題の正答と解説",
+      "usedFor": "スキーマを渡す場所、使えない制限、読む前の確認、prefill、出力の書き方の指示を問う自作問題の正答と解説。取得し直す応答と業務の確認に回す値を、停止理由・原文・項目間の条件で判断する自作事例",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-context/t1-context-window/slides.md",
@@ -152,12 +158,13 @@
         "SRC-claude-docs-context-windows-20261031",
         "SRC-claude-docs-context-overflow-20261031",
         "SRC-anthropic-context-engineering-20261031",
-        "SRC-claude-docs-compaction-20261031"
+        "SRC-claude-docs-compaction-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン4-3の3トピック(枠に収める・効く情報だけを入れる・長い会話を縮める)の読み物と、超え方・中身ごとの考え方・圧縮の始め方の表",
+      "usedFor": "レッスン4-3の3トピック(枠に収める・効く情報だけを入れる・長い会話を縮める)の読み物と、超え方・中身ごとの考え方・圧縮の始め方の表。入力と予約出力の計算、適用時の規約の版と観察事実を引き継ぐ自作事例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-context/knowledge.md",
@@ -165,12 +172,13 @@
         "SRC-claude-docs-context-windows-20261031",
         "SRC-claude-docs-context-overflow-20261031",
         "SRC-anthropic-context-engineering-20261031",
-        "SRC-claude-docs-compaction-20261031"
+        "SRC-claude-docs-compaction-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "枠に数えるもの、超えたときの動き、入れすぎの問題、要るときに読ませる方法、長い会話の保ち方を問う自作問題の正答と解説",
+      "usedFor": "枠に数えるもの、超えたときの動き、入れすぎの問題、要るときに読ませる方法、長い会話の保ち方を問う自作問題の正答と解説。入力と予約出力の計算、適用時の規約の版と観察事実を引き継ぐ自作事例",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/q01-tagged-prompt/README.md",
@@ -186,10 +194,10 @@
         "SRC-claude-docs-structured-outputs-20261031",
         "SRC-claude-docs-structured-considerations-20261031"
       ],
-      "usedFor": "教材独自の課題。書かれていない値を null と unknown で表す抽出の JSON スキーマを書き、構造化出力のリクエストを作り、stop_reason を確かめてから応答を読む関数の受入条件",
+      "usedFor": "教材独自の課題。書かれていない値を null と unknown で表す抽出の JSON スキーマを書き、構造化出力のリクエストを作り、stop_reason を確かめてから応答を読む関数の受入条件。保存済み応答の形と台帳の項目間の矛盾を別々に検出する受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m5-tools-and-mcp@3",
-  "contentHash": "d3ea14e7012aea04863ab6e9b42d455a9cf1f71bf2768e6dd0557f4b0c5a5863",
+  "unitId": "claude-developer-foundations/m5-tools-and-mcp@5",
+  "contentHash": "0324d8e52dea5c574613017f041bdb86dacc1c1d4e4bf51b6c013ad19f98f38a",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -174,24 +174,32 @@
       "sourceRefs": [
         "SRC-claude-code-sdk-mcp-20261031",
         "SRC-claude-docs-mcp-connector-20261031",
-        "SRC-claude-docs-mcp-connector-usage-20261031"
+        "SRC-claude-docs-mcp-connector-usage-20261031",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-claude-agent-skills-20261118",
+        "SRC-claude-docs-tool-use-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "レッスン5-3の3トピック(MCP・MCP コネクター・Agent SDK の MCP)の読み物と、書く場所・つなぎ方の表、許可の範囲の注意",
+      "usedFor": "レッスン5-3の3トピック(MCP・MCP コネクター・Agent SDK の MCP)の読み物と、書く場所・つなぎ方の表、許可の範囲の注意。MCP の三つの機能、Skill・既製ツール・自作ツール・MCP の選択、倉庫検索の接続方式と許可リストを見直す事例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-mcp/knowledge.md",
       "sourceRefs": [
         "SRC-claude-code-sdk-mcp-20261031",
         "SRC-claude-docs-mcp-connector-20261031",
-        "SRC-claude-docs-mcp-connector-usage-20261031"
+        "SRC-claude-docs-mcp-connector-usage-20261031",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-claude-agent-skills-20261118",
+        "SRC-claude-docs-tool-use-20261031",
+        "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "MCP の説明、MCP コネクターに書くもの、つなげるサーバー、MCP のツールの名前と許可を問う自作問題の正答と解説",
+      "usedFor": "MCP の説明、MCP コネクターに書くもの、つなげるサーバー、MCP のツールの名前と許可を問う自作問題の正答と解説。MCP の三つの機能、Skill・既製ツール・自作ツール・MCP の選択、倉庫検索の接続方式と許可リストを見直す事例",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/q01-tool-loop/README.md",
@@ -215,6 +223,14 @@
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q03-mcp-catalog/README.md",
+      "sourceRefs": ["SRC-mcp-tools-spec-20260728", "SRC-mcp-resources-spec-20260728"],
+      "usedFor": "MCP 2026-07-28 の一覧、資料読み取り、ツール結果とエラーの区別に沿って、架空の倉庫で検査するサーバー側の関数の仕様を作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
     }
   ]
 }

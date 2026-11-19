@@ -440,6 +440,26 @@ def motif_claude_developer(c: str) -> str:
     <path d="M 392 332 L 392 428 L 360 428" stroke="{RULE_SOLID}" stroke-width="3" fill="none" stroke-dasharray="8 8"/>"""
 
 
+def motif_answer_cards(c: str) -> str:
+    """一枚ずつ開いて選択の理由を確かめるカード。"""
+    return f"""
+    <rect x="96" y="104" width="276" height="252" rx="20" fill="{PAPER}" stroke="{RULE}" stroke-width="4"/>
+    <rect x="142" y="150" width="292" height="248" rx="20" fill="{PAPER}" stroke="{INK}" stroke-width="4"/>
+    <rect x="180" y="195" width="196" height="13" rx="6" fill="{RULE}"/>
+    <rect x="180" y="228" width="120" height="13" rx="6" fill="{RULE}"/>
+    <path d="M208 300l31 32 77-77" fill="none" stroke="{c}" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>"""
+
+
+def motif_exam_clock(c: str) -> str:
+    """制限時間を計る時計。"""
+    return f"""
+    <circle cx="274" cy="272" r="172" fill="{PAPER}" stroke="{INK}" stroke-width="5"/>
+    <circle cx="274" cy="272" r="145" fill="none" stroke="{RULE}" stroke-width="3"/>
+    <path d="M274 127v18m145 127h-18m-127 145v-18m-145-127h18" fill="none" stroke="{INK}" stroke-width="6"/>
+    <path d="M274 179v93l79 49" fill="none" stroke="{c}" stroke-width="17" stroke-linecap="round"/>
+    <circle cx="274" cy="272" r="12" fill="{c}"/>"""
+
+
 def motif_aws_clf(c: str) -> str:
     """リージョン > AZ の入れ子へ、オンプレミスから移行する。 ステージの軸 (グローバル基盤と用途選択) を 1 枚にする。"""
     azs = []
@@ -741,8 +761,22 @@ SPECS = {
     "claude-developer-foundations": {
         "title": "Claude",
         "title_size": 152,
-        "subtitle": "Certified Developer 対策",
+        "subtitle": "基礎と API 開発",
         "motif": motif_claude_developer,
+    },
+    "claude-developer-practice": {
+        "title": "Claude",
+        "title_size": 152,
+        "subtitle": "実務一問一答",
+        "motif": motif_answer_cards,
+        "icon": "M3 4h14v2H5v11H3z M7 8h14v13H7z M9 10v9h10v-9z M10 14l1.4-1.4 1.6 1.6 3.4-3.4 1.4 1.4-4.8 4.8z",
+    },
+    "claude-developer-mock-exam": {
+        "title": "Claude",
+        "title_size": 152,
+        "subtitle": "模擬試験",
+        "motif": motif_exam_clock,
+        "icon": "M12 1a11 11 0 1 0 0 22 11 11 0 1 0 0-22zm0 2a9 9 0 1 1 0 18 9 9 0 1 1 0-18zm-1 3h2v6l4 3-1.2 1.6L11 13z",
     },
     "aws-clf-c02-basics": {
         "title": "AWS",

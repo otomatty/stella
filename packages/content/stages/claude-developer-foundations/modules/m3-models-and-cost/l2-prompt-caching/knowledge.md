@@ -41,7 +41,7 @@ sourceRefs: [SRC-claude-docs-prompt-caching-20261031, SRC-claude-docs-caching-st
 <details>
 <summary>解答</summary>
 
-**A** — 毎回同じ部分の最後に区切りを置きます。B は毎回変わるので、毎回書き込みになります。時刻は質問と一緒に後ろへ移すのがよい並べ方です。
+**A** — 毎回同じ部分の最後に区切りを置きます。時刻までを区切りに含めると、時刻が変わるたびに新しい前半を書き込むことになります。時刻は質問と一緒に後ろへ移すのがよい並べ方です。
 
 </details>
 
@@ -69,7 +69,7 @@ sourceRefs: [SRC-claude-docs-prompt-caching-20261031, SRC-claude-docs-caching-st
 <details>
 <summary>解答</summary>
 
-**A** — 短い前半は、エラーにならずにキャッシュされないまま処理されます。B なら cache_read_input_tokens に値が入ります。
+**A** — 短い前半は、エラーにならずにキャッシュされないまま処理されます。読み込みがあれば cache_read_input_tokens は正の値になります。
 
 </details>
 

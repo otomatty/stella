@@ -33,7 +33,6 @@ const catalog: CatalogStage[] = [
             title: "まとめ",
             type: "text",
             completed: false,
-            markdown: "# 正しい教材",
           },
         ],
       },
@@ -135,16 +134,13 @@ describe("学習サイドバーと拡張の接続", () => {
     expect(h.html).toContain('data-select="stage"');
   });
 
-  it("表示中のカタログの ID から、信頼できる教材と既存コマンドを引く", async () => {
+  it("表示中のカタログのステージ ID とレッスン ID で Web を開く", async () => {
     const h = harness();
     const { send } = h;
     await vi.waitFor(() => expect(h.html).toContain('data-select="stage"'));
     send({ action: "open", id: "doc", command: "untrusted.command", markdown: "差し替え" });
     await vi.waitFor(() =>
-      expect(mocks.execute).toHaveBeenCalledWith(
-        "stella.openLessonDoc",
-        expect.objectContaining({ markdown: "# 正しい教材" }),
-      ),
+      expect(mocks.execute.mock.calls).toEqual([["stella.openInWeb", "s", "doc"]]),
     );
     expect(h.html).toContain('aria-current="page"');
     expect(h.html).toContain('<li class="lesson current">');

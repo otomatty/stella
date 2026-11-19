@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u06-context@1",
+  "contentHash": "827ee9e6fab9cc692ec062a3598c289e691ae9ea1c82359e372cabbec5452e1b",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-few-shot/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-prompting-20261031"],
+      "usedFor": "「休業日と営業時間外を分ける」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-context-budget/knowledge.md",
+      "sourceRefs": ["SRC-anthropic-context-engineering-20261031"],
+      "usedFor": "「会議の文字起こしを短い枠に収める」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-abstain/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-hallucinations-20261031"],
+      "usedFor": "「写っていない製造番号を扱う」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

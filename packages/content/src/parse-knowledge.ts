@@ -1,4 +1,20 @@
+import { readFrontMatterField } from "./source-references.js";
 import type { QuizQuestionSeed } from "./types.js";
+
+export function readKnowledgeMetadata(source: string): {
+  title?: string;
+  durationMinutes?: number;
+} {
+  const title = readFrontMatterField(source, "title")
+    ?.replace(/^(['"])(.*)\1$/, "$2")
+    .trim();
+  if (title === "") throw new Error("knowledge.md の title にクイズの表示名を指定してください");
+  const minutes = readFrontMatterField(source, "durationMinutes");
+  if (minutes === undefined) return { title };
+  if (!/^[1-9]\d*$/.test(minutes) || !Number.isSafeInteger(Number(minutes)))
+    throw new Error("knowledge.md の durationMinutes は正の整数で指定してください");
+  return { title, durationMinutes: Number(minutes) };
+}
 
 /** knowledge.md: 各設問に種別とスキルを明示する。旧 practice.md の parser は変えない。 */
 export function parseKnowledge(source: string): QuizQuestionSeed[] {
