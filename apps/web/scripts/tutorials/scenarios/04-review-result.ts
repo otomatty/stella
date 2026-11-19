@@ -7,7 +7,7 @@ export default defineScenario({
   order: 4,
   screen: "/stages/$stageId/lessons/$lessonId",
   title: "提出の結果を見る",
-  summary: "課題文の教材から提出を開き、通知とレビューの結果を確認します。",
+  summary: "課題文の教材から提出を開き、通知と結果の画面を確認します。",
   start: "/",
   user: "seed-learner",
   seedSql: REVIEW_RESULT_SEED_SQL,
