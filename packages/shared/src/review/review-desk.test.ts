@@ -27,6 +27,7 @@ describe("人に回した提出のキューの分け方", () => {
     expect(group("ai-unavailable")).toBe("ai-failed");
     expect(group("no-rubric")).toBe("ai-failed");
     expect(group("rubric-unmet", "low-confidence")).toBe("rule");
+    expect(group("test-fitting")).toBe("rule");
     expect(group("unallowed-support")).toBe("rule");
     expect(group("low-confidence", "solution-leak")).toBe("confidence");
     expect(group("rubric-undetermined")).toBe("confidence");

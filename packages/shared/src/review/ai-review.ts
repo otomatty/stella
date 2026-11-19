@@ -14,7 +14,7 @@ import type { MachineCheck, SupportEvent } from "../tasks/submission.js";
  * しきい値の版。表 (`MIN_CONFIDENCE`) と人に回す条件を変えたら上げる。
  * レビュー結果ごとに記録し、人の判定との一致率を版ごとに比べる (07 §13)。
  */
-export const AI_REVIEW_THRESHOLD_VERSION = "2026-10-06.2";
+export const AI_REVIEW_THRESHOLD_VERSION = "2026-11-19.1";
 
 export const RUBRIC_RESULTS = ["met", "unmet", "undetermined"] as const;
 export type RubricResult = (typeof RUBRIC_RESULTS)[number];
@@ -69,11 +69,18 @@ export interface AiLearnerReply {
   goodPoints: string[];
   nextSteps: string[];
 }
+export interface AiTestFitting {
+  /** 配布したテストの入力・期待値に合わせて決め打ちしている疑いがあれば true。 */
+  suspected: boolean;
+  evidence: EvidenceRef[];
+  note: string;
+}
 export interface AiReviewOutput {
   rubric: AiRubricResult[];
   confidence: Confidence;
   findings: AiFinding[];
   learnerReply: AiLearnerReply;
+  testFitting: AiTestFitting;
 }
 
 const evidenceSchema = {
@@ -106,6 +113,16 @@ export const AI_REVIEW_OUTPUT_SCHEMA = {
       },
     },
     confidence: { type: "string", enum: [...CONFIDENCE_LEVELS] },
+    testFitting: {
+      type: "object",
+      properties: {
+        suspected: { type: "boolean" },
+        evidence: { type: "array", items: evidenceSchema },
+        note: { type: "string" },
+      },
+      required: ["suspected", "evidence", "note"],
+      additionalProperties: false,
+    },
     findings: {
       type: "array",
       items: {
@@ -132,7 +149,7 @@ export const AI_REVIEW_OUTPUT_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ["rubric", "confidence", "findings", "learnerReply"],
+  required: ["rubric", "confidence", "testFitting", "findings", "learnerReply"],
   additionalProperties: false,
 } as const;
 
@@ -175,6 +192,19 @@ export function parseAiReviewOutput(raw: string): AiReviewOutput | null {
     return null;
   const reply = v.learnerReply;
   if (!text(reply.message) || !textList(reply.goodPoints) || !textList(reply.nextSteps))
+    return null;
+  // 項目が無い応答は、導入前に記録された出力として読めるようにする。
+  const fitting = Object.hasOwn(v, "testFitting")
+    ? v.testFitting
+    : { suspected: false, evidence: [], note: "" };
+  if (
+    !isObject(fitting) ||
+    typeof fitting.suspected !== "boolean" ||
+    !Array.isArray(fitting.evidence) ||
+    fitting.evidence.length > 20 ||
+    !fitting.evidence.every(isEvidence) ||
+    !text(fitting.note)
+  )
     return null;
   const rubric: AiRubricResult[] = [];
   for (const item of v.rubric) {
@@ -222,6 +252,15 @@ export function parseAiReviewOutput(raw: string): AiReviewOutput | null {
   return {
     rubric,
     confidence: v.confidence as Confidence,
+    testFitting: {
+      suspected: fitting.suspected,
+      evidence: fitting.evidence.map(({ file, startLine, endLine }) => ({
+        file,
+        startLine,
+        endLine,
+      })),
+      note: fitting.note,
+    },
     findings,
     learnerReply: {
       message: reply.message,
@@ -258,6 +297,7 @@ export const ROUTE_REASONS = [
   "no-rubric",
   "rubric-unmet",
   "rubric-undetermined",
+  "test-fitting",
   "low-confidence",
   "misplaced-finding",
   "task-condition",
@@ -274,6 +314,7 @@ export const ROUTE_REASON_LABELS: Record<RouteReason, string> = {
   "no-rubric": "課題に必須の評価項目がない",
   "rubric-unmet": "必須項目に「満たさない」がある",
   "rubric-undetermined": "必須項目に「判断できない」がある",
+  "test-fitting": "テストの入力・期待値に合わせた決め打ちの疑いがある",
   "low-confidence": "確信度がしきい値に届かない",
   "misplaced-finding": "所見が提出に無いファイル・行を指している",
   "task-condition": "課題ごとの追加条件に当たった",
@@ -483,6 +524,7 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
     if (required.length === 0) reasons.add("no-rubric");
     if (required.some((r) => r.result === "unmet")) reasons.add("rubric-unmet");
     if (required.some((r) => r.result === "undetermined")) reasons.add("rubric-undetermined");
+    if (input.output.testFitting.suspected) reasons.add("test-fitting");
     if (CONFIDENCE_RANK[confidence] < CONFIDENCE_RANK[minimumConfidence(input.kind)])
       reasons.add("low-confidence");
     if (
