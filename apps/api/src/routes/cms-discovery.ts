@@ -234,7 +234,7 @@ cmsDiscoveryRoute.post("/api/cms/discovery/requests/:id/generate", async (c) => 
         // 複製元も無い。教材を「作った」ことにはせず、材料が足りないと伝える
         // (空の下書きを置くと、承認できない行がレビュー画面に溜まる)。
         throw new ApiError(
-          "このステージには複製できる確認テストの設問がありません。先にクイズを用意してください",
+          "このステージには複製できるクイズの設問がありません。先にクイズを用意してください",
           400,
         );
       }
@@ -246,7 +246,7 @@ cmsDiscoveryRoute.post("/api/cms/discovery/requests/:id/generate", async (c) => 
       description:
         description ||
         (generator === "heuristic"
-          ? "このステージの確認テストから作った復習問題です。内容を確認してください。"
+          ? "このステージのクイズから作った復習問題です。内容を確認してください。"
           : "つまずいた文脈から生成した復習問題です。"),
       questions,
       generator,

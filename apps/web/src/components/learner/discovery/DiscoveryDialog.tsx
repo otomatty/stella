@@ -53,7 +53,7 @@ interface DiscoveryDialogProps {
 function originLabel(paper: DiscoveryPaper | null): string {
   if (!paper) return "AI生成 ✦ 管理者確認済み";
   return paper.generator === "heuristic"
-    ? "✦ このステージの確認テストから作成 · 管理者確認済み"
+    ? "✦ このステージのクイズから作成 · 管理者確認済み"
     : "✦ AI生成 · 管理者確認済み";
 }
 

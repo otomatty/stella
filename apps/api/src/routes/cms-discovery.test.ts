@@ -154,7 +154,7 @@ beforeEach(() => {
     {
       id: "req-1",
       stageId: "id-b",
-      topic: "確認テスト「配列」",
+      topic: "クイズ「配列」",
       origin: "quiz_fail",
       createdAt: new Date("2026-08-20T00:00:00.000Z"),
       materialCount: 0,
@@ -164,7 +164,7 @@ beforeEach(() => {
   vi.mocked(loadDiscoveryRequest).mockResolvedValue({
     id: "req-1",
     stageId: "id-b",
-    topic: "確認テスト「配列」",
+    topic: "クイズ「配列」",
     origin: "quiz_fail",
   });
   vi.mocked(loadDiscoveryMaterial).mockImplementation(async () => materialRow());
@@ -226,7 +226,7 @@ describe("GET /api/cms/discovery", () => {
       {
         id: "req-1",
         stageId: "id-b",
-        topic: "確認テスト「配列」",
+        topic: "クイズ「配列」",
         origin: "quiz_fail",
         createdAt: new Date("2026-08-20T00:00:00.000Z"),
         materialCount: 2,

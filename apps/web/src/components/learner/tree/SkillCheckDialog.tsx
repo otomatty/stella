@@ -165,7 +165,7 @@ export function SkillCheckDialog({
             <div className="py-8 text-center text-[12.5px] text-ink-3">
               このステージの腕試しはまだ用意できていません。
               <div className="mt-1 text-ink-4">
-                （確認テストの設問が {paper.min_questions ?? 5} 問以上そろうと受けられます）
+                （クイズの設問が {paper.min_questions ?? 5} 問以上そろうと受けられます）
               </div>
             </div>
           ) : null}

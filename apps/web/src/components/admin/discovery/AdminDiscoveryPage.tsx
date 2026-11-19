@@ -46,7 +46,7 @@ const STATUS_META = {
 } as const;
 
 const ORIGIN_LABEL: Record<string, string> = {
-  quiz_fail: "確認テストの不合格",
+  quiz_fail: "クイズの不合格",
   submission_resubmit: "課題の再提出・不合格",
   review_common: "レビューで見つけた共通のつまずき",
 };
@@ -96,7 +96,7 @@ export function AdminDiscoveryPage() {
       setEditingId(material.id);
       toast.success(
         material.generator === "heuristic"
-          ? "既存の確認テストから下書きを作りました。内容を確認してください"
+          ? "既存のクイズから下書きを作りました。内容を確認してください"
           : "AI が下書きを作りました。内容を確認してください",
       );
     } catch (err) {
@@ -145,7 +145,7 @@ export function AdminDiscoveryPage() {
             <div className="px-4 py-6 text-center text-[12.5px] text-ink-3">
               未生成のつまずきはありません。
               <div className="mt-1 text-ink-4">
-                （同じ確認テストを 2 回落とす / 課題が再提出・不合格になると、ここに文脈が並びます）
+                （同じクイズを 2 回落とす / 課題が再提出・不合格になると、ここに文脈が並びます）
               </div>
             </div>
           ) : (

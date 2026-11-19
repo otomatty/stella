@@ -59,7 +59,7 @@ describe("buildDiscoveryUserMessage", () => {
   it("文脈をエスケープして渡す (タグを閉じさせない)", () => {
     const message = buildDiscoveryUserMessage({
       stageTitle: "JavaScript <入門>",
-      topic: '確認テスト: "配列"',
+      topic: 'クイズ: "配列"',
       origin: "quiz_fail",
     });
     expect(message).toContain("JavaScript &lt;入門&gt;");
@@ -76,7 +76,7 @@ describe("buildDiscoveryUserMessage", () => {
   it("origin は日本語ラベルで渡す (識別子のままでは意味が伝わらない)", () => {
     expect(
       buildDiscoveryUserMessage({ stageTitle: "S", topic: "t", origin: "quiz_fail" }),
-    ).toContain("<origin>確認テストの不合格</origin>");
+    ).toContain("<origin>クイズの不合格</origin>");
     expect(
       buildDiscoveryUserMessage({ stageTitle: "S", topic: "t", origin: "submission_resubmit" }),
     ).toContain("<origin>課題の再提出</origin>");

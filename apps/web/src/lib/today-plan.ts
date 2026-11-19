@@ -118,7 +118,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
       title: miss.title,
       reason:
         miss.kind === "quiz"
-          ? "直近の確認テストが不合格でした。要点だけ読み直しましょう。"
+          ? "直近のクイズが不合格でした。要点だけ読み直しましょう。"
           : "再提出になった課題です。指摘を見直しましょう。",
       minutes: MISS_MINUTES,
     });
