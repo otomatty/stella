@@ -251,6 +251,8 @@ async function expectNoSubmissionAfterSwitch() {
   const fetch = vi.fn(async () => Response.json({ error: "Unexpected request" }, { status: 500 }));
   vi.stubGlobal("fetch", fetch);
   apiRequest.mockImplementation(async (url, options) =>
+    url !== "/api/tasks/local-result" &&
+    url !== "/api/tasks/local-runs" &&
     (options as { session?: number } | undefined)?.session !== undefined
       ? realRequest(String(url), options as Parameters<typeof realRequest>[1])
       : {},

@@ -5,7 +5,10 @@
 
 import { toLocalRunReport } from "@stella/shared/tasks/local-report";
 import type { RunResult } from "@stella/shared/tasks/run-result";
-import { apiRequest } from "./api.js";
+import { apiRequest, apiSession } from "./api.js";
+
+const LOCAL_RUN_REPORT_TIMEOUT_MS = 15_000;
+let pendingReport: Promise<unknown> = Promise.resolve();
 
 export async function sendLocalRunReport(
   result: Pick<RunResult, "outcome" | "steps">,
@@ -14,8 +17,16 @@ export async function sendLocalRunReport(
   if (!receipt) return;
   const report = toLocalRunReport(result, receipt);
   if (!report) return;
-  await apiRequest(
-    report.outcome === "passed" ? "/api/tasks/local-result" : "/api/tasks/local-runs",
-    { method: "POST", body: report },
+  // 待っている間に接続が切り替わっても、別の受講者として送らない。
+  const session = apiSession();
+  const sending = pendingReport.then(() =>
+    apiRequest(report.outcome === "passed" ? "/api/tasks/local-result" : "/api/tasks/local-runs", {
+      method: "POST",
+      body: report,
+      signal: AbortSignal.timeout(LOCAL_RUN_REPORT_TIMEOUT_MS),
+      session,
+    }),
   );
+  pendingReport = sending.catch(() => undefined);
+  await sending;
 }
