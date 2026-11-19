@@ -1,0 +1,22 @@
+{
+  "plannedHours": 10,
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-boundary-test",
+      "js-logical-operators",
+      "js-early-return"
+    ],
+    "assesses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-boundary-test",
+      "js-logical-operators",
+      "js-early-return",
+      "js-condition-choice",
+      "js-condition-repair"
+    ]
+  },
+  "reuses": []
+}

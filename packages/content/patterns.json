@@ -486,5 +486,17 @@
   {
     "id": "devlab-training-confirmed-total",
     "title": "週報の集計ルールを変える"
+  },
+  {
+    "id": "js-compare-bool",
+    "title": "比べて真偽値を返す"
+  },
+  {
+    "id": "js-branch-ranges",
+    "title": "範囲を上から順に分ける"
+  },
+  {
+    "id": "js-combine-conditions",
+    "title": "条件を組み合わせ、例外を先に返す"
   }
 ]

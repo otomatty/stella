@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "javascript-basics/u99-coming-soon@1",
+  "contentHash": "2d211123b707cda15c4305068740d7b1fd5e34bc3575d10ca0953309afc0bead",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-about/doc.md",
+      "sourceRefs": [],
+      "usedFor": "今後公開する学習範囲についての独自の案内。",
+      "authorship": "original",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-about/knowledge.md",
+      "sourceRefs": [],
+      "usedFor": "続きの教材で扱う内容を確かめる独自の設問。",
+      "authorship": "original-exercise",
+      "reuse": "original",
+      "reviewStatus": "draft"
+    }
+  ]
+}

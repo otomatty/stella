@@ -466,5 +466,33 @@
   {
     "id": "devlab-training-confirmed-total",
     "title": "週報の集計ルールを変える"
+  },
+  {
+    "id": "js-compare-values",
+    "title": "値を比べて真偽値を得る"
+  },
+  {
+    "id": "js-if-else",
+    "title": "if / else と else if で分ける"
+  },
+  {
+    "id": "js-boundary-test",
+    "title": "境界の値で確かめる"
+  },
+  {
+    "id": "js-logical-operators",
+    "title": "&& / || / ! で条件を組み合わせる"
+  },
+  {
+    "id": "js-early-return",
+    "title": "例外的な入力を先に返す"
+  },
+  {
+    "id": "js-condition-choice",
+    "title": "仕様から条件の組み立てを選ぶ"
+  },
+  {
+    "id": "js-condition-repair",
+    "title": "条件の誤りを見つけて直す"
   }
 ]

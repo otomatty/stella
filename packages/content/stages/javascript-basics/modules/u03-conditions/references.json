@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "javascript-basics/u03-conditions@1",
+  "contentHash": "54bed32322795849e1f0cdf562bf6bda175c18079a38701f42ff5cceac8e4203",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-compare/t1-compare-operators/slides.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-equality-20261119"],
+      "usedFor": "比較が返す真偽値、大小の比較、等価性と型変換の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/t2-if-else/slides.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-if-else-20261119"],
+      "usedFor": "真偽値を条件として使い、if と else のどちら側を実行するかの説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/t3-ranges/slides.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-if-else-20261119"],
+      "usedFor": "else if の判定順と、境界を含む比較の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/doc.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119"
+      ],
+      "usedFor": "大小と等価性の比較、分岐の判定順、境界を含む比較の説明と自作例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/knowledge.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119"
+      ],
+      "usedFor": "比較と分岐の結果を読み、境界のテストを選ぶ自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/t1-and-or/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119"
+      ],
+      "usedFor": "比較式を && と || で結ぶときの真偽値の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/t2-not-early-return/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "否定した条件で分岐し、return で関数を終える説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/doc.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "論理演算子の意味、比較と論理演算子を使った条件式、早期 return の説明と自作例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/knowledge.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "仕様に合う論理演算子、否定、早期 return の挙動を確かめる自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

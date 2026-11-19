@@ -41,4 +41,6 @@
 
 ## 執筆時の扱い
 
-現在はM0の準備中案内だけを置いています。新形式の執筆は `docs/curriculum/07-stella-adoption-redesign.md` と `packages/content/ADDING_STAGE.md` に従います。
+比較と条件、条件の組合せをまとめた代表単元 `u03-conditions` を先行して執筆しました（#226）。数値・文字列・変数・関数の呼び出しと `return` を知っている受講者を想定し、まずスライド・まとめ・知識問題を置きます。
+
+新形式の執筆は `docs/curriculum/07-stella-adoption-redesign.md` と `packages/content/ADDING_STAGE.md` に従います。
