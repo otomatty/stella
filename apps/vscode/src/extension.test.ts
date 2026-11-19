@@ -106,7 +106,9 @@ async function expectConnectionFlow(): Promise<void> {
   await vi.waitFor(() =>
     expect(state.openExternal).toHaveBeenCalledWith("http://127.0.0.1:5173/stages"),
   );
-  expect(state.showInformationMessage).toHaveBeenCalledWith(expect.stringContaining("課題一覧"));
+  expect(state.showInformationMessage).toHaveBeenCalledWith(
+    expect.stringContaining("Web の課題一覧か、コード課題がある教材で「VS Code で開く」"),
+  );
 }
 
 describe("task URI の接続導線", () => {

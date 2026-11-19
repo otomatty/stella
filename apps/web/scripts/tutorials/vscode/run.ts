@@ -217,7 +217,7 @@ async function prepareLmsWindow(page: Page, s: Scenario, executable: string, ctx
   await openUri(page, executable, "vscode://saedgewell.stella-lms/lesson", { confirm: true });
   const toast = page
     .locator(".notifications-toasts .notification-toast")
-    .filter({ hasText: "レッスン指定がありません" });
+    .filter({ hasText: "教材の指定がありません" });
   const shown = await toast
     .first()
     .waitFor({ state: "visible", timeout: 60_000 })

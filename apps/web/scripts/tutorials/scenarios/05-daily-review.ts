@@ -45,7 +45,7 @@ export default defineScenario({
     // seedSql で準備した復習問題が出ることを確かめる。
     // 空画面を「解答の動画」として公開しないよう、問題が無ければ収録を止める。
     await t.expect("[data-testid=review-option]");
-    await t.caption("前に解いた知識問題が、もう一度出ます。", { hold: 5500 });
+    await t.caption("前にクイズで解いた問題が、もう一度出ます。", { hold: 5500 });
     await show(t, "[data-testid=review-option]");
     await t.poster();
     await t.caption("ここでは、試しに答えを一つ選んでみます。", { hold: 5500 });
