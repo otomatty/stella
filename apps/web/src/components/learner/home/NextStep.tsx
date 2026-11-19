@@ -155,7 +155,7 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
           <>
             <p className="text-[14px] font-semibold">いま始められるスキルはありません</p>
             <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-              ステージ一覧にある鍵付きの星から「腕試し」に合格すると、先のスキルを開けます。
+              ステージ一覧で鍵の付いたステージの「腕試し」に合格すると、先のスキルを開けます。
             </p>
           </>
         )}
@@ -202,7 +202,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           最初のステージでは、STELLA での学び方と、VS Code で課題を出すまでを順に進めます。
         </p>
         <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-          ひとつ終えると、ステージ一覧で先の星が少しずつ見えてきます。
+          ひとつ終えると、ステージ一覧で先のステージが少しずつ見えてきます。
         </p>
         <Button
           size="full"
@@ -331,15 +331,16 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           </span>
         </h2>
         <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-          星にマウスを載せる (スマホ・タブレットではタップする) と、内容と始めるボタンが出ます。
+          ステージにマウスを載せる (スマホ・タブレットではタップする)
+          と、内容と始めるボタンが出ます。
         </p>
         {step.welcome ? (
           <>
             <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-              ひとつ終えると、ステージ一覧で先の星が少しずつ見えてきます。
+              ひとつ終えると、ステージ一覧で先のステージが少しずつ見えてきます。
             </p>
             <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
-              すでに知っている内容なら、ステージ一覧の星から「腕試し」を受け、合格すると先のスキルから始められます。
+              すでに知っている内容なら、ステージ一覧のステージから「腕試し」を受け、合格すると先のスキルから始められます。
             </p>
           </>
         ) : null}

@@ -82,9 +82,9 @@ export function stageWrapupOf(tasks: readonly TaskSummary[]): StageWrapup | null
   const tail =
     remaining === 1
       ? isProblemTask(task)
-        ? "全部の問題を提出すると、この星が完了します。"
-        : "レビューで合格すると、この星が完了します。"
-      : `合格していない課題があと ${remaining} 件あります。すべて合格すると、この星が完了します。`;
+        ? "全部の問題を提出すると、このステージが完了します。"
+        : "レビューで合格すると、このステージが完了します。"
+      : `合格していない課題があと ${remaining} 件あります。すべて合格すると、このステージが完了します。`;
   return {
     task: { id: task.id, title: task.title, status: task.status, lessonId: task.lessonId },
     remaining,
