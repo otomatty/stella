@@ -12,8 +12,12 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Download, RefreshCw } from "@/lib/icons";
+import { FilterBar, FilterBarAside, FilterField } from "@/components/common/FilterBar";
+import { Notice } from "@/components/common/Notice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -198,30 +202,30 @@ function AuditLive() {
       />
 
       <Card className="mb-4">
-        <div className="px-4 py-3 flex items-end gap-3 flex-wrap">
+        <FilterBar className="px-4 py-3">
           <FilterField label="開始日">
-            <input
+            <Input
               type="date"
               value={fromDate}
               max={toDate || undefined}
               onChange={(e) => setFromDate(e.target.value)}
-              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="h-9 w-full min-w-0 px-2 text-[12.5px] sm:w-auto sm:min-w-[140px]"
             />
           </FilterField>
           <FilterField label="終了日">
-            <input
+            <Input
               type="date"
               value={toDate}
               min={fromDate || undefined}
               onChange={(e) => setToDate(e.target.value)}
-              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="h-9 w-full min-w-0 px-2 text-[12.5px] sm:w-auto sm:min-w-[140px]"
             />
           </FilterField>
           <FilterField label="実行者">
-            <select
+            <NativeSelect
               value={actorId}
               onChange={(e) => setActorId(e.target.value)}
-              className="h-9 w-full min-w-[180px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="w-full sm:w-auto sm:min-w-[180px]"
             >
               <option value="">すべて</option>
               {profiles.map((p) => (
@@ -229,13 +233,13 @@ function AuditLive() {
                   {p.display_name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </FilterField>
           <FilterField label="操作種別">
-            <select
+            <NativeSelect
               value={action}
               onChange={(e) => setAction(e.target.value)}
-              className="h-9 w-full min-w-[160px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="w-full sm:w-auto sm:min-w-[160px]"
             >
               <option value="">すべて</option>
               {ACTION_OPTIONS.map((a) => (
@@ -243,16 +247,15 @@ function AuditLive() {
                   {actionLabel(a)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </FilterField>
 
-          {hasFilters ? (
-            <Button variant="ghost" size="sm" onClick={onReset}>
-              条件クリア
-            </Button>
-          ) : null}
-
-          <div className="ml-auto flex items-center gap-3">
+          <FilterBarAside>
+            {hasFilters ? (
+              <Button variant="ghost" size="sm" onClick={onReset}>
+                条件クリア
+              </Button>
+            ) : null}
             <span className="text-[12.5px] text-ink-3">{logs.length} 件</span>
             <Button
               variant="ghost"
@@ -263,21 +266,17 @@ function AuditLive() {
             >
               <RefreshCw size={14} />
             </Button>
-          </div>
-        </div>
+          </FilterBarAside>
+        </FilterBar>
       </Card>
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice className="mb-4">{error}</Notice> : null}
 
       {truncated ? (
-        <div className="mb-4 rounded-md border border-border bg-warning-soft px-3 py-2 text-[12.5px] text-warning">
+        <Notice tone="warning" className="mb-4">
           最新 {DEFAULT_LIST_LIMIT} 件のみ表示しています。 条件を絞り込むか、
           全件は「CSV出力」で取得してください。
-        </div>
+        </Notice>
       ) : null}
 
       <Card className="overflow-hidden">
@@ -326,16 +325,6 @@ function AuditLive() {
         )}
       </Card>
     </>
-  );
-}
-
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    // 狭幅では 2 列に収まるよう最小幅つきで伸縮させる (input の既定幅で溢れさせない)。
-    <div className="flex min-w-[140px] flex-1 flex-col gap-1 sm:flex-none">
-      <span className="text-[11px] text-ink-3">{label}</span>
-      {children}
-    </div>
   );
 }
 

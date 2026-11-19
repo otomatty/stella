@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300">
+  <title>エディター右上とステータスバーの提出ボタン</title>
+  <g stroke="var(--vscode-widget-border, var(--vscode-foreground))">
+    <rect x="20" y="20" width="440" height="260" rx="10" fill="var(--vscode-editorWidget-background)"/>
+    <path d="M20 44h440 M20 251h440 M56 44v207 M126 44v207 M280 44v207" fill="none"/>
+    <rect x="31" y="59" width="14" height="14" rx="3" fill="none"/>
+    <rect x="31" y="84" width="14" height="14" rx="3" fill="none"/>
+  </g>
+  <text x="91" y="70" fill="var(--vscode-foreground)" font-family="var(--vscode-font-family)"
+        font-size="12" text-anchor="middle">学習ガイド</text>
+  <g fill="var(--vscode-button-background)" stroke="var(--vscode-focusBorder)" stroke-width="2">
+    <rect x="248" y="51" width="24" height="22" rx="4"/>
+    <rect x="60" y="255" width="80" height="21" rx="4"/>
+  </g>
+  <path d="M260 66v-8m-3 3 3-3 3 3" fill="none"
+        stroke="var(--vscode-button-foreground)" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="100" y="269.5" fill="var(--vscode-button-foreground)" font-family="var(--vscode-font-family)"
+        font-size="12" text-anchor="middle">提出する</text>
+</svg>

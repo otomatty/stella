@@ -37,7 +37,7 @@ import { apiRequest } from "./api.js";
 import { AuthSessionChanged, authSession, onDidChangeAuthSession } from "./auth.js";
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
 import { loadTask } from "./runner/run-task.js";
-import { isInside, locateTask, workspaceRoots } from "./task-commands.js";
+import { helpUrl, isInside, locateTask, workspaceRoots } from "./task-commands.js";
 import { referencesHtml, sideColumn } from "./task-panel.js";
 import { readDistribution } from "./task-submission.js";
 
@@ -315,9 +315,6 @@ export function solutionUri(taskId: string, rel: string, contentHash: string): v
     query: new URLSearchParams({ contentHash }).toString(),
   });
 }
-
-const helpUrl = (taskId: string, contentHash: string) =>
-  `/api/tasks/help?${new URLSearchParams({ taskId, contentHash })}`;
 
 const UNAVAILABLE =
   "解答例を表示できません。いま接続している受講者がこの課題の解答例を開いていないか、LMS に接続していません。「STELLA: ヒント・解答・レビューの結果を表示する」から開き直してください。\n";

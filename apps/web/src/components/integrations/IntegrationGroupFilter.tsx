@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { IntegrationGroup } from "@stella/shared/integrations/types";
+import { NativeSelect } from "@/components/ui/native-select";
 import { apiFetch } from "@/lib/api-client";
 import { isBackendConfigured } from "@/lib/backend";
 
@@ -12,6 +13,7 @@ export function IntegrationGroupFilter({
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
+  const groupSelectId = useId();
   const [groups, setGroups] = useState<IntegrationGroup[]>([]);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -29,11 +31,12 @@ export function IntegrationGroupFilter({
   if (failed) return <span role="status">グループの取得に失敗しました</span>;
   if (!groups.length) return null;
   return (
-    <label className="inline-flex items-center gap-2 text-sm">
+    <label htmlFor={groupSelectId} className="inline-flex items-center gap-2 text-sm">
       グループ
-      <select
+      <NativeSelect
+        id={groupSelectId}
         aria-label="グループで絞り込む"
-        className="h-8 rounded-sm border border-border-2 bg-card px-3"
+        size="sm"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
@@ -44,7 +47,7 @@ export function IntegrationGroupFilter({
             {group.name} ({group.key})
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </label>
   );
 }

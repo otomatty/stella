@@ -572,6 +572,29 @@ describe("コードの場面の検査", () => {
     })),
     brief: { ...fresh().brief, points: ["名前と値"] },
   });
+  it.each([
+    { code: ["// 価格を作る", "  // 名前を付ける", " "], rejects: true },
+    { code: ["", "", " "], rejects: true },
+    { code: ["  // 価格を作る", "const price = 1200;", ""], rejects: false },
+  ])("コメントや空行だけのコードを拒む: %j", ({ code, rejects }) => {
+    const json = codeVideo();
+    json.scenes[0].code = code;
+    const result = parseStoryboard(json);
+    const errors = result.issues.filter((issue) => issue.level === "error");
+    if (rejects) {
+      expect(result.storyboard).toBeUndefined();
+      expect(errors).toEqual([
+        {
+          level: "error",
+          path: "scenes[0].code",
+          message: expect.stringContaining("コメントと空行だけのコードの場面です"),
+        },
+      ]);
+    } else {
+      expect(result.storyboard).toBeDefined();
+      expect(errors).toEqual([]);
+    }
+  });
   it("数直線の6文を受け付け、ほかの場面では数直線の動きを拒む", () => {
     const json = codeVideo();
     Object.assign(json.scenes[1], {

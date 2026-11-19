@@ -5,7 +5,7 @@
 SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。教材の正本は `packages/content`。
 
 - 教材を見る (PDFスライド / 動画) / クイズ — Web
-- コード演習する (VS Code 拡張 `saedgewell.stella-lms`) — P2
+- コード演習と、問題つきの課題の確認・提出 — VS Code 拡張 `saedgewell.stella-lms`
 - 採点される / AIに質問する — P2
 
 ## モノレポ構成

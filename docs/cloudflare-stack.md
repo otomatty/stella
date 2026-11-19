@@ -54,6 +54,7 @@ bun run dev       # :5173
 | Worker `stella-web` | 旧 URL。`wrangler.legacy.toml` が新しいオリジンへ 308 | https://stella-web.saedgewell.workers.dev |
 | Secret `AUTH_JWT_SECRET` など | Worker に登録 | `wrangler secret put` |
 | R2 `stella-materials-public` | 公開 URL を `VITE_MATERIALS_BASE_URL` に登録 | `https://pub-cc7cf3c40111439d989be39f89a6eb84.r2.dev` |
+| KV `stella-oauth` | MCP の OAuth。バインディング `OAUTH_KV` | `apps/api/wrangler.toml` |
 | AI Gateway `stella-ai` | 未作成なら Anthropic 直叩きにフォールバック | `AI_GATEWAY_ID` |
 
 新規リソース作成・データコピー・secrets 登録・OAuth 更新の順序は移行手順に集約する。

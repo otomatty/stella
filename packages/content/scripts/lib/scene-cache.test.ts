@@ -190,7 +190,7 @@ describe("配信前の新方式ハッシュ", () => {
   const input = () => ({
     version: 1,
     title: "STELLAで学ぶ流れ",
-    header: "開発環境とWebの入口",
+    header: "STELLAの使い方",
     takeaway: "Webで読み、VS Codeで書きます。",
     storyboard: {
       schema: 1 as const,

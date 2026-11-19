@@ -1,4 +1,4 @@
-import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
+import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
 import type { CatalogLesson, CatalogSection, CatalogStage } from "./catalog.js";
 
 export interface LearningSelection {
@@ -70,25 +70,72 @@ function escapeHtml(text: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function itemKind(lesson: CatalogLesson): string {
-  if (lesson.task) return "課題";
-  return {
-    text: "まとめ",
-    slides: "スライド",
-    code: "演習",
-    quiz: "確認クイズ",
-    video: "動画",
-    assignment: "課題",
-  }[lesson.type];
+const codeIcon = '<path d="M6 4.5 2.5 8 6 11.5m4-7L13.5 8 10 11.5"/>';
+const lessonKinds = {
+  text: {
+    label: "まとめ",
+    icon: '<path d="M3.5 1.5h6l3 3v10h-9zM9.5 1.5v3h3M5.5 7h5m-5 2.5h5m-5 2.5h5"/>',
+  },
+  slides: {
+    label: "スライド",
+    icon: '<rect x="1.5" y="2.5" width="13" height="8" rx="1"/><path d="M8 10.5v2.5m-3 0h6"/>',
+  },
+  code: { label: "演習", icon: codeIcon },
+  quiz: {
+    label: "確認クイズ",
+    icon: '<circle cx="8" cy="8" r="6.5"/><path d="M6.2 5.8a1.8 1.8 0 1 1 3 1.35C8.5 7.8 8 8 8 9m0 2h.01"/>',
+  },
+  video: {
+    label: "動画",
+    icon: '<rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="m6.5 5.5 4 2.5-4 2.5z"/>',
+  },
+  assignment: { label: "課題", icon: codeIcon },
+};
+
+function icon(className: "kind-icon" | "web-icon", shapes: string): string {
+  return `<svg class="${className}" viewBox="0 0 16 16" aria-hidden="true" focusable="false" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">${shapes}</svg>`;
 }
+
+function itemKind(lesson: CatalogLesson): string {
+  const kind = lessonKinds[lesson.task ? "assignment" : lesson.type];
+  return `<span class="lesson-kind">${icon("kind-icon", kind.icon)}${kind.label}</span>`;
+}
+
+const webIndicator = `${icon("web-icon", '<path d="M7 3H3v10h10V9M9 3h4v4m0-4L7 9"/>')}<span class="sr-only">Web で受講</span>`;
 
 function opensInWeb(lesson: CatalogLesson): boolean {
   return !lesson.task && ["quiz", "video", "assignment"].includes(lesson.type);
 }
 
-function itemStatus(lesson: CatalogLesson): string {
-  if (lesson.task) return TASK_STATUS_LABELS[lesson.task.status];
-  return lesson.completed ? "完了" : "未完了";
+const taskStatusTones = {
+  "not-started": "neutral",
+  "local-passed": "info",
+  submitted: "wait",
+  "instructor-pending": "wait",
+  resubmit: "fail",
+  "ai-passed": "pass",
+  passed: "pass",
+} satisfies Record<TaskStatus, string>;
+
+function taskStatusPill(status: TaskStatus): string {
+  return `<span class="pill pill-${taskStatusTones[status]}">${escapeHtml(TASK_STATUS_LABELS[status])}</span>`;
+}
+
+function sectionProgress(
+  lessons: readonly CatalogLesson[],
+  completed: number,
+  next: CatalogLesson | undefined,
+): string {
+  if (lessons.length > 40) {
+    return `<progress max="${lessons.length}" value="${completed}" aria-label="この単元の完了数"></progress>`;
+  }
+  const segments = lessons.map((lesson) => {
+    if (learningItemComplete(lesson)) return '<li class="done"></li>';
+    if (awaitingReview(lesson)) return '<li class="wait"></li>';
+    if (lesson === next) return '<li class="here"></li>';
+    return "<li></li>";
+  });
+  return `<ol class="segments" role="img" aria-label="${lessons.length} 件中 ${completed} 件完了">${segments.join("")}</ol>`;
 }
 
 function lessonButton(lesson: CatalogLesson, title: string, primary = false): string {
@@ -96,8 +143,11 @@ function lessonButton(lesson: CatalogLesson, title: string, primary = false): st
   return `<button type="button"${primary ? ' id="next-step-action"' : ""} class="${primary ? "primary" : ""}" data-action="${action}" data-lesson="${escapeHtml(lesson.id)}">${escapeHtml(title)}</button>`;
 }
 
-function nextStep(stage: CatalogStage, section: CatalogSection): string {
-  const next = nextLearningItem(section);
+function nextStep(
+  stage: CatalogStage,
+  section: CatalogSection,
+  next: CatalogLesson | undefined,
+): string {
   if (next) {
     const waiting = awaitingReview(next);
     const title = waiting ? "レビューの状況" : "次にやること";
@@ -117,7 +167,7 @@ function nextStep(stage: CatalogStage, section: CatalogSection): string {
         : opensInWeb(next)
           ? "Web で進める"
           : "教材を開く";
-    return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">${title}</p><h2 id="next-title">${escapeHtml(next.title)}</h2><p class="hint">${description}</p>${lessonButton(next, label, true)}</section>`;
+    return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">${title}</p><h2 id="next-title">${escapeHtml(next.title)}</h2>${next.task ? taskStatusPill(next.task.status) : ""}<p class="hint">${description}</p>${lessonButton(next, label, true)}</section>`;
   }
   const index = stage.sections.indexOf(section);
   const nextSection = stage.sections.slice(index + 1).find((item) => item.lessons.length > 0);
@@ -139,6 +189,7 @@ function catalogContent(catalog: readonly CatalogStage[], selection: LearningSel
   if (!section)
     return `${stageSelector}<p class="empty">このステージには、まだ教材がありません。</p>`;
   const completed = section.lessons.filter(learningItemComplete).length;
+  const next = nextLearningItem(section);
   const sectionOptions = stage.sections
     .map(
       (item, index) =>
@@ -149,10 +200,13 @@ function catalogContent(catalog: readonly CatalogStage[], selection: LearningSel
     .map((lesson, index) => {
       const done = learningItemComplete(lesson);
       const active = current?.id === lesson.id;
-      return `<li class="lesson${done ? " done" : ""}${active ? " current" : ""}"><button type="button" id="lesson-${index}" class="lesson-link" data-action="open" data-lesson="${escapeHtml(lesson.id)}"${active ? ' aria-current="page"' : ""}><span class="step-number" aria-hidden="true">${done ? "✓" : String(index + 1).padStart(2, "0")}</span><span class="lesson-copy"><span class="lesson-title">${escapeHtml(lesson.title)}</span><span class="lesson-meta"><span>${itemKind(lesson)}</span><span>${escapeHtml(itemStatus(lesson))}</span>${opensInWeb(lesson) ? '<span class="web-label">Web で受講 ↗</span>' : ""}${active ? '<span class="current-label">いま開いている教材</span>' : ""}</span></span></button></li>`;
+      const status = lesson.task
+        ? taskStatusPill(lesson.task.status)
+        : `<span class="sr-only">${done ? "完了" : "未完了"}</span>`;
+      return `<li class="lesson${done ? " done" : ""}${active ? " current" : ""}"><button type="button" id="lesson-${index}" class="lesson-link" data-action="open" data-lesson="${escapeHtml(lesson.id)}"${active ? ' aria-current="page"' : ""}><span class="step-number" aria-hidden="true">${done ? "✓" : String(index + 1).padStart(2, "0")}</span><span class="lesson-copy"><span class="lesson-title">${escapeHtml(lesson.title)}</span><span class="lesson-meta">${itemKind(lesson)}${status}${opensInWeb(lesson) ? webIndicator : ""}</span>${active ? '<span class="sr-only">いま開いている教材</span>' : ""}</span></button></li>`;
     })
     .join("");
-  return `${stageSelector}<label class="field-label unit-label" for="section">単元 ${stage.sections.indexOf(section) + 1} / ${stage.sections.length}</label><select id="section" data-select="section">${sectionOptions}</select><div class="progress-caption"><span>この単元の進み具合</span><span>${completed} / ${section.lessons.length} 完了</span></div><progress max="${Math.max(1, section.lessons.length)}" value="${completed}" aria-label="この単元の完了数"></progress>${section.lessons.length ? nextStep(stage, section) : '<p class="empty">この単元には、まだ教材がありません。</p>'}<section aria-labelledby="lessons-title"><div class="list-heading"><h2 id="lessons-title">この単元の教材</h2><span>${section.lessons.length} 件</span></div><ol class="lessons">${lessons}</ol></section>`;
+  return `${stageSelector}<label class="field-label unit-label" for="section">単元 ${stage.sections.indexOf(section) + 1} / ${stage.sections.length}</label><select id="section" data-select="section">${sectionOptions}</select><div class="progress-caption"><span>この単元の進み具合</span><span>${completed} / ${section.lessons.length} 完了</span></div>${sectionProgress(section.lessons, completed, next)}${section.lessons.length ? nextStep(stage, section, next) : '<p class="empty">この単元には、まだ教材がありません。</p>'}<section aria-labelledby="lessons-title"><div class="list-heading"><h2 id="lessons-title">この単元の教材</h2><span>${section.lessons.length} 件</span></div><ol class="lessons">${lessons}</ol></section>`;
 }
 
 export type LearningSidebarState =
@@ -173,14 +227,15 @@ function loadingContent(): string {
   // 行の高さは通常表示と共通にし、文字の形だけを細いプレースホルダーに置き換える。
   const line = (size: string) =>
     `<span class="loading-line loading-${size}"><span class="skeleton"></span></span>`;
+  const pill = `<span class="pill loading-pill">${line("status")}</span>`;
   const lessons = Array.from(
     { length: 4 },
     (_, index) =>
-      `<li class="lesson loading-lesson${index === 3 ? " loading-active" : ""}"><div class="lesson-link"><span class="step-number skeleton"></span><span class="lesson-copy"><span class="lesson-title">${line("title")}</span><span class="lesson-meta">${line("kind")}${line("status")}${index === 2 ? line("web") : ""}${index === 3 ? `<span class="current-label">${line("current")}</span>` : ""}</span></span></div></li>`,
+      `<li class="lesson loading-lesson${index === 3 ? " loading-active" : ""}"><div class="lesson-link"><span class="step-number skeleton"></span><span class="lesson-copy"><span class="lesson-title">${line("title")}</span><span class="lesson-meta"><span class="lesson-kind"><span class="kind-icon skeleton"></span>${line("kind")}</span>${index === 2 ? '<span class="web-icon skeleton"></span>' : ""}${index === 3 ? pill : ""}</span></span></div></li>`,
   ).join("");
   const selector = (unit: boolean) =>
     `<div class="loading-select">${unit ? line("number") : ""}${line(unit ? "unit" : "stage")}<span class="loading-chevron"></span></div>`;
-  return `<div class="loading-layout" aria-hidden="true"><div class="field-label">ステージ</div>${selector(false)}<div class="field-label unit-label">単元</div>${selector(true)}<div class="progress-caption"><span>この単元の進み具合</span>${line("count")}</div><div class="skeleton loading-progress"></div><section class="next-step loading-next-step"><div class="eyebrow">${line("eyebrow")}</div><h2>${line("heading")}</h2><div class="hint">${line("description")}${line("description-short")}</div><div class="primary loading-button">${line("button")}</div></section><section><div class="list-heading"><h2>この単元の教材</h2>${line("total")}</div><ol class="lessons">${lessons}</ol></section></div>`;
+  return `<div class="loading-layout" aria-hidden="true"><div class="field-label">ステージ</div>${selector(false)}<div class="field-label unit-label">単元</div>${selector(true)}<div class="progress-caption"><span>この単元の進み具合</span>${line("count")}</div><ol class="segments"><li class="skeleton"></li><li class="skeleton"></li><li class="skeleton"></li><li class="skeleton"></li></ol><section class="next-step loading-next-step"><div class="eyebrow">${line("eyebrow")}</div><h2>${line("heading")}</h2>${pill}<div class="hint">${line("description")}${line("description-short")}</div><div class="primary loading-button">${line("button")}</div></section><section><div class="list-heading"><h2>この単元の教材</h2>${line("total")}</div><ol class="lessons">${lessons}</ol></section></div>`;
 }
 
 /** 初期文書と差分更新の元になるHTMLを生成する。ライブリージョンはmainの外で保持する。 */

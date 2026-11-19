@@ -2,7 +2,7 @@
   "name": "stella-lms",
   "displayName": "STELLA 研修",
   "publisher": "saedgewell",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "private": true,
   "repository": {
     "type": "git",
@@ -93,6 +93,10 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "stella.showLastResult",
+        "title": "STELLA: 前回の確認の結果を表示する"
+      },
+      {
         "command": "stella.diagnoseEnvironment",
         "title": "STELLA: 開発環境を診断する"
       },
@@ -102,7 +106,8 @@
       },
       {
         "command": "stella.submitTask",
-        "title": "STELLA: 課題を提出する"
+        "title": "STELLA: 課題を提出する",
+        "icon": "$(cloud-upload)"
       },
       {
         "command": "stella.consultTask",
@@ -124,19 +129,77 @@
       {
         "command": "stella.showTaskHelp",
         "title": "STELLA: ヒント・解答・レビューの結果を表示する"
+      },
+      {
+        "command": "stella.openWalkthrough",
+        "title": "STELLA: 課題の進め方を見る"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "stella.gettingStarted",
+        "title": "STELLA の課題の進め方",
+        "description": "課題を受け取ってから合格するまでの 4 つの操作です。",
+        "steps": [
+          {
+            "id": "open",
+            "title": "課題を開く",
+            "description": "Web の課題で「VS Code で開く」を押すと、学習フォルダーに課題が準備されます。左に編集するファイル、右に課題文が並びます。\n[学習ガイドを開く](command:stella.lessons.focus)",
+            "completionEvents": ["onContext:stella.inTask"],
+            "media": {
+              "svg": "media/walkthrough/open.svg",
+              "altText": "左の編集するファイルと右の課題文を強調した VS Code の画面"
+            }
+          },
+          {
+            "id": "edit",
+            "title": "ファイルを編集して保存する",
+            "description": "左の列のファイルを書き換えて保存します。作るものと条件は、右の列の課題文に書いてあります。\n[課題文を表示する](command:stella.showTaskReadme)",
+            "completionEvents": ["onCommand:stella.showTaskReadme"],
+            "media": {
+              "svg": "media/walkthrough/edit.svg",
+              "altText": "コードを書く左側のエディターを強調した VS Code の画面"
+            }
+          },
+          {
+            "id": "submit",
+            "title": "提出する",
+            "description": "「提出する」を押すと、テストなどの確認が自動で走ります。通ったら振り返りを書いて送ります。通らなければ何も送らず、直すところが出ます。\n[提出する](command:stella.submitTask)",
+            "completionEvents": ["onCommand:stella.submitTask"],
+            "media": {
+              "svg": "media/walkthrough/submit.svg",
+              "altText": "エディター右上とステータスバーの提出ボタンを強調した VS Code の画面"
+            }
+          },
+          {
+            "id": "review",
+            "title": "レビューの結果を見る",
+            "description": "提出すると AI と講師がレビューします。結果は課題文のパネルと Web の通知に届きます。合格すると、この課題は完了です。\n[レビューの結果を表示する](command:stella.showTaskHelp)",
+            "completionEvents": ["onCommand:stella.showTaskHelp"],
+            "media": {
+              "svg": "media/walkthrough/review.svg",
+              "altText": "右の課題文の進行バーで最後のレビューの段を強調した VS Code の画面"
+            }
+          }
+        ]
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "stella.runTask",
+          "command": "stella.submitTask",
           "when": "stella.inTask && resourceScheme == file",
           "group": "navigation@1"
         },
         {
-          "command": "stella.showTaskReadme",
+          "command": "stella.runTask",
           "when": "stella.inTask && resourceScheme == file",
           "group": "navigation@2"
+        },
+        {
+          "command": "stella.showTaskReadme",
+          "when": "stella.inTask && resourceScheme == file",
+          "group": "navigation@3"
         }
       ]
     },

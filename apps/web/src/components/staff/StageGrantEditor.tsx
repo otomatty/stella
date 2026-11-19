@@ -11,6 +11,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -883,17 +884,16 @@ function PcRoster({
               htmlFor="stage-grant-prereq"
             >
               前提（{prerequisiteTitles.join("・")}）
-              <select
+              <NativeSelect
                 id="stage-grant-prereq"
                 value={prereq}
                 onChange={(event) => onPrereq(event.target.value as PcPrereq)}
-                className="h-9 rounded-sm border border-input bg-card px-2 text-[13px] text-foreground"
               >
                 <option value="all">すべて</option>
                 <option value="done">修了</option>
                 <option value="doing">受講中</option>
                 <option value="none">未着手</option>
-              </select>
+              </NativeSelect>
             </label>
           ) : null}
         </div>

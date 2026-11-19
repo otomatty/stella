@@ -4,7 +4,7 @@ title: "課題を確認する"
 takeaway: "「課題を確認する」で手元の結果を読み、通らなければ直して保存し、確認し直します。"
 introduces: ["ステータスバー"]
 requires: ["課題", "保存", "VS Code"]
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: []
 ---
 <!-- _class: lead -->

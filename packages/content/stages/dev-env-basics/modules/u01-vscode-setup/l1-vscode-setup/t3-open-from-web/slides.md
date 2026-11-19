@@ -4,7 +4,7 @@ title: Webから課題を開く
 takeaway: "Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。"
 introduces: ["学習フォルダー", "課題フォルダー", "課題文のパネル", "Workspace Trust"]
 requires: ["VS Code", "STELLA 拡張", "課題"]
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: ["SRC-dev-env-trust-20261107"]
 ---
 <!-- _class: lead -->

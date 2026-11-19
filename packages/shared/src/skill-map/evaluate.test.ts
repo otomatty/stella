@@ -239,9 +239,9 @@ describe("evaluateSkillMap — 視界", () => {
 
 describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
   const lab = { category: "開発ラボG", audience: "granted" } as const;
+  const basics = id("dev-env-basics");
   const stages = [
-    stage("root"),
-    stage("dev-env-basics", ["root"]),
+    stage("dev-env-basics", [], { title: "STELLAの使い方" }),
     stage("devlab-ts-ch00", ["dev-env-basics"], lab),
     stage("devlab-ts-ch01", ["devlab-ts-ch00"], lab),
     stage("devlab-ts-ch02", ["devlab-ts-ch01"], lab),
@@ -252,11 +252,8 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
   const ch02 = id("devlab-ts-ch02");
   const parallelChapter = id("devlab-ts-test-parallel");
 
-  it("前提なしの 00 章は最初から unlocked・full になり、続きは伏せる", () => {
-    const r = evaluateSkillMap({
-      stages: stages.map((s) => (s.id === ch00 ? { ...s, prerequisites: [] } : s)),
-      clearedStageIds: new Set(),
-    });
+  it("STELLAの使い方をクリアすると 00 章が unlocked・full になり、続きは伏せる", () => {
+    const r = evaluateSkillMap({ stages, clearedStageIds: new Set([basics]) });
     expect(r.states.get(ch00)).toBe("unlocked");
     expect(r.visibility.get(ch00)).toBe("full");
     expect(r.nextStageIds).toContain(ch00);
@@ -269,12 +266,22 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
     const r = evaluateSkillMap({ stages, clearedStageIds: new Set() });
     expect(r.visibility.get(ch00)).toBe("full");
     expect(r.states.get(ch00)).toBe("locked");
-    expect(r.lockReasons.get(ch00)).toEqual([
-      { stageId: id("dev-env-basics"), label: "dev-env-basics のステージ" },
-    ]);
+    expect(r.lockReasons.get(ch00)).toEqual([{ stageId: basics, label: "STELLAの使い方" }]);
+    expect(r.nextStageIds).toEqual([basics]);
     for (const stageId of [ch01, ch02, parallelChapter]) {
       expect(r.visibility.get(stageId)).toBe("hidden");
     }
+  });
+
+  it("前提を免除した 00 章は始められ、続きは伏せる", () => {
+    const r = evaluateSkillMap({
+      stages,
+      clearedStageIds: new Set(),
+      unlockedStageIds: new Set([ch00]),
+    });
+    expect(r.states.get(ch00)).toBe("unlocked");
+    expect(r.visibility.get(ch00)).toBe("full");
+    expect(r.visibility.get(ch01)).toBe("hidden");
   });
 
   it("00 章をクリアすると 01 章と並行する章を見せる", () => {
@@ -286,12 +293,23 @@ describe("evaluateSkillMap — 開発ラボG の段階表示", () => {
     expect(r.visibility.get(ch02)).toBe("hidden");
   });
 
-  it("島内の前提が未了でも開始済みの章は見せる", () => {
-    const input = { stages, clearedStageIds: new Set<string>() };
+  it("前提未達でも受講登録済みの章は解放し、フォーカスした章だけを active にする", () => {
+    const input = {
+      stages,
+      clearedStageIds: new Set<string>(),
+      enrolledStageIds: new Set([ch00, ch01]),
+    };
+    const enrolled = evaluateSkillMap(input);
     const focused = evaluateSkillMap({ ...input, activeStageId: ch01 });
-    const enrolled = evaluateSkillMap({ ...input, enrolledStageIds: new Set([ch01]) });
+    expect(enrolled.states.get(ch01)).toBe("unlocked");
     expect(focused.states.get(ch01)).toBe("active");
+    expect([...focused.states].filter(([, state]) => state === "active")).toEqual([
+      [ch01, "active"],
+    ]);
     for (const r of [focused, enrolled]) {
+      expect(r.states.get(ch00)).toBe("unlocked");
+      expect(r.lockReasons.has(ch00)).toBe(false);
+      expect(r.lockReasons.has(ch01)).toBe(false);
       expect(r.visibility.get(ch01)).toBe("full");
       expect(r.visibility.get(ch02)).toBe("hidden");
       expect(r.visibility.get(parallelChapter)).toBe("hidden");

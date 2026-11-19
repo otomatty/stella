@@ -65,8 +65,13 @@ export function useSubmissions() {
   };
 }
 
-export function usePendingReviewCount(): number {
-  return useSyncExternalStore(subscribeSubmissions, countPending, countPending);
+function getZeroPendingCount(): number {
+  return 0;
+}
+
+export function usePendingReviewCount(enabled: boolean): number {
+  const getSnapshot = enabled ? countPending : getZeroPendingCount;
+  return useSyncExternalStore(subscribeSubmissions, getSnapshot, getSnapshot);
 }
 
 export function useSubmission(submissionId: string | null) {
@@ -81,17 +86,20 @@ function isDocumentVisible(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
+const emptySubmissions: Submission[] = [];
+
+function getEmptySubmissions(): Submission[] {
+  return emptySubmissions;
+}
+
 /**
  * staff の提出一覧を新しく保つ (#34)。AppShell が staff のときに 1 つだけ使う。
  * - 開いたとき・タブが見えるようになったときに取り直す (直前に読んだばかりなら取りに行かない)。
  * - AI が確認中の提出があるあいだは、タブが見えているときだけ控えめな間隔で取り直す。
  */
 export function useSubmissionsAutoRefresh(enabled: boolean): void {
-  const submissions = useSyncExternalStore(
-    subscribeSubmissions,
-    getServerSnapshot,
-    getServerSnapshot,
-  );
+  const getSnapshot = enabled ? getServerSnapshot : getEmptySubmissions;
+  const submissions = useSyncExternalStore(subscribeSubmissions, getSnapshot, getSnapshot);
   const [visible, setVisible] = useState(isDocumentVisible);
   useEffect(() => {
     if (!enabled) return;

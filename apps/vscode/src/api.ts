@@ -1,6 +1,5 @@
 /**
- * トークンの読み書き。VS Code の SecretStorage も、CLI の資格情報ファイルも、この形で渡す。
- * このファイルは `vscode` を読まない (CLI が同じクライアントを束ねるため)。
+ * VS Code の SecretStorage に保存するトークンの読み書き。
  */
 export interface ApiAuth {
   currentSession(): number;

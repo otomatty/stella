@@ -694,9 +694,9 @@ SPECS = {
         "icon": "M3 3h18v4H3zm0 7h18v4H3zm0 7h18v4H3z",
     },
     "dev-env-basics": {
-        "title": "開発環境",
+        "title": "STELLA",
         "title_size": 148,
-        "subtitle": "Webの入口",
+        "subtitle": "の使い方",
         "motif": motif_cli,
         "icon": "M3 3h18v13H3zm4 15h10v3H7z",
     },

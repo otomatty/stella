@@ -177,7 +177,7 @@ export function StatusPanel(props: Props) {
           </div>
           <h2 className="mt-3 text-[15px] font-semibold tracking-tight">受講生を選んでください</h2>
           <p className="mx-auto mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-3">
-            左のリストで受講生を選ぶと、 その人が始めたステージと進み具合をここで確認できます。
+            受講生のリストから選ぶと、 その人が始めたステージと進み具合をここで確認できます。
             教材の割り当ては行いません — 受講者が自分で開始します。
           </p>
         </div>
@@ -502,7 +502,7 @@ function StatusRowItem({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="truncate text-[13.5px] font-medium">
+          <span className="text-[13.5px] font-medium max-sm:line-clamp-2 max-sm:break-words sm:truncate">
             {stage?.title ?? "(削除された教材)"}
           </span>
           {stage && stage.status !== "published" ? (

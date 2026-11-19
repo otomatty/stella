@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -899,7 +899,7 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
 // 実データ側の作り込み。次フェーズ (ホームのステージマップ) が読む前提なので、
 // 欠けたまま気付かずに進まないよう manifest 全体で検査する。
 describe("buildContentManifest — 実データのスキルツリー", () => {
-  const { stages, quizzes } = buildContentManifest();
+  const { stages, quizzes, tasks } = buildContentManifest();
 
   it("Claude の基礎 → 単問の練習 → 120分の模試を受講する", () => {
     const foundations = stages.find((stage) => stage.id === "claude-developer-foundations");
@@ -1003,12 +1003,9 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
         const config = JSON.parse(
           readFileSync(new URL("../stages/dev-env-basics/stage.json", import.meta.url), "utf8"),
         ) as { modules: Record<string, string> };
-        expect(sectionIds?.[0]).toBe("u00-start");
-        expect(sectionIds).toEqual(
-          Object.keys(config.modules).filter((unit) =>
-            existsSync(new URL(`../stages/dev-env-basics/modules/${unit}`, import.meta.url)),
-          ),
-        );
+        expect(stage?.title).toBe("STELLAの使い方");
+        expect(stage?.duration).toBe(2.5);
+        expect(sectionIds).toEqual(["u00-start", "u01-vscode-setup", "u02-first-task"]);
         for (const section of stage?.sections ?? [])
           expect(section.title).toBe(config.modules[section.id]);
         const publicUnits = buildContentManifest()
@@ -1020,6 +1017,21 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
             ?.flatMap((section) => section.lessons)
             .some((lesson) => lesson.type === "slides"),
         ).toBe(true);
+      } else if (slug === "html-css-basics") {
+        expect(stage?.format).toBe(2);
+        expect(stage?.duration).toBe(71.5);
+        expect(sectionIds).toEqual(["u00-files", "u01-check-a", "u99-coming-soon"]);
+        expect(stage?.sections?.[2].lessons[0].markdown).toContain("続きは準備中");
+        expect(
+          tasks
+            .filter((task) => task.stageId === slug && !task.variantOf)
+            .map(({ definition }) => [definition.id, definition.kind]),
+        ).toEqual([
+          ["html-css-basics/u00-files/q01-note-file", "basic"],
+          ["html-css-basics/u00-files/q03-rename", "basic"],
+          ["html-css-basics/u01-check-a/a01-check-a", "assessment-a"],
+          ["html-css-basics/u01-check-a/b01-check-b", "assessment-b"],
+        ]);
       } else {
         expect(sectionIds).toEqual(["m0-orientation"]);
         expect(
@@ -1312,12 +1324,14 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     }
   });
 
-  it("前提なしの入口は Basic の dev-env-basics と開発ラボG の 00 章", () => {
+  it("入口は dev-env-basics で、開発ラボGの00章もそのクリアを求める", () => {
     const roots = stages.filter((stage) => !stage.prerequisites?.length && !stage.parent);
-    expect(roots.map((stage) => stage.id)).toEqual(["dev-env-basics", "devlab-ts-ch00"]);
-    expect(roots.find((stage) => stage.id === "devlab-ts-ch00")).toMatchObject({
+    expect(roots.map((stage) => stage.id)).toEqual(["dev-env-basics"]);
+    expect(stages.find((stage) => stage.id === "devlab-ts-ch00")).toMatchObject({
       audience: "granted",
       category: "開発ラボG",
+      prerequisites: ["dev-env-basics"],
+      parent: "dev-env-basics",
     });
     expect(roots.every((stage) => stage.parent === undefined)).toBe(true);
   });

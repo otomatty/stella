@@ -60,7 +60,7 @@ describe("format 2 の教材", () => {
     const manifest = buildContentManifest(join(fixture(), "stages"));
     expect(manifest.stages[0]).toMatchObject({
       format: 2,
-      title: "開発環境とWebの入口",
+      title: "STELLAの使い方",
       duration: 35,
       environment: "static-web-01",
     });

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch00/u00-setup@2",
-  "contentHash": "b1f226a7836aae7a0bc9ac4035c294d27b6161c4799d498dfe63da9e344cf15c",
+  "unitId": "devlab-ts-ch00/u00-setup@4",
+  "contentHash": "720734706eeb3f317849aae5ce0f63a02ad313020e886929aa8d46e4b4676ec0",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -14,10 +14,14 @@
     },
     {
       "contentId": "l1-how-to/doc.md",
-      "sourceRefs": [],
-      "usedFor": "既存の練習課題の進め方・ルールを説明する独自教材。コードは自分で書き、確認して提出する順番を確かめる。",
-      "authorship": "original",
-      "reuse": "original",
+      "sourceRefs": [
+        "SRC-devlab-node-download-20261119",
+        "SRC-devlab-node-installers-20261119",
+        "SRC-devlab-vscode-terminal-20261119"
+      ],
+      "usedFor": "練習課題の進め方とルール。Node.js の準備では、公式配布ページの LTS の選択肢、公式アーカイブの Windows・macOS 用のファイル形式と同梱の npm の版、VS Code のターミナルの開き方を確認した。必要な版は環境台帳 ts-test-01@1 による。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {

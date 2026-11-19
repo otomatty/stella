@@ -4,7 +4,7 @@ title: "編集して保存する"
 takeaway: "課題のファイルを編集したら、Ctrl + S（Mac は ⌘ + S）で変更を残します。"
 introduces: ["保存", "タブ", "HTML", "見出し", "h1", "要素", "タグ"]
 requires: ["VS Code", "課題", "エディター"]
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: ["SRC-dev-env-editor-20261107", "SRC-mdn-html-20261005"]
 ---
 <!-- _class: lead -->

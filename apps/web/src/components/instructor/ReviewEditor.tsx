@@ -2,6 +2,7 @@ import { manualCompletionUrl } from "@/lib/manual-completion";
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   useMemo,
@@ -24,6 +25,7 @@ import {
   AlertTriangle,
   CheckCheck,
 } from "@/lib/icons";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -92,6 +94,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
   const [loadedDetail, setLoadedDetail] = useState<Submission | undefined>();
   // 別の提出に切り替えた直後は、前の提出の詳細 (ファイル) を出さない。
   const taskDetail = loadedDetail?.id === submission?.id ? loadedDetail : undefined;
+  const fileSelectId = useId();
   const [selectedFile, setSelectedFile] = useState("");
   // 事後確認の操作のあとに取り直す (確認の記録・判定が変わる)。
   const [detailVersion, setDetailVersion] = useState(0);
@@ -358,111 +361,121 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-57px)]">
-      <div className="px-5 py-3.5 border-b border-border bg-card flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-card px-4 py-3 sm:px-5 sm:py-3.5 lg:flex-nowrap">
         <button
           type="button"
           onClick={() => setPage("review-queue")}
-          className="flex items-center gap-2 cursor-pointer text-ink-3 hover:text-foreground"
+          className="flex shrink-0 items-center gap-2 whitespace-nowrap cursor-pointer text-ink-3 hover:text-foreground"
         >
           <ChevronLeft size={14} />
           <span className="text-[11.5px]">キューに戻る</span>
         </button>
-        <div className="w-px h-5 bg-border mx-1.5" />
-        <div>
-          <div className="text-sm font-semibold">
+        <div className="hidden w-px h-5 bg-border mx-1.5 sm:block" />
+        <div className="min-w-0 flex-1 basis-[12rem]">
+          <div className="break-words text-sm font-semibold">
             {submission.assignmentTitle} · {submission.studentName}
           </div>
-          <div className="text-[11.5px] text-ink-3">
+          <div className="break-words text-[11.5px] text-ink-3">
             {submission.stageTitle}
             {submission.sectionTitle ? ` / ${submission.sectionTitle}` : ""} · 提出{" "}
             {formatSubmittedAt(submission.submittedAt)} · {submission.attempt}回目
           </div>
         </div>
-        <div className="flex-1" />
-        {submission.gradingSummary && !submission.gradingSummary.cleared ? (
-          <Badge variant="warning">
-            <AlertTriangle size={10} />
-            自動採点で未クリア
-          </Badge>
-        ) : null}
-        {draftLoading ? (
-          <Badge variant="info">
-            <Loader2 size={10} className="animate-spin" />
-            AI生成中
-          </Badge>
-        ) : submission.aiReady ? (
-          <Badge variant="accent">
-            <Sparkles size={10} />
-            AI下書き準備済
-          </Badge>
-        ) : null}
-        {passByLabel(submission) === "テストで確認" ? (
-          <Badge variant="success">テストで確認</Badge>
-        ) : null}
-        {testsLocked ? null : aiPassedNow ? (
-          // AI が合格にした提出は、合否を付け直さず事後確認の 3 つの操作で扱う (#34)。
-          <>
-            <Badge variant="success">
-              <Sparkles size={10} />
-              AI で合格
+        <div className="flex w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto lg:gap-3">
+          {submission.gradingSummary && !submission.gradingSummary.cleared ? (
+            <Badge variant="warning">
+              <AlertTriangle size={10} />
+              自動採点で未クリア
             </Badge>
-            <Button type="button" variant="primary" onClick={() => setTab("check")}>
-              <CheckCheck size={13} />
-              事後確認
-            </Button>
-          </>
-        ) : (
-          <>
-            {!problemConsult &&
-            submission.verdict === null &&
-            proposal &&
-            submission.reviewSource !== "tests" ? (
-              <Badge variant={proposal === "pass" ? "success" : "warning"}>
-                AI の判定案: {proposal === "pass" ? "合格" : "再提出"}
+          ) : null}
+          {draftLoading ? (
+            <Badge variant="info">
+              <Loader2 size={10} className="animate-spin" />
+              AI生成中
+            </Badge>
+          ) : submission.aiReady ? (
+            <Badge variant="accent">
+              <Sparkles size={10} />
+              AI下書き準備済
+            </Badge>
+          ) : null}
+          {passByLabel(submission) === "テストで確認" ? (
+            <Badge variant="success">テストで確認</Badge>
+          ) : null}
+          {testsLocked ? null : aiPassedNow ? (
+            // AI が合格にした提出は、合否を付け直さず事後確認の 3 つの操作で扱う (#34)。
+            <>
+              <Badge variant="success">
+                <Sparkles size={10} />
+                AI で合格
               </Badge>
-            ) : null}
-            <Button
-              type="button"
-              variant={
-                submission.verdict === null && proposal === "resubmit" ? "primary" : "default"
-              }
-              onClick={() => handleFinalize("resubmit")}
-              disabled={finalizing || (!!submission.taskId && !taskDetail)}
-              title="総評 (所見を直した文) を添えて再提出にします"
-            >
-              <ThumbsDown size={13} />
-              {submission.verdict === null ? "再提出にする" : "再提出"}
-            </Button>
-            {problemConsult ? null : (
+              {/* 狭幅では事後確認のボタンに行全体を使えるようにする。 */}
+              <span aria-hidden="true" className="basis-full sm:hidden" />
               <Button
                 type="button"
-                variant={
-                  submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
-                }
-                onClick={() => handleFinalize("pass")}
-                disabled={finalizing || (!!submission.taskId && !taskDetail)}
+                variant="primary"
+                className="max-sm:flex-1"
+                onClick={() => setTab("check")}
               >
-                <ThumbsUp size={13} />
-                {submission.verdict === null && proposal === "pass"
-                  ? "判定案どおり合格"
-                  : "合格として確定"}
+                <CheckCheck size={13} />
+                事後確認
               </Button>
-            )}
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              {!problemConsult &&
+              submission.verdict === null &&
+              proposal &&
+              submission.reviewSource !== "tests" ? (
+                <Badge variant={proposal === "pass" ? "success" : "warning"}>
+                  AI の判定案: {proposal === "pass" ? "合格" : "再提出"}
+                </Badge>
+              ) : null}
+              {/* 狭幅では判定ボタンが同じ行で幅を等分できるようにする。 */}
+              <span aria-hidden="true" className="basis-full sm:hidden" />
+              <Button
+                type="button"
+                className="max-sm:flex-1"
+                variant={
+                  submission.verdict === null && proposal === "resubmit" ? "primary" : "default"
+                }
+                onClick={() => handleFinalize("resubmit")}
+                disabled={finalizing || (!!submission.taskId && !taskDetail)}
+                title="総評 (所見を直した文) を添えて再提出にします"
+              >
+                <ThumbsDown size={13} />
+                {submission.verdict === null ? "再提出にする" : "再提出"}
+              </Button>
+              {problemConsult ? null : (
+                <Button
+                  type="button"
+                  className="max-sm:flex-1"
+                  variant={
+                    submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
+                  }
+                  onClick={() => handleFinalize("pass")}
+                  disabled={finalizing || (!!submission.taskId && !taskDetail)}
+                >
+                  <ThumbsUp size={13} />
+                  {submission.verdict === null && proposal === "pass"
+                    ? "判定案どおり合格"
+                    : "合格として確定"}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <div
-        className="grid"
-        style={{
-          gridTemplateColumns: testsLocked ? "1fr" : "1fr 380px",
-          minHeight: 0,
-          flex: 1,
-        }}
+        className={cn(
+          "grid min-h-0 flex-1 grid-cols-1",
+          !testsLocked && "lg:grid-cols-[minmax(0,1fr)_380px]",
+        )}
       >
         <div className="min-w-0 overflow-hidden flex flex-col">
           {submission.taskId ? (
-            <div className="p-5 border-b border-border max-h-80 overflow-auto">
+            <div className="p-4 sm:p-5 border-b border-border max-h-80 overflow-auto">
               <details>
                 <summary>提出時の課題文</summary>
                 <pre className="whitespace-pre-wrap font-sans text-sm">{taskDescription}</pre>
@@ -525,32 +538,33 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                   {step.label}: {step.summary}
                 </p>
               ))}
-              <label className="block text-sm mt-3">
+              <label htmlFor={fileSelectId} className="block text-sm mt-3">
                 {submission.reviewSource === "tests" ? "問題のファイル" : "提出ファイル"}{" "}
-                <select
+                <NativeSelect
+                  id={fileSelectId}
                   value={selectedFile}
                   onChange={(e) => setSelectedFile(e.target.value)}
-                  className="bg-card border border-border rounded px-2 py-1"
+                  size="sm"
                 >
                   {taskDetail?.taskFiles?.map((f) => (
                     <option value={f.path} key={f.path}>
                       {f.path}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
             </div>
           ) : submission.explanation ? (
-            <p className="p-5 border-b border-border whitespace-pre-wrap text-sm">
+            <p className="p-4 sm:p-5 border-b border-border whitespace-pre-wrap text-sm">
               {submission.explanation}
             </p>
           ) : null}
-          <div className="px-5 py-2.5 border-b border-border bg-card flex items-center gap-1.5">
+          <div className="px-4 sm:px-5 py-2.5 border-b border-border bg-card flex items-center gap-1.5">
             <Badge>提出コード</Badge>
             <div className="flex-1" />
             <span className="text-[11.5px] text-ink-3">{codeLines.length}行</span>
           </div>
-          <div className="flex-1 overflow-auto font-mono text-[12.5px] leading-[1.6] py-3.5 code-viewer-bg">
+          <div className="flex-1 overflow-auto font-mono text-[12.5px] leading-[1.6] py-3.5 code-viewer-bg max-lg:max-h-[60vh]">
             {codeLines.map((line, i) => {
               const lineNum = i + 1;
               const isCommented = commentedLines.has(lineNum);
@@ -559,7 +573,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                   // biome-ignore lint/suspicious/noArrayIndexKey: 行番号が同一性
                   key={i}
                   className={cn(
-                    "flex gap-4 px-5 relative",
+                    "flex gap-4 px-4 sm:px-5 relative",
                     isCommented ? "code-viewer-commented" : "code-viewer-hover",
                   )}
                 >
@@ -591,7 +605,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
         </div>
 
         {testsLocked ? null : (
-          <aside className="border-l border-border bg-card flex flex-col max-h-[calc(100vh-57px-64px)] overflow-hidden">
+          <aside className="border-t border-border bg-card flex flex-col overflow-hidden lg:border-t-0 lg:border-l lg:max-h-[calc(100vh-57px-64px)]">
             <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0 flex-1">
               <TabsList className="border-b border-border flex px-0 gap-0 m-0">
                 {submission.gradingSummary ? (
@@ -618,7 +632,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
               {submission.gradingSummary ? (
                 <TabsContent
                   value="grade"
-                  className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                  className="mt-0 p-4 sm:p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
                 >
                   <GradeSummaryPanel summary={submission.gradingSummary} />
                 </TabsContent>
@@ -627,7 +641,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
               {wasAiConfirmed ? (
                 <TabsContent
                   value="check"
-                  className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                  className="mt-0 p-4 sm:p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
                 >
                   <PostCheckPanel
                     submissionId={submission.id}
@@ -642,7 +656,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
 
               <TabsContent
                 value="ai"
-                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                className="mt-0 p-4 sm:p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
               >
                 <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 mb-3.5 text-[12.5px] text-brand-ink">
                   <Sparkles size={15} className="shrink-0 mt-0.5" />
@@ -736,7 +750,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
 
               <TabsContent
                 value="rubric"
-                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                className="mt-0 p-4 sm:p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="text-xl font-semibold">
@@ -751,8 +765,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 {rubric.map((r) => (
                   <div
                     key={r.id}
-                    className="grid items-center gap-3 py-2.5 border-b border-border last:border-b-0"
-                    style={{ gridTemplateColumns: "1fr auto" }}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 border-b border-border last:border-b-0"
                   >
                     <div>
                       <div className="text-[13px] font-medium">{r.name}</div>
@@ -781,7 +794,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
 
               <TabsContent
                 value="comment"
-                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+                className="mt-0 p-4 sm:p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
               >
                 {!isBackendConfigured() ? null : aiPassedNow ? (
                   <p className="text-[12px] text-ink-3 mb-3">

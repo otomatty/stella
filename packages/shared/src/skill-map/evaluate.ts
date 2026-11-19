@@ -19,6 +19,7 @@
  * - `active`  … いま進めている星。前提が未充足でも locked には落とさない。着手済みの
  *               受講者を後から締め出す方が害が大きいため (割当の順序ミスなどで起こる)
  * - `unlocked` … 前提を全部クリア済み、または飛び級 (`unlockedStageIds`) で開いた星
+ *                 段階表示の島では、受講登録がある星はあとから前提が足されても unlocked のままにする
  * - `locked`  … それ以外
  *
  * **視界は無向グラフ上の最短距離**で決める。起点は「いま手が届く星」= cleared ∪ active ∪
@@ -339,6 +340,10 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
       continue;
     }
     if (anyGroupMet || unlockedStageIds?.has(stage.id)) {
+      states.set(stage.id, "unlocked");
+      continue;
+    }
+    if (enrolledStageIds?.has(stage.id) && isRevealOneAtATimeIsland(stage.category)) {
       states.set(stage.id, "unlocked");
       continue;
     }

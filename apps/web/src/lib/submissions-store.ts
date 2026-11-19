@@ -87,7 +87,8 @@ function setRemoteList(list: Submission[]): void {
 
 function ensureRemoteFetch(): void {
   if (!isRemotePersistence()) return;
-  if (remoteStatus === "loading" || remoteStatus === "success") return;
+  // 失敗後に描画のたびに取りに行かないよう、読み直しは refreshSubmissions に任せる。
+  if (remoteStatus !== "idle") return;
 
   remoteStatus = "loading";
   void fetchSubmissions()

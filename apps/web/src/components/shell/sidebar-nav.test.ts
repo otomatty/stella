@@ -11,8 +11,8 @@ describe("navForRole", () => {
     expect(items).not.toContain("integrations");
   });
 
-  it("受講者の先頭はホーム = スキルツリー。ステージ一覧はツリーへ集約したので出さない", () => {
-    expect(navForRole("learner")[0]).toMatchObject({ id: "dash", label: "スキルツリー" });
+  it("受講者の先頭はホームの「ステージ一覧」で、別ページの項目は出さない", () => {
+    expect(navForRole("learner")[0]).toMatchObject({ id: "dash", label: "ステージ一覧" });
     expect(ids("learner")).not.toContain("stages");
     expect(navForRole("admin")[0]).toMatchObject({ id: "dash", label: "ダッシュボード" });
   });

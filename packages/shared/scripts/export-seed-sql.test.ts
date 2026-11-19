@@ -250,7 +250,7 @@ describe("export-seed-sql (sqlite)", () => {
   it("seed-learner の登録と提出は新しい入口に紐づく", () => {
     expect(sql).toContain("seed-enrollment-learner-dev-env-basics");
     expect(sql).toContain(stableUuid("lesson:ses:dev-env-basics:0-1-1"));
-    expect(sql).toContain("開発環境とWebの入口");
+    expect(sql).toContain("STELLAの使い方");
     expect(sql).not.toContain("seed-enrollment-learner-typescript-basics");
   });
 
@@ -648,7 +648,7 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
   it("解答例の削除指定を private の素材・公開 bundle・seed SQL に入れない", () => {
     const control = readFileSync(
       new URL(
-        "../../content/stages/dev-env-basics/modules/u03-files/tasks/q03-rename/private/solution/.stella-solution.json",
+        "../../content/stages/html-css-basics/modules/u00-files/tasks/q03-rename/private/solution/.stella-solution.json",
         import.meta.url,
       ),
     );

@@ -4,7 +4,7 @@ title: STELLA拡張を入れる
 takeaway: "STELLA 拡張は、拡張機能のビューで検索して入れます。"
 introduces: ["拡張機能", "STELLA 拡張"]
 requires: ["STELLA", "VS Code"]
-header: "開発環境とWebの入口"
+header: "STELLAの使い方"
 sourceRefs: ["SRC-dev-env-extensions-20261107", "SRC-dev-env-stella-20261107"]
 ---
 <!-- _class: lead -->

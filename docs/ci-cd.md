@@ -65,7 +65,7 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 
 デプロイは毎回、教材の公開バケット `stella-materials-public` に CORS (本番の Web とローカルの 5173 から GET/HEAD) を設定する。無いと動画・字幕・表紙をブラウザーが読み込まない。
 
-手元は ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意し、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。R2 の認証とバケットは PDF と共通。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。動画再生から完了は記録しない。
+手元は ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意し、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。R2 の認証とバケットは PDF と共通。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。受講者のレッスン画面では動画を 9 割まで見るとレッスンが完了になる。`/start` は進捗を記録しない。
 
 動画の方式はトピックごとに `video.json` → 収録版 (`screen.*`) → スライド版 (`narration.json`) の順で選ぶ。新方式は音声合成・ブラウザ起動の前に内容ハッシュを計算し、台帳に動画・字幕・ポスターがあれば生成を省く。ハッシュは正規化した `boards`・`scenes`・イラストの領域、実際の読み上げ文 (読み辞書適用後)、音声のモデル・声・話し方、間の定数、使うショット・クリップ・イラストの中身、描画・配置・時刻・書き出しのコードとフォントを含む。`brief`・`polish`・イラストの `prompt` は含めない。公開用の `video:sync` は `--tts-model`・`VIDEO_TTS_MODEL` を受け付けず、`narration/voice.json` のモデルを使う。
 
@@ -119,7 +119,7 @@ Settings → Secrets and variables → Actions で設定する。
 `github.optionalSecrets` だけは省略できる。値や API キーはこのファイルに書かない。
 
 `CLOUDFLARE_ACCOUNT_ID` は正本の `accountId` と同じアカウントにする。
-`CLOUDFLARE_API_TOKEN` には Workers Scripts Edit / D1 Edit / Account 読み取り / Workers R2 Storage Edit が必要。
+`CLOUDFLARE_API_TOKEN` には Workers Scripts Edit / D1 Edit / Account 読み取り / Workers R2 Storage Edit / Workers KV Storage Edit が必要。KV は `OAUTH_KV`（`stella-oauth`）を API の Worker にバインドするため。
 `VITE_SERVER_URL` は受講者用の Web のオリジン (`https://stella.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
 Web の Worker (`apps/web/worker`) が `/api/*` を API へ中継するので、画面と API は同じオリジンになる (ログインの Cookie のため)。旧ホスト `stella-web` は同じ `deploy:web` で新しいオリジンへ 308 する (`apps/web/wrangler.legacy.toml`)。
 教材の配信 URL は `VITE_MATERIALS_BASE_URL` に入れる。

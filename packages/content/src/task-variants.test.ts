@@ -106,9 +106,8 @@ describe("予備の類題", () => {
   };
 
   it("解答例の削除指定を素材から分け、公開 bundle と解答表示用素材に含めない", async () => {
-    const root = fixture();
-    const task = buildContentManifest(join(root, "stages")).tasks.find((t) =>
-      t.definition.id.endsWith("/q03-rename"),
+    const task = buildContentManifest().tasks.find(
+      (t) => t.definition.id === "html-css-basics/u00-files/q03-rename",
     );
     if (!task) throw new Error("名前を変える課題がありません");
     expect(task.solutionRemoves).toEqual(["memo.txt"]);

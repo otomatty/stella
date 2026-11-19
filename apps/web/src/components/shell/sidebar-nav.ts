@@ -52,7 +52,7 @@ const NAV: Record<Role, NavItem[]> = {
   // 受講者のホームはスキルツリー (「次にやること」付き)。ステージ一覧と別ページの
   // スキルツリーはホームへ集約したので、先頭の 1 つで学習の入口が決まる。
   learner: [
-    { id: "dash", label: "スキルツリー", icon: Compass },
+    { id: "dash", label: "ステージ一覧", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "cert", label: "修了証", icon: Award },
   ],

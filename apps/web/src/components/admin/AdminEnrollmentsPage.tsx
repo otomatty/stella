@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Download } from "@/lib/icons";
+import { Notice } from "@/components/common/Notice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import type { StageRow } from "@stella/shared/cms/types";
@@ -271,11 +272,7 @@ function EnrollmentsLive() {
         }
       />
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice className="mb-4">{error}</Notice> : null}
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <LearnerPanel

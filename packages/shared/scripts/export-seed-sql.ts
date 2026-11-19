@@ -863,7 +863,7 @@ if (!contentOnly) {
   }
 
   lines.push(
-    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${entryLessonId}', 'S0-Ch00-01-print-hello', ${strLit(entryStage?.title ?? "開発環境とWebの入口")}, ${strLit(entryStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) ${doUpdate("submissions", ["code", "status", "student_id"])};`,
+    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${entryLessonId}', 'S0-Ch00-01-print-hello', ${strLit(entryStage?.title ?? "STELLAの使い方")}, ${strLit(entryStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) ${doUpdate("submissions", ["code", "status", "student_id"])};`,
   );
 }
 
