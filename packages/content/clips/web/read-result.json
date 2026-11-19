@@ -4,11 +4,11 @@
   "width": 1600,
   "height": 1000,
   "fps": 30,
-  "duration": 15,
+  "duration": 13.8,
   "marks": {
-    "open-submissions": [8.54, 13.09]
+    "open-submissions": [7.35, 11.88]
   },
   "regions": {
-    "submissions": [475, 602, 1000, 139]
+    "submissions": [475, 602, 1000, 138]
   }
 }

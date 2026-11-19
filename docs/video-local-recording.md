@@ -64,7 +64,7 @@ OS のファイルの画面 (Windows のエクスプローラー) も撮って�
 
 ## 撮り直したクリップ
 
-6本のクリップと、収録2本を撮り直しました。
+7本のクリップと、収録2本を撮り直しました。
 対象のクリップは次のとおりです。
 
 - `web/read-lesson`
@@ -73,12 +73,26 @@ OS のファイルの画面 (Windows のエクスプローラー) も撮って�
 - `vscode/open-task`
 - `vscode/run-check`
 - `vscode/submit`
+- `vscode/open-in-browser`
 
 収録は `t1-edit-save` の `screen.*` です。
 `t3-run-check` の `screen.*` も同じです。
 ステージ名は「STELLAの使い方」です。
-拡張 0.9.0 の画面です。
+拡張 0.10.1 の画面です。
+名称は、教材・クイズ・「提出・レビューを確認する」に統一したあとです。
 「課題を確認する」はエディターの右上です。
+
+画面の名称や拡張の見た目が変わったら、同じものを撮り直します。
+
+- 上のクリップ7本を撮り直します。
+- 上の収録2本を撮り直します。
+
+撮り直したあとは、次を確かめます。
+
+- 絵コンテ `t1-learning-loop` と `t3-open-from-web` の静止画を見直します。
+- 絵コンテ `t4-submit` と `t2-open-in-browser` の静止画を見直します。
+- 静止画は `video:scenes -- <トピック> --stills` で出します。
+- 3単元の `references.json` の `contentHash` を更新します。
 
 ふだん使いの VS Code が更新の再起動待ちのときは、収録用の VS Code が起動しません。
 `firstWindow` の待ち時間切れになります。

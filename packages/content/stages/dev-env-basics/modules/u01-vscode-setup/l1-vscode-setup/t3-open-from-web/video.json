@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "brief": {
-    "goal": "Web の課題文のレッスンから課題を開き、VS Code で編集するファイルと課題文を見つけられる。",
+    "goal": "Web の課題文の教材から課題を開き、VS Code で編集するファイルと課題文を見つけられる。",
     "stuck": "課題をどこから開くのか、VS Code に切り替わったあとにどこを見ればよいのか迷う。",
     "points": [
-      "課題文のレッスンの「VS Code で開く」から課題を受け取ります。",
+      "課題文の教材の「VS Code で開く」から課題を受け取ります。",
       "VS Code では、左に編集するファイル、右に課題文が開きます。"
     ],
     "leaveOut": [
@@ -33,11 +33,11 @@
       "kind": "view",
       "role": "point",
       "point": 1,
-      "title": "課題文のレッスンから開く",
+      "title": "課題文の教材から開く",
       "image": "clip:web/open-task#press-open",
       "beats": [
         {
-          "say": "課題文のレッスンで「VS Code で開く」を押します。",
+          "say": "課題文の教材で「VS Code で開く」を押します。",
           "clip": "web/open-task#press-open",
           "zoom": "handoff",
           "spot": ["open"]
