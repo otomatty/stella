@@ -13,7 +13,6 @@ export function InlineMarkdown({ children }: { children: string }) {
       <ReactMarkdown
         allowedElements={["code", "strong", "em"]}
         unwrapDisallowed
-        skipHtml
         components={components}
       >
         {children}

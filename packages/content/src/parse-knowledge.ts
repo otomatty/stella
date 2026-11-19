@@ -59,6 +59,11 @@ export function parseKnowledge(source: string): QuizQuestionSeed[] {
     const first = rows[0];
     const last = rows.at(-1);
     if (!first || !last) throw new Error(`${question} の選択肢は <details> より前に書いてください`);
+    for (let i = 1; i < rows.length; i++) {
+      const previous = rows[i - 1];
+      if (content.slice(previous.index + previous[0].length, rows[i].index).trim())
+        throw new Error(`${question} の選択肢の間に文を書かないでください`);
+    }
     if (beforeDetails.slice(last.index + last[0].length).trim())
       throw new Error(`${question} の選択肢と <details> の間に文を書かないでください`);
     const bodySource = beforeDetails.slice(0, first.index);

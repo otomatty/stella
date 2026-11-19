@@ -104,6 +104,14 @@ describe("knowledge.md", () => {
       ],
     });
   });
+  it("選択肢の間にある文やコードフェンスを拒否する", () => {
+    for (const gap of ["補足", "```md\n補足\n```"]) {
+      const source = question("single", "A", `- A. 正しい\n\n${gap}\n\n- B. 誤り`);
+      expect(() => parseKnowledge(source)).toThrow(
+        "knowledge.md: Q1 の選択肢の間に文を書かないでください",
+      );
+    }
+  });
   it("選択肢と解答の間の文を拒否する", () => {
     const source = question("single", "A").replace("<details>", "補足の文\n\n<details>");
     expect(() => parseKnowledge(source)).toThrow(/Q1 の選択肢と <details> の間/);
