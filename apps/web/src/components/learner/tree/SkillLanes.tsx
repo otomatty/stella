@@ -16,14 +16,12 @@ import { describeStar, type StarDetail } from "./star-detail";
 interface SkillLanesProps {
   nodes: readonly SkillMapStageNode[];
   activeStageId: string | null;
-  queuedStageIds: readonly string[];
   revealDev: boolean;
   activeInfo: ActiveStarInfo | null;
   islandCaption?: (key: string) => string | null;
   insetLeft: number;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   onShowInTree: (stageId: string) => void;
@@ -33,7 +31,6 @@ interface SkillLanesProps {
 export function SkillLanes({
   nodes,
   activeStageId,
-  queuedStageIds,
   revealDev,
   activeInfo,
   islandCaption,
@@ -110,7 +107,6 @@ export function SkillLanes({
                   const detail = describeStar({
                     node,
                     isActive: active,
-                    queued: queuedStageIds.includes(node.id),
                     revealDev,
                   });
                   const full = node.visibility === "full";
@@ -248,12 +244,7 @@ export function SkillLanes({
 interface LaneActionsProps
   extends Pick<
     SkillLanesProps,
-    | "onResumeStage"
-    | "onStartStage"
-    | "onQueueStage"
-    | "onSkillCheck"
-    | "onOpenStage"
-    | "onShowInTree"
+    "onResumeStage" | "onStartStage" | "onSkillCheck" | "onOpenStage" | "onShowInTree"
   > {
   detail: StarDetail;
   stageId: string;
@@ -267,12 +258,11 @@ function LaneActions({
   openTask,
   onResumeStage,
   onStartStage,
-  onQueueStage,
   onSkillCheck,
   onOpenStage,
   onShowInTree,
 }: LaneActionsProps) {
-  const { resume, start, skillCheck, openStage, queue } = detail.actions;
+  const { resume, start, skillCheck, openStage } = detail.actions;
   const primary = resume
     ? {
         label: openTask ? "課題に取り組む" : "続きから",
@@ -317,11 +307,6 @@ function LaneActions({
         {skillCheck === "try" ? (
           <button type="button" onClick={() => onSkillCheck(stageId)}>
             腕試し
-          </button>
-        ) : null}
-        {queue ? (
-          <button type="button" onClick={() => onQueueStage(stageId)}>
-            キューに追加
           </button>
         ) : null}
         <button

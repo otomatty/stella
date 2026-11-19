@@ -545,7 +545,7 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
   );
 };
 
-/** ガイドの小見出し付きの区画 (そのあと / 次にやるリスト / 発見教材)。 */
+/** ガイドの小見出し付きの区画 (そのあと / 発見教材)。 */
 export const GuideSection = ({
   title,
   meta,

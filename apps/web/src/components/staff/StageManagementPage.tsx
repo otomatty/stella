@@ -41,7 +41,6 @@ import {
 
 /** PC で開いたカードが覆う幅 (左 16px + 幅 360px + 右 16px)。ホームのガイドと同じ。 */
 const CARD_INSET_PX = 392;
-const EMPTY_QUEUE: string[] = [];
 
 function noop() {
   return undefined;
@@ -199,7 +198,6 @@ export function StageManagementPage({
             nodes={plan.board}
             currentUserId={currentUserId}
             activeStageId={null}
-            queuedStageIds={EMPTY_QUEUE}
             initialFocusStageId={initialFocusStageId}
             initialFit={isDesktop && initialFocusStageId === null}
             showIslandChips={false}
@@ -212,7 +210,6 @@ export function StageManagementPage({
             onSelectIsland={selectIsland}
             onResumeStage={noop}
             onStartStage={noop}
-            onQueueStage={noop}
             onSkillCheck={noop}
             onOpenStage={noop}
             celebrate={false}

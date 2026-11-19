@@ -14,12 +14,11 @@ const node = (over: Partial<SkillMapStageNode> = {}): SkillMapStageNode => ({
 
 const describe1 = (
   over: Partial<SkillMapStageNode> = {},
-  opts: { isActive?: boolean; queued?: boolean; revealDev?: boolean } = {},
+  opts: { isActive?: boolean; revealDev?: boolean } = {},
 ) =>
   describeStar({
     node: node(over),
     isActive: opts.isActive ?? false,
-    queued: opts.queued ?? false,
     revealDev: opts.revealDev ?? false,
   });
 
@@ -93,7 +92,6 @@ describe("describeStar のボタン", () => {
       skillCheck: "none",
       resume: false,
       start: false,
-      queue: false,
       openStage: false,
       clearedNote: false,
     });
@@ -105,7 +103,6 @@ describe("describeStar のボタン", () => {
         skillCheck: "none",
         resume: false,
         start: false,
-        queue: false,
         openStage: false,
         clearedNote: false,
       });
@@ -117,31 +114,26 @@ describe("describeStar のボタン", () => {
       skillCheck: "challenge",
       resume: false,
       start: false,
-      queue: false,
       openStage: false,
       clearedNote: false,
     });
   });
 
-  it("解放済みは腕試し + 着手。キューとレッスン一覧は受講登録がある星だけ", () => {
+  it("解放済みは腕試し + 着手。レッスン一覧は受講登録がある星だけ", () => {
     expect(describe1({ enrolled: true }).actions).toEqual({
       skillCheck: "try",
       resume: false,
       start: true,
-      queue: true,
       openStage: true,
       clearedNote: false,
     });
-    expect(describe1({ enrolled: false }).actions.queue).toBe(false);
     expect(describe1({ enrolled: false }).actions.openStage).toBe(false);
-    expect(describe1({ enrolled: true }, { queued: true }).actions.queue).toBe(false);
   });
 
   it("進行中の星は着手の代わりに「続きから」を出す", () => {
     const active = describe1({ enrolled: true }, { isActive: true }).actions;
     expect(active.resume).toBe(true);
     expect(active.start).toBe(false);
-    expect(active.queue).toBe(false);
     expect(active.openStage).toBe(true);
   });
 
@@ -151,7 +143,6 @@ describe("describeStar のボタン", () => {
       skillCheck: "try",
       resume: false,
       start: false,
-      queue: false,
       openStage: true,
       clearedNote: true,
     });

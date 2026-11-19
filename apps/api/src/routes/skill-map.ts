@@ -89,7 +89,6 @@ import {
   wantsDevReveal,
 } from "../lib/skill-map-data.js";
 import type { SkillMapSource, StaffSkillMapStageRow } from "../lib/skill-map-data.js";
-import { dropFromQueue } from "./stage-queue.js";
 import type { Env } from "../env.js";
 
 export const skillMapRoute = new Hono<{ Bindings: Env }>();
@@ -877,8 +876,6 @@ skillMapRoute.put("/api/skill-map/active-stage", async (c) => {
     }
 
     await saveFocusStageId(db, caller, stageId);
-    // 着手した星は「次にやるリスト」から外す (待ち行列に残すと二重に見える)。
-    if (stageId !== null) await dropFromQueue(db, caller, stageId);
     return c.json({ active_stage_id: stageId });
   } catch (err) {
     return errorResponse(c, err);

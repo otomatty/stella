@@ -85,7 +85,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { isApiConfigured } from "@/lib/api-client";
-import { ArrowUp, Book, Check, Lock, Play, Plus, Sparkles, Star, X } from "@/lib/icons";
+import { ArrowUp, Book, Check, Lock, Play, Sparkles, Star, X } from "@/lib/icons";
 import { getSkillMapIcons, type SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
@@ -132,14 +132,10 @@ interface SkillTreeProps {
   /** 演出のスナップショットを本人ごとに分けるためのキー。 */
   currentUserId: string | null;
   activeStageId: string | null;
-  /** 既に「次にやるリスト」に積んである星。 */
-  queuedStageIds: string[];
   /** 「続きから」(進行中の星のレッスンを開く)。 */
   onResumeStage: (stageId: string) => void;
   /** 「ここから始める」(いま進める星に切り替える)。 */
   onStartStage: (stageId: string) => void;
-  /** 「キューに追加」。 */
-  onQueueStage: (stageId: string) => void;
   /** 腕試しを開く。 */
   onSkillCheck: (stageId: string) => void;
   /** 「レッスン一覧」(ステージ詳細を開く)。 */
@@ -441,10 +437,8 @@ export const SkillTree = ({
   nodes,
   currentUserId,
   activeStageId,
-  queuedStageIds,
   onResumeStage,
   onStartStage,
-  onQueueStage,
   onSkillCheck,
   onOpenStage,
   revealDev = false,
@@ -1205,13 +1199,11 @@ export const SkillTree = ({
             <StarSheet
               placed={sheetNode}
               activeStageId={activeStageId}
-              queuedStageIds={queuedStageIds}
               revealDev={revealDev}
               anchorRef={sheetAnchorRef}
               onClose={() => setSheetId(null)}
               onResumeStage={onResumeStage}
               onStartStage={onStartStage}
-              onQueueStage={onQueueStage}
               onSkillCheck={onSkillCheck}
               onOpenStage={onOpenStage}
               renderDetail={renderDetail}
@@ -1427,7 +1419,6 @@ export const SkillTree = ({
           isNextUnlock={nextUnlocks.has(placed.node.id)}
           activeTitle={activeTitle}
           activeProgress={activeInfo?.progress}
-          queued={queuedStageIds.includes(placed.node.id)}
           showCurrentLabel={!isOverview}
           showLabel={
             !isOverview &&
@@ -1456,7 +1447,6 @@ export const SkillTree = ({
           onOpenSheet={(anchor) => openSheet(placed, anchor)}
           onResumeStage={onResumeStage}
           onStartStage={onStartStage}
-          onQueueStage={onQueueStage}
           onSkillCheck={onSkillCheck}
           onOpenStage={onOpenStage}
           revealDev={revealDev}
@@ -1474,7 +1464,6 @@ interface StarNodeProps {
   isNextUnlock: boolean;
   activeTitle: string | null;
   activeProgress?: number;
-  queued: boolean;
   /** 名前札を出すか。 */
   showLabel: boolean;
   showCurrentLabel: boolean;
@@ -1516,7 +1505,6 @@ interface StarNodeProps {
   onOpenSheet: (anchor: HTMLButtonElement) => void;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   revealDev: boolean;
@@ -1531,7 +1519,6 @@ const StarNode = ({
   isNextUnlock,
   activeTitle,
   activeProgress,
-  queued,
   showLabel,
   showCurrentLabel,
   labelSide,
@@ -1552,7 +1539,6 @@ const StarNode = ({
   onOpenSheet,
   onResumeStage,
   onStartStage,
-  onQueueStage,
   onSkillCheck,
   onOpenStage,
   revealDev,
@@ -1560,7 +1546,7 @@ const StarNode = ({
   renderDetail,
 }: StarNodeProps) => {
   const node = placed.node;
-  const detail = describeStar({ node, isActive, queued, revealDev });
+  const detail = describeStar({ node, isActive, revealDev });
   const fog = node.visibility === "fog";
   const cleared = node.state === "cleared";
   const locked = node.state === "locked";
@@ -1851,7 +1837,6 @@ const StarNode = ({
                   onAct={act}
                   onResumeStage={onResumeStage}
                   onStartStage={onStartStage}
-                  onQueueStage={onQueueStage}
                   onSkillCheck={onSkillCheck}
                   onOpenStage={onOpenStage}
                   openTask={activeInfo?.openTask}
@@ -1873,14 +1858,12 @@ interface StarSheetProps {
   placed: RadialNode | null;
   activeStageId: string | null;
   activeTitle: string | null;
-  queuedStageIds: string[];
   revealDev: boolean;
   /** 閉じたときにフォーカスを戻す星。 */
   anchorRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   renderDetail?: (node: SkillMapStageNode, close: () => void) => ReactNode;
@@ -1899,13 +1882,11 @@ const StarSheet = ({
   placed,
   activeStageId,
   activeTitle,
-  queuedStageIds,
   revealDev,
   anchorRef,
   onClose,
   onResumeStage,
   onStartStage,
-  onQueueStage,
   onSkillCheck,
   onOpenStage,
   renderDetail,
@@ -1919,7 +1900,7 @@ const StarSheet = ({
    * 閉じアニメーションの 200ms のあいだ overlay が受験画面の上に残り、その間の
    * タップを飲んでしまう。渡したときは**アニメーションを省いて即座に畳み**、
    * フォーカスも星へ戻さない (開いたダイアログの focus trap と取り合いになる)。
-   * 着手・キューは次のモーダルが無いので、従来どおり滑らせて閉じる。
+   * 着手は次のモーダルが無いので、従来どおり滑らせて閉じる。
    */
   const handedOffRef = useRef(false);
   if (placed) {
@@ -1934,7 +1915,6 @@ const StarSheet = ({
   const detail = describeStar({
     node,
     isActive,
-    queued: queuedStageIds.includes(node.id),
     revealDev,
   });
   const act = (run: () => void) => {
@@ -2028,7 +2008,6 @@ const StarSheet = ({
                   onAct={act}
                   onResumeStage={onResumeStage}
                   onStartStage={onStartStage}
-                  onQueueStage={onQueueStage}
                   onSkillCheck={handOffToSkillCheck}
                   onOpenStage={onOpenStage}
                   openTask={isActive ? activeInfo?.openTask : undefined}
@@ -2125,7 +2104,6 @@ interface StarActionsProps {
   onAct: (run: () => void) => void;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   /** 受講者の番の課題が残っているとき、「続きから」の代わりに出す。 */
@@ -2144,12 +2122,11 @@ export const StarActions = ({
   onAct,
   onResumeStage,
   onStartStage,
-  onQueueStage,
   onSkillCheck,
   onOpenStage,
   openTask,
 }: StarActionsProps) => {
-  const { skillCheck, resume, start, queue, openStage, clearedNote } = detail.actions;
+  const { skillCheck, resume, start, openStage, clearedNote } = detail.actions;
   return (
     <>
       {resume ? (
@@ -2195,13 +2172,6 @@ export const StarActions = ({
         >
           <Book size={12} />
           教材の一覧
-        </Button>
-      ) : null}
-
-      {queue ? (
-        <Button size={size} variant="ghost" onClick={() => onAct(() => onQueueStage(stageId))}>
-          <Plus size={12} />
-          キューに追加
         </Button>
       ) : null}
 
