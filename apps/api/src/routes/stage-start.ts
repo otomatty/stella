@@ -85,7 +85,7 @@ stageStartRoute.post("/api/stages/:id/staff-enroll", async (c) => {
 });
 
 /** クリア済みの星を断る文言 (本人が終わらせた星なので、そのまま理由を返してよい)。 */
-const ALREADY_CLEARED_MESSAGE = "クリア済みのステージです";
+const ALREADY_CLEARED_MESSAGE = "完了済みのステージです";
 
 stageStartRoute.post("/api/stages/:id/start", async (c) => {
   try {
@@ -111,8 +111,8 @@ stageStartRoute.post("/api/stages/:id/start", async (c) => {
       const reasons = maskedLockReasons(source, result, stageId);
       throw new ApiError(
         reasons.length > 0
-          ? `${reasons.join(" / ")} をクリアすると始められます`
-          : "前提のステージをクリアすると始められます",
+          ? `${reasons.join(" / ")} を完了すると始められます`
+          : "前提のステージを完了すると始められます",
         400,
       );
     }

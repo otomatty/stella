@@ -172,8 +172,8 @@ function GradebookTable({
         <TableHeader>
           <TableRow>
             <TableHead>受講者</TableHead>
-            <TableHead>レッスン</TableHead>
-            <TableHead>小テスト</TableHead>
+            <TableHead>教材</TableHead>
+            <TableHead>クイズ</TableHead>
             <TableHead>課題</TableHead>
             <TableHead>状態</TableHead>
             <TableHead className="text-right">操作</TableHead>

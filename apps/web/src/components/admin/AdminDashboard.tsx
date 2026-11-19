@@ -203,7 +203,7 @@ function LiveContent({ analytics }: { analytics: Analytics }) {
           </CardHeader>
           {analytics.stumbles.length === 0 ? (
             <div className="py-10 text-center text-[12.5px] text-ink-3">
-              小テストの受験データがまだありません。
+              クイズの受験データがまだありません。
             </div>
           ) : (
             <Table>

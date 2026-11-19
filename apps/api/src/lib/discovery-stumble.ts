@@ -59,7 +59,7 @@ export async function noteQuizStumble(
   if (!stage) return;
   await upsertDiscoveryRequest(db, {
     stageId: stage.stageId,
-    topic: `確認テスト「${stage.lessonTitle}」`,
+    topic: `クイズ「${stage.lessonTitle}」`,
     origin: "quiz_fail",
   });
 }

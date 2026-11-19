@@ -641,7 +641,7 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
       const locked = await withResourceLock(db, `lesson-markdown:${input.id}`, save);
       if (!locked.ran) {
         throw new ApiError(
-          "同じレッスンが他の操作で更新中です。少し待ってから保存し直してください",
+          "同じ教材が他の操作で更新中です。少し待ってから保存し直してください",
           409,
         );
       }

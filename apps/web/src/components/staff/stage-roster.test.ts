@@ -115,7 +115,7 @@ describe("割り当てと免除の差分", () => {
     const open = row({ id: "sato" });
     expect(exemptionControl(cleared, true, false)).toEqual({
       kind: "text",
-      label: "前提クリア済み",
+      label: "前提を完了済み",
     });
     expect(exemptionControl(skill, true, false)).toEqual({
       kind: "text",

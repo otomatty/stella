@@ -75,7 +75,7 @@ const BROKEN_RECORD_LABELS: Record<string, string> = {
   debugging_record: "修正の記録",
   support_log: "支援の記録",
   task_snapshot: "提出時の課題文",
-  grading_summary: "自動採点の記録",
+  grading_summary: "自動の確認の記録",
 };
 
 const severityDot: Record<ReviewSuggestion["severity"], string> = {
@@ -329,7 +329,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
         throw err;
       }
       if (!saved) {
-        toast.error("採点の保存に失敗しました");
+        toast.error("レビューの保存に失敗しました");
         return;
       }
       setVerdict(v);
@@ -385,7 +385,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
           {submission.gradingSummary && !submission.gradingSummary.cleared ? (
             <Badge variant="warning">
               <AlertTriangle size={10} />
-              自動採点で未クリア
+              自動の確認で不合格
             </Badge>
           ) : null}
           {draftLoading ? (
@@ -487,7 +487,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                       (!taskDetail.machineCheck.ci ||
                         taskDetail.machineCheck.ci.status === "verified")
                     ? "機械の照合は一致しました"
-                    : "講師の確認が必要です"}
+                    : "管理者の確認が必要です"}
               </p>
               {taskDetail?.brokenRecords?.length ? (
                 // 壊れた記録は空として表示している。合否は講師が提出ファイルを見て決める (#34)。
@@ -610,7 +610,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
               <TabsList className="border-b border-border flex px-0 gap-0 m-0">
                 {submission.gradingSummary ? (
                   <TabTrigger value="grade" icon={<AlertTriangle />}>
-                    自動採点
+                    自動の確認
                   </TabTrigger>
                 ) : null}
                 {wasAiConfirmed ? (
@@ -662,7 +662,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                   <Sparkles size={15} className="shrink-0 mt-0.5" />
                   <div>
                     <strong className="font-semibold">AIは下書きです。</strong>
-                    採用・却下・編集を行い、講師の判断で最終確定してください。完全自動化はしません。
+                    採用・却下・編集を行い、管理者の判断で最終確定してください。完全自動化はしません。
                   </div>
                 </div>
 
@@ -860,15 +860,15 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                     !verdict || aiPassedNow || finalizing || (!!submission.taskId && !taskDetail)
                   }
                 >
-                  採点を確定
+                  レビューを確定
                 </Button>
 
                 <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 text-[12.5px] text-brand-ink">
                   <Info size={14} />
                   <div>
                     {isBackendConfigured()
-                      ? "採点を確定すると受講者に LMS 通知が送られます（メールは送信しません）。"
-                      : "採点を確定するとローカルに保存されます（デモ）。"}
+                      ? "レビューを確定すると受講者に LMS 通知が送られます（メールは送信しません）。"
+                      : "レビューを確定するとローカルに保存されます（デモ）。"}
                   </div>
                 </div>
               </TabsContent>
@@ -889,8 +889,8 @@ const GradeSummaryPanel = ({ summary }: { summary: GradingSummary }) => (
     <div className="flex gap-2.5 items-start bg-warning-soft border border-border rounded-md px-3.5 py-3 mb-3.5 text-warning">
       <AlertTriangle size={15} className="shrink-0 mt-0.5" />
       <div>
-        <strong className="font-semibold">学習者はここで詰まっています。</strong>
-        VS Code の自動採点が
+        <strong className="font-semibold">受講者はここで詰まっています。</strong>
+        VS Code の自動の確認が
         {summary.cleared ? "通った状態で引き継がれました。" : "通らなかった提出です。"}
       </div>
     </div>

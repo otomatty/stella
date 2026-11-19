@@ -162,7 +162,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       }
     } catch (err) {
       console.error("[QuizPlayer] submit failed", err);
-      toast.error(err instanceof Error ? err.message : "採点に失敗しました");
+      toast.error(err instanceof Error ? err.message : "確認に失敗しました");
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +195,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
         <HelpCircle size={28} className="text-ink-4" />
         <div className="font-medium text-ink-2">クイズはまだ準備中です</div>
-        <div className="text-[12.5px]">このレッスンの設問はまだ公開されていません。</div>
+        <div className="text-[12.5px]">この教材の設問はまだ公開されていません。</div>
       </div>
     );
   }
@@ -411,7 +411,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
               onClick={handleSubmit}
             >
               {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
-              採点する
+              確認する
             </Button>
           </div>
           {/* sm 未満: 画面下部固定のアクションバー。 右端は AI FAB (right-6 + w-12 = 72px)
@@ -430,7 +430,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                   onClick={handleSubmit}
                 >
                   {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
-                  採点する
+                  確認する
                 </Button>
               </div>
             </div>

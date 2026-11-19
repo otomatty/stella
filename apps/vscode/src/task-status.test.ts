@@ -354,7 +354,7 @@ describe("ステータスバーの課題の状態", () => {
     ["passed", "failed", "$(pass-filled) 合格", false],
     ["ai-passed", "failed", "$(pass-filled) 合格", false],
     ["submitted", "failed", "$(clock) AI が確認中", false],
-    ["instructor-pending", "failed", "$(clock) 講師の確認待ち", false],
+    ["instructor-pending", "failed", "$(clock) 管理者の確認待ち", false],
     ["resubmit", undefined, "$(error) 再提出", true],
     ["resubmit", "passed", "$(error) 再提出", true],
     ["resubmit", "failed", "$(error) 直すところ 1/7", true],

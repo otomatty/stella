@@ -301,7 +301,7 @@ function LaneActions({
       <div className="flex flex-wrap items-center gap-3 text-[11.5px] text-ink-2 [&>button]:min-h-8 [&>button]:rounded-sm [&>button]:hover:text-brand [&>button]:hover:underline [&>button]:focus-visible:outline-none [&>button]:focus-visible:ring-2 [&>button]:focus-visible:ring-brand">
         {openStage ? (
           <button type="button" onClick={() => onOpenStage(stageId)}>
-            レッスン一覧
+            教材の一覧
           </button>
         ) : null}
         {skillCheck === "try" ? (
@@ -311,10 +311,10 @@ function LaneActions({
         ) : null}
         <button
           type="button"
-          aria-label={`${detail.obscured ? "名前の伏せられたスキル" : detail.label}をツリーで見る`}
+          aria-label={`${detail.obscured ? "名前の伏せられたスキル" : detail.label}をステージ一覧で見る`}
           onClick={() => onShowInTree(stageId)}
         >
-          ツリーで見る
+          ステージ一覧で見る
         </button>
       </div>
     </div>

@@ -343,7 +343,7 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
     const tooLarge = bundleSizeProblem(bundle.files);
     if (tooLarge) {
       console.error("[tasks] 固定した開始点が上限を超えています", row.id, tooLarge);
-      throw new ApiError("固定した開始点を配れません。講師に相談してください", 500);
+      throw new ApiError("固定した開始点を配れません。管理者に相談してください", 500);
     }
     await db
       .insert(taskFixedStartUses)

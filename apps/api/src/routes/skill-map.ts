@@ -862,7 +862,7 @@ skillMapRoute.put("/api/skill-map/active-stage", async (c) => {
       const source = await loadSkillMapSource(db, caller, { showAllIslands: wantsDevReveal(c) });
       if (source.clearedStageIds.has(stageId)) {
         // クリア済みは秘密ではない (本人が終わらせた星) ので、そのまま理由を返す。
-        throw new ApiError("クリア済みのステージは選べません", 400);
+        throw new ApiError("完了済みのステージは選べません", 400);
       }
       const result = evaluateSkillMapFor(source);
       // 霧より先の星を自分で active にすると、その星と隣接が即 full になり、視界制限が

@@ -33,7 +33,7 @@ import { studyWeekStart } from "@stella/shared/study/pace";
 import { helpSupportKind } from "@stella/shared/tasks/help";
 import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
 import {
-  CONSULT_SUPPORT_DETAIL,
+  isConsultSupportDetail,
   type EvidenceLevel,
   RECORDED_SUPPORT_KINDS,
   type SupportRecordKind,
@@ -510,7 +510,7 @@ export async function collectMemoMaterial(
       // 固定した開始点は受け取りの記録で数えた。提出に載った写しは時刻がずれることもある
       // (拡張は手元の時刻で残す) ので、時刻で突き合わせず、写しは数えない。
       if (e.kind === "fixed-start") continue;
-      if (s.mode === "consult" && e.kind === "instructor" && e.detail === CONSULT_SUPPORT_DETAIL)
+      if (s.mode === "consult" && e.kind === "instructor" && isConsultSupportDetail(e.detail))
         continue;
       const at = new Date(e.at);
       if (Number.isNaN(at.getTime()) || at < from || at >= to) continue;

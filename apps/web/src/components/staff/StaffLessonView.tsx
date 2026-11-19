@@ -55,7 +55,7 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
   const status = lesson ? lessonVideoStatus(lesson) : "none";
   const adjacent = data ? adjacentStageLessons(data, lessonId) : null;
   const outline = (
-    <nav aria-label="レッスンの並び" className="space-y-4">
+    <nav aria-label="教材の並び" className="space-y-4">
       {sections.map(({ section, lessons }) => (
         <div key={section.id}>
           <h2 className="mb-2 text-sm font-semibold">{section.title}</h2>
@@ -106,7 +106,7 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
           <Button onClick={() => void load()}>再読み込み</Button>
         </div>
       ) : !lesson || !data ? (
-        <p>このレッスンは見つかりません</p>
+        <p>この教材は見つかりません</p>
       ) : (
         <>
           <PageHeader
@@ -119,7 +119,7 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
           <div className="grid min-w-0 gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
             <aside className="hidden md:block">{outline}</aside>
             <details className="md:hidden">
-              <summary className="cursor-pointer text-sm font-semibold">レッスンの並び</summary>
+              <summary className="cursor-pointer text-sm font-semibold">教材の並び</summary>
               <div className="mt-3">{outline}</div>
             </details>
             <div className="min-w-0 space-y-5">
@@ -137,7 +137,7 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
                 </div>
               ) : (
                 <p className="text-sm text-ink-2">
-                  このレッスンは{LESSON_TYPE_LABELS[lesson.type]}
+                  この教材は{LESSON_TYPE_LABELS[lesson.type]}
                   です。受講者と同じ画面で確かめるときは、ステージ詳細の『受講者の画面で確かめる』を使います
                 </p>
               )}
@@ -173,10 +173,7 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
                   </dl>
                 </Card>
               ) : null}
-              <nav
-                aria-label="前後のレッスン"
-                className="flex flex-wrap justify-between gap-4 text-sm"
-              >
+              <nav aria-label="前後の教材" className="flex flex-wrap justify-between gap-4 text-sm">
                 {adjacent?.previous ? (
                   <Link
                     to="/stages/$stageId/lessons/$lessonId"

@@ -309,7 +309,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       await patch({ verdict: corrected, reviewNotes: "判定を訂正しました" });
       expect((await notices()).length).toBe(2);
       const correction = (await notices()).find((n) => n.payload.verdict === corrected);
-      expect(correction?.title).toContain("添削結果が変更されました");
+      expect(correction?.title).toContain("レビュー結果が変更されました");
       expect(correction?.payload.submission_id).toBe(row.id);
       expect((await db.select().from(certificates)).length).toBe(0);
       expect((await db.select().from(taskProgress))[0].status).toBe("resubmit");

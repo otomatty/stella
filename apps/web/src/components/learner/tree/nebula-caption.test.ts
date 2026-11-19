@@ -10,7 +10,7 @@ describe("nebulaCaption", () => {
   });
 
   it("開発環境の名前は入口にする", () => {
-    expect(nebulaCaption("AWS資格", [])).toBe("入口のクリアで現れた");
+    expect(nebulaCaption("AWS資格", [])).toBe("入口の完了で現れた");
   });
 
   it("配信された星から前提の名前を引く", () => {
@@ -23,16 +23,16 @@ describe("nebulaCaption", () => {
         visibility: "full",
       },
     ];
-    expect(nebulaCaption("DevOps", nodes)).toBe("Python 入門のクリアで現れた");
+    expect(nebulaCaption("DevOps", nodes)).toBe("Python 入門の完了で現れた");
   });
 
   it("前提が未配信・名前なしなら名前を推測しない", () => {
-    expect(nebulaCaption("DevOps", [])).toBe("前提のクリアで現れた");
+    expect(nebulaCaption("DevOps", [])).toBe("前提の完了で現れた");
     expect(
       nebulaCaption("DevOps", [
         { id: "python", slug: "python-basics", state: "locked", visibility: "edge" },
       ]),
-    ).toBe("前提のクリアで現れた");
+    ).toBe("前提の完了で現れた");
   });
 
   it("未知のキーなら null", () => {

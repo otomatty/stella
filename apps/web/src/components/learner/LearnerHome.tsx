@@ -406,7 +406,7 @@ export const LearnerHome = ({
       return;
     }
     if (!treeRef.current?.focusStage(stageId)) {
-      toast("この星はまだツリーに見えていません");
+      toast("この星はまだステージ一覧に表示されていません");
     }
   };
 
@@ -455,7 +455,7 @@ export const LearnerHome = ({
                 wrapup.detail
               : activeStage.lessonsCount === 0
                 ? "教材の準備中です。"
-                : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
+                : "教材はすべて終わりました。課題とレビューの結果を確かめましょう。",
           ...(!nextLesson && wrapup?.learnerTurn ? { openTask: openPendingTask } : {}),
         }
       : null;
@@ -514,7 +514,7 @@ export const LearnerHome = ({
       return;
     const frame = requestAnimationFrame(() => {
       if (!treeRef.current?.focusStage(pendingFocusId)) {
-        toast("この星はまだツリーに見えていません");
+        toast("この星はまだステージ一覧に表示されていません");
       }
       setPendingFocusId(null);
     });
@@ -650,7 +650,7 @@ export const LearnerHome = ({
                     }}
                   >
                     <Icon size={14} />
-                    {view === "tree" ? "ツリー" : "道のり"}
+                    {view === "tree" ? "ステージ一覧" : "道のり"}
                   </button>
                 );
               })}

@@ -575,6 +575,13 @@
       "when": 1795046400000,
       "tag": "0084_drop_stage_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "6",
+      "when": 1795046400001,
+      "tag": "0085_discovery_topic_quiz",
+      "breakpoints": true
     }
   ]
 }

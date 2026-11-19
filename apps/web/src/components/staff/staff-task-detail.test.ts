@@ -40,7 +40,7 @@ describe("課題詳細の表示", () => {
       { label: "手元で合格", count: 6 },
       { label: "提出", count: 5 },
       { label: "AI が確認中", count: 4 },
-      { label: "講師の確認待ち", count: 3 },
+      { label: "管理者の確認待ち", count: 3 },
       { label: "再提出", count: 2 },
       { label: "合格", count: 1 },
     ]);

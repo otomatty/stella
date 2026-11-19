@@ -247,7 +247,7 @@ export async function verifyTaskSubmission(
     files.push({ path: f.path, bytes: data.length, sha256: await contentHash(data), data });
   }
   const reasons: string[] = [];
-  if (input.mode === "consult") reasons.push("受講者が講師への相談を求めています");
+  if (input.mode === "consult") reasons.push("受講者が管理者への相談を求めています");
   if (
     manifest.id !== input.taskId ||
     input.contentHash !== bundle.contentHash ||

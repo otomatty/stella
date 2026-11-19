@@ -186,10 +186,10 @@ describe("表示文言", () => {
     expect(stageAudienceLabel("granted")).toBe("Extra");
     expect(stageManagementTitle()).toBe("ステージ管理");
     expect(offBoardNote(stage({ id: "a", status: "archived" }))).toBe(
-      "アーカイブのため、盤面には載せていません",
+      "アーカイブのため、ステージ一覧には載せていません",
     );
     expect(offBoardNote(stage({ id: "b", status: "draft", category: "" }))).toBe(
-      "カテゴリも親も無いため、盤面には載せていません",
+      "カテゴリも親も無いため、ステージ一覧には載せていません",
     );
   });
 });
@@ -258,7 +258,7 @@ describe("staffMapContents", () => {
       title: "Node API 入門",
       routeKey: "バックエンド",
     });
-    expect(island("DevOps")?.visibility).toBe("Python 入門 クリア後");
+    expect(island("DevOps")?.visibility).toBe("Python 入門 完了後");
     expect(island("DevOps")?.prerequisite).toEqual({
       id: "python-basics",
       title: "Python 入門",
@@ -270,8 +270,8 @@ describe("staffMapContents", () => {
       title: "STELLAの使い方",
       routeKey: "基礎",
     });
-    expect(island("AWS資格")?.visibility).toBe("入口 クリア後");
-    expect(island("Python")?.next).toEqual([{ key: "DevOps", visibility: "Python 入門 クリア後" }]);
+    expect(island("AWS資格")?.visibility).toBe("入口 完了後");
+    expect(island("Python")?.next).toEqual([{ key: "DevOps", visibility: "Python 入門 完了後" }]);
   });
 
   it("空の盤面と Basic が混じる島も扱う。入力を並べ替えない", () => {

@@ -174,7 +174,10 @@ discoveryRoute.post("/api/discovery/:id", async (c) => {
         passed: grade.passed,
         ...(recorded
           ? {}
-          : { record_error: "採点はできましたが記録に失敗しました。もう一度挑戦してください" }),
+          : {
+              record_error:
+                "回答は確認できましたが、結果の記録に失敗しました。もう一度挑戦してください",
+            }),
       },
     });
   } catch (err) {

@@ -162,8 +162,8 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
             sub={<p className="break-all font-mono text-xs text-ink-3">{stage.slug}</p>}
             meta={
               <p className="text-[13px] text-ink-2">
-                {sections.length} 単元 ·{" "}
-                {sections.reduce((sum, section) => sum + section.lessonCount, 0)} レッスン ·{" "}
+                {sections.length} 単元 · 教材{" "}
+                {sections.reduce((sum, section) => sum + section.lessonCount, 0)} 件 ·{" "}
                 {data.tasks.length} 課題 · 目安 {stage.duration_hours ?? "—"} 時間 · 前提:{" "}
                 {prerequisitesLabel(data.prerequisites)}
               </p>
@@ -492,7 +492,7 @@ function TasksTab({
                 <Fragment key={section.section.id}>
                   <TableRow className="bg-sunken">
                     <TableCell colSpan={9} className="font-semibold">
-                      {section.section.title} · {section.lessonCount} レッスン ·{" "}
+                      {section.section.title} · 教材 {section.lessonCount} 件 ·{" "}
                       {section.tasks.length} 課題
                     </TableCell>
                   </TableRow>
@@ -596,7 +596,7 @@ function OutlineTab({
             <summary className="cursor-pointer space-y-1 p-4 text-[13px] font-semibold">
               {section.section.title}
               <span className="ml-3 inline-block text-xs font-normal text-ink-3">
-                {section.lessonCount} レッスン · {section.tasks.length} 課題 · 確認待ち{" "}
+                教材 {section.lessonCount} 件 · {section.tasks.length} 課題 · 確認待ち{" "}
                 {section.waiting}
               </span>
             </summary>
@@ -695,7 +695,7 @@ function LearnersTab({ stageId }: { stageId: string }) {
           <Table>
             <TableHeader>
               <TableRow>
-                {["受講者", "状態", "レッスン", "課題", "修了"].map((title) => (
+                {["受講者", "状態", "教材", "課題", "完了"].map((title) => (
                   <TableHead key={title}>{title}</TableHead>
                 ))}
               </TableRow>
@@ -826,7 +826,7 @@ function MaterialItem({
           <Badge
             title={
               material.source === "upload"
-                ? "講師・管理者が配信から外した資料です。受講者の資料タブとダウンロードには出ません。"
+                ? "管理者が配信から外した資料です。受講者の資料タブとダウンロードには出ません。"
                 : "教材から作らなくなった資料です。受講者の資料タブには出ません。版履歴から旧版を取得できます。"
             }
           >

@@ -208,7 +208,7 @@ export function materialFacts(m: MentorMemoMaterial): string[] {
     );
   const a = m.activity;
   facts.push(
-    `学習の記録: ${a.activeDays}日 · 視聴 ${a.studyMinutes}分 · 完了したレッスン ${a.completedLessons} · 提出 ${a.submissions}`,
+    `学習の記録: ${a.activeDays}日 · 視聴 ${a.studyMinutes}分 · 完了した教材 ${a.completedLessons} · 提出 ${a.submissions}`,
   );
   facts.push(
     `合格した課題: ${m.passedTaskCount}件${m.passedTasks.length ? ` (${m.passedTasks.map((t) => `「${t.title}」`).join("")})` : ""}`,
@@ -227,7 +227,7 @@ export function materialFacts(m: MentorMemoMaterial): string[] {
   const r = m.reviews;
   const reasons = listCounts(r.escalationReasons, ROUTE_REASON_LABELS);
   facts.push(
-    `レビュー: AI で合格 ${r.aiConfirmed} · 人に回った ${r.aiEscalated}${reasons ? ` (${reasons})` : ""} · 講師の合格 ${r.humanPass} · 講師の再提出 ${r.humanResubmit}`,
+    `レビュー: AI で合格 ${r.aiConfirmed} · 人に回った ${r.aiEscalated}${reasons ? ` (${reasons})` : ""} · 管理者の合格判定 ${r.humanPass} · 管理者の再提出判定 ${r.humanResubmit}`,
   );
   if (r.unmetCriteria.length)
     facts.push(
@@ -273,7 +273,7 @@ export function buildFallbackMemo(m: MentorMemoMaterial): MentorMemoOutput {
         ? "学習の記録がない週でした。様子を聞いてください。"
         : stumbles > 0 || m.failureStreaks.length > 0
           ? "つまずきの知らせ、または続いている手元の失敗があります。"
-          : "人に回った提出か、講師への相談がありました。",
+          : "人に回った提出か、管理者への相談がありました。",
     watch: "予定どおりに進み、つまずきの知らせもありません。",
   };
   const drafts: Record<MemoAction, string> = {
@@ -281,7 +281,7 @@ export function buildFallbackMemo(m: MentorMemoMaterial): MentorMemoOutput {
     message:
       m.activity.activeDays === 0
         ? "最近の様子はいかがですか。忙しい時期でしたら、ペースの相談にも乗ります。気軽に声を掛けてください。"
-        : "先週もおつかれさまでした。詰まっているところがあれば、一人で抱えずに講師への相談から気軽に聞いてください。",
+        : "先週もおつかれさまでした。詰まっているところがあれば、一人で抱えずに管理者への相談から気軽に聞いてください。",
     watch:
       "先週もよく進めていますね。この調子で続けましょう。困ったことがあれば、いつでも相談してください。",
   };

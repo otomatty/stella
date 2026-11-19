@@ -15,7 +15,7 @@ STELLA is a Learning Management System (LMS) monorepo using **Bun workspaces**. 
 | `@stella/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js runners (extension grader WebView)。擬似言語 (`fe-pseudo`) は `src/fe-pseudo/` で JS に落として QuickJS に相乗り。対応構文は `src/fe-pseudo/SYNTAX.md` |
 | `@stella/content` | `packages/content` | 教材の正本。ステージは `stages/<slug>/stage.json`。執筆ルールは `packages/content/CLAUDE.md`。導入手順（新しいステージが既定）は `packages/content/ADDING_STAGE.md` |
 
-ロールは `student` / `admin` の 2 つ、画面のロールは `learner` / `admin` の 2 つ。migration 0073 で `learner_instructors` を削除し、0074 で `instructor` を `admin` に統合した。migration 0082 で `platform_admin` を `admin` に統合した。ロール変更と無効化は、呼び出した本人がいまも有効な管理者であることを UPDATE の条件で確かめる (同時に互いを降格・無効化しても管理者が 0 人にならない)。招待・ロール変更は受講者と管理者だけを選べ、招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。受講者に見せる「講師の確認待ち」「講師に相談」と、課題の状態 `instructor-pending`・支援の種類 `instructor` は残す。講師専用のダッシュボードと `/students` は削除した。
+ロールは `student` / `admin` の 2 つ、画面のロールは `learner` / `admin` の 2 つ。migration 0073 で `learner_instructors` を削除し、0074 で `instructor` を `admin` に統合した。migration 0082 で `platform_admin` を `admin` に統合した。ロール変更と無効化は、呼び出した本人がいまも有効な管理者であることを UPDATE の条件で確かめる (同時に互いを降格・無効化しても管理者が 0 人にならない)。招待・ロール変更は受講者と管理者だけを選べ、招待 CSV の `instructor`・`講師`・`メンター` はエラーになる。画面の名称は受講者・管理者にそろえ、受講者に見せる文言も「管理者の確認待ち」「管理者に相談」にした (2026-11 オーナー決定)。課題の状態 `instructor-pending`・支援の種類 `instructor` などの識別子は残す。講師専用のダッシュボードと `/students` は削除した。
 
 ### Running services (default: real data)
 

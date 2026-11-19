@@ -112,13 +112,13 @@ function wrapupCopy(stage: GuideActiveStage | null): {
   if (stage?.wrapup) {
     return {
       title: `${title} の仕上げ`,
-      reason: `レッスンはすべて終わりました。${stage.wrapup.detail}`,
+      reason: `教材はすべて終わりました。${stage.wrapup.detail}`,
       openTask: stage.wrapup.learnerTurn,
     };
   }
   return {
     title: `${title} の仕上げ`,
-    reason: "レッスンはすべて終わりました。課題の提出とレビューの結果を確かめましょう。",
+    reason: "教材はすべて終わりました。課題の提出とレビューの結果を確かめましょう。",
     openTask: false,
   };
 }
@@ -155,7 +155,7 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
           <>
             <p className="text-[14px] font-semibold">いま始められるスキルはありません</p>
             <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-              ツリーの鍵の付いた星から「腕試し」に合格すると、先のスキルを開けます。
+              ステージ一覧にある鍵付きの星から「腕試し」に合格すると、先のスキルを開けます。
             </p>
           </>
         )}
@@ -202,7 +202,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           最初のステージでは、STELLA での学び方と、VS Code で課題を出すまでを順に進めます。
         </p>
         <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-          ひとつ終えると、ツリーの先が少しずつ見えてきます。
+          ひとつ終えると、ステージ一覧で先の星が少しずつ見えてきます。
         </p>
         <Button
           size="full"
@@ -222,7 +222,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           onClick={() => ctx.onShowInTree(step.stageId)}
         >
           <Compass size={12} />
-          ツリーで見る
+          ステージ一覧で見る
         </Button>
       </HeroFrame>
     );
@@ -246,7 +246,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
             type="button"
             onClick={() => ctx.onShowInTree(lesson.id)}
             className="mb-1 inline-flex max-w-full items-center gap-1 text-[11.5px] font-medium text-brand-ink hover:underline"
-            title="ツリーで見る"
+            title="ステージ一覧で見る"
           >
             <Compass size={11} className="shrink-0" />
             <span className="truncate">{lesson.title}</span>
@@ -280,7 +280,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
             onClick={ctx.onOpenActiveStage}
           >
             <Book size={12} />
-            レッスン一覧
+            教材の一覧
           </Button>
         ) : null}
       </HeroFrame>
@@ -306,13 +306,13 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
               onClick={ctx.onOpenActiveStage}
             >
               <Book size={12} />
-              レッスン一覧
+              教材の一覧
             </Button>
           </>
         ) : (
           <Button size="full" variant="accent" className="mt-4" onClick={ctx.onOpenActiveStage}>
             <Book size={14} />
-            レッスン一覧を開く
+            教材の一覧を開く
           </Button>
         )}
       </HeroFrame>
@@ -326,8 +326,8 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <Compass size={16} className="mt-1 shrink-0 text-brand" />
           <span className="min-w-0">
             {step.welcome
-              ? "ツリーから最初のステージを選びましょう"
-              : "ツリーから次のステージを選びましょう"}
+              ? "ステージ一覧から最初のステージを選びましょう"
+              : "ステージ一覧から次のステージを選びましょう"}
           </span>
         </h2>
         <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
@@ -336,10 +336,10 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
         {step.welcome ? (
           <>
             <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-              ひとつ終えると、ツリーが少しずつ見えてきます。
+              ひとつ終えると、ステージ一覧で先の星が少しずつ見えてきます。
             </p>
             <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
-              すでに知っている内容は、ツリーの星から「腕試し」に合格すると先のスキルから始められます。
+              すでに知っている内容なら、ステージ一覧の星から「腕試し」を受け、合格すると先のスキルから始められます。
             </p>
           </>
         ) : null}
@@ -382,7 +382,7 @@ const StartableStages = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepConte
         <StageGroup label="Basic" stageIds={basic} ctx={ctx} />
         <StageGroup
           label="Extra"
-          note="講師・管理者があなたに追加したステージです。"
+          note="管理者があなたに追加したステージです。"
           stageIds={extra}
           ctx={ctx}
         />
@@ -435,8 +435,8 @@ const StartableStageRow = ({ id, ctx }: { id: string; ctx: StepContext }) => {
       <Button
         size="icon-sm"
         variant="ghost"
-        aria-label={`${title} をツリーで見る`}
-        title="ツリーで見る"
+        aria-label={`${title} をステージ一覧で見る`}
+        title="ステージ一覧で見る"
         onClick={() => ctx.onShowInTree(id)}
       >
         <Compass size={13} />
@@ -491,7 +491,7 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <Compass size={12} />
         </span>
         <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug">
-          次に始めるステージをツリーから選ぶ
+          次に始めるステージをステージ一覧から選ぶ
         </span>
       </div>
     );

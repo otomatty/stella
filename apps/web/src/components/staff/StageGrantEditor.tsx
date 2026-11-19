@@ -890,7 +890,7 @@ function PcRoster({
                 onChange={(event) => onPrereq(event.target.value as PcPrereq)}
               >
                 <option value="all">すべて</option>
-                <option value="done">修了</option>
+                <option value="done">完了</option>
                 <option value="doing">受講中</option>
                 <option value="none">未着手</option>
               </NativeSelect>
@@ -1212,7 +1212,7 @@ function MobileRoster({
               </FilterChip>
               {showPrereq ? (
                 <FilterChip pressed={prereqDone} onClick={onPrereqDone}>
-                  前提を修了
+                  前提を完了
                 </FilterChip>
               ) : null}
             </>
@@ -1223,7 +1223,7 @@ function MobileRoster({
               </FilterChip>
               {showPrereq ? (
                 <FilterChip pressed={notDone} onClick={onNotDone}>
-                  前提が未修了
+                  前提が未完了
                 </FilterChip>
               ) : null}
             </>

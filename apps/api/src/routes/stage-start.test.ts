@@ -238,14 +238,14 @@ describe("POST /api/stages/:id/start", () => {
     vi.mocked(loadSkillMapSource).mockImplementation(async () => pathSource(["stage-a"]));
     const res = await start("stage-a");
     expect(res.status).toBe(400);
-    expect(await errorOf(res)).toContain("クリア済み");
+    expect(await errorOf(res)).toContain("完了済み");
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 
   it("ロック星は 400 で、見えている前提の名前を返す", async () => {
     const res = await start("stage-b");
     expect(res.status).toBe(400);
-    expect(await errorOf(res)).toBe("stage-a のステージ をクリアすると始められます");
+    expect(await errorOf(res)).toBe("stage-a のステージ を完了すると始められます");
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 

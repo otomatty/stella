@@ -271,7 +271,7 @@ export const LessonPlayer = ({
   }, [lessonId, lessonTitle, stage.title, setAIContext]);
 
   if (!lessonObj) {
-    return <div className="p-10 text-sm text-ink-3">このステージにはレッスンがありません。</div>;
+    return <div className="p-10 text-sm text-ink-3">このステージには教材がありません。</div>;
   }
 
   const taskId = stageTasks?.find((task) => task.lessonId === lessonObj.id)?.id ?? null;
@@ -321,8 +321,8 @@ export const LessonPlayer = ({
           type="button"
           onClick={() => setTocOpen(true)}
           className="lg:hidden w-[34px] h-[34px] shrink-0 rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
-          title="レッスンの目次"
-          aria-label="レッスンの目次を開く"
+          title="教材の目次"
+          aria-label="教材の目次を開く"
           aria-haspopup="dialog"
           aria-expanded={tocOpen}
         >
@@ -698,7 +698,7 @@ const MissingMaterialFallback = ({ type }: { type: "video" | "slides" }) => (
       <div className="text-[13.5px] font-semibold text-ink-1">教材を準備中です</div>
       <div className="text-[12px] text-ink-3 mt-1.5">
         {type === "video" ? "動画" : "スライド"}
-        の素材がまだアップロードされていません。 講師がアップロード次第、 ここに表示されます。
+        の素材がまだアップロードされていません。 管理者がアップロード次第、 ここに表示されます。
       </div>
     </div>
   </div>
@@ -713,7 +713,7 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
   const materialLabel = lesson.type === "video" ? "動画" : "スライド";
   return (
     <div className="prose-lms">
-      <h2>このレッスンについて</h2>
+      <h2>この教材について</h2>
       {hasMaterial ? (
         <p>
           上の{materialLabel}で学習を進めてください。
@@ -783,7 +783,7 @@ const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
       ) : (
         <div className="py-10 text-center text-[12.5px] text-ink-3">
           <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">本文を準備中です</div>
-          このレッスンの本文はまだ登録されていません。 講師が登録次第、 ここに表示されます。
+          この教材の本文はまだ登録されていません。 管理者が登録次第、 ここに表示されます。
         </div>
       )}
 
@@ -862,7 +862,7 @@ const ResourcesList = ({
         <Folder size={28} className="text-ink-4" />
         <div className="font-medium text-ink-2">配布資料はありません</div>
         <div className="text-[12.5px]">
-          このレッスンに配布資料が追加されると、 ここからダウンロードできます。
+          この教材に配布資料が追加されると、 ここからダウンロードできます。
         </div>
       </div>
     );

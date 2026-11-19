@@ -78,13 +78,13 @@ export function buildCertificateOverview({
     }
     const candidates = [
       {
-        label: "レッスン",
+        label: "教材",
         required: completion.criteria.require_all_lessons,
         done: completion.completed_lessons,
         total: completion.total_lessons,
       },
       {
-        label: "小テスト",
+        label: "クイズ",
         required: completion.criteria.require_quiz_pass,
         done: completion.passed_quizzes,
         total: completion.total_quizzes,

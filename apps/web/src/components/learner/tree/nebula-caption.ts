@@ -10,6 +10,6 @@ export function nebulaCaption(key: string, nodes: readonly SkillMapStageNode[]):
   const names = island.requires.map((slug) =>
     slug === "dev-env-basics" ? "入口" : nodes.find((node) => node.slug === slug)?.title,
   );
-  if (names.some((name) => !name)) return "前提のクリアで現れた";
-  return `${names.join("・")}のクリアで現れた`;
+  if (names.some((name) => !name)) return "前提の完了で現れた";
+  return `${names.join("・")}の完了で現れた`;
 }

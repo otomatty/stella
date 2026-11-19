@@ -178,7 +178,7 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
             <TabsContent value="statement">
               <Card className="space-y-4 p-4 md:p-6">
                 <p className="text-xs text-ink-3">
-                  受講者には課題文レッスンと VS Code の課題パネルで同じ文章が出る
+                  受講者には課題文の教材と VS Code の課題パネルで同じ文章が出る
                 </p>
                 {data.readme === null ? (
                   <p className="text-sm text-ink-3">課題文がありません</p>
@@ -423,7 +423,7 @@ function Overview({ data, onStatement }: { data: Detail; onStatement: () => void
                 </div>
               ))}
             </dl>
-            <p className="text-xs text-ink-3">受講者だけの人数です。講師・管理者は含みません。</p>
+            <p className="text-xs text-ink-3">受講者だけの人数です。管理者は含みません。</p>
           </Panel>
           <Panel title="ヒントと解答の出し方">
             <p>{taskSupportLabel(data.support)}</p>

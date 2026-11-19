@@ -180,7 +180,7 @@ export function ciClaimHtml(claim: CiRunClaim | undefined, workflow: string | un
     `<li>実行: ${externalLink(claim.runUrl)}</li>`,
     `<li>公開先: ${externalLink(claim.deployUrl)}</li>`,
     claim.commit ? `<li>手元のコミット: <code>${escapeHtml(claim.commit)}</code></li>` : "",
-    `</ul><p class="hint">提出すると、LMS が GitHub の公開 API で、この実行が成功で終わったこと・手元と同じコミットの実行であること・課題のワークフロー${workflow ? ` (<code>${escapeHtml(workflow)}</code>)` : ""} の実行であることを確かめます。リポジトリは公開にしてください。確かめられないときは講師が確認します。</p></section>`,
+    `</ul><p class="hint">提出すると、LMS が GitHub の公開 API で、この実行が成功で終わったこと・手元と同じコミットの実行であること・課題のワークフロー${workflow ? ` (<code>${escapeHtml(workflow)}</code>)` : ""} の実行であることを確かめます。リポジトリは公開にしてください。確かめられないときは管理者が確認します。</p></section>`,
   ].join("");
 }
 
@@ -228,7 +228,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     : `<a class="button" href="command:stella.submitTask${submissionArgs}">提出する</a>`;
   const links = [
     !input.standalone && outcome !== "cancelled" && !canSubmit(result)
-      ? `<a href="command:stella.consultTask${submissionArgs}">講師に相談</a>`
+      ? `<a href="command:stella.consultTask${submissionArgs}">管理者に相談</a>`
       : "",
     `<a href="command:stella.showRunLog">実行ログを表示</a>`,
     input.standalone
@@ -262,7 +262,7 @@ function renderInvalid(input: Extract<TaskPanelInput, { kind: "invalid" }>): {
     title: "課題の定義を読めません",
     body: [
       `<h1>課題の定義を読めません</h1>`,
-      `<p><code>${escapeHtml(input.root)}</code> の <code>.stella/task.json</code> に次の問題があります。課題の配布ファイルを確認するか、講師に相談してください。</p>`,
+      `<p><code>${escapeHtml(input.root)}</code> の <code>.stella/task.json</code> に次の問題があります。課題の配布ファイルを確認するか、管理者に相談してください。</p>`,
       `<ul>${input.errors.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}</ul>`,
     ].join("\n"),
   };

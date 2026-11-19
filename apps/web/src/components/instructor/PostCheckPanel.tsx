@@ -87,7 +87,7 @@ export function PostCheckPanel({
               <li key={c.id} className="py-1.5 border-b border-border last:border-b-0">
                 <div className="flex items-center gap-1.5">
                   <Badge variant={RESULT_VARIANT[c.result]}>{CHECK_RESULT_LABELS[c.result]}</Badge>
-                  <span>{c.reviewerName ?? "削除された講師"}</span>
+                  <span>{c.reviewerName ?? "削除された管理者"}</span>
                   <span className="text-ink-3 ml-auto">
                     {new Date(c.createdAt).toLocaleString("ja-JP")}
                   </span>
@@ -107,7 +107,7 @@ export function PostCheckPanel({
             onInsert={(body) => setText((prev) => (prev.trim() ? `${prev}\n\n${body}` : body))}
           />
           <Label htmlFor="post-check-text">
-            コメント・覆す理由 (受講者に知らせます。確認済みに添えたメモは講師だけが読みます)
+            コメント・覆す理由 (受講者に知らせます。確認済みに添えたメモは管理者だけが読みます)
           </Label>
           <Textarea
             id="post-check-text"

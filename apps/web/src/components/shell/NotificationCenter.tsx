@@ -46,13 +46,13 @@ interface NotificationCenterProps {
 
 const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; label: string }> = {
   announcement: { icon: Megaphone, tone: "text-brand", label: "お知らせ" },
-  review_completed: { icon: Check, tone: "text-success", label: "添削完了" },
-  review_comment: { icon: MessageCircle, tone: "text-brand", label: "講師のコメント" },
+  review_completed: { icon: Check, tone: "text-success", label: "レビュー完了" },
+  review_comment: { icon: MessageCircle, tone: "text-brand", label: "管理者からのコメント" },
   assignment_due: { icon: Bell, tone: "text-warning", label: "課題期限" },
   learning_pace_delayed: { icon: Bell, tone: "text-warning", label: "学習ペース" },
   learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
-  mentor_message: { icon: Send, tone: "text-brand", label: "講師から" },
-  stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージクリア" },
+  mentor_message: { icon: Send, tone: "text-brand", label: "管理者から" },
+  stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージ完了" },
 };
 
 /** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */

@@ -71,9 +71,9 @@ export const LESSON_TYPE_LABELS: Record<LessonType, string> = {
   video: "動画",
   slides: "スライド",
   text: "読み物",
-  quiz: "知識問題",
-  assignment: "旧形式の演習",
-  code: "旧形式の演習",
+  quiz: "クイズ",
+  assignment: "旧形式の課題",
+  code: "旧形式の課題",
 };
 
 export function prerequisitesLabel(prerequisites: readonly { title: string }[]): string {

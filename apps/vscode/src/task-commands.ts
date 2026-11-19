@@ -664,7 +664,7 @@ async function submitTaskCommand(
           void vscode.window
             .showInformationMessage(
               mode === "consult"
-                ? "相談を送りました。講師の返事は通知と、Web のレッスン画面の『提出・添削を確認する』に届きます。"
+                ? "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。"
                 : "提出しました。AI が確かめた結果は、ふつう数分で届きます。",
               ...(mode === "consult" ? [web] : [result, web]),
             )

@@ -249,7 +249,7 @@ async function notifyLocalFailures(
           userId: staffId,
           type: "learner_stumble",
           title: `${learner.learnerName}さんが同じ課題でつまずいています`,
-          body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、講師への相談を勧めてください。`,
+          body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、管理者への相談を勧めてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "local-failures",
@@ -606,8 +606,8 @@ async function notifyReviewEscalations(
           id,
           userId: staffId,
           type: "learner_stumble",
-          title: `${learner.learnerName}さんの提出が続けて講師の確認に回っています`,
-          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
+          title: `${learner.learnerName}さんの提出が続けて管理者の確認に回っています`,
+          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて管理者の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "review-escalations",
@@ -814,7 +814,7 @@ async function notifyHintsExhausted(
           userId: staffId,
           type: "learner_stumble",
           title: `${learner.learnerName}さんがヒントを最後まで開きました`,
-          body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、講師への相談を勧めてください。`,
+          body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、管理者への相談を勧めてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "hints-exhausted",

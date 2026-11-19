@@ -63,7 +63,7 @@ export const lessonTypeLabel: Record<LessonType, string> = {
   video: "動画",
   slides: "スライド",
   text: "テキスト",
-  quiz: "小テスト",
+  quiz: "クイズ",
   assignment: "課題",
   code: "コーディング課題",
 };
@@ -198,7 +198,7 @@ export const StageDetail = ({
         stage.criteria.requireAllLessons
           ? {
               key: "lessons",
-              label: "全レッスンの完了",
+              label: "すべての教材の完了",
               done: completion?.completed_lessons,
               total: completion?.total_lessons,
             }
@@ -206,7 +206,7 @@ export const StageDetail = ({
         stage.criteria.requireQuizPass
           ? {
               key: "quizzes",
-              label: "全小テストの合格",
+              label: "すべてのクイズの合格",
               done: completion?.passed_quizzes,
               total: completion?.total_quizzes,
             }
@@ -257,7 +257,7 @@ export const StageDetail = ({
               </span>
             ) : null}
             <span className="flex items-center gap-1">
-              <Video size={13} /> {totalLessons}レッスン
+              <Video size={13} /> 教材 {totalLessons} 件
             </span>
             {stage.duration != null ? (
               <span className="flex items-center gap-1">
@@ -390,7 +390,7 @@ export const StageDetail = ({
           {criteriaRows.length > 0 ? (
             <Card data-testid="stage-completion">
               <CardHeader>
-                <CardTitle>修了条件</CardTitle>
+                <CardTitle>完了条件</CardTitle>
               </CardHeader>
               <CardContent className="text-[12.5px] flex flex-col gap-2.5">
                 {criteriaRows.map((row) => {
@@ -489,7 +489,7 @@ const LessonRow = ({
             onOpenSubmission(reviewedSubmissionId);
           }}
         >
-          <Badge variant="success">添削済み</Badge>
+          <Badge variant="success">レビュー済み</Badge>
         </button>
       ) : null}
       {!locked ? <ChevronRight size={13} className="text-ink-4 mt-1" /> : null}
@@ -582,7 +582,7 @@ export function StageDetailSkeleton({ onBack }: { onBack: () => void }) {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>修了条件</CardTitle>
+                <CardTitle>完了条件</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2.5">
                 {SKELETON_CRITERIA.map((key) => (

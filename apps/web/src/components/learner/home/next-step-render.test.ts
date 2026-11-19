@@ -103,7 +103,7 @@ describe("NextStep first-stage", () => {
     expect(markup).toContain("はじめの一歩");
     expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
-    expect(markup).toContain("ツリーで見る");
+    expect(markup).toContain("ステージ一覧で見る");
   });
 });
 
@@ -168,10 +168,10 @@ describe("案内されたステージの開始", () => {
 });
 
 describe("NextStep choose card", () => {
-  it("星を名指しせず、ツリーから選ぶ案内と同列の一覧を出す", () => {
+  it("星を名指しせず、ステージ一覧から選ぶ案内と同列の一覧を出す", () => {
     const markup = card(["html", "js"]);
     const listStart = markup.indexOf("始められるステージ");
-    expect(markup.slice(0, listStart)).toContain("ツリーから次のステージを選びましょう");
+    expect(markup.slice(0, listStart)).toContain("ステージ一覧から次のステージを選びましょう");
     expect(markup.slice(0, listStart)).not.toContain("HTML/CSSとデザイン基礎");
     expect(markup.slice(listStart)).toContain("HTML/CSSとデザイン基礎");
     expect(markup.slice(listStart)).toContain("JavaScriptの値と制御");
@@ -191,16 +191,16 @@ describe("NextStep choose card", () => {
   it("何も始めていない人には最初の案内を出す", () => {
     const markup = card(["dev"], true);
     expect(markup).toContain("はじめの一歩");
-    expect(markup).toContain("ツリーから最初のステージを選びましょう");
+    expect(markup).toContain("ステージ一覧から最初のステージを選びましょう");
     expect(markup).toContain("腕試し");
   });
 
   it("そのあとに回った choose は 1 行の案内で、星もボタンも持たない", () => {
     const steps = [{ kind: "choose" as const, welcome: false, stageIds: ["html", "js"] }];
     const markup = renderToStaticMarkup(createElement(LaterSteps, { ...handlers, steps }));
-    expect(markup).toContain("次に始めるステージをツリーから選ぶ");
+    expect(markup).toContain("次に始めるステージをステージ一覧から選ぶ");
     expect(markup).not.toContain("HTML/CSSとデザイン基礎");
-    expect(markup).not.toContain("ツリーで見る");
+    expect(markup).not.toContain("ステージ一覧で見る");
     expect(markup).not.toContain("<button");
   });
 });

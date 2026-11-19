@@ -104,7 +104,7 @@ publicContentRoute.get("/api/public/lessons/:id", async (c) => {
     const limited = await enforcePublicContentRateLimit(c);
     if (limited) return limited;
     const id = c.req.param("id");
-    if (!id || id.length > 64) throw new ApiError("レッスンが見つかりません", 404);
+    if (!id || id.length > 64) throw new ApiError("教材が見つかりません", 404);
     const db = getDb(c.env);
     const rows = await db
       .select({
@@ -125,7 +125,7 @@ publicContentRoute.get("/api/public/lessons/:id", async (c) => {
       .where(and(eq(lessons.id, id), publicLessonFilter(db)))
       .limit(1);
     const row = rows[0];
-    if (!row?.markdown) throw new ApiError("レッスンが見つかりません", 404);
+    if (!row?.markdown) throw new ApiError("教材が見つかりません", 404);
     const lesson: PublicLesson = {
       id: row.id,
       title: row.title,
