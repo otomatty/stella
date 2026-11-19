@@ -138,6 +138,7 @@ const questionToRow = (q: QuestionSel) => ({
   quiz_id: q.quizId,
   kind: q.kind,
   prompt: q.prompt,
+  body: q.body,
   explanation: q.explanation,
   points: q.points,
   order: q.order,
@@ -778,7 +779,10 @@ cmsRoute.post("/api/cms/quiz-questions", async (c) => {
       );
     } else {
       row = requireReturning(
-        await db.insert(quizQuestions).values(values).returning(),
+        await db
+          .insert(quizQuestions)
+          .values({ ...values, body: input.body === undefined ? "" : String(input.body) })
+          .returning(),
         "quiz question insert",
       );
     }

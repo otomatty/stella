@@ -27,6 +27,8 @@ import type {
   QuizQuestionResult,
 } from "@stella/shared/cms/types";
 import { shuffleLearnerQuizQuestions } from "@stella/shared/quiz/shuffle";
+import { InlineMarkdown } from "./InlineMarkdown";
+import { LessonMarkdown } from "./MarkdownSlides";
 
 interface QuizPlayerProps {
   lessonId: string;
@@ -331,8 +333,13 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                 ) : null}
               </div>
               <div className="text-base font-semibold tracking-tight leading-snug mb-1.5">
-                {q.prompt}
+                <InlineMarkdown>{q.prompt}</InlineMarkdown>
               </div>
+              {q.body ? (
+                <div className="prose-lms min-w-0 overflow-x-auto mb-4">
+                  <LessonMarkdown>{q.body}</LessonMarkdown>
+                </div>
+              ) : null}
               <div className="text-xs text-ink-3 mb-4">
                 {q.kind === "multiple"
                   ? "当てはまるものをすべて選んでください。"
@@ -360,7 +367,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                       !isSelected && !showCorrect && !showWrong && "border-border-2",
                     )}
                   >
-                    <div
+                    <span
                       className={cn(
                         "w-5 h-5 border-[1.5px] grid place-items-center shrink-0 mt-0.5 text-[11px] font-semibold",
                         q.kind === "multiple" ? "rounded-sm" : "rounded-full",
@@ -382,15 +389,17 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                       ) : (
                         String.fromCharCode(65 + oi)
                       )}
-                    </div>
-                    <div className="flex-1 text-sm leading-relaxed">{o.label}</div>
+                    </span>
+                    <span className="flex-1 text-sm leading-relaxed">
+                      <InlineMarkdown>{o.label}</InlineMarkdown>
+                    </span>
                   </button>
                 );
               })}
 
               {qResult?.explanation ? (
                 <div className="mt-2 text-xs text-ink-2 pt-3 border-t border-dashed border-border">
-                  <strong>解説:</strong> {qResult.explanation}
+                  <strong>解説:</strong> <InlineMarkdown>{qResult.explanation}</InlineMarkdown>
                 </div>
               ) : null}
             </Card>

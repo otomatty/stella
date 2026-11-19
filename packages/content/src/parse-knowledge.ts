@@ -16,25 +16,81 @@ export function readKnowledgeMetadata(source: string): {
   return { title, durationMinutes: Number(minutes) };
 }
 
+/** 区切りを探すときだけフェンス内を空白に置き換え、元の本文と位置をそろえる。 */
+function maskFencedCode(source: string): string {
+  let fence: string | undefined;
+  return source
+    .split("\n")
+    .map((line) => {
+      const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+      const run = marker?.[1] ?? "";
+      if (!fence) {
+        if (!marker || (run[0] === "`" && marker[2].includes("`"))) return line;
+        fence = run;
+      } else if (
+        marker &&
+        run[0] === fence[0] &&
+        run.length >= fence.length &&
+        /^[ \t]*$/.test(marker[2])
+      ) {
+        fence = undefined;
+      }
+      return " ".repeat(line.length);
+    })
+    .join("\n");
+}
+
 /** knowledge.md: 各設問に種別とスキルを明示する。旧 practice.md の parser は変えない。 */
 export function parseKnowledge(source: string): QuizQuestionSeed[] {
   const blocks = source.replace(/\r\n/g, "\n").split(/^### /m).slice(1);
   if (blocks.length === 0) throw new Error("knowledge.md: 設問が必要です");
   const seen = new Set<string>();
-  return blocks.map((block) => {
-    const prompt = /^Q(\d+)\.\s*(.+)$/m.exec(block);
-    const meta = /<!--\s*kind:\s*(single|multiple|boolean);\s*skills:\s*([^>]+?)\s*-->/.exec(block);
-    const answer = /\*\*([A-Z](?:\s*,\s*[A-Z])*)\*\*\s*—\s*([\s\S]*?)\n\s*<\/details>/.exec(block);
-    if (!prompt || !meta || !answer?.[2].trim())
-      throw new Error(
-        `knowledge.md: 設問・種別・スキル・解説を確認してください: ${block.slice(0, 50)}`,
+  return blocks.map((block, index) => {
+    const prompt = /^Q(\d+)\.[ \t]*(.+)$/m.exec(block);
+    if (prompt?.index !== 0 || !prompt[2].trim())
+      throw new Error(`knowledge.md: 設問の見出しを確認してください: ${block.slice(0, 50)}`);
+    const question = `knowledge.md: Q${prompt[1]}`;
+    const content = block.slice(prompt[0].length);
+    const delimiters = maskFencedCode(content);
+    const details = /^<details\b[^>]*>/im.exec(delimiters);
+    if (!details) throw new Error(`${question} の解答を <details> に書いてください`);
+    const beforeDetails = content.slice(0, details.index);
+    const rows = [...delimiters.slice(0, details.index).matchAll(/^- ([A-Z])\. ([^\n]+)$/gm)];
+    const first = rows[0];
+    const last = rows.at(-1);
+    if (!first || !last) throw new Error(`${question} の選択肢は <details> より前に書いてください`);
+    for (let i = 1; i < rows.length; i++) {
+      const previous = rows[i - 1];
+      if (content.slice(previous.index + previous[0].length, rows[i].index).trim())
+        throw new Error(`${question} の選択肢の間に文を書かないでください`);
+    }
+    if (beforeDetails.slice(last.index + last[0].length).trim())
+      throw new Error(`${question} の選択肢と <details> の間に文を書かないでください`);
+    const bodySource = beforeDetails.slice(0, first.index);
+    const meta =
+      /^[ \t]*<!--[ \t]*kind:[ \t]*(single|multiple|boolean);[ \t]*skills:[ \t]*([^>\n]+?)[ \t]*-->[ \t]*$/m.exec(
+        bodySource,
       );
+    const answerStart = details.index + details[0].length;
+    const afterDetails = content.slice(answerStart);
+    const detailsEnd = /^<\/details[ \t]*>/im.exec(delimiters.slice(answerStart));
+    const answer =
+      detailsEnd &&
+      /\*\*([A-Z](?:\s*,\s*[A-Z])*)\*\*\s*—\s*([\s\S]*)/.exec(
+        afterDetails.slice(0, detailsEnd.index),
+      );
+    if (!meta || !answer?.[2].trim() || !detailsEnd)
+      throw new Error(`${question} の種別・スキル・解説を確認してください`);
+    if (
+      index < blocks.length - 1 &&
+      afterDetails.slice(detailsEnd.index + detailsEnd[0].length).trim()
+    )
+      throw new Error(`${question} の解答と次の設問の間に文を書かないでください`);
     if (seen.has(prompt[1])) throw new Error(`knowledge.md: Q${prompt[1]} が重複しています`);
     seen.add(prompt[1]);
     const skills = meta[2].split(",").map((v) => v.trim());
     if (skills.some((v) => !v) || new Set(skills).size !== skills.length)
       throw new Error("knowledge.md: スキルが不正です");
-    const rows = [...block.matchAll(/^-\s+([A-Z])\.\s+(.+)$/gm)];
     const labels = rows.map((r) => r[1]);
     const correct = answer[1].split(",").map((s) => s.trim());
     const kind = meta[1] as NonNullable<QuizQuestionSeed["kind"]>;
@@ -56,6 +112,7 @@ export function parseKnowledge(source: string): QuizQuestionSeed[] {
       kind,
       skills,
       prompt: prompt[2].trim(),
+      body: bodySource.replace(meta[0], "").trim(),
       explanation: answer[2].trim(),
       options: rows.map((r) => ({ label: r[2].trim(), isCorrect: correct.includes(r[1]) })),
     };

@@ -14,6 +14,119 @@ describe("knowledge.md", () => {
     ).toHaveLength(2);
     expect(parseKnowledge(question("boolean", "B"))[0]).toMatchObject({ kind: "boolean" });
   });
+  it("見出しと選択肢の間のコードを本文として読み込み、種別のコメントは除く", () => {
+    const code = ["```ts", "const total = 1200 + 500;", "```"].join("\n");
+    const source = question("single", "A").replace("- A.", `\n${code}\n\n- A.`);
+    expect(parseKnowledge(source)[0]).toMatchObject({ prompt: "保存しますか？", body: code });
+  });
+  it("本文のない設問は空文字にする", () => {
+    expect(parseKnowledge(question("single", "A"))[0].body).toBe("");
+  });
+  it("本文・選択肢・解説のコードにある details タグを解答の区切りにしない", () => {
+    const code = ["```ts", 'const html = "<details>";', "```"].join("\n");
+    const label = "`<details>` 要素";
+    const explanation = "`</details>` で要素を閉じます。";
+    const source = question("single", "A", `${code}\n\n- A. ${label}\n- B. その他`).replace(
+      "保存してから表示を確認します。",
+      explanation,
+    );
+    expect(parseKnowledge(source)[0]).toMatchObject({
+      body: code,
+      explanation,
+      options: [
+        { label, isCorrect: true },
+        { label: "その他", isCorrect: false },
+      ],
+    });
+  });
+  it("選択肢より前の解答を拒否する", () => {
+    const source = question("single", "A").replace("- A.", "<details open>\n- A.");
+    expect(() => parseKnowledge(source)).toThrow(/Q1 の選択肢は <details> より前/);
+  });
+  it("本文の HTML コードブロックにある details を本文に残す", () => {
+    const code = ["```html", "<details>", "<summary>補足</summary>", "</details>", "```"].join(
+      "\n",
+    );
+    const source = question("single", "A").replace("- A.", `${code}\n\n- A.`);
+    expect(parseKnowledge(source)[0]).toMatchObject({
+      body: code,
+      explanation: "保存してから表示を確認します。",
+      options: [
+        { label: "正しい", isCorrect: true },
+        { label: "誤り", isCorrect: false },
+      ],
+    });
+  });
+  it("解説の HTML コードブロックにある終了タグで解説を切らない", () => {
+    const explanation = [
+      "閉じ方は次のとおりです。",
+      "",
+      "```html",
+      "</details>",
+      "```",
+      "",
+      "以上です。",
+    ].join("\n");
+    const source = question("single", "A").replace("保存してから表示を確認します。", explanation);
+    expect(parseKnowledge(source)[0].explanation).toBe(explanation);
+  });
+  it("本文のコードブロックにある選択肢の例を数えない", () => {
+    const code = ["```md", "- A. x", "```"].join("\n");
+    const source = question("single", "A").replace("- A.", `${code}\n\n- A.`);
+    expect(parseKnowledge(source)[0]).toMatchObject({
+      body: code,
+      options: [
+        { label: "正しい", isCorrect: true },
+        { label: "誤り", isCorrect: false },
+      ],
+    });
+  });
+  it("チルダのフェンスは同じ文字で十分な長さの行まで続く", () => {
+    const code = [
+      "説明",
+      "",
+      "   ~~~~html",
+      "````",
+      "~~~",
+      "~~~~~html",
+      "<details>",
+      "- A. x",
+      "</details>",
+      "  ~~~~~",
+    ].join("\n");
+    const source = question("single", "A").replace("- A.", `${code}\n\n- A.`);
+    expect(parseKnowledge(source)[0]).toMatchObject({
+      body: code,
+      explanation: "保存してから表示を確認します。",
+      options: [
+        { label: "正しい", isCorrect: true },
+        { label: "誤り", isCorrect: false },
+      ],
+    });
+  });
+  it("選択肢の間にある文やコードフェンスを拒否する", () => {
+    for (const gap of ["補足", "```md\n補足\n```"]) {
+      const source = question("single", "A", `- A. 正しい\n\n${gap}\n\n- B. 誤り`);
+      expect(() => parseKnowledge(source)).toThrow(
+        "knowledge.md: Q1 の選択肢の間に文を書かないでください",
+      );
+    }
+  });
+  it("選択肢と解答の間の文を拒否する", () => {
+    const source = question("single", "A").replace("<details>", "補足の文\n\n<details>");
+    expect(() => parseKnowledge(source)).toThrow(/Q1 の選択肢と <details> の間/);
+  });
+  it("途中の解答と次の設問の間の文を拒否する", () => {
+    const next = question("single", "B").replace("Q1.", "Q2.").slice("## 知識問題\n\n".length);
+    const source = `${question("single", "A")}\n\n補足の文\n\n${next}`;
+    expect(() => parseKnowledge(source)).toThrow(/Q1 の解答と次の設問の間/);
+  });
+  it("最後の解答のあとに参考情報を書ける", () => {
+    const source = question("single", "A");
+    expect(parseKnowledge(`${source}\n\n参考: [資料](https://example.com)\n`)).toEqual(
+      parseKnowledge(source),
+    );
+  });
   it.each([
     question("single", "A, B"),
     question("multiple", "C"),

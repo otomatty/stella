@@ -179,6 +179,7 @@ export interface QuizQuestionRow {
   quiz_id: string;
   kind: QuestionKind;
   prompt: string;
+  body: string;
   explanation: string | null;
   points: number;
   order: number;
@@ -232,6 +233,7 @@ export interface LearnerQuizQuestion {
   id: string;
   kind: QuestionKind;
   prompt: string;
+  body?: string;
   points: number;
   order: number;
   options: LearnerQuizOption[];

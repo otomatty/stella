@@ -45,6 +45,7 @@ function parseBlock(block: string): QuizQuestionSeed {
 
   return {
     prompt: promptMatch[1].trim(),
+    body: "",
     explanation: answerMatch[2].trim(),
     options,
   };

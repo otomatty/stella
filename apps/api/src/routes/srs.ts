@@ -211,6 +211,7 @@ srsRoute.get("/api/srs/today", async (c) => {
             kind: quizQuestions.kind,
             skills: quizQuestions.skills,
             prompt: quizQuestions.prompt,
+            body: quizQuestions.body,
             points: quizQuestions.points,
             order: quizQuestions.order,
           })

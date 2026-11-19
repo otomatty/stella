@@ -124,6 +124,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
         kind: quizQuestions.kind,
         skills: quizQuestions.skills,
         prompt: quizQuestions.prompt,
+        body: quizQuestions.body,
         points: quizQuestions.points,
         order: quizQuestions.order,
       })
@@ -148,6 +149,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
       kind: q.kind,
       skills: q.skills,
       prompt: q.prompt,
+      body: q.body,
       points: q.points,
       order: q.order,
       options: optionRows
