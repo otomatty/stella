@@ -13,10 +13,20 @@ import { gradebookCsv, gradebookTaskLabel } from "@/lib/gradebook";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Award, CheckCircle, Download, Loader2 } from "@/lib/icons";
+import { NativeSelect } from "@/components/ui/native-select";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import type { Stage } from "@/data/types";
 import type { StageGradebook, GradebookEntry } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
@@ -102,10 +112,11 @@ export const Gradebook = ({ stages }: GradebookProps) => {
         actions={
           <>
             <IntegrationGroupFilter value={groupId} onChange={setGroupId} />
-            <select
+            <NativeSelect
               value={stageId}
               onChange={(e) => setStageId(e.target.value)}
-              className="h-8 rounded-sm border border-border-2 bg-card px-3 text-[13px]"
+              size="sm"
+              className="w-full sm:w-auto sm:max-w-[320px]"
             >
               {stages.length === 0 ? <option value="">ステージなし</option> : null}
               {stages.map((c) => (
@@ -113,7 +124,7 @@ export const Gradebook = ({ stages }: GradebookProps) => {
                   {c.title}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <Button type="button" onClick={onExport} disabled={!data || data.rows.length === 0}>
               <Download size={14} />
               CSV出力
@@ -156,37 +167,37 @@ function GradebookTable({
   onIssue: (userId: string) => void;
 }) {
   return (
-    <div className="bg-card border border-border rounded-md overflow-hidden">
-      <table className="w-full text-[12.5px]">
-        <thead>
-          <tr className="text-left text-ink-4 border-b border-border">
-            <th className="font-semibold px-4 py-2.5">受講者</th>
-            <th className="font-semibold px-3 py-2.5">レッスン</th>
-            <th className="font-semibold px-3 py-2.5">小テスト</th>
-            <th className="font-semibold px-3 py-2.5">課題</th>
-            <th className="font-semibold px-3 py-2.5">状態</th>
-            <th className="font-semibold px-4 py-2.5 text-right">操作</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Card className="overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>受講者</TableHead>
+            <TableHead>レッスン</TableHead>
+            <TableHead>小テスト</TableHead>
+            <TableHead>課題</TableHead>
+            <TableHead>状態</TableHead>
+            <TableHead className="text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((row) => {
             const c = row.completion;
             const hasCert = Boolean(c?.has_certificate);
             const met = Boolean(c?.met);
             return (
-              <tr key={row.user_id} className="border-b border-border last:border-0">
-                <td className="px-4 py-2.5">
+              <TableRow key={row.user_id}>
+                <TableCell>
                   <div className="font-medium text-foreground">{row.display_name}</div>
                   {row.email ? <div className="text-[11px] text-ink-4">{row.email}</div> : null}
-                </td>
-                <td className="px-3 py-2.5 font-mono text-ink-2">
+                </TableCell>
+                <TableCell className="font-mono text-ink-2">
                   {c ? `${c.completed_lessons}/${c.total_lessons}` : "—"}
-                </td>
-                <td className="px-3 py-2.5 font-mono text-ink-2">
+                </TableCell>
+                <TableCell className="font-mono text-ink-2">
                   {c ? `${c.passed_quizzes}/${c.total_quizzes}` : "—"}
-                </td>
-                <td className="px-3 py-2.5 font-mono text-ink-2">{gradebookTaskLabel(row)}</td>
-                <td className="px-3 py-2.5">
+                </TableCell>
+                <TableCell className="font-mono text-ink-2">{gradebookTaskLabel(row)}</TableCell>
+                <TableCell>
                   {hasCert ? (
                     <Badge variant="success">発行済み</Badge>
                   ) : met ? (
@@ -197,8 +208,8 @@ function GradebookTable({
                   ) : (
                     <span className="text-ink-4">未達成</span>
                   )}
-                </td>
-                <td className="px-4 py-2.5 text-right">
+                </TableCell>
+                <TableCell className="text-right">
                   {!hasCert && met ? (
                     <Button
                       type="button"
@@ -217,12 +228,12 @@ function GradebookTable({
                   ) : hasCert && c?.cert_code ? (
                     <span className="font-mono text-[11px] text-ink-4">{c.cert_code}</span>
                   ) : null}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   );
 }

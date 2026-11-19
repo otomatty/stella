@@ -3,6 +3,7 @@ import { FirstStepsCard } from "@/components/learner/FirstStepsCard";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { LearningPacePanel } from "@/components/learner/LearningPacePanel";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,9 +49,10 @@ export function LearningPaceManager() {
           </p>
         ) : null}
         <Label htmlFor="pace-learner">受講者</Label>
-        <select
+        <NativeSelect
           id="pace-learner"
-          className="w-full border border-border rounded-md bg-background p-2 text-sm"
+          size="lg"
+          className="w-full"
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
         >
@@ -60,7 +62,7 @@ export function LearningPaceManager() {
               {l.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {data && !data.learners.length ? (
           <p className="text-sm text-ink-3">受講者がいません。</p>
         ) : null}
@@ -166,10 +168,11 @@ function DiagnosisForm({ userId, onChanged }: { userId: string; onChanged: () =>
         }}
       >
         <Label htmlFor={`pace-skill-${userId}`}>確認したスキル</Label>
-        <select
+        <NativeSelect
           id={`pace-skill-${userId}`}
           required
-          className="w-full border border-border rounded-md bg-background p-2 text-sm"
+          size="lg"
+          className="w-full"
           value={skill}
           onChange={(e) => setSkill(e.target.value)}
         >
@@ -179,7 +182,7 @@ function DiagnosisForm({ userId, onChanged }: { userId: string; onChanged: () =>
               {s}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <Label htmlFor={`pace-evidence-${userId}`}>診断の根拠</Label>
         <Input
           id={`pace-evidence-${userId}`}

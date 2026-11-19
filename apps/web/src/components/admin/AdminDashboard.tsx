@@ -18,6 +18,7 @@ import {
   TrendingDown,
   RefreshCw,
 } from "@/lib/icons";
+import { Notice } from "@/components/common/Notice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { KpiCard } from "@/components/common/KpiCard";
 import { Button } from "@/components/ui/button";
@@ -64,11 +65,7 @@ function DashboardLive() {
         }
       />
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
-          集計の取得に失敗しました: {error}
-        </div>
-      ) : null}
+      {error ? <Notice className="mb-4">集計の取得に失敗しました: {error}</Notice> : null}
 
       {!analytics && loading ? (
         <div role="status" aria-busy="true" aria-live="polite" aria-label="集計を読み込み中">

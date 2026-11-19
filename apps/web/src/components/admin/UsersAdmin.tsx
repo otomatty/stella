@@ -1,3 +1,4 @@
+import { Notice } from "@/components/common/Notice";
 import { IntegrationGroupFilter } from "@/components/integrations/IntegrationGroupFilter";
 /**
  * `/admin/users` — ユーザー管理 (Issue #22)。
@@ -155,11 +156,7 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
         }
       />
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice className="mb-4">{error}</Notice> : null}
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3 flex items-center gap-2 border-b border-border flex-wrap">

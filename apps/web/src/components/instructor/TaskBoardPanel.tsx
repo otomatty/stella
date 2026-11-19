@@ -136,10 +136,7 @@ export function TaskBoardPanel({
             受講者 {board.submissions.length}
             名の最新の提出
           </p>
-          <div
-            className="grid gap-4 mb-4"
-            style={{ gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)" }}
-          >
+          <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle>項目ごとの結果 (AI)</CardTitle>

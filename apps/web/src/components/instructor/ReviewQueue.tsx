@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { CONFIDENCE_LABELS, ROUTE_REASON_LABELS } from "@stella/shared/review/ai-review";
 import {
   REVIEW_QUEUE_GROUP_LABELS,
@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -77,6 +78,7 @@ export const ReviewQueue = ({
   useRefreshSubmissionsOnOpen(backendEnabled);
   const [tab, setTab] = useState("queue");
   const [group, setGroup] = useState<GroupFilter>("all");
+  const sortSelectId = useId();
   const [sort, setSort] = useState<ReviewQueueSort>("wait");
   const [boardTaskId, setBoardTaskId] = useState<string | null>(null);
 
@@ -149,7 +151,7 @@ export const ReviewQueue = ({
 
         <TabsContent value="queue">
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
-            <fieldset className="flex flex-wrap items-center gap-1.5 border-0 p-0 m-0">
+            <fieldset className="flex min-w-0 flex-wrap items-center gap-1.5 border-0 p-0 m-0">
               <legend className="sr-only">人に回した理由</legend>
               <Chip active={group === "all"} onClick={() => setGroup("all")}>
                 すべて ({pending.length})
@@ -167,20 +169,23 @@ export const ReviewQueue = ({
                 </Chip>
               ) : null}
             </fieldset>
-            <div className="flex-1" />
-            <label className="flex items-center gap-1.5 text-[12px] text-ink-3">
+            <label
+              htmlFor={sortSelectId}
+              className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[12px] text-ink-3"
+            >
               並べ方
-              <select
+              <NativeSelect
+                id={sortSelectId}
                 value={sort}
                 onChange={(e) => setSort(e.target.value as ReviewQueueSort)}
-                className="h-8 rounded-sm border border-input bg-card px-2 text-[12.5px]"
+                size="sm"
               >
                 {REVIEW_QUEUE_SORTS.map((s) => (
                   <option key={s} value={s}>
                     {REVIEW_QUEUE_SORT_LABELS[s]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           </div>
           {group === "ai-checking" ? (

@@ -8,7 +8,11 @@ import type {
 } from "@stella/shared/cms/types";
 import { TASK_KIND_LABELS, type TaskKind } from "@stella/shared/tasks/manifest";
 import type { StaffStageTasksResponse } from "@stella/shared/tasks/staff-stage";
+import { FilterBar, FilterField } from "@/components/common/FilterBar";
+import { PageContainer } from "@/components/common/PageContainer";
+import { PageHeader } from "@/components/common/PageHeader";
 import { useAppShell } from "@/components/shell/app-shell-context";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -119,11 +123,14 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
   const stage = data?.content.stage;
   const node = data?.node;
   const waiting = data?.tasks.reduce((sum, task) => sum + task.counts.waiting, 0) ?? 0;
+  const back = (
+    <Link to="/stages" className="text-[13px] text-ink-2 hover:underline">
+      ← ステージ管理
+    </Link>
+  );
   return (
-    <div className="mx-auto w-full min-w-0 max-w-7xl space-y-5 p-4 md:p-6">
-      <Link to="/stages" className="text-[13px] text-ink-2 hover:underline">
-        ← ステージ管理
-      </Link>
+    <PageContainer size="wide" className="space-y-5">
+      {loading || error || !data || !stage || !node ? back : null}
       {loading ? (
         <StaffStageDetailSkeleton />
       ) : error ? (
@@ -135,44 +142,52 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
         </div>
       ) : data && stage && node ? (
         <>
-          <header className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {node.category ? <Badge>{node.category}</Badge> : null}
-              <Badge variant={node.audience === "granted" ? "accent" : "default"}>
-                {stageAudienceLabel(node.audience)}
-              </Badge>
-              {node.status !== "published" ? (
-                <Badge variant={node.status === "archived" ? "danger" : "default"}>
-                  {stageStatusLabel(node.status)}
+          <PageHeader
+            className="mb-0"
+            back={back}
+            eyebrow={
+              <>
+                {node.category ? <Badge>{node.category}</Badge> : null}
+                <Badge variant={node.audience === "granted" ? "accent" : "default"}>
+                  {stageAudienceLabel(node.audience)}
                 </Badge>
-              ) : null}
-            </div>
-            <h1 className="break-words text-xl font-bold">{stage.title}</h1>
-            <p className="break-all font-mono text-xs text-ink-3">{stage.slug}</p>
-            <p className="text-[13px] text-ink-2">
-              {sections.length} 単元 ·{" "}
-              {sections.reduce((sum, section) => sum + section.lessonCount, 0)} レッスン ·{" "}
-              {data.tasks.length} 課題 · 目安 {stage.duration_hours ?? "—"} 時間 · 前提:{" "}
-              {prerequisitesLabel(data.prerequisites)}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {node.audience === "granted" ? (
-                <Button onClick={() => setGrantOpen(true)}>ユーザーを割り当てる</Button>
-              ) : null}
-              {node.status === "published" ? (
-                <StaffEnrollButton stageId={stageId} onOpenAsLearner={shell.openStageAsLearner} />
-              ) : null}
-              <Button asChild variant="outline">
-                <a
-                  href={`https://github.com/otomatty/stella/tree/main/packages/content/stages/${encodeURIComponent(stage.slug)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  GitHub で開く
-                </a>
-              </Button>
-            </div>
-          </header>
+                {node.status !== "published" ? (
+                  <Badge variant={node.status === "archived" ? "danger" : "default"}>
+                    {stageStatusLabel(node.status)}
+                  </Badge>
+                ) : null}
+              </>
+            }
+            title={stage.title}
+            sub={<p className="break-all font-mono text-xs text-ink-3">{stage.slug}</p>}
+            meta={
+              <p className="text-[13px] text-ink-2">
+                {sections.length} 単元 ·{" "}
+                {sections.reduce((sum, section) => sum + section.lessonCount, 0)} レッスン ·{" "}
+                {data.tasks.length} 課題 · 目安 {stage.duration_hours ?? "—"} 時間 · 前提:{" "}
+                {prerequisitesLabel(data.prerequisites)}
+              </p>
+            }
+            actions={
+              <>
+                {node.audience === "granted" ? (
+                  <Button onClick={() => setGrantOpen(true)}>ユーザーを割り当てる</Button>
+                ) : null}
+                {node.status === "published" ? (
+                  <StaffEnrollButton stageId={stageId} onOpenAsLearner={shell.openStageAsLearner} />
+                ) : null}
+                <Button asChild variant="outline">
+                  <a
+                    href={`https://github.com/otomatty/stella/tree/main/packages/content/stages/${encodeURIComponent(stage.slug)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub で開く
+                  </a>
+                </Button>
+              </>
+            }
+          />
           <Card className="flex flex-wrap gap-x-8 gap-y-3 p-4 text-[13px] tabular-nums">
             {node.audience === "granted" ? (
               <span>
@@ -254,7 +269,7 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
           />
         </>
       ) : null}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -419,12 +434,16 @@ function TasksTab({
   }));
   return (
     <div className="min-w-0 space-y-4">
-      <div className="flex flex-wrap items-end gap-4 text-[13px]">
-        <label className="flex flex-col gap-1" htmlFor="staff-task-kind">
-          種別
-          <select
+      <FilterBar className="text-[13px] lg:gap-4">
+        <FilterField
+          label="種別"
+          htmlFor="staff-task-kind"
+          className="lg:[&>label]:text-[13px] lg:[&>label]:text-inherit"
+        >
+          <NativeSelect
             id="staff-task-kind"
-            className="h-8 rounded border border-border bg-card px-2"
+            className="w-full sm:w-auto"
+            size="sm"
             value={filter.kind}
             onChange={(event) =>
               setFilter({ ...filter, kind: event.target.value as TaskKind | "all" })
@@ -436,17 +455,24 @@ function TasksTab({
                 {label}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex min-w-0 flex-col gap-1" htmlFor="staff-task-query">
-          題か ID を検索
+          </NativeSelect>
+        </FilterField>
+        <FilterField
+          label="題か ID を検索"
+          htmlFor="staff-task-query"
+          className="lg:[&>label]:text-[13px] lg:[&>label]:text-inherit"
+        >
           <Input
             id="staff-task-query"
+            className="w-full sm:w-64 lg:w-full"
             value={filter.query}
             onChange={(event) => setFilter({ ...filter, query: event.target.value })}
           />
-        </label>
-        <label className="flex items-center gap-2 py-1.5" htmlFor="staff-task-waiting">
+        </FilterField>
+        <label
+          className="col-span-2 flex items-center gap-2 py-1.5 sm:col-span-1"
+          htmlFor="staff-task-waiting"
+        >
           <input
             id="staff-task-waiting"
             type="checkbox"
@@ -455,7 +481,7 @@ function TasksTab({
           />
           人の確認待ちがある課題だけ
         </label>
-      </div>
+      </FilterBar>
       <Card className="min-w-0">
         <Table>
           <TaskTableHeader />
