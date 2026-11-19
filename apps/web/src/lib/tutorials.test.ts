@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   formatDuration,
+  matchesScreen,
   parseTutorialManifest,
   tutorialById,
+  tutorialsForPath,
   tutorialsForRoute,
 } from "./tutorials";
 
@@ -24,6 +26,41 @@ const row = {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
+});
+
+describe("tutorial screens", () => {
+  it.each([
+    ["/", "/", true],
+    ["/", "/stages", false],
+    ["/review", "/review/", true],
+    ["/review/", "/review", true],
+    ["/review", "/review-queue", false],
+    ["/stages/$stageId", "/stages/typescript-basics/", true],
+    ["/stages/$stageId", "/stages", false],
+    ["/stages/$stageId", "/stages/ts/extra", false],
+    ["/stages/$stageId/lessons/$lessonId", "/stages/ts/lessons/l1", true],
+    ["/stages/$stageId/lessons/$lessonId", "/stages/ts/tasks/l1", false],
+    ["/certificates/$certId", "/certificates/cert-123/", true],
+    ["/certificates/$certId", "/certificates/cert-123/extra", false],
+  ])("matches %s against %s as %s", (screen, pathname, expected) => {
+    expect(matchesScreen(screen, pathname)).toBe(expected);
+  });
+
+  it("returns matching screen videos in order without drafts", () => {
+    const stage = { ...row, screen: "/stages/$stageId" };
+    const list = [
+      { ...stage, id: "second" },
+      row,
+      { ...stage, id: "draft", draft: true, order: 0 },
+      { ...stage, id: "first", order: 1 },
+    ];
+    expect(tutorialsForPath("/stages/ts/", list).map((tutorial) => tutorial.id)).toEqual([
+      "first",
+      "second",
+    ]);
+    expect(tutorialsForPath("/", list)).toEqual([row]);
+    expect(tutorialsForPath("/stages", list)).toEqual([]);
+  });
 });
 describe("tutorial manifests", () => {
   it("validates rows, excludes drafts, normalizes assets and sorts", () => {
