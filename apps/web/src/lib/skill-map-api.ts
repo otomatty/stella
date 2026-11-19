@@ -1,6 +1,5 @@
 /**
- * スキルマップ / スキルプロフィール / 「次にやるリスト」の
- * データアクセス層 (Phase 2)。
+ * スキルマップ / スキルプロフィールのデータアクセス層 (Phase 2)。
  *
  * **秘匿はサーバ側で済んでいる。** 霧の星には slug も解放条件も入っておらず、3 歩先
  * (`edge`) には名前すら無く、4 歩以上先は配列に現れない。画面はここで受け取った形を
@@ -154,12 +153,6 @@ export interface SkillProfileMine {
   generated_at: string;
 }
 
-export interface StageQueueEntry {
-  stage_id: string;
-  order: number;
-  added_at: string;
-}
-
 /** `POST /api/stages/:id/start` の応答。 */
 export interface StartStageResult {
   /** この呼び出しで登録が生まれたか (既に始めていた星なら false)。 */
@@ -272,35 +265,4 @@ export async function putActiveStage(stageId: string | null): Promise<string | n
     body: { stageId },
   });
   return res.active_stage_id;
-}
-
-export async function getStageQueue(): Promise<StageQueueEntry[]> {
-  const { stage_queue } = await apiFetch<{ stage_queue: StageQueueEntry[] }>(
-    "/api/stage-queue/mine",
-  );
-  return stage_queue ?? [];
-}
-
-export async function addToStageQueue(stageId: string): Promise<StageQueueEntry[]> {
-  const { stage_queue } = await apiFetch<{ stage_queue: StageQueueEntry[] }>(
-    "/api/stage-queue/mine",
-    { method: "POST", body: { stageId } },
-  );
-  return stage_queue ?? [];
-}
-
-export async function removeFromStageQueue(stageId: string): Promise<StageQueueEntry[]> {
-  const { stage_queue } = await apiFetch<{ stage_queue: StageQueueEntry[] }>(
-    `/api/stage-queue/mine/${encodeURIComponent(stageId)}`,
-    { method: "DELETE" },
-  );
-  return stage_queue ?? [];
-}
-
-export async function reorderStageQueue(stageIds: string[]): Promise<StageQueueEntry[]> {
-  const { stage_queue } = await apiFetch<{ stage_queue: StageQueueEntry[] }>(
-    "/api/stage-queue/mine/order",
-    { method: "PUT", body: { stageIds } },
-  );
-  return stage_queue ?? [];
 }

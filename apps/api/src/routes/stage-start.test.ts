@@ -9,7 +9,7 @@
  *   - 講師も受講者と同じく自分で始められる
  *
  * D1 は `lib/skill-map-data.js` / `lib/enrollment-write.js` を差し替えて、インメモリの
- * 道と登録集合で代用する (skill-map.test.ts / stage-queue.test.ts と同じ流儀)。
+ * 道と登録集合で代用する (skill-map.test.ts と同じ流儀)。
  */
 
 import { Hono } from "hono";
@@ -17,9 +17,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../env.js";
 import { recordAudit } from "../lib/audit.js";
-import type { ProfileRole } from "../lib/authz.js";
+import { ApiError, type ProfileRole } from "../lib/authz.js";
 import { startSelfEnrollment } from "../lib/enrollment-write.js";
-import { loadEnrolledStageIds, loadSkillMapSource } from "../lib/skill-map-data.js";
+import {
+  loadEnrolledStageIds,
+  loadSkillMapSource,
+  saveFocusStageId,
+} from "../lib/skill-map-data.js";
 import { loadStaffEnrollableStage } from "../lib/staff-stage-enroll.js";
 import { skillMapRoute } from "./skill-map.js";
 import { stageStartRoute } from "./stage-start.js";
@@ -125,6 +129,21 @@ function start(stageId: string, opts: { auth?: boolean } = {}) {
   return app.request(
     `/api/stages/${stageId}/start`,
     { method: "POST", headers: auth ? { Authorization: "Bearer test" } : {} },
+    env,
+  );
+}
+
+function putFocus(body: { stageId?: string | null }, auth = true) {
+  return app.request(
+    "/api/skill-map/active-stage",
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(auth ? { Authorization: "Bearer test" } : {}),
+      },
+      body: JSON.stringify(body),
+    },
     env,
   );
 }
@@ -267,15 +286,7 @@ describe("POST /api/stages/:id/start", () => {
     // 受講登録があっても霧の星は選べない (PUT 側の登録ゲートより先に進ませる)。
     enrolledIds.add("stage-far");
     const started = await start("stage-far");
-    const focus = await app.request(
-      "/api/skill-map/active-stage",
-      {
-        method: "PUT",
-        headers: { Authorization: "Bearer test", "Content-Type": "application/json" },
-        body: JSON.stringify({ stageId: "stage-far" }),
-      },
-      env,
-    );
+    const focus = await putFocus({ stageId: "stage-far" });
     expect(focus.status).toBe(400);
     expect(await errorOf(started)).toBe(await errorOf(focus));
   });
@@ -393,5 +404,90 @@ describe("POST /api/stages/:id/staff-enroll", () => {
     });
     expect((await staffEnroll()).status).toBe(500);
     expect(recordAudit).not.toHaveBeenCalled();
+  });
+});
+
+describe("PUT /api/skill-map/active-stage", () => {
+  beforeEach(() => {
+    enrolledIds.add("stage-a");
+  });
+
+  it("認証が無ければ 401", async () => {
+    const res = await putFocus({ stageId: "stage-a" }, false);
+    expect(res.status).toBe(401);
+  });
+
+  it("受講登録のあるステージなら保存される", async () => {
+    const res = await putFocus({ stageId: "stage-a" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ active_stage_id: "stage-a" });
+    expect(saveFocusStageId).toHaveBeenCalledWith({}, caller, "stage-a");
+  });
+
+  it("受講登録の無いステージは 400 で保存しない", async () => {
+    const res = await putFocus({ stageId: "stage-not-mine" });
+    expect(res.status).toBe(400);
+    expect(saveFocusStageId).not.toHaveBeenCalled();
+  });
+
+  it("null はフォーカス解除として受け付ける", async () => {
+    const res = await putFocus({ stageId: null });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ active_stage_id: null });
+    expect(saveFocusStageId).toHaveBeenCalledWith({}, caller, null);
+  });
+
+  it("解除は道を評価せずに通す (現在地を見失っていても外せる)", async () => {
+    // 迷子になったフォーカスを外すのが目的なので、評価器の判定に巻き込まれない。
+    vi.mocked(loadSkillMapSource).mockRejectedValue(new Error("読めない"));
+    const res = await putFocus({ stageId: null });
+    expect(res.status).toBe(200);
+    expect(loadSkillMapSource).not.toHaveBeenCalled();
+    expect(saveFocusStageId).toHaveBeenCalledWith({}, caller, null);
+  });
+
+  it("クリア済みのステージは 400 で保存しない", async () => {
+    // 読み出し側 (resolveActiveStage) はクリア済みのフォーカスを導出へ落とすので、
+    // 保存を許すと「保存したのに反映されない」書き込みになる。
+    vi.mocked(loadSkillMapSource).mockResolvedValueOnce(pathSource(["stage-a"]));
+    const res = await putFocus({ stageId: "stage-a" });
+    expect(res.status).toBe(400);
+    expect(saveFocusStageId).not.toHaveBeenCalled();
+  });
+
+  it("霧の中のステージは、受講登録があっても 400 で保存しない", async () => {
+    // 自分で active にすると隣接まで full になり、視界制限を操作で外せてしまう。
+    enrolledIds.add("stage-fog");
+    const res = await putFocus({ stageId: "stage-fog" });
+    expect(res.status).toBe(400);
+    expect(saveFocusStageId).not.toHaveBeenCalled();
+  });
+
+  it("霧の 400 は未受講の 400 と同じ文言 (割当の有無を漏らさない)", async () => {
+    enrolledIds.add("stage-fog");
+    const fog = await putFocus({ stageId: "stage-fog" });
+    const unknown = await putFocus({ stageId: "stage-not-mine" });
+    expect(fog.status).toBe(unknown.status);
+    expect(await fog.json()).toEqual(await unknown.json());
+  });
+
+  it("道に載っていないステージも 400 (公開されていない星をフォーカスにしない)", async () => {
+    enrolledIds.add("stage-unpublished");
+    const res = await putFocus({ stageId: "stage-unpublished" });
+    expect(res.status).toBe(400);
+    expect(saveFocusStageId).not.toHaveBeenCalled();
+  });
+
+  it("stageId が無ければ 400", async () => {
+    const res = await putFocus({});
+    expect(res.status).toBe(400);
+  });
+
+  it("読み出しが落ちたらエラー応答にする", async () => {
+    vi.mocked(loadEnrolledStageIds).mockRejectedValueOnce(
+      new ApiError("プロフィールが見つかりません", 403),
+    );
+    const res = await putFocus({ stageId: "stage-a" });
+    expect(res.status).toBe(403);
   });
 });

@@ -1043,7 +1043,7 @@ export const stagePathEvents = sqliteTable(
 );
 
 // ---------------------------------------------------------------
-// 学習フォーカスとキュー (ホームの「今日の一手 + 道のり」/ Phase 2)
+// 学習フォーカス (ホームの「今日の一手 + 道のり」/ Phase 2)
 // ---------------------------------------------------------------
 
 /**
@@ -1069,40 +1069,6 @@ export const learnerFocus = sqliteTable("learner_focus", {
   activeStageId: text("active_stage_id").references(() => stages.id, { onDelete: "set null" }),
   updatedAt: tsNowUpd("updated_at"),
 });
-
-/**
- * 「次にやるリスト」— アクティブでないステージを受講者が自分で並べる待ち行列。
- *
- * 学習の正本ではない (割当は `enrollments`、進捗は `lesson_progress`)。並べ替えても
- * 何も解放されないし、消しても受講登録は残る。あくまで「次はこれをやる」という
- * 本人のメモで、ホームの道の下に出す。
- *
- * `order` は 0 から詰めた連番。並べ替えのたびに API 側が振り直す (歯抜けを許すと
- * 比較と挿入位置の扱いが場所ごとにぶれる)。
- */
-export const stageQueue = sqliteTable(
-  "stage_queue",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" })
-      .$defaultFn(() => LEGACY_TENANT_ID),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    stageId: text("stage_id")
-      .notNull()
-      .references(() => stages.id, { onDelete: "cascade" }),
-    order: integer("order").notNull().default(0),
-    addedAt: tsNow("added_at"),
-  },
-  (t) => ({
-    // 同じステージを二重に積ませない。追加 (insert + do nothing) の衝突先でもある。
-    userStageUnique: uniqueIndex("stage_queue_user_stage_uq").on(t.userId, t.stageId),
-    userOrderIdx: index("stage_queue_user_order_idx").on(t.userId, t.order),
-  }),
-);
 
 /**
  * 飛び級で開いた星 (Phase 3a)。
@@ -2146,7 +2112,6 @@ export const APP_TABLES = [
   "study_activity",
   "stage_path_events",
   "learner_focus",
-  "stage_queue",
   "stage_unlocks",
   "stage_grants",
   "skill_check_attempts",

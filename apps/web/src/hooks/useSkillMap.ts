@@ -1,5 +1,5 @@
 /**
- * スキルマップ / スキルプロフィール / 「次にやるリスト」の取得 Hook (Phase 2)。
+ * スキルマップ / スキルプロフィールの取得 Hook (Phase 2)。
  *
  * バックエンド未設定 (デモ) / 未ログイン時は no-op で null のまま返す — ダミーの道を
  * 描くと「進んだのに星が点かない」ように見えるため、何も出さない方を選ぶ。
@@ -10,17 +10,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isBackendConfigured } from "@/lib/backend";
 import { subscribeDevMode } from "@/lib/dev-mode";
 import {
-  addToStageQueue,
   getSkillMap,
   getSkillProfile,
-  getStageQueue,
   putActiveStage,
-  removeFromStageQueue,
-  reorderStageQueue,
   startStage as startStageRequest,
   type SkillMapMine,
   type SkillProfileMine,
-  type StageQueueEntry,
 } from "@/lib/skill-map-api";
 
 export interface UseSkillMapResult {
@@ -120,103 +115,4 @@ export function useSkillMap(
   );
 
   return { map, profile, loading, error, refetch, setActiveStage, startStage };
-}
-
-export interface UseStageQueueResult {
-  /** 並び順どおりのステージ id。 */
-  queue: string[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-  add: (stageId: string) => Promise<void>;
-  remove: (stageId: string) => Promise<void>;
-  reorder: (stageIds: string[]) => Promise<void>;
-}
-
-export function useStageQueue(userId: string | null, enabled = true): UseStageQueueResult {
-  const [entries, setEntries] = useState<StageQueueEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const requestIdRef = useRef(0);
-  const active = enabled && Boolean(userId) && isBackendConfigured();
-
-  const refetch = useCallback(async () => {
-    const reqId = ++requestIdRef.current;
-    if (!active) {
-      setEntries([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const rows = await getStageQueue();
-      if (reqId !== requestIdRef.current) return;
-      setEntries(rows);
-    } catch (err) {
-      if (reqId !== requestIdRef.current) return;
-      setError(messageOf(err));
-    } finally {
-      if (reqId === requestIdRef.current) setLoading(false);
-    }
-  }, [active]);
-
-  useEffect(() => {
-    void refetch();
-  }, [refetch]);
-
-  /** 変更系はサーバが返した新しい並びをそのまま採る (自前で組み立て直さない)。 */
-  const apply = useCallback(async (op: () => Promise<StageQueueEntry[]>) => {
-    const reqId = ++requestIdRef.current;
-    try {
-      const rows = await op();
-      if (reqId !== requestIdRef.current) return;
-      setEntries(rows);
-      setError(null);
-    } catch (err) {
-      if (reqId !== requestIdRef.current) return;
-      setError(messageOf(err));
-      throw err;
-    }
-  }, []);
-
-  const add = useCallback(
-    async (stageId: string) => {
-      if (!active) return;
-      await apply(() => addToStageQueue(stageId));
-    },
-    [active, apply],
-  );
-  const remove = useCallback(
-    async (stageId: string) => {
-      if (!active) return;
-      await apply(() => removeFromStageQueue(stageId));
-    },
-    [active, apply],
-  );
-  const reorder = useCallback(
-    async (stageIds: string[]) => {
-      if (!active) return;
-      // 並べ替えは体感が命なので、先に画面へ反映してからサーバへ送る。
-      setEntries((prev) =>
-        stageIds.flatMap((id, i) => {
-          const found = prev.find((row) => row.stage_id === id);
-          return found ? [{ ...found, order: i }] : [];
-        }),
-      );
-      await apply(() => reorderStageQueue(stageIds));
-    },
-    [active, apply],
-  );
-
-  return {
-    queue: entries.map((row) => row.stage_id),
-    loading,
-    error,
-    refetch,
-    add,
-    remove,
-    reorder,
-  };
 }
