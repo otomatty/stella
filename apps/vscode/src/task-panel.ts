@@ -23,8 +23,6 @@ import * as vscode from "vscode";
 import {
   isPublicSourceUrl,
   type PublicSourceReference,
-  SOURCE_AUTHORSHIP_LABELS,
-  SOURCE_REUSE_LABELS,
 } from "@stella/shared/tasks/source-reference";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./markdown-html.js";
@@ -92,10 +90,10 @@ function attributionHtml(ref: PublicSourceReference): string {
   return `${text}<p>原作者: ${escapeHtml(terms.creator)} / 再利用範囲: ${escapeHtml(terms.scope)} / 利用条件: ${conditions} / 条件確認日: ${escapeHtml(terms.checkedAt)}</p>`;
 }
 
-/** 課題の参照元 (出典・読む箇所・用途・帰属表示)。リンクは公開の HTTP(S) だけ。 */
+/** 課題の参照元 (出典・読む箇所・帰属表示)。リンクは公開の HTTP(S) だけ。 */
 export function referencesHtml(references: readonly PublicSourceReference[] | undefined): string {
   if (!references?.length) return "";
-  return `<section class="references"><h2>参照元</h2><ul>${references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}<p>${escapeHtml(ref.usedFor)}</p><details><summary>出典の詳細</summary><p>資料: ${escapeHtml(ref.documentVersion)} / 確認日: ${escapeHtml(ref.checkedAt)} / 環境: ${escapeHtml(ref.environmentRef)}</p><p>${escapeHtml(SOURCE_AUTHORSHIP_LABELS[ref.authorship] ?? ref.authorship)} / ${escapeHtml(SOURCE_REUSE_LABELS[ref.reuse] ?? ref.reuse)}</p></details>${attributionHtml(ref)}</li>`).join("")}</ul></section>`;
+  return `<section class="references"><h2>参照元</h2><ul>${references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}${attributionHtml(ref)}</li>`).join("")}</ul></section>`;
 }
 
 function renderFailedTest(test: TestCaseResult): string {

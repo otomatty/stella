@@ -439,8 +439,9 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     : publicReferences(referenceMap, registry, contentIds);
   const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
   const testFiles = collectFiles(join(taskDir, "tests"), "tests");
+  // 課題の版 (contentHash) を変えないよう、配布する README は従来の表示を使う。
   const readmeFile = Buffer.from(
-    referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
+    referencedMarkdown(readme, taskReferences, referenceMap, readmeId, "full"),
   ).toString("base64");
   // ヒント・解答例・解説は配布物に入れない。解放条件 (07 §8) を満たした受講者にだけ
   // API (`/api/tasks/help`) が返す。ここでは README と実行に必要なファイルだけを配る。

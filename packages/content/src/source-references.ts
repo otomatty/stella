@@ -358,15 +358,29 @@ function attributionMarkdown(ref: PublicSourceReference): string {
   const terms = ref.attributionTerms;
   return `\n  - ${markdownText(ref.attribution)}${terms ? `\n  - 原作者: ${markdownText(terms.creator)} / 再利用範囲: ${markdownText(terms.scope)} / 利用条件: [${markdownText(terms.conditionsUrl)}](<${terms.conditionsUrl}>) / 条件確認日: ${terms.checkedAt}` : ""}`;
 }
-export function referencesMarkdown(refs: PublicSourceReference[], heading = "参照元"): string {
+type ReferenceStyle = "compact" | "full";
+
+export function referencesMarkdown(
+  refs: PublicSourceReference[],
+  heading = "参照元",
+  style: ReferenceStyle = "compact",
+): string {
   if (refs.length === 0) return "";
   const rows = new Map<string, PublicSourceReference>();
   for (const ref of refs)
     rows.set(
-      `${ref.id}:${ref.usedFor}:${ref.attribution ?? ""}:${JSON.stringify(ref.attributionTerms ?? null)}`,
+      `${ref.id}:${style === "full" ? `${ref.usedFor}:` : ""}${ref.attribution ?? ""}:${JSON.stringify(ref.attributionTerms ?? null)}`,
       ref,
     );
-  return `\n\n## ${heading}\n\n${[...rows.values()].map((r) => `- [${markdownText(r.title)}](<${r.url}>) — ${markdownText(r.publisher)} / ${markdownText(r.section)}\n  - 確認すること: ${markdownText(r.usedFor)}\n  - ${SOURCE_AUTHORSHIP_LABELS[r.authorship]}・${SOURCE_REUSE_LABELS[r.reuse]} / 資料: ${markdownText(r.documentVersion)} / 確認日: ${r.checkedAt} / 環境: ${markdownText(r.environmentRef)}${attributionMarkdown(r)}`).join("\n")}\n`;
+  const lines = [...rows.values()].map((ref) => {
+    const link = `- [${markdownText(ref.title)}](<${ref.url}>) — ${markdownText(ref.publisher)} / ${markdownText(ref.section)}`;
+    const details =
+      style === "full"
+        ? `\n  - 確認すること: ${markdownText(ref.usedFor)}\n  - ${SOURCE_AUTHORSHIP_LABELS[ref.authorship]}・${SOURCE_REUSE_LABELS[ref.reuse]} / 資料: ${markdownText(ref.documentVersion)} / 確認日: ${ref.checkedAt} / 環境: ${markdownText(ref.environmentRef)}`
+        : "";
+    return link + details + attributionMarkdown(ref);
+  });
+  return `\n\n## ${heading}\n\n${lines.join("\n")}\n`;
 }
 /** front-matter は本文ではない。受講者の本文 (referencedMarkdown) と同じ範囲を読む。 */
 function markdownBody(source: string): string {
@@ -426,7 +440,7 @@ export function referenceContentIds(source: string, contentId: string): string[]
 }
 /**
  * 本文の後ろに付ける出典欄。独自制作の記録を外部資料の一覧より先に出す。
- * 解説・知識問題・課題・スライドで文言を揃えるため、本文の組み立て方が違ってもここを通す。
+ * 解説・課題・スライドで文言を揃えるため、本文の組み立て方が違ってもここを通す。
  * `source` は使用箇所 (本文と図) を解決するための元ファイルの本文。
  */
 export function referenceNotesMarkdown(
@@ -434,12 +448,13 @@ export function referenceNotesMarkdown(
   references: PublicSourceReference[],
   refs: UnitReferences,
   contentId?: string,
+  style: ReferenceStyle = "compact",
 ): string {
   const ids = contentId ? referenceContentIds(source, contentId) : [];
   const originals = refs.uses.filter((u) => ids.includes(u.contentId) && u.reuse === "original");
   return (
     originals.map((u) => `\n\n> 教材独自に作成: ${markdownText(u.usedFor)}\n`).join("") +
-    referencesMarkdown(references)
+    referencesMarkdown(references, undefined, style)
   );
 }
 export function referencedMarkdown(
@@ -447,11 +462,12 @@ export function referencedMarkdown(
   references: PublicSourceReference[],
   refs?: UnitReferences,
   contentId?: string,
+  style: ReferenceStyle = "compact",
 ): string {
   // 参照元の記録が読めない単元でも、front-matter (sourceRefs) を受講者の本文に出さない。
   const body = markdownBody(source);
   if (!refs) return body;
-  return body + referenceNotesMarkdown(source, references, refs, contentId);
+  return body + referenceNotesMarkdown(source, references, refs, contentId, style);
 }
 
 /** 公開教材だけ列挙する。private/ とスターター・実行用テストは出典の対応先にしない。 */

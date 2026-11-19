@@ -76,7 +76,7 @@ function result(overrides: Partial<RunResult> = {}): RunResult {
 }
 
 describe("buildTaskPanelHtml", () => {
-  it("課題の出典・読む箇所・用途・必要な帰属表示を安全に表示する", () => {
+  it("課題の出典・読む箇所・必要な帰属表示を安全に表示する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",
       result: result(),
@@ -107,10 +107,11 @@ describe("buildTaskPanelHtml", () => {
       },
     });
     expect(html).toContain('href="https://example.org/html#heading"');
-    expect(html).toContain("&lt;script&gt;source&lt;/script&gt;");
+    expect(html).toContain("&lt;script&gt;source&lt;/script&gt;</a> — MDN / 見出し");
     expect(html).not.toContain("<script>");
-    expect(html).toContain("見出しの受入条件");
-    expect(html).toContain("教材独自の課題 / 概念の参照");
+    expect(html).not.toMatch(
+      /見出しの受入条件|出典の詳細|教材独自の課題|概念の参照|資料: 更新型|確認日: 2026-10-05|環境:|static-web-01@1/,
+    );
     expect(html).toContain("Required credit");
     expect(html).toContain("原作者: &lt;b&gt;Fixture author&lt;/b&gt;");
     expect(html).not.toContain("<b>");
@@ -119,7 +120,6 @@ describe("buildTaskPanelHtml", () => {
       '利用条件: <a href="https://example.org/Attrib_copyright_license">https://example.org/Attrib_copyright_license</a>',
     );
     expect(html).toContain("条件確認日: 2026-09-30");
-    expect(html).toContain("static-web-01@1");
   });
 
   it("失敗した項目を先に出し、HTML をエスケープし、スクリプトを含めない", () => {
