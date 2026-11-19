@@ -11,7 +11,7 @@ export default defineScenario({
   user: "seed-learner",
   async run(t) {
     await openFirstTask(t);
-    await t.caption("課題文のレッスンを開きました。", { hold: 5500 });
+    await t.caption("課題文の教材を開きました。", { hold: 5500 });
     await t.expect("[data-testid=lesson-doc]");
     await show(t, "[data-testid=lesson-doc]");
     await t.caption("まず、何を作るかと手順を読みましょう。", { hold: 5500 });
