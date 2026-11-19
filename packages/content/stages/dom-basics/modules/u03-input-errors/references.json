@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dom-basics/u03-input-errors@2",
-  "contentHash": "188498cdd29370a8119f851b2a2509f0af85e6f1eb14a4c749b587510d99daff",
+  "unitId": "dom-basics/u03-input-errors@3",
+  "contentHash": "63ea5820a3b2496d88a2215f11391066398c54a1aabef96f61a53cc80a163746",
   "environmentRef": "dom-test-01@1",
   "uses": [
     {
@@ -184,6 +184,70 @@
         "SRC-mdn-js-logical-and-20261119"
       ],
       "usedFor": "数量と会員区分を読み取り、JavaScript の条件練習で扱った注文計算をフォームにつなぐ自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "複数の条件を持つフォームを、画面の仕様から組み立てる自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "フォームの送信、エラーの再表示、入力時のエラーの更新を直す自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "問い合わせを題材に、文字数と返信先の検証、フォームのエラー表示を確認する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "予約変更を題材に、数値の範囲、日付、理由の文字数とエラー表示の定着を確認する自作課題。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

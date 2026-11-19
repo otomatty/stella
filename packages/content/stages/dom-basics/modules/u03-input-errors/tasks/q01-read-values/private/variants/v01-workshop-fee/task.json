@@ -1,0 +1,68 @@
+{
+  "id": "dom-basics/u03-input-errors/v01-workshop-fee",
+  "title": "工作教室の参加費を表示する",
+  "kind": "basic",
+  "pattern": "dom-read-input",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else"
+    ],
+    "assesses": [
+      "dom-input-value",
+      "dom-submit-event"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/workshop.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "calculate-total",
+        "criterion": "空欄と数値の 0 を区別し、入力を数値に直してから料金を計算している。",
+        "required": true
+      },
+      {
+        "id": "update-result",
+        "criterion": "送信のたびに現在の入力から料金を表示し直し、空欄なら前の表示を消している。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-dom-input-value-20261119",
+    "SRC-mdn-js-trim-20261119",
+    "SRC-mdn-js-number-20261119",
+    "SRC-mdn-dom-submit-event-20261119",
+    "SRC-mdn-dom-prevent-default-20261119"
+  ],
+  "estimatedMinutes": 15,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

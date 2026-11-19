@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>確認A 問い合わせフォーム</title>
+  </head>
+  <body>
+    <main id="exercise">
+      <h1>確認A 問い合わせフォーム</h1>
+      <form id="inquiry" novalidate>
+        <label for="subject">件名</label>
+        <input type="text" id="subject" aria-describedby="subject-error" />
+        <p id="subject-error"></p>
+
+        <label for="body">本文</label>
+        <textarea id="body" aria-describedby="body-error"></textarea>
+        <p id="body-error"></p>
+
+        <label for="reply">返信先</label>
+        <input type="text" id="reply" aria-describedby="reply-error" />
+        <p id="reply-error"></p>
+
+        <button type="submit">送信する</button>
+      </form>
+      <output aria-label="問い合わせ結果"></output>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
