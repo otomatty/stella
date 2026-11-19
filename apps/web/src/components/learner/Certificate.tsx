@@ -221,7 +221,7 @@ function CertificateList({
               <ResumeButton stage={near[0]}>続きから進める</ResumeButton>
             ) : (
               <Button asChild variant="primary">
-                <Link to="/">スキルツリーへ</Link>
+                <Link to="/">ステージ一覧へ</Link>
               </Button>
             )}
           </div>
@@ -337,7 +337,7 @@ function CertificateList({
       <p className="text-[13px] text-ink-3">
         ほかのステージは{" "}
         <Link to="/" className="text-brand underline underline-offset-2">
-          スキルツリー
+          ステージ一覧
         </Link>{" "}
         から始められます。
       </p>

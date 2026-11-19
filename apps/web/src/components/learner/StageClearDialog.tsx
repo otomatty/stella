@@ -70,7 +70,7 @@ export function StageClearDialog({ onCleared }: { onCleared?: () => void }) {
               </span>
             ))}
             <span className="block mt-1.5">
-              修了証が発行されました。スキルツリーで次のステージが解放されています。
+              修了証が発行されました。ステージ一覧で次のステージが解放されています。
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -78,7 +78,7 @@ export function StageClearDialog({ onCleared }: { onCleared?: () => void }) {
           <Button onClick={close}>閉じる</Button>
           <Button variant="accent" onClick={goSkillTree}>
             <Sparkles size={14} />
-            スキルツリーを見る
+            ステージ一覧を見る
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -161,7 +161,7 @@ export const UnlockNotice = ({
 
   // 星と教材のどちらが増えたかで見出しを変える (両方なら星を主にする — 道が伸びる方が
   // 大きな出来事なので)。
-  const heading = newIds.length > 0 ? "スキルツリーが広がりました" : "新しい教材が解放されました";
+  const heading = newIds.length > 0 ? "新しいステージが現れました" : "新しい教材が解放されました";
 
   return (
     <div

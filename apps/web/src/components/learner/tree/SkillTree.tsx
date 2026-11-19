@@ -185,6 +185,8 @@ interface SkillTreeProps {
   mainlandTitle?: string;
   /** 右上の島チップを出す。既定は出す。false のときはルート名が避ける障害物からも外す。 */
   showIslandChips?: boolean;
+  /** 左上に浮くカードがチップと重なる幅のとき、チップをカードの下へ下げる。盤面の上端からの距離 (px)。 */
+  chipsTop?: number;
   /** 状態の凡例を出す。講師の管理画面では出さない。 */
   showLegend?: boolean;
   /**
@@ -458,6 +460,7 @@ export const SkillTree = ({
   islandCaption,
   mainlandTitle = "開発スキル",
   showIslandChips = true,
+  chipsTop,
   showLegend = true,
   initialFit = false,
   selectedIslandKey = null,
@@ -816,7 +819,12 @@ export const SkillTree = ({
     const obstacles = [{ left: visibleView.width - 52, top: 8, width: 44, height: 120 }];
     if (showIslandChips && visibleIslands.length > 0) {
       const width = Math.min(460, visibleView.width - 72);
-      obstacles.push({ left: visibleView.width - 52 - width, top: 8, width, height: 72 });
+      obstacles.push({
+        left: visibleView.width - 52 - width,
+        top: chipsTop ?? 8,
+        width,
+        height: 72,
+      });
     }
     return placeOverviewCards(ordered, obstacles, visibleView).map((card) => ({
       ...card,
@@ -830,6 +838,7 @@ export const SkillTree = ({
     activeInfo,
     showIslandChips,
     visibleIslands.length,
+    chipsTop,
   ]);
   const markers = useMemo(
     () =>
@@ -870,7 +879,7 @@ export const SkillTree = ({
         ? [
             {
               left: Math.max(0, visibleView.width - 52 - chipsW),
-              top: 8,
+              top: chipsTop ?? 8,
               width: chipsW,
               height: visibleIslands.length > 0 ? 56 : 0,
             },
@@ -901,6 +910,7 @@ export const SkillTree = ({
     showIslandChips,
     placeHeadings,
     isOverview,
+    chipsTop,
   ]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
@@ -1158,12 +1168,11 @@ export const SkillTree = ({
               </div>
             );
           })}
-          {/* 右上: 島チップ。ズームボタン (Canvas 側) の左に並べ、左に浮くガイドの
-              カードとは重ならない幅に収める。 */}
+          {/* 島チップ。既定では右上のズームボタン (Canvas 側) の左に並ぶ。 */}
           {chips ? (
             <div
               className="absolute right-12 top-3 flex justify-end"
-              style={{ maxWidth: `calc(100% - ${viewInset + 64}px)` }}
+              style={{ top: chipsTop, maxWidth: `calc(100% - ${viewInset + 64}px)` }}
             >
               {chips}
             </div>

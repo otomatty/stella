@@ -1,6 +1,6 @@
 /**
  * 手元の確認の要約を LMS に送る。本文は `@stella/shared/tasks/local-report` が作り、
- * コード・ファイル名・メッセージは載せない。拡張と CLI が同じ関数を使う。
+ * コード・ファイル名・メッセージは載せない。
  */
 
 import { toLocalRunReport } from "@stella/shared/tasks/local-report";

@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GuidedStage } from "@stella/shared/stage-grants/types";
-import {
-  guidedStagesLoadResult,
-  guidancePayload,
-  guidedDeadline,
-  guidedStageCard,
-  guidedStageLineTitle,
-} from "./guided-stages";
+import { guidedStagesLoadResult, guidancePayload, guidedDeadline } from "./guided-stages";
 
 const stage: GuidedStage = {
   stage_id: "sample-stage",
@@ -53,43 +47,6 @@ describe("案内の期限は日本時間の暦日で数える", () => {
   });
 });
 
-describe("案内されたステージのカード", () => {
-  it("開始・続き・ロックと進み具合", () => {
-    expect(guidedStageCard(stage)).toMatchObject({
-      button: "始める",
-      progress: "0/1292 問",
-      percent: 0,
-      prerequisite: null,
-    });
-    expect(
-      guidedStageCard({
-        ...stage,
-        status: "in-progress",
-        progress: { unit: "tasks", passed: 3, total: 19 },
-      }),
-    ).toMatchObject({ button: "続きを開く", progress: "3/19 課題" });
-    expect(
-      guidedStageCard({
-        ...stage,
-        status: "locked",
-        prerequisite_titles: ["架空の基礎", "架空の準備"],
-      }),
-    ).toMatchObject({
-      button: null,
-      prerequisite: "『架空の基礎』・『架空の準備』を終えると始められます",
-    });
-  });
-  it("0件の棒と、前提名が無いロック", () => {
-    expect(
-      guidedStageCard({
-        ...stage,
-        status: "locked",
-        progress: { unit: "tasks", passed: 0, total: 0 },
-      }),
-    ).toMatchObject({ percent: 0, prerequisite: "開始の条件がそろうと始められます" });
-  });
-});
-
 describe("管理者の案内入力", () => {
   it("日付はその日の日本時間23:59:59で送る、空欄はnull", () => {
     expect(
@@ -128,19 +85,6 @@ describe("管理者の案内入力", () => {
   });
 });
 
-describe("畳んだ案内の行の名前", () => {
-  it.each([
-    ["架空の研修室", "架空の研修室 事前課題 第1部", "架空の研修室 事前課題 第1部"],
-    ["架空の研修室", "事前課題", "架空の研修室・事前課題"],
-    ["架空の研修室", "準備：架空の研修室の課題", "架空の研修室・準備：架空の研修室の課題"],
-    ["架空の研修室", "架空の研修室", "架空の研修室"],
-    [null, "事前課題", "事前課題"],
-    ["", "事前課題", "事前課題"],
-  ])("案内元 %s・名前 %s → %s", (source_name, title, expected) => {
-    expect(guidedStageLineTitle({ source_name, title })).toBe(expected);
-  });
-});
-
 describe("案内の読み込み結果", () => {
   it("正常な0件と旧APIの404はエラーにしない", () => {
     expect(guidedStagesLoadResult({ stages: [] })).toEqual({ stages: [], error: null });
@@ -156,29 +100,5 @@ describe("案内の読み込み結果", () => {
   });
   it("成功した結果はそのまま返し、エラーを消す", () => {
     expect(guidedStagesLoadResult({ stages: [stage] })).toEqual({ stages: [stage], error: null });
-  });
-});
-
-describe("前提の名前を一部伏せた案内", () => {
-  it.each([
-    [["架空の基礎"], false, "『架空の基礎』を終えると始められます"],
-    [["架空の基礎", "架空の準備"], false, "『架空の基礎』・『架空の準備』を終えると始められます"],
-    [["架空の基礎"], true, "『架空の基礎』と、ほかの条件がそろうと始められます"],
-    [
-      ["架空の基礎", "架空の準備"],
-      true,
-      "『架空の基礎』・『架空の準備』と、ほかの条件がそろうと始められます",
-    ],
-    [[], true, "開始の条件がそろうと始められます"],
-    [[], false, "開始の条件がそろうと始められます"],
-    [["架空の基礎"], undefined, "『架空の基礎』を終えると始められます"],
-  ] as const)("名前 %j・伏せた前提 %s", (names, withheld, expected) => {
-    const input = {
-      ...stage,
-      status: "locked" as const,
-      prerequisite_titles: [...names],
-      prerequisites_withheld: withheld,
-    };
-    expect(guidedStageCard(input).prerequisite).toBe(expected);
   });
 });

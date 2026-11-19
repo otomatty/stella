@@ -2,7 +2,7 @@ import { EXTENSION_VERSION_PARAM } from "@stella/shared/tasks/extension-compat";
 
 let extensionVersion: string | undefined;
 
-/** activate が拡張の package.json から渡す。CLI も読むため vscode には依存しない。 */
+/** activate が拡張の package.json から渡す。 */
 export function setTaskBundleExtensionVersion(version: unknown): void {
   extensionVersion = typeof version === "string" && version.length > 0 ? version : undefined;
 }

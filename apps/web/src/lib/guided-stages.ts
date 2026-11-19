@@ -1,8 +1,4 @@
-import type {
-  GuidedStage,
-  GuidedStagesResponse,
-  StageGrantGuidance,
-} from "@stella/shared/stage-grants/types";
+import type { GuidedStagesResponse, StageGrantGuidance } from "@stella/shared/stage-grants/types";
 
 const DAY = 86_400_000;
 const JST = 9 * 60 * 60 * 1000;
@@ -28,24 +24,6 @@ export function guidedDeadline(dueAt: string | null, now = new Date()) {
         : days === 0
           ? "今日まで"
           : `${label} まで・あと ${days} 日`,
-  };
-}
-
-export function guidedStageCard(stage: GuidedStage) {
-  return {
-    button:
-      stage.status === "locked" ? null : stage.status === "available" ? "始める" : "続きを開く",
-    prerequisite:
-      stage.status !== "locked"
-        ? null
-        : stage.prerequisite_titles.length
-          ? `${stage.prerequisite_titles.map((title) => `『${title}』`).join("・")}${stage.prerequisites_withheld ? "と、ほかの条件がそろうと始められます" : "を終えると始められます"}`
-          : "開始の条件がそろうと始められます",
-    progress: `${stage.progress.passed}/${stage.progress.total} ${stage.progress.unit === "problems" ? "問" : "課題"}`,
-    percent:
-      stage.progress.total > 0
-        ? Math.min(100, Math.max(0, (stage.progress.passed / stage.progress.total) * 100))
-        : 0,
   };
 }
 
@@ -76,13 +54,6 @@ export function guidancePayload(fields: GuidanceFields): StageGrantGuidance {
     due_at: dueAt,
     message: fields.message.trim() || null,
   };
-}
-
-/** 畳んだ帯では、ステージ名の先頭にある案内元を重ねない。 */
-export function guidedStageLineTitle(stage: Pick<GuidedStage, "title" | "source_name">): string {
-  return stage.source_name && !stage.title.startsWith(stage.source_name)
-    ? `${stage.source_name}・${stage.title}`
-    : stage.title;
 }
 
 /** 404 は案内 API のない旧版。正常な0件と読み込みの失敗を分ける。 */
