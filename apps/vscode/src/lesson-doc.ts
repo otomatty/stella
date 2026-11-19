@@ -381,7 +381,7 @@ function viewBody(view: LessonDocView): string {
       const args = encodeURIComponent(JSON.stringify([view.stageId, view.lessonId]));
       return [
         `<h1>${escapeHtml(view.title)}</h1>`,
-        "<p>このレッスンは PDF スライドです。拡張内では表示できません。</p>",
+        "<p>この教材は PDF スライドです。拡張内では表示できません。</p>",
         `<p><a href="command:stella.openInWeb?${args}">Web で開く</a></p>`,
       ].join("\n");
     }

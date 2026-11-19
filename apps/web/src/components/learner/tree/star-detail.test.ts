@@ -42,7 +42,7 @@ describe("describeStar の状態語", () => {
   });
 
   it("クリア / 進行中 / 未解放 / 解放済みを言い分ける", () => {
-    expect(describe1({ state: "cleared" }).stateText).toBe("クリア済み");
+    expect(describe1({ state: "cleared" }).stateText).toBe("完了済み");
     expect(describe1({}, { isActive: true }).stateText).toBe("進行中");
     expect(describe1({ state: "locked" }).stateText).toBe("未解放");
     expect(describe1({}).stateText).toBe("解放済み");
@@ -66,7 +66,7 @@ describe("describeStar の本文", () => {
     expect(describe1({ state: "locked", lock_reasons: ["ITのきほん", "Git 入門"] }).body).toEqual({
       kind: "lock",
       reasons: ["ITのきほん", "Git 入門"],
-      text: "ITのきほん / Git 入門 をクリアすると開きます",
+      text: "ITのきほん / Git 入門 を完了すると開きます",
     });
   });
 
@@ -74,7 +74,7 @@ describe("describeStar の本文", () => {
     expect(describe1({ state: "locked" }).body).toEqual({
       kind: "lock",
       reasons: [],
-      text: "前提のステージをクリアすると開きます",
+      text: "前提のステージを完了すると開きます",
     });
   });
 

@@ -149,7 +149,7 @@ describe("buildTaskHelpHtml", () => {
   it("講師・管理者には先頭に記録しない案内を出す", () => {
     const html = buildTaskHelpHtml({ help: help({ viewer: "staff" }), root: "/work/q01" });
     const notice =
-      "講師・管理者として表示しています。受講者には解放の条件 (ヒントの順番・挑戦の回数・合格) を満たすまで出ません。開いても記録しません。";
+      "管理者として表示しています。受講者には解放の条件 (ヒントの順番・挑戦の回数・合格) を満たすまで出ません。開いても記録しません。";
     expect(html).toContain(notice);
     expect(html.indexOf(notice)).toBeLessThan(html.indexOf("<h1>"));
     expect(html).not.toContain("支援の記録に残ります");
@@ -159,7 +159,7 @@ describe("buildTaskHelpHtml", () => {
     const legacy = help();
     Reflect.deleteProperty(legacy, "viewer");
     const html = buildTaskHelpHtml({ help: legacy, root: "/work/q01" });
-    expect(html).not.toContain("講師・管理者として表示しています");
+    expect(html).not.toContain("管理者として表示しています");
     expect(html).toContain("支援の記録に残ります");
   });
 

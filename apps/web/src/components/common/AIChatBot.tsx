@@ -35,7 +35,8 @@ interface AIChatBotProps {
   returnFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
-const GENERAL_INTRO = "学習アシスタント AI です。 教材内容や演習で詰まったことを質問してください。";
+const GENERAL_INTRO =
+  "学習アシスタント AI です。 教材の内容や課題でつまずいたことを質問してください。";
 
 /**
  * 学習アシスタント AI のチャット UI。
@@ -109,7 +110,9 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
   const subtitle = useMemo(() => {
     if (context.kind === "practice") {
       if (practiceContextError) return "課題情報を取得できません";
-      return assignment ? `課題: ${assignment.title}` : "採点失敗コンテキスト引き継ぎ中";
+      return assignment
+        ? `課題: ${assignment.title}`
+        : "課題の確認に失敗したときの情報を引き継いでいます";
     }
     if (context.kind === "lesson") {
       return `${context.stageTitle} · ${context.lessonTitle}`;

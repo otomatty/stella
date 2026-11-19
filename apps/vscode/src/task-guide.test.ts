@@ -221,7 +221,7 @@ describe("buildTaskGuideHtml", () => {
       "編集して保存",
       "✗ 直すところがあります",
       "直して保存し、もう一度提出します。",
-      ["講師に相談"],
+      ["管理者に相談"],
     ],
     [
       "error",
@@ -229,7 +229,7 @@ describe("buildTaskGuideHtml", () => {
       "提出",
       "! 環境の問題で確認できませんでした",
       "&lt;準備に失敗&gt;",
-      ["実行ログ", "講師に相談"],
+      ["実行ログ", "管理者に相談"],
     ],
     [
       "passed",
@@ -279,8 +279,8 @@ describe("buildTaskGuideHtml", () => {
     ["submitted", "AI が確認中", "結果は、ふつう数分で届きます。ここと Web の通知に出ます。"],
     [
       "instructor-pending",
-      "講師の確認待ち",
-      "講師が確認しています。結果は、ここと Web の通知に出ます。",
+      "管理者の確認待ち",
+      "管理者が確認しています。結果は、ここと Web の通知に出ます。",
     ],
   ] as const)("%s はレビューの段と結果・更新のリンクを出す", (taskStatus, label, body) => {
     const input = guide({ taskStatus, lastRun: { outcome: "passed", steps: [] } });

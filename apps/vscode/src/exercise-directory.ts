@@ -21,7 +21,7 @@ export async function migrateExerciseDirectory(
   for (const document of vscode.workspace.textDocuments) {
     const path = document.uri.fsPath.replace(/\\/g, "/").toLowerCase();
     if (document.isDirty && (path === legacyPath || path.startsWith(`${legacyPath}/`))) {
-      if (!(await document.save())) throw new Error("旧演習ファイルを保存できませんでした");
+      if (!(await document.save())) throw new Error("旧形式の課題ファイルを保存できませんでした");
     }
   }
   const parent = vscode.Uri.joinPath(root, "..");

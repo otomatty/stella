@@ -73,7 +73,7 @@ export const HomeHud = ({ profile, focusBonus, cleared, loading, className }: Ho
         {streak == null ? "—" : `${streak} 日`}
       </Stat>
 
-      <Stat icon={<Star size={13} />} tone="text-brand" label="修了">
+      <Stat icon={<Star size={13} />} tone="text-brand" label="完了">
         {cleared ? `${cleared.count} / ${cleared.total}` : "—"}
       </Stat>
 

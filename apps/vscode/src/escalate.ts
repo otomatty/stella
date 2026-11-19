@@ -60,7 +60,7 @@ export async function submitPassedExercise(
   session?: number,
 ): Promise<number> {
   if (!canSubmitExercise(assignmentId) || !lastAttempt) {
-    throw new Error("確認が通った課題がありません。先に採点を実行してください");
+    throw new Error("確認が通った課題がありません。先に確認を実行してください");
   }
   if (!explanation.trim()) throw new Error("説明を入力してください");
   const attempt = lastAttempt;
@@ -93,7 +93,7 @@ interface SubmissionResponse {
 export async function escalateToInstructor(assignmentId: string): Promise<number> {
   const attempt = getEscalationAttempt(assignmentId);
   if (!attempt) {
-    throw new Error("採点して未クリアだった課題がありません。 先に採点を実行してください");
+    throw new Error("直近の確認で未完了だった課題がありません。先に確認を実行してください");
   }
   const body = buildEscalationSubmissionBody({
     lessonId: attempt.lessonId,

@@ -775,7 +775,7 @@ export const SkillTree = ({
       const cy = region.cy * visibleView.scale + visibleView.y;
       if (cx < 0 || cx > visibleView.width || cy < 0 || cy > visibleView.height) return [];
       const counts = [
-        ...(region.cleared > 0 ? [`クリア ${region.cleared}`] : []),
+        ...(region.cleared > 0 ? [`完了 ${region.cleared}`] : []),
         ...(region.active > 0 ? [`受講中 ${region.active}`] : []),
         ...(region.startable > 0 ? [`始められる ${region.startable}`] : []),
         ...(region.cleared + region.active + region.startable === 0
@@ -1041,7 +1041,7 @@ export const SkillTree = ({
 
   const chips =
     showIslandChips && visibleIslands.length > 0 ? (
-      <nav className="flex flex-wrap justify-end gap-1" aria-label="地図の中を移動">
+      <nav className="flex flex-wrap justify-end gap-1" aria-label="ステージ一覧内を移動">
         {jumpTargets.map((target, index) => {
           const accent = routeAccentOf(target.key);
           return (
@@ -1096,7 +1096,7 @@ export const SkillTree = ({
               aria-label="凡例"
             >
               {[
-                ["cleared", "クリア"],
+                ["cleared", "完了"],
                 ["active", "進行中"],
                 ["open", "始められる"],
                 ["locked", "ロック"],
@@ -1127,7 +1127,7 @@ export const SkillTree = ({
                     : "var(--brand)",
                 } as CSSProperties
               }
-              aria-label={`${region.key}に近づく（クリア ${region.cleared}・受講中 ${region.active}・始められる ${region.startable}）`}
+              aria-label={`${region.key}に近づく（完了 ${region.cleared}・受講中 ${region.active}・始められる ${region.startable}）`}
               onClick={() => focusRegion(region.key)}
             >
               {region.current ? (
@@ -1148,7 +1148,7 @@ export const SkillTree = ({
               className="tree-hint pointer-events-none absolute bottom-20 text-center text-[10.5px]"
               style={{ left: viewInset, width: visibleView?.width }}
             >
-              全体の地図 · 近づくとツリー表示に切り替わります
+              全体を表示中 · 近づくと詳しく表示します
             </div>
           ) : null}
           {sectorLabels.map((label) => {
@@ -2194,7 +2194,7 @@ export const StarActions = ({
           onClick={() => onAct(() => onOpenStage(stageId))}
         >
           <Book size={12} />
-          レッスン一覧
+          教材の一覧
         </Button>
       ) : null}
 
@@ -2208,7 +2208,7 @@ export const StarActions = ({
       {clearedNote ? (
         <span className="inline-flex items-center justify-center gap-1 self-center text-[11.5px] text-ink-3">
           <Check size={12} />
-          このスキルは修了済み
+          このスキルは完了済み
         </span>
       ) : null}
     </>

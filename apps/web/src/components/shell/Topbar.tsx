@@ -68,11 +68,11 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
         type="button"
         onClick={() => setSearchOpen(true)}
         className="flex items-center gap-2 bg-sunken border border-border-2 rounded-full py-[7px] px-2 sm:pl-3.5 sm:pr-2 w-[34px] sm:w-[280px] justify-center sm:justify-start shrink-0 text-ink-3 text-[12.5px] hover:border-border-strong hover:text-ink-2"
-        aria-label="ステージ・レッスンを検索"
+        aria-label="ステージ・教材を検索"
       >
         <Search size={14} className="shrink-0" />
         <span className="hidden sm:block flex-1 min-w-0 text-left truncate">
-          ステージ・レッスンを検索…
+          ステージ・教材を検索…
         </span>
         <span className="hidden sm:block font-display text-[10px] font-bold text-ink-3 border border-border-2 rounded-full px-2 py-[2px] bg-card">
           {shortcutLabel()}

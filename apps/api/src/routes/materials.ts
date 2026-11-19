@@ -94,11 +94,11 @@ async function lessonStageInfo(
 async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string): Promise<void> {
   const info = await lessonStageInfo(db, lessonId);
   if (!info) {
-    throw new ApiError("レッスンが見つかりません", 404);
+    throw new ApiError("教材が見つかりません", 404);
   }
   if (isStaffRole(caller.role)) return;
   if (info.stageStatus !== "published") {
-    throw new ApiError("レッスンが見つかりません", 404);
+    throw new ApiError("教材が見つかりません", 404);
   }
   const enrolled = await db
     .select({ id: enrollments.id })
@@ -111,7 +111,7 @@ async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string):
       ),
     )
     .limit(1);
-  if (!enrolled[0]) throw new ApiError("レッスンが見つかりません", 404);
+  if (!enrolled[0]) throw new ApiError("教材が見つかりません", 404);
 }
 
 function requireBucket(env: Env): NonNullable<Env["MATERIALS_BUCKET"]> {

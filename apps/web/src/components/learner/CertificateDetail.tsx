@@ -181,7 +181,7 @@ function CertificateBody({ cert, autoPrint }: { cert: CertificateRow; autoPrint:
             className="flex flex-col gap-3 rounded-md border border-border bg-card p-[18px]"
           >
             <h2 id="cert-done-heading" className="text-sm font-bold">
-              修了の内容
+              完了の内容
             </h2>
             <dl className="flex flex-col gap-2.5 text-[13.5px]">
               {rows.map((row) => (
@@ -204,7 +204,7 @@ function CertificateBody({ cert, autoPrint }: { cert: CertificateRow; autoPrint:
                   rows.length > 0 && "border-t border-border pt-2.5",
                 )}
               >
-                <dt className="text-ink-2">修了した日</dt>
+                <dt className="text-ink-2">完了した日</dt>
                 <dd className="font-semibold">{issuedLabel}</dd>
               </div>
             </dl>
@@ -304,7 +304,7 @@ function MobileFacts({
 }) {
   const items = [
     { label: "認定番号", value: certCode, mono: true },
-    ...(summary ? [{ label: "修了の内容", value: summary, mono: false }] : []),
+    ...(summary ? [{ label: "完了の内容", value: summary, mono: false }] : []),
     { label: "発行者", value: issuer, mono: false },
   ];
   return (

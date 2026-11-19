@@ -105,7 +105,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
       kind: "lesson",
       title:
         count === 1 ? active.nextLessonTitle : `${active.nextLessonTitle} ほか ${count - 1} 本`,
-      reason: `${active.stageTitle} の続きです。残り ${active.remainingLessons} レッスン。`,
+      reason: `${active.stageTitle} の続きです。残りの教材は ${active.remainingLessons} 件です。`,
       minutes,
     });
     total += minutes;

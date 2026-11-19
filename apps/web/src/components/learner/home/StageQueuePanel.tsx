@@ -67,7 +67,7 @@ export const StageQueuePanel = ({
     <GuideSection title="次にやるリスト" meta={`${queue.length} 件`}>
       {queue.length === 0 ? (
         <p className="text-[12px] text-ink-3">
-          まだありません。ツリーの星の「キューに追加」で、次にやるステージを積んでおけます。
+          まだありません。ステージ一覧の星の「キューに追加」で、次にやるステージを積んでおけます。
         </p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

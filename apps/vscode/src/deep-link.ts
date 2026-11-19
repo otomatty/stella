@@ -60,7 +60,7 @@ export async function loadLessonForUri<T>(
 /** Missing lesson is a failed open — consumePendingOnSuccess must keep pendingLesson. */
 export function requireDeepLinkedLesson<T>(lesson: T | undefined): T {
   if (!lesson) {
-    throw new Error("レッスンが見つかりません");
+    throw new Error("教材が見つかりません");
   }
   return lesson;
 }

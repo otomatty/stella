@@ -197,7 +197,7 @@ export function buildTaskHelpHtml(input: {
   const working = help.phase === "working";
   const body = [
     help.viewer === "staff"
-      ? `<p class="notice">${escapeHtml("講師・管理者として表示しています。受講者には解放の条件 (ヒントの順番・挑戦の回数・合格) を満たすまで出ません。開いても記録しません。")}</p>`
+      ? `<p class="notice">${escapeHtml("管理者として表示しています。受講者には解放の条件 (ヒントの順番・挑戦の回数・合格) を満たすまで出ません。開いても記録しません。")}</p>`
       : "",
     `<h1>${escapeHtml(help.title)}</h1>`,
     `<p class="meta">${TASK_KIND_LABELS[help.kind]} ・ ${escapeHtml(TASK_STATUS_LABELS[help.status])}</p>`,

@@ -5,15 +5,15 @@
 import type { ReviewDraftRequest } from "./types.js";
 
 const SYSTEM = [
-  "あなたはプログラミング学習 LMS の講師向けコードレビューアシスタントです。",
-  "学習者の提出コードを読み、講師が最終判断するための「下書き」を JSON で返してください。",
+  "あなたはプログラミング学習 LMS の管理者向けコードレビューアシスタントです。",
+  "受講者の提出コードを読み、管理者が最終判断するための「下書き」を JSON で返してください。",
   "",
   "ルール:",
   "- 完成コードの丸投げは避け、改善点を具体的に指摘する。",
   "- 行番号は 1 始まり。存在しない行は指定しない。",
   "- severity は high / med / low のいずれか。",
   "- ルーブリックは 4 項目、各 max=4、score は 0–4 の整数。",
-  "- 自動採点の結果が添えられている場合は、その失敗の原因を最優先で説明する。",
+  "- 自動の確認の結果が添えられている場合は、その失敗の原因を最優先で説明する。",
   "- 必ず次の JSON 形式のみを返す (Markdown や説明文は不要):",
   '{"suggestions":[...],"rubric":[...],"notes":"総評の下書き"}',
   "",
@@ -51,7 +51,7 @@ export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
     `  <assignmentTitle>${escapeXml(req.assignmentTitle)}</assignmentTitle>`,
     `</review_context>`,
     ...(req.gradingSummary
-      ? ["", "自動採点の結果 (学習者はここで詰まっています):", req.gradingSummary]
+      ? ["", "自動の確認の結果 (受講者はここで詰まっています):", req.gradingSummary]
       : []),
     "",
     "提出コード:",

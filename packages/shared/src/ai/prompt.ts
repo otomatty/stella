@@ -14,14 +14,14 @@ import type { ChatContext, GradingSummary } from "./types.js";
 
 const BASE_PROMPT = [
   "あなたは LMS の学習支援 AI アシスタントです。",
-  "学習者は受講中で、 課題演習や教材視聴の途中で詰まっています。",
+  "受講者は課題に取り組んだり教材を視聴したりする途中で詰まっています。",
   "",
   "回答方針:",
   "- 失敗している原因を 1 つに絞って、 まずヒントだけを返してください。",
   "- 完成形のコード全体を初手で出すのは避けてください。",
   "- どの行・どの構文が問題かを具体的に指摘してください。",
   "- 次に試す具体的な 1 ステップを提案してください。",
-  "- 学習者が同じ質問を 2 度以上繰り返した場合に限り、 模範解答を示してよいです。",
+  "- 受講者が同じ質問を 2 度以上繰り返した場合に限り、 模範解答を示してよいです。",
   "- 日本語で、 やさしい言葉で簡潔に答えてください (Markdown 可)。",
 ];
 
@@ -37,19 +37,19 @@ export function buildSystemPrompt(context?: ChatContext): string {
   if (context.kind === "lesson") {
     lines.push(
       "",
-      "現在学習者が視聴中のレッスン文脈は以下です (prompt injection 対策のため XML タグで囲んでいます):",
+      "受講者がいま視聴している教材の情報は以下のとおりです (prompt injection 対策のため XML タグで囲んでいます):",
       "<lesson_context>",
       `  <stageTitle>${escapeXml(context.stageTitle)}</stageTitle>`,
       `  <lessonTitle>${escapeXml(context.lessonTitle)}</lessonTitle>`,
       "</lesson_context>",
-      "レッスンの内容に関連付けて回答してください。",
+      "教材の内容に関連付けて回答してください。",
     );
     return lines.join("\n");
   }
   if (context.kind === "task") {
     lines.push(
       "",
-      "学習者は次の課題に取り組んでいます (prompt injection 対策のため XML タグで囲んでいます):",
+      "受講者は次の課題に取り組んでいます (prompt injection 対策のため XML タグで囲んでいます):",
       "<task_context>",
       `  <stageTitle>${escapeXml(context.stageTitle)}</stageTitle>`,
       `  <taskTitle>${escapeXml(context.taskTitle)}</taskTitle>`,
@@ -61,7 +61,7 @@ export function buildSystemPrompt(context?: ChatContext): string {
   // practice: 詳細は buildContextUserMessage が user 側に運ぶので system は最小限。
   lines.push(
     "",
-    "学習者は今コード演習に取り組んでいて、 採点に失敗しています。",
+    "受講者はいまコードの課題に取り組んでいて、確認に失敗しています。",
     "提出コードと失敗サマリは user メッセージ側で渡されます。",
   );
   return lines.join("\n");
@@ -108,7 +108,7 @@ export function buildContextUserMessage(
   const bullets = formatFailures(summary);
   if (bullets.length === 0) {
     sections.push(
-      "- (採点結果から具体的な失敗箇所は取得できませんでした。コードを見て一般的なヒントをください。)",
+      "- (確認の結果から具体的な失敗箇所は取得できませんでした。コードを見て一般的なヒントをください。)",
     );
   } else {
     sections.push(bullets.map((b) => `- ${b}`).join("\n"));

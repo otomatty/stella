@@ -171,7 +171,7 @@ export async function resetExercise(assignment: Assignment): Promise<boolean> {
 
 export async function openLessonCode(lesson: ExerciseLesson): Promise<vscode.Uri | undefined> {
   if (!lesson.assignmentId) {
-    void vscode.window.showInformationMessage("このレッスンには課題が紐付いていません");
+    void vscode.window.showInformationMessage("この教材には課題が紐付いていません");
     return undefined;
   }
   const assignment = await fetchAssignment(lesson.assignmentId);

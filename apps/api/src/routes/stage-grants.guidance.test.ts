@@ -285,7 +285,7 @@ it("開発ラボGの案内はスキルツリーで見える章と00章の前提�
   const denied = await startLab();
   expect(denied.status).toBe(400);
   expect(await denied.json()).toMatchObject({
-    error: "STELLAの使い方 をクリアすると始められます",
+    error: "STELLAの使い方 を完了すると始められます",
   });
 
   await db

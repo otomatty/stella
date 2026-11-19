@@ -21,12 +21,16 @@ export type SupportRecordKind = RecordedSupportKind | "consult" | "human-review"
 export const SUPPORT_RECORD_LABELS: Record<SupportRecordKind, string> = {
   ...SUPPORT_LABELS,
   "ai-chat": "AI チャット",
-  consult: "講師への相談",
+  consult: "管理者への相談",
   "human-review": "人のレビュー",
 };
 
 /** 拡張が「講師に相談」で支援に足す記録の detail。相談そのものと二重に数えない。 */
-export const CONSULT_SUPPORT_DETAIL = "講師への相談";
+export const CONSULT_SUPPORT_DETAIL = "管理者への相談";
+
+export function isConsultSupportDetail(detail: string | undefined): boolean {
+  return detail === CONSULT_SUPPORT_DETAIL || detail === "講師への相談";
+}
 
 /** declared = 提出に添えた支援、submission = 相談・人のレビュー、recorded = サーバーの記録。 */
 export type SupportRecordSource = "declared" | "submission" | "recorded";

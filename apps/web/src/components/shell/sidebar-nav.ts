@@ -53,7 +53,7 @@ const NAV: Record<Role, NavItem[]> = {
   // スキルツリーはホームへ集約したので、先頭の 1 つで学習の入口が決まる。
   learner: [
     { id: "dash", label: "ステージ一覧", icon: Compass },
-    { id: "lesson", label: "現在のレッスン", icon: Play },
+    { id: "lesson", label: "現在の教材", icon: Play },
     { id: "cert", label: "修了証", icon: Award },
   ],
   admin: [

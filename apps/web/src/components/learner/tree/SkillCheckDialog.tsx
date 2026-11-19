@@ -120,7 +120,7 @@ export function SkillCheckDialog({
       setResult(graded);
       onFinished(graded);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "採点に失敗しました");
+      setError(err instanceof Error ? err.message : "確認に失敗しました");
     } finally {
       setSubmitting(false);
     }
@@ -210,7 +210,7 @@ export function SkillCheckDialog({
               </Button>
               <Button variant="accent" disabled={!allAnswered || submitting} onClick={submit}>
                 {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
-                採点する
+                確認する
               </Button>
             </>
           ) : (

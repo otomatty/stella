@@ -81,7 +81,7 @@ export function lessonCommand(node: LessonNode): vscode.Command {
     case "lesson-code":
       return {
         command: "stella.openLessonCode",
-        title: "演習を開く",
+        title: "課題を開く",
         arguments: [node],
       };
     case "lesson-task":

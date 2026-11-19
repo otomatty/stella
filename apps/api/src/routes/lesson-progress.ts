@@ -118,7 +118,7 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
           });
         }
       } catch (e) {
-        console.error("[lesson-progress] 完了が外れたレッスンの巻き戻しに失敗 (同期は継続)", e);
+        console.error("[lesson-progress] 完了が取り消された教材の巻き戻しに失敗 (同期は継続)", e);
       }
     }
 

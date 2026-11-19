@@ -37,13 +37,13 @@ describe("achievementLabel", () => {
         quizzes: { done: 3, total: 4 },
         lessons: { done: 24, total: 30 },
       }),
-    ).toBe("レッスン 24 件を完了・小テスト 3 件に合格・課題 6 件がレビューに合格");
+    ).toBe("教材 24 件を完了・クイズ 3 件に合格・課題 6 件がレビューに合格");
   });
   it("一部の項目だけでも区切りを余分に付けない", () => {
-    expect(achievementLabel({ quizzes: { done: 0, total: 3 } })).toBe("小テスト 0 件に合格");
+    expect(achievementLabel({ quizzes: { done: 0, total: 3 } })).toBe("クイズ 0 件に合格");
     expect(
       achievementLabel({ lessons: { done: 24, total: 24 }, assignments: { done: 6, total: 6 } }),
-    ).toBe("レッスン 24 件を完了・課題 6 件がレビューに合格");
+    ).toBe("教材 24 件を完了・課題 6 件がレビューに合格");
   });
   it("項目がなければ null", () => {
     expect(achievementLabel(null)).toBeNull();
@@ -61,8 +61,8 @@ describe("achievementRows", () => {
         lessons: { done: 24, total: 24 },
       }),
     ).toEqual([
-      { label: "レッスン", value: "24 / 24 完了" },
-      { label: "小テスト", value: "3 / 3 合格" },
+      { label: "教材", value: "24 / 24 完了" },
+      { label: "クイズ", value: "3 / 3 合格" },
       { label: "課題のレビュー", value: "6 / 6 合格" },
     ]);
   });
@@ -70,7 +70,7 @@ describe("achievementRows", () => {
     expect(
       achievementRows({ lessons: { done: 24, total: 24 }, assignments: { done: 6, total: 6 } }),
     ).toEqual([
-      { label: "レッスン", value: "24 / 24 完了" },
+      { label: "教材", value: "24 / 24 完了" },
       { label: "課題のレビュー", value: "6 / 6 合格" },
     ]);
     expect(achievementRows(null)).toEqual([]);
@@ -86,7 +86,7 @@ describe("achievementSummary", () => {
         lessons: { done: 24, total: 24 },
         assignments: { done: 6, total: 6 },
       }),
-    ).toBe("レッスン 24 / 24 完了・課題のレビュー 6 / 6 合格");
+    ).toBe("教材 24 / 24 完了・課題のレビュー 6 / 6 合格");
     expect(achievementSummary(null)).toBeNull();
     expect(achievementSummary({})).toBeNull();
   });
@@ -228,14 +228,14 @@ describe("achievementConditionText", () => {
     const lessons = { done: 20, total: 24 };
     const quizzes = { done: 2, total: 3 };
     const assignments = { done: 4, total: 6 };
-    expect(achievementConditionText({ lessons })).toBe("レッスン 24 件の完了");
-    expect(achievementConditionText({ quizzes })).toBe("小テスト 3 件の合格");
+    expect(achievementConditionText({ lessons })).toBe("教材 24 件の完了");
+    expect(achievementConditionText({ quizzes })).toBe("クイズ 3 件の合格");
     expect(achievementConditionText({ assignments })).toBe("課題 6 件のレビュー合格");
     expect(achievementConditionText({ assignments, lessons })).toBe(
-      "レッスン 24 件の完了と、課題 6 件のレビュー合格",
+      "教材 24 件の完了と、課題 6 件のレビュー合格",
     );
     expect(achievementConditionText({ assignments, quizzes, lessons })).toBe(
-      "レッスン 24 件の完了、小テスト 3 件の合格と、課題 6 件のレビュー合格",
+      "教材 24 件の完了、クイズ 3 件の合格と、課題 6 件のレビュー合格",
     );
   });
 });

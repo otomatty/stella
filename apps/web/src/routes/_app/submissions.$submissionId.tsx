@@ -20,7 +20,7 @@ function SubmissionResultPage() {
       {...(s.role === "learner"
         ? {
             back: hasLessons
-              ? { page: "lesson", label: "現在のレッスンに戻る" }
+              ? { page: "lesson", label: "現在の教材に戻る" }
               : { page: "dash", label: "ホームに戻る" },
           }
         : {})}

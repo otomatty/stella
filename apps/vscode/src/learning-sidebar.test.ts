@@ -140,7 +140,7 @@ describe("学習サイドバー", () => {
   it.each([
     ["slides", "スライド", "<rect"],
     ["text", "まとめ", '<path d="M3.5'],
-    ["code", "演習", '<path d="M6 4.5'],
+    ["code", "課題", '<path d="M6 4.5'],
     ["quiz", "確認クイズ", "<circle"],
     ["video", "動画", '<path d="m6.5'],
     ["assignment", "課題", '<path d="M6 4.5'],
@@ -163,7 +163,8 @@ describe("学習サイドバー", () => {
     ["passed", "pass"],
   ] satisfies [TaskStatus, string][])("%s を %s の札で示す", (status, tone) => {
     const html = renderUnit([lesson("task", { task: { id: "t", status } })]);
-    const pill = `<span class="pill pill-${tone}">${TASK_STATUS_LABELS[status]}</span>`;
+    const label = status === "instructor-pending" ? "管理者の確認待ち" : TASK_STATUS_LABELS[status];
+    const pill = `<span class="pill pill-${tone}">${label}</span>`;
     expect(html).toContain(`</svg>課題</span>${pill}`);
     expect(html).not.toContain('class="sr-only">未完了</span>');
     expect(html).not.toContain('class="sr-only">完了</span>');

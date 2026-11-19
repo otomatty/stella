@@ -54,7 +54,7 @@ export function CertificatePage({ stages, currentUserId, backendEnabled }: Certi
     <div className="mx-auto w-full min-w-0 max-w-[1040px] pb-16">
       <PageHeader
         title="修了証"
-        sub="ステージの修了条件を満たすと、自動で発行されます。証書は PDF で保存でき、検証用のリンクで誰にでも本物だと確かめてもらえます。"
+        sub="ステージの完了条件を満たすと、自動で発行されます。証書は PDF で保存でき、検証用のリンクで誰にでも本物だと確かめてもらえます。"
       />
       {!backendEnabled ? (
         <CertificateList stages={[]} certificates={[DEMO_CERTIFICATE]} completions={[]} demo />
@@ -89,7 +89,7 @@ function LiveCertificates({ stages, userId }: { stages: Stage[]; userId: string 
       try {
         completions = await fetchMyStageCompletions();
       } catch {
-        toast.error("修了条件の読み込みに失敗しました");
+        toast.error("完了条件の読み込みに失敗しました");
       }
       return { certificates, completions };
     })();
@@ -146,12 +146,12 @@ function CertificateList({
                 <h3 className="text-[15px] font-semibold">{stage.title}</h3>
                 <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
                   {stage.autoIssue
-                    ? "修了条件をすべて満たしました。まもなく発行されます。少しあとで開き直してください。"
-                    : "修了条件をすべて満たしました。このステージは講師が確かめてから修了証を発行します。発行されると「発行済み」に並びます。"}
+                    ? "完了条件をすべて満たしました。まもなく発行されます。少しあとで開き直してください。"
+                    : "完了条件をすべて満たしました。このステージは管理者が確かめてから修了証を発行します。発行されると「発行済み」に並びます。"}
                 </p>
               </div>
               <span className="rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold">
-                {stage.autoIssue ? "発行の準備中" : "講師の確認待ち"}
+                {stage.autoIssue ? "発行の準備中" : "管理者の確認待ち"}
               </span>
             </div>
           ))}
@@ -213,7 +213,7 @@ function CertificateList({
             <Award size={48} className="text-brand" aria-hidden="true" />
             <h3 className="font-semibold">まだ修了証はありません</h3>
             <p className="max-w-lg text-[13px] leading-relaxed text-ink-2">
-              ステージの修了条件を満たすと、ここに修了証が届きます。
+              ステージの完了条件を満たすと、ここに修了証が届きます。
               {near[0] &&
                 `いちばん近いのは「${near[0].title}」で、あと ${near[0].remaining} 件です。`}
             </p>
@@ -230,7 +230,7 @@ function CertificateList({
       {near.length > 0 && (
         <section aria-labelledby="near-h" className="space-y-3.5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <SectionTitle id="near-h">修了まであと少し</SectionTitle>
+            <SectionTitle id="near-h">完了まであと少し</SectionTitle>
             <span className="text-xs text-ink-3">残りの少ない順</span>
           </div>
           {near.map((stage) => (

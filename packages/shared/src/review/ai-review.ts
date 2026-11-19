@@ -269,7 +269,7 @@ export const ROUTE_REASON_LABELS: Record<RouteReason, string> = {
   "ci-mismatch": "CI の実行が提出と食い違う",
   "ci-unverified": "CI の実行を GitHub で照合できなかった",
   "unallowed-support": "確認A・Bで許されていない支援の記録がある",
-  consult: "受講者が講師への相談を求めた",
+  consult: "受講者が管理者への相談を求めた",
   "ai-unavailable": "AI が判定できなかった",
   "no-rubric": "課題に必須の評価項目がない",
   "rubric-unmet": "必須項目に「満たさない」がある",
@@ -346,7 +346,8 @@ export function forcedHumanReasons(input: {
   if (input.mode === "consult") reasons.push("consult");
   // 相談の理由は照合結果にも入る (`verifyTaskSubmission`)。それ以外の食い違いだけを数える。
   const mismatches = (input.machineCheck?.reasons ?? []).filter(
-    (r) => r !== "受講者が講師への相談を求めています",
+    (r) =>
+      r !== "受講者が管理者への相談を求めています" && r !== "受講者が講師への相談を求めています",
   );
   if (
     !input.machineCheck ||
@@ -522,9 +523,9 @@ export type AiReviewStatus = "queued" | "confirmed" | "escalated" | "superseded"
 export const AI_REVIEW_STATUS_LABELS: Record<AiReviewStatus, string> = {
   queued: "AI が確認中",
   confirmed: "AI で合格",
-  escalated: "講師の確認待ち",
+  escalated: "管理者の確認待ち",
   superseded: "新しい提出に置き換え",
-  human: "講師が先に確定",
+  human: "管理者が先に確定",
 };
 
 /** staff に返す AI 一次レビューの記録 (`ai_reviews` の行)。 */

@@ -140,7 +140,7 @@ export async function autoCompleteStagesIfMet(
   try {
     return await runAutoComplete(db, input);
   } catch (e) {
-    console.error("[stage-auto-complete] 自動修了の判定に失敗 (学習フローは継続)", e);
+    console.error("[stage-auto-complete] 自動完了の判定に失敗 (学習フローは継続)", e);
     return [];
   }
 }
@@ -170,7 +170,7 @@ export async function autoCompleteEligibleStages(
       ip: ip ?? null,
     });
   } catch (e) {
-    console.error("[stage-auto-complete] 自動修了の判定に失敗 (学習フローは継続)", e);
+    console.error("[stage-auto-complete] 自動完了の判定に失敗 (学習フローは継続)", e);
     return [];
   }
 }
@@ -193,7 +193,7 @@ export async function stageIdsOfLessons(db: Db, lessonIds: readonly string[]): P
     );
     return [...new Set(rows.map((row) => row.stageId))];
   } catch (e) {
-    console.error("[stage-auto-complete] レッスン→ステージ解決に失敗 (学習フローは継続)", e);
+    console.error("[stage-auto-complete] 教材に対応するステージの特定に失敗 (学習フローは継続)", e);
     return [];
   }
 }
@@ -293,7 +293,7 @@ export async function reclaimAutoCertificatesIfUnmet(
       });
     }
   } catch (e) {
-    console.error("[stage-auto-complete] 修了証の巻き戻しに失敗 (添削の保存は継続)", e);
+    console.error("[stage-auto-complete] 修了証の巻き戻しに失敗 (レビューの保存は継続)", e);
   }
 }
 
@@ -475,12 +475,12 @@ async function runAutoComplete(
       await db.insert(notifications).values({
         userId,
         type: "stage_cleared",
-        title: `${stage.title} をクリアしました`,
+        title: `${stage.title} を完了しました`,
         body: "修了証が発行されました。ステージ一覧で次のステージが解放されています。",
         payload: { stage_id: stage.id },
       });
     } catch (e) {
-      console.error("[stage-auto-complete] クリア通知の記録に失敗 (発行は成立)", e);
+      console.error("[stage-auto-complete] 完了通知の記録に失敗 (発行は成立)", e);
     }
 
     cleared.push({ stage_id: stage.id, stage_title: stage.title });

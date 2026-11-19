@@ -92,7 +92,7 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
       : beyond
         ? "まだ先（開発者表示）"
         : cleared
-          ? "クリア済み"
+          ? "完了済み"
           : isActive
             ? "進行中"
             : locked
@@ -109,8 +109,8 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
             reasons,
             text:
               reasons.length > 0
-                ? `${reasons.join(" / ")} をクリアすると開きます`
-                : "前提のステージをクリアすると開きます",
+                ? `${reasons.join(" / ")} を完了すると開きます`
+                : "前提のステージを完了すると開きます",
           }
         : node.can_do
           ? { kind: "can-do", text: node.can_do }

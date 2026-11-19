@@ -27,7 +27,7 @@ describe("findHelpTopic", () => {
     expect(findHelpTopic("/certificates/cert-123/extra")).toBeNull();
     expect(
       findHelpTopic("/certificates/cert-123")?.sections.map((section) => section.heading),
-    ).toEqual(["PDF で保存", "検証用のリンクをコピー", "LinkedIn の資格欄に追加", "修了の内容"]);
+    ).toEqual(["PDF で保存", "検証用のリンクをコピー", "LinkedIn の資格欄に追加", "完了の内容"]);
   });
 
   it("セグメント数が違うパスにはマッチしない", () => {

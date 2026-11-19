@@ -148,7 +148,7 @@ export function formatGradingSummaryText(
   maxLength = MAX_REVIEW_SUMMARY_LENGTH,
 ): string {
   const lines: string[] = [
-    `自動採点: ${summary.cleared ? "クリア" : "未クリア"}`,
+    `自動の確認: ${summary.cleared ? "完了" : "未完了"}`,
     `- Lint: ${checkLabel(summary.checks.lint)}`,
     `- AST: ${checkLabel(summary.checks.ast)}`,
     `- テスト: ${checkLabel(summary.checks.tests)} (${summary.passedTestCount}/${summary.totalTestCount} 通過)`,

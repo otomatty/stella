@@ -57,7 +57,7 @@
       },
       {
         "command": "stella.grade",
-        "title": "STELLA: 採点を実行"
+        "title": "STELLA: 確認を実行"
       },
       {
         "command": "stella.resetExercise",
@@ -73,19 +73,19 @@
       },
       {
         "command": "stella.openLessonCode",
-        "title": "STELLA: 演習を開く"
+        "title": "STELLA: 課題を開く"
       },
       {
         "command": "stella.openNextLesson",
-        "title": "STELLA: 次のレッスンへ"
+        "title": "STELLA: 次の教材へ"
       },
       {
         "command": "stella.submitExercise",
-        "title": "STELLA: 採点した演習を提出する"
+        "title": "STELLA: 確認を通過した課題を提出する"
       },
       {
         "command": "stella.escalateToInstructor",
-        "title": "STELLA: 講師に引き継ぐ"
+        "title": "STELLA: 管理者に引き継ぐ"
       },
       {
         "command": "stella.runTask",
@@ -111,7 +111,7 @@
       },
       {
         "command": "stella.consultTask",
-        "title": "STELLA: 講師に相談する"
+        "title": "STELLA: 管理者に相談する"
       },
       {
         "command": "stella.chooseTrainingFolder",
@@ -174,7 +174,7 @@
           {
             "id": "review",
             "title": "レビューの結果を見る",
-            "description": "提出すると AI と講師がレビューします。結果は課題文のパネルと Web の通知に届きます。合格すると、この課題は完了です。\n[レビューの結果を表示する](command:stella.showTaskHelp)",
+            "description": "提出すると AI と管理者がレビューします。結果は課題文のパネルと Web の通知に届きます。合格すると、この課題は完了です。\n[レビューの結果を表示する](command:stella.showTaskHelp)",
             "completionEvents": ["onCommand:stella.showTaskHelp"],
             "media": {
               "svg": "media/walkthrough/review.svg",

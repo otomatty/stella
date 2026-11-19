@@ -23,7 +23,7 @@ export async function submitSrsAnswer(
     method: "POST",
     body: { question_id: questionId, selected_option_ids: selectedOptionIds },
   });
-  if (!result) throw new Error("採点結果が空でした");
+  if (!result) throw new Error("確認の結果が空でした");
   return result;
 }
 

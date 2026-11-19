@@ -442,7 +442,7 @@ function DeleteEnrollmentDialog({
             受講登録を解除します。 一覧から消え、 受講者のホームからも外れます。
           </p>
           <p className="mt-2 text-[12.5px] leading-relaxed text-ink-3">
-            レッスンの進捗や提出は消えません。 受講者が同じステージを始め直せば、 続きから見えます。
+            教材の進捗や提出は消えません。受講者が同じステージを始め直せば、続きから見えます。
           </p>
         </div>
         <DialogFooter>

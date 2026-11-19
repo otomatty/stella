@@ -240,7 +240,7 @@ async function showConflict(
   const actions =
     conflict.reason === "occupied" ? [showList, reveal] : [openExisting, showList, reveal];
   const choice = await vscode.window.showWarningMessage(
-    `${conflict.summary}。学習者のファイルは上書きしません`,
+    `${conflict.summary}。受講者のファイルは上書きしません`,
     {
       modal: true,
       detail: [
@@ -316,7 +316,7 @@ async function startFromFixedStart(store: TaskOpenStore): Promise<void> {
   const { fixedStart } = await apiRequest<TaskBundleResponse>(taskBundleUrl(taskId));
   if (!fixedStart) {
     void vscode.window.showInformationMessage(
-      "この課題には固定した開始点がありません。進められないときは「STELLA: 講師に相談する」を使ってください",
+      "この課題には固定した開始点がありません。進められないときは「STELLA: 管理者に相談する」を使ってください",
     );
     return;
   }

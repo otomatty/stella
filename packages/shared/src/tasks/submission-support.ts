@@ -3,7 +3,7 @@ const OPTIONS = [
   { kind: "hint", label: "解法のヒント" },
   { kind: "solution", label: "解答の表示" },
   { kind: "fixed-start", label: "固定した開始点" },
-  { kind: "instructor", label: "講師からの実装支援" },
+  { kind: "instructor", label: "管理者からの実装支援" },
   { kind: "ai-answer", label: "AI による解答生成" },
 ] as const;
 

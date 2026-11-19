@@ -620,7 +620,10 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
 });
 
 function submissionChanged(): ApiError {
-  return new ApiError("この提出は学習者が更新しました。 添削キューから開き直してください", 409);
+  return new ApiError(
+    "この提出は受講者が更新しました。レビューの待ち行列から開き直してください",
+    409,
+  );
 }
 
 /**
@@ -772,7 +775,7 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
           )
           .returning();
         if (!updated[0] && undecidedOnly && current?.verdict) {
-          throw new ApiError("別の講師が先に確定しました。提出を開き直してください", 409);
+          throw new ApiError("別の管理者が先に確定しました。提出を開き直してください", 409);
         }
         if (expected && !updated[0]) {
           throw submissionChanged();
@@ -781,7 +784,7 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
         const notice = current && notifyVerdict ? reviewNotification(current, notifyVerdict) : null;
         if (notice) await db.insert(notifications).values(notice);
       });
-      if (!locked.ran) throw new ApiError("別の講師が同じ提出を保存中です", 409);
+      if (!locked.ran) throw new ApiError("別の管理者が同じ提出を保存中です", 409);
     }
 
     const after = requireReturning(

@@ -892,8 +892,8 @@ async function main(): Promise<void> {
     const r = await call("POST", `/api/stages/${stageId}/start`, { token: learner });
     assert(r.status === 400, `クリア済みの開始は 400 を期待したが ${r.status}`);
     assert(
-      r.body?.error === "クリア済みのステージです",
-      `クリア済みの文言と異なる: ${JSON.stringify(r.body)}`,
+      r.body?.error === "完了済みのステージです",
+      `完了済みの文言と異なる: ${JSON.stringify(r.body)}`,
     );
 
     // 断られても登録は残る (「もう始められない」 と 「登録が消えた」 は別)。

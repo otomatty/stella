@@ -2,14 +2,14 @@ import type { FirstSteps, FirstStepKey } from "@stella/shared/study/first-steps"
 import { CheckCircle, Circle } from "@/lib/icons";
 
 const labels: Record<FirstStepKey, string> = {
-  "read-first-lesson": "最初のレッスンを読む",
+  "read-first-lesson": "最初の教材を読む",
   "connected-vscode": "VS Code とつなぐ (U01 の手順)",
   "checked-first-task": "最初の課題を「課題を確認する」で確かめる",
   "submitted-first-task": "最初の課題を提出する",
   "got-result": "結果を受け取る",
 };
 const instructions: Record<FirstStepKey, string> = {
-  "read-first-lesson": "レッスンを開いて読み、完了にしてください。",
+  "read-first-lesson": "教材を開いて読み、完了にしてください。",
   "connected-vscode": "U01 の手順で VS Code と STELLA 拡張を準備し、STELLA とつないでください。",
   "checked-first-task": "U02 の最初の課題を VS Code で開き、「課題を確認する」を実行してください。",
   "submitted-first-task": "最初の課題を確認できたら、VS Code から提出してください。",

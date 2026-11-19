@@ -48,7 +48,7 @@ export class TaskInstallConflict extends Error {
     const listed = files.slice(0, 5).join(", ");
     const more = files.length > 5 ? ` ほか ${files.length - 5} 件` : "";
     super(
-      `${CONFLICT_REASONS[reason]}。学習者のファイルは上書きしません。準備先: ${target}${
+      `${CONFLICT_REASONS[reason]}。受講者のファイルは上書きしません。準備先: ${target}${
         files.length > 0 ? ` (衝突: ${listed}${more})` : ""
       }`,
     );
