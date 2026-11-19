@@ -1,0 +1,63 @@
+{
+  "id": "javascript-basics/u03-conditions/q02-ranges",
+  "title": "範囲を順に分ける",
+  "kind": "basic",
+  "pattern": "js-branch-ranges",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-boundary-test"
+    ],
+    "assesses": [
+      "js-if-else",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/ranges.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "ordered-branches",
+        "criterion": "各関数は if・else if・else で範囲を大きい側か小さい側の一方向から順に分けている。",
+        "required": true
+      },
+      {
+        "id": "included-edges",
+        "criterion": "各比較は仕様で指定した区分に境界ちょうどの値を含め、最後の else が残った区分の値を返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-if-else-20261119"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

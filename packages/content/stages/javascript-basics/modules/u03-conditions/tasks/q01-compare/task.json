@@ -1,0 +1,67 @@
+{
+  "id": "javascript-basics/u03-conditions/q01-compare",
+  "title": "比べて真偽値を返す",
+  "kind": "basic",
+  "pattern": "js-compare-bool",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-boundary-test"
+    ],
+    "assesses": [
+      "js-compare-values",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/checks.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "return-comparison",
+        "criterion": "各関数は比較式の真偽値を直接返し、if や三項演算子で真偽値を選び直していない。",
+        "required": true
+      },
+      {
+        "id": "strict-equality",
+        "criterion": "等しさには === を使い、== や != および商品コードの型変換を使っていない。",
+        "required": true
+      },
+      {
+        "id": "boundary-comparison",
+        "criterion": "3,000 円と 18 歳を含め、在庫 0 個、締切ちょうど、定員ちょうどを含めない比較を使っている。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-equality-20261119"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
