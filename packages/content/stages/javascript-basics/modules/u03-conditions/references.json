@@ -1,0 +1,209 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "javascript-basics/u03-conditions@3",
+  "contentHash": "1b7e6b08d97919f194e9489b9377609094bec3194a9459130dee632758ff9a05",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-compare/t1-compare-operators/slides.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-equality-20261119"],
+      "usedFor": "比較が返す真偽値、大小の比較、等価性と型変換の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/t2-if-else/slides.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-if-else-20261119"],
+      "usedFor": "真偽値を条件として使い、if と else のどちら側を実行するかの説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/t3-ranges/slides.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-if-else-20261119"],
+      "usedFor": "else if の判定順と、境界を含む比較の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/doc.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119"
+      ],
+      "usedFor": "大小と等価性の比較、分岐の判定順、境界を含む比較の説明と自作例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-compare/knowledge.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119"
+      ],
+      "usedFor": "比較と分岐の結果を読み、境界のテストを選ぶ自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/t1-and-or/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119"
+      ],
+      "usedFor": "比較式を && と || で結ぶときの真偽値の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/t2-not-early-return/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "否定した条件で分岐し、return で関数を終える説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/doc.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "論理演算子の意味、比較と論理演算子を使った条件式、早期 return の説明と自作例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-combine/knowledge.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "仕様に合う論理演算子、否定、早期 return の挙動を確かめる自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-compare/README.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-equality-20261119"],
+      "usedFor": "大小の比較、真偽値の戻り値、型を変えない等しさの比較を練習する自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-ranges/README.md",
+      "sourceRefs": ["SRC-mdn-js-comparison-20261119", "SRC-mdn-js-if-else-20261119"],
+      "usedFor": "比較による境界の扱いと else if の判定順を練習する自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-combine/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "厳密等価、論理演算子でつなぐ条件と例外を先に返す分岐を練習する自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connect/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "厳密等価による数量の判定、条件の組合せ、分岐と早期 return を計算につなぐ自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "年齢の境界と、曜日・会員区分を組み合わせた分岐を仕様から考える自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119"
+      ],
+      "usedFor": "購入額の境界、二つの条件の組合せ、数値と文字列の比較の誤りを直す自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "貸出不可の条件と延滞料の境界を組み合わせる自作の確認問題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "駐車券紛失の例外、短時間と利用印の組合せ、時間の境界で区分を返す自作の確認問題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -59,6 +59,7 @@ function aiOutput(over: Partial<AiReviewOutput> = {}): AiReviewOutput {
     ],
     confidence: "high",
     findings: [],
+    testFitting: { suspected: false, evidence: [], note: "" },
     learnerReply: { message: "提出を確認しました。", goodPoints: [], nextSteps: [] },
     ...over,
   };

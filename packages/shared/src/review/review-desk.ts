@@ -51,6 +51,7 @@ const GROUP_OF_REASON: Record<RouteReason, Exclude<ReviewQueueGroup, "legacy">> 
   // 確認A・Bで使ってはいけない支援を使った (課題の決まりの違反)。
   "unallowed-support": "rule",
   "rubric-undetermined": "confidence",
+  "test-fitting": "rule",
   "low-confidence": "confidence",
   "misplaced-finding": "confidence",
   // 返信が解答例と重なった = AI の出力をそのまま信用できない。

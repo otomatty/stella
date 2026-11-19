@@ -1,0 +1,83 @@
+{
+  "id": "dom-basics/u03-input-errors/q04-connect",
+  "title": "注文フォームで合計を表示する",
+  "kind": "connection",
+  "pattern": "dom-form-errors",
+  "skills": {
+    "uses": [
+      "dom-input-value",
+      "dom-validation-function",
+      "dom-error-clear",
+      "js-compare-values",
+      "js-if-else",
+      "js-logical-operators"
+    ],
+    "assesses": [
+      "dom-submit-event",
+      "dom-error-display",
+      "dom-form-choice"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/order.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "validate-before-calculation",
+        "criterion": "数量の value を Number で変換し、整数で下限と上限の間にあることを確かめてから、checked で取得した会員区分とともに計算に使っている。",
+        "required": true
+      },
+      {
+        "id": "calculation-order",
+        "criterion": "割引を税より先に適用し、税の端数を切り捨て、税を足した金額で送料を決めている。",
+        "required": true
+      },
+      {
+        "id": "replace-order-output",
+        "criterion": "フォームの submit の処理で preventDefault を呼び、エラー文と合計を textContent で更新し、エラー文が空なら aria-invalid を外すか false にしている。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-dom-input-value-20261119",
+    "SRC-mdn-dom-submit-event-20261119",
+    "SRC-mdn-dom-prevent-default-20261119",
+    "SRC-mdn-dom-input-event-20261119",
+    "SRC-mdn-aria-invalid-20261119",
+    "SRC-mdn-aria-describedby-20261119",
+    "SRC-mdn-js-number-20261119",
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-logical-and-20261119"
+  ],
+  "estimatedMinutes": 55,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

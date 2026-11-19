@@ -1,0 +1,57 @@
+{
+  "id": "javascript-basics/u03-conditions/v01-support-queue",
+  "title": "サポート依頼の優先度を分ける",
+  "kind": "basic",
+  "pattern": "js-branch-ranges",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else"
+    ],
+    "assesses": [
+      "js-if-else",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/support-queue.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "separate-ranges",
+        "criterion": "未対応件数が 15 件以上なら urgent、5 件以上 15 件未満なら soon、4 件以下なら normal を返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-if-else-20261119"
+  ],
+  "estimatedMinutes": 10,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

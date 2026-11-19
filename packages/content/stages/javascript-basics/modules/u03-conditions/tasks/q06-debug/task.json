@@ -1,0 +1,71 @@
+{
+  "id": "javascript-basics/u03-conditions/q06-debug",
+  "title": "受け取り窓口の条件を修正する",
+  "kind": "debug",
+  "pattern": "js-combine-conditions",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-logical-operators",
+      "js-boundary-test"
+    ],
+    "assesses": [
+      "js-condition-repair",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/pickup.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": true
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "include-threshold",
+        "criterion": "クーポンの 100 円引きを購入額が 1,000 円以上のときだけ適用する。",
+        "required": true
+      },
+      {
+        "id": "require-both",
+        "criterion": "支払い済みで受け取り準備ができているときだけ注文を渡せる。",
+        "required": true
+      },
+      {
+        "id": "distinguish-zero",
+        "criterion": "数値の 0 だけを既定のロッカーとして扱い、文字列の \"0\" と区別する。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-equality-20261119",
+    "SRC-mdn-js-logical-and-20261119",
+    "SRC-mdn-js-logical-or-20261119"
+  ],
+  "estimatedMinutes": 30,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

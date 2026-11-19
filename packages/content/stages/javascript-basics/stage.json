@@ -1,4 +1,5 @@
 {
+  "format": 2,
   "title": "JavaScriptの値と制御",
   "category": "フロントエンド",
   "color": "indigo",
@@ -6,11 +7,13 @@
   "header": "JavaScriptの値と制御",
   "tenantId": "ses",
   "plannedHours": 105,
+  "environment": "node-test-01",
   "prerequisites": ["dev-env-basics"],
   "canDo": "値と条件を整理し、JavaScriptで処理の流れを書ける",
   "theme": "Web の見た目と動き",
   "modules": {
-    "m0-orientation": "M0. このステージについて"
+    "u03-conditions": "比較と条件の組合せ",
+    "u99-coming-soon": "続きは準備中"
   },
   "parent": "dev-env-basics"
 }

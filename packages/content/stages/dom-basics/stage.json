@@ -1,4 +1,5 @@
 {
+  "format": 2,
   "title": "DOMと画面操作",
   "category": "フロントエンド",
   "color": "indigo",
@@ -6,11 +7,13 @@
   "header": "DOMと画面操作",
   "tenantId": "ses",
   "plannedHours": 70,
+  "environment": "dom-test-01",
   "prerequisites": ["html-css-basics", "javascript-basics", "javascript-data-basics"],
   "canDo": "DOMとイベントを使い、入力に応じて画面を更新できる",
   "theme": "Web の見た目と動き",
   "modules": {
-    "m0-orientation": "M0. このステージについて"
+    "u03-input-errors": "入力の取得とエラー表示",
+    "u99-coming-soon": "続きは準備中"
   },
   "parent": "html-css-basics"
 }

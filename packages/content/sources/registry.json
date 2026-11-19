@@ -5188,6 +5188,261 @@
         "reviewedAt": null,
         "scope": "開発ラボG 00章のターミナルの開き方を対象 OS の日本語表示で確認する。"
       }
+    },
+    {
+      "id": "SRC-mdn-js-comparison-20261119",
+      "title": "Expressions and operators",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_operators#comparison_operators",
+      "section": "Comparison operators",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2025-07-08"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-equality-20261119",
+      "title": "Equality comparisons and sameness",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Equality_comparisons_and_sameness",
+      "section": "Strict equality using === / Loose equality using ==",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-09-27"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-if-else-20261119",
+      "title": "if...else",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/if...else#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-11-17"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-logical-and-20261119",
+      "title": "Logical AND (&&)",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Logical_AND#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-11-17"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-logical-or-20261119",
+      "title": "Logical OR (||)",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Logical_OR#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-11-17"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-logical-not-20261119",
+      "title": "Logical NOT (!)",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Logical_NOT#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2025-07-08"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-return-20261119",
+      "title": "return",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/return#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2025-07-08"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-dom-input-value-20261119",
+      "title": "HTMLInputElement: value property",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/value",
+      "section": "Value / Retrieving a text input's value",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2025-04-22"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-dom-submit-event-20261119",
+      "title": "HTMLFormElement: submit event",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/submit_event#description",
+      "section": "Description / Implicit submission",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-10-26"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-dom-prevent-default-20261119",
+      "title": "Event: preventDefault() method",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault#notes",
+      "section": "Notes",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-11-12"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-dom-input-event-20261119",
+      "title": "Element: input event",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Element/input_event#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-10-26"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-aria-invalid-20261119",
+      "title": "ARIA: aria-invalid attribute",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-invalid#description",
+      "section": "Description",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-11-16"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-aria-describedby-20261119",
+      "title": "ARIA: aria-describedby attribute",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-describedby#description",
+      "section": "Description / Values",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-11-16"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-trim-20261119",
+      "title": "String.prototype.trim()",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/trim#return_value",
+      "section": "Return value",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-09-07"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mdn-js-number-20261119",
+      "title": "Number() constructor",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/Number#return_value",
+      "section": "Return value",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": "2026-10-26"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

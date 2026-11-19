@@ -1,0 +1,256 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "dom-basics/u03-input-errors@3",
+  "contentHash": "63ea5820a3b2496d88a2215f11391066398c54a1aabef96f61a53cc80a163746",
+  "environmentRef": "dom-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-read-input/t1-input-value/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "入力欄の現在値の型、空白の除去と数値への変換の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-read-input/t2-submit-event/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-js-trim-20261119"
+      ],
+      "usedFor": "フォームの送信イベントと既定の動作の取り消し、送信時点での値の取得の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-read-input/doc.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119"
+      ],
+      "usedFor": "入力の型・値の変換とフォームの送信を扱う説明と自作例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-read-input/knowledge.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119"
+      ],
+      "usedFor": "値の読み取りと変換、送信イベントの扱いを確かめる自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-show-errors/t1-validate-function/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "入力の検証を値の比較と早期 return で書き、DOM から独立させる説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-show-errors/t2-error-display/slides.md",
+      "sourceRefs": ["SRC-mdn-aria-invalid-20261119", "SRC-mdn-aria-describedby-20261119"],
+      "usedFor": "エラー文を入力欄の説明として関連付け、無効な状態を伝える属性の説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-show-errors/t3-clear-error/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119"
+      ],
+      "usedFor": "編集時の再検証と、エラーの文および無効状態の取り消しの説明。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-show-errors/doc.md",
+      "sourceRefs": [
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-return-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119"
+      ],
+      "usedFor": "検証関数、入力欄とエラーの結び付き、修正時の再検証を扱う説明と自作例。",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-show-errors/knowledge.md",
+      "sourceRefs": [
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-return-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-dom-input-event-20261119"
+      ],
+      "usedFor": "検証結果、エラーの関連付けと修正後の表示を確かめる自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-read-values/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119"
+      ],
+      "usedFor": "現在値を取得し、空白の除去、数値変換、フォーム送信を練習する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-validators/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "文字列の比較と数値の境界を使い、エラー文を返す検証関数を作る自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-show-errors/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "送信時の検証、入力欄とエラー文の関連付け、修正時の再検証を練習する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connect/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119"
+      ],
+      "usedFor": "数量と会員区分を読み取り、JavaScript の条件練習で扱った注文計算をフォームにつなぐ自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "複数の条件を持つフォームを、画面の仕様から組み立てる自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "フォームの送信、エラーの再表示、入力時のエラーの更新を直す自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "問い合わせを題材に、文字数と返信先の検証、フォームのエラー表示を確認する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "予約変更を題材に、数値の範囲、日付、理由の文字数とエラー表示の定着を確認する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

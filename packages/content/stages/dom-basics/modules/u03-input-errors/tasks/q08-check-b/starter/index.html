@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>確認B 予約の変更フォーム</title>
+  </head>
+  <body>
+    <main id="exercise">
+      <h1>確認B 予約の変更フォーム</h1>
+      <form id="reservation-change" novalidate>
+        <label for="people">人数</label>
+        <input type="number" id="people" aria-describedby="people-error" />
+        <p id="people-error"></p>
+
+        <label for="date">変更後の日付</label>
+        <input type="date" id="date" aria-describedby="date-error" />
+        <p id="date-error"></p>
+
+        <label for="reason">変更理由</label>
+        <textarea id="reason" aria-describedby="reason-error"></textarea>
+        <p id="reason-error"></p>
+
+        <button type="submit">変更する</button>
+      </form>
+      <output aria-label="変更結果"></output>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

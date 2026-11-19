@@ -1,0 +1,66 @@
+{
+  "id": "javascript-basics/u03-conditions/q05-independent",
+  "title": "映画館のチケット料金を決める",
+  "kind": "independent",
+  "pattern": "js-combine-conditions",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-logical-operators",
+      "js-boundary-test"
+    ],
+    "assesses": [
+      "js-condition-choice",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/cinema.js"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "age-prices",
+        "criterion": "12 歳未満は 1,000 円、65 歳以上は 1,200 円を返す。曜日や会員区分でこれらの料金は変わらない。",
+        "required": true
+      },
+      {
+        "id": "weekday-member-price",
+        "criterion": "12 歳以上 65 歳未満では平日の会員にだけ 1,400 円を適用し、それ以外は 1,800 円を返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-logical-and-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 35,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

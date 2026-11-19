@@ -65,6 +65,7 @@ function aiOutput(over: Partial<AiReviewOutput> = {}): AiReviewOutput {
     findings: [
       { file: "index.html", startLine: 1, endLine: 1, severity: "info", comment: "本文が短めです" },
     ],
+    testFitting: { suspected: false, evidence: [], note: "" },
     learnerReply: {
       message: "提出を確認しました。",
       goodPoints: ["文書の構造が保たれています"],
@@ -365,7 +366,13 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     const args = complete.mock.calls[0]?.[0];
     if (!args) throw new Error("AI が呼ばれていない");
     expect(args.schema).toMatchObject({
-      required: ["rubric", "confidence", "findings", "learnerReply"],
+      required: ["rubric", "confidence", "testFitting", "findings", "learnerReply"],
+      properties: {
+        testFitting: {
+          required: ["suspected", "evidence", "note"],
+          additionalProperties: false,
+        },
+      },
     });
     expect(args.system.map((b) => [b.text.split("\n")[0], Boolean(b.cache_control)])).toEqual([
       [expect.stringContaining("課題レビュー担当"), false],
@@ -384,6 +391,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     ).toEqual([
       [expect.stringContaining("# 課題文"), false],
       ["# ルーブリック", false],
+      [expect.stringContaining("# 配布したテスト"), false],
       [expect.stringContaining("# 解答例"), false],
       ["# 観点とよくある違反", true],
       ["# 提出", false],
@@ -408,6 +416,56 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       complete.mock.calls[call]?.[0].system,
       complete.mock.calls[call]?.[0].messages,
     ]);
+
+  it("提出時の配布物からテキストのテストだけを渡し、決め打ちの疑いがあれば人に回す", async () => {
+    const bundle = {
+      ...fixture.bundle,
+      files: {
+        ...fixture.bundle.files,
+        "tests/nested/見出し.test.ts": encode('expect(heading()).toBe("課題");'),
+        "tests/nul.bin": encode("a\u0000b"),
+        "tests/invalid-utf8.bin": Buffer.from([0xff]).toString("base64"),
+        "starter/example.ts": encode("starter"),
+      },
+    };
+    await db
+      .update(taskRevisions)
+      .set({ bundle: JSON.stringify(bundle) })
+      .where(eq(taskRevisions.contentHash, bundle.contentHash));
+    complete.mockResolvedValue(
+      answer(
+        aiOutput({
+          testFitting: {
+            suspected: true,
+            evidence: [{ file: "index.html", startLine: 1, endLine: 1 }],
+            note: "配布したテストの期待値をそのまま返しています。",
+          },
+        }),
+      ),
+    );
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    const content = complete.mock.calls[0]?.[0].messages[0]?.content;
+    const tests = Array.isArray(content) ? content[2] : undefined;
+    expect(tests).toMatchObject({
+      type: "text",
+      text: [
+        "# 配布したテスト (受講者も持っている。受講者は変更できない。手元の確認で通っている)",
+        '<test path="tests/config.json">\n{"ok":true}\n\n</test>',
+        '<test path="tests/nested/見出し.test.ts">\nexpect(heading()).toBe("課題");\n</test>',
+      ].join("\n\n"),
+    });
+    expect((await reviews())[0]).toMatchObject({
+      outcome: "escalated",
+      routeReasons: ["test-fitting"],
+      confidence: "high",
+      proposedVerdict: "pass",
+      promptVersion: "2026-11-19.1",
+      thresholdVersion: "2026-11-19.1",
+    });
+    expect(await progress()).toBe("instructor-pending");
+    expect((await detail(row.id, token)).ai_feedback).toBeNull();
+  });
 
   it("素材だけが差し替わっても、提出は受け付けた時点の解答例と観点でレビュー・照合する", async () => {
     complete.mockResolvedValue(

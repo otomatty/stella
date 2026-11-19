@@ -6,7 +6,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
-| `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
+| `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify`（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）、`core-loop`（API スモーク）、`e2e`（PR のブラウザー E2E） |
 | `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 → 未掲載の版だけ Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 |
 
@@ -19,12 +19,26 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 
 | `scope` | 走るもの | 使う場所 |
 |---------|----------|---------|
-| `full`（既定） | verify の全ステップ + core-loop | `pull_request`、`deploy.yml` |
+| `full`（既定） | verify の全ステップ + core-loop、PR では e2e も実行 | `pull_request`、`deploy.yml` |
 | `code` | deploy:config:check + typecheck + test | `release-vscode.yml`（`.vsix` を出す前の最小確認） |
 
 **E2E（`core-loop`）は `deploy.yml` の経路にも入っている。** PR で通っていても、
 マージ後の main の組み合わせで一度も E2E を通さずにデプロイする、という穴を塞ぐため。
 そのぶんデプロイ完了までの時間は core-loop ジョブ 1 本ぶん（数分）伸びる。
+
+## ブラウザー E2E（`e2e` ジョブ）
+
+PR ごとにローカル D1 を migration・seed し、`wrangler dev` の API と本番と同じ方法でビルドした Web を Playwright で動かす。受講者のホーム（受講中・未着手）とレッスンのまとめ、管理者のレビューとステージ管理、確認ダイアログの表示・取り消しを確認する。PC 幅・スマホ幅のライト・ダークで実行し、ホーム・まとめ・レビュー・確認ダイアログの画像を比較する。ブランチ保護の必須チェックには設定していない。
+
+基準画像がない場合、CI が画像を書き出す。PR の Actions 成果物 `e2e-screenshots` を展開し、画像を確認して、ディレクトリ構造を保ったまま `apps/web/e2e/__screenshots__/` にコミットする。画面を意図して変更した場合は該当の基準画像を削除して PR を更新し、CI が書き出した画像を確認してコミットする。比較に失敗した場合は `e2e-failure` に差分画像と HTML レポートが出る。失敗したテストのトレース・スクリーンショット・動画もここで確認できる。
+
+手元では `apps/api/.dev.vars` を用意し、`ALLOWED_ORIGINS` に `http://127.0.0.1:4173,http://localhost:4173` を追加する。ローカル D1 に `bun run db:migrate` と `bun run db:seed` を適用し、別のターミナルで `bun run dev:api` を起動してから次を実行する。
+
+```bash
+E2E_CHROMIUM_PATH=/path/to/chromium bun run --filter=@stella/web e2e
+```
+
+Playwright がインストールした Chromium を使う場合は `E2E_CHROMIUM_PATH` を省ける。手元で書き出した画像は CI の Ubuntu とフォールバックフォントの字形が異なるため、CI が書き出した画像を基準にする。
 
 ## 教材が変わっていない push は教材パイプラインを飛ばす
 

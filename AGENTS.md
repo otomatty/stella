@@ -134,7 +134,9 @@ Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; 
 
 End-to-end coverage is a **core-loop HTTP smoke** (`bun run smoke:core`, `apps/api/scripts/core-loop-smoke.ts`): with the API running it walks stage create → publish → **learner self-start** (`POST /api/stages/:id/start`; the admin assignment APIs are retired and answer 410) → progress → submit → review → notification → certificate → audit-log assertions → cleanup. No browser; auth is a self-minted JWT from `AUTH_JWT_SECRET`, so it needs `db:migrate` + `db:seed` and `dev:api` first. See README「コア学習ループの自動スモーク」.
 
-CI (`.github/workflows/ci.yml`) has two jobs: `verify` (typecheck → test → lint → content:check → 図解 lint → build) and `core-loop` (migrate + seed local D1 → `wrangler dev` → `smoke:core`)。**`ci.yml` が検証ゲートの正本**で、`deploy.yml` と `release-vscode.yml` は `uses:` で呼ぶだけ（同じ手順を書き写さない）。E2E は deploy 経路でも走る。ジョブ名 = ブランチ保護の必須チェック名なので `verify` / `core-loop` を安易に変えないこと。詳細は `docs/ci-cd.md`。
+ブラウザー E2E は `apps/web/e2e/` に置き、`ci.yml` の PR 専用 `e2e` ジョブで、ローカル D1 と API を使った画面の操作と画像比較を行う。基準画像は CI の成果物から採用する（手順は `docs/ci-cd.md`）。
+
+CI (`.github/workflows/ci.yml`) has two required checks: `verify` (typecheck → test → lint → content:check → 図解 lint → build) and `core-loop` (migrate + seed local D1 → `wrangler dev` → `smoke:core`)。**`ci.yml` が検証ゲートの正本**で、`deploy.yml` と `release-vscode.yml` は `uses:` で呼ぶだけ（同じ手順を書き写さない）。コア学習ループの HTTP スモークは deploy 経路でも走る。ジョブ名 = ブランチ保護の必須チェック名なので `verify` / `core-loop` を安易に変えないこと。詳細は `docs/ci-cd.md`。
 
 型検査は 6 ワークスペースすべてで **テストと scripts も対象**（`exclude` を持つ tsconfig は無い）。範囲を狭めると、seed やスモークのように本番データに触るコードが strict の網から外れる。
 

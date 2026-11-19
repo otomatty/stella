@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>入力を読んで表示を更新する</title>
+  </head>
+  <body>
+    <main id="exercise">
+      <h1>入力を読んで表示を更新する</h1>
+      <section>
+        <h2>1. あいさつ</h2>
+        <form id="greeting-form">
+          <label for="name">名前</label>
+          <input id="name" aria-describedby="name-error" />
+          <p id="name-error"></p>
+          <button type="submit">あいさつを表示</button>
+          <output aria-label="あいさつ"></output>
+        </form>
+      </section>
+      <section>
+        <h2>2. 残り文字数</h2>
+        <form id="length-form">
+          <label for="message">メッセージ</label>
+          <input id="message" aria-describedby="message-error" />
+          <p id="message-error"></p>
+          <button type="submit">残り文字数を確認</button>
+          <output aria-label="残り文字数"></output>
+        </form>
+      </section>
+      <section>
+        <h2>3. 数量と合計</h2>
+        <form id="total-form">
+          <label for="quantity">数量（1 個 250 円）</label>
+          <input
+            id="quantity"
+            type="number"
+            aria-describedby="quantity-error"
+          />
+          <p id="quantity-error"></p>
+          <button type="submit">合計を計算</button>
+          <output aria-label="合計"></output>
+        </form>
+      </section>
+      <section>
+        <h2>4. 入力があるときだけ表示</h2>
+        <form id="note-form">
+          <label for="note">備考</label>
+          <input id="note" aria-describedby="note-error" />
+          <p id="note-error"></p>
+          <button type="submit">備考を確認</button>
+          <output aria-label="備考の表示"></output>
+        </form>
+      </section>
+      <section>
+        <h2>5. チェックの有無</h2>
+        <form id="member-form">
+          <label for="member">会員</label>
+          <input id="member" type="checkbox" aria-describedby="member-error" />
+          <p id="member-error"></p>
+          <button type="submit">会員区分を確認</button>
+          <output aria-label="会員区分"></output>
+        </form>
+      </section>
+      <section>
+        <h2>6. 選んだ受取方法</h2>
+        <form id="delivery-form">
+          <label for="delivery">受取方法</label>
+          <select id="delivery" aria-describedby="delivery-error">
+            <option value="">選んでください</option>
+            <option value="店頭">店頭で受け取る</option>
+            <option value="配送">配送で受け取る</option>
+          </select>
+          <p id="delivery-error"></p>
+          <button type="submit">受取方法を確認</button>
+          <output aria-label="選んだ受取方法"></output>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

@@ -122,9 +122,17 @@ export async function loadMaterial(
     .filter(([path]) => path.startsWith("solution/"))
     .map(([path, value]) => ({ path: path.slice("solution/".length), text: decodeBase64(value) }));
   const snapshot = row.taskSnapshot;
-  // 配布物 (starter・テスト・課題文) は受講者がすでに持っているので、返信の照合から除く。
   const bundle = JSON.parse(revision.bundle) as { files?: Record<string, string> };
-  const bundleTexts = Object.values(bundle.files ?? {}).map(decodeBase64);
+  const bundleFiles = Object.entries(bundle.files ?? {}).map(([path, value]) => ({
+    path,
+    text: decodeBase64(value),
+  }));
+  const tests = bundleFiles
+    .filter(
+      ({ path, text }) =>
+        path.startsWith("tests/") && !text.includes("\u0000") && !text.includes("�"),
+    )
+    .sort((a, b) => a.path.localeCompare(b.path));
   let files: Awaited<ReturnType<typeof readSubmissionFiles>>;
   try {
     files = await readSubmissionFiles(db, env, row.id);
@@ -147,6 +155,7 @@ export async function loadMaterial(
     rubric,
     commonRules,
     courseRules,
+    tests,
     solution,
     reviewGuide: privateFiles["review.md"] ? decodeBase64(privateFiles["review.md"]) : "",
     submission: {
@@ -163,7 +172,8 @@ export async function loadMaterial(
     stageId: task.stageId,
     known: [
       ...submissionFiles.flatMap((f) => (f.text === null ? [] : [f.text])),
-      ...bundleTexts,
+      // 配布物 (starter・テスト・課題文) は受講者がすでに持っているので、返信の照合から除く。
+      ...bundleFiles.map((f) => f.text),
       row.explanation ?? "",
     ],
     appliedRules: ruleRefs.map((ref) => ({
