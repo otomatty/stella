@@ -4907,6 +4907,66 @@
         "reviewedAt": null,
         "scope": "研修第4単元の解説・課題の対象版との対応を確認する。"
       }
+    },
+    {
+      "id": "SRC-devlab-node-download-20261119",
+      "title": "Node.js®をダウンロードする",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/ja/download",
+      "section": "Node.js®をダウンロードする",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "開発ラボG 00章の LTS の選び方と公式の配布ページの対応を確認する。"
+      }
+    },
+    {
+      "id": "SRC-devlab-node-installers-20261119",
+      "title": "Node.js® Download Archive",
+      "publisher": "Node.js contributors",
+      "url": "https://nodejs.org/en/download/archive/v24.16.0",
+      "section": "npm version / Installer Packages",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "24.16.0"
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "開発ラボG 00章の Windows・macOS 向けインストーラーの形式と、版の表示例を確認する。"
+      }
+    },
+    {
+      "id": "SRC-devlab-vscode-terminal-20261119",
+      "title": "Terminal Basics",
+      "publisher": "Microsoft",
+      "url": "https://code.visualstudio.com/docs/terminal/basics",
+      "section": "Terminal Basics",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft",
+        "reviewer": null,
+        "reviewedAt": null,
+        "scope": "開発ラボG 00章のターミナルの開き方を対象 OS の日本語表示で確認する。"
+      }
     }
   ]
 }

@@ -49,6 +49,16 @@ Web アプリ側の「押す」場面は撮影済みの `clips/web/open-task` �
 | `dev-env-basics` 0-1-2 ブラウザーで表示する | 保存した `index.html` をブラウザーで開き、編集して保存したあと、ブラウザーを再読み込みする。 |
 | `html-css-basics` 01-1-1 確認Aに取り組む | VS Code の課題文のパネルで確認Aを開く操作を撮る。 |
 
+## 撮り直しが要るクリップ
+
+2026-11-19 に、最初のステージ名を「開発環境とWebの入口」から「STELLAの使い方」に変更し、U03・U04 を `html-css-basics` に移しました。撮影済みのクリップ（`packages/content/clips/web/*`・`packages/content/clips/vscode/*`）と収録（`screen.mp4`）には、VS Code のサイドバーや Web のパンくずに古いステージ名が映っています。`web/read-result` には「次はセクション『ファイルとフォルダーの操作』…」という古い案内も映っています。
+
+- Web の操作は `bun run --filter=@stella/web tutorials:clips` で撮り直します。
+- VS Code の操作は Windows の手元で撮り直します。クリップは `bun run --filter=@stella/web tutorials:vscode -- --clip open-task` を実行し、`open-task` を `run-check`、`submit` に替えて同じように撮ります。対応する `screen.mp4` を更新するときは `tutorials:vscode` に `--save` と収録するシナリオの ID を指定します。
+- 撮り直したら、各 `mark` の秒数と `regions` を確認し、絵コンテ `t1-learning-loop`・`t3-open-from-web`・`t4-submit` で使っている静止画を見直します。
+
+`devlab-ts-ch00` の「進め方とルール」は図解で代用しています。問題つきの課題（TypeScript、1 問 1 ファイル）を VS Code で確認して提出する操作を撮ったら、図解を操作のキャプチャに置き換えます。
+
 ## 撮り方
 
 前提: Windows・VS Code・Bun・ffmpeg。`apps/api/.dev.vars` に `AUTH_JWT_SECRET`。クリップの収録に `GEMINI_API_KEY` は要りません。
