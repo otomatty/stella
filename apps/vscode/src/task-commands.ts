@@ -459,13 +459,14 @@ async function checkTask(
     // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
     // ログは送らない。配布記録のない見本や中断した実行は送らない。失敗は合格と別の道に送る
     // (旧 API は local-result の本文を見ずに合格として扱うため)。
-    try {
-      await sendLocalRunReport(result, receipt?.taskId === manifest.id ? receipt : undefined);
-    } catch (err) {
-      output.appendLine(
-        `手元の確認の結果を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
+    // 確認・提出を待たせないよう、報告の完了は待たない。
+    void sendLocalRunReport(result, receipt?.taskId === manifest.id ? receipt : undefined).catch(
+      (err: unknown) => {
+        output.appendLine(
+          `手元の確認の結果を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      },
+    );
     return { result, manifest, selection };
   });
 }

@@ -321,6 +321,26 @@ describe("stella.submitTask", () => {
     expect(vscodeMock.sendTaskSubmission).not.toHaveBeenCalled();
   });
 
+  it("手元の確認の報告が応答しなくても振り返りを開き、提出コマンドは戻る", async () => {
+    const root = await distributedTask();
+    let releaseReport: () => void = () => undefined;
+    apiRequest.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releaseReport = () => resolve({});
+      }),
+    );
+    const completed = vi.fn();
+    const submitting = run("stella.submitTask", root).then(completed);
+    try {
+      await vi.waitFor(() => expect(completed).toHaveBeenCalledOnce());
+      expect(localReports().map(([url]) => url)).toEqual(["/api/tasks/local-result"]);
+      expect(vscodeMock.showSubmissionForm).toHaveBeenCalledOnce();
+    } finally {
+      releaseReport();
+      await submitting;
+    }
+  });
+
   it("配布記録ができる前の合格は再利用しない", async () => {
     const root = await distributedTask();
     const receiptFile = path.join(root, ".stella", "distribution.json");
@@ -490,15 +510,19 @@ describe("stella.submitTask", () => {
     "%s の確認中に提出を押すと、待つように知らせる",
     async (command) => {
       const root = await distributedTask();
-      let releaseReport: () => void = () => undefined;
-      apiRequest.mockReturnValueOnce(
-        new Promise((resolve) => {
-          releaseReport = () => resolve({});
-        }),
-      );
+      const actual =
+        await vi.importActual<typeof import("./runner/run-task.js")>("./runner/run-task.js");
+      let releaseCheck: () => void = () => undefined;
+      const pendingCheck = new Promise<void>((resolve) => {
+        releaseCheck = resolve;
+      });
+      vi.mocked(runTask).mockImplementationOnce(async (options) => {
+        await pendingCheck;
+        return actual.runTask(options);
+      });
       const checking = run(command, root);
       try {
-        await vi.waitFor(() => expect(localReports()).toHaveLength(1));
+        await vi.waitFor(() => expect(runTask).toHaveBeenCalledOnce());
         vscodeMock.showInformationMessage.mockClear();
         await run("stella.submitTask", root);
         expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
@@ -507,7 +531,7 @@ describe("stella.submitTask", () => {
         await run("stella.runTask", root);
         expect(vscodeMock.progress).toHaveBeenCalledTimes(1);
       } finally {
-        releaseReport();
+        releaseCheck();
         await checking;
       }
       expect(vscodeMock.showSubmissionForm).toHaveBeenCalledTimes(
