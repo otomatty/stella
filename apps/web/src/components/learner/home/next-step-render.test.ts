@@ -172,6 +172,9 @@ describe("NextStep choose card", () => {
     const markup = card(["html", "js"]);
     const listStart = markup.indexOf("始められるステージ");
     expect(markup.slice(0, listStart)).toContain("ステージ一覧から次のステージを選びましょう");
+    expect(markup.slice(0, listStart)).toContain(
+      "ステージにマウスを載せる (スマホ・タブレットではタップする) と、内容と始めるボタンが出ます。",
+    );
     expect(markup.slice(0, listStart)).not.toContain("HTML/CSSとデザイン基礎");
     expect(markup.slice(listStart)).toContain("HTML/CSSとデザイン基礎");
     expect(markup.slice(listStart)).toContain("JavaScriptの値と制御");
@@ -192,7 +195,9 @@ describe("NextStep choose card", () => {
     const markup = card(["dev"], true);
     expect(markup).toContain("はじめの一歩");
     expect(markup).toContain("ステージ一覧から最初のステージを選びましょう");
-    expect(markup).toContain("腕試し");
+    expect(markup).toContain(
+      "すでに知っている内容なら、ステージ一覧のステージから「腕試し」を受け、合格すると先のスキルから始められます。",
+    );
   });
 
   it("そのあとに回った choose は 1 行の案内で、星もボタンも持たない", () => {
@@ -220,7 +225,7 @@ describe("VS Code の準備", () => {
   it("仕上げの案内は残りの問題数を出し、受講者の番なら課題に取り組む", () => {
     const guide: HomeGuide = { steps: [{ kind: "wrapup" }], idle: "empty" };
     const detail =
-      "課題「計算」は取り組み中です。残り 15 問です。レビューで合格すると、この星がクリアになります。";
+      "課題「計算」は取り組み中です。残り 15 問です。全部の問題を提出すると、このステージが完了します。";
     const markup = renderToStaticMarkup(
       createElement(NextStepCard, {
         ...handlers,

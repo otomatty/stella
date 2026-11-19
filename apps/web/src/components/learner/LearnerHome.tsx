@@ -406,7 +406,7 @@ export const LearnerHome = ({
       return;
     }
     if (!treeRef.current?.focusStage(stageId)) {
-      toast("この星はまだステージ一覧に表示されていません");
+      toast("このステージはまだステージ一覧に表示されていません");
     }
   };
 
@@ -514,7 +514,7 @@ export const LearnerHome = ({
       return;
     const frame = requestAnimationFrame(() => {
       if (!treeRef.current?.focusStage(pendingFocusId)) {
-        toast("この星はまだステージ一覧に表示されていません");
+        toast("このステージはまだステージ一覧に表示されていません");
       }
       setPendingFocusId(null);
     });
