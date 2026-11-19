@@ -238,7 +238,7 @@ export const StageDetail = ({
         className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
       >
         <ChevronLeft size={14} />
-        <span>スキルツリーに戻る</span>
+        <span>ステージ一覧に戻る</span>
       </button>
 
       {firstSteps?.stage_id === stage.id ? <FirstStepsCard data={firstSteps} /> : null}
@@ -512,7 +512,7 @@ export function StageDetailSkeleton({ onBack }: { onBack: () => void }) {
         className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
       >
         <ChevronLeft size={14} />
-        <span>スキルツリーに戻る</span>
+        <span>ステージ一覧に戻る</span>
       </button>
       <div role="status" aria-busy="true" aria-live="polite" aria-label="読み込み中">
         <div

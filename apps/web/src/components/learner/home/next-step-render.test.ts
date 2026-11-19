@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { HomeGuide } from "@/lib/home-guide";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
-import { LaterSteps, NextStepBar, NextStepCard } from "./NextStep";
+import { LaterSteps, NextStepCard } from "./NextStep";
 
 const node = (partial: SkillMapStageNode): SkillMapStageNode => partial;
 
@@ -71,6 +71,22 @@ function card(stageIds: string[], welcome = false): string {
   );
 }
 
+it("次のレッスンは題名と続きのボタンを出し、プランの説明は出さない", () => {
+  const reason = "開発環境とWebの入口の続きです。残り 3 レッスン。";
+  const guide: HomeGuide = {
+    steps: [
+      { kind: "plan", item: { kind: "lesson", title: "ターミナルの使い方", minutes: 15, reason } },
+    ],
+    idle: "empty",
+  };
+  const markup = renderToStaticMarkup(
+    createElement(NextStepCard, { ...handlers, guide, loading: false }),
+  );
+  expect(markup).toContain("ターミナルの使い方");
+  expect(markup).toContain("続きから");
+  expect(markup).not.toContain(reason);
+});
+
 describe("NextStep first-stage", () => {
   const guide: HomeGuide = {
     steps: [{ kind: "first-stage", stageId: "dev" }],
@@ -85,15 +101,6 @@ describe("NextStep first-stage", () => {
     expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
     expect(markup).toContain("ツリーで見る");
-  });
-
-  it("畳んだバーにも最初のステージ名と始める主ボタンを残す", () => {
-    const markup = renderToStaticMarkup(
-      createElement(NextStepBar, { ...handlers, guide, loading: false, onExpand: noop }),
-    );
-    expect(markup).toContain("はじめの一歩");
-    expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
-    expect(markup).toContain("最初のステージを始める");
   });
 });
 
@@ -123,20 +130,6 @@ describe("NextStep choose card", () => {
     expect(markup).toContain("はじめの一歩");
     expect(markup).toContain("ツリーから最初のステージを選びましょう");
     expect(markup).toContain("腕試し");
-  });
-
-  it("畳んだバーは星を名指しせず、主ボタンを持たない", () => {
-    const markup = renderToStaticMarkup(
-      createElement(NextStepBar, {
-        ...handlers,
-        guide: guideOf(["html", "js"]),
-        loading: false,
-        onExpand: noop,
-      }),
-    );
-    expect(markup).toContain("ツリーから次のステージを選ぶ");
-    expect(markup).not.toContain("HTML/CSSとデザイン基礎");
-    expect(markup).not.toContain("ここから始める");
   });
 
   it("そのあとに回った choose は 1 行の案内で、星もボタンも持たない", () => {

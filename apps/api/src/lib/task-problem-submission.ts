@@ -107,7 +107,10 @@ export async function submitTaskProblem(
 ): Promise<ProblemSubmissionResult> {
   if (!input.problemId) throw new ApiError("拡張を更新してください", 400);
   if (input.contentHash !== task.contentHash)
-    throw new ApiError("教材が更新されています。課題を開き直してください", 409);
+    throw new ApiError(
+      "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
+      409,
+    );
   const problemId = input.problemId;
   let verified: Awaited<ReturnType<typeof verifyTaskSubmission>>;
   try {

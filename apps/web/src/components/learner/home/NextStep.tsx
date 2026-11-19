@@ -10,9 +10,6 @@ import { OverviewTutorialButton } from "@/components/tutorials/TutorialCard";
  * 主ボタンを持たず、始められるステージを Basic と Extra に分けて同列に並べる (始めるのは
  * ツリーの星のカードから)。行の名前とコンパスは後ろの盤面をその星へ寄せる — ガイドが
  * 「何を」、ツリーが「どこか」を受け持つ。
- *
- * ガイドは盤面に浮かぶカードで、畳むと「次にやること」だけの 1 行 (`NextStepBar`) になる。
- * 畳んでも主ボタンは残す (`choose` には無い) — 盤面を広く見ている間も、次の一手は 1 押しで始められる。
  */
 
 import type { ReactNode } from "react";
@@ -22,17 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GuideStep, HomeGuide } from "@/lib/home-guide";
 import type { StageWrapup } from "@/lib/stage-wrapup";
-import {
-  Book,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Compass,
-  Play,
-  RotateCcw,
-  Sparkles,
-} from "@/lib/icons";
+import { Book, Check, Clock, Compass, Play, RotateCcw, Sparkles } from "@/lib/icons";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlanItemKind } from "@/lib/today-plan";
 
@@ -121,138 +108,6 @@ interface NextStepCardProps extends StepContext {
   loading: boolean;
 }
 
-/** 畳んだガイドの 1 行に載せる要約。主ボタンはカードのものと同じ行き先。 */
-interface StepSummary {
-  icon: typeof Play;
-  eyebrow: string;
-  title: string;
-  action?: { label: string; onClick: () => void; disabled?: boolean };
-}
-
-function summarizeStep(
-  step: GuideStep | undefined,
-  idle: HomeGuide["idle"],
-  ctx: StepContext,
-): StepSummary {
-  if (!step) {
-    return idle === "done"
-      ? { icon: Check, eyebrow: "次にやること", title: "今日のぶんは終わりました" }
-      : { icon: Compass, eyebrow: "次にやること", title: "いま始められるスキルはありません" };
-  }
-  if (step.kind === "setup-vscode") {
-    return {
-      icon: Compass,
-      eyebrow: "次にやること",
-      title: "VS Code の準備がまだです",
-      action: {
-        label: "準備の案内を開く",
-        onClick: () => {
-          window.location.assign("/start");
-        },
-      },
-    };
-  }
-  if (step.kind === "first-stage") {
-    return {
-      icon: Compass,
-      eyebrow: "はじめの一歩",
-      title: `『${ctx.nodeOf(step.stageId)?.title ?? "最初のステージ"}』から始めましょう`,
-      action: {
-        label: "最初のステージを始める",
-        onClick: () => ctx.onStartStage(step.stageId),
-      },
-    };
-  }
-  if (step.kind === "plan") {
-    return {
-      icon: PLAN_ICON[step.item.kind],
-      eyebrow: `次にやること · 約 ${step.item.minutes} 分`,
-      title: step.item.title,
-      action: { label: PLAN_ACTION[step.item.kind], onClick: planAction(step.item.kind, ctx) },
-    };
-  }
-  if (step.kind === "wrapup") {
-    const copy = wrapupCopy(ctx.activeStage);
-    return {
-      icon: copy.openTask ? Play : Book,
-      eyebrow: "次にやること",
-      title: copy.title,
-      action: copy.openTask
-        ? { label: "課題に取り組む", onClick: ctx.onOpenPendingTask }
-        : { label: "レッスン一覧", onClick: ctx.onOpenActiveStage },
-    };
-  }
-  return {
-    icon: Compass,
-    eyebrow: step.welcome ? "はじめの一歩" : "次にやること",
-    title: step.welcome ? "ツリーから最初のステージを選ぶ" : "ツリーから次のステージを選ぶ",
-  };
-}
-
-interface NextStepBarProps extends NextStepCardProps {
-  /** カードを開く。 */
-  onExpand: () => void;
-}
-
-/**
- * 畳んだガイド — 「次にやること」の 1 行と主ボタン。名前の側を押すとカードが開く。
- */
-export const NextStepBar = ({ guide, loading, onExpand, ...ctx }: NextStepBarProps) => {
-  const step = guide.steps[0];
-  const summary = summarizeStep(step, guide.idle, ctx);
-  const Icon = summary.icon;
-  return (
-    <div className="flex items-center gap-2 p-2 pl-3">
-      <button
-        type="button"
-        onClick={onExpand}
-        aria-expanded={false}
-        aria-label={`次にやることを開く: ${summary.title}`}
-        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 text-left"
-      >
-        {/* スマホ幅ではアイコンを省き、名前に幅を回す。 */}
-        <span className="hidden size-8 shrink-0 place-items-center rounded-full bg-brand-soft text-brand sm:grid">
-          <Icon size={14} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[10.5px] font-semibold tracking-wide text-brand-ink">
-            {summary.eyebrow}
-          </span>
-          {loading && !step ? (
-            <Skeleton className="mt-1 h-3.5 w-32" />
-          ) : (
-            <span className="block truncate text-[13px] font-semibold leading-snug">
-              {summary.title}
-            </span>
-          )}
-        </span>
-      </button>
-      {summary.action && !(loading && !step) ? (
-        <Button
-          size="sm"
-          variant="accent"
-          className="shrink-0"
-          disabled={summary.action.disabled}
-          onClick={summary.action.onClick}
-        >
-          {summary.action.label}
-        </Button>
-      ) : null}
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        className="shrink-0"
-        aria-label="次にやることを開く"
-        onClick={onExpand}
-      >
-        {/* 下に浮くとき (スマホ・タブレット) は上へ、左上に浮くとき (PC) は下へ開く。 */}
-        <ChevronUp size={14} className="lg:hidden" />
-        <ChevronDown size={14} className="hidden lg:block" />
-      </Button>
-    </div>
-  );
-};
-
 /** いちばん大きく出す「次にやること」。押すべきボタンはここの 1 つだけ。 */
 export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
   const step = guide.steps[0];
@@ -293,12 +148,12 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
 const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
   if (step.kind === "setup-vscode") return <SetupVscode />;
   if (step.kind === "first-stage") {
-    const summary = summarizeStep(step, "empty", ctx);
+    const title = ctx.nodeOf(step.stageId)?.title ?? "最初のステージ";
     return (
-      <HeroFrame eyebrow={summary.eyebrow}>
+      <HeroFrame eyebrow="はじめの一歩">
         <h2 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
           <Compass size={16} className="mt-1 shrink-0 text-brand" />
-          <span className="min-w-0">{summary.title}</span>
+          <span className="min-w-0">『{title}』から始めましょう</span>
         </h2>
         <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
           最初のステージでは、STELLA での学び方と、VS Code で課題を出すまでを順に進めます。
@@ -358,7 +213,6 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <Icon size={16} className="mt-1 shrink-0 text-brand" />
           <span className="min-w-0">{item.title}</span>
         </h2>
-        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">{item.reason}</p>
         {lesson ? (
           <div className="mt-3 flex items-center gap-2">
             <Progress value={lesson.progress} tone="brand" className="flex-1" />

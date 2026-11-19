@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { HELP_TOPICS, findHelpTopic } from "./helpContent";
 
 describe("findHelpTopic", () => {
-  it("ルート / は受講者のホーム (スキルツリー) のヘルプにマッチする", () => {
-    expect(findHelpTopic("/")?.route).toBe("/");
+  it("ルート / は受講者のホーム (ステージ一覧) のヘルプにマッチする", () => {
+    expect(findHelpTopic("/")).toMatchObject({
+      route: "/",
+      title: "ステージ一覧（ホーム）の使い方",
+    });
   });
 
   it("静的ルートは末尾スラッシュの有無に関わらずマッチする", () => {

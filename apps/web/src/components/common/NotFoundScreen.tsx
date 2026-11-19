@@ -26,7 +26,7 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
     case "learner":
       return [
         {
-          label: "スキルツリー",
+          label: "ステージ一覧",
           description: "次にやることと、受講中のステージ",
           icon: Compass,
           onSelect: () => setPage("dash"),

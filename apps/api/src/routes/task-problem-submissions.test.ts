@@ -1447,7 +1447,7 @@ describe("問題の提出", () => {
     );
     expect(response.status, await response.clone().text()).toBe(409);
     expect(await response.json()).toMatchObject({
-      error: "教材が更新されています。課題を開き直してください",
+      error: "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
     });
     expect(await db.select().from(submissions)).toEqual([]);
     expect(await db.select().from(taskProblemResults)).toEqual([]);
