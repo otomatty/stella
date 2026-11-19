@@ -399,7 +399,7 @@ export function parseStoryboard(
     if (s.kind === "code") {
       const codeIssues = validateCodeScene(s, p);
       issues.push(...codeIssues);
-      if (codeIssues.length) usable = false;
+      if (codeIssues.some((issue) => issue.level === "error")) usable = false;
     }
     if (typeof s.role !== "string" || !["hook", "point", "recap"].includes(s.role))
       error(`${p}.role`, "hook・point・recapから選んでください");

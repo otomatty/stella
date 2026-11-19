@@ -102,6 +102,8 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
+**説明の優先順位**は実際の操作のキャプチャ → 概念図のアニメーション → コードブロック → テキストです。上で見せられる内容は上の手段を使い、新しいスライド版は作りません (2026-11-19、オーナー決定)。使い分けは [VIDEO_GUIDE.md の「何を映すか」](VIDEO_GUIDE.md#何を映すか) を参照してください。
+
 **新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は動画に焼き込み、`captions.vtt` は空にします。以下は旧方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。

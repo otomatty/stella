@@ -15,255 +15,427 @@
       "練習問題の答えのコード"
     ]
   },
+  "boards": {
+    "files": {
+      "cols": 3,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "task",
+          "label": "課題フォルダー",
+          "icon": "folder",
+          "tone": "violet",
+          "cells": [1, 1, 3, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "source",
+          "label": "src/ 問題",
+          "icon": "folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "tests",
+          "label": "tests/",
+          "icon": "folder",
+          "at": [2, 1]
+        },
+        {
+          "id": "config",
+          "label": "設定ファイル",
+          "icon": "file",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "flow": {
+      "cols": 4,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "write",
+          "label": "書く",
+          "icon": "write",
+          "at": [1, 1]
+        },
+        {
+          "id": "save",
+          "label": "保存",
+          "icon": "save",
+          "at": [2, 1]
+        },
+        {
+          "id": "check",
+          "label": "確認",
+          "icon": "check",
+          "at": [3, 1]
+        },
+        {
+          "id": "submit",
+          "label": "提出",
+          "icon": "send",
+          "at": [3, 2]
+        },
+        {
+          "id": "fix",
+          "label": "通らなければ直す",
+          "icon": "repeat",
+          "at": [4, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の問題",
+          "icon": "file",
+          "at": [4, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-save",
+          "from": "write",
+          "to": "save"
+        },
+        {
+          "id": "to-check",
+          "from": "save",
+          "to": "check"
+        },
+        {
+          "id": "failed",
+          "from": "check",
+          "to": "fix"
+        },
+        {
+          "id": "retry",
+          "from": "fix",
+          "to": "save",
+          "route": "over"
+        },
+        {
+          "id": "passed",
+          "from": "check",
+          "to": "submit",
+          "label": "通った"
+        },
+        {
+          "id": "to-next",
+          "from": "submit",
+          "to": "next"
+        }
+      ]
+    },
+    "rules": {
+      "cols": 3,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "allowed",
+          "label": "してよいこと",
+          "tone": "blue",
+          "cells": [1, 1, 1, 2]
+        },
+        {
+          "id": "prohibited",
+          "label": "しないこと",
+          "tone": "violet",
+          "cells": [2, 1, 2, 2]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ask",
+          "label": "説明を聞く",
+          "icon": "question",
+          "at": [1, 1]
+        },
+        {
+          "id": "generate",
+          "label": "AI に書かせる",
+          "icon": "ai",
+          "at": [2, 1]
+        },
+        {
+          "id": "complete",
+          "label": "AI の自動補完",
+          "icon": "editor",
+          "at": [3, 1]
+        },
+        {
+          "id": "change-tests",
+          "label": "テストの書き換え",
+          "icon": "check",
+          "at": [2, 2]
+        },
+        {
+          "id": "change-config",
+          "label": "設定の書き換え",
+          "icon": "file",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "recap": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "write",
+          "label": "自分で書く",
+          "icon": "write",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "確認する",
+          "icon": "check",
+          "at": [2, 1]
+        },
+        {
+          "id": "submit",
+          "label": "提出する",
+          "icon": "send",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-check",
+          "from": "write",
+          "to": "check"
+        },
+        {
+          "id": "to-submit",
+          "from": "check",
+          "to": "submit",
+          "label": "通った"
+        }
+      ]
+    }
+  },
   "scenes": [
     {
       "id": "hook",
-      "kind": "code",
+      "kind": "board",
       "role": "hook",
-      "title": "どれから手を付けますか？",
-      "code": [
-        "// 問題のファイルが並んでいます",
-        "// テスト用のファイルもあります",
-        "// どれを直して、いつ提出しますか？"
-      ],
+      "title": "どのファイルを直す？",
+      "board": "files",
       "beats": [
         {
-          "say": "課題を開くと、たくさんのファイルが並びます。",
-          "type": [0]
+          "say": "課題のフォルダーには、いろいろなファイルが入っています。",
+          "show": ["task"]
         },
         {
-          "say": "テスト用のファイルも、いっしょに入っています。",
-          "type": [1]
+          "say": "どれを直せばよいでしょうか？",
+          "show": ["source", "tests", "config"]
         },
         {
-          "say": "どれを直し、いつ提出すればよいでしょうか。",
-          "type": [2]
+          "say": "提出はいつすればよいでしょうか？",
+          "mark": [
+            {
+              "on": "task",
+              "kind": "question"
+            }
+          ]
         }
       ]
     },
     {
       "id": "file",
-      "kind": "code",
+      "kind": "board",
       "role": "point",
       "title": "一問につき一つのファイル",
-      "code": [
-        "// src/q01-01-add-tax.ts",
-        "// q01 は番号、01 は問の番号、add-tax は名前",
-        "// 問題を開き、「ここに書く」の場所を書きます",
-        "// 練習では src/q01-hello.ts を開きます"
-      ],
+      "board": "files",
+      "point": 1,
+      "reset": true,
       "beats": [
         {
-          "say": "ドリルは、一問につき一つのファイルです。",
-          "type": [0]
+          "say": "ドリルは一問につき一つのファイルです。",
+          "show": ["task", "source"]
         },
         {
-          "say": "名前から、番号と問の番号が分かります。",
-          "type": [1]
+          "say": "問題のファイルは「ここに書く」の場所だけを編集します。",
+          "mark": [
+            {
+              "on": "source",
+              "kind": "check"
+            }
+          ]
         },
         {
-          "say": "問題のファイルを開いて、中を書きます。",
-          "type": [2]
+          "say": "テストのファイルはそのままにします。",
+          "mark": [
+            {
+              "on": "tests",
+              "kind": "cross"
+            }
+          ],
+          "show": ["tests"]
         },
         {
-          "say": "練習のファイルには、問の番号は付きません。",
-          "type": [3]
+          "say": "設定ファイルもそのままにします。",
+          "mark": [
+            {
+              "on": "config",
+              "kind": "cross"
+            }
+          ],
+          "show": ["config"]
         }
-      ],
-      "point": 1
+      ]
     },
     {
       "id": "loop",
-      "kind": "code",
+      "kind": "board",
       "role": "point",
-      "title": "確認してから提出する",
-      "code": [
-        "// 1 問書いたら保存し、「確認する」",
-        "// 通らなければ、結果を読んで直す",
-        "// 通ったら「提出する」",
-        "// 提出したら、次の問題へ進む"
-      ],
+      "title": "書いたら手元で確認",
+      "board": "flow",
+      "point": 2,
       "beats": [
         {
-          "say": "一問書いたら、保存して確認します。",
-          "type": [0],
-          "mark": [
-            {
-              "line": 0,
-              "kind": "check"
-            }
-          ]
+          "say": "まず一問だけ書きます。",
+          "show": ["write"]
         },
         {
-          "say": "テストは、期待した結果になるかを調べるものです。",
-          "type": [1]
+          "say": "書けたら保存します。",
+          "show": ["save", "to-save"],
+          "travel": {
+            "along": ["to-save"]
+          }
         },
         {
-          "say": "通らなければ、結果を読んで直して確認し直します。",
-          "focus": [1]
+          "say": "保存したら「課題を確認する」を使います。",
+          "show": ["check", "to-check"],
+          "travel": {
+            "along": ["to-check"]
+          }
         },
         {
-          "say": "通ったら、課題のパネルから提出します。",
-          "type": [2],
-          "mark": [
-            {
-              "line": 2,
-              "kind": "check"
-            }
-          ]
+          "say": "通らなければ、結果を読んで直します。",
+          "show": ["fix", "failed"],
+          "travel": {
+            "along": ["failed"]
+          }
         },
         {
-          "say": "提出してから、次の問題へ進みます。",
-          "type": [3]
-        }
-      ],
-      "point": 2
-    },
-    {
-      "id": "ai",
-      "kind": "code",
-      "role": "point",
-      "title": "説明は聞ける、コードは自分で書く",
-      "code": [
-        "// 分からないところの説明を聞く",
-        "// 生成 AI に答えのコードを書かせる",
-        "// AI の自動補完を切る",
-        "// テストが通った理由を、自分の言葉で説明する"
-      ],
-      "beats": [
-        {
-          "say": "分からないところの説明を聞くのはよいです。",
-          "type": [0],
-          "mark": [
-            {
-              "line": 0,
-              "kind": "check"
-            }
-          ]
-        },
-        {
-          "say": "生成 AI に、コードを書かせてはいけません。",
-          "speech": "生成エーアイに、コードを書かせてはいけません。",
-          "type": [1],
-          "mark": [
-            {
-              "line": 1,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "AI の自動補完は、始める前に切ります。",
-          "speech": "エーアイの自動補完は、始める前に切ります。",
-          "type": [2],
-          "mark": [
-            {
-              "line": 2,
-              "kind": "check"
-            }
-          ]
-        },
-        {
-          "say": "通った理由を、自分の言葉で説明できるか確かめます。",
-          "type": [3]
-        }
-      ],
-      "point": 3
-    },
-    {
-      "id": "protect",
-      "kind": "code",
-      "role": "point",
-      "title": "テストと設定は変えない",
-      "code": [
-        "// tests/ を書き換える",
-        "// package.json や tsconfig.json を書き換える",
-        "// 問題のファイルだけを直す",
-        "// 説明することは、その下に // のコメントで書く"
-      ],
-      "beats": [
-        {
-          "say": "テストのファイルは、書き換えてはいけません。",
-          "type": [0],
-          "mark": [
-            {
-              "line": 0,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "設定ファイルも、書き換えてはいけません。",
-          "type": [1],
-          "mark": [
-            {
-              "line": 1,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "書き換えると提出できないので、問題だけを直します。",
-          "type": [2],
-          "mark": [
-            {
-              "line": 2,
-              "kind": "check"
-            }
-          ]
-        },
-        {
-          "say": "説明は、指定の場所にコメントで書きます。",
-          "type": [3]
-        },
-        {
-          "say": "コメントは、コードの中に書く説明の文です。",
-          "part": {
-            "line": 3,
-            "text": "// のコメント"
+          "say": "直したら、保存してもう一度確認します。",
+          "show": ["retry"],
+          "travel": {
+            "along": ["retry", "to-check"]
           }
         }
-      ],
-      "point": 3
+      ]
+    },
+    {
+      "id": "submit",
+      "kind": "board",
+      "role": "point",
+      "title": "通ったら提出する",
+      "board": "flow",
+      "point": 2,
+      "beats": [
+        {
+          "say": "確認が通ったら、課題のパネルから提出します。",
+          "show": ["submit", "passed"],
+          "travel": {
+            "along": ["passed"]
+          }
+        },
+        {
+          "say": "次の問題に進むのは、提出してからです。",
+          "show": ["next", "to-next"],
+          "travel": {
+            "along": ["to-next"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rules",
+      "kind": "board",
+      "role": "point",
+      "title": "守るルール",
+      "board": "rules",
+      "point": 3,
+      "beats": [
+        {
+          "say": "分からないところは、説明を聞いても大丈夫です。",
+          "mark": [
+            {
+              "on": "ask",
+              "kind": "check"
+            }
+          ],
+          "show": ["allowed", "ask"]
+        },
+        {
+          "say": "生成 AI にコードを書かせてはいけません。",
+          "mark": [
+            {
+              "on": "generate",
+              "kind": "cross"
+            }
+          ],
+          "show": ["prohibited", "generate"]
+        },
+        {
+          "say": "始める前に AI の自動補完を切ります。",
+          "mark": [
+            {
+              "on": "complete",
+              "kind": "cross"
+            }
+          ],
+          "show": ["complete"]
+        },
+        {
+          "say": "テストのファイルは書き換えません。",
+          "mark": [
+            {
+              "on": "change-tests",
+              "kind": "cross"
+            }
+          ],
+          "show": ["change-tests"]
+        },
+        {
+          "say": "設定ファイルもそのままにしましょう。",
+          "mark": [
+            {
+              "on": "change-config",
+              "kind": "cross"
+            }
+          ],
+          "show": ["change-config"]
+        }
+      ]
     },
     {
       "id": "recap",
-      "kind": "code",
+      "kind": "board",
       "role": "recap",
-      "title": "練習問題で確かめる",
-      "code": [
-        "// 練習のファイルは src/q01-hello.ts",
-        "export function hello(): string {",
-        "  // ここに書く",
-        "}"
-      ],
+      "title": "一問ずつ進める",
+      "board": "recap",
       "beats": [
         {
-          "say": "まずは、練習問題のファイルを開きます。",
-          "type": [0]
+          "say": "問題のファイルは自分で書きます。",
+          "show": ["write"]
         },
         {
-          "say": "印のある場所に、自分で書きます。",
-          "type": [1, 2, 3]
-        },
-        {
-          "say": "この文字が返ることを、テストで確かめます。",
-          "row": [0]
-        },
-        {
-          "say": "確認と提出の順番を守り、自分で書いてみましょう。",
-          "focus": [2]
-        }
-      ],
-      "panel": {
-        "kind": "calls",
-        "rows": [
-          {
-            "call": "hello()",
-            "result": "\"Hello, TypeScript\""
+          "say": "書けたら手元で確認します。",
+          "show": ["check", "to-check"],
+          "travel": {
+            "along": ["to-check"]
           }
-        ]
-      }
+        },
+        {
+          "say": "通ったら提出してから次へ進みましょう。",
+          "show": ["submit", "to-submit"],
+          "travel": {
+            "along": ["to-submit"]
+          }
+        }
+      ]
     }
   ]
 }
