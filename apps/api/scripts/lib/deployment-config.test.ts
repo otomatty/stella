@@ -24,6 +24,9 @@ describe("deployment configuration contract", () => {
   it("checks the actual workflow and every Wrangler configuration without credentials", () => {
     expect(() => checkDeploymentConfig(root)).not.toThrow();
     expect(() => validateDeploymentConfig(workflow, configs(), deployment.accountId)).not.toThrow();
+    expect(api(configs()).kv_namespaces).toEqual([
+      { binding: "OAUTH_KV", id: "ffc7f0cc15fa4c8290fd9cc4e665371b" },
+    ]);
   });
 
   it("recognizes literal bracket names and ignores comments", () => {
