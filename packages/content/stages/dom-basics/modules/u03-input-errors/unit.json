@@ -12,5 +12,5 @@
       "dom-form-repair"
     ]
   },
-  "reuses": []
+  "reuses": ["javascript-basics/u03-conditions/q04-connect/src/order.js"]
 }

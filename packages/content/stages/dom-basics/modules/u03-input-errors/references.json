@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dom-basics/u03-input-errors@1",
-  "contentHash": "0418d45cb395977d2c9ba9a1e9f346d3a82fe61c6dd262b5a12b4c8d8cc81614",
+  "unitId": "dom-basics/u03-input-errors@2",
+  "contentHash": "188498cdd29370a8119f851b2a2509f0af85e6f1eb14a4c749b587510d99daff",
   "environmentRef": "dom-test-01@1",
   "uses": [
     {
@@ -120,6 +120,70 @@
         "SRC-mdn-dom-input-event-20261119"
       ],
       "usedFor": "検証結果、エラーの関連付けと修正後の表示を確かめる自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-read-values/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119"
+      ],
+      "usedFor": "現在値を取得し、空白の除去、数値変換、フォーム送信を練習する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-validators/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "文字列の比較と数値の境界を使い、エラー文を返す検証関数を作る自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-show-errors/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-trim-20261119",
+        "SRC-mdn-js-number-20261119"
+      ],
+      "usedFor": "送信時の検証、入力欄とエラー文の関連付け、修正時の再検証を練習する自作課題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-connect/README.md",
+      "sourceRefs": [
+        "SRC-mdn-dom-input-value-20261119",
+        "SRC-mdn-dom-submit-event-20261119",
+        "SRC-mdn-dom-prevent-default-20261119",
+        "SRC-mdn-dom-input-event-20261119",
+        "SRC-mdn-aria-invalid-20261119",
+        "SRC-mdn-aria-describedby-20261119",
+        "SRC-mdn-js-number-20261119",
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119"
+      ],
+      "usedFor": "数量と会員区分を読み取り、JavaScript の条件練習で扱った注文計算をフォームにつなぐ自作課題。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

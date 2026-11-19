@@ -1,0 +1,78 @@
+{
+  "id": "dom-basics/u03-input-errors/q03-show-errors",
+  "title": "登録フォームにエラーを表示する",
+  "kind": "basic",
+  "pattern": "dom-form-errors",
+  "skills": {
+    "uses": [
+      "dom-input-value",
+      "dom-validation-function",
+      "js-compare-values",
+      "js-if-else"
+    ],
+    "assesses": [
+      "dom-submit-event",
+      "dom-error-display",
+      "dom-error-clear"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/registration.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "validation-separate",
+        "criterion": "入力の検証を、値からエラー文か空文字を返す関数に分けている。",
+        "required": true
+      },
+      {
+        "id": "replace-error",
+        "criterion": "同じエラー用の段落の textContent を更新し、エラー文が空のときは aria-invalid を外すか false にしている。",
+        "required": true
+      },
+      {
+        "id": "stop-submit",
+        "criterion": "フォームの submit の処理で preventDefault を呼んでいる。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-dom-submit-event-20261119",
+    "SRC-mdn-dom-prevent-default-20261119",
+    "SRC-mdn-dom-input-event-20261119",
+    "SRC-mdn-aria-invalid-20261119",
+    "SRC-mdn-aria-describedby-20261119",
+    "SRC-mdn-js-trim-20261119",
+    "SRC-mdn-js-number-20261119"
+  ],
+  "estimatedMinutes": 55,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

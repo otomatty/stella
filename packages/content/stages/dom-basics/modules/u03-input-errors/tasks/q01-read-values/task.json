@@ -1,0 +1,68 @@
+{
+  "id": "dom-basics/u03-input-errors/q01-read-values",
+  "title": "入力を読んで表示を更新する",
+  "kind": "basic",
+  "pattern": "dom-read-input",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else"
+    ],
+    "assesses": [
+      "dom-input-value",
+      "dom-submit-event"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/inputs.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "read-current-values",
+        "criterion": "送信を受けた時点で値を読み、数量は Number で数値に変換し、会員の選択は checked で読んでいる。",
+        "required": true
+      },
+      {
+        "id": "render-as-text",
+        "criterion": "ユーザーの入力を画面に出すときは textContent を使い、innerHTML を使っていない。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-dom-input-value-20261119",
+    "SRC-mdn-js-trim-20261119",
+    "SRC-mdn-js-number-20261119",
+    "SRC-mdn-dom-submit-event-20261119",
+    "SRC-mdn-dom-prevent-default-20261119"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
