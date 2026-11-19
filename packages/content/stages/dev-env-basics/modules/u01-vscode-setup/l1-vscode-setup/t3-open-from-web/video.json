@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "Web の課題文のレッスンから課題を開き、VS Code で編集するファイルと課題文を見つけられる。",
+    "stuck": "課題をどこから開くのか、VS Code に切り替わったあとにどこを見ればよいのか迷う。",
+    "points": [
+      "課題文のレッスンの「VS Code で開く」から課題を受け取ります。",
+      "VS Code では、左に編集するファイル、右に課題文が開きます。"
+    ],
+    "leaveOut": [
+      "ブラウザーの確認で「開く」を選ぶ手順",
+      "初回の学習フォルダーの選択と課題フォルダーの構成",
+      "Workspace Trust で学習フォルダーの出所を確かめる手順",
+      "保存した課題を開き直す手順"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "view",
+      "role": "hook",
+      "title": "課題はどこから開く？",
+      "image": "clip:web/open-task#press-open",
+      "beats": [
+        {
+          "say": "課題を始めるときは、どこから開けばよいでしょうか？",
+          "spot": ["handoff"]
+        }
+      ]
+    },
+    {
+      "id": "open-from-lesson",
+      "kind": "view",
+      "role": "point",
+      "point": 1,
+      "title": "課題文のレッスンから開く",
+      "image": "clip:web/open-task#press-open",
+      "beats": [
+        {
+          "say": "課題文のレッスンで「VS Code で開く」を押します。",
+          "clip": "web/open-task#press-open",
+          "zoom": "handoff",
+          "spot": ["open"]
+        }
+      ]
+    },
+    {
+      "id": "find-task-files",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "開いた課題の見方",
+      "image": "clip:vscode/open-task#open",
+      "beats": [
+        {
+          "say": "左に開くのが、課題で編集するファイルです。",
+          "clip": "vscode/open-task#open",
+          "spot": ["editor"]
+        },
+        {
+          "say": "取り組む内容は、右の課題文で確かめます。",
+          "spot": ["panel"]
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "view",
+      "role": "recap",
+      "title": "課題を受け取る入口",
+      "image": "clip:web/open-task#press-open",
+      "beats": [
+        {
+          "say": "このボタンから、課題のファイルと説明を受け取れます。",
+          "zoom": "handoff",
+          "spot": ["open"]
+        }
+      ]
+    }
+  ]
+}

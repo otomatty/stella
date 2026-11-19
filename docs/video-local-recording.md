@@ -38,6 +38,17 @@ Web アプリ側の「押す」場面は撮影済みの `clips/web/open-task` �
 
 どちらの台本も、WebView の中身は `helpers.ts` の `webviewWith(page, selector, timeout)` で探します。入れ子のフレームも含めて指定の要素を探し、そのフレームの `body` を返します。
 
+## まだスライドの読み上げのままの動画と、置き換えに要る収録
+
+`video:check` で「スライドを読み上げるだけの動画」と警告されるトピックです。
+
+| トピック | 要る収録 |
+| --- | --- |
+| `dev-env-basics` 01-1-1 VS Codeを入れる | Windows で、公式サイトからダウンロードしてインストールし、表示を日本語に切り替える。 |
+| `dev-env-basics` 01-1-2 STELLA拡張を入れる | Windows の VS Code で拡張機能を開き、STELLA を検索してインストールする。 |
+| `dev-env-basics` 0-1-2 ブラウザーで表示する | 保存した `index.html` をブラウザーで開き、編集して保存したあと、ブラウザーを再読み込みする。 |
+| `html-css-basics` 01-1-1 確認Aに取り組む | VS Code の課題文のパネルで確認Aを開く操作を撮る。 |
+
 ## 撮り方
 
 前提: Windows・VS Code・Bun・ffmpeg。`apps/api/.dev.vars` に `AUTH_JWT_SECRET`。クリップの収録に `GEMINI_API_KEY` は要りません。

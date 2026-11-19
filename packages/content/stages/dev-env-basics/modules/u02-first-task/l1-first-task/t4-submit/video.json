@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "手元の確認が通った課題を提出し、Web の課題文のレッスンで提出の状態を確かめられる。",
+    "stuck": "手元の確認が通ったあと、どこから提出して、返ってくる結果をどこで読むのか迷う。",
+    "points": [
+      "手元の確認がすべて通ったら、確認結果のパネルから提出に進みます。",
+      "取り組んだことを振り返りに書いて送ります。",
+      "Web のレッスン下にある「提出・添削を確認する」で提出の状態を見ます。"
+    ],
+    "leaveOut": [
+      "手元の確認に通らなかったときの直し方",
+      "AI の一次レビューの仕組みと講師への引き継ぎ",
+      "合格・再提出・講師の確認待ちのそれぞれに応じた手順",
+      "コマンドパレットから結果を読む手順",
+      "ヒントと支援付きの記録"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "view",
+      "role": "hook",
+      "title": "確認が通ったら？",
+      "image": "clip:vscode/submit#press-submit",
+      "beats": [
+        {
+          "say": "手元の確認が通った課題は、どこから送ればよいでしょうか？",
+          "spot": ["result"]
+        }
+      ]
+    },
+    {
+      "id": "open-submission",
+      "kind": "view",
+      "role": "point",
+      "point": 1,
+      "title": "通過後の提出",
+      "image": "clip:vscode/submit#press-submit",
+      "beats": [
+        {
+          "say": "確認がすべて通ったら、結果の下の「提出」を押します。",
+          "clip": "vscode/submit#press-submit",
+          "zoom": "panel"
+        }
+      ]
+    },
+    {
+      "id": "send-reflection",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "振り返りを書いて送る",
+      "image": "clip:vscode/submit#write",
+      "beats": [
+        {
+          "say": "振り返りには、課題で取り組んだことを書きます。",
+          "clip": "vscode/submit#write",
+          "spot": ["panel"]
+        },
+        {
+          "say": "振り返りが書けたら、右下の「提出する」で送ります。",
+          "clip": "vscode/submit#sent",
+          "spot": ["panel"]
+        }
+      ]
+    },
+    {
+      "id": "read-submission-status",
+      "kind": "view",
+      "role": "point",
+      "point": 3,
+      "title": "Web で提出の状態を見る",
+      "image": "clip:web/read-result#open-submissions",
+      "beats": [
+        {
+          "say": "結果は、レッスン下の「提出・添削を確認する」から読みます。",
+          "clip": "web/read-result#open-submissions",
+          "zoom": "submissions"
+        },
+        {
+          "say": "「AI が確認中」と出たら、結果が届くのを待ちます。",
+          "spot": ["submissions"]
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "view",
+      "role": "recap",
+      "title": "提出後に戻る場所",
+      "image": "clip:web/read-result#open-submissions",
+      "beats": [
+        {
+          "say": "提出した課題の結果は、この欄から読めます。",
+          "zoom": "submissions"
+        }
+      ]
+    }
+  ]
+}
