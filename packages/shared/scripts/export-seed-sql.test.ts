@@ -267,13 +267,14 @@ describe("export-seed-sql (sqlite)", () => {
     );
   });
 
-  it("知識クイズの公開本文は出典だけで、解答を含む正本は履歴に残す", () => {
+  it("知識クイズの公開本文に帰属表示の要らない出典や解答を出さず、解答を含む正本は履歴に残す", () => {
     const id = stableUuid("lesson:ses:dev-env-basics:quiz-0-1");
     const statements = sql.split(/^insert into /m);
     const published = statements.find(
       (s) => s.startsWith("lessons (") && s.includes(`select '${id}'`),
     );
-    expect(published).toContain("MDN Web Docs contributors");
+    expect(published).toBeDefined();
+    expect(published).not.toContain("MDN Web Docs contributors");
     expect(published).not.toContain("<details>");
     const revision = statements.find(
       (s) => s.startsWith("lesson_revisions (") && s.includes(`select '${id}'`),
