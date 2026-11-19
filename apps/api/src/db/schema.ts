@@ -1259,6 +1259,7 @@ export const quizQuestions = sqliteTable(
     kind: text("kind", { enum: ["single", "multiple", "boolean"] }).notNull(),
     skills: json<string[]>("skills", []),
     prompt: text("prompt").notNull().default(""),
+    body: text("body").notNull().default(""),
     explanation: text("explanation"),
     points: integer("points").notNull().default(1),
     order: integer("order").notNull().default(0),

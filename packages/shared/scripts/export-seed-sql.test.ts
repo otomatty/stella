@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
+import { splitSqlStatements } from "../../../apps/api/scripts/lib/d1-remote.js";
 
 function stableUuid(key: string): string {
   const h = createHash("sha1").update(key).digest();
@@ -30,13 +31,14 @@ function stableUuid(key: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function applyMigrations(db: DatabaseSync, before?: string) {
+function applyMigrations(db: DatabaseSync, range: { before?: string; after?: string } = {}) {
   const directory = fileURLToPath(new URL("../../../apps/api/drizzle", import.meta.url));
   db.exec("pragma foreign_keys = off");
   for (const file of readdirSync(directory)
     .filter((file) => file.endsWith(".sql"))
     .sort()) {
-    if (file === before) break;
+    if (range.before !== undefined && file >= range.before) break;
+    if (range.after !== undefined && file <= range.after) continue;
     db.exec(readFileSync(join(directory, file), "utf8"));
   }
   db.exec("pragma foreign_keys = on");
@@ -71,6 +73,10 @@ function exportSql(contentOnly = false, extraEnv: Record<string, string> = {}): 
 
 describe("export-seed-sql (sqlite)", () => {
   const sql = exportSql();
+  const statements = splitSqlStatements(sql);
+  const questionInserts = statements.filter((stmt) =>
+    stmt.startsWith("insert into quiz_questions "),
+  );
 
   it("教材ステージを upsert する", () => {
     expect(sql).toContain("'salesforce-dev-basics'");
@@ -79,10 +85,10 @@ describe("export-seed-sql (sqlite)", () => {
   it("Claude 講座の分割で旧レッスンの履歴と受験記録を引き継ぎ、割り当ては1回だけ配る", () => {
     const original = "claude-developer-foundations";
     const stageId = stableUuid(`course:ses:${original}`);
-    const migration = "0083_split_claude_developer_stages";
+    const migration = "0083_split_claude_developer_stages.sql";
     const sqlite = new DatabaseSync(":memory:");
     try {
-      applyMigrations(sqlite, `${migration}.sql`);
+      applyMigrations(sqlite, { before: migration });
       sqlite.exec(`
         insert into tenants (id, name, created_at, updated_at) values ('ses', 'テスト', 1, 1);
         insert into profiles (id, tenant_id, role, display_name, created_at)
@@ -132,10 +138,7 @@ describe("export-seed-sql (sqlite)", () => {
         }
       }
       sqlite.exec(
-        readFileSync(
-          new URL(`../../../apps/api/drizzle/${migration}.sql`, import.meta.url),
-          "utf8",
-        ),
+        readFileSync(new URL(`../../../apps/api/drizzle/${migration}`, import.meta.url), "utf8"),
       );
       expect(
         sqlite
@@ -144,6 +147,7 @@ describe("export-seed-sql (sqlite)", () => {
           )
           .get(),
       ).toEqual({ n: 2 });
+      applyMigrations(sqlite, { after: migration });
       sqlite.exec(sql);
       const grants =
         sqlite.prepare(`select s.slug from stage_grants g join stages s on s.id = g.stage_id
@@ -430,13 +434,13 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("設問と選択肢は upsert し、教材から消えた行だけ prune する", () => {
-    const questionInserts = sql.match(/^insert into quiz_questions .*$/gm) ?? [];
     const optionInserts = sql.match(/^insert into quiz_options .*$/gm) ?? [];
     expect(questionInserts.length).toBeGreaterThan(0);
     expect(optionInserts.length).toBeGreaterThan(0);
     for (const line of questionInserts) {
       expect(line).toContain("on conflict (id) do update set");
       expect(line).toContain("prompt = excluded.prompt");
+      expect(line).toContain("body = excluded.body");
     }
     for (const line of optionInserts) {
       expect(line).toContain("on conflict (id) do update set");
@@ -452,16 +456,14 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("単一選択と正誤は正解1つ、複数選択には正解集合がある", () => {
-    // 選択肢ラベルには `const price: number = 300;` のようにセミコロンを含むコードが
-    // 入るので、1 文 = 1 行であることを使って行単位で読む。
     const correctByQuestion = new Map<string, number>();
-    const multipleIds = new Set(
-      [
-        ...sql.matchAll(/^insert into quiz_questions .*select '([^']+)', '[^']+', 'multiple'/gm),
-      ].map((m) => m[1]),
-    );
-    for (const [, id] of sql.matchAll(/^insert into quiz_questions .*select '([^']+)'/gm)) {
+    const multipleIds = new Set<string>();
+    for (const stmt of questionInserts) {
+      const question = /\) select '([^']+)', '[^']+', '([^']+)'/.exec(stmt);
+      if (!question) throw new Error(`設問の INSERT を読めません: ${stmt}`);
+      const [, id, kind] = question;
       correctByQuestion.set(id, 0);
+      if (kind === "multiple") multipleIds.add(id);
     }
     expect(correctByQuestion.size).toBeGreaterThan(0);
 
@@ -477,6 +479,43 @@ describe("export-seed-sql (sqlite)", () => {
       multipleIds.has(id) ? n < 1 : n !== 1,
     );
     expect(notSingle).toEqual([]);
+  });
+
+  it("本文だけが変わった設問を上書きし、その復習カードを消す", () => {
+    const sqlite = new DatabaseSync(":memory:");
+    try {
+      applyMigrations(sqlite);
+      sqlite.exec(sql);
+      const question = sqlite
+        .prepare("select id, body from quiz_questions where body like ? limit 1")
+        .get("```ts\n%");
+      if (typeof question?.id !== "string") throw new Error("コード付きの設問がありません");
+      const id = question.id;
+      const deleteCard = statements.find((stmt) =>
+        stmt.startsWith(`delete from review_cards where question_id = '${id}'`),
+      );
+      const upsertQuestion = questionInserts.find((stmt) => stmt.includes(`select '${id}',`));
+      if (!deleteCard || !upsertQuestion) throw new Error("復習カードと設問の SQL がありません");
+      sqlite
+        .prepare(
+          `insert into review_cards
+          (id, tenant_id, user_id, question_id, due_date, last_reviewed_at, created_at)
+          values ('test-card', 'ses', 'seed-learner', ?, '2020-01-01', 1, 1)`,
+        )
+        .run(id);
+      const card = sqlite.prepare("select id from review_cards where id = 'test-card'");
+      sqlite.exec(deleteCard + upsertQuestion);
+      expect(card.get()).toBeDefined();
+
+      sqlite.prepare("update quiz_questions set body = '' where id = ?").run(id);
+      sqlite.exec(deleteCard + upsertQuestion);
+      expect(card.get()).toBeUndefined();
+      expect(sqlite.prepare("select body from quiz_questions where id = ?").get(id)).toMatchObject({
+        body: question.body,
+      });
+    } finally {
+      sqlite.close();
+    }
   });
 
   it("既定では検証用 seed ユーザーを含む", () => {

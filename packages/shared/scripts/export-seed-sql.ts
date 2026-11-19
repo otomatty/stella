@@ -504,6 +504,7 @@ function emitQuiz(
   for (let i = 0; i < quiz.questions.length; i++) {
     const q = quiz.questions[i];
     const qUuid = stableUuid(`quiz-q:${tenantId}:${namespace}:${quiz.lessonId}:${i}`);
+    const body = strLit(q.body ?? "");
     questionIds.push(qUuid);
     if (isSqlite) {
       const optionPreds: string[] = [];
@@ -523,15 +524,15 @@ function emitQuiz(
           ? `(select count(*) from quiz_options o where o.question_id = '${qUuid}') <> 0`
           : `exists (select 1 from quiz_options o where o.question_id = '${qUuid}' and o.id not in (${sqlIn(optionUuids)})) or (select count(*) from quiz_options o where o.question_id = '${qUuid}') <> ${optionUuids.length} or exists (select 1 from quiz_options o where o.question_id = '${qUuid}' and (${optionPreds.join(" or ")}))`;
       lines.push(
-        `delete from review_cards where question_id = '${qUuid}' and (exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and qq.prompt <> ${strLit(q.prompt)}) or ${optionMismatch});`,
+        `delete from review_cards where question_id = '${qUuid}' and (exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and (qq.prompt <> ${strLit(q.prompt)} or qq.body <> ${body})) or ${optionMismatch});`,
       );
     }
     lines.push(
       [
-        `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, explanation, points, "order", skills${isSqlite ? ", created_at, updated_at" : ""})`,
-        `select '${qUuid}', '${quizUuid}', '${q.kind ?? "single"}', ${strLit(q.prompt)}, ${strLit(q.explanation)}, 1, ${i}, ${strLit(JSON.stringify(q.skills ?? []))}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
+        `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, body, explanation, points, "order", skills${isSqlite ? ", created_at, updated_at" : ""})`,
+        `select '${qUuid}', '${quizUuid}', '${q.kind ?? "single"}', ${strLit(q.prompt)}, ${body}, ${strLit(q.explanation)}, 1, ${i}, ${strLit(JSON.stringify(q.skills ?? []))}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
         `where exists (select 1 from ${tbl("quizzes")} z where z.id = '${quizUuid}')`,
-        `on conflict (id) ${doUpdate("quiz_questions", ["quiz_id", "kind", "skills", "prompt", "explanation", "points", '"order"'], { touch: "updated_at" })};`,
+        `on conflict (id) ${doUpdate("quiz_questions", ["quiz_id", "kind", "skills", "prompt", "body", "explanation", "points", '"order"'], { touch: "updated_at" })};`,
       ].join(" "),
     );
     for (let j = 0; j < q.options.length; j++) {

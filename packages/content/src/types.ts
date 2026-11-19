@@ -15,6 +15,8 @@ export interface QuizQuestionSeed {
   skills?: string[];
   /** 設問文（"Q1. " の接頭辞を除いたもの） */
   prompt: string;
+  /** 見出しと選択肢の間に書いた Markdown */
+  body: string;
   explanation: string;
   options: QuizOptionSeed[];
 }

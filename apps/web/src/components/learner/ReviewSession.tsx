@@ -20,6 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { InlineMarkdown } from "./InlineMarkdown";
+import { LessonMarkdown } from "./MarkdownSlides";
 
 interface ReviewSessionProps {
   currentUserId: string | null;
@@ -157,7 +159,14 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
       ) : question ? (
         <Card>
           <CardHeader>
-            <CardTitle>{question.prompt}</CardTitle>
+            <CardTitle>
+              <InlineMarkdown>{question.prompt}</InlineMarkdown>
+            </CardTitle>
+            {question.body ? (
+              <div className="prose-lms w-full min-w-0 overflow-x-auto">
+                <LessonMarkdown>{question.body}</LessonMarkdown>
+              </div>
+            ) : null}
           </CardHeader>
           <CardContent>
             <Progress
@@ -190,7 +199,7 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
                         "border-destructive bg-destructive/10",
                     )}
                   >
-                    {o.label}
+                    <InlineMarkdown>{o.label}</InlineMarkdown>
                   </button>
                 );
               })}
@@ -207,7 +216,9 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
                   {feedback.correct ? "正解!" : "不正解"}
                 </p>
                 {feedback.explanation ? (
-                  <p className="text-sm text-muted-foreground mt-1">{feedback.explanation}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <InlineMarkdown>{feedback.explanation}</InlineMarkdown>
+                  </p>
                 ) : null}
                 <Button variant="accent" className="mt-4" onClick={next}>
                   {index + 1 < questions.length ? "次の問題へ" : "結果を見る"}
