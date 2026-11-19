@@ -1,0 +1,17 @@
+{
+  "source": "apps/web/scripts/tutorials/vscode/scenarios/11-japanese-ui.ts",
+  "video": "clips/vscode/japanese-ui.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 10.33,
+  "marks": {
+    "menu": [0, 4.34],
+    "done": [4.35, 5.55]
+  },
+  "regions": {
+    "top": [0, 0, 800, 500],
+    "menu": [44, 35, 444, 736],
+    "menubar": [43, 0, 400, 44]
+  }
+}

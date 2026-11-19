@@ -39,7 +39,7 @@
       "image": "clip:vscode/submit#press-submit",
       "beats": [
         {
-          "say": "確認がすべて通ったら、結果の下の「提出」を押します。",
+          "say": "確認がすべて通ったら、結果の「提出する」を押します。",
           "clip": "vscode/submit#press-submit",
           "zoom": "panel"
         }
@@ -97,5 +97,9 @@
         }
       ]
     }
-  ]
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "4f81bb18c02bbc92c1d7daca36e4c329294a4d274b81b7f0baa89ab28842b99d"
+  }
 }

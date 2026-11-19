@@ -30,7 +30,9 @@ async function main() {
   const dir = path.join(WEB_ROOT, "scripts/tutorials/shots");
   const definitions: { definition: ShotsDefinition; source: string }[] = [];
   const ids = new Set<string>();
-  for (const file of (await readdir(dir)).filter((f) => f.endsWith(".ts")).sort()) {
+  for (const file of (await readdir(dir))
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+    .sort()) {
     const mod = await import(pathToFileURL(path.join(dir, file)).href);
     const definition = defineShots(mod.default);
     if (ids.has(definition.id)) throw new Error(`定義 id が重複しています: ${definition.id}`);

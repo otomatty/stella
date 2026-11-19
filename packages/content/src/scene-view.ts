@@ -15,6 +15,7 @@ export interface ViewImage {
   height: number;
   /** 画像ピクセル。art の割合も読み込み時に変換する。 */
   regions: Record<string, ShotRegion>;
+  browser?: { tab: string; address: string };
 }
 export interface ViewFrameInput {
   state: ViewSceneState;

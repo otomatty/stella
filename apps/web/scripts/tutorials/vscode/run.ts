@@ -13,14 +13,22 @@ import {
 import { buildVscodeTaskUri } from "../../../../../packages/shared/src/vscode/uris";
 import { writeClip } from "../lib/clip-output";
 import { jwtSecret, mintToken, TutorialEnvironment } from "../lib/environment";
-import { clipMetadata } from "../lib/clips";
+import { clipMetadata, type Regions } from "../lib/clips";
 import { recordingOptions, selectsScenario } from "./options";
 import { chaptersToVtt } from "../lib/captions";
 import { Director, PARK } from "../lib/director";
 import { collectNarrationTexts, muxNarration, Narrator, titleNarration } from "../lib/narration";
 import { overlayScript } from "../lib/overlay";
 import { ScreenRecorder } from "../lib/recorder";
-import { closeNotifications, webviewBody, type Scenario, type TaskContext } from "./helpers";
+import {
+  assertScenario,
+  bareProfile,
+  closeNotifications,
+  recordedRegion,
+  webviewBody,
+  type Scenario,
+  type TaskContext,
+} from "./helpers";
 import { saveRecording } from "./save-recording";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -80,10 +88,13 @@ async function resolveCli(executable: string): Promise<string> {
   return cli;
 }
 
-async function writeUserSettings(urls?: { serverUrl: string; webUrl: string }) {
-  await mkdir(path.join(USER_DATA, "User"), { recursive: true });
+async function writeUserSettings(
+  urls?: { serverUrl: string; webUrl: string },
+  userData = USER_DATA,
+) {
+  await mkdir(path.join(userData, "User"), { recursive: true });
   await writeFile(
-    path.join(USER_DATA, "User", "settings.json"),
+    path.join(userData, "User", "settings.json"),
     JSON.stringify(
       {
         "workbench.startupEditor": "none",
@@ -107,10 +118,15 @@ async function writeUserSettings(urls?: { serverUrl: string; webUrl: string }) {
   );
 }
 
-async function prepareProfile(executable: string) {
-  await writeUserSettings();
-  await mkdir(EXTENSIONS, { recursive: true });
-  const installed = (await readdir(EXTENSIONS, { withFileTypes: true })).some(
+async function prepareProfile(
+  executable: string,
+  userData = USER_DATA,
+  extensions = EXTENSIONS,
+  home?: string,
+) {
+  await writeUserSettings(undefined, userData);
+  await mkdir(extensions, { recursive: true });
+  const installed = (await readdir(extensions, { withFileTypes: true })).some(
     (entry) =>
       entry.isDirectory() &&
       entry.name.toLowerCase().startsWith("ms-ceintl.vscode-language-pack-ja-"),
@@ -124,28 +140,24 @@ async function prepareProfile(executable: string) {
     [
       cli,
       "--user-data-dir",
-      USER_DATA,
+      userData,
       "--extensions-dir",
-      EXTENSIONS,
+      extensions,
       "--install-extension",
       "MS-CEINTL.vscode-language-pack-ja",
     ],
-    { ...process.env, VSCODE_DEV: "", ELECTRON_RUN_AS_NODE: "1" },
+    {
+      ...process.env,
+      ...(home ? { USERPROFILE: home, HOME: home } : {}),
+      VSCODE_DEV: "",
+      ELECTRON_RUN_AS_NODE: "1",
+    },
   );
 }
 
-function assertScenarioIds(s: Scenario) {
-  const tasks = [...new Set([s.task, ...(s.others ?? [])])];
-  if (
-    !/^[a-z0-9-]+$/.test(s.id) ||
-    tasks.some((task) => !/^[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+$/.test(task))
-  ) {
-    throw new Error("台本の id または課題の場所が不正です");
-  }
-}
-
 async function prepareTask(s: Scenario) {
-  assertScenarioIds(s);
+  assertScenario(s);
+  if (!s.task) throw new Error("台本に topic と task が必要です");
   const tasks = [...new Set([s.task, ...(s.others ?? [])])];
   const workDir = path.resolve(WORK, s.id);
   // 作り直す場所が、この収録の一時ディレクトリ直下であることを確かめる。
@@ -173,7 +185,13 @@ async function prepareTask(s: Scenario) {
       JSON.stringify(manifest, null, 2) + "\n",
     );
   }
-  await s.prepare?.({ taskRoot, trainingRoot });
+  await s.prepare?.({
+    taskRoot,
+    trainingRoot,
+    region: async () => {
+      throw new Error("領域は収録中の画面から取ってください");
+    },
+  });
   return { workDir, trainingRoot, taskRoot };
 }
 
@@ -283,6 +301,7 @@ async function openRecordedTask(page: Page, s: Scenario, executable: string, ses
     throw new Error(`接続コードの発行に失敗しました (${response.status})`);
   }
   // 接続コードは URI に載る。ログや例外文には出さない。
+  if (!s.task) throw new Error("台本に topic と task が必要です");
   await openUri(page, executable, buildVscodeTaskUri(s.task, code), { confirm: false });
 }
 
@@ -308,6 +327,200 @@ async function prepareWindow(page: Page, s: Scenario, ctx: TaskContext, openFile
   await finishWindow(page, Boolean(s.clip));
 }
 
+function assertInsideBase(target: string) {
+  const resolved = path.resolve(target);
+  const base = path.resolve(BASE);
+  if (resolved !== base && !resolved.startsWith(`${base}${path.sep}`))
+    throw new Error(`収録用の一時ディレクトリの外は消せません: ${target}`);
+}
+
+async function uninstallStella(
+  executable: string,
+  userData: string,
+  extensions: string,
+  home: string,
+) {
+  const cli = await resolveCli(executable);
+  await new Promise<void>((resolve) => {
+    const child = spawn(
+      executable,
+      [
+        cli,
+        "--user-data-dir",
+        userData,
+        "--extensions-dir",
+        extensions,
+        "--uninstall-extension",
+        "saedgewell.stella-lms",
+      ],
+      {
+        env: {
+          ...process.env,
+          USERPROFILE: home,
+          HOME: home,
+          VSCODE_DEV: "",
+          ELECTRON_RUN_AS_NODE: "1",
+        },
+        stdio: "ignore",
+        windowsHide: true,
+      },
+    );
+    child.on("error", () => resolve());
+    child.on("close", () => resolve());
+  });
+}
+
+async function prepareBare(executable: string, lang: "ja" | "en") {
+  const profile = bareProfile(lang);
+  for (const dir of [profile.root, profile.userData, profile.exts, profile.home])
+    assertInsideBase(dir);
+  if (lang === "en") {
+    await rm(profile.userData, { recursive: true, force: true });
+    await rm(profile.exts, { recursive: true, force: true });
+    await rm(profile.home, { recursive: true, force: true });
+    await mkdir(profile.userData, { recursive: true });
+    await mkdir(profile.exts, { recursive: true });
+    await mkdir(profile.home, { recursive: true });
+  } else {
+    await mkdir(profile.home, { recursive: true });
+    const entries = await readdir(profile.exts, { withFileTypes: true }).catch(() => []);
+    const installed = entries.some(
+      (entry) =>
+        entry.isDirectory() &&
+        entry.name.toLowerCase().startsWith("ms-ceintl.vscode-language-pack-ja-"),
+    );
+    if (!installed) await prepareProfile(executable, profile.userData, profile.exts, profile.home);
+    await uninstallStella(executable, profile.userData, profile.exts, profile.home);
+    for (const name of ["globalStorage", "workspaceStorage"]) {
+      const storage = path.join(profile.userData, "User", name);
+      assertInsideBase(storage);
+      await rm(storage, { recursive: true, force: true });
+    }
+  }
+  await writeUserSettings(
+    { serverUrl: "http://127.0.0.1:9", webUrl: "http://127.0.0.1:9" },
+    profile.userData,
+  );
+}
+
+async function recordBare(
+  s: Scenario,
+  executable: string,
+  narrator: Narrator | null,
+  keepFrames: boolean,
+  source: string,
+) {
+  if (s.bare !== "ja" && s.bare !== "en") throw new Error("bare は ja または en にしてください");
+  const lang = s.bare;
+  if (!s.clip) throw new Error("bare の台本には clip が必要です");
+  const clipId = s.clip;
+  await prepareBare(executable, lang);
+  const workDir = await recreateWorkDir(s.id);
+  const profile = bareProfile(lang);
+  let app: ElectronApplication | undefined;
+  let page: Page | undefined;
+  let recorder: ScreenRecorder | undefined;
+  const errorImage = path.join(WORK, `${s.id}-error.png`);
+  const video = path.join(workDir, `${s.id}.mp4`);
+  await rm(errorImage, { force: true });
+  const captured: Regions = {};
+  try {
+    const attempts = lang === "ja" ? 2 : 1;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      app = await _electron.launch({
+        executablePath: executable,
+        args: [
+          `--user-data-dir=${profile.userData}`,
+          `--extensions-dir=${profile.exts}`,
+          ...(lang === "ja" ? ["--locale=ja"] : []),
+          "--skip-welcome",
+          "--skip-release-notes",
+          "--force-device-scale-factor=1.5",
+        ],
+        env: { ...process.env, USERPROFILE: profile.home, HOME: profile.home },
+        bypassCSP: true,
+        timeout: 60_000,
+      });
+      page = await app.firstWindow();
+      const win = await app.browserWindow(page);
+      await win.evaluate((w) => {
+        w.unmaximize();
+        w.setContentSize(1280, 800);
+      });
+      await page.waitForSelector(".monaco-workbench");
+      const menu = lang === "ja" ? FILE_MENU : '.menubar-menu-button[aria-label="File"]';
+      const ready = await page
+        .locator(menu)
+        .waitFor({ timeout: 10_000 })
+        .then(
+          () => true,
+          () => false,
+        );
+      if (ready) break;
+      if (lang === "en" || attempt === 1)
+        throw new Error(
+          lang === "ja"
+            ? "VS Code が日本語で起動しませんでした"
+            : "VS Code が英語で起動しませんでした",
+        );
+      await app.close();
+      app = undefined;
+      page = undefined;
+    }
+    if (!page) throw new Error("VS Code のウィンドウを開けませんでした");
+    await s.setup?.(page, {
+      taskRoot: workDir,
+      trainingRoot: workDir,
+      region: async () => {
+        throw new Error("領域は収録中の画面から取ってください");
+      },
+    });
+    await closeNotifications(page);
+    await page.keyboard.press("Escape");
+    await finishWindow(page, true);
+    recorder = new ScreenRecorder(page, path.join(workDir, "frames"));
+    const t = new Director(page, recorder, { narrator, clip: true });
+    t.setMouse(PARK.x, PARK.y);
+    console.log(`[tutorials:vscode] 収録中: ${s.title}`);
+    await recorder.start();
+    try {
+      await s.run(t, {
+        taskRoot: workDir,
+        trainingRoot: workDir,
+        page,
+        region: async (name, target) => {
+          captured[name] = recordedRegion(await target.boundingBox(), name);
+        },
+      });
+      await t.finish();
+      await t.hideCaption();
+      await t.wait(700);
+    } finally {
+      await recorder.stop();
+    }
+    await recorder.encode(video, null, { width: 1600 });
+    await writeClip(path.join(ROOT, "packages/content/clips"), video, clipId, source, t.marks, {
+      ...s.regions,
+      ...captured,
+    });
+    console.log(`[tutorials:vscode] クリップを保存しました: ${clipId}`);
+  } catch (error) {
+    if (page && !page.isClosed()) {
+      await page.screenshot({ path: errorImage }).catch(() => {
+        console.error("エラー時の画面を保存できませんでした");
+      });
+    }
+    await rm(video, { force: true });
+    throw error;
+  } finally {
+    try {
+      await app?.close();
+    } finally {
+      if (!keepFrames) await recorder?.cleanup();
+    }
+  }
+}
+
 async function record(
   s: Scenario,
   executable: string,
@@ -316,6 +529,10 @@ async function record(
   source: string,
   session?: LmsSession,
 ) {
+  if (s.bare) {
+    await recordBare(s, executable, narrator, keepFrames, source);
+    return;
+  }
   if (s.lms && !session) throw new Error("収録用の API が起動していません");
   await writeUserSettings(
     s.lms && session ? { serverUrl: session.apiBase, webUrl: session.webBase } : undefined,
@@ -325,7 +542,8 @@ async function record(
   let taskRoot: string;
   let openFile = "";
   if (s.lms && session) {
-    assertScenarioIds(s);
+    assertScenario(s);
+    if (!s.task) throw new Error("台本に topic と task が必要です");
     workDir = await recreateWorkDir(s.id);
     trainingRoot = await resetLmsTrainingRoot();
     taskRoot = path.join(trainingRoot, s.task);
@@ -390,7 +608,14 @@ async function record(
       page = undefined;
     }
     if (!page) throw new Error("VS Code のウィンドウを開けませんでした");
-    const ctx: TaskContext = { taskRoot, trainingRoot };
+    const captured: Regions = {};
+    const ctx: TaskContext = {
+      taskRoot,
+      trainingRoot,
+      region: async () => {
+        throw new Error("領域は収録中の画面から取ってください");
+      },
+    };
     if (s.lms && session) {
       const connected = session;
       const vscode = page;
@@ -398,7 +623,7 @@ async function record(
       ctx.api = { base: connected.apiBase, token: connected.token };
       await prepareLmsWindow(page, s, executable, ctx);
     } else {
-      await prepareWindow(page, s, { taskRoot, trainingRoot }, openFile);
+      await prepareWindow(page, s, ctx, openFile);
     }
     recorder = new ScreenRecorder(page, path.join(workDir, "frames"));
     const t = new Director(page, recorder, { narrator, clip: Boolean(s.clip) });
@@ -408,7 +633,13 @@ async function record(
     await recorder.start();
     try {
       if (!s.clip) await t.title("操作ガイド", s.title, s.summary);
-      await s.run(t, { ...ctx, page });
+      await s.run(t, {
+        ...ctx,
+        page,
+        region: async (name, target) => {
+          captured[name] = recordedRegion(await target.boundingBox(), name);
+        },
+      });
       await t.finish();
       await t.hideCaption();
       await t.wait(700);
@@ -419,14 +650,10 @@ async function record(
       width: 1600,
     });
     if (s.clip) {
-      await writeClip(
-        path.join(ROOT, "packages/content/clips"),
-        video,
-        s.clip,
-        source,
-        t.marks,
-        s.regions ?? {},
-      );
+      await writeClip(path.join(ROOT, "packages/content/clips"), video, s.clip, source, t.marks, {
+        ...s.regions,
+        ...captured,
+      });
       console.log(`[tutorials:vscode] クリップを保存しました: ${s.clip}`);
       return;
     }
@@ -477,19 +704,24 @@ async function main() {
   const options = recordingOptions(process.argv.slice(2));
   const { save } = options;
   const dir = path.join(HERE, "scenarios");
-  const scenarios: (Scenario & { file: string; topicDir: string | null })[] = [];
+  const loaded: { scenario: Scenario; file: string }[] = [];
   for (const file of (await readdir(dir)).filter((name) => /\.tsx?$/.test(name)).sort()) {
-    const { default: s } = (await import(pathToFileURL(path.join(dir, file)).href)) as {
+    const { default: scenario } = (await import(pathToFileURL(path.join(dir, file)).href)) as {
       default: Scenario;
     };
-    if (selectsScenario(s, options)) {
-      if (s.clip) clipMetadata(s.clip, "", 1, 30, {}, s.regions ?? {});
-      scenarios.push({
-        ...s,
-        file: path.join(dir, file),
-        topicDir: save ? await resolveTopic(s.topic) : null,
-      });
+    assertScenario(scenario);
+    loaded.push({ scenario, file: path.join(dir, file) });
+  }
+  const scenarios: (Scenario & { file: string; topicDir: string | null })[] = [];
+  for (const { scenario: s, file } of loaded) {
+    if (!selectsScenario(s, options)) continue;
+    if (s.clip) clipMetadata(s.clip, "", 1, 30, {}, s.regions ?? {});
+    let topicDir: string | null = null;
+    if (save) {
+      if (!s.topic) throw new Error(`--save には topic が必要です: ${s.id}`);
+      topicDir = await resolveTopic(s.topic);
     }
+    scenarios.push({ ...s, file, topicDir });
   }
   if (!scenarios.length) {
     console.log("[tutorials:vscode] 該当するシナリオがありません");
@@ -511,7 +743,8 @@ async function main() {
       "Code.exe が見つかりません。VSCODE_EXECUTABLE に VS Code の実行ファイルを指定してください",
     );
   }
-  if (!existsSync(path.join(EXTENSION, "dist", "extension.js"))) {
+  const bareOnly = scenarios.every((item) => item.bare);
+  if (!bareOnly && !existsSync(path.join(EXTENSION, "dist", "extension.js"))) {
     throw new Error("STELLA 拡張が見つかりません。apps/vscode で bun run build を実行してください");
   }
   const narrator = options.noNarration ? null : Narrator.fromEnv(path.join(TEMP, "_narration"));
@@ -525,7 +758,7 @@ async function main() {
   try {
     const secret = needsLms ? jwtSecret() : "";
     if (environment) await environment.boot(false);
-    await prepareProfile(executable);
+    if (!bareOnly) await prepareProfile(executable);
     await mkdir(OUT, { recursive: true });
     await mkdir(WORK, { recursive: true });
     for (const s of scenarios) {

@@ -1,0 +1,23 @@
+{
+  "source": "apps/web/scripts/tutorials/vscode/scenarios/09-install-extension.ts",
+  "video": "clips/vscode/install-extension.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 29.73,
+  "marks": {
+    "open-view": [0.04, 4.22],
+    "search": [4.22, 10.06],
+    "details": [10.06, 14.2],
+    "install": [14.2, 22.15],
+    "done": [22.15, 23.36]
+  },
+  "regions": {
+    "left": [0, 40, 880, 550],
+    "icon": [9, 268, 46, 46],
+    "row": [65, 225, 363, 91],
+    "details": [469, 84, 1097, 201],
+    "identifier": [1306, 383, 245, 51],
+    "installed": [689, 227, 526, 35]
+  }
+}

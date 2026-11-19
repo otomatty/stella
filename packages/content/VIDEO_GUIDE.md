@@ -169,7 +169,7 @@ bun run --filter=@stella/content video:art -- <トピックのパス> --only rea
 bun run --filter=@stella/content video:art -- <トピックのパス> --only write --ref read   # 絵柄の手本を指定する (既存の画像・作成対象と別の名前)
 ```
 
-- クリップは `packages/content/clips/<組>/<名前>.json` に書きます。`video` は `packages/content` からの相対パス (`stages/` または `clips/` の下だけ)、`width`・`height` は 1600×1000、`fps` は 30、`duration` は秒数、`marks` は `{ "open": [開始秒, 終了秒] }`、`regions` はピクセルの `[x, y, 幅, 高さ]` です。`source` に収録元を残します
+- クリップは `packages/content/clips/<組>/<名前>.json` に書きます。`video` は `packages/content` からの相対パス (`stages/` または `clips/` の下だけ)、`width`・`height` は 1600×1000、`fps` は 30、`duration` は秒数、`marks` は `{ "open": [開始秒, 終了秒] }`、`regions` はピクセルの `[x, y, 幅, 高さ]` です。`source` に収録元を残します。任意の `browser: { tab, address }` は web の枠のタブ名とアドレスです。tab は 1〜20 字、address は 1〜70 字で、vscode のクリップには書けません
 - 既存の収録の区間を使うときは、`video` に元の `screen.mp4` のパスを指定し、`marks` に使う区間を書きます。動画をコピーする必要はありません
 - VS Code の新しい操作は **Windows の手元で撮ります**。撮り方と未撮影の操作は [手元での収録の手引き](../../docs/video-local-recording.md) を参照してください
 - ショットは `packages/content/shots/<組>/<名前>.png` と同名の `.json` (領域 `regions`)。絵コンテからは `shot:web/task` のように指す

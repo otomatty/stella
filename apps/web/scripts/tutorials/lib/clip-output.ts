@@ -3,7 +3,7 @@ import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promise
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { clipMetadata, type Marks, type Regions } from "./clips";
+import { clipMetadata, type ClipBrowser, type Marks, type Regions } from "./clips";
 
 const execute = promisify(execFile);
 const repoRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
@@ -14,6 +14,7 @@ export async function writeClip(
   source: string,
   marks: Marks,
   regions: Regions,
+  browser?: ClipBrowser,
 ) {
   const { stdout } = await execute("ffprobe", [
     "-v",
@@ -42,7 +43,15 @@ export async function writeClip(
   };
   const fps = rate(stream.avg_frame_rate);
   if (rate(stream.r_frame_rate) !== 30) throw new Error("動画は固定 30fps にしてください");
-  const metadata = clipMetadata(id, source, Number(probe.format.duration), fps, marks, regions);
+  const metadata = clipMetadata(
+    id,
+    source,
+    Number(probe.format.duration),
+    fps,
+    marks,
+    regions,
+    browser,
+  );
   const destination = path.join(output, id);
   await mkdir(path.dirname(destination), { recursive: true });
   const stage = await mkdtemp(path.join(path.dirname(destination), ".clip-"));

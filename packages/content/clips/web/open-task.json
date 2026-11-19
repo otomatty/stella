@@ -4,9 +4,9 @@
   "width": 1600,
   "height": 1000,
   "fps": 30,
-  "duration": 10.77,
+  "duration": 12.47,
   "marks": {
-    "press-open": [6.9, 10.71]
+    "press-open": [8.14, 12.12]
   },
   "regions": {
     "handoff": [475, 226, 1000, 122],

@@ -42,20 +42,47 @@ Web アプリ側の「押す」場面は撮影済みの `clips/web/open-task` �
 
 `video:check` で「スライドを読み上げるだけの動画」と警告されるトピックです。
 
+01-1-1・01-1-2・0-1-2 は絵コンテ (`video.json`) に置き換えました。
+使うクリップは次のとおりです。
+
+- `web/vscode-download`
+- `vscode/display-language`
+- `vscode/japanese-ui`
+- `vscode/install-extension`
+- `vscode/open-in-browser`
+- `web/open-html`
+
+インストーラーの画面は撮っていません。
+インストール済みの PC では、更新の画面になるためです。
+OS のファイルの画面 (Windows のエクスプローラー) も撮っていません。
+デスクトップ全体の録画は、PC の中身が映るためです。
+手順は `doc.md` の OS 別の説明に任せています。
+
 | トピック | 要る収録 |
 | --- | --- |
-| `dev-env-basics` 01-1-1 VS Codeを入れる | Windows で、公式サイトからダウンロードしてインストールし、表示を日本語に切り替える。 |
-| `dev-env-basics` 01-1-2 STELLA拡張を入れる | Windows の VS Code で拡張機能を開き、STELLA を検索してインストールする。 |
-| `dev-env-basics` 0-1-2 ブラウザーで表示する | 保存した `index.html` をブラウザーで開き、編集して保存したあと、ブラウザーを再読み込みする。 |
 | `html-css-basics` 01-1-1 確認Aに取り組む | VS Code の課題文のパネルで確認Aを開く操作を撮る。 |
 
-## 撮り直しが要るクリップ
+## 撮り直したクリップ
 
-2026-11-19 に、最初のステージ名を「開発環境とWebの入口」から「STELLAの使い方」に変更し、U03・U04 を `html-css-basics` に移しました。撮影済みのクリップ（`packages/content/clips/web/*`・`packages/content/clips/vscode/*`）と収録（`screen.mp4`）には、VS Code のサイドバーや Web のパンくずに古いステージ名が映っています。`web/read-result` には「次はセクション『ファイルとフォルダーの操作』…」という古い案内も映っています。
+6本のクリップと、収録2本を撮り直しました。
+対象のクリップは次のとおりです。
 
-- Web の操作は `bun run --filter=@stella/web tutorials:clips` で撮り直します。
-- VS Code の操作は Windows の手元で撮り直します。クリップは `bun run --filter=@stella/web tutorials:vscode -- --clip open-task` を実行し、`open-task` を `run-check`、`submit` に替えて同じように撮ります。対応する `screen.mp4` を更新するときは `tutorials:vscode` に `--save` と収録するシナリオの ID を指定します。
-- 撮り直したら、各 `mark` の秒数と `regions` を確認し、絵コンテ `t1-learning-loop`・`t3-open-from-web`・`t4-submit` で使っている静止画を見直します。
+- `web/read-lesson`
+- `web/open-task`
+- `web/read-result`
+- `vscode/open-task`
+- `vscode/run-check`
+- `vscode/submit`
+
+収録は `t1-edit-save` の `screen.*` です。
+`t3-run-check` の `screen.*` も同じです。
+ステージ名は「STELLAの使い方」です。
+拡張 0.9.0 の画面です。
+「課題を確認する」はエディターの右上です。
+
+ふだん使いの VS Code が更新の再起動待ちのときは、収録用の VS Code が起動しません。
+`firstWindow` の待ち時間切れになります。
+VS Code を再起動して、更新を終えてから撮ります。
 
 `devlab-ts-ch00` の「進め方とルール」は図解で代用しています。問題つきの課題（TypeScript、1 問 1 ファイル）を VS Code で確認して提出する操作を撮ったら、図解を操作のキャプチャに置き換えます。
 

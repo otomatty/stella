@@ -73,3 +73,32 @@ it.each([false, true])(
     else expect(warn).not.toHaveBeenCalled();
   },
 );
+
+it("writes browser onto the clip JSON", async () => {
+  const root = await mkdtemp(join(tmpdir(), "stella-clip-output-"));
+  roots.push(root);
+  const video = join(root, "source.mp4");
+  await writeFile(video, "fixture video");
+  execute.mockResolvedValueOnce({
+    stdout: JSON.stringify({
+      streams: [
+        {
+          codec_type: "video",
+          codec_name: "h264",
+          pix_fmt: "yuv420p",
+          width: 1600,
+          height: 1000,
+          avg_frame_rate: "30/1",
+          r_frame_rate: "30/1",
+        },
+      ],
+      format: { duration: "4" },
+    }),
+  });
+  execute.mockResolvedValueOnce({ stdout: "formatted" });
+  const browser = { tab: "練習", address: "web-training/index.html" };
+  await writeClip(root, video, "web/open-html", "source.ts", { open: [1, 2] }, {}, browser);
+  expect(JSON.parse(await readFile(join(root, "web/open-html.json"), "utf8")).browser).toEqual(
+    browser,
+  );
+});

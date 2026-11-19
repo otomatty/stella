@@ -80,7 +80,7 @@ images["art:art"] = {
 };
 
 describe("Windows のウィンドウ枠", () => {
-  function render(image: string) {
+  function render(image: string, browser?: { tab: string; address: string }) {
     const { sb, state, timing, input } = setup();
     state.start.image = image;
     state.beats[0].after = { ...state.start, zoom: "top" };
@@ -90,6 +90,7 @@ describe("Windows のウィンドウ枠", () => {
         width: 1600,
         height: 1000,
         regions: { top: [100, 100, 100, 100] as [number, number, number, number] },
+        ...(browser ? { browser } : {}),
       },
     };
     input.images = images;
@@ -151,6 +152,16 @@ describe("Windows のウィンドウ枠", () => {
       expect(zoomed).not.toContain("#2563EB");
     },
   );
+  it("browser のタブ名とアドレスを枠に出し、記号をエスケープする", async () => {
+    const html = await render("clip:web/action#open", {
+      tab: "A&B<C>",
+      address: 'x&y<z>"',
+    }).at(0);
+    expect(html).toContain("A&amp;B&lt;C&gt;");
+    expect(html).toContain("x&amp;y&lt;z&gt;&quot;");
+    expect(html).not.toContain(">STELLA<");
+    expect(html).not.toContain("stella.saedgewell.workers.dev");
+  });
   it.each(["shot:vscode/one", "clip:vscode/action#open"])(
     "%s のボタンは画像座標でカメラと切り抜きの内側に置く",
     async (image) => {

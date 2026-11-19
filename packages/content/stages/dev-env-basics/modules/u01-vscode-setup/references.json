@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "dev-env-basics/u01-vscode-setup@7",
-  "contentHash": "4db5421e70225e48c6d556af2b68d8e9bc461229f155cd3be001f42b10428e14",
+  "unitId": "dev-env-basics/u01-vscode-setup@8",
+  "contentHash": "421249f50836372f3b3afcde3bec29ea1b53ff21a9eefcbd1cfb80321bc3be38",
   "environmentRef": "static-web-02@1",
   "uses": [
     {

@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "VS Code を公式サイトから自分の OS 用に入れ、表示を日本語に切り替える順番を言える。",
+    "stuck": "VS Code をどこから入れるのか、英語の画面をどうやって日本語にするのか迷う。",
+    "points": [
+      "VS Code は、公式サイトのダウンロードページで自分の OS 用を選びます。",
+      "表示言語は、コマンドパレットの「Configure Display Language」で日本語を選びます。",
+      "再起動してメニューが日本語になれば、準備は完了です。"
+    ],
+    "leaveOut": [
+      "インストーラーの画面ごとの選び方と OS ごとの手順",
+      "拡張機能のビューから Japanese Language Pack を入れる方法",
+      "起動直後に出る言語の通知から切り替える方法",
+      "アカウントのサインインやテーマなどの初期設定"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "view",
+      "role": "hook",
+      "title": "どこから入れる？",
+      "image": "clip:web/vscode-download#open",
+      "beats": [
+        {
+          "say": "VS Code は、どこから入れればよいでしょうか？",
+          "spot": ["platforms"]
+        }
+      ]
+    },
+    {
+      "id": "download",
+      "kind": "view",
+      "role": "point",
+      "point": 1,
+      "title": "公式サイトで選ぶ",
+      "image": "clip:web/vscode-download#open",
+      "beats": [
+        {
+          "say": "VS Code は、公式サイトのダウンロードページから入れます。",
+          "clip": "web/vscode-download#open",
+          "zoom": "platforms"
+        },
+        {
+          "say": "自分の OS に合ったボタンを選びます。",
+          "clip": "web/vscode-download#choose",
+          "spot": ["windows", "macos"]
+        },
+        {
+          "say": "インストールの進め方は、まとめで確かめます。",
+          "zoom": "windows"
+        }
+      ]
+    },
+    {
+      "id": "display-language",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "表示を日本語にする",
+      "image": "clip:vscode/display-language#open-palette",
+      "beats": [
+        {
+          "say": "起動した VS Code は、はじめは英語で表示されます。",
+          "zoom": "menubar"
+        },
+        {
+          "say": "「View」から「Command Palette」を開きます。",
+          "clip": "vscode/display-language#open-palette",
+          "zoom": "work"
+        },
+        {
+          "say": "「Configure Display Language」と入力して選びます。",
+          "speech": "コンフィギュア ディスプレイ ランゲージと入力して選びます。",
+          "clip": "vscode/display-language#find-command",
+          "zoom": "work"
+        },
+        {
+          "say": "言語の一覧から「日本語」を選びます。",
+          "clip": "vscode/display-language#choose-japanese",
+          "speed": 2,
+          "zoom": "work"
+        },
+        {
+          "say": "右下に出るボタンを押すと、VS Code が再起動します。",
+          "zoom": "restart"
+        }
+      ]
+    },
+    {
+      "id": "japanese-menu",
+      "kind": "view",
+      "role": "point",
+      "point": 3,
+      "title": "日本語のメニューを確かめる",
+      "image": "clip:vscode/japanese-ui#menu",
+      "beats": [
+        {
+          "say": "再起動すると、メニューが日本語になります。",
+          "clip": "vscode/japanese-ui#menu",
+          "zoom": "top"
+        },
+        {
+          "say": "日本語のメニューで操作できれば、準備は完了です。",
+          "spot": ["menubar"]
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "view",
+      "role": "recap",
+      "title": "入れて、日本語にする",
+      "image": "clip:web/vscode-download#done",
+      "beats": [
+        {
+          "say": "VS Code は、公式サイトから自分の OS 用を入れます。",
+          "spot": ["platforms"]
+        },
+        {
+          "say": "入れたら、表示を日本語に切り替えて使います。",
+          "image": "clip:vscode/japanese-ui#done",
+          "zoom": "top",
+          "spot": ["menubar"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "8eaa9d69bc27bf34b3a9724a19da52cb731a04c983f18f90664e59ffcc2926c1"
+  }
+}
