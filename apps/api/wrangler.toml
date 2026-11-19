@@ -83,6 +83,13 @@ bucket_name = "stella-materials-public"
 binding = "SUBMISSIONS_BUCKET"
 bucket_name = "stella-submissions"
 
+# MCP の OAuth (Issue #252)。namespace 名は stella-oauth。
+# トークン・認可コード・クライアントの secret はハッシュだけを置く。
+# 手元の `wrangler dev` はこの id を使わず、ローカルの KV を使う。
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "ffc7f0cc15fa4c8290fd9cc4e665371b"
+
 # 外部連携: IP ではなくクライアント ID ごとに制限する。
 [[unsafe.bindings]]
 name = "INTEGRATION_RATE_LIMITER"
