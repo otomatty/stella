@@ -113,7 +113,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         />
         <div
           className={cn(
-            // z-30: 本文 / sticky ヘッダー (z-10) より上、 AI の FAB (z-90) より下。
+            // z-30: 本文 / sticky ヘッダー (z-10) より上、 開発者モードの FAB (z-90) より下。
             "fixed inset-y-0 z-30 flex h-dvh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"

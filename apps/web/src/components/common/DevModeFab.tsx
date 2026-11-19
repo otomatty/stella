@@ -10,16 +10,10 @@ import { Button } from "@/components/ui/button";
 import { FlaskConical } from "@/lib/icons";
 import { isApiConfigured } from "@/lib/api-client";
 import { isDevModeEnabled, setDevModeEnabled, subscribeDevMode } from "@/lib/dev-mode";
-import { cn } from "@/lib/utils";
 
 const SERVER_URL = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
 
-interface DevModeFabProps {
-  /** AI FAB が右下にあるとき、その上に積む。無いときは同じ位置に置く。 */
-  stackedAboveAi?: boolean;
-}
-
-export function DevModeFab({ stackedAboveAi = false }: DevModeFabProps) {
+export function DevModeFab() {
   const [available, setAvailable] = useState(false);
   const [on, setOn] = useState(isDevModeEnabled);
 
@@ -54,12 +48,7 @@ export function DevModeFab({ stackedAboveAi = false }: DevModeFabProps) {
       aria-pressed={on}
       title={on ? "開発者モード: オン（すべてのステージを表示）" : "開発者モード: オフ"}
       aria-label={on ? "開発者モードをオフにする" : "開発者モードをオンにする"}
-      className={cn(
-        "fixed right-6 w-12 h-12 rounded-full shadow-lg z-[90]",
-        stackedAboveAi
-          ? "bottom-[calc(5.25rem+env(safe-area-inset-bottom))]"
-          : "bottom-[calc(1.5rem+env(safe-area-inset-bottom))]",
-      )}
+      className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 w-12 h-12 rounded-full shadow-lg z-[90]"
     >
       <FlaskConical size={18} />
     </Button>

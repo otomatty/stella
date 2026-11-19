@@ -30,7 +30,7 @@ AI_GATEWAY_ID = "stella-ai"
 # AI_GATEWAY_CF_API_TOKEN は secret (Workers AI Read 等の最小権限。deploy 用 CLOUDFLARE_API_TOKEN と別)。
 #   wrangler secret put AI_GATEWAY_CF_API_TOKEN
 
-# AI エンドポイント (chat / review-draft) のレート制限。
+# AI エンドポイント (review-draft・発見教材の生成) のレート制限。
 [[unsafe.bindings]]
 name = "AI_RATE_LIMITER"
 type = "ratelimit"

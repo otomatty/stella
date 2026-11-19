@@ -32,7 +32,7 @@ export interface Env {
    * GitHub Actions の deploy 用 CLOUDFLARE_API_TOKEN とは別物 — `wrangler secret put AI_GATEWAY_CF_API_TOKEN`。
    */
   AI_GATEWAY_CF_API_TOKEN?: string;
-  /** chat / review-draft の LLM プロバイダ (既定: anthropic)。 */
+  /** review-draft の LLM プロバイダ (既定: anthropic)。 */
   CHAT_PROVIDER?: string;
   /** CHAT_PROVIDER に応じたモデル名 (例: grok-4.6)。 */
   CHAT_MODEL?: string;
@@ -98,7 +98,7 @@ export interface Env {
   INVITE_REDIRECT_URL?: string;
 
   /**
-   * AI エンドポイント (chat / review-draft) の Rate Limiting バインディング。
+   * AI エンドポイント (review-draft・発見教材の生成) の Rate Limiting バインディング。
    * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
    */
   AI_RATE_LIMITER?: RateLimit;

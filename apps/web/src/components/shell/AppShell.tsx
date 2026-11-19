@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Sparkles } from "@/lib/icons";
 import { CURRENT_USER } from "@/demo/fixtures";
 import type { Stage, Role, User } from "@/data/types";
-import type { ChatContext } from "@stella/shared/ai/types";
-import { LessonAIProvider } from "@/components/common/LessonAIContext";
 import { useStages, useEnrolledStages } from "@/data/stages-source";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { isBackendConfigured } from "@/lib/backend";
@@ -22,11 +19,9 @@ import { InviteRequiredScreen } from "@/components/shell/InviteRequiredScreen";
 import { resolveUiRole } from "@/lib/ui-role";
 import { AppShellContext, type AppShellValue } from "@/components/shell/app-shell-context";
 
-import { AIChatBot } from "@/components/common/AIChatBot";
 import { StageClearDialog } from "@/components/learner/StageClearDialog";
 import { DevModeFab } from "@/components/common/DevModeFab";
 import { TweaksPanel } from "@/components/common/TweaksPanel";
-import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { usePendingReviewCount, useSubmissionsAutoRefresh } from "@/hooks/useSubmissions";
 import { useMyCertificates } from "@/hooks/useMyCertificates";
@@ -67,7 +62,6 @@ interface PersistedState {
   /** localStorage `lms_state` のキー名は据え置き (保存済みの値を読み落とさないため)。 */
   stage?: AuthStage;
   role?: Role;
-  showAIBot?: boolean;
   lastLocation?: PersistedLastLocation | null;
   /** staff が受講者シェルを開いているときだけ 'learner'。 API の role は変えない。 */
   uiRoleOverride?: Role | null;
@@ -75,7 +69,6 @@ interface PersistedState {
 
 const DEFAULTS = {
   role: "learner" as Role,
-  showAIBot: true,
 };
 
 /** デモ用 localStorage の旧ロールは、今の画面ロールに無い値を受講者へ戻す。 */
@@ -182,10 +175,6 @@ export function AppShell() {
     seq: number;
   } | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
-  const aiFabRef = useRef<HTMLButtonElement | null>(null);
-  const [aiContext, setAiContext] = useState<ChatContext>({ kind: "general" });
-  const [showAIBot, setShowAIBot] = useState(() => loadSaved()?.showAIBot ?? DEFAULTS.showAIBot);
   // 「選択してから遷移する」旧 API (setCurrentStage → setPage('stage-detail') 等) の
   // 橋渡し。 URL が真実になったため state ではなく ref で十分。
   const selectedStageRef = useRef<Stage | null>(null);
@@ -338,10 +327,6 @@ export function AppShell() {
         void doLogout();
         return;
       }
-      if (key === "__ai") {
-        setAiOpen(true);
-        return;
-      }
       if (key === "stage-detail") {
         // 戻る/進むで古いステージに戻った直後は ref が別ステージを指しうるため URL を優先する。
         const stageId = stageIdFromPath(pathname) ?? selectedStageRef.current?.id;
@@ -457,13 +442,6 @@ export function AppShell() {
     }
   }, [backendEnabled, authLoading, session, pathname, isUnknownRoute]);
 
-  // レッスン以外に移動したら AI の文脈を general にリセット
-  useEffect(() => {
-    if (!pathname.includes("/lessons/")) {
-      setAiContext({ kind: "general" });
-    }
-  }, [pathname]);
-
   // ロール切替時のみ添削対象をクリア
   useEffect(() => {
     const prev = prevRoleRef.current;
@@ -479,12 +457,11 @@ export function AppShell() {
       JSON.stringify({
         stage: authStage,
         role,
-        showAIBot,
         lastLocation,
         uiRoleOverride,
       }),
     );
-  }, [authStage, role, showAIBot, lastLocation, uiRoleOverride]);
+  }, [authStage, role, lastLocation, uiRoleOverride]);
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
@@ -565,8 +542,6 @@ export function AppShell() {
     setCurrentStage,
     onOpenLesson: openLesson,
     onActiveLessonChange: handleActiveLessonChange,
-    onOpenAIBot: () => setAiOpen(true),
-    setAIContext: setAiContext,
     currentUserId: session?.user.id ?? null,
     backendEnabled,
     onOpenReview,
@@ -625,32 +600,7 @@ export function AppShell() {
         </SidebarInset>
       </SidebarProvider>
 
-      {/* Floating AI chatbot (learner only) — lesson 内でも開けるよう gate を撤廃 */}
-      {showAIBot && effectiveRole === "learner" ? (
-        <LessonAIProvider value={aiContext}>
-          {/* 開いている間も unmount しない。 モバイルは Drawer (modal Dialog) なので、
-              閉じたときのフォーカス復帰先がこのボタンとして DOM に残っている必要がある。 */}
-          <Button
-            ref={aiFabRef}
-            variant="primary"
-            size="icon"
-            onClick={() => setAiOpen((v) => !v)}
-            title={aiOpen ? "学習アシスタントAIを閉じる" : "学習アシスタントAI"}
-            aria-expanded={aiOpen}
-            // bottom は 24px + safe-area。 クイズ解答中の下部固定バー (QuizPlayer) が
-            // 同じ式でボタン中心を揃えているので、 ここを変えるときは両方揃えること。
-            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 w-12 h-12 rounded-full shadow-lg z-[90]"
-          >
-            <Sparkles size={18} />
-          </Button>
-          {/* 閉じている間も mount したまま。 モバイルの Drawer が閉じアニメーションを出せるようにする。 */}
-          <AIChatBot open={aiOpen} onClose={() => setAiOpen(false)} returnFocusRef={aiFabRef} />
-        </LessonAIProvider>
-      ) : null}
-
-      {backendEnabled ? (
-        <DevModeFab stackedAboveAi={showAIBot && effectiveRole === "learner"} />
-      ) : null}
+      {backendEnabled ? <DevModeFab /> : null}
 
       {/* ステージクリアの祝福 (進捗同期 / 小テスト合格のレスポンスから届く)。
           クリアが起きるのは受講者の学習フローだけなので受講者シェルにだけ置く。
@@ -665,12 +615,10 @@ export function AppShell() {
       {tweaksVisible && !backendEnabled ? (
         <TweaksPanel
           role={role}
-          showAIBot={showAIBot}
           onRole={(r) => {
             setRole(r);
             void navigate({ to: "/" });
           }}
-          onToggleAIBot={() => setShowAIBot((v) => !v)}
         />
       ) : null}
     </>

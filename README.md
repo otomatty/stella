@@ -6,7 +6,7 @@ SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。�
 
 - 教材を見る (PDFスライド / 動画) / クイズ — Web
 - コード演習と、問題つきの課題の確認・提出 — VS Code 拡張 `saedgewell.stella-lms`
-- 採点される / AIに質問する — P2
+- コード演習を採点する — P2
 
 ## モノレポ構成
 
@@ -17,7 +17,7 @@ stella/
 │   │   ├── src/              # Learner / Admin UI
 │   │   └── vite-plugins/     # PDF アセット同期・CSP 生成など
 │   ├── api/                  # @stella/api — Hono API → Cloudflare Workers
-│   │   └── src/              # /api/chat, /api/healthz
+│   │   └── src/              # /api/review-draft, /api/healthz
 │   └── vscode/               # stella (`saedgewell.stella-lms`) — 学習者のコード演習用 VS Code 拡張
 ├── packages/
 │   ├── shared/               # @stella/shared — 課題型・カリキュラム・採点ロジック
@@ -47,7 +47,7 @@ stella/
 - **Bun** (パッケージマネージャ / Workspaces)
 - **旧形式の採点エンジン (VS Code 拡張内)**: QuickJS WASM / sql.js
 - **VS Code 拡張** (`saedgewell.stella-lms` / `apps/vscode`) — 学習者のコード演習
-- **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
+- **AI**: Anthropic Claude（提出の AI 一次レビュー・管理者の AI 下書き・育成メモ）
 
 ## セットアップ（実データ開発・既定）
 
@@ -68,7 +68,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 | `apps/api/.dev.vars` | `AUTH_JWT_SECRET` | 任意の長いランダム文字列（example のままでも可） |
 | `apps/api/.dev.vars` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Console の OAuth クライアント |
 
-任意: `ANTHROPIC_API_KEY`（AI チャット）、`VITE_MATERIALS_BASE_URL`（R2 教材）。
+任意: `ANTHROPIC_API_KEY`（提出の AI 一次レビュー・管理者の AI 下書き・育成メモ）、`VITE_MATERIALS_BASE_URL`（R2 教材）。
 
 ### DB 初期化
 
@@ -221,7 +221,7 @@ JWT の有効期限は **24 時間**。失効後は再ログインが必要（�
 
 - [ ] 未招待 Google ログイン → 招待必要画面（アプリには入れない）
 - [ ] 招待後ログイン → 正しい role
-- [ ] 未認証で /api/chat・/api/review-draft が 401
+- [ ] 未認証で `POST /api/review-draft` が 401
 - [ ] student で review-draft が 403
 
 ### コア学習ループの自動スモーク（#64）
@@ -396,9 +396,9 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - 出力は **CSV のみ** です (Issue #75 の受け入れ基準に合わせたスコープ。 Excel 形式は未対応)。
 - デモ専用 (`VITE_SERVER_URL` 未設定) では実データが無いため、 デモ行は出さず案内のみ表示します。
 
-### Anthropic (AIチャット用、 任意)
+### Anthropic（任意）
 
-`apps/api/.dev.vars` に `ANTHROPIC_API_KEY` を設定。 既定モデルは `claude-sonnet-4-6`。
+提出の AI 一次レビュー・管理者の AI 下書き・育成メモに Anthropic を使う場合は、`apps/api/.dev.vars` に `ANTHROPIC_API_KEY` を設定します。既定モデルは `claude-sonnet-4-6` です。
 本番は Cloudflare Workers の Secret (`wrangler secret put ANTHROPIC_API_KEY`) で管理する。
 
 ## デザイントークン
@@ -416,7 +416,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 |---|---|---|
 | **P0** | monorepo化 + js-review-prototype取り込み + 教材ストレージ | #2 |
 | **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
-| **P2** | コード演習統合 (VS Code 拡張 + AI チャット) | #4 |
+| **P2** | コード演習統合 (VS Code 拡張 + AI チャット〔廃止〕) | #4 |
 | **P3** | 講師添削ワークフロー (提出 → AI下書き → ルーブリック採点 → 確定) | #8 |
 | **P5** | 教材管理 — 管理者がステージ・課題の詳細と配布資料を確認 (教材の編集はリポジトリ) | #10 |
 

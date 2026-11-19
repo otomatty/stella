@@ -6,6 +6,7 @@ import {
   contentHash,
   decodeFile,
   isRunResult,
+  isSupportLog,
   parseTaskSubmission,
   type TaskSubmissionInput,
   verifyTaskSubmission,
@@ -40,6 +41,12 @@ describe("実行結果の形式", () => {
       expect(isRunResult({ ...input.localResult, importedFiles })).toBe(false);
     }
   });
+});
+
+it("提出の支援記録には ai-answer を受け付け、ai-chat を受け付けない", () => {
+  const at = "2026-10-05T00:00:00.000Z";
+  expect(isSupportLog([{ kind: "ai-answer", at }])).toBe(true);
+  expect(isSupportLog([{ kind: "ai-chat", at }])).toBe(false);
 });
 
 describe("提出の機械照合", () => {

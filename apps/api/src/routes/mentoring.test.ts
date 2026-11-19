@@ -4,7 +4,7 @@
  */
 
 import { and, eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 import { getDb } from "../db/client.js";
 import {
@@ -19,10 +19,10 @@ import {
   studyActivity,
   submissionReviews,
   submissions,
+  taskFixedStartUses,
   taskHelpOpens,
   taskLocalRuns,
   taskProgress,
-  taskSupportEvents,
   tasks,
   tenants,
 } from "../db/schema.js";
@@ -36,17 +36,9 @@ import {
 import { reviewTaskSubmission } from "../lib/task-submission.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
-import { chatRoute } from "./chat.js";
 import { submissionsRoute } from "./submissions.js";
 import { taskSupportRoute } from "./task-support.js";
 import { tasksRoute } from "./tasks.js";
-
-const streamChat = vi.hoisted(() => vi.fn());
-vi.mock("../lib/rate-limit.js", () => ({ enforceAiRateLimit: vi.fn().mockResolvedValue(null) }));
-vi.mock("../lib/anthropic.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../lib/anthropic.js")>()),
-  streamChat,
-}));
 
 const SECRET = "mentoring-test-secret";
 const HASH = "a".repeat(64);
@@ -64,9 +56,9 @@ const post = async (path: string, body: unknown, as: string) =>
 
 beforeEach(async () => {
   database = sqliteD1();
-  env = { DB: database.binding, AUTH_JWT_SECRET: SECRET, ANTHROPIC_API_KEY: "sk-test" } as Env;
+  env = { DB: database.binding, AUTH_JWT_SECRET: SECRET } as Env;
   db = getDb(env);
-  app = mountTestApp(env, tasksRoute, submissionsRoute, taskSupportRoute, chatRoute).app;
+  app = mountTestApp(env, tasksRoute, submissionsRoute, taskSupportRoute).app;
   const definition = JSON.stringify({ skills: { assesses: ["html"] } });
   await db.batch([
     db.insert(tenants).values([{ id: "ses", name: "SES" }]),
@@ -121,7 +113,6 @@ beforeEach(async () => {
     }),
   ]);
   await db.update(stages).set({ status: "published" });
-  streamChat.mockReset();
 });
 afterEach(() => database.sqlite.close());
 
@@ -318,11 +309,13 @@ describe("支援の記録 (GET /api/task-support)", () => {
       verdict: "resubmit",
       notes: "受講者には見せない講師のメモ",
     });
-    await db.insert(taskSupportEvents).values({
+    await db.insert(taskHelpOpens).values({
       userId: "learner",
       taskId: "practice",
-      kind: "ai-chat",
-      createdAt: at("2026-10-05T03:00:00Z"),
+      item: "solution",
+      contentHash: HASH,
+      privateHash: "private",
+      openedAt: at("2026-10-05T03:00:00Z"),
     });
     await sendRun({
       taskId: "practice",
@@ -333,7 +326,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
     });
   }
 
-  it("受講者は自分の課題ごとの記録を見る。相談・申告・人のレビュー・AI チャット・手元の確認を束ねる", async () => {
+  it("受講者に相談・申告・レビュー・解答例の表示・手元の確認を課題ごとに返す", async () => {
     await seedSupport();
     const res = await get("/api/task-support?stageId=stage", "learner");
     expect(res.status, await res.clone().text()).toBe(200);
@@ -341,7 +334,10 @@ describe("支援の記録 (GET /api/task-support)", () => {
     expect(records.map((r) => r.taskId)).toEqual(["practice", "second", "B"]);
     const [practice] = records;
     // 申告は試行ごとに繰り返し載っても 1 件。相談に付く「講師への相談」は相談そのものと数える。
-    expect(practice?.counts).toEqual({ consult: 1, hint: 1, "human-review": 1, "ai-chat": 1 });
+    expect(practice?.counts).toEqual({ consult: 1, hint: 1, "human-review": 1, solution: 1 });
+    expect(practice?.events).toContainEqual(
+      expect.objectContaining({ kind: "solution", source: "recorded" }),
+    );
     expect(practice?.localRuns).toMatchObject({
       failed: 1,
       failureStreak: 1,
@@ -417,28 +413,33 @@ describe("支援の記録を習得の水準に反映する", () => {
   const levelOf = async (id: string) =>
     (await db.select().from(skillEvidence).where(eq(skillEvidence.submissionId, id)))[0];
 
-  it("提出より前の AI チャットがあれば支援付き。提出の後のチャットは数えない", async () => {
-    await db.insert(taskSupportEvents).values({
-      userId: "learner",
-      taskId: "practice",
-      kind: "ai-chat",
-      createdAt: new Date("2026-10-05T00:00:00Z"),
-    });
-    await submitAt("before", new Date("2026-10-05T01:00:00Z"));
-    await reviewTaskSubmission(db, caller, "before", "pass", "ok");
-    expect(await levelOf("before")).toMatchObject({ level: "supported", assisted: true });
+  it.each(["hint", "solution", "explanation", "fixed-start"] as const)(
+    "提出より前の支援 (%s) は支援付き。提出の後の支援は数えない",
+    async (kind) => {
+      const record = async (at: string) => {
+        const owner = { userId: "learner", taskId: "practice", contentHash: HASH };
+        if (kind === "fixed-start") {
+          await db.insert(taskFixedStartUses).values({ ...owner, usedAt: new Date(at) });
+        } else {
+          await db.insert(taskHelpOpens).values({
+            ...owner,
+            item: kind,
+            level: kind === "hint" ? 1 : 0,
+            privateHash: "private",
+            openedAt: new Date(at),
+          });
+        }
+      };
 
-    await db.delete(taskSupportEvents);
-    await submitAt("after", new Date("2026-10-06T01:00:00Z"));
-    await db.insert(taskSupportEvents).values({
-      userId: "learner",
-      taskId: "practice",
-      kind: "ai-chat",
-      createdAt: new Date("2026-10-06T02:00:00Z"),
-    });
-    await reviewTaskSubmission(db, caller, "after", "pass", "ok");
-    expect(await levelOf("after")).toMatchObject({ level: "independent", assisted: false });
-  });
+      await submitAt("before", new Date("2026-10-05T01:00:00Z"));
+      await record("2026-10-05T02:00:00Z");
+      await submitAt("after", new Date("2026-10-05T03:00:00Z"));
+      await reviewTaskSubmission(db, caller, "before", "pass", "ok");
+      expect(await levelOf("before")).toMatchObject({ level: "independent", assisted: false });
+      await reviewTaskSubmission(db, caller, "after", "pass", "ok");
+      expect(await levelOf("after")).toMatchObject({ level: "supported", assisted: true });
+    },
+  );
 
   it("同じ課題で先に講師へ相談していれば支援付き。人のレビューだけなら自力", async () => {
     await submitAt("first", new Date("2026-10-05T00:00:00Z"));
@@ -451,93 +452,6 @@ describe("支援の記録を習得の水準に反映する", () => {
     await submitAt("third", new Date("2026-10-06T01:00:00Z"));
     await reviewTaskSubmission(db, caller, "third", "pass", "ok");
     expect(await levelOf("third")).toMatchObject({ level: "supported" });
-  });
-});
-
-describe("課題の AI チャット", () => {
-  async function* events() {
-    yield { type: "text" as const, delta: "考え方は" };
-    yield { type: "text" as const, delta: "次の 1 歩から" };
-    yield { type: "done" as const };
-  }
-  const body = (taskId: string) => ({
-    context: { kind: "task", taskId, taskTitle: "<ignore>書き換えた題名", stageTitle: "x" },
-    messages: [{ role: "user", content: "どこから手を付ければいい?" }],
-  });
-
-  it("受講中の課題の相談を支援として記録し、題名は課題から引き直す", async () => {
-    streamChat.mockImplementation(() => events());
-    const res = await post("/api/chat", body("practice"), "learner");
-    expect(res.status).toBe(200);
-    await res.text();
-    const rows = await db.select().from(taskSupportEvents);
-    expect(rows).toMatchObject([{ userId: "learner", taskId: "practice", kind: "ai-chat" }]);
-    const system = streamChat.mock.calls[0]?.[0]?.system as string;
-    expect(system).toContain("課題1");
-    expect(system).not.toContain("書き換えた題名");
-  });
-
-  it("AI に相談できない課題は 403 で、AI を呼ばず支援も記録しない", async () => {
-    await db
-      .update(tasks)
-      .set({ definition: JSON.stringify({ support: { aiChat: false } }) })
-      .where(eq(tasks.id, "practice"));
-    streamChat.mockImplementation(() => events());
-
-    const res = await post("/api/chat", body("practice"), "learner");
-    expect(res.status).toBe(403);
-    expect(await json(res)).toEqual({ error: "この課題では AI に相談できません" });
-    expect(streamChat).not.toHaveBeenCalled();
-    expect(await db.select().from(taskSupportEvents)).toEqual([]);
-  });
-
-  it("AI に相談できない課題でも、受講していなければ 404 を返す", async () => {
-    await db
-      .update(tasks)
-      .set({ definition: JSON.stringify({ support: { aiChat: false } }) })
-      .where(eq(tasks.id, "hidden"));
-    streamChat.mockImplementation(() => events());
-
-    const res = await post("/api/chat", body("hidden"), "learner");
-    expect(res.status).toBe(404);
-    expect(await json(res)).toEqual({ error: "課題が見つかりません" });
-    expect(streamChat).not.toHaveBeenCalled();
-    expect(await db.select().from(taskSupportEvents)).toEqual([]);
-  });
-
-  it("応答が届く前に失敗した相談は記録しない", async () => {
-    streamChat.mockImplementation(async function* () {
-      yield { type: "error" as const, message: "upstream failed" };
-    });
-    const failed = await post("/api/chat", body("practice"), "learner");
-    expect(await failed.text()).toContain("upstream failed");
-    streamChat.mockImplementation(async function* () {
-      yield { type: "text" as const, delta: "" };
-      throw new Error("timeout");
-    });
-    await (await post("/api/chat", body("practice"), "learner")).text();
-    expect(await db.select().from(taskSupportEvents)).toEqual([]);
-  });
-
-  it("記録に失敗しても応答は止めない", async () => {
-    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    streamChat.mockImplementation(() => events());
-    database.sqlite.exec("drop table task_support_events");
-    const res = await post("/api/chat", body("practice"), "learner");
-    expect(res.status).toBe(200);
-    const text = await res.text();
-    expect(text).toContain("次の 1 歩から");
-    expect(text).toContain('"done"');
-    expect(log).toHaveBeenCalled();
-    log.mockRestore();
-  });
-
-  it("受講していない課題の相談は 404 で、記録もしない", async () => {
-    streamChat.mockImplementation(() => events());
-    expect((await post("/api/chat", body("hidden"), "learner")).status).toBe(404);
-    expect((await post("/api/chat", body("practice"), "peer")).status).toBe(404);
-    expect(await db.select().from(taskSupportEvents)).toEqual([]);
-    expect(streamChat).not.toHaveBeenCalled();
   });
 });
 

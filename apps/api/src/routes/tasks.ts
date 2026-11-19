@@ -15,11 +15,7 @@ import {
 } from "@stella/shared/tasks/extension-compat";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
-import {
-  parseHelpContentHash,
-  parseHelpOpenRequest,
-  taskAiChatEnabled,
-} from "@stella/shared/tasks/help";
+import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
 import type { Env } from "../env.js";
 import {
   sections,
@@ -105,11 +101,9 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
               and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)),
             );
     const problemTasks = new Map<string, { id: string }[]>();
-    const aiChatDisabledTaskIds = new Set<string>();
     for (const row of definitions) {
       const problems = readTaskDefinition(row.definition).problems;
       if (problems) problemTasks.set(row.id, problems);
-      if (!taskAiChatEnabled(JSON.parse(row.definition))) aiChatDisabledTaskIds.add(row.id);
     }
     const resultsByTask = new Map<
       string,
@@ -147,7 +141,6 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           ...task,
           kind: task.kind as TaskKind,
           status,
-          ...(aiChatDisabledTaskIds.has(task.id) ? { aiChatDisabled: true } : {}),
         };
         const problems = problemTasks.get(task.id);
         if (!problems) return base;
