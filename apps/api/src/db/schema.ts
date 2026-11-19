@@ -684,34 +684,6 @@ export const taskLocalRuns = sqliteTable(
 );
 
 /**
- * サーバーが記録する課題ごとの支援 (#38)。いまは AI チャット。
- * kind は text なので、ヒント・解答の表示 (#36) などの種類を足しても表は変えない。
- */
-export const taskSupportEvents = sqliteTable(
-  "task_support_events",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" })
-      .$defaultFn(() => LEGACY_TENANT_ID),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    taskId: text("task_id")
-      .notNull()
-      .references(() => tasks.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull(),
-    detail: text("detail"),
-    createdAt: tsNow("created_at"),
-  },
-  (t) => ({
-    userTaskIdx: index("task_support_events_user_task_idx").on(t.userId, t.taskId, t.createdAt),
-    taskIdx: index("task_support_events_task_id_idx").on(t.taskId),
-  }),
-);
-
-/**
  * 週次の育成メモ (#38・07 §6.5)。受講者 1 人・週 1 枚 (受講者と週で一意)。講師向けで、
  * 受講者本人の API には返さない。15分の cron が積み (`queued`)、数件ずつ書く (`ready`)。
  * 材料を集められないまま試行の上限に達したら `failed` で終える。

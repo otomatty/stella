@@ -154,6 +154,19 @@ export const MENTOR_MEMO_OUTPUT_SCHEMA = {
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
+/** 保存済みの材料に含まれる旧種別など、現在の支援の種類にないキーを読み飛ばす。 */
+export function readMemoSupport(support: unknown): MentorMemoMaterial["support"] {
+  if (!isObject(support)) return {};
+  return Object.fromEntries(
+    Object.entries(support).filter(
+      ([kind, count]) =>
+        Object.hasOwn(SUPPORT_RECORD_LABELS, kind) &&
+        typeof count === "number" &&
+        Number.isFinite(count),
+    ),
+  );
+}
+
 const text = (v: unknown, max: number): v is string =>
   typeof v === "string" && v.trim().length > 0 && v.length <= max;
 
@@ -223,7 +236,7 @@ export function materialFacts(m: MentorMemoMaterial): string[] {
     facts.push(
       `続いている手元の失敗: ${m.failureStreaks.map((s) => `「${s.title}」${s.streak}回`).join("、")}`,
     );
-  facts.push(`支援: ${listCounts(m.support, SUPPORT_RECORD_LABELS) || "なし"}`);
+  facts.push(`支援: ${listCounts(readMemoSupport(m.support), SUPPORT_RECORD_LABELS) || "なし"}`);
   const r = m.reviews;
   const reasons = listCounts(r.escalationReasons, ROUTE_REASON_LABELS);
   facts.push(

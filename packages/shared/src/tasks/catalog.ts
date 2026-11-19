@@ -36,8 +36,6 @@ export interface TaskSummary {
   status: TaskStatus;
   /** 管理者が手で合格にした課題なら true。 */
   manual_passed?: boolean;
-  /** `support.aiChat: false` の課題だけ true。 */
-  aiChatDisabled?: boolean;
   /** 課題文のレッスン (`lessons.id`)。そのレッスンにも「VS Code で開く」を出す。 */
   lessonId: string | null;
   /** 問題つきの課題だけ。今の版の問題数。 */

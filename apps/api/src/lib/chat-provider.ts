@@ -1,5 +1,5 @@
 /**
- * Chat provider selection for SSE chat / review-draft (Issue #3).
+ * Provider selection for review-draft (Issue #3).
  */
 
 import type { Env } from "../env.js";
@@ -25,7 +25,7 @@ export function assertGrokGatewayConfigured(env: ChatProviderEnv): void {
     return;
   }
   if (!env.AI_GATEWAY_ID) {
-    throw new ApiError("Grok chat requires AI Gateway (AI_GATEWAY_ID)", 503);
+    throw new ApiError("Grok requires AI Gateway (AI_GATEWAY_ID)", 503);
   }
   assertAiGatewayRuntimeConfig(env);
 }

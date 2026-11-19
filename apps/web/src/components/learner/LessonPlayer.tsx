@@ -13,7 +13,6 @@ import {
   X,
 } from "@/lib/icons";
 import type { Stage, Section, Lesson } from "@/data/types";
-import type { ChatContext } from "@stella/shared/ai/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -77,10 +76,6 @@ interface LessonPlayerProps {
    * リロード後に同じレッスンへ戻す。
    */
   onActiveLessonChange?: (stageId: string, lessonId: string) => void;
-  /** AIChatBot を開くトリガ。 親が渡す。 */
-  onOpenAIBot?: () => void;
-  /** レッスンの文脈を AIChatBot に伝えるための setter。 */
-  setAIContext?: (ctx: ChatContext) => void;
   onOpenSubmission: (submissionId: string) => void;
 }
 
@@ -93,7 +88,6 @@ export const LessonPlayer = ({
   studentInitials,
   initialLesson = null,
   onActiveLessonChange,
-  setAIContext,
   onOpenSubmission,
 }: LessonPlayerProps) => {
   const sections: Section[] = stage.sections ?? [];
@@ -258,18 +252,6 @@ export const LessonPlayer = ({
     if (!isNarrow) setTocOpen(false);
   }, [isNarrow]);
 
-  // レッスン切替で AI コンテキストを更新する。code レッスンも含め kind: 'lesson'。
-  const lessonId = lessonObj?.id;
-  const lessonTitle = lessonObj?.title;
-  useEffect(() => {
-    if (!setAIContext || lessonId === undefined || lessonTitle === undefined) return;
-    setAIContext({
-      kind: "lesson",
-      lessonTitle,
-      stageTitle: stage.title,
-    });
-  }, [lessonId, lessonTitle, stage.title, setAIContext]);
-
   if (!lessonObj) {
     return <div className="p-10 text-sm text-ink-3">このステージには教材がありません。</div>;
   }
@@ -339,7 +321,7 @@ export const LessonPlayer = ({
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
             // 開くボタンは DrawerTrigger ではなく portal 先の button なので、 Radix の
-            // 既定復帰に任せず自分で戻す (AIChatBot の FAB と同じ扱い)。
+            // 既定復帰に任せず自分で戻す。
             const target = tocButtonRef.current;
             if (target) {
               event.preventDefault();
@@ -545,7 +527,7 @@ export const LessonPlayer = ({
             課題 (VS Code へ渡すだけの画面) にも同じ導線が要るので、 上の分岐の外に置く。
 
             ページ末尾はこのブロックなので、 下端に重なる固定要素のクリアランスもここが持つ。
-            pb-24 (96px) は右下の AI FAB (bottom-6 + h-12 = 下端から 72px) ぶん。 小テストは
+            pb-24 (96px) は右下の開発者モード FAB (bottom-6 + h-12 = 下端から 72px) ぶん。 小テストは
             解答中の sm 未満に下部固定バー (約 100px + safe-area) が出るので、 その間だけ
             pb-36 (144px) へ広げる (採点後は余白が 48px 余るが、 末尾の余白なので害はない)。 */}
         <div

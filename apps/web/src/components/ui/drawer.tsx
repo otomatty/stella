@@ -7,9 +7,6 @@
  * - `direction` で bottom / top / left / right から出す
  * - ハンドルのドラッグでスワイプ閉じ
  * を足している。
- *
- * モバイルでは Drawer、 デスクトップでは Dialog / 独自パネル…… という出し分けは
- * 呼び出し側で `useIsMobileViewport()` を見て切り替える (例: `AIChatBot`)。
  */
 
 import * as React from "react";

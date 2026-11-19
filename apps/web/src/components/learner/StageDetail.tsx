@@ -90,8 +90,6 @@ interface StageDetailProps {
   /** 指定のレッスンでレッスン画面を開く。 */
   onOpenLesson: (lessonId: string) => void;
   onOpenSubmission?: (submissionId: string) => void;
-  /** 課題の文脈で AI チャットを開く (#38)。 */
-  onAskAiAboutTask?: (task: { id: string; title: string }) => void;
 }
 
 export const StageDetail = ({
@@ -100,7 +98,6 @@ export const StageDetail = ({
   setPage,
   onOpenLesson,
   onOpenSubmission,
-  onAskAiAboutTask,
 }: StageDetailProps) => {
   const firstSteps = useFirstSteps();
   const guided = useGuidedStages(currentUserId);
@@ -287,9 +284,7 @@ export const StageDetail = ({
             </p>
           ) : null}
 
-          {stage.format === 2 ? (
-            <TaskList stageId={stage.id} onAskAi={onAskAiAboutTask} onLoaded={handleTasksLoaded} />
-          ) : null}
+          {stage.format === 2 ? <TaskList stageId={stage.id} onLoaded={handleTasksLoaded} /> : null}
           <Card data-testid="stage-syllabus" className="mb-6">
             <CardHeader>
               <CardTitle>シラバス</CardTitle>

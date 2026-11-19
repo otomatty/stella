@@ -4,23 +4,17 @@
  * 記録は 3 つの出どころを課題ごとに束ねる。
  * - 提出に添えた支援 (`submissions.support_log`): 受講者の申告と、拡張が `.stella/support.json` に残したもの。
  * - 提出とレビュー: 講師への相談 (相談として送った提出) と、人のレビュー (`submission_reviews`)。
- * - サーバーが記録する支援: AI チャット (`task_support_events`) と、ヒント・解答例・解説を開いた
- *   記録 (`task_help_opens`、#36。段と合格後かを持つので別の表)。固定した開始点の受け取り (#31) は
- *   提出の支援記録に写して数える。
+ * - サーバーが記録する支援: ヒント・解答例・解説を開いた記録 (`task_help_opens`、#36)。
+ *   固定した開始点の受け取り (#31) は提出の支援記録に写して数える。
  */
 
 import type { TaskKind } from "./manifest.js";
-import { SUPPORT_KINDS, SUPPORT_LABELS } from "./submission-support.js";
+import { type SUPPORT_KINDS, SUPPORT_LABELS } from "./submission-support.js";
 
-/** `task_support_events.kind` に書ける種類。ここに足せば記録・表示・水準に通る。 */
-export const RECORDED_SUPPORT_KINDS = ["ai-chat", ...SUPPORT_KINDS] as const;
-export type RecordedSupportKind = (typeof RECORDED_SUPPORT_KINDS)[number];
-
-export type SupportRecordKind = RecordedSupportKind | "consult" | "human-review";
+export type SupportRecordKind = (typeof SUPPORT_KINDS)[number] | "consult" | "human-review";
 
 export const SUPPORT_RECORD_LABELS: Record<SupportRecordKind, string> = {
   ...SUPPORT_LABELS,
-  "ai-chat": "AI チャット",
   consult: "管理者への相談",
   "human-review": "人のレビュー",
 };

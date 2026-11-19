@@ -111,9 +111,10 @@ describe("機械的な要約", () => {
   });
 
   it("材料の事実に、予定との差・支援・レビューの理由を書く", () => {
+    const savedSupport = { hint: 3, consult: 1, "ai-chat": 2, obsolete: 4 };
     const facts = materialFacts(
       material({
-        support: { "ai-chat": 3, consult: 1 },
+        support: savedSupport,
         failureStreaks: [{ title: "フォーム", streak: 5 }],
         reviews: {
           ...material().reviews,
@@ -123,7 +124,9 @@ describe("機械的な要約", () => {
       }),
     );
     expect(facts.join("\n")).toContain("目安との差 −2時間");
-    expect(facts.join("\n")).toContain("AI チャット 3 · 管理者への相談 1");
+    expect(facts.find((fact) => fact.startsWith("支援:"))).toBe(
+      "支援: 解法のヒント 3 · 管理者への相談 1",
+    );
     expect(facts.join("\n")).toContain("「フォーム」5回");
     expect(facts.join("\n")).toContain("確信度がしきい値に届かない 1");
   });

@@ -44,7 +44,7 @@ INVITE_REDIRECT_URL=http://localhost:5173
 CLOUDFLARE_ACCOUNT_ID=
 # 例: stella-ai。未設定 = Anthropic 直叩き。
 AI_GATEWAY_ID=
-# chat / review-draft プロバイダ (既定 anthropic)。Grok 利用時は gateway 必須。
+# review-draft プロバイダ (既定 anthropic)。Grok 利用時は gateway 必須。
 # CHAT_PROVIDER=grok
 # CHAT_MODEL=grok-4.6
 # AI Gateway REST 専用トークン (Account > Workers AI Read 等。deploy 用 CLOUDFLARE_API_TOKEN とは別)。

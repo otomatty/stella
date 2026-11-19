@@ -1,6 +1,5 @@
 import { createContext, useContext } from "react";
 import type { Stage, Role } from "@/data/types";
-import type { ChatContext } from "@stella/shared/ai/types";
 import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Profile } from "@/lib/auth";
 
@@ -17,8 +16,6 @@ export interface AppShellValue {
   setCurrentStage: (c: Stage) => void;
   onOpenLesson: (stage: Stage, lessonId: string) => void;
   onActiveLessonChange: (stageId: string, lessonId: string) => void;
-  onOpenAIBot: () => void;
-  setAIContext: (ctx: ChatContext) => void;
   currentUserId: string | null;
   backendEnabled: boolean;
   /** 添削対象を控える (直後の setPage('review') が参照する)。 */

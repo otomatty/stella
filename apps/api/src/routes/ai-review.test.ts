@@ -24,7 +24,7 @@ import {
   taskPrivateVersions,
   taskProgress,
   taskRevisions,
-  taskSupportEvents,
+  taskHelpOpens,
   tasks,
   tenants,
 } from "../db/schema.js";
@@ -723,12 +723,12 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       const row = await submit();
       expect(row.ai_review_status).toBe("queued");
       // 提出のあとで支援の記録を読めなくなった (AI を呼ぶ前に毎回例外になる)。
-      database.sqlite.exec("drop table task_support_events");
+      database.sqlite.exec("drop table task_help_opens");
       expect(await runUntilGiveUp()).toEqual(["gave-up"]);
       expect(complete).not.toHaveBeenCalled();
       const [job] = await db.select().from(aiReviewJobs);
       expect(job).toMatchObject({ state: "done", attempts: 3 });
-      expect(job?.lastError).toContain("task_support_events");
+      expect(job?.lastError).toContain("task_help_opens");
       expect((await reviews())[0]).toMatchObject({
         outcome: "escalated",
         failure: "error",
@@ -873,13 +873,16 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect((await detail(row.id, token)).ai_feedback).toBeNull();
   });
 
-  describe("サーバーが記録した支援 (課題の AI チャット・相談、#38)", () => {
-    const recordSupport = (createdAt: Date) =>
-      db.insert(taskSupportEvents).values({
+  describe("サーバーが記録した支援 (ヒントの表示)", () => {
+    const recordSupport = (openedAt: Date) =>
+      db.insert(taskHelpOpens).values({
         userId: "learner",
         taskId: fixture.input.taskId,
-        kind: "ai-chat",
-        createdAt,
+        item: "hint",
+        level: 1,
+        contentHash: fixture.input.contentHash,
+        privateHash: "private",
+        openedAt,
       });
     const passAll = () => {
       const out = aiOutput();
@@ -894,7 +897,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       });
     });
 
-    it("確認Aの前に AI チャットの記録があれば、提出の時点で人に回し、AI は合格にしない", async () => {
+    it("確認Aの前にヒントを開いていれば、提出の時点で人に回し、AI は合格にしない", async () => {
       await recordSupport(new Date(Date.now() - 60_000));
       complete.mockResolvedValue(passAll());
       const row = await submit();

@@ -107,7 +107,7 @@ tasks/<task>/
 | `support.hintLevels` | `hints.md` の段数と一致。確認と統合は 0 |
 | `support.solutionUnlock` | 種別の表のどれか |
 | `support.attempts` | `attempts-or-passed` のときだけ。省略すると 5 |
-| `support.aiChat` | 任意。AI に相談させない課題だけ `false`。省略すると使える |
+| `support.aiChat` | 任意。アプリ内の AI チャットは廃止し、現在は機能から参照していない。今後の MCP で AI に課題文を渡さない印として使うため、確認A・B などには引き続き `false` を書く |
 | `sources` | 単元の `references.json` に、この README の使用箇所として書いた参照元 ID と同じ配列 |
 | `estimatedMinutes` | 正の数。同じ書き方のまとまりなら 30〜60 を目安にする |
 | `protected` | 配布し、改変を照合する設定とテスト。テンプレートの一覧を空にしない |

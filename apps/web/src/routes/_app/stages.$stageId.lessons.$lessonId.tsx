@@ -31,8 +31,6 @@ function LessonPage() {
         <LessonPlayer
           stage={target}
           setPage={s.setPage}
-          onOpenAIBot={s.onOpenAIBot}
-          setAIContext={s.setAIContext}
           studentName={s.studentName}
           studentInitials={s.studentInitials}
           // seq=0 固定で安全: LessonPlayer は「id:seq」キーの変化で適用判定するため、
