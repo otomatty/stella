@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Moon, Search, Sun } from "@/lib/icons";
 import { useTheme } from "@/hooks/useTheme";
-import { HelpDrawer } from "@/components/shell/HelpDrawer";
+import { HelpVideoButton } from "@/components/shell/HelpVideoButton";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
 import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
@@ -105,8 +105,8 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
       >
         {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
       </button>
-      {/* 現在の画面に応じた使い方ヘルプ。 サポートページへの導線はドロワー内に残す。 */}
-      <HelpDrawer role={notify.role} />
+      {/* 受講者が使い方の動画がある画面を開いたときだけ、動画ダイアログのボタンを表示する。 */}
+      <HelpVideoButton role={notify.role} />
       {actions}
     </div>
   );
