@@ -1015,6 +1015,16 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
           ["html-css-basics/u01-check-a/a01-check-a", "assessment-a"],
           ["html-css-basics/u01-check-a/b01-check-b", "assessment-b"],
         ]);
+      } else if (slug === "javascript-basics") {
+        expect(stage?.format).toBe(2);
+        expect(sectionIds).toEqual(["u03-conditions", "u99-coming-soon"]);
+        expect(stage?.sections?.[1].lessons[0].markdown).toContain("続きは準備中");
+        expect(tasks.filter((task) => task.stageId === slug && !task.variantOf)).toHaveLength(8);
+      } else if (slug === "dom-basics") {
+        expect(stage?.format).toBe(2);
+        expect(sectionIds).toEqual(["u03-input-errors", "u99-coming-soon"]);
+        expect(stage?.sections?.[1].lessons[0].markdown).toContain("続きは準備中");
+        expect(tasks.filter((task) => task.stageId === slug && !task.variantOf)).toHaveLength(8);
       } else {
         expect(sectionIds).toEqual(["m0-orientation"]);
         expect(
