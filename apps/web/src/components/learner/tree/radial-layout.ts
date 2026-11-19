@@ -204,7 +204,7 @@ function expandAppearances(nodes: SkillMapStageNode[]): SkillMapStageNode[] {
       out.push(node);
       continue;
     }
-    // 複製が扇の親を失う前に、扇の親を全部控えておく (飛び級の判定に要る)。
+    // 複製が扇の親を失う前に、扇の親を全部控えておく。
     const sectorParentIds = Object.values(node.appearance_parent_ids ?? {});
     for (const sector of unique) {
       const parentId = node.appearance_parent_ids?.[sector];
@@ -233,7 +233,7 @@ function expandAppearances(nodes: SkillMapStageNode[]): SkillMapStageNode[] {
  * サーバが locked と言った複製は開かない — 扇ごとの親が欠けている扇でも、
  * 開く条件を知っているのはサーバなので、ここで開錠に倒さない。
  *
- * 飛び級 (腕試し) で開いた実体は扇の親が 1 つも cleared でないので、扇ごとの
+ * 前提の免除や廃止前の飛び級で開いた実体は扇の親が 1 つも cleared でないので、扇ごとの
  * 鍵に落とさず全複製を開いたままにする。落とすと「開いているのにどの扇でも鍵」
  * になり、受講者から始める導線が消える。
  */
@@ -638,8 +638,8 @@ function layoutCluster(nodes: SkillMapStageNode[], opts?: { fillCircle?: boolean
       edges.push({
         fromId: from.instanceId,
         toId: to.instanceId,
-        // 「満たしている」= 前提の星をクリア済み。評価器と同じ定義 (飛び級で開いた
-        // 星はクリアではないので、線は破線のまま = 前提を飛ばしたことが見える)。
+        // 「満たしている」= 前提の星をクリア済み。評価器と同じ定義 (前提の免除などで
+        // 開いた星からの線は、その星をクリアするまで破線のまま)。
         satisfied: from.node.state === "cleared",
         x1: from.x,
         y1: from.y,

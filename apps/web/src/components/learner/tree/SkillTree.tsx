@@ -12,7 +12,7 @@
  * 何をどこまで見せるかは `GET /api/skill-map/mine` が決めていて、霧 (2 歩先) の通常応答は
  * タイトルと前提線まで (slug・解放条件は載せない)、3 歩先は線を引くトポロジだけ、
  * 4 歩以上先は応答に現れない。ここは受け取った `state` × `visibility` を見た目に写す
- * だけ。開発者モード (`revealDev`) のときだけ段を素通しで描く — 開始や腕試しは
+ * だけ。開発者モード (`revealDev`) のときだけ段を素通しで描く — 開始・フォーカス切り替えは
  * `full` 以外をサーバが断る。
  *
  * ## 3 歩先は星を描かず、線をフェードさせる
@@ -136,8 +136,6 @@ interface SkillTreeProps {
   onResumeStage: (stageId: string) => void;
   /** 「ここから始める」(いま進める星に切り替える)。 */
   onStartStage: (stageId: string) => void;
-  /** 腕試しを開く。 */
-  onSkillCheck: (stageId: string) => void;
   /** 「レッスン一覧」(ステージ詳細を開く)。 */
   onOpenStage: (stageId: string) => void;
   /** 開発者モード: 段を素通しし、幽霊ノードも星として描く。 */
@@ -335,7 +333,7 @@ function PlaceHeading({
  * 届かない間・失敗したときは呼び出し側が状態グリフに落とす。
  *
  * 依存は `iconFetchKey` — 見える has_icon の集合か受講者が変わったら取り直す。
- * 空配列だと、腕試しで霧が開けても初回のバッチのままになる。
+ * 空配列だと、前提のクリアなどで霧が開けても初回のバッチのままになる。
  */
 function useStageIconUrls(
   fetchKey: string,
@@ -439,7 +437,6 @@ export const SkillTree = ({
   activeStageId,
   onResumeStage,
   onStartStage,
-  onSkillCheck,
   onOpenStage,
   revealDev = false,
   overview = false,
@@ -1204,7 +1201,6 @@ export const SkillTree = ({
               onClose={() => setSheetId(null)}
               onResumeStage={onResumeStage}
               onStartStage={onStartStage}
-              onSkillCheck={onSkillCheck}
               onOpenStage={onOpenStage}
               renderDetail={renderDetail}
               activeInfo={activeInfo}
@@ -1447,7 +1443,6 @@ export const SkillTree = ({
           onOpenSheet={(anchor) => openSheet(placed, anchor)}
           onResumeStage={onResumeStage}
           onStartStage={onStartStage}
-          onSkillCheck={onSkillCheck}
           onOpenStage={onOpenStage}
           revealDev={revealDev}
           tag={starTag?.(placed.node) ?? null}
@@ -1505,7 +1500,6 @@ interface StarNodeProps {
   onOpenSheet: (anchor: HTMLButtonElement) => void;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   revealDev: boolean;
   /** 名前のそばの札。null なら受講者のホームと同じ名前札だけ。 */
@@ -1539,7 +1533,6 @@ const StarNode = ({
   onOpenSheet,
   onResumeStage,
   onStartStage,
-  onSkillCheck,
   onOpenStage,
   revealDev,
   tag,
@@ -1837,7 +1830,6 @@ const StarNode = ({
                   onAct={act}
                   onResumeStage={onResumeStage}
                   onStartStage={onStartStage}
-                  onSkillCheck={onSkillCheck}
                   onOpenStage={onOpenStage}
                   openTask={activeInfo?.openTask}
                 />
@@ -1864,7 +1856,6 @@ interface StarSheetProps {
   onClose: () => void;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   renderDetail?: (node: SkillMapStageNode, close: () => void) => ReactNode;
   /** 進行中の星の詳細カードに足す情報。 */
@@ -1887,28 +1878,14 @@ const StarSheet = ({
   onClose,
   onResumeStage,
   onStartStage,
-  onSkillCheck,
   onOpenStage,
   renderDetail,
   activeInfo = null,
 }: StarSheetProps) => {
   const lastRef = useRef<RadialNode | null>(null);
-  /**
-   * 腕試し (別のモーダル) へ渡して閉じたか。
-   *
-   * `SkillCheckDialog` は z-50 で開くのに対し、このシートの overlay は z-[100]。
-   * 閉じアニメーションの 200ms のあいだ overlay が受験画面の上に残り、その間の
-   * タップを飲んでしまう。渡したときは**アニメーションを省いて即座に畳み**、
-   * フォーカスも星へ戻さない (開いたダイアログの focus trap と取り合いになる)。
-   * 着手は次のモーダルが無いので、従来どおり滑らせて閉じる。
-   */
-  const handedOffRef = useRef(false);
-  if (placed) {
-    lastRef.current = placed;
-    handedOffRef.current = false;
-  }
+  if (placed) lastRef.current = placed;
   const shown = placed ?? lastRef.current;
-  if (!shown || (!placed && handedOffRef.current)) return null;
+  if (!shown) return null;
 
   const node = shown.node;
   const isActive = node.id === activeStageId;
@@ -1921,12 +1898,6 @@ const StarSheet = ({
     onClose();
     run();
   };
-  // `act` は閉じてから実行するので、印はここで立てる (どちらも同じイベントの中なので、
-  // シートが畳まれるレンダーからは立った状態で見える)。
-  const handOffToSkillCheck = (stageId: string) => {
-    handedOffRef.current = true;
-    onSkillCheck(stageId);
-  };
 
   return (
     <Drawer
@@ -1938,11 +1909,6 @@ const StarSheet = ({
       <DrawerContent
         className="max-h-[80dvh]"
         onCloseAutoFocus={(event) => {
-          // 次のモーダルへ渡したときは、そちらが当てたフォーカスを奪わない。
-          if (handedOffRef.current) {
-            event.preventDefault();
-            return;
-          }
           // この器にトリガーは無い (星を押したのは盤面) ので、戻す先は自分で指す。
           // 任せると body に落ちて、次の Tab がヘッダーの先頭から始まってしまう。
           const target = anchorRef.current;
@@ -2008,7 +1974,6 @@ const StarSheet = ({
                   onAct={act}
                   onResumeStage={onResumeStage}
                   onStartStage={onStartStage}
-                  onSkillCheck={handOffToSkillCheck}
                   onOpenStage={onOpenStage}
                   openTask={isActive ? activeInfo?.openTask : undefined}
                 />
@@ -2104,7 +2069,6 @@ interface StarActionsProps {
   onAct: (run: () => void) => void;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   /** 受講者の番の課題が残っているとき、「続きから」の代わりに出す。 */
   openTask?: () => void;
@@ -2113,7 +2077,7 @@ interface StarActionsProps {
 /**
  * 詳細のボタン列。並びは器を跨いで同じで、器が外側の箱だけを決める。
  *
- * 先頭がその星の主な一手 (続きから / ここから始める / 飛び級) で、強調はそこだけ。
+ * 先頭がその星の主な一手 (続きから / ここから始める) で、強調はそこだけ。
  */
 export const StarActions = ({
   detail,
@@ -2122,11 +2086,10 @@ export const StarActions = ({
   onAct,
   onResumeStage,
   onStartStage,
-  onSkillCheck,
   onOpenStage,
   openTask,
 }: StarActionsProps) => {
-  const { skillCheck, resume, start, openStage, clearedNote } = detail.actions;
+  const { resume, start, openStage, clearedNote } = detail.actions;
   return (
     <>
       {resume ? (
@@ -2149,17 +2112,6 @@ export const StarActions = ({
         >
           <Play size={12} />
           ここから始める
-        </Button>
-      ) : null}
-
-      {skillCheck === "challenge" ? (
-        <Button size={size} variant="accent" onClick={() => onAct(() => onSkillCheck(stageId))}>
-          <Sparkles size={12} />
-          腕試しに挑戦（飛び級）
-        </Button>
-      ) : skillCheck === "try" ? (
-        <Button size={size} variant="outline" onClick={() => onAct(() => onSkillCheck(stageId))}>
-          腕試しで力試し
         </Button>
       ) : null}
 

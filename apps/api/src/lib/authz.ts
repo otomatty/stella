@@ -143,36 +143,23 @@ export function requireCanManageStageGrants(caller: Caller): void {
   requireAdmin(caller);
 }
 
-/**
- * 腕試し (SkillCheck / 飛び級) を **受ける** 側になれるロール (Phase 3a)。
- *
- * 管理者は、受講者の画面で教材 (課題文・ヒント・解答例を含む) を確かめるために
- * 自分を受講登録する。条件は受講者と同じ (前提・霧・割り当ては評価器が決める)。
- * 自己開始・腕試し・発見教材は同じ顔ぶれにそろえる
- * (片方だけ開けると「受けられないのに始められる」がねじれる)。
- */
-export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin"];
+/** 自己開始と発見教材に取り組めるロール。 */
+export const SELF_STUDY_ROLES: ProfileRole[] = ["student", "admin"];
 
-export function canTakeSkillCheck(role: ProfileRole): boolean {
-  return SKILL_CHECK_ROLES.includes(role);
+export function canStudyAsLearner(role: ProfileRole): boolean {
+  return SELF_STUDY_ROLES.includes(role);
 }
 
-/** 腕試し API (出題・採点の両方) の入口ガード。 */
-export function requireCanTakeSkillCheck(caller: Caller): void {
-  if (!canTakeSkillCheck(caller.role)) {
+/** 発見教材 API の入口ガード。 */
+export function requireCanTakeDiscovery(caller: Caller): void {
+  if (!canStudyAsLearner(caller.role)) {
     throw new ApiError("権限がありません", 403);
   }
 }
 
-/**
- * ステージの自己開始 (`POST /api/stages/:id/start`) の入口ガード (Phase 3b)。
- *
- * 顔ぶれは腕試しと同じ (`SKILL_CHECK_ROLES`) — 飛び級で開いた星の自己登録と自己開始は
- * 同じ「自分の学習を自分で始める」操作なので、片方だけ開けると
- * 「受けられないのに始められる」がねじれる。
- */
+/** ステージの自己開始 (`POST /api/stages/:id/start`) の入口ガード。 */
 export function requireCanStartStage(caller: Caller): void {
-  if (!canTakeSkillCheck(caller.role)) {
+  if (!canStudyAsLearner(caller.role)) {
     throw new ApiError("権限がありません", 403);
   }
 }

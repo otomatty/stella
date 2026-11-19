@@ -34,7 +34,7 @@ import {
 import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
-import { loadUnlockedStageIds } from "./skill-check-data.js";
+import { loadUnlockedStageIds } from "./stage-unlocks-data.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
 /**
@@ -127,7 +127,7 @@ export function shouldRevealDevMap(
  * `visibility === "fog"` のときだけ操作を隠す)。デプロイは `deploy:api` →
  * `deploy:web` の順で、しかも**開いたままのタブは古い bundle のまま**なので、
  * 「新 API + 旧画面」は必ず起きる。そのとき線だけのはずの幽霊ノードが
- * 「？？？」のロック星として描かれ、押すと必ず 400 になる腕試しボタンまで出る。
+ * 「？？？」のロック星として描かれてしまう。
  *
  * そこで申告の無いクライアントには **幽霊ノードを配らない** (`full` / `fog` だけ)。
  * 旧画面は今までどおり名前のある星だけを描き、失敗する導線も出ない。段を増やした
@@ -190,7 +190,7 @@ export interface SkillMapSource {
   /** 受講登録があるステージ (道の上で「始められる星」を描き分けるのに使う)。 */
   enrolledStageIds?: Set<string>;
   /**
-   * 飛び級 (腕試し合格) で開いた星 (Phase 3a)。前提が未充足でも `unlocked` になり、
+   * 前提の免除や廃止前の飛び級で開いた星。前提が未充足でも `unlocked` になり、
    * 視界の起点にもなる (評価器の `unlockedStageIds`)。
    *
    * **クリアではない** — この星を前提に持つ次の星は開かない。
@@ -234,7 +234,7 @@ export async function loadSkillMapSource(
   const unlockedStageIds = await loadUnlockedStageIds(db, caller);
 
   // 島 (資格 / Python / DevOps / 案件 / C# / 開発ラボG) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
-  // 組み立て口) で落とすので、スキルマップ・腕試し・開始・発見教材のどの API も
+  // 組み立て口) で落とすので、スキルマップ・開始・発見教材のどの API も
   // 同じ星を同じ条件で伏せる — 経路ごとに緩みが生まれない。
   // 開発モード (`showAllIslands`) だけは素通しにして、島の中身を作りながら確かめられるようにする。
   const islandRows = opts?.showAllIslands

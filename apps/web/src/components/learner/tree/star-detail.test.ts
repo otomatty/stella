@@ -89,7 +89,6 @@ describe("describeStar の本文", () => {
 describe("describeStar のボタン", () => {
   it("霧の星には何も出さない", () => {
     expect(describe1({ visibility: "fog", enrolled: true }).actions).toEqual({
-      skillCheck: "none",
       resume: false,
       start: false,
       openStage: false,
@@ -97,10 +96,9 @@ describe("describeStar のボタン", () => {
     });
   });
 
-  it("霧より先の段にも何も出さない (飛び級の入口は 1 歩先まで)", () => {
+  it("霧より先の段にも何も出さない", () => {
     for (const visibility of ["edge", "hidden"] as const) {
       expect(describe1({ visibility, enrolled: true }).actions).toEqual({
-        skillCheck: "none",
         resume: false,
         start: false,
         openStage: false,
@@ -109,9 +107,8 @@ describe("describeStar のボタン", () => {
     }
   });
 
-  it("ロック星は飛び級の腕試しだけ", () => {
+  it("ロック星にはボタンを出さない", () => {
     expect(describe1({ state: "locked", enrolled: true }).actions).toEqual({
-      skillCheck: "challenge",
       resume: false,
       start: false,
       openStage: false,
@@ -119,9 +116,8 @@ describe("describeStar のボタン", () => {
     });
   });
 
-  it("解放済みは腕試し + 着手。レッスン一覧は受講登録がある星だけ", () => {
+  it("解放済みには着手を出す。レッスン一覧は受講登録がある星だけ", () => {
     expect(describe1({ enrolled: true }).actions).toEqual({
-      skillCheck: "try",
       resume: false,
       start: true,
       openStage: true,
@@ -140,7 +136,6 @@ describe("describeStar のボタン", () => {
   it("修了済みには着手の導線を出さず、読み返しのレッスン一覧だけ残す", () => {
     const cleared = describe1({ state: "cleared", enrolled: true }).actions;
     expect(cleared).toEqual({
-      skillCheck: "try",
       resume: false,
       start: false,
       openStage: true,

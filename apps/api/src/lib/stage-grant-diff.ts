@@ -26,7 +26,7 @@ export interface PreparedStageGrantDiff {
   added: string[];
   /** 外す依頼。割り当てが無くても delete は空振りする。 */
   removed: string[];
-  /** staff の免除を足す。腕試しの行がある人は含まない (上書きしない)。 */
+  /** staff の免除を足す。廃止した腕試しで開いた行がある人は含まない (上書きしない)。 */
   exempted: string[];
   /** staff の免除を外す依頼。 */
   unexempted: string[];

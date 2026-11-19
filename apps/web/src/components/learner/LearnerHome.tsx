@@ -46,7 +46,6 @@ import {
   type GuideHandlers,
 } from "@/components/learner/home/NextStep";
 import { UnlockNotice } from "@/components/learner/home/UnlockNotice";
-import { SkillCheckDialog } from "@/components/learner/tree/SkillCheckDialog";
 import {
   SkillTree,
   type ActiveStarInfo,
@@ -63,7 +62,6 @@ import {
 } from "@/lib/home-guide";
 import { Compass, ListTree, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
-import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { buildTodayPlan } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
@@ -460,20 +458,6 @@ export const LearnerHome = ({
         }
       : null;
 
-  // ----- 腕試し・発見教材 -----
-
-  /** 腕試しを開いている星 (null なら閉じている)。 */
-  const [checkStageId, setCheckStageId] = useState<string | null>(null);
-  const handleSkillCheckFinished = (result: SkillCheckResult) => {
-    if (result.unlocked) {
-      // 解放と同時に自己開始の受講登録も作られる (= すぐ「ここから始める」が出る)。
-      toast.success(`新しいスキルが解放されました。ここから始められます — ${result.title}`);
-      void refetchStages();
-    }
-    // 合否によらず引き直す (解放されたかどうかの判断はサーバの応答に任せる)。
-    void skillMap.refetch();
-  };
-
   /**
    * 発見教材 (Phase 4)。**サーバが公開条件で絞ったものをそのまま描く**。
    * 受験ダイアログを閉じたらマップを引き直す — 合格の印と XP はサーバの再取得で更新する。
@@ -580,7 +564,6 @@ export const LearnerHome = ({
             activeStageId={serverActiveStageId}
             onResumeStage={resumeStage}
             onStartStage={startStage}
-            onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             revealDev={revealDev}
             // ガイドが名指しする星には上の effect で寄せる。
@@ -669,7 +652,6 @@ export const LearnerHome = ({
             insetLeft={isDesktop ? GUIDE_INSET_PX : 0}
             onResumeStage={resumeStage}
             onStartStage={startStage}
-            onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             onShowInTree={showInTree}
             className="pointer-events-auto row-start-2 h-full w-full max-lg:pb-2 max-lg:pt-1 lg:absolute lg:-inset-4 lg:row-auto lg:h-auto lg:w-auto"
@@ -758,13 +740,6 @@ export const LearnerHome = ({
           </div>
         </aside>
       </div>
-
-      <SkillCheckDialog
-        stageId={checkStageId}
-        stageTitle={nodeById.get(checkStageId ?? "")?.title ?? "このステージ"}
-        onClose={() => setCheckStageId(null)}
-        onFinished={handleSkillCheckFinished}
-      />
 
       {/* 発見教材の受験。閉じたらマップを引き直して合格の印と XP を更新する。 */}
       <DiscoveryDialog
