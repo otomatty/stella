@@ -22,12 +22,12 @@ sourceRefs: ["SRC-dev-env-editor-20261107", "SRC-dev-env-win-setup-20261107", "S
 <!-- kind: single; skills: open-learning-folder -->
 
 - A. 名前だけ
-- B. 発行元 saedgewell、ID saedgewell.stella-lms
+- B. 識別子 saedgewell.stella-lms
 
 <details>
 <summary>解答</summary>
 
-**B** — 拡張機能のビューで検索し、発行元とIDも確かめます。
+**B** — 拡張機能のビューで検索し、識別子も確かめます。
 
 </details>
 

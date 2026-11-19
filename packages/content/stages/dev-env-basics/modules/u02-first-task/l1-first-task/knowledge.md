@@ -32,7 +32,7 @@ sourceRefs: ["SRC-mdn-html-20261005", "SRC-dev-env-editor-20261107"]
 
 </details>
 
-### Q3. 手元の確認で通らなかったときは、結果の1行目から読み、直して保存し、確認し直します。
+### Q3. 手元の確認で通らなかったときは、結果の見出しから読み、直して保存し、確認し直します。
 <!-- kind: boolean; skills: stella-task-loop -->
 
 - A. 正しい

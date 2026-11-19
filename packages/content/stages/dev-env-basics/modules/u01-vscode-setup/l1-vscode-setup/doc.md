@@ -50,7 +50,7 @@ Command Palette（コマンドパレット）は、操作名を探して実行�
 STELLA 拡張で、課題の受け取り・確認・提出ができます。
 
 1. 左の四角の「拡張機能」アイコンを押し、「STELLA」を検索します。
-2. 名前「STELLA」、発行元 `saedgewell`、ID `saedgewell.stella-lms` を確かめます。
+2. 「STELLA 研修」を選び、説明の右側の「識別子」が `saedgewell.stella-lms` であることを確かめます。
 3. 「インストール」を押します。「無効にする」が選べれば有効です。
 
 ## 01-1-3 Webから課題を開く
