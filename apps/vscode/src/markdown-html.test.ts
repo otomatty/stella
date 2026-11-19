@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  buildLessonDocHtml,
-  defaultOsForPlatform,
-  markdownToHtml,
-  resolveLessonDoc,
-} from "./lesson-doc.js";
+import { defaultOsForPlatform, markdownToHtml, OS_TABS_CSS } from "./markdown-html.js";
 
 vi.mock("vscode", () => ({
   window: { createWebviewPanel: vi.fn() },
@@ -121,72 +116,6 @@ describe("markdownToHtml", () => {
   });
 });
 
-describe("resolveLessonDoc", () => {
-  it("prefers markdown when both markdown and pdfPath exist", () => {
-    const doc = resolveLessonDoc({
-      id: "l1",
-      stageId: "c1",
-      title: "Intro",
-      markdown: "# Hi",
-      pdfPath: "slides/a.pdf",
-    });
-    expect(doc.kind).toBe("markdown");
-    if (doc.kind === "markdown") {
-      expect(doc.bodyHtml).toContain("<h1>");
-      expect(doc.bodyHtml).toContain("Hi");
-    }
-  });
-
-  it("is pdf-only when only pdfPath exists", () => {
-    const doc = resolveLessonDoc({
-      id: "l1",
-      stageId: "c1",
-      title: "Slides",
-      pdfPath: "slides/a.pdf",
-    });
-    expect(doc).toEqual({
-      kind: "pdf-only",
-      title: "Slides",
-      stageId: "c1",
-      lessonId: "l1",
-    });
-  });
-
-  it("is empty when neither markdown nor pdfPath is present", () => {
-    const doc = resolveLessonDoc({
-      id: "l1",
-      stageId: "c1",
-      title: "Soon",
-    });
-    expect(doc.kind).toBe("empty");
-  });
-});
-
-describe("buildLessonDocHtml", () => {
-  it("includes no script tags", () => {
-    const html = buildLessonDocHtml({
-      kind: "markdown",
-      title: "Intro",
-      bodyHtml: "<h1>Hi</h1>",
-    });
-    expect(html).not.toMatch(/<script/i);
-    expect(html).toContain("<h1>Hi</h1>");
-  });
-
-  it("offers stella.openInWeb for pdf-only lessons", () => {
-    const html = buildLessonDocHtml({
-      kind: "pdf-only",
-      title: "Slides",
-      stageId: "c1",
-      lessonId: "l1",
-    });
-    expect(html).not.toMatch(/<script/i);
-    expect(html).toContain("command:stella.openInWeb");
-    expect(html).toContain("c1");
-    expect(html).toContain("l1");
-  });
-});
-
 describe("OS 別ブロック", () => {
   const source = [
     "# 確認",
@@ -238,11 +167,8 @@ describe("OS 別ブロック", () => {
     expect(defaultOsForPlatform("win32")).toBe("windows");
     expect(defaultOsForPlatform("darwin")).toBe("macos");
     expect(defaultOsForPlatform("linux")).toBe("windows");
-    const doc = resolveLessonDoc(
-      { id: "doc-0-1", stageId: "s", title: "まとめ", markdown: source },
-      defaultOsForPlatform("darwin"),
-    );
-    expect(doc.kind === "markdown" && doc.bodyHtml).toMatch(/value="macos" checked/);
+    const html = markdownToHtml(source, { os: defaultOsForPlatform("darwin") });
+    expect(html).toMatch(/value="macos" checked/);
   });
 
   it("OS 別ブロックの無い本文は今までどおり描く", () => {
@@ -250,14 +176,16 @@ describe("OS 別ブロック", () => {
   });
 
   it("スクリプトを使わず CSS だけで切り替える", () => {
-    const html = buildLessonDocHtml({
-      kind: "markdown",
-      title: "まとめ",
-      bodyHtml: markdownToHtml(source, { os: "windows" }),
-    });
+    const html = markdownToHtml(source, { os: "windows" });
     expect(html).not.toMatch(/<script/i);
-    expect(html).toContain('.os-tab-input[value="macos"]:checked ~ .os-panel[data-os="macos"]');
-    expect(html).toContain("default-src 'none'");
+    expect(html).toContain('class="os-tab-input"');
+    expect(OS_TABS_CSS).toContain(".os-panel { display: none;");
+    expect(OS_TABS_CSS).toContain(
+      '.os-tab-input[value="windows"]:checked ~ .os-panel[data-os="windows"],',
+    );
+    expect(OS_TABS_CSS).toContain(
+      '.os-tab-input[value="macos"]:checked ~ .os-panel[data-os="macos"] { display: block; }',
+    );
   });
 });
 

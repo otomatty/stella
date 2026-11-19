@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { escapeHtml, markdownToHtml } from "./lesson-doc.js";
+import { escapeHtml, markdownToHtml } from "./markdown-html.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 
 const VIEW_TYPE = "stella.exercise";

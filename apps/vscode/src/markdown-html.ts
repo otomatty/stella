@@ -10,25 +10,6 @@ import {
   parseOsBlocks,
   pickOsBlock,
 } from "@stella/shared/markdown/os-blocks";
-import * as vscode from "vscode";
-import { findCachedLesson } from "./catalog.js";
-
-export interface LessonDocInput {
-  id: string;
-  stageId: string;
-  title: string;
-  markdown?: string | null;
-  pdfPath?: string | null;
-}
-
-export type LessonDocView =
-  | { kind: "markdown"; title: string; bodyHtml: string }
-  | { kind: "pdf-only"; title: string; stageId: string; lessonId: string }
-  | { kind: "empty"; title: string };
-
-const VIEW_TYPE = "stella.lessonDoc";
-
-let currentPanel: vscode.WebviewPanel | undefined;
 
 export function escapeHtml(text: string): string {
   return text
@@ -307,7 +288,7 @@ function osTabsHtml(blocks: readonly OsBlock[], os: OsName, group: number): stri
   return `<div class="os-tabs" role="group" aria-label="OS ごとの手順">${tabs}\n${panels}\n</div>`;
 }
 
-/** OS 別ブロックのタブの見た目。`buildLessonDocHtml` と課題文のパネルが使う。 */
+/** OS 別ブロックのタブの見た目。課題文とヒントのパネルが使う。 */
 export const OS_TABS_CSS = `
     .os-tabs {
       margin: 1rem 0;
@@ -335,7 +316,7 @@ export const OS_TABS_CSS = `
 
 /**
  * 教材の markdown を HTML にする。生の HTML は文字として出す。
- * まとめ・課題文の OS 別ブロック (`:::os windows` / `:::os macos`) は OS のタブにし、
+ * OS 別ブロック (`:::os windows` / `:::os macos`) は OS のタブにし、
  * `options.os` (既定は端末の OS) のタブを開いておく。
  */
 export function markdownToHtml(markdown: string, options: { os?: OsName } = {}): string {
@@ -348,130 +329,4 @@ export function markdownToHtml(markdown: string, options: { os?: OsName } = {}):
       s.kind === "markdown" ? renderBlocks(s.markdown) : osTabsHtml(s.blocks, os, ++group),
     )
     .join("\n");
-}
-
-export function resolveLessonDoc(
-  lesson: LessonDocInput,
-  os: OsName = defaultOsForPlatform(),
-): LessonDocView {
-  const markdown = lesson.markdown?.trim();
-  if (markdown) {
-    return {
-      kind: "markdown",
-      title: lesson.title,
-      bodyHtml: markdownToHtml(markdown, { os }),
-    };
-  }
-  if (lesson.pdfPath?.trim()) {
-    return {
-      kind: "pdf-only",
-      title: lesson.title,
-      stageId: lesson.stageId,
-      lessonId: lesson.id,
-    };
-  }
-  return { kind: "empty", title: lesson.title };
-}
-
-function viewBody(view: LessonDocView): string {
-  switch (view.kind) {
-    case "markdown":
-      return view.bodyHtml;
-    case "pdf-only": {
-      const args = encodeURIComponent(JSON.stringify([view.stageId, view.lessonId]));
-      return [
-        `<h1>${escapeHtml(view.title)}</h1>`,
-        "<p>このレッスンは PDF スライドです。拡張内では表示できません。</p>",
-        `<p><a href="command:stella.openInWeb?${args}">Web で開く</a></p>`,
-      ].join("\n");
-    }
-    case "empty":
-      return [`<h1>${escapeHtml(view.title)}</h1>`, "<p>本文を準備中です</p>"].join("\n");
-    default: {
-      const _exhaustive: never = view;
-      return _exhaustive;
-    }
-  }
-}
-
-export function buildLessonDocHtml(view: LessonDocView): string {
-  return `<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
-  <title>${escapeHtml(view.title)}</title>
-  <style>
-    body {
-      font-family: var(--vscode-font-family);
-      font-size: var(--vscode-font-size);
-      color: var(--vscode-foreground);
-      background: var(--vscode-editor-background);
-      line-height: 1.6;
-      padding: 1.25rem 1.5rem 2rem;
-      max-width: 52rem;
-    }
-    h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.3; }
-    pre {
-      overflow: auto;
-      padding: 0.75rem 1rem;
-      background: var(--vscode-textCodeBlock-background);
-      border-radius: 4px;
-    }
-    code { font-family: var(--vscode-editor-font-family); font-size: 0.9em; }
-    a { color: var(--vscode-textLink-foreground); }
-    ul, ol { padding-left: 1.4rem; }
-    blockquote {
-      margin: 0.75rem 0;
-      padding: 0.15rem 0 0.15rem 0.9rem;
-      border-left: 3px solid var(--vscode-textBlockQuote-border);
-    }
-    table { border-collapse: collapse; margin: 0.75rem 0; }
-    th, td {
-      border: 1px solid var(--vscode-panel-border);
-      padding: 0.35rem 0.6rem;
-      text-align: left;
-    }${OS_TABS_CSS}
-  </style>
-</head>
-<body>
-${viewBody(view)}
-</body>
-</html>`;
-}
-
-function mergeWithCatalog(lesson: LessonDocInput): LessonDocInput {
-  const cached = findCachedLesson(lesson.stageId, lesson.id);
-  return {
-    ...lesson,
-    markdown: lesson.markdown?.trim() ? lesson.markdown : cached?.markdown,
-    pdfPath: lesson.pdfPath?.trim() ? lesson.pdfPath : cached?.pdfPath,
-  };
-}
-
-/** Open (or reuse) one WebviewPanel for a text / slides lesson. */
-export function openLessonDoc(lesson: LessonDocInput): void {
-  const view = resolveLessonDoc(mergeWithCatalog(lesson));
-  const html = buildLessonDocHtml(view);
-
-  if (!currentPanel) {
-    currentPanel = vscode.window.createWebviewPanel(
-      VIEW_TYPE,
-      lesson.title,
-      vscode.ViewColumn.Active,
-      {
-        enableScripts: false,
-        localResourceRoots: [],
-        enableCommandUris: ["stella.openInWeb"],
-      },
-    );
-    currentPanel.onDidDispose(() => {
-      currentPanel = undefined;
-    });
-  } else {
-    currentPanel.title = lesson.title;
-    currentPanel.reveal(vscode.ViewColumn.Active);
-  }
-
-  currentPanel.webview.html = html;
 }

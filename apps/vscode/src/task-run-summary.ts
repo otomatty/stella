@@ -3,7 +3,7 @@ import {
   type StepStatus,
   type TestCaseResult,
 } from "@stella/shared/tasks/run-result";
-import { escapeHtml } from "./lesson-doc.js";
+import { escapeHtml } from "./markdown-html.js";
 
 export interface TestCounts {
   passed: number;
