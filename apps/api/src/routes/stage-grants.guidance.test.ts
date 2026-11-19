@@ -26,13 +26,14 @@ import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { stageGrantsRoute } from "./stage-grants.js";
 import { skillMapRoute } from "./skill-map.js";
+import { stageStartRoute } from "./stage-start.js";
 
 let database: ReturnType<typeof sqliteD1>;
 let env: Env;
 let admin: string;
 let learner: string;
 let db: ReturnType<typeof getDb>;
-const app = mountTestApp({} as Env, stageGrantsRoute, skillMapRoute).app;
+const app = mountTestApp({} as Env, stageGrantsRoute, skillMapRoute, stageStartRoute).app;
 const empty = { source_name: null, due_at: null, message: null };
 const guidance = {
   source_name: "架空の案内元",
@@ -205,52 +206,65 @@ describe("割り当ての案内 (実 SQLite)", () => {
   });
 });
 
-it("開発ラボGの案内はスキルツリーで見える章だけを返し、ほかの島の案内は残す", async () => {
-  await db.insert(stages).values(
-    [
-      { id: "devlab-ts-ch00", title: "00章", category: "開発ラボG", prerequisites: "[]" },
-      {
-        id: "devlab-ts-ch01",
-        title: "01章",
-        category: "開発ラボG",
-        prerequisites: '["devlab-ts-ch00"]',
-      },
-      {
-        id: "devlab-ts-ch02",
-        title: "02章",
-        category: "開発ラボG",
-        prerequisites: '["devlab-ts-ch01"]',
-      },
-      {
-        id: "devlab-ts-test-parallel",
-        title: "架空の並行章",
-        category: "開発ラボG",
-        prerequisites: '["devlab-ts-ch00"]',
-      },
-      {
-        id: "aws-first",
-        title: "AWS 基礎",
-        category: "AWS資格",
-        prerequisites: '["sample-basic"]',
-      },
-      {
-        id: "aws-next",
-        title: "AWS 応用",
-        category: "AWS資格",
-        prerequisites: '["aws-first"]',
-      },
-    ].map<typeof stages.$inferInsert>((stage) => ({
+const labEntryStages: (typeof stages.$inferInsert)[] = [
+  {
+    id: "dev-env-basics",
+    slug: "dev-env-basics",
+    title: "STELLAの使い方",
+    status: "published",
+  },
+  {
+    id: "devlab-ts-ch00",
+    slug: "devlab-ts-ch00",
+    title: "00章",
+    category: "開発ラボG",
+    prerequisites: '["dev-env-basics"]',
+    audience: "granted",
+    status: "published",
+  },
+];
+const startLab = () => call("/api/stages/devlab-ts-ch00/start", "POST", undefined, learner);
+
+it("開発ラボGの案内はスキルツリーで見える章と00章の前提を返し、ほかの島の案内は残す", async () => {
+  await db.insert(stages).values(labEntryStages);
+  const laterChapters = Array.from({ length: 9 }, (_, index) => ({
+    id: `devlab-ts-ch0${index + 1}`,
+    title: `0${index + 1}章`,
+    category: "開発ラボG",
+    prerequisites: JSON.stringify([`devlab-ts-ch0${index}`]),
+  }));
+  for (const stage of [
+    ...laterChapters,
+    {
+      id: "devlab-ts-test-parallel",
+      title: "架空の並行章",
+      category: "開発ラボG",
+      prerequisites: '["devlab-ts-ch00"]',
+    },
+    {
+      id: "aws-first",
+      title: "AWS 基礎",
+      category: "AWS資格",
+      prerequisites: '["sample-basic"]',
+    },
+    {
+      id: "aws-next",
+      title: "AWS 応用",
+      category: "AWS資格",
+      prerequisites: '["aws-first"]',
+    },
+  ]) {
+    await db.insert(stages).values({
       ...stage,
       slug: stage.id,
       audience: "granted",
       status: "published",
-    })),
-  );
+    });
+  }
   await grant();
   for (const id of [
     "devlab-ts-ch00",
-    "devlab-ts-ch01",
-    "devlab-ts-ch02",
+    ...laterChapters.map(({ id }) => id),
     "devlab-ts-test-parallel",
     "aws-first",
     "aws-next",
@@ -261,11 +275,32 @@ it("開発ラボGの案内はスキルツリーで見える章だけを返し、
   const statuses = async () =>
     Object.fromEntries((await mine()).stages.map((stage) => [stage.stage_id, stage.status]));
   const otherStages = { extra: "locked", "aws-first": "locked", "aws-next": "locked" };
-  expect(await statuses()).toEqual({ ...otherStages, "devlab-ts-ch00": "available" });
+  expect(await statuses()).toEqual({ ...otherStages, "devlab-ts-ch00": "locked" });
+  expect((await mine()).stages.find(({ stage_id }) => stage_id === "devlab-ts-ch00")).toMatchObject(
+    {
+      prerequisite_titles: ["STELLAの使い方"],
+      prerequisites_withheld: false,
+    },
+  );
+  const denied = await startLab();
+  expect(denied.status).toBe(400);
+  expect(await denied.json()).toMatchObject({
+    error: "STELLAの使い方 をクリアすると始められます",
+  });
 
   await db
     .insert(enrollments)
-    .values({ userId: "learner", stageId: "devlab-ts-ch00", status: "completed" });
+    .values({ userId: "learner", stageId: "dev-env-basics", status: "completed" });
+  expect(await statuses()).toEqual({ ...otherStages, "devlab-ts-ch00": "available" });
+  const started = await startLab();
+  expect(started.status).toBe(200);
+  expect(await started.json()).toMatchObject({ created: true, state: "unlocked" });
+  expect(await statuses()).toEqual({ ...otherStages, "devlab-ts-ch00": "in-progress" });
+
+  await db
+    .update(enrollments)
+    .set({ status: "completed" })
+    .where(eq(enrollments.stageId, "devlab-ts-ch00"));
   const afterCompletion = {
     ...otherStages,
     "devlab-ts-ch01": "available",
@@ -277,6 +312,38 @@ it("開発ラボGの案内はスキルツリーで見える章だけを返し、
     .insert(enrollments)
     .values({ userId: "learner", stageId: "devlab-ts-ch02", status: "active" });
   expect(await statuses()).toEqual({ ...afterCompletion, "devlab-ts-ch02": "in-progress" });
+});
+
+it("前提の追加前から受講中の応募者は、STELLAの使い方のクリア前でも00章を続けられる", async () => {
+  await db.insert(stages).values(labEntryStages);
+  await grant("learner", "devlab-ts-ch00");
+  await db
+    .insert(enrollments)
+    .values({ userId: "learner", stageId: "devlab-ts-ch00", status: "active" });
+  expect((await mine()).stages).toMatchObject([
+    {
+      stage_id: "devlab-ts-ch00",
+      status: "in-progress",
+      prerequisite_titles: [],
+      prerequisites_withheld: false,
+    },
+  ]);
+  const resumed = await startLab();
+  expect(resumed.status).toBe(200);
+  expect(await resumed.json()).toMatchObject({ created: false, state: "unlocked" });
+});
+
+it("管理者の前提免除でSTELLAの使い方のクリア前でも00章を始められる", async () => {
+  await db.insert(stages).values(labEntryStages);
+  await grant("learner", "devlab-ts-ch00");
+  const exempted = await call("/api/stage-grants/devlab-ts-ch00", "PATCH", { exempt: ["learner"] });
+  expect(exempted.status).toBe(200);
+  expect((await mine()).stages).toMatchObject([
+    { stage_id: "devlab-ts-ch00", status: "available", prerequisite_titles: [] },
+  ]);
+  const started = await startLab();
+  expect(started.status).toBe(200);
+  expect(await started.json()).toMatchObject({ created: true, state: "unlocked" });
 });
 
 async function task(

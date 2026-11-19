@@ -41,7 +41,7 @@ describe("toCatalogStage", () => {
     updated_at: "",
   });
   const detail = {
-    stage: { id: "st", title: "開発環境とWebの入口", status: "published", format: 2 },
+    stage: { id: "st", title: "STELLAの使い方", status: "published", format: 2 },
     sections: [
       {
         section: { id: "s1", stage_id: "st", title: "最初のページ", order: 0, created_at: "" },

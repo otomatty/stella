@@ -1,7 +1,7 @@
 /**
- * 受講者のホーム — **スキルツリーが主役** の 1 画面。
+ * 受講者のホーム — ステージ一覧の盤面と 2 枚のカード。
  *
- * 盤面 (スキルツリー) が画面いっぱいに広がり、「あなたの状況」と「次にやること」の
+ * 盤面が画面いっぱいに広がり、「あなたの状況」と「次にやること」の
  * カードがその上に浮かぶ。PC では左上に縦に並べ、スマホ・タブレットでは上端と下端に出す。
  * 表示の切り替えはスマホ・タブレットでは「あなたの状況」のすぐ下に置く。
  * PC ではカードの陰を盤面の「見えている範囲」から外す (`insetLeft`)。
@@ -10,9 +10,8 @@
  *
  * - ホームは今日の一手だけを残す。提出と添削はレッスン画面、お知らせは通知から確認する
  * - 縦一本の「スキルマップ」(StagePath) はやめた。同じ星を 2 つの描き方で見せると、
- *   どちらが本物の現在地か迷う。現在地はツリーの脈打つ星と、ガイドの「次にやること」
- * - 「続きから」は 1 か所 (ガイドの主ボタン) に絞った。ツリーの現在地の星にも出るが、
- *   同じ行き先を指す
+ *   どちらが本物の現在地か迷う。サーバの現在地は盤面の脈打つ星に出す
+ * - 現在地がないときは、ガイドに限り案内されたステージの開始・続き・仕上げを出す
  * - プレースメント (初回の案内) はガイドの最初の手順になった。ツリーが横に見えている
  *   ので「あとで選ぶ」で閉じる必要が無い
  *
@@ -37,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Stage } from "@/data/types";
+import { useGuidedStages } from "@/hooks/useGuidedStages";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
@@ -64,10 +64,16 @@ import {
 import { SkillLanes } from "@/components/learner/tree/SkillLanes";
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
-import { buildHomeGuide, homeGuideStageInput } from "@/lib/home-guide";
+import {
+  buildHomeGuide,
+  homeGuideStageInput,
+  isGuidedStageStep,
+  pickGuidedStage,
+} from "@/lib/home-guide";
 import { Compass, ListTree, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
+import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { buildTodayPlan } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
 import { openInVscode } from "@/lib/vscode-launch";
@@ -115,6 +121,7 @@ export const LearnerHome = ({
   // 「今日の復習」(SRS) の残り問題数。カードが無い/今日ぶんゼロならプランに出さない。
   const { review, error: reviewError } = useSrsToday(currentUserId, backendEnabled);
   const skillMap = useSkillMap(currentUserId, backendEnabled);
+  const guided = useGuidedStages(currentUserId);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
   const treeRef = useRef<SkillTreeHandle | null>(null);
   const [homeView, setHomeView] = useState<"tree" | "lanes">(() => {
@@ -175,9 +182,16 @@ export const LearnerHome = ({
       stages.find((c) => !c.completed && (c.sections?.length ?? 0) > 0))
     : undefined;
   const activeStage = serverActiveStageId ? serverActiveStage : fallbackStage;
+  // サーバの現在地が null のときだけ、案内された星をガイドの続き・仕上げに使う。
+  const pickedGuidedStage = pickGuidedStage(guided.stages, skillMap.map?.active_stage_id);
+  const guidedInProgress =
+    pickedGuidedStage?.status === "in-progress" ? stageById(pickedGuidedStage.stage_id) : undefined;
+  const guidedStage =
+    pickedGuidedStage?.status === "available" || guidedInProgress ? pickedGuidedStage : undefined;
+  const guideStage = activeStage ?? guidedInProgress;
   const nextLesson = useMemo(
-    () => findNextLesson(activeStage, progressMap),
-    [activeStage, progressMap],
+    () => findNextLesson(guideStage, progressMap),
+    [guideStage, progressMap],
   );
   /**
    * レッスンを終えた新形式の星で、まだ合格していない課題。修了には課題のレビューの合格も
@@ -186,12 +200,12 @@ export const LearnerHome = ({
    */
   const wrapupStageId =
     backendEnabled &&
-    activeStage &&
-    !activeStage.completed &&
+    guideStage &&
+    !guideStage.completed &&
     !nextLesson &&
-    activeStage.format === 2 &&
-    activeStage.lessonsCount > 0
-      ? activeStage.id
+    guideStage.format === 2 &&
+    guideStage.lessonsCount > 0
+      ? guideStage.id
       : null;
   const wrapup = useStageWrapup(wrapupStageId);
 
@@ -211,12 +225,12 @@ export const LearnerHome = ({
     const plan = buildTodayPlan({
       srsDueCount: review?.questions.length ?? 0,
       activeStage:
-        activeStage && nextLesson
+        guideStage && nextLesson
           ? {
-              stageTitle: activeStage.title,
+              stageTitle: guideStage.title,
               nextLessonTitle: nextLesson.lesson.title,
               // 下限は 0 (「残り 0 レッスン」はありうる状態)。
-              remainingLessons: Math.max(activeStage.lessonsCount - nextLesson.lessonNumber + 1, 0),
+              remainingLessons: Math.max(guideStage.lessonsCount - nextLesson.lessonNumber + 1, 0),
             }
           : null,
       recentMiss: recentMiss ? { title: recentMiss.assignmentTitle, kind: "submission" } : null,
@@ -229,7 +243,8 @@ export const LearnerHome = ({
       hasAnyEnrollment:
         skillMap.map?.has_enrollment ?? nodes.some((node) => node.enrolled === true),
       hasVisibleExtra: ordinaryGuide.hasVisibleExtra,
-      activeWithoutLesson: Boolean(activeStage && !activeStage.completed && !nextLesson),
+      activeWithoutLesson: Boolean(guideStage && !guideStage.completed && !nextLesson),
+      guidedStage,
       startableStageIds: ordinaryGuide.startableStageIds,
       stageAudienceById: Object.fromEntries(nodes.map((node) => [node.id, node.audience])),
       reviewDone,
@@ -239,7 +254,8 @@ export const LearnerHome = ({
     });
   }, [
     review,
-    activeStage,
+    guideStage,
+    guidedStage,
     nextLesson,
     recentMiss,
     skillMap.map,
@@ -254,24 +270,29 @@ export const LearnerHome = ({
   const later = guide.steps.slice(1);
   const firstStep = guide.steps[0];
   const firstStageId = firstStep?.kind === "first-stage" ? firstStep.stageId : null;
+  const initialGuidedStageId =
+    guidedStage && isGuidedStageStep(firstStep, guidedStage) ? guidedStage.stage_id : null;
+  const initialGuideStageId = initialGuidedStageId ?? firstStageId;
   const firstStageFocusAttempted = useRef(false);
+  const guidedFocusAttempted = useRef(false);
   useEffect(() => {
-    if (homeView !== "tree" || pendingFocusId || !firstStageId || firstStageFocusAttempted.current)
-      return;
+    const attempted = initialGuidedStageId ? guidedFocusAttempted : firstStageFocusAttempted;
+    if (homeView !== "tree" || pendingFocusId || !initialGuideStageId || attempted.current) return;
     // 既存の初期フォーカスは止め、描画後にこの星へ 1 回だけ寄せる。
     // まだ描画前なら、次のフレームで 1 回だけ試し直す。
     let retryFrame: number | undefined;
     const frame = requestAnimationFrame(() => {
       firstStageFocusAttempted.current = true;
-      if (!treeRef.current?.focusStage(firstStageId)) {
-        retryFrame = requestAnimationFrame(() => treeRef.current?.focusStage(firstStageId));
+      attempted.current = true;
+      if (!treeRef.current?.focusStage(initialGuideStageId)) {
+        retryFrame = requestAnimationFrame(() => treeRef.current?.focusStage(initialGuideStageId));
       }
     });
     return () => {
       cancelAnimationFrame(frame);
       if (retryFrame !== undefined) cancelAnimationFrame(retryFrame);
     };
-  }, [firstStageId, homeView, pendingFocusId]);
+  }, [initialGuideStageId, initialGuidedStageId, homeView, pendingFocusId]);
 
   // ----- 星を始める / 開く -----
 
@@ -346,6 +367,41 @@ export const LearnerHome = ({
     void navigate({ to: "/stages/$stageId", params: { stageId } });
   };
 
+  const guidedStartPending = useRef(false);
+  const [startingGuidedStage, setStartingGuidedStage] = useState(false);
+  const [guidedStartError, setGuidedStartError] = useState<{
+    stageId: string;
+    message: string;
+  } | null>(null);
+  const startFromGuide = async (stageId: string) => {
+    if (guidedStartPending.current) return;
+    guidedStartPending.current = true;
+    setStartingGuidedStage(true);
+    setGuidedStartError(null);
+    const seq = ++startSeqRef.current;
+    try {
+      await startGuidedStage(stageId);
+      const [nextStages] = await Promise.all([
+        refetchStages(),
+        guided.refetch(),
+        skillMap.refetch(),
+      ]);
+      await whenProgressReady();
+      if (!mountedRef.current || seq !== startSeqRef.current) return;
+      const target = startDestination(nextStages, stageId, loadMap());
+      if (target) onOpenLesson(target.stage, target.lessonId);
+      else openStage(stageId);
+    } catch (err) {
+      setGuidedStartError({
+        stageId,
+        message: err instanceof Error ? err.message : "開始に失敗しました",
+      });
+    } finally {
+      guidedStartPending.current = false;
+      setStartingGuidedStage(false);
+    }
+  };
+
   /** その星の続き (未完了の先頭、無ければ読み返しの先頭) を開く。開けなければ詳細へ。 */
   const resumeStage = (stageId: string) => {
     const target = startDestination(stages, stageId, progressMap);
@@ -361,19 +417,20 @@ export const LearnerHome = ({
    */
   const handheld = useIsHandheld();
   const openPendingTask = () => {
-    if (!activeStage || !wrapup) return;
+    if (!guideStage || !wrapup) return;
     if (!handheld) {
       void openInVscode({ taskId: wrapup.task.id });
       return;
     }
     const lessonId = wrapup.task.lessonId;
-    if (lessonId) onOpenLesson(activeStage, lessonId);
-    else openStage(activeStage.id);
+    if (lessonId) onOpenLesson(guideStage, lessonId);
+    else openStage(guideStage.id);
   };
 
   const showInTree = (stageId: string) => {
     if (homeView === "lanes") {
       firstStageFocusAttempted.current = true;
+      guidedFocusAttempted.current = true;
       setPendingFocusId(stageId);
       setHomeView("tree");
       return;
@@ -387,23 +444,23 @@ export const LearnerHome = ({
     onStartStage: startStage,
     onStartReview: () => setPage("daily-review"),
     onResumeLesson: () => {
-      if (activeStage && nextLesson) onOpenLesson(activeStage, nextLesson.lesson.id);
+      if (guideStage && nextLesson) onOpenLesson(guideStage, nextLesson.lesson.id);
     },
     onOpenMiss: () => {
       if (recentMiss) onOpenSubmission(recentMiss.id);
     },
     onOpenActiveStage: () => {
-      if (activeStage) openStage(activeStage.id);
+      if (guideStage) openStage(guideStage.id);
     },
     onOpenPendingTask: openPendingTask,
     onShowInTree: showInTree,
   };
-  const guideActiveStage: GuideActiveStage | null = activeStage
+  const guideActiveStage: GuideActiveStage | null = guideStage
     ? {
-        id: activeStage.id,
-        title: activeStage.title,
-        progress: activeStage.progress,
-        lessonsCount: activeStage.lessonsCount,
+        id: guideStage.id,
+        title: guideStage.title,
+        progress: guideStage.progress,
+        lessonsCount: guideStage.lessonsCount,
         wrapup,
       }
     : null;
@@ -411,6 +468,9 @@ export const LearnerHome = ({
     ...handlers,
     activeStage: guideActiveStage,
     nodeOf: (id: string) => nodeById.get(id),
+    onStartGuidedStage: startFromGuide,
+    startingGuidedStage,
+    guidedStartError,
   };
 
   /** 進行中の星の詳細カードに足す情報。 */
@@ -562,8 +622,8 @@ export const LearnerHome = ({
             onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             revealDev={revealDev}
-            // 初回の案内は上の effect で寄せる。それ以外は現在地か入口の星座。
-            initialFocusStageId={firstStageId ? null : serverActiveStageId}
+            // ガイドが名指しする星には上の effect で寄せる。
+            initialFocusStageId={initialGuideStageId ? null : serverActiveStageId}
             activeInfo={activeInfo}
             handleRef={treeRef}
             // PC でカードの陰は「見えている範囲」から外す。

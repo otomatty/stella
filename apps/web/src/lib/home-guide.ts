@@ -1,10 +1,8 @@
 /**
- * ホームのガイド (スキルツリーの脇の「次にやること」) の組み立て — 純関数 (I/O を持たない)。
+ * ホームのガイド (ステージ一覧の「次にやること」) の組み立て — 純関数 (I/O を持たない)。
  *
- * ホームはスキルツリーそのもので、ガイドはその横に **今日の手順を上から 1 本** で並べる。
- * 先頭の 1 つ (`steps[0]`) が画面でいちばん大きく出る「次にやること」で、残りは
- * 「そのあと」として小さく続く。何をどの順に出すかはここだけが決める (画面に条件を
- * 散らすと、「続きから」がガイドとツリーの両方で別の星を指す類のずれが出る)。
+ * ガイドはステージ一覧の盤面に重なる「次にやること」のカードに、今日の手順を上から並べる。
+ * 先頭の 1 つ (`steps[0]`) を大きく出し、残りは「そのあと」として続く。
  *
  * ## 決めたこと
  *
@@ -12,17 +10,20 @@
  *   そちらで並べ、ここは順番を崩さない
  * - 進行中のステージのレッスンが尽きた (課題・レビュー待ち) ときは「仕上げ」を足す。
  *   黙って次のステージの一覧へ進むと、提出の確認が残っていることに気付けない
- * - **始められるステージの一覧はレッスンが無いときだけ**。進めるステージは同時に 1 つという設計
- *   なので、続きがあるうちは別の星を並べて迷わせない
- * - 何も始めていない人には、初回の案内が **最初の一手** (先頭) になる
+ * - 通常の現在地に続きのレッスンがあれば、始められるステージの一覧は出さない。
+ *   案内から選んだ星の続きには、通常の手順をあとに残す。
+ * - 何も始めていない人には、初回の案内が **最初の一手** になる。案内されたステージを
+ *   ガイドに出す日は、そのステージの手順のあとに初回・ツリー選択・VS Code 準備を残す。
  * - 通常の道は `unguided_next_stage_ids` / `has_unguided_enrollment` で決める。
- *   割り当ては「案内されたステージ」の枠が受け持ち、一覧にも初回の名指しの判定にも数えない。
+ *   割り当ては一覧にも初回の名指しの判定にも数えない。
  *   割り当てのない受講がなく、始められる Basic が 1 つなら、その星を名指しする。
- * - 自分で案内された星をフォーカスに選んだときは、今日のプランの続き・仕上げを従来どおり出す。
- *   案内の枠から始める・開く操作ではフォーカスを変えない (06 §11.1)。
+ * - サーバの現在地が null なら、案内から進行中 → 始められる → 期限順で 1 件選ぶ
+ *   (期限なしは最後、同順は API 順)。進行中はガイドの続き・仕上げに使い、
+ *   始められる星は続きのレッスンと同じ位置に置く。開始・表示でフォーカスは変えない (06 §11.1)。
  * - 古い API の応答では従来の項目で判断する。
  */
 
+import type { GuidedStage } from "@stella/shared/stage-grants/types";
 import type { SkillMapMine, SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlan, TodayPlanItem } from "@/lib/today-plan";
 
@@ -30,6 +31,7 @@ export type GuideStep =
   | { kind: "setup-vscode" }
   /** 初回に始められる星が Basic の 1 つだけ — その場で始める。 */
   | { kind: "first-stage"; stageId: string }
+  | { kind: "start-guided"; stage: GuidedStage }
   /** 今日のプランの 1 項目 (復習 / 続きのレッスン / つまずきの見直し)。 */
   | { kind: "plan"; item: TodayPlanItem }
   /** 進行中のステージのレッスンが尽きた — 課題とレビューの状況を確かめる。 */
@@ -50,10 +52,12 @@ export interface HomeGuideInput {
   hasEnrollment: boolean;
   /** 準備案内用。割り当ても含めた全受講登録。省略時は従来どおり hasEnrollment。 */
   hasAnyEnrollment?: boolean;
-  /** 古い API の互換判定。新しい応答では割り当てを別枠へ分けるため false。 */
+  /** 古い API の互換判定。新しい応答では通常の一覧から割り当てを除くため false。 */
   hasVisibleExtra: boolean;
   /** 進行中のステージがあり、未修了なのに開けるレッスンが残っていない。 */
   activeWithoutLesson: boolean;
+  /** 案内から選んだ星。進行中の星は本人の受講一覧にあるときだけ渡す。 */
+  guidedStage?: GuidedStage;
   /** 今すぐ始められる星 (`startableStageIds` の戻り値)。 */
   startableStageIds: string[];
   /** 星の audience。未指定は Basic として扱う。 */
@@ -86,26 +90,66 @@ export function startableStageIds(
   return picked;
 }
 
+/** 現在地が確定していない間や、本人の現在地があるときは案内へ切り替えない。 */
+export function pickGuidedStage(
+  stages: readonly GuidedStage[],
+  activeStageId: string | null | undefined,
+): GuidedStage | undefined {
+  if (activeStageId !== null) return undefined;
+  let picked: GuidedStage | undefined;
+  let pickedDeadline = Infinity;
+  for (const stage of stages) {
+    if (stage.status !== "available" && stage.status !== "in-progress") continue;
+    const deadline = stage.due_at ? Date.parse(stage.due_at) : Infinity;
+    if (
+      !picked ||
+      (picked.status === "available" && stage.status === "in-progress") ||
+      (picked.status === stage.status && deadline < pickedDeadline)
+    ) {
+      picked = stage;
+      pickedDeadline = deadline;
+    }
+  }
+  return picked;
+}
+
+export function isGuidedStageStep(step: GuideStep | undefined, stage: GuidedStage): boolean {
+  return (
+    (step?.kind === "start-guided" && step.stage.stage_id === stage.stage_id) ||
+    (stage.status === "in-progress" &&
+      (step?.kind === "wrapup" || (step?.kind === "plan" && step.item.kind === "lesson")))
+  );
+}
+
 export function buildHomeGuide(input: HomeGuideInput): HomeGuide {
   const steps: GuideStep[] = input.plan.items.map((item) => ({ kind: "plan", item }));
   if (input.activeWithoutLesson) steps.push({ kind: "wrapup" });
 
+  const guidedStage = input.guidedStage;
+  if (guidedStage?.status === "available") {
+    steps.splice(input.plan.items[0]?.kind === "review" ? 1 : 0, 0, {
+      kind: "start-guided",
+      stage: guidedStage,
+    });
+  }
+  const guidedIndex = guidedStage
+    ? steps.findIndex((step) => isGuidedStageStep(step, guidedStage))
+    : -1;
   const hasLesson = input.plan.items.some((item) => item.kind === "lesson");
   const stageIds = input.startableStageIds;
-  if (!hasLesson && stageIds.length > 0) {
+  if ((!hasLesson || guidedIndex >= 0) && stageIds.length > 0) {
     // 本人が案内された星をフォーカスに選んだ場合も、仕上げを先頭に保つ。
-    if (input.hasEnrollment || input.activeWithoutLesson) {
+    if (input.hasEnrollment || (input.activeWithoutLesson && guidedIndex < 0)) {
       steps.push({ kind: "choose", welcome: false, stageIds });
     } else {
-      if (
+      const step: GuideStep =
         !input.hasVisibleExtra &&
         stageIds.length === 1 &&
         input.stageAudienceById[stageIds[0]] !== "granted"
-      ) {
-        steps.unshift({ kind: "first-stage", stageId: stageIds[0] });
-      } else {
-        steps.unshift({ kind: "choose", welcome: true, stageIds });
-      }
+          ? { kind: "first-stage", stageId: stageIds[0] }
+          : { kind: "choose", welcome: true, stageIds };
+      if (guidedIndex >= 0) steps.push(step);
+      else steps.unshift(step);
     }
   }
 
@@ -114,8 +158,8 @@ export function buildHomeGuide(input: HomeGuideInput): HomeGuide {
     input.connectedVscode === false &&
     input.firstStageStarted === false
   ) {
-    // 今日の先頭を保ち、「そのあと」の先頭へ。他の手順も無ければ案内を先頭にする。
-    steps.splice(Math.min(1, steps.length), 0, { kind: "setup-vscode" });
+    // 今日の先頭と案内された星の手順のあとへ。他の手順が無ければ先頭にする。
+    steps.splice(Math.min(Math.max(1, guidedIndex + 1), steps.length), 0, { kind: "setup-vscode" });
   }
 
   return { steps, idle: input.reviewDone ? "done" : "empty" };

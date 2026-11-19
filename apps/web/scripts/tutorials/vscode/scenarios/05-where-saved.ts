@@ -6,9 +6,13 @@ export default {
   id: "where-saved",
   title: "保存先を確かめる",
   summary: "一番上のフォルダー名から、ファイルの保存先をたどります。",
-  topic: "dev-env-basics/modules/u03-files/l1-files-and-folders/t3-where-saved",
-  task: "dev-env-basics/u03-files/q01-note-file",
-  others: ["dev-env-basics/u02-first-task/q01-first-page", "dev-env-basics/u03-files/q03-rename"],
+  topic: "html-css-basics/modules/u00-files/l1-files-and-folders/t3-where-saved",
+  task: "html-css-basics/u00-files/q01-note-file",
+  others: [
+    "dev-env-basics/u02-first-task/q01-first-page",
+    "html-css-basics/u00-files/q03-rename",
+    "html-css-basics/u01-check-a/a01-check-a",
+  ],
   open: "note.txt",
 
   async prepare({ taskRoot }) {
@@ -38,7 +42,7 @@ export default {
     await t.highlight(root, 4000);
 
     await t.caption("ステージ、単元、課題の順にフォルダーを開きます。", { hold: 14000 });
-    for (const name of ["dev-env-basics", "u03-files", "q01-note-file"]) {
+    for (const name of ["html-css-basics", "u00-files", "q01-note-file"]) {
       const folder = explorerRow(page, name);
       await t.expect(folder);
       await t.highlight(folder, 1200);
@@ -57,7 +61,7 @@ export default {
     await t.caption("エディターの上のパンくずリストも、同じ場所を示します。", {
       hold: 10000,
     });
-    for (const name of ["dev-env-basics", "u03-files", "q01-note-file", "note.txt"]) {
+    for (const name of ["html-css-basics", "u00-files", "q01-note-file", "note.txt"]) {
       await t.expect(breadcrumbs, { text: name });
     }
     await t.highlight(breadcrumbs, 4000);

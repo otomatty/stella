@@ -6,11 +6,11 @@ export default {
   id: "rename",
   title: "ファイルの名前を変える",
   summary: "ファイルを選び、F2 キー（Mac は Enter キー）で名前を変え、拡張子を確かめます。",
-  topic: "dev-env-basics/modules/u03-files/l1-files-and-folders/t2-rename",
-  task: "dev-env-basics/u03-files/q03-rename",
+  topic: "html-css-basics/modules/u00-files/l1-files-and-folders/t2-rename",
+  task: "html-css-basics/u00-files/q03-rename",
   others: [
     "dev-env-basics/u02-first-task/q01-first-page",
-    "dev-env-basics/u03-files/q01-note-file",
+    "html-css-basics/u00-files/q01-note-file",
   ],
   open: "memo.txt",
 

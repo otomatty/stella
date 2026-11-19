@@ -54,6 +54,37 @@ describe("startableStageIds", () => {
 });
 
 describe("buildHomeGuide", () => {
+  it("案内されたステージの開始は復習と見直しの間に置き、準備と選択も残す", () => {
+    const plan = buildTodayPlan({
+      srsDueCount: 3,
+      recentMiss: { kind: "submission", title: "再提出になった課題" },
+    });
+    const guide = buildHomeGuide({
+      ...base,
+      plan,
+      guidedStage: {
+        stage_id: "guided",
+        title: "案内されたステージ",
+        status: "available",
+        source_name: null,
+        message: null,
+        due_at: null,
+        prerequisite_titles: [],
+        progress: { unit: "tasks", passed: 0, total: 1 },
+      },
+      startableStageIds: ["next"],
+      connectedVscode: false,
+      firstStageStarted: false,
+    });
+    expect(guide.steps.map((step) => (step.kind === "plan" ? step.item.kind : step.kind))).toEqual([
+      "review",
+      "start-guided",
+      "setup-vscode",
+      "miss",
+      "choose",
+    ]);
+  });
+
   it("今日のプランの順をそのまま手順にする (先頭が「次にやること」)", () => {
     const guide = buildHomeGuide({
       ...base,

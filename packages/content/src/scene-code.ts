@@ -280,6 +280,11 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
   });
   if (issues.length || !(input.beats as unknown[]).every(obj)) return issues;
   const scene = input as unknown as CodeScene;
+  if (scene.code.every((line) => !line.trim() || line.trimStart().startsWith("//")))
+    error(
+      `${path}.code`,
+      "コメントと空行だけのコードの場面です。操作は実画面（view）、関係や流れ、ルールは概念図（board）で見せてください",
+    );
   const states = codeSceneState(scene);
   scene.beats.forEach((beat, i) => {
     const p = `${path}.beats[${i}]`,

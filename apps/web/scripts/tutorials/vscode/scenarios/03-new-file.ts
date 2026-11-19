@@ -6,15 +6,18 @@ export default {
   id: "new-file",
   title: "新しいファイルを作る",
   summary: "課題フォルダーを選んでからファイルを作り、保存します。",
-  topic: "dev-env-basics/modules/u03-files/l1-files-and-folders/t1-new-file",
-  task: "dev-env-basics/u03-files/q01-note-file",
-  others: ["dev-env-basics/u02-first-task/q01-first-page"],
+  topic: "html-css-basics/modules/u00-files/l1-files-and-folders/t1-new-file",
+  task: "html-css-basics/u00-files/q01-note-file",
+  others: [
+    "dev-env-basics/u02-first-task/q01-first-page",
+    "html-css-basics/u01-check-a/a01-check-a",
+  ],
   open: null,
 
   async setup(page) {
-    const stage = explorerRow(page, "dev-env-basics");
+    const stage = explorerRow(page, "html-css-basics");
     if ((await stage.getAttribute("aria-expanded")) === "false") await stage.click();
-    // この台本では単元の子が1つなので、単元と課題が同じ行にまとまる。
+    // この単元の課題は1つだけなので、単元と課題が同じ行にまとまる。
     const folder = explorerRow(page, "q01-note-file");
     await folder.waitFor({ state: "visible" });
     if ((await folder.getAttribute("aria-expanded")) === "true") await folder.click();

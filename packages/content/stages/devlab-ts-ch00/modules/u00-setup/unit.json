@@ -1,5 +1,5 @@
 {
-  "plannedHours": 0.75,
+  "plannedHours": 1,
   "skills": {
     "uses": [],
     "assesses": ["devlab-ts-setup"]

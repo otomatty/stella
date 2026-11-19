@@ -549,6 +549,33 @@ describe("外部連携の境界 (実 SQLite)", () => {
     const a = await setupWrite();
     expect((await write(a.token, "stages", { stages: [setting] })).status).toBe(200);
   });
+  it("連携の exempt: true でSTELLAの使い方のクリア前でも00章を始められる", async () => {
+    const a = await setupWrite();
+    const orm = getDb(env);
+    await orm.update(stages).set({ slug: "dev-env-basics" }).where(eq(stages.id, "basic"));
+    await orm
+      .update(stages)
+      .set({
+        slug: "devlab-ts-ch00",
+        category: "開発ラボG",
+        prerequisites: '["dev-env-basics"]',
+      })
+      .where(eq(stages.id, "extra"));
+    expect((await patch(a.client.id, { allowedStagePrefixes: ["devlab-ts-"] })).status).toBe(200);
+    expect(
+      (await write(a.token, "members", { members: [{ email: "inside@example.test" }] })).status,
+    ).toBe(200);
+    expect(
+      (await write(a.token, "stages", { stages: [{ slug: "devlab-ts-ch00", exempt: true }] }))
+        .status,
+    ).toBe(200);
+    const started = await request(app, env, "/api/stages/extra/start", {
+      token: studentToken,
+      method: "POST",
+    });
+    expect(started.status).toBe(200);
+    expect(await started.json()).toMatchObject({ created: true, state: "unlocked" });
+  });
   it("招待・既存・再送・行ごとの失敗。既存の名前と手動割り当てを保護する", async () => {
     const a = await setupWrite();
     await getDb(env)

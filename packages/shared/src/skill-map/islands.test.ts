@@ -44,7 +44,7 @@ describe("filterIslandStages", () => {
     expect(slugsOf(visible)).toEqual(slugsOf(mainland));
   });
 
-  it("開発環境とWebの入口をクリアすると島が現れる (既定の表示条件)", () => {
+  it("STELLAの使い方をクリアすると島が現れる (既定の表示条件)", () => {
     const visible = filterIslandStages([...mainland, ...islands], new Set(["id-dev-env-basics"]));
     expect(slugsOf(visible)).toEqual(slugsOf([...mainland, ...islands]));
   });
@@ -53,7 +53,7 @@ describe("filterIslandStages", () => {
     const python = stage("python-basics", "Python");
     const devops = stage("devops-basics", "DevOps");
     const rows = [...mainland, python, devops, ...islands];
-    // Python も島。開発環境とWebの入口をクリアするまで存在ごと落ちる。
+    // Python も島。STELLAの使い方をクリアするまで存在ごと落ちる。
     expect(slugsOf(filterIslandStages(rows, new Set()))).toEqual(slugsOf(mainland));
     const afterIt = filterIslandStages(rows, new Set(["id-dev-env-basics"]));
     expect(slugsOf(afterIt)).toEqual(slugsOf([...mainland, python, ...islands]));

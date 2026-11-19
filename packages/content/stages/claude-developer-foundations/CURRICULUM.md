@@ -12,7 +12,7 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 - 置き場所: スキルツリーの **Anthropic認定資格** の島(表示条件は `dev-env-basics` のクリア)。
   旧 AI駆動開発の島(AI駆動開発の考え方・Claude チャット入門・Claude Code 入門・Skills とサブエージェント・
   検証・hooks・MCP・Cowork 入門の 6 ステージ)は 2026-10 に退役させ、このステージを一から作り直す
-- 前提ステージ: **開発環境とWebの入口(`dev-env-basics`)**。Node.js と VS Code の拡張で課題を確かめられる状態から始める
+- 前提ステージ: **STELLAの使い方(`dev-env-basics`)**。Node.js と VS Code の拡張で課題を確かめられる状態から始める
   (`stage.json` の `prerequisites` に対応)。Claude Code も、試験の範囲のぶんはこのステージで扱う(M8)
 - 推奨(解放条件にはしない): JavaScript / TypeScript で関数と非同期の HTTP 通信が読めること
   (`javascript-basics`・`http-async-basics` の範囲)。試験ガイド v1.0 の受験者像は Python か TypeScript が使える人です(推奨で必須ではない。下記)

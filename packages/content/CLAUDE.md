@@ -102,11 +102,13 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
+**説明の優先順位**は実際の操作のキャプチャ → 概念図のアニメーション → コードブロック → テキストです。上で見せられる内容は上の手段を使い、新しいスライド版は作りません (2026-11-19、オーナー決定)。使い分けは [VIDEO_GUIDE.md の「何を映すか」](VIDEO_GUIDE.md#何を映すか) を参照してください。
+
 **新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は動画に焼き込み、`captions.vtt` は空にします。以下は旧方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の12トピックすべてに台本があります。GitHub Secret `GEMINI_API_KEY` は登録済みで、CI で動画を生成しています。main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに台本があります。GitHub Secret `GEMINI_API_KEY` は登録済みで、CI で動画を生成しています。main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
@@ -159,15 +161,15 @@ python packages/content/scripts/diagram_export.py packages/content/stages/<slug>
 
 ## 現在の状態
 
-教材は `stages/<slug>/modules/` が正本です。新18ステージ・残す11ステージ・あとから足した13ステージの計42ステージがあります。`dev-env-basics` は4時間・5単元（U00〜U04）・12トピック・課題5つの草稿を持ちます。公開の U00 `u00-start` は学習の流れ、U01 `u01-vscode-setup` は VS Code と STELLA 拡張の準備を扱います。U02 `u02-first-task` は編集・保存・表示と確認・提出、U03 `u03-files` はファイル作成・名前の変更、U04 `u04-check-a` はファイル操作の確認Aと後日の確認Bです。STELLAの網羅的な説明はせず、VS Code の主要な操作を優先します。相対リンク、ターミナル、Node.js・npm の準備と環境診断、Git のローカルの記録、ローカルサーバーは最初に使う後続ステージの冒頭で扱い、具体的な配置は執筆時（#41）に決めます。参照元と本文は講師の承認待ちで、AI は `approved` を付けません。ほかの新17ステージは M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つステージも全体は準備中です。残すステージのうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えたステージです（説明から【準備中】を外した）。開発ラボG の島の Extra は、選考の事前課題 第1部を章ごとの `devlab-ts-ch00`〜`devlab-ts-ch09` に分けています。01〜09章の章の問題は `modules/u99-problems/tasks/chapter/` に置きます。番号ごとの単元には今後、読む教材を置く予定です。発展問題は 01〜09章のステージの最後の単元 `u100-extra`（`tasks/extra/`）に置き、章の修了に数えます。準備中は計23ステージです。
+教材は `stages/<slug>/modules/` が正本です。新18ステージ・残す11ステージ・あとから足した13ステージの計42ステージがあります。「STELLAの使い方」(`dev-env-basics`) は2.5時間・3単元（U00〜U02）・8トピック・課題1つの草稿を持ちます。公開の U00 `u00-start` は学習の流れ、U01 `u01-vscode-setup` は VS Code と STELLA 拡張の準備を扱います。U02 `u02-first-task` は編集・保存・表示と確認・提出を扱います。次の `html-css-basics` では U00 `u00-files` でファイル作成・名前変更、U01 `u01-check-a` でファイル操作の確認Aと確認Bを扱います。確認Bは確認A合格の7日後に出ます。相対リンク、ターミナル、Node.js・npm の準備と環境診断、Git のローカルの記録、ローカルサーバーは最初に使う後続ステージの冒頭で扱い、具体的な配置は執筆時（#41）に決めます。参照元と本文は講師の承認待ちで、AI は `approved` を付けません。ほかの新16ステージは M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つステージも全体は準備中です。残すステージのうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えたステージです（説明から【準備中】を外した）。開発ラボG の島の Extra は、選考の事前課題 第1部を章ごとの `devlab-ts-ch00`〜`devlab-ts-ch09` に分けています。01〜09章の章の問題は `modules/u99-problems/tasks/chapter/` に置きます。番号ごとの単元には今後、読む教材を置く予定です。発展問題は 01〜09章のステージの最後の単元 `u100-extra`（`tasks/extra/`）に置き、章の修了に数えます。準備中は計23ステージです。
 
-Basic で唯一の前提なしステージは `dev-env-basics` です。このステージには前提を追加しないでください。Extra は前提が 1 つ以上必要ですが、表示条件の無い島 (`requires: []`) の Extra は前提なしにでき、開発ラボG の 00章が該当します。新18ステージの slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
+Basic で唯一の前提なしステージは `dev-env-basics` です。このステージには前提を追加しないでください。Extra は前提が 1 つ以上必要ですが、表示条件の無い島 (`requires: []`) の Extra は前提なしにできます。開発ラボG の 00章の前提は `dev-env-basics` (STELLAの使い方) です。新18ステージの slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 
 Basic = 新18ステージ、それ以外は Extra (`audience: granted`)。講師・管理者がステージ管理 (`/stages`) の盤面で割り当てた受講者にだけ出ます。Python は独立した島です。AWS資格・情報処理資格・Anthropic認定資格・Salesforce案件・Python は `dev-env-basics` クリアで現れる島で、DevOps は `python-basics` クリアで現れ、開発ラボG は条件なしです。いずれも割り当てが必要です。表示条件は `@stella/shared/skill-map/islands` に定義します。Git の独立したステージは退役し、Git の練習は新しいステージへ分散します。複製を扱う機能は維持していますが、現行カタログに複製するステージはありません。
 
 退役した19ステージと、2026-10 に退役した AI駆動開発の島の6ステージの教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
-新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の12トピックに新しい台本を配置済みです。`GEMINI_API_KEY` は登録済みで、CI で動画を生成・配信しています。
+新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに新しい台本を配置済みです。`GEMINI_API_KEY` は登録済みで、CI で動画を生成・配信しています。
 
 残す教材の本文は維持します。新しいステージと教材の追加手順は [ADDING_STAGE.md](ADDING_STAGE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 

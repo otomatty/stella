@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { type ComponentProps, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
@@ -51,6 +51,9 @@ function noop(): void {
 
 const handlers = {
   activeStage: null,
+  onStartGuidedStage: noop,
+  startingGuidedStage: false,
+  guidedStartError: null,
   nodeOf: (id: string) => nodes.get(id),
   onStartStage: noop,
   onStartReview: noop,
@@ -101,6 +104,66 @@ describe("NextStep first-stage", () => {
     expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
     expect(markup).toContain("ツリーで見る");
+  });
+});
+
+describe("案内されたステージの開始", () => {
+  const stage = {
+    stage_id: "devlab-ts-ch00",
+    title: "00章",
+    status: "available" as const,
+    source_name: "開発ラボG",
+    message: "事前課題の案内文",
+    due_at: "2026-11-21T14:59:59.000Z",
+    prerequisite_titles: [],
+    progress: { unit: "problems" as const, passed: 0, total: 12 },
+  };
+  const guide: HomeGuide = { steps: [{ kind: "start-guided", stage }], idle: "empty" };
+
+  function renderSteps(
+    state: Partial<
+      Pick<ComponentProps<typeof NextStepCard>, "startingGuidedStage" | "guidedStartError">
+    > = {},
+  ) {
+    return [
+      renderToStaticMarkup(
+        createElement(NextStepCard, { ...handlers, ...state, guide, loading: false }),
+      ),
+      renderToStaticMarkup(
+        createElement(LaterSteps, { ...handlers, ...state, steps: guide.steps }),
+      ),
+    ];
+  }
+
+  it("主のカードと「そのあと」の行には見出しと開始ボタンを出し、案内の内容は出さない", () => {
+    const [card, later] = renderSteps();
+    expect(card).toContain("次にやること");
+    expect(later).toContain("そのあと");
+    for (const markup of [card, later]) {
+      expect(markup).toContain("『00章』を始めましょう");
+      expect(markup).toContain("始める</button>");
+      expect(markup).not.toContain(stage.source_name);
+      expect(markup).not.toContain(stage.message);
+      expect(markup).not.toContain(stage.due_at);
+      expect(markup).not.toContain("11/21");
+      expect(markup).not.toContain("期限");
+    }
+  });
+
+  it("どちらの表示でも開始中はボタンを無効にし、失敗は文字で伝える", () => {
+    for (const markup of renderSteps({ startingGuidedStage: true })) {
+      expect(markup).toContain('disabled=""');
+      expect(markup).toContain("開始しています…");
+    }
+
+    const guidedStartError = {
+      stageId: stage.stage_id,
+      message: "ステージを始められませんでした",
+    };
+    for (const markup of renderSteps({ guidedStartError })) {
+      expect(markup).toContain('role="alert"');
+      expect(markup).toContain(guidedStartError.message);
+    }
   });
 });
 

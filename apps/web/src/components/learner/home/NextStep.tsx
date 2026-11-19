@@ -22,6 +22,7 @@ import type { StageWrapup } from "@/lib/stage-wrapup";
 import { Book, Check, Clock, Compass, Play, RotateCcw, Sparkles } from "@/lib/icons";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlanItemKind } from "@/lib/today-plan";
+import { cn } from "@/lib/utils";
 
 /** 進行中のステージ (レッスンの続き・仕上げの文面に使う)。 */
 export interface GuideActiveStage {
@@ -48,6 +49,9 @@ export interface GuideHandlers {
 
 interface StepContext extends GuideHandlers {
   activeStage: GuideActiveStage | null;
+  onStartGuidedStage: (stageId: string) => void;
+  startingGuidedStage: boolean;
+  guidedStartError: { stageId: string; message: string } | null;
   /** 一覧の星の名前・カテゴリの引き当て。 */
   nodeOf: (stageId: string) => SkillMapStageNode | undefined;
 }
@@ -69,6 +73,23 @@ function planAction(kind: TodayPlanItemKind, ctx: GuideHandlers): () => void {
   if (kind === "lesson") return ctx.onResumeLesson;
   return ctx.onOpenMiss;
 }
+
+function guidedStartCopy(step: Extract<GuideStep, { kind: "start-guided" }>, ctx: StepContext) {
+  const { stage_id: stageId, title } = step.stage;
+  return {
+    title: `『${title}』を始めましょう`,
+    action: ctx.startingGuidedStage ? "開始しています…" : "始める",
+    onClick: () => ctx.onStartGuidedStage(stageId),
+    error: ctx.guidedStartError?.stageId === stageId ? ctx.guidedStartError.message : null,
+  };
+}
+
+const GuidedStartError = ({ message }: { message: string | null }) =>
+  message ? (
+    <p role="alert" className="basis-full text-xs text-danger">
+      {message}
+    </p>
+  ) : null;
 
 /**
  * 仕上げの文面。レッスンを持たない星 (準備中) と、レッスンを終えた星を言い分ける。
@@ -147,6 +168,28 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
 
 const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
   if (step.kind === "setup-vscode") return <SetupVscode />;
+  if (step.kind === "start-guided") {
+    const copy = guidedStartCopy(step, ctx);
+    return (
+      <HeroFrame eyebrow="次にやること">
+        <h2 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
+          <Play size={16} className="mt-1 shrink-0 text-brand" />
+          <span className="min-w-0">{copy.title}</span>
+        </h2>
+        <Button
+          size="full"
+          variant="accent"
+          className="mt-4"
+          disabled={ctx.startingGuidedStage}
+          onClick={copy.onClick}
+        >
+          <Play size={14} />
+          {copy.action}
+        </Button>
+        <GuidedStartError message={copy.error} />
+      </HeroFrame>
+    );
+  }
   if (step.kind === "first-stage") {
     const title = ctx.nodeOf(step.stageId)?.title ?? "最初のステージ";
     return (
@@ -454,8 +497,10 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
     );
   }
   if (step.kind === "first-stage") return <HeroStep step={step} ctx={ctx} />;
-  const row =
-    step.kind === "plan"
+  const guided = step.kind === "start-guided" ? guidedStartCopy(step, ctx) : null;
+  const row = guided
+    ? { ...guided, icon: Play, meta: "" }
+    : step.kind === "plan"
       ? {
           icon: PLAN_ICON[step.item.kind],
           title: step.item.title,
@@ -472,7 +517,12 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
         };
   const Icon = row.icon;
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2">
+    <div
+      className={cn(
+        "flex items-center gap-2.5 rounded-lg border border-border px-3 py-2",
+        guided?.error && "flex-wrap",
+      )}
+    >
       <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border-strong text-ink-3">
         <Icon size={12} />
       </span>
@@ -485,10 +535,12 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
         size="sm"
         variant="default"
         className="shrink-0"
+        disabled={step.kind === "start-guided" && ctx.startingGuidedStage}
         onClick={row.onClick}
       >
         {row.action}
       </Button>
+      <GuidedStartError message={guided?.error ?? null} />
     </div>
   );
 };

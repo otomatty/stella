@@ -1,5 +1,5 @@
 /**
- * スキルツリーの「島」— 本土 (Basic = 新カリキュラムの 18 ステージ。開発環境とWebの入口〜
+ * スキルツリーの「島」— 本土 (Basic = 新カリキュラムの 18 ステージ。STELLAの使い方〜
  * フロントエンド / バックエンド / フルスタック) から離れた場所に浮かぶ独立の星団。
  * 資格・Python・DevOps・特定ベンダーの案件トラックのように「目的別の入り口」になる
  * まとまりを、本土の扇ではなく別の島として描く。
@@ -16,10 +16,10 @@
  * 全部読めてしまい、条件が演出でしかなくなる。割り当て (`audience: granted`) とは別の軸で、
  * 両方を満たした受講者にだけ島の星が残る。
  *
- * 表示条件は島ごとに変えられる。資格・Python・案件は 開発環境とWebの入口、DevOps は
+ * 表示条件は島ごとに変えられる。資格・Python・案件は STELLAの使い方、DevOps は
  * Python 入門、という具合に、どこまで進んだ人にその島を見せるかを書く。
  * `requires` が空の島は条件なしで、割り当てだけで現れる (開発ラボG = 社内の選考の
- * 事前課題。応募者は dev-env-basics を受けていない)。
+ * 事前課題)。応募者は STELLAの使い方 (dev-env-basics) を終えると 00章を始められる。
  * `revealOneAtATime` の島 (開発ラボG) は、クリア済み・受講中と、島内の前提を
  * すべてクリアした星を表示する。その先の星と線は伏せる。
  *
@@ -67,7 +67,7 @@ export const SKILL_MAP_ISLAND_CATEGORIES: ReadonlySet<string> = new Set(
   SKILL_MAP_ISLANDS.map((island) => island.category),
 );
 
-/** 表示条件の無い島には、前提なしの Extra の根を置ける。 */
+/** 表示条件の無い島では、教材が前提を指定せず Extra の根を置くこともできる。 */
 export function isIslandWithoutRequirements(category: string | null | undefined): boolean {
   return SKILL_MAP_ISLANDS.some(
     (island) => island.category === category && !island.requires.length,
@@ -81,7 +81,7 @@ export function isIslandWithoutRequirements(category: string | null | undefined)
  * 載っている島は、申告が下限未満の画面には**存在ごと落とす**。旧 bundle の
  * `SKILL_MAP_ISLAND_CATEGORIES` に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が
  * 引かれてしまう (DevOps の親は `python-basics`、Anthropic認定資格の親は `dev-env-basics`、
- * Python の親は `node-api-basics`、C# の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
+ * Python の親は `node-api-basics`、C# と開発ラボG の入口の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
  * (ヘッダにしない — CORS 許可リストに無いと全呼び出しが落ちる)。
  */
 export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {

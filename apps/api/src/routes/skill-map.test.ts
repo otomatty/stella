@@ -185,7 +185,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(stages.get("id-f")).toBeUndefined();
   });
 
-  it("開発ラボG の未到達の章は通常の応答から落とし、開発者表示には載せる", async () => {
+  it("開発ラボG の 00章は前提のクリア前から見え、未到達の章は開発者表示にだけ載せる", async () => {
     const labStage = (slug: string, prerequisite: string) => ({
       id: slug,
       slug,
@@ -198,14 +198,64 @@ describe("GET /api/skill-map/mine", () => {
     const ch01 = "devlab-ts-ch01";
     const ch02 = "devlab-ts-ch02";
     const parallelChapter = "devlab-ts-test-parallel";
-    vi.mocked(loadSkillMapSource).mockResolvedValue({
+    const basics = "dev-env-basics";
+    const source = {
       stages: [
-        labStage(ch00, "dev-env-basics"),
+        { id: basics, slug: basics, title: "STELLAの使い方", category: "基礎", prerequisites: [] },
+        labStage(ch00, basics),
         labStage(ch01, ch00),
         labStage(ch02, ch01),
         labStage(parallelChapter, ch00),
       ],
-      clearedStageIds: new Set([ch00]),
+    };
+    vi.mocked(loadSkillMapSource).mockResolvedValue({ ...source, clearedStageIds: new Set() });
+    const initial = await get("/api/skill-map/mine");
+    expect(initial.status).toBe(200);
+    expect(await initial.json()).toMatchObject({
+      skill_map: {
+        stages: [
+          expect.objectContaining({ id: basics }),
+          expect.objectContaining({
+            id: ch00,
+            state: "locked",
+            visibility: "full",
+            parent_id: basics,
+            lock_reasons: ["STELLAの使い方"],
+          }),
+        ],
+        next_stage_ids: [basics],
+        unguided_next_stage_ids: [basics],
+      },
+    });
+
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      ...source,
+      clearedStageIds: new Set(),
+      enrolledStageIds: new Set([basics, ch00]),
+      activeStageId: basics,
+    });
+    const enrolled = await fetchStages();
+    expect(enrolled.get(ch00)).toMatchObject({
+      state: "unlocked",
+      visibility: "full",
+      enrolled: true,
+    });
+    expect(enrolled.get(ch00)).not.toHaveProperty("lock_reasons");
+    expect(
+      [...enrolled.values()].filter(({ state }) => state === "active").map(({ id }) => id),
+    ).toEqual([basics]);
+
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      ...source,
+      clearedStageIds: new Set([basics]),
+    });
+    const afterBasics = await fetchStages();
+    expect([...afterBasics.keys()]).toEqual([basics, ch00]);
+    expect(afterBasics.get(ch00)).toMatchObject({ state: "unlocked", visibility: "full" });
+
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      ...source,
+      clearedStageIds: new Set([basics, ch00]),
       unlockedStageIds: new Set([ch02]),
     });
 
@@ -214,9 +264,9 @@ describe("GET /api/skill-map/mine", () => {
     const { skill_map: map } = (await res.json()) as {
       skill_map: { stages: StagePayload[]; next_stage_ids: string[]; stage_count: number };
     };
-    expect(map.stages.map((s) => s.id)).toEqual([ch00, ch01, parallelChapter]);
+    expect(map.stages.map((s) => s.id)).toEqual([basics, ch00, ch01, parallelChapter]);
     expect(map.next_stage_ids).not.toContain(ch02);
-    expect(map.stage_count).toBe(4);
+    expect(map.stage_count).toBe(5);
 
     vi.mocked(wantsDevReveal).mockReturnValue(true);
     const devStages = await fetchStages();
