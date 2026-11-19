@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "javascript-basics/u03-conditions@2",
-  "contentHash": "6c20bd27df832d8047506c60616e36640cb130ab21c8056688d83f898f806c79",
+  "unitId": "javascript-basics/u03-conditions@3",
+  "contentHash": "1b7e6b08d97919f194e9489b9377609094bec3194a9459130dee632758ff9a05",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -148,6 +148,59 @@
         "SRC-mdn-js-return-20261119"
       ],
       "usedFor": "厳密等価による数量の判定、条件の組合せ、分岐と早期 return を計算につなぐ自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05-independent/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "年齢の境界と、曜日・会員区分を組み合わせた分岐を仕様から考える自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q06-debug/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-equality-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-or-20261119"
+      ],
+      "usedFor": "購入額の境界、二つの条件の組合せ、数値と文字列の比較の誤りを直す自作の設問。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q07-check-a/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-or-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "貸出不可の条件と延滞料の境界を組み合わせる自作の確認問題。",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08-check-b/README.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-mdn-js-if-else-20261119",
+        "SRC-mdn-js-logical-and-20261119",
+        "SRC-mdn-js-logical-not-20261119",
+        "SRC-mdn-js-return-20261119"
+      ],
+      "usedFor": "駐車券紛失の例外、短時間と利用印の組合せ、時間の境界で区分を返す自作の確認問題。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

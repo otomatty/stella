@@ -1,0 +1,68 @@
+{
+  "id": "javascript-basics/u03-conditions/q07-check-a",
+  "title": "確認A 図書館の貸出可否と延滞料",
+  "kind": "assessment-a",
+  "pattern": "js-combine-conditions",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-logical-operators",
+      "js-early-return",
+      "js-boundary-test"
+    ],
+    "assesses": [
+      "js-condition-choice",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/library.js"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "denied-loan",
+        "criterion": "利用停止中か、貸出中の本が 5 冊以上なら null を返し、延滞日数で結果が変わらない。",
+        "required": true
+      },
+      {
+        "id": "grace-period",
+        "criterion": "貸出可能な場合、延滞が 2 日以内なら 0 を返し、3 日以上なら 2 日を超えた日数に 50 円を掛けて返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-logical-or-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 30,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
