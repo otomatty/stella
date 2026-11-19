@@ -494,5 +494,33 @@
   {
     "id": "js-condition-repair",
     "title": "条件の誤りを見つけて直す"
+  },
+  {
+    "id": "dom-input-value",
+    "title": "入力欄の値を読み、型をそろえる"
+  },
+  {
+    "id": "dom-submit-event",
+    "title": "送信を受けて既定の動作を止める"
+  },
+  {
+    "id": "dom-validation-function",
+    "title": "検証を関数に分ける"
+  },
+  {
+    "id": "dom-error-display",
+    "title": "エラーを入力欄と結んで表示する"
+  },
+  {
+    "id": "dom-error-clear",
+    "title": "直したらエラーを消す"
+  },
+  {
+    "id": "dom-form-choice",
+    "title": "仕様からフォームの検証と表示を組み立てる"
+  },
+  {
+    "id": "dom-form-repair",
+    "title": "フォームの不具合を見つけて直す"
   }
 ]
