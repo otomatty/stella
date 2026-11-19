@@ -15,6 +15,3 @@ export const DISPLAY_SHORT_NAME = "STELLA";
 
 /** Support mail subject prefix. */
 export const supportMailSubjectPrefix = (): string => `【${DISPLAY_NAME}】`;
-
-/** Help drawer heading for the product overview. */
-export const helpAboutHeading = (): string => `${DISPLAY_NAME} とは`;

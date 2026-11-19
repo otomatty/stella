@@ -9,7 +9,7 @@ export function TutorialPlayer({ tutorial }: { tutorial: Tutorial }) {
   const [rate, setRate] = useState(1);
   const current = [...tutorial.chapters].reverse().find((c) => c.t <= time);
   return (
-    <div className="my-3 space-y-3 rounded-xl border border-border bg-card p-3">
+    <div className="my-3 min-w-0 space-y-3 rounded-xl border border-border bg-card p-3">
       <video
         ref={ref}
         src={tutorial.video}
@@ -51,7 +51,7 @@ export function TutorialPlayer({ tutorial }: { tutorial: Tutorial }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="w-full justify-start"
+                className="h-auto min-h-7 w-full justify-start whitespace-normal text-left"
                 aria-current={current === chapter ? "step" : undefined}
                 onClick={() => {
                   if (!ref.current) return;
@@ -62,8 +62,10 @@ export function TutorialPlayer({ tutorial }: { tutorial: Tutorial }) {
                 }}
               >
                 <Play size={12} />
-                {index + 1}. {chapter.title}
-                <span className="ml-auto text-ink-3">{formatDuration(chapter.t)}</span>
+                <span className="min-w-0 flex-1">
+                  {index + 1}. {chapter.title}
+                </span>
+                <span className="ml-auto shrink-0 text-ink-3">{formatDuration(chapter.t)}</span>
               </Button>
             </li>
           ))}

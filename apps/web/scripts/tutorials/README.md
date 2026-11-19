@@ -50,7 +50,7 @@ apps/web/scripts/tutorials/
 | 項目 | 説明 |
 | --- | --- |
 | `id` / `order` | 動画の ID と収録順 |
-| `screen` | ヘルプの route と同じ文字列 |
+| `screen` | 動画を出す画面のルートパターン (例 `/stages/$stageId`)。上部の「?」は、受講者がこの画面を開いているときだけ出る |
 | `title` / `summary` | 動画の題と説明 |
 | `start` | 収録を始める画面のパス |
 | `user?` / `freshUser?` | seed の利用者。既定は `seed-learner`、`freshUser: true` なら `seed-learner2` |
