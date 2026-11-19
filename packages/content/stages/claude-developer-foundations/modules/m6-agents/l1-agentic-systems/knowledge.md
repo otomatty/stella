@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-anthropic-effective-agents-defs-20261031, SRC-anthropic-effective-agents-20261031]
+sourceRefs: [SRC-anthropic-effective-agents-defs-20261031, SRC-anthropic-effective-agents-20261031, SRC-claude-managed-agents-20261118, SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 ## 知識問題
 
@@ -57,5 +57,19 @@ sourceRefs: [SRC-anthropic-effective-agents-defs-20261031, SRC-anthropic-effecti
 <summary>解答</summary>
 
 **A, B, C** — 手順が決まった仕事には、動きを予想しやすいワークフローが向きます。
+
+</details>
+
+### Q5. 各案件で調べるファイルが変わり、処理が 30 分続く場合があります。既定のエージェントループで足り、実行ホストを運用する人はいません。Web アプリから開始して後で進捗を読む設計にはどれが合いますか？
+<!-- kind: single; skills: claude-agentic-choice -->
+
+- A. 利用者のブラウザーでループを動かし、閉じる直前に結果を記録する
+- B. Managed Agents の環境とセッションを用意し、アプリからセッションのイベントを読む
+- C. 自社サーバーに Agent SDK を置き、各リクエストの間だけループを動かす
+
+<details>
+<summary>解答</summary>
+
+**B** — 実行とその記録をサービスに持たせるため、ブラウザーが閉じても案件を追えます。ブラウザーで動くループは画面を閉じると止まります。自社サーバーで SDK を動かすなら、実行ホストと長い処理を維持する仕組みを自社で運用します。
 
 </details>

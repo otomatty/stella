@@ -116,7 +116,7 @@ describe("deep-link", () => {
   });
 
   it("throws when the deep-linked lesson is missing", () => {
-    expect(() => requireDeepLinkedLesson(undefined)).toThrow("レッスンが見つかりません");
+    expect(() => requireDeepLinkedLesson(undefined)).toThrow("教材が見つかりません");
   });
 
   it("returns the lesson when the deep-link target exists", () => {
@@ -129,6 +129,6 @@ describe("deep-link", () => {
       consumePendingOnSuccess({ stageId: "c1", lessonId: "l1" }, async () => {
         requireDeepLinkedLesson(undefined);
       }),
-    ).rejects.toThrow("レッスンが見つかりません");
+    ).rejects.toThrow("教材が見つかりません");
   });
 });

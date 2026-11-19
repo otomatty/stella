@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@3",
-  "contentHash": "680f8c5dc2ee28046e950ecec1bd9f0327d99848eb91bba5cbc31e09f3a307f7",
+  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@5",
+  "contentHash": "a5db9c116828df6702fbacc15f6851f23804d548d0f5b563193063133c48415d",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -33,12 +33,16 @@
       "sourceRefs": [
         "SRC-claude-code-memory-20261031",
         "SRC-claude-code-hooks-guide-20261031",
-        "SRC-claude-code-settings-20261031"
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-extensions-20261118",
+        "SRC-claude-code-skills-20261118",
+        "SRC-claude-code-plugins-20261118",
+        "SRC-claude-code-headless-20261118"
       ],
-      "usedFor": "レッスン8-1の3トピック(CLAUDE.md・フック・設定ファイル)の読み物と、記憶の違い・置き場所・イベント・設定の範囲の表",
+      "usedFor": "共有設定、スキル、プラグイン、非対話実行、ルールとサブエージェントを要件から選ぶ演習",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-claude-code/knowledge.md",
@@ -50,7 +54,7 @@
       "usedFor": "CLAUDE.md の置き場所と書き方、フックで止めること、終了コード、設定の強く効く順を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-evals/t1-success-criteria/slides.md",
@@ -62,11 +66,15 @@
     },
     {
       "contentId": "l2-evals/t2-compare-evals/slides.md",
-      "sourceRefs": ["SRC-claude-docs-evals-20261031", "SRC-claude-docs-eval-grading-20261031"],
-      "usedFor": "同じ評価のセットで変更の前後を比べること、コード・LLM・人による採点の違い、質より量",
+      "sourceRefs": [
+        "SRC-claude-docs-evals-20261031",
+        "SRC-claude-docs-eval-grading-20261031",
+        "SRC-anthropic-agent-evals-20261118"
+      ],
+      "usedFor": "同じ評価セットで変更前後を比べる手順と、人が付けた判定の使い方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-evals/t3-tool-misuse/slides.md",
@@ -81,24 +89,26 @@
       "sourceRefs": [
         "SRC-claude-docs-evals-20261031",
         "SRC-claude-docs-eval-grading-20261031",
-        "SRC-claude-docs-tool-troubleshooting-20261031"
+        "SRC-claude-docs-tool-troubleshooting-20261031",
+        "SRC-anthropic-agent-evals-20261118"
       ],
-      "usedFor": "レッスン8-2の3トピック(成功の基準・同じ評価で比べる・ツールの誤用)の読み物と、基準の条件・採点の方法・症状と直し方の表",
+      "usedFor": "成功の基準と前後の評価、ツールの誤用、校正用データで誤合格を特定する演習",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-evals/knowledge.md",
       "sourceRefs": [
         "SRC-claude-docs-evals-20261031",
         "SRC-claude-docs-eval-grading-20261031",
-        "SRC-claude-docs-tool-troubleshooting-20261031"
+        "SRC-claude-docs-tool-troubleshooting-20261031",
+        "SRC-anthropic-agent-evals-20261118"
       ],
-      "usedFor": "成功の基準の書き方、評価のセットの作り方、採点の方法、前後の比べ方、ツールの誤用の直し方を問う自作問題の正答と解説",
+      "usedFor": "評価の設定と回帰、未使用の事例で人の判定と採点器の誤りを照合する問題",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/q01-eval-compare/README.md",
@@ -107,6 +117,22 @@
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-evals/t4-calibrate-judge/slides.md",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "sourceRefs": ["SRC-anthropic-agent-evals-20261118"],
+      "usedFor": "人と採点器で合格件数が一致したときも、回答単位で誤合格を見分ける手順",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-calibrate-judge/README.md",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "sourceRefs": ["SRC-anthropic-agent-evals-20261118", "SRC-claude-docs-eval-grading-20261031"],
+      "usedFor": "照合と採用基準、独立した事例で採点器を再評価する課題の受入条件",
+      "reviewStatus": "draft"
     }
   ]
 }

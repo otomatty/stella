@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u04-evaluation@1",
+  "contentHash": "ecfab8b52feef95312fd51b0561ff209fecd547ae6216c85bb2503b99ca3c912",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-grader/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-eval-grading-20261031"],
+      "usedFor": "「研修日程の採点式を選ぶ」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-regression/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-evals-20261031"],
+      "usedFor": "「同じ正解率の内訳を調べる」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-scorecard/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-eval-grading-20261031"],
+      "usedFor": "「案内文の口調を採点する」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

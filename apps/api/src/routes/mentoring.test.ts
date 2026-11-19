@@ -288,6 +288,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
         supportLog: [
           { kind: "hint", at: "2026-10-05T01:00:00.000Z" },
           { kind: "instructor", at: "2026-10-05T02:00:00.000Z", detail: "講師への相談" },
+          { kind: "instructor", at: "2026-10-05T02:00:00.000Z", detail: "管理者への相談" },
         ],
         stageTitle: "開発環境",
         assignmentTitle: "課題1",

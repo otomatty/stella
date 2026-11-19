@@ -5,7 +5,7 @@ describe("linksForRole", () => {
   it("sends learners to the skill tree, current lesson and certificates", () => {
     const setPage = vi.fn();
     const labels = linksForRole("learner", setPage).map((link) => link.label);
-    expect(labels).toEqual(["ステージ一覧", "現在のレッスン", "修了証"]);
+    expect(labels).toEqual(["ステージ一覧", "現在の教材", "修了証"]);
   });
 
   it("does not offer the retired interview-prep page to any role", () => {

@@ -41,7 +41,6 @@ import {
 
 /** PC で開いたカードが覆う幅 (左 16px + 幅 360px + 右 16px)。ホームのガイドと同じ。 */
 const CARD_INSET_PX = 392;
-const EMPTY_QUEUE: string[] = [];
 
 function noop() {
   return undefined;
@@ -192,14 +191,13 @@ export function StageManagementPage({
           <BoardMessage>
             {stages !== null && stages.length === 0
               ? "まだステージがありません。"
-              : "盤面に載せられるステージがありません。"}
+              : "ステージ一覧に載せられるステージがありません。"}
           </BoardMessage>
         ) : (
           <SkillTree
             nodes={plan.board}
             currentUserId={currentUserId}
             activeStageId={null}
-            queuedStageIds={EMPTY_QUEUE}
             initialFocusStageId={initialFocusStageId}
             initialFit={isDesktop && initialFocusStageId === null}
             showIslandChips={false}
@@ -212,7 +210,6 @@ export function StageManagementPage({
             onSelectIsland={selectIsland}
             onResumeStage={noop}
             onStartStage={noop}
-            onQueueStage={noop}
             onSkillCheck={noop}
             onOpenStage={noop}
             celebrate={false}
@@ -330,8 +327,8 @@ export function StageManagementPage({
                   </div>
 
                   {query.trim() === "" ? (
-                    <nav aria-label="地図の目次">
-                      <h2 className="text-[12px] font-semibold">地図の目次</h2>
+                    <nav aria-label="ステージ一覧の目次">
+                      <h2 className="text-[12px] font-semibold">ステージ一覧の目次</h2>
                       <p className="text-[11px] text-ink-4">押すとその場所へ寄ります</p>
                       <h3 className="mb-1 mt-3 text-[11px] text-ink-3">本土 · Basic</h3>
                       <ContentsRow
@@ -367,9 +364,9 @@ export function StageManagementPage({
                   ) : null}
 
                   {query.trim() === "" && plan.offBoard.length > 0 ? (
-                    <section aria-label="盤面に載らないステージ">
+                    <section aria-label="ステージ一覧に載らないステージ">
                       <h2 className="text-[12px] font-semibold text-ink-2">
-                        盤面に載らないステージ
+                        ステージ一覧に載らないステージ
                         <span className="ml-1 font-normal text-ink-4">{plan.offBoard.length}</span>
                       </h2>
                       <ul className="mt-2 flex flex-col gap-2">
@@ -593,7 +590,7 @@ function StaffIslandDetail({
   return (
     <>
       <Button type="button" size="sm" variant="ghost" className="self-start" onClick={onBack}>
-        地図の目次へ戻る
+        ステージ一覧の目次へ戻る
       </Button>
       <div className="flex flex-wrap items-center gap-2">
         <RouteDot routeKey={island.key} />

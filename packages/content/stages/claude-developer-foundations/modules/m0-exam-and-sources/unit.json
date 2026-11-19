@@ -1,8 +1,14 @@
 {
-  "plannedHours": 1,
+  "plannedHours": 2,
   "skills": {
     "uses": [],
-    "assesses": ["claude-cert-exam-plan", "claude-official-sources"]
+    "assesses": [
+      "claude-prompt-design",
+      "claude-grounding",
+      "claude-messages-request",
+      "claude-cert-exam-plan",
+      "claude-official-sources"
+    ]
   },
   "reuses": []
 }

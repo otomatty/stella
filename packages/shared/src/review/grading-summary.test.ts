@@ -80,7 +80,7 @@ describe("buildGradingSummary", () => {
 describe("formatGradingSummaryText", () => {
   it("チェック 3 行を必ず含み、失敗の詳細を並べる", () => {
     const text = formatGradingSummaryText(buildGradingSummary(failing, "javascript"));
-    expect(text).toContain("自動採点: 未クリア");
+    expect(text).toContain("自動の確認: 不合格");
     expect(text).toContain("- Lint: 失敗");
     expect(text).toContain("- テスト: 失敗 (1/2 通過)");
     expect(text).toContain("- 3 行目: === を使ってください (eqeqeq)");
@@ -116,14 +116,14 @@ describe("formatGradingSummaryText", () => {
     expect(text.length).toBeLessThanOrEqual(MAX_REVIEW_SUMMARY_LENGTH);
     expect(text).toContain("以下省略");
     // 打ち切っても先頭のチェック行は必ず残る。
-    expect(text).toContain("自動採点: 未クリア");
+    expect(text).toContain("自動の確認: 不合格");
   });
 
   it("行の途中では切らない", () => {
     const text = formatGradingSummaryText(buildGradingSummary(failing, "javascript"), 60);
     expect(text.length).toBeLessThanOrEqual(60);
     for (const line of text.split("\n")) {
-      expect(line === "…(以下省略)" || line.startsWith("自動採点") || line.startsWith("-")).toBe(
+      expect(line === "…(以下省略)" || line.startsWith("自動の確認") || line.startsWith("-")).toBe(
         true,
       );
     }

@@ -73,11 +73,11 @@ describe("buildExercisePanelHtml", () => {
       result: failResult,
       nextLesson: { stageId: "c1", lessonId: "l2", title: "Two" },
     });
-    expect(html).toContain("未クリア");
+    expect(html).toContain("<strong>不合格</strong>");
     expect(html).toContain("prints ok");
     expect(html).toContain("&lt;b&gt;inject&lt;/b&gt;");
     expect(html).not.toContain("<b>inject</b>");
-    expect(html).not.toContain("次のレッスンへ");
+    expect(html).not.toContain("次の教材へ");
     expect(html).not.toMatch(/<script/i);
   });
 
@@ -91,7 +91,7 @@ describe("buildExercisePanelHtml", () => {
       canEscalate: true,
       result: failResult,
     });
-    expect(html).toContain("講師に引き継ぐ");
+    expect(html).toContain("管理者に引き継ぐ");
     expect(html).toContain("command:stella.escalateToInstructor");
     expect(html).toContain(encodeURIComponent(JSON.stringify(["a1"])));
     expect(html).not.toMatch(/<script/i);
@@ -107,7 +107,7 @@ describe("buildExercisePanelHtml", () => {
       canEscalate: true,
       result: clearResult,
     });
-    expect(cleared).not.toContain("講師に引き継ぐ");
+    expect(cleared).not.toContain("管理者に引き継ぐ");
 
     const notGraded = buildExercisePanelHtml({
       assignmentTitle: "Demo",
@@ -117,7 +117,7 @@ describe("buildExercisePanelHtml", () => {
       assignmentId: "a1",
       canEscalate: true,
     });
-    expect(notGraded).not.toContain("講師に引き継ぐ");
+    expect(notGraded).not.toContain("管理者に引き継ぐ");
   });
 
   it("hides 講師に引き継ぐ when no grade run is remembered", () => {
@@ -130,7 +130,7 @@ describe("buildExercisePanelHtml", () => {
       canEscalate: false,
       result: failResult,
     });
-    expect(html).not.toContain("講師に引き継ぐ");
+    expect(html).not.toContain("管理者に引き継ぐ");
   });
 
   it("offers 次のレッスンへ via command URI when cleared", () => {
@@ -142,8 +142,8 @@ describe("buildExercisePanelHtml", () => {
       result: clearResult,
       nextLesson: { stageId: "c1", lessonId: "l2", title: "Two" },
     });
-    expect(html).toContain("クリア");
-    expect(html).toContain("次のレッスンへ");
+    expect(html).toContain("<strong>合格</strong>");
+    expect(html).toContain("次の教材へ");
     expect(html).toContain("command:stella.openNextLesson");
     expect(html).toContain("c1");
     expect(html).toContain("l1");

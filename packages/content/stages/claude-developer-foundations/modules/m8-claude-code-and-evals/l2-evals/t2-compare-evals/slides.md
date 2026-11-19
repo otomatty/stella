@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-evals-20261031, SRC-claude-docs-eval-grading-20261031]
+sourceRefs: [SRC-claude-docs-evals-20261031, SRC-claude-docs-eval-grading-20261031, SRC-anthropic-agent-evals-20261118]
 id: 8-2-2
 title: 同じ評価で比べる
 takeaway: "プロンプトを変えたら、同じ評価のセットを自動で採点して前と比べます。"
@@ -22,8 +22,8 @@ header: "Claude Developer資格対策"
 # 採点の方法
 - コードで採点: 完全一致・含むかどうか。速く確か
 - LLM による採点: 細かな判断ができる。基準をはっきり書く
-- 人が採点: 柔軟だが遅く高い
-<!-- ノート: できるだけ速く確かな方法を選びます。質の高い少数より、自動で採点できる多くの例のほうが役に立ちます。 -->
+- 人が採点: 判断が割れる例の基準をそろえる
+<!-- ノート: 表記の一致ならコードで確認できます。意味まで判断する採点器は、人が付けた判定と照らし合わせます。 -->
 ---
 <!-- _class: summary -->
 # まとめ

@@ -95,7 +95,7 @@ export function LearnerPanel({
             受講者 {students.length}
           </Chip>
           <Chip active={filter === "staff"} onClick={() => onChangeFilter("staff")}>
-            スタッフ {staff.length}
+            管理者 {staff.length}
           </Chip>
         </div>
       </div>

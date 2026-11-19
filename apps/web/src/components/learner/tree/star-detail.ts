@@ -36,8 +36,6 @@ export interface StarDetailActions {
   resume: boolean;
   /** 「ここから始める」。 */
   start: boolean;
-  /** 「キューに追加」。 */
-  queue: boolean;
   /**
    * 「レッスン一覧」(ステージ詳細を開く)。受講登録のある星だけ — 詳細は受講中の一覧から
    * 引くので、登録の無い星では開けない。ステージ一覧をツリーへ集約した代わりの入口。
@@ -53,7 +51,6 @@ export function hasStarActions(actions: StarDetailActions): boolean {
     actions.skillCheck !== "none" ||
     actions.resume ||
     actions.start ||
-    actions.queue ||
     actions.openStage ||
     actions.clearedNote
   );
@@ -73,13 +70,11 @@ export interface StarDetailInput {
   node: SkillMapStageNode;
   /** 進行中の星か。 */
   isActive: boolean;
-  /** 既に「次にやるリスト」に積んであるか。 */
-  queued: boolean;
   /** 開発者モード: 段を素通しし、名前をぼかさない。 */
   revealDev: boolean;
 }
 
-export function describeStar({ node, isActive, queued, revealDev }: StarDetailInput): StarDetail {
+export function describeStar({ node, isActive, revealDev }: StarDetailInput): StarDetail {
   /** 霧より先 (= `full` でない) の段。名前は出しても行動の導線は出さない。 */
   const beyond = node.visibility !== "full";
   const obscured = nameObscured(node, revealDev);
@@ -92,7 +87,7 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
       : beyond
         ? "まだ先（開発者表示）"
         : cleared
-          ? "クリア済み"
+          ? "完了済み"
           : isActive
             ? "進行中"
             : locked
@@ -109,8 +104,8 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
             reasons,
             text:
               reasons.length > 0
-                ? `${reasons.join(" / ")} をクリアすると開きます`
-                : "前提のステージをクリアすると開きます",
+                ? `${reasons.join(" / ")} を完了すると開きます`
+                : "前提のステージを完了すると開きます",
           }
         : node.can_do
           ? { kind: "can-do", text: node.can_do }
@@ -123,7 +118,6 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
         skillCheck: "none",
         resume: false,
         start: false,
-        queue: false,
         openStage: false,
         clearedNote: false,
       }
@@ -135,8 +129,6 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
         // 解放済みなら **割り当ての有無によらず** 始められる (Phase 3b) —
         // 受講登録は「ここから始める」を押した時点で自分で作る。
         start: !locked && !cleared && !isActive,
-        // キューだけは受講登録のある星に限る (キュー API が登録を要求するため)。
-        queue: !locked && !cleared && !isActive && !queued && node.enrolled === true,
         // 修了した星も読み返せるように出す。ロック星は開いてもレッスンが閉じている。
         openStage: !locked && node.enrolled === true,
         clearedNote: cleared,

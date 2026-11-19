@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-structured-outputs-20261031, SRC-claude-docs-structured-considerations-20261031, SRC-claude-docs-prompting-20261031]
+sourceRefs: [SRC-claude-docs-structured-outputs-20261031, SRC-claude-docs-structured-considerations-20261031, SRC-claude-docs-prompting-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 ## 知識問題
 
@@ -70,5 +70,20 @@ sourceRefs: [SRC-claude-docs-structured-outputs-20261031, SRC-claude-docs-struct
 <summary>解答</summary>
 
 **A** — 禁止ではなく、してほしい形で指示します。
+
+</details>
+
+### Q6. 貸出記録では「返却済み」の行に返却日が必要です。`end_turn` で返った JSON は `{"returned":true,"returned_on":null}` でした。スキーマは日付欄に null を許します。確定した記録だけを集計するには、どの処理を選びますか？
+<!-- kind: single; skills: claude-structured-output -->
+
+- A. JSON は型に合うので返却済みとして集計する
+- B. 今日の日付を返却日に入れてから集計する
+- C. 項目間の矛盾を記録し、原文を確認するまで集計を保留する
+- D. 日付欄から null を外して同じ入力を送り直す
+
+<details>
+<summary>解答</summary>
+
+**C** — 停止理由と型は正常でも、返却日を裏付ける情報がありません。そのまま集計すると未確認の件数が増え、当日の日付を埋めると原文にない値が残ります。null を禁止すると、返却前で日付がない貸出記録まで表せなくなります。
 
 </details>

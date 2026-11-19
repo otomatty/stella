@@ -124,7 +124,9 @@ describe("escalateToInstructor", () => {
   });
 
   it("採点していなければ送らずにエラーを返す", async () => {
-    await expect(escalateToInstructor("asg-1")).rejects.toThrow("先に採点");
+    await expect(escalateToInstructor("asg-1")).rejects.toThrow(
+      "直近の確認で不合格だった課題がありません。先に確認を実行してください",
+    );
     expect(apiRequest).not.toHaveBeenCalled();
   });
 });
@@ -149,10 +151,10 @@ describe("submitPassedExercise", () => {
   });
   it("未通過・未採点・説明なしの通常提出を拒否する", async () => {
     expect(canSubmitExercise(undefined)).toBe(false);
-    await expect(submitPassedExercise("asg-1", "説明")).rejects.toThrow("先に採点");
+    await expect(submitPassedExercise("asg-1", "説明")).rejects.toThrow("先に確認");
     remember(failed);
     expect(canSubmitExercise("asg-1")).toBe(false);
-    await expect(submitPassedExercise("asg-1", "説明")).rejects.toThrow("先に採点");
+    await expect(submitPassedExercise("asg-1", "説明")).rejects.toThrow("先に確認");
     remember(cleared);
     await expect(submitPassedExercise("asg-1", " ")).rejects.toThrow("説明");
     expect(apiRequest).not.toHaveBeenCalled();

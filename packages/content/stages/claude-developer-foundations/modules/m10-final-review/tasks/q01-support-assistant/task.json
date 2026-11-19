@@ -34,6 +34,11 @@
         "id": "stop-reason-vs-error",
         "criterion": "stop_reason の値ごとの分岐と、create が投げたエラーの扱いを分け、切れた応答を JSON として読まず、429・500 以上のエラーをアプリで重ねて送り直さずに返している",
         "required": true
+      },
+      {
+        "id": "support-incident",
+        "criterion": "説明で t1・t2・t3 の注文と成否を特定できる。照会だけを実行し、結果の 4 項目と失敗時の公開文言を選ぶ箇所、最終ターンで実行を止める箇所をコードから確認できる",
+        "required": true
       }
     ],
     "escalateWhen": []

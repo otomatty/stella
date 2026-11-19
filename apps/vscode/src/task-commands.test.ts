@@ -665,7 +665,7 @@ describe("提出後の案内", () => {
   it("相談後は返事が届く場所を示し、Web のボタンだけを出す。ID が無ければホームへ戻る", async () => {
     await submit("consult", "Web で開く");
     expect(vscodeMock.showInformationMessage).toHaveBeenLastCalledWith(
-      "相談を送りました。講師の返事は通知と、Web のレッスン画面の『提出・添削を確認する』に届きます。",
+      "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。",
       "Web で開く",
     );
     expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");

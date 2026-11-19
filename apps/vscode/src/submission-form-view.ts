@@ -105,7 +105,7 @@ export function renderSubmissionForm(
   assets: { nonce: string; cspSource: string; styleUri: string; scriptUri: string },
 ): string {
   const consulting = input.mode === "consult";
-  const title = consulting ? "講師に相談する" : "課題を提出する";
+  const title = consulting ? "管理者に相談する" : "課題を提出する";
   const debug = input.debug
     ? `<section aria-labelledby="debug-heading"><h2 id="debug-heading">修正課題の記録</h2><p class="description">${consulting ? "分かっている範囲で記入できます。" : "再現から修正後の確認まで、各項目を記入してください。"}</p>${Object.entries(
         DEBUGGING_LABELS,

@@ -61,12 +61,12 @@ export function StageClearDialog({ onCleared }: { onCleared?: () => void }) {
             <span className="grid place-items-center w-8 h-8 rounded-full bg-brand/15 text-brand">
               <Sparkles size={16} />
             </span>
-            <DialogTitle>ステージクリア！</DialogTitle>
+            <DialogTitle>ステージ完了！</DialogTitle>
           </div>
           <DialogDescription>
             {cleared.map((stage) => (
               <span key={stage.stageId} className="block">
-                「{stage.title}」をクリアしました。
+                「{stage.title}」を完了しました。
               </span>
             ))}
             <span className="block mt-1.5">

@@ -123,7 +123,7 @@ describe("機械的な要約", () => {
       }),
     );
     expect(facts.join("\n")).toContain("目安との差 −2時間");
-    expect(facts.join("\n")).toContain("AI チャット 3 · 講師への相談 1");
+    expect(facts.join("\n")).toContain("AI チャット 3 · 管理者への相談 1");
     expect(facts.join("\n")).toContain("「フォーム」5回");
     expect(facts.join("\n")).toContain("確信度がしきい値に届かない 1");
   });

@@ -227,7 +227,7 @@ export function CertificateView({
           }}
         >
           <p className="certificate-phrase" style={{ margin: 0 }}>
-            あなたは {DISPLAY_NAME} のステージ「{stageTitle}」の修了条件をすべて満たしました。
+            あなたは {DISPLAY_NAME} のステージ「{stageTitle}」の完了条件をすべて満たしました。
           </p>
           <p className="certificate-phrase" style={{ margin: 0 }}>
             その学びの成果をここに証します。

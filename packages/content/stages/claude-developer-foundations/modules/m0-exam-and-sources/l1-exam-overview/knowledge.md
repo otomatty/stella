@@ -13,7 +13,7 @@ sourceRefs: [SRC-claude-four-certs-20261031, SRC-anthropic-services-track-202610
 <details>
 <summary>解答</summary>
 
-**A** — Developer: Foundations は、Claude でアプリを作るエンジニア向けの資格です。B は Associate: Foundations、C は Architect: Professional の説明です。
+**A** — Developer: Foundations は、Claude でアプリを作るエンジニア向けの資格です。Claude を使う案件に広く関わる人向けには Associate、大規模な組織への導入を設計する人向けには Architect: Professional があります。
 
 </details>
 

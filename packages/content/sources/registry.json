@@ -4909,6 +4909,227 @@
       }
     },
     {
+      "id": "SRC-claude-developer-prep-20261118",
+      "title": "Claude Certified Developer - Foundations Prep Course",
+      "publisher": "Anthropic",
+      "url": "https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations",
+      "section": "This course contains the following lessons",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-developer-guide-v11-20261118",
+      "title": "Claude Certified Developer – Foundations Exam Guide (exams from December 7)",
+      "publisher": "Anthropic",
+      "url": "https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946771/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7.pdf",
+      "section": "4. Exam Details at a Glance / 5. Exam Content Outline (Blueprint) / 6. How to Prepare / 8. How the Exam Is Scored",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "Version 1.1 · Effective December 7, 2026"
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-anthropic-agent-evals-20261118",
+      "title": "Demystifying evals for AI agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/demystifying-evals-for-ai-agents",
+      "section": "How to evaluate AI agents / How evals fit with other methods for a holistic understanding of agents",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-01-09"
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agents-20261118",
+      "title": "Claude Managed Agents overview",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/overview",
+      "section": "Core concepts / How it works / When to use Claude Managed Agents",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-server-concepts-20261118",
+      "title": "Understanding MCP servers",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/docs/2026-07-28/learn/server-concepts",
+      "section": "Core Server Features",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-agent-skills-20261118",
+      "title": "Agent Skills",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+      "section": "How Skills work",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-hooks-20261118",
+      "title": "Intercept and control agent behavior with hooks",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hooks",
+      "section": "How hooks work / Available hooks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-skills-20261118",
+      "title": "Extend Claude with skills",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/skills",
+      "section": "Create your first skill / Choose where skills load",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugins-20261118",
+      "title": "Plugins overview",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins",
+      "section": "Plugins overview",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-headless-20261118",
+      "title": "Run Claude Code programmatically",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/headless",
+      "section": "Basic usage / Get structured output / Stream responses",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-extensions-20261118",
+      "title": "Extend Claude Code",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/features-overview",
+      "section": "Compare similar features",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-tools-spec-20260728",
+      "title": "Tools",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+      "section": "Protocol Messages / Error Handling",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-resources-spec-20260728",
+      "title": "Resources",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/resources",
+      "section": "Protocol Messages / Error Handling",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-18",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
       "id": "SRC-devlab-node-download-20261119",
       "title": "Node.js®をダウンロードする",
       "publisher": "Node.js contributors",

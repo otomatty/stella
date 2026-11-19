@@ -735,7 +735,7 @@ export async function reviewTaskSubmission(
       }
     }
     if (options.requireUndecided && row.verdict !== null)
-      throw new ApiError("別の講師が先に確定しました。提出を開き直してください", 409);
+      throw new ApiError("別の管理者が先に確定しました。提出を開き直してください", 409);
     const aiPassed = row.verdict === "pass" && row.reviewSource === "ai";
     if (options.requireAiPass && !aiPassed)
       throw new ApiError("この提出はもう AI の合格ではありません。提出を開き直してください", 409);
@@ -855,7 +855,7 @@ export async function reviewTaskSubmission(
       // 覆したときは理由を知らせる (07 §6.4 の 6)。
       const reason = notes.trim();
       notice.title = `${row.assignmentTitle || "課題"} の合格が${verdict === "fail" ? "不合格" : "再提出"}に変わりました`;
-      notice.body = `講師が確認し、AI の合格を取り消しました。${reason ? `理由: ${reason.slice(0, 300)}` : "フィードバックを確認してください。"}`;
+      notice.body = `管理者が確認し、AI の合格を取り消しました。${reason ? `理由: ${reason.slice(0, 300)}` : "フィードバックを確認してください。"}`;
     }
     if (notice && source !== "tests") statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {

@@ -212,14 +212,19 @@ describe("AI の判定によらず人に回す", () => {
         support: [],
       }),
     ).toEqual(["machine-check"]);
-    expect(
-      forcedHumanReasons({
-        kind: "basic",
-        mode: "consult",
-        machineCheck: { matched: false, reasons: ["受講者が講師への相談を求めています"] },
-        support: [],
-      }),
-    ).toEqual(["consult"]);
+    for (const reason of [
+      "受講者が管理者への相談を求めています",
+      "受講者が講師への相談を求めています",
+    ]) {
+      expect(
+        forcedHumanReasons({
+          kind: "basic",
+          mode: "consult",
+          machineCheck: { matched: false, reasons: [reason] },
+          support: [],
+        }),
+      ).toEqual(["consult"]);
+    }
     // CI の照合 (07 §5.5): 食い違いと照合できなかったものを分けて人に回す。
     const ci = (status: string) => ({ ...matched, ci: { status } }) as never;
     expect(

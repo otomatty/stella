@@ -36,7 +36,7 @@ export type StageRosterPending = Map<string, StageRosterPendingEntry>;
 export type RosterMark = "追加" | "外す" | "免除" | "免除を外す";
 
 export type ExemptionControl =
-  | { kind: "text"; label: "前提クリア済み" | "腕試しで解放済み" }
+  | { kind: "text"; label: "前提を完了済み" | "腕試しで解放済み" }
   | { kind: "switch"; checked: boolean; enabled: boolean };
 
 export interface StageRosterView {
@@ -65,8 +65,8 @@ export interface RosterLocalFilter {
 
 export function prerequisiteStatusLabel(
   status: StageRosterRow["prerequisite_status"],
-): "修了" | "受講中" | "未着手" {
-  if (status === "done") return "修了";
+): "完了" | "受講中" | "未着手" {
+  if (status === "done") return "完了";
   if (status === "doing") return "受講中";
   return "未着手";
 }
@@ -99,7 +99,7 @@ export function exemptionControl(
   assigned: boolean,
   exempted: boolean,
 ): ExemptionControl {
-  if (row.prerequisites_cleared) return { kind: "text", label: "前提クリア済み" };
+  if (row.prerequisites_cleared) return { kind: "text", label: "前提を完了済み" };
   if (row.unlocked_by_skill_check) return { kind: "text", label: "腕試しで解放済み" };
   return { kind: "switch", checked: exempted, enabled: assigned };
 }

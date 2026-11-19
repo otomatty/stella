@@ -7,8 +7,8 @@ const ACHIEVEMENT_LINES: {
   label: string;
   unit: string;
 }[] = [
-  { key: "lessons", label: "レッスン", unit: "完了" },
-  { key: "quizzes", label: "小テスト", unit: "合格" },
+  { key: "lessons", label: "教材", unit: "完了" },
+  { key: "quizzes", label: "クイズ", unit: "合格" },
   { key: "assignments", label: "課題のレビュー", unit: "合格" },
 ];
 
@@ -45,8 +45,8 @@ export function achievementConditionText(
 ): string | null {
   if (!a) return null;
   const items: string[] = [];
-  if (a.lessons) items.push(`レッスン ${a.lessons.total} 件の完了`);
-  if (a.quizzes) items.push(`小テスト ${a.quizzes.total} 件の合格`);
+  if (a.lessons) items.push(`教材 ${a.lessons.total} 件の完了`);
+  if (a.quizzes) items.push(`クイズ ${a.quizzes.total} 件の合格`);
   if (a.assignments) items.push(`課題 ${a.assignments.total} 件のレビュー合格`);
   if (items.length === 0) return null;
   if (items.length === 1) return items[0];
@@ -60,8 +60,8 @@ export function normalizeCertCode(input: string): string | null {
 export function achievementLabel(a: CertificateAchievement | null | undefined): string | null {
   if (!a) return null;
   const labels: string[] = [];
-  if (a.lessons) labels.push(`レッスン ${a.lessons.done} 件を完了`);
-  if (a.quizzes) labels.push(`小テスト ${a.quizzes.done} 件に合格`);
+  if (a.lessons) labels.push(`教材 ${a.lessons.done} 件を完了`);
+  if (a.quizzes) labels.push(`クイズ ${a.quizzes.done} 件に合格`);
   if (a.assignments) labels.push(`課題 ${a.assignments.done} 件がレビューに合格`);
   return labels.length > 0 ? labels.join("・") : null;
 }

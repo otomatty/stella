@@ -30,7 +30,7 @@ import type { PublicSourceReference } from "../../shared/src/tasks/source-refere
 import { isIslandWithoutRequirements } from "../../shared/src/skill-map/islands.js";
 import { sortNatural } from "./natural-order.mjs";
 import { parseQuiz } from "./parse-quiz.js";
-import { parseKnowledge } from "./parse-knowledge.js";
+import { parseKnowledge, readKnowledgeMetadata } from "./parse-knowledge.js";
 import {
   assertFixedStartCovers,
   assertKnownSkills,
@@ -409,7 +409,8 @@ function dropPracticeLink(markdown: string): string {
  * 出すと、受講者と講師の時間見積もりが大きく狂う。10 問を超えるものだけ
  * 1 問 80 秒で概算し、5 分単位に切り上げる。
  */
-function quizDuration(questionCount: number): string {
+function quizDuration(questionCount: number, durationMinutes?: number): string {
+  if (durationMinutes !== undefined) return `${durationMinutes}分`;
   if (questionCount <= 10) return "5分";
   return `${Math.ceil((questionCount * 80) / 60 / 5) * 5}分`;
 }
@@ -545,27 +546,32 @@ function buildOneStage(
 
       const topicKey = lessonKey(topicIds);
       const docFile = join(lessonPath, "doc.md");
-      const docSource = readFileSync(docFile, "utf8").replace(/\r\n/g, "\n");
-      // スライドを持たない format 2 のまとめと知識問題には、単元とレッスンのディレクトリを使う。
-      const textOnly = config.format === 2 && !topicKey;
-      const key = textOnly ? `${moduleDir}-${lessonDir}` : topicKey;
-      const lessonTitle = textOnly
-        ? (docSource.match(/^# (.+)$/m)?.[1] ?? moduleTitles[moduleDir] ?? lessonDir)
-        : key;
-      lessons.push({
-        id: `doc-${key}`,
-        title: `${lessonTitle} まとめ`,
-        type: "text",
-        duration: "10分",
-        status: "todo",
-        ...(publicUnit ? { public: true } : {}),
-        markdown: dropPracticeLink(
-          rewriteImagePaths(slug, renderContent(docSource, `${lessonDir}/doc.md`)),
-        ),
-      });
-
       const practiceFile = join(lessonPath, config.format === 2 ? "knowledge.md" : "practice.md");
       const practiceSource = readFileSync(practiceFile, "utf8").replace(/\r\n/g, "\n");
+      const metadata = config.format === 2 ? readKnowledgeMetadata(practiceSource) : {};
+      // スライドを持たない format 2 では単元とレッスンのディレクトリを安定キーにする。
+      const textOnly = config.format === 2 && !topicKey;
+      const key = textOnly ? `${moduleDir}-${lessonDir}` : topicKey;
+      // 題を明記した知識問題だけのレッスンは doc.md を省ける。それ以外は欠落をエラーにする。
+      const quizOnly = textOnly && metadata.title !== undefined && !existsSync(docFile);
+      const docSource = quizOnly ? undefined : readFileSync(docFile, "utf8").replace(/\r\n/g, "\n");
+      const lessonTitle = textOnly
+        ? (docSource?.match(/^# (.+)$/m)?.[1] ?? moduleTitles[moduleDir] ?? lessonDir)
+        : key;
+      if (docSource !== undefined) {
+        lessons.push({
+          id: `doc-${key}`,
+          title: `${lessonTitle} まとめ`,
+          type: "text",
+          duration: "10分",
+          status: "todo",
+          ...(publicUnit ? { public: true } : {}),
+          markdown: dropPracticeLink(
+            rewriteImagePaths(slug, renderContent(docSource, `${lessonDir}/doc.md`)),
+          ),
+        });
+      }
+
       const questions =
         config.format === 2 ? parseKnowledge(practiceSource) : parseQuiz(practiceSource);
       if (config.format === 2) {
@@ -575,9 +581,9 @@ function buildOneStage(
         const quizLessonId = `quiz-${key}`;
         lessons.push({
           id: quizLessonId,
-          title: `${lessonTitle} 確認クイズ`,
+          title: metadata.title ?? `${lessonTitle} 確認クイズ`,
           type: "quiz",
-          duration: quizDuration(questions.length),
+          duration: quizDuration(questions.length, metadata.durationMinutes),
           status: "todo",
           ...(referenceMap
             ? {

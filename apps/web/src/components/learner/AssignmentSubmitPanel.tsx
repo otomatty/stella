@@ -61,7 +61,7 @@ export function AssignmentSubmitPanel({
         );
         return;
       }
-      toast.success("講師に提出しました。添削結果は Q&A または通知でお知らせします。");
+      toast.success("管理者に提出しました。レビュー結果は Q&A または通知でお知らせします。");
       onSubmitted?.();
     } finally {
       setSubmitting(false);
@@ -72,8 +72,8 @@ export function AssignmentSubmitPanel({
     <div className="prose-lms">
       <h2>課題提出</h2>
       <p>
-        完成したコード（またはレポート）を提出してください。 講師が AI 下書きを参考に添削し、 合格 /
-        再提出 / 不合格のいずれかで返却します。
+        完成したコード（またはレポート）を提出してください。 管理者が AI 下書きを参考にレビューし、
+        合格 / 再提出 / 不合格のいずれかで返却します。
       </p>
       <Label className="mt-4 block">提出コード</Label>
       <Textarea
@@ -85,11 +85,11 @@ export function AssignmentSubmitPanel({
       <div className="flex gap-2.5 items-center pt-4 border-t border-border">
         <Button variant="accent" onClick={handleSubmit} disabled={submitting}>
           {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-          講師に提出
+          管理者に提出
         </Button>
         <span className="text-[11.5px] text-ink-3 flex items-center gap-1">
           <CheckCircle size={12} />
-          提出後は「添削待ち」キューに表示されます
+          提出後はレビューの待ち行列に「レビュー待ち」として表示されます
         </span>
       </div>
     </div>

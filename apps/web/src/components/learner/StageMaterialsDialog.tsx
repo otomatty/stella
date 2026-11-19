@@ -141,7 +141,7 @@ export const StageMaterialsDialog = ({
               <Folder size={28} className="text-ink-4" />
               <div className="font-medium text-ink-2">配布資料はありません</div>
               <div className="text-[12.5px]">
-                このステージのレッスンに資料が追加されると、 ここからダウンロードできます。
+                このステージの教材に資料が追加されると、 ここからダウンロードできます。
               </div>
             </div>
           ) : (

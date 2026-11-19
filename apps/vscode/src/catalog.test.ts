@@ -32,7 +32,7 @@ describe("toCatalogStage", () => {
     order,
     duration_label: null,
     video_path: null,
-    pdf_path: null,
+    pdf_path: `slides/${id}.pdf`,
     markdown: `# ${id}`,
     assignment_id: null,
     total_pages: null,
@@ -50,14 +50,14 @@ describe("toCatalogStage", () => {
     ],
   } as unknown as StageWithChildren;
 
-  it("課題文レッスンに課題を結び、ほかのレッスンはそのまま", () => {
+  it("課題文レッスンに課題を結び、教材の本文と PDF パスは保持しない", () => {
     const stage = toCatalogStage(
       detail,
       new Set(["doc"]),
       new Map([["task-lesson", { id: "dev-env-basics/m0/q01", status: "not-started" as const }]]),
     );
     expect(stage?.sections[0]?.lessons).toEqual([
-      expect.objectContaining({ id: "doc", completed: true }),
+      { id: "doc", stageId: "st", title: "doc", type: "text", completed: true },
       expect.objectContaining({
         id: "task-lesson",
         task: { id: "dev-env-basics/m0/q01", status: "not-started" },

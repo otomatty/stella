@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m1-messages-api@3",
-  "contentHash": "236bbb75b60c9805b485068c7dd7b6ca7a1f4d5b67b8c177702a409b8551c761",
+  "unitId": "claude-developer-foundations/m1-messages-api@5",
+  "contentHash": "c1e5e13f16535c250a4f8445ed935df1d031ee86a549732e2d4c68d182427bfe",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -99,12 +99,14 @@
       "sourceRefs": [
         "SRC-claude-docs-ts-sdk-20261031",
         "SRC-claude-docs-api-key-20261031",
-        "SRC-claude-docs-model-ids-20261031"
+        "SRC-claude-docs-model-ids-20261031",
+        "SRC-claude-docs-messages-system-20261031",
+        "SRC-claude-code-memory-20261031"
       ],
-      "usedFor": "レッスン1-2の3トピック(SDK・API キー・モデル ID)の読み物",
+      "usedFor": "SDK の設定、Claude Code と API での指示の違い、モデルと指示の版から原因を切り分ける演習",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-sdk/knowledge.md",
@@ -156,7 +158,7 @@
       "usedFor": "stop_reason の値の意味、途中で切れた応答と拒否の扱いを問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/q01-build-messages/README.md",

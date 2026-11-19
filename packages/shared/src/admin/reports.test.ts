@@ -195,7 +195,7 @@ describe("reportRowToCells", () => {
     const assignmentCells = reportRowToCells("grades", assignment);
     expect(quizCells).toHaveLength(REPORT_META.grades.headers.length);
     expect(assignmentCells).toHaveLength(REPORT_META.grades.headers.length);
-    expect(quizCells[0]).toBe("小テスト");
+    expect(quizCells[0]).toBe("クイズ");
     expect(quizCells[8]).toBe("合格");
     expect(assignmentCells[0]).toBe("課題");
     expect(assignmentCells[5]).toBe("");

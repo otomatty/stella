@@ -110,11 +110,11 @@ describe("buildCertificateOverview", () => {
       }),
     ]).near[0];
     expect(result.items.map((i) => [i.label, i.met])).toEqual([
-      ["レッスン", false],
+      ["教材", false],
       ["課題", true],
     ]);
     expect(result.percent).toBe(60);
-    expect(result.remainingText).toBe("あと 2 件（レッスン 2）");
+    expect(result.remainingText).toBe("あと 2 件（教材 2）");
     expect(overview([completion()]).near[0].items).toHaveLength(1);
   });
   it("残りの少ない順、同数は題名順", () => {

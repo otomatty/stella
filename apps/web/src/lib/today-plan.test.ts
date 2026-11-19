@@ -87,9 +87,9 @@ describe("buildTodayPlan", () => {
   it("つまずきの理由は出どころで書き分ける", () => {
     const quiz = buildTodayPlan({
       srsDueCount: 0,
-      recentMiss: { title: "第 2 章の確認テスト", kind: "quiz" },
+      recentMiss: { title: "第 2 章のクイズ", kind: "quiz" },
     });
-    expect(quiz.items[0]?.reason).toContain("確認テスト");
+    expect(quiz.items[0]?.reason).toContain("クイズ");
     const submission = buildTodayPlan({
       srsDueCount: 0,
       recentMiss: { title: "配列の課題", kind: "submission" },

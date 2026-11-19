@@ -51,10 +51,10 @@ interface DiscoveryDialogProps {
 
 /** 出自ラベル。承認済みのものしか受講者には届かないので「講師確認済み」を必ず添える。 */
 function originLabel(paper: DiscoveryPaper | null): string {
-  if (!paper) return "AI生成 ✦ 講師確認済み";
+  if (!paper) return "AI生成 ✦ 管理者確認済み";
   return paper.generator === "heuristic"
-    ? "✦ このステージの確認テストから作成 · 講師確認済み"
-    : "✦ AI生成 · 講師確認済み";
+    ? "✦ このステージのクイズから作成 · 管理者確認済み"
+    : "✦ AI生成 · 管理者確認済み";
 }
 
 export function DiscoveryDialog({
@@ -121,7 +121,7 @@ export function DiscoveryDialog({
       setResult(graded);
       onFinished(graded);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "採点に失敗しました");
+      setError(err instanceof Error ? err.message : "確認に失敗しました");
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +189,7 @@ export function DiscoveryDialog({
               </Button>
               <Button variant="accent" disabled={!allAnswered || submitting} onClick={submit}>
                 {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
-                採点する
+                確認する
               </Button>
             </>
           ) : (

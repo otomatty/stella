@@ -62,7 +62,7 @@ function statusSentence(task: TaskSummary): string {
     case "submitted":
       return `課題「${title}」は AI が確認中です。`;
     case "instructor-pending":
-      return `課題「${title}」は講師の確認待ちです。`;
+      return `課題「${title}」は管理者の確認待ちです。`;
     default:
       return `課題「${title}」がまだ提出されていません。VS Code で取り組んで提出しましょう。`;
   }
@@ -82,9 +82,9 @@ export function stageWrapupOf(tasks: readonly TaskSummary[]): StageWrapup | null
   const tail =
     remaining === 1
       ? isProblemTask(task)
-        ? "全部の問題を提出すると、この星がクリアになります。"
-        : "レビューで合格すると、この星がクリアになります。"
-      : `合格していない課題があと ${remaining} 件あります。すべて合格すると、この星がクリアになります。`;
+        ? "全部の問題を提出すると、このステージが完了します。"
+        : "レビューで合格すると、このステージが完了します。"
+      : `合格していない課題があと ${remaining} 件あります。すべて合格すると、このステージが完了します。`;
   return {
     task: { id: task.id, title: task.title, status: task.status, lessonId: task.lessonId },
     remaining,

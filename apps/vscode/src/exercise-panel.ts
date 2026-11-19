@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { escapeHtml, markdownToHtml } from "./lesson-doc.js";
+import { escapeHtml, markdownToHtml } from "./markdown-html.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 
 const VIEW_TYPE = "stella.exercise";
@@ -32,7 +32,7 @@ function checkLabel(passed: boolean): string {
 
 function renderGradeResults(result: ExecutionResult): string {
   const { lintPassed, astPassed, testsPassed } = result.evaluation.checks;
-  const status = result.evaluation.cleared ? "クリア" : "未クリア";
+  const status = result.evaluation.cleared ? "合格" : "不合格";
   const tests = result.testResults
     .map((test) => {
       const mark = test.passed ? "✓" : "✗";
@@ -42,7 +42,7 @@ function renderGradeResults(result: ExecutionResult): string {
     .join("");
   const extra = result.errorMessage ? `<p>${escapeHtml(result.errorMessage)}</p>` : "";
   return [
-    `<h2>採点結果</h2>`,
+    `<h2>確認の結果</h2>`,
     `<p><strong>${status}</strong></p>`,
     `<ul>`,
     `<li>Lint: ${checkLabel(lintPassed)}</li>`,
@@ -60,7 +60,7 @@ function renderGradeResults(result: ExecutionResult): string {
 function escalateLink(input: ExercisePanelInput): string {
   if (input.result?.evaluation.cleared && input.canSubmit && input.assignmentId) {
     const args = encodeURIComponent(JSON.stringify([input.assignmentId]));
-    return `<div class="escalate"><p><a href="command:stella.submitExercise?${args}">提出</a></p><p class="hint">確認が通ったコードをレビューに提出します。レビューの合格で修了になります。</p></div>`;
+    return `<div class="escalate"><p><a href="command:stella.submitExercise?${args}">提出</a></p><p class="hint">確認が通ったコードをレビューに提出します。レビューに合格すると完了です。</p></div>`;
   }
   const failed = input.result !== undefined && !input.result.evaluation.cleared;
   if (!failed || !input.canEscalate || !input.assignmentId) {
@@ -69,8 +69,8 @@ function escalateLink(input: ExercisePanelInput): string {
   const args = encodeURIComponent(JSON.stringify([input.assignmentId]));
   return [
     `<div class="escalate">`,
-    `<p><a href="command:stella.escalateToInstructor?${args}">講師に引き継ぐ</a></p>`,
-    `<p class="hint">いま採点したコードと失敗した項目を講師の添削キューに送ります。 レッスンの完了にはなりません。</p>`,
+    `<p><a href="command:stella.escalateToInstructor?${args}">管理者に引き継ぐ</a></p>`,
+    `<p class="hint">いま確認したコードと失敗した項目を管理者のレビューの待ち行列に送ります。教材の完了にはなりません。</p>`,
     `</div>`,
   ].join("\n");
 }
@@ -81,7 +81,7 @@ function nextLessonLink(input: ExercisePanelInput): string {
     return "";
   }
   const args = encodeURIComponent(JSON.stringify([input.stageId, input.lessonId]));
-  return `<p><a href="command:stella.openNextLesson?${args}">次のレッスンへ</a></p>`;
+  return `<p><a href="command:stella.openNextLesson?${args}">次の教材へ</a></p>`;
 }
 
 export function buildExercisePanelHtml(input: ExercisePanelInput): string {

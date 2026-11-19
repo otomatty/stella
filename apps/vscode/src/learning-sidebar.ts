@@ -80,7 +80,7 @@ const lessonKinds = {
     label: "スライド",
     icon: '<rect x="1.5" y="2.5" width="13" height="8" rx="1"/><path d="M8 10.5v2.5m-3 0h6"/>',
   },
-  code: { label: "演習", icon: codeIcon },
+  code: { label: "課題", icon: codeIcon },
   quiz: {
     label: "確認クイズ",
     icon: '<circle cx="8" cy="8" r="6.5"/><path d="M6.2 5.8a1.8 1.8 0 1 1 3 1.35C8.5 7.8 8 8 8 9m0 2h.01"/>',
@@ -104,7 +104,7 @@ function itemKind(lesson: CatalogLesson): string {
 const webIndicator = `${icon("web-icon", '<path d="M7 3H3v10h10V9M9 3h4v4m0-4L7 9"/>')}<span class="sr-only">Web で受講</span>`;
 
 function opensInWeb(lesson: CatalogLesson): boolean {
-  return !lesson.task && ["quiz", "video", "assignment"].includes(lesson.type);
+  return !lesson.task && lesson.type !== "code";
 }
 
 const taskStatusTones = {
@@ -157,7 +157,7 @@ function nextStep(
         ? "編集するファイルと課題文を並べて開きます。"
         : opensInWeb(next)
           ? "ブラウザーの STELLA で進めます。終わったら、この画面に戻れます。"
-          : "VS Code で開いて進めます。";
+          : "VS Code で課題を開いて進めます。";
     const label = waiting
       ? "Web で状況を見る"
       : next.task
@@ -166,18 +166,18 @@ function nextStep(
           : "課題に取り組む"
         : opensInWeb(next)
           ? "Web で進める"
-          : "教材を開く";
+          : "課題を開く";
     return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">${title}</p><h2 id="next-title">${escapeHtml(next.title)}</h2>${next.task ? taskStatusPill(next.task.status) : ""}<p class="hint">${description}</p>${lessonButton(next, label, true)}</section>`;
   }
   const index = stage.sections.indexOf(section);
   const nextSection = stage.sections.slice(index + 1).find((item) => item.lessons.length > 0);
-  return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">この単元の教材・課題は完了</p><h2 id="next-title">${nextSection ? escapeHtml(nextSection.title) : "学習の状況を確認しましょう"}</h2>${nextSection ? `<button type="button" class="primary" data-action="section" data-section="${escapeHtml(nextSection.id)}">次の単元へ</button>` : '<button type="button" class="primary" data-action="home">Web で学習マップを開く</button>'}</section>`;
+  return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">この単元の教材・課題は完了</p><h2 id="next-title">${nextSection ? escapeHtml(nextSection.title) : "学習の状況を確認しましょう"}</h2>${nextSection ? `<button type="button" class="primary" data-action="section" data-section="${escapeHtml(nextSection.id)}">次の単元へ</button>` : '<button type="button" class="primary" data-action="home">Web のステージ一覧を開く</button>'}</section>`;
 }
 
 function catalogContent(catalog: readonly CatalogStage[], selection: LearningSelection): string {
   const { stage, section, lesson: current } = resolveLearningLocation(catalog, selection);
   if (!stage) {
-    return '<section class="empty"><h1>学習を始めましょう</h1><p>Web の学習マップでステージを始めると、教材がここに並びます。</p><button type="button" class="primary" data-action="home">学習マップを開く</button></section>';
+    return '<section class="empty"><h1>学習を始めましょう</h1><p>Web のステージ一覧でステージを始めると、教材がここに並びます。</p><button type="button" class="primary" data-action="home">ステージ一覧を開く</button></section>';
   }
   const stageOptions = catalog
     .map(
@@ -250,7 +250,7 @@ export function renderLearningSidebar(
       break;
     case "disconnected":
       content =
-        '<section class="empty"><p class="eyebrow">STELLA の学習ガイド</p><h1>教材を読み、課題に取り組む</h1><p>Web の課題で「VS Code で開く」を押すと接続できます。接続後は、この場所で単元の進み具合や次にやることを確認できます。</p><button type="button" class="primary" data-action="connect">Web で接続する</button></section>';
+        '<section class="empty"><p class="eyebrow">STELLA の学習ガイド</p><h1>課題に取り組む</h1><p>Web の課題で「VS Code で開く」を押すと接続できます。接続後は、この場所で単元の進み具合や次にやることを確認できます。教材は Web で開きます。</p><button type="button" class="primary" data-action="connect">Web で接続する</button></section>';
       break;
     case "error":
       content = `<section class="empty" role="status"><h1>教材を読み込めませんでした</h1><p>${escapeHtml(state.message)}</p><button type="button" class="primary" data-action="refresh">もう一度読み込む</button></section>`;
@@ -266,6 +266,6 @@ export function renderLearningSidebar(
   const footer =
     state.kind === "loading"
       ? '<footer class="loading-footer" aria-hidden="true"><span class="text-button"><span class="loading-line loading-map"><span class="skeleton"></span></span></span><span class="text-button"><span class="loading-line loading-reload"><span class="skeleton"></span></span></span></footer>'
-      : '<footer><button type="button" id="open-map" class="text-button" data-action="home">Web の学習マップ ↗</button><button type="button" id="reload" class="text-button" data-action="refresh">再読み込み</button></footer>';
+      : '<footer><button type="button" id="open-map" class="text-button" data-action="home">Web のステージ一覧 ↗</button><button type="button" id="reload" class="text-button" data-action="refresh">再読み込み</button></footer>';
   return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${nonce}';"><title>STELLA 学習ガイド</title><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"></head><body data-message-token="${nonce}" data-scope="${scope}"><p id="loading-status" class="sr-only" role="status" aria-atomic="true"></p><main data-state="${state.kind}" aria-busy="${state.kind === "loading"}">${content}</main>${footer}<script nonce="${nonce}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
 }

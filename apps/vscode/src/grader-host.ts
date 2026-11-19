@@ -48,7 +48,7 @@ export class GraderHost {
     return new Promise<ExecutionResult>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(requestId);
-        reject(new Error("採点がタイムアウトしました"));
+        reject(new Error("確認がタイムアウトしました"));
       }, GRADE_TIMEOUT_MS);
       this.pending.set(requestId, { resolve, reject, timer });
       void webview.postMessage(message);

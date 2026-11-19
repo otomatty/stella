@@ -265,7 +265,7 @@ export async function checkAiPassedSubmission(
           db.insert(notifications).values({
             userId: studentId,
             type: "review_comment",
-            title: `${row.assignmentTitle || "課題"} に講師がコメントしました`,
+            title: `${row.assignmentTitle || "課題"} に管理者がコメントしました`,
             body: comment.slice(0, 500),
             payload: {
               submission_id: submissionId,

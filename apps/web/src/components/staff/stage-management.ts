@@ -70,8 +70,8 @@ export function stageAudienceLabel(
 }
 
 export function offBoardNote(stage: StaffSkillMapStageNode): string {
-  if (stage.status === "archived") return "アーカイブのため、盤面には載せていません";
-  return "カテゴリも親も無いため、盤面には載せていません";
+  if (stage.status === "archived") return "アーカイブのため、ステージ一覧には載せていません";
+  return "カテゴリも親も無いため、ステージ一覧には載せていません";
 }
 
 export function stageManagementTitle(): string {
@@ -223,7 +223,7 @@ export function staffMapContents(
       const stage = bySlug.get(slug);
       return stage?.id === entryId || slug === "dev-env-basics" ? "入口" : (stage?.title ?? slug);
     });
-    return `${names.join("、")} クリア後`;
+    return `${names.join("、")} 完了後`;
   };
   const depth = (stage: StaffSkillMapStageNode): number => {
     const seen = new Set([stage.id]);

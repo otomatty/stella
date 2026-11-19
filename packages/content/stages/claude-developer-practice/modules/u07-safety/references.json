@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u07-safety@1",
+  "contentHash": "21b1fa1b7bd7e68c51a570e7f3365f2371b58bd6a60936d16acf20323afd490a",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-current-user/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-sdk-secure-deployment-20261031"],
+      "usedFor": "「他の部署の予約を一覧から外す」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-no-secret/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-sdk-secure-deployment-20261031"],
+      "usedFor": "「翻訳用データに資格情報が混じる」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-sensitive-action/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-sdk-permissions-20261031"],
+      "usedFor": "「定員追加の依頼を下書きに戻す」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

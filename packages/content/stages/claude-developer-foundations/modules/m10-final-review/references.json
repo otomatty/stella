@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m10-final-review@3",
-  "contentHash": "5119dee6c6d31208fb187571d6bba1e081cdebf51d75999935f9b28fa8ab5a26",
+  "unitId": "claude-developer-foundations/m10-final-review@5",
+  "contentHash": "45f454936f713f0eee5439c8ff6fe1832bc0ba4f8fbea8fdad9a83ada941dae2",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -11,10 +11,10 @@
         "SRC-claude-docs-batch-20261031",
         "SRC-claude-docs-batch-caching-20261031"
       ],
-      "usedFor": "人が待つ応答はストリーミング、急がない大量の処理はバッチで送ること、結果の届き方・料金・向く場面の比較、バッチのリクエストに stream: true を書けないこと",
+      "usedFor": "途中表示と非同期集計の制約から、API の呼び方を決める。",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-api-distinctions/t2-cache-and-batch/slides.md",
@@ -58,10 +58,10 @@
         "SRC-claude-docs-stop-vs-errors-20261031",
         "SRC-claude-docs-errors-20261031"
       ],
-      "usedFor": "レッスン10-1(API の機能を見分ける)の読み物。ストリーミングとバッチ、キャッシュとバッチ(当たる割合の目安)、構造化出力と strict(引用と組み合わせられないこと)、stop_reason とエラーの比較",
+      "usedFor": "処理期限と期限切れの回収を含めてストリーミングとバッチを比べる。キャッシュ、厳密な入力、終了理由の復習も含む。",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-api-distinctions/knowledge.md",
@@ -126,78 +126,6 @@
       "reviewStatus": "approved"
     },
     {
-      "contentId": "l3-domain-drills/t1-drill-weak-domains/slides.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "模擬試験で間違えた範囲のドリルを解き、外した問題を戻るトピックと公式ドキュメントで確かめる進め方。試験が実際の仕事を映すように作られていることを背景にする",
-      "authorship": "summary",
-      "reuse": "concept-reference",
-      "reviewStatus": "approved"
-    },
-    {
-      "contentId": "l3-domain-drills/doc.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "レッスン10-3(範囲別のドリル)の読み物。範囲ごとの問題の並びと戻る単元、ドリルの進め方",
-      "authorship": "summary",
-      "reuse": "concept-reference",
-      "reviewStatus": "approved"
-    },
-    {
-      "contentId": "l3-domain-drills/knowledge.md",
-      "sourceRefs": [
-        "SRC-claude-docs-ts-sdk-20261031",
-        "SRC-claude-api-messages-create-20261031",
-        "SRC-claude-docs-errors-long-requests-20261031",
-        "SRC-claude-docs-context-windows-20261031",
-        "SRC-claude-docs-thinking-20261031",
-        "SRC-claude-docs-prompt-caching-20261031",
-        "SRC-claude-docs-caching-structure-20261031",
-        "SRC-anthropic-effective-agents-20261031",
-        "SRC-claude-code-agent-loop-control-20261031",
-        "SRC-claude-docs-prompting-20261031",
-        "SRC-anthropic-context-engineering-20261031",
-        "SRC-claude-docs-handle-tool-calls-20261031",
-        "SRC-claude-docs-tool-choice-20261031",
-        "SRC-claude-docs-define-tools-20261031",
-        "SRC-claude-docs-jailbreaks-20261031",
-        "SRC-claude-code-sdk-secure-deployment-20261031",
-        "SRC-claude-docs-hallucinations-20261031",
-        "SRC-claude-code-settings-20261031",
-        "SRC-claude-code-memory-20261031",
-        "SRC-claude-code-hooks-guide-20261031",
-        "SRC-claude-docs-evals-20261031",
-        "SRC-claude-docs-eval-grading-20261031",
-        "SRC-claude-docs-tool-troubleshooting-20261031"
-      ],
-      "usedFor": "教材独自のドリル 24 問(範囲ごとに 3 問)の正答と解説。各問で戻る単元のトピックと公式の資料を示す",
-      "authorship": "original-exercise",
-      "reuse": "concept-reference",
-      "reviewStatus": "approved"
-    },
-    {
-      "contentId": "l4-exam-day/t1-read-the-scenario/slides.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "資格が実際の仕事を映すように作られていることを背景に、問題文から場面の条件を拾って選択肢を比べる読み方",
-      "authorship": "summary",
-      "reuse": "concept-reference",
-      "reviewStatus": "approved"
-    },
-    {
-      "contentId": "l4-exam-day/doc.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "レッスン10-4(受験の準備と当日)の読み物。場面の条件の言葉と選び方の表、申し込みの前と当日に確かめること(受験資格・試験ガイド・準備の講座・監督と本人確認・デジタルバッジ)",
-      "authorship": "summary",
-      "reuse": "concept-reference",
-      "reviewStatus": "approved"
-    },
-    {
-      "contentId": "l4-exam-day/knowledge.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "教材独自の知識問題 4 問の正答と解説",
-      "authorship": "original-exercise",
-      "reuse": "concept-reference",
-      "reviewStatus": "approved"
-    },
-    {
       "contentId": "tasks/q01-support-assistant/README.md",
       "sourceRefs": [
         "SRC-claude-docs-handle-tool-calls-20261031",
@@ -210,10 +138,10 @@
         "SRC-claude-docs-ts-sdk-20261031",
         "SRC-claude-docs-errors-20261031"
       ],
-      "usedFor": "確認A の課題文。strict のツールと構造化出力を同じリクエストで使い、thinking ブロックを含む content を返すツール使用のループ、stop_reason ごとの扱い、SDK に任せる送り直しと一時的なエラーの返し方を、偽のクライアントで確かめる",
+      "usedFor": "教材独自の通販窓口。公開ツールの範囲、照会結果の選別、失敗と再照会の ID を区別した 3 ターンの記録、最終回での停止を検査する。SDK の再試行と終了理由は公式の仕様を使う。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     }
   ]
 }

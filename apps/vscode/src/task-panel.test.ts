@@ -137,7 +137,7 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("<pre>expected [ 7 ]</pre>");
     expect(html).toContain("&lt;never&gt;");
     expect(html).toContain(
-      '<p class="links"><a href="command:stella.consultTask">講師に相談</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a> ・ <a href="command:stella.showTaskHelp">ヒント・解答・レビューの結果</a></p>',
+      '<p class="links"><a href="command:stella.consultTask">管理者に相談</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a> ・ <a href="command:stella.showTaskHelp">ヒント・解答・レビューの結果</a></p>',
     );
     expect(html).toContain("src/filter.js:8:5");
     expect(html.indexOf('<div class="test-fail">')).toBeLessThan(html.indexOf("✓ 空配列"));
@@ -194,7 +194,7 @@ describe("buildTaskPanelHtml", () => {
       root,
     });
     expect(html).toContain(
-      `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">講師に相談`,
+      `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">管理者に相談`,
     );
     expect(html).toContain(
       `href="command:stella.submitTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">提出する`,
@@ -233,7 +233,7 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain('<span class="summary-mark" aria-hidden="true">!</span>');
     expect(html).toContain('<p class="summary-title">環境の問題で確認できませんでした</p>');
     expect(html).toContain('<p class="summary-sub">まだ何も送っていません</p>');
-    expect(html).toContain('href="command:stella.consultTask">講師に相談');
+    expect(html).toContain('href="command:stella.consultTask">管理者に相談');
   });
 
   it("中断した実行は結果を残さないと伝える", () => {
@@ -487,7 +487,7 @@ describe("buildTaskPanelHtml", () => {
       manifest: { ...manifest, kind: "assessment-a" },
       result: result({ outcome: "passed", files: [], steps: [] }),
     });
-    expect(html).toContain('href="command:stella.consultTask">講師に相談</a>');
+    expect(html).toContain('href="command:stella.consultTask">管理者に相談</a>');
     expect(html).toContain('href="command:stella.showTaskHelp">レビューの結果</a>');
   });
 

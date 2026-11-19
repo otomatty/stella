@@ -193,7 +193,7 @@ describe("提出の機械照合", () => {
     const { input, bundle } = await submissionFixture();
     input.mode = "consult";
     expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
-      "受講者が講師への相談を求めています",
+      "受講者が管理者への相談を求めています",
     );
   });
 });

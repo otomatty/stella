@@ -129,7 +129,7 @@ export function ReviewResultView({
   const pendingLabel =
     submission.aiReviewStatus && submission.aiReviewStatus !== "confirmed"
       ? AI_REVIEW_STATUS_LABELS[submission.aiReviewStatus]
-      : "添削待ち";
+      : "レビュー待ち";
   const passLabel = passByLabel(submission);
   const feedback = submission.aiFeedback ?? null;
 
@@ -211,7 +211,7 @@ export function ReviewResultView({
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>講師からの総評</CardTitle>
+                <CardTitle>管理者からの総評</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[13px] leading-relaxed text-ink-2 whitespace-pre-wrap">
@@ -219,7 +219,7 @@ export function ReviewResultView({
                     (submission.aiReviewStatus === "queued"
                       ? "AI が確認しています。結果が出たら通知します。"
                       : submission.aiReviewStatus === "escalated" && !meta
-                        ? "講師が確認しています。確認待ちの間も、次の課題へ進めます。"
+                        ? "管理者が確認しています。確認待ちの間も、次の課題へ進めます。"
                         : "総評はまだありません。")}
                 </p>
               </CardContent>
@@ -230,7 +230,7 @@ export function ReviewResultView({
             // AI で合格した提出に、講師があとから足したコメント (判定は変わらない、#34)。
             <Card>
               <CardHeader>
-                <CardTitle>講師からのコメント</CardTitle>
+                <CardTitle>管理者からのコメント</CardTitle>
               </CardHeader>
               <CardContent className="text-[13px] leading-relaxed text-ink-2">
                 {submission.staffComments.map((c) => (
@@ -254,7 +254,7 @@ export function ReviewResultView({
             </CardHeader>
             <CardContent>
               {submission.rubric.length === 0 ? (
-                <p className="text-[12.5px] text-ink-3">採点結果はまだありません。</p>
+                <p className="text-[12.5px] text-ink-3">レビュー結果はまだありません。</p>
               ) : (
                 submission.rubric.map((criterion) => (
                   <div

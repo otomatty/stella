@@ -27,7 +27,7 @@ export function SubmissionHistory({
         data-testid="submissions-toggle"
         className="cursor-pointer px-4 py-3 text-sm font-semibold"
       >
-        提出・添削を確認する
+        提出・レビューを確認する
       </summary>
       {open ? <SubmissionList target={target} onOpenSubmission={onOpenSubmission} /> : null}
     </details>
@@ -72,7 +72,7 @@ function SubmissionList({
         const pendingLabel =
           submission.aiReviewStatus && submission.aiReviewStatus !== "confirmed"
             ? AI_REVIEW_STATUS_LABELS[submission.aiReviewStatus]
-            : "添削待ち";
+            : "レビュー待ち";
         return (
           <button
             type="button"

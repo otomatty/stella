@@ -186,7 +186,7 @@ export function PublicStartPage() {
         </p>
       ) : units.length === 0 ? (
         <p className="rounded-md border border-border bg-card p-4 text-[12.5px] text-ink-3">
-          導入案内の本文は準備中です。講師の案内に従って VS Code を準備してください。
+          導入案内の本文は準備中です。管理者の案内に従って VS Code を準備してください。
         </p>
       ) : (
         <>
@@ -232,7 +232,7 @@ export function PublicLessonPage({ lessonId }: { lessonId: string }) {
         <SkeletonRows rows={6} />
       ) : error ? (
         <p className="rounded-md border border-border bg-card p-4 text-[12.5px] text-ink-3">
-          レッスンを読み込めませんでした。時間をおいて開き直してください。
+          教材を読み込めませんでした。時間をおいて開き直してください。
         </p>
       ) : !lesson ? (
         <div className="rounded-md border border-border bg-card p-6 text-center">
@@ -276,7 +276,7 @@ export function PublicLessonPage({ lessonId }: { lessonId: string }) {
           )}
 
           <nav
-            aria-label="前後のレッスン"
+            aria-label="前後の教材"
             className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5"
           >
             {prev ? (

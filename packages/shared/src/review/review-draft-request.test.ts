@@ -27,8 +27,8 @@ describe("validateReviewDraftRequest", () => {
   });
 
   it("採点サマリは文字列のときだけ載る", () => {
-    expect(ok({ ...base, gradingSummary: "自動採点: 未クリア" }).gradingSummary).toBe(
-      "自動採点: 未クリア",
+    expect(ok({ ...base, gradingSummary: "自動の確認: 不合格" }).gradingSummary).toBe(
+      "自動の確認: 不合格",
     );
     expect(ok({ ...base, gradingSummary: "   " }).gradingSummary).toBeUndefined();
     expect(ok({ ...base, gradingSummary: { cleared: false } }).gradingSummary).toBeUndefined();
@@ -52,12 +52,12 @@ describe("buildReviewDraftUserMessage", () => {
   });
 
   it("採点サマリがあれば提出コードの前に載せる", () => {
-    const message = buildReviewDraftUserMessage({ ...base, gradingSummary: "自動採点: 未クリア" });
-    expect(message).toContain("自動採点: 未クリア");
-    expect(message.indexOf("自動採点: 未クリア")).toBeLessThan(message.indexOf("提出コード:"));
+    const message = buildReviewDraftUserMessage({ ...base, gradingSummary: "自動の確認: 不合格" });
+    expect(message).toContain("自動の確認: 不合格");
+    expect(message.indexOf("自動の確認: 不合格")).toBeLessThan(message.indexOf("提出コード:"));
   });
 
   it("採点サマリが無ければ何も足さない", () => {
-    expect(buildReviewDraftUserMessage(base)).not.toContain("自動採点");
+    expect(buildReviewDraftUserMessage(base)).not.toContain("自動の確認");
   });
 });

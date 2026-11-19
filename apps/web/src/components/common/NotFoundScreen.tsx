@@ -31,7 +31,7 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
           icon: Compass,
           onSelect: () => setPage("dash"),
         },
-        { label: "現在のレッスン", icon: Play, onSelect: () => setPage("lesson") },
+        { label: "現在の教材", icon: Play, onSelect: () => setPage("lesson") },
         { label: "修了証", icon: Award, onSelect: () => setPage("cert") },
       ];
     default: {

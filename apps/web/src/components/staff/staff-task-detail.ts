@@ -52,7 +52,7 @@ export function staffTaskCounts(counts: StaffTaskDetail["counts"]) {
     { label: "手元で合格", count: counts.localPassed },
     { label: "提出", count: counts.submitted },
     { label: "AI が確認中", count: counts.reviewing },
-    { label: "講師の確認待ち", count: counts.waiting },
+    { label: "管理者の確認待ち", count: counts.waiting },
     { label: "再提出", count: counts.resubmit },
     { label: "合格", count: counts.passed },
   ];

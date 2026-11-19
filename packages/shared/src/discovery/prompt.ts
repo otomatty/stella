@@ -64,7 +64,7 @@ const CONTEXT_MAX_LENGTH = 160;
 
 /** つまずきの出どころ (`discovery_requests.origin`) の日本語ラベル。 */
 const ORIGIN_LABELS: Record<string, string> = {
-  quiz_fail: "確認テストの不合格",
+  quiz_fail: "クイズの不合格",
   submission_resubmit: "課題の再提出",
 };
 

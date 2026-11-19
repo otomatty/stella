@@ -43,9 +43,7 @@ const NavCard = ({
     >
       {isNext ? null : <ChevronLeft size={15} className="shrink-0 text-ink-3" />}
       <span className="min-w-0 flex-1">
-        <span className="block text-[11px] text-ink-3">
-          {isNext ? "次のレッスン" : "前のレッスン"}
-        </span>
+        <span className="block text-[11px] text-ink-3">{isNext ? "次の教材" : "前の教材"}</span>
         <span className="block truncate text-[13px] font-semibold">{node.lesson.title}</span>
         <span className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-3">
           <LessonTypeIcon type={node.lesson.type} size={10} />
@@ -70,18 +68,18 @@ const NavEdge = ({ label, action }: { label: string; action?: React.ReactNode })
 export const LessonNavFooter = ({ neighbors, onSelectLesson, onBackToStage }: NavProps) => {
   const { current, prev, next, total } = neighbors;
   return (
-    <nav aria-label="レッスンの移動" className="mt-8 border-t border-border pt-5">
+    <nav aria-label="教材の移動" className="mt-8 border-t border-border pt-5">
       <div className="grid gap-2.5 sm:grid-cols-2">
         {prev ? (
           <NavCard node={prev} direction="prev" onSelect={onSelectLesson} />
         ) : (
-          <NavEdge label="最初のレッスンです" />
+          <NavEdge label="最初の教材です" />
         )}
         {next ? (
           <NavCard node={next} direction="next" onSelect={onSelectLesson} />
         ) : (
           <NavEdge
-            label="最後のレッスンです"
+            label="最後の教材です"
             action={
               <Button size="sm" variant="outline" onClick={onBackToStage}>
                 ステージ詳細へ
@@ -93,7 +91,7 @@ export const LessonNavFooter = ({ neighbors, onSelectLesson, onBackToStage }: Na
       {current ? (
         <p className="mt-3 text-center text-[11.5px] text-ink-3">
           <span className="font-display font-bold text-ink-2">{current.position}</span> / {total}{" "}
-          レッスン
+          教材
         </p>
       ) : null}
     </nav>
@@ -121,17 +119,17 @@ export const LessonCompleteCallout = ({
   const Icon = milestone === "stage" ? GraduationCap : milestone === "section" ? Sparkles : Check;
   const title =
     milestone === "stage"
-      ? "ステージのレッスンをすべて完了しました"
+      ? "ステージの教材をすべて完了しました"
       : milestone === "section" && current
         ? `セクション「${current.section.title}」を完了しました`
-        : "レッスンを完了しました";
+        : "教材を完了しました";
   const description = next
     ? nextStartsNewSection
       ? `次はセクション「${next.section.title}」の「${next.lesson.title}」です。`
       : `次は「${next.lesson.title}」です。`
     : stageComplete
-      ? "お疲れさまでした。 修了の状況はステージ詳細から確認できます。"
-      : "これがステージの最後のレッスンです。 未完了のレッスンが残っています。";
+      ? "お疲れさまでした。完了状況はステージ詳細で確認できます。"
+      : "これがステージの最後の教材です。未完了の教材が残っています。";
 
   return (
     // <output> は暗黙で role="status"。 完了は非同期に確定するので読み上げも通す。
@@ -152,7 +150,7 @@ export const LessonCompleteCallout = ({
         <div className="mt-3">
           {next ? (
             <Button variant="accent" onClick={() => onSelectLesson(next.lesson.id)}>
-              次のレッスンへ
+              次の教材へ
               <ChevronRight size={13} />
             </Button>
           ) : (

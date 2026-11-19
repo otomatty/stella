@@ -719,8 +719,8 @@ export function StageNotFoundNotice({ setPage }: { setPage: (p: string) => void 
 export function LessonNotFoundNotice({ setPage }: { setPage: (p: string) => void }) {
   return (
     <NotFoundNotice
-      title="レッスンが見つかりません"
-      description="このレッスンは削除されたか、 ステージの構成が変更された可能性があります。"
+      title="教材が見つかりません"
+      description="この教材は削除されたか、ステージの構成が変更された可能性があります。"
       backLabel="ステージ詳細に戻る"
       onBack={() => setPage("stage-detail")}
     />
