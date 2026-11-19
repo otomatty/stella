@@ -573,23 +573,27 @@ describe("コードの場面の検査", () => {
     brief: { ...fresh().brief, points: ["名前と値"] },
   });
   it.each([
-    { code: ["// 価格を作る", "  // 名前を付ける", " "], warns: true },
-    { code: ["", "", " "], warns: true },
-    { code: ["  // 価格を作る", "const price = 1200;", ""], warns: false },
-  ])("コメントや空行だけのコードに警告する: %j", ({ code, warns }) => {
+    { code: ["// 価格を作る", "  // 名前を付ける", " "], rejects: true },
+    { code: ["", "", " "], rejects: true },
+    { code: ["  // 価格を作る", "const price = 1200;", ""], rejects: false },
+  ])("コメントや空行だけのコードを拒む: %j", ({ code, rejects }) => {
     const json = codeVideo();
     json.scenes[0].code = code;
     const result = parseStoryboard(json);
-    expect(result.issues.filter((issue) => issue.level === "error")).toEqual([]);
-    expect(result.storyboard).toBeDefined();
-    const codeIssues = result.issues.filter((issue) => issue.path === "scenes[0].code");
-    expect(codeIssues).toHaveLength(warns ? 1 : 0);
-    if (warns)
-      expect(codeIssues[0]).toEqual({
-        level: "warning",
-        path: "scenes[0].code",
-        message: expect.stringContaining("概念図（board）で見せてください"),
-      });
+    const errors = result.issues.filter((issue) => issue.level === "error");
+    if (rejects) {
+      expect(result.storyboard).toBeUndefined();
+      expect(errors).toEqual([
+        {
+          level: "error",
+          path: "scenes[0].code",
+          message: expect.stringContaining("コメントと空行だけのコードの場面です"),
+        },
+      ]);
+    } else {
+      expect(result.storyboard).toBeDefined();
+      expect(errors).toEqual([]);
+    }
   });
   it("数直線の6文を受け付け、ほかの場面では数直線の動きを拒む", () => {
     const json = codeVideo();

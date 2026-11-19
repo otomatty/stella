@@ -1,7 +1,6 @@
 import { globSync, readFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMMENT_ONLY_CODE_WARNING } from "../src/scene-code.js";
 import { sayHash } from "../src/video-polish.js";
 import { parseStoryboard } from "../src/video-storyboard.js";
 import { storyboardAssets } from "./lib/storyboard-assets.js";
@@ -26,7 +25,6 @@ if (import.meta.main) {
     .sort();
   const storyboards = files.filter((file) => basename(file) === "video.json");
   let errors = 0;
-  let commentOnlyWarnings = 0;
   for (const file of storyboards) {
     try {
       const json = JSON.parse(readFileSync(resolve(root, file), "utf8"));
@@ -37,7 +35,6 @@ if (import.meta.main) {
       for (const issue of result.issues) {
         console.info(`${issue.level}: ${file}:${issue.path}: ${issue.message}`);
         if (issue.level === "error") errors++;
-        else if (issue.message === COMMENT_ONLY_CODE_WARNING) commentOnlyWarnings++;
       }
     } catch (e) {
       errors++;
@@ -50,7 +47,7 @@ if (import.meta.main) {
       `warning: ${file}: スライドを読み上げるだけの動画です。video.json に置き換えてください`,
     );
   console.info(
-    `絵コンテ ${storyboards.length}件 / エラー ${errors}件 / コメントと空行だけの code の警告 ${commentOnlyWarnings}件 / スライド版の警告 ${slideVideos.length}件`,
+    `絵コンテ ${storyboards.length}件 / エラー ${errors}件 / スライド版の警告 ${slideVideos.length}件`,
   );
   if (errors) process.exitCode = 1;
 }

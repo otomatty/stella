@@ -199,7 +199,7 @@ bun run --filter=@stella/content video:polish -- <トピックのパス> --apply
 
 ## 確かめ方
 
-`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。コメントと空行だけの `code` は警告します。既存の動画の置き換えが済んだらエラーにします。`narration.json` があり、`video.json` も `screen.mp4` も無いトピックは、置き換えの対象として警告します。
+`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。コメントと空行だけの `code` はエラーにします。`narration.json` があり、`video.json` も `screen.mp4` も無いトピックは、置き換えの対象として警告します。
 
 ```bash
 bun run --filter=@stella/content video:check                                   # 絵コンテの検査
