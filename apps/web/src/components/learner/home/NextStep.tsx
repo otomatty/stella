@@ -1,5 +1,4 @@
 import { OverviewTutorialButton } from "@/components/tutorials/TutorialCard";
-import { GuidedDeadline } from "./GuidedStages";
 /**
  * ホームのガイドの「次にやること」と「そのあと」(手順の並びは `@/lib/home-guide`)。
  *
@@ -11,9 +10,6 @@ import { GuidedDeadline } from "./GuidedStages";
  * 主ボタンを持たず、始められるステージを Basic と Extra に分けて同列に並べる (始めるのは
  * ツリーの星のカードから)。行の名前とコンパスは後ろの盤面をその星へ寄せる — ガイドが
  * 「何を」、ツリーが「どこか」を受け持つ。
- *
- * ガイドは盤面に浮かぶカードで、畳むと「次にやること」だけの 1 行 (`NextStepBar`) になる。
- * 畳んでも主ボタンは残す (`choose` には無い) — 盤面を広く見ている間も、次の一手は 1 押しで始められる。
  */
 
 import type { ReactNode } from "react";
@@ -23,17 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GuideStep, HomeGuide } from "@/lib/home-guide";
 import type { StageWrapup } from "@/lib/stage-wrapup";
-import {
-  Book,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Compass,
-  Play,
-  RotateCcw,
-  Sparkles,
-} from "@/lib/icons";
+import { Book, Check, Clock, Compass, Play, RotateCcw, Sparkles } from "@/lib/icons";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlanItemKind } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
@@ -88,6 +74,23 @@ function planAction(kind: TodayPlanItemKind, ctx: GuideHandlers): () => void {
   return ctx.onOpenMiss;
 }
 
+function guidedStartCopy(step: Extract<GuideStep, { kind: "start-guided" }>, ctx: StepContext) {
+  const { stage_id: stageId, title } = step.stage;
+  return {
+    title: `『${title}』を始めましょう`,
+    action: ctx.startingGuidedStage ? "開始しています…" : "始める",
+    onClick: () => ctx.onStartGuidedStage(stageId),
+    error: ctx.guidedStartError?.stageId === stageId ? ctx.guidedStartError.message : null,
+  };
+}
+
+const GuidedStartError = ({ message }: { message: string | null }) =>
+  message ? (
+    <p role="alert" className="basis-full text-xs text-danger">
+      {message}
+    </p>
+  ) : null;
+
 /**
  * 仕上げの文面。レッスンを持たない星 (準備中) と、レッスンを終えた星を言い分ける。
  * 課題が残っていれば名指しし、受講者の番なら主ボタンを「課題を開く」にする
@@ -125,163 +128,6 @@ interface NextStepCardProps extends StepContext {
   /** マップを読み終えるまでは骨組みだけを出す (空の案内が一瞬出る瞬きを避ける)。 */
   loading: boolean;
 }
-
-/** 畳んだガイドの 1 行に載せる要約。主ボタンはカードのものと同じ行き先。 */
-interface StepSummary {
-  icon: typeof Play;
-  eyebrow: string;
-  title: string;
-  action?: { label: string; onClick: () => void; disabled?: boolean };
-  error?: string | null;
-}
-
-function guidedStartSummary(step: Extract<GuideStep, { kind: "start-guided" }>, ctx: StepContext) {
-  return {
-    icon: Play,
-    eyebrow: "次にやること",
-    title: `『${step.stage.title}』を始めましょう`,
-    action: {
-      label: ctx.startingGuidedStage ? "開始しています…" : "始める",
-      disabled: ctx.startingGuidedStage,
-      onClick: () => ctx.onStartGuidedStage(step.stage.stage_id),
-    },
-    error:
-      ctx.guidedStartError?.stageId === step.stage.stage_id ? ctx.guidedStartError.message : null,
-  };
-}
-
-const GuidedStartError = ({ message }: { message?: string | null }) =>
-  message ? (
-    <p role="alert" className="basis-full text-xs text-danger">
-      {message}
-    </p>
-  ) : null;
-
-function summarizeStep(
-  step: GuideStep | undefined,
-  idle: HomeGuide["idle"],
-  ctx: StepContext,
-): StepSummary {
-  if (!step) {
-    return idle === "done"
-      ? { icon: Check, eyebrow: "次にやること", title: "今日のぶんは終わりました" }
-      : { icon: Compass, eyebrow: "次にやること", title: "いま始められるスキルはありません" };
-  }
-  if (step.kind === "setup-vscode") {
-    return {
-      icon: Compass,
-      eyebrow: "次にやること",
-      title: "VS Code の準備がまだです",
-      action: {
-        label: "準備の案内を開く",
-        onClick: () => {
-          window.location.assign("/start");
-        },
-      },
-    };
-  }
-  if (step.kind === "first-stage") {
-    return {
-      icon: Compass,
-      eyebrow: "はじめの一歩",
-      title: `『${ctx.nodeOf(step.stageId)?.title ?? "最初のステージ"}』から始めましょう`,
-      action: {
-        label: "最初のステージを始める",
-        onClick: () => ctx.onStartStage(step.stageId),
-      },
-    };
-  }
-  if (step.kind === "start-guided") return guidedStartSummary(step, ctx);
-  if (step.kind === "plan") {
-    return {
-      icon: PLAN_ICON[step.item.kind],
-      eyebrow: `次にやること · 約 ${step.item.minutes} 分`,
-      title: step.item.title,
-      action: { label: PLAN_ACTION[step.item.kind], onClick: planAction(step.item.kind, ctx) },
-    };
-  }
-  if (step.kind === "wrapup") {
-    const copy = wrapupCopy(ctx.activeStage);
-    return {
-      icon: copy.openTask ? Play : Book,
-      eyebrow: "次にやること",
-      title: copy.title,
-      action: copy.openTask
-        ? { label: "課題に取り組む", onClick: ctx.onOpenPendingTask }
-        : { label: "レッスン一覧", onClick: ctx.onOpenActiveStage },
-    };
-  }
-  return {
-    icon: Compass,
-    eyebrow: step.welcome ? "はじめの一歩" : "次にやること",
-    title: step.welcome ? "ツリーから最初のステージを選ぶ" : "ツリーから次のステージを選ぶ",
-  };
-}
-
-interface NextStepBarProps extends NextStepCardProps {
-  /** カードを開く。 */
-  onExpand: () => void;
-}
-
-/**
- * 畳んだガイド — 「次にやること」の 1 行と主ボタン。名前の側を押すとカードが開く。
- */
-export const NextStepBar = ({ guide, loading, onExpand, ...ctx }: NextStepBarProps) => {
-  const step = guide.steps[0];
-  const summary = summarizeStep(step, guide.idle, ctx);
-  const Icon = summary.icon;
-  return (
-    <div className={cn("flex items-center gap-2 p-2 pl-3", summary.error && "flex-wrap")}>
-      <button
-        type="button"
-        onClick={onExpand}
-        aria-expanded={false}
-        aria-label={`次にやることを開く: ${summary.title}`}
-        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 text-left"
-      >
-        {/* スマホ幅ではアイコンを省き、名前に幅を回す。 */}
-        <span className="hidden size-8 shrink-0 place-items-center rounded-full bg-brand-soft text-brand sm:grid">
-          <Icon size={14} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[10.5px] font-semibold tracking-wide text-brand-ink">
-            {summary.eyebrow}
-          </span>
-          {loading && !step ? (
-            <Skeleton className="mt-1 h-3.5 w-32" />
-          ) : (
-            <span className="block truncate text-[13px] font-semibold leading-snug">
-              {summary.title}
-            </span>
-          )}
-        </span>
-      </button>
-      {summary.action && !(loading && !step) ? (
-        <Button
-          size="sm"
-          variant="accent"
-          className="shrink-0"
-          disabled={summary.action.disabled}
-          onClick={summary.action.onClick}
-        >
-          {summary.action.label}
-        </Button>
-      ) : null}
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        className="shrink-0"
-        aria-label="次にやることを開く"
-        onClick={onExpand}
-      >
-        {/* 下に浮くとき (スマホ・タブレット) は上へ、左上に浮くとき (PC) は下へ開く。 */}
-        <ChevronUp size={14} className="lg:hidden" />
-        <ChevronDown size={14} className="hidden lg:block" />
-      </Button>
-      <GuidedStartError message={summary.error} />
-    </div>
-  );
-};
 
 /** いちばん大きく出す「次にやること」。押すべきボタンはここの 1 つだけ。 */
 export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
@@ -323,36 +169,34 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
 const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
   if (step.kind === "setup-vscode") return <SetupVscode />;
   if (step.kind === "start-guided") {
-    const { stage } = step;
-    const summary = guidedStartSummary(step, ctx);
+    const copy = guidedStartCopy(step, ctx);
     return (
-      <HeroFrame eyebrow={summary.eyebrow}>
-        <h2 className="text-[17px] font-semibold leading-snug tracking-tight">{summary.title}</h2>
-        {stage.source_name ? (
-          <p className="mt-1 text-xs text-ink-3">{stage.source_name} からの案内</p>
-        ) : null}
-        <GuidedDeadline dueAt={stage.due_at} />
+      <HeroFrame eyebrow="次にやること">
+        <h2 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
+          <Play size={16} className="mt-1 shrink-0 text-brand" />
+          <span className="min-w-0">{copy.title}</span>
+        </h2>
         <Button
           size="full"
           variant="accent"
           className="mt-4"
-          disabled={summary.action.disabled}
-          onClick={summary.action.onClick}
+          disabled={ctx.startingGuidedStage}
+          onClick={copy.onClick}
         >
           <Play size={14} />
-          {summary.action.label}
+          {copy.action}
         </Button>
-        <GuidedStartError message={summary.error} />
+        <GuidedStartError message={copy.error} />
       </HeroFrame>
     );
   }
   if (step.kind === "first-stage") {
-    const summary = summarizeStep(step, "empty", ctx);
+    const title = ctx.nodeOf(step.stageId)?.title ?? "最初のステージ";
     return (
-      <HeroFrame eyebrow={summary.eyebrow}>
+      <HeroFrame eyebrow="はじめの一歩">
         <h2 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
           <Compass size={16} className="mt-1 shrink-0 text-brand" />
-          <span className="min-w-0">{summary.title}</span>
+          <span className="min-w-0">『{title}』から始めましょう</span>
         </h2>
         <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
           最初のステージでは、STELLA での学び方と、VS Code で課題を出すまでを順に進めます。
@@ -412,7 +256,6 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <Icon size={16} className="mt-1 shrink-0 text-brand" />
           <span className="min-w-0">{item.title}</span>
         </h2>
-        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">{item.reason}</p>
         {lesson ? (
           <div className="mt-3 flex items-center gap-2">
             <Progress value={lesson.progress} tone="brand" className="flex-1" />
@@ -654,15 +497,9 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
     );
   }
   if (step.kind === "first-stage") return <HeroStep step={step} ctx={ctx} />;
-  const guided = step.kind === "start-guided" ? guidedStartSummary(step, ctx) : null;
+  const guided = step.kind === "start-guided" ? guidedStartCopy(step, ctx) : null;
   const row = guided
-    ? {
-        icon: guided.icon,
-        title: guided.title,
-        meta: "",
-        action: guided.action.label,
-        onClick: guided.action.onClick,
-      }
+    ? { ...guided, icon: Play, meta: "" }
     : step.kind === "plan"
       ? {
           icon: PLAN_ICON[step.item.kind],
@@ -698,12 +535,12 @@ const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
         size="sm"
         variant="default"
         className="shrink-0"
-        disabled={guided?.action.disabled}
+        disabled={step.kind === "start-guided" && ctx.startingGuidedStage}
         onClick={row.onClick}
       >
         {row.action}
       </Button>
-      <GuidedStartError message={guided?.error} />
+      <GuidedStartError message={guided?.error ?? null} />
     </div>
   );
 };
