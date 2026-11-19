@@ -15,7 +15,7 @@
  * ## 鍵が無ければ heuristic に落ちる
  *
  * `ANTHROPIC_API_KEY` が無い / 呼び出しが失敗した / 応答が JSON でない場合は、
- * **そのステージの既存クイズ設問を腕試しと同じサンプリングで 5 問複製** して下書きに
+ * **そのステージの既存クイズ設問を決定的に選んで 5 問複製** して下書きに
  * する。生成の失敗でレビュー画面が行き止まりになるより、既存設問の詰め合わせを
  * 講師が直す方が前に進む。ただし `generator` に `heuristic` と刻み、画面にも出す —
  * **AI が書いたものと既存教材の複製を混同させない**。
@@ -55,7 +55,7 @@ import {
   buildDiscoveryUserMessage,
   parseDiscoveryDraftJson,
 } from "@stella/shared/discovery/prompt";
-import { selectSkillCheckPaper } from "@stella/shared/skill-map/skill-check";
+import { selectQuestionSample } from "@stella/shared/discovery/sample";
 
 import { stages } from "../db/schema.js";
 import { completeMessage } from "../lib/anthropic-complete.js";
@@ -147,8 +147,7 @@ cmsDiscoveryRoute.get("/api/cms/discovery", async (c) => {
 /**
  * そのステージの既存クイズ設問から 5 問を複製した下書き (heuristic フォールバック)。
  *
- * サンプリングは腕試しと同じ決定的な選び方 (`selectSkillCheckPaper`)。種に
- * リクエスト id を使うので、同じリクエストからは何度押しても同じ顔ぶれになる。
+ * リクエスト id を種に使い、同じリクエストでは同じ設問を選ぶ (`selectQuestionSample`)。
  */
 async function buildHeuristicQuestions(
   db: Db,
@@ -158,7 +157,7 @@ async function buildHeuristicQuestions(
   const pool = await loadStageQuizQuestionsForCopy(db, stageId);
   if (pool.length === 0) return [];
   const picked = new Set(
-    selectSkillCheckPaper({
+    selectQuestionSample({
       questionIds: pool.map((q) => q.id),
       userId: requestId,
       stageId,

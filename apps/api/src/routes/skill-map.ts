@@ -96,9 +96,7 @@ export const skillMapRoute = new Hono<{ Bindings: Env }>();
 /**
  * 読み出した材料をそのまま評価器へ渡す。
  *
- * 呼ぶ場所が増えるほど「飛び級ぶんを渡し忘れた 1 か所」が生まれやすい (渡し忘れると
- * その画面だけ星が閉じて見える) ので、組み立ては 1 か所に閉じる。腕試し
- * (`routes/skill-check.ts`) もここを使う。
+ * 前提の免除や廃止前の飛び級による解放を、どの経路でも同じように評価する。
  */
 export function evaluateSkillMapFor(source: SkillMapSource) {
   return evaluateSkillMap({
@@ -209,14 +207,13 @@ export function maskedLockReasons(
 }
 
 /**
- * フォーカスに選べない / 腕試しを受けられない星に返す汎用文言。
+ * 選べない星や開けない発見教材に返す汎用文言。
  *
  * 「存在しない」「割り当てられていない」「霧より先」を **区別しない**。理由を書き分けると、
  * 応答の違いから他人の割当や未公開ステージ、霧の向こうの星の有無を探れてしまう。
  *
- * 触れてよいのは `full` (0〜1 歩) の星だけ (`isSelectableVisibility`)。腕試し
- * (`routes/skill-check.ts`) と自己開始 (`routes/stage-start.ts`) も同じ判定と同じ文言で
- * 断る — どれか 1 つだけ別の文言にすると、応答を突き合わせて先の星の有無が読めてしまう。
+ * 自己開始とフォーカス切り替えは `full` (0〜1 歩) の星だけを受け付ける
+ * (`isSelectableVisibility`)。発見教材も公開条件を満たさないときは同じ文言を返す。
  */
 export const UNSELECTABLE_STAGE_MESSAGE = "受講登録のないステージは選べません";
 
@@ -390,8 +387,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           const visibility = visibilityOf(stage.id);
           if (revealDev) return true;
           if (visibility === "hidden") return false;
-          // 旧い画面は `edge` を普通の星として描いてしまう (「？？？」のロック星 +
-          // 必ず 400 になる腕試しボタン)。申告の無いクライアントには配らない。
+          // 旧い画面は `edge` を普通の星として描いてしまう。申告の無いクライアントには配らない。
           return ghostStars || isStarVisible(visibility);
         })
         .map((stage) => stage.id),
@@ -416,7 +412,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
       };
 
       // 開発者表示は段を素通し (名前も解放条件も載せる)。視界の値はそのままなので、
-      // 開始 / 腕試しは依然としてサーバが断る。
+      // 開始・フォーカス切り替えには引き続き視界の条件を適用する。
       if (revealDev) {
         return [
           {

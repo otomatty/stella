@@ -1,13 +1,8 @@
 /**
  * 発見教材 (✦) の受験ダイアログ (Phase 4)。
  *
- * 道の脇に灯った教材を開いて解く。作りは腕試し (`SkillCheckDialog`) の流儀をそのまま
- * 流用している — 出題も採点もサーバ、**正答・解説は応答に入っていない** ので、
- * この画面は「どの問題を間違えたか」を出さない。出すのは得点と合否だけ。
- *
- * `SkillCheckDialog` を共通化しなかったのは、腕試しが「星を開ける (飛び級)」判定を
- * 抱えていて、受験回数の上限・到達説明・解放の失敗といった発見教材には無い概念が
- * 画面の分岐として入り込んでいるため。混ぜると両方が読みにくくなる。
+ * 道の脇に灯った教材を開いて解く。サーバが出題と採点を行い、
+ * この画面には得点と合否を表示する。
  *
  * ## 出自を必ず出す
  *
@@ -210,7 +205,7 @@ interface QuestionBlockProps {
   onToggle: (question: DiscoveryPaperQuestion, optionId: string) => void;
 }
 
-/** 選択肢の行の共通クラス (`SkillCheckDialog` と同じ形)。 */
+/** 選択肢の行の共通クラス。 */
 const optionRowClass = (active: boolean) =>
   cn(
     "flex w-full items-start gap-3 rounded-md border p-3 text-left text-[13px]",

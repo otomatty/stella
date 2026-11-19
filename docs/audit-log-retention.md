@@ -15,7 +15,7 @@
 | `user_disable` / `user_enable` | `POST /api/admin/users/disable` | `user/<userId>` | `disabled` |
 | `course_publish` / `course_unpublish` / `course_status_change` | `PATCH /api/cms/courses/:id/status` | `course/<courseId>` | `title`, `slug`, `from`, `to` |
 | `course_delete` | `DELETE /api/cms/courses/:id` | `course/<courseId>` | `title`, `slug`, `status`, `lesson_count` |
-| `stage_self_start` | `POST /api/stages/:id/start` / 腕試しの飛び級 (`POST /api/skill-check/:stageId`) | `enrollment/<id>` | `stage_id`, `state`, `created`, `reactivated`, (飛び級のみ) `via: skill_check` |
+| `stage_self_start` | `POST /api/stages/:id/start` / `POST /api/stages/:id/staff-enroll` | `enrollment/<id>` | `stage_id`, `state`, `created`, `reactivated`, 確認用の自己登録では `via: staff`、`via: skill_check` は腕試し廃止前の記録のみ |
 | `enrollment_update` | `PATCH /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `stage_id`, `patch` |
 | `enrollment_delete` | `DELETE /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `stage_id` |
 | `certificate_issue` | `POST /api/certificates/issue` | `certificate/<id>` | `cert_code`, `course_id`, `user_id`, `self_issued` |

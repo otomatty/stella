@@ -22,7 +22,6 @@ interface SkillLanesProps {
   insetLeft: number;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
-  onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   onShowInTree: (stageId: string) => void;
   className?: string;
@@ -220,7 +219,7 @@ export function SkillLanes({
                           </p>
                         </div>
                       ) : null}
-                      {full ? (
+                      {full && node.state !== "locked" ? (
                         <LaneActions
                           {...actions}
                           detail={detail}
@@ -242,10 +241,7 @@ export function SkillLanes({
 }
 
 interface LaneActionsProps
-  extends Pick<
-    SkillLanesProps,
-    "onResumeStage" | "onStartStage" | "onSkillCheck" | "onOpenStage" | "onShowInTree"
-  > {
+  extends Pick<SkillLanesProps, "onResumeStage" | "onStartStage" | "onOpenStage" | "onShowInTree"> {
   detail: StarDetail;
   stageId: string;
   openTask?: () => void;
@@ -258,11 +254,10 @@ function LaneActions({
   openTask,
   onResumeStage,
   onStartStage,
-  onSkillCheck,
   onOpenStage,
   onShowInTree,
 }: LaneActionsProps) {
-  const { resume, start, skillCheck, openStage } = detail.actions;
+  const { resume, start, openStage } = detail.actions;
   const primary = resume
     ? {
         label: openTask ? "課題に取り組む" : "続きから",
@@ -276,13 +271,7 @@ function LaneActions({
           Icon: Play,
           testId: "lane-start-stage",
         }
-      : skillCheck === "challenge"
-        ? {
-            label: "腕試しに挑戦（飛び級）",
-            run: () => onSkillCheck(stageId),
-            Icon: Sparkles,
-          }
-        : null;
+      : null;
 
   return (
     <div className="mt-auto pt-1">
@@ -302,11 +291,6 @@ function LaneActions({
         {openStage ? (
           <button type="button" onClick={() => onOpenStage(stageId)}>
             教材の一覧
-          </button>
-        ) : null}
-        {skillCheck === "try" ? (
-          <button type="button" onClick={() => onSkillCheck(stageId)}>
-            腕試し
           </button>
         ) : null}
         <button

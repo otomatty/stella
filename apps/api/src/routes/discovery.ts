@@ -16,17 +16,15 @@
  *   受けられる」穴になる
  * - **未承認 (draft / rejected) の教材は存在ごと出さない。** 講師が読む前の AI 出力を
  *   受講者に見せないための線なので、404 ではなく他と同じ 400 に丸める
- * - **断り文言はフォーカス切り替え / 腕試しと同じ汎用文言** (`UNSELECTABLE_STAGE_MESSAGE`)。
+ * - **断り文言は自己開始・フォーカス切り替えと同じ汎用文言** (`UNSELECTABLE_STAGE_MESSAGE`)。
  *   「そんな教材は無い」と「あなたには見せられない」を書き分けると、応答の違いから
  *   まだ見えていないステージに教材があること自体が読める
  * - **正答・解説を応答に載せない** (受験票にも採点結果にも)。何度でも受けられるので、
- *   返すと解答集が作れてしまう。個別の正誤も返さない (腕試しと同じ判断)
+ *   返すと解答集が作れてしまう。個別の正誤も返さない
  *
  * ## 受験回数の上限は持たない
  *
- * 腕試しと違い、発見教材の合格は星を開かない (飛び級にならない)。総当たりで得られる
- * のは 30 XP だけなので、回数を絞るより解き直せる方が学習に資する。XP も教材ごとに
- * 1 回ぶんしか入らない (`countDistinct(material_id)`)。
+ * 発見教材は何度でも解き直せる。合格の 30 XP は教材ごとに 1 回ぶんだけ加算する (`countDistinct(material_id)`)。
  */
 
 import { Hono } from "hono";
@@ -39,7 +37,7 @@ import {
   type DiscoveryAnswer,
 } from "@stella/shared/discovery/types";
 
-import { ApiError, errorResponse, getCaller, requireCanTakeSkillCheck } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireCanTakeDiscovery } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import {
   insertDiscoveryAttempt,
@@ -62,7 +60,7 @@ export const discoveryRoute = new Hono<{ Bindings: Env }>();
  * 受けられる教材かを確かめて 1 件返す。
  *
  * GET と POST の両方がここを通る — 片方だけ緩むと、出題は断るのに採点は通る
- * (= 直接 POST すれば受験できる) 穴になる (`routes/skill-check.ts` と同じ流儀)。
+ * (= 直接 POST すれば受験できる) 穴になる。
  */
 async function resolveMaterial(
   db: Db,
@@ -70,8 +68,7 @@ async function resolveMaterial(
   id: string,
   opts: SkillMapLoadOptions,
 ): Promise<DiscoveryMaterialRow> {
-  // ロールのゲートも 1 か所に寄せる。顔ぶれは腕試しと同じ (受講者・管理者)。
-  requireCanTakeSkillCheck(caller);
+  requireCanTakeDiscovery(caller);
   const material = await loadDiscoveryMaterial(db, id);
   // 存在しない / 未承認 を **同じ 400** に丸める。
   if (material?.reviewStatus !== "approved") {

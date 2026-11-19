@@ -722,7 +722,7 @@ describe("layoutRadialSkillTree", () => {
       expect(gits.map((g) => g.node.state)).toEqual(["locked", "locked"]);
     });
 
-    it("飛び級で開いた実体は、扇の親が 1 つも cleared でないので全複製が開いたまま", () => {
+    it("前提の免除などで開いた実体は、扇の親が 1 つも cleared でないので全複製が開いたまま", () => {
       const layout = layoutRadialSkillTree(
         withGitAfterBasics().map((n) => (n.id === "js" ? { ...n, state: "locked" as const } : n)),
       );

@@ -284,8 +284,7 @@ describe("GET /api/skill-map/mine", () => {
     // 名前のある星 (0〜1 歩) はそのまま。旧画面は今までどおりこれだけを描く。
     expect(stages.get("id-c")?.visibility).toBe("full");
     expect(stages.get("id-d")).toBeUndefined();
-    // 2 歩先は配らない — 旧 describeStar() は fog 以外を普通の星として描き、
-    // 必ず 400 になる腕試しボタンまで出してしまう。
+    // 旧画面は 2 歩先を普通の星として描くため、応答から外す。
     expect(stages.get("id-e")).toBeUndefined();
     expect(stages.get("id-f")).toBeUndefined();
   });
@@ -671,7 +670,7 @@ describe("GET /api/skill-map/mine", () => {
           category: "基礎",
         },
       ],
-      // 飛び級で開いた星 (= 視界の起点)。扇の親が無くても応答には載る形を作る。
+      // 前提の免除などで開いた星 (= 視界の起点)。扇の親が無くても応答には載る形を作る。
       clearedStageIds: new Set<string>(),
       unlockedStageIds: new Set(["id-git"]),
       activeStageId: undefined,
@@ -695,7 +694,7 @@ describe("GET /api/skill-map/mine", () => {
     });
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       // 本線 r → s1 → s2 → s3 → p (p は 4 歩で hidden)。
-      // 飛び級で d を開くと、その手前が d → c → x と数えられ、x は 2 歩 = edge に
+      // 前提の免除などで d を開くと、その手前が d → c → x と数えられ、x は 2 歩 = edge に
       // なる。ところが x の **線** は p 側 (3 歩) へ向いているので、x から引ける線が無い。
       stages: [
         s("r", []),
@@ -881,7 +880,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(revealed.get("id-c")?.has_icon).toBe(true);
   });
 
-  it("飛び級で開いた星は unlocked になり、視界の起点にもなる", async () => {
+  it("前提の免除などで開いた星は unlocked になり、視界の起点にもなる", async () => {
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       ...lineSource(),
       unlockedStageIds: new Set(["id-d"]),

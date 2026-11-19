@@ -16,7 +16,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
  * `unlocked_profile_ids` は、割り当てたユーザーのうち前提を免除する人 (`stage_unlocks.via = staff`)。
  * 指定すると、そのステージの staff の行のうち指定に無い人だけを消し、指定された人を足す
  * (残した行の日時はそのまま)。省くと、割当から外した人の前提の免除だけを外す。
- * 腕試し (`skill_check`) で開いた行は消さず、上書きもしない。
+ * 廃止した腕試し (`skill_check`) で開いた既存の行は消さず、上書きもしない。
  * 割り当ても前提の免除も、受講開始は自己開始のまま (`POST /api/stages/:id/start`)。
  * 新たに割り当てたユーザーには、線の親と前提をたどった Extra (granted) のステージにも同じ割当を足す
  * (外したとき、および既にある割当は触らない)。catalog に着いたらそこから先はたどらない。
@@ -499,7 +499,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       .from(stageUnlocks)
       .where(eq(stageUnlocks.stageId, stageId));
     const assigned = new Set(profileIds);
-    // 一意制約は user × stage。腕試しの行がある人へ staff は入らない (上書きしない)。
+    // 一意制約は user × stage。旧飛び級の行がある人へ staff は入らない (上書きしない)。
     const blockedByOtherVia = new Set(
       existingUnlocks.filter((row) => row.via !== "staff").map((row) => row.userId),
     );

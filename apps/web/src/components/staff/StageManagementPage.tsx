@@ -210,7 +210,6 @@ export function StageManagementPage({
             onSelectIsland={selectIsland}
             onResumeStage={noop}
             onStartStage={noop}
-            onSkillCheck={noop}
             onOpenStage={noop}
             celebrate={false}
             loadIcons={getStaffSkillMapIcons}

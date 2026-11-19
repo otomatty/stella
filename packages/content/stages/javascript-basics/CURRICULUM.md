@@ -37,7 +37,7 @@
 
 確認Bは `dev-env-basics` の確認A合格の7日後に出る。`html-css-basics` の最初の単元に「確認Bが出たら先に解く」と書く予定である。
 
-最初の課題の前に環境診断 (`env-diagnose`、`diagnose-node-01`) を置き、版は `node-test-01` に合わせる。腕試しで先に来た人も含め、全員がここで診断を通る。
+最初の課題の前に環境診断 (`env-diagnose`、`diagnose-node-01`) を置き、版は `node-test-01` に合わせる。全員がここで診断を通る。
 
 ## 執筆時の扱い
 

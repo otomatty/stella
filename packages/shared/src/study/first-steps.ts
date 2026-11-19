@@ -11,7 +11,7 @@ export const FIRST_STEP_KEYS = [
 export type FirstStepKey = (typeof FIRST_STEP_KEYS)[number];
 export interface FirstSteps {
   stage_id: string | null;
-  /** ステージの受講登録。腕試しによる解放は含まない。 */
+  /** ステージの受講登録。解放記録だけでは受講開始とみなさない。 */
   stage_started: boolean;
   items: { key: FirstStepKey; done: boolean; at: string | null }[];
 }
