@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>検証関数でエラー文を返す</title>
+  </head>
+  <body>
+    <main id="exercise">
+      <h1>検証関数でエラー文を返す</h1>
+      <form id="preview-form">
+        <label for="name">名前</label>
+        <input id="name" aria-describedby="name-error" />
+        <p id="name-error"></p>
+        <button type="submit">必須入力を確認</button>
+        <output aria-label="検証結果"></output>
+      </form>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

@@ -99,7 +99,7 @@ describe("noteQuizStumble", () => {
       lessonId: "lesson-1",
     });
     expect(resolveLessonStage).toHaveBeenCalledWith(db, "lesson-1");
-    expect(lastTopic()).toBe("確認テスト「配列の操作」");
+    expect(lastTopic()).toBe("クイズ「配列の操作」");
   });
 
   it("1 回目の不合格では積まない", async () => {

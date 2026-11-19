@@ -7,7 +7,7 @@ export default defineScenario({
   order: 4,
   screen: "/stages/$stageId/lessons/$lessonId",
   title: "提出の結果を見る",
-  summary: "課題のレッスンの下でその課題の提出を開き、通知と結果の画面を確認します。",
+  summary: "課題文の教材から提出を開き、通知と結果の画面を確認します。",
   start: "/",
   user: "seed-learner",
   seedSql: REVIEW_RESULT_SEED_SQL,
@@ -15,7 +15,7 @@ export default defineScenario({
     await openFirstTask(t);
     await t.caption("提出のあとも、Web で結果を確かめられます。", { hold: 5500 });
     await t.expect("[data-testid=lesson-screen]");
-    await t.caption("課題のレッスンの下に「提出・添削を確認する」があります。", { hold: 5500 });
+    await t.caption("課題文の下に「提出・レビューを確認する」があります。", { hold: 5500 });
     await show(t, "[data-testid=submissions-toggle]");
     await t.caption("押すと、この課題の提出が開きます。", { hold: 5500 });
     await t.click("[data-testid=submissions-toggle]");

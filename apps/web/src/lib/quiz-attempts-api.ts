@@ -34,6 +34,6 @@ export async function submitQuizAttempt(
     result: QuizGradeResult;
     cleared_stages?: StageClearedNotice[];
   }>(`/api/quiz/${encodeURIComponent(quizId)}/attempt`, { method: "POST", body: { answers } });
-  if (!result) throw new Error("採点結果が空でした");
+  if (!result) throw new Error("確認の結果が空でした");
   return { result, clearedStages: cleared_stages ?? [] };
 }

@@ -13,7 +13,7 @@ import {
   type LearningSidebarState,
 } from "./learning-sidebar.js";
 
-export type LessonContextValue = "lesson-code" | "lesson-doc" | "lesson-web" | "lesson-task";
+export type LessonContextValue = "lesson-code" | "lesson-web" | "lesson-task";
 
 export interface LessonNode {
   kind: "lesson";
@@ -23,8 +23,6 @@ export interface LessonNode {
   lessonType: LessonType;
   contextValue: LessonContextValue;
   completed: boolean;
-  markdown?: string;
-  pdfPath?: string;
   assignmentId?: string;
   /** 新形式の課題の課題文レッスンなら、その課題。開くと課題フォルダーを準備して並べる。 */
   task?: { id: string; status: TaskStatus };
@@ -36,7 +34,6 @@ function contextValueFor(type: LessonType): LessonContextValue {
       return "lesson-code";
     case "text":
     case "slides":
-      return "lesson-doc";
     case "video":
     case "quiz":
     case "assignment":
@@ -57,8 +54,6 @@ export function toLessonNode(lesson: CatalogLesson): LessonNode {
     lessonType: lesson.type,
     contextValue: lesson.task ? "lesson-task" : contextValueFor(lesson.type),
     completed: lesson.completed,
-    ...(lesson.markdown ? { markdown: lesson.markdown } : {}),
-    ...(lesson.pdfPath ? { pdfPath: lesson.pdfPath } : {}),
     ...(lesson.assignmentId ? { assignmentId: lesson.assignmentId } : {}),
     ...(lesson.task ? { task: lesson.task } : {}),
   };
@@ -72,16 +67,10 @@ export function lessonCommand(node: LessonNode): vscode.Command {
         title: "Web で開く",
         arguments: [node.stageId, node.id],
       };
-    case "lesson-doc":
-      return {
-        command: "stella.openLessonDoc",
-        title: "ドキュメントを開く",
-        arguments: [node],
-      };
     case "lesson-code":
       return {
         command: "stella.openLessonCode",
-        title: "演習を開く",
+        title: "課題を開く",
         arguments: [node],
       };
     case "lesson-task":

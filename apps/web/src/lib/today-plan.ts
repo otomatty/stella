@@ -105,7 +105,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
       kind: "lesson",
       title:
         count === 1 ? active.nextLessonTitle : `${active.nextLessonTitle} ほか ${count - 1} 本`,
-      reason: `${active.stageTitle} の続きです。残り ${active.remainingLessons} レッスン。`,
+      reason: `${active.stageTitle} の続きです。残りの教材は ${active.remainingLessons} 件です。`,
       minutes,
     });
     total += minutes;
@@ -118,7 +118,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
       title: miss.title,
       reason:
         miss.kind === "quiz"
-          ? "直近の確認テストが不合格でした。要点だけ読み直しましょう。"
+          ? "直近のクイズが不合格でした。要点だけ読み直しましょう。"
           : "再提出になった課題です。指摘を見直しましょう。",
       minutes: MISS_MINUTES,
     });

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Moon, Search, Sun } from "@/lib/icons";
 import { useTheme } from "@/hooks/useTheme";
-import { HelpDrawer } from "@/components/shell/HelpDrawer";
+import { HelpVideoButton } from "@/components/shell/HelpVideoButton";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
 import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
@@ -68,11 +68,11 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
         type="button"
         onClick={() => setSearchOpen(true)}
         className="flex items-center gap-2 bg-sunken border border-border-2 rounded-full py-[7px] px-2 sm:pl-3.5 sm:pr-2 w-[34px] sm:w-[280px] justify-center sm:justify-start shrink-0 text-ink-3 text-[12.5px] hover:border-border-strong hover:text-ink-2"
-        aria-label="ステージ・レッスンを検索"
+        aria-label="ステージ・教材を検索"
       >
         <Search size={14} className="shrink-0" />
         <span className="hidden sm:block flex-1 min-w-0 text-left truncate">
-          ステージ・レッスンを検索…
+          ステージ・教材を検索…
         </span>
         <span className="hidden sm:block font-display text-[10px] font-bold text-ink-3 border border-border-2 rounded-full px-2 py-[2px] bg-card">
           {shortcutLabel()}
@@ -105,8 +105,8 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
       >
         {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
       </button>
-      {/* 現在の画面に応じた使い方ヘルプ。 サポートページへの導線はドロワー内に残す。 */}
-      <HelpDrawer role={notify.role} />
+      {/* 受講者が使い方の動画がある画面を開いたときだけ、動画ダイアログのボタンを表示する。 */}
+      <HelpVideoButton role={notify.role} />
       {actions}
     </div>
   );

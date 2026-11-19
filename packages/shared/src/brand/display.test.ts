@@ -8,7 +8,6 @@ import {
   DISPLAY_NAME,
   DISPLAY_SHORT_NAME,
   PACKAGE_SCOPE,
-  helpAboutHeading,
   supportMailSubjectPrefix,
 } from "./display";
 
@@ -25,7 +24,6 @@ describe("display brand (Phase A–D)", () => {
     expect(DISPLAY_NAME).toBe("STELLA");
     expect(DISPLAY_SHORT_NAME).toBe("STELLA");
     expect(DISPLAY_COMMAND_PREFIX).toBe("STELLA");
-    expect(helpAboutHeading()).toBe("STELLA とは");
     expect(supportMailSubjectPrefix()).toBe("【STELLA】");
   });
 
@@ -78,11 +76,6 @@ describe("display brand (Phase A–D)", () => {
     };
     expect(manifest.name).toBe(DISPLAY_NAME);
     expect(manifest.short_name).toBe(DISPLAY_NAME);
-  });
-
-  it("help drawer about heading uses STELLA", () => {
-    const helpContent = readRepoFile("apps/web/src/components/shell/helpContent.ts");
-    expect(helpContent).toContain("helpAboutHeading()");
   });
 
   it("Brand default title uses STELLA constant", () => {

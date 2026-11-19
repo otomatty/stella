@@ -223,7 +223,7 @@ function TaskSupportPanel({ userId }: { userId: string }) {
     <details>
       <summary className="cursor-pointer text-sm font-semibold">課題ごとの支援の記録</summary>
       <p className="text-xs text-ink-3 mt-2">
-        ヒント・解答の表示、講師への相談、人のレビュー、AI
+        ヒント・解答の表示、管理者への相談、人のレビュー、AI
         チャット、手元の確認の回数です。人のレビュー以外の支援があった合格は「支援付き」になります。
       </p>
       {error ? (

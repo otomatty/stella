@@ -128,7 +128,7 @@ export async function resolveTrainingRoot(
   };
   const pick = {
     label: "既存のフォルダーを選ぶ",
-    detail: "前に作った学習フォルダーや、講師に指定された場所を使うとき",
+    detail: "前に作った学習フォルダーや、管理者に指定された場所を使うとき",
     action: "pick" as const,
   };
   const choice = await vscode.window.showQuickPick([create, pick], {

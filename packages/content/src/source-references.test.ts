@@ -882,20 +882,70 @@ describe("参照元の公開ゲートと表示", () => {
     expect(JSON.stringify(publicTask)).not.toContain("fixture-reviewer");
     const lessons = manifest.stages[0].sections?.flatMap((s) => s.lessons) ?? [];
     const doc = lessons.find((l) => l.id.startsWith("doc-"));
-    expect(doc?.markdown).toContain("確認すること:");
+    const slides = lessons.find((l) => l.type === "slides");
+    const reference = "— MDN Web Docs contributors / HTML とは / 初めての HTML 文書の作成 / 見出し";
+    expect(doc?.markdown).toContain(reference);
     expect(doc?.markdown).not.toContain("sourceRefs:");
+    expect(slides?.markdown?.split("\n\n---\n\n").at(-1)).toContain(reference);
     const quiz = lessons.find((l) => l.type === "quiz");
-    expect(quiz?.markdown).toContain("教材独自の課題");
-    expect(quiz?.markdown).toContain("MDN Web Docs contributors");
-    expect(quiz?.markdown).not.toContain("<details>");
-    expect(quiz?.markdown).not.toContain("### Q1.");
-    expect(lessons.at(-1)?.markdown).toContain("単元の参照元");
+    expect(quiz?.markdown).toBe("");
+    const unitReferences = lessons.at(-1)?.markdown?.split("## 単元の参照元\n").at(1);
+    expect(unitReferences).toContain(reference);
+    expect(unitReferences?.match(/MDN Web Docs contributors/g)).toHaveLength(1);
+    for (const markdown of [doc?.markdown, slides?.markdown, unitReferences]) {
+      expect(markdown).not.toMatch(/確認日:|環境:|確認すること:|資料:|要約・概念の参照/);
+    }
+    const readme = Buffer.from(publicTask.files["README.md"], "base64").toString("utf8");
+    expect(readme).toContain("確認すること: 教材独自の課題。");
+    expect(readme).toContain(
+      "教材独自の課題・概念の参照 / 資料: 更新型 / 確認日: 2026-10-05 / 環境: static-web-01@1",
+    );
     const targets = collectPdfTargets(manifest);
     expect(targets.every((t) => t.source.includes("MDN Web Docs contributors"))).toBe(true);
     const first = targets[0];
     expect(pdfSourceHash({ ...first, source: first.source + "参照元の更新" })).not.toBe(
       pdfSourceHash(first),
     );
+  });
+  it("知識問題の参照元は帰属表示が必要な資料だけを載せる", () => {
+    const { root, unit } = fixture();
+    const contentId = "l1-save-and-preview/knowledge.md";
+    patch(join(unit, "references.json"), (row) => {
+      (row.uses as Record<string, unknown>[]).push(
+        {
+          contentId,
+          sourceRefs: [],
+          usedFor: "教材独自の知識問題",
+          authorship: "original-exercise",
+          reuse: "original",
+          reviewStatus: "approved",
+        },
+        {
+          contentId,
+          sourceRefs: ["SRC-mdn-html-20261005"],
+          usedFor: "知識問題に引用した説明",
+          authorship: "quotation",
+          reuse: "quote",
+          reviewStatus: "approved",
+          attribution: {
+            text: "Required quiz credit",
+            creator: "Fixture author",
+            scope: "引用した説明",
+            conditionsUrl: "https://example.org/license",
+            checkedAt: "2026-09-30",
+            displayAt: contentId,
+          },
+        },
+      );
+    });
+    const manifest = buildContentManifest(join(root, "stages"));
+    const quiz = manifest.stages[0].sections?.[0].lessons.find((l) => l.type === "quiz");
+    expect(quiz?.markdown).toContain("## 参照元");
+    expect(quiz?.markdown).toContain("[HTML: コンテンツの作成]");
+    expect(quiz?.markdown?.match(/MDN Web Docs contributors/g)).toHaveLength(1);
+    expect(quiz?.markdown).toContain("Required quiz credit");
+    expect(quiz?.markdown).toContain("原作者: Fixture author");
+    expect(quiz?.markdown).not.toMatch(/教材独自に作成|確認すること|### Q1\./);
   });
   it("引用・改変は条件と帰属表示を必須にし、private への参照を拒否する", () => {
     const { root, unit } = fixture();

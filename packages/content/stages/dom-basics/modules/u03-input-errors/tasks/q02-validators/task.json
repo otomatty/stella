@@ -1,0 +1,70 @@
+{
+  "id": "dom-basics/u03-input-errors/q02-validators",
+  "title": "検証関数でエラー文を返す",
+  "kind": "basic",
+  "pattern": "dom-validate-message",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-early-return"
+    ],
+    "assesses": [
+      "dom-validation-function"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/validators.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "pure-validators",
+        "criterion": "各検証関数は引数だけで判定し、DOM を参照・更新せず、エラー文か空文字を返している。",
+        "required": true
+      },
+      {
+        "id": "quantity-range",
+        "criterion": "数量は空欄を区別してから数値に変換し、整数かどうかと両端を含む範囲を確かめている。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-trim-20261119",
+    "SRC-mdn-js-number-20261119",
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-equality-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js",
+    "src/preview.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

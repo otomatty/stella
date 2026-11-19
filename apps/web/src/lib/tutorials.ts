@@ -8,7 +8,7 @@ export interface Tutorial {
   id: string;
   title: string;
   summary: string;
-  /** HELP_TOPICS の route と同じルートパターン。 */
+  /** 動画を出す画面のルートパターン (TanStack Router の形式。例 `/stages/$stageId`)。 */
   screen: string;
   order: number;
   duration: number;
@@ -130,6 +130,22 @@ export function useTutorials(): Tutorial[] {
     };
   }, []);
   return list;
+}
+export function matchesScreen(screen: string, pathname: string): boolean {
+  const pattern = screen.split("/").filter(Boolean);
+  const segments = pathname.split("/").filter(Boolean);
+  return (
+    pattern.length === segments.length &&
+    pattern.every((part, i) => part.startsWith("$") || part === segments[i])
+  );
+}
+export function tutorialsForPath(
+  pathname: string,
+  list: readonly Tutorial[] = cache ?? [],
+): Tutorial[] {
+  return list
+    .filter((t) => !t.draft && matchesScreen(t.screen, pathname))
+    .sort((a, b) => a.order - b.order);
 }
 export function tutorialsForRoute(
   route: string,

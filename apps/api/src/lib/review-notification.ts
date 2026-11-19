@@ -24,7 +24,7 @@ export function reviewNotification(
   return {
     userId: before.studentId,
     type: "review_completed",
-    title: `${before.assignmentTitle || "課題"} の添削${corrected ? "結果が変更されました" : "が完了しました"}`,
+    title: `${before.assignmentTitle || "課題"} のレビュー${corrected ? "結果が変更されました" : "が完了しました"}`,
     body:
       verdict === "pass"
         ? "合格しました。 おめでとうございます。"

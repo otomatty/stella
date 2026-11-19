@@ -253,7 +253,7 @@ function AuditLive() {
           <FilterBarAside>
             {hasFilters ? (
               <Button variant="ghost" size="sm" onClick={onReset}>
-                条件クリア
+                絞り込みをリセット
               </Button>
             ) : null}
             <span className="text-[12.5px] text-ink-3">{logs.length} 件</span>
@@ -346,7 +346,7 @@ const DEMO_ROWS = [
   },
   {
     t: "2026-04-18 12:18:30",
-    a: "堀江メンター",
+    a: "堀江",
     ac: "stage_delete",
     tg: "stage/legacy-sql",
     ip: "10.0.3.22",

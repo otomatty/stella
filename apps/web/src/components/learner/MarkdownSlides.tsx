@@ -289,7 +289,7 @@ function splitMarkdownSlides(markdown: string): string[] {
 
 const NoSlides = () => (
   <div className="prose-lms">
-    <p className="text-ink-3">このレッスンにはスライドが登録されていません。</p>
+    <p className="text-ink-3">この教材にはスライドが登録されていません。</p>
   </div>
 );
 

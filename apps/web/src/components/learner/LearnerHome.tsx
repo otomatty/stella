@@ -27,20 +27,12 @@ import { toast } from "sonner";
 import { nebulaCaption } from "@/components/learner/tree/nebula-caption";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { Stage } from "@/data/types";
 import { useGuidedStages } from "@/hooks/useGuidedStages";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
-import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
+import { useSkillMap } from "@/hooks/useSkillMap";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
@@ -53,7 +45,6 @@ import {
   type GuideActiveStage,
   type GuideHandlers,
 } from "@/components/learner/home/NextStep";
-import { StageQueuePanel } from "@/components/learner/home/StageQueuePanel";
 import { UnlockNotice } from "@/components/learner/home/UnlockNotice";
 import { SkillCheckDialog } from "@/components/learner/tree/SkillCheckDialog";
 import {
@@ -122,7 +113,6 @@ export const LearnerHome = ({
   const { review, error: reviewError } = useSrsToday(currentUserId, backendEnabled);
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const guided = useGuidedStages(currentUserId);
-  const stageQueue = useStageQueue(currentUserId, backendEnabled);
   const treeRef = useRef<SkillTreeHandle | null>(null);
   const [homeView, setHomeView] = useState<"tree" | "lanes">(() => {
     try {
@@ -315,7 +305,7 @@ export const LearnerHome = ({
   /**
    * 星を始めて、そのまま最初のレッスン (一度始めた星なら続き) を開く (Phase 3b)。
    *
-   * 開始 (受講登録) → フォーカス → **一覧とキューの取り直し** → 開くレッスンの決定。
+   * 開始 (受講登録) → フォーカス → **一覧の取り直し** → 開くレッスンの決定。
    * 失敗は必ず文字にする — 投げっぱなしにすると画面上は「押しても何も起きない」になる。
    */
   const startStage = (stageId: string) => {
@@ -323,7 +313,7 @@ export const LearnerHome = ({
     void (async () => {
       try {
         await skillMap.startStage(stageId);
-        const [nextStages] = await Promise.all([refetchStages(), stageQueue.refetch()]);
+        const nextStages = await refetchStages();
         const title = nodeById.get(stageId)?.title;
         toast.success(`${title ?? "このステージ"} を進行中にしました`);
         // 進捗は **この時点の値** を読む。描画時の値を閉じ込めると、サーバ進捗の
@@ -340,26 +330,6 @@ export const LearnerHome = ({
         toast.error(err instanceof Error ? err.message : "ステージを始められませんでした");
       }
     })();
-  };
-
-  /**
-   * キューからの「始める」。**既に進めている星があれば乗り換えを確かめる** —
-   * 「1 つに絞る」設計なので黙って切り替えない。ツリーの星のカードは
-   * 「カードを開く → 押す」の 2 手が確認を兼ねるので、こちらを通さない。
-   */
-  const [pendingStageId, setPendingStageId] = useState<string | null>(null);
-  const requestStart = (stageId: string) => {
-    if (activeStage && !activeStage.completed && activeStage.id !== stageId) {
-      setPendingStageId(stageId);
-      return;
-    }
-    startStage(stageId);
-  };
-  const confirmSwitch = () => {
-    if (!pendingStageId) return;
-    const target = pendingStageId;
-    setPendingStageId(null);
-    startStage(target);
   };
 
   /** ステージ詳細 (レッスン一覧)。受講中の一覧から引くので、登録のある星だけが開ける。 */
@@ -436,7 +406,7 @@ export const LearnerHome = ({
       return;
     }
     if (!treeRef.current?.focusStage(stageId)) {
-      toast("この星はまだツリーに見えていません");
+      toast("このステージはまだステージ一覧に表示されていません");
     }
   };
 
@@ -485,7 +455,7 @@ export const LearnerHome = ({
                 wrapup.detail
               : activeStage.lessonsCount === 0
                 ? "教材の準備中です。"
-                : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
+                : "教材はすべて終わりました。課題とレビューの結果を確かめましょう。",
           ...(!nextLesson && wrapup?.learnerTurn ? { openTask: openPendingTask } : {}),
         }
       : null;
@@ -519,7 +489,7 @@ export const LearnerHome = ({
     [nodes],
   );
 
-  /** 失敗は黙って捨てない (キュー・切り替え・取得)。 */
+  /** 失敗は黙って捨てない (切り替え・取得)。 */
   const errors = [
     stagesError ? `ステージの取得に失敗しました: ${stagesError}` : null,
     reviewError ? `今日の復習の取得に失敗しました: ${reviewError}` : null,
@@ -527,7 +497,6 @@ export const LearnerHome = ({
     skillMap.error && nodes.length > 0
       ? `ステージ一覧の更新に失敗しました: ${skillMap.error}`
       : null,
-    stageQueue.error ? `次にやるリストの更新に失敗しました: ${stageQueue.error}` : null,
   ].filter((e): e is string => e !== null);
 
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -545,7 +514,7 @@ export const LearnerHome = ({
       return;
     const frame = requestAnimationFrame(() => {
       if (!treeRef.current?.focusStage(pendingFocusId)) {
-        toast("この星はまだツリーに見えていません");
+        toast("このステージはまだステージ一覧に表示されていません");
       }
       setPendingFocusId(null);
     });
@@ -609,16 +578,8 @@ export const LearnerHome = ({
             islandCaption={islandCaption}
             currentUserId={currentUserId}
             activeStageId={serverActiveStageId}
-            queuedStageIds={stageQueue.queue}
             onResumeStage={resumeStage}
             onStartStage={startStage}
-            onQueueStage={(stageId) =>
-              void stageQueue
-                .add(stageId)
-                .catch((err: unknown) =>
-                  toast.error(err instanceof Error ? err.message : "キューへの追加に失敗しました"),
-                )
-            }
             onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             revealDev={revealDev}
@@ -689,7 +650,7 @@ export const LearnerHome = ({
                     }}
                   >
                     <Icon size={14} />
-                    {view === "tree" ? "ツリー" : "道のり"}
+                    {view === "tree" ? "ステージ一覧" : "道のり"}
                   </button>
                 );
               })}
@@ -703,19 +664,11 @@ export const LearnerHome = ({
             nodes={nodes}
             islandCaption={islandCaption}
             activeStageId={serverActiveStageId}
-            queuedStageIds={stageQueue.queue}
             revealDev={revealDev}
             activeInfo={activeInfo}
             insetLeft={isDesktop ? GUIDE_INSET_PX : 0}
             onResumeStage={resumeStage}
             onStartStage={startStage}
-            onQueueStage={(stageId) =>
-              void stageQueue
-                .add(stageId)
-                .catch((err: unknown) =>
-                  toast.error(err instanceof Error ? err.message : "キューへの追加に失敗しました"),
-                )
-            }
             onSkillCheck={setCheckStageId}
             onOpenStage={openStage}
             onShowInTree={showInTree}
@@ -802,16 +755,6 @@ export const LearnerHome = ({
                 </ul>
               </GuideSection>
             ) : null}
-
-            {stageQueue.queue.length > 0 ? (
-              <StageQueuePanel
-                queue={stageQueue.queue}
-                stageById={stageById}
-                onReorder={(ids) => void stageQueue.reorder(ids).catch(() => undefined)}
-                onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
-                onStart={requestStart}
-              />
-            ) : null}
           </div>
         </aside>
       </div>
@@ -833,33 +776,6 @@ export const LearnerHome = ({
         }}
         onFinished={() => undefined}
       />
-
-      {/* 乗り換えの確認。「1 つに絞る」設計なので、黙って切り替えない。 */}
-      <Dialog
-        open={pendingStageId !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingStageId(null);
-        }}
-      >
-        <DialogContent className="w-[min(calc(100vw-2rem),460px)]">
-          <DialogHeader>
-            <DialogTitle>進めるステージを切り替えますか?</DialogTitle>
-            <DialogDescription>
-              「{activeStage?.title}」を一時停止して「
-              {(pendingStageId && nodeById.get(pendingStageId)?.title) ?? "選んだステージ"}
-              」に切り替えます。進捗はそのまま残り、いつでも戻せます。
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="default" onClick={() => setPendingStageId(null)}>
-              やめる
-            </Button>
-            <Button variant="accent" onClick={confirmSwitch}>
-              切り替える
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

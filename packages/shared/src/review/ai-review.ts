@@ -14,7 +14,7 @@ import type { MachineCheck, SupportEvent } from "../tasks/submission.js";
  * しきい値の版。表 (`MIN_CONFIDENCE`) と人に回す条件を変えたら上げる。
  * レビュー結果ごとに記録し、人の判定との一致率を版ごとに比べる (07 §13)。
  */
-export const AI_REVIEW_THRESHOLD_VERSION = "2026-10-06.2";
+export const AI_REVIEW_THRESHOLD_VERSION = "2026-11-19.1";
 
 export const RUBRIC_RESULTS = ["met", "unmet", "undetermined"] as const;
 export type RubricResult = (typeof RUBRIC_RESULTS)[number];
@@ -69,11 +69,18 @@ export interface AiLearnerReply {
   goodPoints: string[];
   nextSteps: string[];
 }
+export interface AiTestFitting {
+  /** 配布したテストの入力・期待値に合わせて決め打ちしている疑いがあれば true。 */
+  suspected: boolean;
+  evidence: EvidenceRef[];
+  note: string;
+}
 export interface AiReviewOutput {
   rubric: AiRubricResult[];
   confidence: Confidence;
   findings: AiFinding[];
   learnerReply: AiLearnerReply;
+  testFitting: AiTestFitting;
 }
 
 const evidenceSchema = {
@@ -106,6 +113,16 @@ export const AI_REVIEW_OUTPUT_SCHEMA = {
       },
     },
     confidence: { type: "string", enum: [...CONFIDENCE_LEVELS] },
+    testFitting: {
+      type: "object",
+      properties: {
+        suspected: { type: "boolean" },
+        evidence: { type: "array", items: evidenceSchema },
+        note: { type: "string" },
+      },
+      required: ["suspected", "evidence", "note"],
+      additionalProperties: false,
+    },
     findings: {
       type: "array",
       items: {
@@ -132,7 +149,7 @@ export const AI_REVIEW_OUTPUT_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ["rubric", "confidence", "findings", "learnerReply"],
+  required: ["rubric", "confidence", "testFitting", "findings", "learnerReply"],
   additionalProperties: false,
 } as const;
 
@@ -175,6 +192,19 @@ export function parseAiReviewOutput(raw: string): AiReviewOutput | null {
     return null;
   const reply = v.learnerReply;
   if (!text(reply.message) || !textList(reply.goodPoints) || !textList(reply.nextSteps))
+    return null;
+  // 項目が無い応答は、導入前に記録された出力として読めるようにする。
+  const fitting = Object.hasOwn(v, "testFitting")
+    ? v.testFitting
+    : { suspected: false, evidence: [], note: "" };
+  if (
+    !isObject(fitting) ||
+    typeof fitting.suspected !== "boolean" ||
+    !Array.isArray(fitting.evidence) ||
+    fitting.evidence.length > 20 ||
+    !fitting.evidence.every(isEvidence) ||
+    !text(fitting.note)
+  )
     return null;
   const rubric: AiRubricResult[] = [];
   for (const item of v.rubric) {
@@ -222,6 +252,15 @@ export function parseAiReviewOutput(raw: string): AiReviewOutput | null {
   return {
     rubric,
     confidence: v.confidence as Confidence,
+    testFitting: {
+      suspected: fitting.suspected,
+      evidence: fitting.evidence.map(({ file, startLine, endLine }) => ({
+        file,
+        startLine,
+        endLine,
+      })),
+      note: fitting.note,
+    },
     findings,
     learnerReply: {
       message: reply.message,
@@ -258,6 +297,7 @@ export const ROUTE_REASONS = [
   "no-rubric",
   "rubric-unmet",
   "rubric-undetermined",
+  "test-fitting",
   "low-confidence",
   "misplaced-finding",
   "task-condition",
@@ -269,11 +309,12 @@ export const ROUTE_REASON_LABELS: Record<RouteReason, string> = {
   "ci-mismatch": "CI の実行が提出と食い違う",
   "ci-unverified": "CI の実行を GitHub で照合できなかった",
   "unallowed-support": "確認A・Bで許されていない支援の記録がある",
-  consult: "受講者が講師への相談を求めた",
+  consult: "受講者が管理者への相談を求めた",
   "ai-unavailable": "AI が判定できなかった",
   "no-rubric": "課題に必須の評価項目がない",
   "rubric-unmet": "必須項目に「満たさない」がある",
   "rubric-undetermined": "必須項目に「判断できない」がある",
+  "test-fitting": "テストの入力・期待値に合わせた決め打ちの疑いがある",
   "low-confidence": "確信度がしきい値に届かない",
   "misplaced-finding": "所見が提出に無いファイル・行を指している",
   "task-condition": "課題ごとの追加条件に当たった",
@@ -346,7 +387,8 @@ export function forcedHumanReasons(input: {
   if (input.mode === "consult") reasons.push("consult");
   // 相談の理由は照合結果にも入る (`verifyTaskSubmission`)。それ以外の食い違いだけを数える。
   const mismatches = (input.machineCheck?.reasons ?? []).filter(
-    (r) => r !== "受講者が講師への相談を求めています",
+    (r) =>
+      r !== "受講者が管理者への相談を求めています" && r !== "受講者が講師への相談を求めています",
   );
   if (
     !input.machineCheck ||
@@ -483,6 +525,7 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
     if (required.length === 0) reasons.add("no-rubric");
     if (required.some((r) => r.result === "unmet")) reasons.add("rubric-unmet");
     if (required.some((r) => r.result === "undetermined")) reasons.add("rubric-undetermined");
+    if (input.output.testFitting.suspected) reasons.add("test-fitting");
     if (CONFIDENCE_RANK[confidence] < CONFIDENCE_RANK[minimumConfidence(input.kind)])
       reasons.add("low-confidence");
     if (
@@ -522,9 +565,9 @@ export type AiReviewStatus = "queued" | "confirmed" | "escalated" | "superseded"
 export const AI_REVIEW_STATUS_LABELS: Record<AiReviewStatus, string> = {
   queued: "AI が確認中",
   confirmed: "AI で合格",
-  escalated: "講師の確認待ち",
+  escalated: "管理者の確認待ち",
   superseded: "新しい提出に置き換え",
-  human: "講師が先に確定",
+  human: "管理者が先に確定",
 };
 
 /** staff に返す AI 一次レビューの記録 (`ai_reviews` の行)。 */

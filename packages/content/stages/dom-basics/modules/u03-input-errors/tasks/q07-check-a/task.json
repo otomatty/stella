@@ -1,0 +1,82 @@
+{
+  "id": "dom-basics/u03-input-errors/q07-check-a",
+  "title": "確認A 問い合わせフォーム",
+  "kind": "assessment-a",
+  "pattern": "dom-form-errors",
+  "skills": {
+    "uses": [
+      "dom-input-value",
+      "dom-validation-function",
+      "js-compare-values",
+      "js-if-else",
+      "dom-submit-event",
+      "dom-error-display",
+      "dom-error-clear"
+    ],
+    "assesses": [
+      "dom-form-choice",
+      "dom-error-display",
+      "dom-error-clear"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/inquiry.js"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "validate-rules",
+        "criterion": "各欄の検証を分け、空欄や仕様にある境界を正しく判定している。",
+        "required": true
+      },
+      {
+        "id": "link-errors",
+        "criterion": "各欄のエラーを対応する段落と aria-invalid に反映し、修正された欄のエラーを消している。",
+        "required": true
+      },
+      {
+        "id": "stop-submit",
+        "criterion": "有効な入力でも無効な入力でもページを再読み込みせず、全欄が有効なときだけ完了を表示している。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-mdn-dom-submit-event-20261119",
+    "SRC-mdn-dom-prevent-default-20261119",
+    "SRC-mdn-dom-input-event-20261119",
+    "SRC-mdn-aria-invalid-20261119",
+    "SRC-mdn-aria-describedby-20261119",
+    "SRC-mdn-js-trim-20261119",
+    "SRC-mdn-js-number-20261119"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "id": "javascript-basics/u03-conditions/v01-studio-entry",
+  "title": "録音室に入室できるか",
+  "kind": "basic",
+  "pattern": "js-combine-conditions",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-logical-operators",
+      "js-early-return"
+    ],
+    "assesses": [
+      "js-logical-operators",
+      "js-early-return",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/studio.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "closed-studio",
+        "criterion": "録音室が閉室中なら他の条件を判定する前に false を返す。",
+        "required": true
+      },
+      {
+        "id": "require-reservation-and-time",
+        "criterion": "閉室中でなければ、予約済みで利用時間が 45 分以内のときだけ true を返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-equality-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-logical-and-20261119",
+    "SRC-mdn-js-logical-or-20261119",
+    "SRC-mdn-js-logical-not-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 15,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

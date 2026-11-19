@@ -16,7 +16,7 @@ import type { LoadedMaterial } from "./ai-review-material.js";
 
 /** 練習で返信が解答例と重なったときに、受講者へ代わりに返す文。 */
 const SAFE_REPLY: AiLearnerReply = {
-  message: "提出を確認しました。気になる点があれば、講師への相談から質問してください。",
+  message: "提出を確認しました。気になる点があれば、管理者への相談から質問してください。",
   goodPoints: [],
   nextSteps: [],
 };

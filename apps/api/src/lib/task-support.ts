@@ -13,7 +13,7 @@ import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
 import { helpOpenDetail, helpSupportKind } from "@stella/shared/tasks/help";
 import {
-  CONSULT_SUPPORT_DETAIL,
+  isConsultSupportDetail,
   RECORDED_SUPPORT_KINDS,
   type EvidenceLevel,
   type RecordedSupportKind,
@@ -404,7 +404,7 @@ export async function loadTaskSupport(
     for (const e of s.supportLog ?? []) {
       if (!(SUPPORT_KINDS as readonly string[]).includes(e.kind)) continue;
       // 相談の提出に拡張が足す「講師への相談」は、上の相談そのものと同じ出来事。
-      if (s.mode === "consult" && e.kind === "instructor" && e.detail === CONSULT_SUPPORT_DETAIL)
+      if (s.mode === "consult" && e.kind === "instructor" && isConsultSupportDetail(e.detail))
         continue;
       const at = new Date(e.at);
       if (Number.isNaN(at.getTime())) continue;

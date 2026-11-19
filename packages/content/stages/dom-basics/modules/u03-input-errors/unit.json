@@ -1,0 +1,16 @@
+{
+  "plannedHours": 10,
+  "skills": {
+    "uses": ["js-compare-values", "js-if-else", "js-early-return"],
+    "assesses": [
+      "dom-input-value",
+      "dom-submit-event",
+      "dom-validation-function",
+      "dom-error-display",
+      "dom-error-clear",
+      "dom-form-choice",
+      "dom-form-repair"
+    ]
+  },
+  "reuses": ["javascript-basics/u03-conditions/q04-connect/src/order.js"]
+}

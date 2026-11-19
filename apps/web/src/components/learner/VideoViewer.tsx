@@ -431,11 +431,9 @@ export function VideoViewer({
         // ボタンが操作バーと重ならないようにする。
         <div className="absolute inset-0 grid place-items-center bg-black/70 px-4 pb-14 text-center">
           <div className="max-w-sm">
-            <div className="text-[11.5px] uppercase tracking-[0.14em] text-white/70">
-              次のレッスン
-            </div>
+            <div className="text-[11.5px] uppercase tracking-[0.14em] text-white/70">次の教材</div>
             <div className="mt-1.5 text-[15px] font-bold text-white">
-              {nextLessonTitle ?? "次のレッスン"}
+              {nextLessonTitle ?? "次の教材"}
             </div>
             <div className="mt-4 flex items-center justify-center gap-2">
               <Button
@@ -447,7 +445,7 @@ export function VideoViewer({
                 }}
               >
                 <Play size={13} />
-                {countdown === null ? "次のレッスンへ" : `次のレッスンへ (${countdown})`}
+                {countdown === null ? "次の教材へ" : `次の教材へ (${countdown})`}
               </Button>
               <Button
                 variant="outline"

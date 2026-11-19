@@ -1,0 +1,74 @@
+{
+  "id": "javascript-basics/u03-conditions/q04-connect",
+  "title": "注文の合計を計算する",
+  "kind": "connection",
+  "pattern": "js-combine-conditions",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-boundary-test",
+      "js-logical-operators",
+      "js-early-return"
+    ],
+    "assesses": [
+      "js-logical-operators",
+      "js-if-else",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/order.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "guard-zero-quantity",
+        "criterion": "数量が 0 個なら、単価や会員区分にかかわらず、通常の計算に入る前に 0 を返す。",
+        "required": true
+      },
+      {
+        "id": "discount-before-tax",
+        "criterion": "単価と数量を掛けた小計が 3,000 円以上かつ会員のときだけ 300 円を引き、割引後の小計の 10% を Math.floor で切り捨てて税にする。",
+        "required": true
+      },
+      {
+        "id": "shipping-after-tax",
+        "criterion": "税を足した金額が 3,000 円以上のときだけ送料無料とし、最後に送料を足して返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-equality-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-logical-and-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 35,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

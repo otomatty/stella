@@ -1,0 +1,70 @@
+{
+  "id": "dom-basics/u03-input-errors/v01-bicycle-days",
+  "title": "自転車の貸出日数を検証する",
+  "kind": "basic",
+  "pattern": "dom-validate-message",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-early-return"
+    ],
+    "assesses": [
+      "dom-validation-function"
+    ]
+  },
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/rental-days.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "include-boundaries",
+        "criterion": "貸出日数の下限と上限を含め、空欄や整数以外を無効にしている。",
+        "required": true
+      },
+      {
+        "id": "return-message",
+        "criterion": "検証関数は入力値だけを受け取り、画面を操作せず、エラー文か空文字を返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [
+    "SRC-mdn-js-trim-20261119",
+    "SRC-mdn-js-number-20261119",
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-equality-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 15,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**",
+    "src/main.js",
+    "src/preview.js"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

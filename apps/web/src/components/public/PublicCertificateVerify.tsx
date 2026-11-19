@@ -171,7 +171,7 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
                     {code}
                   </Detail>
                   {valid && condition && (
-                    <Detail label="修了の条件">
+                    <Detail label="完了条件">
                       <span className="text-sm font-normal leading-relaxed">{condition}</span>
                     </Detail>
                   )}

@@ -36,6 +36,7 @@ function output(
     rubric: Object.entries(results).map(([id, result]) => ({ id, result, evidence, note: "" })),
     confidence,
     findings: [],
+    testFitting: { suspected: false, evidence: [], note: "" },
     learnerReply: { message: "よく書けています", goodPoints: ["見出し"], nextSteps: [] },
     ...extra,
   };
@@ -93,6 +94,21 @@ describe("人に回すかどうかのしきい値 (07 §6.3)", () => {
       output({ "CR-NAME-01": "met", heading: "met", extra: "unmet" }, "medium"),
     );
     expect(decision).toMatchObject({ outcome: "confirmed", reasons: [], confidence: "medium" });
+  });
+  it.each([true, false])("決め打ちの疑いが %s のときの振り分け", (suspected) => {
+    const out = output({ "CR-NAME-01": "met", heading: "met" }, "high", {
+      testFitting: {
+        suspected,
+        evidence: suspected ? [{ file: "missing.ts", startLine: 1, endLine: 1 }] : [],
+        note: suspected ? "テストの入力の場合だけ期待値を返しています。" : "",
+      },
+    });
+    expect(route("basic", out)).toMatchObject({
+      outcome: suspected ? "escalated" : "confirmed",
+      reasons: suspected ? ["test-fitting"] : [],
+      confidence: "high",
+      proposedVerdict: "pass",
+    });
   });
   it("AI が返さなかった必須項目は「判断できない」として人に回す", () => {
     const decision = route("basic", output({ heading: "met" }, "high"));
@@ -196,14 +212,19 @@ describe("AI の判定によらず人に回す", () => {
         support: [],
       }),
     ).toEqual(["machine-check"]);
-    expect(
-      forcedHumanReasons({
-        kind: "basic",
-        mode: "consult",
-        machineCheck: { matched: false, reasons: ["受講者が講師への相談を求めています"] },
-        support: [],
-      }),
-    ).toEqual(["consult"]);
+    for (const reason of [
+      "受講者が管理者への相談を求めています",
+      "受講者が講師への相談を求めています",
+    ]) {
+      expect(
+        forcedHumanReasons({
+          kind: "basic",
+          mode: "consult",
+          machineCheck: { matched: false, reasons: [reason] },
+          support: [],
+        }),
+      ).toEqual(["consult"]);
+    }
     // CI の照合 (07 §5.5): 食い違いと照合できなかったものを分けて人に回す。
     const ci = (status: string) => ({ ...matched, ci: { status } }) as never;
     expect(
@@ -283,6 +304,26 @@ describe("AI の応答の検証", () => {
   const valid = JSON.stringify(output({ heading: "met" }, "medium"));
   it("スキーマどおりの応答を読む", () => {
     expect(parseAiReviewOutput(valid)?.confidence).toBe("medium");
+  });
+  it("決め打ちの項目が無い旧版の応答を読む", () => {
+    const old = JSON.parse(valid);
+    delete old.testFitting;
+    expect(parseAiReviewOutput(JSON.stringify(old))?.testFitting).toEqual({
+      suspected: false,
+      evidence: [],
+      note: "",
+    });
+  });
+  it.each([
+    null,
+    { suspected: "true", evidence: [], note: "" },
+    { suspected: true, evidence: {}, note: "" },
+    { suspected: true, evidence: [{ file: "a", startLine: "1", endLine: 1 }], note: "" },
+    { suspected: true, evidence: Array(21).fill(evidence[0]), note: "" },
+    { suspected: true, evidence: [], note: 1 },
+    { suspected: true, evidence: [], note: "a".repeat(4001) },
+  ])("決め打ちの項目が不正なら応答を使わない (%#)", (testFitting) => {
+    expect(parseAiReviewOutput(JSON.stringify({ ...JSON.parse(valid), testFitting }))).toBeNull();
   });
   it("形の誤りは null (AI が判定できなかった)", () => {
     expect(parseAiReviewOutput("not json")).toBeNull();

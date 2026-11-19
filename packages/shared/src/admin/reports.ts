@@ -262,14 +262,14 @@ export const REPORT_META: Record<ReportType, ReportMeta> = {
       "登録日時",
       "期限",
       "完了日時",
-      "完了レッスン",
-      "総レッスン",
+      "完了した教材数",
+      "教材の総数",
       "進捗率(%)",
     ],
   },
   grades: {
     label: "成績",
-    description: "小テスト受験と課題提出の結果",
+    description: "クイズの受験と課題の提出結果",
     fileBase: "report-grades",
     headers: [
       "種別",
@@ -365,7 +365,7 @@ export function reportRowToCells(type: ReportType, row: ReportRow): string[] {
     case "grades": {
       const r = row as GradeReportRow;
       return [
-        r.kind === "quiz" ? "小テスト" : "課題",
+        r.kind === "quiz" ? "クイズ" : "課題",
         r.user_name,
         r.email ?? "",
         r.stage_title,

@@ -40,7 +40,6 @@ vi.mock("./task-help.js", () => ({ registerTaskHelp: vi.fn() }));
 vi.mock("./task-status.js", () => ({ registerTaskStatus: vi.fn() }));
 vi.mock("./exercise-panel.js", () => ({}));
 vi.mock("./grader.js", () => ({}));
-vi.mock("./lesson-doc.js", () => ({}));
 vi.mock("./workspace.js", () => ({}));
 vi.mock("./open-task.js", () => ({
   openDistributedTask: state.openTask,
@@ -107,7 +106,9 @@ async function expectConnectionFlow(): Promise<void> {
   await vi.waitFor(() =>
     expect(state.openExternal).toHaveBeenCalledWith("http://127.0.0.1:5173/stages"),
   );
-  expect(state.showInformationMessage).toHaveBeenCalledWith(expect.stringContaining("課題一覧"));
+  expect(state.showInformationMessage).toHaveBeenCalledWith(
+    expect.stringContaining("Web の課題一覧か、コード課題がある教材で「VS Code で開く」"),
+  );
 }
 
 describe("task URI の接続導線", () => {

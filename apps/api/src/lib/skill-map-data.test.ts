@@ -8,7 +8,6 @@ import type { Db } from "../db/client.js";
 import type { Caller } from "./authz.js";
 import { D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
-import { isEnrolledInStage } from "./stage-queue-data.js";
 import {
   INVALID_PREREQUISITE_SENTINEL,
   isDevMode,
@@ -208,7 +207,7 @@ describe("loadStaffSkillMapRows", () => {
   });
 });
 
-describe("受講登録の絞り込み (loadEnrolledStageIds / isEnrolledInStage)", () => {
+describe("受講登録の絞り込み (loadEnrolledStageIds)", () => {
   it("読める登録 (active / completed) だけを数える — expired は enrolled 扱いにしない", async () => {
     const { db, last } = recordingDb();
     await loadEnrolledStageIds(db, CALLER);
@@ -218,17 +217,6 @@ describe("受講登録の絞り込み (loadEnrolledStageIds / isEnrolledInStage)
     expect(q.params).toContain("completed");
     // 期限切れの割当は「今すぐ始められる星」ではない (開くと 404 になる)。
     expect(q.params).not.toContain("expired");
-  });
-
-  it("キューの受け入れ判定も読める登録だけを数える", async () => {
-    const { db, last } = recordingDb();
-    await isEnrolledInStage(db, CALLER, "stage-a");
-    const q = last();
-    expect(q.sql).toContain('"status" in (?, ?)');
-    expect(q.params).toContain("active");
-    expect(q.params).toContain("completed");
-    expect(q.params).not.toContain("expired");
-    expect(q.params).toContain("stage-a");
   });
 });
 

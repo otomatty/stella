@@ -17,7 +17,7 @@ export function CodeLessonHandoff({
     <div className="px-4 sm:px-10 py-6 max-w-[880px] mx-auto w-full">
       {handheld ? (
         <p className="text-[13.5px] text-ink-2">
-          この演習はパソコンの VS Code で進めます。パソコンでこのページを開き、「VS Code
+          この課題はパソコンの VS Code で進めます。パソコンでこのページを開き、「VS Code
           で開く」を押してください。
         </p>
       ) : null}
@@ -34,8 +34,8 @@ export function CodeLessonHandoff({
 
       {handheld ? null : (
         <p className="text-[13px] text-ink-3 mt-4">
-          拡張 {DISPLAY_NAME} を入れた VS Code で演習を進めます。ボタンを押すと VS Code
-          が起動し、未接続なら接続も同時に済ませてこのレッスンを開きます。拡張機能が入っていなければ、VS
+          拡張 {DISPLAY_NAME} を入れた VS Code で課題を進めます。ボタンを押すと VS Code
+          が起動し、未接続なら接続も同時に済ませてこの教材を開きます。拡張機能が入っていなければ、VS
           Code がインストールを尋ねます。
         </p>
       )}

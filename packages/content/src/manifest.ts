@@ -518,7 +518,7 @@ function buildOneStage(
           )
           .join("\n\n---\n\n");
         // 出典欄は最後のスライドに付ける (枚数 = totalPages を変えない)。独自制作だけの
-        // スライドは外部資料の一覧が空になるので、解説・知識問題・課題と同じ独自制作の記録を出す。
+        // スライドは外部資料の一覧が空になるので、解説・課題と同じ独自制作の記録を出す。
         const slidesContentId = `${lessonDir}/${topicDir}/slides.md`;
         lessons.push({
           id: fm.id,
@@ -546,7 +546,9 @@ function buildOneStage(
 
       const topicKey = lessonKey(topicIds);
       const docFile = join(lessonPath, "doc.md");
-      const practiceFile = join(lessonPath, config.format === 2 ? "knowledge.md" : "practice.md");
+      const practiceName = config.format === 2 ? "knowledge.md" : "practice.md";
+      const practiceFile = join(lessonPath, practiceName);
+      const practiceContentId = `${lessonDir}/${practiceName}`;
       const practiceSource = readFileSync(practiceFile, "utf8").replace(/\r\n/g, "\n");
       const metadata = config.format === 2 ? readKnowledgeMetadata(practiceSource) : {};
       // スライドを持たない format 2 では単元とレッスンのディレクトリを安定キーにする。
@@ -579,35 +581,23 @@ function buildOneStage(
       }
       if (questions.length > 0) {
         const quizLessonId = `quiz-${key}`;
+        const quizReferences = contentReferences(practiceContentId, practiceSource).filter(
+          (ref) => ref.attribution,
+        );
         lessons.push({
           id: quizLessonId,
           title: metadata.title ?? `${lessonTitle} 確認クイズ`,
           type: "quiz",
           duration: quizDuration(questions.length, metadata.durationMinutes),
           status: "todo",
-          ...(referenceMap
-            ? {
-                markdown: referencedMarkdown(
-                  "",
-                  contentReferences(
-                    `${lessonDir}/${config.format === 2 ? "knowledge.md" : "practice.md"}`,
-                    practiceSource,
-                  ),
-                  referenceMap,
-                  `${lessonDir}/${config.format === 2 ? "knowledge.md" : "practice.md"}`,
-                ),
-              }
-            : {}),
+          ...(referenceMap ? { markdown: referencesMarkdown(quizReferences) } : {}),
         });
         quizzes.push({
           stageId: slug,
           lessonId: quizLessonId,
           passScore: 80,
           questions,
-          sourceText: renderContent(
-            practiceSource,
-            `${lessonDir}/${config.format === 2 ? "knowledge.md" : "practice.md"}`,
-          ),
+          sourceText: renderContent(practiceSource, practiceContentId),
           ...(config.format === 2 ? { source: "knowledge" as const } : {}),
         });
       }

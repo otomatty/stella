@@ -21,8 +21,6 @@ export interface CatalogLesson {
   title: string;
   type: LessonType;
   completed: boolean;
-  markdown?: string;
-  pdfPath?: string;
   assignmentId?: string;
   /**
    * 新形式の課題の課題文レッスンなら、その課題 (`tasks.lesson_id`)。ツリーから開くと
@@ -156,8 +154,6 @@ function toCatalogSection(
           title: lesson.title,
           type: lesson.type,
           completed: completedIds.has(lesson.id),
-          ...(lesson.markdown ? { markdown: lesson.markdown } : {}),
-          ...(lesson.pdf_path ? { pdfPath: lesson.pdf_path } : {}),
           ...(lesson.assignment_id ? { assignmentId: lesson.assignment_id } : {}),
           ...(task ? { task } : {}),
         };
@@ -190,8 +186,8 @@ async function fetchStageDetail(stageId: string): Promise<StageWithChildren | nu
 }
 
 /**
- * 新形式のステージ (format 2) の課題と、その課題文レッスン。読めなければ空 (ツリーは
- * 課題文をドキュメントとして出すだけで、課題は Web の「VS Code で開く」から開ける)。
+ * 新形式のステージ (format 2) の課題と、その課題文レッスン。
+ * 課題を取得できなかったレッスンは Web で開く。
  */
 async function fetchTasksByLesson(detail: StageWithChildren | null): Promise<TasksByLesson> {
   const map = new Map<string, { id: string; status: TaskStatus }>();

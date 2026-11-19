@@ -48,7 +48,7 @@ export const stages: StageInfo[] = [
   },
   {
     id: "S5",
-    label: "S5 設計演習",
+    label: "S5 設計課題",
     shortLabel: "全体を設計する",
     description: "複数の概念を統合し、 少し大きな仕様を自分で分割して実装する。",
     defaultTestKind: "function",

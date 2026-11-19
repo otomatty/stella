@@ -81,6 +81,6 @@ export function buildHeuristicReviewDraft(code: string): ReviewDraftResponse {
   return {
     suggestions,
     rubric,
-    notes: `コードはおおむね理解できています（AI下書き: ${total}/${max}）。指摘事項を確認のうえ、講師の判断で最終採点してください。`,
+    notes: `コードはおおむね理解できています（AI下書き: ${total}/${max}）。指摘事項を確認のうえ、管理者の判断でレビューを確定してください。`,
   };
 }

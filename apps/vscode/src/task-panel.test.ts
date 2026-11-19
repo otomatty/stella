@@ -76,7 +76,7 @@ function result(overrides: Partial<RunResult> = {}): RunResult {
 }
 
 describe("buildTaskPanelHtml", () => {
-  it("課題の出典・読む箇所・用途・必要な帰属表示を安全に表示する", () => {
+  it("課題の出典・読む箇所・必要な帰属表示を安全に表示する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",
       result: result(),
@@ -107,10 +107,11 @@ describe("buildTaskPanelHtml", () => {
       },
     });
     expect(html).toContain('href="https://example.org/html#heading"');
-    expect(html).toContain("&lt;script&gt;source&lt;/script&gt;");
+    expect(html).toContain("&lt;script&gt;source&lt;/script&gt;</a> — MDN / 見出し");
     expect(html).not.toContain("<script>");
-    expect(html).toContain("見出しの受入条件");
-    expect(html).toContain("教材独自の課題 / 概念の参照");
+    expect(html).not.toMatch(
+      /見出しの受入条件|出典の詳細|教材独自の課題|概念の参照|資料: 更新型|確認日: 2026-10-05|環境:|static-web-01@1/,
+    );
     expect(html).toContain("Required credit");
     expect(html).toContain("原作者: &lt;b&gt;Fixture author&lt;/b&gt;");
     expect(html).not.toContain("<b>");
@@ -119,7 +120,6 @@ describe("buildTaskPanelHtml", () => {
       '利用条件: <a href="https://example.org/Attrib_copyright_license">https://example.org/Attrib_copyright_license</a>',
     );
     expect(html).toContain("条件確認日: 2026-09-30");
-    expect(html).toContain("static-web-01@1");
   });
 
   it("失敗した項目を先に出し、HTML をエスケープし、スクリプトを含めない", () => {
@@ -137,7 +137,7 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("<pre>expected [ 7 ]</pre>");
     expect(html).toContain("&lt;never&gt;");
     expect(html).toContain(
-      '<p class="links"><a href="command:stella.consultTask">講師に相談</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a> ・ <a href="command:stella.showTaskHelp">ヒント・解答・レビューの結果</a></p>',
+      '<p class="links"><a href="command:stella.consultTask">管理者に相談</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a> ・ <a href="command:stella.showTaskHelp">ヒント・解答・レビューの結果</a></p>',
     );
     expect(html).toContain("src/filter.js:8:5");
     expect(html.indexOf('<div class="test-fail">')).toBeLessThan(html.indexOf("✓ 空配列"));
@@ -194,7 +194,7 @@ describe("buildTaskPanelHtml", () => {
       root,
     });
     expect(html).toContain(
-      `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">講師に相談`,
+      `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">管理者に相談`,
     );
     expect(html).toContain(
       `href="command:stella.submitTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">提出する`,
@@ -233,7 +233,7 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain('<span class="summary-mark" aria-hidden="true">!</span>');
     expect(html).toContain('<p class="summary-title">環境の問題で確認できませんでした</p>');
     expect(html).toContain('<p class="summary-sub">まだ何も送っていません</p>');
-    expect(html).toContain('href="command:stella.consultTask">講師に相談');
+    expect(html).toContain('href="command:stella.consultTask">管理者に相談');
   });
 
   it("中断した実行は結果を残さないと伝える", () => {
@@ -487,7 +487,7 @@ describe("buildTaskPanelHtml", () => {
       manifest: { ...manifest, kind: "assessment-a" },
       result: result({ outcome: "passed", files: [], steps: [] }),
     });
-    expect(html).toContain('href="command:stella.consultTask">講師に相談</a>');
+    expect(html).toContain('href="command:stella.consultTask">管理者に相談</a>');
     expect(html).toContain('href="command:stella.showTaskHelp">レビューの結果</a>');
   });
 

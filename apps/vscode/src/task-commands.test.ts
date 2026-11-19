@@ -665,7 +665,7 @@ describe("提出後の案内", () => {
   it("相談後は返事が届く場所を示し、Web のボタンだけを出す。ID が無ければホームへ戻る", async () => {
     await submit("consult", "Web で開く");
     expect(vscodeMock.showInformationMessage).toHaveBeenLastCalledWith(
-      "相談を送りました。講師の返事は通知と、Web のレッスン画面の『提出・添削を確認する』に届きます。",
+      "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。",
       "Web で開く",
     );
     expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
@@ -1303,6 +1303,40 @@ describe("問題つきの課題", () => {
     expect(body.body.problemId).toBe("q01-add");
     expect(body.body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
     expect(body.body.explanation).toBe("");
+  });
+
+  it("提出する問題の引数を、開いている別の問題のファイルより優先する", async () => {
+    const root = await problemRoot();
+    state.activeFile = path.join(root, "src", "q02-sub.ts");
+    apiRequest.mockImplementation(async (...args: unknown[]) => {
+      if (args[0] === "/api/submissions") {
+        return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
+      }
+      return {
+        problems: [],
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+      };
+    });
+    await run("stella.submitTask", root, "q01-add");
+    expect(runTask).not.toHaveBeenCalled();
+    expect(apiRequest).toHaveBeenCalledWith(
+      "/api/submissions",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          problemId: "q01-add",
+          files: [expect.objectContaining({ path: "src/q01-add.ts" })],
+        }),
+      }),
+    );
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith("提出しました (1/2 問)");
+
+    vi.mocked(runTask).mockRejectedValueOnce(new Error("実行できません"));
+    await run("stella.submitTask", root);
+    expect(runTask).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ problem: "q02-sub" }),
+    );
   });
 
   it("配布版を記録していない問題の合格は再利用しない", async () => {

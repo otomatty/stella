@@ -101,7 +101,7 @@ describe("existing exercise migration", () => {
       save: async () => false,
     });
     await expect(migrateExerciseDirectory(root, legacy)).rejects.toThrow(
-      "旧演習ファイルを保存できませんでした",
+      "旧形式の課題ファイルを保存できませんでした",
     );
     expect(state.copy).not.toHaveBeenCalled();
   });

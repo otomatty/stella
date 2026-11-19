@@ -75,6 +75,7 @@ export const REVIEW_ESCALATION_LOOKBACK_MS = 30 * 86_400_000;
  * 受講者の取り組みに関わる、人に回した理由。AI や教材の都合 (AI が判定できない・必須の評価項目が
  * 無い・所見の位置ずれ・返信と解答例の重なり) だけで回った提出は、続きに数えも切りもしない。
  * 講師への相談は受講者が自分で選ぶ支援なので、相談の提出はそもそも見ない。
+ * 配布したテストに合わせた決め打ちの疑いは、受講者の取り組みに関わる理由として数える。
  * CI の照合は、食い違い (失敗した実行・別のコミット・別のワークフロー) だけを数える。照合できない
  * (GitHub の回数制限・不調など) は受講者の取り組みと限らない (07 §5.5)。
  */
@@ -84,6 +85,7 @@ export const LEARNER_ESCALATION_REASONS: readonly RouteReason[] = [
   "unallowed-support",
   "rubric-unmet",
   "rubric-undetermined",
+  "test-fitting",
   "low-confidence",
   "task-condition",
 ];
@@ -249,7 +251,7 @@ async function notifyLocalFailures(
           userId: staffId,
           type: "learner_stumble",
           title: `${learner.learnerName}さんが同じ課題でつまずいています`,
-          body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、講師への相談を勧めてください。`,
+          body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、管理者への相談を勧めてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "local-failures",
@@ -606,8 +608,8 @@ async function notifyReviewEscalations(
           id,
           userId: staffId,
           type: "learner_stumble",
-          title: `${learner.learnerName}さんの提出が続けて講師の確認に回っています`,
-          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
+          title: `${learner.learnerName}さんの提出が続けて管理者の確認に回っています`,
+          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて管理者の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "review-escalations",
@@ -814,7 +816,7 @@ async function notifyHintsExhausted(
           userId: staffId,
           type: "learner_stumble",
           title: `${learner.learnerName}さんがヒントを最後まで開きました`,
-          body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、講師への相談を勧めてください。`,
+          body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、管理者への相談を勧めてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "hints-exhausted",

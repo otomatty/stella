@@ -32,7 +32,7 @@ describe("stageWrapupOf", () => {
     });
     expect(wrapup?.detail).toContain("「最初のページを作る」");
     expect(wrapup?.detail).toContain("提出");
-    expect(wrapup?.detail).toContain("レビューで合格すると、この星がクリアになります。");
+    expect(wrapup?.detail).toContain("レビューで合格すると、このステージが完了します。");
   });
 
   it("手元で合格しただけ・再提出も受講者の番 (手元の合格ではクリアにならない)", () => {
@@ -44,7 +44,7 @@ describe("stageWrapupOf", () => {
   it("レビュー待ちは受講者の番ではない", () => {
     expect(stageWrapupOf([task("a", "submitted")])).toMatchObject({ learnerTurn: false });
     expect(stageWrapupOf([task("a", "submitted")])?.detail).toContain("AI が確認中");
-    expect(stageWrapupOf([task("a", "instructor-pending")])?.detail).toContain("講師の確認待ち");
+    expect(stageWrapupOf([task("a", "instructor-pending")])?.detail).toContain("管理者の確認待ち");
   });
 
   it("受講者の番の課題をレビュー待ちより先に案内し、残りの件数を数える", () => {
@@ -54,7 +54,9 @@ describe("stageWrapupOf", () => {
       task("c", "not-started"),
     ]);
     expect(wrapup).toMatchObject({ task: { id: "c" }, remaining: 2, learnerTurn: true });
-    expect(wrapup?.detail).toContain("あと 2 件");
+    expect(wrapup?.detail).toContain(
+      "合格していない課題があと 2 件あります。すべて合格すると、このステージが完了します。",
+    );
   });
 
   it("受講者の番が無ければ、並び順で最初のレビュー待ちを案内する", () => {
@@ -90,7 +92,7 @@ describe("stageWrapupOf", () => {
     expect(fresh?.detail).toContain("残り 20 問");
     expect(fresh?.learnerTurn).toBe(true);
 
-    expect(working?.detail).toContain("全部の問題を提出すると、この星がクリアになります。");
+    expect(working?.detail).toContain("全部の問題を提出すると、このステージが完了します。");
     expect(working?.detail).not.toContain("レビューで合格");
     expect(waiting?.detail).not.toContain("レビューで合格");
     expect(fresh?.detail).not.toContain("レビューで合格");

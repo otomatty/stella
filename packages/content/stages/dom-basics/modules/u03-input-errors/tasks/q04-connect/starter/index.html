@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>注文フォームで合計を表示する</title>
+  </head>
+  <body>
+    <main id="exercise">
+      <h1>注文フォームで合計を表示する</h1>
+      <form id="order" novalidate>
+        <p>単価は 1 個 1,364 円です。</p>
+        <label for="quantity">数量</label>
+        <input id="quantity" type="number" aria-describedby="quantity-error" />
+        <p id="quantity-error"></p>
+
+        <label for="member">会員</label>
+        <input id="member" type="checkbox" aria-describedby="member-error" />
+        <p id="member-error"></p>
+
+        <button type="submit">合計を確認</button>
+      </form>
+      <output aria-label="注文の合計"></output>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

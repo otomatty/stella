@@ -26,4 +26,5 @@ DOMとイベントを使い、入力に応じて画面を更新できる。
 
 ## 執筆時の扱い
 
-現在はM0の準備中案内だけを置いています。新形式の執筆は `docs/curriculum/07-stella-adoption-redesign.md` と `packages/content/ADDING_STAGE.md` に従います。
+新形式の執筆は `docs/curriculum/07-stella-adoption-redesign.md` と `packages/content/ADDING_STAGE.md` に従います。
+入力の取得と入力検証をまとめた U03「入力の取得とエラー表示」を、#226 の代表単元として執筆しました。要素の取得・表示更新・イベントを扱う U00〜U02 は後から追加します。

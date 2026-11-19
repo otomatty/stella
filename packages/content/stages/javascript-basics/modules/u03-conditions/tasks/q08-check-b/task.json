@@ -1,0 +1,69 @@
+{
+  "id": "javascript-basics/u03-conditions/q08-check-b",
+  "title": "確認B 駐車場の料金区分",
+  "kind": "assessment-b",
+  "pattern": "js-combine-conditions",
+  "skills": {
+    "uses": [
+      "js-compare-values",
+      "js-if-else",
+      "js-logical-operators",
+      "js-early-return",
+      "js-boundary-test"
+    ],
+    "assesses": [
+      "js-condition-choice",
+      "js-boundary-test"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/parking.js"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rubric": [
+      {
+        "id": "lost-ticket",
+        "criterion": "駐車券を紛失した場合は駐車時間・利用印にかかわらず \"lost-ticket\" を返す。",
+        "required": true
+      },
+      {
+        "id": "time-categories",
+        "criterion": "駐車券があれば、利用印があり 30 分以内なら \"free\"、180 分以上なら \"daily\"、残りは \"standard\" を返す。",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-mdn-js-comparison-20261119",
+    "SRC-mdn-js-if-else-20261119",
+    "SRC-mdn-js-logical-and-20261119",
+    "SRC-mdn-js-logical-not-20261119",
+    "SRC-mdn-js-return-20261119"
+  ],
+  "estimatedMinutes": 30,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -41,7 +41,6 @@ import {
 } from "./grader.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
-import { openLessonDoc } from "./lesson-doc.js";
 import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskDiagnostics } from "./task-diagnostics.js";
 import { registerTaskHelp } from "./task-help.js";
@@ -146,7 +145,7 @@ async function openWebForConnect(target?: PendingLesson): Promise<void> {
   const web = stellaUrl("webUrl");
   const path = target ? `/stages/${target.stageId}/lessons/${target.lessonId}` : "/stages";
   void vscode.window.showInformationMessage(
-    `${DISPLAY_NAME} に接続していません。 Web の課題一覧またはコードレッスンで「VS Code で開く」を押してください`,
+    `${DISPLAY_NAME} に接続していません。Web の課題一覧か、コード課題がある教材で「VS Code で開く」を押してください`,
   );
   await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
 }
@@ -175,7 +174,7 @@ async function handleLessonUri(
 ): Promise<void> {
   const pending = parsePendingLesson(uri.query);
   if (!pending) {
-    void vscode.window.showInformationMessage("レッスン指定がありません");
+    void vscode.window.showInformationMessage("教材の指定がありません");
     return;
   }
 
@@ -373,13 +372,6 @@ export function activate(context: vscode.ExtensionContext): void {
         await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
       },
     ),
-    vscode.commands.registerCommand("stella.openLessonDoc", (node?: LessonNode) => {
-      if (!node?.id || !node.stageId) {
-        void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
-        return;
-      }
-      openLessonDoc(node);
-    }),
     vscode.commands.registerCommand("stella.grade", async () => {
       try {
         const run = await gradeActiveExercise();
@@ -393,12 +385,12 @@ export function activate(context: vscode.ExtensionContext): void {
         if (result.evaluation.cleared) {
           if (!lesson) {
             void vscode.window.showErrorMessage(
-              "レッスンを特定できないため、進捗を記録できませんでした",
+              "教材を特定できないため、進捗を記録できませんでした",
             );
             return;
           }
           void vscode.window.showInformationMessage(
-            `${message}。パネルの「提出」からレビューを受けてください。レビューの合格で修了します`,
+            `${message}。パネルの「提出」からレビューを受けてください。レビューに合格すると完了します`,
           );
         } else {
           void vscode.window.showWarningMessage(message);
@@ -411,7 +403,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("stella.submitExercise", async (assignmentId?: string) => {
       const target = typeof assignmentId === "string" ? assignmentId : resolveActiveAssignmentId();
       if (!canSubmitExercise(target) || !target) {
-        void vscode.window.showInformationMessage("先に課題の採点を通してください");
+        void vscode.window.showInformationMessage("先に課題の確認を通してください");
         return;
       }
       const draftKey = `stella.submissionDraft.${target}`;
@@ -420,7 +412,7 @@ export function activate(context: vscode.ExtensionContext): void {
       showSubmissionForm(
         {
           key: target,
-          title: lesson?.title || "演習の振り返り",
+          title: lesson?.title || "課題の振り返り",
           mode: "submit",
           initial: context.workspaceState.get<SubmissionDraft>(draftKey),
         },
@@ -450,7 +442,7 @@ export function activate(context: vscode.ExtensionContext): void {
         try {
           const attempt = await escalateToInstructor(target);
           void vscode.window.showInformationMessage(
-            `講師に引き継ぎました (${attempt} 回目)。 添削されると Web に通知が届きます`,
+            `管理者に引き継ぎました (${attempt} 回目)。レビューが完了すると Web に通知が届きます`,
           );
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -480,7 +472,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
         const next = findNextLesson(getCachedCatalog(), stageId, lessonId);
         if (!next) {
-          void vscode.window.showInformationMessage("次のレッスンはありません");
+          void vscode.window.showInformationMessage("次の教材はありません");
           return;
         }
         openLessonNode(toLessonNode(next));
@@ -488,7 +480,7 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.commands.registerCommand("stella.openLessonCode", async (node?: LessonNode) => {
       if (!node?.id) {
-        void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
+        void vscode.window.showInformationMessage("教材をサイドバーから選んでください");
         return;
       }
       try {
