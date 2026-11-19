@@ -265,8 +265,8 @@ function remainingStepsHtml(steps: StepSummary[]): string {
   return remaining.length > 0 ? `<p class="rest">残り: ${remaining.join(" ・ ")}</p>` : "";
 }
 
-function submitButton(root: string): string {
-  return link("stella.submitTask", [root], "提出する", "button");
+function submitButton(root: string, problemId?: string): string {
+  return link("stella.submitTask", problemId ? [root, problemId] : [root], "提出する", "button");
 }
 
 function consultLink(root: string, problemId?: string): string {
@@ -386,7 +386,7 @@ function buildProblemGuideHtml(input: TaskGuideInput, items: ProblemState[]): st
       current.status === "local-passed"
         ? "手元の確認は通っています。「提出する」を押すと送って、次の問題を開きます。"
         : `${link("stella.openTaskFile", [root, current.source], `<code>${escapeHtml(current.source)}</code>`)} を書いて保存したら提出します。確認が通れば、そのまま送って次の問題を開きます。`;
-    card = `<div class="now-card"><p class="now-title">いまの問題: ${escapeHtml(current.title)}</p><p>${body}</p><p class="actions">${submitButton(root)} ${consultLink(root, current.id)}</p></div>`;
+    card = `<div class="now-card"><p class="now-title">いまの問題: ${escapeHtml(current.title)}</p><p>${body}</p><p class="actions">${submitButton(root, current.id)} ${consultLink(root, current.id)}</p></div>`;
   }
   return [
     '<section class="guide" aria-label="この課題の進め方">',

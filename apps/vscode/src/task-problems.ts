@@ -116,7 +116,7 @@ export function problemFileToOpen(states: readonly ProblemState[]): string | und
 }
 
 /**
- * 確認・提出する問題。開いているファイルが問題のソースならそれ。
+ * 確認・提出する問題。開いているファイルが問題のソースかテストならそれ。
  * そうでなければ次の未提出。全部提出済みなら 1 問目。
  */
 export function chooseProblem(
@@ -125,7 +125,7 @@ export function chooseProblem(
   manifest: TaskManifest,
 ): ProblemState | undefined {
   if (openPath) {
-    const fromFile = problemForPath(manifest, openPath);
+    const fromFile = problemForPath(manifest, openPath) ?? problemForTestPath(manifest, openPath);
     const found = fromFile ? states.find((state) => state.id === fromFile.id) : undefined;
     if (found) return found;
   }

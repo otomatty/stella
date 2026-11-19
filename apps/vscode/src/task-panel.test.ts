@@ -184,7 +184,7 @@ describe("buildTaskPanelHtml", () => {
     expect(html).not.toContain("修正記録");
   });
 
-  it("問題の失敗結果からの相談は、その問題の ID を渡す", () => {
+  it("問題の失敗結果からの提出・相談は、その問題の ID を渡す", () => {
     const root = "/home/me/web-training/course/unit/q01";
     const problemId = "q01-add";
     const html = buildTaskPanelHtml({
@@ -195,6 +195,9 @@ describe("buildTaskPanelHtml", () => {
     });
     expect(html).toContain(
       `href="command:stella.consultTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">講師に相談`,
+    );
+    expect(html).toContain(
+      `href="command:stella.submitTask?${encodeURIComponent(JSON.stringify([root, problemId]))}">提出する`,
     );
   });
 

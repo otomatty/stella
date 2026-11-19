@@ -5,7 +5,7 @@ import path from "node:path";
 import type { RunResult } from "@stella/shared/tasks/run-result";
 import type { ExtensionContext } from "vscode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AuthExpiredError } from "./api.js";
+import { AuthExpiredError, initApi } from "./api.js";
 import { AuthStore } from "./auth.js";
 import { hashFile } from "./runner/files.js";
 import { buildTaskGuideHtml, type TaskGuideInput } from "./task-guide.js";
@@ -148,7 +148,6 @@ const apiRequest = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => ({})));
 vi.mock("./api.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api.js")>()),
   apiRequest,
-  apiSession: () => 1,
 }));
 
 vi.mock("./task-submission.js", async (importOriginal) => ({
@@ -198,6 +197,7 @@ const staticTask = {
 };
 
 let context: ExtensionContext;
+let auth: AuthStore;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -217,7 +217,14 @@ beforeEach(() => {
   state.inputs = [];
   state.dirtyDocs = [];
   state.readmeRoot = undefined;
-  const auth = new AuthStore({ get: vscodeMock.getSecret } as never);
+  auth = new AuthStore({
+    get: vscodeMock.getSecret,
+    store: async (_key: string, token: string) => {
+      vscodeMock.getSecret.mockResolvedValue(token);
+    },
+    delete: vi.fn(),
+  } as never);
+  initApi(auth, () => "https://stella.example");
   context = {
     extension: { id: "test-publisher.test-extension" },
     subscriptions: [],
@@ -227,12 +234,32 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const item of context.subscriptions) item?.dispose();
+  vi.unstubAllGlobals();
 });
 
 async function run(command: string, ...args: unknown[]): Promise<void> {
   await (state.handlers.get(command) as ((...a: unknown[]) => Promise<void>) | undefined)?.(
     ...args,
   );
+}
+
+const sessionChangedWarning =
+  "LMS への接続が変わったため、提出をやめました。もう一度「提出する」を押してください";
+
+async function expectNoSubmissionAfterSwitch() {
+  const { apiRequest: realRequest } = await vi.importActual<typeof import("./api.js")>("./api.js");
+  const fetch = vi.fn(async () => Response.json({ error: "Unexpected request" }, { status: 500 }));
+  vi.stubGlobal("fetch", fetch);
+  apiRequest.mockImplementation(async (url, options) =>
+    (options as { session?: number } | undefined)?.session !== undefined
+      ? realRequest(String(url), options as Parameters<typeof realRequest>[1])
+      : {},
+  );
+  return () => {
+    expect(fetch).not.toHaveBeenCalled();
+    expect(vscodeMock.showWarningMessage).toHaveBeenCalledWith(sessionChangedWarning);
+    expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
+  };
 }
 
 it("stella.openWalkthrough は呼ばれたときに拡張の ID でウォークスルーを開く", async () => {
@@ -292,6 +319,37 @@ describe("stella.submitTask", () => {
     expect(vscodeMock.progress).toHaveBeenCalledTimes(1);
     expect(localReports().map(([url]) => url)).toEqual(["/api/tasks/local-result"]);
     expect(vscodeMock.sendTaskSubmission).not.toHaveBeenCalled();
+  });
+
+  it("配布記録ができる前の合格は再利用しない", async () => {
+    const root = await distributedTask();
+    const receiptFile = path.join(root, ".stella", "distribution.json");
+    const receipt = await readFile(receiptFile);
+    await unlink(receiptFile);
+    await run("stella.runTask", root);
+    await writeFile(receiptFile, receipt);
+    await run("stella.submitTask", root);
+    expect(runTask).toHaveBeenCalledTimes(2);
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledOnce();
+  });
+
+  it("確認中に接続が変わると、振り返りフォームから送信しない", async () => {
+    const assertBlocked = await expectNoSubmissionAfterSwitch();
+    const { sendTaskSubmission } =
+      await vi.importActual<typeof import("./task-submission.js")>("./task-submission.js");
+    vscodeMock.sendTaskSubmission.mockImplementationOnce(sendTaskSubmission);
+    const root = await distributedTask();
+    const { runTask: realRunTask } =
+      await vi.importActual<typeof import("./runner/run-task.js")>("./runner/run-task.js");
+    vi.mocked(runTask).mockImplementationOnce(async (options) => {
+      await auth.setToken("another-learner");
+      return realRunTask(options);
+    });
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledOnce();
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1];
+    await actions.submit({ explanation: "振り返り" });
+    assertBlocked();
   });
 
   it.each([
@@ -1107,6 +1165,7 @@ describe("問題つきの課題", () => {
       protected: [],
       manifestSha256: taskJson.sha256,
       problemId: "q01-add",
+      taskContentHash: "ab".repeat(32),
     };
     await mkdir(path.join(root, ".stella", "problem-runs"));
     await writeFile(
@@ -1205,6 +1264,7 @@ describe("問題つきの課題", () => {
       };
     });
     await run("stella.submitTask", root);
+    expect(runTask).not.toHaveBeenCalled();
     expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith("提出しました (1/2 問)");
     expect(vscodeMock.showTextDocument).toHaveBeenCalledWith(
@@ -1217,6 +1277,116 @@ describe("問題つきの課題", () => {
     expect(body.body.problemId).toBe("q01-add");
     expect(body.body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
     expect(body.body.explanation).toBe("");
+  });
+
+  it("配布版を記録していない問題の合格は再利用しない", async () => {
+    const root = await problemRoot();
+    const resultFile = path.join(root, ".stella", "problem-runs", "q01-add.json");
+    const passed = JSON.parse(await readFile(resultFile, "utf8")) as RunResult;
+    delete passed.taskContentHash;
+    await writeFile(resultFile, JSON.stringify(passed));
+    vi.mocked(runTask).mockResolvedValueOnce(passed);
+    apiRequest.mockResolvedValue({ passedProblems: 2, totalProblems: 2, taskPassed: true });
+    await run("stella.submitTask", root);
+    expect(runTask).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ problem: "q01-add" }),
+    );
+    expect(apiRequest).toHaveBeenCalledWith(
+      "/api/submissions",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({
+          localResult: expect.objectContaining({ taskContentHash: "ab".repeat(32) }),
+        }),
+      }),
+    );
+  });
+
+  it("問題の確認中に接続が変わると自動提出しない", async () => {
+    const assertBlocked = await expectNoSubmissionAfterSwitch();
+    const root = await problemRoot();
+    const resultFile = path.join(root, ".stella", "problem-runs", "q01-add.json");
+    const passed = JSON.parse(await readFile(resultFile, "utf8")) as RunResult;
+    await unlink(resultFile);
+    vi.mocked(runTask).mockImplementationOnce(async () => {
+      await auth.setToken("another-learner");
+      return passed;
+    });
+    await run("stella.submitTask", root);
+    assertBlocked();
+    expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+  });
+
+  it("相談の準備中に接続が変わると、相談フォームから送信しない", async () => {
+    const assertBlocked = await expectNoSubmissionAfterSwitch();
+    const root = await problemRoot(undefined, "failed");
+    apiRequest.mockImplementationOnce(async () => {
+      await auth.setToken("another-learner");
+      return {};
+    });
+    await run("stella.consultTask", root, "q01-add");
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledOnce();
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1];
+    await actions.submit({ explanation: "足す処理のテストが通りません。" });
+    assertBlocked();
+  });
+
+  it.each(["stella.runTask", "stella.submitTask", "問題 ID を指定した提出"])(
+    "%s で対象の問題だけを確認する",
+    async (command) => {
+      const root = await problemRoot();
+      const problemId = "q02-sub";
+      const testFile = "tests/q02-sub.test.ts";
+      await mkdir(path.join(root, "tests"));
+      await writeFile(path.join(root, testFile), "");
+      const passed = JSON.parse(
+        await readFile(path.join(root, ".stella", "problem-runs", "q01-add.json"), "utf8"),
+      ) as RunResult;
+      vi.mocked(runTask).mockResolvedValueOnce({
+        ...passed,
+        problemId,
+        files: [await hashFile(root, "src/q02-sub.ts")],
+        protected: [await hashFile(root, testFile)],
+      });
+      apiRequest.mockResolvedValue({
+        problemId,
+        passedProblems: 2,
+        totalProblems: 2,
+        taskPassed: true,
+      });
+      if (command === "問題 ID を指定した提出") {
+        expect(state.activeFile).toBe(path.join(root, "src/q01-add.ts"));
+        await run("stella.submitTask", root, problemId);
+      } else {
+        state.activeFile = path.join(root, testFile);
+        await run(command, { scheme: "file", fsPath: state.activeFile });
+      }
+      expect(runTask).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ problem: problemId }),
+      );
+      const posts = apiRequest.mock.calls.filter(([url]) => url === "/api/submissions");
+      expect(posts).toEqual(
+        command === "stella.runTask"
+          ? []
+          : [
+              [
+                "/api/submissions",
+                expect.objectContaining({
+                  method: "POST",
+                  body: expect.objectContaining({ problemId }),
+                }),
+              ],
+            ],
+      );
+    },
+  );
+
+  it.each(["missing", { id: "q01-add" }])("未定義の問題 ID %j は提出しない", async (id) => {
+    const root = await problemRoot();
+    await run("stella.submitTask", root, id);
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith("提出する問題がありません");
+    expect(runTask).not.toHaveBeenCalled();
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 
   it("最後の問題では課題に合格しました、と出す", async () => {
@@ -1321,6 +1491,7 @@ describe("問題つきの課題", () => {
 
   it("相談は説明の入力のまま", async () => {
     const root = await problemRoot(undefined, "failed");
+    const session = auth.currentSession();
     apiRequest.mockResolvedValue({ row: { id: "consultation", attempt: 1 } });
     await run("stella.consultTask", root);
     expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
@@ -1333,7 +1504,7 @@ describe("問題つきの課題", () => {
     await actions.submit({ explanation: "足す処理のテストが通りません。" });
     expect(apiRequest).toHaveBeenCalledWith("/api/submissions", {
       method: "POST",
-      session: 1,
+      session,
       body: expect.objectContaining({
         mode: "consult",
         problemId: "q01-add",

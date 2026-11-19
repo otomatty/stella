@@ -196,7 +196,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const commandArgs = input.root
     ? `?${escapeHtml(encodeURIComponent(JSON.stringify([input.root])))}`
     : "";
-  const consultArgs =
+  const submissionArgs =
     input.root && result.problemId
       ? `?${escapeHtml(encodeURIComponent(JSON.stringify([input.root, result.problemId])))}`
       : commandArgs;
@@ -225,10 +225,10 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const summaryLine = summaryLines[outcome];
   const action = input.standalone
     ? `<a class="button" href="command:stella.diagnoseEnvironment">もう一度確認する</a>`
-    : `<a class="button" href="command:stella.submitTask${commandArgs}">提出する</a>`;
+    : `<a class="button" href="command:stella.submitTask${submissionArgs}">提出する</a>`;
   const links = [
     !input.standalone && outcome !== "cancelled" && !canSubmit(result)
-      ? `<a href="command:stella.consultTask${consultArgs}">講師に相談</a>`
+      ? `<a href="command:stella.consultTask${submissionArgs}">講師に相談</a>`
       : "",
     `<a href="command:stella.showRunLog">実行ログを表示</a>`,
     input.standalone

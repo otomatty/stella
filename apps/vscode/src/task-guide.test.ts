@@ -519,7 +519,7 @@ describe("buildTaskGuideHtml", () => {
       [input.root, "src/q02-sub.ts"],
       [input.root, "src/q03-mod.ts"],
     ]);
-    expect(commandArgs(html, "stella.submitTask")).toEqual([[input.root]]);
+    expect(commandArgs(html, "stella.submitTask")).toEqual([[input.root, "q02-sub"]]);
     expect(commandArgs(html, "stella.consultTask")).toEqual([
       [input.root, "q02-sub"],
       [input.root],

@@ -23,7 +23,7 @@ import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { apiSession } from "./api.js";
-import { type AuthStore, onDidChangeAuthSession } from "./auth.js";
+import { AuthSessionChanged, type AuthStore, onDidChangeAuthSession } from "./auth.js";
 import { getCachedCatalog } from "./catalog.js";
 import { stellaUrl } from "./config.js";
 import { sendLocalRunReport } from "./local-run-report.js";
@@ -325,11 +325,21 @@ async function selectTaskProblem(
   root: string,
   manifest: TaskManifest,
   openPath: string | undefined,
+  requestedProblem?: unknown,
 ): Promise<ProblemSelection | undefined> {
+  if (
+    requestedProblem !== undefined &&
+    !manifest.problems?.some((problem) => problem.id === requestedProblem)
+  )
+    throw new Error("提出する問題がありません");
   if (!manifest.problems?.length) return undefined;
   const server = await fetchProblemResults(manifest.id).catch(() => undefined);
   const states = await loadProblemStates(root, manifest, server);
-  const chosen = chooseProblem(states, openPath, manifest);
+  const chosen =
+    requestedProblem === undefined
+      ? chooseProblem(states, openPath, manifest)
+      : states.find((state) => state.id === requestedProblem);
+  if (requestedProblem !== undefined && !chosen) throw new Error("提出する問題がありません");
   return chosen ? { id: chosen.id, states } : undefined;
 }
 
@@ -338,6 +348,7 @@ async function checkTask(
   loaded: Extract<LoadedTask, { ok: true }>,
   options: {
     requested?: unknown;
+    requestedProblem?: unknown;
     openPath?: string;
     forSubmission?: boolean;
     selection?: ProblemSelection;
@@ -383,6 +394,7 @@ async function checkTask(
       root,
       manifest,
       options.forSubmission ? options.openPath : requestedProblemPath(root, options.requested),
+      options.requestedProblem,
     );
     const problem = selection?.id;
     const startedAt = Date.now();
@@ -491,6 +503,9 @@ async function diagnoseCommand(output: vscode.OutputChannel): Promise<void> {
   }
 }
 
+const SUBMISSION_SESSION_CHANGED =
+  "LMS への接続が変わったため、提出をやめました。もう一度「提出する」を押してください";
+
 async function submitTaskCommand(
   output: vscode.OutputChannel,
   mode: "submit" | "consult",
@@ -504,6 +519,7 @@ async function submitTaskCommand(
   if (submitting) return;
   submitting = true;
   try {
+    const session = apiSession();
     const root =
       mode === "submit"
         ? await requestedTaskRoot(requestedRoot)
@@ -520,7 +536,7 @@ async function submitTaskCommand(
     let problem: ProblemState | undefined;
     if (mode === "submit") {
       const openPath = requestedProblemPath(root, requestedRoot);
-      let selection = await selectTaskProblem(root, manifest, openPath);
+      let selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
       if (manifest.problems?.length && !selection) throw new Error("提出する問題がありません");
       const plan = RUNNERS[manifest.runner].plan;
       const previous =
@@ -531,10 +547,15 @@ async function submitTaskCommand(
               : prepareLocalTaskSubmission(loaded, "submit")
             ).catch(() => undefined);
       let problemId = previous?.localResult.problemId;
-      if (!previous || dirtyTaskDocuments(root).length > 0) {
+      if (
+        !previous?.localResult.taskContentHash ||
+        previous.localResult.taskContentHash !== previous.contentHash ||
+        dirtyTaskDocuments(root).length > 0
+      ) {
         const checked = await checkTask(output, loaded, {
           forSubmission: true,
           openPath,
+          requestedProblem,
           selection,
         });
         if (!checked || !canSubmit(checked.result)) return;
@@ -546,7 +567,7 @@ async function submitTaskCommand(
           throw new Error(`確認した問題が一致しません。${SUBMIT_AGAIN}`);
         if (dirtyTaskDocuments(root).length > 0)
           throw new Error(`保存していない変更があります。${SUBMIT_AGAIN}`);
-        await submitProblemTask(root, manifest, problemId, selection.states);
+        await submitProblemTask(root, manifest, problemId, selection.states, session);
         return;
       }
     } else {
@@ -572,7 +593,6 @@ async function submitTaskCommand(
       if (canSubmit(result)) throw new Error("手元の確認が通っています。「提出」を使ってください");
     }
     const saved = await readSubmissionNotes(root);
-    const session = apiSession();
     const notesFor = async (draft: SubmissionDraft) => {
       const support: SupportEvent[] = [...(saved?.support ?? [])];
       for (const event of await readRecordedSupport(root)) {
@@ -616,8 +636,14 @@ async function submitTaskCommand(
               at: new Date().toISOString(),
               detail: CONSULT_SUPPORT_DETAIL,
             });
-          if (problem) await sendProblemConsultation(root, problem.id, notes, session);
-          else await sendTaskSubmission(root, mode, notes, session);
+          try {
+            if (problem) await sendProblemConsultation(root, problem.id, notes, session);
+            else await sendTaskSubmission(root, mode, notes, session);
+          } catch (error) {
+            if (!(error instanceof AuthSessionChanged)) throw error;
+            void vscode.window.showWarningMessage(SUBMISSION_SESSION_CHANGED);
+            return;
+          }
           if (!manifest.problems) void refreshTaskState(root, manifest.id, { forceLms: true });
           refreshLearningSidebar();
           if (taskReadmeRoot() === root) {
@@ -650,7 +676,9 @@ async function submitTaskCommand(
       },
     );
   } catch (e) {
-    void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
+    if (e instanceof AuthSessionChanged)
+      void vscode.window.showWarningMessage(SUBMISSION_SESSION_CHANGED);
+    else void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
   } finally {
     submitting = false;
   }
@@ -662,8 +690,9 @@ async function submitProblemTask(
   manifest: TaskManifest,
   problemId: string,
   states: readonly ProblemState[],
+  session: number | undefined,
 ): Promise<void> {
-  const response = await sendProblemSubmission(root, problemId, apiSession());
+  const response = await sendProblemSubmission(root, problemId, session);
   refreshLearningSidebar();
   setCurrentTask({
     root,
@@ -857,8 +886,8 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
     onTaskReadmeVisible((root) => {
       void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
     }),
-    vscode.commands.registerCommand("stella.submitTask", (root?: unknown) =>
-      submitTaskCommand(output, "submit", root),
+    vscode.commands.registerCommand("stella.submitTask", (root?: unknown, problemId?: unknown) =>
+      submitTaskCommand(output, "submit", root, problemId),
     ),
     vscode.commands.registerCommand("stella.consultTask", (root?: string, problemId?: unknown) =>
       submitTaskCommand(output, "consult", root, problemId),
