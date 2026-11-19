@@ -1071,17 +1071,10 @@ export const learnerFocus = sqliteTable("learner_focus", {
 });
 
 /**
- * 飛び級で開いた星 (Phase 3a)。
+ * 前提の免除や廃止前の飛び級で開いた星。
  *
- * 腕試し (SkillCheck) に合格すると 1 行入り、評価器 (`@stella/shared/skill-map`) の
- * `unlockedStageIds` として渡る = 前提を満たしていなくても `unlocked` になる。
- *
- * **クリア (修了) ではない。** 修了は従来どおり `enrollments.status = 'completed'` /
- * 修了証で、この行は「入口の鍵を開けた」だけ。だから前提の充足判定には効かない
- * (この星を前提に持つ次の星は開かない)。
- *
- * **一度開いた星は閉じない。** 不合格の受験を積んでも行は消さない (履歴は
- * `skill_check_attempts` 側)。
+ * 評価器に `unlockedStageIds` として渡し、前提を満たしていなくても `unlocked` にする。
+ * 修了は受講登録で判定する。この行は後続ステージの前提の充足判定には使わない。
  */
 export const stageUnlocks = sqliteTable(
   "stage_unlocks",
@@ -1097,7 +1090,7 @@ export const stageUnlocks = sqliteTable(
     stageId: text("stage_id")
       .notNull()
       .references(() => stages.id, { onDelete: "cascade" }),
-    /** 開いた経路。腕試しの合格 (skill_check) と、講師・管理者が ステージ管理の盤面で開けたもの (staff)。 */
+    /** staff は前提の免除。skill_check は廃止した腕試しで開いた既存の行 (新しくは作らない)。 */
     via: text("via", { enum: ["skill_check", "staff"] })
       .notNull()
       .default("skill_check"),
@@ -1105,47 +1098,8 @@ export const stageUnlocks = sqliteTable(
     unlockedAt: tsNow("unlocked_at"),
   },
   (t) => ({
-    // 二重解放を許さない (合格のたびの upsert の衝突先)。
+    // 二重解放を許さない。
     userStageUnique: uniqueIndex("stage_unlocks_user_stage_uq").on(t.userId, t.stageId),
-  }),
-);
-
-/**
- * 腕試しの受験履歴 (Phase 3a)。
- *
- * `quiz_attempts` を流用しないのは、あちらが `quiz_id` 必須で 1 つの小テストに
- * 紐づくため。腕試しはステージ内の複数の小テストから抜いた混成なので載せる
- * `quiz_id` が無く、無理に 1 つ選ぶと XP の「合格した小テスト数」と受験回数上限に
- * 混ざる (詳細は migration 0036 のコメント)。
- */
-export const skillCheckAttempts = sqliteTable(
-  "skill_check_attempts",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" })
-      .$defaultFn(() => LEGACY_TENANT_ID),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    stageId: text("stage_id")
-      .notNull()
-      .references(() => stages.id, { onDelete: "cascade" }),
-    score: integer("score").notNull(),
-    maxScore: integer("max_score").notNull(),
-    passed: integer("passed", { mode: "boolean" }).notNull(),
-    /** 出題した設問 id (出題は決定的だが、教材が編集されると再現できなくなる)。 */
-    questionIds: json<string[]>("question_ids", []),
-    answers: json<unknown[]>("answers", []),
-    submittedAt: tsNow("submitted_at"),
-  },
-  (t) => ({
-    userStageIdx: index("skill_check_attempts_user_stage_idx").on(
-      t.userId,
-      t.stageId,
-      t.submittedAt,
-    ),
   }),
 );
 
@@ -2114,7 +2068,6 @@ export const APP_TABLES = [
   "learner_focus",
   "stage_unlocks",
   "stage_grants",
-  "skill_check_attempts",
   "discovery_requests",
   "discovery_materials",
   "discovery_attempts",

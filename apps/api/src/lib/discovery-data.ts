@@ -411,7 +411,6 @@ export interface DiscoveryAttemptRecord {
 /**
  * 受験を 1 行記録する (合否によらず必ず残す)。
  *
- * 上限は設けない — 発見教材は補強演習で、飛び級のような「開ける」効果を持たない。
  * 何度でも解き直せてよい (XP は教材ごとに 1 回ぶんしか入らない)。
  */
 export async function insertDiscoveryAttempt(
@@ -433,8 +432,7 @@ export async function insertDiscoveryAttempt(
 /**
  * heuristic フォールバックの材料 — そのステージの既存クイズ設問を、正答つきで読む。
  *
- * **正解の選択肢を 1 つも持たない設問は除く** (腕試しの出題プールと同じ理由: どう
- * 答えても不正解になる設問を混ぜると、合格ラインに手が届かなくなる)。
+ * **正解の選択肢を 1 つも持たない設問は除く**。解答できる設問だけを複製する。
  */
 export async function loadStageQuizQuestionsForCopy(
   db: Db,

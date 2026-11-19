@@ -5,10 +5,10 @@
  *   - 公開条件 (承認済み × 源流ステージが active / cleared) を一覧と受験で揃える
  *   - locked / 霧の星の教材は **存在ごと** 応答に出さない
  *   - 出題にも採点結果にも正答・解説を載せない
- *   - 受けられるロールは腕試しと同じ (受講者 + 管理者)
+ *   - 受けられるロールは受講者と管理者
  *
  * D1 は `lib/discovery-data.js` / `lib/skill-map-data.js` を差し替えてインメモリの
- * 教材と受験記録で代用する (skill-check.test.ts と同じ流儀)。
+ * 教材と受験記録で代用する。
  */
 
 import { Hono } from "hono";
@@ -417,7 +417,7 @@ describe("POST /api/discovery/:id — 採点", () => {
   });
 });
 
-describe("受験できるロール (腕試しと同じ顔ぶれ)", () => {
+describe("発見教材を受けられるロール", () => {
   it("管理者は受講者と同じ発見教材を受けられる", async () => {
     caller = { ...BASE_CALLER, id: "seed-admin", role: "admin" };
     const paper = await fetchPaper("m-active");

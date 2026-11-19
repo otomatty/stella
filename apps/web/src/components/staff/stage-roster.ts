@@ -93,7 +93,7 @@ export function rosterMarks(
   return marks;
 }
 
-/** 前提クリア済み、腕試しで解放済みは操作しない。スイッチは割り当て済みのときだけ押せる。 */
+/** 前提クリア済み、廃止前の腕試しで解放済みの場合は操作しない。スイッチは割り当て済みのときだけ押せる。 */
 export function exemptionControl(
   row: Pick<StageRosterRow, "prerequisites_cleared" | "unlocked_by_skill_check">,
   assigned: boolean,

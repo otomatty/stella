@@ -250,7 +250,7 @@ describe("「進行中」に据えてよい星か (selectableActiveStages)", () 
     expect(selectable()("id-does-not-exist")).toBe(false);
   });
 
-  it("飛び級で開いた星は据えてよい (前提が未充足でも起点)", () => {
+  it("前提の免除などで開いた星は据えてよい (前提が未充足でも起点)", () => {
     const isSelectable = selectableActiveStages(line, new Set(), new Set([id_("d")]));
     expect(isSelectable(id_("d"))).toBe(true);
     // その隣 (c) も 1 歩に上がるので据えられる。

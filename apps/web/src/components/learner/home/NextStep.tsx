@@ -152,12 +152,7 @@ export const NextStepCard = ({ guide, loading, ...ctx }: NextStepCardProps) => {
             今日のぶんは終わりました。また明日。
           </p>
         ) : (
-          <>
-            <p className="text-[14px] font-semibold">いま始められるスキルはありません</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-              ステージ一覧で鍵の付いたステージの「腕試し」に合格すると、先のスキルを開けます。
-            </p>
-          </>
+          <p className="text-[14px] font-semibold">いま始められるスキルはありません</p>
         )}
       </HeroFrame>
     );
@@ -335,14 +330,9 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           と、内容と始めるボタンが出ます。
         </p>
         {step.welcome ? (
-          <>
-            <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-              ひとつ終えると、ステージ一覧で先のステージが少しずつ見えてきます。
-            </p>
-            <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
-              すでに知っている内容なら、ステージ一覧のステージから「腕試し」を受け、合格すると先のスキルから始められます。
-            </p>
-          </>
+          <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
+            ひとつ終えると、ステージ一覧で先のステージが少しずつ見えてきます。
+          </p>
         ) : null}
       </HeroFrame>
       <StartableStages stageIds={step.stageIds} ctx={ctx} />

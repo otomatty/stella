@@ -298,7 +298,7 @@ describe("POST /api/stages/:id/start", () => {
     expect(startSelfEnrollment).toHaveBeenCalled();
   });
 
-  it("管理者は受講者と同じく自分で始められる (腕試しと同じ顔ぶれ)", async () => {
+  it("管理者は受講者と同じく自分で始められる", async () => {
     caller = { ...BASE_CALLER, role: "admin" };
     expect((await start("stage-a")).status).toBe(200);
   });

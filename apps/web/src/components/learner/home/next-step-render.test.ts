@@ -195,9 +195,7 @@ describe("NextStep choose card", () => {
     const markup = card(["dev"], true);
     expect(markup).toContain("はじめの一歩");
     expect(markup).toContain("ステージ一覧から最初のステージを選びましょう");
-    expect(markup).toContain(
-      "すでに知っている内容なら、ステージ一覧のステージから「腕試し」を受け、合格すると先のスキルから始められます。",
-    );
+    expect(markup).toContain("ひとつ終えると、ステージ一覧で先のステージが少しずつ見えてきます。");
   });
 
   it("そのあとに回った choose は 1 行の案内で、星もボタンも持たない", () => {

@@ -5,16 +5,9 @@
  * 積む** 必要がある (`stage_path_events`)。この 2 つが離れると「登録はあるのに開始
  * イベントが無い受講者」が経路によって生まれ、モニタリングの母数が経路ごとにずれる。
  *
- * ## Phase 3b: 入口は「自己開始」だけになった
- *
- * staff の割当 (`POST /api/enrollments` / `/bulk` / プリセット適用) は退役し、登録を
- * 作るのは **受講者自身の操作** に一本化された:
- *   - 解放済みの星を自分で始める (`routes/stage-start.ts`)
- *   - 腕試しの飛び級で開いた星を、合格と同時に始める (`routes/skill-check.ts`)
- *
- * どちらも `startSelfEnrollment()` を通る。書き込みの形も 1 通りしか無い —
- * 「無ければ作る / あれば触らない (期限切れだけ再開する)」。期限 / 必須を後から直すのは
- * `PATCH /api/enrollments/:id` の仕事で、ここでは上書きしない。
+ * 自己開始と管理者の確認用の自己登録は `startSelfEnrollment()` を通る。
+ * 登録がなければ作り、期限切れなら再開する。期限や必須の変更は
+ * `PATCH /api/enrollments/:id` で行う。
  */
 
 import { and, eq } from "drizzle-orm";
@@ -66,11 +59,7 @@ export interface SelfEnrollmentResult {
 }
 
 /**
- * **自分でステージを始める** (Phase 3b の唯一の登録入口)。
- *
- * 呼び出し元は 2 つとも「受講者本人の意思表示」:
- *   - 解放済みの星の「ここから始める」(`POST /api/stages/:id/start`)
- *   - 腕試しの飛び級で開いた星 (`routes/skill-check.ts`) — 合格した瞬間に始める
+ * 本人の受講登録を作る。自己開始と管理者の確認用の自己登録で使う。
  *
  * **冪等**。既にある `active` / `completed` の登録は触らない — 期限や必須フラグ
  * (移行前に staff が付けたもの、あるいは `PATCH` で運用が直したもの) を、2 度目の

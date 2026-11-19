@@ -28,10 +28,8 @@ export type StarDetailBody =
   | { kind: "can-do"; text: string }
   | { kind: "none" };
 
-/** 出すボタン。霧より先の星には何も出さない (開始も腕試しもサーバが断る)。 */
+/** ステージの詳細に出す操作。 */
 export interface StarDetailActions {
-  /** 腕試し。`challenge` = ロック星の飛び級 (強調)、`try` = 解放済みの力試し。 */
-  skillCheck: "none" | "challenge" | "try";
   /** 「続きから」(進行中の星のレッスンを開く)。 */
   resume: boolean;
   /** 「ここから始める」。 */
@@ -47,13 +45,7 @@ export interface StarDetailActions {
 
 /** ボタンが 1 つでも出るか (出ないなら器は箱ごと描かない)。 */
 export function hasStarActions(actions: StarDetailActions): boolean {
-  return (
-    actions.skillCheck !== "none" ||
-    actions.resume ||
-    actions.start ||
-    actions.openStage ||
-    actions.clearedNote
-  );
+  return actions.resume || actions.start || actions.openStage || actions.clearedNote;
 }
 
 export interface StarDetail {
@@ -112,17 +104,13 @@ export function describeStar({ node, isActive, revealDev }: StarDetailInput): St
           : { kind: "none" };
 
   const actions: StarDetailActions = beyond
-    ? // 霧より先の星には導線を出さない。開始も腕試しもフォーカスもサーバが断るので、
-      // ボタンを出すと「押せるのに必ず失敗する」になる。飛び級の入口は 1 歩先まで。
-      {
-        skillCheck: "none",
+    ? {
         resume: false,
         start: false,
         openStage: false,
         clearedNote: false,
       }
     : {
-        skillCheck: locked ? "challenge" : "try",
         // 進行中の星は「始める」の代わりに「続きから」(開始は済んでいる)。
         resume: isActive && !cleared,
         // 修了した星に着手の導線は出さない (サーバも切り替えを 400 で断る)。

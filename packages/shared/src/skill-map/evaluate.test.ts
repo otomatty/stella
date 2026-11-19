@@ -72,7 +72,7 @@ describe("evaluateSkillMap — 状態", () => {
     expect(r.states.get(id("a"))).toBe("cleared");
   });
 
-  it("飛び級は locked を unlocked にする", () => {
+  it("解放記録は locked を unlocked にする", () => {
     const base = evaluateSkillMap({ stages: line, clearedStageIds: new Set() });
     expect(base.states.get(id("d"))).toBe("locked");
 
@@ -203,7 +203,7 @@ describe("evaluateSkillMap — 視界", () => {
     expect(isStarVisible("fog")).toBe(true);
     expect(isStarVisible("edge")).toBe(false);
     expect(isStarVisible("hidden")).toBe(false);
-    // 触れてよい (開始・腕試し・フォーカス) のは full だけ。
+    // 触れてよい (開始・フォーカス) のは full だけ。
     expect(isSelectableVisibility("full")).toBe(true);
     expect(isSelectableVisibility("fog")).toBe(false);
     expect(isSelectableVisibility("edge")).toBe(false);
@@ -224,7 +224,7 @@ describe("evaluateSkillMap — 視界", () => {
     expect(r.visibility.get(id("island"))).toBe("full");
   });
 
-  it("飛び級で先へ出ると、飛ばした手前の星は霧に戻らない (無向で数える)", () => {
+  it("前提の免除などで先が開くと、手前の星は霧に戻らない (無向で数える)", () => {
     const r = evaluateSkillMap({
       stages: line,
       clearedStageIds: new Set(),
@@ -423,7 +423,7 @@ describe("evaluateSkillMap — 状態の優先順位 (取りこぼしやすい�
     expect(r.lockReasons.has(id("d"))).toBe(false);
   });
 
-  it("active は飛び級指定より優先される (unlocked ではなく active)", () => {
+  it("active は解放記録より優先される (unlocked ではなく active)", () => {
     const r = evaluateSkillMap({
       stages: line,
       clearedStageIds: new Set(),
@@ -483,8 +483,8 @@ describe("evaluateSkillMap — 2 つの連結成分をまたぐ距離", () => {
   });
 });
 
-describe("evaluateSkillMap — 飛び級と推奨順の細部", () => {
-  it("飛び級で開いた星は視界の起点になり、次の一歩にも並ぶ", () => {
+describe("evaluateSkillMap — 解放記録と推奨順の細部", () => {
+  it("前提の免除などで開いた星は視界の起点になり、次の一歩にも並ぶ", () => {
     const r = evaluateSkillMap({
       stages: line,
       clearedStageIds: new Set(),
