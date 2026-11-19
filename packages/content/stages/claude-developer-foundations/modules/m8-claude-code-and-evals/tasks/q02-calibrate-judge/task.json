@@ -1,0 +1,70 @@
+{
+  "id": "claude-developer-foundations/m8-claude-code-and-evals/q02-calibrate-judge",
+  "title": "採点器の見逃しを調べる",
+  "kind": "independent",
+  "pattern": "eval-compare",
+  "skills": {
+    "uses": [
+      "claude-evals"
+    ],
+    "assesses": [
+      "claude-evals"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/judge.js"
+    ],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      {
+        "id": "CR-SCOPE-01",
+        "required": true
+      },
+      {
+        "id": "CR-EXPLAIN-01",
+        "required": true
+      }
+    ],
+    "rubric": [
+      {
+        "id": "pair-by-id",
+        "criterion": "人の判定と自動判定を ID で照合し、不足・重複・余分な ID のある結果を採用しない",
+        "required": true
+      },
+      {
+        "id": "reject-false-pass",
+        "criterion": "誤合格と誤不合格の ID を区別し、説明欄で実例の ID と再評価に使う未使用の事例を挙げている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-anthropic-agent-evals-20261118",
+    "SRC-claude-docs-eval-grading-20261031"
+  ],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

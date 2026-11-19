@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-code-sdk-mcp-20261031, SRC-claude-docs-mcp-connector-20261031, SRC-claude-docs-mcp-connector-usage-20261031]
+sourceRefs: [SRC-claude-code-sdk-mcp-20261031, SRC-claude-docs-mcp-connector-20261031, SRC-claude-docs-mcp-connector-usage-20261031, SRC-mcp-server-concepts-20261118, SRC-claude-agent-skills-20261118, SRC-claude-docs-tool-use-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 # レッスン5-3 MCP でつなぐ
 
@@ -24,7 +24,18 @@ Claude の側では、次の 2 つから MCP サーバーを使えます。
 | Messages API | MCP コネクター | 5-3-2 |
 | Agent SDK(と Claude Code) | MCP サーバーの設定 | 5-3-3 |
 
-MCP の仕様は modelcontextprotocol.io で公開されています。この教材は、Anthropic と Claude Code の公式ドキュメントに書かれた範囲で扱います。
+MCP サーバーが提供できるものには、呼び出す操作（tool）、URI で読み取る資料（resource）、利用者が選ぶ指示のひな形（prompt）があります。例えば倉庫では、「在庫数を検索する」は tool、「商品分類表を読む」は resource、「棚卸し報告の下書きを始める」は prompt として提供できます。接続先の機能と、使うクライアントが対応する機能を両方確かめます。
+
+### その仕事に MCP は必要か
+
+| 倉庫チームの要望 | 最初に選ぶ手段と理由 |
+| --- | --- |
+| 調査のたびに同じ棚卸し手順と報告書の見本を参照したい | 手順・見本を Skill にまとめる。必要な仕事で再利用できる |
+| エージェントの実行環境に置いた当日の在庫ファイルを読みたい | 既に利用できる組み込みのファイル読み取りツールを使う |
+| 1 つのアプリから、社内の既存の引当関数を引数つきで呼びたい | クライアントツールとして定義し、アプリで権限と引数を検査して実行する |
+| 複数の対応アプリで同じ在庫検索を使いたい。既に MCP サーバーがある | 各アプリからそのサーバーの検索ツールにつなぐ |
+
+報告書の書き方を共有しても、現在の在庫数は分かりません。「報告の手順」と「在庫の取得」が両方必要なら、Skill と検索ツールを組み合わせます。
 
 ## 5-3-2 API から MCP を使う
 
@@ -93,9 +104,42 @@ for await (const message of query({
 
 MCP のツールを使えるようにするために、確認をすべて飛ばす設定(`permissionMode: "bypassPermissions"`)にはしません。ほかの安全のための確認まで外れてしまいます。`allowedTools` で、要るサーバーのツールだけを許可します。
 
+### 演習　デモで動いた倉庫検索をサービスに移す
+
+倉庫の担当者は、自分の PC で動く stdio の MCP サーバーを Agent SDK から使っています。週末から、Web アプリの Messages API でも在庫を検索します。サービス用には外部から到達できる認証付き HTTPS の MCP サーバーを用意しました。二つのサーバーはどちらも `find_stock` と `reserve_stock` を提供します。
+
+Web アプリの要件は「在庫を読むだけ。今後追加されるツールも個別に審査する」です。次の設定で満たせるか、設定を変える前に判定してください。
+
+```js
+const toolset = {
+  type: "mcp_toolset",
+  mcp_server_name: "warehouse",
+  configs: { reserve_stock: { enabled: false } },
+};
+```
+
+新しいツールを追加した日を想像すると、問題が分かります。この設定は既存の予約ツールだけを無効にします。次のように既定を無効にして、検索を一つずつ有効にします。
+
+```js
+const toolset = {
+  type: "mcp_toolset",
+  mcp_server_name: "warehouse",
+  default_config: { enabled: false },
+  configs: { find_stock: { enabled: true } },
+};
+```
+
+この設定は `tools` に入れ、`mcp_servers` に同じ名前 `warehouse` と HTTPS の接続先を指定します。応答に `mcp_tool_result` があれば検索は実行済みです。手元のクライアントツール用の実行関数へ渡すと二重実行になります。
+
+接続先が認証エラーを返したら、サービスが取得した有効なアクセストークンを接続設定の `authorization_token` に渡したかを確認します。検索ツールの入力にトークンを書いたり、接続を直すために予約ツールまで有効にしたりする必要はありません。
+
+別の倉庫に、社外から接続できない stdio サーバーしかない場合はどうしますか。担当者の PC で Agent SDK から起動し、確認なしで使う名前を `mcp__warehouse__find_stock` に絞れます。Web アプリから直接接続するには、対応するリモートの接続先を別途用意します。
+
 ## もっと知りたい人へ
 
 - [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) — MCP の概要、サーバーの足し方、ツールの許可、つなぎ方(英語)
 - [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) — Messages API からのつなぎ方と制限(英語)
+- [Understanding MCP servers](https://modelcontextprotocol.io/docs/2026-07-28/learn/server-concepts) — Tools、resources、prompts の役割
+- [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) — 再利用する手順と資料の置き方
 
-知識問題で、このレッスンの内容を確かめます。
+知識問題のあと、課題一覧から「MCP で品目表と在庫検索を提供する」を開きます。今度はサーバー側の関数を書き、資料の読み取り、品番検索、権限のない呼び出しの結果を手元のテストで確かめます。

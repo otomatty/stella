@@ -91,6 +91,8 @@ export async function answerInquiry({
 
     switch (message.stop_reason) {
       case "tool_use":
+        // 次のリクエストに結果を渡せるときだけ、注文を照会する。
+        if (turn === maxTurns) return { status: "max_turns", turns: turn };
         // thinking ブロックも含め、応答の content をそのまま返す。
         messages.push({ role: "assistant", content: message.content });
         messages.push({
@@ -137,8 +139,11 @@ async function runTools(content, handlers) {
 }
 
 async function runTool(block, handlers) {
-  const handler = handlers[block.name];
-  if (!handler) {
+  if (
+    block.name !== lookupOrderTool.name ||
+    !Object.hasOwn(handlers, block.name) ||
+    typeof handlers[block.name] !== "function"
+  ) {
     return {
       type: "tool_result",
       tool_use_id: block.id,
@@ -147,17 +152,24 @@ async function runTool(block, handlers) {
     };
   }
   try {
+    const order = await handlers.lookup_order(block.input);
+    const { order_id, status, shipped_on, refund_deadline } = order;
     return {
       type: "tool_result",
       tool_use_id: block.id,
-      content: JSON.stringify(await handler(block.input)),
+      content: JSON.stringify({
+        order_id,
+        status,
+        shipped_on,
+        refund_deadline,
+      }),
     };
-  } catch (error) {
+  } catch {
     return {
       type: "tool_result",
       tool_use_id: block.id,
       is_error: true,
-      content: `ツールが失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      content: "注文を照会できませんでした。",
     };
   }
 }

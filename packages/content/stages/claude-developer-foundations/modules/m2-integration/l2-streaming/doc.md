@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-streaming-20261031, SRC-claude-docs-errors-long-requests-20261031, SRC-claude-docs-streaming-deltas-20261031]
+sourceRefs: [SRC-claude-docs-streaming-20261031, SRC-claude-docs-errors-long-requests-20261031, SRC-claude-docs-streaming-deltas-20261031, SRC-claude-docs-stop-vs-errors-20261031]
 ---
 # レッスン2-2 ストリーミング
 
@@ -56,6 +56,19 @@ const message = await stream.finalMessage();
 ```
 
 max_tokens の大きいリクエストでは、SDK が通信の時間切れを避けるためにストリーミングを求めることがあり、そのときにもこの書き方が使えます。
+
+### HTTP 200 のあとに失敗した翻訳を調べる
+
+通話メモの翻訳を受け取り、完了したものだけを議事録に保存する画面です。下は2件の記録から必要なイベントだけを抜いたものです。各行で「画面に途中表示してよいか」「確定欄に保存してよいか」を決めてください。
+
+| 記録 | イベントの順序 |
+| --- | --- |
+| 甲 | HTTP 200 → 本文の差分「会議は」 → `error: overloaded_error` → 接続終了 |
+| 乙 | HTTP 200 → 本文の差分「会議は延期です」 → `message_delta: end_turn` → `message_stop` |
+
+甲は途中表示までです。接続が閉じても翻訳が終わった証拠にはならず、表示した「会議は」を確定欄に保存すると文の意味まで変わります。途中表示に中断の印を付け、再実行時は同じ欄を最初から組み立てます。乙は終了理由とメッセージの終端を受け取ったので確定できます。
+
+**条件を一つ変更**　乙の終了理由だけが `max_tokens` ならどうでしょう。通信は最後まで届いても翻訳は途中です。保存前に未完了として扱います。テストには「混雑」「上限に到達」「通常終了」の3件を残し、通常終了でだけ確定欄に書き込まれたことを調べます。
 
 ## もっと知りたい人へ
 

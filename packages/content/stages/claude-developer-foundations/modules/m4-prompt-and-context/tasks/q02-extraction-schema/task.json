@@ -27,7 +27,7 @@
       },
       {
         "id": "read-safely",
-        "criterion": "stop_reason を確かめてから JSON として読み、読めない JSON を理由つきで返し、plan の大文字と小文字をそろえている",
+        "criterion": "stop_reason の確認後に JSON を読み、構文エラー・項目や型の違い・デモ希望のない日付を別の理由で返す。日程未定のデモ希望を受け付け、plan の大文字と小文字をそろえている",
         "required": true
       }
     ],

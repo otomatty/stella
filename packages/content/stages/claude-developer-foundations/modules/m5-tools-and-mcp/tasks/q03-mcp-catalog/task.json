@@ -1,0 +1,52 @@
+{
+  "id": "claude-developer-foundations/m5-tools-and-mcp/q03-mcp-catalog",
+  "title": "MCP で品目表と在庫検索を提供する",
+  "kind": "independent",
+  "pattern": "error-as-result",
+  "skills": {
+    "uses": ["claude-tool-use"],
+    "assesses": ["claude-mcp", "claude-tool-design"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/catalog.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "catalog-contract",
+        "criterion": "分類表を URI と本文を持つ resource にし、検索ツールの引数の検査が公開したスキーマと一致している",
+        "required": true
+      },
+      {
+        "id": "lookup-boundary",
+        "criterion": "認証済みの権限を一覧と呼び出しの両方で確認し、入力の不備・未登録品番・在庫ゼロを区別している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": ["SRC-mcp-tools-spec-20260728", "SRC-mcp-resources-spec-20260728"],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": { "lint": true, "format": true }
+}

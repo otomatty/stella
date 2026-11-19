@@ -29,7 +29,7 @@ packages/content/stages/<slug>/
 - 図解 SVG とサムネイルは `main` への push で自動反映（デプロイが seed の前に R2 へ流す）
 - ローカルに入れるときだけ `bun run --filter=@stella/content upload` を手で叩く
 - 受講者が見るには講師 / 管理者が enrollment する。本番 seed は Google ログインした本人を自動登録しない
-- `practice.md` の確認クイズだけが LMS の quiz になる。ハンズオン本文は Assignment 化されていない
+- 新形式は `knowledge.md` の知識問題、旧形式は `practice.md` の確認クイズが LMS の quiz になる。新形式のコード課題は `tasks/` に置く
 
 | ファイル | LMS |
 | --- | --- |
@@ -39,7 +39,7 @@ packages/content/stages/<slug>/
 | モジュールディレクトリ | セクション |
 | トピックの `slides.md` | レッスン（slides） |
 | `doc.md` | レッスン（text、まとめ） |
-| `practice.md` の「確認クイズ」 | レッスン（quiz） |
+| `knowledge.md` の知識問題、または旧形式の `practice.md` の「確認クイズ」 | レッスン（quiz） |
 
 ---
 
@@ -49,7 +49,11 @@ packages/content/stages/<slug>/
 
 単元は **モジュール** に対応します。`stage.json` に `"format": 2`・`plannedHours`（正の時間数）・`environment`（環境台帳の ID）を書きます。見本は `stages/dev-env-basics/` です。format を省略したステージは従来の読み込み・seed・PDFのままです。
 
-スライドを作らないレッスンは `doc.md` と `knowledge.md` を置きます。まとめと知識問題の ID には単元とレッスンのディレクトリ名を使います。ステージで `"completion": "tasks"` を指定すると、配布した全課題の合格が修了条件になります。まとめの閲覧や知識問題の合格は任意です。
+スライドを作らないレッスンは `doc.md` と `knowledge.md` を置きます。一問一答などクイズだけで完結するレッスンは、`knowledge.md` の先頭の front-matter に `title: 表示名` を書くと、スライドと `doc.md` を省けます。スライドがない場合は、単元とレッスンのディレクトリ名からレッスン ID が決まります。
+
+クイズに付けた `title` は、まとめと併設した場合にもクイズの表示名になります。所要時間が決まっている模試などは、同じ front-matter に `durationMinutes: 120` のように分数を正の整数で指定します。省略時は問題数から目安を表示します。
+
+ステージで `"completion": "tasks"` を指定すると、配布した全課題の合格が修了条件になります。まとめの閲覧や知識問題の合格は任意です。
 
 ```text
 modules/<unit>/

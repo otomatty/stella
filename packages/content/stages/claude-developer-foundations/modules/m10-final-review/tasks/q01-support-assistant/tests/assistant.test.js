@@ -226,13 +226,13 @@ describe("ツール使用のループ", () => {
     expect(result.status).toBe("answered");
   });
 
-  test("ツールが例外を投げたら、is_error を付けた結果で理由を返して続ける", async () => {
+  test("注文の照会に失敗したら、内部のメッセージを伏せて続ける", async () => {
     const client = fakeClient([
       toolUse(["toolu_01", "lookup_order", { order_id: "Z-0000" }]),
       finalReply({ ...REPLY, needs_human: true }),
     ]);
     const failing = vi.fn(async () => {
-      throw new Error("注文が見つかりません");
+      throw new Error("orders-primary: 内部の照会に失敗");
     });
     const result = await answerInquiry(
       options(client, { handlers: { lookup_order: failing } }),
@@ -240,7 +240,7 @@ describe("ツール使用のループ", () => {
     const [toolResult] = client.calls[1].body.messages[2].content;
     expect(toolResult.tool_use_id).toBe("toolu_01");
     expect(toolResult.is_error).toBe(true);
-    expect(toolResult.content).toContain("注文が見つかりません");
+    expect(toolResult.content).toBe("注文を照会できませんでした。");
     expect(result).toEqual({
       status: "answered",
       reply: { ...REPLY, needs_human: true },
@@ -253,8 +253,10 @@ describe("ツール使用のループ", () => {
       toolUse([`toolu_${index}`, "lookup_order", { order_id: "A-1024" }]),
     );
     const client = fakeClient(calls);
-    const result = await answerInquiry(options(client, { maxTurns: 2 }));
+    const input = options(client, { maxTurns: 2 });
+    const result = await answerInquiry(input);
     expect(client.calls).toHaveLength(2);
+    expect(input.handlers.lookup_order).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ status: "max_turns", turns: 2 });
   });
 
@@ -266,6 +268,74 @@ describe("ツール使用のループ", () => {
     const result = await answerInquiry(options(client));
     expect(client.calls).toHaveLength(4);
     expect(result).toEqual({ status: "max_turns", turns: 4 });
+  });
+});
+
+describe("受付記録をたどる", () => {
+  test("同じ窓口に登録した管理用の処理は呼ばない", async () => {
+    const cancelOrder = vi.fn();
+    const client = fakeClient([
+      toolUse(["t9", "cancel_order", { order_id: "B-2048" }]),
+      finalReply({ ...REPLY, needs_human: true }),
+    ]);
+    await answerInquiry(
+      options(client, {
+        handlers: { lookup_order: vi.fn(), cancel_order: cancelOrder },
+      }),
+    );
+    expect(cancelOrder).not.toHaveBeenCalled();
+    expect(client.calls[1].body.messages[2].content).toEqual([
+      expect.objectContaining({ tool_use_id: "t9", is_error: true }),
+    ]);
+  });
+
+  test("2 件の照会結果と、失敗した注文の再照会を 3 回目まで引き継ぐ", async () => {
+    const first = toolUse(
+      ["t1", "lookup_order", { order_id: "A-1024" }],
+      ["t2", "lookup_order", { order_id: "B-2048" }],
+    );
+    const second = toolUse(["t3", "lookup_order", { order_id: "B-2048" }]);
+    const reply = { ...REPLY, answer: "2 件とも発送済みです。" };
+    const client = fakeClient([first, second, finalReply(reply)]);
+    const secondOrder = { ...ORDER, order_id: "B-2048" };
+    const lookup = vi
+      .fn()
+      .mockResolvedValueOnce({ ...ORDER, warehouse_note: "棚番 K-18" })
+      .mockRejectedValueOnce(new Error("warehouse_db: timeout"))
+      .mockResolvedValueOnce({ ...secondOrder, contact: "社内の連絡先" });
+    const question = "A-1024 と B-2048 の発送状況を教えてください。";
+    const result = await answerInquiry(
+      options(client, { question, handlers: { lookup_order: lookup } }),
+    );
+    expect(result).toEqual({ status: "answered", turns: 3, reply });
+    expect(lookup.mock.calls).toEqual([
+      [{ order_id: "A-1024" }],
+      [{ order_id: "B-2048" }],
+      [{ order_id: "B-2048" }],
+    ]);
+    const history = client.calls[2].body.messages;
+    expect(history).toHaveLength(5);
+    expect(history.slice(0, 3)).toEqual(client.calls[1].body.messages);
+    expect(history[0]).toEqual({ role: "user", content: question });
+    expect(history[1]).toEqual({ role: "assistant", content: first.content });
+    expect(history[3]).toEqual({ role: "assistant", content: second.content });
+    expect(history[2].content.map((result) => result.tool_use_id)).toEqual([
+      "t1",
+      "t2",
+    ]);
+    expect(JSON.parse(history[2].content[0].content)).toEqual(ORDER);
+    expect(history[2].content[1]).toMatchObject({
+      type: "tool_result",
+      is_error: true,
+      content: "注文を照会できませんでした。",
+    });
+    expect(history[4].role).toBe("user");
+    expect(history[4].content).toHaveLength(1);
+    expect(history[4].content[0]).toMatchObject({
+      type: "tool_result",
+      tool_use_id: "t3",
+    });
+    expect(JSON.parse(history[4].content[0].content)).toEqual(secondOrder);
   });
 });
 

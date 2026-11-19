@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-prompting-20261031, SRC-anthropic-context-engineering-20261031]
+sourceRefs: [SRC-claude-docs-prompting-20261031, SRC-anthropic-context-engineering-20261031, SRC-claude-docs-hallucinations-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 ## 知識問題
 
@@ -71,5 +71,19 @@ sourceRefs: [SRC-claude-docs-prompting-20261031, SRC-anthropic-context-engineeri
 <summary>解答</summary>
 
 **A** — 引用を quotes のようなタグに書かせてから答えさせます。
+
+</details>
+
+### Q6. 検索型の手順案内で、資料にない保管期限を答えてしまいました。指示を「根拠の条文を返し、見つからなければその旨を返す」に変えます。改訂の効果を比較できる試し方はどれですか？
+<!-- kind: single; skills: claude-prompt-design -->
+
+- A. 承認済みの条文で答えられる質問だけを増やし、引用の件数を比べる
+- B. 改訂版だけ検索件数を増やし、回答できた質問の数を数える
+- C. 同じ検索結果と質問を両版に渡し、根拠の一致と、根拠が無い場合に未確認と答えたかを照合する
+
+<details>
+<summary>解答</summary>
+
+**C** — 資料と質問を固定すれば、指示を変えた影響を比べられます。条文で答えられる例だけでは、今回の失敗を再現できません。検索件数も変えると、改善があっても理由を切り分けられません。
 
 </details>

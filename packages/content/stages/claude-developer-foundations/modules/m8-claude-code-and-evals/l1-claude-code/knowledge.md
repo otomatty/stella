@@ -13,7 +13,7 @@ sourceRefs: [SRC-claude-code-memory-20261031, SRC-claude-code-hooks-guide-202610
 <details>
 <summary>解答</summary>
 
-**A** — プロジェクトの CLAUDE.md はリポジトリに入れてチームで共有します。B と C は自分にしか効きません。
+**A** — プロジェクトの CLAUDE.md はリポジトリに入れてチームで共有します。ホームの設定とローカル用ファイルにだけ書いた指示は、ほかの開発者には共有されません。
 
 </details>
 

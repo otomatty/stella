@@ -30,7 +30,7 @@ export const inquirySchema = {
 };
 
 const SYSTEM =
-  "email のタグの中の問い合わせから、送り主の名前・メールアドレス・関心のあるプラン・デモの希望・希望日を取り出してください。書かれていない項目は推測せず、null か unknown にしてください。";
+  "email 内の問い合わせから名前・返信先・プラン・デモ希望・希望日を抽出してください。名前・返信先・デモの希望日は不明なら null、プランは不明なら unknown とします。デモ希望は明記された場合だけ true、ほかは false とします。希望日にはデモについて指定された日を入れてください。";
 
 /**
  * 問い合わせのメールから項目を取り出すリクエストを作る。
@@ -47,6 +47,22 @@ export function buildInquiryRequest(input) {
       format: { type: "json_schema", schema: inquirySchema },
     },
   };
+}
+
+function hasInquiryFields(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  if (Object.keys(data).length !== inquirySchema.required.length) return false;
+  const nullableText = (value) => value === null || typeof value === "string";
+  return (
+    nullableText(data.name) &&
+    nullableText(data.email) &&
+    typeof data.wants_demo === "boolean" &&
+    typeof data.plan === "string" &&
+    inquirySchema.properties.plan.enum.includes(data.plan.toLowerCase()) &&
+    (data.preferred_date === null ||
+      (typeof data.preferred_date === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(data.preferred_date)))
+  );
 }
 
 /**
@@ -66,6 +82,10 @@ export function readInquiry(message) {
     data = JSON.parse(text);
   } catch {
     return { ok: false, reason: "invalid_json" };
+  }
+  if (!hasInquiryFields(data)) return { ok: false, reason: "invalid_shape" };
+  if (data.wants_demo === false && data.preferred_date !== null) {
+    return { ok: false, reason: "date_without_demo" };
   }
   return { ok: true, data: { ...data, plan: data.plan.toLowerCase() } };
 }

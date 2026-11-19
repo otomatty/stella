@@ -1,5 +1,5 @@
 {
-  "plannedHours": 2,
+  "plannedHours": 5,
   "skills": {
     "uses": ["claude-tool-design", "claude-model-selection"],
     "assesses": ["claude-code-config", "claude-evals"]
