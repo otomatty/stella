@@ -40,7 +40,6 @@ vi.mock("./task-help.js", () => ({ registerTaskHelp: vi.fn() }));
 vi.mock("./task-status.js", () => ({ registerTaskStatus: vi.fn() }));
 vi.mock("./exercise-panel.js", () => ({}));
 vi.mock("./grader.js", () => ({}));
-vi.mock("./lesson-doc.js", () => ({}));
 vi.mock("./workspace.js", () => ({}));
 vi.mock("./open-task.js", () => ({
   openDistributedTask: state.openTask,

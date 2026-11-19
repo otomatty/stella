@@ -12,7 +12,6 @@ describe("課題文レッスン", () => {
     title: "最初のページを作る 課題文",
     type: "text" as const,
     completed: false,
-    markdown: "# 最初のページを作る",
   };
 
   it("課題に取り組むコマンドにし、状態を添える", () => {
@@ -29,9 +28,13 @@ describe("課題文レッスン", () => {
     expect(node.task?.status).toBe("not-started");
   });
 
-  it("課題の無いテキストのレッスンは今までどおりドキュメントを開く", () => {
-    const node = toLessonNode(base);
-    expect(node.contextValue).toBe("lesson-doc");
-    expect(lessonCommand(node).command).toBe("stella.openLessonDoc");
+  it.each(["text", "slides"] as const)("課題の無い %s のレッスンは Web で開く", (type) => {
+    const node = toLessonNode({ ...base, type });
+    expect(node.contextValue).toBe("lesson-web");
+    expect(lessonCommand(node)).toEqual({
+      command: "stella.openInWeb",
+      title: "Web で開く",
+      arguments: [base.stageId, base.id],
+    });
   });
 });
