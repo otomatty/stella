@@ -124,7 +124,9 @@ describe("escalateToInstructor", () => {
   });
 
   it("採点していなければ送らずにエラーを返す", async () => {
-    await expect(escalateToInstructor("asg-1")).rejects.toThrow("先に確認");
+    await expect(escalateToInstructor("asg-1")).rejects.toThrow(
+      "直近の確認で不合格だった課題がありません。先に確認を実行してください",
+    );
     expect(apiRequest).not.toHaveBeenCalled();
   });
 });

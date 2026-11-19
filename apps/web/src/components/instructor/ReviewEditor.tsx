@@ -385,7 +385,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
           {submission.gradingSummary && !submission.gradingSummary.cleared ? (
             <Badge variant="warning">
               <AlertTriangle size={10} />
-              自動の確認で未完了
+              自動の確認で不合格
             </Badge>
           ) : null}
           {draftLoading ? (

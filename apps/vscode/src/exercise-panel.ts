@@ -32,7 +32,7 @@ function checkLabel(passed: boolean): string {
 
 function renderGradeResults(result: ExecutionResult): string {
   const { lintPassed, astPassed, testsPassed } = result.evaluation.checks;
-  const status = result.evaluation.cleared ? "完了" : "未完了";
+  const status = result.evaluation.cleared ? "合格" : "不合格";
   const tests = result.testResults
     .map((test) => {
       const mark = test.passed ? "✓" : "✗";

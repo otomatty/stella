@@ -73,7 +73,7 @@ describe("buildExercisePanelHtml", () => {
       result: failResult,
       nextLesson: { stageId: "c1", lessonId: "l2", title: "Two" },
     });
-    expect(html).toContain("<strong>未完了</strong>");
+    expect(html).toContain("<strong>不合格</strong>");
     expect(html).toContain("prints ok");
     expect(html).toContain("&lt;b&gt;inject&lt;/b&gt;");
     expect(html).not.toContain("<b>inject</b>");
@@ -142,7 +142,7 @@ describe("buildExercisePanelHtml", () => {
       result: clearResult,
       nextLesson: { stageId: "c1", lessonId: "l2", title: "Two" },
     });
-    expect(html).toContain("<strong>完了</strong>");
+    expect(html).toContain("<strong>合格</strong>");
     expect(html).toContain("次の教材へ");
     expect(html).toContain("command:stella.openNextLesson");
     expect(html).toContain("c1");

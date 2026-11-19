@@ -196,6 +196,7 @@ describe("buildTaskGuideHtml", () => {
     expect(html).toContain('<details class="all-steps"><summary>進め方をすべて見る</summary><ol>');
     expect(html.split('<details class="all-steps">')[1]?.match(/<li>/g)).toHaveLength(3);
     expect(html).toContain("エディターの右上のビーカー");
+    expect(html).toContain("レビューで合格すると、この課題は完了です。");
     expect(commandArgs(html, "stella.openTaskFile")).toEqual([[input.root, "index.html"]]);
     expect(commandArgs(html, "stella.runTask")).toEqual([[input.root]]);
     expect(commandArgs(html, "stella.submitTask")).toEqual([[input.root]]);

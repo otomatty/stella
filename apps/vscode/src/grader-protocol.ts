@@ -74,7 +74,7 @@ export function isGraderReadyMessage(value: unknown): value is { type: "ready" }
 
 export function formatGradeMessage(result: ExecutionResult): string {
   if (result.evaluation.cleared) {
-    return "確認: 完了";
+    return "確認: 合格";
   }
   const { lintPassed, astPassed, testsPassed } = result.evaluation.checks;
   const parts: string[] = [];
@@ -90,5 +90,5 @@ export function formatGradeMessage(result: ExecutionResult): string {
   }
   const reason = parts.length > 0 ? parts.join("、") : "判定失敗";
   const extra = result.errorMessage ? ` (${result.errorMessage})` : "";
-  return `確認: 未完了（${reason}）${extra}`;
+  return `確認: 不合格（${reason}）${extra}`;
 }

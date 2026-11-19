@@ -93,7 +93,7 @@ interface SubmissionResponse {
 export async function escalateToInstructor(assignmentId: string): Promise<number> {
   const attempt = getEscalationAttempt(assignmentId);
   if (!attempt) {
-    throw new Error("直近の確認で未完了だった課題がありません。先に確認を実行してください");
+    throw new Error("直近の確認で不合格だった課題がありません。先に確認を実行してください");
   }
   const body = buildEscalationSubmissionBody({
     lessonId: attempt.lessonId,

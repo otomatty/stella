@@ -63,9 +63,9 @@ describe("grader protocol", () => {
       lintAtRun: [],
       astAtRun: { required: [], forbidden: [] },
     };
-    expect(formatGradeMessage(base)).toBe("確認: 未完了（テスト失敗 1 件）");
+    expect(formatGradeMessage(base)).toBe("確認: 不合格（テスト失敗 1 件）");
     expect(formatGradeMessage({ ...base, evaluation: { ...base.evaluation, cleared: true } })).toBe(
-      "確認: 完了",
+      "確認: 合格",
     );
   });
 
@@ -81,7 +81,7 @@ describe("grader protocol", () => {
       lintAtRun: [],
       astAtRun: { required: [], forbidden: [] },
     };
-    expect(formatGradeMessage(passedTests)).toBe("確認: 未完了（Lint）");
+    expect(formatGradeMessage(passedTests)).toBe("確認: 不合格（Lint）");
     expect(formatGradeMessage(passedTests)).not.toContain("テスト失敗");
 
     const astOnly: ExecutionResult = {
@@ -91,7 +91,7 @@ describe("grader protocol", () => {
         checks: { lintPassed: true, astPassed: false, testsPassed: true },
       },
     };
-    expect(formatGradeMessage(astOnly)).toBe("確認: 未完了（AST）");
+    expect(formatGradeMessage(astOnly)).toBe("確認: 不合格（AST）");
     expect(formatGradeMessage(astOnly)).not.toContain("テスト失敗");
   });
 });

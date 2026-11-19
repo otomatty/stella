@@ -174,7 +174,7 @@
           {
             "id": "review",
             "title": "レビューの結果を見る",
-            "description": "提出すると AI と管理者がレビューします。結果は課題文のパネルと Web の通知に届きます。合格すると、この課題は完了です。\n[レビューの結果を表示する](command:stella.showTaskHelp)",
+            "description": "提出すると AI がレビューし、必要なときは管理者が確認します。結果は課題文のパネルと Web の通知に届きます。合格すると、この課題は完了です。\n[レビューの結果を表示する](command:stella.showTaskHelp)",
             "completionEvents": ["onCommand:stella.showTaskHelp"],
             "media": {
               "svg": "media/walkthrough/review.svg",
