@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u02-integration@1",
+  "contentHash": "5e0530a3f9af6818b45a589dbcd8235d12814903c27d3f4902765bee4b1054fa",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-rate-limit/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-rate-limits-20261031"],
+      "usedFor": "「空いているはずの API が止まる」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-photo-and-label/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-vision-20261031"],
+      "usedFor": "「どの写真に傷があるかを記録する」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-invalid-field/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-errors-20261031"],
+      "usedFor": "「更新後に全件が 400 になる」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

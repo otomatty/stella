@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m2-integration@3",
-  "contentHash": "5def60ccb891dca7399b695c96cc04f5b8c5bd9c2178575a7003450949ecb25b",
+  "unitId": "claude-developer-foundations/m2-integration@5",
+  "contentHash": "8327c393e7542ab7f0db61d5436944c90028b1dd0d024e5ed7bb7b99eaf8d51e",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -99,12 +99,13 @@
       "sourceRefs": [
         "SRC-claude-docs-streaming-20261031",
         "SRC-claude-docs-errors-long-requests-20261031",
-        "SRC-claude-docs-streaming-deltas-20261031"
+        "SRC-claude-docs-streaming-deltas-20261031",
+        "SRC-claude-docs-stop-vs-errors-20261031"
       ],
-      "usedFor": "レッスン2-2の3トピック(ストリーミングの使いどころ・差分のイベント・まとめた応答)の読み物",
+      "usedFor": "ストリームの終了と HTTP 成功後のエラーを2つの翻訳記録で区別する演習",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-streaming/knowledge.md",
@@ -116,7 +117,7 @@
       "usedFor": "ストリーミングの使いどころ・イベントの種類・finalMessage を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-batches/t1-batch-when/slides.md",

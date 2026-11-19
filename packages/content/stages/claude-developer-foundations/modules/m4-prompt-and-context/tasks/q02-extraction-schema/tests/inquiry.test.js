@@ -195,4 +195,38 @@ describe("readInquiry", () => {
     );
     expect(result).toEqual({ ok: true, data: { ...full, plan: "pro" } });
   });
+
+  test("型や項目が異なる保存済みの応答を取り込まない", () => {
+    for (const record of [
+      null,
+      [],
+      { name: "田中" },
+      { ...full, phone: "123" },
+      { ...full, email: 321 },
+      { ...full, wants_demo: "false" },
+      { ...full, plan: 300 },
+      { ...full, plan: "gold" },
+      { ...full, preferred_date: "来週" },
+    ]) {
+      expect(readInquiry(reply("end_turn", JSON.stringify(record)))).toEqual({
+        ok: false,
+        reason: "invalid_shape",
+      });
+    }
+  });
+
+  test("デモの希望がないのに日付があるときだけ、担当者の確認に回す", () => {
+    const conflicting = { ...full, wants_demo: false };
+    expect(matches(inquirySchema, conflicting)).toBe(true);
+    expect(readInquiry(reply("end_turn", JSON.stringify(conflicting)))).toEqual(
+      { ok: false, reason: "date_without_demo" },
+    );
+    for (const wants_demo of [true, false]) {
+      const noDate = { ...full, wants_demo, preferred_date: null };
+      expect(readInquiry(reply("end_turn", JSON.stringify(noDate)))).toEqual({
+        ok: true,
+        data: noDate,
+      });
+    }
+  });
 });

@@ -104,7 +104,7 @@ function itemKind(lesson: CatalogLesson): string {
 const webIndicator = `${icon("web-icon", '<path d="M7 3H3v10h10V9M9 3h4v4m0-4L7 9"/>')}<span class="sr-only">Web で受講</span>`;
 
 function opensInWeb(lesson: CatalogLesson): boolean {
-  return !lesson.task && ["quiz", "video", "assignment"].includes(lesson.type);
+  return !lesson.task && lesson.type !== "code";
 }
 
 const taskStatusTones = {
@@ -157,7 +157,7 @@ function nextStep(
         ? "編集するファイルと課題文を並べて開きます。"
         : opensInWeb(next)
           ? "ブラウザーの STELLA で進めます。終わったら、この画面に戻れます。"
-          : "VS Code で開いて進めます。";
+          : "VS Code で課題を開いて進めます。";
     const label = waiting
       ? "Web で状況を見る"
       : next.task
@@ -166,7 +166,7 @@ function nextStep(
           : "課題に取り組む"
         : opensInWeb(next)
           ? "Web で進める"
-          : "教材を開く";
+          : "課題を開く";
     return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">${title}</p><h2 id="next-title">${escapeHtml(next.title)}</h2>${next.task ? taskStatusPill(next.task.status) : ""}<p class="hint">${description}</p>${lessonButton(next, label, true)}</section>`;
   }
   const index = stage.sections.indexOf(section);
@@ -250,7 +250,7 @@ export function renderLearningSidebar(
       break;
     case "disconnected":
       content =
-        '<section class="empty"><p class="eyebrow">STELLA の学習ガイド</p><h1>教材を読み、課題に取り組む</h1><p>Web の課題で「VS Code で開く」を押すと接続できます。接続後は、この場所で単元の進み具合や次にやることを確認できます。</p><button type="button" class="primary" data-action="connect">Web で接続する</button></section>';
+        '<section class="empty"><p class="eyebrow">STELLA の学習ガイド</p><h1>課題に取り組む</h1><p>Web の課題で「VS Code で開く」を押すと接続できます。接続後は、この場所で単元の進み具合や次にやることを確認できます。教材は Web で開きます。</p><button type="button" class="primary" data-action="connect">Web で接続する</button></section>';
       break;
     case "error":
       content = `<section class="empty" role="status"><h1>教材を読み込めませんでした</h1><p>${escapeHtml(state.message)}</p><button type="button" class="primary" data-action="refresh">もう一度読み込む</button></section>`;

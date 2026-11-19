@@ -13,7 +13,7 @@ sourceRefs: [SRC-claude-docs-stop-reasons-20261031, SRC-claude-docs-refusals-202
 <details>
 <summary>解答</summary>
 
-**A** — end_turn は、答えを自然に終えたことを表します。B は max_tokens、C は tool_use です。
+**A** — end_turn は、答えを自然に終えたことを表します。出力トークンの上限に達した場合は max_tokens、ツールを呼ぶ場合は tool_use です。
 
 </details>
 

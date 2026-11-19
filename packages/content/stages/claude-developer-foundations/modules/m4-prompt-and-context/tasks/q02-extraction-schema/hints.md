@@ -4,6 +4,10 @@
 
 ## ヒント2 手がかりのコード
 
+JSON を読んだあと、`wants_demo` が真・偽、`preferred_date` が日付・null の 4 通りを紙に書きます。営業が原文を確認したい組を一つだけ選びます。
+
+保存済みの `"null"` は `JSON.parse` に通ります。項目を読む前に値そのものを確かめ、`toLowerCase()` を呼ぶ前に `plan` の型を確かめてください。
+
 ```js
 preferred_date: { type: ["string", "null"], format: "date" },
 ```

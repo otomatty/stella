@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-practice/u03-claude-code@1",
+  "contentHash": "d7d29248385b1b0086f9731095e3a5d876ba027b9f6a3084fa82ef1050904f79",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-rules-scope/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-memory-20261031"],
+      "usedFor": "「翻訳ファイルだけに表記規則を配る」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-baseline/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-settings-20261031"],
+      "usedFor": "「チームの設定を新人に届ける」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-explicit-skill/knowledge.md",
+      "sourceRefs": ["SRC-claude-code-skills-20261118"],
+      "usedFor": "「担当者が指示したときだけ議事録を配る」の判断基準と解説。状況と選択肢は教材用に作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -58,6 +58,8 @@
 - `@better-auth/oauth-provider` は使わない。手元とテストでは Better Auth を切って開発用トークンを使っており、ログインも Google だけなので、認可の流れを手元で通せない。peer が `better-auth ^1.7.26` で、本体の更新も要る。
 - 自前の実装はしない (リダイレクト先の検証や PKCE を自分で書く危険に見合わない)。
 - 同意の画面は API がサーバーで HTML を返す (`/api/oauth/authorize`)。ライブラリの同意の補助 (`describeConsent`・`beginConsent`・`approveConsent`・`denyConsent`) が、1 回限りのハンドル・Cookie・フレームの拒否を受け持つ。利用者は既存の `getCaller` で決める。
+- KV は無料枠のままにする。namespace `stella-oauth` はバインディング `OAUTH_KV` として `apps/api/wrangler.toml` に結んである。
+- アクセストークンの寿命は 8 時間にする (実装するときに設定する)。既定の 1 時間だと、50 人が 8 時間使うと 1 日 800 回書き、無料枠の 1,000 回に近づく。8 時間なら 1 人 1 日 2〜4 回で済む。無効にした受講者は呼び出しのたびに `profiles` を見て弾くので、寿命を延ばしても止める速さは変わらない。
 
 ### 確かめたこと
 
@@ -72,7 +74,7 @@
 
 | もの | 内容 |
 | --- | --- |
-| KV の namespace | バインディング `OAUTH_KV`。Cloudflare のアカウントに作り、`apps/api/wrangler.toml` に id を書く (人の作業)。 |
+| KV の namespace | 作成済み。バインディング `OAUTH_KV`（namespace `stella-oauth`）。id は `apps/api/wrangler.toml`。無料枠のまま。 |
 | 互換フラグ | `global_fetch_strictly_public` (CIMD の外向きの fetch のため)。`compatibility_date` は今のままでよい。 |
 | Web の Worker の中継 | 既存の `/api/*` に加えて、`/.well-known/oauth-authorization-server` と `/.well-known/oauth-protected-resource/api/mcp` を、URL を変えずに API へ渡す。 |
 | パス | 認可 `/api/oauth/authorize`、トークンと失効 `/api/oauth/token`、登録 `/api/oauth/register`、MCP `/api/mcp`。issuer は Web のオリジン。 |
@@ -85,7 +87,7 @@
 | アクセストークンの更新 1 回 | 2 | 2 |
 | MCP の呼び出し 1 回 | 0 | 1 |
 
-アクセストークンの寿命が既定の 1 時間だと、使っている間は 1 時間ごとに 2 回書く (50 人が 8 時間使うと 800 回)。寿命を 8 時間にすると 1 人 1 日 2〜4 回で済む。無効にした受講者は、呼び出しのたびに D1 の `profiles` を見て弾くので、寿命を延ばしてもすぐ止まる。接続の解除は KV のトークンを消すが、KV は結果整合で、ほかの拠点に届くまで 60 秒以上かかることがある (Cloudflare の資料)。解除をすぐ効かせる必要があるかは実装の前に決め、必要なら呼び出しのたびに D1 で接続の有無を確かめる。
+アクセストークンの寿命は 8 時間に決めた。既定の 1 時間だと、使っている間は 1 時間ごとに 2 回書く (50 人が 8 時間使うと 800 回)。寿命を 8 時間にすると 1 人 1 日 2〜4 回で済む。無効にした受講者は、呼び出しのたびに D1 の `profiles` を見て弾くので、寿命を延ばしてもすぐ止まる。接続の解除は KV のトークンを消すが、KV は結果整合で、ほかの拠点に届くまで 60 秒以上かかることがある (Cloudflare の資料)。解除をすぐ効かせる必要があるかは実装の前に決め、必要なら呼び出しのたびに D1 で接続の有無を確かめる。
 
 ### 確かめていないこと
 
@@ -137,7 +139,6 @@ MCP の `instructions` とツールの説明文に、次を書く。AI への依
 
 ## まだ決めていないこと
 
-- KV の namespace をだれがいつ作るか。無料枠のままにするか。
 - 未ログインで認可の URL を開いたときの誘導 (ログインのあとに認可へ戻す方法)。
 - ChatGPT で使えるプラン。
 - `get_task` で starter・tests を返すか (最初の版は課題文だけ)。

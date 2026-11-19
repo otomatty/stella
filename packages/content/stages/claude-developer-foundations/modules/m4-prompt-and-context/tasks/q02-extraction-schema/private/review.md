@@ -8,6 +8,8 @@
 - スキーマを指示の文ではなく `output_config.format` に渡しているか。メールを `<email>` のタグで包んでいるか
 - `stop_reason` を確かめてから JSON として読んでいるか。`JSON.parse` の失敗を `invalid_json` で返しているか
 - `plan` を小文字にそろえているか
+- 旧応答の形を確かめてから値を使い、`null` や数値の `plan` で例外にならないか
+- `false` と日付が同時に入った場合は `date_without_demo` を返すか。説明欄でこの場合と `true`・`null` の日程未定を区別できているか
 - 説明欄が、書かれていない値の表し方と、読む前に確かめたことを、自分のコードに即して述べているか
 
 よくある違反: `required` に一部しか入れない、`plan` を自由な文字列にして推測させる、`type: "string"` のまま `null` を受け付けない、`stop_reason` を見ずに `JSON.parse` して `max_tokens` の応答で例外になる、`readInquiry` の中で `plan` 以外の値まで書き換える。

@@ -35,7 +35,7 @@ import {
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
 import { AuthSessionChanged, authSession, onDidChangeAuthSession } from "./auth.js";
-import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
+import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./markdown-html.js";
 import { loadTask } from "./runner/run-task.js";
 import { helpUrl, isInside, locateTask, workspaceRoots } from "./task-commands.js";
 import { referencesHtml, sideColumn } from "./task-panel.js";

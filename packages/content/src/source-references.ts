@@ -275,14 +275,20 @@ export function readUnitReferences(directory: string): UnitReferences | undefine
   return existsSync(file) ? parseUnitReferences(JSON.parse(readFileSync(file, "utf8"))) : undefined;
 }
 
-/** front-matter は既存の台帳と同じインライン配列。doc/practice/knowledge でも使う。 */
-export function readSourceRefs(markdown: string): string[] | undefined {
+export function readFrontMatterField(markdown: string, key: string): string | undefined {
   const head = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(markdown.replace(/\r\n/g, "\n"));
   if (!head) return undefined;
-  const matches = head[1].split("\n").filter((line) => /^sourceRefs:/.test(line));
+  const matches = head[1].split("\n").filter((line) => line.startsWith(`${key}:`));
   if (matches.length === 0) return undefined;
-  if (matches.length !== 1) throw new Error("sourceRefs: 重複した front-matter フィールドです");
-  const list = /^sourceRefs:\s*\[(.*)\]\s*$/.exec(matches[0]);
+  if (matches.length !== 1) throw new Error(`${key}: 重複した front-matter フィールドです`);
+  return matches[0].slice(key.length + 1).trim();
+}
+
+/** front-matter は既存の台帳と同じインライン配列。doc/practice/knowledge でも使う。 */
+export function readSourceRefs(markdown: string): string[] | undefined {
+  const field = readFrontMatterField(markdown, "sourceRefs");
+  if (field === undefined) return undefined;
+  const list = /^\[(.*)\]$/.exec(field);
   if (!list) throw new Error("sourceRefs: インライン配列で書いてください");
   return stringList(
     list[1].trim() ? list[1].split(",").map((v) => v.trim().replace(/^['"]|['"]$/g, "")) : [],

@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-code-agent-loop-20261031, SRC-claude-code-agent-loop-control-20261031, SRC-claude-code-sdk-subagents-20261031, SRC-claude-code-sdk-subagents-create-20261031, SRC-claude-code-sdk-sessions-20261031]
+sourceRefs: [SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-code-agent-loop-20261031, SRC-claude-code-agent-loop-control-20261031, SRC-claude-code-sdk-subagents-20261031, SRC-claude-code-sdk-subagents-create-20261031, SRC-claude-code-sdk-sessions-20261031, SRC-claude-sdk-hooks-20261118, SRC-claude-developer-guide-v11-20261118]
 ---
 # レッスン6-3 Agent SDK でエージェントを動かす
 
@@ -116,11 +116,35 @@ for await (const message of query({
 
 セッションのファイルは、作ったマシンの中に保存されます。CI や使い捨てのコンテナのように別のマシンで再開するときは、セッションの保存先を共有する仕組み(session store)を使うか、セッションのファイルを移します。
 
+### 演習　途中で止まった調査を引き継ぐ
+
+担当者は同じフォルダーで 2 件の調査を進めています。どちらのセッションも手元に保存済みです。下の表は SDK が返した記録の抜粋です。
+
+| 時刻 | 案件 | `session_id` | `subtype` | 最後に観察したこと |
+| --- | --- | --- | --- | --- |
+| 14:06 | 配送の遅れ | `s-12` | `error_max_turns` | 2 回目のツール呼び出しで配送記録を取得。最終回答はまだない |
+| 14:10 | 返品期限 | `s-13` | `success` | 返品期限についての最終回答を受領 |
+
+14:12 に配送担当から「続けてください」と連絡が来ました。①画面に今出せる状態、②再開に渡す ID、③同じ箇所でまた止まらないために確かめる設定を決めてください。
+
+配送の調査は「回数上限で中断」と表示できます。取得済みの配送記録は途中の観察で、最終回答の `result` はありません。残りの作業と予算を確認し、再開を認めるなら `resume: "s-12"` を指定します。元の `maxTurns` と実際の回数を照合し、ツールの結果を読んで回答するターンも見込みます。`continue: true` で最新のセッションを選ぶと、別件の返品期限を再開してしまいます。
+
+引き継ぎ先が、親の会話を共有しない通常のサブエージェントならどうでしょうか。「さっきの件を調べて」では対象を特定できません。案件名、取得済みの配送記録の場所、未確認の箇所、返してほしい結果を依頼に含めます。
+
+### 判断を必ず実行させる
+
+配送担当は、下書きは自由に作れる一方、配送日の確定には台帳の承認が必要です。失敗した実行を追うと「承認を確認する」という指示は読まれましたが、実行記録には `request(confirm_date)`、`result(success)` が続き、承認確認がありませんでした。
+
+指示を繰り返しても確認が毎回走る保証はありません。Agent SDK なら `confirm_date` を対象に実行前の `PreToolUse` フックを登録し、渡された案件 ID を承認台帳と照合します。未承認なら拒否し、照合できない場合も実行に進めないように扱います。ツールの実装側でも承認を確かめます。実行後の `PostToolUse` は記録には向きますが、既に確定した配送日を元には戻せません。
+
+テストでは、承認済み・未承認の架空の案件を一つずつ使い、配送日を確定する関数の呼び出し回数を記録します。前者で 1 回、後者で 0 回なら、画面のメッセージと実行した処理を区別して確かめられます。
+
 ## もっと知りたい人へ
 
 - [Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview) — Agent SDK とほかの道具の違い(英語)
 - [How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop) — ループの進み方、止める条件、結果の確かめ方(英語)
 - [Subagents in the SDK](https://code.claude.com/docs/en/agent-sdk/subagents) — サブエージェントの定義と、受け継ぐもの(英語)
 - [Work with sessions](https://code.claude.com/docs/en/agent-sdk/sessions) — continue・resume・fork の選び方(英語)
+- [Intercept and control agent behavior with hooks](https://code.claude.com/docs/en/agent-sdk/hooks) — ツール実行前の制御と実行後の記録
 
 知識問題で、このレッスンの内容を確かめます。

@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-anthropic-effective-agents-defs-20261031, SRC-anthropic-effective-agents-20261031]
+sourceRefs: [SRC-anthropic-effective-agents-defs-20261031, SRC-anthropic-effective-agents-20261031, SRC-claude-managed-agents-20261118, SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 # レッスン6-1 ワークフローとエージェント
 
@@ -43,8 +43,17 @@ sourceRefs: [SRC-anthropic-effective-agents-defs-20261031, SRC-anthropic-effecti
 
 この記事は 2024 年 12 月のもので、冒頭に「記事で紹介した道具の状況は、その後大きく変わった」という注記があります。この単元では、個々の道具ではなく、仕組みの分け方と形の考え方を扱います。
 
+### 演習　夜間の調査をどこで動かすか
+
+チームは夜に規程を照合し、翌朝に候補を確認します。調査には数十分かかり、読むファイルも順番も案件によって変わります。実行環境を自前で運用せず、担当者が画面を閉じた後も記録を追いたい、という条件です。
+
+この条件なら Claude Managed Agents が候補です。エージェントと実行環境を設定し、調査ごとにセッションを作ります。サービスがループを動かし、アプリはイベントを受けて進捗を表示します。アプリで 1 回の API 応答を待ち続ける設計に比べ、画面と長時間の処理を切り離せます。
+
+次に、各モデル呼び出しの履歴を自社の形式で組み立て、既存の処理系が次のツールの実行順をすべて決める案件を考えます。この要件では Messages API の応答をアプリで読み、独自のループを動かす方が制御箇所を特定できます。Agent SDK をアプリに組み込む道もありますが、SDK のループを使う場合、SDK を動かすホストとその運用は自社で用意します。
+
 ## もっと知りたい人へ
 
 - [Building effective agents](https://www.anthropic.com/research/building-effective-agents) — ワークフローとエージェントの違い、使いどころ、よく使う形(英語)
+- [Claude Managed Agents overview](https://platform.claude.com/docs/en/managed-agents/overview) — 実行環境、セッション、イベント、Messages API との使い分け
 
 知識問題で、このレッスンの内容を確かめます。

@@ -899,7 +899,24 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
 // 実データ側の作り込み。次フェーズ (ホームのステージマップ) が読む前提なので、
 // 欠けたまま気付かずに進まないよう manifest 全体で検査する。
 describe("buildContentManifest — 実データのスキルツリー", () => {
-  const { stages, tasks } = buildContentManifest();
+  const { stages, quizzes, tasks } = buildContentManifest();
+
+  it("Claude の基礎 → 単問の練習 → 120分の模試を受講する", () => {
+    const foundations = stages.find((stage) => stage.id === "claude-developer-foundations");
+    const practice = stages.find((stage) => stage.id === "claude-developer-practice");
+    const exam = stages.find((stage) => stage.id === "claude-developer-mock-exam");
+    expect(foundations?.sections?.[0]?.lessons?.[0]?.title).toBe("Claude に初めて頼む");
+    expect(practice?.prerequisites).toEqual([foundations?.id]);
+    expect(exam?.prerequisites).toEqual([practice?.id]);
+    const practiceQuizzes = quizzes.filter((quiz) => quiz.stageId === practice?.id);
+    expect(practiceQuizzes).toHaveLength(24);
+    expect(practiceQuizzes.every((quiz) => quiz.questions.length === 1)).toBe(true);
+    const last = exam?.sections?.at(-1)?.lessons?.at(-1);
+    expect(last).toMatchObject({ type: "quiz", duration: "120分" });
+    expect(
+      quizzes.find((quiz) => quiz.stageId === exam?.id && quiz.lessonId === last?.id)?.questions,
+    ).toHaveLength(70);
+  });
 
   it("全ステージに canDo と theme がある", () => {
     const missing = stages.filter((c) => !c.canDo || !c.theme).map((c) => c.id);
@@ -976,7 +993,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "claude-code-team",
       "claude-cowork-basics",
     ];
-    expect(stages).toHaveLength(42);
+    expect(stages).toHaveLength(44);
     for (const slug of placeholders) {
       const stage = stages.find((c) => c.id === slug);
       expect(stage, slug).toBeDefined();
@@ -1233,6 +1250,8 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "fe-kamoku-a",
       "fe-kamoku-b",
       "claude-developer-foundations",
+      "claude-developer-practice",
+      "claude-developer-mock-exam",
       "devlab-ts-ch00",
       "devlab-ts-ch01",
       "devlab-ts-ch02",

@@ -17,6 +17,7 @@ export interface WranglerConfig {
   env?: Record<string, WranglerConfig>;
   d1_databases?: { binding: string; database_name: string; database_id: string }[];
   r2_buckets?: { binding: string; bucket_name: string }[];
+  kv_namespaces?: { binding: string; id: string }[];
   services?: { binding: string; service: string; entrypoint?: string }[];
 }
 

@@ -82,6 +82,51 @@ describe("format 2 の教材", () => {
     expect(quiz?.source).toBe("knowledge");
     expect(quiz?.questions.map((q) => q.kind)).toEqual(["single", "multiple", "boolean"]);
   });
+  it("知識問題の題と時間を表示し、まとめを残したままクイズのIDを保つ", () => {
+    const root = fixture();
+    const path = join(
+      root,
+      "stages/dev-env-basics/modules/m0-first-page/l1-save-and-preview/knowledge.md",
+    );
+    const source = readFileSync(path, "utf8").replace(
+      /^---\r?\n/,
+      '---\ntitle: "模擬試験"\ndurationMinutes: 120\n',
+    );
+    writeFileSync(path, source);
+    const { stages } = buildContentManifest(join(root, "stages"));
+    const lessons = stages[0].sections?.flatMap((section) => section.lessons);
+    expect(lessons).toContainEqual(
+      expect.objectContaining({ id: "quiz-0-1", title: "模擬試験", duration: "120分" }),
+    );
+    expect(lessons).toContainEqual(expect.objectContaining({ id: "doc-0-1", title: "0-1 まとめ" }));
+  });
+  it("題のある知識問題だけを一つのレッスンとして配り、解説はPDFに出さない", () => {
+    const root = fixture();
+    const unit = join(root, "stages/dev-env-basics/modules/m0-first-page");
+    const lesson = join(unit, "l2-drill");
+    mkdirSync(lesson);
+    const path = join(lesson, "knowledge.md");
+    const source = readFileSync(join(unit, "l1-save-and-preview/knowledge.md"), "utf8");
+    writeFileSync(path, source);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/doc\.md/);
+
+    writeFileSync(path, source.replace(/^---\r?\n/, "---\ntitle: どこに保存しますか\n"));
+    const manifest = buildContentManifest(join(root, "stages"));
+    const key = "m0-first-page-l2-drill";
+    const lessons = manifest.stages[0].sections?.flatMap((section) => section.lessons);
+    expect(lessons?.filter((lesson) => lesson.id.endsWith(key))).toEqual([
+      expect.objectContaining({
+        type: "quiz",
+        id: `quiz-${key}`,
+        title: "どこに保存しますか",
+        duration: "5分",
+      }),
+    ]);
+    expect(
+      manifest.quizzes.find((quiz) => quiz.lessonId === `quiz-${key}`)?.questions,
+    ).toHaveLength(3);
+    expect(collectPdfTargets(manifest).some((target) => target.lessonId.endsWith(key))).toBe(false);
+  });
   it("非公開領域の本文は、公開用と似た名前でも bundle・レッスン・PDF に混ぜない", () => {
     const root = fixture();
     const taskDir = join(root, "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page");

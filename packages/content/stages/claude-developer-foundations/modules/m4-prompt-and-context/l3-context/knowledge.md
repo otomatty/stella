@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-context-windows-20261031, SRC-claude-docs-context-overflow-20261031, SRC-anthropic-context-engineering-20261031, SRC-claude-docs-compaction-20261031]
+sourceRefs: [SRC-claude-docs-context-windows-20261031, SRC-claude-docs-context-overflow-20261031, SRC-anthropic-context-engineering-20261031, SRC-claude-docs-compaction-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
 ## 知識問題
 
@@ -70,5 +70,19 @@ sourceRefs: [SRC-claude-docs-context-windows-20261031, SRC-claude-docs-context-o
 <summary>解答</summary>
 
 **A, B** — キャッシュした前半も枠に数えます。
+
+</details>
+
+### Q6. 保証の判定に使える入力は残り 2,000 トークンです。購入時の条項は 700、受付時の商品状態は 200、再取得できる過去の類似案件は 1,900 トークンです。後で判定根拠を照合する必要があります。何を引き継ぎますか？
+<!-- kind: single; skills: claude-context-management -->
+
+- A. 類似案件を全部残し、足りない条項は判断時に推測する
+- B. 購入時の規約の版・該当条項と商品状態を残し、類似案件は必要時に再取得する
+- C. 過去の類似案件と商品状態だけを残し、どの規約を使ったかは最新の規約から推定する
+
+<details>
+<summary>解答</summary>
+
+**B** — 購入時の条項と状態は合計 900 トークンで収まり、その注文の根拠を確認できます。類似案件を優先すると、適用した条項を失います。類似案件と商品状態を両方残す案は 2,100 トークンになり、枠も超えます。
 
 </details>

@@ -1,16 +1,64 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m0-exam-and-sources@4",
-  "contentHash": "da3b7a7a21a4772e9d2ac89b1f3e0c487522fab4911f5e80d9bf90952e44354e",
+  "unitId": "claude-developer-foundations/m0-exam-and-sources@6",
+  "contentHash": "c351c41f1db0549c4404067470ac438614fcf450bdcc945bbb32bcd0f2458250",
   "environmentRef": "node-test-01@1",
   "uses": [
+    {
+      "contentId": "l0-first-conversation/t1-first-request/slides.md",
+      "sourceRefs": ["SRC-claude-docs-prompting-20261031"],
+      "usedFor": "短い案内の要約を例に、依頼の目的、使う資料、回答の長さを伝える方法",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l0-first-conversation/t2-check-answer/slides.md",
+      "sourceRefs": ["SRC-claude-docs-hallucinations-20261031"],
+      "usedFor": "回答例の事実を根拠となる一文と照合し、根拠不足なら不明を示す考え方",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l0-first-conversation/t3-choose-interface/slides.md",
+      "sourceRefs": ["SRC-claude-docs-messages-20261031"],
+      "usedFor": "対話での試行とアプリからの呼び出しを同じ要約例で比べ、基本の Messages API に必要な履歴を送る手順",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l0-first-conversation/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompting-20261031",
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-messages-20261031"
+      ],
+      "usedFor": "教材独自の研修案内を使って依頼を試し、答えを照合して追加依頼を出す基本練習。ウェブと API からの呼び出しの使い分け",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l0-first-conversation/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompting-20261031",
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-messages-20261031"
+      ],
+      "usedFor": "目的と資料の伝え方、根拠の照合、ウェブでの試行を基本の API 呼び出しで再現する際の判断を問う独自問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
     {
       "contentId": "l1-exam-overview/t1-developer-cert/slides.md",
       "sourceRefs": ["SRC-claude-four-certs-20261031"],
       "usedFor": "4つの資格の対象と、Developer: Foundations が Claude API・ツール使用・エージェント開発を扱うことの説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-exam-overview/t2-who-can-take/slides.md",
@@ -34,7 +82,7 @@
       "usedFor": "レッスン0-1の3トピック(資格の対象・受験できる人・監督つきの試験)を読み物にまとめた説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-exam-overview/knowledge.md",
@@ -42,15 +90,15 @@
       "usedFor": "資格の対象・受験資格・本人確認・認定の帰属を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-official-sources/t1-exam-guide/slides.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "資格ごとの準備の講座が Partner Academy にあることの説明。試験ガイドの置き場所・配点の有無・改訂の予定は講師が Partner Academy で確かめる",
+      "sourceRefs": ["SRC-claude-four-certs-20261031", "SRC-claude-developer-guide-v11-20261118"],
+      "usedFor": "CCDV-F ガイドの領域別配点と入口診断を使い、復習する単元と確認方法を決める手順",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-official-sources/t2-platform-docs/slides.md",
@@ -108,12 +156,14 @@
         "SRC-claude-code-memory-20261031",
         "SRC-claude-code-hooks-guide-20261031",
         "SRC-claude-docs-evals-20261031",
-        "SRC-claude-docs-tool-troubleshooting-20261031"
+        "SRC-claude-docs-tool-troubleshooting-20261031",
+        "SRC-claude-developer-guide-v11-20261118",
+        "SRC-claude-developer-prep-20261118"
       ],
-      "usedFor": "レッスン0-2の4トピックの読み物と、公式の情報源マップ(各ページが扱う範囲の要約)",
+      "usedFor": "70問形式の時間・採点・8領域の配点、3つの実装場面による入口診断、公式準備講座で対応するレッスンの選び方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-official-sources/knowledge.md",
@@ -121,12 +171,15 @@
         "SRC-claude-four-certs-20261031",
         "SRC-claude-docs-features-20261031",
         "SRC-claude-docs-messages-20261031",
-        "SRC-claude-code-agent-sdk-overview-20261031"
+        "SRC-claude-code-agent-sdk-overview-20261031",
+        "SRC-claude-developer-guide-v11-20261118",
+        "SRC-claude-docs-batch-usage-20261031",
+        "SRC-anthropic-agent-evals-20261118"
       ],
-      "usedFor": "試験ガイドと公式ドキュメントの使い分け、学習に使う資料を問う自作問題の正答と解説",
+      "usedFor": "組み込みと評価の配点・誤答理由を踏まえて復習課題を選び、公式の仕様を確かめる自作問題",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "tasks/q01-study-plan/README.md",

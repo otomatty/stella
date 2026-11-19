@@ -13,7 +13,7 @@ sourceRefs: [SRC-claude-docs-choosing-model-20261031, SRC-claude-docs-choosing-s
 <details>
 <summary>解答</summary>
 
-**A** — 量が多く単純な処理は、速度・費用から始める方法が向きます。C は、自分の課題で試していません。
+**A** — 量が多く単純な処理は、速度・費用から始める方法が向きます。料金表だけでは、実際の問い合わせを正しく分類できるかが分かりません。
 
 </details>
 

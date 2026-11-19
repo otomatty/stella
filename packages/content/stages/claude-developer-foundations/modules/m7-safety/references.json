@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m7-safety@3",
-  "contentHash": "19efbd93062c25c0826874baec82d6d12bca795d66010bd0d6383f208de861c0",
+  "unitId": "claude-developer-foundations/m7-safety@5",
+  "contentHash": "18c7a0b138d3dbf5d7df29bd9f460e67a5d0bed859d5fc1ab37f18a4c58f71e7",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -97,12 +97,14 @@
         "SRC-claude-docs-hallucinations-20261031",
         "SRC-claude-docs-hallucination-advanced-20261031",
         "SRC-claude-code-sdk-secure-deployment-20261031",
-        "SRC-claude-docs-jailbreaks-20261031"
+        "SRC-claude-docs-jailbreaks-20261031",
+        "SRC-claude-developer-guide-v11-20261118",
+        "SRC-claude-docs-api-key-20261031"
       ],
-      "usedFor": "レッスン7-2の3トピック(分からないと言わせる・引用から答えさせる・秘密を見せない)の読み物と、確かめる方法の表・多層防御",
+      "usedFor": "回答の根拠と秘密の扱い、検証と本番の資格情報を分け、露出した鍵を失効させる判断",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-reliable-answers/knowledge.md",
