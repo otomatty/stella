@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
 import type { StaffTaskDetail as Detail } from "@stella/shared/tasks/staff-stage";
+import { PageContainer } from "@/components/common/PageContainer";
+import { PageHeader } from "@/components/common/PageHeader";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { TaskBoardPanel } from "@/components/instructor/TaskBoardPanel";
 import { LessonMarkdown } from "@/components/learner/MarkdownSlides";
@@ -69,47 +71,50 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
     return () => pending.current?.abort();
   }, [load]);
   const changeTab = (value: string) => void navigate({ search: { tab: parseStaffTaskTab(value) } });
-  return (
-    <div className="mx-auto w-full min-w-0 max-w-7xl space-y-5 p-4 md:p-6">
-      <nav
-        aria-label="パンくず"
-        className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-ink-2"
-      >
-        <div className="flex flex-wrap gap-2">
-          <Link to="/stages" className="hover:underline">
-            ステージ管理
-          </Link>
-          {data ? (
-            <>
-              <span aria-hidden="true">›</span>
-              <Link
-                to="/stages/$stageId"
-                params={{ stageId }}
-                search={{ tab: "tasks" }}
-                className="hover:underline"
-              >
-                {data.stage.title}
-              </Link>
-              <span aria-hidden="true">›</span>
-              <span>{data.section.title}</span>
-            </>
+  const back = (
+    <nav
+      aria-label="パンくず"
+      className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-ink-2"
+    >
+      <div className="flex flex-wrap gap-2">
+        <Link to="/stages" className="hover:underline">
+          ステージ管理
+        </Link>
+        {data ? (
+          <>
+            <span aria-hidden="true">›</span>
+            <Link
+              to="/stages/$stageId"
+              params={{ stageId }}
+              search={{ tab: "tasks" }}
+              className="hover:underline"
+            >
+              {data.stage.title}
+            </Link>
+            <span aria-hidden="true">›</span>
+            <span>{data.section.title}</span>
+          </>
+        ) : null}
+      </div>
+      {data ? (
+        <div className="flex flex-wrap gap-4">
+          {data.neighbors.previous ? (
+            <TaskLink stageId={stageId} taskId={data.neighbors.previous.id}>
+              ← 前の課題: {data.neighbors.previous.title}
+            </TaskLink>
+          ) : null}
+          {data.neighbors.next ? (
+            <TaskLink stageId={stageId} taskId={data.neighbors.next.id}>
+              次の課題: {data.neighbors.next.title} →
+            </TaskLink>
           ) : null}
         </div>
-        {data ? (
-          <div className="flex flex-wrap gap-4">
-            {data.neighbors.previous ? (
-              <TaskLink stageId={stageId} taskId={data.neighbors.previous.id}>
-                ← 前の課題: {data.neighbors.previous.title}
-              </TaskLink>
-            ) : null}
-            {data.neighbors.next ? (
-              <TaskLink stageId={stageId} taskId={data.neighbors.next.id}>
-                次の課題: {data.neighbors.next.title} →
-              </TaskLink>
-            ) : null}
-          </div>
-        ) : null}
-      </nav>
+      ) : null}
+    </nav>
+  );
+  return (
+    <PageContainer size="wide" className="space-y-5">
+      {loading || error || !data ? back : null}
       {loading ? (
         <SkeletonRows />
       ) : error ? (
@@ -121,32 +126,44 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
         </div>
       ) : data ? (
         <>
-          <header className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <Badge>{TASK_KIND_LABELS[data.task.kind]}</Badge>
-              <Badge>{data.task.manifest.runner}</Badge>
-              <Badge>{environmentLabel(data.task.manifest.environment)}</Badge>
-              <Badge>目安 {data.task.estimatedMinutes} 分</Badge>
-            </div>
-            <h1 className="break-words text-xl font-bold">{data.task.title}</h1>
-            <p className="break-all font-mono text-xs text-ink-3">{data.task.id}</p>
-            {data.task.parentTaskId ? (
-              <p className="text-[13px] text-ink-2">
-                <TaskLink stageId={stageId} taskId={data.task.parentTaskId}>
-                  {data.task.parentTaskId}
-                </TaskLink>{" "}
-                の類題
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              <StaffEnrollButton stageId={stageId} onOpenAsLearner={shell.openStageAsLearner} />
-              <Button asChild variant="outline">
-                <a href={taskGithubUrl(data.sourcePath)} target="_blank" rel="noopener noreferrer">
-                  GitHub で開く
-                </a>
-              </Button>
-            </div>
-          </header>
+          <PageHeader
+            className="mb-0"
+            back={back}
+            eyebrow={
+              <>
+                <Badge>{TASK_KIND_LABELS[data.task.kind]}</Badge>
+                <Badge>{data.task.manifest.runner}</Badge>
+                <Badge>{environmentLabel(data.task.manifest.environment)}</Badge>
+                <Badge>目安 {data.task.estimatedMinutes} 分</Badge>
+              </>
+            }
+            title={data.task.title}
+            sub={<p className="break-all font-mono text-xs text-ink-3">{data.task.id}</p>}
+            meta={
+              data.task.parentTaskId ? (
+                <p className="text-[13px] text-ink-2">
+                  <TaskLink stageId={stageId} taskId={data.task.parentTaskId}>
+                    {data.task.parentTaskId}
+                  </TaskLink>{" "}
+                  の類題
+                </p>
+              ) : null
+            }
+            actions={
+              <>
+                <StaffEnrollButton stageId={stageId} onOpenAsLearner={shell.openStageAsLearner} />
+                <Button asChild variant="outline">
+                  <a
+                    href={taskGithubUrl(data.sourcePath)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub で開く
+                  </a>
+                </Button>
+              </>
+            }
+          />
           <Tabs value={tab} onValueChange={changeTab}>
             <TabsList aria-label="課題詳細">
               {tabs.map(({ value, label }) => (
@@ -245,7 +262,7 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
           </Tabs>
         </>
       ) : null}
-    </div>
+    </PageContainer>
   );
 }
 

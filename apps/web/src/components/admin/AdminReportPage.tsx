@@ -30,8 +30,12 @@ import {
 } from "@stella/shared/admin/reports";
 
 import { Download, RefreshCw } from "@/lib/icons";
+import { FilterBar, FilterBarAside, FilterField } from "@/components/common/FilterBar";
+import { Notice } from "@/components/common/Notice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
@@ -132,53 +136,53 @@ function ReportLive() {
       />
 
       <Card className="mb-4">
-        <div className="px-4 py-3 flex items-end gap-3 flex-wrap">
+        <FilterBar className="px-4 py-3">
           <FilterField label="レポート種別">
-            <select
+            <NativeSelect
               value={type}
               onChange={(e) => setType(e.target.value as ReportType)}
-              className="h-9 w-full min-w-[160px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="w-full sm:w-auto sm:min-w-[160px]"
             >
               {REPORT_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {REPORT_META[t].label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </FilterField>
           <FilterField label="期間">
-            <select
+            <NativeSelect
               value={preset}
               onChange={(e) => setPreset(e.target.value as ReportPeriodPreset)}
-              className="h-9 w-full min-w-[140px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="w-full sm:w-auto sm:min-w-[140px]"
             >
               {PRESET_OPTIONS.map((p) => (
                 <option key={p} value={p}>
                   {REPORT_PERIOD_PRESET_LABELS[p]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </FilterField>
           <FilterField label="開始日">
-            <input
+            <Input
               type="date"
               value={period.from ?? ""}
               max={period.to || undefined}
               onChange={(e) => onDateChange("from", e.target.value)}
-              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="h-9 w-full min-w-0 px-2 text-[12.5px] sm:w-auto sm:min-w-[140px]"
             />
           </FilterField>
           <FilterField label="終了日">
-            <input
+            <Input
               type="date"
               value={period.to ?? ""}
               min={period.from || undefined}
               onChange={(e) => onDateChange("to", e.target.value)}
-              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
+              className="h-9 w-full min-w-0 px-2 text-[12.5px] sm:w-auto sm:min-w-[140px]"
             />
           </FilterField>
 
-          <div className="ml-auto flex items-center gap-3">
+          <FilterBarAside>
             <span className="text-[12.5px] text-ink-3">{total} 件</span>
             <Button
               variant="ghost"
@@ -189,28 +193,24 @@ function ReportLive() {
             >
               <RefreshCw size={14} />
             </Button>
-          </div>
-        </div>
+          </FilterBarAside>
+        </FilterBar>
         <div className="px-4 pb-3 text-[11.5px] text-ink-3">{meta.description}</div>
       </Card>
 
       {invalidPeriod ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
+        <Notice className="mb-4">
           開始日が終了日より後になっています。 期間を修正してください。
-        </div>
+        </Notice>
       ) : null}
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice className="mb-4">{error}</Notice> : null}
 
       {truncated ? (
-        <div className="mb-4 rounded-md border border-border bg-warning-soft px-3 py-2 text-[12.5px] text-warning">
+        <Notice tone="warning" className="mb-4">
           全 {total} 件のうち先頭 {REPORT_PREVIEW_LIMIT} 件を表示しています。
           全件は「CSV出力」で取得してください。
-        </div>
+        </Notice>
       ) : null}
 
       <Card className="overflow-hidden">
@@ -253,16 +253,6 @@ function ReportLive() {
         )}
       </Card>
     </>
-  );
-}
-
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    // 狭幅では 2 列に収まるよう最小幅つきで伸縮させる (input の既定幅で溢れさせない)。
-    <div className="flex min-w-[140px] flex-1 flex-col gap-1 sm:flex-none">
-      <span className="text-[11px] text-ink-3">{label}</span>
-      {children}
-    </div>
   );
 }
 

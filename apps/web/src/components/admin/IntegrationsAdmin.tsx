@@ -8,6 +8,7 @@ import {
   type IntegrationScope,
 } from "@stella/shared/integrations/types";
 import { apiFetch } from "@/lib/api-client";
+import { Notice } from "@/components/common/Notice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,12 +66,9 @@ export function IntegrationsAdmin() {
     <>
       <PageHeader title="外部連携" sub="連携クライアントとグループを管理します" />
       {error ? (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive"
-        >
+        <Notice role="alert" className="mb-4">
           {error}
-        </div>
+        </Notice>
       ) : null}
       {token ? (
         <Card role="status" className="mb-6 border-warning">

@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { PageContainer } from "@/components/common/PageContainer";
+import { PageHeader } from "@/components/common/PageHeader";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -219,6 +222,7 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const modeSelectId = useId();
   const [mode, setMode] = useState<CompletionMode>("complete");
   const [confirm, setConfirm] = useState(false);
   const [reason, setReason] = useState("");
@@ -294,26 +298,35 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
   const problemTitle = (tid: string, pid: string) =>
     resultTasks.current.find((t) => t.id === tid)?.problems.find((p) => p.id === pid)?.title ?? pid;
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <Link
-        to="/stages/$stageId"
-        params={{ stageId }}
-        className="text-[13px] text-ink-2 hover:underline"
-      >
-        ← ステージの詳細に戻る
-      </Link>
-      <h1 className="text-2xl font-semibold">手で済みにする</h1>
-      {data ? (
-        <div>
-          <h2 className="text-lg font-semibold break-words">
-            {data.userName} · {data.stageTitle}
-          </h2>
-          <p className="text-sm text-ink-3">
-            {problems.length} 問中 {problems.filter((p) => p.status === "passed").length}{" "}
-            問済み（うち手で済み {problems.filter((p) => p.source === "manual").length} 問）
-          </p>
-        </div>
-      ) : null}
+    <PageContainer size="narrow" className="space-y-4">
+      <PageHeader
+        className="mb-0"
+        back={
+          <Link
+            to="/stages/$stageId"
+            params={{ stageId }}
+            className="text-[13px] text-ink-2 hover:underline"
+          >
+            ← ステージの詳細に戻る
+          </Link>
+        }
+        title="手で済みにする"
+        sub={
+          data ? (
+            <span className="break-words text-[15px] font-medium text-ink-2">
+              {data.userName} · {data.stageTitle}
+            </span>
+          ) : null
+        }
+        meta={
+          data ? (
+            <p className="text-sm text-ink-3">
+              {problems.length} 問中 {problems.filter((p) => p.status === "passed").length}{" "}
+              問済み（うち手で済み {problems.filter((p) => p.source === "manual").length} 問）
+            </p>
+          ) : null
+        }
+      />
       {busy ? (
         <p role="status">
           送信中: {progress.total} 回中 {progress.completed}{" "}
@@ -355,10 +368,11 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
       {loading ? <p>読み込み中…</p> : null}
       <fieldset disabled={busy || loading || !data} className="min-w-0 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm">
+          <label htmlFor={modeSelectId} className="text-sm">
             操作{" "}
-            <select
-              className="h-11 rounded-md border border-border bg-card px-3"
+            <NativeSelect
+              id={modeSelectId}
+              size="lg"
               value={mode}
               onChange={(e) => {
                 setMode(e.target.value as CompletionMode);
@@ -368,7 +382,7 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
             >
               <option value="complete">済みにする</option>
               <option value="revoke">取り消す</option>
-            </select>
+            </NativeSelect>
           </label>
           <p className="text-sm">
             {selectionCount} 件を選択（{items.length} 課題）
@@ -446,6 +460,6 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

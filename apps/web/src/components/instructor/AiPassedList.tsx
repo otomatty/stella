@@ -9,6 +9,7 @@ import {
 } from "@stella/shared/review/review-desk";
 import type { Submission } from "@stella/shared/review/types";
 import { ChevronRight } from "@/lib/icons";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
@@ -27,9 +28,6 @@ interface AiPassedListProps {
   submissions: Submission[];
   onOpen: (submissionId: string) => void;
 }
-
-const SELECT =
-  "h-8 rounded-sm border border-input bg-card px-2 text-[12.5px] min-w-[140px] max-w-[220px]";
 
 function formatDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString("ja-JP") : "-";
@@ -109,9 +107,10 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
             </Chip>
           ))}
         </fieldset>
-        <select
+        <NativeSelect
           aria-label="ステージ"
-          className={SELECT}
+          size="sm"
+          className="min-w-[140px] max-w-[220px]"
           value={stageId}
           onChange={(e) => {
             setStageId(e.target.value);
@@ -124,10 +123,11 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
               {title}
             </option>
           ))}
-        </select>
-        <select
+        </NativeSelect>
+        <NativeSelect
           aria-label="課題"
-          className={SELECT}
+          size="sm"
+          className="min-w-[140px] max-w-[220px]"
           value={taskId}
           onChange={(e) => setTaskId(e.target.value)}
         >
@@ -137,10 +137,11 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
               {title}
             </option>
           ))}
-        </select>
-        <select
+        </NativeSelect>
+        <NativeSelect
           aria-label="受講者"
-          className={SELECT}
+          size="sm"
+          className="min-w-[140px] max-w-[220px]"
           value={learnerId}
           onChange={(e) => setLearnerId(e.target.value)}
         >
@@ -150,17 +151,18 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
               {name}
             </option>
           ))}
-        </select>
-        <select
+        </NativeSelect>
+        <NativeSelect
           aria-label="確信度"
-          className={SELECT}
+          size="sm"
+          className="min-w-[140px] max-w-[220px]"
           value={confidence}
           onChange={(e) => setConfidence(e.target.value as "" | "high" | "medium")}
         >
           <option value="">すべての確信度</option>
           <option value="medium">中</option>
           <option value="high">高</option>
-        </select>
+        </NativeSelect>
         <label className="flex items-center gap-1 text-[12px] text-ink-3">
           AI 合格日
           <input

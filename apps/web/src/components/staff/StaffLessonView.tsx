@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { StageWithChildren } from "@stella/shared/cms/types";
+import { PageContainer } from "@/components/common/PageContainer";
+import { PageHeader } from "@/components/common/PageHeader";
 import { LessonMarkdown, PlainMarkdownSlides } from "@/components/learner/MarkdownSlides";
 import { SlideLessonMedia } from "@/components/learner/SlideLessonMedia";
 import { Badge } from "@/components/ui/badge";
@@ -81,16 +83,19 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
       ))}
     </nav>
   );
+  const back = (
+    <Link
+      to="/stages/$stageId"
+      params={{ stageId }}
+      search={{ tab: "outline" }}
+      className="text-sm text-brand hover:underline"
+    >
+      ← {data?.stage.title ?? "ステージ詳細"}
+    </Link>
+  );
   return (
-    <div className="mx-auto w-full min-w-0 max-w-7xl space-y-5 p-4 md:p-6">
-      <Link
-        to="/stages/$stageId"
-        params={{ stageId }}
-        search={{ tab: "outline" }}
-        className="text-sm text-brand hover:underline"
-      >
-        ← {data?.stage.title ?? "ステージ詳細"}
-      </Link>
+    <PageContainer size="wide" className="space-y-5">
+      {loading || error || !lesson || !data ? back : null}
       {loading ? (
         <SkeletonRows />
       ) : error ? (
@@ -104,11 +109,13 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
         <p>このレッスンは見つかりません</p>
       ) : (
         <>
-          <header className="space-y-2">
-            <p className="text-sm text-ink-3">{section?.section.title}</p>
-            <h1 className="break-words text-xl font-bold">{lesson.title}</h1>
-            <Badge>{LESSON_TYPE_LABELS[lesson.type]}</Badge>
-          </header>
+          <PageHeader
+            className="mb-0"
+            back={back}
+            eyebrow={<p className="text-sm text-ink-3">{section?.section.title}</p>}
+            title={lesson.title}
+            meta={<Badge>{LESSON_TYPE_LABELS[lesson.type]}</Badge>}
+          />
           <div className="grid min-w-0 gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
             <aside className="hidden md:block">{outline}</aside>
             <details className="md:hidden">
@@ -193,6 +200,6 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
           </div>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

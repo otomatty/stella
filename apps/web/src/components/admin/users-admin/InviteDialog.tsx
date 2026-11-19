@@ -9,6 +9,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Mail } from "@/lib/icons";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -120,18 +121,19 @@ export function InviteDialog({ open, onOpenChange, onInvited }: InviteDialogProp
           </div>
           <div>
             <Label htmlFor="inv-role">ロール</Label>
-            <select
+            <NativeSelect
               id="inv-role"
               value={role}
               onChange={(e) => setRole(e.target.value as AssignableProfileRole)}
-              className="h-10 w-full rounded-sm border border-input bg-card px-3 text-sm"
+              size="lg"
+              className="w-full"
             >
               {ASSIGNABLE_PROFILE_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {ROLE_LABEL[r]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <DialogFooter className="px-0 pb-2 border-t-0">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

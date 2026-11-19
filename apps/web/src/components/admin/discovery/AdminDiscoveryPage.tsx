@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Notice } from "@/components/common/Notice";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -128,11 +129,7 @@ export function AdminDiscoveryPage() {
         sub="受講者のつまずきから AI が作る補強演習。 講師が承認したものだけが「✦ 発見」として受講者に届く"
       />
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice className="mb-4">{error}</Notice> : null}
 
       <div className="flex flex-col gap-4">
         <Card>

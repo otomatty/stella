@@ -5,6 +5,7 @@ import {
   type ReviewMetrics,
 } from "@stella/shared/review/review-desk";
 import { AlertTriangle } from "@/lib/icons";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -112,23 +113,23 @@ export function ReviewMetricsPanel() {
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-3 text-[12.5px]">
-        <label htmlFor="metrics-days" className="text-ink-3">
+      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
+        <label htmlFor="metrics-days" className="shrink-0 whitespace-nowrap text-ink-3">
           期間
         </label>
-        <select
+        <NativeSelect
           id="metrics-days"
           value={days}
           onChange={(e) => setDays(Number(e.target.value) as (typeof PERIODS)[number])}
-          className="h-8 rounded-sm border border-input bg-card px-2"
+          size="sm"
         >
           {PERIODS.map((d) => (
             <option key={d} value={d}>
               直近 {d} 日
             </option>
           ))}
-        </select>
-        <span className="text-ink-3">
+        </NativeSelect>
+        <span className="basis-full text-ink-3 sm:basis-auto sm:flex-1">
           境目を超えた行に印を付けます。しきい値は自動では変えません (月 1 回、人が見直します)。
         </span>
       </div>
