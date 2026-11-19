@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { CONFIDENCE_LABELS, ROUTE_REASON_LABELS } from "@stella/shared/review/ai-review";
+import type { Submission } from "@stella/shared/review/types";
 import {
   REVIEW_QUEUE_GROUP_LABELS,
   REVIEW_QUEUE_GROUPS,
@@ -19,6 +20,7 @@ import {
   Sparkles,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import { RecordItem, RecordList } from "@/components/common/RecordList";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { useRefreshSubmissionsOnOpen, useSubmissions } from "@/hooks/useSubmissions";
+import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { hasAiDraft } from "@/lib/ai-draft";
 import {
   formatWaiting,
@@ -73,6 +76,7 @@ export const ReviewQueue = ({
   onOpenReview,
   backendEnabled = false,
 }: ReviewQueueProps) => {
+  const isMobile = useIsMobileViewport();
   const { submissions } = useSubmissions();
   // 開いたときに取り直す (ほかの講師の確定・AI の結果を反映する)。
   useRefreshSubmissionsOnOpen(backendEnabled);
@@ -195,107 +199,109 @@ export const ReviewQueue = ({
             </p>
           ) : null}
           <Card className="overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>受講者</TableHead>
-                  <TableHead>課題</TableHead>
-                  <TableHead>理由</TableHead>
-                  <TableHead>AI</TableHead>
-                  <TableHead>待ち時間</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-ink-3 py-10">
-                      人のレビューを待っている提出はありません
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((r) => (
-                    <TableRow key={r.id} interactive onClick={() => open(r.id)}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar size="sm">
-                            <AvatarFallback tone={r.avatarTone as AvatarTone}>
-                              {r.studentInitials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{r.studentName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>{r.assignmentTitle}</div>
-                        <div className="text-[11.5px] text-ink-3">{r.stageTitle}</div>
-                      </TableCell>
-                      <TableCell>
-                        {r.aiReviewStatus === "queued" ? (
-                          <Badge variant="info">AI が確認中</Badge>
-                        ) : (
-                          <Badge
-                            variant={queueGroupOf(r) === "legacy" ? "default" : "warning"}
-                            title={(r.routeReasons ?? [])
-                              .map((reason) => ROUTE_REASON_LABELS[reason])
-                              .join(" / ")}
+            {isMobile ? (
+              rows.length === 0 ? (
+                <p className="py-10 text-center text-[13px] text-ink-3">
+                  人のレビューを待っている提出はありません
+                </p>
+              ) : (
+                <RecordList aria-label="人に回した提出">
+                  {rows.map((r) => (
+                    <RecordItem
+                      key={r.id}
+                      leading={<QueueAvatar submission={r} />}
+                      title={r.studentName}
+                      subtitle={<QueueAssignment submission={r} isMobile />}
+                      badges={
+                        <>
+                          <QueueReasonBadge submission={r} />
+                          <QueueAiBadges submission={r} isMobile />
+                        </>
+                      }
+                      meta={formatWaiting(r.submittedAt)}
+                      onClick={() => open(r.id)}
+                      actions={
+                        r.taskId ? (
+                          <Button
+                            size="icon-sm"
+                            type="button"
+                            variant="ghost"
+                            aria-label="同じ課題の提出を並べて見る"
+                            title="同じ課題の提出を並べて見る"
+                            onClick={() => setBoardTaskId(r.taskId ?? null)}
                           >
-                            {REVIEW_QUEUE_GROUP_LABELS[queueGroupOf(r)]}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {r.reviewSource === "tests" ? (
-                          <Badge>テストで確認</Badge>
-                        ) : r.aiConfidence ? (
-                          <div className="flex flex-wrap gap-1">
-                            <Badge>確信度 {CONFIDENCE_LABELS[r.aiConfidence]}</Badge>
-                            {r.aiProposedVerdict ? (
-                              <Badge
-                                variant={r.aiProposedVerdict === "pass" ? "success" : "warning"}
-                              >
-                                案 {r.aiProposedVerdict === "pass" ? "合格" : "再提出"}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        ) : hasAiDraft(r) ? (
-                          <Badge variant="accent">
-                            <Sparkles size={10} />
-                            下書き
-                          </Badge>
-                        ) : (
-                          // 旧形式の下書きは講師が Editor を開いた時に生成する。
-                          <span className="text-ink-3 text-[11.5px]">
-                            {r.taskId ? "記録なし" : "未生成"}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-ink-3">{formatWaiting(r.submittedAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {r.taskId ? (
-                            <Button
-                              size="sm"
-                              type="button"
-                              variant="ghost"
-                              title="同じ課題の提出を並べて見る"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setBoardTaskId(r.taskId ?? null);
-                              }}
-                            >
-                              <ListTree size={12} />
-                              並べて見る
-                            </Button>
-                          ) : null}
-                          <ChevronRight size={14} className="text-ink-4" />
-                        </div>
+                            <ListTree size={14} />
+                          </Button>
+                        ) : null
+                      }
+                    />
+                  ))}
+                </RecordList>
+              )
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>受講者</TableHead>
+                    <TableHead>課題</TableHead>
+                    <TableHead>理由</TableHead>
+                    <TableHead>AI</TableHead>
+                    <TableHead>待ち時間</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-ink-3 py-10">
+                        人のレビューを待っている提出はありません
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    rows.map((r) => (
+                      <TableRow key={r.id} interactive onClick={() => open(r.id)}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <QueueAvatar submission={r} />
+                            <span className="font-medium">{r.studentName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <QueueAssignment submission={r} />
+                        </TableCell>
+                        <TableCell>
+                          <QueueReasonBadge submission={r} />
+                        </TableCell>
+                        <TableCell>
+                          <QueueAiBadges submission={r} />
+                        </TableCell>
+                        <TableCell className="text-ink-3">{formatWaiting(r.submittedAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {r.taskId ? (
+                              <Button
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                                title="同じ課題の提出を並べて見る"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBoardTaskId(r.taskId ?? null);
+                                }}
+                              >
+                                <ListTree size={12} />
+                                並べて見る
+                              </Button>
+                            ) : null}
+                            <ChevronRight size={14} className="text-ink-4" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </Card>
         </TabsContent>
 
@@ -359,3 +365,83 @@ export const ReviewQueue = ({
     </>
   );
 };
+
+function QueueAvatar({ submission }: { submission: Submission }) {
+  return (
+    <Avatar size="sm">
+      <AvatarFallback tone={submission.avatarTone as AvatarTone}>
+        {submission.studentInitials}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function QueueAssignment({
+  submission,
+  isMobile = false,
+}: {
+  submission: Submission;
+  isMobile?: boolean;
+}) {
+  const Line = isMobile ? "span" : "div";
+  return (
+    <>
+      <Line className={isMobile ? "block text-ink-2" : undefined}>
+        {submission.assignmentTitle}
+      </Line>
+      <Line className={isMobile ? "block text-[11.5px] text-ink-3" : "text-[11.5px] text-ink-3"}>
+        {submission.stageTitle}
+      </Line>
+    </>
+  );
+}
+
+function QueueReasonBadge({ submission }: { submission: Submission }) {
+  if (submission.aiReviewStatus === "queued") return <Badge variant="info">AI が確認中</Badge>;
+  const group = queueGroupOf(submission);
+  return (
+    <Badge
+      variant={group === "legacy" ? "default" : "warning"}
+      title={(submission.routeReasons ?? [])
+        .map((reason) => ROUTE_REASON_LABELS[reason])
+        .join(" / ")}
+    >
+      {REVIEW_QUEUE_GROUP_LABELS[group]}
+    </Badge>
+  );
+}
+
+function QueueAiBadges({
+  submission,
+  isMobile = false,
+}: {
+  submission: Submission;
+  isMobile?: boolean;
+}) {
+  if (submission.reviewSource === "tests") return <Badge>テストで確認</Badge>;
+  if (submission.aiConfidence) {
+    const badges = (
+      <>
+        <Badge>確信度 {CONFIDENCE_LABELS[submission.aiConfidence]}</Badge>
+        {submission.aiProposedVerdict ? (
+          <Badge variant={submission.aiProposedVerdict === "pass" ? "success" : "warning"}>
+            案 {submission.aiProposedVerdict === "pass" ? "合格" : "再提出"}
+          </Badge>
+        ) : null}
+      </>
+    );
+    return isMobile ? badges : <div className="flex flex-wrap gap-1">{badges}</div>;
+  }
+  if (hasAiDraft(submission)) {
+    return (
+      <Badge variant="accent">
+        <Sparkles size={10} />
+        下書き
+      </Badge>
+    );
+  }
+  // 旧形式の下書きは講師が Editor を開いた時に生成する。
+  return (
+    <span className="text-ink-3 text-[11.5px]">{submission.taskId ? "記録なし" : "未生成"}</span>
+  );
+}

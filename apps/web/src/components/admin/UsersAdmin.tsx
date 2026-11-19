@@ -15,11 +15,13 @@ import { toast } from "sonner";
 
 import { Upload, Plus, Search, MoreHorizontal, Shield, Lock, Trash } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import { RecordItem, RecordList } from "@/components/common/RecordList";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableHeader,
@@ -31,6 +33,7 @@ import {
 import type { ProfileRole } from "@stella/shared/cms/types";
 import { ASSIGNABLE_PROFILE_ROLES, type AssignableProfileRole } from "@stella/shared/admin/types";
 import { useProfiles } from "@/hooks/useProfiles";
+import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-users-api";
 
 import { ROLE_LABEL, RoleBadge, toneFromId } from "./users-admin/shared";
@@ -56,6 +59,7 @@ export function UsersAdmin({ currentUserId, backendEnabled }: Props) {
 // ---------------------------------------------------------------
 
 function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
+  const isMobile = useIsMobileViewport();
   const [groupId, setGroupId] = useState("");
   const { profiles, loading, error, refetch } = useProfiles(true, groupId);
   const [query, setQuery] = useState("");
@@ -136,6 +140,20 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
     await refetch();
   };
 
+  const rowActions = (p: AdminProfileRow) => (
+    <UserRowActions
+      profile={p}
+      manageable={p.id !== currentUserId}
+      busy={busyId === p.id}
+      open={menuId === p.id}
+      onToggle={() => setMenuId((id) => (id === p.id ? null : p.id))}
+      onChangeRole={(role) => void onChangeRole(p, role)}
+      onToggleDisabled={() => void onToggleDisabled(p)}
+      onDelete={p.role === "student" && p.id !== currentUserId ? () => askDelete(p) : undefined}
+      onClose={() => setMenuId(null)}
+    />
+  );
+
   return (
     <>
       <PageHeader
@@ -193,6 +211,27 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
           <div className="py-10 text-center text-sm text-ink-3">
             まだユーザーがいません。 「ユーザーを招待」 から追加してください。
           </div>
+        ) : isMobile ? (
+          <RecordList aria-label="ユーザーの一覧">
+            {filtered.map((p) => (
+              <RecordItem
+                key={p.id}
+                leading={<UserAvatar profile={p} />}
+                title={p.display_name}
+                titleSuffix={p.id === currentUserId ? <CurrentUserLabel /> : null}
+                subtitle={<span className="break-all">{p.email ?? "—"}</span>}
+                badges={
+                  <>
+                    <RoleBadge role={p.role} />
+                    <UserStatusBadge disabled={p.disabled} />
+                  </>
+                }
+                meta={new Date(p.created_at).toLocaleDateString("ja-JP")}
+                actions={rowActions(p)}
+                dimmed={p.disabled}
+              />
+            ))}
+          </RecordList>
         ) : (
           <Table>
             <TableHeader>
@@ -206,66 +245,28 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((p) => {
-                const manageable = canManageUserRow(p, currentUserId);
-                return (
-                  <TableRow key={p.id} className={p.disabled ? "opacity-60" : undefined}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar size="sm">
-                          <AvatarFallback tone={toneFromId(p.id)}>
-                            {(p.initials ?? p.display_name.slice(0, 1)).slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{p.display_name}</span>
-                        {p.id === currentUserId ? (
-                          <span className="text-[10.5px] text-ink-3">(あなた)</span>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-ink-3">{p.email ?? "—"}</TableCell>
-                    <TableCell>
-                      <RoleBadge role={p.role} />
-                    </TableCell>
-                    <TableCell>
-                      {p.disabled ? (
-                        <Badge variant="danger">無効</Badge>
-                      ) : (
-                        <Badge variant="success">有効</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-ink-3 text-[11.5px]">
-                      {new Date(p.created_at).toLocaleDateString("ja-JP")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="relative flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          disabled={!manageable || busyId === p.id}
-                          onClick={() => setMenuId((id) => (id === p.id ? null : p.id))}
-                          title={manageable ? "操作" : "自分自身は変更できません"}
-                        >
-                          <MoreHorizontal size={13} />
-                        </Button>
-                        {menuId === p.id && manageable ? (
-                          <RowMenu
-                            profile={p}
-                            onChangeRole={(role) => void onChangeRole(p, role)}
-                            onToggleDisabled={() => void onToggleDisabled(p)}
-                            onDelete={
-                              p.role === "student" && p.id !== currentUserId
-                                ? () => askDelete(p)
-                                : undefined
-                            }
-                            onClose={() => setMenuId(null)}
-                          />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {filtered.map((p) => (
+                <TableRow key={p.id} className={p.disabled ? "opacity-60" : undefined}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <UserAvatar profile={p} />
+                      <span className="font-medium">{p.display_name}</span>
+                      {p.id === currentUserId ? <CurrentUserLabel /> : null}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-ink-3">{p.email ?? "—"}</TableCell>
+                  <TableCell>
+                    <RoleBadge role={p.role} />
+                  </TableCell>
+                  <TableCell>
+                    <UserStatusBadge disabled={p.disabled} />
+                  </TableCell>
+                  <TableCell className="text-ink-3 text-[11.5px]">
+                    {new Date(p.created_at).toLocaleDateString("ja-JP")}
+                  </TableCell>
+                  <TableCell>{rowActions(p)}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}
@@ -283,8 +284,22 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
   );
 }
 
-function canManageUserRow(profile: AdminProfileRow, currentUserId: string | null): boolean {
-  return profile.id !== currentUserId;
+function UserAvatar({ profile }: { profile: AdminProfileRow }) {
+  return (
+    <Avatar size="sm">
+      <AvatarFallback tone={toneFromId(profile.id)}>
+        {(profile.initials ?? profile.display_name.slice(0, 1)).slice(0, 2)}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function CurrentUserLabel() {
+  return <span className="text-[10.5px] text-ink-3">(あなた)</span>;
+}
+
+function UserStatusBadge({ disabled }: { disabled: boolean }) {
+  return disabled ? <Badge variant="danger">無効</Badge> : <Badge variant="success">有効</Badge>;
 }
 
 function FilterChip({
@@ -309,64 +324,94 @@ function FilterChip({
   );
 }
 
-function RowMenu({
-  profile,
-  onChangeRole,
-  onToggleDisabled,
-  onDelete,
-  onClose,
-}: {
+interface RowMenuItemsProps {
   profile: AdminProfileRow;
   onChangeRole: (role: AssignableProfileRole) => void;
   onToggleDisabled: () => void;
   onDelete?: () => void;
+}
+
+interface UserRowActionsProps extends RowMenuItemsProps {
+  manageable: boolean;
+  busy: boolean;
+  open: boolean;
+  onToggle: () => void;
   onClose: () => void;
-}) {
+}
+
+function UserRowActions({
+  manageable,
+  busy,
+  open,
+  onToggle,
+  onClose,
+  ...menuItems
+}: UserRowActionsProps) {
+  return (
+    <div className="flex justify-end">
+      {/* 枠の overflow-hidden でメニューが切れないようにする。 */}
+      <Popover open={open && manageable} onOpenChange={(next) => (next ? onToggle() : onClose())}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled={!manageable || busy}
+            title={manageable ? "操作" : "自分自身は変更できません"}
+          >
+            <MoreHorizontal size={13} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          aria-label="操作"
+          align="end"
+          sideOffset={4}
+          collisionPadding={8}
+          className="w-48 rounded-md bg-card px-0 py-1 text-[12.5px] text-foreground"
+        >
+          <RowMenuItems {...menuItems} />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function RowMenuItems({ profile, onChangeRole, onToggleDisabled, onDelete }: RowMenuItemsProps) {
   return (
     <>
-      {/* クリックアウトで閉じる透明レイヤ */}
+      <div className="px-3 py-1.5 text-[11px] text-ink-3 flex items-center gap-1.5">
+        <Shield size={12} />
+        ロール変更
+      </div>
+      {ASSIGNABLE_PROFILE_ROLES.map((role) => (
+        <button
+          key={role}
+          type="button"
+          className="w-full text-left px-3 py-1.5 hover:bg-sunken flex items-center justify-between"
+          onClick={() => onChangeRole(role)}
+        >
+          {ROLE_LABEL[role]}
+          {profile.role === role ? <span className="text-brand">✓</span> : null}
+        </button>
+      ))}
+      <div className="my-1 border-t border-border" />
       <button
         type="button"
-        className="fixed inset-0 z-10 cursor-default"
-        aria-label="メニューを閉じる"
-        onClick={onClose}
-      />
-      <div className="absolute right-0 top-7 z-20 w-48 bg-card border border-border rounded-md shadow-lg text-[12.5px] py-1">
-        <div className="px-3 py-1.5 text-[11px] text-ink-3 flex items-center gap-1.5">
-          <Shield size={12} />
-          ロール変更
-        </div>
-        {ASSIGNABLE_PROFILE_ROLES.map((role) => (
-          <button
-            key={role}
-            type="button"
-            className="w-full text-left px-3 py-1.5 hover:bg-sunken flex items-center justify-between"
-            onClick={() => onChangeRole(role)}
-          >
-            {ROLE_LABEL[role]}
-            {profile.role === role ? <span className="text-brand">✓</span> : null}
-          </button>
-        ))}
-        <div className="my-1 border-t border-border" />
+        className="w-full text-left px-3 py-1.5 hover:bg-sunken flex items-center gap-1.5 text-destructive"
+        onClick={onToggleDisabled}
+      >
+        <Lock size={12} />
+        {profile.disabled ? "有効化する" : "無効化する"}
+      </button>
+      {onDelete ? (
         <button
           type="button"
           className="w-full text-left px-3 py-1.5 hover:bg-sunken flex items-center gap-1.5 text-destructive"
-          onClick={onToggleDisabled}
+          onClick={onDelete}
         >
-          <Lock size={12} />
-          {profile.disabled ? "有効化する" : "無効化する"}
+          <Trash size={12} />
+          削除する…
         </button>
-        {onDelete ? (
-          <button
-            type="button"
-            className="w-full text-left px-3 py-1.5 hover:bg-sunken flex items-center gap-1.5 text-destructive"
-            onClick={onDelete}
-          >
-            <Trash size={12} />
-            削除する…
-          </button>
-        ) : null}
-      </div>
+      ) : null}
     </>
   );
 }
