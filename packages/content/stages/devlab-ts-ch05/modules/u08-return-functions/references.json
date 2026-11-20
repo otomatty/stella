@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch05/u08-return-functions@1",
+  "contentHash": "66ae020f4b547d6ff4c9db86a08334838beaf63622bcb580d77758b2adc5162a",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q08/README.md",
+      "sourceRefs": ["SRC-typescriptbook-functions-function-is-a-value"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch04/u06-unknown-narrowing@1",
+  "contentHash": "ccbc7069d9566bf866e4f699f20c3b05736a38c40831807d5220882e44a00fea",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q06/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-statements-unknown",
+        "SRC-typescriptbook-statements-control-flow-analysis-and-type-guard"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の文と例外の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

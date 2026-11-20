@@ -13,7 +13,11 @@
   "canDo": "組み込みの API とモジュールを使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "09章の問題",
+    "u01-map": "q01 Map",
+    "u02-set": "q02 Set",
+    "u03-date": "q03 Date",
+    "u04-error": "q04 Error",
+    "u05-modules": "q05 import と export",
     "u100-extra": "09章の発展問題"
   }
 }

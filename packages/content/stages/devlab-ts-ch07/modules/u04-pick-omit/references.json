@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch07/u04-pick-omit@1",
+  "contentHash": "28f896e39d104fd93d09d889087c876353de1d10678e527eb13a327f73cc7241",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q04/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-type-reuse-utility-types-pick",
+        "SRC-typescriptbook-type-reuse-utility-types-omit"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の型の再利用とジェネリクスの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch08/u02-async-await/q02",
+  "title": "08章 q02 async と await",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch08",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07"
+    ],
+    "assesses": [
+      "devlab-ts-ch08"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q02-01-get-age",
+      "title": "fetchUser で取得して、年齢を返す"
+    },
+    {
+      "id": "q02-02-get-name",
+      "title": "取得して、名前を返す"
+    },
+    {
+      "id": "q02-03-is-adult",
+      "title": "取得して、20歳以上なら true"
+    },
+    {
+      "id": "q02-04-greet-user",
+      "title": "取得して、\"こんにちは、山田さん\" の形のあいさつを返す"
+    },
+    {
+      "id": "q02-05-name-length",
+      "title": "async のアロー関数で書く"
+    },
+    {
+      "id": "q02-06-age-after",
+      "title": "取得して、years 年後の年齢を返す"
+    },
+    {
+      "id": "q02-07-sum-ages",
+      "title": "a と b のユーザーを、順番に await して取得し、年齢の合計を返す"
+    },
+    {
+      "id": "q02-08-sum-ages-at-once",
+      "title": "a と b のユーザーの取得を一度に始め、Promise.all と await で待って、年齢の合計を返す"
+    },
+    {
+      "id": "q02-09-names-in-order",
+      "title": "ids のユーザーを for...of と await で1人ずつ順番に取得し、名前の配列を返す"
+    },
+    {
+      "id": "q02-10-names-at-once",
+      "title": "ids のユーザーの取得を map で一度に始め、Promise.all で待って、名前の配列を返す"
+    },
+    {
+      "id": "q02-11-oldest-name",
+      "title": "ids のユーザーを同時に取得し、いちばん年上の人の名前を返す"
+    },
+    {
+      "id": "q02-12-average-age",
+      "title": "ids のユーザーを同時に取得し、年齢の平均を返す"
+    },
+    {
+      "id": "q02-13-safe-name",
+      "title": "try・catch で、取得できれば名前、失敗したら \"不明\" を返す"
+    },
+    {
+      "id": "q02-14-user-exists",
+      "title": "取得できれば true、失敗したら false を返す"
+    },
+    {
+      "id": "q02-15-count-found",
+      "title": "ids のユーザーを順番に取得し、取得できた人数を返す"
+    },
+    {
+      "id": "q02-16-first-adult",
+      "title": "ids のユーザーを順番に取得し、最初に見つかった20歳以上の人の名前を返す"
+    },
+    {
+      "id": "q02-17-wait-and-return",
+      "title": "wait を await で待ってから、value を返す"
+    },
+    {
+      "id": "q02-18-run-in-order",
+      "title": "tasksを前から1つずつ呼び、前の task が終わってから次を呼ぶ"
+    },
+    {
+      "id": "q02-19-run-at-once",
+      "title": "tasks をすべて一度に呼び、Promise.all で待って、結果の配列を返す"
+    },
+    {
+      "id": "q02-20-until-failure",
+      "title": "tasks を前から順番に呼び、失敗したらそこで止めて、それまでに成功した結果の配列を返す"
+    },
+    {
+      "id": "q02-async-await",
+      "title": "async と await（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-asynchronous-async",
+    "SRC-typescriptbook-asynchronous-await"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

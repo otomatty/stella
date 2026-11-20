@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch05/u10-array-utilities/q10",
+  "title": "05章 q10 配列のユーティリティ",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q10-01-names-of",
+      "title": "名前の配列を返す"
+    },
+    {
+      "id": "q10-02-average-score",
+      "title": "点数の平均を返す"
+    },
+    {
+      "id": "q10-03-best-student",
+      "title": "点数がいちばん高い生徒を返す"
+    },
+    {
+      "id": "q10-04-in-grade",
+      "title": "grade 年生の生徒だけを返す"
+    },
+    {
+      "id": "q10-05-passed-students",
+      "title": "border 点以上の生徒だけを返す"
+    },
+    {
+      "id": "q10-06-sort-by-score",
+      "title": "点数の高い順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q10-07-rank-labels",
+      "title": "点数の高い順に「1位 佐藤」「2位 山田」…と並べた配列を返す"
+    },
+    {
+      "id": "q10-08-group-by-grade",
+      "title": "学年ごとにまとめる"
+    },
+    {
+      "id": "q10-09-count-by-grade",
+      "title": "学年ごとの人数"
+    },
+    {
+      "id": "q10-10-average-by-grade",
+      "title": "学年ごとの平均点"
+    },
+    {
+      "id": "q10-11-split-by-pass",
+      "title": "border 点以上の生徒とそれ以外に分け、[合格の配列, 不合格の配列] を返す"
+    },
+    {
+      "id": "q10-12-top-students",
+      "title": "点数の高い順に n 人を返す"
+    },
+    {
+      "id": "q10-13-score-table",
+      "title": "{ 名前: 点数 } のオブジェクトを返す"
+    },
+    {
+      "id": "q10-14-has-perfect",
+      "title": "100点の生徒が1人でもいれば true"
+    },
+    {
+      "id": "q10-15-everyone-passed",
+      "title": "全員が border 点以上なら true"
+    },
+    {
+      "id": "q10-16-total-score",
+      "title": "点数の合計"
+    },
+    {
+      "id": "q10-17-score-range",
+      "title": "[最低点, 最高点] を返す"
+    },
+    {
+      "id": "q10-18-find-by-name",
+      "title": "名前で生徒を探す"
+    },
+    {
+      "id": "q10-19-update-score",
+      "title": "name の生徒の点数だけを score にした新しい配列を返す"
+    },
+    {
+      "id": "q10-20-summary-text",
+      "title": "「人数 3、平均 78.3、最高 佐藤」の形にする"
+    },
+    {
+      "id": "q10-array-utils",
+      "title": "配列のユーティリティ（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-array-array-operations"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

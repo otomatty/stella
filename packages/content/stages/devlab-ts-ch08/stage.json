@@ -13,7 +13,11 @@
   "canDo": "非同期処理を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "08章の問題",
+    "u01-promise": "q01 Promise",
+    "u02-async-await": "q02 async と await",
+    "u03-fetch": "q03 fetch",
+    "u04-async-errors": "q04 非同期のエラー処理",
+    "u05-aggregate-api-results": "q05 複数のAPIの結果をまとめる",
     "u100-extra": "08章の発展問題"
   }
 }

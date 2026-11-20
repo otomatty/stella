@@ -60,7 +60,7 @@ id の重複、内部リンク、タグの対応を調べます。
 新しい章や番号の断片を書くときは、先に [WRITING_GUIDE.md](WRITING_GUIDE.md) を読んでください。
 章を追加するときは、組み立てと検査の章数、章のリンクの表も更新します。
 課題の問題やテストを直したら、ガイドの該当する断片も直してください。
-出典は `packages/content/stages/devlab-ts-chNN/modules/u99-problems/tasks/chapter/README.md`（NN は 01〜09）と、`packages/content/stages/devlab-ts-chNN/modules/u100-extra/tasks/extra/README.md` の章ごとの発展問題から読み取ります。
+出典は `packages/content/stages/devlab-ts-chNN/modules/u*/tasks/q*/README.md`（NN は 01〜09）を課題番号順に読み取ります。最後に `modules/u100-extra/tasks/extra/README.md` の発展問題の出典を足します。
 
 ## 公開先
 

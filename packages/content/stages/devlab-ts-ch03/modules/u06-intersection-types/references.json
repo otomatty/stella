@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch03/u06-intersection-types@1",
+  "contentHash": "ed52a0ca1a329c04dbedd840c7a11f84ea09e437a90d8ec97601360f4029f610",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q06/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-intersection"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のユニオン型とそのほかの型の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

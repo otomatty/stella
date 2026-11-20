@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch08/u03-fetch/q03",
+  "title": "08章 q03 fetch",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch08",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07"
+    ],
+    "assesses": [
+      "devlab-ts-ch08"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-get-status",
+      "title": "url を fetch して、ステータスコードを返す"
+    },
+    {
+      "id": "q03-02-is-ok",
+      "title": "url を fetch して、res.ok を返す"
+    },
+    {
+      "id": "q03-03-get-text",
+      "title": "url を fetch して、本文を文字列で返す"
+    },
+    {
+      "id": "q03-04-get-json",
+      "title": "url を fetch して、本文を JSON として読んだ結果を返す"
+    },
+    {
+      "id": "q03-05-get-json-or-throw",
+      "title": "getJson と同じ"
+    },
+    {
+      "id": "q03-06-get-user",
+      "title": "`${API}/users/${id}` を取得し、isUser で確かめて User を返す"
+    },
+    {
+      "id": "q03-07-get-user-or-null",
+      "title": "`${API}/users/${id}` を取得する"
+    },
+    {
+      "id": "q03-08-get-users",
+      "title": "`${API}/users` を取得し、User の配列を返す"
+    },
+    {
+      "id": "q03-09-get-todo-titles",
+      "title": "`${API}/todos` を取得し、TODO のタイトルの配列を返す"
+    },
+    {
+      "id": "q03-10-count-done",
+      "title": "`${API}/todos` を取得し、done が true の TODO の数を返す"
+    },
+    {
+      "id": "q03-11-search-users",
+      "title": "`${API}/users?q=キーワード` を取得し、User の配列を返す"
+    },
+    {
+      "id": "q03-12-get-todos-page",
+      "title": "`${API}/todos?page=2&per_page=10` の形の URL で取得し、Todo の配列を返す"
+    },
+    {
+      "id": "q03-13-post-json",
+      "title": "url に body を JSON で POST し、ステータスコードを返す"
+    },
+    {
+      "id": "q03-14-create-todo",
+      "title": "`${API}/todos` に { title, done: false } を JSON で POST し、作られた Todo を返す"
+    },
+    {
+      "id": "q03-15-update-todo",
+      "title": "`${API}/todos/${id}` に { done } を JSON で送り、res.ok を返す"
+    },
+    {
+      "id": "q03-16-delete-todo",
+      "title": "`${API}/todos/${id}` を method \"DELETE\" で呼び、res.ok を返す"
+    },
+    {
+      "id": "q03-17-get-with-token",
+      "title": "url を、ヘッダー Authorization: \"Bearer トークン\" を付けて取得し、本文の文字列を返す"
+    },
+    {
+      "id": "q03-18-get-all-texts",
+      "title": "urls をすべて同時に取得し、本文の文字列の配列を返す"
+    },
+    {
+      "id": "q03-19-get-first-ok",
+      "title": "urls を前から順番に取得し、最初に ok だったものの本文の文字列を返す"
+    },
+    {
+      "id": "q03-20-get-json-safe",
+      "title": "url の JSON を返す"
+    },
+    {
+      "id": "q03-fetch",
+      "title": "fetch でAPIを呼ぶ（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-asynchronous-async",
+    "SRC-typescriptbook-asynchronous-await"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

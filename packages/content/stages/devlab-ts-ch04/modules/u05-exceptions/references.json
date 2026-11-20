@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch04/u05-exceptions@1",
+  "contentHash": "60c33618edb87a748aa525d9a597d423b1bb3f1127915385c8806b8234b9ad43",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q05/README.md",
+      "sourceRefs": ["SRC-typescriptbook-statements-exception"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の文と例外の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

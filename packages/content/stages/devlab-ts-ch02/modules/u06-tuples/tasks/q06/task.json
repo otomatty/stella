@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch02/u06-tuples/q06",
+  "title": "02章 q06 タプル",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q06-01-make-pair",
+      "title": "名前と数を、[名前, 数] のタプルにする"
+    },
+    {
+      "id": "q06-02-flip-pair",
+      "title": "[数, 名前] を [名前, 数] に並べ替える"
+    },
+    {
+      "id": "q06-03-name-of",
+      "title": "[名前, 数] の名前を返す"
+    },
+    {
+      "id": "q06-04-count-of",
+      "title": "[名前, 数] の数を返す"
+    },
+    {
+      "id": "q06-05-add-points",
+      "title": "2つの座標 [x, y] を足した座標を返す"
+    },
+    {
+      "id": "q06-06-scale-point",
+      "title": "座標 [x, y] を k 倍した座標を返す"
+    },
+    {
+      "id": "q06-07-distance-from-origin",
+      "title": "座標 [x, y] の原点からの距離を返す"
+    },
+    {
+      "id": "q06-08-to-point",
+      "title": "x と y から座標 [x, y] を作る"
+    },
+    {
+      "id": "q06-09-point-text",
+      "title": "引数の位置で分割代入して、「」を返す"
+    },
+    {
+      "id": "q06-10-rgb-text",
+      "title": "色 [r, g, b] を「rgb」にする"
+    },
+    {
+      "id": "q06-11-divmod",
+      "title": "a を b で割った [商, 余り] を返す"
+    },
+    {
+      "id": "q06-12-split-name",
+      "title": "「姓 名」の文字列を [姓, 名] に分ける"
+    },
+    {
+      "id": "q06-13-order2",
+      "title": "2つの数を [小さい方, 大きい方] にする"
+    },
+    {
+      "id": "q06-14-head-tail",
+      "title": "配列を [最初の要素, 残りの配列] に分ける"
+    },
+    {
+      "id": "q06-15-expand-range",
+      "title": "[開始, 終了] から、開始以上終了以下の整数を並べた配列を返す"
+    },
+    {
+      "id": "q06-16-is-origin",
+      "title": "座標 [x, y] が原点なら true"
+    },
+    {
+      "id": "q06-17-entry-text",
+      "title": "[名前, 数] を「りんご × 3」の形にする"
+    },
+    {
+      "id": "q06-18-sum-pair",
+      "title": "[a, b] の合計を返す"
+    },
+    {
+      "id": "q06-19-swap-xy",
+      "title": "座標 [x, y] を [y, x] にする"
+    },
+    {
+      "id": "q06-20-with-index",
+      "title": "各要素を [番号, 要素] のタプルにした配列を返す"
+    },
+    {
+      "id": "q06-tuple",
+      "title": "タプル（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-tuple",
+    "SRC-typescriptbook-values-types-variables-array-destructuring-assignment-from-array"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

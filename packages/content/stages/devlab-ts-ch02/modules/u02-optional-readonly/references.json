@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch02/u02-optional-readonly@1",
+  "contentHash": "de470b300ed2d552b7183ba0ff474c0939942739d19d7db8b563b843fbce9dbc",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q02/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-object-optional-property",
+        "SRC-typescriptbook-values-types-variables-object-readonly-property"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

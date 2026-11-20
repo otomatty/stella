@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch07/u08-generic-utilities/q08",
+  "title": "07章 q08 ジェネリクスのユーティリティ",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q08-01-group-items",
+      "title": "keyFn が返す文字列ごとにまとめる"
+    },
+    {
+      "id": "q08-02-count-items",
+      "title": "keyFn が返す文字列ごとの数"
+    },
+    {
+      "id": "q08-03-split-by",
+      "title": "predicate が true の配列と false の配列に分ける"
+    },
+    {
+      "id": "q08-04-unique-by-key",
+      "title": "keyFn が同じものは最初の1つだけ残す"
+    },
+    {
+      "id": "q08-05-sort-by-key",
+      "title": "keyFn の数値の小さい順に並べた新しい配列"
+    },
+    {
+      "id": "q08-06-chunked",
+      "title": "size 個ずつに区切る"
+    },
+    {
+      "id": "q08-07-zip-with",
+      "title": "2つの配列の同じ番号どうしを fn で組み合わせた配列"
+    },
+    {
+      "id": "q08-08-flatten-once",
+      "title": "配列の配列を1つの配列にする"
+    },
+    {
+      "id": "q08-09-compact",
+      "title": "null と undefined を除いた配列"
+    },
+    {
+      "id": "q08-10-index-by",
+      "title": "keyFn をキーにした Record<string, T>"
+    },
+    {
+      "id": "q08-11-map-values",
+      "title": "Record<string, T> のすべての値に fn を当てはめた Record<string, U>"
+    },
+    {
+      "id": "q08-12-last-n",
+      "title": "末尾の n 個の新しい配列"
+    },
+    {
+      "id": "q08-13-difference",
+      "title": "a にあって b にない要素"
+    },
+    {
+      "id": "q08-14-intersection",
+      "title": "a と b の両方にある要素"
+    },
+    {
+      "id": "q08-15-union",
+      "title": "a と b のどちらかにある要素を、出てきた順に重複なく並べる"
+    },
+    {
+      "id": "q08-16-take-while",
+      "title": "先頭から、predicate が true のあいだの要素を集める"
+    },
+    {
+      "id": "q08-17-drop-while",
+      "title": "先頭から、predicate が true のあいだの要素を飛ばし、残りを返す"
+    },
+    {
+      "id": "q08-18-find-last-item",
+      "title": "predicate が true の最後の要素"
+    },
+    {
+      "id": "q08-19-sum-of",
+      "title": "fn の合計"
+    },
+    {
+      "id": "q08-20-min-by",
+      "title": "fn の値がいちばん小さい要素"
+    },
+    {
+      "id": "q08-generic-utils",
+      "title": "ジェネリクスのユーティリティ（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-generics",
+    "SRC-typescriptbook-generics-type-variables",
+    "SRC-typescriptbook-generics-type-parameter-constraint"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

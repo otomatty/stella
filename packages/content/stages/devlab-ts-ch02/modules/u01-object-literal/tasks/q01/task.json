@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch02/u01-object-literal/q01",
+  "title": "02章 q01 オブジェクトの型",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-get-name",
+      "title": "利用者 { name, age } の name を返す"
+    },
+    {
+      "id": "q01-02-get-age",
+      "title": "利用者 { name, age } の age を返す"
+    },
+    {
+      "id": "q01-03-make-point",
+      "title": "x と y から、座標のオブジェクト { x, y } を作る"
+    },
+    {
+      "id": "q01-04-point-text",
+      "title": "座標 { x, y } を「」の文字列にする"
+    },
+    {
+      "id": "q01-05-make-user",
+      "title": "name と age から、利用者のオブジェクト { name, age } を作る"
+    },
+    {
+      "id": "q01-06-is-adult-user",
+      "title": "利用者 { name, age } が18歳以上なら true"
+    },
+    {
+      "id": "q01-07-book-label",
+      "title": "本 { title, price } を「タイトル」にする"
+    },
+    {
+      "id": "q01-08-make-book",
+      "title": "title と price から、本のオブジェクト { title, price } を作る"
+    },
+    {
+      "id": "q01-09-subtotal",
+      "title": "注文 { price, quantity } の小計を返す"
+    },
+    {
+      "id": "q01-10-rect-area",
+      "title": "長方形 { width, height } の面積を返す"
+    },
+    {
+      "id": "q01-11-make-rect",
+      "title": "width と height から、長方形のオブジェクト { width, height } を作る"
+    },
+    {
+      "id": "q01-12-full-name-of",
+      "title": "人 { firstName, lastName } を「姓 名」の順に半角スペースでつなぐ"
+    },
+    {
+      "id": "q01-13-make-person",
+      "title": "firstName と lastName から、人のオブジェクト { firstName, lastName } を作る"
+    },
+    {
+      "id": "q01-14-measure-text",
+      "title": "測定値 { value, unit } を、値と単位をつないだ文字列にする"
+    },
+    {
+      "id": "q01-15-is-same-name",
+      "title": "2つのオブジェクト { name } の name が同じなら true"
+    },
+    {
+      "id": "q01-16-score-total",
+      "title": "成績 { math, english, science } の合計点を返す"
+    },
+    {
+      "id": "q01-17-make-score",
+      "title": "3教科の点数から、成績のオブジェクト { math, english, science } を作る"
+    },
+    {
+      "id": "q01-18-color-text",
+      "title": "色 { r, g, b } を「rgb」の文字列にする"
+    },
+    {
+      "id": "q01-19-make-color",
+      "title": "r、g、b から、色のオブジェクト { r, g, b } を作る"
+    },
+    {
+      "id": "q01-20-middle-of",
+      "title": "区間 { start, end } の真ん中の値を返す"
+    },
+    {
+      "id": "q01-object-type",
+      "title": "オブジェクトの型（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-object-type-annotation-of-objects",
+    "SRC-typescriptbook-values-types-variables-object-shorthand-property-names"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

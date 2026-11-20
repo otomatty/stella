@@ -1,0 +1,141 @@
+{
+  "id": "devlab-ts-ch09/u04-error/q04",
+  "title": "09章 q04 Error",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch09",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08"
+    ],
+    "assesses": [
+      "devlab-ts-ch09"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-fail",
+      "title": "message を持つ Error を必ず投げる"
+    },
+    {
+      "id": "q04-02-error-message",
+      "title": "error が Error ならその message、そうでなければ \"不明なエラー\" を返す"
+    },
+    {
+      "id": "q04-03-check-range",
+      "title": "n が min 以上 max 以下ならそのまま返す"
+    },
+    {
+      "id": "q04-04-require-string",
+      "title": "value が文字列ならそのまま返す"
+    },
+    {
+      "id": "q04-05-parse-json-or-null",
+      "title": "text を JSON.parse で読んで返す"
+    },
+    {
+      "id": "q04-06-error-kind",
+      "title": "TypeError なら \"TypeError\"、RangeError なら \"RangeError\"、SyntaxError なら \"SyntaxError\"、それ以外の Error なら \"Error\"、Error でなければ \"unknown\" を返す"
+    },
+    {
+      "id": "q04-07-validation-error",
+      "title": "Error を継承したクラス ValidationError を書く"
+    },
+    {
+      "id": "q04-08-timeout-error",
+      "title": "Error を継承したクラス TimeoutError を書く"
+    },
+    {
+      "id": "q04-09-http-status-of",
+      "title": "error が HttpError ならその status、そうでなければ undefined を返す"
+    },
+    {
+      "id": "q04-10-is-not-found",
+      "title": "error が NotFoundError、または status が 404 の HttpError なら true"
+    },
+    {
+      "id": "q04-11-to-http-error",
+      "title": "status が 404 なら NotFoundError、それ以外なら HttpError を作って返す"
+    },
+    {
+      "id": "q04-12-status-message",
+      "title": "NotFoundError なら \"見つかりません\"、それ以外の HttpError なら `通信エラー`、それ以外の Error なら message、Error でなければ \"不明なエラー\" を返す"
+    },
+    {
+      "id": "q04-13-wrap-error",
+      "title": "message を持つ新しい Error を作って返す"
+    },
+    {
+      "id": "q04-14-root-cause",
+      "title": "error の cause をたどり、いちばん元の原因を返す"
+    },
+    {
+      "id": "q04-15-try-or",
+      "title": "fn を呼んでその値を返す"
+    },
+    {
+      "id": "q04-16-attempt",
+      "title": "fn が値を返したら { ok: true, value }、例外を投げたら { ok: false, error } を返す"
+    },
+    {
+      "id": "q04-17-collect-errors",
+      "title": "fns を順番にすべて呼び、投げられたエラーの message を集めた配列を返す"
+    },
+    {
+      "id": "q04-18-with-finally",
+      "title": "fn の値を返す"
+    },
+    {
+      "id": "q04-19-validate-all",
+      "title": "values に負の数があれば AggregateError を投げる"
+    },
+    {
+      "id": "q04-20-error-to-json",
+      "title": "error が Error なら { name, message }、そうでなければ { name: \"Unknown\", message: String } を返す"
+    },
+    {
+      "id": "q04-error",
+      "title": "Error（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-builtin-api-error",
+    "SRC-typescriptbook-statements-exception"
+  ],
+  "estimatedMinutes": 81,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "src/shared/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

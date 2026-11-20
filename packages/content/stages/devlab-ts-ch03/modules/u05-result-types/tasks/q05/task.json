@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch03/u05-result-types/q05",
+  "title": "03章 q05 成功と失敗を表す型",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-01-success",
+      "title": "value を持つ成功の Result を作る"
+    },
+    {
+      "id": "q05-02-failure",
+      "title": "error を持つ失敗の Result を作る"
+    },
+    {
+      "id": "q05-03-is-ok",
+      "title": "成功なら true"
+    },
+    {
+      "id": "q05-04-value-or",
+      "title": "成功なら value、失敗なら fallback を返す"
+    },
+    {
+      "id": "q05-05-error-or",
+      "title": "失敗なら error、成功なら fallback を返す"
+    },
+    {
+      "id": "q05-06-safe-divide",
+      "title": "a ÷ b を返す"
+    },
+    {
+      "id": "q05-07-safe-sqrt",
+      "title": "平方根を返す"
+    },
+    {
+      "id": "q05-08-parse-age",
+      "title": "文字列を年齢にする"
+    },
+    {
+      "id": "q05-09-double-result",
+      "title": "成功なら value を2倍にした成功、失敗ならそのまま返す"
+    },
+    {
+      "id": "q05-10-add-results",
+      "title": "両方成功なら value を足した成功"
+    },
+    {
+      "id": "q05-11-count-ok",
+      "title": "成功の数を返す"
+    },
+    {
+      "id": "q05-12-first-error",
+      "title": "最初に見つかった失敗の error を返す"
+    },
+    {
+      "id": "q05-13-sum-ok",
+      "title": "成功の value だけを合計する"
+    },
+    {
+      "id": "q05-14-result-text",
+      "title": "成功なら「成功: 3」、失敗なら「失敗: エラーの文」を返す"
+    },
+    {
+      "id": "q05-15-validate-price",
+      "title": "価格を確かめる"
+    },
+    {
+      "id": "q05-16-parse-percent",
+      "title": "「50%」の形の文字列を数値 50 にする"
+    },
+    {
+      "id": "q05-17-at-least",
+      "title": "成功で value が min 未満なら「<min>未満です」の失敗にする"
+    },
+    {
+      "id": "q05-18-all-ok",
+      "title": "すべて成功なら true"
+    },
+    {
+      "id": "q05-19-combine-all",
+      "title": "すべて成功なら value の合計の成功"
+    },
+    {
+      "id": "q05-20-or-else",
+      "title": "first が成功なら first、失敗なら second を返す"
+    },
+    {
+      "id": "q05-result",
+      "title": "成功と失敗を表す型（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-discriminated-union"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

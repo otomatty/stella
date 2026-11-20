@@ -10,7 +10,7 @@ TypeScript の選考の事前課題（STELLA の `devlab-ts-ch00`〜`devlab-ts-c
 ## 置き場所
 
 - 断片：`docs/devlab-ts-prework-guide/src/fragments/`。以下のパスはリポジトリのルートからの相対パス。
-- 課題：`packages/content/stages/devlab-ts-ch<章2桁>/modules/u99-problems/tasks/chapter/`（発展問題は `packages/content/stages/devlab-ts-ch<章2桁>/modules/u100-extra/tasks/extra/`）
+- 課題：`packages/content/stages/devlab-ts-ch<章2桁>/modules/<番号ごとの単元>/tasks/q<番号2桁>/`。発展問題は `modules/u100-extra/tasks/extra/`。
   - `README.md`：番号ごとのルールと、教材（サバイバルTypeScript）のリンク
   - `starter/src/<id>.ts`：問題文とスターター（応募者が見るもの）
   - `tests/<id>.test.ts`：テストの値
@@ -82,12 +82,12 @@ TypeScript の選考の事前課題（STELLA の `devlab-ts-ch00`〜`devlab-ts-c
 
 ## 確かめること（終える前に必ず）
 
-1. **確認フォルダーを作る。** 次のコマンドで、自分専用のフォルダーを用意する。`modules/u99-problems/tasks/chapter/starter/` の設定をコピーし、`npm ci` してから使う。ほかの担当の probe には触らない。
+1. **確認フォルダーを作る。** 次のコマンドで、自分専用のフォルダーを用意する。担当する課題の `starter/` の設定をコピーし、`npm ci` してから使う。ほかの担当の probe には触らない。
 
    ```bash
    # リポジトリのルートで実行する。モジュール名は担当に合わせる。
-   GUIDE_STARTER="$PWD/packages/content/stages/devlab-ts-ch02/modules/u99-problems/tasks/chapter/starter"
-   GUIDE_PROBE=$(mktemp -d -t probe-02-q03-XXXXXXXX)
+   GUIDE_STARTER="$PWD/packages/content/stages/devlab-ts-ch02/modules/u01-object-literal/tasks/q01/starter"
+   GUIDE_PROBE=$(mktemp -d -t probe-02-q01-XXXXXXXX)
    mkdir -p "$GUIDE_PROBE/src"
    cp "$GUIDE_STARTER"/{package.json,package-lock.json,tsconfig.json,eslint.config.js,.prettierrc.json,.prettierignore} "$GUIDE_PROBE/"
    cd "$GUIDE_PROBE"

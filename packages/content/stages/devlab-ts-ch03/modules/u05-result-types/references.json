@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch03/u05-result-types@1",
+  "contentHash": "aa5efe863a227af46394ec0e5171b3ae421191d68defe4a1588db7e906488e89",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q05/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-discriminated-union"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のユニオン型とそのほかの型の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

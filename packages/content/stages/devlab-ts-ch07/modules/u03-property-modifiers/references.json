@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch07/u03-property-modifiers@1",
+  "contentHash": "a02ea787e1f465d9d942e0975b2fc6019cdd95675bb700803ce405c429a40829",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q03/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-type-reuse-utility-types-partial",
+        "SRC-typescriptbook-type-reuse-utility-types-required",
+        "SRC-typescriptbook-type-reuse-utility-types-readonly"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の型の再利用とジェネリクスの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

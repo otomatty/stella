@@ -13,7 +13,11 @@
   "canDo": "クラスを使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "06章の問題",
+    "u01-class-basics": "q01 クラスの基本",
+    "u02-access-modifiers": "q02 アクセス修飾子と readonly",
+    "u03-interfaces": "q03 インターフェース",
+    "u04-class-inheritance": "q04 クラスの継承",
+    "u05-stateful-classes": "q05 状態を持つクラス",
     "u100-extra": "06章の発展問題"
   }
 }

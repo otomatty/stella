@@ -1,0 +1,136 @@
+{
+  "id": "devlab-ts-ch04/u08-string-parsing/q08",
+  "title": "04章 q08 文字列の解析",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q08-01-parse-key-value",
+      "title": "\"key=value\" を [key, value] にする"
+    },
+    {
+      "id": "q08-02-parse-number-list",
+      "title": "\"1,2,3\" を [1, 2, 3] にする"
+    },
+    {
+      "id": "q08-03-parse-yes-no",
+      "title": "\"true\"、\"yes\"、\"1\" は true、\"false\"、\"no\"、\"0\" は false にする"
+    },
+    {
+      "id": "q08-04-parse-clock",
+      "title": "\"09:30\" を、0時からの分にする"
+    },
+    {
+      "id": "q08-05-parse-date-parts",
+      "title": "\"2026-12-01\" を [2026, 12, 1] にする"
+    },
+    {
+      "id": "q08-06-parse-byte-size",
+      "title": "\"10KB\" をバイト数にする"
+    },
+    {
+      "id": "q08-07-parse-seconds",
+      "title": "\"90s\"、\"5m\"、\"2h\" を秒にする"
+    },
+    {
+      "id": "q08-08-parse-range",
+      "title": "\"3-7\" を [3, 7] にする"
+    },
+    {
+      "id": "q08-09-parse-hex-color",
+      "title": "\"#ff0000\" を [255, 0, 0] にする"
+    },
+    {
+      "id": "q08-10-parse-ratio",
+      "title": "\"50%\" を 0.5 にする"
+    },
+    {
+      "id": "q08-11-parse-query",
+      "title": "\"a=1&b=2\" を { a: \"1\", b: \"2\" } にする"
+    },
+    {
+      "id": "q08-12-parse-csv-line",
+      "title": "\"a, b ,c\" を、「,」で分けて前後の空白を取り除いた配列にする"
+    },
+    {
+      "id": "q08-13-parse-version",
+      "title": "\"1.2.3\" を [1, 2, 3] にする"
+    },
+    {
+      "id": "q08-14-compare-versions",
+      "title": "\"1.2.3\" の形の2つのバージョンを比べ、a が古ければ -1、同じなら 0、新しければ 1 を返す"
+    },
+    {
+      "id": "q08-15-parse-operator",
+      "title": "\"+\"、\"-\"、\"*\"、\"/\" ならそのまま返す"
+    },
+    {
+      "id": "q08-16-evaluate",
+      "title": "\"3 + 4\" のような「数 演算子 数」を計算する"
+    },
+    {
+      "id": "q08-17-command-name",
+      "title": "前後の空白を取り除き、最初の単語を小文字にして返す"
+    },
+    {
+      "id": "q08-18-command-args",
+      "title": "最初の単語より後ろの単語を、配列で返す"
+    },
+    {
+      "id": "q08-19-try-parse-int",
+      "title": "整数の文字列なら { ok: true, value }、そうでなければ { ok: false, error: \"整数ではありません: <text>\" } を返す"
+    },
+    {
+      "id": "q08-20-non-empty-lines",
+      "title": "改行で分け、前後の空白を取り除き、空の行を除いた配列を返す"
+    },
+    {
+      "id": "q08-command",
+      "title": "コマンドの解析（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-exception",
+    "SRC-typescriptbook-statements-unknown",
+    "SRC-typescriptbook-statements-control-flow-analysis-and-type-guard"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "id": "devlab-ts-ch05/u01-function-forms/q01",
+  "title": "05章 q01 関数宣言・関数式・アロー関数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-add3",
+      "title": "【関数宣言】3つの数を足す"
+    },
+    {
+      "id": "q01-02-cube-of",
+      "title": "【関数宣言】3乗を返す"
+    },
+    {
+      "id": "q01-03-initials",
+      "title": "【関数宣言】名と姓の頭文字を「T.Y.」の形にする"
+    },
+    {
+      "id": "q01-04-to-minutes",
+      "title": "【関数宣言】時と分を、0時からの分にする"
+    },
+    {
+      "id": "q01-05-is-all-upper",
+      "title": "【関数宣言】英字を含み、すべて大文字なら true"
+    },
+    {
+      "id": "q01-06-circle-area",
+      "title": "【関数宣言】円の面積を返す"
+    },
+    {
+      "id": "q01-07-is-weekend-day",
+      "title": "【関数宣言】曜日の番号が土日なら true"
+    },
+    {
+      "id": "q01-08-half",
+      "title": "【関数式】半分にする"
+    },
+    {
+      "id": "q01-09-negate",
+      "title": "【関数式】符号を反転する"
+    },
+    {
+      "id": "q01-10-quote",
+      "title": "【関数式】文字列を「\"」で囲む"
+    },
+    {
+      "id": "q01-11-km-to-miles",
+      "title": "【関数式】km をマイルにする"
+    },
+    {
+      "id": "q01-12-percent-text",
+      "title": "【関数式】0〜1 の割合を「50%」の形にする"
+    },
+    {
+      "id": "q01-13-is-multiple-of7",
+      "title": "【関数式】7の倍数なら true"
+    },
+    {
+      "id": "q01-14-last-word",
+      "title": "【関数式】半角スペースで区切った最後の単語を返す"
+    },
+    {
+      "id": "q01-15-triple",
+      "title": "【アロー関数】3倍にする"
+    },
+    {
+      "id": "q01-16-is-positive-number",
+      "title": "【アロー関数】0より大きければ true"
+    },
+    {
+      "id": "q01-17-first-word",
+      "title": "【アロー関数】半角スペースで区切った最初の単語を返す"
+    },
+    {
+      "id": "q01-18-count-spaces",
+      "title": "【アロー関数】半角スペースの数を返す"
+    },
+    {
+      "id": "q01-19-average2",
+      "title": "【アロー関数】2つの数の平均を返す"
+    },
+    {
+      "id": "q01-20-describe-temp",
+      "title": "【アロー関数】気温が 25 以上なら \"夏日\"、それ未満は \"普通\" を返す"
+    },
+    {
+      "id": "q01-function-forms",
+      "title": "関数宣言・関数式・アロー関数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-function-declaration",
+    "SRC-typescriptbook-functions-function-expression",
+    "SRC-typescriptbook-functions-arrow-functions"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

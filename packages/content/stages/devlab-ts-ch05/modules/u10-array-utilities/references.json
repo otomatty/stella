@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch05/u10-array-utilities@1",
+  "contentHash": "abf82db923385fa2dfc0740564e13fac8771cb9a235b49574b45c07ceaef1e41",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q10/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-array-array-operations"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch08/u01-promise/q01",
+  "title": "08章 q01 Promise",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch08",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07"
+    ],
+    "assesses": [
+      "devlab-ts-ch08"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-resolve-with",
+      "title": "value ですぐに解決する Promise を返す"
+    },
+    {
+      "id": "q01-02-reject-with",
+      "title": "message を持つ Error で失敗する Promise を返す"
+    },
+    {
+      "id": "q01-03-wait",
+      "title": "ms ミリ秒たったら解決する Promise<void> を返す"
+    },
+    {
+      "id": "q01-04-wait-value",
+      "title": "ms ミリ秒たったら value で解決する Promise を返す"
+    },
+    {
+      "id": "q01-05-double",
+      "title": "then で、promise の値を2倍にした Promise を返す"
+    },
+    {
+      "id": "q01-06-length-of",
+      "title": "then で、promise の文字列の文字数を返す"
+    },
+    {
+      "id": "q01-07-trimmed",
+      "title": "then で、promise の文字列の前後の空白を取り除く"
+    },
+    {
+      "id": "q01-08-add-both",
+      "title": "a の then の中で b の then を呼び、2つの値の合計を返す"
+    },
+    {
+      "id": "q01-09-parse-number",
+      "title": "then の中で Number で数に変換する"
+    },
+    {
+      "id": "q01-10-recover",
+      "title": "catch で、promise が失敗したら 0 で解決する Promise にする"
+    },
+    {
+      "id": "q01-11-error-message",
+      "title": "成功なら \"成功\"、失敗の理由が Error ならその message、Error でなければ \"不明なエラー\" で解決する"
+    },
+    {
+      "id": "q01-12-log-done",
+      "title": "finally で、成功しても失敗しても log に \"done\" を足す"
+    },
+    {
+      "id": "q01-13-all-numbers",
+      "title": "Promise.all で、すべての値の配列を返す"
+    },
+    {
+      "id": "q01-14-sum-of-all",
+      "title": "Promise.all と then で、すべての値の合計を返す"
+    },
+    {
+      "id": "q01-15-pair-of",
+      "title": "Promise.all で、2つの値を [文字列, 数値] のタプルにして返す"
+    },
+    {
+      "id": "q01-16-fastest",
+      "title": "Promise.race で、いちばん早く解決した値を返す"
+    },
+    {
+      "id": "q01-17-settled-count",
+      "title": "Promise.allSettled で、成功した Promise の数を返す"
+    },
+    {
+      "id": "q01-18-fulfilled-values",
+      "title": "Promise.allSettled で、成功した値だけの配列を返す"
+    },
+    {
+      "id": "q01-19-rejected-messages",
+      "title": "Promise.allSettled で、失敗の理由の message の配列を返す"
+    },
+    {
+      "id": "q01-20-chain-steps",
+      "title": "start から始めて、steps の関数を前から順に then でつなぎ、最後の値を返す"
+    },
+    {
+      "id": "q01-promise",
+      "title": "Promise（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-asynchronous",
+    "SRC-typescriptbook-asynchronous-promise"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

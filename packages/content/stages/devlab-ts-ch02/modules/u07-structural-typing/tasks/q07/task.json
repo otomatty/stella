@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch02/u07-structural-typing/q07",
+  "title": "02章 q07 構造的型付け",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q07-01-name-of",
+      "title": "name を返す"
+    },
+    {
+      "id": "q07-02-name-length",
+      "title": "name の文字数を返す"
+    },
+    {
+      "id": "q07-03-age-next-year",
+      "title": "来年の年齢を返す"
+    },
+    {
+      "id": "q07-04-is-older-than",
+      "title": "age が years より大きければ true"
+    },
+    {
+      "id": "q07-05-face-area",
+      "title": "width × height を返す"
+    },
+    {
+      "id": "q07-06-is-square-shape",
+      "title": "width と height が同じなら true"
+    },
+    {
+      "id": "q07-07-price-with-tax",
+      "title": "税込価格を返す"
+    },
+    {
+      "id": "q07-08-is-free",
+      "title": "price が 0 なら true"
+    },
+    {
+      "id": "q07-09-price-label",
+      "title": "「名前: 価格円」を返す"
+    },
+    {
+      "id": "q07-10-introduce",
+      "title": "「名前」を返す"
+    },
+    {
+      "id": "q07-11-older-name",
+      "title": "年上の方の名前を返す"
+    },
+    {
+      "id": "q07-12-total-price",
+      "title": "price の合計を返す"
+    },
+    {
+      "id": "q07-13-names-of",
+      "title": "name を並べた配列を返す"
+    },
+    {
+      "id": "q07-14-perimeter-of",
+      "title": "周りの長さを返す"
+    },
+    {
+      "id": "q07-15-orientation",
+      "title": "横長なら \"横長\"、縦長なら \"縦長\"、同じなら \"正方形\" を返す"
+    },
+    {
+      "id": "q07-16-has-long-name",
+      "title": "name が max 文字より長ければ true"
+    },
+    {
+      "id": "q07-17-average-age",
+      "title": "age の平均を返す"
+    },
+    {
+      "id": "q07-18-cheapest-name",
+      "title": "いちばん安いものの name を返す"
+    },
+    {
+      "id": "q07-19-sum-area",
+      "title": "width × height の合計を返す"
+    },
+    {
+      "id": "q07-20-size-text",
+      "title": "「width × height」の文字列を返す"
+    },
+    {
+      "id": "q07-structural-typing",
+      "title": "構造的型付け（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-structural-subtyping",
+    "SRC-typescriptbook-values-types-variables-object-excess-property-checking"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

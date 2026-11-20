@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch03/u02-literal-unions@1",
+  "contentHash": "ea29b9b5282a9774931ecc799caca28ea6ce115c787a3f1f6871b404c13f7da9",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q02/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のユニオン型とそのほかの型の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

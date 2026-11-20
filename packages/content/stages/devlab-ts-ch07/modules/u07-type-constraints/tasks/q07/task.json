@@ -1,0 +1,137 @@
+{
+  "id": "devlab-ts-ch07/u07-type-constraints/q07",
+  "title": "07章 q07 型引数の制約",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q07-01-get-prop",
+      "title": "obj の key のプロパティを返す"
+    },
+    {
+      "id": "q07-02-shortest",
+      "title": "length を持つ値の配列から、length がいちばん短いものを返す"
+    },
+    {
+      "id": "q07-03-longer",
+      "title": "length が長い方を返す"
+    },
+    {
+      "id": "q07-04-pluck-all",
+      "title": "それぞれの要素の key の値を並べた配列"
+    },
+    {
+      "id": "q07-05-merge-objects",
+      "title": "2つのオブジェクトを合わせた新しいオブジェクト"
+    },
+    {
+      "id": "q07-06-add-id",
+      "title": "オブジェクトに id を足した新しいオブジェクト"
+    },
+    {
+      "id": "q07-07-set-prop",
+      "title": "obj の key だけを value にした新しいオブジェクト"
+    },
+    {
+      "id": "q07-08-max-by",
+      "title": "fn の値がいちばん大きい要素"
+    },
+    {
+      "id": "q07-09-sum-by",
+      "title": "fn の値の合計"
+    },
+    {
+      "id": "q07-10-sort-by-name",
+      "title": "name プロパティを持つものに限り、name の辞書順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q07-11-oldest",
+      "title": "age プロパティを持つものに限り、age がいちばん大きい要素を返す"
+    },
+    {
+      "id": "q07-12-sort-by-number",
+      "title": "fn の値の小さい順に並べた新しい配列"
+    },
+    {
+      "id": "q07-13-find-by-id",
+      "title": "id プロパティを持つものに限り、id が一致する要素を返す"
+    },
+    {
+      "id": "q07-14-update-by-id",
+      "title": "id が一致する要素だけを patchで上書きした新しい配列"
+    },
+    {
+      "id": "q07-15-count-where",
+      "title": "predicate が true の要素の数"
+    },
+    {
+      "id": "q07-16-or-default",
+      "title": "文字列か数値に限り、value が undefined なら fallback を返す"
+    },
+    {
+      "id": "q07-17-has-all-keys",
+      "title": "keys のプロパティがすべて undefined でなければ true"
+    },
+    {
+      "id": "q07-18-first-where",
+      "title": "predicate が true の最初の要素"
+    },
+    {
+      "id": "q07-19-count-by-key",
+      "title": "keyFn が返すキーごとの数"
+    },
+    {
+      "id": "q07-20-to-id-map",
+      "title": "id プロパティを持つものに限り、id をキーにした Record<number, T> を返す"
+    },
+    {
+      "id": "q07-constraints",
+      "title": "型引数の制約（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-generics-type-parameter-constraint"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u05-string@4",
-  "contentHash": "d5777e302f2df945d4ff2d5989d9e6c64444773cfc7b30cacd373532f855024f",
+  "unitId": "devlab-ts-ch01/u05-string@5",
+  "contentHash": "68f2418ace12b483ed004433902cdda13b2138a61cdd5337e190251f1bd2b8c1",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -41,6 +41,14 @@
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
       "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
       "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q05/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     }

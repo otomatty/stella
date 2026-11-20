@@ -1,0 +1,134 @@
+{
+  "id": "devlab-ts-ch04/u07-never-exhaustiveness/q07",
+  "title": "04章 q07 never型と網羅性のチェック",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q07-01-fruit-color",
+      "title": "apple は \"赤\"、banana は \"黄\"、cherry は \"赤\" を返す"
+    },
+    {
+      "id": "q07-02-fruit-price",
+      "title": "apple は 150、banana は 100、cherry は 500 を返す"
+    },
+    {
+      "id": "q07-03-next-signal",
+      "title": "green → yellow → red → green の順に、次の色を返す"
+    },
+    {
+      "id": "q07-04-can-cross",
+      "title": "green なら true、それ以外は false"
+    },
+    {
+      "id": "q07-05-apply-op",
+      "title": "add は a + b、sub は a - b、mul は a × b を返す"
+    },
+    {
+      "id": "q07-06-op-symbol",
+      "title": "add は \"+\"、sub は \"-\"、mul は \"×\" を返す"
+    },
+    {
+      "id": "q07-07-shape-area",
+      "title": "面積を返す"
+    },
+    {
+      "id": "q07-08-shape-label",
+      "title": "「円」「正方形」を返す"
+    },
+    {
+      "id": "q07-09-level-value",
+      "title": "debug は 0、info は 1、warn は 2、error は 3 を返す"
+    },
+    {
+      "id": "q07-10-level-prefix",
+      "title": "\"[DEBUG]\"、\"[INFO]\"、\"[WARN]\"、\"[ERROR]\" を返す"
+    },
+    {
+      "id": "q07-11-should-notify",
+      "title": "warn と error なら true、debug と info なら false"
+    },
+    {
+      "id": "q07-12-fail",
+      "title": "message の Error を投げる関数"
+    },
+    {
+      "id": "q07-13-unreachable",
+      "title": "\"ここには来ないはずです\" の Error を投げる関数"
+    },
+    {
+      "id": "q07-14-to-fruit",
+      "title": "文字列が Fruit のどれかなら、それを返す"
+    },
+    {
+      "id": "q07-15-count-by-level",
+      "title": "ログの重要度ごとの数を { debug, info, warn, error } で返す"
+    },
+    {
+      "id": "q07-16-fruit-emoji",
+      "title": "apple は \"🍎\"、banana は \"🍌\"、cherry は \"🍒\" を返す"
+    },
+    {
+      "id": "q07-17-signal-seconds",
+      "title": "信号の長さを返す"
+    },
+    {
+      "id": "q07-18-op-name",
+      "title": "add は \"足し算\"、sub は \"引き算\"、mul は \"掛け算\" を返す"
+    },
+    {
+      "id": "q07-19-scale-shape",
+      "title": "大きさを k 倍した、新しい図形を返す"
+    },
+    {
+      "id": "q07-20-more-severe",
+      "title": "重要度の高い方を返す"
+    },
+    {
+      "id": "q07-never",
+      "title": "never型と網羅性のチェック（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-never"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -13,7 +13,14 @@
   "canDo": "文と例外を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "04章の問題",
+    "u01-if-else": "q01 if-else文",
+    "u02-switch": "q02 switch文",
+    "u03-for-loops": "q03 for文と for-of文",
+    "u04-while-loops": "q04 while文と break・continue",
+    "u05-exceptions": "q05 例外処理",
+    "u06-unknown-narrowing": "q06 unknown型と型の絞り込み",
+    "u07-never-exhaustiveness": "q07 never型と網羅性のチェック",
+    "u08-string-parsing": "q08 文字列の解析",
     "u100-extra": "04章の発展問題"
   }
 }

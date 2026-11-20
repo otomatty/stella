@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch09/u05-modules@1",
+  "contentHash": "020793819db0f01d5cf20294f7bba0d2d81702cde8212d7ca672fec754a957ba",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q05/README.md",
+      "sourceRefs": ["SRC-typescriptbook-import-export-require"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の組み込みの API とモジュールの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

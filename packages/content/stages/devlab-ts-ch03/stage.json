@@ -13,7 +13,14 @@
   "canDo": "ユニオン型とそのほかの型を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "03章の問題",
+    "u01-type-alias-union": "q01 型エイリアスとユニオン型",
+    "u02-literal-unions": "q02 リテラル型のユニオン",
+    "u03-null-undefined": "q03 null と undefined",
+    "u04-discriminated-unions": "q04 判別可能なユニオン型",
+    "u05-result-types": "q05 成功と失敗を表す型",
+    "u06-intersection-types": "q06 インターセクション型",
+    "u07-const-assertions": "q07 as const",
+    "u08-state-transitions": "q08 状態の切り替え",
     "u100-extra": "03章の発展問題"
   }
 }

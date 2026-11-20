@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch03/u08-state-transitions/q08",
+  "title": "03章 q08 状態の切り替え",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q08-01-close-door",
+      "title": "開いているドアを閉める"
+    },
+    {
+      "id": "q08-02-open-door",
+      "title": "閉まっているドアを開ける"
+    },
+    {
+      "id": "q08-03-lock-door",
+      "title": "閉まっているドアに鍵 key をかける"
+    },
+    {
+      "id": "q08-04-unlock-door",
+      "title": "鍵のかかったドアを、同じ鍵 key なら開錠して closed にする"
+    },
+    {
+      "id": "q08-05-door-text",
+      "title": "ドアの状態を「開いている」「閉まっている」「鍵がかかっている」で返す"
+    },
+    {
+      "id": "q08-06-turn-on",
+      "title": "消えている照明を明るさ 100 で点ける"
+    },
+    {
+      "id": "q08-07-turn-off",
+      "title": "照明を消す"
+    },
+    {
+      "id": "q08-08-dim",
+      "title": "点いている照明の明るさを amount だけ下げる"
+    },
+    {
+      "id": "q08-09-light-text",
+      "title": "照明の状態を「消灯」か「点灯」で返す"
+    },
+    {
+      "id": "q08-10-start-timer",
+      "title": "タイマーを動かす"
+    },
+    {
+      "id": "q08-11-pause-timer",
+      "title": "動いているタイマーを止める"
+    },
+    {
+      "id": "q08-12-reset-timer",
+      "title": "どの状態からでも idle に戻す"
+    },
+    {
+      "id": "q08-13-elapsed-of",
+      "title": "経過時間を返す"
+    },
+    {
+      "id": "q08-14-assign-ticket",
+      "title": "open か assigned のチケットを、assignee の担当にする"
+    },
+    {
+      "id": "q08-15-close-ticket",
+      "title": "open か assigned のチケットを、resolution を付けて closed にする"
+    },
+    {
+      "id": "q08-16-reopen",
+      "title": "closed のチケットを open に戻す"
+    },
+    {
+      "id": "q08-17-assignee-of",
+      "title": "assigned なら担当者の名前、それ以外は undefined を返す"
+    },
+    {
+      "id": "q08-18-ticket-text",
+      "title": "「[未対応] タイトル」「[担当: 山田] タイトル」「[完了: 修正済み] タイトル」を返す"
+    },
+    {
+      "id": "q08-19-can-edit",
+      "title": "closed でなければ true"
+    },
+    {
+      "id": "q08-20-count-unfinished",
+      "title": "closed でないチケットの数を返す"
+    },
+    {
+      "id": "q08-order-status",
+      "title": "注文の状態遷移（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-discriminated-union"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

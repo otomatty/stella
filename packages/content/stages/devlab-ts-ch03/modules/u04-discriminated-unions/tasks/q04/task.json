@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch03/u04-discriminated-unions/q04",
+  "title": "03章 q04 判別可能なユニオン型",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-shape-area",
+      "title": "面積を返す"
+    },
+    {
+      "id": "q04-02-shape-name",
+      "title": "図形の名前を返す"
+    },
+    {
+      "id": "q04-03-shape-perimeter",
+      "title": "周りの長さを返す"
+    },
+    {
+      "id": "q04-04-is-round",
+      "title": "円なら true"
+    },
+    {
+      "id": "q04-05-scale-shape",
+      "title": "大きさを k 倍した、新しい図形を返す"
+    },
+    {
+      "id": "q04-06-payment-label",
+      "title": "支払い方法を表示する"
+    },
+    {
+      "id": "q04-07-needs-confirmation",
+      "title": "card か bank なら true"
+    },
+    {
+      "id": "q04-08-last-four",
+      "title": "card ならカード番号の末尾4桁、それ以外は undefined を返す"
+    },
+    {
+      "id": "q04-09-notice-text",
+      "title": "お知らせを表示する"
+    },
+    {
+      "id": "q04-10-is-serious",
+      "title": "error なら true"
+    },
+    {
+      "id": "q04-11-error-code",
+      "title": "error なら code、それ以外は undefined を返す"
+    },
+    {
+      "id": "q04-12-cry",
+      "title": "型 Animalを定義して export し、cry を書く"
+    },
+    {
+      "id": "q04-13-capacity",
+      "title": "型 Vehicleを定義して export し、capacity を書く"
+    },
+    {
+      "id": "q04-14-action-text",
+      "title": "型 UserActionを定義して export し、actionText を書く"
+    },
+    {
+      "id": "q04-15-media-info",
+      "title": "型 Mediaを定義して export し、mediaInfo を書く"
+    },
+    {
+      "id": "q04-16-response-text",
+      "title": "型 ApiResponseを定義して export し、responseText を書く"
+    },
+    {
+      "id": "q04-17-account-text",
+      "title": "型 Accountを定義して export し、accountText を書く"
+    },
+    {
+      "id": "q04-18-token-text",
+      "title": "型 Tokenを定義して export し、tokenText を書く"
+    },
+    {
+      "id": "q04-19-contact-text",
+      "title": "型 Contactを定義して export し、contactText を書く"
+    },
+    {
+      "id": "q04-20-to-celsius",
+      "title": "型 Readingを定義して export し、toCelsius を書く"
+    },
+    {
+      "id": "q04-discriminated-union",
+      "title": "判別可能なユニオン型（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-discriminated-union"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

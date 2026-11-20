@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch04/u03-for-loops@1",
+  "contentHash": "509ce38c37ec48ebe158477f5097d0e2abf1e1d95f82afbdca93eae83f6f3a98",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q03/README.md",
+      "sourceRefs": ["SRC-typescriptbook-statements-for-of"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の文と例外の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

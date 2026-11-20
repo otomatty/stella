@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch04/u06-unknown-narrowing/q06",
+  "title": "04章 q06 unknown型と型の絞り込み",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q06-01-is-text",
+      "title": "文字列なら true"
+    },
+    {
+      "id": "q06-02-length-of",
+      "title": "文字列か配列なら length、それ以外は 0"
+    },
+    {
+      "id": "q06-03-number-or-zero",
+      "title": "数値ならそのまま、それ以外は 0"
+    },
+    {
+      "id": "q06-04-kind-of",
+      "title": "typeof の結果を返す"
+    },
+    {
+      "id": "q06-05-to-text",
+      "title": "文字列はそのまま、数値と真偽値は String で文字列に、null は \"null\"、undefined は \"undefined\"、それ以外は \"[object]\""
+    },
+    {
+      "id": "q06-06-add-if-numbers",
+      "title": "2つとも数値なら足した数、そうでなければ null"
+    },
+    {
+      "id": "q06-07-is-date-value",
+      "title": "Date なら true"
+    },
+    {
+      "id": "q06-08-date-text",
+      "title": "Date なら「2026-12-01」、それ以外は \"日付ではありません\""
+    },
+    {
+      "id": "q06-09-count-strings",
+      "title": "文字列の要素の数を返す"
+    },
+    {
+      "id": "q06-10-only-numbers",
+      "title": "数値の要素だけを集めた配列を返す"
+    },
+    {
+      "id": "q06-11-first-text",
+      "title": "最初の文字列の要素を返す"
+    },
+    {
+      "id": "q06-12-has-name",
+      "title": "null でないオブジェクトで、name プロパティが文字列なら true"
+    },
+    {
+      "id": "q06-13-name-or-unknown",
+      "title": "name プロパティが文字列ならそれを、そうでなければ \"不明\" を返す"
+    },
+    {
+      "id": "q06-14-is-number-list",
+      "title": "配列で、すべての要素が数値なら true"
+    },
+    {
+      "id": "q06-15-to-bool",
+      "title": "真偽値ならそのまま、文字列 \"true\" なら true、それ以外は false"
+    },
+    {
+      "id": "q06-16-problem-text",
+      "title": "Error なら message、文字列ならそのまま、それ以外は \"エラー\""
+    },
+    {
+      "id": "q06-17-first-item-length",
+      "title": "配列で、最初の要素が文字列なら、その文字数を返す"
+    },
+    {
+      "id": "q06-18-port-of",
+      "title": "オブジェクトで port プロパティが数値ならそれを、そうでなければ 3000 を返す"
+    },
+    {
+      "id": "q06-19-is-plain-object",
+      "title": "null でも配列でもないオブジェクトなら true"
+    },
+    {
+      "id": "q06-20-json-number",
+      "title": "JSON.parse の結果が数値ならそれを、そうでなければ null を返す"
+    },
+    {
+      "id": "q06-unknown",
+      "title": "unknown型と型の絞り込み（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-unknown",
+    "SRC-typescriptbook-statements-control-flow-analysis-and-type-guard"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

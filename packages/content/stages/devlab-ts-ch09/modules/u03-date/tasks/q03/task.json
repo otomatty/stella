@@ -1,0 +1,140 @@
+{
+  "id": "devlab-ts-ch09/u03-date/q03",
+  "title": "09章 q03 Date",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch09",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08"
+    ],
+    "assesses": [
+      "devlab-ts-ch09"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-make-date",
+      "title": "年・月・日から、その日の 0時0分の Date を作る"
+    },
+    {
+      "id": "q03-02-year-of",
+      "title": "年を返す"
+    },
+    {
+      "id": "q03-03-month-of",
+      "title": "月を 1〜12 で返す"
+    },
+    {
+      "id": "q03-04-weekday-name",
+      "title": "曜日を \"日\"・\"月\"・\"火\"・\"水\"・\"木\"・\"金\"・\"土\" のどれかで返す"
+    },
+    {
+      "id": "q03-05-is-weekend",
+      "title": "土曜日か日曜日なら true"
+    },
+    {
+      "id": "q03-06-add-days",
+      "title": "n 日後の新しい Date を返す"
+    },
+    {
+      "id": "q03-07-add-hours",
+      "title": "h 時間後の新しい Date を返す"
+    },
+    {
+      "id": "q03-08-format-date",
+      "title": "\"2026-04-01\" の形の文字列を返す"
+    },
+    {
+      "id": "q03-09-format-time",
+      "title": "\"09:05\" の形の文字列を返す"
+    },
+    {
+      "id": "q03-10-format-japanese",
+      "title": "\"2026年4月1日\" の形の文字列を返す"
+    },
+    {
+      "id": "q03-11-parse-date",
+      "title": "\"2026-04-01\" の形の文字列から、その日の 0時0分の Date を作る"
+    },
+    {
+      "id": "q03-12-is-same-day",
+      "title": "a と b が同じ日付なら true"
+    },
+    {
+      "id": "q03-13-is-before",
+      "title": "a が b より前なら true"
+    },
+    {
+      "id": "q03-14-days-between",
+      "title": "a の日付から b の日付までの日数を返す"
+    },
+    {
+      "id": "q03-15-age-on",
+      "title": "誕生日 birthday の人の、today の時点の満年齢を返す"
+    },
+    {
+      "id": "q03-16-start-of-day",
+      "title": "同じ日の 0時0分0秒0ミリ秒の新しい Date を返す"
+    },
+    {
+      "id": "q03-17-end-of-month",
+      "title": "同じ月の最終日の 0時0分の Date を返す"
+    },
+    {
+      "id": "q03-18-days-in-month",
+      "title": "year 年 month 月の日数を返す"
+    },
+    {
+      "id": "q03-19-latest",
+      "title": "いちばん新しいDate を返す"
+    },
+    {
+      "id": "q03-20-sort-dates",
+      "title": "古い順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q03-date",
+      "title": "Date（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-builtin-api-date"
+  ],
+  "estimatedMinutes": 82,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "src/shared/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

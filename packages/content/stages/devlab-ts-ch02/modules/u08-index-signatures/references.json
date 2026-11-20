@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch02/u08-index-signatures@1",
+  "contentHash": "0d418a30fe3368a07cf434b6408c015da8a8aec2f8b63b2aa3c335a2fafe1ee6",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q08/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-object-index-signature",
+        "SRC-typescriptbook-values-types-variables-object-how-to-loop-an-object"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "id": "devlab-ts-ch04/u03-for-loops/q03",
+  "title": "04章 q03 for文と for-of文",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-sum-array",
+      "title": "合計を返す"
+    },
+    {
+      "id": "q03-02-count-matches",
+      "title": "target と同じ要素の数を返す"
+    },
+    {
+      "id": "q03-03-longest-word",
+      "title": "いちばん長い単語を返す"
+    },
+    {
+      "id": "q03-04-index-of-max",
+      "title": "最大値の番号を返す"
+    },
+    {
+      "id": "q03-05-product-of",
+      "title": "すべての要素を掛けた数を返す"
+    },
+    {
+      "id": "q03-06-reverse-array",
+      "title": "逆順にした新しい配列を返す"
+    },
+    {
+      "id": "q03-07-squares-up-to",
+      "title": "1〜n の2乗を並べた配列を返す"
+    },
+    {
+      "id": "q03-08-evens-up-to",
+      "title": "0 以上 n 以下の偶数を並べた配列を返す"
+    },
+    {
+      "id": "q03-09-join-with-dash",
+      "title": "要素を「-」でつないだ文字列を返す"
+    },
+    {
+      "id": "q03-10-count-upper",
+      "title": "英大文字の数を返す"
+    },
+    {
+      "id": "q03-11-positions-of",
+      "title": "char が出てくる位置を並べた配列を返す"
+    },
+    {
+      "id": "q03-12-digit-total",
+      "title": "文字列に含まれる数字の合計を返す"
+    },
+    {
+      "id": "q03-13-first-negative",
+      "title": "最初に出てくる負の数を返す"
+    },
+    {
+      "id": "q03-14-all-even",
+      "title": "すべて偶数なら true"
+    },
+    {
+      "id": "q03-15-running-total",
+      "title": "先頭からの累計を並べた配列を返す"
+    },
+    {
+      "id": "q03-16-zip-sum",
+      "title": "2つの配列の同じ番号どうしを足した配列を返す"
+    },
+    {
+      "id": "q03-17-flatten",
+      "title": "配列の配列を、1つの配列にする"
+    },
+    {
+      "id": "q03-18-count-in-range",
+      "title": "min 以上 max 以下の要素の数を返す"
+    },
+    {
+      "id": "q03-19-dedupe",
+      "title": "重複を除いた新しい配列を返す"
+    },
+    {
+      "id": "q03-20-stairs",
+      "title": "\"*\" を1個、2個…n 個並べた文字列の配列を返す"
+    },
+    {
+      "id": "q03-for-of",
+      "title": "for文と for-of文（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-for-of"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

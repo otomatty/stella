@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch02/u05-immutable-arrays/q05",
+  "title": "02章 q05 配列を壊さない操作",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-01-append",
+      "title": "末尾に item を足した新しい配列を返す"
+    },
+    {
+      "id": "q05-02-prepend",
+      "title": "先頭に item を足した新しい配列を返す"
+    },
+    {
+      "id": "q05-03-drop-first",
+      "title": "先頭の要素を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-04-drop-last",
+      "title": "最後の要素を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-05-insert-at",
+      "title": "index 番目に item を差し込んだ新しい配列を返す"
+    },
+    {
+      "id": "q05-06-remove-at",
+      "title": "index 番目の要素を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-07-replace-at",
+      "title": "index 番目の要素を item に置き換えた新しい配列を返す"
+    },
+    {
+      "id": "q05-08-sort-asc",
+      "title": "小さい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-09-sort-desc",
+      "title": "大きい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-10-sort-words",
+      "title": "辞書順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-11-reversed",
+      "title": "逆順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-12-concat-both",
+      "title": "2つの配列をつないだ新しい配列を返す"
+    },
+    {
+      "id": "q05-13-without",
+      "title": "value と同じ要素をすべて除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-14-unique-numbers",
+      "title": "重複を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-15-move-to-front",
+      "title": "index 番目の要素を先頭に移した新しい配列を返す"
+    },
+    {
+      "id": "q05-16-swap-items",
+      "title": "i 番目と j 番目を入れ替えた新しい配列を返す"
+    },
+    {
+      "id": "q05-17-take",
+      "title": "先頭から n 個の要素の新しい配列を返す"
+    },
+    {
+      "id": "q05-18-skip",
+      "title": "先頭の n 個を除いた新しい配列を返す"
+    },
+    {
+      "id": "q05-19-filled",
+      "title": "value を length 個並べた新しい配列を返す"
+    },
+    {
+      "id": "q05-20-increment-at",
+      "title": "index 番目の要素だけを1増やした新しい配列を返す"
+    },
+    {
+      "id": "q05-non-destructive",
+      "title": "配列を壊さない操作（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-array-array-operations",
+    "SRC-typescriptbook-values-types-variables-array-spread-syntax-for-array"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

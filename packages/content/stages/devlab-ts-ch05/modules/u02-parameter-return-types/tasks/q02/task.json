@@ -1,0 +1,137 @@
+{
+  "id": "devlab-ts-ch05/u02-parameter-return-types/q02",
+  "title": "05章 q02 引数と戻り値の型、void",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q02-01-log-to",
+      "title": "lines の末尾に message を足す"
+    },
+    {
+      "id": "q02-02-add-all",
+      "title": "target の末尾に values をすべて足す"
+    },
+    {
+      "id": "q02-03-clear-all",
+      "title": "配列を空にする"
+    },
+    {
+      "id": "q02-04-rename",
+      "title": "user の name を書き換える"
+    },
+    {
+      "id": "q02-05-increment-all",
+      "title": "すべての要素を1増やす"
+    },
+    {
+      "id": "q02-06-reset-counter",
+      "title": "counter の count を 0 にする"
+    },
+    {
+      "id": "q02-07-toggle-flag",
+      "title": "flags の key の値を反転する"
+    },
+    {
+      "id": "q02-08-swap-in-place",
+      "title": "items の i 番目と j 番目を入れ替える"
+    },
+    {
+      "id": "q02-09-push-unique",
+      "title": "item が items になければ末尾に足して true、すでにあれば何もせず false を返す"
+    },
+    {
+      "id": "q02-10-clamp-value",
+      "title": "value を min 以上 max 以下に収める"
+    },
+    {
+      "id": "q02-11-parse-port",
+      "title": "1〜65535 の整数の文字列ならその数値、そうでなければ undefined を返す"
+    },
+    {
+      "id": "q02-12-format-bytes",
+      "title": "バイト数を、1024 以上なら「1.5 KB」、1024 × 1024 以上なら「2.0 MB」、それ未満なら「512 B」の形にする"
+    },
+    {
+      "id": "q02-13-sum-and-average",
+      "title": "合計と平均を { sum, average } で返す"
+    },
+    {
+      "id": "q02-14-do-nothing",
+      "title": "引数を受け取らず、何もしない関数"
+    },
+    {
+      "id": "q02-15-greet-all",
+      "title": "それぞれの名前に「さん、こんにちは」を付けた配列を返す"
+    },
+    {
+      "id": "q02-16-describe-user",
+      "title": "{ name, age } を「山田」にする"
+    },
+    {
+      "id": "q02-17-pick-numbers",
+      "title": "文字列と数値が混ざった配列から、数値だけを集める"
+    },
+    {
+      "id": "q02-18-seconds-text",
+      "title": "ミリ秒を「1.5秒」の形にする"
+    },
+    {
+      "id": "q02-19-first-or",
+      "title": "最初の要素を返す"
+    },
+    {
+      "id": "q02-20-sum-values",
+      "title": "オブジェクトの値の合計を返す"
+    },
+    {
+      "id": "q02-params-return",
+      "title": "引数と戻り値の型、void（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-function-parameters",
+    "SRC-typescriptbook-functions-void-type",
+    "SRC-typescriptbook-functions-pass-by-value"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

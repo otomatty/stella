@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch07/u07-type-constraints@1",
+  "contentHash": "1c7a28154646d652405d30155ca8ad5fd1abcd8a3a47e3e956a63a98632d6550",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q07/README.md",
+      "sourceRefs": ["SRC-typescriptbook-generics-type-parameter-constraint"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の型の再利用とジェネリクスの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

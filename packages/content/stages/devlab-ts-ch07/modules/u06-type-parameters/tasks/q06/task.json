@@ -1,0 +1,138 @@
+{
+  "id": "devlab-ts-ch07/u06-type-parameters/q06",
+  "title": "07章 q06 型変数（ジェネリクス）",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q06-01-identity",
+      "title": "受け取った値をそのまま返す"
+    },
+    {
+      "id": "q06-02-first-of",
+      "title": "最初の要素を返す"
+    },
+    {
+      "id": "q06-03-last-of",
+      "title": "最後の要素を返す"
+    },
+    {
+      "id": "q06-04-wrap-in-array",
+      "title": "値を1つだけ持つ配列にする"
+    },
+    {
+      "id": "q06-05-repeat-value",
+      "title": "value を times 個並べた配列"
+    },
+    {
+      "id": "q06-06-make-pair",
+      "title": "2つの値を [a, b] のタプルにする"
+    },
+    {
+      "id": "q06-07-swap-pair",
+      "title": "タプル [a, b] を [b, a] にする"
+    },
+    {
+      "id": "q06-08-box-of",
+      "title": "型 Box<T>を定義して export し、boxOf で Box を作る"
+    },
+    {
+      "id": "q06-09-unboxed",
+      "title": "{ value: T } から value を取り出す"
+    },
+    {
+      "id": "q06-10-reversed-copy",
+      "title": "逆順にした新しい配列"
+    },
+    {
+      "id": "q06-11-nth",
+      "title": "index 番目の要素を返す"
+    },
+    {
+      "id": "q06-12-take-first",
+      "title": "先頭から n 個の新しい配列"
+    },
+    {
+      "id": "q06-13-count-of",
+      "title": "target と同じ要素の数"
+    },
+    {
+      "id": "q06-14-includes-value",
+      "title": "value が含まれていれば true"
+    },
+    {
+      "id": "q06-15-without-value",
+      "title": "value と同じ要素をすべて除いた新しい配列"
+    },
+    {
+      "id": "q06-16-last-index-of-value",
+      "title": "value が最後に出てくる番号"
+    },
+    {
+      "id": "q06-17-filled-with",
+      "title": "value を length 個並べた新しい配列"
+    },
+    {
+      "id": "q06-18-or-else",
+      "title": "型 Maybe<T>を定義して export し、orElse で null なら fallback を返す"
+    },
+    {
+      "id": "q06-19-zip",
+      "title": "2つの配列の同じ番号どうしを [a, b] のタプルにした配列"
+    },
+    {
+      "id": "q06-20-toggle-item",
+      "title": "item が含まれていれば除き、なければ末尾に足した新しい配列"
+    },
+    {
+      "id": "q06-type-variables",
+      "title": "型変数（ジェネリクス）（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-generics",
+    "SRC-typescriptbook-generics-type-variables"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

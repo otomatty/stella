@@ -1,0 +1,138 @@
+{
+  "id": "devlab-ts-ch07/u01-typeof/q01",
+  "title": "07章 q01 typeof 型演算子",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-default-user",
+      "title": "型 DefaultUser を DEFAULT_USER から作る"
+    },
+    {
+      "id": "q01-02-point",
+      "title": "型 Point を ORIGIN から作る"
+    },
+    {
+      "id": "q01-03-settings",
+      "title": "型 Settings を SETTINGS から作る"
+    },
+    {
+      "id": "q01-04-notifications",
+      "title": "型 Notifications を、SETTINGS の notifications プロパティの型として作る"
+    },
+    {
+      "id": "q01-05-color",
+      "title": "型 Color を、COLORS の要素の型として作る"
+    },
+    {
+      "id": "q01-06-level",
+      "title": "型 Level を、LEVELS の要素の型として作る"
+    },
+    {
+      "id": "q01-07-role-labels",
+      "title": "型 RoleLabels を ROLE_LABELS から作る"
+    },
+    {
+      "id": "q01-08-endpoint",
+      "title": "型 Endpoint を、ENDPOINTS のすべての値のユニオン型として作る"
+    },
+    {
+      "id": "q01-09-version",
+      "title": "型 Version を VERSION から作る"
+    },
+    {
+      "id": "q01-10-max-size",
+      "title": "型 MaxSize を MAX_SIZE から作る"
+    },
+    {
+      "id": "q01-11-tag",
+      "title": "型 Tag を、TAGS の要素の型として作る"
+    },
+    {
+      "id": "q01-12-item",
+      "title": "型 Item を、関数 makeItem の戻り値の型として作る"
+    },
+    {
+      "id": "q01-13-click-handler",
+      "title": "型 ClickHandler を、関数 handleClick の型として作る"
+    },
+    {
+      "id": "q01-14-clone-user",
+      "title": "DEFAULT_USER のコピーを返す関数 cloneUser を書く"
+    },
+    {
+      "id": "q01-15-move-point",
+      "title": "点を dx、dy だけ動かした新しい点を返す"
+    },
+    {
+      "id": "q01-16-with-font-size",
+      "title": "settings の fontSize だけを変えた新しい設定を返す"
+    },
+    {
+      "id": "q01-17-is-color",
+      "title": "文字列が COLORS のどれかなら true"
+    },
+    {
+      "id": "q01-18-next-level",
+      "title": "1 → 2 → 3 の順に次のレベルを返す"
+    },
+    {
+      "id": "q01-19-role-label",
+      "title": "ROLE_LABELS からラベルを返す"
+    },
+    {
+      "id": "q01-20-endpoint-of",
+      "title": "ENDPOINTS から URL を返す"
+    },
+    {
+      "id": "q01-typeof",
+      "title": "typeof 型演算子（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-type-reuse-typeof-type-operator",
+    "SRC-typescriptbook-type-reuse-indexed-access-types"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

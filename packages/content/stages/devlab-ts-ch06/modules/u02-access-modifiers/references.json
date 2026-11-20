@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch06/u02-access-modifiers@1",
+  "contentHash": "2b8607f893e56807406a19f9aa939329f84f8ad678cec99ceb62f1f9c3655e1c",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q02/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-object-oriented-class-access-modifiers",
+        "SRC-typescriptbook-object-oriented-class-readonly-modifier-in-classes",
+        "SRC-typescriptbook-object-oriented-class-constructor-shorthand"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}
