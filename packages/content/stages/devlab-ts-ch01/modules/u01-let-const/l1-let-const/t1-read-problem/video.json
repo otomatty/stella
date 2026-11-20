@@ -55,6 +55,12 @@
     },
     "text": {
       "prompt": "A large rounded speech bubble and a blank name tag card, each filled only with a few horizontal placeholder lines of different lengths in light grey. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
     }
   },
   "boards": {
@@ -210,6 +216,24 @@
           "id": "kstr",
           "label": "文字",
           "art": "text",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
           "at": [2, 1]
         }
       ]
@@ -788,6 +812,138 @@
       ]
     },
     {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "コードには、2種類の部分があります。",
+          "speech": "コードには、二種類の部分があります。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "function や return は、言語で決まっている書き方です。",
+          "speech": "ファンクションやリターンは、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "function"
+              },
+              {
+                "line": 3,
+                "text": "return"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "種類を表す number も、決まっている言葉です。",
+          "speech": "種類を表すナンバーも、決まっている言葉です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "number"
+              }
+            ]
+          }
+        },
+        {
+          "say": "かっこやコロンなどの記号も、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "("
+              },
+              {
+                "line": 1,
+                "text": ")"
+              },
+              {
+                "line": 1,
+                "text": ":"
+              },
+              {
+                "line": 1,
+                "text": "{"
+              },
+              {
+                "line": 3,
+                "text": ";"
+              },
+              {
+                "line": 4,
+                "text": "}"
+              }
+            ]
+          },
+          "pause": 1
+        },
+        {
+          "say": "addShipping と price は、自分で付けた名前です。",
+          "speech": "アッドシッピングとプライスは、自分で付けた名前です。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "addShipping"
+              },
+              {
+                "line": 1,
+                "text": "price"
+              },
+              {
+                "line": 3,
+                "text": "price"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "足す数の 500 も、自分で決めた値です。",
+          "speech": "足す数の五百も、自分で決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "500"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
       "id": "call",
       "kind": "code",
       "role": "apply",
@@ -811,7 +967,10 @@
           "say": "では、最初の例をこの関数で動かします。",
           "type": [5, 6],
           "figure": {
-            "untag": ["total"]
+            "show": ["price", "give", "fee", "back", "total"],
+            "tag": {
+              "fee": "＋500"
+            }
           }
         },
         {
@@ -1115,7 +1274,7 @@
           ]
         },
         {
-          "say": "入口と出口は、問題にもう書いてあります。",
+          "say": "入口と出口は、最初から書いてあります。",
           "spot": ["in", "out"]
         },
         {
@@ -1220,6 +1379,6 @@
   ],
   "polish": {
     "model": "gemini-4-argon",
-    "sayHash": "7f9bdcf424f890d8177345a74d9128c453bd7235ad26372565b1020240dec3a9"
+    "sayHash": "0396bcf8c0c9234507480c1d6c2eeb67723120f8bdadb5f8276a1c2c383cbd68"
   }
 }
