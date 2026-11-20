@@ -168,6 +168,7 @@ export function sceneTimelines(
         }
         image = next;
       }
+      if (schema === 2 && beat.term) end = Math.max(end, speechEnd + SCENE_TIMING.highlightHold);
       if (schema === 2 && typeof beat.pause === "number" && Number.isFinite(beat.pause))
         end += beat.pause;
       t = end + pacing.between;

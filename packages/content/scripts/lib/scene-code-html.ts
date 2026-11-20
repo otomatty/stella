@@ -16,6 +16,8 @@ import { sceneCaptionAt, type SceneTimeline } from "../../src/scene-timeline.js"
 import {
   iconSvg,
   mark,
+  rubyHtml,
+  sceneScriptData,
   sceneCaptionCss,
   sceneFontCss,
   type SceneHtmlInput,
@@ -347,6 +349,90 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
   ];
   draw(0);
 }
+function codeCutRuntime() {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const card = document.getElementById("card") as HTMLElement;
+  const background = document.getElementById("code-opening");
+  if (!background) win.__busyRanges.shift();
+  const draw = (time: number) => {
+    card.style.opacity = "1";
+    if (background)
+      background.style.opacity = String((1 - Math.max(0, Math.min(1, time / 0.4))) ** 3);
+  };
+  win.__setTime = (time) => {
+    const pending = setTime(time);
+    draw(time);
+    return pending;
+  };
+  draw(0);
+}
+
+function partNoteRuntime(notes: { start: number; html?: string }[]) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const code = document.getElementById("code") as HTMLElement;
+  const fade = 0.3;
+  for (const note of notes) if (note.html) win.__busyRanges.push([note.start, note.start + fade]);
+  win.__setTime = async (time) => {
+    await setTime(time);
+    const note = notes.findLast(({ start }) => time >= start);
+    if (!note?.html) return;
+    const last = code.querySelector(".part.numbered");
+    const first = code.querySelector(".part");
+    if (!first || !last) return;
+    last.classList.remove("numbered");
+    const a = first.getBoundingClientRect();
+    const b = last.getBoundingClientRect();
+    const bounds = code.getBoundingClientRect();
+    const center = (a.left + b.right) / 2 - bounds.left;
+    const bubble = document.createElement("div");
+    bubble.className = "part-note";
+    bubble.innerHTML = note.html;
+    code.append(bubble);
+    const width = bubble.offsetWidth;
+    const height = bubble.offsetHeight;
+    const left = Math.max(8, Math.min(code.clientWidth - width - 8, center - width / 2));
+    const above = a.top - bounds.top >= height + 14;
+    bubble.style.left = `${left}px`;
+    bubble.style.top = `${above ? a.top - bounds.top - height - 10 : b.bottom - bounds.top + 10}px`;
+    bubble.style.setProperty("--pointer", `${Math.max(10, Math.min(width - 10, center - left))}px`);
+    bubble.classList.toggle("below", !above);
+    const progress = Math.max(0, Math.min(1, (time - note.start) / fade));
+    bubble.style.opacity = String(1 - (1 - progress) ** 3);
+    bubble.style.transform = `translateY(${(above ? 3 : -3) * (1 - progress)}px)`;
+  };
+}
+
+function withCodeOverlays(html: string, input: SceneHtmlInput, scene: CodeScene): string {
+  if (input.schema === 2) {
+    if (input.fadeFromBackground)
+      html = html.replace(
+        "<script>",
+        '<div id="code-opening" style="position:absolute;inset:0;background:#F7F7F9;z-index:2;pointer-events:none"></div><script>',
+      );
+    html = html.replace("</html>", `<script>(${codeCutRuntime.toString()})();</script></html>`);
+  }
+  if (!scene.beats.some((beat) => beat.part?.note)) return html;
+  const notes = scene.beats.map(({ part }, index) => ({
+    start: input.timing.beats[index].start,
+    html: part?.note ? rubyHtml(part.note, input.ruby ?? {}) : undefined,
+  }));
+  return html
+    .replace(
+      "</style>",
+      `
+      .part-note{position:absolute;z-index:1;width:max-content;max-width:calc(100% - 16px);padding:5px 12px;background:#EEEAFC;color:#5749DB;border-radius:9px;font:700 26px/1.2 'Noto Sans JP',sans-serif;white-space:nowrap;pointer-events:none}
+      .part-note:after{content:'';position:absolute;left:var(--pointer);top:100%;transform:translateX(-50%);border:7px solid transparent;border-bottom:0;border-top-color:#EEEAFC}
+      .part-note.below:after{top:auto;bottom:100%;border-top:0;border-bottom:7px solid #EEEAFC}
+    </style>`,
+    )
+    .replace(
+      "</html>",
+      () => `<script>(${partNoteRuntime.toString()})(${sceneScriptData(notes)});</script></html>`,
+    );
+}
+
 export function codeHtml(input: SceneHtmlInput): string {
   const scene = input.scene as CodeScene;
   const safe = (s: string) =>
@@ -369,7 +455,13 @@ export function codeHtml(input: SceneHtmlInput): string {
     },
     state: figure,
     timing: input.timing,
-    motions: scene.beats.map((beat) => ({ travel: beat.figure?.travel?.along, pause: beat.pause })),
+    motions: scene.beats.map((beat, index) => {
+      const timed = input.timing.beats[index];
+      return {
+        travel: beat.figure?.travel?.along,
+        pause: beat.term ? timed.end - (timed.speechEnd ?? timed.end) : beat.pause,
+      };
+    }),
   };
   const codeWidth = scene.panel ? 1010 : 1752;
   const widest = Math.max(
@@ -400,7 +492,7 @@ export function codeHtml(input: SceneHtmlInput): string {
       ),
     ),
   };
-  return `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${codeFontCss}${sceneCaptionCss}
+  const html = `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${codeFontCss}${sceneCaptionCss}
   *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#f7f7f9;color:#16161a;font:500 30px 'Noto Sans JP',sans-serif}
   #card{position:absolute;left:60px;top:140px;width:1800px;height:810px;padding:24px;background:white;border-radius:20px;box-shadow:0 5px 18px #00000012;display:flex;flex-direction:column;gap:24px}
   #heading{height:56px;flex-shrink:0;display:flex;align-items:center;gap:20px;overflow:hidden;white-space:nowrap}#heading span{padding:8px 16px;border-radius:8px;background:#0e0e10;color:#fff;font-size:24px}#heading h2{margin:0;font-size:28px;font-weight:700}
@@ -413,4 +505,5 @@ export function codeHtml(input: SceneHtmlInput): string {
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;flex-shrink:0;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace;white-space:nowrap}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content.stacked{flex-direction:column;align-items:flex-end;gap:4px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap;flex-shrink:0}.value-content small{font-size:22px;white-space:nowrap;flex-shrink:0}.answer{display:flex;align-items:center;flex-shrink:0}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}
   #code,#code *,#panel,#panel *{font-variant-ligatures: none;font-feature-settings: "liga" 0, "calt" 0}
   ${figureData ? figureCss : ""}</style><div id="card"><div id="heading"><span>${sceneRoleLabel(scene)}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});${figureData ? `(${figureRuntime.toString()})(${JSON.stringify(figureData).replace(/</g, "\\u003c")});` : ""}</script></html>`;
+  return withCodeOverlays(html, input, scene);
 }

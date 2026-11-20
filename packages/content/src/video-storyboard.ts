@@ -5,6 +5,7 @@ import {
   validateCodeMotion,
   type CodeScene,
   type CodeSceneState,
+  type CodeBeat,
 } from "./scene-code.js";
 /** 絵コンテの契約・状態遷移。I/O と描画に依存しない。 */
 import { parseVideoArt, type VideoArt } from "./video-art.js";
@@ -75,6 +76,7 @@ const LESSON_SEQUENCE: readonly Exclude<keyof typeof LESSON_ROLE_LABELS, "note">
   "answer",
   "explain",
   "usage",
+  "next",
 ] as const;
 const LESSON_ROLE_LABELS = {
   goal: "学ぶこと",
@@ -86,6 +88,7 @@ const LESSON_ROLE_LABELS = {
   answer: "答え合わせ",
   explain: "解説",
   usage: "使う場面",
+  next: "次の課題",
 } as const;
 export type SceneRole = "hook" | "point" | "recap" | keyof typeof LESSON_ROLE_LABELS;
 
@@ -114,11 +117,13 @@ export interface BoardMotion {
   travel?: { along: string[]; icon?: IconName };
   zoom?: string[] | "all";
 }
-export interface Beat extends BoardMotion {
+export interface NarratedBeat {
   say: string;
   speech?: string;
   pause?: number;
+  term?: { text: string; ruby?: string; note?: string };
 }
+export interface Beat extends BoardMotion, NarratedBeat {}
 export interface BoardScene {
   kind?: "board";
   id: string;
@@ -144,10 +149,7 @@ export function clipReference(ref: string) {
   const match = /^([a-z0-9-]+\/[a-z0-9-]+)#([a-z0-9-]+)$/.exec(ref);
   return match ? { id: match[1], mark: match[2] } : undefined;
 }
-export interface ViewBeat {
-  say: string;
-  speech?: string;
-  pause?: number;
+export interface ViewBeat extends NarratedBeat {
   image?: string;
   clip?: string;
   speed?: number;
@@ -184,6 +186,7 @@ export interface StoryboardContext {
 export interface VideoStoryboard {
   schema: 1 | 2;
   polish?: { model: string; sayHash: string };
+  ruby?: Record<string, string>;
   brief: { goal: string; stuck: string; points: string[]; leaveOut: string[] };
   art?: Record<string, Omit<VideoArt, "aspect"> & { aspect?: VideoArt["aspect"] }>;
   boards?: Record<string, Board>;
@@ -356,6 +359,28 @@ export function storyboardStates(
 
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
+/** 左から最長一致で語を拾い、表示と未使用の検査で同じ当て方を使う。 */
+export function rubyParts(text: string, dictionary: Record<string, string>) {
+  const words = Object.keys(dictionary)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+  const parts: { text: string; reading?: string }[] = [];
+  let plain = "";
+  for (let i = 0; i < text.length; ) {
+    const word = words.find((key) => text.startsWith(key, i));
+    if (word) {
+      if (plain) parts.push({ text: plain });
+      plain = "";
+      parts.push({ text: word, reading: dictionary[word] });
+      i += word.length;
+    } else {
+      plain += text[i++];
+    }
+  }
+  if (plain) parts.push({ text: plain });
+  return parts;
+}
+
 export function parseStoryboard(
   json: unknown,
   context?: StoryboardContext,
@@ -433,6 +458,24 @@ export function parseStoryboard(
   const lesson = root.schema === 2;
   const inSeconds = (v: unknown, min: number, max: number) =>
     typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
+  const oneLine = (v: unknown, p: string, max: number) => {
+    str(v, p, max);
+    if (typeof v === "string" && /[\r\n\t\u0085\u2028\u2029]/u.test(v))
+      error(p, "1行の文字列にしてください");
+  };
+  const reading = (v: unknown, p: string) => {
+    if (
+      typeof v !== "string" ||
+      Array.from(v).length > 30 ||
+      !/^[ぁ-ゖゝ-ゟァ-ヺヽ-ヿー]+$/u.test(v)
+    )
+      error(p, "ひらがな・カタカナ・長音だけで1〜30字にしてください");
+  };
+  if (root.ruby !== undefined)
+    for (const [word, value] of Object.entries(obj(root.ruby, "ruby"))) {
+      str(word, `ruby.${word}`, 20);
+      reading(value, `ruby.${word}`);
+    }
   if (root.polish !== undefined) {
     const polish = obj(root.polish, "polish");
     str(polish.model, "polish.model");
@@ -565,6 +608,13 @@ export function parseStoryboard(
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
+      if (beat.term !== undefined) {
+        if (!lesson) error(`${q}.term`, "term は schema 2 の文だけに指定できます");
+        const term = obj(beat.term, `${q}.term`);
+        oneLine(term.text, `${q}.term.text`, 10);
+        if (term.ruby !== undefined) reading(term.ruby, `${q}.term.ruby`);
+        if (term.note !== undefined) oneLine(term.note, `${q}.term.note`, 16);
+      }
       if (beat.pause !== undefined) {
         if (!lesson) error(`${q}.pause`, "pause は schema 2 の文だけに指定できます");
         else if (!inSeconds(beat.pause, 0.5, 8))
@@ -690,12 +740,15 @@ export function parseStoryboard(
     const p = `scenes[${i}]`;
     if (lesson) {
       if (s.role === "note") {
-        if (i === 0 || i === sb.scenes.length - 1 || sb.scenes[i - 1]?.role === "quiz")
+        if (lessonRoles.has("next")) error(`${p}.role`, "next のあとには next だけを置けます");
+        else if (i === 0 || i === sb.scenes.length - 1 || sb.scenes[i - 1]?.role === "quiz")
           error(`${p}.role`, "note は最初・最後・quiz の直後を避けて置いてください");
       } else {
         const index = (LESSON_SEQUENCE as readonly SceneRole[]).indexOf(s.role);
         if (index >= 0) {
-          if (index < lastRoleIndex)
+          if (s.role === "next" && !lessonRoles.has("usage"))
+            error(`${p}.role`, "next は usage のあとに置いてください");
+          else if (index < lastRoleIndex)
             error(`${p}.role`, `場面は ${LESSON_SEQUENCE.join(" → ")} の順に並べてください`);
           lastRoleIndex = Math.max(lastRoleIndex, index);
         }
@@ -782,7 +835,8 @@ export function parseStoryboard(
   });
   if (lesson) {
     for (const role of LESSON_SEQUENCE)
-      if (!lessonRoles.has(role)) error("scenes", `${role} の場面を入れてください`);
+      if (role !== "next" && !lessonRoles.has(role))
+        error("scenes", `${role} の場面を入れてください`);
   } else {
     sb.brief.points.forEach((_, i) => {
       if (!pointNumbers.includes(i + 1)) error("scenes", `要点${i + 1}の場面がありません`);
@@ -828,7 +882,8 @@ export function parseStoryboard(
         ) ||
         b.travel !== undefined ||
         (b.zoom !== undefined && JSON.stringify(state.before.zoom) !== JSON.stringify(b.zoom));
-      if (s.kind !== "code" && !change) error(q, "絵が変わる動きを指定してください（空振りです）");
+      if (s.kind !== "code" && !change && !s.beats[j].term)
+        error(q, "絵が変わる動きを指定してください（空振りです）");
       const links = b.travel?.along.map((id) =>
         analysisBoards[name].links?.find((l) => l.id === id),
       );
@@ -858,6 +913,38 @@ export function parseStoryboard(
       path: `scenes[${last}]`,
       message: "まとめの終わりで全ノードが出ていません",
     });
+  const dictionary = sb.ruby;
+  if (dictionary && !issues.some((issue) => issue.level === "error")) {
+    const unused = new Set(Object.keys(dictionary));
+    const use = (text: string) => {
+      for (const part of rubyParts(text, dictionary)) if (part.reading) unused.delete(part.text);
+    };
+    for (const scene of sb.scenes) {
+      const name = sceneBoardName(scene);
+      const board = name === undefined ? undefined : analysisBoards[name];
+      for (const node of board?.nodes ?? []) use(node.label);
+      for (const link of board?.links ?? []) if (link.label) use(link.label);
+      for (const beat of scene.beats) {
+        use(beat.say);
+        if (beat.term && beat.term.ruby === undefined) use(beat.term.text);
+        if (scene.kind === "view") {
+          for (const label of (beat as ViewBeat).label ?? []) use(label.text);
+        } else if (scene.kind === "code") {
+          const { part, figure } = beat as CodeBeat;
+          if (part?.note) use(part.note);
+          for (const tag of Object.values(figure?.tag ?? {})) use(tag);
+        } else {
+          for (const tag of Object.values((beat as Beat).tag ?? {})) use(tag);
+        }
+      }
+    }
+    for (const word of unused)
+      issues.push({
+        level: "warning",
+        path: `ruby.${word}`,
+        message: `ruby の「${word}」はどこにも出てきません`,
+      });
+  }
   const seconds = sceneTimelines(
     sb.scenes,
     sb.scenes.map((s) => s.beats.map((b) => estimateSpeechSeconds(b.speech ?? b.say))),
@@ -974,6 +1061,7 @@ function validateView(
           error(`${p}.${key}`, `存在しない領域「${name}」です`);
     }
     const change =
+      beat.term !== undefined ||
       changed ||
       beat.clip !== undefined ||
       (beat.spot?.length ?? 0) > 0 ||

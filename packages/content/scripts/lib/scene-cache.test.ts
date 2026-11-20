@@ -216,6 +216,20 @@ describe("配信前の新方式ハッシュ", () => {
     expect(sceneCacheHash(plan())).toBe("0dc71d1989c88b2b553891fa101efd63");
     expect(sceneVideoSourceHash(input())).toBe("61298f02d212474d640556d90f0bc881");
   });
+  it("フリガナの変更で配信用動画を作り直す", () => {
+    const original = input();
+    const withRuby = {
+      ...original,
+      storyboard: { ...original.storyboard, ruby: { ファイル: "ふぁいる" } },
+    };
+    expect(sceneVideoSourceHash(withRuby)).not.toBe(sceneVideoSourceHash(original));
+    expect(
+      sceneVideoSourceHash({
+        ...withRuby,
+        storyboard: { ...withRuby.storyboard, ruby: { ファイル: "ファイル" } },
+      }),
+    ).not.toBe(sceneVideoSourceHash(withRuby));
+  });
   it("schema 2 の間の設定を場面と配信のハッシュに含める", () => {
     const scene = plan();
     const video = input();

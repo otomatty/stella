@@ -253,3 +253,11 @@ it("概念図の札をノードのラベルと値で説明する", () => {
     expect.arrayContaining(["札: 読む=3件", "札を外す: 書く"]),
   );
 });
+
+it("用語の表示を絵の説明に含める", () => {
+  const sb = fresh();
+  sb.schema = 2;
+  sb.scenes[0].beats[0].term = { text: "引数" };
+  const { scenes } = JSON.parse(buildPolishRequest(sb, "").user);
+  expect(scenes[0].lines[0].picture).toContain("用語の表示: 引数");
+});

@@ -1,13 +1,16 @@
 import type { SceneTimeline } from "./scene-timeline.js";
-import type { BoardMotion, Issue, SceneRole, SceneState } from "./video-storyboard.js";
+import type {
+  BoardMotion,
+  Issue,
+  NarratedBeat,
+  SceneRole,
+  SceneState,
+} from "./video-storyboard.js";
 
-export interface CodeBeat {
-  say: string;
-  speech?: string;
-  pause?: number;
+export interface CodeBeat extends NarratedBeat {
   type?: number[];
   focus?: number[];
-  part?: { line: number; text: string };
+  part?: { line: number; text: string; note?: string };
   set?: Record<string, string>;
   calc?: { on: string; expr: string; result: string };
   plot?: { at: number; label: string };
@@ -273,6 +276,15 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       else {
         line(b.part.line, `${p}.part.line`);
         text(b.part.text, `${p}.part.text`);
+        const note = b.part.note;
+        if (
+          note !== undefined &&
+          (typeof note !== "string" ||
+            !note.trim() ||
+            /[\r\n\t\u0085\u2028\u2029]/u.test(note) ||
+            Array.from(note).length > 8)
+        )
+          error(`${p}.part.note`, "空でない1行の文字列（8字以内）にしてください");
         if (
           typeof b.part.text === "string" &&
           typeof code[Number(b.part.line)] === "string" &&
@@ -360,6 +372,7 @@ export function validateCodeMotion(
       !focusChanged &&
       !partChanged &&
       !beat.calc &&
+      !beat.term &&
       !figureChanged[i]
     )
       error(p, "絵が変わる動きを指定してください（空振りです）");

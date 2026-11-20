@@ -182,12 +182,19 @@ kinds は上記6種類から選び、reason は日本語にしてください。
         lines: scene.beats.map((beat, i) => ({
           id: `${scene.id}#${i + 1}`,
           say: beat.say,
-          picture:
-            scene.kind === "view"
-              ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
-              : scene.kind === "code"
-                ? JSON.stringify(beat)
-                : pictureOf(boards[scene.board], beat as Beat),
+          picture: (() => {
+            const picture =
+              scene.kind === "view"
+                ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
+                : scene.kind === "code"
+                  ? JSON.stringify(beat)
+                  : pictureOf(boards[scene.board], beat as Beat);
+            if (!beat.term) return picture;
+            return [
+              ...(typeof picture === "string" ? [picture] : picture),
+              `用語の表示: ${beat.term.text}`,
+            ];
+          })(),
         })),
       })),
     },

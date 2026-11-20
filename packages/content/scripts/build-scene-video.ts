@@ -322,6 +322,7 @@ export async function buildSceneTopic(
       const { scene, timing, sourceIndex } = sequence[i];
       let previousFrame: string | undefined;
       if (
+        storyboard.schema === 1 &&
         i > 0 &&
         scene.kind !== "text" &&
         (scene.kind === "code" || sequence[i - 1].scene.kind === "code")
@@ -342,6 +343,8 @@ export async function buildSceneTopic(
           ? textSceneHtml(scene)
           : sceneHtml({
               board: sceneBoard(sourceIndex),
+              schema: storyboard.schema,
+              ruby: storyboard.ruby,
               scene,
               previousFrame,
               state: states[sourceIndex],

@@ -383,3 +383,22 @@ it.each([undefined, 3.5])("問題の強調と pause のあとに考える時間 
     Math.round(timing.duration * SCENE_TIMING.fps),
   );
 });
+
+it("用語は読み終わりから1.5秒保ち、そのあとに pause と文間を足す", () => {
+  const scene: Scene = {
+    id: "term",
+    role: "syntax",
+    title: "引数",
+    board: "main",
+    beats: [
+      { say: "引数です。", term: { text: "引数" }, pause: 1 },
+      { say: "次の文です。", term: { text: "値" } },
+    ],
+  };
+  const [{ beats }] = sceneTimelines([scene], [[2, 3]], {}, 2);
+  expect(beats[0].speechEnd).toBeCloseTo(2.8);
+  expect(beats[0].end).toBeCloseTo(5.3);
+  expect(beats[1].start).toBeCloseTo(6.9);
+  expect(beats[1].end - (beats[1].speechEnd ?? 0)).toBeCloseTo(1.5);
+  expect(sceneCaptionAt({ start: 0, duration: 15, beats }, 4)).toBe("");
+});

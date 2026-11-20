@@ -2,7 +2,7 @@ import { runInNewContext } from "node:vm";
 import { expect, it } from "vitest";
 import { codeSceneState, type CodeScene } from "../../src/scene-code.js";
 import { sceneTimelines } from "../../src/scene-timeline.js";
-import { storyboardStates, type Board } from "../../src/video-storyboard.js";
+import { storyboardStates, type Board, type Scene } from "../../src/video-storyboard.js";
 import { sceneHtml, type ScenePageWindow } from "./scene-html.js";
 
 it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・印・字幕と撮影区間を出す", async () => {
@@ -842,4 +842,175 @@ it("概念図のカード・矢印・イラストと、フェード・印・札�
   await window.__setTime(third.start + 0.4);
   expect(markup()).toContain('data-id="total" style="height:170px;opacity:0');
   expect(markup()).not.toContain('class="figure-tag"');
+});
+
+it("レッスン型はコードの前後をカットにし、冒頭だけ背景からフェードする", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "next",
+    role: "next",
+    title: "課題のコード",
+    code: ["const value = 1;"],
+    show: true,
+    beats: [{ say: "最初のコードです。" }],
+  };
+  const board = { cols: 1, rows: 1, nodes: [] };
+  const [timing] = sceneTimelines([scene], [[2]], {}, 2);
+  const input = {
+    scene,
+    board,
+    timing,
+    state: codeSceneState(scene),
+    index: 3,
+    total: 4,
+    previousFrame: "data:image/png;base64,YQ==",
+  };
+  const legacy = sceneHtml({ ...input, schema: 1 });
+  const cut = sceneHtml({ ...input, schema: 2 });
+  expect(legacy).toContain("previous-code-frame");
+  expect(cut).not.toContain(input.previousFrame);
+  expect(cut).not.toContain("previous-code-frame");
+  expect(cut).not.toContain('id="code-opening"');
+  const boardScene = {
+    id: "board",
+    role: "next",
+    title: "図",
+    board: "main",
+    beats: [{ say: "最初に見るものです。" }],
+  } satisfies Scene;
+  const viewScene = {
+    id: "view",
+    kind: "view",
+    role: "next",
+    title: "図",
+    image: "art:example",
+    beats: [{ say: "最初に見るものです。" }],
+  } satisfies Scene;
+  for (const scene of [boardScene, viewScene]) {
+    const [state] = storyboardStates({
+      schema: 2,
+      brief: { goal: "図", stuck: "図", points: ["図"], leaveOut: [] },
+      boards: { main: board },
+      scenes: [scene],
+    });
+    const frame = sceneHtml({ ...input, scene, state, schema: 2 });
+    expect(frame).not.toContain(input.previousFrame);
+    expect(frame).not.toContain("previous-code-frame");
+  }
+
+  for (const [html, schema, opening] of [
+    [legacy, 1, false],
+    [cut, 2, false],
+    [sceneHtml({ ...input, schema: 2, fadeFromBackground: true }), 2, true],
+  ] as const) {
+    const elements = new Map(
+      [
+        "code",
+        "panel",
+        "caption",
+        "card",
+        "previous-code-frame",
+        ...(opening ? ["code-opening"] : []),
+      ].map((id) => [id, { innerHTML: "", style: {} as Record<string, string> }]),
+    );
+    const window = {} as ScenePageWindow;
+    const vm = {
+      window,
+      document: { getElementById: (id: string) => elements.get(id), querySelectorAll: () => [] },
+    };
+    for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+      runInNewContext(script, vm);
+    await window.__setTime(0);
+    expect(elements.get("card")?.style.opacity).toBe(schema === 1 ? "0" : "1");
+    expect(elements.get("code-opening")?.style.opacity).toBe(opening ? "1" : undefined);
+    await window.__setTime(0.2);
+    if (schema === 1) {
+      expect(elements.get("previous-code-frame")?.style.opacity).toBe("0.5");
+      expect(elements.get("card")?.style.opacity).toBe("0.5");
+    } else expect(elements.get("card")?.style.opacity).toBe("1");
+    await window.__setTime(0.4);
+    expect(elements.get("code-opening")?.style.opacity).toBe(opening ? "0" : undefined);
+  }
+});
+
+it("意味の吹き出しはフリガナ付きで出て番号を消し、次の文で消える", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "name",
+    role: "point",
+    point: 1,
+    title: "関数を作る",
+    code: ["function add() {}"],
+    show: true,
+    beats: [
+      { say: "足すという意味です。", part: { line: 0, text: "add", note: "足す" } },
+      { say: "次の文です。", part: { line: 0, text: "add" } },
+    ],
+  };
+  const [timing] = sceneTimelines([scene], [[2, 2]]);
+  const html = sceneHtml({
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 2,
+    total: 3,
+    ruby: { 足す: "たす" },
+  });
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, script]) =>
+    script.includes("function partNoteRuntime("),
+  )?.[1];
+  if (!script) throw new Error("吹き出しの描画処理がありません");
+  let numbered = true;
+  let below = false;
+  let drawn = false;
+  const span = {
+    getBoundingClientRect: () => ({ left: 930, right: 1000, top: 28, bottom: 64 }),
+    classList: {
+      remove: (name: string) => {
+        if (name === "numbered") numbered = false;
+      },
+    },
+  };
+  const bubble = {
+    className: "",
+    innerHTML: "",
+    offsetWidth: 140,
+    offsetHeight: 44,
+    style: { setProperty: () => undefined } as Record<string, string | ((name: string) => void)>,
+    classList: {
+      toggle: (name: string, value: boolean) => {
+        if (name === "below") below = value;
+      },
+    },
+  };
+  const code = {
+    clientWidth: 1010,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    querySelector: () => span,
+    append: () => {
+      drawn = true;
+    },
+  };
+  const window = {
+    __busyRanges: [],
+    __setTime: async () => {
+      drawn = false;
+      numbered = true;
+    },
+  };
+  const document = { getElementById: () => code, createElement: () => bubble };
+  runInNewContext(script, { window, document });
+  const [first, next] = timing.beats;
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(window.__busyRanges).toEqual([[first.start, first.start + 0.3]]);
+  expect(drawn).toBe(true);
+  expect(numbered).toBe(false);
+  expect(below).toBe(true);
+  expect(bubble.style.left).toBe("862px");
+  expect(Number(bubble.style.opacity)).toBeCloseTo(1);
+  expect(bubble.innerHTML).toContain('<ruby>足す<rt style="font-size:0.45em">たす</rt></ruby>');
+  await (window as unknown as ScenePageWindow).__setTime(next.start);
+  expect(drawn).toBe(false);
+  expect(numbered).toBe(true);
 });

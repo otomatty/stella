@@ -72,6 +72,7 @@ export function sceneVideoSourceHash(input: {
     normalizeStoryboard({
       ...rest,
       boards: storyboard.boards,
+      ruby: storyboard.ruby && Object.keys(storyboard.ruby).length ? storyboard.ruby : undefined,
       scenes: storyboard.scenes,
       art: Object.fromEntries(
         Object.entries(storyboard.art ?? {}).map(([id, art]) => [id, { regions: art.regions }]),
