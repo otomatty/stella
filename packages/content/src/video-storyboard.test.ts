@@ -3,6 +3,7 @@ import { globSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  casualEnding,
   expandFocus,
   normalizeStoryboard,
   parseStoryboard,
@@ -760,6 +761,50 @@ describe("schema 2 のレッスン型", () => {
       reset: true,
       beats: [{ say: "値を比べます。", show: ["read"] }],
     })),
+  });
+  it.each([
+    "係がすることは、さっきと同じですね。",
+    "見終えると、形が分かるようになりますよ。",
+    "関数には、値を受け取る入口があるんです。",
+    "金額でしたね。",
+    "読みましょうね。",
+    "待ってくださいね。",
+    "どちらなんですか？",
+    "先に読むんでした。",
+    "答えは金額でしたよね?",
+  ])("くだけた文末を schema 2 の say でエラーにする (%s)", (say) => {
+    expect(casualEnding(say)).toBe(true);
+    const storyboard = lesson();
+    storyboard.scenes[0].beats[0].say = say;
+    expect(parseStoryboard(storyboard).issues.filter((issue) => issue.level === "error")).toEqual([
+      {
+        level: "error",
+        path: "scenes[0].beats[0].say",
+        message: "くだけた文末 (〜ね・〜よ・〜んです) は使いません。丁寧な説明の文末にしてください",
+      },
+    ]);
+
+    const legacy = fresh();
+    legacy.scenes[0].beats[0].say = say;
+    expect(parseStoryboard(legacy).storyboard).toEqual(legacy);
+  });
+  it.each([
+    "値を受け取る入口があります。",
+    "返す値を、戻り値と呼びます。",
+    "読んでみましょう。",
+    "思い浮かべてください。",
+    "いくつでしょうか？",
+    "数値だけではありません。",
+    "理由があるのです。",
+    "骨は、ほねと読みます。",
+    "屋根を見ます。",
+  ])("丁寧な文末を受け付ける (%s)", (say) => {
+    expect(casualEnding(say)).toBe(false);
+  });
+  it("speech のくだけた文末は検査しない", () => {
+    const storyboard = lesson();
+    storyboard.scenes[0].beats[0].speech = "値を比べますね。";
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
   });
   it.each([
     ["値です。", "名前です。", "です"],

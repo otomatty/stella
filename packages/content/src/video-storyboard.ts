@@ -395,6 +395,13 @@ export function storyboardStates(
 
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
+
+export function casualEnding(say: string): boolean {
+  return /(?:(?:です|ます|ました|でした|ません|でしょう|ましょう|ください)(?:よね|ね|よ)|んですか?|んでした)[。？?]?$/u.test(
+    say,
+  );
+}
+
 export function parseStoryboard(
   json: unknown,
   context?: StoryboardContext,
@@ -622,6 +629,11 @@ export function parseStoryboard(
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
       if (lesson) {
+        if (typeof beat.say === "string" && casualEnding(beat.say))
+          error(
+            `${q}.say`,
+            "くだけた文末 (〜ね・〜よ・〜んです) は使いません。丁寧な説明の文末にしてください",
+          );
         const ending =
           typeof beat.say === "string" && /[。？?]$/u.test(beat.say)
             ? Array.from(beat.say.slice(0, -1)).slice(-2)
