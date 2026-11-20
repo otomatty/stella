@@ -19,6 +19,7 @@ const thread: CommentThread = {
   resolved: false,
   can_delete: false,
   can_resolve: false,
+  mention_candidates: [{ id: author.id, name: author.name }],
   replies: [
     {
       id: "reply",
@@ -83,6 +84,7 @@ function render(
         ...playback,
       },
       onSeek: vi.fn(),
+      getPlaybackState: () => null,
       onPause: vi.fn(),
       onComposingChange: vi.fn(),
       focusThreadId,
@@ -186,5 +188,23 @@ describe("動画レッスンのコメント欄", () => {
     expect(html).toContain("動画の更新で、場面が無くなったコメントです。");
     expect(html).toContain(">更新前</span>");
     expect(html).not.toContain("へ移動");
+  });
+
+  it("通知で指定した更新前のスレッドの返信を開く", () => {
+    const html = render({
+      focus: { lessonId: "lesson", id: thread.id, fromNotification: true },
+      orphanedCount: 1,
+      orphanedOpen: true,
+      orphaned: {
+        threads: [{ ...thread, state: "orphaned", position_sec: null }],
+        hasMore: false,
+        loading: false,
+        error: undefined,
+        reload: vi.fn(),
+        loadMore: vi.fn(),
+      },
+    });
+    expect(html).toMatch(/<button[^>]+aria-expanded="true"[^>]*>返信 1 件を閉じる/);
+    expect(html).toContain("ありがとうございます");
   });
 });

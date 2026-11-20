@@ -143,7 +143,7 @@ it("新方式の上限は後続のスライド版の音声合成も止める", a
 });
 it("新方式の成功を配信のreportに載せ、出力が同じなら次回の生成を省く", async () => {
   const { root } = fixture();
-  const { scenes } = JSON.parse(readFileSync(join(root, "video.json"), "utf8"));
+  const { scenes, boards } = JSON.parse(readFileSync(join(root, "video.json"), "utf8"));
   const close = vi.fn();
   vi.mocked(chromium.launch).mockResolvedValue({ close } as unknown as Awaited<
     ReturnType<typeof chromium.launch>
@@ -176,7 +176,16 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
       durationSec: 90,
       sourceHash: expect.stringMatching(/^[a-f0-9]{32}$/),
       videoScenes: [
-        { id: "hook", startSec: 2.6, durationSec: 3.126, hash: videoSceneHash(scenes[0]) },
+        {
+          id: "hook",
+          startSec: 2.6,
+          durationSec: 3.126,
+          hash: videoSceneHash({
+            definition: scenes[0],
+            board: boards[scenes[0].board],
+            assets: {},
+          }),
+        },
       ],
     }),
   ]);

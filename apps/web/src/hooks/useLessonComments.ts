@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   COMMENT_PAGE_SIZE,
   type CommentFilter,
@@ -12,6 +12,7 @@ import type {
   VideoPlaybackState,
   VideoViewerHandle,
 } from "@/components/learner/VideoViewer";
+import { shouldOpenOrphanedComments } from "@/lib/lesson-comments";
 import {
   deleteLessonComment,
   listLessonComments,
@@ -23,30 +24,45 @@ type Query = Parameters<typeof listLessonComments>[0];
 type ListData = LessonCommentsResponse & { offset: number };
 type ListUpdate = (data: ListData) => ListData;
 type Sort = "time" | "new";
+type Focus = { lessonId: string; id: string; fromNotification?: true };
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "コメントの処理に失敗しました";
 }
 
 function useCommentPages(query: Query, enabled: boolean, include?: string) {
-  const [page, setPage] = useState<{ query: Query; data: ListData }>();
+  const [page, setPage] = useState<{ query: Query; data: ListData; loadedInclude?: string }>();
   const [request, setRequest] = useState<{ query: Query; error?: string }>();
   const [lastResponse, setLastResponse] = useState<{
     lessonId: string;
     data: LessonCommentsResponse;
     allTotal?: number;
   }>();
-  const pending = useRef<AbortController | null>(null);
+  const pendingPage = useRef<{ controller: AbortController; offset: number; pages: number } | null>(
+    null,
+  );
+  const pendingMetadata = useRef<AbortController | null>(null);
+  const requestSequence = useRef(0);
+  const metadataSequence = useRef(0);
   const lastFetch = useRef(0);
   const current = page?.query === query ? page.data : undefined;
 
   const load = useCallback(
     async (offset = 0, pages = 1, metadataOnly = false) => {
       if (!enabled) return;
-      pending.current?.abort();
       const controller = new AbortController();
-      pending.current = controller;
-      setRequest({ query });
+      const endOffset = offset + pages * COMMENT_PAGE_SIZE;
+      const sequence = ++requestSequence.current;
+      if (metadataOnly) {
+        pendingMetadata.current?.abort();
+        pendingMetadata.current = controller;
+      } else {
+        pendingPage.current?.controller.abort();
+        pendingPage.current = { controller, offset, pages };
+        setRequest({ query });
+      }
+      const isLatest = () =>
+        controller === (metadataOnly ? pendingMetadata.current : pendingPage.current?.controller);
       try {
         const results = await Promise.all(
           Array.from({ length: pages }, (_, index) =>
@@ -61,11 +77,16 @@ function useCommentPages(query: Query, enabled: boolean, include?: string) {
             ),
           ),
         );
-        if (controller.signal.aborted) return;
+        if (!isLatest()) return;
         const data = results[0];
+        // ページと件数の応答順が前後しても、新しい取得の件数を優先する。
+        const useMetadata = sequence > metadataSequence.current;
+        if (useMetadata) metadataSequence.current = sequence;
         setPage((previous) => {
-          if (metadataOnly && previous?.query === query) {
-            return { query, data: { ...previous.data, total: data.total } };
+          if (metadataOnly) {
+            return useMetadata && previous?.query === query
+              ? { ...previous, data: { ...previous.data, total: data.total } }
+              : previous;
           }
           const threads = offset && previous?.query === query ? previous.data.threads : [];
           const merged = new Map(threads.map((thread) => [thread.id, thread]));
@@ -74,35 +95,54 @@ function useCommentPages(query: Query, enabled: boolean, include?: string) {
           }
           return {
             query,
+            loadedInclude:
+              offset === 0
+                ? include
+                : previous?.query === query
+                  ? previous.loadedInclude
+                  : undefined,
             data: {
               ...data,
+              total: !useMetadata && previous?.query === query ? previous.data.total : data.total,
               threads: [...merged.values()],
-              offset: offset + pages * COMMENT_PAGE_SIZE,
+              offset: endOffset,
             },
           };
         });
-        setLastResponse((previous) => ({
-          lessonId: query.lessonId,
-          data,
-          allTotal:
-            query.scope !== "orphaned" && query.filter === "all"
-              ? data.total
-              : previous?.lessonId === query.lessonId
-                ? previous.allTotal
-                : undefined,
-        }));
-        setRequest(undefined);
+        if (useMetadata) {
+          setLastResponse((previous) => ({
+            lessonId: query.lessonId,
+            data,
+            allTotal:
+              query.scope !== "orphaned" && query.filter === "all"
+                ? data.total
+                : previous?.lessonId === query.lessonId
+                  ? previous.allTotal
+                  : undefined,
+          }));
+        }
+        if (!metadataOnly) setRequest(undefined);
         lastFetch.current = Date.now();
       } catch (error) {
-        if (!controller.signal.aborted) setRequest({ query, error: errorMessage(error) });
+        if (isLatest() && !metadataOnly) setRequest({ query, error: errorMessage(error) });
+      } finally {
+        if (isLatest()) {
+          if (metadataOnly) pendingMetadata.current = null;
+          else pendingPage.current = null;
+        }
       }
     },
     [enabled, query, include],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     void load();
-    return () => pending.current?.abort();
+    return () => {
+      pendingPage.current?.controller.abort();
+      pendingMetadata.current?.abort();
+      pendingPage.current = null;
+      pendingMetadata.current = null;
+    };
   }, [load]);
 
   const offset = current?.offset ?? 0;
@@ -117,9 +157,14 @@ function useCommentPages(query: Query, enabled: boolean, include?: string) {
     return () => document.removeEventListener("visibilitychange", refresh);
   }, [enabled, load, offset]);
 
-  const update = (patch: ListUpdate, countChange = 0) => {
+  const update = (patch: ListUpdate, countChange = 0, retryPage = true) => {
+    const interrupted = pendingPage.current;
+    interrupted?.controller.abort();
+    pendingMetadata.current?.abort();
+    pendingPage.current = null;
+    pendingMetadata.current = null;
     setPage((previous) =>
-      previous?.query === query ? { query, data: patch(previous.data) } : previous,
+      previous?.query === query ? { ...previous, data: patch(previous.data) } : previous,
     );
     setLastResponse((previous) =>
       previous?.lessonId === query.lessonId
@@ -130,16 +175,29 @@ function useCommentPages(query: Query, enabled: boolean, include?: string) {
           }
         : previous,
     );
+    if (interrupted) {
+      if (!retryPage) setRequest(undefined);
+      else if (countChange < 0) {
+        // スレッドの削除で offset がずれるので、同じ範囲を先頭から取り直す。
+        void load(0, Math.ceil(interrupted.offset / COMMENT_PAGE_SIZE) + interrupted.pages);
+      } else {
+        void load(interrupted.offset, interrupted.pages);
+      }
+    }
   };
 
   const error = request?.query === query ? request.error : undefined;
   return {
     data: current,
+    loadedInclude: page?.query === query ? page.loadedInclude : undefined,
     metadata: lastResponse?.lessonId === query.lessonId ? lastResponse : undefined,
     loading: enabled && ((!current && !error) || (request?.query === query && !error)),
     error,
     load,
-    refresh: () => load(0, 1, true),
+    refresh: () => {
+      if (current && page?.loadedInclude === include) return load(0, 1, true);
+      if (!pendingPage.current) return load();
+    },
     update,
     hasMore: current !== undefined && offset < current.total,
     loadMore: () => load(offset),
@@ -151,21 +209,24 @@ export function useLessonComments(
   {
     enabled,
     focusThreadId,
+    videoPath,
     currentTime = 0,
   }: {
     enabled: boolean;
     focusThreadId?: string;
+    videoPath?: string | null;
     currentTime?: number;
   },
 ) {
   const [sort, setSort] = useState<Sort>("time");
   const [selection, setSelection] = useState<{ lessonId: string; filter: CommentFilter }>();
-  const [focus, setFocus] = useState<{ lessonId: string; id: string }>();
+  const [focus, setFocus] = useState<Focus>();
   const [orphanedLessonId, setOrphanedLessonId] = useState<string>();
-  const [busy, setBusy] = useState(false);
-  const mutation = useRef(false);
+  const checkedNotification = useRef<Focus>(undefined);
+  const [busyLessons, setBusyLessons] = useState<ReadonlySet<string>>(() => new Set());
+  const mutations = useRef(new Set<string>());
   const activeLesson = useRef<string | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     activeLesson.current = enabled ? lessonId : null;
     return () => {
       activeLesson.current = null;
@@ -182,7 +243,7 @@ export function useLessonComments(
   useEffect(() => {
     if (focusThreadId) {
       setSelection({ lessonId, filter: "all" });
-      setFocus({ lessonId, id: focusThreadId });
+      setFocus({ lessonId, id: focusThreadId, fromNotification: true });
     }
   }, [lessonId, focusThreadId]);
 
@@ -222,29 +283,43 @@ export function useLessonComments(
   }, [lessonId, activeScenes]);
 
   const orphanedOpen = orphanedLessonId === lessonId;
+  useEffect(() => {
+    if (
+      !enabled ||
+      !target?.fromNotification ||
+      target.id !== focusThreadId ||
+      checkedNotification.current === target ||
+      filter !== "all" ||
+      active.loadedInclude !== target.id
+    )
+      return;
+    checkedNotification.current = target;
+    if (shouldOpenOrphanedComments(active.data, target.id)) setOrphanedLessonId(lessonId);
+  }, [active.data, active.loadedInclude, enabled, filter, focusThreadId, lessonId, target]);
+
   const orphanedQuery = useMemo(() => ({ lessonId, scope: "orphaned" as const }), [lessonId]);
   const orphaned = useCommentPages(orphanedQuery, enabled && orphanedOpen, focusThreadId);
 
   const latest = useRef({ active, orphaned });
-  useEffect(() => {
+  useLayoutEffect(() => {
     latest.current = { active, orphaned };
   });
 
   const mutate = async <T>(action: () => Promise<T>, apply: (value: T) => void) => {
-    if (!enabled || mutation.current) return false;
-    mutation.current = true;
-    setBusy(true);
+    if (!enabled || mutations.current.has(lessonId)) return false;
+    mutations.current.add(lessonId);
+    setBusyLessons(new Set(mutations.current));
     try {
       const value = await action();
       if (activeLesson.current !== lessonId) return false;
       apply(value);
       return true;
     } catch (error) {
-      toast.error(errorMessage(error));
+      if (activeLesson.current === lessonId) toast.error(errorMessage(error));
       return false;
     } finally {
-      mutation.current = false;
-      setBusy(false);
+      mutations.current.delete(lessonId);
+      setBusyLessons(new Set(mutations.current));
     }
   };
 
@@ -283,10 +358,10 @@ export function useLessonComments(
       reload: () => orphaned.load(),
       loadMore: orphaned.loadMore,
     },
-    busy,
+    busy: busyLessons.has(lessonId),
     post: (body: string, positionSec: number | null) =>
       mutate(
-        () => postLessonComment({ lessonId, body, positionSec }),
+        () => postLessonComment({ lessonId, body, positionSec, videoPath: videoPath ?? undefined }),
         (entry) => {
           if (!("replies" in entry)) return;
           const { active } = latest.current;
@@ -297,6 +372,7 @@ export function useLessonComments(
               total: data.total + 1,
             }),
             1,
+            false,
           );
           // 「すべて」への切り替えと include の変更で 1 回だけ取り直す。
           revealThread(entry.id);
@@ -371,27 +447,25 @@ const INITIAL_PLAYBACK: VideoPlaybackState = {
   ended: false,
 };
 
-export function useVideoLessonComments(lessonId: string, enabled: boolean, focusThreadId?: string) {
+export function useVideoLessonComments(
+  lessonId: string,
+  enabled: boolean,
+  videoPath: string | null | undefined,
+  focusThreadId?: string,
+) {
   const player = useRef<VideoViewerHandle | null>(null);
   const playerContainer = useRef<HTMLDivElement>(null);
-  const pendingSeek = useRef<{ lessonId: string; sec: number } | null>(null);
   const [reported, setReported] = useState<{ lessonId: string; playback: VideoPlaybackState }>();
   const [composing, setComposing] = useState<{ lessonId: string; active: boolean }>();
   const playback = reported?.lessonId === lessonId ? reported.playback : INITIAL_PLAYBACK;
   const comments = useLessonComments(lessonId, {
     enabled,
     focusThreadId,
+    videoPath,
     currentTime: playback.currentTime,
   });
   const onPlaybackChange = useCallback(
-    (playback: VideoPlaybackState) => {
-      const pending = pendingSeek.current;
-      if (playback.duration > 0 && pending?.lessonId === lessonId && player.current) {
-        pendingSeek.current = null;
-        player.current.seekTo(pending.sec);
-      }
-      setReported({ lessonId, playback });
-    },
+    (playback: VideoPlaybackState) => setReported({ lessonId, playback }),
     [lessonId],
   );
   return {
@@ -409,10 +483,9 @@ export function useVideoLessonComments(lessonId: string, enabled: boolean, focus
       if (player.current) {
         player.current.seekTo(sec);
         playerContainer.current?.scrollIntoView({ block: "nearest" });
-      } else {
-        pendingSeek.current = { lessonId, sec };
       }
     },
+    getPlaybackState: () => player.current?.getPlaybackState() ?? null,
     onPause: () => player.current?.pause(),
     onComposingChange: useCallback(
       (active: boolean) => setComposing({ lessonId, active }),

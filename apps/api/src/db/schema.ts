@@ -842,6 +842,20 @@ export const lessonComments = sqliteTable(
   }),
 );
 
+export const lessonCommentPosts = sqliteTable(
+  "lesson_comment_posts",
+  {
+    id: uuid(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    userCreatedIdx: index("lesson_comment_posts_user_created_idx").on(t.userId, t.createdAt),
+  }),
+);
+
 export const lessonCommentMentions = sqliteTable(
   "lesson_comment_mentions",
   {

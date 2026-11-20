@@ -41,6 +41,7 @@ const FILTERS = [
 export function LessonComments({
   comments,
   playback,
+  getPlaybackState,
   onSeek,
   onPause,
   onComposingChange,
@@ -50,6 +51,7 @@ export function LessonComments({
 }: {
   comments: Comments;
   playback: VideoPlaybackState;
+  getPlaybackState: () => VideoPlaybackState | null;
   onSeek: (sec: number) => void;
   onPause: () => void;
   onComposingChange: (composing: boolean) => void;
@@ -159,7 +161,6 @@ export function LessonComments({
           replyId === id ? (
             <ReplyComposer
               thread={thread}
-              viewerId={viewer.id}
               draft={draft}
               busy={comments.busy}
               onChange={(next) => setDrafts((previous) => ({ ...previous, [id]: next }))}
@@ -169,9 +170,7 @@ export function LessonComments({
               }}
               onCancel={() => clearReply(id)}
               onSubmit={async () => {
-                if (
-                  await comments.reply(thread, draft.body, mentionedIds(draft.body, draft.mentions))
-                ) {
+                if (await comments.reply(thread, draft.body, mentionedIds(draft.mentions))) {
                   setOpen(true);
                   clearReply(id);
                 }
@@ -219,7 +218,9 @@ export function LessonComments({
                 variant="ghost"
                 className={COMMENT_ACTION}
                 onClick={() =>
-                  setPosition(position === null ? Math.round(playback.currentTime * 10) / 10 : null)
+                  setPosition(
+                    position === null ? (getPlaybackState() ?? playback).currentTime : null,
+                  )
                 }
               >
                 {position === null ? "いまの場面に付ける" : "場面を付けずに書く"}
@@ -238,11 +239,12 @@ export function LessonComments({
             onChange={(event) => setBody(event.currentTarget.value)}
             onFocus={() => {
               setRootFocused(true);
+              onPause();
               if (!expanded) {
+                const state = getPlaybackState() ?? playback;
                 setExpanded(true);
-                setPosition(playback.ended ? null : defaultCommentPosition(playback));
+                setPosition(state.ended ? null : defaultCommentPosition(state));
               }
-              if (!playback.paused) onPause();
             }}
             onBlur={() => setRootFocused(false)}
             onKeyDown={(event) => {

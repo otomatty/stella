@@ -149,7 +149,12 @@ export const LessonPlayer = ({
   const lessonId = lessonObj?.id ?? "";
   const showVideo = Boolean(lessonObj && isVideoLesson(lessonObj));
   const threadFromRoute = lessonId === initialLesson?.id ? focusThreadId : undefined;
-  const video = useVideoLessonComments(lessonId, showVideo && materialsEnabled, threadFromRoute);
+  const video = useVideoLessonComments(
+    lessonId,
+    showVideo && materialsEnabled,
+    lessonObj?.videoPath,
+    threadFromRoute,
+  );
   const tabKey = JSON.stringify([lessonId, threadFromRoute]);
   const tab = tabSelection?.key === tabKey ? tabSelection.tab : showVideo ? "comments" : "content";
   useEffect(() => {
@@ -544,6 +549,7 @@ export const LessonPlayer = ({
                         key={lessonId}
                         comments={video.comments}
                         playback={video.playback}
+                        getPlaybackState={video.getPlaybackState}
                         onSeek={video.onSeek}
                         onPause={video.onPause}
                         onComposingChange={video.onComposingChange}

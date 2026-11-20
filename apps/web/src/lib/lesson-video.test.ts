@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { LessonRow } from "@stella/shared/cms/types";
 import { displayLessonType, isVideoLesson, nextLessonMeta } from "./lesson-video";
 
 describe("isVideoLesson", () => {
@@ -10,6 +11,11 @@ describe("isVideoLesson", () => {
     ["text", "lesson.mp4", false],
   ] as const)("%s (動画パス %s) の動画表示は %s", (type, videoPath, expected) => {
     expect(isVideoLesson({ type, videoPath })).toBe(expected);
+  });
+
+  it.each(["lesson.mp4", null])("管理者の video 行 (動画パス %s) を判定する", (video_path) => {
+    const row: Pick<LessonRow, "type" | "video_path"> = { type: "video", video_path };
+    expect(isVideoLesson({ type: row.type, videoPath: row.video_path })).toBe(video_path !== null);
   });
 });
 

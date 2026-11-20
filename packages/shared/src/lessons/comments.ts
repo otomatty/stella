@@ -1,6 +1,11 @@
 export const COMMENT_BODY_MAX = 2000;
 export const COMMENT_MENTIONS_MAX = 10;
 export const COMMENT_PAGE_SIZE = 20;
+export const COMMENT_NOTIFICATION_TYPES = [
+  "lesson_comment",
+  "lesson_comment_reply",
+  "lesson_comment_mention",
+] as const;
 
 export interface VideoScene {
   id: string;
@@ -18,8 +23,8 @@ export interface CommentAnchor {
 }
 
 export type CommentPosition =
-  | { state: "current" | "outdated"; positionSec: number }
-  | { state: "untimed" | "orphaned"; positionSec: null };
+  | { state: "current" | "outdated"; positionSec: number; sceneId: string | null }
+  | { state: "untimed" | "orphaned"; positionSec: null; sceneId: null };
 
 export function sceneAt<Scene extends Pick<VideoScene, "startSec" | "durationSec">>(
   scenes: readonly Scene[] | null,
@@ -40,23 +45,34 @@ export function resolveCommentPosition(
   comment: CommentAnchor,
   current: { videoPath: string | null; scenes: readonly VideoScene[] | null },
 ): CommentPosition {
-  if (comment.positionSec === null) return { state: "untimed", positionSec: null };
-  if (current.videoPath === null) return { state: "orphaned", positionSec: null };
+  if (comment.positionSec === null) return { state: "untimed", positionSec: null, sceneId: null };
+  if (current.videoPath === null) return { state: "orphaned", positionSec: null, sceneId: null };
   if (comment.videoPath === current.videoPath) {
-    return { state: "current", positionSec: comment.positionSec };
+    return {
+      state: "current",
+      positionSec: comment.positionSec,
+      sceneId: sceneAt(current.scenes, comment.positionSec)?.id ?? null,
+    };
   }
 
-  const scene = current.scenes?.find(({ id }) => id === comment.sceneId);
-  if (!scene || comment.sceneHash === null || comment.sceneOffsetSec === null) {
-    return { state: "orphaned", positionSec: null };
+  const sameId = current.scenes?.find(({ id }) => id === comment.sceneId);
+  if (comment.sceneHash === null || comment.sceneOffsetSec === null) {
+    return { state: "orphaned", positionSec: null, sceneId: null };
   }
-  if (scene.hash !== comment.sceneHash) {
-    return { state: "outdated", positionSec: scene.startSec };
+  let scene = sameId;
+  if (sameId?.hash !== comment.sceneHash) {
+    const matches = current.scenes?.filter(({ hash }) => hash === comment.sceneHash);
+    scene = matches?.length === 1 ? matches[0] : undefined;
   }
-  return {
-    state: "current",
-    positionSec: scene.startSec + Math.min(comment.sceneOffsetSec, scene.durationSec),
-  };
+  if (scene) {
+    return {
+      state: "current",
+      positionSec: scene.startSec + Math.min(comment.sceneOffsetSec, scene.durationSec),
+      sceneId: scene.id,
+    };
+  }
+  if (sameId) return { state: "outdated", positionSec: sameId.startSec, sceneId: sameId.id };
+  return { state: "orphaned", positionSec: null, sceneId: null };
 }
 
 export function mentionCandidates(
@@ -98,6 +114,7 @@ export interface CommentThread extends CommentEntry {
   resolved: boolean;
   can_resolve: boolean;
   replies: CommentReply[];
+  mention_candidates: CommentMention[];
 }
 
 export interface CommentMarker {

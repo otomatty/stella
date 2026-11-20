@@ -4,13 +4,19 @@ import {
   type CommentAuthor,
   type CommentMention,
   type CommentThread,
-  mentionCandidates,
 } from "@stella/shared/lessons/comments";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { applyMention, parseMentionQuery, splitMentions } from "@/lib/lesson-comments";
+import {
+  applyMention,
+  type MentionRange,
+  moveMentionRanges,
+  parseMentionQuery,
+  splitMentions,
+  trackMentionRanges,
+} from "@/lib/lesson-comments";
 import { relativeTime } from "@/lib/relative-time";
 import { cn } from "@/lib/utils";
 import { formatVideoTime } from "@/lib/video-player";
@@ -245,12 +251,11 @@ function ReplyText({ body, mentions }: { body: string; mentions: CommentMention[
 
 export interface ReplyDraft {
   body: string;
-  mentions: CommentMention[];
+  mentions: MentionRange[];
 }
 
 export function ReplyComposer({
   thread,
-  viewerId,
   draft,
   onChange,
   onFocusChange,
@@ -259,7 +264,6 @@ export function ReplyComposer({
   busy,
 }: {
   thread: CommentThread;
-  viewerId: string;
   draft: ReplyDraft;
   onChange: (draft: ReplyDraft) => void;
   onFocusChange: (focused: boolean) => void;
@@ -273,32 +277,30 @@ export function ReplyComposer({
   const field = useRef<HTMLTextAreaElement>(null);
   const listboxId = useId();
   const query = suggest ? parseMentionQuery(draft.body, caret) : null;
-  const authors = [thread.author, ...thread.replies.map(({ author }) => author)];
-  const names = new Map(authors.map(({ id, name }) => [id, name]));
   const options = query
-    ? mentionCandidates(
-        thread.author.id,
-        thread.replies.map(({ author }) => author.id),
-        viewerId,
-      ).flatMap((id) => {
-        const name = names.get(id);
-        return name?.toLocaleLowerCase().includes(query.query.toLocaleLowerCase())
-          ? [{ id, name }]
-          : [];
-      })
+    ? (thread.mention_candidates ?? []).filter(({ name }) =>
+        name.toLocaleLowerCase().includes(query.query.toLocaleLowerCase()),
+      )
     : [];
   const selectedIndex = Math.min(selected, options.length - 1);
   const optionId = (index: number) => `${listboxId}-${index}`;
   const disabled = busy || !draft.body.trim();
 
   const choose = (person: CommentMention) => {
-    if (!query) return;
-    const mention = applyMention(draft.body, { start: query.start, end: caret }, person.name);
-    if (mention.text.length > COMMENT_BODY_MAX) return;
-    onChange({ body: mention.text, mentions: [...draft.mentions, person] });
-    setCaret(mention.caret);
     setSuggest(false);
+    if (!query) return false;
+    const mention = applyMention(draft.body, { start: query.start, end: caret }, person.name);
+    if (mention.text.length > COMMENT_BODY_MAX) return false;
+    onChange({
+      body: mention.text,
+      mentions: [
+        ...moveMentionRanges(draft.mentions, query.start, caret, mention.caret - query.start),
+        { id: person.id, start: query.start, length: mention.caret - query.start - 1 },
+      ],
+    });
+    setCaret(mention.caret);
     requestAnimationFrame(() => field.current?.setSelectionRange(mention.caret, mention.caret));
+    return true;
   };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.nativeEvent.isComposing) return;
@@ -316,8 +318,7 @@ export function ReplyComposer({
         }
         case "Enter":
         case "Tab":
-          event.preventDefault();
-          choose(options[selectedIndex]);
+          if (choose(options[selectedIndex]) || event.key === "Enter") event.preventDefault();
           return;
         case "Escape":
           event.preventDefault();
@@ -351,8 +352,12 @@ export function ReplyComposer({
         readOnly={busy}
         value={draft.body}
         onChange={(event) => {
-          onChange({ ...draft, body: event.currentTarget.value });
-          setCaret(event.currentTarget.selectionStart);
+          const { value, selectionStart } = event.currentTarget;
+          onChange({
+            body: value,
+            mentions: trackMentionRanges(draft.body, value, draft.mentions, selectionStart),
+          });
+          setCaret(selectionStart);
           setSelected(0);
           setSuggest(true);
         }}

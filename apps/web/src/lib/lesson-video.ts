@@ -1,6 +1,9 @@
 import type { Lesson } from "@/data/types";
 
-export function isVideoLesson(lesson: Pick<Lesson, "type" | "videoPath">): boolean {
+export function isVideoLesson(lesson: {
+  type: Lesson["type"];
+  videoPath?: string | null;
+}): boolean {
   return (lesson.type === "video" || lesson.type === "slides") && Boolean(lesson.videoPath);
 }
 

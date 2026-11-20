@@ -52,6 +52,8 @@ import {
 } from "../src/narration.js";
 import { splitNarration, trimSilence } from "../src/narration-split.js";
 import { splitSlides } from "../src/split-slides.js";
+import { storyboardAssets } from "../src/storyboard-assets.js";
+import type { VideoStoryboard } from "../src/video-storyboard.js";
 import {
   buildTimeline,
   captionSegments,
@@ -275,10 +277,11 @@ const VIDEO_CSS = `html, body { margin: 0; padding: 0; background: #fff; }
   text-wrap: balance; word-break: auto-phrase;
 }`;
 
-function slidesHeadings(topic: VideoTopic): { title: string; isTitleSlide: boolean }[] {
+function slidesHeadings(topic: VideoTopic) {
   return splitSlides(topic.slidesSource).map((s) => ({
     title: s.cls === "lead" ? topic.title : (slideHeading(s.body) ?? topic.title),
     isTitleSlide: s.cls === "lead",
+    body: s.body,
   }));
 }
 
@@ -513,7 +516,10 @@ async function buildTopic(
     durationSec: timeline.duration,
     probedDurationSec: Math.round(probed * 1000) / 1000,
     slides,
-    videoScenes: slideVideoScenes(slides, topic.narration.slides),
+    videoScenes: slideVideoScenes(
+      slides.map((slide, i) => ({ ...slide, body: headings[i].body })),
+      topic.narration.slides,
+    ),
     cues: cues.length,
     speechChars,
     charsPerSec: Math.round((speechChars / audioSec) * 100) / 100,
@@ -826,16 +832,20 @@ export async function buildVideos(
         );
         if (!result) throw new Error("場面の動画がありません");
         // 生成コードは動画とキャッシュのハッシュに入るので、配信用の場面情報はここで作る。
-        const storyboard = JSON.parse(readFileSync(join(topic.topicDir, "video.json"), "utf8")) as {
-          scenes: { id: string }[];
-        };
+        const storyboard = JSON.parse(
+          readFileSync(join(topic.topicDir, "video.json"), "utf8"),
+        ) as VideoStoryboard;
+        const { hashes } = storyboardAssets(contentRoot, topic.topicDir, storyboard, {
+          onlyReferenced: true,
+        });
         if (planSceneTopic(topic, provider.identity) !== sourceHash)
           throw new Error("動画の入力が計画後に変わりました (生成後)");
         const report: TopicReport = {
           ...result,
           videoScenes: storyboardVideoScenes(
             result.scenes as Pick<VideoScene, "id" | "startSec" | "durationSec">[],
-            storyboard.scenes,
+            storyboard,
+            hashes,
           ),
           stageSlug: topic.stageSlug,
           id: topic.id,

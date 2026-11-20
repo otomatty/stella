@@ -1,6 +1,7 @@
 import {
   COMMENT_BODY_MAX,
   COMMENT_MENTIONS_MAX,
+  COMMENT_NOTIFICATION_TYPES,
   COMMENT_PAGE_SIZE,
   type CommentAuthor,
   type CommentMarker,
@@ -15,12 +16,13 @@ import {
   resolveCommentPosition,
   sceneAt,
 } from "@stella/shared/lessons/comments";
-import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { Db } from "../db/client.js";
 import {
   lessonCommentMentions,
+  lessonCommentPosts,
   lessonComments,
   lessons,
   notifications,
@@ -36,7 +38,11 @@ import {
   isStaffRole,
   loadActiveStaffIds,
 } from "../lib/authz.js";
-import { assertLessonReadable } from "../lib/lesson-access.js";
+import {
+  assertLessonReadable,
+  lessonReadableByProfile,
+  readableUserIds,
+} from "../lib/lesson-access.js";
 
 export const lessonCommentsRoute = new Hono<{ Bindings: Env }>();
 const PATH = "/api/lesson-comments";
@@ -44,11 +50,7 @@ const ROOT_LIMIT = 1000;
 const REPLY_LIMIT = 200;
 const POST_WINDOW_MS = 10 * 60 * 1000;
 const POST_LIMIT = 30;
-const COMMENT_NOTIFICATION_TYPES = [
-  "lesson_comment",
-  "lesson_comment_reply",
-  "lesson_comment_mention",
-] as const;
+const VIDEO_UPDATED = "動画が更新されました。画面を読み込み直してからコメントしてください";
 
 const anchorColumns = {
   id: lessonComments.id,
@@ -97,25 +99,30 @@ function threadResponse(
   row: Entry,
   caller: Caller,
   position: CommentPosition,
-  sceneId: string | null,
   resolved: boolean,
   replies: CommentReply[],
+  candidates: CommentMention[],
 ): CommentThread {
   return {
     ...commentEntry(row, caller),
     position_sec: position.positionSec,
     state: position.state,
-    scene_id: sceneId,
+    scene_id: position.sceneId,
     resolved,
     can_resolve: canManage(caller, row.userId),
     replies,
+    mention_candidates: candidates,
   };
 }
 
 async function readableVideo(db: Db, caller: Caller, lessonId: string) {
   const { stageId } = await assertLessonReadable(db, caller, lessonId);
   const [video] = await db
-    .select({ videoPath: lessons.videoPath, scenes: lessons.videoScenes })
+    .select({
+      videoPath: lessons.videoPath,
+      scenes: lessons.videoScenes,
+      totalSec: lessons.totalSec,
+    })
     .from(lessons)
     .where(eq(lessons.id, lessonId));
   if (!video) throw new ApiError("教材が見つかりません", 404);
@@ -136,7 +143,7 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
     .where(inArray(lessonComments.parentId, threadIds))
     .as("ranked_replies");
 
-  const [roots, replies, mentions] = await db.batch([
+  const [roots, replies, mentions, participants] = await db.batch([
     db
       .select(entryColumns)
       .from(lessonComments)
@@ -160,6 +167,18 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
       .innerJoin(profiles, eq(profiles.id, lessonCommentMentions.userId))
       .where(sql`${rankedReplies.rank} <= ${REPLY_LIMIT}`)
       .orderBy(asc(profiles.id)),
+    // 候補には、表示件数の上限より後に初めて返信した参加者も含める。
+    db
+      .select({
+        parentId: lessonComments.parentId,
+        id: profiles.id,
+        name: profiles.displayName,
+      })
+      .from(lessonComments)
+      .innerJoin(profiles, eq(profiles.id, lessonComments.userId))
+      .where(inArray(lessonComments.parentId, threadIds))
+      .groupBy(lessonComments.parentId, profiles.id, profiles.displayName)
+      .orderBy(sql`min(${lessonComments.createdAt})`, asc(profiles.id)),
   ]);
 
   const mentionsByReply = new Map<string, CommentMention[]>();
@@ -175,7 +194,18 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
     list.push({ ...commentEntry(row, caller), mentions: mentionsByReply.get(row.id) ?? [] });
     repliesByThread.set(row.parentId, list);
   }
-  return { roots: new Map(roots.map((row) => [row.id, row])), repliesByThread };
+  const participantsByThread = new Map<string, Map<string, string>>();
+  for (const root of roots) {
+    participantsByThread.set(root.id, new Map([[root.userId, root.name]]));
+  }
+  for (const { parentId, id, name } of participants) {
+    if (parentId) participantsByThread.get(parentId)?.set(id, name);
+  }
+  return {
+    roots: new Map(roots.map((row) => [row.id, row])),
+    repliesByThread,
+    participantsByThread,
+  };
 }
 
 function sceneResponse(scenes: VideoScene[] | null): LessonCommentsResponse["video"] {
@@ -261,15 +291,8 @@ lessonCommentsRoute.get(PATH, async (c) => {
       if ((scope === "orphaned") !== (position.state === "orphaned")) continue;
       if (filter === "mine" && root.userId !== caller.id) continue;
 
-      // 引き直した位置が場面の末尾でも、対応先は元と同じ ID の場面。
-      const currentSceneId =
-        position.positionSec === null
-          ? null
-          : root.videoPath === video.videoPath
-            ? (sceneAt(video.scenes, position.positionSec)?.id ?? null)
-            : root.sceneId;
-      if (filter === "scene" && currentSceneId !== sceneId) continue;
-      matches.push({ root, position, sceneId: currentSceneId });
+      if (filter === "scene" && position.sceneId !== sceneId) continue;
+      matches.push({ root, position });
     }
     if (scope === "active" && sort === "time") {
       matches.sort((a, b) => {
@@ -297,17 +320,28 @@ lessonCommentsRoute.get(PATH, async (c) => {
       caller,
       page.map(({ root }) => root.id),
     );
-    for (const { root, position, sceneId } of page) {
+    const participantIds = new Set<string>();
+    for (const participants of entries.participantsByThread.values()) {
+      for (const id of participants.keys()) {
+        if (id !== caller.id) participantIds.add(id);
+      }
+    }
+    const readableIds = await readableUserIds(db, lessonId, [...participantIds]);
+    for (const { root, position } of page) {
       const entry = entries.roots.get(root.id);
       if (!entry) continue;
+      const candidates: CommentMention[] = [];
+      for (const [id, name] of entries.participantsByThread.get(root.id) ?? []) {
+        if (readableIds.has(id)) candidates.push({ id, name });
+      }
       response.threads.push(
         threadResponse(
           entry,
           caller,
           position,
-          sceneId,
           root.resolvedAt !== null,
           entries.repliesByThread.get(root.id) ?? [],
+          candidates,
         ),
       );
     }
@@ -325,6 +359,7 @@ function parsePost(input: unknown) {
     lessonId,
     body,
     positionSec = null,
+    videoPath,
     parentId,
     mentionUserIds = [],
   } = input as Record<string, unknown>;
@@ -336,15 +371,15 @@ function parsePost(input: unknown) {
   if (parentId !== undefined && (typeof parentId !== "string" || !parentId)) {
     throw new ApiError("parentId の指定が不正です", 400);
   }
+  if (parentId === undefined && videoPath !== undefined && typeof videoPath !== "string") {
+    throw new ApiError("videoPath の指定が不正です", 400);
+  }
   if (
     parentId === undefined &&
     positionSec !== null &&
-    (typeof positionSec !== "number" ||
-      !Number.isFinite(positionSec) ||
-      positionSec < 0 ||
-      positionSec > 86400)
+    (typeof positionSec !== "number" || !Number.isFinite(positionSec) || positionSec < 0)
   ) {
-    throw new ApiError("動画の位置は 0〜86400 秒で指定してください", 400);
+    throw new ApiError("動画の位置は 0 以上の秒数で指定してください", 400);
   }
   if (
     !Array.isArray(mentionUserIds) ||
@@ -361,6 +396,7 @@ function parsePost(input: unknown) {
     lessonId,
     body: content,
     positionSec: !parentId && typeof positionSec === "number" ? positionSec : null,
+    expectedVideoPath: !parentId && typeof videoPath === "string" ? videoPath : undefined,
     parentId,
     mentionIds,
   };
@@ -387,24 +423,38 @@ async function replyParticipants(db: Db, caller: Caller, lessonId: string, paren
     .selectDistinct({ userId: lessonComments.userId })
     .from(lessonComments)
     .where(eq(lessonComments.parentId, parentId));
-  return mentionCandidates(
+  const participants = mentionCandidates(
     root.userId,
     replies.map(({ userId }) => userId),
     caller.id,
   );
+  return readableUserIds(db, lessonId, participants);
 }
 
 lessonCommentsRoute.post(PATH, async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const input = parsePost(await c.req.json().catch(() => null));
-    const { lessonId, body, positionSec, parentId, mentionIds } = input;
+    const { lessonId, body, positionSec, expectedVideoPath, parentId, mentionIds } = input;
     const video = await readableVideo(db, caller, lessonId);
+    if (expectedVideoPath !== undefined && expectedVideoPath !== video.videoPath) {
+      throw new ApiError(VIDEO_UPDATED, 409);
+    }
     if (video.videoPath === null) throw new ApiError("この教材にはコメントできません", 409);
-    const recipients = parentId
+    if (positionSec !== null) {
+      const lastScene = video.scenes?.at(-1);
+      const duration = lastScene ? lastScene.startSec + lastScene.durationSec : video.totalSec;
+      if (duration !== null && (lastScene || duration > 0)) {
+        if (positionSec > duration + 1) {
+          throw new ApiError("動画の位置が動画の長さを超えています", 400);
+        }
+      } else if (positionSec > 86400) {
+        throw new ApiError("動画の位置は 0〜86400 秒で指定してください", 400);
+      }
+    }
+    const recipientIds = parentId
       ? await replyParticipants(db, caller, lessonId, parentId)
-      : (await loadActiveStaffIds(db)).filter((id) => id !== caller.id);
-    const recipientIds = new Set(recipients);
+      : new Set((await loadActiveStaffIds(db)).filter((id) => id !== caller.id));
     if (!mentionIds.every((id) => recipientIds.has(id))) {
       throw new ApiError("メンションできるのは、このスレッドに参加している人だけです", 400);
     }
@@ -423,17 +473,23 @@ lessonCommentsRoute.post(PATH, async (c) => {
     };
 
     // INSERT の条件で件数を確かめ、同時投稿でも 30 件を超えないようにする。
+    const windowStart = new Date(createdAt.getTime() - POST_WINDOW_MS);
     const recentPosts = db
-      .select({ id: lessonComments.id })
-      .from(lessonComments)
+      .select({ id: lessonCommentPosts.id })
+      .from(lessonCommentPosts)
       .where(
         and(
-          eq(lessonComments.userId, caller.id),
-          gte(lessonComments.createdAt, new Date(createdAt.getTime() - POST_WINDOW_MS)),
+          eq(lessonCommentPosts.userId, caller.id),
+          gte(lessonCommentPosts.createdAt, windowStart),
         ),
       )
       .limit(1)
       .offset(POST_LIMIT - 1);
+    // 動画を読んでから INSERT するまでに差し替わった場合も、旧版の位置は保存しない。
+    const matchingVideo = db
+      .select({ id: lessons.id })
+      .from(lessons)
+      .where(and(eq(lessons.id, lessonId), eq(lessons.videoPath, video.videoPath)));
     const insert = db
       .insert(lessonComments)
       .select(sql`
@@ -441,10 +497,11 @@ lessonCommentsRoute.post(PATH, async (c) => {
         ${positionSec}, ${videoPath}, ${scene?.id ?? null}, ${offset}, ${scene?.hash ?? null},
         null, null, ${createdAt.getTime()}
       where not exists ${recentPosts}
+      ${expectedVideoPath === undefined ? sql.empty() : sql`and exists ${matchingVideo}`}
     `)
       .returning({ id: lessonComments.id });
 
-    const pending = recipients.map((userId) => {
+    const pending = [...recipientIds].map((userId) => {
       const mentioned = mentions.has(userId);
       const type = parentId
         ? mentioned
@@ -459,17 +516,31 @@ lessonCommentsRoute.post(PATH, async (c) => {
       return { id: crypto.randomUUID(), userId, type, title: `${caller.name}さんが${message}` };
     });
 
-    // 行を JSON 1 バインドで渡し、投稿が作られた場合だけ関連行を入れる。
+    // 投稿が作られた場合だけ関連行を入れる。
     const insertedComment = db
       .select({ id: lessonComments.id })
       .from(lessonComments)
       .where(eq(lessonComments.id, id));
+    const recordPost = db.insert(lessonCommentPosts).select(sql`
+      select ${id}, ${caller.id}, ${createdAt.getTime()}
+      where exists ${insertedComment}
+    `);
+    const prunePosts = db
+      .delete(lessonCommentPosts)
+      .where(
+        and(
+          eq(lessonCommentPosts.userId, caller.id),
+          lt(lessonCommentPosts.createdAt, windowStart),
+        ),
+      );
+    // 宛先の一覧は JSON 1 バインドで渡す。
     const insertMentions = db.insert(lessonCommentMentions).select(sql`
       select ${id}, ${profiles.id}
       from json_each(${JSON.stringify(mentionIds)}) as recipient
       inner join ${profiles} on ${profiles.id} = recipient.value
       where exists ${insertedComment}
     `);
+    // 宛先を調べた後に閲覧権が失われても、返信本文を含む通知は保存しない。
     const insertNotifications = db.insert(notifications).select(sql`
       select json_extract(recipient.value, '$.id'), ${profiles.id}, ${profiles.tenantId},
         json_extract(recipient.value, '$.type'), json_extract(recipient.value, '$.title'),
@@ -477,6 +548,7 @@ lessonCommentsRoute.post(PATH, async (c) => {
       from json_each(${JSON.stringify(pending)}) as recipient
       inner join ${profiles} on ${profiles.id} = json_extract(recipient.value, '$.userId')
       where exists ${insertedComment}
+      ${parentId ? sql`and ${lessonReadableByProfile(db, lessonId)}` : sql.empty()}
     `);
 
     const selectMentions = db
@@ -486,12 +558,16 @@ lessonCommentsRoute.post(PATH, async (c) => {
       .where(eq(lessonCommentMentions.commentId, id))
       .orderBy(asc(profiles.id));
 
-    const [inserted, , , savedMentions] = await db.batch([
+    const [inserted, , , , , savedMentions, matchedVideo] = await db.batch([
       insert,
+      recordPost,
+      prunePosts,
       insertMentions,
       insertNotifications,
       selectMentions,
+      ...(expectedVideoPath === undefined ? [] : ([matchingVideo] as const)),
     ]);
+    if (matchedVideo?.length === 0) throw new ApiError(VIDEO_UPDATED, 409);
     if (!inserted.length)
       throw new ApiError("コメントが多すぎます。時間をおいて再試行してください", 429);
 
@@ -511,7 +587,7 @@ lessonCommentsRoute.post(PATH, async (c) => {
       },
       video,
     );
-    return c.json(threadResponse(entry, caller, position, scene?.id ?? null, false, []), 201);
+    return c.json(threadResponse(entry, caller, position, false, [], []), 201);
   } catch (err) {
     return errorResponse(c, err);
   }

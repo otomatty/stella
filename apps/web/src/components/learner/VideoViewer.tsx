@@ -58,6 +58,7 @@ export interface VideoPlaybackState {
 
 export interface VideoViewerHandle {
   seekTo(sec: number): void;
+  getPlaybackState(): VideoPlaybackState | null;
   pause(): void;
   play(): void;
 }
@@ -229,6 +230,10 @@ export function reachesVideoCompletion(currentTime: number, duration: number): b
   );
 }
 
+export function seekDismissesNextOverlay(currentTime: number, duration: number): boolean {
+  return Number.isFinite(duration) && currentTime < duration - 1;
+}
+
 export function VideoViewer({
   lessonId,
   videoPath,
@@ -303,6 +308,21 @@ export function VideoViewer({
     };
   }, []);
   const hasPlayedRef = useRef(false);
+  const pendingSeek = useRef<number | null>(null);
+  const readPlayback = useCallback(
+    (video: HTMLVideoElement): VideoPlaybackState => ({
+      currentTime: video.currentTime,
+      duration: Number.isFinite(video.duration) ? video.duration : seekDuration,
+      paused: video.paused,
+      hasPlayed: hasPlayedRef.current,
+      ended: video.ended,
+    }),
+    [seekDuration],
+  );
+  const getPlaybackState = useCallback(
+    () => (videoRef.current ? readPlayback(videoRef.current) : null),
+    [readPlayback],
+  );
   const lastPlaybackState = useRef<VideoPlaybackState | null>(null);
   const reportPlayback = useCallback(
     (video: HTMLVideoElement, fromTimeUpdate = false) => {
@@ -314,13 +334,7 @@ export function VideoViewer({
       ) {
         return;
       }
-      const state = {
-        currentTime: video.currentTime,
-        duration: Number.isFinite(video.duration) ? video.duration : seekDuration,
-        paused: video.paused,
-        hasPlayed: hasPlayedRef.current,
-        ended: video.ended,
-      };
+      const state = readPlayback(video);
       if (
         previous?.currentTime === state.currentTime &&
         previous.duration === state.duration &&
@@ -333,13 +347,26 @@ export function VideoViewer({
       lastPlaybackState.current = state;
       onPlaybackChange(state);
     },
-    [onPlaybackChange, seekDuration],
+    [onPlaybackChange, readPlayback],
   );
 
   const completedRef = useRef(isCompleted);
   const lastSaveRef = useRef<number>(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumedRef = useRef(false);
+
+  const seekTo = useCallback((time: number) => {
+    const video = videoRef.current;
+    if (!Number.isFinite(time)) return;
+    if (!video || video.readyState === 0) {
+      pendingSeek.current = time;
+      return;
+    }
+    pendingSeek.current = null;
+    resumedRef.current = true;
+    video.currentTime = Math.max(0, Math.min(video.duration || Number.POSITIVE_INFINITY, time));
+    setCurrentTime(video.currentTime);
+  }, []);
 
   const url = useMemo<string | null>(() => {
     if (!isBackendConfigured()) return null;
@@ -378,10 +405,11 @@ export function VideoViewer({
     v.playbackRate = speed;
     const track = v.textTracks[0];
     if (captionsPath && track?.mode === "disabled") track.mode = "showing";
-    resumePlayback();
+    if (pendingSeek.current !== null) seekTo(pendingSeek.current);
+    else resumePlayback();
     setCurrentTime(v.currentTime);
     reportPlayback(v);
-  }, [captionsPath, resumePlayback, speed, reportPlayback]);
+  }, [captionsPath, resumePlayback, seekTo, speed, reportPlayback]);
 
   // メタデータが先に読み終わっていた場合は、 進捗が決着した時点で再開位置を当てる。
   useEffect(() => {
@@ -542,14 +570,12 @@ export function VideoViewer({
     setCaptionsShowing(track.mode === "showing");
   };
 
-  const seekTo = useCallback((time: number) => {
-    const video = videoRef.current;
-    if (!video || !Number.isFinite(time)) return;
-    video.currentTime = Math.max(0, Math.min(video.duration || Number.POSITIVE_INFINITY, time));
-    setCurrentTime(video.currentTime);
-  }, []);
-
-  useImperativeHandle(ref, () => ({ seekTo, pause, play }), [seekTo, pause, play]);
+  useImperativeHandle(ref, () => ({ seekTo, pause, play, getPlaybackState }), [
+    seekTo,
+    pause,
+    play,
+    getPlaybackState,
+  ]);
 
   const seek = useCallback(
     (deltaSec: number) => {
@@ -743,7 +769,14 @@ export function VideoViewer({
               onClick={togglePlaybackFromVideo}
               onLoadedMetadata={onLoadedMetadata}
               onTimeUpdate={onTimeUpdate}
-              onSeeked={(event) => reportPlayback(event.currentTarget)}
+              onSeeked={(event) => {
+                const video = event.currentTarget;
+                if (seekDismissesNextOverlay(video.currentTime, video.duration)) {
+                  setShowNextOverlay(false);
+                  setCountdown(null);
+                }
+                reportPlayback(video);
+              }}
               onVolumeChange={(event) => setIsMuted(event.currentTarget.muted)}
               onPlay={onPlay}
               onPause={onPauseOrEnded}

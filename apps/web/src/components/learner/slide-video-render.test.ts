@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SlideLessonMedia } from "./SlideLessonMedia";
-import { reachesVideoCompletion, VideoViewer } from "./VideoViewer";
+import { reachesVideoCompletion, seekDismissesNextOverlay, VideoViewer } from "./VideoViewer";
 
 vi.mock("@/lib/backend", () => ({ isBackendConfigured: () => true }));
 vi.mock("@/lib/storage", () => ({
@@ -28,6 +28,18 @@ describe("スライド動画の完了判定", () => {
     [90, Number.POSITIVE_INFINITY, false],
   ])("再生位置 %s 秒、長さ %s 秒の完了判定は %s", (currentTime, duration, expected) => {
     expect(reachesVideoCompletion(currentTime, duration)).toBe(expected);
+  });
+});
+
+describe("シーク後に次の教材の案内を閉じる判定", () => {
+  it.each([
+    [98.99, 100, true],
+    [99, 100, false],
+    [100, 100, false],
+    [30, Number.NaN, false],
+    [30, Number.POSITIVE_INFINITY, false],
+  ])("再生位置 %s 秒、長さ %s 秒では案内を閉じるか (%s)", (time, duration, expected) => {
+    expect(seekDismissesNextOverlay(time, duration)).toBe(expected);
   });
 });
 

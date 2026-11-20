@@ -35,6 +35,7 @@ interface PostLessonCommentInput {
   lessonId: string;
   body: string;
   positionSec?: number | null;
+  videoPath?: string;
   parentId?: string;
   mentionUserIds?: readonly string[];
 }

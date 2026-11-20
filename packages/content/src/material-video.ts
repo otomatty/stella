@@ -1,6 +1,6 @@
 /** 配信する3ファイルは同じ内容ハッシュを共有する。旧版は台帳に残す。 */
 import { createHash } from "node:crypto";
-import { normalizeStoryboard } from "./video-storyboard.js";
+import { normalizeStoryboard, type VideoStoryboard } from "./video-storyboard.js";
 
 export const SCREEN_VIDEO_FILES = ["screen.mp4", "screen.vtt", "screen.jpg"] as const;
 
@@ -52,24 +52,41 @@ function toVideoScene(id: string, timing: SceneTiming, definition: unknown): Vid
 
 export function storyboardVideoScenes(
   report: ReadonlyArray<SceneTiming & { id: string }>,
-  definitions: ReadonlyArray<{ id: string }>,
+  storyboard: Pick<VideoStoryboard, "scenes" | "boards">,
+  assetHashes: Readonly<Record<string, string>>,
 ): VideoScene[] {
-  const byId = new Map(definitions.map((scene) => [scene.id, scene]));
+  const byId = new Map(storyboard.scenes.map((scene) => [scene.id, scene]));
   return report.flatMap((timing) => {
     const definition = byId.get(timing.id);
     // 自動生成のタイトル画面は絵コンテに定義がない。
-    return definition ? [toVideoScene(timing.id, timing, definition)] : [];
+    if (!definition) return [];
+    const board = "board" in definition ? storyboard.boards?.[definition.board] : undefined;
+    const references = new Set<string>();
+    if (definition.kind === "view") {
+      references.add(definition.image);
+      for (const beat of definition.beats) {
+        if (beat.image) references.add(beat.image);
+        if (beat.clip) references.add(`clip:${beat.clip}`);
+      }
+    }
+    for (const node of board?.nodes ?? []) {
+      if (node.art) references.add(`art:${node.art}`);
+    }
+    const assets = Object.fromEntries([...references].map((ref) => [ref, assetHashes[ref]]));
+    const content = board || references.size ? { definition, board, assets } : definition;
+    return [toVideoScene(timing.id, timing, content)];
   });
 }
 
 export function slideVideoScenes(
-  slides: ReadonlyArray<SceneTiming & { title: string }>,
+  slides: ReadonlyArray<SceneTiming & { title: string; body: string }>,
   narration: ReadonlyArray<{ cues: ReadonlyArray<{ text: string }> }>,
 ): VideoScene[] {
   return slides.map((slide, i) =>
     toVideoScene(`slide-${i + 1}`, slide, [
       slide.title,
       narration[i].cues.map((cue) => cue.text).join(""),
+      slide.body,
     ]),
   );
 }

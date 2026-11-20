@@ -6,7 +6,9 @@ import type {
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { Env } from "../env.js";
+import { getDb } from "../db/client.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { readableUserIds } from "../lib/lesson-access.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { lessonCommentsRoute } from "./lesson-comments.js";
@@ -139,6 +141,7 @@ describe("動画レッスンのコメント API", () => {
       can_delete: true,
       can_resolve: true,
       replies: [],
+      mention_candidates: [],
     });
     expect(
       db.sqlite
@@ -184,6 +187,7 @@ describe("動画レッスンのコメント API", () => {
       parentId: root.id,
       mentionUserIds: [learner, learner],
       positionSec: 5,
+      videoPath: "older.mp4",
     });
     expect(reply.mentions).toEqual([{ id: learner, name: "受講者" }]);
     expect(
@@ -222,6 +226,61 @@ describe("動画レッスンのコメント API", () => {
     expect(thread.replies.find(({ id }) => id === reply.id)).toEqual(reply);
   });
 
+  it("先頭の投稿は表示中の動画と版が違うと拒否し、同じ版と旧クライアントの投稿は保存する", async () => {
+    const stale = await post(learner, { videoPath: "older.mp4", positionSec: 12 });
+    expect(stale.status).toBe(409);
+    expect(await json(stale)).toEqual({
+      error: "動画が更新されました。画面を読み込み直してからコメントしてください",
+    });
+    expect((await list()).total).toBe(0);
+    expect(await create(learner, { videoPath: "old.mp4", positionSec: 12 })).toMatchObject({
+      position_sec: 12,
+      scene_id: "search",
+    });
+    expect(await create(learner, { positionSec: 13 })).toMatchObject({ position_sec: 13 });
+  });
+
+  it("投稿の保存直前に動画が差し替わった場合も旧版の位置を拒否する", async () => {
+    const batch = db.binding.batch.bind(db.binding);
+    db.binding.batch = (statements) => {
+      db.sqlite.exec("UPDATE lessons SET video_path = 'new.mp4' WHERE id = 'video'");
+      return batch(statements);
+    };
+    const stale = await post(learner, { videoPath: "old.mp4", positionSec: 12 });
+    expect(stale.status).toBe(409);
+    expect((await list()).total).toBe(0);
+    expect(db.sqlite.prepare("SELECT count(*) AS n FROM lesson_comment_posts").get()).toEqual({
+      n: 0,
+    });
+  });
+
+  it("最後の場面の終点と 1 秒の余裕を受け付け、その先は拒否する", async () => {
+    db.sqlite.exec("UPDATE lessons SET total_sec = 100 WHERE id = 'video'");
+    expect(await create(learner, { positionSec: 30 })).toMatchObject({
+      position_sec: 30,
+      scene_id: "end",
+    });
+    expect(await create(learner, { positionSec: 31 })).toMatchObject({ position_sec: 31 });
+    const pastEnd = await post(learner, { positionSec: 31.01 });
+    expect(pastEnd.status).toBe(400);
+    expect(await json(pastEnd)).toEqual({ error: "動画の位置が動画の長さを超えています" });
+  });
+
+  it("場面がなければ total_sec を使い、それもなければ 86400 秒まで受け付ける", async () => {
+    const lessonId = lessons.legacy;
+    expect(await create(learner, { lessonId, positionSec: 86400 })).toMatchObject({
+      position_sec: 86400,
+    });
+    expect((await post(learner, { lessonId, positionSec: 86401 })).status).toBe(400);
+    db.sqlite.exec("UPDATE lessons SET total_sec = 60 WHERE id = 'legacy'");
+    expect(await create(learner, { lessonId, positionSec: 61 })).toMatchObject({
+      position_sec: 61,
+    });
+    const pastEnd = await post(learner, { lessonId, positionSec: 61.01 });
+    expect(pastEnd.status).toBe(400);
+    expect(await json(pastEnd)).toEqual({ error: "動画の位置が動画の長さを超えています" });
+  });
+
   it("本文・位置・メンションを検証する", async () => {
     const root = await create();
     for (const details of [
@@ -253,18 +312,88 @@ describe("動画レッスンのコメント API", () => {
     ).toBe(400);
   });
 
-  it("直近 10 分の 31 件目を拒否し、通知もコメントも追加しない", async () => {
-    const insert = db.sqlite.prepare(`
-      INSERT INTO lesson_comments (id, lesson_id, user_id, body, created_at)
-      VALUES (?, 'video', 'learner', '', ?)
+  it("閲覧権を失った参加者のコメントを残し、通知とメンションの候補から外す", async () => {
+    const root = await create();
+    const disabledReply = await create<CommentReply>(third, { parentId: root.id });
+    const demotedReply = await create<CommentReply>(admin, { parentId: root.id });
+    const readableReply = await create<CommentReply>(other, { parentId: root.id });
+    db.sqlite.exec(`
+      DELETE FROM enrollments WHERE user_id = 'learner';
+      UPDATE profiles SET disabled = 1 WHERE id = 'third';
+      UPDATE profiles SET role = 'student' WHERE id = 'admin';
     `);
+
+    for (const id of [learner, third, admin]) {
+      const response = await post(other, { parentId: root.id, mentionUserIds: [id] });
+      expect(response.status).toBe(400);
+      expect(await json(response)).toEqual({
+        error: "メンションできるのは、このスレッドに参加している人だけです",
+      });
+    }
+    const [thread] = (await list("", other)).threads;
+    expect(thread.author.id).toBe(learner);
+    expect(thread.replies.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([disabledReply.id, demotedReply.id, readableReply.id]),
+    );
+    expect(thread.mention_candidates).toEqual([]);
+
+    const reply = await create<CommentReply>(other, { parentId: root.id });
+    expect(notes(reply.id)).toEqual([]);
+    db.sqlite.exec("UPDATE profiles SET role = 'admin' WHERE id = 'admin'");
+    const [threadForAdmin] = (await list("", admin)).threads;
+    expect(threadForAdmin.mention_candidates).toEqual([{ id: other, name: "別の受講者" }]);
+    const replyForOther = await create<CommentReply>(admin, {
+      parentId: root.id,
+      mentionUserIds: [other],
+    });
+    expect(notes(replyForOther.id)).toMatchObject([
+      { user_id: other, type: "lesson_comment_mention" },
+    ]);
+    const replyForAdmin = await create<CommentReply>(other, { parentId: root.id });
+    expect(notes(replyForAdmin.id)).toMatchObject([
+      { user_id: admin, type: "lesson_comment_reply" },
+    ]);
+  });
+
+  it("readableUserIds は有効な管理者と公開中の教材を閲覧できる受講者を返す", async () => {
+    const client = getDb(test.env);
+    db.sqlite.exec("UPDATE enrollments SET status = 'expired' WHERE user_id = 'third'");
+    const ids = [admin, "disabled", learner, other, third, outsider, "missing", learner];
+    expect(await readableUserIds(client, lessons.video, ids)).toEqual(
+      new Set([admin, learner, other]),
+    );
+    expect(await readableUserIds(client, lessons.video, [])).toEqual(new Set());
+    expect(await readableUserIds(client, "missing", ids)).toEqual(new Set());
+
+    db.sqlite.exec("UPDATE stages SET status = 'draft' WHERE id = 'stage'");
+    expect(await readableUserIds(client, lessons.video, ids)).toEqual(new Set([admin]));
+  });
+
+  it("30 件投稿して 1 件消しても、直近 10 分の 31 件目は拒否する", async () => {
+    const first = await create();
+    for (let i = 1; i < 30; i++) await create();
+    expect((await call(`${path}/${first.id}`, learner, "DELETE")).status).toBe(200);
+    expect((await post(learner)).status).toBe(429);
+    expect(db.sqlite.prepare("SELECT count(*) AS n FROM lesson_comment_posts").get()).toEqual({
+      n: 30,
+    });
+    expect(db.sqlite.prepare("SELECT count(*) AS n FROM lesson_comments").get()).toEqual({ n: 29 });
+    expect(db.sqlite.prepare("SELECT count(*) AS n FROM notifications").get()).toEqual({ n: 29 });
+  });
+
+  it("10 分より古い投稿記録は件数に含めず、その人の分を削除する", async () => {
+    const insert = db.sqlite.prepare(
+      "INSERT INTO lesson_comment_posts (id, user_id, created_at) VALUES (?, ?, ?)",
+    );
     const now = Date.now();
-    insert.run("outside-window", now - 10 * 60 * 1000 - 10_000);
-    for (let i = 0; i < 29; i++) insert.run(`recent-${i}`, now);
+    for (let i = 0; i < 29; i++) insert.run(`recent-${i}`, learner, now);
+    insert.run("expired", learner, now - 10 * 60 * 1000 - 10_000);
+    insert.run("other-expired", other, now - 10 * 60 * 1000 - 10_000);
     await create();
     expect((await post(learner)).status).toBe(429);
-    expect(db.sqlite.prepare("SELECT count(*) AS n FROM lesson_comments").get()).toEqual({ n: 31 });
-    expect(db.sqlite.prepare("SELECT count(*) AS n FROM notifications").get()).toEqual({ n: 1 });
+    expect(
+      db.sqlite.prepare("SELECT id FROM lesson_comment_posts WHERE created_at < ?").all(now),
+    ).toEqual([{ id: "other-expired" }]);
   });
 
   it("削除は本人か管理者に限り、通知を一緒に消して管理者の操作を監査する", async () => {
@@ -414,14 +543,17 @@ describe("動画レッスンのコメント API", () => {
       .prepare("UPDATE lessons SET video_path = 'new.mp4', video_scenes = ? WHERE id = 'video'")
       .run(
         JSON.stringify([
-          { ...initialScenes[0], durationSec: 6 },
+          { ...initialScenes[0], id: "moved-intro", durationSec: 6 },
           { ...initialScenes[1], startSec: 6 },
         ]),
       );
 
-    const result = await list(`&filter=scene&sceneId=intro&include=${search.id}`);
+    const result = await list(`&filter=scene&sceneId=moved-intro&include=${search.id}`);
     expect(result.total).toBe(1);
-    expect(result.threads).toMatchObject([{ id: intro.id, scene_id: "intro", position_sec: 6 }]);
+    expect(result.threads).toMatchObject([
+      { id: intro.id, scene_id: "moved-intro", position_sec: 6, state: "current" },
+    ]);
+    expect((await list("&filter=scene&sceneId=intro")).total).toBe(0);
     expect(result.orphaned_count).toBe(1);
     expect(result.markers).toHaveLength(2);
     expect((await call(`${path}?lessonId=video&filter=scene`, learner)).status).toBe(400);
@@ -453,7 +585,8 @@ describe("動画レッスンのコメント API", () => {
   it("参加者が D1 のバインド上限より多くても通知し、表示する返信は 200 件まで", async () => {
     const root = await create();
     const addProfile = db.sqlite.prepare(`
-      INSERT INTO profiles (id, tenant_id, display_name, created_at) VALUES (?, 'ses', ?, 1)
+      INSERT INTO profiles (id, tenant_id, role, display_name, created_at)
+      VALUES (?, 'ses', 'admin', ?, 1)
     `);
     const addReply = db.sqlite.prepare(`
       INSERT INTO lesson_comments (id, lesson_id, user_id, parent_id, body, created_at)
@@ -469,5 +602,10 @@ describe("動画レッスンのコメント API", () => {
     const [thread] = (await list()).threads;
     expect(thread.replies).toHaveLength(200);
     expect(thread.replies.at(-1)?.id).toBe("reply-199");
+    expect(thread.mention_candidates).toHaveLength(206);
+    expect(thread.mention_candidates).toContainEqual({
+      id: "participant-204",
+      name: "participant-204",
+    });
   });
 });
