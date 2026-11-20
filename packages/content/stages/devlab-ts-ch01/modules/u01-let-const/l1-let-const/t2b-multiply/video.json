@@ -1,0 +1,807 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "アスタリスクを使った式を読んで、掛け算の結果を言える。",
+    "stuck": "キーボードに × が無く、* が掛け算の記号だと知らない。",
+    "points": ["掛け算は、× ではなくアスタリスク (*) で書く。"],
+    "leaveOut": [
+      "割り算と余りの書き方",
+      "足し算と掛け算を混ぜたときの順番",
+      "引数が 2 つ以上ある関数",
+      "Math.floor",
+      "問1の答えのコード"
+    ]
+  },
+  "art": {
+    "books": {
+      "prompt": "A friendly robot clerk (white rounded body, blue accents, dark screen face with a simple smile, small antenna) stands behind a shop counter in the center. Composition strictly left to right with wide gaps: on the left third of the counter, one closed purple hardcover book standing upright; on the right third of the counter, a row of three identical closed purple hardcover books standing upright side by side. Front view, no shelves, no background objects. No people, no letters, no digits, no symbols.",
+      "aspect": "16:9",
+      "regions": {
+        "one": [0.19, 0.39, 0.12, 0.25],
+        "three": [0.685, 0.385, 0.18, 0.26]
+      }
+    },
+    "onebook": {
+      "prompt": "One closed purple hardcover book standing upright with a blank price tag. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "stack": {
+      "prompt": "Three identical closed purple hardcover books stacked neatly on top of each other. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "bill": {
+      "prompt": "Two blank banknote shapes and a few coins lying on a small tray. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "qty": {
+      "prompt": "A shopping cart holding four identical light grey boxes. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "wage": {
+      "prompt": "A round wall clock with no numbers next to a small stack of coins. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "area": {
+      "prompt": "A simple rectangular floor plan of one room seen from above, drawn as a plain outline with a door gap. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "price": {
+      "prompt": "One closed hardcover book standing upright, with a blank price tag hanging from it on a short string. Nothing else in the image."
+    },
+    "tax": {
+      "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
+    },
+    "total": {
+      "prompt": "A blank paper receipt slip with a zigzag bottom edge, with three coins and one blank banknote shape lying beside it. Objects only, drawn large and centered. No people, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "times": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "unit",
+          "label": "1つ分の値段",
+          "art": "onebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "mul",
+          "label": "掛ける数",
+          "art": "stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "全部の金額",
+          "art": "bill",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "m1",
+          "from": "unit",
+          "to": "mul",
+          "label": "掛ける"
+        },
+        {
+          "id": "m2",
+          "from": "mul",
+          "to": "cost",
+          "label": "結果"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tprice",
+          "label": "値段",
+          "art": "price",
+          "at": [1, 1]
+        },
+        {
+          "id": "ttax",
+          "label": "税込にする係",
+          "art": "tax",
+          "at": [3, 1]
+        },
+        {
+          "id": "ttotal",
+          "label": "税込の金額",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tgive",
+          "from": "tprice",
+          "to": "ttax",
+          "label": "渡す"
+        },
+        {
+          "id": "tback",
+          "from": "ttax",
+          "to": "ttotal",
+          "label": "返す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "個数と値段",
+          "art": "qty",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "時給と時間",
+          "art": "wage",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "縦と横",
+          "art": "area",
+          "at": [3, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "view",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "image": "art:books",
+      "beats": [
+        {
+          "say": "この動画では、掛け算の書き方を学びます。"
+        },
+        {
+          "say": "同じ本を3冊買うと、値段は3倍ですね。",
+          "speech": "同じ本を三冊買うと、値段は三倍ですね。",
+          "spot": ["three"],
+          "label": [
+            {
+              "at": "three",
+              "text": "3冊分"
+            }
+          ]
+        },
+        {
+          "say": "算数では、かける記号を使って計算しました。",
+          "spot": ["one"],
+          "label": [
+            {
+              "at": "one",
+              "text": "1冊の値段"
+            }
+          ],
+          "pause": 1
+        },
+        {
+          "say": "見終えると、この1行が読めるようになりますよ。",
+          "speech": "見終えると、この一行が読めるようになりますよ。",
+          "dialog": {
+            "title": "掛け算の1行が読めるようになります",
+            "code": [
+              "// 3 冊分の金額 cost を作り、1200 に 3 を掛けた結果を入れる",
+              "const cost = 1200 * 3;"
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "three",
+      "role": "example",
+      "title": "同じ本を3冊買う",
+      "board": "times",
+      "beats": [
+        {
+          "say": "まず、本を3冊買う場面で考えましょう。",
+          "speech": "まず、本を三冊買う場面で考えましょう。",
+          "show": ["unit"],
+          "pulse": ["unit"]
+        },
+        {
+          "say": "1冊の値段は、1200円です。",
+          "speech": "一冊の値段は、千二百円です。",
+          "tag": {
+            "unit": "1200円"
+          }
+        },
+        {
+          "say": "3冊分にするには、この値段に3を掛けます。",
+          "speech": "三冊分にするには、この値段に三を掛けます。",
+          "show": ["m1", "mul"],
+          "tag": {
+            "mul": "×3"
+          },
+          "travel": {
+            "along": ["m1"],
+            "icon": "send"
+          },
+          "pulse": ["mul"]
+        },
+        {
+          "say": "全部で、3600円になりました。",
+          "speech": "全部で、三千六百円になりました。",
+          "show": ["m2", "cost"],
+          "tag": {
+            "cost": "3600円"
+          },
+          "travel": {
+            "along": ["m2"],
+            "icon": "send"
+          },
+          "pulse": ["cost"]
+        },
+        {
+          "say": "同じ数を何回も足すより、ずっと楽ですね。",
+          "pulse": ["mul"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "kind": "code",
+      "role": "syntax",
+      "title": "掛け算はアスタリスク",
+      "code": [
+        "// 3 冊分の金額 cost を作り、1200 に 3 を掛けた結果を入れる",
+        "const cost = 1200 * 3;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "times"
+      },
+      "beats": [
+        {
+          "say": "この計算を、コードで書いてみます。",
+          "type": [0, 1],
+          "figure": {
+            "tag": {
+              "unit": "1200",
+              "cost": "cost"
+            }
+          }
+        },
+        {
+          "say": "掛け算の記号は、星のようなこの形です。",
+          "part": {
+            "line": 1,
+            "text": "*",
+            "note": "掛ける"
+          },
+          "figure": {
+            "tag": {
+              "mul": "＊3"
+            },
+            "pulse": ["mul"]
+          }
+        },
+        {
+          "say": "キーボードには、算数のかける記号がありません。",
+          "focus": [1]
+        },
+        {
+          "say": "代わりに使うこの記号を、アスタリスクと呼びます。",
+          "term": {
+            "text": "アスタリスク",
+            "note": "掛け算を表す記号 ＊"
+          },
+          "pause": 1
+        },
+        {
+          "say": "1200 掛ける 3 の結果が、cost に入りますね。",
+          "speech": "千二百掛けるさんの結果が、コストに入りますね。",
+          "part": {
+            "line": 1,
+            "text": "1200 * 3"
+          },
+          "figure": {
+            "travel": {
+              "along": ["m1", "m2"]
+            },
+            "tag": {
+              "cost": "3600"
+            },
+            "pulse": ["cost"]
+          }
+        },
+        {
+          "say": "cost は、費用という意味の英語です。",
+          "speech": "コストは、費用という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "cost",
+            "note": "費用"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数の中で掛ける",
+      "code": [
+        "// 冊数を受け取り、1200 円の本の合計を返す関数",
+        "function bookCost(count: number): number {",
+        "  // 1 冊の値段 price を作り、1200 を入れる",
+        "  const price = 1200;",
+        "  // 値段に冊数を掛けた結果を返す",
+        "  return price * count;",
+        "}",
+        "// 3 冊分を計算する",
+        "bookCost(3);"
+      ],
+      "show": [0, 1, 6],
+      "panel": {
+        "kind": "figure",
+        "board": "times"
+      },
+      "beats": [
+        {
+          "say": "今度は、冊数を受け取る関数にしてみましょう。",
+          "type": [2, 3],
+          "figure": {
+            "untag": ["cost"],
+            "tag": {
+              "unit": "price",
+              "mul": "count"
+            },
+            "pulse": ["unit"]
+          }
+        },
+        {
+          "say": "引数の count は、数えるという意味です。",
+          "speech": "引数のカウントは、数えるという意味です。",
+          "part": {
+            "line": 1,
+            "text": "count",
+            "note": "数える"
+          },
+          "figure": {
+            "pulse": ["mul"]
+          }
+        },
+        {
+          "say": "値段に冊数を掛けて、その結果を返します。",
+          "type": [4, 5]
+        },
+        {
+          "say": "3 を渡すと、count の中身は 3 ですね。",
+          "speech": "さんを渡すと、カウントの中身はさんですね。",
+          "type": [7, 8],
+          "figure": {
+            "tag": {
+              "mul": "×3"
+            }
+          }
+        },
+        {
+          "say": "price の 1200 に、3 を掛けます。",
+          "speech": "プライスの千二百に、さんを掛けます。",
+          "part": {
+            "line": 5,
+            "text": "price * count"
+          },
+          "figure": {
+            "tag": {
+              "unit": "1200"
+            },
+            "travel": {
+              "along": ["m1"]
+            },
+            "pulse": ["unit", "mul"]
+          }
+        },
+        {
+          "say": "戻ってくるのは、3600 です。",
+          "speech": "戻ってくるのは、三千六百です。",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "cost": "3600"
+            },
+            "travel": {
+              "along": ["m2"]
+            },
+            "pulse": ["cost"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 冊数を受け取り、1200 円の本の合計を返す関数",
+        "function bookCost(count: number): number {",
+        "  // 1 冊の値段 price を作り、1200 を入れる",
+        "  const price = 1200;",
+        "  // 値段に冊数を掛けた結果を返す",
+        "  return price * count;",
+        "}",
+        "// 3 冊分を計算する",
+        "bookCost(3);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この関数も、2種類に分けて見てみましょう。",
+          "speech": "この関数も、二種類に分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "アスタリスクは、言語で決まっている記号です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "*"
+              },
+              {
+                "line": 5,
+                "text": "return"
+              },
+              {
+                "line": 3,
+                "text": "const"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "price と count は、自分で付けた名前でした。",
+          "speech": "プライスとカウントは、自分で付けた名前でした。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "price"
+              },
+              {
+                "line": 5,
+                "text": "price"
+              },
+              {
+                "line": 1,
+                "text": "count"
+              },
+              {
+                "line": 5,
+                "text": "count"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "1200 という値段も、自分で決めていますね。",
+          "speech": "千二百という値段も、自分で決めていますね。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "1200"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻ってくる値はいくつ",
+      "code": [
+        "// 値段を受け取り、半額にした金額を返す関数",
+        "function halfPrice(price: number): number {",
+        "  // 値段に 0.5 を掛けた結果を返す",
+        "  return price * 0.5;",
+        "}",
+        "// 800 円の商品を半額にする",
+        "halfPrice(800);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "times"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["unit", "m1", "mul", "m2", "cost"]
+          }
+        },
+        {
+          "say": "半額セールの値段を出す関数を、用意しました。",
+          "part": {
+            "line": 1,
+            "text": "halfPrice"
+          },
+          "figure": {
+            "tag": {
+              "mul": "×0.5"
+            },
+            "pulse": ["mul"]
+          }
+        },
+        {
+          "say": "掛ける数は、0.5 になっていますね。",
+          "speech": "掛ける数は、れいてんごになっていますね。",
+          "part": {
+            "line": 3,
+            "text": "0.5"
+          }
+        },
+        {
+          "say": "この関数に、800 を渡して呼び出します。",
+          "speech": "この関数に、八百を渡して呼び出します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "unit": "800"
+            },
+            "pulse": ["unit"]
+          }
+        },
+        {
+          "say": "戻ってくる値は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "cost",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["cost"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 値段を受け取り、半額にした金額を返す関数",
+        "function halfPrice(price: number): number {",
+        "  // 値段に 0.5 を掛けた結果を返す",
+        "  return price * 0.5;",
+        "}",
+        "// 800 円の商品を半額にする",
+        "halfPrice(800);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "times"
+      },
+      "beats": [
+        {
+          "say": "答えは、400 です。",
+          "speech": "答えは、四百です。",
+          "figure": {
+            "tag": {
+              "cost": "400"
+            },
+            "mark": [
+              {
+                "on": "cost",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["cost"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "0.5 を掛けると半分",
+      "code": [
+        "// 値段を受け取り、半額にした金額を返す関数",
+        "function halfPrice(price: number): number {",
+        "  // 値段に 0.5 を掛けた結果を返す",
+        "  return price * 0.5;",
+        "}",
+        "// 800 円の商品を半額にする",
+        "halfPrice(800);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "times"
+      },
+      "beats": [
+        {
+          "say": "800 が、引数の price に入ります。",
+          "speech": "八百が、引数のプライスに入ります。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
+          "figure": {
+            "pulse": ["unit"]
+          }
+        },
+        {
+          "say": "0.5 を掛けると、半分の大きさになるんです。",
+          "speech": "れいてんごを掛けると、半分の大きさになるんです。",
+          "part": {
+            "line": 3,
+            "text": "price * 0.5"
+          },
+          "figure": {
+            "travel": {
+              "along": ["m1"]
+            },
+            "pulse": ["mul"]
+          }
+        },
+        {
+          "say": "800 の半分なので、結果は 400 ですね。",
+          "speech": "八百の半分なので、結果は四百ですね。",
+          "figure": {
+            "travel": {
+              "along": ["m2"]
+            },
+            "pulse": ["cost"]
+          }
+        },
+        {
+          "say": "小数を掛けるときも、同じ記号で書けます。",
+          "part": {
+            "line": 3,
+            "text": "*"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "掛け算を使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "掛け算は、個数と値段から金額を出すときに使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "アルバイト代なら、時給に働いた時間を掛けますね。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "部屋の広さも、縦と横の掛け算です。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        },
+        {
+          "say": "割合を掛けて、一部分も求められます。",
+          "pulse": ["u1", "u2", "u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1で使う",
+      "code": [
+        "// 問1 税込価格を返す（税率10%。税額の1円未満は切り捨て）",
+        "//     例: addTax(1000) → 1100",
+        "export function addTax(price: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問1では、税の金額を求める計算が出てきます。",
+          "speech": "問いちでは、税の金額を求める計算が出てきます。",
+          "part": {
+            "line": 0,
+            "text": "税率10%"
+          },
+          "figure": {
+            "show": ["tprice", "tgive", "ttax", "tback", "ttotal"]
+          }
+        },
+        {
+          "say": "値段に割合を掛ける式を、考えてみましょう。",
+          "figure": {
+            "tag": {
+              "ttax": "掛け算"
+            },
+            "pulse": ["ttax"]
+          }
+        },
+        {
+          "say": "使う記号は、アスタリスクでしたね。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "36def901af9a1de5f774ddec7c9f64674cf58afca5fff705c6d83cf3fbc86567"
+  }
+}

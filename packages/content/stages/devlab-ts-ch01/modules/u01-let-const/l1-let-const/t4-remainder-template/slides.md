@@ -3,8 +3,8 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-number, SRC-typescriptboo
 id: 1-1-4
 title: 余りと文字の組み立て
 takeaway: "余りを求め、テンプレートリテラルに値を埋め込むと、数を説明する文を作れます。"
-introduces: ["余り", "%", "テンプレートリテラル", "バッククォート", "string", "lint"]
-requires: ["const", "文字列"]
+introduces: ["余り", "%", "テンプレートリテラル", "バッククォート", "lint"]
+requires: ["const", "文字列", "string"]
 header: "開発ラボG 事前課題 第1部"
 ---
 

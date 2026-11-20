@@ -41,10 +41,6 @@ console.log(confirmedQuantity(3));
 `console.log` は、値を表示して確かめるために使っています。
 行頭の `//` から先はコメントで、処理の説明を書く場所です。
 
-よくある間違いは、数値の `3` を文字列の `"3"` と混同することです。
-文字列は文字を並べた値で、引用符で囲んで書きます。
-数値を受け取る引数に文字列を渡すと、型のエラーになります。
-
 問題では、まず関数名と引数・戻り値の型を読みます。
 次に「テストで確かめる値」を読み、渡す値と期待される結果を結び付けます。
 問1では `addTax(1000)` は `1100`、`addTax(980)` は `1078`、`addTax(5)` は `5` です。
@@ -52,46 +48,191 @@ console.log(confirmedQuantity(3));
 
 参考: サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)・[関数宣言](https://typescriptbook.jp/reference/functions/function-declaration)。説明と例は教材用に独自作成しています。
 
+## 1-1-1a 文字列の書き方
+
+> **文字は引用符で囲んで書き、その種類を string と呼びます。**
+
+名前や住所のような文字は、引用符で囲んで書きます。
+引用符で囲んだ値を「文字列」と呼び、その種類は string です。
+
+```ts
+// 名前を受け取り、その名前を返す関数
+function customerName(name: string): string {
+  // 受け取った名前をそのまま返す
+  return name;
+}
+// 田中という名前を渡して関数を呼び、戻り値を表示する
+console.log(customerName("田中"));
+// 結果: 田中
+```
+
+- `"田中"` は文字列です。囲んでいる記号 `"` をダブルクォートと呼びます。
+- `name: string` は、引数 name が文字列だという型注釈です。
+- かっこの後ろの `string` は、戻り値も文字列だという意味です。
+
+数値の `3` と、文字列の `"3"` は別の値です。
+number の引数に文字列を渡すと、型のエラーになります。
+
+```ts
+// 個数を受け取り、その数を返す関数
+function orderCount(count: number): number {
+  // 受け取った個数をそのまま返す
+  return count;
+}
+// 数値の 3 は渡せる
+orderCount(3);
+// 文字列の 3 は渡せない
+orderCount("3");
+// エラー: string 型の値は number 型の引数に渡せません
+```
+
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
+
+参考: サバイバルTypeScript [string型](https://typescriptbook.jp/reference/values-types-variables/string)・[型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)。
+
 ## 1-1-2 値に名前を付ける
 
 > **const で変数を作ると、値に名前が付き、その名前で値を使えます。**
 
-名前で値を使えるようにしたものを「変数」と呼びます。
-価格や送料に名前を付けると、金額の計算を読みやすくできます。
+名前を付けた値の入れ物を「変数」と呼びます。
+送料に名前を付けると、何の数なのかがコードから読み取れます。
+
+```ts
+// 送料 shipping を作り、500 を入れる
+const shipping = 500;
+// 送料を表示する
+console.log(shipping);
+// 結果: 500
+```
+
+- `const` は、変数を作る印です。
+- `shipping` は、自分で考えて付けた名前です。送料という意味の英語です。
+- `=` は、右の値を左の変数に入れる印です。この操作を「代入」と呼びます。等しいという意味ではありません。
+- 最後の `;` は、文の終わりを表します。
+
+変数は、関数の中でも作れます。
+
+```ts
+// 本の値段を受け取り、支払う金額を返す関数を作る
+function addShipping(price: number): number {
+  // 送料 shipping を作り、500 を入れる
+  const shipping = 500;
+  // 値段に送料を足して返す
+  return price + shipping;
+}
+// 1200 を渡して関数を呼び、戻り値を表示する
+console.log(addShipping(1200));
+// 結果: 1700
+```
+
+const で作った変数には、あとから別の値を入れ直せません。
+
+説明とコード例は教材用に独自作成しています。問1の解答コードは載せていません。
+
+参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。
+
+## 1-1-2a 計算した結果を入れる
+
+> **イコールの右側が先に計算され、その結果が変数に入ります。**
+
+値だけでなく、計算した結果にも名前を付けられます。
+`1200 + 500` のような計算の書き方を「式」と呼びます。
+
+```ts
+// 合計 total を作り、1200 と 500 を足した結果を入れる
+const total = 1200 + 500;
+// 合計を表示する
+console.log(total);
+// 結果: 1700
+```
+
+イコールの右側の式が、先に計算されます。
+変数 total に入るのは、式そのものではなく、結果の `1700` です。
+
+式には、変数も書けます。
 
 ```ts
 // 価格 price を作り、1200 を入れる
 const price = 1200;
 // 送料 shipping を作り、500 を入れる
 const shipping = 500;
-// 価格と送料を足した合計 total を作る
+// 合計 total を作り、足した結果を入れる
 const total = price + shipping;
 // 合計を表示する
 console.log(total);
 // 結果: 1700
 ```
 
-`=` は、右の値を左の名前に入れる印です。この操作を「代入」と呼びます。
-右側が先に計算されるので、`total` には `1700` が入ります。
-掛け算は `*` で書き、`price * 3` は `3600` になります。
-const で作った名前には、あとから別の値を入れ直せません。
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
+
+参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。
+
+## 1-1-2b 掛け算の書き方
+
+> **掛け算は、アスタリスクという記号で書きます。**
+
+掛け算は、`*` という記号で書きます。この記号をアスタリスクと呼びます。
+算数で使うかける記号 `×` は、コードでは使いません。
 
 ```ts
-// 100 円ごとのポイント数を作る
-const points = Math.floor(1980 / 100);
-// ポイント数を表示する
+// 3 冊分の金額 cost を作り、1200 に 3 を掛けた結果を入れる
+const cost = 1200 * 3;
+// 金額を表示する
+console.log(cost);
+// 結果: 3600
+```
+
+`1200 * 3` が先に計算され、結果の `3600` が cost に入ります。
+
+小数を掛けるときも、同じ記号で書きます。
+
+```ts
+// 半額の金額 half を作り、800 に 0.5 を掛けた結果を入れる
+const half = 800 * 0.5;
+// 金額を表示する
+console.log(half);
+// 結果: 400
+```
+
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
+
+参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。
+
+## 1-1-2c 小数点以下を切り捨てる
+
+> **Math.floor を使うと、小数点以下を切り捨てた整数になります。**
+
+小数点から下を捨てて整数にすることを、「切り捨て」と呼びます。
+切り捨てには、最初から用意されている関数 Math.floor を使います。
+
+```ts
+// ポイント points を作り、19.8 を切り捨てた結果を入れる
+const points = Math.floor(19.8);
+// ポイントを表示する
 console.log(points);
 // 結果: 19
 ```
 
-割り算は `/` で書きます。まず `1980 / 100` が `19.8` になります。
-Math.floor は、その数以下で最も大きい整数にします。
-この例のような正の数では、小数点以下を捨てて `19` になります。
-四捨五入ではないので、`20` にはなりません。
+かっこの中に渡した数の、小数点から下が捨てられます。
+四捨五入ではないので、`19.8` は `20` ではなく `19` になります。
 
-説明とコード例は教材用に独自作成しています。問1の解答コードは載せていません。
+計算した結果を、そのまま渡すこともできます。
 
-参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。
+```ts
+// 切り捨てる前の数 raw を作り、1980 の 1% を入れる
+const raw = 1980 * 0.01;
+// ポイント points を作り、切り捨てた結果を入れる
+const points = Math.floor(raw);
+// ポイントを表示する
+console.log(points);
+// 結果: 19
+```
+
+この例のような正の数では、Math.floor は小数点以下を捨てた整数を返します。
+
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
+
+参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。
 
 ## 1-1-3 割り算と切り上げ
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u01-let-const@8",
-  "contentHash": "c6846ece045f35471967819b16a1bf6177bab55a302aaa4721d3962a8b39a891",
+  "contentHash": "9e89a04670c1a6204d668b4fd80477dcf1a4cce18b702d56b41cbae62552ffad",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -11,6 +11,33 @@
         "SRC-typescriptbook-values-types-variables-number"
       ],
       "usedFor": "const による変数宣言の概念を参照。箱と名札の例、イラストを使った図解、送料に名前を付けるサンプル、コードの色分け、動画内の問題と解説、台本は教材用に独自作成。課題で最初に見るコード（問1の関数の形）を示す。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t2a-store-result/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "const による変数宣言と数値の計算の概念を参照。レジの会計の例・イラストを使った図解・合計を変数に入れるサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t2b-multiply/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "数値の計算の概念を参照。同じ本を何冊か買う例・イラストを使った図解・掛け算のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t2c-floor/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "数値と小数の概念を参照。お店のポイントの例・イラストを使った図解・Math.floor のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -50,6 +77,17 @@
         "SRC-typescriptbook-functions-function-declaration"
       ],
       "usedFor": "関数宣言と型注釈の概念を参照。通販の送料と包装代の例、イラストを使った図解、動画内の問題と解説、台本は教材用に独自作成。課題で最初に見るコード（問1の関数の形）を示す。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t1a-string/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-type-annotation"
+      ],
+      "usedFor": "文字列の書き方と型注釈の概念を参照。伝票の名前と個数の例・イラストを使った図解・名前を返す関数のサンプル・型が合わない例・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問3の関数の形) は見せるが、解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
