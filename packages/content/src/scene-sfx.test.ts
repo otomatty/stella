@@ -7,7 +7,13 @@ import {
 } from "./scene-sfx.js";
 import { sceneTimelines, sceneVideoSequence } from "./scene-timeline.js";
 import { viewFrame } from "./scene-view.js";
-import { storyboardStates, type VideoStoryboard, type ViewScene } from "./video-storyboard.js";
+import {
+  storyboardStates,
+  type BoardScene,
+  type Scene,
+  type VideoStoryboard,
+  type ViewScene,
+} from "./video-storyboard.js";
 
 describe.each([24000, 48000])("%sHzの効果音", (rate) => {
   it.each(["switch", "title"] as const)(
@@ -94,4 +100,148 @@ it("効果音の時刻がviewFrameの窓の入れ替わり開始と一致する"
     expect(frame.fade).toBe(0);
     expect(viewFrame({ state, timing, images, previous }, cue.at + 0.1).fade).toBeCloseTo(0.1);
   }
+});
+
+const board = {
+  cols: 3,
+  rows: 1,
+  nodes: [
+    { id: "a", label: "値", icon: "file" as const, at: [1, 1] as [number, number] },
+    { id: "b", label: "先", icon: "file" as const, at: [2, 1] as [number, number] },
+  ],
+  links: [{ id: "ab", from: "a", to: "b" }],
+};
+
+function lessonCues(scene: Scene, schema: 1 | 2 = 2) {
+  const [timing] = sceneTimelines([scene], [scene.beats.map(() => 1)], undefined, schema);
+  const [state] = storyboardStates({
+    schema,
+    brief: { goal: "", stuck: "", points: [], leaveOut: [] },
+    boards: { main: board },
+    scenes: [scene],
+  });
+  return { timing, cues: sceneSfxCues(scene, timing, undefined, schema, state) };
+}
+
+it("印・札・移動を状態から拾い、1文1音を優先順に鳴らす", () => {
+  const motion = { travel: { along: ["ab"] } };
+  const quiz: BoardScene = {
+    id: "quiz",
+    role: "quiz",
+    title: "問題",
+    board: "main",
+    think: 3.5,
+    beats: [
+      {
+        say: "用語",
+        term: { text: "値" },
+        show: ["a", "b", "ab"],
+        mark: [{ on: "a", kind: "check" }],
+      },
+      {
+        say: "正解",
+        mark: [
+          { on: "a", kind: "cross" },
+          { on: "b", kind: "check" },
+        ],
+      },
+      {
+        say: "不正解",
+        mark: [
+          { on: "a", kind: "question" },
+          { on: "b", kind: "cross" },
+        ],
+      },
+      { say: "疑問", mark: [{ on: "b", kind: "question" }], tag: { a: "1" } },
+      { say: "変わらない", mark: [{ on: "b", kind: "question" }], tag: { a: "1" } },
+      { say: "札が変わる", tag: { a: "2" }, ...motion },
+      { say: "移動", ...motion },
+      {
+        say: "隠れた札と印",
+        hide: ["b", "ab"],
+        tag: { b: "3" },
+        mark: [{ on: "b", kind: "cross" }],
+      },
+      { say: "まだ隠れている札", tag: { b: "4" } },
+      { say: "札を外す", untag: ["a"] },
+      { say: "札を付ける", tag: { a: "1" } },
+    ],
+  };
+  const { cues, timing } = lessonCues(quiz);
+  const start = (index: number) => timing.beats[index].start;
+  const think = timing.think?.start ?? Number.NaN;
+  expect(cues).toEqual([
+    { kind: "quiz", at: 0 },
+    { kind: "term", at: start(0) },
+    { kind: "correct", at: start(1) },
+    { kind: "wrong", at: start(2) },
+    { kind: "question", at: start(3) },
+    { kind: "pop", at: start(5) + 0.1 },
+    { kind: "move", at: start(6) },
+    { kind: "pop", at: start(10) + 0.1 },
+    ...[0, 1, 2, 3].map((offset) => ({ kind: "tick", at: think + offset })),
+    { kind: "timeup", at: think + 3.5 },
+  ]);
+  expect(lessonCues({ ...quiz, think: 3 }).cues.slice(-4)).toEqual([
+    { kind: "tick", at: think },
+    { kind: "tick", at: think + 1 },
+    { kind: "tick", at: think + 2 },
+    { kind: "timeup", at: think + 3 },
+  ]);
+  expect(lessonCues(quiz, 1).cues).toEqual([]);
+});
+
+it("figureの状態とコードの行の印・意味の吹き出しで鳴らす", () => {
+  const { timing, cues } = lessonCues({
+    kind: "code",
+    id: "syntax",
+    role: "syntax",
+    title: "コード",
+    code: ["const a = 1;", "const b = 2;"],
+    show: [0],
+    panel: { kind: "figure", board: "main" },
+    beats: [
+      { say: "正解", figure: { show: ["a", "b", "ab"], mark: [{ on: "a", kind: "check" }] } },
+      { say: "不正解", figure: { mark: [{ on: "a", kind: "cross" }] } },
+      { say: "疑問", figure: { mark: [{ on: "a", kind: "question" }] } },
+      { say: "札", figure: { tag: { a: "1" } } },
+      { say: "同じ札と印", figure: { tag: { a: "1" }, mark: [{ on: "a", kind: "question" }] } },
+      { say: "図の移動", figure: { travel: { along: ["ab"] } } },
+      { say: "行の不正解", mark: [{ line: 0, kind: "cross" }] },
+      {
+        say: "同じ印・見えない行",
+        mark: [
+          { line: 0, kind: "cross" },
+          { line: 1, kind: "cross" },
+        ],
+      },
+      { say: "意味", part: { line: 0, text: "const", note: "定数" } },
+    ],
+  });
+  const start = (index: number) => timing.beats[index].start;
+  expect(cues).toEqual([
+    { kind: "scene", at: 0 },
+    { kind: "correct", at: start(0) },
+    { kind: "wrong", at: start(1) },
+    { kind: "question", at: start(2) },
+    { kind: "pop", at: start(3) + 0.1 },
+    { kind: "move", at: start(5) },
+    { kind: "wrong", at: start(6) },
+    { kind: "pop", at: start(8) + 0.1 },
+  ]);
+});
+
+it("schema 2 でも窓の切り替えを保ち、場面の頭の切り替え音を重ねない", () => {
+  const previous = "shot:web/prior";
+  const legacy = sceneSfxCues(scene, timing, previous);
+  expect(sceneSfxCues(scene, timing, previous, 1)).toEqual(legacy);
+  expect(sceneSfxCues(scene, timing, previous, 2)).toEqual(legacy);
+  expect(sceneSfxCues(scene, timing, undefined, 2)).toEqual([
+    { kind: "scene", at: 0 },
+    ...legacy.slice(1),
+  ]);
+  const [title] = sceneVideoSequence([], [], { title: "タイトル", takeaway: "まとめ" });
+  expect(sceneSfxCues(title.scene, title.timing, undefined, 2)).toEqual([
+    { kind: "title", at: 0.1 },
+  ]);
 });

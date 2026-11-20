@@ -525,7 +525,9 @@ function rubyRuntime(
     ...overflows(),
     ...[...document.querySelectorAll<HTMLElement>("[data-ruby-fit],.ruby-caption")].flatMap(
       (box) => {
-        const limit = box.matches(".figure-tag,.figure-arrow-label")
+        // カードの文字は、縮めたイラストとフリガナを含めて figureRuntime で検査する。
+        if (box.matches(".figure-label,.figure-tag")) return [];
+        const limit = box.matches(".figure-arrow-label")
           ? (box.parentElement ?? box)
           : box.matches(".ruby-caption")
             ? caption
@@ -586,8 +588,9 @@ function withRuby(html: string, input: SceneHtmlInput): string {
       "</style>",
       `${rubyBoxCss}
       #caption .ruby-caption{line-height:1.2}
-      .figure-label[data-ruby-fit]{line-height:1.2}
-      .figure-tag[data-ruby-fit]{height:64px;line-height:1.2}
+      .figure-label[data-ruby-fit],.figure-tag[data-ruby-fit]{line-height:1.2}
+      .figure-label[data-ruby-fit]>span,.figure-tag[data-ruby-fit]>span{display:inline-block;transform:translateY(-0.18em)}
+      .figure-tag[data-ruby-fit]{height:64px}
       .figure-arrow-label[data-ruby-fit]{line-height:1.2}
     </style>`,
     )

@@ -781,22 +781,47 @@ it("概念図のカード・矢印・イラストと、フェード・印・札�
   });
   expect(html).toContain(url);
   const label = {
-    scrollWidth: 180,
-    clientWidth: 160,
-    scrollHeight: 36,
-    clientHeight: 36,
     textContent: "長いラベル",
+    classList: { contains: () => false },
+    dataset: {},
+  };
+  const card = {
+    style: { opacity: "1" },
+    offsetHeight: 170,
+    clientTop: 3,
+    getBoundingClientRect: () => ({ left: 0, right: 300, top: 0, bottom: 170, height: 170 }),
+    querySelectorAll: () => [label],
+    querySelector: () => label,
   };
   const panel = {
     innerHTML: "",
-    querySelectorAll: (selector: string) => (selector === ".figure-label" ? [label] : []),
+    querySelectorAll: (selector: string) => (selector === ".figure-node" ? [card] : []),
   };
+  let textRight = 310;
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
     window,
+    NodeFilter: { SHOW_TEXT: 4 },
     document: {
       getElementById: (id: string) => (id === "panel" ? panel : { innerHTML: "", style: {} }),
       querySelectorAll: () => [],
+      createTreeWalker: () => {
+        let unread = true;
+        return {
+          currentNode: label,
+          nextNode: () => {
+            const result = unread;
+            unread = false;
+            return result;
+          },
+        };
+      },
+      createRange: () => ({
+        selectNodeContents: () => undefined,
+        getClientRects: () => [
+          { left: 160, right: textRight, top: 65, bottom: 105, width: textRight - 160, height: 40 },
+        ],
+      }),
     },
   });
   const markup = () => panel.innerHTML;
@@ -806,6 +831,8 @@ it("概念図のカード・矢印・イラストと、フェード・印・札�
   expect(markup().indexOf('data-id="shipping"')).toBeLessThan(markup().indexOf('data-id="total"'));
   expect(markup()).toContain('<span class="figure-arrow-label">足す</span>');
   expect(window.__overflows()).toContain("図のカード「長いラベル」のラベルが収まりません");
+  textRight = 296;
+  expect(window.__overflows()).toEqual([]);
   expect(
     window.__busyRanges.some(
       ([from, to]) => from <= timing.beats[1].start && to > timing.beats[1].end,
@@ -964,8 +991,12 @@ it("意味の吹き出しはフリガナ付きで出て番号を消し、次の�
   let numbered = true;
   let below = false;
   let drawn = false;
+  let top = 28;
+  let nextText = "";
+  const line = { nextElementSibling: { querySelector: () => ({ textContent: nextText }) } };
   const span = {
-    getBoundingClientRect: () => ({ left: 930, right: 1000, top: 28, bottom: 64 }),
+    getBoundingClientRect: () => ({ left: 930, right: 1000, top, bottom: top + 36 }),
+    closest: () => line,
     classList: {
       remove: (name: string) => {
         if (name === "numbered") numbered = false;
@@ -986,6 +1017,7 @@ it("意味の吹き出しはフリガナ付きで出て番号を消し、次の�
   };
   const code = {
     clientWidth: 1010,
+    clientHeight: 365,
     getBoundingClientRect: () => ({ left: 0, top: 0 }),
     querySelector: () => span,
     append: () => {
@@ -1010,7 +1042,102 @@ it("意味の吹き出しはフリガナ付きで出て番号を消し、次の�
   expect(bubble.style.left).toBe("862px");
   expect(Number(bubble.style.opacity)).toBeCloseTo(1);
   expect(bubble.innerHTML).toContain('<ruby>足す<rt style="font-size:0.45em">たす</rt></ruby>');
+  expect(html).toContain("font:700 30px/1.2");
+  top = 100;
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(below).toBe(true);
+  expect(bubble.style.top).toBe("146px");
+  nextText = "return 1;";
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(below).toBe(false);
+  expect(bubble.style.top).toBe("46px");
+  top = 28;
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(below).toBe(true);
   await (window as unknown as ScenePageWindow).__setTime(next.start);
   expect(drawn).toBe(false);
   expect(numbered).toBe(true);
+});
+
+it("170pxの3枚のfigureで6字のラベルと5字のルビ付きの札に横幅を渡す", async () => {
+  const ids = ["first", "second", "third"];
+  const board: Board = {
+    cols: 3,
+    rows: 1,
+    nodes: ids.map((id, index) => ({
+      id,
+      label: "税込にする係",
+      icon: "file",
+      at: [index + 1, 1],
+    })),
+  };
+  const withTags = Object.fromEntries(ids.map((id) => [id, "ここを書く"]));
+  const scene: CodeScene = {
+    kind: "code",
+    id: "width",
+    role: "syntax",
+    title: "札とラベル",
+    code: ["const x = 1;"],
+    show: true,
+    panel: { kind: "figure", board: "main" },
+    beats: [
+      { say: "カードを出します。", figure: { show: ids } },
+      { say: "札を付けます。", figure: { tag: withTags, pulse: ids } },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[2, 2]], undefined, 2)[0];
+  const state = storyboardStates({
+    schema: 2,
+    boards: { main: board },
+    brief: { goal: "", stuck: "", points: [], leaveOut: [] },
+    scenes: [scene],
+  })[0];
+  const html = sceneHtml({
+    schema: 2,
+    scene,
+    state,
+    timing,
+    board,
+    index: 2,
+    total: 3,
+    ruby: { 税込: "ぜいこみ", 係: "かかり", 書く: "かく" },
+  });
+
+  const panel = { innerHTML: "", querySelectorAll: () => [] };
+  const elements = new Map(
+    ["code", "card", "caption"].map((id) => [id, { innerHTML: "", style: {} }]),
+  );
+  const window = {} as ScenePageWindow;
+  const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1];
+  runInNewContext(script ?? "", {
+    window,
+    document: {
+      getElementById: (id: string) => (id === "panel" ? panel : elements.get(id)),
+      querySelectorAll: () => [],
+    },
+  });
+  const unescapeScript = html.replaceAll("\\u003c", "<").replaceAll('\\"', '"');
+  expect(unescapeScript).toContain('<ruby>書く<rt style="font-size:0.45em">かく</rt></ruby>');
+  expect(unescapeScript).toContain('<ruby>税込<rt style="font-size:0.45em">ぜいこみ</rt></ruby>');
+  expect(html).toMatch(/\.figure-art\{[^}]*min-width:var\(--art-min\)/);
+  expect(html).toMatch(/\.figure-label\{[^}]*min-width:max-content[^}]*white-space:nowrap/);
+
+  // 全角32pxで見積もる。ここでの読みは親文字の幅に収まる。
+  // パネル幅はカード1800pxから左右24px・コード1010px・列間36pxを引いたもの。
+  const available = 1800 - 48 - 1010 - 36 - 32 - 32 - 6 - 32 - 40;
+  for (const offset of [0.15, 0.3, 0.8]) {
+    await window.__setTime(timing.beats[1].start + offset);
+    expect(panel.innerHTML.match(/height:170px/g)).toHaveLength(3);
+    expect(panel.innerHTML.match(/>税込にする係<\/div>/g)).toHaveLength(3);
+    expect(panel.innerHTML.match(/>ここを書く<\/span>/g)).toHaveLength(3);
+    const arts = [
+      ...panel.innerHTML.matchAll(/class="figure-art" style="width:([\d.]+)px;--art-min:(\d+)px"/g),
+    ];
+    expect(arts).toHaveLength(3);
+    for (const [, preferred, minimum] of arts) {
+      const textWidth = (6 + 5) * 32;
+      expect(Number(preferred) + textWidth).toBeGreaterThan(available);
+      expect(Number(minimum) + textWidth).toBeLessThanOrEqual(available);
+    }
+  }
 });

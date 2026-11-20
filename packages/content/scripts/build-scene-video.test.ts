@@ -11,6 +11,7 @@ import {
   symlinkSync,
 } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { synthesizeSceneSfx } from "../src/scene-sfx.js";
 import { estimateSpeechSeconds } from "../src/narration.js";
 import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
 import type { Scene, BoardStoryboard, VideoStoryboard } from "../src/video-storyboard.js";
@@ -635,6 +636,68 @@ describe("音声モデルと日次上限", () => {
       }
     },
   );
+  it("schema 2 のタイトル直後と、状態が変わる文の効果音をミックスに渡す", async () => {
+    const { root, topics, storyboard } = fixture();
+    try {
+      const roles = [
+        "goal",
+        "example",
+        "syntax",
+        "apply",
+        "quiz",
+        "answer",
+        "explain",
+        "usage",
+        "next",
+      ] as const;
+      const video: BoardStoryboard = {
+        ...storyboard,
+        schema: 2,
+        scenes: roles.map((role) => ({
+          id: role,
+          role,
+          title: "説明",
+          board: "main",
+          beats: [
+            role === "goal"
+              ? { say: "読みます。", show: ["read"] }
+              : role === "answer"
+                ? { say: "正解です。", mark: [{ on: "read", kind: "check" }] }
+                : { say: "読みます。", pulse: ["read"] },
+          ],
+        })),
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      vi.mocked(createTtsProvider).mockReturnValue(provider("cue"));
+      vi.mocked(decodeTrimmedPcm).mockImplementation(async () => {
+        const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
+        return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
+      });
+      await buildSceneVideos(["fixture", "--tts", "fake", "--out", join(root, "out")]);
+      const tracks = vi
+        .mocked(writeNarrationWav)
+        .mock.calls.filter(([file]) => /sfx-\d+\.wav$/.test(file))
+        .map(([, , placements]) => placements[0].pcm);
+      expect(tracks).toHaveLength(video.scenes.length + 1);
+      for (const [index, kind, at] of [
+        [0, "title", 0.1],
+        [1, "scene", 0],
+        [5, "quiz", 0],
+        [6, "correct", 0.8],
+      ] as const) {
+        const expected = synthesizeSceneSfx(kind, AUDIO_RATE);
+        const start = Math.round(at * AUDIO_RATE);
+        const actual = tracks[index].subarray(start, start + expected.length);
+        expect(actual.subarray(0, Math.min(expected.length, AUDIO_RATE * 0.8))).toEqual(
+          expected.subarray(0, Math.min(expected.length, AUDIO_RATE * 0.8)),
+        );
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("配信用の計画にもtakeawayの変更を反映する", () => {
     const { root, topics } = fixture();
     try {

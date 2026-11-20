@@ -21,7 +21,7 @@ import { chromium, type Browser } from "playwright";
 import { estimateSpeechSeconds, speechOf } from "../src/narration.js";
 import { splitNarration, trimSilence } from "../src/narration-split.js";
 import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
-import { sceneSfxCues, synthesizeSceneSfx } from "../src/scene-sfx.js";
+import { mixSceneSfx, sceneSfxCues, synthesizeSceneSfx } from "../src/scene-sfx.js";
 import {
   parseStoryboard,
   sceneBoardName,
@@ -469,12 +469,14 @@ export async function buildSceneTopic(
       const html = await load(i);
       const { scene, timing, sourceIndex } = sequence[i];
       const previous = states[sourceIndex - 1];
+      const state = scene.kind === "text" ? undefined : states[sourceIndex];
       const sfx = sceneSfxCues(
         scene,
         timing,
         previous?.kind === "view" ? previous.end.image : undefined,
+        storyboard.schema,
+        state,
       );
-      const state = scene.kind === "text" ? undefined : states[sourceIndex];
       const sourceHash = sceneCacheHash({
         schema: storyboard.schema,
         version: GENERATOR_VERSION,
@@ -518,10 +520,12 @@ export async function buildSceneTopic(
           writeNarrationWav(
             sfxWav,
             timing.duration,
-            sfx.map((cue) => ({
-              startSec: cue.at,
-              pcm: synthesizeSceneSfx(cue.kind, AUDIO_RATE),
-            })),
+            storyboard.schema === 2
+              ? [{ startSec: 0, pcm: mixSceneSfx(sfx, AUDIO_RATE, timing.duration) }]
+              : sfx.map((cue) => ({
+                  startSec: cue.at,
+                  pcm: synthesizeSceneSfx(cue.kind, AUDIO_RATE),
+                })),
           );
         await encodeNarration(wav, audio, {
           preventSilence: true,

@@ -253,9 +253,9 @@ const figureCss = `
   #panel:has(.figure-flow){overflow:visible}
   .figure-flow{padding:10px 16px}
   .figure-node{position:relative;display:flex;align-items:center;gap:16px;padding:0 16px;background:white;border:3px solid #DDDDE2;border-radius:16px}
-  .figure-art{display:grid;place-items:center;flex:none;height:100%}
+  .figure-art{display:grid;place-items:center;min-width:var(--art-min);height:100%}
   .figure-art img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}
-  .figure-label{flex:1;min-width:0;max-height:100%;font-size:32px;font-weight:700;overflow:hidden;overflow-wrap:anywhere}
+  .figure-label{flex:1;min-width:max-content;font-size:32px;font-weight:700;white-space:nowrap}
   .figure-tag{flex:none;display:flex;align-items:center;height:56px;padding:0 20px;background:#5749DB;color:white;border-radius:16px;font-size:32px;font-weight:700;white-space:pre}
   .figure-mark{position:absolute;right:-7px;top:-9px;width:44px;height:44px}
   .figure-arrow{position:relative;display:grid;place-items:center;overflow:hidden;color:#5C5C66}
@@ -326,7 +326,7 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
           from === to ? 1 : old ? 1 - clamp(elapsed / (to ? 0.15 : 0.2)) : 1 - (1 - progress) ** 3;
         const tagScale =
           from === to || old ? 1 : 0.9 + 0.1 * tagOpacity + 0.12 * Math.sin(progress * Math.PI);
-        const card = `<div class="figure-node" data-id="${safe(id)}" style="height:${height}px;opacity:${opacity(id)};transform:scale(${scale});border-color:${pulse || focused ? accent : "#DDDDE2"};background:${focused ? "rgba(230,47,154,0.08)" : "white"}"><div class="figure-art" style="width:${(height * 4) / 3}px">${art}</div><div class="figure-label">${safe(label)}</div>${value === undefined ? "" : `<span class="figure-tag" style="opacity:${tagOpacity};transform:scale(${tagScale})">${safe(value)}</span>`}${mark ? `<svg class="figure-mark" data-mark="${mark}" style="transform:scale(${markScale})" viewBox="-30 -30 60 60">${marks[mark]}</svg>` : ""}</div>`;
+        const card = `<div class="figure-node" data-id="${safe(id)}" style="height:${height}px;opacity:${opacity(id)};transform:scale(${scale});border-color:${pulse || focused ? accent : "#DDDDE2"};background:${focused ? "rgba(230,47,154,0.08)" : "white"}"><div class="figure-art" style="width:${(height * 4) / 3}px;--art-min:${Math.round(height * 0.7)}px">${art}</div><div class="figure-label">${safe(label)}</div>${value === undefined ? "" : `<span class="figure-tag" style="opacity:${tagOpacity};transform:scale(${tagScale})">${safe(value)}</span>`}${mark ? `<svg class="figure-mark" data-mark="${mark}" style="transform:scale(${markScale})" viewBox="-30 -30 60 60">${marks[mark]}</svg>` : ""}</div>`;
         if (index === nodes.length - 1) return card;
         const arrow = link
           ? `<svg width="28" height="${gap}" viewBox="0 0 28 ${gap}" fill="none" stroke="${beat?.pulse.includes(link.id) && elapsed < 0.6 ? accent : "#5C5C66"}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3V${gap - 5}m-9-9 9 9 9-9"/></svg>${link.label ? `<span class="figure-arrow-label">${safe(link.label)}</span>` : ""}${traveling === link.id && travelY > -14 && travelY < gap + 14 ? `<span class="figure-traveler" style="top:${travelY}px"></span>` : ""}`
@@ -339,14 +339,42 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
     await setTime(time);
     draw(time);
   };
-  win.__overflows = () => [
-    ...overflows(),
-    ...[...panel.querySelectorAll<HTMLElement>(".figure-label")].flatMap((label) =>
-      label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight
-        ? [`図のカード「${label.textContent}」のラベルが収まりません`]
-        : [],
-    ),
-  ];
+  win.__overflows = () => {
+    const messages = overflows();
+    for (const card of panel.querySelectorAll<HTMLElement>(".figure-node")) {
+      if (card.style.opacity === "0") continue;
+      const bounds = card.getBoundingClientRect();
+      const scale = bounds.height / card.offsetHeight;
+      const border = card.clientTop * scale;
+      for (const content of card.querySelectorAll<HTMLElement>(".figure-label,.figure-tag")) {
+        const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const range = document.createRange();
+          range.selectNodeContents(walker.currentNode);
+          // 親文字と rt の文字を個別に測る。ruby の行ボックスは文字の範囲より広い。
+          if (
+            [...range.getClientRects()].some(
+              (rect) =>
+                rect.width > 0 &&
+                rect.height > 0 &&
+                (rect.left < bounds.left + border - 1 ||
+                  rect.right > bounds.right - border + 1 ||
+                  rect.top < bounds.top + border - 1 ||
+                  rect.bottom > bounds.bottom - border + 1),
+            )
+          ) {
+            const label = card.querySelector<HTMLElement>(".figure-label");
+            const part = content.classList.contains("figure-tag") ? "札" : "ラベル";
+            messages.push(
+              `図のカード「${label?.dataset.rubyFit ?? label?.textContent}」の${part}が収まりません`,
+            );
+            break;
+          }
+        }
+      }
+    }
+    return messages;
+  };
   draw(0);
 }
 function codeCutRuntime() {
@@ -393,9 +421,12 @@ function partNoteRuntime(notes: { start: number; html?: string }[]) {
     const width = bubble.offsetWidth;
     const height = bubble.offsetHeight;
     const left = Math.max(8, Math.min(code.clientWidth - width - 8, center - width / 2));
-    const above = a.top - bounds.top >= height + 14;
+    const line = first.closest(".line");
+    const next = line?.nextElementSibling?.querySelector(".source");
+    const above = Boolean(next?.textContent?.trim()) && a.top - bounds.top >= height + 17;
+    const top = above ? a.top - bounds.top - height - 10 : b.bottom - bounds.top + 10;
     bubble.style.left = `${left}px`;
-    bubble.style.top = `${above ? a.top - bounds.top - height - 10 : b.bottom - bounds.top + 10}px`;
+    bubble.style.top = `${Math.max(7, Math.min(code.clientHeight - height - 7, top))}px`;
     bubble.style.setProperty("--pointer", `${Math.max(10, Math.min(width - 10, center - left))}px`);
     bubble.classList.toggle("below", !above);
     const progress = Math.max(0, Math.min(1, (time - note.start) / fade));
@@ -422,7 +453,7 @@ function withCodeOverlays(html: string, input: SceneHtmlInput, scene: CodeScene)
     .replace(
       "</style>",
       `
-      .part-note{position:absolute;z-index:1;width:max-content;max-width:calc(100% - 16px);padding:5px 12px;background:#EEEAFC;color:#5749DB;border-radius:9px;font:700 26px/1.2 'Noto Sans JP',sans-serif;white-space:nowrap;pointer-events:none}
+      .part-note{position:absolute;z-index:1;width:max-content;max-width:calc(100% - 16px);padding:5px 12px;background:#EEEAFC;color:#5749DB;border-radius:9px;font:700 30px/1.2 'Noto Sans JP',sans-serif;white-space:nowrap;pointer-events:none}
       .part-note:after{content:'';position:absolute;left:var(--pointer);top:100%;transform:translateX(-50%);border:7px solid transparent;border-bottom:0;border-top-color:#EEEAFC}
       .part-note.below:after{top:auto;bottom:100%;border-top:0;border-bottom:7px solid #EEEAFC}
     </style>`,
@@ -475,11 +506,22 @@ export function codeHtml(input: SceneHtmlInput): string {
     Math.floor((codeWidth - 90) / widest),
   );
   const contentHeight = 682;
+  // 最後の行やその手前にも、下に出す吹き出しと三角のぶんの空間を確保する。
+  const noteLineCount = Math.max(
+    0,
+    ...scene.beats.map(({ part }) => (part?.note ? part.line + 1 : 0)),
+  );
+  const notePadding = 104; // 上の28pxと、吹き出しを下に置く76px。
   const lineHeight = Math.min(
     Math.ceil(fontSize * 1.5),
     Math.floor((contentHeight - 56) / scene.code.length),
+    noteLineCount ? Math.floor((contentHeight - notePadding) / noteLineCount) : Infinity,
   );
-  const codeHeight = Math.max(Math.ceil(810 * 0.45), scene.code.length * lineHeight + 56);
+  const codeHeight = Math.max(
+    Math.ceil(810 * 0.45),
+    scene.code.length * lineHeight + 56,
+    noteLineCount ? noteLineCount * lineHeight + notePadding : 0,
+  );
   const data: CodeRenderData = {
     scene,
     state,

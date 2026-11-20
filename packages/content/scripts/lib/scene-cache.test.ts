@@ -1,3 +1,4 @@
+import { sceneSfxCues } from "../../src/scene-sfx.js";
 import {
   existsSync,
   mkdirSync,
@@ -393,4 +394,13 @@ it("figure の図解・素材・開始状態はそれぞれ場面キャッシュ
   ).not.toBe(hash);
   expect(sceneCacheHash({ ...input, board: { ...fixture.board, rows: 2 } })).not.toBe(hash);
   expect(sceneCacheHash({ ...input, assets: { "art:item": "after" } })).not.toBe(hash);
+});
+
+it("schema 2 で生成したキューはキャッシュを変え、schema 1 のキャッシュは従来どおり", () => {
+  const input = plan();
+  const cues = (schema: 1 | 2) => sceneSfxCues(input.scene, input.timing, undefined, schema);
+  expect(sceneCacheHash({ ...input, schema: 1, sfx: cues(1) })).toBe(sceneCacheHash(input));
+  const lesson = { ...input, schema: 2 as const };
+  expect(cues(2)).toEqual([{ kind: "scene", at: 0 }]);
+  expect(sceneCacheHash({ ...lesson, sfx: cues(2) })).not.toBe(sceneCacheHash(lesson));
 });
