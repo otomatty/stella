@@ -169,11 +169,21 @@ function codeBeatPicture(
   schema: 1 | 2,
 ): string | string[] {
   const base = JSON.stringify(beat);
+  if (schema !== 2) return base;
+  const lines: string[] = [];
   const figure = beat.figure;
-  if (schema !== 2 || scene.panel?.kind !== "figure" || figure?.pulse === undefined) return base;
-  const board = boards[scene.panel.board];
-  if (!board) return base;
-  const lines = pictureOf(board, figure, 2).filter((line) => line.startsWith("強調"));
+  if (scene.panel?.kind === "figure" && figure?.pulse !== undefined) {
+    const board = boards[scene.panel.board];
+    if (board) lines.push(...pictureOf(board, figure, 2).filter((line) => line.startsWith("強調")));
+  }
+  if (beat.classify) {
+    const { fixed, free } = beat.classify;
+    const categories = [
+      ...(fixed ? [`決まっている書き方 = ${fixed.map(({ text }) => text).join("、")}`] : []),
+      ...(free ? [`自分で決めるところ = ${free.map(({ text }) => text).join("、")}`] : []),
+    ];
+    lines.push(`色分け: ${categories.join(" ／ ")}`);
+  }
   return lines.length ? [base, ...lines] : base;
 }
 export function buildPolishRequest(storyboard: VideoStoryboard, guideText: string) {

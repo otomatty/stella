@@ -769,6 +769,29 @@ describe("schema 2 のレッスン型", () => {
       expect.objectContaining({ level: "warning", message: expect.stringContaining("180〜480秒") }),
     ]);
   });
+  it.each([17, 18, 19])("%d場面を検査する", (count) => {
+    const storyboard = lesson();
+    const note = storyboard.scenes[4];
+    storyboard.scenes.splice(
+      4,
+      0,
+      ...Array.from({ length: count - 9 }, (_, i) => ({
+        ...note,
+        id: `note-${i}`,
+      })),
+    );
+    const result = parseStoryboard(storyboard);
+    if (count <= 18) expect(result.storyboard).toEqual(storyboard);
+    else {
+      expect(result.storyboard).toBeUndefined();
+      expect(result.issues).toContainEqual(
+        expect.objectContaining({
+          path: "scenes",
+          message: expect.stringContaining("9〜18"),
+        }),
+      );
+    }
+  });
   const invalid = [
     [
       "順序",
@@ -1589,6 +1612,32 @@ describe("コードの横の概念図", () => {
         level: "error",
         path: "scenes[2].panel",
         message: expect.stringContaining("コードだけの場面は作れません"),
+      }),
+    );
+  });
+
+  it("figure があるコード場面で色分けだけの文を schema 2 の動きに数える", () => {
+    const { storyboard, code } = fixture();
+    const classify = { fixed: [{ line: 1, text: "const" }] };
+    code.beats.push({ say: "書き方を色分けします。", classify });
+    expect(parseStoryboard(storyboard).issues).toContainEqual(
+      expect.objectContaining({ path: "scenes[1].beats[2].classify" }),
+    );
+    storyboard.schema = 2;
+    const example = storyboard.scenes[0] as BoardScene;
+    storyboard.scenes = (
+      ["goal", "example", "syntax", "apply", "note", "quiz", "answer", "explain", "usage"] as const
+    ).map((role) =>
+      role === "syntax"
+        ? { ...code, role, point: undefined }
+        : { ...example, id: role, role, reset: true },
+    );
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+    code.beats.push({ say: "もう一度色分けします。", classify });
+    expect(parseStoryboard(storyboard).issues).toContainEqual(
+      expect.objectContaining({
+        path: "scenes[2].beats[3]",
+        message: expect.stringContaining("空振り"),
       }),
     );
   });

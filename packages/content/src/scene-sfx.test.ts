@@ -273,3 +273,52 @@ it("ダイアログの pop は文の開始で鳴り、用語に次いで印・�
   ]);
   expect(lessonCues(scene, 1).cues).toEqual([]);
 });
+
+it("色分けが付く文だけで pop が鳴り、印と移動の間で優先する", () => {
+  const classified: Scene = {
+    kind: "code",
+    id: "syntax",
+    role: "syntax",
+    title: "色分け",
+    code: ["const x = 1;"],
+    show: true,
+    panel: { kind: "figure", board: "main" },
+    beats: [
+      {
+        say: "決まった書き方",
+        classify: { fixed: [{ line: 0, text: "const" }] },
+        figure: { show: ["a", "ab", "b"] },
+      },
+      { say: "同じ色", classify: { fixed: [{ line: 0, text: "const" }] } },
+      {
+        say: "名前",
+        classify: { free: [{ line: 0, text: "x" }] },
+        figure: { travel: { along: ["ab"] } },
+      },
+      {
+        say: "印",
+        classify: { free: [{ line: 0, text: "1" }] },
+        figure: { mark: [{ on: "a", kind: "check" }] },
+      },
+      {
+        say: "色を変える",
+        classify: { fixed: [{ line: 0, text: "x" }] },
+        part: { line: 0, text: "x", note: "名前" },
+      },
+    ],
+  };
+  const { cues, timing } = lessonCues(classified);
+  const start = (i: number) => timing.beats[i].start;
+  expect(cues).toEqual([
+    { kind: "scene", at: 0 },
+    { kind: "pop", at: start(0) + 0.1 },
+    { kind: "pop", at: start(2) + 0.1 },
+    { kind: "correct", at: start(3) },
+    { kind: "pop", at: start(4) + 0.1 },
+  ]);
+  expect(lessonCues(classified, 1).cues).toEqual([]);
+  expect(sceneSfxCues(classified, timing, undefined, 2)).toContainEqual({
+    kind: "pop",
+    at: start(0) + 0.1,
+  });
+});

@@ -320,3 +320,35 @@ it("コード場面の figure.pulse も強調の説明を足す", () => {
   const plain = JSON.parse(buildPolishRequest(schema1, "").user).scenes[0].lines[0].picture;
   expect(plain).toBe(JSON.stringify(kept));
 });
+
+it("コードの色分けを校正の絵の説明に足す", () => {
+  const beat = {
+    say: "書き方を色分けします。",
+    classify: {
+      fixed: [
+        { line: 0, text: "function" },
+        { line: 0, text: "return" },
+      ],
+      free: [{ line: 0, text: "addShipping" }],
+    },
+  };
+  const sb: VideoStoryboard = {
+    schema: 2,
+    brief: sample.brief,
+    scenes: [
+      {
+        id: "shipping",
+        kind: "code",
+        role: "syntax",
+        title: "送料を足す",
+        code: ["function addShipping() { return 1; }"],
+        show: true,
+        beats: [beat],
+      },
+    ],
+  };
+  expect(JSON.parse(buildPolishRequest(sb, "").user).scenes[0].lines[0].picture).toEqual([
+    JSON.stringify(beat),
+    "色分け: 決まっている書き方 = function、return ／ 自分で決めるところ = addShipping",
+  ]);
+});

@@ -11,7 +11,13 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import hljs from "highlight.js/lib/core";
 import typescript from "highlight.js/lib/languages/typescript";
-import { codeFrame, type CodeScene, type CodeSceneState } from "../../src/scene-code.js";
+import {
+  addsCodeClassification,
+  codeFrame,
+  type CodeScene,
+  type CodeSceneState,
+  type CodeState,
+} from "../../src/scene-code.js";
 import { sceneCaptionAt, type SceneTimeline } from "../../src/scene-timeline.js";
 import {
   iconSvg,
@@ -524,6 +530,134 @@ function partNoteRuntime(notes: { start: number; html?: string }[], lesson?: boo
   };
 }
 
+const CLASSIFICATION_LEGEND = {
+  fixed: "言語で決まっている書き方",
+  free: "自分で決めるところ",
+} as const;
+const CLASSIFICATION_HEIGHT = 64;
+const classificationCss = `
+  #code .line{isolation:isolate}
+  .classification-fill,.classification-swatch{border-radius:4px;pointer-events:none;box-shadow:inset 0 -3px var(--classification-line);background:var(--classification-ground)}
+  .classification-fixed{--classification-ground:rgba(59,130,246,0.38);--classification-line:#60A5FA}
+  .classification-free{--classification-ground:rgba(245,158,11,0.38);--classification-line:#FBBF24}
+  .classification-fill{position:absolute;z-index:-1}
+  .classification-legend{position:absolute;left:24px;right:24px;bottom:20px;display:flex;gap:40px;color:#F4F4F6;font:500 24px/28px 'Noto Sans JP',sans-serif;white-space:nowrap}
+  .classification-legend span{display:flex;align-items:center;gap:10px}
+  .classification-swatch{width:28px;height:28px;flex:none}
+`;
+interface ClassificationRenderData {
+  legend: string;
+  beats: { start: number; colors?: CodeState["classification"]; changed: boolean }[];
+}
+
+function removePartNumbers() {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const code = document.getElementById("code") as HTMLElement;
+  win.__setTime = async (time) => {
+    await setTime(time);
+    // 吹き出しが下線の末尾を測ったあとで、残った番号を外す。
+    code.querySelector?.(".part.numbered")?.classList.remove("numbered");
+  };
+}
+
+function classificationRuntime({ beats, legend }: ClassificationRenderData) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const code = document.getElementById("code") as HTMLElement;
+  const first = beats.find(({ changed }) => changed);
+  if (!first) return;
+  const fade = 0.3;
+  const opacity = (elapsed: number) => Math.max(0, Math.min(1, elapsed / fade));
+  for (const beat of beats)
+    if (beat.changed) win.__busyRanges.push([beat.start, beat.start + fade]);
+  win.__setTime = async (time) => {
+    await setTime(time);
+    const index = beats.findLastIndex(({ start }) => time >= start);
+    const beat = beats[index];
+    const before = beats[index - 1]?.colors;
+    const progress = beat ? opacity(time - beat.start) : 0;
+    for (const [line, colors] of Object.entries(beat?.colors ?? {})) {
+      const row = code.children[Number(line)] as HTMLElement;
+      const source = row.querySelector(".source") as HTMLElement;
+      const length = source.textContent?.length ?? 0;
+      if (!length) continue;
+      const rowBox = row.getBoundingClientRect();
+      const walker = document.createTreeWalker(source, NodeFilter.SHOW_TEXT);
+      const nodes: { node: Text; start: number; end: number }[] = [];
+      let offset = 0;
+      while (walker.nextNode()) {
+        const node = walker.currentNode as Text;
+        if (!node.length) continue;
+        nodes.push({ node, start: offset, end: offset + node.length });
+        offset += node.length;
+      }
+      const oldColors = before?.[Number(line)];
+      for (let start = 0; start < length; ) {
+        const kind = colors[start];
+        if (!kind) {
+          start++;
+          continue;
+        }
+        const retained = (offset: number) => oldColors?.[offset] === kind;
+        const same = retained(start);
+        let end = start + 1;
+        while (end < length && colors[end] === kind && retained(end) === same) end++;
+        const a = nodes.find((node) => node.end > start);
+        const b = nodes.find((node) => node.end >= end);
+        if (a && b) {
+          const range = document.createRange();
+          range.setStart(a.node, start - a.start);
+          range.setEnd(b.node, end - b.start);
+          const box = range.getBoundingClientRect();
+          const fill = document.createElement("span");
+          fill.className = `classification-fill classification-${kind}`;
+          fill.style.left = `${box.left - rowBox.left}px`;
+          fill.style.top = `${box.top - rowBox.top}px`;
+          fill.style.width = `${box.width}px`;
+          fill.style.height = `${box.height}px`;
+          fill.style.opacity = String(same ? 1 : progress);
+          row.prepend(fill);
+        }
+        start = end;
+      }
+    }
+    code.insertAdjacentHTML(
+      "beforeend",
+      `<div class="classification-legend" style="opacity:${opacity(time - first.start)}">${legend}</div>`,
+    );
+  };
+  const overflows = win.__overflows;
+  win.__overflows = () => {
+    const messages = overflows();
+    const legend = code.querySelector(".classification-legend");
+    if (!legend) return messages;
+    const bounds = code.getBoundingClientRect();
+    const card = document.getElementById("card")?.getBoundingClientRect() ?? bounds;
+    const legendBox = legend.getBoundingClientRect();
+    if (
+      bounds.left < card.left ||
+      bounds.right > card.right ||
+      bounds.top < card.top ||
+      bounds.bottom > card.bottom ||
+      [...legend.children, ...code.querySelectorAll(".classification-fill")].some((item) => {
+        const box = item.getBoundingClientRect();
+        return (
+          box.left < bounds.left ||
+          box.right > bounds.right ||
+          box.top < bounds.top ||
+          box.bottom > (legend.contains(item) ? bounds.bottom : legendBox.top)
+        );
+      }) ||
+      [...code.querySelectorAll(".line,.part-note")].some(
+        (item) => item.getBoundingClientRect().bottom > legendBox.top,
+      )
+    )
+      messages.push("コードの場面で色分けまたは凡例が枠に収まっていません");
+    return messages;
+  };
+}
+
 function withCodeOverlays(html: string, input: SceneHtmlInput, scene: CodeScene): string {
   if (input.schema === 2) {
     if (input.fadeFromBackground)
@@ -591,7 +725,9 @@ export function codeHtml(input: SceneHtmlInput): string {
     scene.code.length <= 6 ? 36 : 30,
     Math.floor((codeWidth - 90) / widest),
   );
-  const contentHeight = 682;
+  const classified = input.schema === 2 && scene.beats.some((beat) => beat.classify);
+  const legendHeight = classified ? CLASSIFICATION_HEIGHT : 0;
+  const contentHeight = 682 - legendHeight;
   // 最後の行やその手前にも、下に出す吹き出しと三角のぶんの空間を確保する。
   const noteLineCount = Math.max(
     0,
@@ -603,11 +739,13 @@ export function codeHtml(input: SceneHtmlInput): string {
     Math.floor((contentHeight - 56) / scene.code.length),
     noteLineCount ? Math.floor((contentHeight - notePadding) / noteLineCount) : Infinity,
   );
-  const codeHeight = Math.max(
-    Math.ceil(810 * 0.45),
-    scene.code.length * lineHeight + 56,
-    noteLineCount ? noteLineCount * lineHeight + notePadding : 0,
-  );
+  const codeHeight =
+    legendHeight +
+    Math.max(
+      Math.ceil(810 * 0.45),
+      scene.code.length * lineHeight + 56,
+      noteLineCount ? noteLineCount * lineHeight + notePadding : 0,
+    );
   const data: CodeRenderData = {
     scene,
     state,
@@ -631,5 +769,33 @@ export function codeHtml(input: SceneHtmlInput): string {
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;flex-shrink:0;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace;white-space:nowrap}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content.stacked{flex-direction:column;align-items:flex-end;gap:4px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap;flex-shrink:0}.value-content small{font-size:22px;white-space:nowrap;flex-shrink:0}.answer{display:flex;align-items:center;flex-shrink:0}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}
   #code,#code *,#panel,#panel *{font-variant-ligatures: none;font-feature-settings: "liga" 0, "calt" 0}
   ${figureData ? figureCss : ""}</style><div id="card"><div id="heading"><span>${sceneRoleLabel(scene)}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});${figureData ? `(${figureRuntime.toString()})(${JSON.stringify(figureData).replace(/</g, "\\u003c")});` : ""}</script></html>`;
-  return withCodeOverlays(html, input, scene);
+  const withOverlays = withCodeOverlays(html, input, scene);
+  const withoutNumbers =
+    input.schema === 2 && scene.beats.some((beat) => beat.part)
+      ? withOverlays.replace(
+          "</html>",
+          `<script>(${removePartNumbers.toString()})();</script></html>`,
+        )
+      : withOverlays;
+  if (!classified) return withoutNumbers;
+  const classification: ClassificationRenderData = {
+    legend: Object.entries(CLASSIFICATION_LEGEND)
+      .map(
+        ([kind, label]) =>
+          `<span><i class="classification-swatch classification-${kind}"></i>${label}</span>`,
+      )
+      .join(""),
+    beats: state.beats.map((beat, i) => ({
+      start: input.timing.beats[i].start,
+      colors: beat.after.classification,
+      changed: addsCodeClassification(beat),
+    })),
+  };
+  return withoutNumbers
+    .replace("</style>", `${classificationCss}</style>`)
+    .replace(
+      "</html>",
+      () =>
+        `<script>(${classificationRuntime.toString()})(${sceneScriptData(classification)});</script></html>`,
+    );
 }

@@ -1464,3 +1464,255 @@ it("schema 2 の吹き出しは 0.94 から等倍へフェードする", async (
   expect(bubble.style.transformOrigin).toBe("center");
   expect(Number(bubble.style.opacity)).toBeCloseTo(1);
 });
+
+it("schema 2 は吹き出しの有無によらず下線の丸い番号を外す", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "part",
+    role: "syntax",
+    title: "名前",
+    code: ["function add() {}"],
+    show: true,
+    beats: [
+      { say: "関数です。", part: { line: 0, text: "function" } },
+      { say: "名前です。", part: { line: 0, text: "add", note: "足す" } },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[2, 2]], undefined, 2)[0];
+  const html = sceneHtml({
+    schema: 2,
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 1,
+    total: 3,
+  });
+  expect(html).not.toContain("classification-legend");
+  let numbered = false;
+  let bubble = "";
+  const span = {
+    getBoundingClientRect: () => ({ left: 25, right: 80, top: 30, bottom: 66 }),
+    closest: () => null,
+    classList: {
+      remove: () => {
+        numbered = false;
+      },
+    },
+  };
+  const code = {
+    children: [{ querySelector: () => ({}) }],
+    set innerHTML(_html: string) {
+      numbered = false;
+      bubble = "";
+    },
+    querySelector: (selector: string) => (selector === ".part" || numbered ? span : null),
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    clientWidth: 1010,
+    clientHeight: 365,
+    append: (note: { innerHTML: string }) => {
+      bubble = note.innerHTML;
+    },
+  };
+  const window = {} as ScenePageWindow;
+  const scripts = {
+    window,
+    NodeFilter: { SHOW_TEXT: 4 },
+    document: {
+      getElementById: (id: string) => (id === "code" ? code : { innerHTML: "", style: {} }),
+      createTreeWalker: () => {
+        let visited = false;
+        return {
+          currentNode: { length: scene.code[0].length },
+          nextNode: () => {
+            if (visited) return false;
+            visited = true;
+            return true;
+          },
+        };
+      },
+      createRange: () => ({
+        setStart: () => undefined,
+        setEnd: () => undefined,
+        surroundContents: () => undefined,
+      }),
+      createElement: (tag: string) =>
+        tag === "span"
+          ? {
+              classList: {
+                add: () => {
+                  numbered = true;
+                },
+              },
+            }
+          : {
+              offsetWidth: 80,
+              offsetHeight: 40,
+              classList: { toggle: () => undefined },
+              style: { setProperty: () => undefined },
+            },
+    },
+  };
+  for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+    runInNewContext(script, scripts);
+  await window.__setTime(timing.beats[0].start);
+  expect(numbered).toBe(false);
+  expect(bubble).toBe("");
+  await window.__setTime(timing.beats[1].start + 0.3);
+  expect(numbered).toBe(false);
+  expect(bubble).toBe("足す");
+});
+
+it("色の地と凡例の不透明度を時刻から求め、打った文字の範囲にだけ地を敷く", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "classify",
+    role: "syntax",
+    title: "色分け",
+    code: ["x: number = 1 as number"],
+    beats: [
+      { say: "書きます。", type: [0] },
+      { say: "型を見ます。", classify: { fixed: [{ line: 0, text: "number" }] } },
+      { say: "名前を見ます。", classify: { free: [{ line: 0, text: "x" }] } },
+      { say: "行を消します。", clear: [0] },
+      { say: "型を書きます。", type: [0], classify: { fixed: [{ line: 0, text: "number" }] } },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[4, 4, 4, 4, 4]], undefined, 2)[0];
+  const input = {
+    schema: 2 as const,
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 1,
+    total: 3,
+  };
+  const html = sceneHtml(input);
+  const plain = { ...scene, beats: scene.beats.map(({ classify: _classify, ...beat }) => beat) };
+  const plainHtml = sceneHtml({ ...input, scene: plain, state: codeSceneState(plain) });
+  expect(plainHtml).not.toContain("classification");
+  expect(html).toContain("rgba(59,130,246,0.38);--classification-line:#60A5FA");
+  expect(html).toContain("rgba(245,158,11,0.38);--classification-line:#FBBF24");
+  const height = (source: string) => Number(/#code\{[^}]*height:(\d+)px/.exec(source)?.[1]);
+  expect(height(html) - height(plainHtml)).toBe(64);
+  let markup = "";
+  let legend = "";
+  let legendRight = 900;
+  const bounds = { left: 0, top: 0, right: 1010, bottom: 429 };
+  const legendBounds = {
+    children: [
+      { getBoundingClientRect: () => ({ ...bounds, top: 381, bottom: 409, right: legendRight }) },
+    ],
+    contains: () => true,
+    getBoundingClientRect: () => ({ ...bounds, top: 381, bottom: 409 }),
+  };
+  const fills: { className: string; style: Record<string, string> }[] = [];
+  const source = {
+    get textContent() {
+      return /class="source">(.*?)<\/span><\/div>/.exec(markup)?.[1].replace(/<[^>]+>/g, "") ?? "";
+    },
+  };
+  const row = {
+    querySelector: () => source,
+    prepend: (fill: (typeof fills)[number]) => fills.push(fill),
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+  };
+  const code = {
+    children: [row],
+    set innerHTML(html: string) {
+      markup = html;
+      fills.length = 0;
+      legend = "";
+    },
+    insertAdjacentHTML: (_position: string, html: string) => {
+      legend = html;
+    },
+    querySelector: () => legendBounds,
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => bounds,
+  };
+  let start = 0;
+  let end = 0;
+  const window = {} as ScenePageWindow;
+  const scripts = {
+    window,
+    NodeFilter: { SHOW_TEXT: 4 },
+    document: {
+      querySelectorAll: () => [],
+      getElementById: (id: string) =>
+        id === "code" ? code : { innerHTML: "", style: {}, getBoundingClientRect: () => bounds },
+      createTreeWalker: () => {
+        let visited = false;
+        return {
+          currentNode: { length: source.textContent.length },
+          nextNode: () => {
+            if (visited) return false;
+            visited = true;
+            return true;
+          },
+        };
+      },
+      createRange: () => ({
+        setStart: (_node: unknown, offset: number) => {
+          start = offset;
+        },
+        setEnd: (_node: unknown, offset: number) => {
+          end = offset;
+        },
+        getBoundingClientRect: () => ({
+          left: start * 10,
+          top: 2,
+          width: (end - start) * 10,
+          height: 32,
+        }),
+      }),
+      createElement: () => ({ className: "", style: {} }),
+    },
+  };
+  for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+    runInNewContext(script, scripts);
+  const [typed, fixed, free, cleared, retyped] = timing.beats;
+  const legendOpacity = () => Number(/opacity:([^"]+)/.exec(legend)?.[1]);
+  await window.__setTime(typed.end);
+  const before = markup;
+  expect(legendOpacity()).toBe(0);
+  expect(fills).toEqual([]);
+  expect(legend).toContain("言語で決まっている書き方");
+  expect(legend).toContain("自分で決めるところ");
+  await window.__setTime(fixed.start);
+  expect(legendOpacity()).toBe(0);
+  expect(fills.map(({ style }) => Number(style.opacity))).toEqual([0, 0]);
+  await window.__setTime(fixed.start + 0.15);
+  expect(legendOpacity()).toBeCloseTo(0.5);
+  expect(markup).toBe(before);
+  expect(fills.map(({ className, style }) => [className, style.left, style.width])).toEqual([
+    ["classification-fill classification-fixed", "30px", "60px"],
+    ["classification-fill classification-fixed", "170px", "60px"],
+  ]);
+  for (const { style } of fills) {
+    expect(Number(style.opacity)).toBeCloseTo(0.5);
+    expect(style.transform).toBeUndefined();
+  }
+  await window.__setTime(fixed.start + 0.301);
+  expect(legendOpacity()).toBe(1);
+  expect(fills.map(({ style }) => Number(style.opacity))).toEqual([1, 1]);
+  await window.__setTime(free.start + 0.15);
+  expect(markup).toBe(before);
+  expect(fills[0].className).toBe("classification-fill classification-free");
+  expect(Number(fills[0].style.opacity)).toBeCloseTo(0.5);
+  expect(fills.slice(1).map(({ style }) => Number(style.opacity))).toEqual([1, 1]);
+  await window.__setTime(cleared.start);
+  expect(fills).toEqual([]);
+  expect(legendOpacity()).toBe(1);
+  await window.__setTime(retyped.start + 0.31);
+  expect(source.textContent).toBe("x: nu");
+  expect(fills.map(({ style }) => style.width)).toEqual(["20px"]);
+  await window.__setTime(0);
+  expect(legendOpacity()).toBe(0);
+  expect(window.__busyRanges).toContainEqual([fixed.start, fixed.start + 0.3]);
+  expect(window.__busyRanges).toContainEqual([free.start, free.start + 0.3]);
+  expect(window.__overflows()).toEqual([]);
+  legendRight = 1011;
+  expect(window.__overflows()).toContain("コードの場面で色分けまたは凡例が枠に収まっていません");
+});

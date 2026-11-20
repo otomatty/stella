@@ -7,10 +7,15 @@ import type {
   SceneState,
 } from "./video-storyboard.js";
 
+type CodeCategory = "fixed" | "free";
+const CODE_CATEGORIES = ["fixed", "free"] as const;
+type CodeClassification = Record<number, Record<number, CodeCategory>>;
+
 export interface CodeBeat extends NarratedBeat {
   type?: number[];
   focus?: number[];
   part?: { line: number; text: string; note?: string };
+  classify?: Partial<Record<CodeCategory, { line: number; text: string }[]>>;
   set?: Record<string, string>;
   calc?: { on: string; expr: string; result: string };
   plot?: { at: number; label: string };
@@ -44,6 +49,7 @@ export interface CodeState {
   values: Record<string, string>;
   rows: number[];
   marks: Record<number, "cross" | "check">;
+  classification?: CodeClassification;
   numberLine?: {
     point?: { at: number; label: string };
     range?: [number, number];
@@ -58,6 +64,25 @@ export interface CodeSceneState {
   end: CodeState;
   figure?: SceneState;
 }
+
+/** DOM の Range と同じ UTF-16 の位置で、左から重ならない一致を取る。 */
+function* matchingCodeOffsets(line: string, text: string) {
+  for (
+    let offset = line.indexOf(text);
+    offset !== -1;
+    offset = line.indexOf(text, offset + text.length)
+  )
+    for (let i = offset; i < offset + text.length; i++) yield i;
+}
+
+export function addsCodeClassification({ before, after }: CodeSceneState["beats"][number]) {
+  return Object.entries(after.classification ?? {}).some(([line, offsets]) =>
+    Object.entries(offsets).some(
+      ([offset, kind]) => before.classification?.[Number(line)]?.[Number(offset)] !== kind,
+    ),
+  );
+}
+
 export function codeSceneState(scene: CodeScene, figure?: SceneState): CodeSceneState {
   const start: CodeState = {
     visible: Array.isArray(scene.show)
@@ -77,10 +102,21 @@ export function codeSceneState(scene: CodeScene, figure?: SceneState): CodeScene
     for (const line of beat.clear ?? []) {
       current.visible = current.visible.filter((n) => n !== line);
       delete current.marks[line];
+      if (current.classification) delete current.classification[line];
     }
     current.visible = [...new Set([...current.visible, ...(beat.type ?? [])])].sort(
       (a, b) => a - b,
     );
+    for (const kind of CODE_CATEGORIES)
+      for (const { line, text } of beat.classify?.[kind] ?? []) {
+        for (const offset of matchingCodeOffsets(scene.code[line], text)) {
+          current.classification ??= {};
+          current.classification[line] ??= {};
+          current.classification[line][offset] = kind;
+        }
+      }
+    if (current.classification && !Object.keys(current.classification).length)
+      delete current.classification;
     current.values = { ...current.values, ...beat.set };
     if (beat.calc) current.values = { ...current.values, [beat.calc.on]: beat.calc.result };
     current.rows = [...new Set([...current.rows, ...(beat.row ?? [])])].sort((a, b) => a - b);
@@ -129,7 +165,11 @@ export function validateCodeLines(code: unknown[], path: string, lineBreak = /[\
   return issues;
 }
 /** 不正な形は状態計算に渡さず、JSON の誤りをまとめて報告する。 */
-export function validateCodeScene(input: Record<string, unknown>, path: string): Issue[] {
+export function validateCodeScene(
+  input: Record<string, unknown>,
+  path: string,
+  schema: 1 | 2 = 1,
+): Issue[] {
   const issues: Issue[] = [];
   const error = (p: string, message: string) => issues.push({ level: "error", path: p, message });
   const obj = (v: unknown): v is Record<string, unknown> =>
@@ -220,6 +260,9 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       error(p, "values・numberLineパネルの存在する箱の名前にしてください");
   };
   if (!Array.isArray(input.beats)) return issues;
+  const visible = new Set(
+    Array.isArray(input.show) ? input.show : input.show === true ? code.map((_, i) => i) : [],
+  );
   let plotted = false;
   const position = (v: unknown, p: string, integer = false) => {
     if (
@@ -281,6 +324,58 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
         line(v, `${p}.${key}[${j}]`, key === "row" ? rowCount : code.length);
       });
       if (new Set(values).size !== values.length) error(`${p}.${key}`, "番号が重複しています");
+    }
+    if (Array.isArray(b.clear)) for (const n of b.clear) visible.delete(n);
+    if (Array.isArray(b.type)) for (const n of b.type) visible.add(n);
+    if (b.classify !== undefined) {
+      const q = `${p}.classify`;
+      if (schema !== 2) error(q, "classify は schema 2 のコードの場面だけに指定できます");
+      else if (
+        !obj(b.classify) ||
+        (b.classify.fixed === undefined && b.classify.free === undefined)
+      )
+        error(q, "fixed・free のいずれかを持つオブジェクトにしてください");
+      else {
+        const fixed = new Map<number, Set<number>>();
+        for (const kind of CODE_CATEGORIES) {
+          if (b.classify[kind] === undefined) continue;
+          list(b.classify[kind], `${q}.${kind}`, 12).forEach((item, j) => {
+            const at = `${q}.${kind}[${j}]`;
+            if (!obj(item)) {
+              error(at, "オブジェクトにしてください");
+              return;
+            }
+            line(item.line, `${at}.line`);
+            if (
+              typeof item.text !== "string" ||
+              !item.text.length ||
+              /[\r\n\t\u0085\u2028\u2029]/u.test(item.text)
+            ) {
+              error(`${at}.text`, "空でない1行の文字列にしてください");
+              return;
+            }
+            if (typeof item.line !== "number") return;
+            const source = code[item.line];
+            if (typeof source !== "string") return;
+            if (!visible.has(item.line))
+              error(`${at}.line`, "色分けは出ている行に指定してください");
+            if (!source.includes(item.text)) {
+              error(`${at}.text`, "行に存在する部分を指定してください");
+              return;
+            }
+            const offsets = matchingCodeOffsets(source, item.text);
+            if (kind === "fixed") {
+              const seen = fixed.get(item.line) ?? new Set<number>();
+              for (const offset of offsets) seen.add(offset);
+              fixed.set(item.line, seen);
+            } else {
+              const seen = fixed.get(item.line);
+              if ([...offsets].some((offset) => seen?.has(offset)))
+                error(`${at}.text`, "同じ文字に fixed と free を指定できません");
+            }
+          });
+        }
+      }
     }
     if (b.part !== undefined) {
       if (!obj(b.part)) error(`${p}.part`, "オブジェクトにしてください");

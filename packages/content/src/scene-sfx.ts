@@ -1,5 +1,5 @@
 import { viewTransition, type SceneTimeline, type TextScene } from "./scene-timeline.js";
-import type { CodeSceneState } from "./scene-code.js";
+import { addsCodeClassification, codeSceneState, type CodeSceneState } from "./scene-code.js";
 import type {
   BeatState,
   Scene,
@@ -49,6 +49,12 @@ export function sceneSfxCues(
     else if (!openingSwitch) cues.push({ kind: "scene", at: 0 });
   }
   const board = state?.kind === "code" ? state.figure : state?.kind === "view" ? undefined : state;
+  const code =
+    state?.kind === "code"
+      ? state
+      : schema === 2 && scene.kind === "code" && scene.beats.some((beat) => beat.classify)
+        ? codeSceneState(scene)
+        : undefined;
   for (const [i, beat] of scene.beats.entries()) {
     const at = timing.beats[i].start;
     if (scene.kind === "view") {
@@ -76,7 +82,12 @@ export function sceneSfxCues(
     else if (newMark(boardBeat, "check")) kind = "correct";
     else if (newMark(boardBeat, "cross") || lineCross) kind = "wrong";
     else if (newMark(boardBeat, "question")) kind = "question";
-    else if (newTag(boardBeat) || codeBeat?.part?.note) kind = "pop";
+    else if (
+      newTag(boardBeat) ||
+      codeBeat?.part?.note ||
+      (codeBeat?.classify && code && addsCodeClassification(code.beats[i]))
+    )
+      kind = "pop";
     else if (motion?.travel) kind = "move";
     if (kind) cues.push({ kind, at: kind === "pop" && !beat.dialog ? at + 0.1 : at });
   }

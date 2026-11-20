@@ -568,7 +568,7 @@ export function parseStoryboard(
       });
     }
   }
-  arr(root.scenes, "scenes", lesson ? 9 : 3, lesson ? 16 : 6).forEach((value, i) => {
+  arr(root.scenes, "scenes", lesson ? 9 : 3, lesson ? 18 : 6).forEach((value, i) => {
     const p = `scenes[${i}]`,
       s = obj(value, p);
     str(s.id, `${p}.id`);
@@ -580,7 +580,7 @@ export function parseStoryboard(
     if (s.kind === "view") str(s.image, `${p}.image`);
     else if (s.kind !== "code") str(s.board, `${p}.board`);
     if (s.kind === "code") {
-      const codeIssues = validateCodeScene(s, p);
+      const codeIssues = validateCodeScene(s, p, lesson ? 2 : 1);
       issues.push(...codeIssues);
       if (codeIssues.length) usable = false;
       if (lesson && (!record(s.panel) || s.panel.kind !== "figure"))
@@ -621,6 +621,8 @@ export function parseStoryboard(
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
+      if (beat.classify !== undefined && s.kind !== "code")
+        error(`${q}.classify`, "classify は schema 2 のコードの場面だけに指定できます");
       if (beat.term !== undefined) {
         if (!lesson) error(`${q}.term`, "term は schema 2 の文だけに指定できます");
         const term = obj(beat.term, `${q}.term`);
