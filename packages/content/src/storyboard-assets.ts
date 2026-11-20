@@ -50,6 +50,26 @@ export function videoContentHash(file: string, fresh = false): string {
   videoHashes.set(file, value);
   return value;
 }
+
+function clipBrowser(id: string, meta: Record<string, unknown>) {
+  if (!Object.hasOwn(meta, "browser")) return undefined;
+  if (!id.startsWith("web/")) throw new Error(`browser は web のクリップだけに書けます: ${id}`);
+  const browser = meta.browser;
+  if (
+    !isRecord(browser) ||
+    typeof browser.tab !== "string" ||
+    browser.tab.length < 1 ||
+    browser.tab.length > 20 ||
+    /[\r\n]/.test(browser.tab) ||
+    typeof browser.address !== "string" ||
+    browser.address.length < 1 ||
+    browser.address.length > 70 ||
+    /[\r\n]/.test(browser.address)
+  )
+    throw new Error(`クリップの browser が不正です: ${id}`);
+  return { tab: browser.tab, address: browser.address };
+}
+
 /** ファイルの読み込みは検査の純関数から分ける。使う素材だけをキャッシュへ含める。 */
 export function storyboardAssets(
   root: string,
@@ -120,7 +140,9 @@ export function storyboardAssets(
       if (options.allowMissingClips) continue;
       throw new Error(`クリップの動画がありません: ${id} (${meta.video})`);
     }
+    const browser = clipBrowser(id, meta as Record<string, unknown>);
     const clip = meta as unknown as ClipInfo;
+    if (browser) clip.browser = browser;
     if (context.clips) context.clips[id] = clip;
     for (const ref of refs) {
       if (!ref.startsWith("clip:")) continue;
@@ -131,6 +153,7 @@ export function storyboardAssets(
         height: clip.height,
         regions: clip.regions,
         url: "",
+        ...(clip.browser ? { browser: clip.browser } : {}),
       };
       clips[ref] = clip;
       hashes[ref] = digest(bytes, Buffer.from(videoContentHash(video, options.freshVideoHashes)));

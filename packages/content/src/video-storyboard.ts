@@ -95,6 +95,7 @@ export interface ClipInfo {
   duration: number;
   marks: Record<string, [number, number]>;
   regions: Record<string, ShotRegion>;
+  browser?: { tab: string; address: string };
 }
 export function clipReference(ref: string) {
   const match = /^([a-z0-9-]+\/[a-z0-9-]+)#([a-z0-9-]+)$/.exec(ref);

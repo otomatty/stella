@@ -33,7 +33,9 @@ async function main() {
   const dir = path.join(WEB_ROOT, "scripts/tutorials/clips");
   const definitions: { definition: ClipDefinition; source: string }[] = [];
   const ids = new Set<string>();
-  for (const file of (await readdir(dir)).filter((f) => f.endsWith(".ts")).sort()) {
+  for (const file of (await readdir(dir))
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+    .sort()) {
     const definition = defineClip((await import(pathToFileURL(path.join(dir, file)).href)).default);
     if (ids.has(definition.id)) throw new Error(`定義 id が重複しています: ${definition.id}`);
     ids.add(definition.id);
@@ -44,40 +46,65 @@ async function main() {
     console.log("該当するクリップの定義はありません");
     return;
   }
-  const secret = jwtSecret();
-  const environment = new TutorialEnvironment();
+  const allStandalone = definitions.every(({ definition }) => definition.standalone === true);
+  let environment: TutorialEnvironment | undefined;
+  let secret = "";
+  let base = "";
+  if (!allStandalone) {
+    secret = jwtSecret();
+    environment = new TutorialEnvironment();
+  }
   let browser: Browser | undefined;
   try {
-    const base = url ? url.replace(/\/$/, "") : await environment.boot(skipBuild);
+    if (environment) base = url ? url.replace(/\/$/, "") : await environment.boot(skipBuild);
     browser = await launchTutorialBrowser();
     for (const { definition, source } of definitions) {
-      if (!url) await environment.reset(secret, definition.seedSql);
-      else if (definition.seedSql?.length)
-        console.warn(`警告: ${definition.id} の seedSql は --url 指定時には適用しません`);
-      const context = await browser.newContext({
-        baseURL: base,
-        viewport,
-        deviceScaleFactor: 1.5,
-        colorScheme: "light",
-        locale: "ja-JP",
-        timezoneId: "Asia/Tokyo",
-      });
+      if (!definition.standalone) {
+        if (!environment) throw new Error("収録環境が起動していません");
+        if (!url) await environment.reset(secret, definition.seedSql);
+        else if (definition.seedSql?.length)
+          console.warn(`警告: ${definition.id} の seedSql は --url 指定時には適用しません`);
+      }
+      const context = await browser.newContext(
+        definition.standalone
+          ? {
+              viewport,
+              deviceScaleFactor: 1.5,
+              colorScheme: "light",
+              locale: "ja-JP",
+              timezoneId: "Asia/Tokyo",
+              bypassCSP: true,
+              acceptDownloads: false,
+            }
+          : {
+              baseURL: base,
+              viewport,
+              deviceScaleFactor: 1.5,
+              colorScheme: "light",
+              locale: "ja-JP",
+              timezoneId: "Asia/Tokyo",
+            },
+      );
       const work = await mkdtemp(path.join(os.tmpdir(), "stella-clip-"));
       let recorder: ScreenRecorder | undefined;
       try {
         const page = await context.newPage();
-        await page.addInitScript(
-          ({ token }) => {
-            localStorage.setItem("stella_auth_token_v1", token);
-            localStorage.setItem("theme", "light");
-          },
-          { token: mintToken(secret, definition.user ?? "seed-learner") },
-        );
+        if (!definition.standalone) {
+          await page.addInitScript(
+            ({ token }) => {
+              localStorage.setItem("stella_auth_token_v1", token);
+              localStorage.setItem("theme", "light");
+            },
+            { token: mintToken(secret, definition.user ?? "seed-learner") },
+          );
+        }
         await page.addInitScript({
           content: `var __name = (f) => f; (${overlayScript.toString()})(${JSON.stringify({ accent: "#6470e8", clip: true })});`,
         });
-        await page.goto(base);
-        await page.waitForSelector("body");
+        if (!definition.standalone) {
+          await page.goto(base);
+          await page.waitForSelector("body");
+        }
         recorder = new ScreenRecorder(page, path.join(work, "frames"));
         const t = new Director(page, recorder, { clip: true });
         await recorder.start();
@@ -85,6 +112,10 @@ async function main() {
         try {
           await definition.run(t);
           for (const [name, selector] of Object.entries(definition.regions)) {
+            if (Array.isArray(selector)) {
+              regions[name] = selector;
+              continue;
+            }
             const loc = page.locator(selector).first();
             await loc.waitFor({ state: "visible" });
             const rect = await loc.boundingBox();
@@ -103,6 +134,7 @@ async function main() {
           source,
           t.marks,
           regions,
+          definition.browser,
         );
         console.log(`作成しました: ${definition.id}`);
       } finally {
@@ -117,10 +149,11 @@ async function main() {
     try {
       await browser?.close();
     } finally {
-      await environment.close();
+      if (environment) await environment.close();
     }
   }
 }
+
 main().catch((e) => {
   console.error(e.message);
   process.exitCode = 1;

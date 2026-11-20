@@ -1,7 +1,7 @@
 ---
 sourceRefs: []
 ---
-## 知識問題
+## 確認クイズ
 
 この問題と解説は教材用に作成しました。
 
@@ -21,7 +21,7 @@ sourceRefs: []
 ### Q2. 課題のファイルを書く場所はどこですか？
 <!-- kind: single; skills: stella-task-loop -->
 
-- A. Web の知識問題の選択肢
+- A. Web の確認クイズの選択肢
 - B. PC の VS Code
 
 <details>

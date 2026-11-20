@@ -245,6 +245,15 @@ VS Code は収録用の学習フォルダーを開いて起動するため、課
 
 プロファイルは `os.tmpdir()/stella-tutorials/vscode/profile/{user-data,exts}` に保存して再利用し、毎回エクスプローラーの開閉状態を初期化します。普段の VS Code の設定や拡張には触れません。
 
+`bare: "ja" | "en"` の台本は、課題も学習フォルダーも開発中の STELLA 拡張も使わない窓で撮ります。プロファイルは `os.tmpdir()/stella-tutorials/vscode/bare/<ja|en>/{user-data,exts,home}` です。`ja` は日本語の言語パックが無ければ入れ、STELLA 拡張は毎回アンインストールしてから `--locale=ja` で起動します。`en` は user-data・exts・home を毎回作り直し、言語パックも拡張も無く、`--locale` も付けません。どちらも `--extensionDevelopmentPath` は付けず、ユーザー設定の `stella.serverUrl` と `stella.webUrl` は `http://127.0.0.1:9` です。`ctx.region(name, locator)` は収録中の要素の枠を、窓 1280×800 から動画 1600×1000 のピクセルに換算し、台本の `regions` に上書きします。
+
+- `install-extension`（`bare: "ja"`）: `bun run --filter=@stella/web tutorials:vscode -- --clip install-extension`
+- `display-language`（`bare: "en"`）: `bun run --filter=@stella/web tutorials:vscode -- --clip display-language`
+- `japanese-ui`（`bare: "ja"`）: `bun run --filter=@stella/web tutorials:vscode -- --clip japanese-ui`
+- `open-in-browser`: `bun run --filter=@stella/web tutorials:vscode -- --clip open-in-browser`
+- `web/open-html`: `bun run --filter=@stella/web tutorials:clips -- open-html`
+- `web/vscode-download`: `bun run --filter=@stella/web tutorials:clips -- vscode-download`
+
 ## 動画の素材にする静止画を撮る
 
 字幕・カーソル・クリックの波紋・タイトルを重ねず、明るいテーマの Web 画面を PNG にします。1280×800、deviceScaleFactor 2 で撮るため、画像は 2560×1600 ピクセルです。動画の収録結果は更新しません。
@@ -292,7 +301,11 @@ bun run --filter=@stella/web tutorials:clips -- --url http://127.0.0.1:5173
 
 `--url` は既存の Web / API を使い、ビルド・起動・初期化・seedSql の適用を省きます。開発用 JWT を送れるローカル API 向けの Web を指定します。`AUTH_JWT_SECRET` は通常の収録と共通です。
 
-定義は `clips/*.ts` の `defineClip({ id, user?, seedSql?, regions, run })`。`regions` は最後の画面のセレクタで、最初の要素の全体が画面内にある必要があります。`t.mark("名前", async () => { … })` で動画の先頭からの開始・終了秒を残します。名前は英小文字・数字・ハイフンで、重複はエラーです。結果を見せるため、区間の終わりに `t.wait(1000)` 程度の間を入れます。mark の外の操作も録画されます。`t.pretendClick(selector)` はカーソルと波紋だけを出し、ボタンを押しません。`t.expect` の失敗時は出力しません。
+`standalone: true` のクリップは STELLA の Web と API を起動しません。`run` の中で `t.page.goto` して開き、`user` と `seedSql` は併用できません。`--url` は standalone の定義には影響せず、開発用 JWT と `localStorage.theme` も入れません。任意の `browser: { tab, address }` はクリップの JSON に残り、動画のブラウザー枠のタブ名とアドレスになります。
+
+定義は `clips/*.ts` の `defineClip({ id, user?, seedSql?, standalone?, browser?, regions, run })`。`regions` は最後の画面のセレクタで、最初の要素の全体が画面内にある必要があります。
+セレクタのほか、`[x, y, 幅, 高さ]`（1600×1000 の整数）も書けます。配列は要素を探さず、そのまま JSON の `regions` に残します。
+`t.mark("名前", async () => { … })` で動画の先頭からの開始・終了秒を残します。名前は英小文字・数字・ハイフンで、重複はエラーです。結果を見せるため、区間の終わりに `t.wait(1000)` 程度の間を入れます。mark の外の操作も録画されます。`t.pretendClick(selector)` はカーソルと波紋だけを出し、ボタンを押しません。`t.expect` の失敗時は出力しません。
 
 出力は `packages/content/clips/<組>/<名前>.mp4` と `.json`。動画は音声なしの H.264 / yuv420p / 1600×1000 / 固定 30fps / faststart です。JSON に定義の `source`、content からの相対パス `video`、`width`・`height`・ffprobe で確認した `duration`・`fps`・`marks`・動画ピクセルの `regions` を保存します。既存のチュートリアルやトピックの `screen.*` は更新しません。
 

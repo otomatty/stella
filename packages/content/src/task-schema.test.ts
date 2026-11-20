@@ -172,7 +172,7 @@ describe("問題つきの課題のファイル", () => {
     expect(added?.definition.review).toEqual({ rubric: [], escalateWhen: [] });
     expect(added?.bundle.manifest.problems).toHaveLength(2);
     expect(plain?.bundle.contentHash).toBe(
-      "e14f9ddb17bf286a897d17c6d4ae3908bbd06ce03a2c65807a432db8f3e8f656",
+      "af1c1c897fba146143de2b36ab7ae6677c41c78e7f6475b5662b1933ff9faef8",
     );
     expect(plain?.bundle.manifest).not.toHaveProperty("problems");
   });

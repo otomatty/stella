@@ -1,5 +1,8 @@
+import os from "node:os";
+import path from "node:path";
 import type { Frame, Locator, Page } from "playwright";
 import type { Director } from "../lib/director";
+import { pixelRegion } from "../lib/shots";
 
 export interface TaskContext {
   taskRoot: string;
@@ -8,6 +11,7 @@ export interface TaskContext {
   openTask?: () => Promise<void>;
   /** 提出が届いたかを読むための、収録用 API。lms のときだけ入る。 */
   api?: { base: string; token: string };
+  region(name: string, target: Locator): Promise<void>;
 }
 
 export interface Scenario {
@@ -19,9 +23,15 @@ export interface Scenario {
   title: string;
   summary: string;
   /** 動画を置くトピック (packages/content/stages からの相対パス) */
-  topic: string;
+  topic?: string;
   /** 取り組む課題 (<ステージ>/<単元>/<課題>) */
-  task: string;
+  task?: string;
+  /**
+   * 課題・学習フォルダー・開発中の STELLA 拡張を使わない窓で撮る。クリップ専用。
+   * "ja": 日本語の言語パック入り。STELLA 拡張は毎回アンインストールしてから起動する。
+   * "en": 入れたばかりの状態。言語パックも拡張も無く、毎回プロファイルを作り直す。
+   */
+  bare?: "ja" | "en";
   /**
    * 収録用のローカル API と Web を起動し、拡張をそこへ接続する。
    * 課題は手元にコピーせず、拡張が API から受け取って学習フォルダーに置く。
@@ -146,11 +156,11 @@ export async function closeNotifications(page: Page, t?: Director) {
         if (!box) return;
         await t.moveToPoint(box.x + box.width / 2, box.y + box.height / 2);
       }
-      await dismiss.click({ timeout: 500 });
+      await dismiss.click({ timeout: 1500 });
       if (t) await t.wait(150);
     } catch (error) {
-      if (!(await toast.isVisible())) return;
-      throw error;
+      if (!(await toast.isVisible().catch(() => false))) return;
+      if (attempt === 4) throw error;
     }
   }
 }
@@ -169,4 +179,102 @@ export function explorerRow(page: Page, name: string, level?: number): Locator {
 export async function expandFolder(t: Director, row: Locator) {
   await t.expect(row);
   if ((await row.getAttribute("aria-expanded")) === "false") await t.click(row);
+}
+
+const TASK_PATH = /^[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+$/;
+
+export function assertScenario(s: Scenario) {
+  if (typeof s?.id !== "string" || !/^[a-z0-9-]+$/.test(s.id))
+    throw new Error("台本の id または課題の場所が不正です");
+  if (s.bare !== undefined && s.bare !== "ja" && s.bare !== "en")
+    throw new Error("bare は ja または en にしてください");
+  if (s.bare) {
+    if (!s.clip) throw new Error("bare の台本には clip が必要です");
+    for (const key of ["lms", "others", "open", "prepare"] as const)
+      if (Object.hasOwn(s, key)) throw new Error(`bare の台本に ${key} は使えません`);
+    return;
+  }
+  if (!s.topic || !s.task) throw new Error("台本に topic と task が必要です");
+  const tasks = [...new Set([s.task, ...(s.others ?? [])])];
+  if (tasks.some((task) => !TASK_PATH.test(task)))
+    throw new Error("台本の id または課題の場所が不正です");
+}
+
+export function bareProfile(lang: "ja" | "en") {
+  const root = path.join(os.tmpdir(), "stella-tutorials", "vscode", "bare", lang);
+  return {
+    root,
+    userData: path.join(root, "user-data"),
+    exts: path.join(root, "exts"),
+    home: path.join(root, "home"),
+  };
+}
+
+export function recordedRegion(
+  rect: { x: number; y: number; width: number; height: number } | null,
+  name: string,
+): [number, number, number, number] {
+  if (!rect) throw new Error(`領域が見つかりません: ${name}`);
+  try {
+    return pixelRegion(rect, { width: 1280, height: 800 }, 1600 / 1280);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.startsWith(`${name}: `)) throw error;
+    throw new Error(`${name}: ${message}`);
+  }
+}
+
+/** エディター右上の「課題を確認する」。ステータスバーには出さない。 */
+export function runTaskButton(page: Page): Locator {
+  return page
+    .locator(".editor-actions")
+    .getByRole("button", { name: /課題を確認する/ })
+    .filter({ visible: true })
+    .first();
+}
+
+export function unionBox(boxes: { x: number; y: number; width: number; height: number }[]): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  if (boxes.length === 0) throw new Error("領域がありません");
+  let left = Number.POSITIVE_INFINITY;
+  let top = Number.POSITIVE_INFINITY;
+  let right = Number.NEGATIVE_INFINITY;
+  let bottom = Number.NEGATIVE_INFINITY;
+  for (const box of boxes) {
+    if (!(box.width > 0) || !(box.height > 0)) throw new Error("領域のサイズが不正です");
+    left = Math.min(left, box.x);
+    top = Math.min(top, box.y);
+    right = Math.max(right, box.x + box.width);
+    bottom = Math.max(bottom, box.y + box.height);
+  }
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+/** 複数の要素を囲む矩形を、収録の 1600×1000 に換算する。 */
+export async function coverRegion(
+  name: string,
+  locators: Locator[],
+): Promise<[number, number, number, number]> {
+  const boxes: { x: number; y: number; width: number; height: number }[] = [];
+  for (const locator of locators) {
+    const box = await locator.boundingBox();
+    if (!box) throw new Error(`領域が見つかりません: ${name}`);
+    boxes.push(box);
+  }
+  return recordedRegion(unionBox(boxes), name);
+}
+
+export function mergeRegions(
+  a: [number, number, number, number],
+  b: [number, number, number, number],
+): [number, number, number, number] {
+  const left = Math.min(a[0], b[0]);
+  const top = Math.min(a[1], b[1]);
+  const right = Math.max(a[0] + a[2], b[0] + b[2]);
+  const bottom = Math.max(a[1] + a[3], b[1] + b[3]);
+  return [left, top, right - left, bottom - top];
 }

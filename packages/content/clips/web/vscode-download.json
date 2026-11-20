@@ -1,0 +1,22 @@
+{
+  "source": "apps/web/scripts/tutorials/clips/vscode-download.ts",
+  "video": "clips/web/vscode-download.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 16.77,
+  "marks": {
+    "open": [12.13, 13.15],
+    "choose": [13.15, 15.45],
+    "done": [15.45, 16.65]
+  },
+  "regions": {
+    "windows": [306, 524, 270, 69],
+    "macos": [665, 526, 270, 70],
+    "platforms": [271, 419, 1057, 279]
+  },
+  "browser": {
+    "tab": "Download VS Code",
+    "address": "code.visualstudio.com/download"
+  }
+}

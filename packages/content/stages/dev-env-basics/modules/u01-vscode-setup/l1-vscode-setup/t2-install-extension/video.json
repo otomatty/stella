@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "拡張機能のビューで STELLA 拡張を探し、識別子を確かめてインストールできる。",
+    "stuck": "拡張機能をどこから入れるのか分からず、似た名前の拡張と見分けられない。",
+    "points": [
+      "拡張機能のビューで「STELLA」を検索します。",
+      "入れる前に、識別子が saedgewell.stella-lms であることを確かめます。",
+      "「インストール」を押して入れます。"
+    ],
+    "leaveOut": [
+      "Marketplace の Web ページから入れる方法",
+      "発行元を信頼するかを尋ねる確認の詳細",
+      "拡張の更新・無効化・アンインストール",
+      "入れたあとに Web から課題を開いて接続する手順"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "view",
+      "role": "hook",
+      "title": "拡張はどこから入れる？",
+      "image": "clip:vscode/install-extension#open-view",
+      "beats": [
+        {
+          "say": "STELLA 拡張は、VS Code のどこから入れるのでしょうか？",
+          "zoom": "left",
+          "spot": ["icon"]
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "kind": "view",
+      "role": "point",
+      "point": 1,
+      "title": "拡張機能のビューで探す",
+      "image": "clip:vscode/install-extension#open-view",
+      "beats": [
+        {
+          "say": "左の四角いアイコンを押して、拡張機能のビューを開きます。",
+          "clip": "vscode/install-extension#open-view",
+          "zoom": "left"
+        },
+        {
+          "say": "検索の欄に STELLA と入力します。",
+          "clip": "vscode/install-extension#search",
+          "zoom": "left"
+        },
+        {
+          "say": "一覧に、STELLA 拡張が出てきます。",
+          "spot": ["row"]
+        }
+      ]
+    },
+    {
+      "id": "publisher",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "識別子を確かめる",
+      "image": "clip:vscode/install-extension#details",
+      "beats": [
+        {
+          "say": "名前を押すと、拡張の説明が開きます。",
+          "clip": "vscode/install-extension#details"
+        },
+        {
+          "say": "右にある識別子を見ます。",
+          "spot": ["identifier"]
+        },
+        {
+          "say": "saedgewell.stella-lms なら、STELLA 拡張です。",
+          "speech": "エスエー エッジウェル ドット ステラ エルエムエスなら、ステラ拡張です。",
+          "zoom": "identifier"
+        },
+        {
+          "say": "識別子を見ると、似た名前の拡張と見分けられます。",
+          "zoom": "left",
+          "spot": ["row"]
+        }
+      ]
+    },
+    {
+      "id": "install",
+      "kind": "view",
+      "role": "point",
+      "point": 3,
+      "title": "インストールする",
+      "image": "clip:vscode/install-extension#install",
+      "beats": [
+        {
+          "say": "確かめたら、「インストール」を押します。",
+          "clip": "vscode/install-extension#install",
+          "zoom": "details"
+        },
+        {
+          "say": "ボタンが「アンインストール」に変われば、入っています。",
+          "zoom": "installed"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "view",
+      "role": "recap",
+      "title": "検索して確かめて入れる",
+      "image": "clip:vscode/install-extension#done",
+      "beats": [
+        {
+          "say": "STELLA 拡張は、拡張機能のビューで検索して入れます。",
+          "zoom": "left",
+          "spot": ["icon"]
+        },
+        {
+          "say": "入れる前に、識別子を確かめましょう。",
+          "zoom": "identifier"
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "7a8b13a8c6b054b207a44c84ad3c47c82732033b197c10742d870340d143838c"
+  }
+}

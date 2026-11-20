@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "slidesHash": "bc93d1d312d1c6b5",
+  "slidesHash": "ab9be03f4e167e16",
   "slides": [
     {
       "cues": [
@@ -34,7 +34,7 @@
           "text": "準備の順序は、公式サイトで選び、インストールして起動し、日本語にする流れです。"
         },
         {
-          "text": "OS ごとの詳しい操作は、レッスンのまとめの自分の OS のタブで確認できます。"
+          "text": "OS ごとの詳しい操作は、まとめの自分の OS のタブで確認できます。"
         },
         {
           "text": "Japanese Language Pack は、日本語で表示する追加機能です。"

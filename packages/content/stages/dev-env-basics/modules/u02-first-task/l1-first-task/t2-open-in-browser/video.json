@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "brief": {
+    "goal": "保存した HTML をブラウザーで開き、直したあとに保存と再読み込みで表示を更新できる。",
+    "stuck": "ファイルを直してもブラウザーの表示が変わらず、保存と再読み込みが要ることに気づかない。",
+    "points": [
+      "VS Code のエクスプローラーからファイルの場所を開き、ブラウザーで表示します。",
+      "ブラウザーに出るのは、保存したファイルの内容です。",
+      "直したら保存し、ブラウザーで再読み込みします。"
+    ],
+    "leaveOut": [
+      "OS ごとのメニューの名前と、ファイルの画面での操作",
+      "ファイルをブラウザーへドラッグして開く方法",
+      "ローカルサーバーや拡張機能を使った表示",
+      "再読み込みのショートカットキー"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "view",
+      "role": "hook",
+      "title": "ページではどう見える？",
+      "image": "clip:vscode/open-in-browser#reveal",
+      "beats": [
+        {
+          "say": "書いた HTML は、ページではどう見えるのでしょうか？",
+          "zoom": "left",
+          "spot": ["code"]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "kind": "view",
+      "role": "point",
+      "point": 1,
+      "title": "ファイルをブラウザーで開く",
+      "image": "clip:vscode/open-in-browser#reveal",
+      "beats": [
+        {
+          "say": "エクスプローラーで index.html を右クリックします。",
+          "clip": "vscode/open-in-browser#reveal",
+          "zoom": "left"
+        },
+        {
+          "say": "メニューから、ファイルの場所を開く項目を選びます。",
+          "spot": ["reveal"]
+        },
+        {
+          "say": "そのファイルを開くと、ブラウザーに表示されます。",
+          "clip": "web/open-html#open",
+          "zoom": "top"
+        }
+      ]
+    },
+    {
+      "id": "saved-content",
+      "kind": "view",
+      "role": "point",
+      "point": 2,
+      "title": "見えるのは保存した内容",
+      "image": "clip:web/open-html#reload",
+      "beats": [
+        {
+          "say": "ブラウザーに出るのは、保存したファイルの内容です。",
+          "zoom": "top"
+        },
+        {
+          "say": "見出しをよく見ると、「て」が抜けています。",
+          "spot": ["text"]
+        }
+      ]
+    },
+    {
+      "id": "fix-and-reload",
+      "kind": "view",
+      "role": "point",
+      "point": 3,
+      "title": "直して、保存して、再読み込み",
+      "image": "clip:vscode/open-in-browser#edit",
+      "beats": [
+        {
+          "say": "VS Code に戻って、見出しを直します。",
+          "clip": "vscode/open-in-browser#edit",
+          "zoom": "code"
+        },
+        {
+          "say": "直したら、Ctrl + S で保存します。",
+          "speech": "直したら、コントロール プラス エスで保存します。",
+          "clip": "vscode/open-in-browser#save",
+          "zoom": "left",
+          "spot": ["tab"]
+        },
+        {
+          "say": "ブラウザーに戻って、ページを再読み込みします。",
+          "clip": "web/open-html#reload",
+          "zoom": "top"
+        },
+        {
+          "say": "見出しが「はじめてのページ」に変わりました。",
+          "spot": ["text"]
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "view",
+      "role": "recap",
+      "title": "保存して、再読み込み",
+      "image": "clip:web/open-html#done",
+      "beats": [
+        {
+          "say": "直したら保存し、ブラウザーで再読み込みします。",
+          "zoom": "top"
+        },
+        {
+          "say": "表示が前のままなら、保存したかを確かめましょう。",
+          "spot": ["text"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-argon",
+    "sayHash": "02d07b3a6c003833e4be252470057cf65652aa9723b3a0e0490a11409cb935e6"
+  }
+}

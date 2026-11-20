@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Page } from "playwright";
-import { ClipMarks, clipMetadata, defineClip } from "./clips";
+import { ClipMarks, clipMetadata, defineClip, step } from "./clips";
 import { Director } from "./director";
 import type { ScreenRecorder } from "./recorder";
 
@@ -17,6 +17,23 @@ describe("clip definitions and metadata", () => {
     for (const id of ["../lesson", "web/../lesson", "/web/lesson", "web/lesson.mp4", "web"])
       expect(() => defineClip({ ...definition, id })).toThrow();
     expect(() => defineClip({ ...definition, regions: { slides: "" } })).toThrow();
+    const fixed = {
+      ...definition,
+      regions: {
+        slides: "#slides",
+        top: [0, 0, 1600, 1000] as [number, number, number, number],
+      },
+    };
+    expect(defineClip(fixed)).toBe(fixed);
+    for (const region of [
+      [1590, 0, 20, 20],
+      [0, 0, 0, 10],
+      [0, 0, 10.5, 10],
+      [-1, 0, 10, 10],
+    ])
+      expect(() =>
+        defineClip({ ...definition, regions: { off: region as [number, number, number, number] } }),
+      ).toThrow();
     expect(() => defineClip({ ...definition, user: " " })).toThrow();
     expect(() => defineClip({ ...definition, seedSql: [1] as unknown as string[] })).toThrow();
   });
@@ -127,4 +144,50 @@ it("rounds duration and mark seconds to two decimal places without changing the 
   expect(() =>
     clipMetadata("web/lesson", "source.ts", 1, 30, { tiny: [0.001, 0.002] }, {}),
   ).toThrow("丸めた mark");
+});
+
+it("accepts standalone clips and checks browser text", () => {
+  const standalone = { ...definition, id: "web/open-html", standalone: true };
+  expect(defineClip(standalone)).toBe(standalone);
+  expect(() => defineClip({ ...standalone, user: "seed-learner" })).toThrow(
+    "standalone のクリップに user と seedSql は使えません",
+  );
+  expect(() => defineClip({ ...standalone, seedSql: ["select 1"] })).toThrow(
+    "standalone のクリップに user と seedSql は使えません",
+  );
+  expect(() => defineClip({ ...definition, standalone: "yes" as unknown as boolean })).toThrow(
+    "standalone は boolean",
+  );
+  const browser = { tab: "練習", address: "web-training/index.html" };
+  expect(defineClip({ ...standalone, browser }).browser).toEqual(browser);
+  for (const bad of [
+    { tab: "", address: "a" },
+    { tab: "a".repeat(21), address: "a" },
+    { tab: "a\nb", address: "a" },
+    { tab: "a", address: "" },
+    { tab: "a", address: "a".repeat(71) },
+    { tab: "a", address: "a\r" },
+  ])
+    expect(() => defineClip({ ...definition, browser: bad })).toThrow("browser.");
+  const marks = { open: [1, 2] as [number, number] };
+  expect(clipMetadata("web/lesson", "source.ts", 4, 30, marks, {}, browser)).toMatchObject({
+    browser,
+  });
+  expect(clipMetadata("web/lesson", "source.ts", 4, 30, marks, {})).not.toHaveProperty("browser");
+  expect(() =>
+    clipMetadata("web/lesson", "source.ts", 4, 30, marks, {}, { tab: "", address: "a" }),
+  ).toThrow("browser.tab");
+});
+
+it("prefixes a failing step once", async () => {
+  await expect(
+    step("open", async () => {
+      throw new Error("missing");
+    }),
+  ).rejects.toThrow("open: missing");
+  await expect(
+    step("open", async () => {
+      throw new Error("open: already");
+    }),
+  ).rejects.toThrow("open: already");
 });

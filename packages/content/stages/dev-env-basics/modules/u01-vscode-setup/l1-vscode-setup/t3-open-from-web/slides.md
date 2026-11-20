@@ -1,7 +1,7 @@
 ---
 id: 01-1-3
 title: Webから課題を開く
-takeaway: "Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。"
+takeaway: "Web の教材の「VS Code で開く」で、VS Code に課題が届きます。"
 introduces: ["学習フォルダー", "課題フォルダー", "課題文のパネル", "Workspace Trust"]
 requires: ["VS Code", "STELLA 拡張", "課題"]
 header: "STELLAの使い方"
@@ -10,13 +10,13 @@ sourceRefs: ["SRC-dev-env-trust-20261107"]
 <!-- _class: lead -->
 # 01-1-3 Webから課題を開く
 
-<!-- ノート: 課題は Web のレッスンから開きます。この公開単元には課題がないので、実際の操作は U02 で試します。 -->
+<!-- ノート: 課題は Web の教材から開きます。この公開単元には課題がないので、実際の操作は U02 で試します。 -->
 
 ---
 
 # 覚えること
 
-Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。
+Web の教材の「VS Code で開く」で、VS Code に課題が届きます。
 
 <!-- ノート: Web のボタンから VS Code を開くと、取り組む課題のファイルと説明を受け取れます。 -->
 
@@ -24,7 +24,7 @@ Web のレッスンの「VS Code で開く」で、VS Code に課題が届きま
 
 # Web から VS Code へ
 
-1. Web で課題文のレッスンを開く
+1. Web で課題文の教材を開く
 2. 「VS Code で開く」を押し、ブラウザーの確認で「開く」を選ぶ
 3. VS Code の左にファイル、右に課題文が出る
 
@@ -37,6 +37,6 @@ Web のレッスンの「VS Code で開く」で、VS Code に課題が届きま
 <!-- _class: summary -->
 # まとめ
 
-Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。
+Web の教材の「VS Code で開く」で、VS Code に課題が届きます。
 
-<!-- ノート: 課題を始める入口は Web のレッスンです。続きも同じレッスンから開き直せます。 -->
+<!-- ノート: 課題を始める入口は Web の教材です。続きも同じ教材から開き直せます。 -->

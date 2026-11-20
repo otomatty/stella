@@ -1,0 +1,22 @@
+{
+  "source": "apps/web/scripts/tutorials/clips/open-html.ts",
+  "video": "clips/web/open-html.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 7.67,
+  "marks": {
+    "open": [0, 1.16],
+    "reload": [1.16, 4.2],
+    "done": [4.2, 5.4]
+  },
+  "regions": {
+    "heading": [10, 26, 1580, 61],
+    "top": [0, 0, 800, 500],
+    "text": [0, 14, 440, 84]
+  },
+  "browser": {
+    "tab": "練習",
+    "address": "web-training/dev-env-basics/u02-first-task/q01-first-page/index.html"
+  }
+}

@@ -1,11 +1,12 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { closeNotifications, type Scenario, webviewBody, webviewWith } from "../helpers";
+import { closeNotifications, runTaskButton, type Scenario, webviewWith } from "../helpers";
 
 const TOPIC = "dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop";
 const TASK = "dev-env-basics/u02-first-task/q01-first-page";
 const REFLECTION =
   "見出しを「はじめてのページ」に直し、課題を確認してすべて通ることを確かめました。";
+const PASSED_HEADING = "すべて通りました";
 
 export default {
   id: "submit",
@@ -17,8 +18,8 @@ export default {
   task: TASK,
   regions: {
     panel: [1022, 84, 568, 876],
-    result: [1046, 466, 502, 340],
-    submit: [1040, 864, 48, 28],
+    result: [1047, 461, 518, 84],
+    submit: [1444, 484, 102, 39],
   },
 
   async setup(page, ctx) {
@@ -28,7 +29,7 @@ export default {
     const taskTab = page.locator('.tabs-container .tab[aria-label^="課題: "]');
     await indexTab.waitFor({ state: "visible", timeout: 60_000 });
     await taskTab.waitFor({ state: "visible", timeout: 60_000 });
-    await webviewBody(page).waitFor({ timeout: 60_000 });
+    await webviewWith(page, "text=最初のページを作る", 60_000);
 
     const file = path.join(ctx.taskRoot, "index.html");
     const html = await readFile(file, "utf8");
@@ -41,18 +42,21 @@ export default {
       .first()
       .waitFor({ state: "visible", timeout: 30_000 });
 
-    await page.locator('[id="saedgewell.stella-lms.stella.runTask"]').click();
-    const result = await webviewWith(page, ".outcome.passed", 30_000);
+    await runTaskButton(page).click();
+    const result = await webviewWith(page, ".summary.passed", 30_000);
     await result
-      .locator(".outcome.passed")
-      .filter({ hasText: "すべて通りました" })
+      .locator(".summary.passed .summary-title")
+      .filter({ hasText: PASSED_HEADING })
       .waitFor({ state: "visible", timeout: 30_000 });
     await closeNotifications(page);
   },
 
-  async run(t, { page, api }) {
-    const result = await webviewWith(page, ".outcome.passed", 30_000);
-    const submitLink = result.locator('a[href^="command:stella.submitTask"]');
+  async run(t, { page, api, region }) {
+    const result = await webviewWith(page, ".summary.passed", 30_000);
+    const summary = result.locator(".summary.passed");
+    const submitLink = summary.locator('a[href^="command:stella.submitTask"]');
+    await region("result", summary);
+    await region("submit", submitLink);
     await t.mark("press-submit", async () => {
       await t.expect(submitLink);
       await t.click(submitLink);

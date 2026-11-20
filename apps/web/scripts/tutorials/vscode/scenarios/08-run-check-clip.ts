@@ -1,8 +1,29 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { closeNotifications, dragText, saveFile, type Scenario, webviewBody } from "../helpers";
+import {
+  closeNotifications,
+  coverRegion,
+  dragText,
+  mergeRegions,
+  runTaskButton,
+  saveFile,
+  type Scenario,
+  webviewWith,
+} from "../helpers";
 
 const TASK = "dev-env-basics/u02-first-task/q01-first-page";
+const FAILED_HEADING = "直すところがあります";
+const PASSED_HEADING = "すべて通りました";
+const HEADING_MESSAGE =
+  "<h1> の文字が「はじめてのページ」になっていません (いまは「ここを変更します」)";
+
+const regions: Record<string, [number, number, number, number]> = {
+  editor: [440, 84, 578, 876],
+  code: [476, 112, 490, 304],
+  panel: [1022, 84, 568, 876],
+  headline: [1119, 234, 310, 31],
+  result: [1047, 219, 518, 385],
+};
 
 export default {
   id: "run-check-clip",
@@ -12,18 +33,12 @@ export default {
   topic: "dev-env-basics/modules/u00-start/l1-how-stella-works/t1-learning-loop",
   task: TASK,
   open: "index.html",
-  regions: {
-    editor: [440, 84, 578, 876],
-    code: [476, 112, 490, 304],
-    panel: [1022, 84, 568, 876],
-    headline: [1040, 222, 204, 30],
-    result: [1046, 268, 520, 292],
-  },
+  regions,
 
-  async run(t, { taskRoot, page }) {
-    const runTask = page.locator('[id="saedgewell.stella-lms.stella.runTask"]');
+  async run(t, { taskRoot, page, region }) {
+    const runTask = runTaskButton(page);
     const resultTab = page.locator('.tabs-container .tab[aria-label^="確認: 最初のページを作る"]');
-    const result = webviewBody(page);
+    let result = page.locator("body");
     const heading = page
       .locator(".monaco-editor .view-lines .view-line")
       .filter({ hasText: "ここを変更します" })
@@ -34,8 +49,9 @@ export default {
       await t.expect(runTask);
       await t.click(runTask);
       await t.expect(resultTab);
-      await t.expect(result.locator(".outcome.failed"), {
-        text: "直すところがあります",
+      result = await webviewWith(page, ".summary.failed", 30_000);
+      await t.expect(result.locator(".summary.failed .summary-title"), {
+        text: FAILED_HEADING,
         timeout: 30_000,
       });
       await closeNotifications(page, t);
@@ -44,11 +60,16 @@ export default {
     });
 
     await t.mark("fail", async () => {
-      await t.highlight(result.locator(".outcome.failed"), 1200);
-      const message = result.locator(".tests pre").filter({ hasText: "<h1>" });
-      await t.expect(message, {
-        text: "<h1> の文字が「はじめてのページ」になっていません (いまは「ここを変更します」)",
-      });
+      const summary = result.locator(".summary.failed");
+      const title = summary.locator(".summary-title");
+      await region("headline", title);
+      regions.result = await coverRegion("result", [
+        summary,
+        result.locator("section.step.failed"),
+      ]);
+      await t.highlight(title, 1200);
+      const message = result.locator(".test-fail pre").filter({ hasText: "<h1>" });
+      await t.expect(message, { text: HEADING_MESSAGE });
       await t.highlight(message, 1500);
     });
 
@@ -73,8 +94,9 @@ export default {
 
     await t.mark("recheck", async () => {
       await t.click(runTask);
-      await t.expect(result.locator(".outcome.passed"), {
-        text: "すべて通りました",
+      result = await webviewWith(page, ".summary.passed", 30_000);
+      await t.expect(result.locator(".summary.passed .summary-title"), {
+        text: PASSED_HEADING,
         timeout: 30_000,
       });
       await closeNotifications(page, t);
@@ -83,7 +105,9 @@ export default {
     });
 
     await t.mark("pass", async () => {
-      await t.highlight(result.locator(".outcome.passed"), 1800);
+      const summary = result.locator(".summary.passed");
+      regions.result = mergeRegions(regions.result, await coverRegion("result", [summary]));
+      await t.highlight(summary.locator(".summary-title"), 1800);
     });
 
     const saved = await readFile(path.join(taskRoot, "index.html"), "utf8");

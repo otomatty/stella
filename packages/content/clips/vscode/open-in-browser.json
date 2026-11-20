@@ -1,0 +1,23 @@
+{
+  "source": "apps/web/scripts/tutorials/vscode/scenarios/12-open-in-browser.ts",
+  "video": "clips/vscode/open-in-browser.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 23.33,
+  "marks": {
+    "reveal": [0, 4.36],
+    "edit": [7.12, 15.1],
+    "save": [15.1, 19.75],
+    "done": [19.75, 20.95]
+  },
+  "regions": {
+    "explorer": [62, 84, 378, 876],
+    "editor": [440, 84, 578, 876],
+    "left": [0, 40, 1040, 650],
+    "menu": [246, 217, 391, 513],
+    "reveal": [247, 253, 389, 31],
+    "code": [533, 304, 442, 29],
+    "tab": [440, 44, 149, 40]
+  }
+}

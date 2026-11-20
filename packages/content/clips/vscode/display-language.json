@@ -1,0 +1,21 @@
+{
+  "source": "apps/web/scripts/tutorials/vscode/scenarios/10-display-language.ts",
+  "video": "clips/vscode/display-language.mp4",
+  "width": 1600,
+  "height": 1000,
+  "fps": 30,
+  "duration": 25.77,
+  "marks": {
+    "open-palette": [0.06, 7.21],
+    "find-command": [7.21, 13.42],
+    "choose-japanese": [13.42, 19.74],
+    "done": [19.74, 20.94]
+  },
+  "regions": {
+    "work": [200, 0, 1000, 625],
+    "menubar": [40, 0, 400, 44],
+    "view-menu": [220, 0, 55, 44],
+    "languages": [425, 7, 752, 452],
+    "restart": [1025, 864, 565, 115]
+  }
+}

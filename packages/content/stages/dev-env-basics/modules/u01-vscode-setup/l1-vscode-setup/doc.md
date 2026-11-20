@@ -50,17 +50,17 @@ Command Palette（コマンドパレット）は、操作名を探して実行�
 STELLA 拡張で、課題の受け取り・確認・提出ができます。
 
 1. 左の四角の「拡張機能」アイコンを押し、「STELLA」を検索します。
-2. 名前「STELLA」、発行元 `saedgewell`、ID `saedgewell.stella-lms` を確かめます。
+2. 「STELLA 研修」を選び、説明の右側の「識別子」が `saedgewell.stella-lms` であることを確かめます。
 3. 「インストール」を押します。「無効にする」が選べれば有効です。
 
 ## 01-1-3 Webから課題を開く
 
-> **Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。**
+> **Web の教材の「VS Code で開く」で、VS Code に課題が届きます。**
 
 :::tutorial open-in-vscode
 
 この公開単元には課題はありません。U02 の最初の課題で試します。
-PC で Web にログインし、課題文のレッスンから「VS Code で開く」を押します。
+PC で Web にログインし、課題文の教材から「VS Code で開く」を押します。
 ブラウザーの確認で「開く」を選ぶと、左にファイル、右に課題文のパネルが出ます。
 課題文のパネルは、取り組む課題の説明を読む場所です。
 
@@ -74,7 +74,7 @@ PC で Web にログインし、課題文のレッスンから「VS Code で開�
 Workspace Trust は、この信頼を確かめる仕組みです。
 信頼していないフォルダーでは「課題を確認する」が動きません。
 
-翌日も、Web の同じ課題のレッスンから「VS Code で開く」で戻れます。
+翌日も、Web の同じ課題文の教材から「VS Code で開く」で戻れます。
 閉じる前には保存します。保存したファイルは残り、開き直しても上書きされません。
 
 ## もっと知りたい人へ
@@ -85,4 +85,4 @@ Workspace Trust は、この信頼を確かめる仕組みです。
 - [STELLA の Marketplace ページ](https://marketplace.visualstudio.com/items?itemName=saedgewell.stella-lms)
 - [Workspace Trust の公式説明](https://code.visualstudio.com/docs/editing/workspaces/workspace-trust)
 
-ログイン後は、このレッスンの知識問題で確かめます。
+ログイン後は、確認クイズで確かめます。

@@ -1,6 +1,18 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { closeNotifications, dragText, saveFile, type Scenario, webviewBody } from "../helpers";
+import {
+  closeNotifications,
+  dragText,
+  runTaskButton,
+  saveFile,
+  type Scenario,
+  webviewWith,
+} from "../helpers";
+
+const FAILED_HEADING = "直すところがあります";
+const PASSED_HEADING = "すべて通りました";
+const HEADING_MESSAGE =
+  "<h1> の文字が「はじめてのページ」になっていません (いまは「ここを変更します」)";
 
 export default {
   id: "run-check",
@@ -11,15 +23,15 @@ export default {
   open: "index.html",
 
   async run(t, { taskRoot, page }) {
-    const runTask = page.locator('[id="saedgewell.stella-lms.stella.runTask"]');
+    const runTask = runTaskButton(page);
     const resultTab = page.locator('.tabs-container .tab[aria-label^="確認: 最初のページを作る"]');
-    const result = webviewBody(page);
+    let result = page.locator("body");
     const heading = page
       .locator(".monaco-editor .view-lines .view-line")
       .filter({ hasText: "ここを変更します" })
       .first();
 
-    await t.caption("下のステータスバーを見ます。「課題を確認する」を押します。", {
+    await t.caption("エディターの右上にある「課題を確認する」を押します。", {
       hold: 8000,
     });
     await t.expect(runTask);
@@ -28,21 +40,20 @@ export default {
     await t.hideCaption();
     await t.click(runTask);
     await t.expect(resultTab);
-    await t.expect(result.locator(".outcome.failed"), {
-      text: "直すところがあります",
+    result = await webviewWith(page, ".summary.failed", 30_000);
+    await t.expect(result.locator(".summary.failed .summary-title"), {
+      text: FAILED_HEADING,
       timeout: 30_000,
     });
     await closeNotifications(page, t);
     await t.park();
 
-    await t.caption("結果の1行目を読みます。直すところがあります。", { hold: 8000 });
-    await t.highlight(result.locator(".outcome.failed"), 3000);
+    await t.caption("結果の見出しを読みます。直すところがあります。", { hold: 8000 });
+    await t.highlight(result.locator(".summary.failed .summary-title"), 3000);
 
     await t.caption("通らなかった項目のメッセージを読みます。", { hold: 8000 });
-    const message = result.locator(".tests pre").filter({ hasText: "<h1>" });
-    await t.expect(message, {
-      text: "<h1> の文字が「はじめてのページ」になっていません (いまは「ここを変更します」)",
-    });
+    const message = result.locator(".test-fail pre").filter({ hasText: "<h1>" });
+    await t.expect(message, { text: HEADING_MESSAGE });
     await t.highlight(message, 3500);
 
     await t.caption("課題文の指定どおり、見出しを直します。", { hold: 11000 });
@@ -65,15 +76,16 @@ export default {
     await t.settle();
     await t.hideCaption();
     await t.click(runTask);
-    await t.expect(result.locator(".outcome.passed"), {
-      text: "すべて通りました",
+    result = await webviewWith(page, ".summary.passed", 30_000);
+    await t.expect(result.locator(".summary.passed .summary-title"), {
+      text: PASSED_HEADING,
       timeout: 30_000,
     });
     await closeNotifications(page, t);
     await t.park();
 
     await t.caption("「すべて通りました」と出れば、手元の確認は完了です。", { hold: 9000 });
-    await t.highlight(result.locator(".outcome.passed"), 3500);
+    await t.highlight(result.locator(".summary.passed .summary-title"), 3500);
     await t.poster();
 
     const saved = await readFile(path.join(taskRoot, "index.html"), "utf8");

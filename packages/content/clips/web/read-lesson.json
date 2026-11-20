@@ -4,10 +4,10 @@
   "width": 1600,
   "height": 1000,
   "fps": 30,
-  "duration": 12.23,
+  "duration": 12.87,
   "marks": {
-    "open-lesson": [4.98, 8.34],
-    "next-slide": [8.34, 12.19]
+    "open-lesson": [5.41, 8.9],
+    "next-slide": [8.91, 12.79]
   },
   "regions": {
     "slides": [475, 307, 1000, 564]

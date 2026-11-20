@@ -1,7 +1,7 @@
 ---
 sourceRefs: ["SRC-dev-env-editor-20261107", "SRC-dev-env-win-setup-20261107", "SRC-dev-env-mac-setup-20261107", "SRC-dev-env-locales-20261107", "SRC-dev-env-jp-pack-20261107", "SRC-dev-env-extensions-20261107", "SRC-dev-env-stella-20261107", "SRC-dev-env-trust-20261107"]
 ---
-## 知識問題
+## 確認クイズ
 
 この問題と解説は教材用に作成しました。
 
@@ -22,19 +22,19 @@ sourceRefs: ["SRC-dev-env-editor-20261107", "SRC-dev-env-win-setup-20261107", "S
 <!-- kind: single; skills: open-learning-folder -->
 
 - A. 名前だけ
-- B. 発行元 saedgewell、ID saedgewell.stella-lms
+- B. 識別子 saedgewell.stella-lms
 
 <details>
 <summary>解答</summary>
 
-**B** — 拡張機能のビューで検索し、発行元とIDも確かめます。
+**B** — 拡張機能のビューで検索し、識別子も確かめます。
 
 </details>
 
 ### Q3. 翌日に同じ課題の続きを開く方法はどれですか？
 <!-- kind: single; skills: open-learning-folder -->
 
-- A. Web の同じ課題のレッスンから「VS Code で開く」を押す
+- A. Web の同じ課題文の教材から「VS Code で開く」を押す
 - B. 毎回、新しい学習フォルダーを作る
 
 <details>

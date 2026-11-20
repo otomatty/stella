@@ -215,3 +215,55 @@ it("Windows と POSIX のパスで content 外・変更検知の対象外を拒�
       expect(clipVideoPath(root, input, "fixture", path)).toBe(path.resolve(root, input));
   }
 });
+
+it("web の browser を画像とハッシュに載せ、空の tab と vscode は拒む", () => {
+  const root = mkdtempSync(join(tmpdir(), "stella-clip-browser-"));
+  try {
+    mkdirSync(join(root, "clips/web"), { recursive: true });
+    const definition = {
+      source: "fixture",
+      video: "clips/one.mp4",
+      width: 1600,
+      height: 1000,
+      fps: 30,
+      duration: 10,
+      marks: { open: [2, 4] },
+      regions: { top: [10, 10, 100, 100] },
+      browser: { tab: "練習", address: "local/index.html" },
+    };
+    const json = join(root, "clips/web/action.json");
+    writeFileSync(json, JSON.stringify(definition));
+    writeFileSync(join(root, "clips/one.mp4"), "aaaa");
+    const sb = {
+      scenes: [
+        { kind: "view", image: "clip:web/action#open", beats: [{ clip: "web/action#open" }] },
+      ],
+    };
+    const first = storyboardAssets(root, root, sb);
+    expect(first.context.clips?.["web/action"].browser).toEqual(definition.browser);
+    expect(first.images["clip:web/action#open"].browser).toEqual(definition.browser);
+    writeFileSync(
+      json,
+      JSON.stringify({ ...definition, browser: { tab: "別", address: "local/index.html" } }),
+    );
+    expect(storyboardAssets(root, root, sb).hashes).not.toEqual(first.hashes);
+    writeFileSync(
+      json,
+      JSON.stringify({ ...definition, browser: { tab: "", address: "local/index.html" } }),
+    );
+    expect(() => storyboardAssets(root, root, sb)).toThrow(
+      "クリップの browser が不正です: web/action",
+    );
+    writeFileSync(json, JSON.stringify(definition));
+    mkdirSync(join(root, "clips/vscode"), { recursive: true });
+    writeFileSync(
+      join(root, "clips/vscode/tool.json"),
+      JSON.stringify({ ...definition, browser: { tab: "Code", address: "file" } }),
+    );
+    expect(() => storyboardAssets(root, root, sb)).toThrow(
+      "browser は web のクリップだけに書けます: vscode/tool",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
