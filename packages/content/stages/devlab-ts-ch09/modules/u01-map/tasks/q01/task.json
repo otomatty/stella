@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch09/u01-map/q01",
+  "title": "09章 q01 Map",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch09",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08"
+    ],
+    "assesses": [
+      "devlab-ts-ch09"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-to-map",
+      "title": "[名前, 点数] の配列から Map を作る"
+    },
+    {
+      "id": "q01-02-score-of",
+      "title": "name の点数を返す"
+    },
+    {
+      "id": "q01-03-has-name",
+      "title": "name が Map のキーにあれば true"
+    },
+    {
+      "id": "q01-04-with-score",
+      "title": "name に score を設定した新しい Map を返す"
+    },
+    {
+      "id": "q01-05-without-name",
+      "title": "name を取り除いた新しい Map を返す"
+    },
+    {
+      "id": "q01-06-size-of",
+      "title": "Map に入っている数を返す"
+    },
+    {
+      "id": "q01-07-names-of",
+      "title": "キーの配列を返す"
+    },
+    {
+      "id": "q01-08-total-score",
+      "title": "値の合計を返す"
+    },
+    {
+      "id": "q01-09-to-object",
+      "title": "Map をオブジェクトにする"
+    },
+    {
+      "id": "q01-10-from-object",
+      "title": "オブジェクトを Map にする"
+    },
+    {
+      "id": "q01-11-char-counts",
+      "title": "文字ごとの出てきた回数の Map を返す"
+    },
+    {
+      "id": "q01-12-group-by-initial",
+      "title": "単語を、最初の1文字ごとにまとめた Map を返す"
+    },
+    {
+      "id": "q01-13-invert",
+      "title": "キーと値を入れ替えた新しい Map を返す"
+    },
+    {
+      "id": "q01-14-merge-add",
+      "title": "2つの Map をまとめた新しい Map を返す"
+    },
+    {
+      "id": "q01-15-top-name",
+      "title": "値がいちばん大きいキーを返す"
+    },
+    {
+      "id": "q01-16-sorted-by-value",
+      "title": "[キー, 値] の配列を、値の大きい順に並べて返す"
+    },
+    {
+      "id": "q01-17-at-least",
+      "title": "値が min 以上のものだけを残した新しい Map を返す"
+    },
+    {
+      "id": "q01-18-map-values",
+      "title": "すべての値に fn を当てた新しい Map を返す"
+    },
+    {
+      "id": "q01-19-first-index",
+      "title": "単語ごとに、最初に出てきた位置の Map を返す"
+    },
+    {
+      "id": "q01-20-last-seen",
+      "title": "{ user, time } の配列から、ユーザーごとのいちばん大きい time の Map を返す"
+    },
+    {
+      "id": "q01-map",
+      "title": "Map（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-builtin-api-map"
+  ],
+  "estimatedMinutes": 82,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

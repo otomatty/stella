@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch02/u03-destructuring-spread/q03",
+  "title": "02章 q03 分割代入とスプレッド構文",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-item-label",
+      "title": "分割代入で name と price を取り出し、「りんご 150円」の形にする"
+    },
+    {
+      "id": "q03-02-set-price",
+      "title": "price だけを変えた新しい Item を返す"
+    },
+    {
+      "id": "q03-03-set-stock",
+      "title": "stock だけを変えた新しい Item を返す"
+    },
+    {
+      "id": "q03-04-add-stock",
+      "title": "stock を amount だけ増やした新しい Item を返す"
+    },
+    {
+      "id": "q03-05-rename",
+      "title": "name だけを変えた新しい Item を返す"
+    },
+    {
+      "id": "q03-06-user-summary",
+      "title": "分割代入で name と age を取り出し、「山田」の形にする"
+    },
+    {
+      "id": "q03-07-birthday",
+      "title": "age を1増やした新しい User を返す"
+    },
+    {
+      "id": "q03-08-change-email",
+      "title": "email だけを変えた新しい User を返す"
+    },
+    {
+      "id": "q03-09-pick-id-name",
+      "title": "分割代入で id と name を取り出し、{ id, name } だけのオブジェクトを返す"
+    },
+    {
+      "id": "q03-10-merge-user",
+      "title": "patch { name, email } の値で上書きした新しい User を返す"
+    },
+    {
+      "id": "q03-11-copy-item",
+      "title": "中身が同じで、別のオブジェクトになった Item を返す"
+    },
+    {
+      "id": "q03-12-discount-item",
+      "title": "price を percentOff パーセント引きにした新しい Item を返す"
+    },
+    {
+      "id": "q03-13-greet-by-name",
+      "title": "引数の位置で分割代入して、「こんにちは、山田さん」を返す"
+    },
+    {
+      "id": "q03-14-is-expensive",
+      "title": "引数の位置で price を分割代入し、1000円以上なら true を返す"
+    },
+    {
+      "id": "q03-15-stock-value",
+      "title": "引数の位置で price と stock を分割代入し、在庫金額を返す"
+    },
+    {
+      "id": "q03-16-reset-stock",
+      "title": "stock を 0 にした新しい Item を返す"
+    },
+    {
+      "id": "q03-17-to-option",
+      "title": "分割代入で名前を付け替えて、{ value, label } を返す"
+    },
+    {
+      "id": "q03-18-with-defaults",
+      "title": "{ size?, color? } に、足りない値を size 10、color \"black\" で補ったオブジェクトを返す"
+    },
+    {
+      "id": "q03-19-combine",
+      "title": "{ x } と { y } を合わせて { x, y } にする"
+    },
+    {
+      "id": "q03-20-with-tax",
+      "title": "price を税込にした新しい Item を返す"
+    },
+    {
+      "id": "q03-destructuring-spread",
+      "title": "分割代入とスプレッド構文（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-object-destructuring-assignment-from-objects",
+    "SRC-typescriptbook-values-types-variables-object-spread-syntax-for-object"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

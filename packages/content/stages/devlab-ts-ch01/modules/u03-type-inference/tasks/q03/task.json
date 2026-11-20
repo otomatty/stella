@@ -1,0 +1,130 @@
+{
+  "id": "devlab-ts-ch01/u03-type-inference/q03",
+  "title": "01章 q03 型推論",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch01",
+  "skills": {
+    "uses": [],
+    "assesses": [
+      "devlab-ts-ch01"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-site-name",
+      "title": "定数 SITE_NAME を宣言する"
+    },
+    {
+      "id": "q03-02-max-members",
+      "title": "定数 MAX_MEMBERS を宣言する"
+    },
+    {
+      "id": "q03-03-is-beta",
+      "title": "定数 IS_BETA を宣言する"
+    },
+    {
+      "id": "q03-04-tax-rate",
+      "title": "定数 TAX_RATE を宣言する"
+    },
+    {
+      "id": "q03-05-double",
+      "title": "2倍の数を返す"
+    },
+    {
+      "id": "q03-06-to-text",
+      "title": "数値を文字列にする"
+    },
+    {
+      "id": "q03-07-is-zero",
+      "title": "0 なら true を返す"
+    },
+    {
+      "id": "q03-08-sign",
+      "title": "正なら \"plus\"、負なら \"minus\"、0 なら \"zero\" を返す"
+    },
+    {
+      "id": "q03-09-judge",
+      "title": "60点以上なら \"合格\"、それ未満なら \"不合格\" を返す"
+    },
+    {
+      "id": "q03-10-square",
+      "title": "2乗した数を返す"
+    },
+    {
+      "id": "q03-11-join-words",
+      "title": "2つの単語を半角スペースでつなぐ"
+    },
+    {
+      "id": "q03-12-half-if-even",
+      "title": "偶数なら半分にした数を、奇数なら undefined を返す"
+    },
+    {
+      "id": "q03-13-ampm",
+      "title": "0〜11時なら \"午前\"、12〜23時なら \"午後\" を返す"
+    },
+    {
+      "id": "q03-14-bigger",
+      "title": "2つの数のうち大きい方を返す"
+    },
+    {
+      "id": "q03-15-char-count",
+      "title": "文字数を返す"
+    },
+    {
+      "id": "q03-16-is-empty-text",
+      "title": "空の文字列なら true を返す"
+    },
+    {
+      "id": "q03-17-yes-no",
+      "title": "true なら \"はい\"、false なら \"いいえ\" を返す"
+    },
+    {
+      "id": "q03-18-next-year",
+      "title": "次の年を返す"
+    },
+    {
+      "id": "q03-19-wrap-paren",
+      "title": "文字列を丸かっこ「」で囲む"
+    },
+    {
+      "id": "q03-20-first-char",
+      "title": "text[0] で最初の文字を取り出して返す"
+    },
+    {
+      "id": "q03-type-inference",
+      "title": "型推論（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-type-inference"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

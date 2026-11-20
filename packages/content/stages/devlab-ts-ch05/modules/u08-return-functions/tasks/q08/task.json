@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch05/u08-return-functions/q08",
+  "title": "05章 q08 関数を返す関数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q08-01-make-adder",
+      "title": "受け取った数に n を足す関数を返す"
+    },
+    {
+      "id": "q08-02-make-times",
+      "title": "受け取った数を n 倍する関数を返す"
+    },
+    {
+      "id": "q08-03-make-greeter",
+      "title": "名前を受け取り「greeting、◯◯さん」を返す関数を返す"
+    },
+    {
+      "id": "q08-04-make-counter",
+      "title": "呼ぶたびに 1、2、3… を返す関数を返す"
+    },
+    {
+      "id": "q08-05-make-counter-from",
+      "title": "呼ぶたびに start、start + 1、… を返す関数を返す"
+    },
+    {
+      "id": "q08-06-make-toggle",
+      "title": "呼ぶたびに真偽値を反転し、反転した後の値を返す関数を返す"
+    },
+    {
+      "id": "q08-07-make-accumulator",
+      "title": "受け取った数を足し続け、それまでの合計を返す関数を返す"
+    },
+    {
+      "id": "q08-08-make-id-maker",
+      "title": "呼ぶたびに \"u1\"、\"u2\"… を返す関数を返す"
+    },
+    {
+      "id": "q08-09-only-once",
+      "title": "fn を最初の1回だけ呼び、2回目からは1回目の結果を返す関数を返す"
+    },
+    {
+      "id": "q08-10-make-limiter",
+      "title": "max 回目までは true、それより後は false を返す関数を返す"
+    },
+    {
+      "id": "q08-11-make-history",
+      "title": "{ add, list } を返す"
+    },
+    {
+      "id": "q08-12-make-stack",
+      "title": "{ push, pop, size } を返す"
+    },
+    {
+      "id": "q08-13-make-square-cache",
+      "title": "{ square, computed } を返す"
+    },
+    {
+      "id": "q08-14-make-cycler",
+      "title": "呼ぶたびに items を先頭から順に返し、最後まで行ったら先頭に戻る関数を返す"
+    },
+    {
+      "id": "q08-15-make-wallet",
+      "title": "{ deposit, withdraw, balance } を返す"
+    },
+    {
+      "id": "q08-16-make-formatter",
+      "title": "数を受け取り「数 + unit」の文字列を返す関数を返す"
+    },
+    {
+      "id": "q08-17-make-validator",
+      "title": "数を受け取り、min 以上 max 以下なら true を返す関数を返す"
+    },
+    {
+      "id": "q08-18-make-lap-timer",
+      "title": "時刻 tを受け取り、前回呼んだときの t との差を返す関数を返す"
+    },
+    {
+      "id": "q08-19-partial",
+      "title": "2つの数を受け取る関数 fn と a を受け取り、b だけを受け取って fn を返す関数を返す"
+    },
+    {
+      "id": "q08-20-make-tagger",
+      "title": "文字列を受け取り「<tag>文字列</tag>」を返す関数を返す"
+    },
+    {
+      "id": "q08-closures",
+      "title": "関数を返す関数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-function-is-a-value"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

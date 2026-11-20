@@ -1,0 +1,134 @@
+{
+  "id": "devlab-ts-ch02/u04-array-types/q04",
+  "title": "02章 q04 配列の型",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-sum-all",
+      "title": "合計を返す"
+    },
+    {
+      "id": "q04-02-count-items",
+      "title": "要素の数を返す"
+    },
+    {
+      "id": "q04-03-first-or-zero",
+      "title": "最初の要素を返す"
+    },
+    {
+      "id": "q04-04-last-item",
+      "title": "最後の要素を返す"
+    },
+    {
+      "id": "q04-05-double-each",
+      "title": "すべての要素を2倍にした新しい配列を返す"
+    },
+    {
+      "id": "q04-06-lengths",
+      "title": "それぞれの文字列の文字数を並べた配列を返す"
+    },
+    {
+      "id": "q04-07-evens",
+      "title": "偶数だけを集めた配列を返す"
+    },
+    {
+      "id": "q04-08-long-words",
+      "title": "min 文字以上の単語だけを集めた配列を返す"
+    },
+    {
+      "id": "q04-09-contains-item",
+      "title": "target が含まれていれば true"
+    },
+    {
+      "id": "q04-10-position-of",
+      "title": "target が何番目にあるかを返す"
+    },
+    {
+      "id": "q04-11-join-with-comma",
+      "title": "要素を「, 」でつないだ文字列を返す"
+    },
+    {
+      "id": "q04-12-max-value",
+      "title": "最大値を返す"
+    },
+    {
+      "id": "q04-13-min-value",
+      "title": "最小値を返す"
+    },
+    {
+      "id": "q04-14-average-of",
+      "title": "平均を返す"
+    },
+    {
+      "id": "q04-15-upper-all",
+      "title": "すべての英字を大文字にした配列を返す"
+    },
+    {
+      "id": "q04-16-count-positive",
+      "title": "0より大きい要素の数を返す"
+    },
+    {
+      "id": "q04-17-range",
+      "title": "start 以上 end 未満の整数を順に並べた配列を返す"
+    },
+    {
+      "id": "q04-18-repeat-item",
+      "title": "item を times 個並べた配列を返す"
+    },
+    {
+      "id": "q04-19-sum-even-index",
+      "title": "0番目、2番目、4番目…の要素だけを合計する"
+    },
+    {
+      "id": "q04-20-all-positive",
+      "title": "すべての要素が0より大きければ true"
+    },
+    {
+      "id": "q04-array-type",
+      "title": "配列の型と読み取り専用の配列（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-array-type-annotation-of-array",
+    "SRC-typescriptbook-values-types-variables-array-readonly-array",
+    "SRC-typescriptbook-values-types-variables-array-how-to-loop-an-array"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

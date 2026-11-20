@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch03/u06-intersection-types/q06",
+  "title": "03章 q06 インターセクション型",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q06-01-introduce",
+      "title": "「山田」を返す"
+    },
+    {
+      "id": "q06-02-make-person",
+      "title": "name と age から Named & Aged を作る"
+    },
+    {
+      "id": "q06-03-with-id",
+      "title": "Named に id を足した Named & Identified を返す"
+    },
+    {
+      "id": "q06-04-stamp",
+      "title": "Named に createdAt を足した Named & Timestamped を返す"
+    },
+    {
+      "id": "q06-05-price-tag",
+      "title": "「りんご 150円」を返す"
+    },
+    {
+      "id": "q06-06-is-cheap",
+      "title": "price が limit 以下なら true"
+    },
+    {
+      "id": "q06-07-make-item",
+      "title": "name と price から Named & Priced を作る"
+    },
+    {
+      "id": "q06-08-id-label",
+      "title": "「#3 山田」を返す"
+    },
+    {
+      "id": "q06-09-older-by-one",
+      "title": "age を1増やした、新しい Named & Aged を返す"
+    },
+    {
+      "id": "q06-10-created-date",
+      "title": "createdAt を「2026-12-01」の形にする"
+    },
+    {
+      "id": "q06-11-make-member",
+      "title": "name、age、id から Named & Aged & Identified を作る"
+    },
+    {
+      "id": "q06-12-total-of",
+      "title": "price の合計を返す"
+    },
+    {
+      "id": "q06-13-oldest-name",
+      "title": "いちばん年上の人の name を返す"
+    },
+    {
+      "id": "q06-14-product-text",
+      "title": "型 Product を Named & Priced & Identified として定義して export し、productText を書く"
+    },
+    {
+      "id": "q06-15-is-adult-admin",
+      "title": "型 Member を Named & Aged & { role: \"admin\" | \"member\" } として定義して export し、isAdultAdmin を書く"
+    },
+    {
+      "id": "q06-16-post-title",
+      "title": "型 Post を Identified & Timestamped & { title: string } として定義して export し、postTitle を書く"
+    },
+    {
+      "id": "q06-17-publish",
+      "title": "型 Draftと、型 Publishedを定義して export し、publish を書く"
+    },
+    {
+      "id": "q06-18-add-tag",
+      "title": "型 Tagged を Named & { tags: string[] } として定義して export し、addTag を書く"
+    },
+    {
+      "id": "q06-19-final-price",
+      "title": "型 Discounted を Priced & { discount: number } として定義して export し、finalPrice を書く"
+    },
+    {
+      "id": "q06-20-place",
+      "title": "型 Place を Named & { lat: number; lng: number } として定義して export し、place を書く"
+    },
+    {
+      "id": "q06-intersection",
+      "title": "インターセクション型（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-intersection"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

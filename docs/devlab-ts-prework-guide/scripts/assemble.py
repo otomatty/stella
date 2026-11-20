@@ -11,7 +11,7 @@ STAGES = Path(__file__).resolve().parents[3] / "packages/content/stages"
 
 def chapter_readmes(ch):
     stage = STAGES / f"devlab-ts-ch{ch}"
-    readmes = [stage / "modules/u99-problems/tasks/chapter/README.md"]
+    readmes = sorted(stage.glob("modules/u*/tasks/q*/README.md"), key=lambda path: path.parent.name)
     extra = stage / "modules/u100-extra/tasks/extra/README.md"
     if extra.is_file():
         readmes.append(extra)

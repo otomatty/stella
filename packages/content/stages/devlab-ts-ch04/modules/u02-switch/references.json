@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch04/u02-switch@1",
+  "contentHash": "9c0089a3e4ec77a84a37863f1c101e8680beecf8b018ec15e67d93f879e86461",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q02/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-statements-switch",
+        "SRC-typescriptbook-statements-switch-fallthrough"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の文と例外の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

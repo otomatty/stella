@@ -1,0 +1,64 @@
+{
+  "id": "devlab-ts-ch06/u05-stateful-classes/q05",
+  "title": "06章 q05 状態を持つクラス",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch06",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05"
+    ],
+    "assesses": [
+      "devlab-ts-ch06"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-todo-list-drill",
+      "title": "状態を持つクラス（ドリル）"
+    },
+    {
+      "id": "q05-todo-list",
+      "title": "ToDoリスト（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-object-oriented-class-constructor",
+    "SRC-typescriptbook-object-oriented-class-fields",
+    "SRC-typescriptbook-object-oriented-class-methods",
+    "SRC-typescriptbook-object-oriented-class-field-initializers",
+    "SRC-typescriptbook-object-oriented-class-access-modifiers"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

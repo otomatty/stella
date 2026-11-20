@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch05/u04-default-parameters/q04",
+  "title": "05章 q04 デフォルト引数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-greet-guest",
+      "title": "省略できる name を受け取り「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q04-02-power-of",
+      "title": "base を exponent 乗する"
+    },
+    {
+      "id": "q04-03-page-count",
+      "title": "全件数 total を perPage 件ずつに分けたときのページ数を返す"
+    },
+    {
+      "id": "q04-04-price-text",
+      "title": "「1,200円」の形にする"
+    },
+    {
+      "id": "q04-05-stars",
+      "title": "char を times 個並べる"
+    },
+    {
+      "id": "q04-06-bracket",
+      "title": "text を left と right で囲む"
+    },
+    {
+      "id": "q04-07-limit",
+      "title": "value を min 以上 max 以下に収める"
+    },
+    {
+      "id": "q04-08-join-items",
+      "title": "要素を separator でつなぐ"
+    },
+    {
+      "id": "q04-09-with-tax",
+      "title": "税込価格を返す"
+    },
+    {
+      "id": "q04-10-range-of",
+      "title": "end 未満の数を、start から step ずつ増やした配列を返す"
+    },
+    {
+      "id": "q04-11-after-text",
+      "title": "「◯秒後」を返す"
+    },
+    {
+      "id": "q04-12-make-options",
+      "title": "{ size, color } を返す"
+    },
+    {
+      "id": "q04-13-pad-left",
+      "title": "text を width 文字になるよう、前を fill で埋める"
+    },
+    {
+      "id": "q04-14-date-text",
+      "title": "「2026-01-01」の形にする"
+    },
+    {
+      "id": "q04-15-shorten",
+      "title": "max 文字を超えたら、max 文字に切って「…」を付ける"
+    },
+    {
+      "id": "q04-16-pass-or-fail",
+      "title": "score が pass 以上なら \"合格\"、それ未満は \"不合格\""
+    },
+    {
+      "id": "q04-17-percentage",
+      "title": "part が total の何パーセントかを、整数に四捨五入して返す"
+    },
+    {
+      "id": "q04-18-page-title",
+      "title": "「タイトル | サイト名」を返す"
+    },
+    {
+      "id": "q04-19-times-table",
+      "title": "n × 1 から n × upTo までを並べた配列を返す"
+    },
+    {
+      "id": "q04-20-split-by",
+      "title": "text を separator で分けた配列を返す"
+    },
+    {
+      "id": "q04-default-params",
+      "title": "デフォルト引数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-default-parameters"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

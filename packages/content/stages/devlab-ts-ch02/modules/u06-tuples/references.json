@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch02/u06-tuples@1",
+  "contentHash": "b1af3f22e13a996de848d2fb0d7aaf9400e559caffd91ec2e60bed09748016a8",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q06/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-tuple",
+        "SRC-typescriptbook-values-types-variables-array-destructuring-assignment-from-array"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

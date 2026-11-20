@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch06/u03-interfaces@1",
+  "contentHash": "c3fa17df9401f37febcf5db70a2c1dd22511f94d6f44d95505329106821f4270",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q03/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-object-oriented-interface-implementing-interfaces",
+        "SRC-typescriptbook-object-oriented-interface-interface-inheritance",
+        "SRC-typescriptbook-object-oriented-interface-interface-vs-type-alias",
+        "SRC-typescriptbook-object-oriented-interface-readonly-modifier-in-interfaces"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のクラスの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

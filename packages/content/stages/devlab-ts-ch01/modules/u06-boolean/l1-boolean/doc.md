@@ -9,7 +9,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbo
 - [ ] よくある間違いを説明できる
 - [ ] ヒントを読んで、一問ずつ確認して提出できる
 
-実装は「01章の問題」の q06 のファイルで行います。
+実装はこの単元の「01章 q06 boolean型」を VS Code で開き、各問題のファイルに書きます。
 知識問題は理解の自己確認です。選考の判定には使いません。
 
 ## 6-1-1 条件を組み合わせて返す

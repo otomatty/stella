@@ -565,7 +565,7 @@ export class TagIndex {
       <span class="q-new">新しく出てくる書き方：ほかのクラスのインスタンスをフィールドに持つ、<code>private</code> なメソッド、アロー関数でオブジェクトを返す <code>({ … })</code></span>
     </header>
     <div class="task">
-      <pre><code class="language-typescript">import { Counter } from "./q01-class-basics";
+      <pre><code class="language-typescript">class Counter {}
 
 export type Todo = { readonly id: number; title: string; done: boolean };
 export type Filter = "all" | "active" | "done";
@@ -579,7 +579,7 @@ export class TodoList {}</code></pre>
         <li><code>list(filter)</code>：ToDo の配列を返します。<code>filter</code> は省略でき、省略したら <code>"all"</code> です。<code>"active"</code> なら未完了だけ、<code>"done"</code> なら完了だけを返します。返すのはコピーにします。配列も、中の ToDo も、受け取った側が書き換えても、<code>TodoList</code> の中身が変わらないようにします。</li>
         <li><code>count()</code>：すべて・未完了・完了の件数を <code>{ all, active, done }</code> のオブジェクトで返します。</li>
       </ol>
-      <p>id は、q01 の応用問題で書いた <code>Counter</code> で振ります。<code>Counter</code> を <code>private</code> なフィールドに持ち、<code>increment()</code> の戻り値を id にします。<code>Counter</code> は、ファイルの先頭で読み込んであります。q01 が解けていないと、この問題のテストも通りません。</p>
+      <p>q01 の応用問題で書いた <code>Counter</code> を、このファイルの中でもう一度書きます。<code>export</code> は付けません。<code>TodoList</code> は <code>Counter</code> を <code>private</code> なフィールドに持ち、<code>increment()</code> の戻り値を id にします。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <p>新しい <code>TodoList</code> に、上から順に呼びます。</p>

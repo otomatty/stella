@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch05/u09-type-guards@1",
+  "contentHash": "4650c5a523f920bb26d93d30fcbdaec81df355cf5a3d65aa0839302740e1013e",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q09/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-functions-type-guard-functions",
+        "SRC-typescriptbook-functions-assertion-functions"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

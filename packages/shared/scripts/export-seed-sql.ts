@@ -29,6 +29,11 @@ import { RETIRED_STAGES } from "../src/curriculum/retired-stages.js";
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
 import { lessonIdRemapStatements } from "./lesson-id-remap.js";
+import {
+  DEVLAB_TASK_PROBLEM_MOVES,
+  taskProblemCarryoverStatements,
+  taskProblemCarryoverTargets,
+} from "./task-problem-carryover.js";
 
 const dialect = process.env.DIALECT === "sqlite" ? "sqlite" : "postgres";
 const isSqlite = dialect === "sqlite";
@@ -186,7 +191,12 @@ const stageIdMap = new Map<string, string>();
 const sectionIdMap = new Map<string, string>();
 const emittedAssignments = new Set<string>();
 const emittedLessonUuids = new Set<string>();
-const stagesToPrune: { stageUuid: string; sectionUuids: string[]; lessonUuids: string[] }[] = [];
+const stagesToPrune: {
+  stageId: string;
+  stageUuid: string;
+  sectionUuids: string[];
+  lessonUuids: string[];
+}[] = [];
 
 /** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
@@ -289,7 +299,7 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
   }
 
   emitLessonIdRemap(lessonIdRemaps);
-  stagesToPrune.push({ stageUuid, sectionUuids, lessonUuids });
+  stagesToPrune.push({ stageId: stage.id, stageUuid, sectionUuids, lessonUuids });
 }
 
 function sqlIn(ids: string[]): string {
@@ -324,13 +334,32 @@ function emitRetiredStages() {
 
 /** 安定 UUID ステージから、GitHub に無い section / lesson を落とす。
  *  stage_id が安定 UUID と一致しない CMS ステージは触らない。 */
-function emitPrune(stageUuid: string, sectionUuids: string[], lessonUuids: string[]) {
+function emitPrune({
+  stageId,
+  stageUuid,
+  sectionUuids,
+  lessonUuids,
+}: (typeof stagesToPrune)[number]) {
   if (sectionUuids.length === 0) return;
   const removedLessonsInStage = `select l.id from ${tbl("lessons")} l join ${tbl("sections")} s on s.id = l.section_id where s.stage_id = '${stageUuid}'${lessonUuids.length > 0 ? ` and l.id not in (${sqlIn(lessonUuids)})` : ""}`;
+  const move = DEVLAB_TASK_PROBLEM_MOVES.find((entry) => entry.stageId === stageId);
+  const target = move && taskProblemCarryoverTargets(move, content.tasks)[0];
+  const submissions = tbl("submissions");
+  let keepTaskSubmissions = "";
+  if (move && target) {
+    const sectionId = sectionIdMap.get(`ses:${target.stageId}:${target.unitId}`);
+    if (!sectionId) throw new Error(`carryover section missing: ${target.definition.id}`);
+    const from = strLit(move.from);
+    // 旧単元の削除で旧課題と問題結果が連鎖削除されないよう、課題を現行単元へ移して停止する。
+    lines.push(
+      `update tasks set section_id = ${strLit(sectionId)}, active = 0 where id = ${from} and section_id in (select id from ${tbl("sections")} where stage_id = '${stageUuid}' and id not in (${sqlIn(sectionUuids)}));`,
+    );
+    keepTaskSubmissions = ` and not exists (select 1 from tasks history where history.id = ${from} and (history.id = ${submissions}.task_id or history.lesson_id = ${submissions}.lesson_id))`;
+  }
   lines.push(
-    // この2表の lesson_id は FK ではない。旧レッスンより先に消し、宙に浮く進捗・提出を残さない。
+    // この2表の lesson_id は FK ではない。旧レッスンより先に不要な進捗・提出を消す。
     `delete from ${tbl("lesson_progress")} where lesson_id in (${removedLessonsInStage});`,
-    `delete from ${tbl("submissions")} where lesson_id in (${removedLessonsInStage});`,
+    `delete from ${submissions} where lesson_id in (${removedLessonsInStage})${keepTaskSubmissions};`,
     lessonUuids.length > 0
       ? `delete from ${tbl("lessons")} where section_id in (select id from ${tbl("sections")} where stage_id = '${stageUuid}') and id not in (${sqlIn(lessonUuids)});`
       : `delete from ${tbl("lessons")} where section_id in (select id from ${tbl("sections")} where stage_id = '${stageUuid}');`,
@@ -640,8 +669,7 @@ function emitPdfMaterials() {
 for (const c of content.stages) emitStage("ses", c);
 // 移したレッスンを先に新しい section へ結ぶ。元のステージを先に prune すると
 // ステージの走査順によって受験記録や進捗まで消してしまう。
-for (const { stageUuid, sectionUuids, lessonUuids } of stagesToPrune)
-  emitPrune(stageUuid, sectionUuids, lessonUuids);
+for (const stage of stagesToPrune) emitPrune(stage);
 
 const skillRegistry = JSON.parse(
   readFileSync(new URL("../../content/skills.json", import.meta.url), "utf8"),
@@ -759,6 +787,11 @@ for (const [order, task] of content.tasks.entries()) {
       : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
+
+// 新課題の行と配布版がそろったあと、章の課題で記録した問題結果を引き継ぐ。
+lines.push(
+  ...taskProblemCarryoverStatements(DEVLAB_TASK_PROBLEM_MOVES, content.tasks, nowExpr(), strLit),
+);
 
 // コーディング規則の正本 (packages/content/coding-rules.md とステージの stages/<slug>/coding-rules.md)。
 // AI の一次レビューと人のレビューが同じ本文を読む。正本から消えた規則は D1 からも消す

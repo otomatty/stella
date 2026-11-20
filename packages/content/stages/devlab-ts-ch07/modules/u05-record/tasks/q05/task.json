@@ -1,0 +1,137 @@
+{
+  "id": "devlab-ts-ch07/u05-record/q05",
+  "title": "07章 q05 Record",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-01-category-count",
+      "title": "型 CategoryCount を、キーが Category、値が数値の Record として作る"
+    },
+    {
+      "id": "q05-02-schedule",
+      "title": "型 Schedule を、キーが Weekday、値が文字列の配列の Record として作る"
+    },
+    {
+      "id": "q05-03-empty-counts",
+      "title": "すべてのカテゴリが 0 の Record<Category, number> を返す"
+    },
+    {
+      "id": "q05-04-count-categories",
+      "title": "カテゴリの配列から、それぞれの数を Record<Category, number> で返す"
+    },
+    {
+      "id": "q05-05-category-name",
+      "title": "定数 CATEGORY_NAMES を Record<Category, string> として宣言して export し、categoryName でその名前を返す"
+    },
+    {
+      "id": "q05-06-empty-schedule",
+      "title": "すべての曜日が空の配列の Record<Weekday, string[]> を返す"
+    },
+    {
+      "id": "q05-07-add-event",
+      "title": "schedule の day に event を足した、新しい Record<Weekday, string[]> を返す"
+    },
+    {
+      "id": "q05-08-busiest-day",
+      "title": "予定がいちばん多い曜日を返す"
+    },
+    {
+      "id": "q05-09-top-scorer",
+      "title": "Record<string, number> の得点表から、最高得点の人を返す"
+    },
+    {
+      "id": "q05-10-invert-record",
+      "title": "Record<string, string> のキーと値を入れ替える"
+    },
+    {
+      "id": "q05-11-sum-record",
+      "title": "Record<string, number> の値の合計"
+    },
+    {
+      "id": "q05-12-map-record",
+      "title": "Record<string, number> のすべての値に fn を当てはめた、新しい Record を返す"
+    },
+    {
+      "id": "q05-13-filter-record",
+      "title": "値が min 以上のものだけを残した、新しい Record<string, number> を返す"
+    },
+    {
+      "id": "q05-14-from-pairs",
+      "title": "[キー, 値] の配列から Record<string, number> を作る"
+    },
+    {
+      "id": "q05-15-to-pairs",
+      "title": "Record<string, number> を [キー, 値] の配列にする"
+    },
+    {
+      "id": "q05-16-price-of",
+      "title": "価格表 Record<Category, number> から、category の価格を返す"
+    },
+    {
+      "id": "q05-17-order-total",
+      "title": "価格表 Record<Category, number> と、注文 Partial<Record<Category, number>>から合計金額を返す"
+    },
+    {
+      "id": "q05-18-weekday-label",
+      "title": "定数 WEEKDAY_LABELS を Record<Weekday, string> として宣言して export し、weekdayLabel でその名前を返す"
+    },
+    {
+      "id": "q05-19-group-by-initial",
+      "title": "単語を最初の1文字ごとにまとめた Record<string, string[]> を返す"
+    },
+    {
+      "id": "q05-20-count-letters",
+      "title": "文字ごとの出てきた回数を Record<string, number> で返す"
+    },
+    {
+      "id": "q05-record",
+      "title": "Record（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-type-reuse-utility-types-record"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

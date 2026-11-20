@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u02-type-annotation@2",
-  "contentHash": "399522c32c9461f73c75ba0c8d7d686525b5b1a3941c7d2ae4fbd1c87be03cd2",
+  "unitId": "devlab-ts-ch01/u02-type-annotation@3",
+  "contentHash": "fef6a217f22037789be775955aaae06086c4b993dfbef4ff7848518191b40ab7",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -33,6 +33,14 @@
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
       "usedFor": "型注釈の理解の自己確認用の独自問題。",
       "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     }

@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch07/u03-property-modifiers/q03",
+  "title": "07章 q03 Partial・Required・Readonly",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-partial-options",
+      "title": "型 PartialOptions を Options から作る"
+    },
+    {
+      "id": "q03-02-required-profile",
+      "title": "型 RequiredProfile を Profile から作る"
+    },
+    {
+      "id": "q03-03-readonly-options",
+      "title": "型 ReadonlyOptions を Options から作る"
+    },
+    {
+      "id": "q03-04-readonly-profile",
+      "title": "型 ReadonlyProfile を Profile から作る"
+    },
+    {
+      "id": "q03-05-with-defaults",
+      "title": "一部だけ指定した Partial<Options> を受け取り、足りないところを DEFAULT_OPTIONS で補った Options を返す"
+    },
+    {
+      "id": "q03-06-patch-options",
+      "title": "options を patchで上書きした、新しい Options を返す"
+    },
+    {
+      "id": "q03-07-complete-profile",
+      "title": "Profile の足りないところを、email は \"\"、age は 0 で補って Required<Profile> を返す"
+    },
+    {
+      "id": "q03-08-freeze-options",
+      "title": "options のコピーを Object.freeze して、Readonly<Options> として返す"
+    },
+    {
+      "id": "q03-09-is-complete",
+      "title": "email と age の両方があれば true"
+    },
+    {
+      "id": "q03-10-count-set",
+      "title": "Partial<Options> のうち、値が入っているプロパティの数を返す"
+    },
+    {
+      "id": "q03-11-merge-patches",
+      "title": "いくつかの Partial<Options> を、前から順に重ねた Partial<Options> を返す"
+    },
+    {
+      "id": "q03-12-update-email",
+      "title": "Readonly<Profile> を受け取り、email だけを変えた新しい Readonly<Profile> を返す"
+    },
+    {
+      "id": "q03-13-require-email",
+      "title": "email を返す"
+    },
+    {
+      "id": "q03-14-diff-options",
+      "title": "a と b で値が違うプロパティだけを、b の値で持つ Partial<Options> を返す"
+    },
+    {
+      "id": "q03-15-toggle-bold",
+      "title": "Readonly<Options> を受け取り、bold を反転した新しい Options を返す"
+    },
+    {
+      "id": "q03-16-size-or",
+      "title": "Partial<Options> の size を返す"
+    },
+    {
+      "id": "q03-17-describe-options",
+      "title": "Readonly<Options> を \"12px black\" の形にする"
+    },
+    {
+      "id": "q03-18-fill-profile",
+      "title": "profile の足りないところを defaultsで補った Required<Profile> を返す"
+    },
+    {
+      "id": "q03-19-empty-patch",
+      "title": "何も指定していない Partial<Options>を返す"
+    },
+    {
+      "id": "q03-20-reset-keys",
+      "title": "options の、keys に並べたプロパティだけを DEFAULT_OPTIONS の値に戻した新しい Options を返す"
+    },
+    {
+      "id": "q03-partial-required-readonly",
+      "title": "Partial・Required・Readonly（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-type-reuse-utility-types-partial",
+    "SRC-typescriptbook-type-reuse-utility-types-required",
+    "SRC-typescriptbook-type-reuse-utility-types-readonly"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

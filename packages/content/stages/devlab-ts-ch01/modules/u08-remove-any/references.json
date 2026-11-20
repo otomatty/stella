@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u08-remove-any@2",
-  "contentHash": "0af757f704a52a0f99d87c0159fc2c4c1ef85f048db78ebbb40bb4b7470132c5",
+  "unitId": "devlab-ts-ch01/u08-remove-any@3",
+  "contentHash": "cebeae949adaf193065d84fbf3f1e0ab0259b94e221113e40ba6cf924d777ec6",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -25,6 +25,14 @@
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
       "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
       "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q08/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     }

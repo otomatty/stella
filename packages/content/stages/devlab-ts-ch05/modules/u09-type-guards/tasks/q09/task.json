@@ -1,0 +1,136 @@
+{
+  "id": "devlab-ts-ch05/u09-type-guards/q09",
+  "title": "05章 q09 型ガード関数とアサーション関数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q09-01-is-text",
+      "title": "【型ガード】文字列か"
+    },
+    {
+      "id": "q09-02-is-num",
+      "title": "【型ガード】NaN でない数値か"
+    },
+    {
+      "id": "q09-03-is-bool",
+      "title": "【型ガード】真偽値か"
+    },
+    {
+      "id": "q09-04-is-string-array",
+      "title": "【型ガード】すべての要素が文字列の配列か"
+    },
+    {
+      "id": "q09-05-is-present",
+      "title": "【型ガード】string | null を受け取り、null でないか"
+    },
+    {
+      "id": "q09-06-is-defined-number",
+      "title": "【型ガード】number | undefined を受け取り、undefined でないか"
+    },
+    {
+      "id": "q09-07-is-user",
+      "title": "【型ガード】null でないオブジェクトで、name が文字列、age が数値か"
+    },
+    {
+      "id": "q09-08-is-admin",
+      "title": "【型ガード】User | Admin を受け取り、Admin か"
+    },
+    {
+      "id": "q09-09-is-dog",
+      "title": "【型ガード】Pet が犬か"
+    },
+    {
+      "id": "q09-10-is-cat",
+      "title": "【型ガード】Pet が猫か"
+    },
+    {
+      "id": "q09-11-only-strings",
+      "title": "unknown の配列から、文字列だけを集めた string[] を返す"
+    },
+    {
+      "id": "q09-12-defined-only",
+      "title": "[] から undefined を除いた number[] を返す"
+    },
+    {
+      "id": "q09-13-count-users",
+      "title": "unknown の配列の中で、User の形をしたものの数を返す"
+    },
+    {
+      "id": "q09-14-assert-text",
+      "title": "【アサーション】文字列でなければ \"文字列ではありません\" の Error を投げる"
+    },
+    {
+      "id": "q09-15-assert-defined",
+      "title": "【アサーション】string | undefined を受け取り、undefined なら \"値がありません\" の Error を投げる"
+    },
+    {
+      "id": "q09-16-assert-user",
+      "title": "【アサーション】User の形でなければ \"User ではありません\" の Error を投げる"
+    },
+    {
+      "id": "q09-17-to-user-or-null",
+      "title": "User の形ならそれを、そうでなければ null を返す"
+    },
+    {
+      "id": "q09-18-is-email-like",
+      "title": "【型ガード】「@」を含む文字列か"
+    },
+    {
+      "id": "q09-19-is-point",
+      "title": "【型ガード】x と y が数値のオブジェクトか"
+    },
+    {
+      "id": "q09-20-is-color-name",
+      "title": "【型ガード】文字列が \"red\"、\"green\"、\"blue\" のどれかか"
+    },
+    {
+      "id": "q09-type-guards",
+      "title": "型ガード関数とアサーション関数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-type-guard-functions",
+    "SRC-typescriptbook-functions-assertion-functions"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

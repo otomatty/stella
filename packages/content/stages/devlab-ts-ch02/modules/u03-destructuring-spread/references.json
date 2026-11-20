@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch02/u03-destructuring-spread@1",
+  "contentHash": "9892f9c39538370dd619c88840db3286f450d825194a00972cc34776e12826eb",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q03/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-object-destructuring-assignment-from-objects",
+        "SRC-typescriptbook-values-types-variables-object-spread-syntax-for-object"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のオブジェクト・配列・タプルの範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

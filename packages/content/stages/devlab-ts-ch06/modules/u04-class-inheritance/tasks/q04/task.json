@@ -1,0 +1,61 @@
+{
+  "id": "devlab-ts-ch06/u04-class-inheritance/q04",
+  "title": "06章 q04 クラスの継承",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch06",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05"
+    ],
+    "assesses": [
+      "devlab-ts-ch06"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-inheritance-drill",
+      "title": "クラスの継承（ドリル）"
+    },
+    {
+      "id": "q04-inheritance",
+      "title": "クラスの継承（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-object-oriented-class-class-inheritance",
+    "SRC-typescriptbook-object-oriented-class-instanceof-operator"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

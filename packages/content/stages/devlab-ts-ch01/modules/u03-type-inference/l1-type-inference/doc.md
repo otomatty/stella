@@ -213,7 +213,7 @@ console.log(text, padded);
 ## もっと知りたい人へ
 
 - サバイバルTypeScript [型推論](https://typescriptbook.jp/reference/values-types-variables/type-inference)
-- [知識問題](knowledge.md)で理解を確かめてから、01章の課題に取り組みます。
+- [知識問題](knowledge.md)で理解を確かめてから、この単元の「01章 q03 型推論」に取り組みます。
 
 ## 問題ごとのヒント
 

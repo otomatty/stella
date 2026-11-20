@@ -1,0 +1,134 @@
+{
+  "id": "devlab-ts-ch04/u04-while-loops/q04",
+  "title": "04章 q04 while文と break・continue",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-count-digits",
+      "title": "1以上の整数の桁数を返す"
+    },
+    {
+      "id": "q04-02-halve-until-odd",
+      "title": "偶数のあいだ2で割り続け、奇数になった値を返す"
+    },
+    {
+      "id": "q04-03-power-of-two-at-least",
+      "title": "n 以上で最小の、2の累乗を返す"
+    },
+    {
+      "id": "q04-04-steps-to-zero",
+      "title": "0 になるまでの手順の数を返す"
+    },
+    {
+      "id": "q04-05-max-count-within",
+      "title": "1 + 2 + … + k が limit 以下になる、いちばん大きい k を返す"
+    },
+    {
+      "id": "q04-06-reverse-number",
+      "title": "0以上の整数の桁を逆に並べた数を返す"
+    },
+    {
+      "id": "q04-07-is-prime",
+      "title": "素数なら true"
+    },
+    {
+      "id": "q04-08-next-prime",
+      "title": "n より大きい、最小の素数を返す"
+    },
+    {
+      "id": "q04-09-lcm",
+      "title": "2つの正の整数の最小公倍数を返す"
+    },
+    {
+      "id": "q04-10-sum-skip-threes",
+      "title": "1〜n の合計を返す"
+    },
+    {
+      "id": "q04-11-first-index-over",
+      "title": "limit より大きい最初の要素の番号を返す"
+    },
+    {
+      "id": "q04-12-leading-zeros",
+      "title": "先頭に続く「0」の数を返す"
+    },
+    {
+      "id": "q04-13-trim-zeros",
+      "title": "先頭の「0」を取り除く"
+    },
+    {
+      "id": "q04-14-digital-root",
+      "title": "各桁を足すことを、1桁になるまで繰り返した値を返す"
+    },
+    {
+      "id": "q04-15-bit-length",
+      "title": "0以上の整数を2進数で書いたときの桁数を返す"
+    },
+    {
+      "id": "q04-16-repeat-to-length",
+      "title": "text をつなげていき、ちょうど length 文字にして返す"
+    },
+    {
+      "id": "q04-17-divisible-times",
+      "title": "n を d で割り切れなくなるまで割ったとき、割れた回数を返す"
+    },
+    {
+      "id": "q04-18-sum-positives",
+      "title": "正の数だけを合計する"
+    },
+    {
+      "id": "q04-19-first-repeated-char",
+      "title": "2回目に出てきた最初の文字を返す"
+    },
+    {
+      "id": "q04-20-digits-of",
+      "title": "0以上の整数の各桁を、上の桁から並べた配列を返す"
+    },
+    {
+      "id": "q04-while",
+      "title": "while文と break・continue（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-for-of"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

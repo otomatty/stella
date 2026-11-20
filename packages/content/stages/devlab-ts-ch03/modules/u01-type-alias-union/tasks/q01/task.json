@@ -1,0 +1,134 @@
+{
+  "id": "devlab-ts-ch03/u01-type-alias-union/q01",
+  "title": "03章 q01 型エイリアスとユニオン型",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-to-id",
+      "title": "文字列か数値を受け取り、文字列にして返す"
+    },
+    {
+      "id": "q01-02-id-length",
+      "title": "文字列か数値を受け取り、文字列にしたときの文字数を返す"
+    },
+    {
+      "id": "q01-03-format-value",
+      "title": "数値なら小数第2位までの文字列、文字列ならそのまま返す"
+    },
+    {
+      "id": "q01-04-double-value",
+      "title": "数値なら2倍、文字列なら2回つなげたものを返す"
+    },
+    {
+      "id": "q01-05-is-number-value",
+      "title": "数値なら true"
+    },
+    {
+      "id": "q01-06-to-number-value",
+      "title": "数値ならそのまま、文字列なら Number で数値にして返す"
+    },
+    {
+      "id": "q01-07-type-label",
+      "title": "文字列なら \"文字列\"、数値なら \"数値\"、真偽値なら \"真偽値\" を返す"
+    },
+    {
+      "id": "q01-08-size-of",
+      "title": "文字列なら文字数、数値ならその数を返す"
+    },
+    {
+      "id": "q01-09-pad-value",
+      "title": "文字列か数値を、width 桁になるように前を0で埋めた文字列にする"
+    },
+    {
+      "id": "q01-10-score-text",
+      "title": "型 Scoreを定義して export し、scoreText を書く"
+    },
+    {
+      "id": "q01-11-price-text",
+      "title": "型 Priceを定義して export し、priceText を書く"
+    },
+    {
+      "id": "q01-12-answer-text",
+      "title": "型 Replyを定義して export し、answerText を書く"
+    },
+    {
+      "id": "q01-13-width-css",
+      "title": "型 Widthを定義して export し、widthCss を書く"
+    },
+    {
+      "id": "q01-14-is-within-limit",
+      "title": "型 Limitを定義して export し、isWithinLimit を書く"
+    },
+    {
+      "id": "q01-15-port-number",
+      "title": "型 Portを定義して export し、portNumber を書く"
+    },
+    {
+      "id": "q01-16-delay-ms",
+      "title": "型 Delayを定義して export し、delayMs を書く"
+    },
+    {
+      "id": "q01-17-level-value",
+      "title": "型 Levelを定義して export し、levelValue を書く"
+    },
+    {
+      "id": "q01-18-same-user",
+      "title": "型 UserIdを定義して export し、sameUser を書く"
+    },
+    {
+      "id": "q01-19-font-px",
+      "title": "型 FontSizeを定義して export し、fontPx を書く"
+    },
+    {
+      "id": "q01-20-temp-text",
+      "title": "型 Temperatureを定義して export し、tempText を書く"
+    },
+    {
+      "id": "q01-union-type-alias",
+      "title": "型エイリアスとユニオン型（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-type-alias",
+    "SRC-typescriptbook-values-types-variables-union"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

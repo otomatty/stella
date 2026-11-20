@@ -8503,9 +8503,11 @@ orders.<span class="hljs-title function_">unshift</span>(<span class="hljs-numbe
       <span class="q-new">新しい書き方はありません。</span>
     </header>
     <div class="task">
-      <pre><code class="hl"><span class="hljs-keyword">import</span> { errorMessage } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./q05-exception&quot;</span>;
-<span class="hljs-keyword">import</span> { toNumber } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./q06-unknown&quot;</span>;
-<span class="hljs-keyword">import</span> { assertNever } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./q07-never&quot;</span>;
+      <pre><code class="hl"><span class="hljs-keyword">function</span> <span class="hljs-title function_">errorMessage</span>(<span class="hljs-params"></span>) {}
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">toNumber</span>(<span class="hljs-params"></span>) {}
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">assertNever</span>(<span class="hljs-params"></span>) {}
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">type</span> <span class="hljs-title class_">Command</span> = { <span class="hljs-attr">op</span>: <span class="hljs-string">&quot;add&quot;</span> | <span class="hljs-string">&quot;sub&quot;</span> | <span class="hljs-string">&quot;mul&quot;</span> | <span class="hljs-string">&quot;div&quot;</span>; <span class="hljs-attr">a</span>: <span class="hljs-built_in">number</span>; <span class="hljs-attr">b</span>: <span class="hljs-built_in">number</span> };
 
@@ -8525,7 +8527,7 @@ orders.<span class="hljs-title function_">unshift</span>(<span class="hljs-numbe
         <li><code>run(text)</code>：<code>parseCommand</code> と <code>execute</code> を順に呼びます。成功なら <code>{ ok: true, value }</code> を返します。途中で例外が出たら <code>catch</code> して、<code>{ ok: false, error: メッセージ }</code> を返します。</li>
         <li><code>runAll(lines)</code>：1 行ずつ <code>run</code> します。成功なら <code>"add 3 5 = 8"</code>（前後の空白を除いた元の行、<code>" = "</code>、結果）、失敗なら <code>"エラー: メッセージ"</code> を並べた配列を返します。引数は <code>readonly string[]</code> です。</li>
       </ol>
-      <p>前の問題で書いた関数を 3 つ使います。どれも、ファイルの先頭で読み込んであります（02章 q08 総合）。<code>parseCommand</code> の数値の読み取りには q06 の <code>toNumber</code> を使い、<code>null</code> なら <code>"数値ではありません: …"</code> の <code>Error</code> を投げます。<code>execute</code> の <code>switch</code> の <code>default</code> では、q07 の <code>assertNever</code> を使います。<code>run</code> の <code>catch</code> では、q05 の <code>errorMessage</code> でメッセージを取り出します。前の問題が解けていないと、この問題のテストも通りません。</p>
+      <p>前の番号で書いた関数を 3 つ、このファイルの中でもう一度書きます。<code>export</code> は付けません。<code>parseCommand</code> の数値の読み取りには q06 の <code>toNumber</code> を使い、<code>null</code> なら <code>"数値ではありません: …"</code> の <code>Error</code> を投げます。<code>execute</code> の <code>switch</code> の <code>default</code> では、q07 の <code>assertNever</code> を使います。<code>run</code> の <code>catch</code> では、q05 の <code>errorMessage</code> でメッセージを取り出します。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <dl class="eg">

@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch05/u03-optional-parameters/q03",
+  "title": "05章 q03 オプション引数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-greet-with-title",
+      "title": "name と、省略できる title"
+    },
+    {
+      "id": "q03-02-fixed",
+      "title": "n と、省略できる digits"
+    },
+    {
+      "id": "q03-03-name-text",
+      "title": "last と、省略できる first"
+    },
+    {
+      "id": "q03-04-repeat-once",
+      "title": "text と、省略できる times"
+    },
+    {
+      "id": "q03-05-countdown-from",
+      "title": "from と、省略できる to"
+    },
+    {
+      "id": "q03-06-cut",
+      "title": "text と、省略できる max"
+    },
+    {
+      "id": "q03-07-pad-two",
+      "title": "n と、省略できる width"
+    },
+    {
+      "id": "q03-08-price-label",
+      "title": "price と、省略できる unit"
+    },
+    {
+      "id": "q03-09-first-words",
+      "title": "text と、省略できる count"
+    },
+    {
+      "id": "q03-10-make-user",
+      "title": "name と、省略できる age"
+    },
+    {
+      "id": "q03-11-average-of2",
+      "title": "a と、省略できる b"
+    },
+    {
+      "id": "q03-12-tag-text",
+      "title": "name と、省略できる color"
+    },
+    {
+      "id": "q03-13-is-long-enough",
+      "title": "text と、省略できる min"
+    },
+    {
+      "id": "q03-14-log-text",
+      "title": "message と、省略できる level"
+    },
+    {
+      "id": "q03-15-round-step",
+      "title": "n と、省略できる step"
+    },
+    {
+      "id": "q03-16-age-label",
+      "title": "省略できる age だけを受け取る"
+    },
+    {
+      "id": "q03-17-sum-up-to3",
+      "title": "a と、省略できる b と c"
+    },
+    {
+      "id": "q03-18-build-url",
+      "title": "path と、省略できる query"
+    },
+    {
+      "id": "q03-19-in-range",
+      "title": "n と、省略できる min と max"
+    },
+    {
+      "id": "q03-20-initials-of",
+      "title": "first と、省略できる last"
+    },
+    {
+      "id": "q03-optional-params",
+      "title": "オプション引数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-optional-parameters"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

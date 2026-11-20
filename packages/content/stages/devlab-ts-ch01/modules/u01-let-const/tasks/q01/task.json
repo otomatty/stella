@@ -1,0 +1,131 @@
+{
+  "id": "devlab-ts-ch01/u01-let-const/q01",
+  "title": "01章 q01 letとconst",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch01",
+  "skills": {
+    "uses": [],
+    "assesses": [
+      "devlab-ts-ch01"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-add-tax",
+      "title": "税込価格を返す"
+    },
+    {
+      "id": "q01-02-split-bill",
+      "title": "割り勘で1人が払う金額を返す"
+    },
+    {
+      "id": "q01-03-minutes-to-text",
+      "title": "分を「◯時間◯分」の文字列にする"
+    },
+    {
+      "id": "q01-04-average3",
+      "title": "3つの数の平均を返す"
+    },
+    {
+      "id": "q01-05-sum-to",
+      "title": "1から n までの合計を返す"
+    },
+    {
+      "id": "q01-06-factorial",
+      "title": "n の階乗を返す"
+    },
+    {
+      "id": "q01-07-count-down",
+      "title": "n から 1 まで数えて、最後に「発射」を付けた文字列を返す"
+    },
+    {
+      "id": "q01-08-power",
+      "title": "base の exponent 乗を返す"
+    },
+    {
+      "id": "q01-09-count-char",
+      "title": "text の中に char が何回出てくるかを返す"
+    },
+    {
+      "id": "q01-10-reverse-text",
+      "title": "文字列を逆順にして返す"
+    },
+    {
+      "id": "q01-11-digit-sum",
+      "title": "0以上の整数の、各桁の数字の合計を返す"
+    },
+    {
+      "id": "q01-12-fizz-buzz",
+      "title": "3の倍数なら \"Fizz\"、5の倍数なら \"Buzz\"、両方なら \"FizzBuzz\"、どちらでもなければ数字の文字列を返す"
+    },
+    {
+      "id": "q01-13-compound",
+      "title": "元金を年利 rate パーセントで years 年預けたときの金額を返す"
+    },
+    {
+      "id": "q01-14-max-of3",
+      "title": "3つの数の最大値を返す"
+    },
+    {
+      "id": "q01-15-shipping-fee",
+      "title": "送料を返す"
+    },
+    {
+      "id": "q01-16-count-vowels",
+      "title": "英字の文字列に含まれる母音の数を返す"
+    },
+    {
+      "id": "q01-17-collatz-steps",
+      "title": "n が1になるまでの手順の数を返す"
+    },
+    {
+      "id": "q01-18-gcd",
+      "title": "2つの正の整数の最大公約数を返す"
+    },
+    {
+      "id": "q01-19-fibonacci",
+      "title": "フィボナッチ数列の n 番目を返す"
+    },
+    {
+      "id": "q01-20-seconds-to-clock",
+      "title": "秒を「時:分:秒」の形にする"
+    },
+    {
+      "id": "q01-let-const",
+      "title": "letとconst（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-let-and-const",
+    "SRC-typescriptbook-values-types-variables-vars-problems"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

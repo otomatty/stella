@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch08/u01-promise@1",
+  "contentHash": "c36a5c55a28f88c26c718c06108044f2cd0f29f46d757b45c09e782878e5f41a",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q01/README.md",
+      "sourceRefs": ["SRC-typescriptbook-asynchronous", "SRC-typescriptbook-asynchronous-promise"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の非同期処理の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

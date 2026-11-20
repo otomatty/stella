@@ -1,0 +1,152 @@
+{
+  "id": "devlab-ts-ch09/u05-modules/q05",
+  "title": "09章 q05 import と export",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch09",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08"
+    ],
+    "assesses": [
+      "devlab-ts-ch09"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-01-double",
+      "title": "下の関数 double を、名前付き export にする"
+    },
+    {
+      "id": "q05-02-max-items",
+      "title": "下の定数 MAX_ITEMS を export する"
+    },
+    {
+      "id": "q05-03-point",
+      "title": "下の型 Point を export する"
+    },
+    {
+      "id": "q05-04-add",
+      "title": "下の2つの関数 add と sub を、最後の export { … } の1行でまとめて export する"
+    },
+    {
+      "id": "q05-05-square",
+      "title": "下の関数 internalSquare を、square という名前で export する"
+    },
+    {
+      "id": "q05-06-with-tax",
+      "title": "q05-modules.lib から priceWithTax を import し、それを使って、税込みの金額を返す withTax を書く"
+    },
+    {
+      "id": "q05-07-price-label",
+      "title": "formatYen を yen という名前で import し、yen を使って priceLabel を書く"
+    },
+    {
+      "id": "q05-08-welcome",
+      "title": "q05-modules.lib のデフォルト exportを import し、greet の後ろに \"！\" を付けて返す welcome を書く"
+    },
+    {
+      "id": "q05-09-site-title",
+      "title": "q05-modules.lib の export をすべて shop という名前でまとめて import し、shop.SITE_NAME を使って siteTitle を書く"
+    },
+    {
+      "id": "q05-10-cheapest",
+      "title": "型 Product を import type で import し、cheapest で値段がいちばん安い商品を返す"
+    },
+    {
+      "id": "q05-11-format-yen",
+      "title": "q05-modules.lib の formatYen を、このファイルからそのまま re-export する"
+    },
+    {
+      "id": "q05-12-taxed",
+      "title": "q05-modules.lib の priceWithTax を、taxed という名前で re-export する"
+    },
+    {
+      "id": "q05-13-greet-user",
+      "title": "q05-modules.lib のデフォルト export を、greetUser という名前で re-export する"
+    },
+    {
+      "id": "q05-14-product",
+      "title": "q05-modules.lib の型 Product を、型として re-export する"
+    },
+    {
+      "id": "q05-15-library",
+      "title": "q05-modules.lib の export をすべて、library という名前のまとまりとして re-export する"
+    },
+    {
+      "id": "q05-16-farewell",
+      "title": "下の関数 farewell を、このファイルのデフォルト export にする"
+    },
+    {
+      "id": "q05-17-half",
+      "title": "export const half = … の形で、n の半分を返すアロー関数を export する"
+    },
+    {
+      "id": "q05-18-catalog",
+      "title": "SITE_NAME と products を import し、\"サンプル商店: りんご、みかん、ぶどう\" の形の文字列を返す catalog を書く"
+    },
+    {
+      "id": "q05-19-tax-label",
+      "title": "TAX_RATE を import し、\"消費税 10%\" の形の文字列を返す taxLabel を書く"
+    },
+    {
+      "id": "q05-20-stack",
+      "title": "下のクラス Stack を export する"
+    },
+    {
+      "id": "q05-modules-price",
+      "title": "モジュールに分ける: TAX_RATE と priceWithTax（応用問題）"
+    },
+    {
+      "id": "q05-modules-format",
+      "title": "モジュールに分ける: formatYen（応用問題）"
+    },
+    {
+      "id": "q05-modules-cart",
+      "title": "モジュールに分ける: カートの計算（応用問題）"
+    },
+    {
+      "id": "q05-modules",
+      "title": "モジュールに分ける（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-import-export-require"
+  ],
+  "estimatedMinutes": 93,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**",
+    "src/shared/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

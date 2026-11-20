@@ -1,0 +1,139 @@
+{
+  "id": "devlab-ts-ch09/u02-set/q02",
+  "title": "09章 q02 Set",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch09",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07",
+      "devlab-ts-ch08"
+    ],
+    "assesses": [
+      "devlab-ts-ch09"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q02-01-to-set",
+      "title": "配列から Set を作る"
+    },
+    {
+      "id": "q02-02-unique-count",
+      "title": "重複を除いた要素の数を返す"
+    },
+    {
+      "id": "q02-03-has-duplicates",
+      "title": "同じ値が2回以上出てきたら true"
+    },
+    {
+      "id": "q02-04-unique-sorted",
+      "title": "重複を除き、小さい順に並べた配列を返す"
+    },
+    {
+      "id": "q02-05-unique-chars",
+      "title": "重複を除いた文字を、出てきた順につないだ文字列を返す"
+    },
+    {
+      "id": "q02-06-with-added",
+      "title": "value を足した新しい Set を返す"
+    },
+    {
+      "id": "q02-07-with-removed",
+      "title": "value を取り除いた新しい Set を返す"
+    },
+    {
+      "id": "q02-08-toggle",
+      "title": "value があれば取り除き、なければ足した新しい Set を返す"
+    },
+    {
+      "id": "q02-09-union",
+      "title": "a か b のどちらかにある要素の Set を返す"
+    },
+    {
+      "id": "q02-10-intersection",
+      "title": "a と b の両方にある要素の Set を返す"
+    },
+    {
+      "id": "q02-11-difference",
+      "title": "a にあって b にない要素の Set を返す"
+    },
+    {
+      "id": "q02-12-symmetric-difference",
+      "title": "a と b のどちらか一方にだけある要素の Set を返す"
+    },
+    {
+      "id": "q02-13-is-subset",
+      "title": "a の要素がすべて b にあれば true"
+    },
+    {
+      "id": "q02-14-has-all",
+      "title": "values の要素がすべて set にあれば true"
+    },
+    {
+      "id": "q02-15-has-any",
+      "title": "values の要素のどれか1つでも set にあれば true"
+    },
+    {
+      "id": "q02-16-common-chars",
+      "title": "a と b の両方に出てくる文字を、a の順に重複なくつないだ文字列を返す"
+    },
+    {
+      "id": "q02-17-first-repeated",
+      "title": "前から見て、2回目に出てきた最初の要素を返す"
+    },
+    {
+      "id": "q02-18-unique-by-id",
+      "title": "同じ id のユーザーは最初の1人だけを残した配列を返す"
+    },
+    {
+      "id": "q02-19-all-tags",
+      "title": "投稿のタグを、重複なく出てきた順に並べた配列を返す"
+    },
+    {
+      "id": "q02-20-same-members",
+      "title": "順番と重複を無視して、a と b が同じ要素の集まりなら true"
+    },
+    {
+      "id": "q02-set",
+      "title": "Set（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-builtin-api-set"
+  ],
+  "estimatedMinutes": 82,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

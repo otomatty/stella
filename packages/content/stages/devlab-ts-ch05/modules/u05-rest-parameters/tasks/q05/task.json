@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch05/u05-rest-parameters/q05",
+  "title": "05章 q05 残余引数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-01-total",
+      "title": "すべての数の合計"
+    },
+    {
+      "id": "q05-02-largest",
+      "title": "1つ以上の数の最大値"
+    },
+    {
+      "id": "q05-03-smallest",
+      "title": "1つ以上の数の最小値"
+    },
+    {
+      "id": "q05-04-concat-all",
+      "title": "すべての文字列をつなぐ"
+    },
+    {
+      "id": "q05-05-count-args",
+      "title": "渡された引数の数を返す"
+    },
+    {
+      "id": "q05-06-join-words",
+      "title": "1つ目の引数 separator で、残りの単語をつなぐ"
+    },
+    {
+      "id": "q05-07-average-all",
+      "title": "すべての数の平均"
+    },
+    {
+      "id": "q05-08-all-true",
+      "title": "すべて true なら true"
+    },
+    {
+      "id": "q05-09-any-true",
+      "title": "1つでも true なら true"
+    },
+    {
+      "id": "q05-10-path-of",
+      "title": "空でない部品だけを「/」でつなぐ"
+    },
+    {
+      "id": "q05-11-multiply-all",
+      "title": "すべての数を掛ける"
+    },
+    {
+      "id": "q05-12-first-defined",
+      "title": "undefined でない最初の値を返す"
+    },
+    {
+      "id": "q05-13-labeled",
+      "title": "1つ目の引数 label に続けて、残りを「, 」でつなぐ"
+    },
+    {
+      "id": "q05-14-longest-of",
+      "title": "いちばん長い文字列を返す"
+    },
+    {
+      "id": "q05-15-count-of",
+      "title": "1つ目の引数 target が、残りの中にいくつあるかを返す"
+    },
+    {
+      "id": "q05-16-push-all",
+      "title": "target の末尾に残りの数をすべて足し、足した後の長さを返す"
+    },
+    {
+      "id": "q05-17-max-of-array",
+      "title": "配列をスプレッド構文で Math.max に渡して、最大値を返す"
+    },
+    {
+      "id": "q05-18-merge-arrays",
+      "title": "いくつかの配列を受け取り、1つにつないだ配列を返す"
+    },
+    {
+      "id": "q05-19-with-prefix",
+      "title": "1つ目の引数 prefix を、残りのそれぞれの前に付けた配列を返す"
+    },
+    {
+      "id": "q05-20-unique-of",
+      "title": "重複を除いた配列を返す"
+    },
+    {
+      "id": "q05-rest-params",
+      "title": "残余引数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-rest-parameters"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

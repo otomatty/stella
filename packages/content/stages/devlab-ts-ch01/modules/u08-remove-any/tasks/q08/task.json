@@ -1,0 +1,130 @@
+{
+  "id": "devlab-ts-ch01/u08-remove-any/q08",
+  "title": "01章 q08 any をなくす",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch01",
+  "skills": {
+    "uses": [],
+    "assesses": [
+      "devlab-ts-ch01"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q08-01-add",
+      "title": "2つの数を足す"
+    },
+    {
+      "id": "q08-02-greet",
+      "title": "「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q08-03-length-of",
+      "title": "文字数を返す"
+    },
+    {
+      "id": "q08-04-is-adult",
+      "title": "20歳以上なら true を返す"
+    },
+    {
+      "id": "q08-05-shout",
+      "title": "英字を大文字にする"
+    },
+    {
+      "id": "q08-06-half",
+      "title": "半分にした数を返す"
+    },
+    {
+      "id": "q08-07-tidy",
+      "title": "前後の空白を取り除く"
+    },
+    {
+      "id": "q08-08-area",
+      "title": "長方形の面積を返す"
+    },
+    {
+      "id": "q08-09-price-text",
+      "title": "金額を3桁ごとのカンマ区切りにし、「円」を付ける"
+    },
+    {
+      "id": "q08-10-is-empty",
+      "title": "空の文字列なら true を返す"
+    },
+    {
+      "id": "q08-11-first-char",
+      "title": "最初の1文字を返す"
+    },
+    {
+      "id": "q08-12-sum3",
+      "title": "3つの数を足す"
+    },
+    {
+      "id": "q08-13-repeat",
+      "title": "text を times 回つなげる"
+    },
+    {
+      "id": "q08-14-larger",
+      "title": "2つの数のうち大きい方を返す"
+    },
+    {
+      "id": "q08-15-contains",
+      "title": "text に word が含まれていれば true を返す"
+    },
+    {
+      "id": "q08-16-to-number",
+      "title": "文字列を数値に変える"
+    },
+    {
+      "id": "q08-17-count-label",
+      "title": "件数の後ろに「件」を付ける"
+    },
+    {
+      "id": "q08-18-round-off",
+      "title": "小数点以下を四捨五入する"
+    },
+    {
+      "id": "q08-19-join-names",
+      "title": "2人の名前を「・」でつなぐ"
+    },
+    {
+      "id": "q08-20-last-char",
+      "title": "最後の1文字を返す"
+    },
+    {
+      "id": "q08-remove-any",
+      "title": "any をなくす（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-any"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

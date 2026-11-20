@@ -1,0 +1,140 @@
+{
+  "id": "devlab-ts-ch08/u04-async-errors/q04",
+  "title": "08章 q04 非同期のエラー処理",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch08",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07"
+    ],
+    "assesses": [
+      "devlab-ts-ch08"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-safe-run",
+      "title": "task を待ち、成功ならその値、失敗なら undefined を返す"
+    },
+    {
+      "id": "q04-02-run-or",
+      "title": "task を待ち、成功ならその値、失敗なら fallback を返す"
+    },
+    {
+      "id": "q04-03-error-text",
+      "title": "成功なら \"OK\"、Error で失敗したらその message、Error でないもので失敗したら \"不明なエラー\" を返す"
+    },
+    {
+      "id": "q04-04-to-result",
+      "title": "成功なら { ok: true, value }、失敗なら { ok: false, message } を返す"
+    },
+    {
+      "id": "q04-05-with-context",
+      "title": "失敗したら `${context}: ${元の message}` の Error を投げ直す"
+    },
+    {
+      "id": "q04-06-retry-once",
+      "title": "task を呼び、失敗したら1回だけやり直す"
+    },
+    {
+      "id": "q04-07-retry",
+      "title": "成功するまで、全部で attempts 回まで task を呼ぶ"
+    },
+    {
+      "id": "q04-08-attempts-needed",
+      "title": "成功するまで、全部で max 回まで task を呼び、成功までに呼んだ回数を返す"
+    },
+    {
+      "id": "q04-09-first-success",
+      "title": "tasks を前から順番に試し、最初に成功した値を返す"
+    },
+    {
+      "id": "q04-10-count-failures",
+      "title": "tasks をすべて同時に呼び、失敗した数を返す"
+    },
+    {
+      "id": "q04-11-with-cleanup",
+      "title": "task の結果を返す"
+    },
+    {
+      "id": "q04-12-with-timeout",
+      "title": "task が ms ミリ秒以内に終われば、その値を返す"
+    },
+    {
+      "id": "q04-13-parse-age",
+      "title": "taskを待ち、0 以上の整数に変換して返す"
+    },
+    {
+      "id": "q04-14-assert-ok",
+      "title": "taskを待ち、ok なら status を返す"
+    },
+    {
+      "id": "q04-15-log-errors",
+      "title": "tasks を前から順番に呼ぶ"
+    },
+    {
+      "id": "q04-16-failed-indexes",
+      "title": "tasks をすべて同時に呼び、失敗した task の位置の配列を返す"
+    },
+    {
+      "id": "q04-17-retry-with-delay",
+      "title": "retry と同じだが、失敗するたびに wait で ms ミリ秒待ってからやり直す"
+    },
+    {
+      "id": "q04-18-retry-if",
+      "title": "retry と同じだが、失敗したときに shouldRetry が false なら、やり直さずにその失敗をすぐ投げる"
+    },
+    {
+      "id": "q04-19-finally-log",
+      "title": "log に \"開始\" を足してから task を待つ"
+    },
+    {
+      "id": "q04-20-settle-all",
+      "title": "tasks をすべて同時に呼び、{ values: 成功した値の配列, errors: 失敗の message の配列 } を返す"
+    },
+    {
+      "id": "q04-async-errors",
+      "title": "非同期のエラー処理（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-asynchronous-async",
+    "SRC-typescriptbook-asynchronous-await",
+    "SRC-typescriptbook-statements-exception"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

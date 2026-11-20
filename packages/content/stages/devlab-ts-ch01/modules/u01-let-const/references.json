@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@6",
-  "contentHash": "46854b5922755f5ca3d8b36895a230169c5019b80100bf8f62de4deac64f1382",
+  "unitId": "devlab-ts-ch01/u01-let-const@7",
+  "contentHash": "1cdc7accc3fc2203775fa78fb528364971bde481a61ce5a3b5cf353a62698d8f",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -203,6 +203,17 @@
       ],
       "usedFor": "変数・数値・文字列・真偽・条件・関数の概念を参照。書き方ガイドの説明・サンプル・テスト値・日本語の手順を素材に、発送・予約・受付・注文番号・残高の例と台本、知識問題を独自作成。最後のまとめに問1〜20と応用の日本語の骨組みを掲載し、課題の解答コードは示さない",
       "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-vars-problems"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     }

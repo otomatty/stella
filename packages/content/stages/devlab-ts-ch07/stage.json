@@ -13,7 +13,14 @@
   "canDo": "型の再利用とジェネリクスを使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "07章の問題",
+    "u01-typeof": "q01 typeof 型演算子",
+    "u02-keyof": "q02 keyof 型演算子",
+    "u03-property-modifiers": "q03 Partial・Required・Readonly",
+    "u04-pick-omit": "q04 Pick と Omit",
+    "u05-record": "q05 Record",
+    "u06-type-parameters": "q06 型変数（ジェネリクス）",
+    "u07-type-constraints": "q07 型引数の制約",
+    "u08-generic-utilities": "q08 ジェネリクスのユーティリティ",
     "u100-extra": "07章の発展問題"
   }
 }

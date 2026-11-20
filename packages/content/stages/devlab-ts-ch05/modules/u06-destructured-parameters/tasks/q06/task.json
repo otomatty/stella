@@ -1,0 +1,136 @@
+{
+  "id": "devlab-ts-ch05/u06-destructured-parameters/q06",
+  "title": "05章 q06 分割代入引数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q06-01-hello",
+      "title": "{ name } を受け取り「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q06-02-area-of",
+      "title": "{ width, height } の面積"
+    },
+    {
+      "id": "q06-03-full-name",
+      "title": "{ first, last } を「姓 名」の順でつなぐ"
+    },
+    {
+      "id": "q06-04-point-text",
+      "title": "{ x, y } を「」にする"
+    },
+    {
+      "id": "q06-05-option-text",
+      "title": "{ size, color } を「M/black」の形にする"
+    },
+    {
+      "id": "q06-06-price-text",
+      "title": "{ price, currency } を「1,200円」の形にする"
+    },
+    {
+      "id": "q06-07-first-of",
+      "title": "配列を [first] で受け取り、最初の要素を返す"
+    },
+    {
+      "id": "q06-08-swapped",
+      "title": "タプル [a, b] を受け取り、[b, a] を返す"
+    },
+    {
+      "id": "q06-09-sum-of-pair",
+      "title": "{ a, b } の合計"
+    },
+    {
+      "id": "q06-10-user-label",
+      "title": "{ name, age } を「山田」にする"
+    },
+    {
+      "id": "q06-11-make-member",
+      "title": "{ name, role } から { name, role } を作る"
+    },
+    {
+      "id": "q06-12-page-range",
+      "title": "{ page, perPage } から { offset, limit } を返す"
+    },
+    {
+      "id": "q06-13-query-text",
+      "title": "{ q, limit } を「q=…&limit=…」にする"
+    },
+    {
+      "id": "q06-14-address-text",
+      "title": "{ pref, city, line } をつなぐ"
+    },
+    {
+      "id": "q06-15-perimeter",
+      "title": "{ width, height } の周りの長さ"
+    },
+    {
+      "id": "q06-16-head-and-tail",
+      "title": "配列を [head, ...tail] で受け取り、{ head, tail } を返す"
+    },
+    {
+      "id": "q06-17-ymd",
+      "title": "{ year, month, day } を「2026-12-04」の形にする"
+    },
+    {
+      "id": "q06-18-distance-between",
+      "title": "2つの点 { x, y } の距離を返す"
+    },
+    {
+      "id": "q06-19-name-with",
+      "title": "{ first, last } と、省略できる separator"
+    },
+    {
+      "id": "q06-20-lat-lng-text",
+      "title": "タプル [lat, lng] を「35.68, 139.76」の形にする"
+    },
+    {
+      "id": "q06-destructuring-params",
+      "title": "分割代入引数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-destructuring-assignment-parameters",
+    "SRC-typescriptbook-functions-keyword-arguments-and-options-object-pattern"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

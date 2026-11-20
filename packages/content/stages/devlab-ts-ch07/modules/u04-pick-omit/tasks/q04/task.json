@@ -1,0 +1,138 @@
+{
+  "id": "devlab-ts-ch07/u04-pick-omit/q04",
+  "title": "07章 q04 Pick と Omit",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q04-01-user-name",
+      "title": "型 UserName を、User から name だけを取り出して作る"
+    },
+    {
+      "id": "q04-02-user-contact",
+      "title": "型 UserContact を、User から name と email を取り出して作る"
+    },
+    {
+      "id": "q04-03-safe-user",
+      "title": "型 SafeUser を、User から password を除いて作る"
+    },
+    {
+      "id": "q04-04-new-user",
+      "title": "型 NewUser を、User から id を除いて作る"
+    },
+    {
+      "id": "q04-05-article-summary",
+      "title": "型 ArticleSummary を、Article から id と title を取り出して作る"
+    },
+    {
+      "id": "q04-06-article-draft",
+      "title": "型 ArticleDraft を、Article から id と publishedAt を除いて作る"
+    },
+    {
+      "id": "q04-07-to-contact",
+      "title": "User から { name, email } を取り出して返す"
+    },
+    {
+      "id": "q04-08-to-safe-user",
+      "title": "User から password を除いたオブジェクトを返す"
+    },
+    {
+      "id": "q04-09-to-summary",
+      "title": "Article から { id, title } を取り出して返す"
+    },
+    {
+      "id": "q04-10-create-user",
+      "title": "Omit<User, \"id\"> と id から User を作る"
+    },
+    {
+      "id": "q04-11-publish",
+      "title": "下書き Omit<Article, \"id\" | \"publishedAt\"> に id と publishedAt を足して Article を作る"
+    },
+    {
+      "id": "q04-12-summaries",
+      "title": "Article の配列を Pick<Article, \"id\" | \"title\"> の配列にする"
+    },
+    {
+      "id": "q04-13-safe-users",
+      "title": "User の配列から、password を除いた配列を返す"
+    },
+    {
+      "id": "q04-14-patch-user",
+      "title": "型 UserPatch を、User の name、email、age だけを、どれも省略できるようにして作る"
+    },
+    {
+      "id": "q04-15-author-info",
+      "title": "型 AuthorInfo を Pick<Article, \"author\"> & { articleCount: number } として作り、authorInfo でその人の記事の数を返す"
+    },
+    {
+      "id": "q04-16-find-contact",
+      "title": "id の User を探し、Pick<User, \"name\" | \"email\"> を返す"
+    },
+    {
+      "id": "q04-17-login",
+      "title": "型 Credentials を Pick<User, \"email\" | \"password\"> として作る"
+    },
+    {
+      "id": "q04-18-to-public-article",
+      "title": "型 PublicArticle を、Article から body を除いて作る"
+    },
+    {
+      "id": "q04-19-to-teaser",
+      "title": "型 Teaser を Pick<Article, \"title\"> & { excerpt: string } として作る"
+    },
+    {
+      "id": "q04-20-to-rows",
+      "title": "型 UserRow を Pick<User, \"id\" | \"name\" | \"age\"> として作る"
+    },
+    {
+      "id": "q04-pick-omit",
+      "title": "Pick と Omit（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-type-reuse-utility-types-pick",
+    "SRC-typescriptbook-type-reuse-utility-types-omit"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -282,7 +282,7 @@ console.log(balance, deposit);
 - サバイバルTypeScript [boolean型](https://typescriptbook.jp/reference/values-types-variables/boolean)
 - サバイバルTypeScript [string型](https://typescriptbook.jp/reference/values-types-variables/string)
 
-章の課題の q01 を一問ずつ確かめましょう。
+この単元の「01章 q01 letとconst」を一問ずつ確かめましょう。
 ここからのヒントは書き方ガイドの値と日本語の手順を使っています。
 「問N のサンプル」は、このまとめの対応する書き方の例に置き換えて読めます。
 

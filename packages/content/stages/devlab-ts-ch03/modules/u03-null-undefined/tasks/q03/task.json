@@ -1,0 +1,134 @@
+{
+  "id": "devlab-ts-ch03/u03-null-undefined/q03",
+  "title": "03章 q03 null と undefined",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q03-01-length-or-zero",
+      "title": "文字列か undefined を受け取り、文字数を返す"
+    },
+    {
+      "id": "q03-02-upper-or-empty",
+      "title": "文字列か null を受け取り、大文字にして返す"
+    },
+    {
+      "id": "q03-03-or-default",
+      "title": "数値か undefined を受け取り、undefined なら fallback を返す"
+    },
+    {
+      "id": "q03-04-name-or-guest",
+      "title": "名前か null を受け取り、null なら「ゲスト」を返す"
+    },
+    {
+      "id": "q03-05-first-letter",
+      "title": "文字列か undefined を受け取り、最初の1文字を text?.[0] で取り出して返す"
+    },
+    {
+      "id": "q03-06-city-of",
+      "title": "{ address?: { city } } の city を返す"
+    },
+    {
+      "id": "q03-07-city-or-unknown",
+      "title": "{ address?: { city } } の city を返す"
+    },
+    {
+      "id": "q03-08-empty-to-null",
+      "title": "空の文字列なら null、それ以外はそのまま返す"
+    },
+    {
+      "id": "q03-09-index-or-null",
+      "title": "target が何番目にあるかを返す"
+    },
+    {
+      "id": "q03-10-parse-or-null",
+      "title": "文字列を Number で数値にする"
+    },
+    {
+      "id": "q03-11-is-missing",
+      "title": "null か undefined なら true"
+    },
+    {
+      "id": "q03-12-count-present",
+      "title": "undefined でない要素の数を返す"
+    },
+    {
+      "id": "q03-13-sum-non-null",
+      "title": "null を飛ばして合計する"
+    },
+    {
+      "id": "q03-14-phone-text",
+      "title": "{ phone?: string | null } の phone を返す"
+    },
+    {
+      "id": "q03-15-manager-name",
+      "title": "{ manager: { name } | null } の manager の name を返す"
+    },
+    {
+      "id": "q03-16-null-to-undefined",
+      "title": "null なら undefined に変える"
+    },
+    {
+      "id": "q03-17-undefined-to-null",
+      "title": "undefined なら null に変える"
+    },
+    {
+      "id": "q03-18-both-present",
+      "title": "2つとも null でなければ true"
+    },
+    {
+      "id": "q03-19-join-present",
+      "title": "null でないものだけを半角スペースでつなぐ"
+    },
+    {
+      "id": "q03-20-last-login-text",
+      "title": "{ lastLoginAt: Date | null } を「2026-12-01」の形にする"
+    },
+    {
+      "id": "q03-null-undefined",
+      "title": "null と undefined（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-undefined-vs-null",
+    "SRC-typescriptbook-values-types-variables-object-optional-chaining"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

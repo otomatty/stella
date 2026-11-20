@@ -13,7 +13,16 @@
   "canDo": "関数を使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "05章の問題",
+    "u01-function-forms": "q01 関数宣言・関数式・アロー関数",
+    "u02-parameter-return-types": "q02 引数と戻り値の型、void",
+    "u03-optional-parameters": "q03 オプション引数",
+    "u04-default-parameters": "q04 デフォルト引数",
+    "u05-rest-parameters": "q05 残余引数",
+    "u06-destructured-parameters": "q06 分割代入引数",
+    "u07-callbacks": "q07 コールバック関数",
+    "u08-return-functions": "q08 関数を返す関数",
+    "u09-type-guards": "q09 型ガード関数とアサーション関数",
+    "u10-array-utilities": "q10 配列のユーティリティ",
     "u100-extra": "05章の発展問題"
   }
 }

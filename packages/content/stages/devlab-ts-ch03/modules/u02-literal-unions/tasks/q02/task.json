@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch03/u02-literal-unions/q02",
+  "title": "03章 q02 リテラル型のユニオン",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q02-01-turn-right",
+      "title": "右に90度回った向きを返す"
+    },
+    {
+      "id": "q02-02-parse-direction",
+      "title": "前後の空白を取り除いて小文字にし、Direction のどれかならそれを返す"
+    },
+    {
+      "id": "q02-03-is-vertical",
+      "title": "up か down なら true"
+    },
+    {
+      "id": "q02-04-arrow-of",
+      "title": "向きを矢印にする"
+    },
+    {
+      "id": "q02-05-next-weekday",
+      "title": "次の平日を返す"
+    },
+    {
+      "id": "q02-06-parse-weekday",
+      "title": "文字列の最初の1文字が Weekday のどれかならそれを返す"
+    },
+    {
+      "id": "q02-07-is-friday",
+      "title": "金なら true"
+    },
+    {
+      "id": "q02-08-plan-price",
+      "title": "月額料金を返す"
+    },
+    {
+      "id": "q02-09-upgrade",
+      "title": "1つ上のプランを返す"
+    },
+    {
+      "id": "q02-10-parse-plan",
+      "title": "小文字にして、Plan のどれかならそれを返す"
+    },
+    {
+      "id": "q02-11-flip-coin",
+      "title": "型 Coinを定義して export し、flipCoin を書く"
+    },
+    {
+      "id": "q02-12-parse-answer",
+      "title": "型 Answerを定義して export し、parseAnswer を書く"
+    },
+    {
+      "id": "q02-13-resolve-theme",
+      "title": "型 Themeを定義して export し、resolveTheme を書く"
+    },
+    {
+      "id": "q02-14-to-millimeters",
+      "title": "型 Unitを定義して export し、toMillimeters を書く"
+    },
+    {
+      "id": "q02-15-grade-from",
+      "title": "型 Gradeを定義して export し、gradeFrom を書く"
+    },
+    {
+      "id": "q02-16-rank-point",
+      "title": "型 Rankを定義して export し、rankPoint を書く"
+    },
+    {
+      "id": "q02-17-is-finished",
+      "title": "型 TaskStatusを定義して export し、isFinished を書く"
+    },
+    {
+      "id": "q02-18-can-go",
+      "title": "型 Signalを定義して export し、canGo を書く"
+    },
+    {
+      "id": "q02-19-hello",
+      "title": "型 Langを定義して export し、hello を書く"
+    },
+    {
+      "id": "q02-20-can-view",
+      "title": "型 Visibilityを定義して export し、canView を書く"
+    },
+    {
+      "id": "q02-literal-union",
+      "title": "リテラル型のユニオン（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-literal-types"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

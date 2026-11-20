@@ -1,0 +1,136 @@
+{
+  "id": "devlab-ts-ch05/u07-callbacks/q07",
+  "title": "05章 q07 コールバック関数",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch05",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04"
+    ],
+    "assesses": [
+      "devlab-ts-ch05"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q07-01-map-numbers",
+      "title": "それぞれの要素に fn を当てはめた配列を返す"
+    },
+    {
+      "id": "q07-02-filter-numbers",
+      "title": "predicate が true の要素だけを集める"
+    },
+    {
+      "id": "q07-03-each-with-index",
+      "title": "それぞれの要素と番号を fn に渡して呼ぶ"
+    },
+    {
+      "id": "q07-04-count-where",
+      "title": "predicate が true の要素の数"
+    },
+    {
+      "id": "q07-05-some-match",
+      "title": "predicate が true になる要素が1つでもあれば true"
+    },
+    {
+      "id": "q07-06-every-match",
+      "title": "すべての要素で predicate が true なら true"
+    },
+    {
+      "id": "q07-07-find-number",
+      "title": "predicate が true になる最初の要素"
+    },
+    {
+      "id": "q07-08-find-index-where",
+      "title": "predicate が true になる最初の要素の番号"
+    },
+    {
+      "id": "q07-09-times",
+      "title": "fn を n 回呼ぶ"
+    },
+    {
+      "id": "q07-10-reduce-numbers",
+      "title": "initial から始めて、fn で1つの値にまとめる"
+    },
+    {
+      "id": "q07-11-map-strings",
+      "title": "それぞれの文字列に fn を当てはめた配列を返す"
+    },
+    {
+      "id": "q07-12-apply-twice",
+      "title": "x に fn を2回当てはめる"
+    },
+    {
+      "id": "q07-13-sum-by",
+      "title": "それぞれの単語に fn を当てはめた数の合計"
+    },
+    {
+      "id": "q07-14-max-by",
+      "title": "fn の値がいちばん大きい単語を返す"
+    },
+    {
+      "id": "q07-15-sort-by-key",
+      "title": "key の値の小さい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q07-16-reject-numbers",
+      "title": "predicate が true の要素を除いた配列を返す"
+    },
+    {
+      "id": "q07-17-split-by",
+      "title": "predicate が true の要素と false の要素に分け、[true の配列, false の配列] を返す"
+    },
+    {
+      "id": "q07-18-with-log",
+      "title": "log の末尾に \"call\" を足してから、fn の結果を返す"
+    },
+    {
+      "id": "q07-19-retry",
+      "title": "fn が true を返すまで、最大 times 回呼ぶ"
+    },
+    {
+      "id": "q07-20-compose-two",
+      "title": "x に f を当てはめ、その結果に g を当てはめる"
+    },
+    {
+      "id": "q07-callback",
+      "title": "コールバック関数（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-functions-callback-functions",
+    "SRC-typescriptbook-functions-function-type-declaration"
+  ],
+  "estimatedMinutes": 76,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

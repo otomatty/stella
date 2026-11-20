@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch05/u06-destructured-parameters@1",
+  "contentHash": "00c086205970de8267db36c2e25c97062c3fab46f61295a888d8635d67122a41",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q06/README.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-functions-destructuring-assignment-parameters",
+        "SRC-typescriptbook-functions-keyword-arguments-and-options-object-pattern"
+      ],
+      "usedFor": "教材独自の課題。サバイバルTypeScript の関数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

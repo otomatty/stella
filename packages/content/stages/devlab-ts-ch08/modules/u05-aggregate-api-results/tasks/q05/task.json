@@ -1,0 +1,140 @@
+{
+  "id": "devlab-ts-ch08/u05-aggregate-api-results/q05",
+  "title": "08章 q05 複数のAPIの結果をまとめる",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch08",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06",
+      "devlab-ts-ch07"
+    ],
+    "assesses": [
+      "devlab-ts-ch08"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q05-01-user-with-posts",
+      "title": "getUser と getPosts を同時に呼び、{ user, posts } を返す"
+    },
+    {
+      "id": "q05-02-post-count",
+      "title": "ユーザーの投稿の数を返す"
+    },
+    {
+      "id": "q05-03-post-titles",
+      "title": "ユーザーの投稿のタイトルの配列を返す"
+    },
+    {
+      "id": "q05-04-names-of",
+      "title": "ids のユーザーを同時に取得し、名前の配列を返す"
+    },
+    {
+      "id": "q05-05-total-posts",
+      "title": "ids のユーザーの投稿を同時に取得し、投稿の数の合計を返す"
+    },
+    {
+      "id": "q05-06-loaded-users",
+      "title": "ids のユーザーを同時に取得し、取得できたユーザーだけの配列を返す"
+    },
+    {
+      "id": "q05-07-missing-ids",
+      "title": "ids のユーザーを同時に取得し、取得できなかった id の配列を返す"
+    },
+    {
+      "id": "q05-08-user-summary",
+      "title": "ユーザーと投稿を同時に取得し、\"山田\" の形の文字列を返す"
+    },
+    {
+      "id": "q05-09-comment-count",
+      "title": "投稿のコメントの数を返す"
+    },
+    {
+      "id": "q05-10-comments-of-user",
+      "title": "ユーザーの投稿を取得してから、それぞれの投稿のコメントを同時に取得し、コメントの text を1つの配列にまとめて返す"
+    },
+    {
+      "id": "q05-11-latest-post-title",
+      "title": "ユーザーの投稿のうち、id がいちばん大きいもののタイトルを返す"
+    },
+    {
+      "id": "q05-12-post-counts-by-id",
+      "title": "ids の投稿を同時に取得し、{ id: 投稿の数 } のオブジェクトを返す"
+    },
+    {
+      "id": "q05-13-profile-or-null",
+      "title": "userWithPosts と同じ { user, posts } を返す"
+    },
+    {
+      "id": "q05-14-dashboard",
+      "title": "ids のユーザーと投稿をすべて同時に取得し、ユーザーを取得できた人だけ { name, postCount } の配列にする"
+    },
+    {
+      "id": "q05-15-most-active",
+      "title": "ids のユーザーと投稿を同時に取得し、投稿がいちばん多い人の名前を返す"
+    },
+    {
+      "id": "q05-16-posts-with-author",
+      "title": "ids のユーザーと投稿を同時に取得し、すべての投稿を { title, author: 書いた人の名前 } の配列にする"
+    },
+    {
+      "id": "q05-17-search-posts",
+      "title": "ids の投稿を同時に取得し、タイトルに keyword を含む投稿のタイトルの配列を返す"
+    },
+    {
+      "id": "q05-18-comment-total",
+      "title": "ユーザーの投稿を取得してから、それぞれの投稿のコメントを同時に取得し、コメントの数の合計を返す"
+    },
+    {
+      "id": "q05-19-first-available-name",
+      "title": "ids のユーザーを順番に1人ずつ取得し、最初に取得できた人の名前を返す"
+    },
+    {
+      "id": "q05-20-load-in-batches",
+      "title": "ids を size 人ずつに区切り、区切りの中は同時に、区切りどうしは順番に取得して、名前の配列を返す"
+    },
+    {
+      "id": "q05-aggregate",
+      "title": "複数のAPIの結果をまとめる（総合問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-asynchronous-promise",
+    "SRC-typescriptbook-asynchronous-async",
+    "SRC-typescriptbook-asynchronous-await"
+  ],
+  "estimatedMinutes": 78,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

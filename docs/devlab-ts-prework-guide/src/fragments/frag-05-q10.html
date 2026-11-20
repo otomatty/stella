@@ -723,8 +723,9 @@ export function summaryText() {
       <span class="q-new">新しい書き方はありません。</span>
     </header>
     <div class="task">
-      <pre><code class="language-typescript">import { clamp } from "./q02-params-return";
-import { sumAll } from "./q05-rest-params";
+      <pre><code class="language-typescript">function clamp() {}
+
+function sumAll() {}
 
 export type Student = { name: string; grade: number; score: number };
 
@@ -745,7 +746,7 @@ export function averageBy() {}</code></pre>
         <li><code>topN(students, n)</code>：点数の高い順に <code>n</code> 人を返します。同じ点数なら元の順のままです。<code>n</code> が負なら空の配列、人数より多ければ全員です。<code>n</code> は、q02 の <code>clamp</code> で 0 以上・生徒の人数以下に収めてから使います。</li>
         <li><code>averageBy(students, keyFn)</code>：<code>keyFn(生徒)</code> が返す文字列ごとに、点数の平均を小数第 1 位までに四捨五入して返します。戻り値は <code>{ [key: string]: number }</code> です。点数の合計は、q05 の <code>sumAll</code> で出します。<code>groupBy</code> を使うと短く書けます。</li>
       </ol>
-      <p><code>clamp</code> と <code>sumAll</code> は、ファイルの先頭で import してあります。q02 と q05 が解けていないと、この問題のテストも通りません。テストでは、次の 5 人の配列を使います。山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・62 点）、高橋（2 年・80 点）、田中（3 年・45 点）。</p>
+      <p>q02 の <code>clamp</code> と q05 の <code>sumAll</code> を、このファイルの中でもう一度書きます。<code>export</code> は付けません。テストでは、次の 5 人の配列を使います。山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・62 点）、高橋（2 年・80 点）、田中（3 年・45 点）。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <dl class="eg">

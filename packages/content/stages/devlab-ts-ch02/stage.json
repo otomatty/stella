@@ -13,7 +13,14 @@
   "canDo": "オブジェクト・配列・タプルを使い、テストと型の確認が通るコードを書けます。",
   "theme": "開発ラボG の選考",
   "modules": {
-    "u99-problems": "02章の問題",
+    "u01-object-literal": "q01 オブジェクトの型",
+    "u02-optional-readonly": "q02 オプションプロパティと readonly",
+    "u03-destructuring-spread": "q03 分割代入とスプレッド構文",
+    "u04-array-types": "q04 配列の型",
+    "u05-immutable-arrays": "q05 配列を壊さない操作",
+    "u06-tuples": "q06 タプル",
+    "u07-structural-typing": "q07 構造的型付け",
+    "u08-index-signatures": "q08 インデックス型",
     "u100-extra": "02章の発展問題"
   }
 }

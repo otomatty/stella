@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch02/u02-optional-readonly/q02",
+  "title": "02章 q02 オプションプロパティと readonly",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch02",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01"
+    ],
+    "assesses": [
+      "devlab-ts-ch02"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q02-01-greet-user",
+      "title": "{ name, nickname? } を受け取り、nickname があれば nickname、なければ name を使って「こんにちは、◯◯さん」を返す"
+    },
+    {
+      "id": "q02-02-has-email",
+      "title": "{ email? } に email があれば true"
+    },
+    {
+      "id": "q02-03-email-text",
+      "title": "{ email? } の email を返す"
+    },
+    {
+      "id": "q02-04-age-text",
+      "title": "{ age? } を「◯歳」にする"
+    },
+    {
+      "id": "q02-05-color-of",
+      "title": "{ color? } の color を返す"
+    },
+    {
+      "id": "q02-06-per-page-of",
+      "title": "{ perPage? } の perPage を返す"
+    },
+    {
+      "id": "q02-07-create-todo",
+      "title": "id と title から、ToDo { id, title, done } を作る"
+    },
+    {
+      "id": "q02-08-complete-todo",
+      "title": "ToDo { id, title, done } の done を true にした、新しい ToDo を返す"
+    },
+    {
+      "id": "q02-09-name-with-middle",
+      "title": "{ first, middle?, last } をつなぐ"
+    },
+    {
+      "id": "q02-10-is-complete",
+      "title": "{ name?, email? } の両方がそろっていれば true"
+    },
+    {
+      "id": "q02-11-count-filled",
+      "title": "{ a?, b?, c? } のうち、値があるプロパティの数を返す"
+    },
+    {
+      "id": "q02-12-pay-amount",
+      "title": "{ price, coupon? } の支払額を返す"
+    },
+    {
+      "id": "q02-13-address-text",
+      "title": "{ city, building? } を、building があれば「city building」、なければ「city」にする"
+    },
+    {
+      "id": "q02-14-frozen-point",
+      "title": "x と y から、どちらも読み取り専用の座標 { x, y } を作る"
+    },
+    {
+      "id": "q02-15-move-right",
+      "title": "読み取り専用の座標 { x, y } の x を1増やした、新しい座標を返す"
+    },
+    {
+      "id": "q02-16-title-text",
+      "title": "{ title, subtitle? } を、subtitle があれば「title: subtitle」、なければ「title」にする"
+    },
+    {
+      "id": "q02-17-timeout-ms",
+      "title": "{ timeoutSeconds? } をミリ秒にして返す"
+    },
+    {
+      "id": "q02-18-is-guest",
+      "title": "{ name, memberId? } に memberId がなければ true"
+    },
+    {
+      "id": "q02-19-label-of",
+      "title": "{ id, label? } の label を返す"
+    },
+    {
+      "id": "q02-20-setting-text",
+      "title": "{ darkMode, fontSize? } を「ダーク / 16px」の形にする"
+    },
+    {
+      "id": "q02-optional-readonly",
+      "title": "オプションプロパティと readonly（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-object-optional-property",
+    "SRC-typescriptbook-values-types-variables-object-readonly-property"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

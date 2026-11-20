@@ -1,0 +1,137 @@
+{
+  "id": "devlab-ts-ch07/u02-keyof/q02",
+  "title": "07章 q02 keyof 型演算子",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch07",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03",
+      "devlab-ts-ch04",
+      "devlab-ts-ch05",
+      "devlab-ts-ch06"
+    ],
+    "assesses": [
+      "devlab-ts-ch07"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q02-01-user-key",
+      "title": "型 UserKey を keyof User で作る"
+    },
+    {
+      "id": "q02-02-product-key",
+      "title": "型 ProductKey を keyof Product で作る"
+    },
+    {
+      "id": "q02-03-setting-key",
+      "title": "型 SettingKey を、定数 SETTINGS のキーとして作る"
+    },
+    {
+      "id": "q02-04-color-name",
+      "title": "型 ColorName を、定数 COLOR_CODES のキーとして作る"
+    },
+    {
+      "id": "q02-05-user-or-product-key",
+      "title": "型 UserOrProductKey を、User と Product のどちらかのプロパティ名として作る"
+    },
+    {
+      "id": "q02-06-user-value",
+      "title": "型 UserValue を、User のすべてのプロパティの値の型のユニオン型として作る"
+    },
+    {
+      "id": "q02-07-user-field",
+      "title": "user の key のプロパティを返す"
+    },
+    {
+      "id": "q02-08-product-field",
+      "title": "product の key のプロパティを返す"
+    },
+    {
+      "id": "q02-09-setting-value",
+      "title": "SETTINGS の key の値を返す"
+    },
+    {
+      "id": "q02-10-color-code",
+      "title": "COLOR_CODES から色の番号を返す"
+    },
+    {
+      "id": "q02-11-field-label",
+      "title": "User のプロパティ名を日本語にする"
+    },
+    {
+      "id": "q02-12-is-user-key",
+      "title": "文字列が User のプロパティ名なら true"
+    },
+    {
+      "id": "q02-13-values-of",
+      "title": "user の、keys に並べたプロパティの値を、その順に並べた配列を返す"
+    },
+    {
+      "id": "q02-14-different-keys",
+      "title": "2人の User で値が違うプロパティ名を、id、name、email、age の順で返す"
+    },
+    {
+      "id": "q02-15-sort-by-number-key",
+      "title": "User の配列を、keyの小さい順に並べた新しい配列を返す"
+    },
+    {
+      "id": "q02-16-key-count",
+      "title": "オブジェクトのキーの数を返す"
+    },
+    {
+      "id": "q02-17-has-own-key",
+      "title": "obj に key のプロパティがあれば true"
+    },
+    {
+      "id": "q02-18-product-text",
+      "title": "product の keys に並べたプロパティを \"code=A1, price=150\" の形にする"
+    },
+    {
+      "id": "q02-19-user-labels",
+      "title": "型 UserLabels を、User のすべてのプロパティ名をキー、文字列を値にした型として作る"
+    },
+    {
+      "id": "q02-20-total-stock",
+      "title": "Product の配列の、keyのプロパティの合計を返す"
+    },
+    {
+      "id": "q02-keyof",
+      "title": "keyof 型演算子（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-type-reuse-keyof-type-operator"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

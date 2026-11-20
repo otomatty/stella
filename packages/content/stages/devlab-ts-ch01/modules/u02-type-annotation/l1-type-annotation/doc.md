@@ -147,7 +147,7 @@ console.log(canShip(3, true), canShip(0, true), canShip(3, false));
 ## もっと知りたい人へ
 
 - サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)
-- [知識問題](knowledge.md)で理解を確かめてから、01章の課題に取り組みます。
+- [知識問題](knowledge.md)で理解を確かめてから、この単元の「01章 q02 型注釈」に取り組みます。
 
 ## 問題ごとのヒント
 

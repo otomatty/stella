@@ -1,0 +1,135 @@
+{
+  "id": "devlab-ts-ch04/u01-if-else/q01",
+  "title": "04章 q01 if-else文",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch04",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02",
+      "devlab-ts-ch03"
+    ],
+    "assesses": [
+      "devlab-ts-ch04"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q01-01-abs-value",
+      "title": "絶対値を返す"
+    },
+    {
+      "id": "q01-02-max-of2",
+      "title": "大きい方を返す"
+    },
+    {
+      "id": "q01-03-pass-fail",
+      "title": "60点以上なら \"合格\"、それ未満は \"不合格\""
+    },
+    {
+      "id": "q01-04-bmi-label",
+      "title": "BMI が 18.5 未満なら \"やせ\"、25 未満なら \"普通\"、それ以上は \"肥満\""
+    },
+    {
+      "id": "q01-05-age-group",
+      "title": "18歳未満は \"子ども\"、65歳未満は \"大人\"、それ以上は \"シニア\""
+    },
+    {
+      "id": "q01-06-feeling",
+      "title": "気温が 15 未満なら \"寒い\"、28 以上なら \"暑い\"、それ以外は \"ちょうどよい\""
+    },
+    {
+      "id": "q01-07-sign-text",
+      "title": "正なら \"正\"、負なら \"負\"、0 なら \"ゼロ\""
+    },
+    {
+      "id": "q01-08-bus-fare",
+      "title": "バスの運賃を返す"
+    },
+    {
+      "id": "q01-09-discount-rate",
+      "title": "合計が 10000円以上なら 0.1、5000円以上なら 0.05、それ未満は 0 を返す"
+    },
+    {
+      "id": "q01-10-greeting-for",
+      "title": "5〜10時は \"おはよう\"、11〜17時は \"こんにちは\"、それ以外は \"こんばんは\""
+    },
+    {
+      "id": "q01-11-compare-text",
+      "title": "a が大きければ \"a のほうが大きい\"、b が大きければ \"b のほうが大きい\"、同じなら \"同じ\""
+    },
+    {
+      "id": "q01-12-quadrant",
+      "title": "座標 が第何象限かを返す"
+    },
+    {
+      "id": "q01-13-medal-by-time",
+      "title": "タイムが 60 未満なら \"金\"、90 未満なら \"銀\"、120 未満なら \"銅\"、それ以外は \"参加賞\""
+    },
+    {
+      "id": "q01-14-water-state",
+      "title": "水温が 0 以下なら \"氷\"、100 未満なら \"水\"、それ以上は \"水蒸気\""
+    },
+    {
+      "id": "q01-15-parking-fee",
+      "title": "駐車料金を返す"
+    },
+    {
+      "id": "q01-16-wind-level",
+      "title": "風速が 5 未満なら \"弱い\"、10 未満なら \"やや強い\"、それ以上は \"強い\""
+    },
+    {
+      "id": "q01-17-pick-longer",
+      "title": "長い方の文字列を返す"
+    },
+    {
+      "id": "q01-18-parity-label",
+      "title": "偶数なら \"偶数\"、奇数なら \"奇数\""
+    },
+    {
+      "id": "q01-19-taxi-fare",
+      "title": "22時〜翌5時前は運賃を 2割増しにする"
+    },
+    {
+      "id": "q01-20-stock-status",
+      "title": "在庫が 0 なら \"在庫なし\"、5 以下なら \"残りわずか\"、それ以外は \"在庫あり\""
+    },
+    {
+      "id": "q01-if-else",
+      "title": "if-else文（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-statements-if-else",
+    "SRC-typescriptbook-statements-ternary-operator"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

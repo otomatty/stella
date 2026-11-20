@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "devlab-ts-ch03/u07-const-assertions@1",
+  "contentHash": "18dec3043c23a64bc148f6f7a1da6393fc18ec58b784765f8a7c3bd5085ccd20",
+  "environmentRef": "ts-test-01@1",
+  "uses": [
+    {
+      "contentId": "tasks/q07/README.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-const-assertion"],
+      "usedFor": "教材独自の課題。サバイバルTypeScript のユニオン型とそのほかの型の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

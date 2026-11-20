@@ -1,0 +1,133 @@
+{
+  "id": "devlab-ts-ch03/u07-const-assertions/q07",
+  "title": "03章 q07 as const",
+  "kind": "independent",
+  "pattern": "devlab-ts-ch03",
+  "skills": {
+    "uses": [
+      "devlab-ts-ch01",
+      "devlab-ts-ch02"
+    ],
+    "assesses": [
+      "devlab-ts-ch03"
+    ]
+  },
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "problems": [
+    {
+      "id": "q07-01-days",
+      "title": "定数 DAYS を [\"月\", \"火\", \"水\"] として宣言する"
+    },
+    {
+      "id": "q07-02-origin",
+      "title": "定数 ORIGIN を { x: 0, y: 0 } として宣言する"
+    },
+    {
+      "id": "q07-03-roles",
+      "title": "定数 ROLES を [\"admin\", \"editor\", \"viewer\"] として宣言する"
+    },
+    {
+      "id": "q07-04-http-status",
+      "title": "定数 HTTP_STATUS を { ok: 200, notFound: 404 } として宣言する"
+    },
+    {
+      "id": "q07-05-levels",
+      "title": "定数 LEVELS を [1, 2, 3] として宣言する"
+    },
+    {
+      "id": "q07-06-theme",
+      "title": "定数 THEME を { primary: \"#0066ff\", radius: 4 } として宣言する"
+    },
+    {
+      "id": "q07-07-flags",
+      "title": "定数 FLAGS を { beta: true, debug: false } として宣言する"
+    },
+    {
+      "id": "q07-08-entry",
+      "title": "定数 ENTRY を [\"key\", 1] として宣言する"
+    },
+    {
+      "id": "q07-09-is-status",
+      "title": "文字列が STATUSES のどれかなら true"
+    },
+    {
+      "id": "q07-10-status-index",
+      "title": "STATUSES の何番目かを返す"
+    },
+    {
+      "id": "q07-11-prev-status",
+      "title": "STATUSES の1つ前のステータスを返す"
+    },
+    {
+      "id": "q07-12-priority-point",
+      "title": "PRIORITY_POINTS から点数を返す"
+    },
+    {
+      "id": "q07-13-higher-priority",
+      "title": "点数の高い方の優先度を返す"
+    },
+    {
+      "id": "q07-14-month-name",
+      "title": "月から MONTH_NAMES の名前を返す"
+    },
+    {
+      "id": "q07-15-all-statuses",
+      "title": "STATUSES をコピーした、書き換えられる配列を返す"
+    },
+    {
+      "id": "q07-16-status-text",
+      "title": "定数 STATUS_TEXT を { todo: \"未着手\", doing: \"作業中\", done: \"完了\" } として as const で宣言して export し、statusText を書く"
+    },
+    {
+      "id": "q07-17-size-px",
+      "title": "定数 SIZE_PX を { S: 12, M: 16, L: 20 } として as const で宣言して export し、sizePx を書く"
+    },
+    {
+      "id": "q07-18-is-weekend-day",
+      "title": "定数 WEEKEND を [\"土\", \"日\"] として as const で宣言して export し、isWeekendDay を書く"
+    },
+    {
+      "id": "q07-19-count-by-status",
+      "title": "ステータスの配列から、{ todo, doing, done } それぞれの数を数える"
+    },
+    {
+      "id": "q07-20-next-month-name",
+      "title": "月の次の月の名前を MONTH_NAMES から返す"
+    },
+    {
+      "id": "q07-as-const",
+      "title": "as const（応用問題）"
+    }
+  ],
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "never",
+    "aiChat": false
+  },
+  "sources": [
+    "SRC-typescriptbook-values-types-variables-const-assertion"
+  ],
+  "estimatedMinutes": 77,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
