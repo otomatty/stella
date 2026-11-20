@@ -299,6 +299,22 @@ describe("動画レッスンのコメント API", () => {
     });
   });
 
+  it("場面の終点が 86402 秒でも 86401 秒は拒否し、86400 秒は保存する", async () => {
+    db.sqlite
+      .prepare("UPDATE lessons SET video_scenes = ? WHERE id = 'video'")
+      .run(JSON.stringify([{ id: "long", startSec: 0, durationSec: 86402, hash: "long" }]));
+
+    const overLimit = await post(learner, { positionSec: 86401 });
+    expect(overLimit.status).toBe(400);
+    expect(await json(overLimit)).toEqual({ error: "動画の位置は 0〜86400 秒で指定してください" });
+
+    const atLimit = await create(learner, { positionSec: 86400 });
+    expect(atLimit).toMatchObject({ position_sec: 86400, scene_id: "long" });
+    expect(
+      db.sqlite.prepare("SELECT position_sec FROM lesson_comments WHERE id = ?").get(atLimit.id),
+    ).toEqual({ position_sec: 86400 });
+  });
+
   it("場面がなければ total_sec を使い、それもなければ 86400 秒まで受け付ける", async () => {
     const lessonId = lessons.legacy;
     expect(await create(learner, { lessonId, positionSec: 86400 })).toMatchObject({

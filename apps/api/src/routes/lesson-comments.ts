@@ -443,6 +443,9 @@ lessonCommentsRoute.post(PATH, async (c) => {
       throw new ApiError(VIDEO_UPDATED, 409);
     }
     if (positionSec !== null) {
+      if (positionSec > 86400) {
+        throw new ApiError("動画の位置は 0〜86400 秒で指定してください", 400);
+      }
       const lastScene = video.scenes?.at(-1);
       const duration = lastScene ? lastScene.startSec + lastScene.durationSec : video.totalSec;
       if (duration !== null && (lastScene || duration > 0)) {
@@ -450,8 +453,6 @@ lessonCommentsRoute.post(PATH, async (c) => {
           throw new ApiError("動画の位置が動画の長さを超えています", 400);
         }
         positionSec = Math.min(positionSec, duration);
-      } else if (positionSec > 86400) {
-        throw new ApiError("動画の位置は 0〜86400 秒で指定してください", 400);
       }
     }
     const recipientIds = parentId
