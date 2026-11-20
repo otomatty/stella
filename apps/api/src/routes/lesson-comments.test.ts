@@ -193,6 +193,16 @@ describe("動画レッスンのコメント API", () => {
     expect((await list("", learner, lessons.legacy)).video).toEqual({ scenes: [] });
   });
 
+  it("以前のプロフィールに残る Google 以外の画像 URL は他の受講者に送らない", async () => {
+    db.sqlite
+      .prepare("UPDATE profiles SET avatar_url = ? WHERE id = ?")
+      .run("https://example.test/old-avatar", learner);
+    const created = await create(learner);
+    expect(created.author.avatar_url).toBeNull();
+    const page = await list("", other);
+    expect(page.threads.find((thread) => thread.id === created.id)?.author.avatar_url).toBeNull();
+  });
+
   it("返信は先頭だけに付き、メンションと通常の返信を参加者に 1 通ずつ送る", async () => {
     const replyAvatar = "https://lh3.googleusercontent.com/a/other";
     db.sqlite.prepare("UPDATE profiles SET avatar_url = ? WHERE id = ?").run(replyAvatar, other);

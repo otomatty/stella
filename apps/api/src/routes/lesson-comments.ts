@@ -30,6 +30,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { auditLogInsert, clientIp } from "../lib/audit.js";
+import { googleAvatarUrl } from "../lib/auth-users.js";
 import {
   ApiError,
   type Caller,
@@ -93,7 +94,7 @@ function commentEntry(row: Entry, caller: Caller) {
     author: {
       id: row.userId,
       name: row.name,
-      avatar_url: row.avatarUrl,
+      avatar_url: googleAvatarUrl(row.avatarUrl),
       role: row.role,
       is_self: row.userId === caller.id,
     },

@@ -72,6 +72,20 @@ function createAuth(env: Env & AuthSettings) {
     rateLimit: { enabled: false },
     telemetry: { enabled: false },
     databaseHooks: {
+      user: {
+        update: {
+          before: async (user, ctx) => {
+            // Google omits picture when none is available. Drizzle skips undefined on UPDATE.
+            if (
+              ctx?.params?.id === "google" &&
+              ctx.path?.startsWith("/callback/") &&
+              "image" in user
+            ) {
+              return { data: { image: googleAvatarUrl(user.image) } };
+            }
+          },
+        },
+      },
       session: {
         create: {
           after: async (session, ctx) => {
@@ -141,9 +155,10 @@ async function syncProfile(db: Db, userId: string): Promise<void> {
         .where(eq(authUsers.id, userId))
         .limit(1)
     )[0];
-    const displayName = user?.name.trim();
-    const avatarUrl = googleAvatarUrl(user?.image);
-    if (avatarUrl) await db.update(profiles).set({ avatarUrl }).where(eq(profiles.id, userId));
+    if (!user) return;
+    const displayName = user.name.trim();
+    const avatarUrl = googleAvatarUrl(user.image);
+    await db.update(profiles).set({ avatarUrl }).where(eq(profiles.id, userId));
     if (displayName)
       await db
         .update(profiles)

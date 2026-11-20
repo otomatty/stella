@@ -31,6 +31,7 @@ import {
   requireReturning,
 } from "../lib/authz.js";
 import { learnerOrUnknown } from "../lib/learner-scope.js";
+import { googleAvatarUrl } from "../lib/auth-users.js";
 import { clientIp } from "../lib/audit.js";
 import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
 import { withResourceLock } from "../lib/resource-lock.js";
@@ -147,7 +148,7 @@ function toSummaryRow(
     // 新形式の提出の AI 一次レビューが記録済みか (staff だけ)。旧形式の `ai_ready` と並べて数える。
     ai_review_ready: revealDrafts && aiReviewReady,
     submitted_at: s.submittedAt.toISOString(),
-    profiles: profile,
+    profiles: profile && { ...profile, avatar_url: googleAvatarUrl(profile.avatar_url) },
   };
 }
 
