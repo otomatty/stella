@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u01-let-const@8",
-  "contentHash": "743f8132155da66719d774b7e084e4279fa3005a712adef3c7a05f87906c6fbf",
+  "contentHash": "c007b0b88b05213c7b33e323d92ea8467b33e34960de9dea5e0f2bf131d992aa",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -10,7 +10,7 @@
         "SRC-typescriptbook-values-types-variables-let-and-const",
         "SRC-typescriptbook-values-types-variables-number"
       ],
-      "usedFor": "const による変数宣言と再代入の制限、整数・小数と数値の計算の概念を参照。説明・価格と送料のサンプル・Math.floor の補足・コードの場面の台本は教材用に独自作成し、問1の解答コードは示さない",
+      "usedFor": "const による変数宣言の概念を参照。箱と名札の例、イラストを使った図解、送料に名前を付けるサンプル、コードの色分け、動画内の問題と解説、台本は教材用に独自作成。課題で最初に見るコード（問1の関数の形）を示す。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
