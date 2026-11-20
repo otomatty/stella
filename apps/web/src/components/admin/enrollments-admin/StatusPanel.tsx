@@ -24,7 +24,6 @@ import {
   Users,
   X,
 } from "@/lib/icons";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -52,7 +51,7 @@ import type { AdminProfileRow } from "@/lib/admin-users-api";
 import type { UpdateEnrollmentPatch } from "@/lib/enrollments-api";
 import { todayDateKey } from "@/lib/date-keys";
 import type { StageRow, EnrollmentRow } from "@stella/shared/cms/types";
-import { toneFromId } from "../users-admin/shared";
+import { ProfileAvatar } from "../users-admin/shared";
 import {
   ENROLLMENT_STATUS_LABEL,
   type StatusFilter,
@@ -198,11 +197,7 @@ export function StatusPanel(props: Props) {
 
         {single ? (
           <div className="mt-3 flex items-center gap-2.5">
-            <Avatar size="sm">
-              <AvatarFallback tone={toneFromId(single.id)}>
-                {(single.initials ?? single.display_name.slice(0, 1)).slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileAvatar profile={single} />
             <div className="min-w-0">
               <div className="truncate text-[14px] font-semibold">{single.display_name}</div>
               <div className="truncate text-[11.5px] text-ink-3">{single.email ?? "—"}</div>

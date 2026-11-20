@@ -2,9 +2,10 @@
  * UsersAdmin (実データ版 / デモ版 / ダイアログ) で共有する小物。
  */
 
+import { UserAvatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { AvatarTone } from "@/data/types";
-import type { ProfileRole } from "@stella/shared/cms/types";
+import type { ProfileRole, ProfileRow } from "@stella/shared/cms/types";
 
 export const ROLE_LABEL: Record<ProfileRole, string> = {
   student: "受講者",
@@ -17,6 +18,17 @@ export function toneFromId(id: string): AvatarTone {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h + id.charCodeAt(i)) % AVATAR_TONES.length;
   return AVATAR_TONES[h] ?? "c1";
+}
+
+export function ProfileAvatar({ profile }: { profile: ProfileRow }) {
+  return (
+    <UserAvatar
+      size="sm"
+      src={profile.avatar_url}
+      fallback={(profile.initials || profile.display_name.slice(0, 1)).slice(0, 2)}
+      tone={toneFromId(profile.id)}
+    />
+  );
 }
 
 export function RoleBadge({ role }: { role: ProfileRole }) {

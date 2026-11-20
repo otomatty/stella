@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authRoute } from "./auth.js";
 import { signAccessToken, verifyAccessToken } from "../lib/auth-jwt.js";
+import { getAuth } from "../lib/better-auth.js";
 import type { Env } from "../env.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -181,21 +182,69 @@ describe("Better Auth (本番の経路)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("Google ログインは Better Auth が始め、旧 Google ログインの入口は 410", async () => {
+  it("Google の写真をログイン時に保存し、写真がなくなったら次のログインで消す", async () => {
     const env = prodEnv();
     const { app } = mountTestApp(env, authRoute);
-    const start = await request(app, env, `${WEB}/api/auth/sign-in/social`, {
-      method: "POST",
-      headers: { Origin: WEB },
-      body: JSON.stringify({ provider: "google", callbackURL: `${WEB}/auth/callback` }),
-    });
-    expect(start.status).toBe(200);
-    const { url } = await json<{ url: string }>(start);
-    const google = new URL(url);
-    expect(google.hostname).toBe("accounts.google.com");
-    expect(google.searchParams.get("redirect_uri")).toBe(`${WEB}/api/auth/callback/google`);
-    expect(google.searchParams.get("state")).toBeTruthy();
+    const provider = (await getAuth(env)?.$context)?.socialProviders.find((p) => p.id === "google");
+    if (!provider) throw new Error("Google provider missing");
+    const image = "https://lh3.googleusercontent.com/a/learner";
+    vi.spyOn(provider, "validateAuthorizationCode").mockResolvedValue({ accessToken: "test" });
+    const googleUser = {
+      user: {
+        name: "受講者",
+        email: "learner@example.test",
+        emailVerified: true,
+      },
+      data: { sub: "google-123" },
+    };
+    vi.spyOn(provider, "getUserInfo")
+      .mockResolvedValueOnce({ ...googleUser, user: { ...googleUser.user, image } })
+      .mockResolvedValueOnce(googleUser);
 
+    async function login() {
+      const start = await request(app, env, `${WEB}/api/auth/sign-in/social`, {
+        method: "POST",
+        headers: { Origin: WEB },
+        body: JSON.stringify({ provider: "google", callbackURL: `${WEB}/auth/callback` }),
+      });
+      expect(start.status).toBe(200);
+      const { url } = await json<{ url: string }>(start);
+      const google = new URL(url);
+      expect(google.hostname).toBe("accounts.google.com");
+      expect(google.searchParams.get("redirect_uri")).toBe(`${WEB}/api/auth/callback/google`);
+      const state = google.searchParams.get("state");
+      expect(state).toBeTruthy();
+      const cookie = start.headers
+        .getSetCookie()
+        .map((value) => value.split(";")[0])
+        .join("; ");
+      const callback = await request(
+        app,
+        env,
+        `${WEB}/api/auth/callback/google?code=test&state=${state}`,
+        {
+          headers: { Cookie: cookie },
+        },
+      );
+      expect(callback.headers.get("location")).toBe(`${WEB}/auth/callback`);
+    }
+
+    const stored = db.sqlite.prepare(`
+      SELECT auth_users.image, profiles.avatar_url, profiles.display_name
+      FROM auth_users JOIN profiles USING (id) WHERE id = 'learner'
+    `);
+    await login();
+    expect(stored.get()).toEqual({ image, avatar_url: image, display_name: "受講者" });
+    db.sqlite.exec(
+      "UPDATE profiles SET name_source = 'user', display_name = '自分の名前' WHERE id = 'learner'",
+    );
+    await login();
+    expect(stored.get()).toEqual({ image: null, avatar_url: null, display_name: "自分の名前" });
+  });
+
+  it("旧 Google ログインの入口は 410", async () => {
+    const env = prodEnv();
+    const { app } = mountTestApp(env, authRoute);
     expect((await request(app, env, `${WEB}/api/auth/google`)).status).toBe(410);
     expect((await request(app, env, `${WEB}/api/auth/google/callback?code=x`)).status).toBe(410);
   });

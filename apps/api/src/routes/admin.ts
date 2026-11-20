@@ -37,7 +37,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { auditLogInsert, clientIp, recordAudit } from "../lib/audit.js";
-import { inviteUser } from "../lib/auth-users.js";
+import { googleAvatarUrl, inviteUser } from "../lib/auth-users.js";
 import {
   ApiError,
   errorResponse,
@@ -118,6 +118,7 @@ adminRoute.get("/api/admin/users", async (c) => {
         role: r.role,
         display_name: r.displayName,
         initials: r.initials,
+        avatar_url: googleAvatarUrl(r.avatarUrl),
         email: r.email,
         disabled: r.disabled,
         created_at: r.createdAt,

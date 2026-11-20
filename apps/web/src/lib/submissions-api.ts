@@ -80,7 +80,7 @@ interface SubmissionRow {
   debugging_record?: Submission["debuggingRecord"];
   support_log?: Submission["supportLog"];
   files?: { path: string; content: string }[];
-  profiles?: { display_name: string; initials: string | null } | null;
+  profiles?: { display_name: string; initials: string | null; avatar_url?: string | null } | null;
   ai_review_status?: Submission["aiReviewStatus"];
   ai_review_ready?: boolean;
   review_source?: Submission["reviewSource"];
@@ -114,6 +114,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
     studentId: row.student_id,
     studentName: name,
     studentInitials: initials,
+    studentAvatarUrl: profile?.avatar_url,
     avatarTone: toneFromStudentId(row.student_id),
     stageTitle: row.stage_title,
     sectionTitle: row.section_title ?? undefined,
