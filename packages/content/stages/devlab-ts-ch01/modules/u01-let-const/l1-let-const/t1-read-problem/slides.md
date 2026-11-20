@@ -1,17 +1,17 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-typescriptbook-functions-function-declaration]
 id: 1-1-1
-title: 問題の読み方
-takeaway: "関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。"
+title: 関数のしくみ
+takeaway: "関数は、値を受け取り、決まった処理をして、値を返すまとまりです。"
 introduces: ["関数", "引数", "戻り値", "return", "型注釈", "number", "export", "function", "文字列"]
 requires: []
 header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-1 問題の読み方
+# 1-1-1 関数のしくみ
 
-<!-- ノート: 問題の読み方を、コードと値の動きで確かめます。 -->
+<!-- ノート: 関数のしくみを、コードと値の動きで確かめます。 -->
 
 ---
 
@@ -27,7 +27,7 @@ header: "開発ラボG 事前課題 第1部"
 
 # 覚えること
 
-関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。
+関数は、値を受け取り、決まった処理をして、値を返すまとまりです。
 
 引数は受け取る値、戻り値は返す値です。
 
@@ -65,6 +65,6 @@ export function confirmedQuantity(quantity: number): number {
 <!-- _class: summary -->
 # まとめ
 
-関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。
+関数は、値を受け取り、決まった処理をして、値を返すまとまりです。
 
-<!-- ノート: 関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。 -->
+<!-- ノート: 関数は、値を受け取り、決まった処理をして、値を返すまとまりです。 -->

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@7",
-  "contentHash": "1cdc7accc3fc2203775fa78fb528364971bde481a61ce5a3b5cf353a62698d8f",
+  "unitId": "devlab-ts-ch01/u01-let-const@8",
+  "contentHash": "314e5c75c6ddb71accceb2ff62c9d5b44a71a4af29c05d019aa6c5ee0f63ac4c",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -49,7 +49,7 @@
         "SRC-typescriptbook-values-types-variables-type-annotation",
         "SRC-typescriptbook-functions-function-declaration"
       ],
-      "usedFor": "関数または数値・文字列の概念を参照。ガイドの説明とテストの値を素材に、業務の例とコードの場面の台本を独自作成。課題の解答コードは示さない",
+      "usedFor": "関数宣言と型注釈の概念を参照。通販の送料と包装代の例、イラストを使った図解、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
