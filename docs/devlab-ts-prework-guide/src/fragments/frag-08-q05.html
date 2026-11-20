@@ -917,8 +917,13 @@ export function loadInBatches() {
       <span class="q-new">新しく出てくる書き方：値を返さずに関数を抜ける <code>return;</code></span>
     </header>
     <div class="task">
-      <pre><code class="language-typescript">import { timeout } from "./q01-promise";
-import { tryAsync, withRetry } from "./q04-async-errors";
+      <pre><code class="language-typescript">function timeout() {}
+
+type Result&lt;T&gt; = unknown;
+
+function tryAsync() {}
+
+function withRetry() {}
 
 export type User = { id: number; name: string };
 export type Post = { id: number; userId: number; title: string };
@@ -942,7 +947,7 @@ export function formatDashboard() {}</code></pre>
         <li><code>loadDashboard(api, ids)</code>：<code>ids</code> のそれぞれについて、<code>getUser</code> と <code>getPosts</code> をすべて同時に呼びます。ユーザーを取得できた人だけを <code>ids</code> の順に並べ、<code>{ name, postCount }</code> の配列を返します。投稿の取得は、失敗したら 1 回だけやり直します（全部で 2 回まで）。2 回とも失敗した人の <code>postCount</code> は <code>null</code> です。ユーザーの取得は <code>tryAsync</code> で包み、投稿の取得のやり直しには 08章 q04 の応用の <code>withRetry</code> を使います。</li>
         <li><code>formatDashboard(rows)</code>：<code>loadDashboard</code> の結果を、1 人 1 行の文字列にして、改行（<code>\n</code>）でつなぎます。投稿の数が分かる人は <code>"山田: 投稿 3件"</code>、<code>postCount</code> が <code>null</code> の人は <code>"佐藤: 投稿数を取得できませんでした"</code> と書きます。<code>rows</code> が空なら <code>"表示できるユーザーがいません"</code> を返します。</li>
       </ol>
-      <p><code>timeout</code>・<code>tryAsync</code>・<code>withRetry</code> は、ファイルの先頭で import してあります。08章 q01 と q04 の応用が解けていないと、この問題のテストも通りません。テストは自分で用意した <code>api</code> を渡します。その <code>api</code> では、山田の投稿が 2 件、鈴木の投稿が 1 件で、呼ばれた順を記録します。</p>
+      <p>q01 の <code>timeout</code> と、q04 の <code>Result&lt;T&gt;</code>・<code>tryAsync</code>・<code>withRetry</code> を、このファイルの中でもう一度書きます。<code>export</code> は付けません。テストは自分で用意した <code>api</code> を渡します。その <code>api</code> では、山田の投稿が 2 件、鈴木の投稿が 1 件で、呼ばれた順を記録します。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <dl class="eg">

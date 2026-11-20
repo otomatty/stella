@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch05/u07-callbacks@1",
-  "contentHash": "4951711e290a9a5cb1bb83b16ef1fc59e333e0d9886ee22940323736fafbfec1",
+  "contentHash": "fac3a7d4f37aa3da5bbe89c8907450bf898171e28a850097f8e70c2b851da0b6",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

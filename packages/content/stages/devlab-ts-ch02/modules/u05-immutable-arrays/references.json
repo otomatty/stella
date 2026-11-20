@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch02/u05-immutable-arrays@1",
-  "contentHash": "ee8c44713f932f75301303de431ff1a7c0a63a8b7831b41837271322f04a7024",
+  "contentHash": "53ac0d3668f773e527827a7a819282e20211ce50fdee6bb100856661d96a4d15",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

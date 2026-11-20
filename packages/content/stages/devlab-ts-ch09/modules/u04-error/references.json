@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch09/u04-error@1",
-  "contentHash": "deed00b404ec1b506db9ac0a78a2c531657a2343a7dfcb521de0c885fd7af677",
+  "contentHash": "e3f42e7ba3cd2e5aa1de3053acd734fd31e0e369ff7ec79fb012afff7a30e29c",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

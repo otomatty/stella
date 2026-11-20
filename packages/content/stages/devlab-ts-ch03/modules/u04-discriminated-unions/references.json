@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch03/u04-discriminated-unions@1",
-  "contentHash": "b188f686f8af8475d2fbc3d3b921af6582cd8d411577a18cecf56c699055e57c",
+  "contentHash": "5452696e8172f12b593c5aa58d3089b6c976aa48fff5631373c8a9df52d93c84",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

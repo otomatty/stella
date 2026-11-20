@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch08/u04-async-errors@1",
-  "contentHash": "86edbe3471be5cd41321ad60637cdfeb9fdcc79019f2a9dc630685fddcec1bac",
+  "contentHash": "8cb6cea0d4e39a9fe29b61c1fe3919466443bb319d82841ef79ce38f8bc636b6",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

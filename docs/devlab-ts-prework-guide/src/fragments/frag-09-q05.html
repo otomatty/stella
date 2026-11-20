@@ -28,7 +28,7 @@
     <article class="item">
       <div class="item-h"><code class="tok">export と import</code><h4>ファイルどうしをつなぐ（モジュール）</h4></div>
       <p>TypeScript では、<code>export</code> や <code>import</code> を使う 1 つ 1 つのファイルをモジュールと呼びます。ファイルの中で作った関数や定数は、そのままではそのファイルの中でしか使えません。ほかのファイルに渡したいものには、前に <code>export</code> を付けます。受け取る側のファイルでは、<code>import</code> の文で名前とファイルの場所を書いて読み込みます。</p>
-      <p><code>export function</code> は 00章から書いてきました。<code>import { sum } from "./q04-array-type"</code> は、02章 q08 の総合問題でまねて書きました。この番号では、この 2 つのしくみを中心に学びます。</p>
+      <p><code>export function</code> は 00章から書いてきました。この番号では <code>export</code> のしくみを学び、問6 で初めて自分で <code>import</code> を書きます。</p>
       <p>次のサンプルは、送料を計算するファイル <code>shipping.ts</code> と、それを使う注文のファイル <code>order.ts</code> の 2 つに分かれています。</p>
       <div class="sample">
         <span class="cap">サンプル：src/shipping.ts</span>
@@ -339,7 +339,7 @@ export default function greet(name: string): string {
     <h3 class="sub">新しい書き方</h3>
     <article class="item">
       <div class="item-h"><code class="tok">"./shared/q05-modules.lib"</code><h4>フォルダーの中のファイルを指す</h4></div>
-      <p><code>from</code> の後ろには、読み込むファイルの場所を、このファイルから見た道順で書きます。同じフォルダーの中にある、別のフォルダーのファイルを読むときは、<code>./</code> のあとにフォルダーの名前と <code>/</code> を続けます。名前付き import の書き方は、02章 q08 の総合問題と同じです。</p>
+      <p><code>from</code> の後ろには、読み込むファイルの場所を、このファイルから見た道順で書きます。同じフォルダーの中にある、別のフォルダーのファイルを読むときは、<code>./</code> のあとにフォルダーの名前と <code>/</code> を続けます。名前付き import では、受け取る名前を <code>{ }</code> の中に書きます（問1 のサンプル）。</p>
       <div class="sample">
         <span class="cap">サンプル：src/shared/stock.lib.ts</span>
         <pre><code class="language-typescript">// 関数 isInStock を作る。数値の stock を受け取り、true か false を返す。ほかのファイルから使えるようにする
@@ -367,7 +367,7 @@ const label = isInStock(3) ? "在庫あり" : "在庫なし";
         <table>
           <thead><tr><th>書き方</th><th>意味</th><th>この番号での例</th></tr></thead>
           <tbody>
-            <tr><td><code>./</code></td><td>このファイルと同じフォルダー</td><td><code>"./q04-error"</code>（総合 3）</td></tr>
+            <tr><td><code>./</code></td><td>このファイルと同じフォルダー</td><td><code>"./q05-modules-price"</code>（総合 3）</td></tr>
             <tr><td><code>./shared/</code></td><td>同じフォルダーの中の <code>shared</code> フォルダー</td><td><code>"./shared/q05-modules.lib"</code></td></tr>
             <tr><td><code>../</code></td><td>1 つ上のフォルダー</td><td>テストの <code>"../src/q05-06-with-tax"</code></td></tr>
           </tbody>
@@ -1119,16 +1119,14 @@ class Stack {
           <tbody>
             <tr><td><code>src/q05-modules-price.ts</code></td><td><code>TAX_RATE</code> と <code>priceWithTax</code> を名前付き export（総合 1）</td></tr>
             <tr><td><code>src/q05-modules-format.ts</code></td><td><code>formatYen</code> をデフォルト export（総合 2）</td></tr>
-            <tr><td><code>src/q05-modules-cart.ts</code></td><td><code>CartItem</code>、<code>addItem</code>、<code>cartTotal</code>、<code>cartSummary</code>。<code>./q05-modules-price</code>、<code>./q05-modules-format</code>、<code>./q04-error</code> から import（総合 3）</td></tr>
+            <tr><td><code>src/q05-modules-cart.ts</code></td><td><code>CartItem</code>、<code>addItem</code>、<code>cartTotal</code>、<code>cartSummary</code>。<code>./q05-modules-price</code> と <code>./q05-modules-format</code> から import。<code>ValidationError</code> はこのファイルで定義（総合 3）</td></tr>
             <tr><td><code>src/q05-modules.ts</code></td><td>上の 3 つのファイルの再エクスポートだけ（総合 4）</td></tr>
           </tbody>
         </table>
       </div>
       <div class="lbl-block">
         <span class="lbl">移す元：src/q05-modules.ts のコード</span>
-        <pre><code class="language-typescript">import { ValidationError } from "./q04-error";
-
-export const TAX_RATE = 0.1;
+        <pre><code class="language-typescript">export const TAX_RATE = 0.1;
 
 export type CartItem = { name: string; price: number; quantity: number };
 
@@ -1212,13 +1210,13 @@ export default function formatYen(amount: number): string {
       <span class="q-new">新しい書き方はありません。</span>
     </header>
     <div class="task">
-      <pre><code class="language-typescript">export {};</code></pre>
+      <pre><code class="language-typescript">export class ValidationError {}</code></pre>
       <p>型 <code>CartItem</code> と、<code>addItem</code>・<code>cartTotal</code>・<code>cartSummary</code> を <code>q05-modules-cart.ts</code> に移し、名前付き export にします。</p>
       <ol>
         <li><code>cartTotal</code> は <code>priceWithTax</code> を、<code>cartSummary</code> は <code>formatYen</code> を使います。総合 1 の <code>q05-modules-price.ts</code> から <code>priceWithTax</code>（名前付き export）を、総合 2 の <code>q05-modules-format.ts</code> から <code>formatYen</code>（デフォルト export）を import します。</li>
-        <li><code>addItem</code> に、元のコードにない確かめを足します。<code>item.quantity</code> が 1 以上の整数でなければ、<code>new ValidationError("quantity", "数量は1以上の整数にしてください")</code> を投げます。<code>ValidationError</code> は <code>"./q04-error"</code> から import します。</li>
+        <li><code>addItem</code> に、元のコードにない確かめを足します。<code>item.quantity</code> が 1 以上の整数でなければ、<code>new ValidationError("quantity", "数量は1以上の整数にしてください")</code> を投げます。<code>ValidationError</code> は、このファイルにあるクラスの骨組みに書き足します。</li>
       </ol>
-      <p><code>ValidationError</code> は、09章 q04 の総合問題（<code>q04-error.ts</code>）で作ったクラスです。q04 が解けていないと、この問題のテストも通りません。</p>
+      <p>q04 の総合問題で作った <code>ValidationError</code> を、このファイルの中でもう一度書きます。<code>Error</code> を継承し、<code>constructor(field, message)</code> で受け取った項目名を <code>readonly field: string</code> に持たせます。<code>name</code> は <code>"ValidationError"</code> にします。テストがこのクラスを直接読み込むので、名前付き <code>export</code> を付けます。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <p>テストでは、次の 2 つの商品が入ったカートを使います。</p>
@@ -1240,14 +1238,14 @@ export default function formatYen(amount: number): string {
     <div class="hints">
       <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// q05-modules-price.ts の priceWithTax を、このファイルで使えるようにする
 // q05-modules-format.ts のデフォルト export を、formatYen という名前でこのファイルで使えるようにする
-// q04-error.ts の ValidationError を、このファイルで使えるようにする
+// このファイルに ValidationError を書く。Error を継承し、名前付き export にする
 
 // （型 CartItem と、addItem・cartTotal・cartSummary を、export ごと q05-modules.ts から移す）
 
 // addItem の中の先頭に、次の確かめを足す
   // もし item.quantity が整数でないか、1 より小さいなら
     // "quantity" と "数量は1以上の整数にしてください" を渡した ValidationError を投げる</code></pre></details>
-      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問6、2 行目は問8 と同じ形です。どのファイルも同じ <code>src</code> フォルダーにあるので、場所は <code>"./q05-modules-price"</code> のように <code>./</code> から書きます。3 行目は、<code>q05-modules.ts</code> の先頭にある import の行を、そのまま移します。整数かどうかは <code>Number.isInteger()</code>、「〜でない」は <code>!</code> です（どちらも 01章 q04 の応用）。「〜か」は <code>||</code>（01章 q01 問15）で書けます。エラーを投げるのは <code>throw new</code>（01章 q04 問8）です。</p></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は問6、2 行目は問8 と同じ形です。どのファイルも同じ <code>src</code> フォルダーにあるので、場所は <code>"./q05-modules-price"</code> のように <code>./</code> から書きます。3 行目のクラスは、q04 の総合問題と同じ形です。整数かどうかは <code>Number.isInteger()</code>、「〜でない」は <code>!</code> です（どちらも 01章 q04 の応用）。「〜か」は <code>||</code>（01章 q01 問15）で書けます。エラーを投げるのは <code>throw new</code>（01章 q04 問8）です。</p></details>
     </div>
   </section>
 
@@ -1255,11 +1253,11 @@ export default function formatYen(amount: number): string {
   <section class="q" id="c09-q05-d">
     <header class="q-h">
       <span class="q-n">総合 4</span><span class="q-t">q05-modules.ts を再エクスポートだけにする</span>
-      <span class="q-new">新しく出てくる書き方：<code>export * from</code></span>
+      <span class="q-new">この問題で使う書き方は、公開する名前を選んで再エクスポートすることです。</span>
     </header>
     <div class="task">
       <pre><code class="language-typescript">// このファイル（q05-modules.ts）には、次の3つの re-export だけを書く（関数や型の定義は残さない）
-//   - q05-modules-cart.ts の export をすべて re-export する（export * from …）
+//   - q05-modules-cart.ts の型 CartItem と addItem・cartTotal・cartSummary を名前付きで re-export する
 //   - q05-modules-price.ts の TAX_RATE と priceWithTax を re-export する
 //   - q05-modules-format.ts のデフォルト export を、formatYen という名前で re-export する
 //
@@ -1267,7 +1265,7 @@ export default function formatYen(amount: number): string {
 //
 // 説明すること（答えは、この下に // のコメントで書く）
 // - 名前付き export とデフォルト export の違い。自分ならどちらを使うか、その理由</code></pre>
-      <p>総合 1〜3 でコードを移したら、<code>q05-modules.ts</code> から関数や型の定義と、先頭の import の行を消します。残すのは、上のコメントにある 3 つの再エクスポートだけです。テストは、<code>import * as shop from "../src/q05-modules"</code> で読み込んで確かめます。</p>
+      <p>総合 1〜3 でコードを移したら、<code>q05-modules.ts</code> から定数・関数・型の定義を消します。残すのは、上のコメントにある 3 つの再エクスポートだけです。テストは、<code>import * as shop from "../src/q05-modules"</code> で読み込んで確かめます。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <dl class="eg">
@@ -1282,10 +1280,10 @@ export default function formatYen(amount: number): string {
       <p>「説明すること」の答えは、コードを書き終えてから、自分の言葉でコメントに書きます。考える手がかりとして、<code>q05-modules-format.ts</code> の <code>formatYen</code> を名前付き export に変えてみて、どのファイルのどの import を直す必要が出るかを見てみましょう。試したら、元に戻します。</p>
     </div>
 
-    <h3 class="sub">新しい書き方</h3>
+    <h3 class="sub">この問題で使う書き方</h3>
     <article class="item">
-      <div class="item-h"><code class="tok">export * from "…"</code><h4>export をすべて受け渡す</h4></div>
-      <p><code>export * from</code> と書くと、そのファイルの名前付き export を、すべて同じ名前のまま受け渡します。型も一緒に受け渡されます。問15 の <code>export * as 名前 from</code> は 1 つのまとまりにして渡しますが、こちらはまとまりにせず、1 つずつの名前のまま渡します。</p>
+      <div class="item-h"><code class="tok">export { … } from "…"</code><h4>名前を選んで受け渡す</h4></div>
+      <p><code>export { … } from</code> の <code>{ }</code> に、受け渡す名前を <code>,</code> で区切って並べます（問11）。型の名前の前には <code>type</code> を付けます（問14）。</p>
       <div class="sample">
         <span class="cap">サンプル：src/shipping.ts（問9 と同じ）</span>
         <pre><code class="language-typescript">// 送料が無料になる金額 FREE_LINE を作り、5000 を入れる。ほかのファイルから使えるようにする
@@ -1297,8 +1295,8 @@ export function shippingFee(total: number): number {
   return total &gt;= FREE_LINE ? 0 : 500;
 }</code></pre>
         <span class="cap">サンプル：src/shop.ts</span>
-        <pre><code class="language-typescript">// shipping.ts の export をすべて、このファイルから受け渡す
-export * from "./shipping";</code></pre>
+        <pre><code class="language-typescript">// shipping.ts の FREE_LINE と shippingFee を、このファイルから受け渡す
+export { FREE_LINE, shippingFee } from "./shipping";</code></pre>
         <span class="cap">サンプル：src/order.ts</span>
         <pre><code class="language-typescript">// shop.ts の FREE_LINE と shippingFee を、このファイルで使えるようにする
 import { FREE_LINE, shippingFee } from "./shop";
@@ -1309,17 +1307,17 @@ const left = FREE_LINE - 4000;
 const fee = shippingFee(4000);
 // 結果: left は 1000、fee は 500</code></pre>
       </div>
-      <p class="memo"><b>よくある間違い</b><code>export * from</code> が受け渡すのは、名前付き export だけです。デフォルト export は受け渡されません。デフォルト export も渡したいときは、問13 の <code>export { default as … } from</code> を別に書きます。</p>
+      <p class="memo"><b>よくある間違い</b><code>export * from</code> を使うと、カートのファイルの <code>ValidationError</code> まで受け渡します。この問題では、受け渡す名前だけを <code>{ }</code> に並べます。</p>
     </article>
 
     <div class="hints">
-      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// q05-modules-cart.ts の export をすべて、このファイルから受け渡す
+      <details class="hint"><summary>ヒント 1<span>日本語の手順</span></summary><p>やることを、サンプルと同じ言い回しで書きました。1 行ずつコードに直してください。</p><pre><code class="language-typescript">// q05-modules-cart.ts の型 CartItem と addItem・cartTotal・cartSummary を、このファイルから受け渡す
 // q05-modules-price.ts の TAX_RATE と priceWithTax を、このファイルから受け渡す
 // q05-modules-format.ts のデフォルト export を、formatYen という名前でこのファイルから受け渡す
 
 // 説明すること（答えは、この下に // のコメントで書く）
 // - 名前付き export とデフォルト export の違い。自分ならどちらを使うか、その理由</code></pre></details>
-      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目は総合 4 のサンプルの <code>shop.ts</code>、2 行目は問11 の形で名前を 2 つ並べたもの、3 行目は問13 と同じ形です。型 <code>CartItem</code> は、1 行目で一緒に受け渡されます。</p></details>
+      <details class="hint"><summary>ヒント 2<span>コードへの直し方</span></summary><p>1 行目と 2 行目は総合 4 のサンプルの <code>shop.ts</code> と同じ形です。1 行目の <code>CartItem</code> には <code>type</code> を付けます。3 行目は問13 と同じ形です。</p></details>
     </div>
   </section>
 </section>

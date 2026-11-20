@@ -8599,8 +8599,9 @@ cart.<span class="hljs-title function_">add</span>(<span class="hljs-string">&qu
       <span class="q-new">新しい書き方はありません。</span>
     </header>
     <div class="task">
-      <pre><code class="hl"><span class="hljs-keyword">import</span> { clamp } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./q02-params-return&quot;</span>;
-<span class="hljs-keyword">import</span> { sumAll } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./q05-rest-params&quot;</span>;
+      <pre><code class="hl"><span class="hljs-keyword">function</span> <span class="hljs-title function_">clamp</span>(<span class="hljs-params"></span>) {}
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">sumAll</span>(<span class="hljs-params"></span>) {}
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">type</span> <span class="hljs-title class_">Student</span> = { <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">grade</span>: <span class="hljs-built_in">number</span>; <span class="hljs-attr">score</span>: <span class="hljs-built_in">number</span> };
 
@@ -8621,7 +8622,7 @@ cart.<span class="hljs-title function_">add</span>(<span class="hljs-string">&qu
         <li><code>topN(students, n)</code>：点数の高い順に <code>n</code> 人を返します。同じ点数なら元の順のままです。<code>n</code> が負なら空の配列、人数より多ければ全員です。<code>n</code> は、q02 の <code>clamp</code> で 0 以上・生徒の人数以下に収めてから使います。</li>
         <li><code>averageBy(students, keyFn)</code>：<code>keyFn(生徒)</code> が返す文字列ごとに、点数の平均を小数第 1 位までに四捨五入して返します。戻り値は <code>{ [key: string]: number }</code> です。点数の合計は、q05 の <code>sumAll</code> で出します。<code>groupBy</code> を使うと短く書けます。</li>
       </ol>
-      <p><code>clamp</code> と <code>sumAll</code> は、ファイルの先頭で import してあります。q02 と q05 が解けていないと、この問題のテストも通りません。テストでは、次の 5 人の配列を使います。山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・62 点）、高橋（2 年・80 点）、田中（3 年・45 点）。</p>
+      <p>q02 の <code>clamp</code> と q05 の <code>sumAll</code> を、このファイルの中でもう一度書きます。<code>export</code> は付けません。テストでは、次の 5 人の配列を使います。山田（1 年・80 点）、佐藤（2 年・95 点）、鈴木（1 年・62 点）、高橋（2 年・80 点）、田中（3 年・45 点）。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <dl class="eg">

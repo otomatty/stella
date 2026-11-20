@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch02/u03-destructuring-spread@1",
-  "contentHash": "8c3ccd8ef0b6a0340dcfb404dc031608e6a5b199c7b7d14ba45fb1493bc329fa",
+  "contentHash": "9892f9c39538370dd619c88840db3286f450d825194a00972cc34776e12826eb",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

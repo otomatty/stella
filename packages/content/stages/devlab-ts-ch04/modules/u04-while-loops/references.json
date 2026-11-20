@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch04/u04-while-loops@1",
-  "contentHash": "37531bc97f2b6e74c18da90a5dd0546b60efd75af5f34b400aafff58ebd84e63",
+  "contentHash": "f4102e6a3a0781de8eaf44063769e9525666457df3e24803481d3b185960e27d",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

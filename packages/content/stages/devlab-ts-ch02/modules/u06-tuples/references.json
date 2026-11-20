@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch02/u06-tuples@1",
-  "contentHash": "b0d2a155b1c178e0eaa7106913f055f6dd93bc84742e51a7234388b286c68362",
+  "contentHash": "b1af3f22e13a996de848d2fb0d7aaf9400e559caffd91ec2e60bed09748016a8",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

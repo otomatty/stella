@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch05/u09-type-guards@1",
-  "contentHash": "58531025148b36e84d34e0b392650f567fb718dfd6a8be20bf8d74185ec1f432",
+  "contentHash": "4650c5a523f920bb26d93d30fcbdaec81df355cf5a3d65aa0839302740e1013e",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

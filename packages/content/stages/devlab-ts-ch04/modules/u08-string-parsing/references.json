@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch04/u08-string-parsing@1",
-  "contentHash": "023ded9761df91af4a328b06cb35d9c092f8fc1164e32c6b3db8fa8c8897b8b9",
+  "contentHash": "e92c31843b65bdb569e62d093e87b2e37b761433c950b39056ee4b307ee1b8e9",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

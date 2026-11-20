@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch05/u06-destructured-parameters@1",
-  "contentHash": "69538c325e5cec02988fb1a4bd42b94aec6269d0663bce117f181478a7fe976c",
+  "contentHash": "00c086205970de8267db36c2e25c97062c3fab46f61295a888d8635d67122a41",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

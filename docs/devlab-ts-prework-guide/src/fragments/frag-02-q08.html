@@ -852,10 +852,10 @@ export function lookupOr() {
   <section class="q" id="c02-q08-a">
     <header class="q-h">
       <span class="q-n">総合</span><span class="q-t">在庫の集計</span>
-      <span class="q-new">新しく出てくる書き方：<code>import { sum } from "./q04-array-type"</code>（ほかのファイルの関数を使う）</span>
+      <span class="q-new">この問題で使う書き方は、同じファイルの中の関数を呼ぶことです。</span>
     </header>
     <div class="task">
-      <pre><code class="language-typescript">import { sum } from "./q04-array-type";
+      <pre><code class="language-typescript">function sum() {}
 
 export type Item = {
   name: string;
@@ -881,7 +881,7 @@ export function inventoryReport() {}</code></pre>
         <li><code>applySale(items, category, percentOff)</code> は、<code>category</code> の商品だけを <code>percentOff</code> パーセント引きの価格にした、新しい配列を返します。1 円未満は切り捨てます。ほかのカテゴリの商品は、そのまま入れます。小数の誤差を避けるため、<code>price * (100 - percentOff) / 100</code> の順で計算します。</li>
         <li><code>inventoryReport(items)</code> は、商品数・在庫切れの数・在庫金額の合計を <code>"商品数 4、在庫切れ 1、在庫金額 24,500円"</code> の形の文字列にして返します。在庫金額は 3 桁ごとにカンマで区切ります。</li>
       </ol>
-      <p>5. の在庫金額は、q04 の総合問題で書いた <code>sum</code> で合計します。<code>sum</code> は、ファイルの先頭で読み込んであります。q04 の総合問題が解けていないと、この問題のテストも通りません。</p>
+      <p>q04 の総合問題で書いた <code>sum</code> を、このファイルの中でもう一度書きます。<code>export</code> は付けません。<code>readonly number[]</code> を受け取って合計を返し、空の配列なら 0 を返します。5. の在庫金額は、この <code>sum</code> を呼んで合計します。</p>
       <div class="lbl-block">
         <span class="lbl">テストで確かめる値</span>
         <p>テストでは、次の 4 つの商品を使います。</p>
@@ -906,29 +906,25 @@ export function inventoryReport() {}</code></pre>
       </div>
     </div>
 
-    <h3 class="sub">新しい書き方</h3>
+    <h3 class="sub">この問題で使う書き方</h3>
     <article class="item">
-      <div class="item-h"><code class="tok">import { sum } from "…"</code><h4>ほかのファイルが export した関数を使う</h4></div>
-      <p>ほかのファイルで <code>export</code> した関数を、このファイルで使えるようにする書き方です。<code>{ }</code> の中に使う名前を、<code>from</code> の後ろにファイルの場所を書きます。この問題では、ファイルの先頭にもう書いてあります。自分で書き足す必要はありません。<code>sum</code> は、ほかの関数と同じように呼べます。</p>
+      <div class="item-h"><code class="tok">関数名(引数)</code><h4>同じファイルの中の関数を呼ぶ</h4></div>
+      <p>同じファイルに書いた関数は、関数名と引数を書くだけで呼べます。そのファイルの中だけで使う関数には <code>export</code> を付けません。</p>
       <div class="sample"><span class="cap">サンプル</span>
-        <pre><code class="language-typescript">// q04-array-type.ts の sum を、このファイルで使えるようにする
-import { sum } from "./q04-array-type";
+        <pre><code class="language-typescript">// 関数 subtotal を作る。数値の price と quantity を受け取り、小計を返す
+function subtotal(price: number, quantity: number): number {
+  // 単価に個数を掛けた金額を返す
+  return price * quantity;
+}
 
-// 注文の金額の配列 amounts を作り、1200 と 800 と 500 を入れる
-const amounts = [1200, 800, 500];
-// total を作り、amounts を sum で合計したものを入れる
-const total = sum(amounts);
-// 結果: total は 2500</code></pre>
+// 関数 orderTotal を作る。数値の price、quantity、shippingFee を受け取り、送料込みの金額を返す
+export function orderTotal(price: number, quantity: number, shippingFee: number): number {
+  // 同じファイルに書いた subtotal を呼び、送料を足した金額を返す
+  return subtotal(price, quantity) + shippingFee;
+}
+// 結果: orderTotal(500, 3, 400) は 1900</code></pre>
       </div>
-      <figure class="anat">
-        <pre>import { <span class="seg"><i>1</i>sum</span> } from <span class="seg"><i>2</i>"./q04-array-type"</span>;</pre>
-        <ol>
-          <li><span>使う関数の名前です。読み込む先のファイルで <code>export</code> している名前と同じにします。</span></li>
-          <li><span>読み込む先のファイルの場所です。<code>./</code> は「このファイルと同じフォルダー」という意味です。<code>.ts</code> は付けません。</span></li>
-        </ol>
-      </figure>
-      <p>ここでは、まねて書ければ十分です。</p>
-      <p class="more">09章 q05（import と export）</p>
+      <p class="more">ファイルを分けて関数を使う書き方は、09章 q05（import と export）で学びます。</p>
     </article>
 
     <div class="hints">

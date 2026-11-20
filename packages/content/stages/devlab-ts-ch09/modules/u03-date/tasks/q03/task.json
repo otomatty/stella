@@ -130,8 +130,7 @@
     "eslint.config.js",
     ".prettierrc.json",
     ".prettierignore",
-    "tests/**",
-    "src/shared/**"
+    "tests/**"
   ],
   "checks": {
     "lint": true,

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch02/u08-index-signatures@1",
-  "contentHash": "0d418a30fe3368a07cf434b6408c015da8a8aec2f8b63b2aa3c335a2fafe1ee6",
+  "contentHash": "ee7b7ee1c44fda6c6c9f84cd0d8441920de1859195bece7c14479a7a271ac081",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

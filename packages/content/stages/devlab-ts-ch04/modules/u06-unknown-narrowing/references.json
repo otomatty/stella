@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch04/u06-unknown-narrowing@1",
-  "contentHash": "ccbc7069d9566bf866e4f699f20c3b05736a38c40831807d5220882e44a00fea",
+  "contentHash": "0ae432a07772e87ddd171520f0721043c51e8f2f42618576368abe58bf8b5fb9",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

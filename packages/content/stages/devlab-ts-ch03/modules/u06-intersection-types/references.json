@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch03/u06-intersection-types@1",
-  "contentHash": "ed52a0ca1a329c04dbedd840c7a11f84ea09e437a90d8ec97601360f4029f610",
+  "contentHash": "0618bc75859bd99ae9adb42880ff853ef3f24c5fd5dfd4e8a4e8c9927ec21e9a",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
