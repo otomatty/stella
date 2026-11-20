@@ -632,6 +632,58 @@ describe("動画レッスンのコメント API", () => {
     expect((await list(`&scope=orphaned&include=${second.id}`)).threads).toEqual([]);
   });
 
+  it("1000 件より古いスレッドも、同じ教材の先頭で表示条件に合うときだけ include で返す", async () => {
+    const old = await create(other, { positionSec: 11 });
+    const orphaned = await create(learner, { positionSec: 25 });
+    const foreign = await create(learner, { lessonId: lessons.legacy });
+    const reply = await create<CommentReply>(learner, { parentId: old.id });
+    db.sqlite
+      .prepare("UPDATE lessons SET video_path = 'new.mp4', video_scenes = ? WHERE id = 'video'")
+      .run(JSON.stringify([initialScenes[0], { ...initialScenes[1], startSec: 12 }]));
+    db.sqlite.exec(`
+      UPDATE lesson_comments SET created_at = 0;
+      WITH RECURSIVE numbers(n) AS (
+        SELECT 1 UNION ALL SELECT n + 1 FROM numbers WHERE n < 1000
+      )
+      INSERT INTO lesson_comments (id, lesson_id, user_id, body, created_at, video_path, position_sec)
+      SELECT 'recent-' || n, 'video', 'learner', 'コメント', n, 'new.mp4', 5 FROM numbers;
+    `);
+
+    const firstPage = await list("&limit=1&sort=new");
+    expect(firstPage.threads.map(({ id }) => id)).toEqual(["recent-1000"]);
+    expect(firstPage.total).toBe(1000);
+    expect(firstPage.markers).toHaveLength(1000);
+    expect(firstPage.orphaned_count).toBe(0);
+
+    const included = await list(`&limit=1&sort=new&include=${old.id}`);
+    expect(included).toEqual({
+      ...firstPage,
+      threads: [
+        expect.objectContaining({
+          id: old.id,
+          state: "current",
+          scene_id: "search",
+          position_sec: 13,
+          replies: [expect.objectContaining({ id: reply.id })],
+        }),
+        ...firstPage.threads,
+      ],
+    });
+    for (const query of [
+      `&include=${foreign.id}`,
+      `&include=${reply.id}`,
+      `&scope=active&include=${orphaned.id}`,
+      `&filter=mine&include=${old.id}`,
+      `&filter=scene&sceneId=intro&include=${old.id}`,
+    ]) {
+      expect(await list(`&limit=1&sort=new${query}`)).toEqual(firstPage);
+    }
+    const archived = await list(`&scope=orphaned&include=${orphaned.id}`);
+    expect(archived.total).toBe(0);
+    expect(archived.orphaned_count).toBe(0);
+    expect(archived.threads).toMatchObject([{ id: orphaned.id, state: "orphaned" }]);
+  });
+
   it("参加者が D1 のバインド上限より多くても通知し、表示する返信は 200 件まで", async () => {
     const root = await create();
     const addProfile = db.sqlite.prepare(`

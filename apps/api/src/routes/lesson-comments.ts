@@ -259,20 +259,27 @@ lessonCommentsRoute.get(PATH, async (c) => {
     };
     if (video.videoPath === null) return c.json(response);
 
-    const roots = await db
-      .select({
-        ...anchorColumns,
-        userId: lessonComments.userId,
-        authorName: profiles.displayName,
-        excerpt: sql<string>`substr(replace(replace(replace(
-          ${lessonComments.body}, char(13, 10), ' '), char(13), ' '), char(10), ' '), 1, 60)`,
-      })
-      .from(lessonComments)
-      .innerJoin(profiles, eq(profiles.id, lessonComments.userId))
-      .where(and(eq(lessonComments.lessonId, lessonId), isNull(lessonComments.parentId)))
+    const lessonRoots = and(eq(lessonComments.lessonId, lessonId), isNull(lessonComments.parentId));
+    const selectRoots = () =>
+      db
+        .select({
+          ...anchorColumns,
+          userId: lessonComments.userId,
+          authorName: profiles.displayName,
+          excerpt: sql<string>`substr(replace(replace(replace(
+            ${lessonComments.body}, char(13, 10), ' '), char(13), ' '), char(10), ' '), 1, 60)`,
+        })
+        .from(lessonComments)
+        .innerJoin(profiles, eq(profiles.id, lessonComments.userId));
+    const roots = await selectRoots()
+      .where(lessonRoots)
       .orderBy(desc(lessonComments.createdAt), desc(lessonComments.id))
       .limit(ROOT_LIMIT);
 
+    const matchesQuery = (userId: string, position: CommentPosition) =>
+      (scope === "orphaned") === (position.state === "orphaned") &&
+      (filter !== "mine" || userId === caller.id) &&
+      (filter !== "scene" || position.sceneId === sceneId);
     const matches = [];
     const markers: CommentMarker[] = [];
     let orphanedCount = 0;
@@ -288,11 +295,7 @@ lessonCommentsRoute.get(PATH, async (c) => {
           excerpt: root.excerpt,
         });
       }
-      if ((scope === "orphaned") !== (position.state === "orphaned")) continue;
-      if (filter === "mine" && root.userId !== caller.id) continue;
-
-      if (filter === "scene" && position.sceneId !== sceneId) continue;
-      matches.push({ root, position });
+      if (matchesQuery(root.userId, position)) matches.push({ root, position });
     }
     if (scope === "active" && sort === "time") {
       matches.sort((a, b) => {
@@ -308,7 +311,18 @@ lessonCommentsRoute.get(PATH, async (c) => {
     const page = matches.slice(offset, offset + limit);
     if (include && !page.some(({ root }) => root.id === include)) {
       const included = matches.find(({ root }) => root.id === include);
-      if (included) page.unshift(included);
+      if (included) {
+        page.unshift(included);
+      } else if (!roots.some(({ id }) => id === include)) {
+        // 通知先が通常の取得範囲より古い場合も、このページだけに加える。
+        const [root] = await selectRoots()
+          .where(and(lessonRoots, eq(lessonComments.id, include)))
+          .limit(1);
+        if (root) {
+          const position = resolveCommentPosition(root, video);
+          if (matchesQuery(root.userId, position)) page.unshift({ root, position });
+        }
+      }
     }
     response.total = matches.length;
     response.orphaned_count = orphanedCount;
