@@ -279,7 +279,7 @@ describe("export-seed-sql (sqlite)", () => {
     const revision = statements.find(
       (s) => s.startsWith("lesson_revisions (") && s.includes(`select '${id}'`),
     );
-    expect(revision).toContain("## 知識問題");
+    expect(revision).toContain("## 確認クイズ");
     expect(revision).toContain("<details>");
   });
 
