@@ -124,7 +124,11 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
             </details>
             <div className="min-w-0 space-y-5">
               {lesson.type === "slides" ? (
-                <SlideLessonMedia lessonId={lesson.id} videoPath={lesson.video_path}>
+                <SlideLessonMedia
+                  lessonId={lesson.id}
+                  videoPath={lesson.video_path}
+                  showSlidesToggle
+                >
                   {lesson.markdown ? (
                     <PlainMarkdownSlides markdown={lesson.markdown} header={data.stage.title} />
                   ) : (

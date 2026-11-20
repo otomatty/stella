@@ -1,7 +1,7 @@
 /**
  * HTML5 動画プレイヤーラッパ。
  *
- * - R2 上の mp4 を直接 src に渡し、 ネイティブ controls を活用
+ * - R2 上の mp4 を直接 src に渡し、動画の下に操作バーを表示
  * - 再生速度プリセット (0.75〜2.0x) を独自 UI で
  * - キーボードショートカット (Space / ←→ / J L / M / F)
  * - 動画レッスンは前回視聴位置 (`watchedSec`) から自動再開し、`timeupdate` を 250ms デバウンスして保存
@@ -14,9 +14,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Play,
   Pause,
+  SkipForward,
+  Captions,
   Volume2,
   VolumeX,
   Maximize2,
+  Minimize2,
   Download,
   RefreshCw,
   AlertCircle,
@@ -29,6 +32,7 @@ import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
 import { flushNow } from "@/lib/lesson-progress";
 import { useAutoplayNext } from "@/lib/autoplay-pref";
 import { cn } from "@/lib/utils";
+import { formatSeekValue, formatVideoTime, timeAtPointer } from "@/lib/video-player";
 
 interface Props {
   lessonId: string;
@@ -41,6 +45,8 @@ interface Props {
   onComplete?: () => void;
   /** 再生終了後に案内する次のレッスン名。 次が無いステージ末尾では null。 */
   nextLessonTitle?: string | null;
+  /** 次の教材の種類と所要時間 (例: 知識問題 · 5分)。 */
+  nextLessonMeta?: string | null;
   /** 次のレッスンへ進む。 未指定 (次が無い) ならオーバーレイを出さない。 */
   onAdvanceNext?: (() => void) | undefined;
 }
@@ -50,6 +56,89 @@ const SAVE_DEBOUNCE_MS = 250;
 const COMPLETION_THRESHOLD = 0.9;
 /** 再生終了から自動で次へ進むまでの秒数。 */
 const AUTO_ADVANCE_SEC = 5;
+const CONTROL_BUTTON =
+  "inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white";
+
+type FullscreenVideo = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+  webkitExitFullscreen?: () => void;
+  webkitDisplayingFullscreen?: boolean;
+};
+
+function SeekBar({
+  currentTime,
+  duration,
+  onSeek,
+}: {
+  currentTime: number;
+  duration: number;
+  onSeek: (time: number) => void;
+}) {
+  const position = Math.min(currentTime, duration);
+  const percent = duration > 0 ? (position / duration) * 100 : 0;
+
+  const seekAtPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    onSeek(timeAtPointer(event.clientX, event.currentTarget.getBoundingClientRect(), duration));
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    let time: number;
+    switch (event.key) {
+      case "ArrowLeft":
+        time = position - 5;
+        break;
+      case "ArrowRight":
+        time = position + 5;
+        break;
+      case "Home":
+        time = 0;
+        break;
+      case "End":
+        time = duration;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    if (duration > 0) onSeek(Math.max(0, Math.min(duration, time)));
+  };
+
+  return (
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label="再生位置"
+      aria-valuemin={0}
+      aria-valuemax={Math.floor(duration)}
+      aria-valuenow={Math.floor(position)}
+      aria-valuetext={formatSeekValue(position, duration)}
+      onKeyDown={onKeyDown}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || !event.isPrimary || duration <= 0) return;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        seekAtPointer(event);
+      }}
+      onPointerMove={(event) => {
+        if (
+          event.isPrimary &&
+          duration > 0 &&
+          event.currentTarget.hasPointerCapture(event.pointerId)
+        ) {
+          seekAtPointer(event);
+        }
+      }}
+      className="flex h-6 w-full touch-none cursor-pointer select-none items-center rounded focus-visible:outline-2 focus-visible:outline-white"
+    >
+      <div className="pointer-events-none relative h-1 w-full rounded-full bg-white/35">
+        <div className="h-full rounded-full bg-white" style={{ width: `${percent}%` }} />
+        <div
+          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+          style={{ left: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function reachesVideoCompletion(currentTime: number, duration: number): boolean {
   return (
@@ -66,6 +155,7 @@ export function VideoViewer({
   recordProgress = true,
   onComplete,
   nextLessonTitle = null,
+  nextLessonMeta = null,
   onAdvanceNext,
 }: Props) {
   const { entry, recordWatchTime, markComplete } = useLessonProgress(lessonId);
@@ -75,8 +165,12 @@ export function VideoViewer({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [captionsShowing, setCaptionsShowing] = useState(Boolean(captionsPath));
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [completedDuringPlayback, setCompletedDuringPlayback] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
   const [duration, setDuration] = useState<number>(totalSec ?? 0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [hasError, setHasError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [autoAdvance, setAutoAdvance] = useAutoplayNext();
@@ -84,9 +178,42 @@ export function VideoViewer({
   /** 自動遷移までの残り秒。 null なら自動遷移しない (ボタンのみ)。 */
   const [countdown, setCountdown] = useState<number | null>(null);
   const canAdvance = Boolean(onAdvanceNext);
+  const seekDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  const nextTitle = nextLessonTitle ?? "次の教材";
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<FullscreenVideo | null>(null);
+  // unmount 時は React が ref を外したあとも最後の再生位置を読めるようにする。
+  const lastVideoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const attachVideo = useCallback((video: FullscreenVideo | null) => {
+    if (!video) return;
+    videoRef.current = video;
+    lastVideoRef.current = video;
+
+    const syncFullscreen = () => {
+      const container = containerRef.current;
+      setIsFullscreen(
+        (container !== null && document.fullscreenElement === container) ||
+          video.webkitDisplayingFullscreen === true,
+      );
+    };
+    const syncCaptions = () => {
+      setCaptionsShowing(video.textTracks[0]?.mode === "showing");
+    };
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    video.addEventListener("webkitbeginfullscreen", syncFullscreen);
+    video.addEventListener("webkitendfullscreen", syncFullscreen);
+    video.textTracks.addEventListener("change", syncCaptions);
+    syncFullscreen();
+    syncCaptions();
+    return () => {
+      videoRef.current = null;
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      video.removeEventListener("webkitbeginfullscreen", syncFullscreen);
+      video.removeEventListener("webkitendfullscreen", syncFullscreen);
+      video.textTracks.removeEventListener("change", syncCaptions);
+    };
+  }, []);
   const completedRef = useRef(isCompleted);
   const lastSaveRef = useRef<number>(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,8 +253,12 @@ export function VideoViewer({
     const v = videoRef.current;
     if (!v) return;
     if (Number.isFinite(v.duration) && v.duration > 0) setDuration(v.duration);
+    v.playbackRate = speed;
+    const track = v.textTracks[0];
+    if (captionsPath && track?.mode === "disabled") track.mode = "showing";
     resumePlayback();
-  }, [resumePlayback]);
+    setCurrentTime(v.currentTime);
+  }, [captionsPath, resumePlayback, speed]);
 
   // メタデータが先に読み終わっていた場合は、 進捗が決着した時点で再開位置を当てる。
   useEffect(() => {
@@ -135,12 +266,13 @@ export function VideoViewer({
   }, [resumePlayback]);
 
   const flushSave = useCallback(
-    (sec: number) => {
+    (sec: number, mediaDuration = videoRef.current?.duration) => {
       if (!recordProgress) return;
-      const dur = videoRef.current?.duration || duration || totalSec || 0;
+      const dur = mediaDuration || duration || totalSec || 0;
       recordWatchTime(sec, dur);
       if (!completedRef.current && dur > 0 && sec / dur >= COMPLETION_THRESHOLD) {
         completedRef.current = true;
+        setCompletedDuringPlayback(true);
         markComplete();
         onComplete?.();
       }
@@ -149,16 +281,22 @@ export function VideoViewer({
   );
 
   const completeSlideVideo = useCallback(() => {
-    if (recordProgress || !onComplete || isCompleted || completedRef.current) return;
+    if (recordProgress || isCompleted || completedRef.current || (!onComplete && !canAdvance)) {
+      return;
+    }
     completedRef.current = true;
-    onComplete();
-    flushNow();
-  }, [recordProgress, onComplete, isCompleted]);
+    setCompletedDuringPlayback(true);
+    if (onComplete) {
+      onComplete();
+      flushNow();
+    }
+  }, [recordProgress, onComplete, isCompleted, canAdvance]);
 
   const onTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
     const sec = v.currentTime;
+    setCurrentTime(sec);
     if (!recordProgress) {
       if (reachesVideoCompletion(sec, v.duration)) completeSlideVideo();
       return;
@@ -207,11 +345,10 @@ export function VideoViewer({
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
-      const v = videoRef.current;
+      const v = lastVideoRef.current;
       if (v) {
-        // unmount 時点の currentTime を保存。 v は detach 済み参照なので注意
         try {
-          flushSave(v.currentTime);
+          flushSave(v.currentTime, v.duration);
         } catch {
           // ignore
         }
@@ -220,12 +357,6 @@ export function VideoViewer({
     };
     // 1 回登録すれば良い
   }, []);
-
-  // speed 反映
-  useEffect(() => {
-    const v = videoRef.current;
-    if (v) v.playbackRate = speed;
-  }, [speed]);
 
   // 自動遷移のカウントダウン。 コールバックは ref 経由で読み、 親の再レンダで
   // identity が変わっても 1 秒の刻みをやり直さない。
@@ -265,32 +396,60 @@ export function VideoViewer({
     setIsMuted(v.muted);
   }, []);
 
-  const seek = useCallback((deltaSec: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = Math.max(
-      0,
-      Math.min(v.duration || Number.POSITIVE_INFINITY, v.currentTime + deltaSec),
-    );
+  const toggleCaptions = () => {
+    const track = videoRef.current?.textTracks[0];
+    if (!track) return;
+    track.mode = track.mode === "showing" ? "hidden" : "showing";
+    setCaptionsShowing(track.mode === "showing");
+  };
+
+  const seekTo = useCallback((time: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.max(0, Math.min(video.duration || Number.POSITIVE_INFINITY, time));
+    setCurrentTime(video.currentTime);
   }, []);
 
+  const seek = useCallback(
+    (deltaSec: number) => {
+      const video = videoRef.current;
+      if (video) seekTo(video.currentTime + deltaSec);
+    },
+    [seekTo],
+  );
+
   const toggleFullscreen = useCallback(() => {
-    if (!containerRef.current) return;
-    if (document.fullscreenElement === containerRef.current) {
-      document.exitFullscreen().catch(() => {
-        // フルスクリーン解除が拒否されても操作は続行する
-      });
-    } else {
-      containerRef.current.requestFullscreen().catch(() => {
-        // フルスクリーン要求が拒否されても操作は続行する
-      });
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container || !video) return;
+
+    try {
+      if (document.fullscreenElement === container) {
+        void document.exitFullscreen().catch(() => {
+          // 全画面の解除が拒否されても操作は続行する。
+        });
+      } else if (video.webkitDisplayingFullscreen) {
+        video.webkitExitFullscreen?.();
+      } else if (container.requestFullscreen && document.fullscreenEnabled !== false) {
+        void container.requestFullscreen().catch(() => {
+          // 全画面の要求が拒否されても操作は続行する。
+        });
+      } else {
+        video.webkitEnterFullscreen?.();
+      }
+    } catch {
+      // メタデータの読み込み前など、全画面が拒否されても操作は続行する。
     }
   }, []);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) {
+      if (
+        target?.closest(
+          'input, textarea, select, button, a, [contenteditable="true"], [role="slider"]',
+        )
+      ) {
         return;
       }
       switch (e.key) {
@@ -334,19 +493,35 @@ export function VideoViewer({
 
   const retry = useCallback(() => {
     setHasError(false);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setShowNextOverlay(false);
+    setCountdown(null);
     resumedRef.current = false;
     setReloadKey((k) => k + 1);
   }, []);
 
-  const handleMarkComplete = useCallback(() => {
-    markComplete();
-    completedRef.current = true;
-    onComplete?.();
-  }, [markComplete, onComplete]);
+  const advanceNext = () => {
+    setCountdown(null);
+    setShowNextOverlay(false);
+    onAdvanceNext?.();
+  };
 
-  const watched = entry?.watchedSec ?? 0;
-  const dur = duration || totalSec || 0;
-  const pct = dur > 0 ? Math.min(100, Math.round((watched / dur) * 100)) : 0;
+  const advanceLabel = countdown === null ? "次へ進む" : `次へ進む (${countdown})`;
+  const togglePlaybackFromVideo = () => {
+    containerRef.current?.focus({ preventScroll: true });
+    togglePlay();
+  };
+
+  const replay = () => {
+    setCountdown(null);
+    setShowNextOverlay(false);
+    containerRef.current?.focus({ preventScroll: true });
+    seekTo(0);
+    videoRef.current?.play().catch(() => {
+      // 再生が拒否された場合は、再生ボタンから再試行できる。
+    });
+  };
 
   if (!url) {
     return (
@@ -371,7 +546,10 @@ export function VideoViewer({
       // biome-ignore lint/a11y/noNoninteractiveTabindex: キーボード操作のためコンテナがフォーカスを持つ
       tabIndex={0}
       onKeyDown={onKeyDown}
-      className="relative bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+      className={cn(
+        "relative bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60",
+        isFullscreen && "flex h-full flex-col",
+      )}
       aria-label="動画ビューア"
     >
       {hasError ? (
@@ -384,7 +562,14 @@ export function VideoViewer({
                 通信状況を確認して再読み込みしてください。
               </div>
               <div className="flex gap-2 mt-3">
-                <Button size="sm" variant="primary" onClick={retry}>
+                <Button
+                  type="button"
+                  aria-label="再読み込み"
+                  size="sm"
+                  variant="primary"
+                  onClick={retry}
+                  className="min-h-10 min-w-10"
+                >
                   <RefreshCw size={12} /> 再読み込み
                 </Button>
                 <a
@@ -400,152 +585,189 @@ export function VideoViewer({
           </div>
         </div>
       ) : (
-        <video
-          key={reloadKey}
-          ref={videoRef}
-          src={url}
-          crossOrigin={captionsPath ? "anonymous" : undefined}
-          poster={posterPath ? getMaterialUrl(posterPath) : undefined}
-          controls
-          preload="metadata"
-          className="w-full max-h-[62vh] bg-black"
-          onLoadedMetadata={onLoadedMetadata}
-          onTimeUpdate={onTimeUpdate}
-          onPlay={onPlay}
-          onPause={onPauseOrEnded}
-          onEnded={handleEnded}
-          onError={() => setHasError(true)}
-        >
-          <track
-            kind="captions"
-            src={captionsPath ? getMaterialUrl(captionsPath) : undefined}
-            srcLang="ja"
-            label="日本語"
-            default={Boolean(captionsPath)}
-          />
-        </video>
-      )}
-
-      {showNextOverlay && canAdvance ? (
-        // ブラウザ既定のコントロールバーはこの上に描かれるので、 下に余白を空けて
-        // ボタンが操作バーと重ならないようにする。
-        <div className="absolute inset-0 grid place-items-center bg-black/70 px-4 pb-14 text-center">
-          <div className="max-w-sm">
-            <div className="text-[11.5px] uppercase tracking-[0.14em] text-white/70">次の教材</div>
-            <div className="mt-1.5 text-[15px] font-bold text-white">
-              {nextLessonTitle ?? "次の教材"}
-            </div>
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <Button
-                variant="accent"
-                onClick={() => {
-                  setCountdown(null);
-                  setShowNextOverlay(false);
-                  onAdvanceNext?.();
-                }}
-              >
-                <Play size={13} />
-                {countdown === null ? "次の教材へ" : `次の教材へ (${countdown})`}
-              </Button>
-              <Button
-                variant="outline"
-                className="border-white/40 bg-transparent text-white hover:bg-white/10"
-                onClick={() => {
-                  setCountdown(null);
-                  setShowNextOverlay(false);
-                }}
-              >
-                {countdown === null ? "閉じる" : "キャンセル"}
-              </Button>
-            </div>
-            <label className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] text-white/80">
-              <input
-                type="checkbox"
-                checked={autoAdvance}
-                onChange={(e) => {
-                  const next = e.target.checked;
-                  setAutoAdvance(next);
-                  // その場で挙動を合わせる (オフにしたらカウントダウンを止める)。
-                  setCountdown(next ? AUTO_ADVANCE_SEC : null);
-                }}
-                className="accent-brand"
-              />
-              再生終了後に自動で次へ進む
-            </label>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="absolute top-2 right-2 flex items-center gap-1.5 text-[11.5px]">
-        <div className="flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full px-2.5 py-1 text-white font-display font-bold">
-          <label htmlFor={`speed-${lessonId}`} className="sr-only">
-            再生速度
-          </label>
-          <select
-            id={`speed-${lessonId}`}
-            aria-label="再生速度"
-            value={String(speed)}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="bg-transparent text-white text-[11.5px] focus:outline-none"
-          >
-            {SPEEDS.map((s) => (
-              <option key={s} value={s} className="text-foreground">
-                {s.toFixed(2)}x
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="button"
-          aria-label={isMuted ? "ミュート解除" : "ミュート"}
-          onClick={toggleMute}
-          className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white"
-        >
-          {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-        </button>
-        <button
-          type="button"
-          aria-label="フルスクリーン"
-          onClick={toggleFullscreen}
-          className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white"
-        >
-          <Maximize2 size={13} />
-        </button>
-      </div>
-
-      {recordProgress || onComplete ? (
-        <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2.5 text-[11.5px] text-ink-3">
-          {recordProgress ? (
-            <>
-              <span className="inline-flex items-center gap-1.5">
-                {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-                視聴 {Math.round(watched)} / {Math.round(dur) || "?"} 秒{" "}
-                <span className="font-display font-bold text-ink-2">({pct}%)</span>
-              </span>
-              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
-                <div
-                  className={cn("h-full", isCompleted ? "bg-success" : "sf-gradient-bg")}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </>
-          ) : null}
-          <div className="flex-1" />
-          {!isCompleted ? (
-            <Button
-              size="sm"
-              variant="accent"
-              onClick={recordProgress ? handleMarkComplete : completeSlideVideo}
+        <>
+          <div className={cn("relative", isFullscreen && "flex min-h-0 flex-1")}>
+            <video
+              key={reloadKey}
+              ref={attachVideo}
+              src={url}
+              crossOrigin={captionsPath ? "anonymous" : undefined}
+              poster={posterPath ? getMaterialUrl(posterPath) : undefined}
+              playsInline
+              muted={isMuted}
+              preload="metadata"
+              className={cn(
+                "cursor-pointer bg-black object-contain",
+                isFullscreen ? "h-full w-full max-h-none" : "w-full max-h-[62vh]",
+              )}
+              onClick={togglePlaybackFromVideo}
+              onLoadedMetadata={onLoadedMetadata}
+              onTimeUpdate={onTimeUpdate}
+              onVolumeChange={(event) => setIsMuted(event.currentTarget.muted)}
+              onPlay={onPlay}
+              onPause={onPauseOrEnded}
+              onEnded={handleEnded}
+              onError={() => setHasError(true)}
             >
-              <Check size={13} /> 完了にする
-            </Button>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-success text-[12px] px-2">
-              <Check size={13} /> 完了済み
-            </span>
-          )}
-        </div>
-      ) : null}
+              <track
+                kind="captions"
+                src={captionsPath ? getMaterialUrl(captionsPath) : undefined}
+                srcLang="ja"
+                label="日本語"
+                default={Boolean(captionsPath)}
+              />
+            </video>
+            {showNextOverlay && canAdvance ? (
+              <div className="absolute inset-0 overflow-y-auto overscroll-contain bg-black/75 text-center">
+                <div className="flex min-h-full flex-col items-center justify-center gap-1 px-2 py-1 sm:gap-3 sm:px-3 sm:py-2">
+                  <div className="flex items-center justify-center gap-1.5 text-sm leading-4 font-semibold text-white sm:leading-5">
+                    <Check size={16} className="text-success" aria-hidden="true" />
+                    この動画を見終わりました
+                  </div>
+                  <div className="w-full max-w-sm rounded-xl bg-white p-2 text-zinc-900 shadow-lg sm:p-5">
+                    <div className="text-xs font-semibold text-zinc-600">次にやること</div>
+                    {nextLessonMeta ? (
+                      <div className="mt-0.5 wrap-anywhere text-xs text-zinc-600 sm:mt-1.5">
+                        {nextLessonMeta}
+                      </div>
+                    ) : null}
+                    <div className="mt-0.5 wrap-anywhere text-base leading-5 font-bold sm:mt-1.5 sm:text-lg sm:leading-7">
+                      {nextTitle}
+                    </div>
+                    <div className="mt-1.5 flex justify-center gap-2 sm:mt-2.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        aria-label="もう一度見る"
+                        className="h-9 border-zinc-300 px-3 text-xs text-zinc-900 hover:border-zinc-400 hover:bg-zinc-100 sm:h-10 sm:px-4.5 sm:text-sm"
+                        onClick={replay}
+                      >
+                        もう一度見る
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="accent"
+                        size="lg"
+                        aria-label={advanceLabel}
+                        className="h-9 px-3 text-xs sm:h-10 sm:px-4.5 sm:text-sm"
+                        onClick={advanceNext}
+                      >
+                        {advanceLabel}
+                      </Button>
+                    </div>
+                    <label className="mt-1.5 flex items-center justify-center gap-1.5 text-xs sm:mt-2.5">
+                      <input
+                        type="checkbox"
+                        checked={autoAdvance}
+                        onChange={(event) => {
+                          const enabled = event.target.checked;
+                          setAutoAdvance(enabled);
+                          setCountdown(enabled ? AUTO_ADVANCE_SEC : null);
+                        }}
+                        className="shrink-0 accent-brand"
+                      />
+                      再生終了後に自動で次へ進む
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ) : !isPlaying ? (
+              <button
+                type="button"
+                aria-label="再生"
+                className="absolute top-1/2 left-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/70 text-white hover:bg-black/90 focus-visible:outline-2 focus-visible:outline-white"
+                onClick={togglePlaybackFromVideo}
+              >
+                <Play size={30} fill="currentColor" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+          <div className="shrink-0 bg-zinc-950 px-2 pb-1 text-white">
+            <SeekBar currentTime={currentTime} duration={seekDuration} onSeek={seekTo} />
+            <div className="flex flex-wrap items-center text-xs">
+              <button
+                type="button"
+                aria-label={isPlaying ? "一時停止" : "再生"}
+                onClick={togglePlay}
+                className={CONTROL_BUTTON}
+              >
+                {isPlaying ? (
+                  <Pause size={18} aria-hidden="true" />
+                ) : (
+                  <Play size={18} aria-hidden="true" />
+                )}
+              </button>
+              {canAdvance && (isCompleted || completedDuringPlayback) ? (
+                <button
+                  type="button"
+                  aria-label={`次の教材へ: ${nextTitle}`}
+                  onClick={advanceNext}
+                  className={cn(CONTROL_BUTTON, "px-1")}
+                >
+                  <SkipForward size={16} aria-hidden="true" /> 次へ
+                </button>
+              ) : null}
+              <button
+                type="button"
+                aria-label={isMuted ? "ミュート解除" : "ミュート"}
+                onClick={toggleMute}
+                className={CONTROL_BUTTON}
+              >
+                {isMuted ? (
+                  <VolumeX size={18} aria-hidden="true" />
+                ) : (
+                  <Volume2 size={18} aria-hidden="true" />
+                )}
+              </button>
+              <span className="min-w-8 flex-1 wrap-anywhere tabular-nums">
+                {formatVideoTime(currentTime)} / {formatVideoTime(seekDuration)}
+              </span>
+              <div className="ml-auto flex items-center">
+                <select
+                  aria-label="再生速度"
+                  value={String(speed)}
+                  onChange={(event) => {
+                    const nextSpeed = Number(event.target.value);
+                    setSpeed(nextSpeed);
+                    if (videoRef.current) videoRef.current.playbackRate = nextSpeed;
+                  }}
+                  className={cn(CONTROL_BUTTON, "bg-zinc-950 [color-scheme:dark]")}
+                >
+                  {SPEEDS.map((s) => (
+                    <option key={s} value={s}>
+                      {s.toFixed(2)}x
+                    </option>
+                  ))}
+                </select>
+                {captionsPath ? (
+                  <button
+                    type="button"
+                    aria-label={captionsShowing ? "字幕を隠す" : "字幕を表示"}
+                    aria-pressed={captionsShowing}
+                    onClick={toggleCaptions}
+                    className={CONTROL_BUTTON}
+                  >
+                    <Captions size={18} aria-hidden="true" />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  aria-label={isFullscreen ? "全画面を終了" : "全画面"}
+                  onClick={toggleFullscreen}
+                  className={CONTROL_BUTTON}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 size={18} aria-hidden="true" />
+                  ) : (
+                    <Maximize2 size={18} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

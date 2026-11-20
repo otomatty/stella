@@ -33,6 +33,7 @@ import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
 import { resolveLessonNeighbors } from "@/lib/lesson-navigation";
+import { displayLessonType, isVideoLesson, nextLessonMeta } from "@/lib/lesson-video";
 import {
   useLessonProgress,
   useLessonProgressMap,
@@ -199,7 +200,8 @@ export const LessonPlayer = ({
 
   const handleBackToStage = useCallback(() => setPage("stage-detail"), [setPage]);
 
-  const nextLessonId = neighbors.next?.lesson.id ?? null;
+  const nextLesson = neighbors.next?.lesson;
+  const nextLessonId = nextLesson?.id ?? null;
   const handleAdvanceNext = useCallback(() => {
     if (nextLessonId) goToLesson(nextLessonId);
   }, [nextLessonId, goToLesson]);
@@ -269,6 +271,11 @@ export const LessonPlayer = ({
   const isText = lessonObj.type === "text";
   const isVideo = lessonObj.type === "video";
   const isSlides = lessonObj.type === "slides";
+  const showVideo = isVideoLesson(lessonObj);
+  const displayType = displayLessonType(lessonObj);
+  const nextMeta = nextLesson
+    ? nextLessonMeta(lessonTypeLabel[displayLessonType(nextLesson)], nextLesson.duration)
+    : null;
 
   return (
     <div
@@ -380,7 +387,8 @@ export const LessonPlayer = ({
                   videoPath={lessonObj.videoPath}
                   totalSec={lessonObj.totalSec}
                   onComplete={handleMarkComplete}
-                  nextLessonTitle={neighbors.next?.lesson.title ?? null}
+                  nextLessonTitle={nextLesson?.title ?? null}
+                  nextLessonMeta={nextMeta}
                   // 次が無いステージ末尾では渡さない。 渡すと VideoViewer 側の
                   // canAdvance が true になり、 何もしないオーバーレイが出る。
                   onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
@@ -388,9 +396,17 @@ export const LessonPlayer = ({
               ) : (
                 <MissingMaterialFallback type="video" />
               )
-            ) : null}
-
-            {isSlides && !lessonObj.markdown && !lessonObj.videoPath ? (
+            ) : isSlides && lessonObj.videoPath ? (
+              <SlideLessonMedia
+                key={lessonObj.id}
+                lessonId={lessonObj.id}
+                videoPath={lessonObj.videoPath}
+                onComplete={handleMarkComplete}
+                nextLessonTitle={nextLesson?.title ?? null}
+                nextLessonMeta={nextMeta}
+                onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+              />
+            ) : isSlides && !lessonObj.markdown ? (
               lessonObj.pdfPath ? (
                 <Suspense fallback={<ViewerLoading />}>
                   <SlidesViewer
@@ -414,13 +430,27 @@ export const LessonPlayer = ({
                       variant="accent"
                       className="bg-sf-magenta-soft text-sf-magenta-ink font-bold"
                     >
-                      <LessonTypeIcon type={lessonObj.type} size={10} />
-                      {lessonTypeLabel[lessonObj.type]}
+                      <LessonTypeIcon type={displayType} size={10} />
+                      {lessonTypeLabel[displayType]}
                     </Badge>
                     <span className="text-[11.5px] text-ink-3">
                       {activeSection ? activeSection.title : ""} · {lessonIndexInSection + 1} /{" "}
                       {activeSection ? activeSection.lessons.length : 0}
                     </span>
+                    {showVideo ? (
+                      <div className="ml-auto shrink-0">
+                        {activeCompleted ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-success">
+                            <Check size={13} aria-hidden="true" />
+                            完了
+                          </span>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={handleMarkComplete}>
+                            完了にする
+                          </Button>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                   <h1 className="text-[22px] font-black tracking-[0.01em] leading-[1.3]">
                     {lessonObj.title}
@@ -442,11 +472,13 @@ export const LessonPlayer = ({
                 </div>
               </div>
 
-              <Tabs value={tab} onValueChange={setTab}>
+              <Tabs value={showVideo ? "resources" : tab} onValueChange={setTab}>
                 <TabsList>
-                  <TabsTrigger value="content" icon={<FileText />}>
-                    教材
-                  </TabsTrigger>
+                  {!showVideo ? (
+                    <TabsTrigger value="content" icon={<FileText />}>
+                      教材
+                    </TabsTrigger>
+                  ) : null}
                   {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
                   <TabsTrigger
                     value="resources"
@@ -457,60 +489,43 @@ export const LessonPlayer = ({
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="content">
-                  {isQuiz ? (
-                    <>
-                      <QuizPlayer lessonId={lessonObj.id} onComplete={handleMarkComplete} />
-                      {lessonObj.markdown ? (
-                        <div className="mt-6">
-                          <LessonMarkdown>{lessonObj.markdown}</LessonMarkdown>
-                        </div>
-                      ) : null}
-                    </>
-                  ) : isAssignment && stage.format !== 2 ? (
-                    <AssignmentSubmitPanel
-                      stage={stage}
-                      lesson={lessonObj}
-                      sectionTitle={activeSection?.title}
-                      studentName={studentName}
-                      studentInitials={studentInitials}
-                      onSubmitted={handleMarkComplete}
-                    />
-                  ) : isText ? (
-                    <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
-                  ) : isSlides && (lessonObj.markdown || lessonObj.videoPath) ? (
-                    <SlideLessonMedia
-                      key={lessonObj.id}
-                      lessonId={lessonObj.id}
-                      videoPath={lessonObj.videoPath}
-                      onComplete={handleMarkComplete}
-                    >
-                      {lessonObj.markdown ? (
-                        <MarkdownSlides
-                          lessonId={lessonObj.id}
-                          markdown={lessonObj.markdown}
-                          header={stage.title}
-                          onComplete={handleMarkComplete}
-                        />
-                      ) : lessonObj.pdfPath ? (
-                        <Suspense fallback={<ViewerLoading />}>
-                          <SlidesViewer
-                            lessonId={lessonObj.id}
-                            pdfPath={lessonObj.pdfPath}
-                            totalPages={lessonObj.totalPages}
-                            onComplete={handleMarkComplete}
-                          />
-                        </Suspense>
-                      ) : (
-                        <MissingMaterialFallback type="slides" />
-                      )}
-                    </SlideLessonMedia>
-                  ) : isVideo || isSlides ? (
-                    <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
-                  ) : (
-                    <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
-                  )}
-                </TabsContent>
+                {!showVideo ? (
+                  <TabsContent value="content">
+                    {isQuiz ? (
+                      <>
+                        <QuizPlayer lessonId={lessonObj.id} onComplete={handleMarkComplete} />
+                        {lessonObj.markdown ? (
+                          <div className="mt-6">
+                            <LessonMarkdown>{lessonObj.markdown}</LessonMarkdown>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : isAssignment && stage.format !== 2 ? (
+                      <AssignmentSubmitPanel
+                        stage={stage}
+                        lesson={lessonObj}
+                        sectionTitle={activeSection?.title}
+                        studentName={studentName}
+                        studentInitials={studentInitials}
+                        onSubmitted={handleMarkComplete}
+                      />
+                    ) : isText ? (
+                      <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                    ) : isSlides && lessonObj.markdown ? (
+                      <MarkdownSlides
+                        key={lessonObj.id}
+                        lessonId={lessonObj.id}
+                        markdown={lessonObj.markdown}
+                        header={stage.title}
+                        onComplete={handleMarkComplete}
+                      />
+                    ) : isVideo || isSlides ? (
+                      <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
+                    ) : (
+                      <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                    )}
+                  </TabsContent>
+                ) : null}
                 <TabsContent value="resources">
                   <ResourcesList
                     materials={materials}
@@ -523,8 +538,7 @@ export const LessonPlayer = ({
           </>
         )}
 
-        {/* 完了の CTA と前後ナビはレッスンの種類を問わず本文の最後に出す。 コーディング
-            課題 (VS Code へ渡すだけの画面) にも同じ導線が要るので、 上の分岐の外に置く。
+        {/* コーディング課題にも完了の CTA と前後ナビを出すため、上の分岐の外に置く。
 
             ページ末尾はこのブロックなので、 下端に重なる固定要素のクリアランスもここが持つ。
             pb-24 (96px) は右下の開発者モード FAB (bottom-6 + h-12 = 下端から 72px) ぶん。 小テストは
@@ -539,7 +553,7 @@ export const LessonPlayer = ({
           {submissionTarget ? (
             <SubmissionHistory target={submissionTarget} onOpenSubmission={onOpenSubmission} />
           ) : null}
-          {showCompleteCallout ? (
+          {showCompleteCallout && (!showVideo || neighbors.next === null) ? (
             <LessonCompleteCallout
               neighbors={neighbors}
               onSelectLesson={goToLesson}
@@ -547,11 +561,13 @@ export const LessonPlayer = ({
               onDismiss={() => setCalloutDismissed(true)}
             />
           ) : null}
-          <LessonNavFooter
-            neighbors={neighbors}
-            onSelectLesson={goToLesson}
-            onBackToStage={handleBackToStage}
-          />
+          {!showVideo ? (
+            <LessonNavFooter
+              neighbors={neighbors}
+              onSelectLesson={goToLesson}
+              onBackToStage={handleBackToStage}
+            />
+          ) : null}
         </div>
       </main>
     </div>
@@ -643,7 +659,7 @@ const LessonToc = ({
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{l.title}</div>
                   <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
-                    <LessonTypeIcon type={l.type} size={10} />
+                    <LessonTypeIcon type={displayLessonType(l)} size={10} />
                     <span>{l.duration}</span>
                     {isActive && l.progress !== undefined ? (
                       <>
@@ -689,19 +705,15 @@ const MissingMaterialFallback = ({ type }: { type: "video" | "slides" }) => (
 const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) => {
   const { entry } = useLessonProgress(lesson.id);
   const isCompleted = entry?.completed === true;
-  const hasMaterial =
-    (lesson.type === "video" && Boolean(lesson.videoPath)) ||
-    (lesson.type === "slides" && Boolean(lesson.pdfPath));
+  const hasPdf = lesson.type === "slides" && Boolean(lesson.pdfPath);
   const materialLabel = lesson.type === "video" ? "動画" : "スライド";
   return (
     <div className="prose-lms">
       <h2>この教材について</h2>
-      {hasMaterial ? (
+      {hasPdf ? (
         <p>
-          上の{materialLabel}で学習を進めてください。
-          {lesson.type === "video"
-            ? " 視聴秒数の90%に到達すると自動的に完了マークが付きます。"
-            : " ページ全体の90%を閲覧すると自動的に完了マークが付きます。"}
+          上のスライドで学習を進めてください。{" "}
+          ページ全体の90%を閲覧すると自動的に完了マークが付きます。
         </p>
       ) : (
         <p>
@@ -709,7 +721,7 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
           素材はまだ準備中です。 アップロードされ次第、 ここから視聴できるようになります。
         </p>
       )}
-      {hasMaterial ? (
+      {hasPdf ? (
         <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
           <div className="flex-1" />
           {isCompleted ? (

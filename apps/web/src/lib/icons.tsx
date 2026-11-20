@@ -9,6 +9,8 @@ export {
   BookOpen as Book,
   Play,
   Pause,
+  SkipForward,
+  Captions,
   FileText,
   Check,
   CheckCircle2 as CheckCircle,
