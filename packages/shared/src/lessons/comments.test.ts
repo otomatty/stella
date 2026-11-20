@@ -66,6 +66,21 @@ describe("resolveCommentPosition", () => {
     });
   });
 
+  it.each([
+    [2, 26.999],
+    [0.001, 25],
+    [0.0005, 25],
+  ])("途中の場面の長さが %s 秒なら次の場面に入らない", (durationSec, expected) => {
+    const scene = { ...current.scenes[0], durationSec };
+    const video = {
+      ...current,
+      scenes: [scene, { ...scenes[2], startSec: scene.startSec + durationSec }],
+    };
+    const position = resolveCommentPosition(anchor, video);
+    expect(position).toEqual({ state: "current", positionSec: expected, sceneId: scene.id });
+    expect(sceneAt(video.scenes, expected)).toBe(scene);
+  });
+
   it("場面の内容が変わったら場面の始点を使う", () => {
     expect(
       resolveCommentPosition(anchor, {

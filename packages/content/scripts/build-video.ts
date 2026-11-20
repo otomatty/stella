@@ -122,6 +122,7 @@ interface BuildOptions {
   cacheDir: string;
   captioned: boolean;
   keepWork: boolean;
+  voice: VoiceConfig;
 }
 
 // ---------------------------------------------------------------- 設定
@@ -213,6 +214,15 @@ interface CuePlan {
   file?: string;
 }
 
+interface TopicPlan {
+  topic: VideoTopic;
+  cues: CuePlan[];
+  warnings: string[];
+  recorded: boolean;
+  sourceHash: string;
+  assetHashes: Readonly<Record<string, string>>;
+}
+
 interface TopicReport {
   scenes?: unknown[];
   videoScenes?: VideoScene[];
@@ -241,6 +251,7 @@ function sourceHashOf(
   cues: CuePlan[],
   voice: VoiceConfig,
   provider: TtsProvider,
+  assetHashes?: Record<string, string>,
 ): string {
   const h = createHash("sha256");
   h.update(
@@ -262,8 +273,10 @@ function sourceHashOf(
   );
   h.update(topic.markdown);
   for (const [key, file] of [...topic.assets].sort(([a], [b]) => a.localeCompare(b))) {
+    const contents = readFileSync(file);
     h.update(key);
-    h.update(readFileSync(file));
+    h.update(contents);
+    if (assetHashes) assetHashes[key] = createHash("sha256").update(contents).digest("hex");
   }
   return h.digest("hex").slice(0, 32);
 }
@@ -357,13 +370,10 @@ async function encodeFromSegments(
 }
 
 async function buildTopic(
-  topic: VideoTopic,
-  cues: CuePlan[],
-  sourceHash: string,
+  { topic, cues, sourceHash, warnings, assetHashes }: TopicPlan,
   provider: TtsProvider,
   browser: Browser,
-  warnings: string[],
-  { outDir, cacheDir, captioned, keepWork }: BuildOptions,
+  { outDir, cacheDir, captioned, keepWork, voice }: BuildOptions,
 ): Promise<TopicReport> {
   const topicOut = join(outDir, topic.stageSlug, topic.id);
   const workDir = join(topicOut, "work");
@@ -507,12 +517,8 @@ async function buildTopic(
     startSec: s.start,
     durationSec: s.duration,
   }));
-  const assetHashes = Object.fromEntries(
-    [...topic.assets].map(([ref, file]) => [
-      ref,
-      createHash("sha256").update(readFileSync(file)).digest("hex"),
-    ]),
-  );
+  if (sourceHashOf(topic, cues, voice, provider) !== sourceHash)
+    throw new Error("動画の入力が計画後に変わりました (生成後)");
   // 描画側と同じ、画像の参照が R2 キーに変換された本文で探す。
   const renderedSlides = splitLessonSlides(topic.markdown);
   const report: TopicReport = {
@@ -715,13 +721,7 @@ export async function buildVideos(
   const failures: VideoFailure[] = [...invalid];
 
   // 台本の検証 (エラーのあるトピックは作らない)
-  const plans: {
-    topic: VideoTopic;
-    cues: CuePlan[];
-    warnings: string[];
-    recorded: boolean;
-    sourceHash: string;
-  }[] = [];
+  const plans: TopicPlan[] = [];
   for (const topic of topics) {
     const label = `${topic.stageSlug}/${topic.id}`;
     const source = topic.source;
@@ -746,12 +746,16 @@ export async function buildVideos(
               };
             }),
           );
+    const assetHashes: Record<string, string> = {};
     plans.push({
       topic,
       cues,
       recorded: source.kind === "recorded",
       sourceHash:
-        source.kind === "recorded" ? source.sourceHash : sourceHashOf(topic, cues, voice, provider),
+        source.kind === "recorded"
+          ? source.sourceHash
+          : sourceHashOf(topic, cues, voice, provider, assetHashes),
+      assetHashes,
       warnings: issues.filter((i) => i.level === "warning").map((i) => formatIssue("", i).slice(2)),
     });
   }
@@ -996,23 +1000,17 @@ export async function buildVideos(
     const generated = buildable.filter((p) => !p.recorded);
     if (generated.length > 0) {
       const sharedBrowser = await getBrowser();
-      await mapPool(generated, concurrency, async ({ topic, cues, warnings, sourceHash }) => {
+      await mapPool(generated, concurrency, async (plan) => {
+        const { topic } = plan;
         const label = `${topic.stageSlug}/${topic.id}`;
         try {
-          const report = await buildTopic(
-            topic,
-            cues,
-            sourceHash,
-            provider,
-            sharedBrowser,
-            warnings,
-            {
-              outDir,
-              cacheDir,
-              captioned,
-              keepWork,
-            },
-          );
+          const report = await buildTopic(plan, provider, sharedBrowser, {
+            outDir,
+            cacheDir,
+            captioned,
+            keepWork,
+            voice,
+          });
           reports.push(report);
           console.log(
             `  ✓ ${label} ${report.durationSec.toFixed(1)}s (audio ${report.timingsMs.audio}ms / render ${report.timingsMs.render}ms / encode ${report.timingsMs.encode}ms)`,

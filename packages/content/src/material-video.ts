@@ -1,6 +1,6 @@
 /** 配信する3ファイルは同じ内容ハッシュを共有する。旧版は台帳に残す。 */
 import { createHash } from "node:crypto";
-import { normalizeStoryboard, type VideoStoryboard } from "./video-storyboard.js";
+import { normalizeStoryboard, storyboardStates, type VideoStoryboard } from "./video-storyboard.js";
 
 export const SCREEN_VIDEO_FILES = ["screen.mp4", "screen.vtt", "screen.jpg"] as const;
 
@@ -52,14 +52,18 @@ function toVideoScene(id: string, timing: SceneTiming, definition: unknown): Vid
 
 export function storyboardVideoScenes(
   report: ReadonlyArray<SceneTiming & { id: string }>,
-  storyboard: Pick<VideoStoryboard, "scenes" | "boards">,
+  storyboard: VideoStoryboard,
   assetHashes: Readonly<Record<string, string>>,
 ): VideoScene[] {
-  const byId = new Map(storyboard.scenes.map((scene) => [scene.id, scene]));
+  const states = storyboardStates(storyboard);
+  const byId = new Map(
+    storyboard.scenes.map((definition, i) => [definition.id, { definition, state: states[i] }]),
+  );
   return report.flatMap((timing) => {
-    const definition = byId.get(timing.id);
+    const scene = byId.get(timing.id);
     // 自動生成のタイトル画面は絵コンテに定義がない。
-    if (!definition) return [];
+    if (!scene) return [];
+    const { definition, state } = scene;
     const board = "board" in definition ? storyboard.boards?.[definition.board] : undefined;
     const references = new Set<string>();
     if (definition.kind === "view") {
@@ -73,7 +77,16 @@ export function storyboardVideoScenes(
       if (node.art) references.add(`art:${node.art}`);
     }
     const assets = Object.fromEntries([...references].map((ref) => [ref, assetHashes[ref]]));
-    const content = board || references.size ? { definition, board, assets } : definition;
+    // 定義だけから決まる開始状態は省き、前の場面から引き継いだ状態を含める。
+    let start: typeof state.start | undefined;
+    if (state.kind === "view") {
+      if (state.start.lastFrame) start = state.start;
+    } else if (state.kind !== "code") {
+      const { visible, marks, zoom } = state.start;
+      if (visible.length || Object.keys(marks).length || zoom !== "all") start = state.start;
+    }
+    const content =
+      board || references.size || start ? { definition, board, assets, start } : definition;
     return [toVideoScene(timing.id, timing, content)];
   });
 }

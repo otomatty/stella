@@ -16,7 +16,7 @@ import {
   type VideoManifest,
   type VideoState,
 } from "./material-video.js";
-import type { VideoStoryboard, ViewScene } from "./video-storyboard.js";
+import type { BoardScene, VideoStoryboard, ViewScene } from "./video-storyboard.js";
 
 describe("教材動画の配信", () => {
   const failure = { stageSlug: "dev-env-basics", id: "0-1-1", reason: "最初の理由\n詳細" };
@@ -105,6 +105,7 @@ describe("教材動画の配信", () => {
 });
 
 describe("教材動画の場面", () => {
+  const brief = { goal: "流れを確認する", stuck: "順番が分からない", points: [], leaveOut: [] };
   it("絵コンテのハッシュはキー順に依存せず、内容が1文字違うと変わる", () => {
     const scene = { id: "intro", beats: [{ say: "はじめ", hold: 1 }] };
     const hash = videoSceneHash(scene);
@@ -130,7 +131,7 @@ describe("教材動画の場面", () => {
           { id: "first", startSec: 2.6001, durationSec: 3.1259 },
           { id: "last", startSec: 5.726, durationSec: 4.2344 },
         ],
-        { scenes: [first, last] },
+        { schema: 1, brief, scenes: [first, last] },
         { [first.image]: "first-hash", [last.image]: "last-hash" },
       ),
     ).toEqual([
@@ -149,7 +150,9 @@ describe("教材動画の場面", () => {
     ]);
   });
 
-  const storyboard: Pick<VideoStoryboard, "scenes" | "boards"> = {
+  const storyboard: VideoStoryboard = {
+    schema: 1,
+    brief,
     scenes: [
       {
         kind: "view",
@@ -211,6 +214,53 @@ describe("教材動画の場面", () => {
     );
     expect(updated[0].hash).toBe(view.hash);
     expect(updated[1].hash).not.toBe(board.hash);
+  });
+
+  it("前の場面から引き継ぐ盤面の表示をハッシュに含め、時刻は含めない", () => {
+    const first: BoardScene = {
+      id: "first",
+      title: "最初",
+      role: "hook",
+      board: "main",
+      beats: [{ say: "表示します。", show: ["main"] }],
+    };
+    const second: BoardScene = {
+      ...first,
+      id: "second",
+      role: "point",
+      point: 1,
+      beats: [{ say: "続けます。" }],
+    };
+    const reset: BoardScene = { ...second, id: "last", role: "recap", reset: true };
+    const boardStoryboard = { ...storyboard, scenes: [first, second, reset] };
+    const timings = boardStoryboard.scenes.map(({ id }, i) => ({
+      id,
+      startSec: i * 5,
+      durationSec: 5,
+    }));
+    const original = storyboardVideoScenes(timings, boardStoryboard, hashes);
+    const changed = storyboardVideoScenes(
+      timings,
+      {
+        ...boardStoryboard,
+        scenes: [{ ...first, beats: [{ say: "表示します。" }] }, second, reset],
+      },
+      hashes,
+    );
+    expect(changed[1].hash).not.toBe(original[1].hash);
+    expect(changed[2].hash).toBe(original[2].hash);
+
+    const retimed = storyboardVideoScenes(
+      timings.map((timing, i) => ({
+        ...timing,
+        startSec: i === 0 ? 0 : timing.startSec + 2,
+        durationSec: i === 0 ? 7 : timing.durationSec,
+      })),
+      boardStoryboard,
+      hashes,
+    );
+    expect(retimed[1].startSec).toBe(7);
+    expect(retimed.map(({ hash }) => hash)).toEqual(original.map(({ hash }) => hash));
   });
 
   it("スライドには1始まりの ID を付け、題名と読み上げ文と本文をハッシュにする", () => {

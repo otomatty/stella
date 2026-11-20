@@ -539,9 +539,9 @@ describe("動画レッスンのコメント API", () => {
         scene_id,
       ]),
     ).toEqual([
+      [same.id, "current", expect.closeTo(4.999, 6), "intro"],
+      [tied.id, "current", expect.closeTo(4.999, 6), "intro"],
       [changed.id, "outdated", 5, "search"],
-      [same.id, "current", 5, "intro"],
-      [tied.id, "current", 5, "intro"],
       [untimed.id, "untimed", null, null],
     ]);
     expect(active.video.scenes).toEqual([
@@ -601,7 +601,7 @@ describe("動画レッスンのコメント API", () => {
     const result = await list(`&filter=scene&sceneId=moved-intro&include=${search.id}`);
     expect(result.total).toBe(1);
     expect(result.threads).toMatchObject([
-      { id: intro.id, scene_id: "moved-intro", position_sec: 6, state: "current" },
+      { id: intro.id, scene_id: "moved-intro", position_sec: 5.999, state: "current" },
     ]);
     expect((await list("&filter=scene&sceneId=intro")).total).toBe(0);
     expect(result.orphaned_count).toBe(1);

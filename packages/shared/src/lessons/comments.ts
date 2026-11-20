@@ -65,9 +65,11 @@ export function resolveCommentPosition(
     scene = matches?.length === 1 ? matches[0] : undefined;
   }
   if (scene) {
+    const maxOffset =
+      scene === current.scenes?.at(-1) ? scene.durationSec : Math.max(0, scene.durationSec - 0.001);
     return {
       state: "current",
-      positionSec: scene.startSec + Math.min(comment.sceneOffsetSec, scene.durationSec),
+      positionSec: scene.startSec + Math.min(comment.sceneOffsetSec, maxOffset),
       sceneId: scene.id,
     };
   }
