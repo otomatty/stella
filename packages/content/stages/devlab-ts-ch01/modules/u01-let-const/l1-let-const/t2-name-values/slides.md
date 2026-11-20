@@ -2,7 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number]
 id: 1-1-2
 title: 値に名前を付ける
-takeaway: "const を使うと、値に名前を付けて、その名前で値を使えます。"
+takeaway: "const で変数を作ると、値に名前が付き、その名前で値を使えます。"
 introduces: ["const", "変数", "代入", "Math.floor"]
 requires: []
 header: "開発ラボG 事前課題 第1部"
@@ -27,7 +27,7 @@ header: "開発ラボG 事前課題 第1部"
 
 # 覚えること
 
-const を使うと、値に名前を付けて、その名前で値を使えます。
+const で変数を作ると、値に名前が付き、その名前で値を使えます。
 
 名前で値を使えるようにしたものを「変数」と呼びます。
 
@@ -70,6 +70,6 @@ const points = Math.floor(1980 / 100);
 <!-- _class: summary -->
 # まとめ
 
-const を使うと、値に名前を付けて、その名前で値を使えます。
+const で変数を作ると、値に名前が付き、その名前で値を使えます。
 
-<!-- ノート: const を使うと、値に名前を付けて、その名前で値を使えます。 -->
+<!-- ノート: const で変数を作ると、値に名前が付き、その名前で値を使えます。 -->

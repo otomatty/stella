@@ -747,7 +747,15 @@ export function codeHtml(input: SceneHtmlInput): string {
       noteLineCount ? noteLineCount * lineHeight + notePadding : 0,
     );
   const data: CodeRenderData = {
-    scene,
+    scene:
+      input.schema === 2
+        ? {
+            ...scene,
+            beats: scene.beats.map((beat) =>
+              beat.part && beat.focus === undefined ? { ...beat, focus: [beat.part.line] } : beat,
+            ),
+          }
+        : scene,
     state,
     timing: input.timing,
     highlighted: scene.code.map((line) =>

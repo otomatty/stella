@@ -1,9 +1,9 @@
 {
   "schema": 2,
   "brief": {
-    "goal": "const で値に名前を付けたコードを読んで、どの名前にどの値が入っているかを言える。",
-    "stuck": "コードの中に数だけが書いてあると何の数か分からず、const や = の意味も分からない。",
-    "points": ["const は、値に名前を付けて、その名前で値を使えるようにする書き方。"],
+    "goal": "変数を作る 1 行を読んで、どの名前にどの値が入っているかを言える。",
+    "stuck": "コードの中に数だけが書いてあると何の数か分からず、変数という言葉も const や = の意味も分からない。",
+    "points": ["変数は名前を付けた値の入れ物で、const で作ると、その名前で値を使える。"],
     "leaveOut": [
       "= の右側で計算した結果を入れること",
       "掛け算や割り算の書き方と Math.floor",
@@ -30,14 +30,20 @@
     "seats": {
       "prompt": "A small meeting room seen from the front with two rows of four empty chairs facing a blank whiteboard. Drawn large and centered. No people, no letters, no digits, no symbols."
     },
-    "total": {
-      "prompt": "A blank paper receipt slip with a zigzag bottom edge, with three coins and one blank banknote shape lying beside it. Objects only, drawn large and centered. No people, no digits, no symbols.",
+    "memo": {
+      "prompt": "One square paper memo note pinned with a round pushpin, showing only one short thick placeholder line in the middle and nothing else. Object only, drawn large and centered. No people, no letters, no digits, no symbols.",
       "regions": {
-        "paper": [0.12, 0.14, 0.34, 0.7]
+        "paper": [0.18, 0.17, 0.63, 0.67]
       }
     },
-    "clerk": {
-      "prompt": "A friendly robot clerk (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, holding a small toy delivery truck in one hand and resting the other hand on a cardboard parcel on the counter. No people."
+    "pick": {
+      "prompt": "A friendly robot clerk (white rounded body, blue accents, dark screen face with a simple smile, small antenna) holding a light grey cardboard box with a blank white name tag hanging from it, lifting it with both hands. Only the robot and the box. No people, no letters, no digits, no symbols."
+    },
+    "rate": {
+      "prompt": "A desk calculator with a blank display next to a blank paper receipt slip with a zigzag bottom edge. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "truck": {
+      "prompt": "A small delivery truck seen from the side with one light grey cardboard parcel beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols, no logos."
     },
     "rule": {
       "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
@@ -50,6 +56,9 @@
     },
     "tax": {
       "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
+    },
+    "total": {
+      "prompt": "A blank paper receipt slip with a zigzag bottom edge, with three coins and one blank banknote shape lying beside it. Objects only, drawn large and centered. No people, no digits, no symbols."
     }
   },
   "boards": {
@@ -72,7 +81,45 @@
         {
           "id": "use",
           "label": "名前で使う",
-          "art": "clerk",
+          "art": "pick",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "put",
+          "from": "val",
+          "to": "box",
+          "label": "入れる"
+        },
+        {
+          "id": "take",
+          "from": "box",
+          "to": "use",
+          "label": "使う"
+        }
+      ]
+    },
+    "variable": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "val",
+          "label": "値",
+          "art": "coins",
+          "at": [1, 1]
+        },
+        {
+          "id": "box",
+          "label": "変数",
+          "art": "tagged",
+          "at": [3, 1]
+        },
+        {
+          "id": "use",
+          "label": "名前で使う",
+          "art": "pick",
           "at": [5, 1]
         }
       ],
@@ -116,13 +163,13 @@
         {
           "id": "rate",
           "label": "税の割合",
-          "art": "total",
+          "art": "rate",
           "at": [1, 1]
         },
         {
-          "id": "fee",
+          "id": "truck",
           "label": "送料",
-          "art": "clerk",
+          "art": "truck",
           "at": [2, 1]
         },
         {
@@ -181,10 +228,10 @@
       "image": "art:shelf",
       "beats": [
         {
-          "say": "この動画では、値に名前を付ける書き方を学びます。"
+          "say": "この動画では、値に名前を付ける方法を学びます。"
         },
         {
-          "say": "中身が同じ箱でも、名札が無いと区別できません。",
+          "say": "同じ箱が並ぶと、中身の区別がつきません。",
           "spot": ["plain"],
           "label": [
             {
@@ -194,7 +241,7 @@
           ]
         },
         {
-          "say": "名札を付けると、ひと目で分かるようになります。",
+          "say": "名札を付ければ、ひと目で分かるようになりますね。",
           "spot": ["tagged"],
           "label": [
             {
@@ -205,10 +252,10 @@
           "pause": 1
         },
         {
-          "say": "見終えると、const を使った1行が読めるようになります。",
-          "speech": "見終えると、コンストを使った一行が読めるようになります。",
+          "say": "見終えるころには、この1行が読めるはずです。",
+          "speech": "見終えるころには、この一行が読めるはずです。",
           "dialog": {
-            "title": "const を使った1行が読めるようになります",
+            "title": "変数を作る1行が読めるようになります",
             "code": ["// 送料 shipping を作り、500 を入れる", "const shipping = 500;"]
           },
           "pause": 1
@@ -220,10 +267,10 @@
       "kind": "view",
       "role": "example",
       "title": "数だけのメモ",
-      "image": "art:total",
+      "image": "art:memo",
       "beats": [
         {
-          "say": "まず、身近な例で考えます。"
+          "say": "まず、身近な例で考えましょう。"
         },
         {
           "say": "メモに、500 とだけ書いてあったとします。",
@@ -231,8 +278,8 @@
           "spot": ["paper"]
         },
         {
-          "say": "何の500円なのか、あとで分からなくなります。",
-          "speech": "何の五百円なのか、あとで分からなくなります。",
+          "say": "何の500円なのか、あとで困りそうですね。",
+          "speech": "何の五百円なのか、あとで困りそうですね。",
           "label": [
             {
               "at": "paper",
@@ -250,8 +297,8 @@
       "board": "naming",
       "beats": [
         {
-          "say": "お店で、送料の500円を覚えておきます。",
-          "speech": "お店で、送料の五百円を覚えておきます。",
+          "say": "お店で、送料の500円を覚えておきたいとします。",
+          "speech": "お店で、送料の五百円を覚えておきたいとします。",
           "show": ["val"],
           "tag": {
             "val": "500円"
@@ -259,7 +306,7 @@
           "pulse": ["val"]
         },
         {
-          "say": "箱を用意して、送料という名札を付けます。",
+          "say": "そこで、送料という名札を付けた箱を用意しました。",
           "show": ["box"],
           "tag": {
             "box": "送料"
@@ -267,8 +314,8 @@
           "pulse": ["box"]
         },
         {
-          "say": "その箱に、500円を入れておきます。",
-          "speech": "その箱に、五百円を入れておきます。",
+          "say": "この箱に、500円を入れておきます。",
+          "speech": "この箱に、五百円を入れておきます。",
           "show": ["put"],
           "travel": {
             "along": ["put"],
@@ -276,7 +323,7 @@
           }
         },
         {
-          "say": "係は、送料と呼ぶだけで中身を使えます。",
+          "say": "あとは、送料と呼ぶだけで中身を使えるんです。",
           "show": ["take", "use"],
           "tag": {
             "use": "500円"
@@ -288,7 +335,12 @@
           "pulse": ["use"]
         },
         {
-          "say": "プログラムでも、同じように値に名前を付けます。",
+          "say": "名前の付いた箱を、プログラムでは変数と呼びます。",
+          "term": {
+            "text": "変数",
+            "ruby": "へんすう",
+            "note": "名前を付けた値の入れ物"
+          },
           "pulse": ["box"],
           "pause": 1
         }
@@ -298,33 +350,33 @@
       "id": "write",
       "kind": "code",
       "role": "syntax",
-      "title": "const で名前を付ける",
+      "title": "const で変数を作る",
       "code": ["// 送料 shipping を作り、500 を入れる", "const shipping = 500;"],
       "panel": {
         "kind": "figure",
-        "board": "naming"
+        "board": "variable"
       },
       "beats": [
         {
-          "say": "送料に名前を付けるコードは、こう書きます。",
+          "say": "変数を作るコードは、こう書きます。",
           "type": [0, 1],
           "figure": {
-            "untag": ["use"]
+            "show": ["val", "put", "box", "take", "use"]
           }
         },
         {
-          "say": "const は、値に名前を付けるという印です。",
+          "say": "const は、変数を作るという印です。",
           "part": {
             "line": 1,
             "text": "const",
-            "note": "名前を付ける"
+            "note": "変数を作る"
           },
           "figure": {
             "pulse": ["box"]
           }
         },
         {
-          "say": "その後ろは、自分で考えて付けた名前です。",
+          "say": "その後ろに、自分で考えた名前を書きます。",
           "part": {
             "line": 1,
             "text": "shipping"
@@ -336,8 +388,8 @@
           }
         },
         {
-          "say": "shipping は、送料という意味の英語です。",
-          "speech": "シッピングは、送料という意味の英語です。",
+          "say": "shipping は、送料という意味の英語ですね。",
+          "speech": "シッピングは、送料という意味の英語ですね。",
           "part": {
             "line": 1,
             "text": "shipping",
@@ -346,7 +398,7 @@
           "pause": 1
         },
         {
-          "say": "イコールの右が、名前を付ける値です。",
+          "say": "イコールの右には、入れる値を書きます。",
           "part": {
             "line": 1,
             "text": "500"
@@ -359,7 +411,8 @@
           }
         },
         {
-          "say": "右の値を、左の名前に入れます。",
+          "say": "これで、500 が shipping に入りました。",
+          "speech": "これで、五百がシッピングに入りました。",
           "part": {
             "line": 1,
             "text": "=",
@@ -384,7 +437,7 @@
       "show": true,
       "panel": {
         "kind": "figure",
-        "board": "naming"
+        "board": "variable"
       },
       "beats": [
         {
@@ -398,23 +451,11 @@
           }
         },
         {
-          "say": "値を名前に入れることを、代入と呼びます。",
+          "say": "値を変数に入れることを、代入と呼びます。",
           "term": {
             "text": "代入",
             "ruby": "だいにゅう",
-            "note": "値を名前に入れること"
-          },
-          "pause": 1
-        },
-        {
-          "say": "名前で値を使えるようにしたものが、変数です。",
-          "term": {
-            "text": "変数",
-            "ruby": "へんすう",
-            "note": "名前を付けた値"
-          },
-          "figure": {
-            "pulse": ["box"]
+            "note": "値を変数に入れること"
           },
           "pause": 1
         },
@@ -450,36 +491,36 @@
       "show": [0, 1, 6],
       "panel": {
         "kind": "figure",
-        "board": "naming"
+        "board": "variable"
       },
       "beats": [
         {
-          "say": "前の動画の関数に、この1行を入れます。",
-          "speech": "前の動画の関数に、この一行を入れます。",
+          "say": "前の動画の関数に、この1行を入れてみましょう。",
+          "speech": "前の動画の関数に、この一行を入れてみましょう。",
           "type": [2, 3],
           "figure": {
             "pulse": ["box"]
           }
         },
         {
-          "say": "足す数を、500 ではなく名前で書けます。",
-          "speech": "足す数を、五百ではなく名前で書けます。",
+          "say": "足す数は、500 ではなく変数の名前で書けるんです。",
+          "speech": "足す数は、五百ではなく変数の名前で書けるんです。",
           "type": [4, 5],
           "figure": {
             "pulse": ["use"]
           }
         },
         {
-          "say": "1200 を渡して、呼び出してみます。",
-          "speech": "千二百を渡して、呼び出してみます。",
+          "say": "1200 を渡して、この関数を呼び出します。",
+          "speech": "千二百を渡して、この関数を呼び出します。",
           "type": [7, 8],
           "figure": {
             "pulse": []
           }
         },
         {
-          "say": "shipping には、500 が入っています。",
-          "speech": "シッピングには、五百が入っています。",
+          "say": "shipping の中身は、500 でしたね。",
+          "speech": "シッピングの中身は、五百でしたね。",
           "part": {
             "line": 3,
             "text": "shipping = 500"
@@ -489,8 +530,8 @@
           }
         },
         {
-          "say": "price の 1200 に、shipping の 500 を足します。",
-          "speech": "プライスの千二百に、シッピングの五百を足します。",
+          "say": "price の 1200 に、その 500 を足すと 1700 です。",
+          "speech": "プライスの千二百に、その五百を足すと千七百です。",
           "part": {
             "line": 5,
             "text": "price + shipping"
@@ -503,8 +544,8 @@
           }
         },
         {
-          "say": "1700 が、呼び出した場所に戻ります。",
-          "speech": "千七百が、呼び出した場所に戻ります。",
+          "say": "この 1700 が、呼び出した場所に戻ってきます。",
+          "speech": "この千七百が、呼び出した場所に戻ってきます。",
           "focus": [8],
           "figure": {
             "tag": {
@@ -536,16 +577,16 @@
       },
       "beats": [
         {
-          "say": "この1行も、2種類に分けて見てみます。",
-          "speech": "この一行も、二種類に分けて見てみます。",
+          "say": "この1行も、2種類に分けて見てみましょう。",
+          "speech": "この一行も、二種類に分けて見てみましょう。",
           "focus": [3],
           "figure": {
             "show": ["pfixed", "pfree"]
           }
         },
         {
-          "say": "const と、イコールとセミコロンは、決まった書き方です。",
-          "speech": "コンストと、イコールとセミコロンは、決まった書き方です。",
+          "say": "const と、イコールとセミコロンは決まった書き方です。",
+          "speech": "コンストと、イコールとセミコロンは決まった書き方です。",
           "classify": {
             "fixed": [
               {
@@ -570,8 +611,8 @@
           }
         },
         {
-          "say": "shipping は、自分で付けた名前です。",
-          "speech": "シッピングは、自分で付けた名前です。",
+          "say": "一方、shipping は自分で付けた名前でした。",
+          "speech": "一方、シッピングは自分で付けた名前でした。",
           "classify": {
             "free": [
               {
@@ -592,8 +633,8 @@
           }
         },
         {
-          "say": "500 も、自分で決めた値です。",
-          "speech": "五百も、自分で決めた値です。",
+          "say": "500 という値も、自分で決めています。",
+          "speech": "五百という値も、自分で決めています。",
           "classify": {
             "free": [
               {
@@ -612,20 +653,20 @@
       "role": "quiz",
       "title": "戻ってくる値はいくつ",
       "code": [
-        "// 本の値段を受け取り、包装代を足して返す関数",
-        "function addWrapping(price: number): number {",
-        "  // 包装代 wrapping を作り、300 を入れる",
-        "  const wrapping = 300;",
-        "  // 値段に包装代を足して返す",
-        "  return price + wrapping;",
+        "// チケット代を受け取り、手数料を足して返す関数",
+        "function addFee(ticket: number): number {",
+        "  // 手数料 fee を作り、150 を入れる",
+        "  const fee = 150;",
+        "  // チケット代に手数料を足して返す",
+        "  return ticket + fee;",
         "}",
-        "// 2000 円の本の値段を渡して、関数を呼ぶ",
-        "addWrapping(2000);"
+        "// 1800 円のチケット代を渡して、関数を呼ぶ",
+        "addFee(1800);"
       ],
       "show": [0, 1, 2, 3, 4, 5, 6],
       "panel": {
         "kind": "figure",
-        "board": "naming"
+        "board": "variable"
       },
       "reset": true,
       "think": 8,
@@ -637,21 +678,33 @@
           }
         },
         {
-          "say": "この関数は、包装代に名前を付けています。",
+          "say": "映画のチケットを買う関数を用意しました。",
+          "part": {
+            "line": 1,
+            "text": "addFee"
+          },
+          "figure": {
+            "pulse": ["use"]
+          }
+        },
+        {
+          "say": "fee は、手数料という意味の英語ですね。",
+          "speech": "フィーは、手数料という意味の英語ですね。",
           "part": {
             "line": 3,
-            "text": "wrapping"
+            "text": "fee",
+            "note": "手数料"
           },
           "figure": {
             "tag": {
-              "box": "wrapping"
+              "box": "fee"
             },
             "pulse": ["box"]
           }
         },
         {
-          "say": "この関数に、2000 を渡して呼び出します。",
-          "speech": "この関数に、二千を渡して呼び出します。",
+          "say": "この関数に、1800 を渡して呼び出します。",
+          "speech": "この関数に、千八百を渡して呼び出します。",
           "type": [7, 8]
         },
         {
@@ -674,28 +727,28 @@
       "role": "answer",
       "title": "答え合わせ",
       "code": [
-        "// 本の値段を受け取り、包装代を足して返す関数",
-        "function addWrapping(price: number): number {",
-        "  // 包装代 wrapping を作り、300 を入れる",
-        "  const wrapping = 300;",
-        "  // 値段に包装代を足して返す",
-        "  return price + wrapping;",
+        "// チケット代を受け取り、手数料を足して返す関数",
+        "function addFee(ticket: number): number {",
+        "  // 手数料 fee を作り、150 を入れる",
+        "  const fee = 150;",
+        "  // チケット代に手数料を足して返す",
+        "  return ticket + fee;",
         "}",
-        "// 2000 円の本の値段を渡して、関数を呼ぶ",
-        "addWrapping(2000);"
+        "// 1800 円のチケット代を渡して、関数を呼ぶ",
+        "addFee(1800);"
       ],
       "show": true,
       "panel": {
         "kind": "figure",
-        "board": "naming"
+        "board": "variable"
       },
       "beats": [
         {
-          "say": "答えは、2300 です。",
-          "speech": "答えは、二千三百です。",
+          "say": "答えは、1950 です。",
+          "speech": "答えは、千九百五十です。",
           "figure": {
             "tag": {
-              "use": "2300"
+              "use": "1950"
             },
             "mark": [
               {
@@ -715,67 +768,67 @@
       "role": "explain",
       "title": "名前を値に読みかえる",
       "code": [
-        "// 本の値段を受け取り、包装代を足して返す関数",
-        "function addWrapping(price: number): number {",
-        "  // 包装代 wrapping を作り、300 を入れる",
-        "  const wrapping = 300;",
-        "  // 値段に包装代を足して返す",
-        "  return price + wrapping;",
+        "// チケット代を受け取り、手数料を足して返す関数",
+        "function addFee(ticket: number): number {",
+        "  // 手数料 fee を作り、150 を入れる",
+        "  const fee = 150;",
+        "  // チケット代に手数料を足して返す",
+        "  return ticket + fee;",
         "}",
-        "// 2000 円の本の値段を渡して、関数を呼ぶ",
-        "addWrapping(2000);"
+        "// 1800 円のチケット代を渡して、関数を呼ぶ",
+        "addFee(1800);"
       ],
       "show": true,
       "panel": {
         "kind": "figure",
-        "board": "naming"
+        "board": "variable"
       },
       "beats": [
         {
-          "say": "wrapping には、300 が入っています。",
-          "speech": "ラッピングには、三百が入っています。",
+          "say": "変数 fee には、150 が入っています。",
+          "speech": "変数フィーには、百五十が入っています。",
           "part": {
             "line": 3,
-            "text": "wrapping = 300"
+            "text": "fee = 150"
           },
           "figure": {
             "tag": {
-              "val": "300"
+              "val": "150"
             },
             "pulse": ["val"]
           }
         },
         {
-          "say": "price には、渡した 2000 が入ります。",
-          "speech": "プライスには、渡した二千が入ります。",
+          "say": "引数の ticket は、渡した 1800 ですね。",
+          "speech": "引数のチケットは、渡した千八百ですね。",
           "part": {
             "line": 1,
-            "text": "price"
+            "text": "ticket"
           },
           "figure": {
             "pulse": []
           }
         },
         {
-          "say": "price 足す wrapping は、2000 足す 300 です。",
-          "speech": "プライス足すラッピングは、二千足す三百です。",
+          "say": "ticket 足す fee は、1800 足す 150 になります。",
+          "speech": "チケット足すフィーは、千八百足す百五十になります。",
           "part": {
             "line": 5,
-            "text": "price + wrapping"
+            "text": "ticket + fee"
           },
           "figure": {
             "tag": {
-              "use": "2000＋300"
+              "use": "1800＋150"
             },
             "pulse": ["use"]
           }
         },
         {
-          "say": "名前を値に読みかえると、2300 と分かります。",
-          "speech": "名前を値に読みかえると、二千三百と分かります。",
+          "say": "名前を値に読みかえれば、1950 だと分かりますね。",
+          "speech": "名前を値に読みかえれば、千九百五十だと分かりますね。",
           "figure": {
             "tag": {
-              "use": "2300"
+              "use": "1950"
             }
           },
           "pause": 1
@@ -785,17 +838,17 @@
     {
       "id": "uses",
       "role": "usage",
-      "title": "名前を付ける場面",
+      "title": "変数を使う場面",
       "board": "uses",
       "beats": [
         {
-          "say": "意味のある数には、名前を付けておきます。",
+          "say": "意味のある数には、名前を付けておきましょう。",
           "show": ["rate"]
         },
         {
-          "say": "税の割合や送料は、名前があると読みやすくなります。",
-          "show": ["fee"],
-          "pulse": ["rate", "fee"]
+          "say": "税の割合や送料は、名前があると読みやすいです。",
+          "show": ["truck"],
+          "pulse": ["rate", "truck"]
         },
         {
           "say": "部屋の定員のように、何度も使う数にも向いています。",
@@ -803,9 +856,9 @@
           "pulse": ["seats"]
         },
         {
-          "say": "数が変わっても、名前を付けた1か所を直せば済みます。",
-          "speech": "数が変わっても、名前を付けた一か所を直せば済みます。",
-          "pulse": ["rate", "fee", "seats"],
+          "say": "数が変わっても、直すのは1か所で済みますね。",
+          "speech": "数が変わっても、直すのは一か所で済みますね。",
+          "pulse": ["rate", "truck", "seats"],
           "pause": 1
         }
       ]
@@ -829,8 +882,8 @@
       },
       "beats": [
         {
-          "say": "問1の関数の中でも、const を使えます。",
-          "speech": "問いちの関数の中でも、コンストを使えます。",
+          "say": "問1の関数の中でも、変数を作れます。",
+          "speech": "問いちの関数の中でも、変数を作れます。",
           "part": {
             "line": 3,
             "text": "// ここに書く"
@@ -840,7 +893,7 @@
           }
         },
         {
-          "say": "税の割合のような数に、名前を付けてみましょう。",
+          "say": "税の割合のような数に、名前を付けてみてください。",
           "figure": {
             "tag": {
               "ttax": "名前を付ける"
@@ -849,7 +902,7 @@
           }
         },
         {
-          "say": "名前は、中身が分かる英語で付けます。",
+          "say": "名前は、中身が分かる英語にするのがこつです。",
           "focus": [3],
           "pause": 1
         }
@@ -858,6 +911,6 @@
   ],
   "polish": {
     "model": "gemini-4-argon",
-    "sayHash": "7755922535a1d525d8fa48acbbbf9dabd4cc124769bc89597a6ddfbb475d69e5"
+    "sayHash": "89e2d726301b6eb0b18700390280eacae621f4664eff987d5743d7078b220978"
   }
 }

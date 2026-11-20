@@ -761,6 +761,41 @@ describe("schema 2 のレッスン型", () => {
       beats: [{ say: "値を比べます。", show: ["read"] }],
     })),
   });
+  it.each([
+    ["値です。", "名前です。", "です"],
+    ["どちらでしょうか？", "どの値でしょうか?", "うか"],
+  ])("続く文の末尾が同じなら、後ろの文でエラーにする (%s %s)", (first, second, ending) => {
+    const storyboard = lesson();
+    storyboard.scenes[0].beats = [
+      { say: first, show: ["read"] },
+      { say: second, show: ["quiz"] },
+    ];
+    expect(parseStoryboard(storyboard).issues.filter((issue) => issue.level === "error")).toEqual([
+      {
+        level: "error",
+        path: "scenes[0].beats[1].say",
+        message: `同じ文末 (〜${ending}) が続いています。言い方を変えてください`,
+      },
+    ]);
+  });
+  it("同じ文末でも、間に違う文末があるか場面が変われば通る", () => {
+    const storyboard = lesson();
+    storyboard.scenes[0].beats = [
+      { say: "値です。", show: ["read"] },
+      { say: "値を比べます。", show: ["quiz"] },
+      { say: "答えです。", hide: ["quiz"] },
+    ];
+    storyboard.scenes[1].beats[0].say = "次の例です。";
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+  });
+  it("schema 1 では同じ文末が続いても通る", () => {
+    const storyboard = fresh();
+    storyboard.scenes[0].beats.forEach((beat) => {
+      beat.say = "ここが目印です。";
+    });
+    expect(storyboard.scenes[0].beats.length).toBeGreaterThan(1);
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+  });
   it("9場面で通り、最後の図解に全ノードが出なくてもよい", () => {
     const storyboard = lesson();
     const result = parseStoryboard(storyboard);
@@ -1035,7 +1070,7 @@ describe("schema 2 のレッスン型", () => {
     Object.assign(mixed.scenes[3], {
       kind: "view",
       image: "shot:web/sample",
-      beats: [{ say: "画面を出します。" }, termBeat],
+      beats: [{ say: "こちらが例です。" }, termBeat],
     });
     expect(parseStoryboard(mixed).storyboard).toEqual(mixed);
   });
@@ -1092,7 +1127,7 @@ describe("schema 2 のレッスン型", () => {
     Object.assign(storyboard.scenes[0], {
       kind: "view",
       image: "shot:web/sample",
-      beats: [{ say: "画面を出します。" }, beat],
+      beats: [{ say: "こちらが例です。" }, beat],
     });
     expect(storyboard.scenes[0].role).toBe("goal");
     storyboard.scenes[1].beats = [beat];
@@ -1148,7 +1183,7 @@ describe("schema 2 のレッスン型", () => {
     const storyboard = lesson();
     storyboard.scenes[0].beats = [
       { say: "読む場所を出します。", show: ["read"], pulse: ["read"] },
-      { say: "強調を外します。", pulse: [] },
+      { say: "強調はここまでです。", pulse: [] },
     ];
     expect(parseStoryboard(storyboard).issues.filter((issue) => issue.level === "error")).toEqual(
       [],
@@ -1175,25 +1210,25 @@ describe("schema 2 のレッスン型", () => {
     expect(
       whiffs([
         { say: "読む場所を出します。", show: ["read", "quiz"], pulse: ["read"] },
-        { say: "同じ場所を見ます。", pulse: ["read"] },
+        { say: "同じ場所ですね。", pulse: ["read"] },
       ]),
     ).toContainEqual(at);
     expect(
       whiffs([
         { say: "読む場所を出します。", show: ["read", "quiz"], pulse: ["read", "quiz"] },
-        { say: "順を変えて見ます。", pulse: ["quiz", "read"] },
+        { say: "順を変えてみましょう。", pulse: ["quiz", "read"] },
       ]),
     ).toContainEqual(at);
     expect(
       whiffs([
         { say: "読む場所を出します。", show: ["read", "quiz"], pulse: ["read"] },
-        { say: "問題を見ます。", pulse: ["quiz"] },
+        { say: "問題を見ましょう。", pulse: ["quiz"] },
       ]),
     ).toEqual([]);
     expect(
       whiffs([
         { say: "読む場所を出します。", show: ["read"], pulse: ["read"] },
-        { say: "強調を外します。", pulse: [] },
+        { say: "強調はここまでです。", pulse: [] },
       ]),
     ).toEqual([]);
     expect(
@@ -1368,7 +1403,7 @@ describe("コードの横の概念図", () => {
       beats: [
         { say: "価格に印を付けます。", figure: { mark: [{ on: "price", kind: "check" }] } },
         {
-          say: "合計に値を渡します。",
+          say: "合計に渡す値は、この価格です。",
           figure: {
             travel: { along: ["price-shipping", "shipping-total"] },
             tag: { total: "1200" },
@@ -1633,7 +1668,7 @@ describe("コードの横の概念図", () => {
         : { ...example, id: role, role, reset: true },
     );
     expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
-    code.beats.push({ say: "もう一度色分けします。", classify });
+    code.beats.push({ say: "同じ色分けですね。", classify });
     expect(parseStoryboard(storyboard).issues).toContainEqual(
       expect.objectContaining({
         path: "scenes[2].beats[3]",

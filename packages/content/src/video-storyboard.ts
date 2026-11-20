@@ -609,6 +609,7 @@ export function parseStoryboard(
     }
     if (s.kind !== "code" && s.reset !== undefined && typeof s.reset !== "boolean")
       error(`${p}.reset`, "真偽値にしてください");
+    let previousEnding: string | undefined;
     arr(s.beats, `${p}.beats`, 1, s.kind === "code" ? 6 : 5).forEach((value, j) => {
       const q = `${p}.beats[${j}]`,
         beat = obj(value, q);
@@ -620,6 +621,16 @@ export function parseStoryboard(
           /^\s*(?:[-+>]|\d+[.)])\s/u.test(beat.say))
       )
         error(`${q}.say`, "文末を1つにした1文にし、括弧・改行・Markdown・禁止記号を除いてください");
+      if (lesson) {
+        const ending =
+          typeof beat.say === "string" && /[。？?]$/u.test(beat.say)
+            ? Array.from(beat.say.slice(0, -1)).slice(-2)
+            : [];
+        const currentEnding = ending.length === 2 ? ending.join("") : undefined;
+        if (currentEnding !== undefined && currentEnding === previousEnding)
+          error(`${q}.say`, `同じ文末 (〜${currentEnding}) が続いています。言い方を変えてください`);
+        previousEnding = currentEnding;
+      }
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
       if (beat.classify !== undefined && s.kind !== "code")
         error(`${q}.classify`, "classify は schema 2 のコードの場面だけに指定できます");

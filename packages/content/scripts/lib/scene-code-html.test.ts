@@ -1465,22 +1465,23 @@ it("schema 2 の吹き出しは 0.94 から等倍へフェードする", async (
   expect(Number(bubble.style.opacity)).toBeCloseTo(1);
 });
 
-it("schema 2 は吹き出しの有無によらず下線の丸い番号を外す", async () => {
+it.each([1, 2] as const)("schema %i の下線・行の強調・丸い番号・吹き出しを描く", async (schema) => {
   const scene: CodeScene = {
     kind: "code",
     id: "part",
     role: "syntax",
     title: "名前",
-    code: ["function add() {}"],
+    code: ["function add() {}", "add();"],
     show: true,
     beats: [
       { say: "関数です。", part: { line: 0, text: "function" } },
-      { say: "名前です。", part: { line: 0, text: "add", note: "足す" } },
+      { say: "名前を見ます。", focus: [1], part: { line: 0, text: "add", note: "足す" } },
+      { say: "ここまでですね。" },
     ],
   };
-  const timing = sceneTimelines([scene], [[2, 2]], undefined, 2)[0];
+  const timing = sceneTimelines([scene], [[2, 2, 2]], undefined, schema)[0];
   const html = sceneHtml({
-    schema: 2,
+    schema,
     scene,
     timing,
     state: codeSceneState(scene),
@@ -1491,6 +1492,7 @@ it("schema 2 は吹き出しの有無によらず下線の丸い番号を外す"
   expect(html).not.toContain("classification-legend");
   let numbered = false;
   let bubble = "";
+  let markup = "";
   const span = {
     getBoundingClientRect: () => ({ left: 25, right: 80, top: 30, bottom: 66 }),
     closest: () => null,
@@ -1502,7 +1504,8 @@ it("schema 2 は吹き出しの有無によらず下線の丸い番号を外す"
   };
   const code = {
     children: [{ querySelector: () => ({}) }],
-    set innerHTML(_html: string) {
+    set innerHTML(html: string) {
+      markup = html;
       numbered = false;
       bubble = "";
     },
@@ -1555,12 +1558,22 @@ it("schema 2 は吹き出しの有無によらず下線の丸い番号を外す"
   };
   for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
     runInNewContext(script, scripts);
+  const opacities = () =>
+    Array.from(markup.matchAll(/class="line" style="opacity:([^"]+)"/g), (match) =>
+      Number(match[1]),
+    );
   await window.__setTime(timing.beats[0].start);
-  expect(numbered).toBe(false);
+  expect(opacities()).toEqual([1, schema === 2 ? 0.38 : 1]);
+  expect(numbered).toBe(schema === 1);
   expect(bubble).toBe("");
+  await window.__setTime(timing.beats[1].start - 0.1);
+  expect(opacities()).toEqual([1, schema === 2 ? 0.38 : 1]);
   await window.__setTime(timing.beats[1].start + 0.3);
+  expect(opacities()).toEqual([0.38, 1]);
   expect(numbered).toBe(false);
   expect(bubble).toBe("足す");
+  await window.__setTime(timing.beats[2].start);
+  expect(opacities()).toEqual([1, 1]);
 });
 
 it("色の地と凡例の不透明度を時刻から求め、打った文字の範囲にだけ地を敷く", async () => {
