@@ -87,7 +87,7 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 
 seed は SQL を D1 の 100KB/query に収まるチャンクへ割って**直列に**適用する（FK 順と upsert 順があるので並列にしないこと）。remote は 1 プロセスから D1 の HTTP API (`/query`) を叩く（`apps/api/scripts/lib/d1-remote.ts`）。チャンクごとに `bunx wrangler d1 execute` を起こしていた頃は、D1 上の実行時間が合計 4 秒なのに壁時計が 8 分半で、差はすべて CLI の起動と通信だった。途中で落ちたら何チャンク目かを出して失敗させる（「成功したことにしない」）。HTTP 側で問題が出たときは `cd apps/api && bun run scripts/seed-d1.ts --remote --content-only --wrangler` で旧経路（チャンクごとに `wrangler d1 execute`）に戻せる。local (`--local`) は miniflare の実体に書く必要があるので wrangler のままで、チャンクに割らず全文を 1 回で流す（起動だけで 1 回 3〜4 秒かかるので、チャンクごとに起こすと 20 分を超える）。
 
-seed は `packages/content/stages/<slug>/` を正本として各ステージを D1 に upsert し、GitHub から消えたトピック / セクションは prune する。旧デモのステージ (`web-fundamentals` 等) は安定 UUID で削除する。デプロイ時は `db:seed:remote:content`（検証用 `seed-*` ユーザー / 提出は含めない）。CMS で作った別 ID のコースのレッスンツリーは触らない。
+seed は `packages/content/stages/<slug>/` を正本として各ステージを D1 に upsert し、GitHub から消えたトピック / セクションは prune する。旧デモのステージ (`web-fundamentals` 等) は安定 UUID で削除する。デプロイ時は `db:seed:remote:content` を使い、remote の seed は常に教材だけを適用する。検証用の `seed-*` ユーザー・提出・受講登録は local の `db:seed` だけが作る。CMS で作った別 ID のコースのレッスンツリーは触らない。
 
 **seed は内容の変わった行だけを書く**（upsert の `do update ... where 列 is not excluded.列 or ...`。`export-seed-sql.ts` の `doUpdate`）。D1 は内容が同じでも書き直した行を書き込み行数に数え、**無料枠は 1 日 10 万行の書き込み**で止まる（2026-10-06 に全行を書き直す seed でデプロイが止まった）。remote の seed はログの最後に D1 が返した `rows_written` の合計を出す。upsert を足すときも `doUpdate` を通し、`export-seed-sql-writes.test.ts`（2 回目の seed は 0 行）を通すこと。
 

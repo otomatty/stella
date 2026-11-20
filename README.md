@@ -90,7 +90,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
      "select user_id, count(*) from enrollments where user_id like 'seed-learner%' group by user_id"
    ```
 
-   ステージ ID が安定 UUID に変わったあと、古いローカル D1 で seed が失敗する場合は `apps/api/.wrangler/state`（または同等のローカル D1 状態）を削除してから `bun run db:migrate && bun run db:seed` をやり直してください。リモート D1（`db:seed:remote`）も既存のランダムな stage ID は書き換えられないため、安定 UUID 導入前に seed 済みなら wipe/再作成するか、衝突する stages 行を消してから再 seed してください。
+   ステージ ID が安定 UUID に変わったあと、古いローカル D1 で seed が失敗する場合は `apps/api/.wrangler/state`（または同等のローカル D1 状態）を削除してから `bun run db:migrate && bun run db:seed` をやり直してください。リモート D1（`db:seed:remote:content`）も既存のランダムな stage ID は書き換えられないため、安定 UUID 導入前に seed 済みなら wipe/再作成するか、衝突する stages 行を消してから再 seed してください。
 
 ### 起動（既定）
 
