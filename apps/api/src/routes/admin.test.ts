@@ -29,6 +29,31 @@ describe("ユーザー管理", () => {
 
   const token = () => signAccessToken(SECRET, "admin", "admin@example.test");
 
+  it("招待前にログインした人のGoogle画像をプロフィールに保存し、ユーザー一覧に返す", async () => {
+    const image = "https://lh3.googleusercontent.com/a/avatar";
+    const insert = db.sqlite.prepare(
+      "INSERT INTO auth_users (id, email, image, created_at) VALUES (?, ?, ?, 1)",
+    );
+    insert.run("early", "early@example.test", image);
+    insert.run("other", "other@example.test", "https://example.test/avatar");
+    const adminToken = await token();
+    const invite = await request(app, env, "/api/admin/users/invite", {
+      method: "POST",
+      token: adminToken,
+      body: JSON.stringify({
+        invites: [
+          { email: "early@example.test", displayName: "受講者A", role: "student" },
+          { email: "other@example.test", displayName: "受講者B", role: "student" },
+        ],
+      }),
+    });
+    expect(invite.status).toBe(200);
+    const list = await request(app, env, "/api/admin/users", { token: adminToken });
+    const { rows } = await json<{ rows: { id: string; avatar_url: string | null }[] }>(list);
+    expect(rows.find((row) => row.id === "early")?.avatar_url).toBe(image);
+    expect(rows.find((row) => row.id === "other")?.avatar_url).toBeNull();
+  });
+
   it("招待するとロールが保存され、受講登録は作られない", async () => {
     const res = await request(app, env, "/api/admin/users/invite", {
       method: "POST",

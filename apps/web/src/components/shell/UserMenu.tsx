@@ -5,7 +5,7 @@
  */
 
 import { ChevronsUpDown, Eye, GraduationCap, LogOut, Settings } from "@/lib/icons";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,15 +45,11 @@ export const UserMenu = ({
       className="flex w-full items-center gap-2.5 rounded-xl border border-transparent px-1.5 py-1.5 text-left transition-colors hover:bg-sunken hover:border-border data-[state=open]:bg-sunken data-[state=open]:border-border"
       aria-label="ユーザーメニュー"
     >
-      <Avatar>
-        {user.avatarUrl ? (
-          // referrerPolicy: googleusercontent は Referer 付きだと 403 を返すことがある。
-          <AvatarImage src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
-        ) : null}
-        <AvatarFallback className="bg-ink text-card font-display text-[11px] font-bold">
-          {user.initials}
-        </AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        src={user.avatarUrl}
+        fallback={user.initials}
+        fallbackClassName="bg-ink text-card font-display text-[11px] font-bold"
+      />
       <div className="min-w-0 flex-1 text-xs">
         <div className="truncate font-bold text-foreground">{user.name}</div>
         <div className="truncate text-[11px] text-ink-3">{user.email}</div>

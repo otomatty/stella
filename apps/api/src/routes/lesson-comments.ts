@@ -67,6 +67,7 @@ const entryColumns = {
   id: lessonComments.id,
   userId: lessonComments.userId,
   name: profiles.displayName,
+  avatarUrl: profiles.avatarUrl,
   role: profiles.role,
   body: lessonComments.body,
   createdAt: lessonComments.createdAt,
@@ -76,6 +77,7 @@ type Entry = {
   id: string;
   userId: string;
   name: string;
+  avatarUrl: string | null;
   role: CommentAuthor["role"];
   body: string;
   createdAt: Date;
@@ -88,7 +90,13 @@ function canManage(caller: Caller, authorId: string) {
 function commentEntry(row: Entry, caller: Caller) {
   return {
     id: row.id,
-    author: { id: row.userId, name: row.name, role: row.role, is_self: row.userId === caller.id },
+    author: {
+      id: row.userId,
+      name: row.name,
+      avatar_url: row.avatarUrl,
+      role: row.role,
+      is_self: row.userId === caller.id,
+    },
     body: row.body,
     created_at: row.createdAt.getTime(),
     can_delete: canManage(caller, row.userId),
@@ -538,7 +546,11 @@ lessonCommentsRoute.post(PATH, async (c) => {
       where not exists ${recentPosts}
       ${expectedVideoPath === undefined ? sql.empty() : sql`and exists ${matchingVideo}`}
     `)
-      .returning({ id: lessonComments.id });
+      .returning({
+        avatarUrl: sql<
+          string | null
+        >`(select ${profiles.avatarUrl} from ${profiles} where ${profiles.id} = ${caller.id})`,
+      });
 
     const pending = [...recipientIds].map((userId) => {
       const mentioned = mentions.has(userId);
@@ -607,10 +619,18 @@ lessonCommentsRoute.post(PATH, async (c) => {
       ...(expectedVideoPath === undefined ? [] : ([matchingVideo] as const)),
     ]);
     if (matchedVideo?.length === 0) throw new ApiError(VIDEO_UPDATED, 409);
-    if (!inserted.length)
-      throw new ApiError("コメントが多すぎます。時間をおいて再試行してください", 429);
+    const [saved] = inserted;
+    if (!saved) throw new ApiError("コメントが多すぎます。時間をおいて再試行してください", 429);
 
-    const entry = { id, userId: caller.id, name: caller.name, role: caller.role, body, createdAt };
+    const entry = {
+      id,
+      userId: caller.id,
+      name: caller.name,
+      avatarUrl: saved.avatarUrl,
+      role: caller.role,
+      body,
+      createdAt,
+    };
     if (parentId) {
       const reply: CommentReply = { ...commentEntry(entry, caller), mentions: savedMentions };
       return c.json(reply, 201);

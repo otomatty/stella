@@ -5,7 +5,7 @@ import {
   type CommentMention,
   type CommentThread,
 } from "@stella/shared/lessons/comments";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,19 +24,14 @@ import { formatVideoTime } from "@/lib/video-player";
 export const COMMENT_ACTION = "min-h-8 min-w-8";
 export const COMMENT_PRIMARY = "min-h-11 min-w-11 sm:min-h-8 sm:min-w-8";
 
-export function CommentAvatar({
-  initials,
-  name,
-  small = false,
-}: {
-  initials: string;
-  name: string;
-  small?: boolean;
-}) {
+function AuthorAvatar({ author }: { author: CommentAuthor }) {
   return (
-    <Avatar size={small ? "sm" : "md"} title={name} aria-hidden="true">
-      <AvatarFallback>{initials}</AvatarFallback>
-    </Avatar>
+    <UserAvatar
+      src={author.avatar_url}
+      size="sm"
+      title={author.name}
+      fallback={Array.from(author.name).slice(0, 2).join("")}
+    />
   );
 }
 
@@ -111,7 +106,10 @@ export function LessonCommentThread({
         </Button>
       )}
       <div className="min-w-0 flex-1 space-y-2">
-        <AuthorLine author={thread.author} createdAt={thread.created_at} />
+        <div className="flex items-center gap-2">
+          <AuthorAvatar author={thread.author} />
+          <AuthorLine author={thread.author} createdAt={thread.created_at} />
+        </div>
         {current || thread.resolved || thread.state === "outdated" ? (
           <div className="flex flex-wrap gap-1">
             {current ? <Badge variant="accent">いまの場面</Badge> : null}
@@ -208,11 +206,7 @@ export function LessonCommentThread({
             {open
               ? thread.replies.map((reply) => (
                   <li key={reply.id} className="flex items-start gap-2">
-                    <CommentAvatar
-                      name={reply.author.name}
-                      initials={Array.from(reply.author.name).slice(0, 2).join("")}
-                      small
-                    />
+                    <AuthorAvatar author={reply.author} />
                     <div className="min-w-0 flex-1">
                       <AuthorLine author={reply.author} createdAt={reply.created_at} />
                       <p className="mt-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">

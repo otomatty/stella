@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -47,7 +47,6 @@ import {
   sortQueue,
   testsPassedRows,
 } from "@/lib/review-queue";
-import type { AvatarTone } from "@/data/types";
 import { AiPassedList } from "./AiPassedList";
 import { ReviewMetricsPanel } from "./ReviewMetricsPanel";
 import { TaskBoardPanel } from "./TaskBoardPanel";
@@ -333,11 +332,7 @@ export const ReviewQueue = ({
                         <TableRow key={r.id} interactive onClick={() => open(r.id)}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Avatar size="sm">
-                                <AvatarFallback tone={r.avatarTone as AvatarTone}>
-                                  {r.studentInitials}
-                                </AvatarFallback>
-                              </Avatar>
+                              <QueueAvatar submission={r} />
                               <span className="font-medium">{r.studentName}</span>
                             </div>
                           </TableCell>
@@ -368,11 +363,12 @@ export const ReviewQueue = ({
 
 function QueueAvatar({ submission }: { submission: Submission }) {
   return (
-    <Avatar size="sm">
-      <AvatarFallback tone={submission.avatarTone as AvatarTone}>
-        {submission.studentInitials}
-      </AvatarFallback>
-    </Avatar>
+    <UserAvatar
+      size="sm"
+      src={submission.studentAvatarUrl}
+      fallback={submission.studentInitials}
+      tone={submission.avatarTone}
+    />
   );
 }
 

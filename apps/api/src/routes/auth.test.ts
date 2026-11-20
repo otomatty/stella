@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authRoute } from "./auth.js";
 import { signAccessToken, verifyAccessToken } from "../lib/auth-jwt.js";
+import { getAuth } from "../lib/better-auth.js";
 import type { Env } from "../env.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -181,9 +182,22 @@ describe("Better Auth (本番の経路)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("Google ログインは Better Auth が始め、旧 Google ログインの入口は 410", async () => {
+  it("Google ログインでアバターをプロフィールに保存し、旧ログインの入口は 410", async () => {
     const env = prodEnv();
     const { app } = mountTestApp(env, authRoute);
+    const provider = (await getAuth(env)?.$context)?.socialProviders.find((p) => p.id === "google");
+    if (!provider) throw new Error("Google provider missing");
+    const image = "https://lh3.googleusercontent.com/a/learner";
+    vi.spyOn(provider, "validateAuthorizationCode").mockResolvedValue({ accessToken: "test" });
+    vi.spyOn(provider, "getUserInfo").mockResolvedValue({
+      user: {
+        name: "受講者",
+        email: "learner@example.test",
+        emailVerified: true,
+        image,
+      },
+      data: { sub: "google-123" },
+    });
     const start = await request(app, env, `${WEB}/api/auth/sign-in/social`, {
       method: "POST",
       headers: { Origin: WEB },
@@ -194,7 +208,26 @@ describe("Better Auth (本番の経路)", () => {
     const google = new URL(url);
     expect(google.hostname).toBe("accounts.google.com");
     expect(google.searchParams.get("redirect_uri")).toBe(`${WEB}/api/auth/callback/google`);
-    expect(google.searchParams.get("state")).toBeTruthy();
+    const state = google.searchParams.get("state");
+    expect(state).toBeTruthy();
+    const cookie = start.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    const callback = await request(
+      app,
+      env,
+      `${WEB}/api/auth/callback/google?code=test&state=${state}`,
+      {
+        headers: { Cookie: cookie },
+      },
+    );
+    expect(callback.headers.get("location")).toBe(`${WEB}/auth/callback`);
+    expect(db.sqlite.prepare("SELECT avatar_url FROM profiles WHERE id = 'learner'").get()).toEqual(
+      {
+        avatar_url: image,
+      },
+    );
 
     expect((await request(app, env, `${WEB}/api/auth/google`)).status).toBe(410);
     expect((await request(app, env, `${WEB}/api/auth/google/callback?code=x`)).status).toBe(410);

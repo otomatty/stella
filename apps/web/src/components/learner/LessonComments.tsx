@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { UserAvatar } from "@/components/ui/avatar";
 import type { VideoPlaybackState } from "./VideoViewer";
 import type { useLessonComments } from "@/hooks/useLessonComments";
 import { defaultCommentPosition, isCurrentThread, mentionedIds } from "@/lib/lesson-comments";
@@ -22,14 +23,13 @@ import { formatVideoTime } from "@/lib/video-player";
 import {
   COMMENT_ACTION,
   COMMENT_PRIMARY,
-  CommentAvatar,
   LessonCommentThread,
   ReplyComposer,
   type ReplyDraft,
 } from "./LessonCommentThread";
 
 type Comments = ReturnType<typeof useLessonComments>;
-type Viewer = { id: string; name: string; initials: string };
+type Viewer = { id: string; name: string; initials: string; avatarUrl?: string | null };
 
 const EMPTY_REPLY: ReplyDraft = { body: "", mentions: [] };
 const FILTERS = [
@@ -192,7 +192,7 @@ export function LessonComments({
           void post();
         }}
       >
-        <CommentAvatar initials={viewer.initials} name={viewer.name} />
+        <UserAvatar src={viewer.avatarUrl} fallback={viewer.initials} title={viewer.name} />
         <div className="min-w-0 flex-1 space-y-2">
           {expanded ? (
             <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs text-ink-3">

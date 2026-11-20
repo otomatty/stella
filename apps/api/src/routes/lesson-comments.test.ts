@@ -31,6 +31,7 @@ const initialScenes = [
 describe("動画レッスンのコメント API", () => {
   let db: ReturnType<typeof sqliteD1>;
   let test: ReturnType<typeof mountTestApp>;
+  const avatarUrl = "https://lh3.googleusercontent.com/a/learner";
 
   beforeEach(() => {
     db = sqliteD1();
@@ -57,6 +58,7 @@ describe("動画レッスンのコメント API", () => {
         ('two', 'ses', 'other', 'stage', 'completed', 1),
         ('three', 'ses', 'third', 'stage', 'active', 1);
     `);
+    db.sqlite.prepare("UPDATE profiles SET avatar_url = ? WHERE id = 'learner'").run(avatarUrl);
     db.sqlite
       .prepare("UPDATE lessons SET video_scenes = ? WHERE id = 'video'")
       .run(JSON.stringify(initialScenes));
@@ -137,7 +139,13 @@ describe("動画レッスンのコメント API", () => {
     const thread = await create(learner, { body: `  ${body}\n`, positionSec: 12.5 });
     expect(thread).toEqual({
       id: expect.any(String),
-      author: { id: learner, name: "受講者", role: "student", is_self: true },
+      author: {
+        id: learner,
+        name: "受講者",
+        role: "student",
+        avatar_url: avatarUrl,
+        is_self: true,
+      },
       body,
       position_sec: 12.5,
       state: "current",
@@ -186,8 +194,11 @@ describe("動画レッスンのコメント API", () => {
   });
 
   it("返信は先頭だけに付き、メンションと通常の返信を参加者に 1 通ずつ送る", async () => {
+    const replyAvatar = "https://lh3.googleusercontent.com/a/other";
+    db.sqlite.prepare("UPDATE profiles SET avatar_url = ? WHERE id = ?").run(replyAvatar, other);
     const root = await create();
     const first = await create<CommentReply>(other, { parentId: root.id });
+    expect(first.author.avatar_url).toBe(replyAvatar);
     db.sqlite.prepare("UPDATE lesson_comments SET created_at = 1 WHERE id = ?").run(first.id);
     await create<CommentReply>(other, { parentId: root.id });
     const reply = await create<CommentReply>(third, {
@@ -228,8 +239,15 @@ describe("動画レッスンのコメント API", () => {
     expect((await post(other, { parentId: first.id })).status).toBe(404);
     expect((await post(other, { lessonId: lessons.legacy, parentId: root.id })).status).toBe(404);
     const [thread] = (await list("", third)).threads;
-    expect(thread.author).toEqual({ id: learner, name: "受講者", role: "student", is_self: false });
-    expect(thread.replies[0].id).toBe(first.id);
+    expect(thread.author).toEqual({
+      id: learner,
+      name: "受講者",
+      role: "student",
+      avatar_url: avatarUrl,
+      is_self: false,
+    });
+    expect(reply.author.avatar_url).toBeNull();
+    expect(thread.replies[0]).toMatchObject({ id: first.id, author: { avatar_url: replyAvatar } });
     expect(thread.replies.find(({ id }) => id === reply.id)).toEqual(reply);
   });
 

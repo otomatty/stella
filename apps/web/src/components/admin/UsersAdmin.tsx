@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
@@ -36,7 +35,7 @@ import { useProfiles } from "@/hooks/useProfiles";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-users-api";
 
-import { ROLE_LABEL, RoleBadge, toneFromId } from "./users-admin/shared";
+import { ProfileAvatar, ROLE_LABEL, RoleBadge } from "./users-admin/shared";
 import { InviteDialog } from "./users-admin/InviteDialog";
 import { DeleteUserDialog } from "./users-admin/DeleteUserDialog";
 import { CsvInviteDialog } from "./users-admin/CsvInviteDialog";
@@ -216,7 +215,7 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
             {filtered.map((p) => (
               <RecordItem
                 key={p.id}
-                leading={<UserAvatar profile={p} />}
+                leading={<ProfileAvatar profile={p} />}
                 title={p.display_name}
                 titleSuffix={p.id === currentUserId ? <CurrentUserLabel /> : null}
                 subtitle={<span className="break-all">{p.email ?? "—"}</span>}
@@ -249,7 +248,7 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
                 <TableRow key={p.id} className={p.disabled ? "opacity-60" : undefined}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <UserAvatar profile={p} />
+                      <ProfileAvatar profile={p} />
                       <span className="font-medium">{p.display_name}</span>
                       {p.id === currentUserId ? <CurrentUserLabel /> : null}
                     </div>
@@ -281,16 +280,6 @@ function UsersAdminLive({ currentUserId }: { currentUserId: string | null }) {
         onDeleted={forgetDeletedUser}
       />
     </>
-  );
-}
-
-function UserAvatar({ profile }: { profile: AdminProfileRow }) {
-  return (
-    <Avatar size="sm">
-      <AvatarFallback tone={toneFromId(profile.id)}>
-        {(profile.initials ?? profile.display_name.slice(0, 1)).slice(0, 2)}
-      </AvatarFallback>
-    </Avatar>
   );
 }
 

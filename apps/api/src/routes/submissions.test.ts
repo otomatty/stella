@@ -13,6 +13,7 @@ describe("PATCH /api/submissions/:id のテスト確定", () => {
   let env: Env;
   let db: ReturnType<typeof getDb>;
   let instructorToken: string;
+  const avatarUrl = "https://lh3.googleusercontent.com/a/learner";
 
   beforeEach(async () => {
     database = sqliteD1();
@@ -21,7 +22,7 @@ describe("PATCH /api/submissions/:id のテスト確定", () => {
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db.insert(profiles).values([
-        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "learner", displayName: "受講者", role: "student", avatarUrl },
         { id: "teacher", displayName: "講師", role: "admin" },
       ]),
       db.insert(submissions).values([
@@ -103,6 +104,9 @@ describe("PATCH /api/submissions/:id のテスト確定", () => {
     expect(response.status, await response.clone().text()).toBe(200);
     const { rows } = await json<{ rows: { id: string; review_source: string | null }[] }>(response);
     expect(rows.map((row) => row.id).sort()).toEqual(["by-tests", "legacy"]);
-    expect(rows.find((row) => row.id === "by-tests")).toMatchObject({ review_source: "tests" });
+    expect(rows.find((row) => row.id === "by-tests")).toMatchObject({
+      review_source: "tests",
+      profiles: { display_name: "受講者", avatar_url: avatarUrl },
+    });
   });
 });

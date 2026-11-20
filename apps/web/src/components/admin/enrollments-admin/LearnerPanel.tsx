@@ -11,7 +11,6 @@
 import { useMemo } from "react";
 
 import { Search, Users } from "@/lib/icons";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
@@ -19,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import type { AdminProfileRow } from "@/lib/admin-users-api";
 import type { EnrollmentSummaryRow } from "@stella/shared/cms/types";
-import { RoleBadge, toneFromId } from "../users-admin/shared";
+import { ProfileAvatar, RoleBadge } from "../users-admin/shared";
 import { type LearnerFilter, matchesProfile } from "./shared";
 
 interface Props {
@@ -161,11 +160,7 @@ export function LearnerPanel({
                     aria-pressed={selected}
                     className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   >
-                    <Avatar size="sm">
-                      <AvatarFallback tone={toneFromId(p.id)}>
-                        {(p.initials ?? p.display_name.slice(0, 1)).slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <ProfileAvatar profile={p} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">
                         {p.display_name}

@@ -76,6 +76,7 @@ export interface Submission {
   studentId?: string | null;
   studentName: string;
   studentInitials: string;
+  studentAvatarUrl?: string | null;
   avatarTone: ReviewAvatarTone;
   stageTitle: string;
   sectionTitle?: string;

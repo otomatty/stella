@@ -23,6 +23,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { recordAudit } from "./audit.js";
+import { googleAvatarUrl } from "./auth-users.js";
 
 function createAuth(env: Env & AuthSettings) {
   const db = getDb(env);
@@ -141,7 +142,7 @@ async function syncProfile(db: Db, userId: string): Promise<void> {
         .limit(1)
     )[0];
     const displayName = user?.name.trim();
-    const avatarUrl = user?.image?.trim();
+    const avatarUrl = googleAvatarUrl(user?.image);
     if (avatarUrl) await db.update(profiles).set({ avatarUrl }).where(eq(profiles.id, userId));
     if (displayName)
       await db

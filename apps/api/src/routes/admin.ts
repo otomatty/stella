@@ -118,6 +118,7 @@ adminRoute.get("/api/admin/users", async (c) => {
         role: r.role,
         display_name: r.displayName,
         initials: r.initials,
+        avatar_url: r.avatarUrl,
         email: r.email,
         disabled: r.disabled,
         created_at: r.createdAt,

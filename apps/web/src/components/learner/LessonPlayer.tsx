@@ -559,6 +559,7 @@ export const LessonPlayer = ({
                           id: shell?.currentUserId ?? "",
                           name: studentName,
                           initials: studentInitials,
+                          avatarUrl: shell?.profile?.avatar_url,
                         }}
                       />
                     ) : null}
