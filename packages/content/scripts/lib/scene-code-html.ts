@@ -16,7 +16,7 @@ import { sceneCaptionAt, type SceneTimeline } from "../../src/scene-timeline.js"
 import {
   iconSvg,
   mark,
-  rubyHtml,
+  escapeHtml,
   sceneScriptData,
   sceneCaptionCss,
   sceneFontCss,
@@ -31,6 +31,12 @@ export const codeFontCss = readFileSync(fontFile, "utf8").replace(
   /url\(\.\/(.+?)\)/g,
   (_, p: string) => `url(${pathToFileURL(join(dirname(fontFile), p)).href})`,
 );
+export const codeColorsCss = `.hljs-keyword,.hljs-literal{color:#c4a5ff}.hljs-number{color:#ffcd91}.hljs-string,.hljs-template-variable{color:#b5e39c}.hljs-title,.hljs-type{color:#96d4ff}.hljs-comment{color:#a0a0ac}.hljs-built_in,.hljs-params{color:#f4dfa3}`;
+export const highlightCode = (code: string) =>
+  hljs.highlight(code, { language: "typescript" }).value;
+export const codeTextWidth = (line: string) =>
+  Array.from(line).reduce((width, c) => width + (/[\x20-\x7e]/u.test(c) ? 0.61 : 1), 0);
+
 interface CodeRenderData {
   scene: CodeScene;
   state: CodeSceneState;
@@ -351,7 +357,6 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
         while (walker.nextNode()) {
           const range = document.createRange();
           range.selectNodeContents(walker.currentNode);
-          // 親文字と rt の文字を個別に測る。ruby の行ボックスは文字の範囲より広い。
           if (
             [...range.getClientRects()].some(
               (rect) =>
@@ -365,9 +370,7 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
           ) {
             const label = card.querySelector<HTMLElement>(".figure-label");
             const part = content.classList.contains("figure-tag") ? "札" : "ラベル";
-            messages.push(
-              `図のカード「${label?.dataset.rubyFit ?? label?.textContent}」の${part}が収まりません`,
-            );
+            messages.push(`図のカード「${label?.textContent}」の${part}が収まりません`);
             break;
           }
         }
@@ -447,7 +450,7 @@ function withCodeOverlays(html: string, input: SceneHtmlInput, scene: CodeScene)
   if (!scene.beats.some((beat) => beat.part?.note)) return html;
   const notes = scene.beats.map(({ part }, index) => ({
     start: input.timing.beats[index].start,
-    html: part?.note ? rubyHtml(part.note, input.ruby ?? {}) : undefined,
+    html: part?.note ? escapeHtml(part.note) : undefined,
   }));
   return html
     .replace(
@@ -490,17 +493,12 @@ export function codeHtml(input: SceneHtmlInput): string {
       const timed = input.timing.beats[index];
       return {
         travel: beat.figure?.travel?.along,
-        pause: beat.term ? timed.end - (timed.speechEnd ?? timed.end) : beat.pause,
+        pause: beat.term || beat.dialog ? timed.end - (timed.speechEnd ?? timed.end) : beat.pause,
       };
     }),
   };
   const codeWidth = scene.panel ? 1010 : 1752;
-  const widest = Math.max(
-    1,
-    ...scene.code.map((line) =>
-      Array.from(line).reduce((width, c) => width + (/[\x20-\x7e]/u.test(c) ? 0.61 : 1), 0),
-    ),
-  );
+  const widest = Math.max(1, ...scene.code.map(codeTextWidth));
   const fontSize = Math.min(
     scene.code.length <= 6 ? 36 : 30,
     Math.floor((codeWidth - 90) / widest),
@@ -527,10 +525,8 @@ export function codeHtml(input: SceneHtmlInput): string {
     state,
     timing: input.timing,
     highlighted: scene.code.map((line) =>
-      Array.from(
-        { length: Array.from(line).length + 1 },
-        (_, n) =>
-          hljs.highlight(Array.from(line).slice(0, n).join(""), { language: "typescript" }).value,
+      Array.from({ length: Array.from(line).length + 1 }, (_, n) =>
+        highlightCode(Array.from(line).slice(0, n).join("")),
       ),
     ),
   };
@@ -541,7 +537,7 @@ export function codeHtml(input: SceneHtmlInput): string {
   #content{display:flex;align-items:center;gap:36px;flex:1;min-height:0}
   #code{position:relative;width:${codeWidth}px;flex-shrink:0;height:${codeHeight}px;padding:28px 24px;background:#16161a;border-radius:12px;color:#f4f4f6;font:400 ${fontSize}px/${lineHeight}px 'JetBrains Mono',ui-monospace,monospace;overflow:hidden}
   .line{height:${lineHeight}px;position:relative;white-space:pre;padding-right:38px}.source{white-space:pre}.mark{position:absolute;right:0;top:0;font:700 34px/${lineHeight}px sans-serif}.part{border-bottom:3px solid #b6a9ff}.numbered{position:relative}.numbered:after{content:'1';position:absolute;right:-10px;top:-16px;width:20px;height:20px;border-radius:50%;background:#5749db;color:white;text-align:center;font:500 14px/20px sans-serif}
-  .hljs-keyword,.hljs-literal{color:#c4a5ff}.hljs-number{color:#ffcd91}.hljs-string,.hljs-template-variable{color:#b5e39c}.hljs-title,.hljs-type{color:#96d4ff}.hljs-comment{color:#a0a0ac}.hljs-built_in,.hljs-params{color:#f4dfa3}
+  ${codeColorsCss}
   #panel{flex:1;min-width:0;max-height:100%;display:flex;flex-direction:column;gap:16px;justify-content:center;overflow:hidden}
   .number-line{width:100%;height:auto;flex-shrink:0;overflow:hidden;margin-bottom:32px}
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;flex-shrink:0;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace;white-space:nowrap}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content.stacked{flex-direction:column;align-items:flex-end;gap:4px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap;flex-shrink:0}.value-content small{font-size:22px;white-space:nowrap;flex-shrink:0}.answer{display:flex;align-items:center;flex-shrink:0}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}

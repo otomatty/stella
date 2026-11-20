@@ -344,7 +344,6 @@ export async function buildSceneTopic(
           : sceneHtml({
               board: sceneBoard(sourceIndex),
               schema: storyboard.schema,
-              ruby: storyboard.ruby,
               scene,
               previousFrame,
               state: states[sourceIndex],

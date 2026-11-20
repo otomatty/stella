@@ -245,3 +245,31 @@ it("schema 2 でも窓の切り替えを保ち、場面の頭の切り替え音�
     { kind: "title", at: 0.1 },
   ]);
 });
+
+it("ダイアログの pop は文の開始で鳴り、用語に次いで印・札・移動より優先する", () => {
+  const dialog = { title: "完成したコード", code: ["const value = 1;"] };
+  const scene: BoardScene = {
+    id: "goal",
+    role: "goal",
+    title: "学ぶこと",
+    board: "main",
+    beats: [
+      {
+        say: "コードを見せます。",
+        dialog,
+        show: ["a", "b", "ab"],
+        mark: [{ on: "a", kind: "check" }],
+        tag: { a: "1" },
+        travel: { along: ["ab"] },
+      },
+      { say: "用語を見せます。", term: { text: "値", ruby: "あたい" }, dialog },
+    ],
+  };
+  const { timing, cues } = lessonCues(scene);
+  expect(cues).toEqual([
+    { kind: "scene", at: 0 },
+    { kind: "pop", at: timing.beats[0].start },
+    { kind: "term", at: timing.beats[1].start },
+  ]);
+  expect(lessonCues(scene, 1).cues).toEqual([]);
+});

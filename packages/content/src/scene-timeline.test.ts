@@ -402,3 +402,26 @@ it("用語は読み終わりから1.5秒保ち、そのあとに pause と文間
   expect(beats[1].end - (beats[1].speechEnd ?? 0)).toBeCloseTo(1.5);
   expect(sceneCaptionAt({ start: 0, duration: 15, beats }, 4)).toBe("");
 });
+
+it("ダイアログは読み終わりから2.5秒保ち、そのあとに pause と文間を足す", () => {
+  const dialog = { title: "完成したコード", code: ["const value = 1;"] };
+  const scene: Scene = {
+    kind: "view",
+    id: "goal",
+    role: "goal",
+    title: "学ぶこと",
+    image: "shot:web/example",
+    beats: [
+      { say: "コードを読みます。", dialog, pause: 1.5, label: [{ at: "editor", text: "コード" }] },
+      { say: "次のコードです。", dialog },
+    ],
+  };
+  const [timing] = sceneTimelines([scene], [[2, 3]], {}, 2);
+  const [first, second] = timing.beats;
+  expect(first.speechEnd).toBeCloseTo(2.8);
+  expect(first.end).toBeCloseTo(2.8 + 2.5 + 1.5);
+  expect(second.start).toBeCloseTo(first.end + 1.6);
+  expect(second.end - (second.speechEnd ?? 0)).toBeCloseTo(2.5);
+  expect(sceneCaptionAt(timing, first.start + 0.4)).toBe(first.say);
+  expect(sceneCaptionAt(timing, first.end - 1 / 30)).toBe("");
+});

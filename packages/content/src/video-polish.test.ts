@@ -261,3 +261,11 @@ it("用語の表示を絵の説明に含める", () => {
   const { scenes } = JSON.parse(buildPolishRequest(sb, "").user);
   expect(scenes[0].lines[0].picture).toContain("用語の表示: 引数");
 });
+
+it("ダイアログの見出しを絵の説明に含める", () => {
+  const sb = fresh();
+  sb.schema = 2;
+  sb.scenes[0].beats[0].dialog = { title: "完成したコード", code: ["const value = 1;"] };
+  const { scenes } = JSON.parse(buildPolishRequest(sb, "").user);
+  expect(scenes[0].lines[0].picture).toContain("ダイアログ: 完成したコード");
+});

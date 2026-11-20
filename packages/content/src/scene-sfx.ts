@@ -14,7 +14,7 @@ export const SCENE_SFX_SECONDS = {
   switch: 0.28,
   title: 0.9,
   quiz: 0.9,
-  scene: 0.3,
+  scene: 0.45,
   term: 0.6,
   correct: 0.7,
   wrong: 0.4,
@@ -72,12 +72,13 @@ export function sceneSfxCues(
     );
     let kind: SceneSfxKind | undefined;
     if (beat.term) kind = "term";
+    else if (beat.dialog) kind = "pop";
     else if (newMark(boardBeat, "check")) kind = "correct";
     else if (newMark(boardBeat, "cross") || lineCross) kind = "wrong";
     else if (newMark(boardBeat, "question")) kind = "question";
     else if (newTag(boardBeat) || codeBeat?.part?.note) kind = "pop";
     else if (motion?.travel) kind = "move";
-    if (kind) cues.push({ kind, at: kind === "pop" ? at + 0.1 : at });
+    if (kind) cues.push({ kind, at: kind === "pop" && !beat.dialog ? at + 0.1 : at });
   }
   if (schema === 2 && timing.think) {
     const { start, duration } = timing.think;
@@ -133,7 +134,10 @@ export function synthesizeSceneSfx(kind: SceneSfxKind, sampleRate: number): Int1
       case "quiz":
         return sequence([523, 659, 784], t, 0.16);
       case "scene":
-        return Math.sin(glide(330, 440, t, duration)) * envelope(t, duration, 0.1);
+        return (
+          (sine(440, t) + 0.25 * sine(1760, t) * Math.exp(-t / 0.03)) *
+          envelope(t, duration, 0.09, 0.004)
+        );
       case "term":
         return (sine(660, t) + 0.55 * sine(990, t)) * envelope(t, duration, 0.17);
       case "correct":

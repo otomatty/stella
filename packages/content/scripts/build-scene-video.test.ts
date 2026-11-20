@@ -1,4 +1,5 @@
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { runInNewContext } from "node:vm";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -16,6 +17,7 @@ import { estimateSpeechSeconds } from "../src/narration.js";
 import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
 import type { Scene, BoardStoryboard, VideoStoryboard } from "../src/video-storyboard.js";
 import type { TtsProvider } from "./lib/tts.js";
+import type { ScenePageWindow } from "./lib/scene-html.js";
 
 vi.mock("playwright", () => ({ chromium: { launch: vi.fn() } }));
 vi.mock("./lib/tts.js", async (original) => ({
@@ -460,6 +462,83 @@ describe("音声モデルと日次上限", () => {
       expect(screenshots).toHaveLength(
         2 * (storyboard.scenes.reduce((n, s) => n + s.beats.length, 0) + 2),
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("stills ではダイアログが出ている時刻にその文を撮る", async () => {
+    const { root, page, storyboard, topics } = fixture();
+    try {
+      const roles = [
+        "goal",
+        "example",
+        "syntax",
+        "apply",
+        "quiz",
+        "answer",
+        "explain",
+        "usage",
+        "next",
+      ] as const;
+      const dialog = { title: "完成したコード", code: ["const value = 1;"] };
+      const video: BoardStoryboard = {
+        ...storyboard,
+        schema: 2,
+        scenes: roles.map((role) => ({
+          id: role,
+          role,
+          title: "説明",
+          board: "main",
+          beats: [
+            role === "goal"
+              ? { say: "コードを見ます。", show: ["read"], dialog }
+              : { say: "読みます。", pulse: ["read"] },
+          ],
+        })),
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+
+      const window = {
+        __setTime: async () => undefined,
+        __busyRanges: [],
+        __overflows: () => [],
+      } as unknown as ScenePageWindow;
+      const entry = {
+        hidden: true,
+        style: {},
+        classList: { contains: () => true },
+        querySelectorAll: () => [],
+      };
+      const overlay = { style: { opacity: "" }, children: [entry] };
+      const caption = { style: {} };
+      let activePage = false;
+      page.goto.mockImplementation(async (url: string) => {
+        const html = readFileSync(fileURLToPath(url), "utf8");
+        const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, js]) =>
+          js.includes("function beatOverlayRuntime("),
+        )?.[1];
+        activePage = !!script;
+        if (!script) return;
+        window.__setTime = async () => undefined;
+        runInNewContext(script, {
+          window,
+          document: { getElementById: (id: string) => (id === "caption" ? caption : overlay) },
+        });
+      });
+      page.evaluate.mockImplementation(async (callback, time?: number) => {
+        if (activePage && time !== undefined) await window.__setTime(time);
+        return String(callback).includes("__overflows") ? [] : undefined;
+      });
+      const shots: string[] = [];
+      page.screenshot.mockImplementation(async ({ path }) => {
+        if (activePage && !entry.hidden && overlay.style.opacity === "1") shots.push(path);
+        return Buffer.from("poster");
+      });
+      const out = join(root, "out");
+      await buildSceneVideos(["fixture", "--stills", "--out", out]);
+      expect(shots).toEqual([join(out, "fixture", "first", "stills", "scene-2-beat-1.png")]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

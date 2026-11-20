@@ -1,4 +1,10 @@
-import { codeHtml } from "./scene-code-html.js";
+import {
+  codeColorsCss,
+  codeFontCss,
+  codeHtml,
+  codeTextWidth,
+  highlightCode,
+} from "./scene-code-html.js";
 import type { CodeSceneState } from "../../src/scene-code.js";
 import { viewHtml } from "./scene-view-html.js";
 import type { ViewImage } from "../../src/scene-view.js";
@@ -22,7 +28,6 @@ import {
 } from "../../src/scene-timeline.js";
 import {
   VIDEO_ICONS,
-  rubyParts,
   sceneRoleLabel,
   type Board,
   type BoardState,
@@ -36,7 +41,7 @@ import {
 } from "../../src/video-storyboard.js";
 
 const require = createRequire(import.meta.url);
-const escapeHtml = (s: string) =>
+export const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const iconLicense = readFileSync(
   join(dirname(require.resolve("lucide-static/package.json")), "LICENSE"),
@@ -52,7 +57,6 @@ export const sceneCaptionCss =
 export interface SceneHtmlInput {
   board: Board;
   schema?: VideoStoryboard["schema"];
-  ruby?: VideoStoryboard["ruby"];
   images?: Record<string, ViewImage>;
   previousView?: ViewSceneState;
   /** code の前後だけ、直前の場面の最終コマを重ねてクロスフェードする。 */
@@ -430,193 +434,43 @@ export function sceneHtml(input: SceneHtmlInput): string {
         `<script>(${thinkRuntime.toString()})(${JSON.stringify(input.timing.think)});</script></html>`,
       );
   }
-  return withTerms(withRuby(html, input), input);
-}
-
-export function rubyHtml(
-  text: string,
-  dictionary: Record<string, string>,
-  alreadyRead?: Set<string>,
-  size = "0.45em",
-): string {
-  const parts = rubyParts(text, dictionary);
-  const html = parts
-    .map(({ text, reading }) =>
-      reading && !alreadyRead?.has(text)
-        ? `<ruby>${escapeHtml(text)}<rt style="font-size:${size}">${escapeHtml(reading)}</rt></ruby>`
-        : escapeHtml(text),
-    )
-    .join("");
-  for (const part of parts) if (part.reading) alreadyRead?.add(part.text);
-  return html;
+  return withBeatOverlays(html, input);
 }
 
 export function sceneScriptData(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
-function rubyWidth(text: string, dictionary: Record<string, string>, fontSize: number): number {
-  return rubyParts(text, dictionary).reduce(
-    (width, part) =>
-      width +
-      fontSize *
-        Math.max(Array.from(part.text).length, Array.from(part.reading ?? "").length * 0.45),
-    0,
-  );
+function dialogOverflow(entry: HTMLElement): string[] | undefined {
+  if (!entry.classList.contains("code-dialog")) return undefined;
+  const bounds = [entry, ...entry.querySelectorAll<HTMLElement>(".dialog-title,.dialog-code")];
+  return bounds.some(
+    (box) => box.scrollWidth > box.clientWidth + 1 || box.scrollHeight > box.clientHeight + 1,
+  )
+    ? [`ダイアログに文字が収まりません: ${entry.querySelector(".dialog-title")?.textContent}`]
+    : [];
 }
 
-const rubyBoxCss = `
-  .ruby-box{display:grid;align-content:center;text-align:center;width:100%;height:100%;line-height:1.2;overflow:hidden;overflow-wrap:anywhere}
-  .ruby-box span{display:block;min-width:0}
-`;
-
-function rubyBox(text: string, html: string, box: Box, size: number, color = "#0E0E10") {
-  return `<foreignObject x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"><div class="ruby-box" data-ruby-fit="${escapeHtml(text)}" style="font-size:${size}px;color:${color}"><span>${html}</span></div></foreignObject>`;
-}
-
-function rubyRuntime(
-  captions: ({ start: number; end: number; html: string } | undefined)[],
-  labels: [string, string][],
-  boxOf: typeof rubyBox,
+function beatOverlayRuntime(
+  beats: { start: number; end: number; backdrop: string }[],
+  extraOverflow?: (entry: HTMLElement) => string[] | undefined,
 ) {
   const win = window as unknown as ScenePageWindow;
   const setTime = win.__setTime;
   const overflows = win.__overflows;
-  const markup = new Map(labels);
-  const caption = document.getElementById("caption") as HTMLElement;
-  const draw = (time: number) => {
-    const active = captions.find((b) => b && time >= b.start && time < b.end);
-    if (active) caption.innerHTML = `<span class="ruby-caption">${active.html}</span>`;
-    for (const label of document.querySelectorAll<HTMLElement>(
-      ".figure-label,.figure-tag,.figure-arrow-label",
-    )) {
-      const html = markup.get(label.textContent ?? "");
-      if (html) {
-        label.dataset.rubyFit = label.textContent ?? "";
-        label.innerHTML = `<span>${html}</span>`;
-      }
-    }
-    for (const label of document.querySelectorAll<SVGTextElement>(
-      "#surface > g > rect + path + text",
-    )) {
-      const text = label.textContent ?? "";
-      const html = markup.get(text);
-      const rect = label.previousElementSibling?.previousElementSibling;
-      if (!html || !rect) continue;
-      const get = (attr: string) => Number(rect.getAttribute(attr));
-      // 既存の札の枠に合わせ、フリガナを含む文字を中央へ置く。
-      label.insertAdjacentHTML(
-        "afterend",
-        boxOf(
-          text,
-          html,
-          { x: get("x") + 8, y: get("y"), w: get("width") - 16, h: get("height") },
-          35,
-        ),
-      );
-      label.remove();
-    }
-  };
-  win.__setTime = async (time) => {
-    await setTime(time);
-    draw(time);
-  };
-  win.__overflows = () => [
-    ...overflows(),
-    ...[...document.querySelectorAll<HTMLElement>("[data-ruby-fit],.ruby-caption")].flatMap(
-      (box) => {
-        // カードの文字は、縮めたイラストとフリガナを含めて figureRuntime で検査する。
-        if (box.matches(".figure-label,.figure-tag")) return [];
-        const limit = box.matches(".figure-arrow-label")
-          ? (box.parentElement ?? box)
-          : box.matches(".ruby-caption")
-            ? caption
-            : box;
-        const content =
-          box.firstElementChild && !box.matches(".ruby-caption") ? box.firstElementChild : box;
-        const bounds = limit.getBoundingClientRect();
-        const range = document.createRange();
-        range.selectNodeContents(content);
-        return [...range.getClientRects()].some(
-          (r) =>
-            r.width > 0 &&
-            r.height > 0 &&
-            (r.left < bounds.left - 1 ||
-              r.right > bounds.right + 1 ||
-              r.top < bounds.top - 1 ||
-              r.bottom > bounds.bottom + 1),
-        )
-          ? [`フリガナ付きの文字が収まりません: ${box.dataset.rubyFit ?? box.textContent}`]
-          : [];
-      },
-    ),
-  ];
-  win.__setTime(0);
-}
-
-function withRuby(html: string, input: SceneHtmlInput): string {
-  const dictionary = input.ruby;
-  if (!dictionary || !Object.keys(dictionary).length) return html;
-  const seen = new Set<string>();
-  const captions = input.timing.beats.map((beat) => {
-    const html = rubyHtml(beat.say, dictionary, seen);
-    if (html.includes("<ruby>"))
-      return { start: beat.speechStart ?? beat.start, end: beat.speechEnd ?? beat.end, html };
-    return undefined;
-  });
-  const scene = input.scene;
-  const labels =
-    scene.kind === "view"
-      ? scene.beats.flatMap((beat) => beat.label?.map((label) => label.text) ?? [])
-      : scene.kind === "code" && scene.panel?.kind === "figure"
-        ? [
-            ...input.board.nodes.map((node) => node.label),
-            ...(input.board.links ?? []).flatMap(({ label }) => (label ? [label] : [])),
-            ...[
-              ...((input.state as CodeSceneState).figure?.beats ?? []).map((beat) => beat.after),
-              (input.state as CodeSceneState).figure?.start,
-            ].flatMap((snapshot) => Object.values(snapshot?.tags ?? {})),
-          ]
-        : [];
-  const markup = [...new Set(labels)].flatMap((label) => {
-    const html = rubyHtml(label, dictionary);
-    return html.includes("<ruby>") ? [[label, html]] : [];
-  });
-  if (!captions.some(Boolean) && !markup.length && !html.includes('data-ruby-fit="')) return html;
-  return html
-    .replace(
-      "</style>",
-      `${rubyBoxCss}
-      #caption .ruby-caption{line-height:1.2}
-      .figure-label[data-ruby-fit],.figure-tag[data-ruby-fit]{line-height:1.2}
-      .figure-label[data-ruby-fit]>span,.figure-tag[data-ruby-fit]>span{display:inline-block;transform:translateY(-0.18em)}
-      .figure-tag[data-ruby-fit]{height:64px}
-      .figure-arrow-label[data-ruby-fit]{line-height:1.2}
-    </style>`,
-    )
-    .replace(
-      "</html>",
-      () =>
-        `<script>const escapeHtml=${escapeHtml.toString()};(${rubyRuntime.toString()})(${sceneScriptData(captions)},${sceneScriptData(markup)},${rubyBox.toString()});</script></html>`,
-    );
-}
-
-function termRuntime(terms: { start: number; end: number }[]) {
-  const win = window as unknown as ScenePageWindow;
-  const setTime = win.__setTime;
-  const overflows = win.__overflows;
-  const overlay = document.getElementById("term-overlay") as HTMLElement;
+  const overlay = document.getElementById("beat-overlay") as HTMLElement;
   const caption = document.getElementById("caption") as HTMLElement;
   const entries = [...overlay.children] as HTMLElement[];
   const fade = 0.3;
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
-  for (const { start, end } of terms)
+  for (const { start, end } of beats)
     win.__busyRanges.push([start, start + fade], [end, end + fade]);
   const draw = (time: number) => {
-    const i = terms.findIndex(({ start, end }) => time >= start && time < end + fade);
-    const term = terms[i];
-    const progress = term ? clamp((time - term.start) / fade) : 0;
-    const opacity = term ? Math.min(progress, clamp((term.end + fade - time) / fade)) : 0;
+    const i = beats.findIndex(({ start, end }) => time >= start && time < end + fade);
+    const beat = beats[i];
+    const progress = beat ? clamp((time - beat.start) / fade) : 0;
+    const opacity = beat ? Math.min(progress, clamp((beat.end + fade - time) / fade)) : 0;
+    overlay.style.background = beat?.backdrop ?? "";
     overlay.style.opacity = String(opacity);
     overlay.style.visibility = opacity > 0 ? "visible" : "hidden";
     caption.style.zIndex = opacity > 0 ? "6" : "";
@@ -634,8 +488,11 @@ function termRuntime(terms: { start: number; end: number }[]) {
   win.__overflows = () => [
     ...overflows(),
     ...entries.flatMap((entry) => {
+      if (entry.hidden) return [];
+      const extra = extraOverflow?.(entry);
+      if (extra !== undefined) return extra;
       const text = entry.firstElementChild as HTMLElement | null;
-      return !entry.hidden && text && text.scrollWidth > text.clientWidth + 1
+      return text && text.scrollWidth > text.clientWidth + 1
         ? [`用語が画面に収まりません: ${text.textContent}`]
         : [];
     }),
@@ -643,32 +500,67 @@ function termRuntime(terms: { start: number; end: number }[]) {
   draw(0);
 }
 
-function withTerms(html: string, input: SceneHtmlInput): string {
+function withBeatOverlays(html: string, input: SceneHtmlInput): string {
   if (input.schema !== 2) return html;
-  const terms = input.scene.beats.flatMap(({ term }, i) =>
-    term ? [{ term, start: input.timing.beats[i].start, end: input.timing.beats[i].end }] : [],
+  const beats = input.scene.beats.flatMap(({ term, dialog }, i) =>
+    term || dialog
+      ? [{ term, dialog, start: input.timing.beats[i].start, end: input.timing.beats[i].end }]
+      : [],
   );
-  if (!terms.length) return html;
+  if (!beats.length) return html;
+  const hasDialog = beats.some(({ dialog }) => dialog);
   const overlay = `<style>
-    #term-overlay{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:rgba(14,14,16,0.78);color:white;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
+    #beat-overlay{position:absolute;inset:0;z-index:5;display:grid;place-items:center;color:white;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
+    ${
+      beats.some(({ term }) => term)
+        ? `
     .term-text{max-width:1800px;margin:auto;font-size:120px;font-weight:700;line-height:1.2;white-space:nowrap}
     .term-line{width:96px;height:6px;background:#E62F9A;margin:24px auto}
     .term-note{font-size:44px;color:#DDDDE2}
     .term-text rt{line-height:1}
-  </style><div id="term-overlay">${terms
-    .map(({ term }) => {
-      const text = term.ruby
-        ? rubyHtml(term.text, { [term.text]: term.ruby }, undefined, "40px")
-        : rubyHtml(term.text, input.ruby ?? {}, undefined, "40px");
-      return `<div hidden><div class="term-text">${text}</div><div class="term-line"></div>${term.note ? `<div class="term-note">${escapeHtml(term.note)}</div>` : ""}</div>`;
+    `
+        : ""
+    }
+    ${
+      hasDialog
+        ? `
+    ${input.scene.kind === "code" ? "" : codeFontCss + codeColorsCss}
+    .code-dialog{width:1240px;border-radius:24px;background:white;box-shadow:0 16px 60px #00000040;overflow:hidden}
+    .dialog-heading{position:relative;display:grid;place-items:center;height:88px;border-bottom:2px solid #DDDDE2}
+    .dialog-heading::before{content:'';position:absolute;left:32px;width:16px;height:16px;border-radius:50%;background:#DDDDE2;box-shadow:28px 0 #DDDDE2,56px 0 #DDDDE2}
+    .dialog-title{max-width:calc(100% - 240px);margin:0;color:#0E0E10;font-size:36px;font-weight:700;white-space:nowrap;overflow:hidden}
+    .dialog-code{margin:32px;padding:32px;border-radius:12px;background:#16161A;color:#F4F4F6;text-align:left;line-height:1.5;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:400;font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0;overflow:hidden}
+    .dialog-code code{font:inherit}
+    `
+        : ""
+    }
+  </style><div id="beat-overlay">${beats
+    .map(({ term, dialog }) => {
+      if (term) {
+        const text = escapeHtml(term.text);
+        const label = term.ruby
+          ? `<ruby>${text}<rt style="font-size:40px">${escapeHtml(term.ruby)}</rt></ruby>`
+          : text;
+        return `<div hidden><div class="term-text">${label}</div><div class="term-line"></div>${term.note ? `<div class="term-note">${escapeHtml(term.note)}</div>` : ""}</div>`;
+      }
+      if (!dialog) return "";
+      const widest = Math.max(1, ...dialog.code.map(codeTextWidth));
+      const fontSize = Math.min(34, Math.floor((1240 - 4 * 32) / widest));
+      return `<div class="code-dialog" hidden><header class="dialog-heading"><h2 class="dialog-title">${escapeHtml(dialog.title)}</h2></header><pre class="dialog-code" style="font-size:${fontSize}px"><code>${highlightCode(dialog.code.join("\n"))}</code></pre></div>`;
     })
     .join("")}</div>`;
+  const times = beats.map(({ start, end, dialog }) => ({
+    start,
+    end,
+    backdrop: dialog ? "rgba(14,14,16,0.55)" : "rgba(14,14,16,0.78)",
+  }));
+  const overflow = hasDialog ? `,${dialogOverflow.toString()}` : "";
   return html
     .replace("<script>", () => `${overlay}<script>`)
     .replace(
       "</html>",
       () =>
-        `<script>(${termRuntime.toString()})(${sceneScriptData(terms.map(({ start, end }) => ({ start, end })))});</script></html>`,
+        `<script>(${beatOverlayRuntime.toString()})(${sceneScriptData(times)}${overflow});</script></html>`,
     );
 }
 
@@ -767,21 +659,14 @@ function boardTagRuntime(state: SceneState, timing: SceneTimeline) {
   win.__setTime(0);
 }
 
-function boardTag(
-  id: string,
-  box: Box,
-  states: BoardState[],
-  dictionary: Record<string, string>,
-): string {
+function boardTag(id: string, box: Box, states: BoardState[]): string {
   const values = new Set(
     states.flatMap(({ tags }) => (tags && Object.hasOwn(tags, id) ? [tags[id]] : [])),
   );
   if (!values.size) return "";
   // 右上の印に重ならないよう、左右に同じ余白を確保する。
   const width = box.w - 64;
-  const readings = new Map([...values].map((value) => [value, rubyHtml(value, dictionary)]));
-  const rubyHeight = [...readings.values()].some((html) => html.includes("<ruby>")) ? 76 : 64;
-  return `<svg data-board-tag="${escapeHtml(id)}" x="${box.x + 32}" y="${box.y - rubyHeight / 2}" width="${width}" height="${rubyHeight}" viewBox="${-width / 2} ${-rubyHeight / 2} ${width} ${rubyHeight}" overflow="hidden">${[
+  return `<svg data-board-tag="${escapeHtml(id)}" x="${box.x + 32}" y="${box.y - 32}" width="${width}" height="64" viewBox="${-width / 2} -32 ${width} 64" overflow="hidden">${[
     ...values,
   ]
     .map((value) => {
@@ -793,11 +678,6 @@ function boardTag(
             0,
           ),
       );
-      const html = readings.get(value) ?? "";
-      if (html.includes("<ruby>")) {
-        const tagWidth = Math.min(width, Math.max(w, rubyWidth(value, dictionary, 34) + 40));
-        return `<g data-value="${escapeHtml(value)}" opacity="0"><rect x="${-tagWidth / 2}" y="-36" width="${tagWidth}" height="72" rx="16" fill="#5749DB"/>${rubyBox(value, html, { x: -tagWidth / 2 + 6, y: -36, w: tagWidth - 12, h: 72 }, 34, "white")}</g>`;
-      }
       return `<g data-value="${escapeHtml(value)}" opacity="0"><rect x="${-w / 2}" y="-28" width="${w}" height="56" rx="16" fill="#5749DB"/><text x="0" y="0" style="fill:white;white-space:pre" font-size="34" font-weight="700" text-anchor="middle" dominant-baseline="central">${escapeHtml(value)}</text></g>`;
     })
     .join("")}</svg>`;
@@ -807,11 +687,6 @@ function boardHtml(input: BoardHtmlInput): string {
   const toneColor = (tone?: "blue" | "violet") =>
     tone === "blue" ? "#2563EB" : tone === "violet" ? "#8330C7" : undefined;
   const layout = layoutBoard(input.board);
-  const dictionary = input.ruby ?? {};
-  const withLabelRuby = (text: string, box: Box) => {
-    const html = rubyHtml(text, dictionary);
-    return html.includes("<ruby>") ? rubyBox(text, html, box, 36) : label(text, box);
-  };
   const zones = (input.board.zones ?? [])
     .map((z) => {
       const b = layout.zones[z.id],
@@ -826,8 +701,7 @@ function boardHtml(input: BoardHtmlInput): string {
       const b = layout.nodes[n.id],
         size = b.h < 160 ? 40 : 76,
         compact = b.h < 100;
-      const ruby = rubyHtml(n.label, dictionary).includes("<ruby>");
-      const artLabelHeight = ruby ? 84 : 72;
+      const artLabelHeight = 72;
       const zone = input.board.zones?.find(
         (z) =>
           n.at[0] >= z.cells[0] &&
@@ -835,38 +709,36 @@ function boardHtml(input: BoardHtmlInput): string {
           n.at[1] >= z.cells[1] &&
           n.at[1] < z.cells[1] + z.cells[3],
       );
-      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${compact ? b.y + (b.h - size) / 2 : b.y + 8}" width="${compact ? size : b.w - 16}" height="${compact ? size : b.h - artLabelHeight - 16}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", compact ? b.x + 8 : b.x + (b.w - size) / 2, compact ? b.y + (b.h - size) / 2 : b.y + 14, size)}</g>${withLabelRuby(n.label, compact ? { x: b.x + size + 16, y: b.y + 6, w: b.w - size - 24, h: b.h - 12 } : { x: b.x + 6, y: n.art ? b.y + b.h - (ruby ? 92 : 80) : b.y + size + 16, w: b.w - 12, h: n.art ? artLabelHeight : b.h - size - 20 })}${tags ? boardTag(n.id, b, tagStates, dictionary) : ""}${mark()}</g>`;
+      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${compact ? b.y + (b.h - size) / 2 : b.y + 8}" width="${compact ? size : b.w - 16}" height="${compact ? size : b.h - artLabelHeight - 16}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", compact ? b.x + 8 : b.x + (b.w - size) / 2, compact ? b.y + (b.h - size) / 2 : b.y + 14, size)}</g>${label(n.label, compact ? { x: b.x + size + 16, y: b.y + 6, w: b.w - size - 24, h: b.h - 12 } : { x: b.x + 6, y: n.art ? b.y + b.h - 80 : b.y + size + 16, w: b.w - 12, h: n.art ? artLabelHeight : b.h - size - 20 })}${tags ? boardTag(n.id, b, tagStates) : ""}${mark()}</g>`;
     })
     .join("");
   const links = (input.board.links ?? [])
     .map((l) => {
       const p = layout.links[l.id];
-      const ruby = !!l.label && rubyHtml(l.label, dictionary).includes("<ruby>");
-      const height = ruby ? 68 : 56;
       const length = Array.from(l.label ?? "").length;
-      const width = l.label
-        ? (ruby ? Math.max(length * 40, rubyWidth(l.label, dictionary, 36)) : length * 40) + 20
-        : 0;
-      return `<g id="element-${escapeHtml(l.id)}"><path class="link" d="${linkPath(p)}" fill="none" stroke="#5C5C66" stroke-width="3" stroke-linejoin="round" marker-end="url(#arrow)"/>${l.label ? `<rect x="${ruby ? p.label.x - width / 2 : p.label.x - length * 20 - 10}" y="${p.label.y - height / 2}" width="${width}" height="${height}" rx="8" fill="#F7F7F9"/>${withLabelRuby(l.label, { x: p.label.x - (ruby ? width - 12 : 280) / 2, y: p.label.y - height / 2, w: ruby ? width - 12 : 280, h: height })}` : ""}</g>`;
+      return `<g id="element-${escapeHtml(l.id)}"><path class="link" d="${linkPath(p)}" fill="none" stroke="#5C5C66" stroke-width="3" stroke-linejoin="round" marker-end="url(#arrow)"/>${l.label ? `<rect x="${p.label.x - length * 20 - 10}" y="${p.label.y - 28}" width="${length * 40 + 20}" height="56" rx="8" fill="#F7F7F9"/>${label(l.label, { x: p.label.x - 140, y: p.label.y - 28, w: 280, h: 56 })}` : ""}</g>`;
     })
     .join("");
   const heading = (s: Scene | undefined) =>
     s ? `<span>${sceneRoleLabel(s)}</span> ${escapeHtml(s.title)}` : "";
-  const { previous: _previous, ruby: _ruby, schema: _schema, ...renderInput } = input;
+  const { previous: _previous, schema: _schema, ...renderInput } = input;
   const sameTitle =
     input.previous?.role === input.scene.role &&
     input.previous?.point === input.scene.point &&
     input.previous?.title === input.scene.title;
   // 移動の尺に間を含めず、移動が済んだ絵を保つ。
-  if (input.scene.beats.some((beat) => beat.travel && (beat.pause || beat.term))) {
+  if (input.scene.beats.some((beat) => beat.travel && (beat.pause || beat.term || beat.dialog))) {
     renderInput.timing = {
       ...input.timing,
       beats: input.timing.beats.map((timed, i) => {
         const beat = input.scene.beats[i];
-        return beat.travel && (beat.pause || beat.term)
+        return beat.travel && (beat.pause || beat.term || beat.dialog)
           ? {
               ...timed,
-              end: beat.term ? (timed.speechEnd ?? timed.end) : timed.end - (beat.pause ?? 0),
+              end:
+                beat.term || beat.dialog
+                  ? (timed.speechEnd ?? timed.end)
+                  : timed.end - (beat.pause ?? 0),
             }
           : timed;
       }),

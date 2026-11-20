@@ -950,6 +950,25 @@ describe("schema 2 のレッスン型", () => {
     );
   });
 
+  it.each([
+    [{ text: "引数" }, false],
+    [{ text: "のこり" }, true],
+    [{ text: "引数", ruby: "ひきすう" }, true],
+    [{ text: "引数", ruby: "ヒキスウー" }, true],
+    ...["", "aたい", "ア・タイ", "あ".repeat(31)].map(
+      (ruby) => [{ text: "引数", ruby }, false] as const,
+    ),
+  ] as const)("漢字のある用語には読みが必須で、ひらがなだけなら任意 (%j)", (term, valid) => {
+    const storyboard = lesson();
+    Object.assign(storyboard.scenes[0].beats[0], { term });
+    const result = parseStoryboard(storyboard);
+    if (valid) expect(result.storyboard).toEqual(storyboard);
+    else
+      expect(result.issues).toContainEqual(
+        expect.objectContaining({ level: "error", path: "scenes[0].beats[0].term.ruby" }),
+      );
+  });
+
   it("term を schema 1 では拒み、schema 2 では3種類の場面で動きに数える", () => {
     fails((s) => {
       s.scenes[0].beats[0].term = { text: "値" };
@@ -986,6 +1005,89 @@ describe("schema 2 のレッスン型", () => {
       image: "shot:web/sample",
       beats: [{ say: "画面を出します。" }, termBeat],
     });
+    expect(parseStoryboard(mixed).storyboard).toEqual(mixed);
+  });
+
+  const dialog = { title: "完成したコード", code: ["// 一行の説明", "const value = 1;"] };
+  it.each([
+    [{ title: " " }, "dialog.title"],
+    [{ title: "長".repeat(25) }, "dialog.title"],
+    [{ title: "改\n行" }, "dialog.title"],
+    [{ code: [] }, "dialog.code"],
+    [{ code: Array(9).fill("const a = 1;") }, "dialog.code"],
+    [{ code: ["漢".repeat(41)] }, "dialog.code[0]"],
+    [{ code: ["x".repeat(81)] }, "dialog.code[0]"],
+    [{ code: ["const\tx = 1;"] }, "dialog.code[0]"],
+    [{ code: ["const x = 1;\nconst y = 2;"] }, "dialog.code[0]"],
+    [{ code: ["const x = 1;\u2028const y = 2;"] }, "dialog.code[0]"],
+    [{ code: ["", "  // コメント", " "] }, "dialog.code"],
+    [{ code: ["/* コメント", "続き */", ""] }, "dialog.code"],
+  ])("不正な dialog を拒む (%j)", (change, path) => {
+    const storyboard = lesson();
+    Object.assign(storyboard.scenes[0].beats[0], { dialog: { ...dialog, ...change } });
+    expect(parseStoryboard(storyboard).issues).toContainEqual(
+      expect.objectContaining({ level: "error", path: `scenes[0].beats[0].${path}` }),
+    );
+  });
+
+  it("dialog の見出し24字とコード8行を上限まで使える", () => {
+    const storyboard = lesson();
+    Object.assign(storyboard.scenes[0].beats[0], {
+      dialog: {
+        title: "題".repeat(24),
+        code: ["//" + "漢".repeat(39), "", "x".repeat(80), "", "", "", "", "x = 1;"],
+      },
+    });
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+  });
+
+  it("dialog は schema 1 と term を指定した文では使えない", () => {
+    fails((s) => {
+      s.scenes[0].beats[0].dialog = dialog;
+    }, "scenes[0].beats[0].dialog");
+    const storyboard = lesson();
+    Object.assign(storyboard.scenes[0].beats[0], { term: { text: "よみ" }, dialog });
+    expect(parseStoryboard(storyboard).issues).toContainEqual({
+      level: "error",
+      path: "scenes[0].beats[0].dialog",
+      message: "term と dialog は同じ文に書けません",
+    });
+  });
+
+  it("dialog だけでも3種類の場面で動きに数え、学ぶこと・身近な例・使う場面で使える", () => {
+    const storyboard = lesson();
+    const beat = { say: "値を比べます。", dialog };
+    Object.assign(storyboard.scenes[0], {
+      kind: "view",
+      image: "shot:web/sample",
+      beats: [{ say: "画面を出します。" }, beat],
+    });
+    expect(storyboard.scenes[0].role).toBe("goal");
+    storyboard.scenes[1].beats = [beat];
+    Object.assign(storyboard.scenes[2], {
+      kind: "code",
+      show: true,
+      code: ["const value = 1;"],
+      panel: { kind: "figure", board: "pair" },
+      beats: [beat],
+    });
+    const usage = storyboard.scenes.find((s) => s.role === "usage");
+    if (!usage) throw new Error("使う場面がありません");
+    usage.beats = [beat];
+    const mixed = {
+      ...storyboard,
+      boards: {
+        ...storyboard.boards,
+        pair: {
+          cols: 2,
+          rows: 1,
+          nodes: [
+            { id: "a", label: "入力", icon: "read", at: [1, 1] },
+            { id: "b", label: "出力", icon: "write", at: [2, 1] },
+          ],
+        },
+      },
+    };
     expect(parseStoryboard(mixed).storyboard).toEqual(mixed);
   });
 
@@ -1342,37 +1444,14 @@ describe("コードの横の概念図", () => {
   });
 });
 
-it.each([
-  null,
-  [],
-  { "": "あ" },
-  { 値: "" },
-  { 値: "aたい" },
-  { 値: "ア・タイ" },
-  { 値: "移動" },
-  { 値: "あ".repeat(31) },
-  { ["値".repeat(21)]: "あたい" },
-])("不正な ruby を拒む (%j)", (ruby) => {
-  const { issues } = parseStoryboard({ ...fresh(), ruby });
-  expect(issues).toContainEqual(
-    expect.objectContaining({ level: "error", path: expect.stringMatching(/^ruby/) }),
-  );
-});
-
-it("字幕の最長一致とフリガナを付けない場所を考慮して未使用の語を警告する", () => {
+it("最上位の ruby を拒む", () => {
   const storyboard = fresh();
-  storyboard.scenes[0].title = "見出しだけ";
-  storyboard.scenes[0].beats[0].say = "戻り値です。";
-  storyboard.ruby = { 戻り値: "もどりち", 値: "あたい", 見出し: "みだし", 未使用: "ミシヨウー" };
-  const result = parseStoryboard(storyboard);
-  expect(result.storyboard).toEqual(storyboard);
-  expect(result.issues.filter(({ path }) => path.startsWith("ruby."))).toEqual(
-    ["値", "見出し", "未使用"].map((text) => ({
-      level: "warning",
-      path: `ruby.${text}`,
-      message: `ruby の「${text}」はどこにも出てきません`,
-    })),
-  );
+  const { issues } = parseStoryboard({ ...storyboard, ruby: {} });
+  expect(issues).toContainEqual({
+    level: "error",
+    path: "ruby",
+    message: "ruby は廃止しました。フリガナは用語の表示 (term.ruby) だけに書きます",
+  });
 });
 
 it.each([null, false, "", "あ".repeat(9), "改\n行", "改\u2028行"])(

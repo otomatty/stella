@@ -960,7 +960,7 @@ it("レッスン型はコードの前後をカットにし、冒頭だけ背景�
   }
 });
 
-it("意味の吹き出しはフリガナ付きで出て番号を消し、次の文で消える", async () => {
+it("意味の吹き出しはフリガナなしで出て番号を消し、次の文で消える", async () => {
   const scene: CodeScene = {
     kind: "code",
     id: "name",
@@ -982,7 +982,6 @@ it("意味の吹き出しはフリガナ付きで出て番号を消し、次の�
     board: { cols: 1, rows: 1, nodes: [] },
     index: 2,
     total: 3,
-    ruby: { 足す: "たす" },
   });
   const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, script]) =>
     script.includes("function partNoteRuntime("),
@@ -1041,7 +1040,7 @@ it("意味の吹き出しはフリガナ付きで出て番号を消し、次の�
   expect(below).toBe(true);
   expect(bubble.style.left).toBe("862px");
   expect(Number(bubble.style.opacity)).toBeCloseTo(1);
-  expect(bubble.innerHTML).toContain('<ruby>足す<rt style="font-size:0.45em">たす</rt></ruby>');
+  expect(bubble.innerHTML).toBe("足す");
   expect(html).toContain("font:700 30px/1.2");
   top = 100;
   await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
@@ -1059,7 +1058,7 @@ it("意味の吹き出しはフリガナ付きで出て番号を消し、次の�
   expect(numbered).toBe(true);
 });
 
-it("170pxの3枚のfigureで6字のラベルと5字のルビ付きの札に横幅を渡す", async () => {
+it("170pxの3枚のfigureで6字のラベルと5字の札に横幅を渡す", async () => {
   const ids = ["first", "second", "third"];
   const board: Board = {
     cols: 3,
@@ -1100,7 +1099,6 @@ it("170pxの3枚のfigureで6字のラベルと5字のルビ付きの札に横�
     board,
     index: 2,
     total: 3,
-    ruby: { 税込: "ぜいこみ", 係: "かかり", 書く: "かく" },
   });
 
   const panel = { innerHTML: "", querySelectorAll: () => [] };
@@ -1116,13 +1114,11 @@ it("170pxの3枚のfigureで6字のラベルと5字のルビ付きの札に横�
       querySelectorAll: () => [],
     },
   });
-  const unescapeScript = html.replaceAll("\\u003c", "<").replaceAll('\\"', '"');
-  expect(unescapeScript).toContain('<ruby>書く<rt style="font-size:0.45em">かく</rt></ruby>');
-  expect(unescapeScript).toContain('<ruby>税込<rt style="font-size:0.45em">ぜいこみ</rt></ruby>');
+  expect(html).not.toMatch(/<ruby>|<rt[ >]|ruby-fit/);
   expect(html).toMatch(/\.figure-art\{[^}]*min-width:var\(--art-min\)/);
   expect(html).toMatch(/\.figure-label\{[^}]*min-width:max-content[^}]*white-space:nowrap/);
 
-  // 全角32pxで見積もる。ここでの読みは親文字の幅に収まる。
+  // ラベルと札は全角32pxで見積もる。
   // パネル幅はカード1800pxから左右24px・コード1010px・列間36pxを引いたもの。
   const available = 1800 - 48 - 1010 - 36 - 32 - 32 - 6 - 32 - 40;
   for (const offset of [0.15, 0.3, 0.8]) {

@@ -12,7 +12,7 @@ export const SCENE_TIMING = {
 } as const;
 export const SCENE_PACING = {
   1: { between: SCENE_TIMING.between, tail: SCENE_TIMING.tail },
-  2: { between: 1.6, tail: 2.4, beforeThink: 0.6, defaultThink: 6 },
+  2: { between: 1.6, tail: 2.4, beforeThink: 0.6, defaultThink: 6, dialogHold: 2.5 },
 } as const;
 type Schema = VideoStoryboard["schema"];
 export interface TimedBeat {
@@ -169,6 +169,7 @@ export function sceneTimelines(
         image = next;
       }
       if (schema === 2 && beat.term) end = Math.max(end, speechEnd + SCENE_TIMING.highlightHold);
+      if (schema === 2 && beat.dialog) end = Math.max(end, speechEnd + SCENE_PACING[2].dialogHold);
       if (schema === 2 && typeof beat.pause === "number" && Number.isFinite(beat.pause))
         end += beat.pause;
       t = end + pacing.between;

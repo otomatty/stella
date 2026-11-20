@@ -6,7 +6,7 @@
     "points": ["関数は、値を受け取り、決まった処理をして、値を返すまとまり。"],
     "leaveOut": [
       "export の詳しい仕組みと、テストの読み方",
-      "型の種類の一覧と、数値と文字列の違い",
+      "string の値の書き方と、型が合わないときのエラー",
       "const による変数宣言と計算",
       "引数が 2 つ以上ある関数",
       "問1の答えのコード"
@@ -52,6 +52,9 @@
     },
     "tax": {
       "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
+    },
+    "text": {
+      "prompt": "A large rounded speech bubble and a blank name tag card, each filled only with a few horizontal placeholder lines of different lengths in light grey. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     }
   },
   "boards": {
@@ -192,6 +195,24 @@
           "label": "返す"
         }
       ]
+    },
+    "kinds": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "knum",
+          "label": "数値",
+          "art": "total",
+          "at": [1, 1]
+        },
+        {
+          "id": "kstr",
+          "label": "文字",
+          "art": "text",
+          "at": [2, 1]
+        }
+      ]
     }
   },
   "scenes": [
@@ -237,8 +258,18 @@
           "pause": 1
         },
         {
-          "say": "見終えると、関数のコードを読めるようになります。",
-          "spot": ["in", "body", "out"]
+          "say": "見終えると、関数の基本的な形が分かるようになります。",
+          "dialog": {
+            "title": "関数の基本的な形が分かるようになります",
+            "code": [
+              "// 本の値段を受け取り、支払う金額を返す関数",
+              "function addShipping(price: number): number {",
+              "  // 受け取った値段に、送料の 500 を足して返す",
+              "  return price + 500;",
+              "}"
+            ]
+          },
+          "pause": 1
         }
       ]
     },
@@ -368,7 +399,8 @@
           "pause": 1.5,
           "term": {
             "text": "関数",
-            "note": "受け取って、処理して、返すもの"
+            "note": "受け取って、処理して、返すもの",
+            "ruby": "かんすう"
           }
         }
       ]
@@ -482,7 +514,8 @@
           "say": "受け取る値を、引数と呼びます。",
           "term": {
             "text": "引数",
-            "note": "関数が受け取る値"
+            "note": "関数が受け取る値",
+            "ruby": "ひきすう"
           },
           "part": {
             "line": 1,
@@ -583,9 +616,87 @@
           "say": "この書き方を、型注釈と呼びます。",
           "term": {
             "text": "型注釈",
-            "note": "値の種類を書く書き方"
+            "note": "値の種類を書く書き方",
+            "ruby": "かたちゅうしゃく"
           },
           "focus": [1],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "kinds",
+      "kind": "code",
+      "role": "note",
+      "title": "種類はほかにもある",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": [0, 1, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "kinds"
+      },
+      "beats": [
+        {
+          "say": "値の種類は、数値だけではありません。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          },
+          "figure": {
+            "show": ["knum"],
+            "tag": {
+              "knum": "number"
+            }
+          }
+        },
+        {
+          "say": "文字を表す種類は、string と書きます。",
+          "speech": "文字を表す種類は、ストリングと書きます。",
+          "figure": {
+            "show": ["kstr"],
+            "tag": {
+              "kstr": "string"
+            }
+          },
+          "pause": 1
+        },
+        {
+          "say": "名前や住所のような文字に使います。",
+          "figure": {
+            "pulse": ["kstr"]
+          }
+        },
+        {
+          "say": "今回受け取るのは、本の値段という金額です。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
+          "figure": {
+            "pulse": ["knum"]
+          }
+        },
+        {
+          "say": "金額は数なので、数値の number にしています。",
+          "speech": "金額は数なので、数値のナンバーにしています。",
+          "part": {
+            "line": 1,
+            "text": "price: number"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "knum",
+                "kind": "check"
+              }
+            ]
+          },
           "pause": 1
         }
       ]
@@ -615,7 +726,7 @@
             "text": "{"
           },
           "figure": {
-            "untag": ["price", "total"],
+            "show": ["price", "give", "fee", "back", "total"],
             "pulse": ["fee"]
           }
         },
@@ -646,7 +757,8 @@
           "say": "返す値を、戻り値と呼びます。",
           "term": {
             "text": "戻り値",
-            "note": "関数が返す値"
+            "note": "関数が返す値",
+            "ruby": "もどりち"
           },
           "part": {
             "line": 3,
@@ -1090,26 +1202,8 @@
       ]
     }
   ],
-  "ruby": {
-    "関数": "かんすう",
-    "引数": "ひきすう",
-    "戻り値": "もどりち",
-    "型注釈": "かたちゅうしゃく",
-    "値": "あたい",
-    "値段": "ねだん",
-    "数値": "すうち",
-    "係": "かかり",
-    "送料": "そうりょう",
-    "包装代": "ほうそうだい",
-    "包装": "ほうそう",
-    "割り勘": "わりかん",
-    "波かっこ": "なみかっこ",
-    "税込": "ぜいこみ",
-    "税金": "ぜいきん",
-    "命令": "めいれい"
-  },
   "polish": {
     "model": "gemini-4-argon",
-    "sayHash": "6bb655f0e25b9971c183b745d0a7f0588bd859d62d539cce53c20f21b5080839"
+    "sayHash": "7f9bdcf424f890d8177345a74d9128c453bd7235ad26372565b1020240dec3a9"
   }
 }

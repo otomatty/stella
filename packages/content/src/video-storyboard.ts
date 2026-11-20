@@ -2,10 +2,10 @@ export type { CodeScene, CodeBeat } from "./scene-code.js";
 import {
   codeSceneState,
   validateCodeScene,
+  validateCodeLines,
   validateCodeMotion,
   type CodeScene,
   type CodeSceneState,
-  type CodeBeat,
 } from "./scene-code.js";
 /** 絵コンテの契約・状態遷移。I/O と描画に依存しない。 */
 import { parseVideoArt, type VideoArt } from "./video-art.js";
@@ -122,6 +122,7 @@ export interface NarratedBeat {
   speech?: string;
   pause?: number;
   term?: { text: string; ruby?: string; note?: string };
+  dialog?: { title: string; code: string[] };
 }
 export interface Beat extends BoardMotion, NarratedBeat {}
 export interface BoardScene {
@@ -186,7 +187,6 @@ export interface StoryboardContext {
 export interface VideoStoryboard {
   schema: 1 | 2;
   polish?: { model: string; sayHash: string };
-  ruby?: Record<string, string>;
   brief: { goal: string; stuck: string; points: string[]; leaveOut: string[] };
   art?: Record<string, Omit<VideoArt, "aspect"> & { aspect?: VideoArt["aspect"] }>;
   boards?: Record<string, Board>;
@@ -359,28 +359,6 @@ export function storyboardStates(
 
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-/** 左から最長一致で語を拾い、表示と未使用の検査で同じ当て方を使う。 */
-export function rubyParts(text: string, dictionary: Record<string, string>) {
-  const words = Object.keys(dictionary)
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length);
-  const parts: { text: string; reading?: string }[] = [];
-  let plain = "";
-  for (let i = 0; i < text.length; ) {
-    const word = words.find((key) => text.startsWith(key, i));
-    if (word) {
-      if (plain) parts.push({ text: plain });
-      plain = "";
-      parts.push({ text: word, reading: dictionary[word] });
-      i += word.length;
-    } else {
-      plain += text[i++];
-    }
-  }
-  if (plain) parts.push({ text: plain });
-  return parts;
-}
-
 export function parseStoryboard(
   json: unknown,
   context?: StoryboardContext,
@@ -455,6 +433,10 @@ export function parseStoryboard(
   };
   const root = obj(json, "$");
   if (root.schema !== 1 && root.schema !== 2) error("schema", "1か2にしてください");
+  if (Object.hasOwn(root, "ruby")) {
+    error("ruby", "ruby は廃止しました。フリガナは用語の表示 (term.ruby) だけに書きます");
+    return { issues };
+  }
   const lesson = root.schema === 2;
   const inSeconds = (v: unknown, min: number, max: number) =>
     typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
@@ -471,11 +453,6 @@ export function parseStoryboard(
     )
       error(p, "ひらがな・カタカナ・長音だけで1〜30字にしてください");
   };
-  if (root.ruby !== undefined)
-    for (const [word, value] of Object.entries(obj(root.ruby, "ruby"))) {
-      str(word, `ruby.${word}`, 20);
-      reading(value, `ruby.${word}`);
-    }
   if (root.polish !== undefined) {
     const polish = obj(root.polish, "polish");
     str(polish.model, "polish.model");
@@ -613,7 +590,26 @@ export function parseStoryboard(
         const term = obj(beat.term, `${q}.term`);
         oneLine(term.text, `${q}.term.text`, 10);
         if (term.ruby !== undefined) reading(term.ruby, `${q}.term.ruby`);
+        else if (lesson && typeof term.text === "string" && /\p{Script=Han}/u.test(term.text))
+          error(`${q}.term.ruby`, "漢字を含む用語には読みを書いてください");
         if (term.note !== undefined) oneLine(term.note, `${q}.term.note`, 16);
+      }
+      if (beat.dialog !== undefined) {
+        if (!lesson) error(`${q}.dialog`, "dialog は schema 2 の文だけに指定できます");
+        if (beat.term !== undefined) error(`${q}.dialog`, "term と dialog は同じ文に書けません");
+        const dialog = obj(beat.dialog, `${q}.dialog`);
+        oneLine(dialog.title, `${q}.dialog.title`, 24);
+        const path = `${q}.dialog.code`;
+        const code = arr(dialog.code, path, 1, 8);
+        const codeIssues = validateCodeLines(code, path, /[\r\n\t\u0085\u2028\u2029]/u);
+        issues.push(...codeIssues);
+        if (
+          !codeIssues.length &&
+          code.length > 0 &&
+          code.length <= 8 &&
+          /^(?:\s|\/\/[^\n]*(?:\n|$)|\/\*(?:(?!\*\/)[\s\S])*\*\/)*$/u.test(code.join("\n"))
+        )
+          error(path, "コメントと空行だけのコードは指定できません");
       }
       if (beat.pause !== undefined) {
         if (!lesson) error(`${q}.pause`, "pause は schema 2 の文だけに指定できます");
@@ -882,7 +878,7 @@ export function parseStoryboard(
         ) ||
         b.travel !== undefined ||
         (b.zoom !== undefined && JSON.stringify(state.before.zoom) !== JSON.stringify(b.zoom));
-      if (s.kind !== "code" && !change && !s.beats[j].term)
+      if (s.kind !== "code" && !change && !s.beats[j].term && !s.beats[j].dialog)
         error(q, "絵が変わる動きを指定してください（空振りです）");
       const links = b.travel?.along.map((id) =>
         analysisBoards[name].links?.find((l) => l.id === id),
@@ -913,38 +909,6 @@ export function parseStoryboard(
       path: `scenes[${last}]`,
       message: "まとめの終わりで全ノードが出ていません",
     });
-  const dictionary = sb.ruby;
-  if (dictionary && !issues.some((issue) => issue.level === "error")) {
-    const unused = new Set(Object.keys(dictionary));
-    const use = (text: string) => {
-      for (const part of rubyParts(text, dictionary)) if (part.reading) unused.delete(part.text);
-    };
-    for (const scene of sb.scenes) {
-      const name = sceneBoardName(scene);
-      const board = name === undefined ? undefined : analysisBoards[name];
-      for (const node of board?.nodes ?? []) use(node.label);
-      for (const link of board?.links ?? []) if (link.label) use(link.label);
-      for (const beat of scene.beats) {
-        use(beat.say);
-        if (beat.term && beat.term.ruby === undefined) use(beat.term.text);
-        if (scene.kind === "view") {
-          for (const label of (beat as ViewBeat).label ?? []) use(label.text);
-        } else if (scene.kind === "code") {
-          const { part, figure } = beat as CodeBeat;
-          if (part?.note) use(part.note);
-          for (const tag of Object.values(figure?.tag ?? {})) use(tag);
-        } else {
-          for (const tag of Object.values((beat as Beat).tag ?? {})) use(tag);
-        }
-      }
-    }
-    for (const word of unused)
-      issues.push({
-        level: "warning",
-        path: `ruby.${word}`,
-        message: `ruby の「${word}」はどこにも出てきません`,
-      });
-  }
   const seconds = sceneTimelines(
     sb.scenes,
     sb.scenes.map((s) => s.beats.map((b) => estimateSpeechSeconds(b.speech ?? b.say))),
@@ -1062,6 +1026,7 @@ function validateView(
     }
     const change =
       beat.term !== undefined ||
+      beat.dialog !== undefined ||
       changed ||
       beat.clip !== undefined ||
       (beat.spot?.length ?? 0) > 0 ||

@@ -711,7 +711,7 @@ it("札を使わない schema 1 の概念図の HTML を維持する", () => {
   );
 });
 
-describe("用語とフリガナの描画", () => {
+describe("用語とダイアログの描画", () => {
   const board = {
     cols: 3,
     rows: 1,
@@ -722,29 +722,16 @@ describe("用語とフリガナの描画", () => {
     ],
     links: [{ id: "call", from: "input", to: "result", label: "値" }],
   } satisfies NonNullable<BoardStoryboard["boards"]>[string];
-  const dictionary = { 値: "あたい", 戻り値: "もどりち", 引数: "ひきすう" };
-
-  function render(
-    kind: "board" | "view" | "code",
-    ruby?: Record<string, string>,
-    term: boolean | string = false,
-  ) {
+  type Overlay = Pick<Scene["beats"][number], "term" | "dialog">;
+  const term = { text: "引数", ruby: "ひきすう", note: "関数が受け取る値" };
+  const dialog = { title: "関数の形", code: ["// 戻り値", "const value = 1;"] };
+  const kinds = ["board", "view", "code"] as const;
+  function render(kind: (typeof kinds)[number], first: Overlay = {}, second: Overlay = {}) {
     const actualBoard = kind === "code" ? { ...board, zones: undefined } : board;
     const common = { id: "example", role: "next", title: "引数と戻り値" } as const;
     const narration = [
-      {
-        say: "戻り値と値です。",
-        ...(term
-          ? {
-              term: {
-                text: "引数",
-                note: "関数が受け取る値",
-                ...(typeof term === "string" ? { ruby: term } : {}),
-              },
-            }
-          : {}),
-      },
-      { say: "戻り値と引数です。" },
+      { say: "戻り値と値です。", ...first },
+      { say: "戻り値と引数です。", ...second },
     ];
     const scene: Scene =
       kind === "board"
@@ -786,7 +773,6 @@ describe("用語とフリガナの描画", () => {
     const html = sceneHtml({
       scene,
       schema: 2,
-      ruby,
       state,
       timing,
       board: actualBoard,
@@ -807,16 +793,16 @@ describe("用語とフリガナの描画", () => {
   it.each(["board", "view", "code"] as const)(
     "%s で用語の幕と字幕を文の時刻から描く",
     async (kind) => {
-      const { html, timing } = render(kind, dictionary, true);
+      const { html, timing } = render(kind, { term });
       expect(html).toContain("rgba(14,14,16,0.78)");
       expect(html).toContain('<ruby>引数<rt style="font-size:40px">ひきすう</rt></ruby>');
       expect(html).toContain('<div class="term-note">関数が受け取る値</div>');
-      const term = { hidden: true, style: {} };
-      const overlay = { style: {} as Record<string, string>, children: [term] };
+      const entry = { hidden: true, style: {} };
+      const overlay = { style: {} as Record<string, string>, children: [entry] };
       const caption = { style: {} as Record<string, string> };
       const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
       const document = { getElementById: (id: string) => (id === "caption" ? caption : overlay) };
-      runInNewContext(script(html, "termRuntime"), { window, document });
+      runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
       const { start, end } = timing.beats[0];
       expect(window.__busyRanges).toEqual([
         [start, start + 0.3],
@@ -835,107 +821,106 @@ describe("用語とフリガナの描画", () => {
         expect(Number(overlay.style.opacity)).toBeCloseTo(opacity);
         expect(caption.style.color).toBe(opacity > 0 ? "white" : "");
         expect(caption.style.zIndex).toBe(opacity > 0 ? "6" : "");
-        expect(term.hidden).toBe(opacity === 0);
+        expect(entry.hidden).toBe(opacity === 0);
       }
     },
   );
 
-  it("用語の表示では term.ruby を辞書より優先する", () => {
-    const { html } = render("board", dictionary, "ヒキスウ");
-    expect(html).toContain('<ruby>引数<rt style="font-size:40px">ヒキスウ</rt></ruby>');
-    expect(html).not.toContain('<rt style="font-size:40px">ひきすう</rt>');
+  it.each(kinds)("%s の字幕・図・札・コードにフリガナを足さない", (kind) => {
+    const { html } = render(kind);
+    expect(html).toContain("<span>次の課題</span>");
+    expect(html).toContain("引数と戻り値");
+    expect(html).toContain("戻り値と値です。");
+    expect(html).not.toMatch(/<ruby>|<rt[ >]|ruby-fit|beat-overlay/);
+    if (kind === "board") {
+      const markup = html.split("<script>")[0];
+      expect(markup).toMatch(/<tspan[^>]*>戻り値<\/tspan>/);
+      expect(markup).toMatch(/<tspan[^>]*>値<\/tspan>/);
+      expect(markup).toMatch(/data-value="引数"[\s\S]*?<text[^>]*>引数<\/text>/);
+      expect(markup).toMatch(/id="zone-label-zone"[^>]*>引数<\/text>/);
+    } else if (kind === "code") {
+      expect(html).toMatch(/hljs-comment[^>]*>\/\/ 戻り値/);
+      expect(html).toContain('"label":"戻り値"');
+      expect(html).toContain('"tags":{"input":"引数"}');
+    } else {
+      expect(html).toContain('"text":"引数"');
+    }
   });
 
-  it.each(["board", "view", "code"] as const)(
-    "%s の字幕は最長一致で場面ごとの初出にだけ付ける",
-    async (kind) => {
-      const { html, timing } = render(kind, dictionary);
-      expect(html).toContain("<span>次の課題</span>");
-      expect(html).toContain("引数と戻り値</");
-      const caption = { innerHTML: "" };
-      const window = {
-        __setTime: async () => {
-          caption.innerHTML = "";
-        },
-        __overflows: () => [],
-      };
-      const document = { getElementById: () => caption, querySelectorAll: () => [] };
-      runInNewContext(script(html, "rubyRuntime"), { window, document });
-      const [first, second] = timing.beats;
-      for (const [time, expected] of [
-        [first.start, ["もどりち", "あたい"]],
-        [second.start, ["ひきすう"]],
-        [second.end + 0.1, []],
-        [first.start, ["もどりち", "あたい"]],
-      ] as const) {
-        await (window as unknown as ScenePageWindow).__setTime(time);
-        expect(
-          [...caption.innerHTML.matchAll(/<rt[^>]*>(.*?)<\/rt>/g)].map(([, reading]) => reading),
-        ).toEqual(expected);
-      }
-      expect(render(kind).html).toEqual(render(kind, {}).html);
-      expect(render(kind).html).not.toMatch(/<ruby>|term-overlay|rubyRuntime/);
-    },
-  );
-
-  it("概念図のノード・矢印・値の札に付き、囲みと見出しには付かない", () => {
-    const { html } = render("board", dictionary);
-    const markup = html.split("<script>")[0];
-    expect(markup.match(/<ruby>/g)).toHaveLength(4);
-    expect(markup).toContain('data-ruby-fit="戻り値"');
-    expect(markup).toContain('data-ruby-fit="値"');
-    expect(markup).toMatch(/data-value="引数"[\s\S]*?data-ruby-fit="引数"/);
-    expect(markup).toMatch(/id="zone-label-zone"[^>]*>引数<\/text>/);
-    expect(markup).toContain("<span>次の課題</span> 引数と戻り値</div>");
+  it.each(kinds)("%s のダイアログに同じ幕・見出し・コードを描く", async (kind) => {
+    const { html, timing } = render(kind, { dialog });
+    expect(html).toContain("rgba(14,14,16,0.55)");
+    expect(html).toContain('<h2 class="dialog-title">関数の形</h2>');
+    expect(html).toContain(
+      '<code><span class="hljs-comment">// 戻り値</span>\n<span class="hljs-keyword">const</span> value = <span class="hljs-number">1</span>;</code>',
+    );
+    expect(html).toContain("JetBrains Mono");
+    const code = { scrollWidth: 100, clientWidth: 100 };
+    const entry = {
+      hidden: true,
+      style: { transform: "" },
+      classList: { contains: (name: string) => name === "code-dialog" },
+      querySelectorAll: () => [code],
+      querySelector: () => ({ textContent: "関数の形" }),
+    };
+    const overlay = { style: {} as Record<string, string>, children: [entry] };
+    const caption = { style: {} as Record<string, string> };
+    const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
+    const document = { getElementById: (id: string) => (id === "caption" ? caption : overlay) };
+    runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
+    const { start, end } = timing.beats[0];
+    for (const [time, opacity] of [
+      [0, 0],
+      [start + 0.15, 0.5],
+      [start + 0.4, 1],
+      [end - 1 / 30, 1],
+      [end, 1],
+      [end + 0.15, 0.5],
+      [timing.beats[1].start, 0],
+    ]) {
+      await (window as unknown as ScenePageWindow).__setTime(time);
+      expect(Number(overlay.style.opacity)).toBeCloseTo(opacity);
+      expect(entry.hidden).toBe(opacity === 0);
+      expect(caption.style.color).toBe(opacity > 0 ? "white" : "");
+      expect(caption.style.zIndex).toBe(opacity > 0 ? "6" : "");
+      if (opacity > 0) expect(overlay.style.background).toBe("rgba(14,14,16,0.55)");
+      expect(window.__overflows()).toEqual([]);
+    }
+    await (window as unknown as ScenePageWindow).__setTime(start + 0.15);
+    expect(entry.style.transform).toBe("scale(1.06)");
+    code.scrollWidth = 125;
+    expect(window.__overflows()).toEqual(["ダイアログに文字が収まりません: 関数の形"]);
+    await (window as unknown as ScenePageWindow).__setTime(start + 0.4);
+    expect(entry.style.transform).toBe("scale(1)");
   });
 
-  it("コード横の図のラベルと札にフリガナを入れ、コードのコメントはそのままにする", async () => {
-    const { html, timing } = render("code", dictionary);
-    const labels = ["引数", "値", "戻り値"].map((textContent) => ({
-      textContent,
-      dataset: {},
-      innerHTML: "",
-    }));
-    const caption = { innerHTML: "" };
-    const window = { __setTime: async () => undefined, __overflows: () => [] };
+  it("同じ場面に用語とダイアログがあるときは、文に合わせて幕と内容を切り替える", async () => {
+    const { html, timing } = render("view", { term }, { dialog });
+    const entries = [0, 1].map(() => ({ hidden: true, style: {} }));
+    const overlay = { style: {} as Record<string, string>, children: entries };
+    const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
     const document = {
-      getElementById: () => caption,
-      querySelectorAll: (selector: string) => (selector.startsWith(".figure") ? labels : []),
+      getElementById: (id: string) => (id === "caption" ? { style: {} } : overlay),
     };
-    runInNewContext(script(html, "rubyRuntime"), { window, document });
-    await (window as unknown as ScenePageWindow).__setTime(timing.beats[0].start + 0.4);
-    for (const label of labels)
-      expect(label.innerHTML).toContain(dictionary[label.textContent as keyof typeof dictionary]);
-    expect(html).toMatch(/hljs-comment[^>]*>\/\/ 戻り値/);
+    runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
+    for (const index of [0, 1, 0]) {
+      await (window as unknown as ScenePageWindow).__setTime(timing.beats[index].start + 0.4);
+      expect(entries.map(({ hidden }) => hidden)).toEqual([index !== 0, index !== 1]);
+      expect(overlay.style.background).toBe(
+        index === 0 ? "rgba(14,14,16,0.78)" : "rgba(14,14,16,0.55)",
+      );
+    }
   });
 
-  it("画面の札では既存の枠内にフリガナを置く", async () => {
-    const { html, timing } = render("view", dictionary);
-    const rect = {
-      getAttribute: (attr: string) => ({ x: 45, y: 60, width: 100, height: 60 })[attr as "x"],
-    };
-    let markup = "";
-    let removed = false;
-    const label = {
-      textContent: "引数",
-      previousElementSibling: { previousElementSibling: rect },
-      insertAdjacentHTML: (_position: string, text: string) => {
-        markup = text;
-      },
-      remove: () => {
-        removed = true;
-      },
-    };
-    const window = { __setTime: async () => undefined, __overflows: () => [] };
-    const document = {
-      getElementById: () => ({}),
-      querySelectorAll: (selector: string) => (selector.startsWith("#surface") ? [label] : []),
-    };
-    runInNewContext(script(html, "rubyRuntime"), { window, document });
-    await (window as unknown as ScenePageWindow).__setTime(timing.beats[0].start + 0.4);
-    expect(markup).toContain('<foreignObject x="53" y="60" width="84" height="60">');
-    expect(markup).toContain("<ruby>引数<rt");
-    expect(markup).toContain("ひきすう</rt>");
-    expect(removed).toBe(true);
+  it("コードを収めるために最長行に合わせて文字を縮める", () => {
+    const { html } = render("view", { dialog: { ...dialog, code: ["a".repeat(80)] } });
+    expect(html).toContain('<pre class="dialog-code" style="font-size:22px">');
+  });
+
+  it.each(kinds)("%s に dialog がなければ HTML に要素・CSS・描画処理を足さない", (kind) => {
+    expect(render(kind).html).toBe(render(kind, { dialog: undefined }).html);
+    expect(render(kind, { term }).html).not.toMatch(
+      /code-dialog|dialog-heading|dialog-code|dialogOverflow/,
+    );
   });
 });

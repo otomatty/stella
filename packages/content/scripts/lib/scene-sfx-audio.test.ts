@@ -136,6 +136,31 @@ it.each([24000, 48000] as const)("%s Hzの全効果音を検査し、従来のPC
   expect(hashes.size).toBe(kinds.length);
 });
 
+it.each([
+  [
+    24000,
+    "99d66c83e0e5d03a9396a0d0c3e349ff3eddf747ccf8e94dd125d31cd3c7b610",
+    "b1a2eacaa80186eac64b2a80282e5d54f297556125f917e78b5677e52f6b58e1",
+  ],
+  [
+    48000,
+    "ccfd07c23fceb5fa78503525cc0c4261a1ad58b6d22d52ba1268cf26b440f8ca",
+    "9d7b16abf944cd6b554b792418f2f228a9a4b49380393eea392ac5bdded42cbf",
+  ],
+] as const)(
+  "%s Hzの場面の音は0.45秒の木琴の音で、ほかのPCMは従来どおり",
+  (rate, sceneHash, otherHash) => {
+    const pcm = synthesizeSceneSfx("scene", rate);
+    expect(pcm.length).toBe(Math.round(0.45 * rate));
+    expect(pcmHash(pcm)).toBe(sceneHash);
+    const other = createHash("sha256");
+    for (const kind of kinds) {
+      if (kind !== "scene") other.update(new Uint8Array(synthesizeSceneSfx(kind, rate).buffer));
+    }
+    expect(other.digest("hex")).toBe(otherHash);
+  },
+);
+
 it.skipIf(!hasFfmpeg)(
   "重なった効果音を加算し、読み上げに混ぜてもクリップしない",
   async () => {

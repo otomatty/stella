@@ -113,6 +113,21 @@ export function codeSceneState(scene: CodeScene, figure?: SceneState): CodeScene
 export function codeLineWidth(text: string): number {
   return Array.from(text).reduce((n, c) => n + (/[\x20-\x7e\uff61-\uff9f]/u.test(c) ? 0.5 : 1), 0);
 }
+export function validateCodeLines(code: unknown[], path: string, lineBreak = /[\r\n\t]/u): Issue[] {
+  const issues: Issue[] = [];
+  code.forEach((line, i) => {
+    const at = `${path}[${i}]`;
+    if (typeof line !== "string" || lineBreak.test(line))
+      issues.push({
+        level: "error",
+        path: at,
+        message: "1行の文字列にしてください（字下げは空白）",
+      });
+    else if (codeLineWidth(line) > 40)
+      issues.push({ level: "error", path: at, message: "全角換算40字以内にしてください" });
+  });
+  return issues;
+}
 /** 不正な形は状態計算に渡さず、JSON の誤りをまとめて報告する。 */
 export function validateCodeScene(input: Record<string, unknown>, path: string): Issue[] {
   const issues: Issue[] = [];
@@ -132,11 +147,7 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
     return v;
   };
   const code = list(input.code, `${path}.code`);
-  code.forEach((v, i) => {
-    if (typeof v !== "string" || /[\r\n\t]/u.test(v))
-      error(`${path}.code[${i}]`, "1行の文字列にしてください（字下げは空白）");
-    else if (codeLineWidth(v) > 40) error(`${path}.code[${i}]`, "全角換算40字以内にしてください");
-  });
+  issues.push(...validateCodeLines(code, `${path}.code`));
   const panel = obj(input.panel) ? input.panel : undefined;
   const names = new Set<string>();
   let rowCount = 0;
@@ -373,6 +384,7 @@ export function validateCodeMotion(
       !partChanged &&
       !beat.calc &&
       !beat.term &&
+      !beat.dialog &&
       !figureChanged[i]
     )
       error(p, "絵が変わる動きを指定してください（空振りです）");

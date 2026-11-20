@@ -189,10 +189,11 @@ kinds は上記6種類から選び、reason は日本語にしてください。
                 : scene.kind === "code"
                   ? JSON.stringify(beat)
                   : pictureOf(boards[scene.board], beat as Beat);
-            if (!beat.term) return picture;
+            if (!beat.term && !beat.dialog) return picture;
             return [
               ...(typeof picture === "string" ? [picture] : picture),
-              `用語の表示: ${beat.term.text}`,
+              ...(beat.term ? [`用語の表示: ${beat.term.text}`] : []),
+              ...(beat.dialog ? [`ダイアログ: ${beat.dialog.title}`] : []),
             ];
           })(),
         })),
