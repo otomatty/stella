@@ -618,9 +618,11 @@ describe("動画レッスンのコメント API", () => {
 
     const included = await list(`&limit=1&include=${second.id}`);
     expect(included.total).toBe(3);
+    expect(included.include_state).toBe("current");
     expect(included.threads.map(({ id }) => id)).toEqual([second.id, first.id]);
 
     const alreadyInPage = await list(`&limit=2&include=${second.id}`);
+    expect(alreadyInPage.include_state).toBe("current");
     expect(alreadyInPage.threads.map(({ id }) => id)).toEqual([first.id, second.id]);
 
     const emptyPage = await list(`&offset=100&include=${second.id}`);
@@ -650,6 +652,7 @@ describe("動画レッスンのコメント API", () => {
     `);
 
     const firstPage = await list("&limit=1&sort=new");
+    expect(firstPage).not.toHaveProperty("include_state");
     expect(firstPage.threads.map(({ id }) => id)).toEqual(["recent-1000"]);
     expect(firstPage.total).toBe(1000);
     expect(firstPage.markers).toHaveLength(1000);
@@ -658,6 +661,7 @@ describe("動画レッスンのコメント API", () => {
     const included = await list(`&limit=1&sort=new&include=${old.id}`);
     expect(included).toEqual({
       ...firstPage,
+      include_state: "current",
       threads: [
         expect.objectContaining({
           id: old.id,
@@ -669,18 +673,20 @@ describe("動画レッスンのコメント API", () => {
         ...firstPage.threads,
       ],
     });
-    for (const query of [
-      `&include=${foreign.id}`,
-      `&include=${reply.id}`,
-      `&scope=active&include=${orphaned.id}`,
-      `&filter=mine&include=${old.id}`,
-      `&filter=scene&sceneId=intro&include=${old.id}`,
-    ]) {
-      expect(await list(`&limit=1&sort=new${query}`)).toEqual(firstPage);
+    for (const [query, include_state] of [
+      [`&include=${foreign.id}`, null],
+      [`&include=${reply.id}`, null],
+      ["&include=missing-thread", null],
+      [`&scope=active&include=${orphaned.id}`, "orphaned"],
+      [`&filter=mine&include=${old.id}`, "current"],
+      [`&filter=scene&sceneId=intro&include=${old.id}`, "current"],
+    ] as const) {
+      expect(await list(`&limit=1&sort=new${query}`)).toEqual({ ...firstPage, include_state });
     }
     const archived = await list(`&scope=orphaned&include=${orphaned.id}`);
     expect(archived.total).toBe(0);
     expect(archived.orphaned_count).toBe(0);
+    expect(archived.include_state).toBe("orphaned");
     expect(archived.threads).toMatchObject([{ id: orphaned.id, state: "orphaned" }]);
   });
 

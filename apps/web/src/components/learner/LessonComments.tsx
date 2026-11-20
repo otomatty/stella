@@ -357,7 +357,7 @@ export function LessonComments({
         ) : null}
       </div>
 
-      {comments.orphanedCount > 0 ? (
+      {comments.orphanedCount > 0 || comments.orphanedOpen ? (
         <div className="space-y-2 border-t border-border pt-2">
           <Button
             type="button"
@@ -369,7 +369,7 @@ export function LessonComments({
               comments.setOrphanedOpen(!comments.orphanedOpen);
             }}
           >
-            更新前の動画へのコメント {comments.orphanedCount} 件
+            {`更新前の動画へのコメント${comments.orphanedCount > 0 ? ` ${comments.orphanedCount} 件` : ""}`}
           </Button>
           {comments.orphanedOpen ? (
             <div className="space-y-2" aria-busy={comments.orphaned.loading}>

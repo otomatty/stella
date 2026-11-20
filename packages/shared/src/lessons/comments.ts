@@ -131,6 +131,7 @@ export interface LessonCommentsResponse {
   video: { scenes: { id: string; start_sec: number; duration_sec: number }[] };
   total: number;
   orphaned_count: number;
+  include_state?: CommentPosition["state"] | null;
   markers: CommentMarker[];
   threads: CommentThread[];
 }

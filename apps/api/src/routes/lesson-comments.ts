@@ -254,10 +254,11 @@ lessonCommentsRoute.get(PATH, async (c) => {
       video: sceneResponse(video.videoPath === null ? null : video.scenes),
       total: 0,
       orphaned_count: 0,
+      ...(include !== undefined ? { include_state: null } : {}),
       markers: [],
       threads: [],
     };
-    if (video.videoPath === null) return c.json(response);
+    if (video.videoPath === null && !include) return c.json(response);
 
     const lessonRoots = and(eq(lessonComments.lessonId, lessonId), isNull(lessonComments.parentId));
     const selectRoots = () =>
@@ -271,10 +272,13 @@ lessonCommentsRoute.get(PATH, async (c) => {
         })
         .from(lessonComments)
         .innerJoin(profiles, eq(profiles.id, lessonComments.userId));
-    const roots = await selectRoots()
-      .where(lessonRoots)
-      .orderBy(desc(lessonComments.createdAt), desc(lessonComments.id))
-      .limit(ROOT_LIMIT);
+    const roots =
+      video.videoPath === null
+        ? []
+        : await selectRoots()
+            .where(lessonRoots)
+            .orderBy(desc(lessonComments.createdAt), desc(lessonComments.id))
+            .limit(ROOT_LIMIT);
 
     const matchesQuery = (userId: string, position: CommentPosition) =>
       (scope === "orphaned") === (position.state === "orphaned") &&
@@ -285,6 +289,7 @@ lessonCommentsRoute.get(PATH, async (c) => {
     let orphanedCount = 0;
     for (const root of roots) {
       const position = resolveCommentPosition(root, video);
+      if (root.id === include) response.include_state = position.state;
       if (position.state === "orphaned") orphanedCount++;
       if (position.positionSec !== null) {
         markers.push({
@@ -313,14 +318,17 @@ lessonCommentsRoute.get(PATH, async (c) => {
       const included = matches.find(({ root }) => root.id === include);
       if (included) {
         page.unshift(included);
-      } else if (!roots.some(({ id }) => id === include)) {
+      } else if (response.include_state === null) {
         // 通知先が通常の取得範囲より古い場合も、このページだけに加える。
         const [root] = await selectRoots()
           .where(and(lessonRoots, eq(lessonComments.id, include)))
           .limit(1);
         if (root) {
           const position = resolveCommentPosition(root, video);
-          if (matchesQuery(root.userId, position)) page.unshift({ root, position });
+          response.include_state = position.state;
+          if (video.videoPath !== null && matchesQuery(root.userId, position)) {
+            page.unshift({ root, position });
+          }
         }
       }
     }

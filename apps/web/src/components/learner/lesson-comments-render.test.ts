@@ -190,10 +190,10 @@ describe("動画レッスンのコメント欄", () => {
     expect(html).not.toContain("へ移動");
   });
 
-  it("通知で指定した更新前のスレッドの返信を開く", () => {
+  it.each([1, 0])("件数が %s でも通知で指定した更新前のスレッドの返信を開く", (orphanedCount) => {
     const html = render({
       focus: { lessonId: "lesson", id: thread.id, fromNotification: true },
-      orphanedCount: 1,
+      orphanedCount,
       orphanedOpen: true,
       orphaned: {
         threads: [{ ...thread, state: "orphaned", position_sec: null }],
@@ -204,6 +204,11 @@ describe("動画レッスンのコメント欄", () => {
         loadMore: vi.fn(),
       },
     });
+    if (orphanedCount === 0) {
+      expect(html).toMatch(
+        /<button[^>]+aria-expanded="true"[^>]*>更新前の動画へのコメント<\/button>/,
+      );
+    }
     expect(html).toMatch(/<button[^>]+aria-expanded="true"[^>]*>返信 1 件を閉じる/);
     expect(html).toContain("ありがとうございます");
   });

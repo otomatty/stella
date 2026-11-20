@@ -11,7 +11,25 @@ import {
 } from "./lesson-comments";
 
 describe("通知から更新前のコメントを開く判定", () => {
-  it("通常の一覧を取得し、対象がなく更新前のコメントがあるときに開く", () => {
+  it("include_state が orphaned なら件数が 0 でも開く", () => {
+    expect(
+      shouldOpenOrphanedComments(
+        { include_state: "orphaned", threads: [], orphaned_count: 0 },
+        "target",
+      ),
+    ).toBe(true);
+  });
+
+  it.each(["current", "outdated", "untimed", null] as const)(
+    "include_state が %s なら件数があっても開かない",
+    (include_state) => {
+      expect(
+        shouldOpenOrphanedComments({ include_state, threads: [], orphaned_count: 1 }, "target"),
+      ).toBe(false);
+    },
+  );
+
+  it("旧 API では通常の一覧に対象がなく更新前のコメントがあるときに開く", () => {
     expect(shouldOpenOrphanedComments(undefined, "target")).toBe(false);
     expect(shouldOpenOrphanedComments({ threads: [], orphaned_count: 0 }, "target")).toBe(false);
     expect(

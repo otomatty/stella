@@ -125,12 +125,16 @@ type SceneCoordinates = Pick<VideoScene, "id" | "startSec" | "durationSec">;
 type ListedScene = LessonCommentsResponse["video"]["scenes"][number];
 
 export function shouldOpenOrphanedComments(
-  active: { threads: readonly Pick<CommentThread, "id">[]; orphaned_count: number } | undefined,
+  active:
+    | (Pick<LessonCommentsResponse, "orphaned_count" | "include_state"> & {
+        threads: readonly Pick<CommentThread, "id">[];
+      })
+    | undefined,
   threadId: string,
 ): boolean {
-  return Boolean(
-    active && active.orphaned_count > 0 && !active.threads.some(({ id }) => id === threadId),
-  );
+  if (!active) return false;
+  if (active.include_state !== undefined) return active.include_state === "orphaned";
+  return active.orphaned_count > 0 && !active.threads.some(({ id }) => id === threadId);
 }
 
 export function isCurrentThread(
