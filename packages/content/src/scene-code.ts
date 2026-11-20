@@ -1,9 +1,10 @@
 import type { SceneTimeline } from "./scene-timeline.js";
-import type { Issue } from "./video-storyboard.js";
+import type { BoardMotion, Issue, SceneRole, SceneState } from "./video-storyboard.js";
 
 export interface CodeBeat {
   say: string;
   speech?: string;
+  pause?: number;
   type?: number[];
   focus?: number[];
   part?: { line: number; text: string };
@@ -16,16 +17,20 @@ export interface CodeBeat {
   row?: number[];
   mark?: { line: number; kind: "cross" | "check" }[];
   clear?: number[];
+  figure?: Omit<BoardMotion, "zoom">;
 }
 export interface CodeScene {
   kind: "code";
   id: string;
-  role: "hook" | "point" | "recap";
+  role: SceneRole;
+  think?: number;
   point?: number;
   title: string;
   code: string[];
-  show?: boolean;
+  show?: boolean | number[];
+  reset?: boolean;
   panel?:
+    | { kind: "figure"; board: string }
     | { kind: "values"; items: string[] }
     | { kind: "numberLine"; from: number; to: number; items?: string[] }
     | { kind: "calls"; rows: { call: string; result: string; note?: string }[] };
@@ -48,10 +53,15 @@ export interface CodeSceneState {
   start: CodeState;
   beats: { before: CodeState; after: CodeState }[];
   end: CodeState;
+  figure?: SceneState;
 }
-export function codeSceneState(scene: CodeScene): CodeSceneState {
+export function codeSceneState(scene: CodeScene, figure?: SceneState): CodeSceneState {
   const start: CodeState = {
-    visible: scene.show ? scene.code.map((_, i) => i) : [],
+    visible: Array.isArray(scene.show)
+      ? [...scene.show].sort((a, b) => a - b)
+      : scene.show
+        ? scene.code.map((_, i) => i)
+        : [],
     values: {},
     rows: [],
     marks: {},
@@ -88,7 +98,13 @@ export function codeSceneState(scene: CodeScene): CodeSceneState {
     for (const mark of beat.mark ?? []) current.marks[mark.line] = mark.kind;
     return { before, after: structuredClone(current) };
   });
-  return { kind: "code", start, beats, end: structuredClone(current) };
+  return {
+    kind: "code",
+    start,
+    beats,
+    end: structuredClone(current),
+    ...(figure ? { figure } : {}),
+  };
 }
 /** ASCII は半角、それ以外は全角として数える。 */
 export function codeLineWidth(text: string): number {
@@ -118,14 +134,12 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       error(`${path}.code[${i}]`, "1行の文字列にしてください（字下げは空白）");
     else if (codeLineWidth(v) > 40) error(`${path}.code[${i}]`, "全角換算40字以内にしてください");
   });
-  if (input.show !== undefined && typeof input.show !== "boolean")
-    error(`${path}.show`, "真偽値にしてください");
   const panel = obj(input.panel) ? input.panel : undefined;
   const names = new Set<string>();
   let rowCount = 0;
   if (input.panel !== undefined) {
-    if (!panel || !["values", "calls", "numberLine"].includes(String(panel.kind)))
-      error(`${path}.panel`, "values・calls・numberLineのパネルにしてください");
+    if (!panel || !["values", "calls", "numberLine", "figure"].includes(String(panel.kind)))
+      error(`${path}.panel`, "values・calls・numberLine・figureのパネルにしてください");
     else if (panel.kind === "values" || panel.kind === "numberLine") {
       if (panel.kind === "numberLine") {
         if (
@@ -148,6 +162,8 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
           names.add(v);
         }
       }
+    } else if (panel.kind === "figure") {
+      text(panel.board, `${path}.panel.board`);
     } else {
       const rows = list(panel.rows, `${path}.panel.rows`);
       rowCount = rows.length;
@@ -167,6 +183,20 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
     if (!Number.isInteger(v) || Number(v) < 0 || Number(v) >= count)
       error(p, "存在する行の0始まりの番号にしてください");
   };
+  if (Array.isArray(input.show)) {
+    input.show.forEach((v, i) => {
+      line(v, `${path}.show[${i}]`);
+    });
+    if (new Set(input.show).size !== input.show.length)
+      error(`${path}.show`, "番号が重複しています");
+  } else if (input.show !== undefined && typeof input.show !== "boolean") {
+    error(`${path}.show`, "真偽値か行番号の配列にしてください");
+  }
+  if (input.reset !== undefined) {
+    if (panel?.kind !== "figure")
+      error(`${path}.reset`, "reset は figure パネルだけに指定できます");
+    else if (typeof input.reset !== "boolean") error(`${path}.reset`, "真偽値にしてください");
+  }
   const box = (v: unknown, p: string) => {
     if (
       (panel?.kind !== "values" && panel?.kind !== "numberLine") ||
@@ -190,6 +220,8 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
   input.beats.forEach((b, i) => {
     if (!obj(b)) return;
     const p = `${path}.beats[${i}]`;
+    if (b.figure !== undefined && panel?.kind !== "figure")
+      error(`${p}.figure`, "figure は figure パネルだけに指定できます");
     for (const key of ["plot", "range", "snap", "tick"] as const) {
       const value = b[key];
       if (value === undefined) continue;
@@ -285,6 +317,18 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       `${path}.code`,
       "コメントと空行だけのコードの場面です。操作は実画面（view）、関係や流れ、ルールは概念図（board）で見せてください",
     );
+  if (scene.panel?.kind !== "figure") issues.push(...validateCodeMotion(scene, path));
+  return issues;
+}
+
+/** figure では引き継いだ図の状態も使って、文ごとの動きを確かめる。 */
+export function validateCodeMotion(
+  scene: CodeScene,
+  path: string,
+  figureChanged: boolean[] = [],
+): Issue[] {
+  const issues: Issue[] = [];
+  const error = (path: string, message: string) => issues.push({ level: "error", path, message });
   const states = codeSceneState(scene);
   scene.beats.forEach((beat, i) => {
     const p = `${path}.beats[${i}]`,
@@ -315,7 +359,8 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       JSON.stringify(visualState(before)) === JSON.stringify(visualState(after)) &&
       !focusChanged &&
       !partChanged &&
-      !beat.calc
+      !beat.calc &&
+      !figureChanged[i]
     )
       error(p, "絵が変わる動きを指定してください（空振りです）");
   });

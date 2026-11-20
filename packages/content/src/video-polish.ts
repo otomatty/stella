@@ -142,6 +142,9 @@ function pictureOf(board: Board, beat: Beat): string[] {
   ] as const) {
     if (beat[key]?.length) actions.push(`${verb}: ${beat[key].map(label).join("、")}`);
   }
+  for (const [id, value] of Object.entries(beat.tag ?? {}))
+    actions.push(`札: ${nodeLabel(id)}=${value}`);
+  if (beat.untag?.length) actions.push(`札を外す: ${beat.untag.map(nodeLabel).join("、")}`);
   for (const m of beat.mark ?? []) actions.push(`印: ${label(m.on)} に ${m.kind}`);
   if (beat.travel) {
     const links = beat.travel.along.map((id) => board.links?.find((l) => l.id === id));

@@ -2,6 +2,7 @@ import { runInNewContext } from "node:vm";
 import { expect, it } from "vitest";
 import { codeSceneState, type CodeScene } from "../../src/scene-code.js";
 import { sceneTimelines } from "../../src/scene-timeline.js";
+import { storyboardStates, type Board } from "../../src/video-storyboard.js";
 import { sceneHtml, type ScenePageWindow } from "./scene-html.js";
 
 it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・印・字幕と撮影区間を出す", async () => {
@@ -716,4 +717,129 @@ it.each([
     // 札を寄せても点そのものの座標を変えない。
     expect(panel.innerHTML).toContain(`translate(${pointX} 262)`);
   }
+});
+
+it("概念図のカード・矢印・イラストと、フェード・印・札・移動を時刻から描く", async () => {
+  const board: Board = {
+    cols: 3,
+    rows: 1,
+    nodes: [
+      { id: "total", label: "合計", at: [3, 1], icon: "file" },
+      { id: "price", label: "価格", at: [1, 1], art: "price" },
+      { id: "shipping", label: "送料", at: [2, 1], icon: "file" },
+    ],
+    links: [
+      { id: "first", from: "price", to: "shipping", label: "足す" },
+      { id: "second", from: "shipping", to: "total" },
+    ],
+  };
+  const scene: CodeScene = {
+    id: "syntax",
+    kind: "code",
+    role: "syntax",
+    title: "価格と合計",
+    code: ["const price = 1200;"],
+    show: true,
+    panel: { kind: "figure", board: "shop" },
+    beats: [
+      {
+        say: "価格を出します。",
+        figure: {
+          show: ["price", "shipping", "total", "first", "second"],
+          mark: [{ on: "price", kind: "check" }],
+          tag: { price: "1200" },
+          pulse: ["price"],
+          focus: ["price"],
+        },
+      },
+      {
+        say: "値を渡します。",
+        figure: { travel: { along: ["first", "second"] }, tag: { price: "500" } },
+      },
+      {
+        say: "札と印を外します。",
+        figure: { untag: ["price"], unmark: ["price"], hide: ["total", "second"] },
+      },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[3, 4, 3]], undefined, 2)[0];
+  const state = storyboardStates({
+    schema: 2,
+    boards: { shop: board },
+    brief: { goal: "", stuck: "", points: [], leaveOut: [] },
+    scenes: [scene],
+  })[0];
+  const url = "file:///art/price.png";
+  const html = sceneHtml({
+    board,
+    scene,
+    state,
+    timing,
+    index: 1,
+    total: 3,
+    images: { "art:price": { url, width: 400, height: 300, regions: {} } },
+  });
+  expect(html).toContain(url);
+  const label = {
+    scrollWidth: 180,
+    clientWidth: 160,
+    scrollHeight: 36,
+    clientHeight: 36,
+    textContent: "長いラベル",
+  };
+  const panel = {
+    innerHTML: "",
+    querySelectorAll: (selector: string) => (selector === ".figure-label" ? [label] : []),
+  };
+  const window = {} as ScenePageWindow;
+  runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+    window,
+    document: {
+      getElementById: (id: string) => (id === "panel" ? panel : { innerHTML: "", style: {} }),
+      querySelectorAll: () => [],
+    },
+  });
+  const markup = () => panel.innerHTML;
+  expect(markup()).toContain('data-id="price" style="height:170px;opacity:0');
+  expect(markup()).toContain(`<img src="${url}" alt="">`);
+  expect(markup().indexOf('data-id="price"')).toBeLessThan(markup().indexOf('data-id="shipping"'));
+  expect(markup().indexOf('data-id="shipping"')).toBeLessThan(markup().indexOf('data-id="total"'));
+  expect(markup()).toContain('<span class="figure-arrow-label">足す</span>');
+  expect(window.__overflows()).toContain("図のカード「長いラベル」のラベルが収まりません");
+  expect(
+    window.__busyRanges.some(
+      ([from, to]) => from <= timing.beats[1].start && to > timing.beats[1].end,
+    ),
+  ).toBe(true);
+  const [first, second, third] = timing.beats;
+  await window.__setTime(first.start + 0.3);
+  expect(markup()).toMatch(
+    /data-id="price"[^>]*opacity:0\.6\d*;transform:scale\(1\.045\);border-color:#E62F9A;background:rgba/,
+  );
+  expect(markup()).toMatch(/data-mark="check" style="transform:scale\(0\./);
+  expect(markup()).toContain(">1200</span>");
+  await window.__setTime(first.end);
+  expect(markup()).toContain('data-id="shipping" style="height:170px;opacity:1');
+  expect(markup()).toContain('data-mark="check" style="transform:scale(1)"');
+
+  await window.__setTime(second.start + 0.1);
+  expect(markup()).toContain(">1200</span>");
+  expect(markup()).not.toContain('class="figure-traveler"');
+  await window.__setTime(second.start + 1);
+  expect(markup()).not.toContain(">1200</span>");
+  expect(markup()).toContain('class="figure-tag" style="opacity:1;transform:scale(1)">500');
+  expect(markup()).toMatch(/足す<\/span><span class="figure-traveler"/);
+  await window.__setTime(second.start + 2);
+  expect(markup()).not.toContain('class="figure-traveler"');
+  await window.__setTime(second.start + 3);
+  expect(markup()).toContain('class="figure-traveler"');
+  expect(markup()).not.toMatch(/足す<\/span><span class="figure-traveler"/);
+
+  await window.__setTime(third.start + 0.1);
+  expect(markup()).toMatch(/data-id="total"[^>]*opacity:0\.6/);
+  expect(markup()).toContain(">500</span>");
+  expect(markup()).not.toContain('data-mark="check"');
+  await window.__setTime(third.start + 0.4);
+  expect(markup()).toContain('data-id="total" style="height:170px;opacity:0');
+  expect(markup()).not.toContain('class="figure-tag"');
 });

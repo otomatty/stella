@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { speechOf } from "../../src/narration.js";
 import { createHash } from "node:crypto";
 import type { SceneTimeline, TextScene } from "../../src/scene-timeline.js";
-import { SCENE_TIMING } from "../../src/scene-timeline.js";
+import { SCENE_PACING, SCENE_TIMING } from "../../src/scene-timeline.js";
 import type { SceneSfxCue } from "../../src/scene-sfx.js";
 import {
   normalizeStoryboard,
@@ -17,9 +17,11 @@ export interface SceneCacheInput<
   S extends Scene | TextScene = Scene | TextScene,
   T = BoardState | ViewState | CodeState,
 > {
+  schema?: 1 | 2;
   version: number;
   board: S extends TextScene ? undefined : Board;
   start: S extends TextScene ? undefined : T;
+  figureStart?: BoardState;
   /** 使う画像・クリップ定義と動画全体の sha256。ファイルの時刻・サイズは使わない。 */
   assets?: Record<string, string>;
   scene: S;
@@ -37,7 +39,7 @@ export interface SceneCacheInput<
 const digest = (data: string | Uint8Array): string =>
   createHash("sha256").update(data).digest("hex").slice(0, 32);
 /** 先行する音声の長さの変更だけでは、この場面のキャッシュを捨てない。 */
-export function sceneCacheHash(input: SceneCacheInput): string {
+export function sceneCacheHash({ schema, ...input }: SceneCacheInput): string {
   return digest(
     normalizeStoryboard({
       ...input,
@@ -47,6 +49,7 @@ export function sceneCacheHash(input: SceneCacheInput): string {
         : input.html,
       timing: { ...input.timing, start: 0 },
       settings: SCENE_TIMING,
+      ...(schema === 2 ? { pacing: SCENE_PACING[2] } : {}),
       audio: input.audio.map((p) => digest(new Uint8Array(p.buffer, p.byteOffset, p.byteLength))),
     }),
   );
@@ -80,6 +83,7 @@ export function sceneVideoSourceHash(input: {
         ),
       ],
       timing: SCENE_TIMING,
+      ...(storyboard.schema === 2 ? { pacing: SCENE_PACING[2] } : {}),
     }),
   );
 }

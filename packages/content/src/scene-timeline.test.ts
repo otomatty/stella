@@ -321,3 +321,65 @@ it("空のspot・labelには待ち時間を足さず、操作が長ければそ�
   expect(t.beats[0].speechEnd).toBeCloseTo(1.8);
   expect(sceneTimelines([scene], [[8]], clips)[0].beats[0].end).toBeCloseTo(10.3);
 });
+
+it("schema 2 の文間・余韻と pause は読み上げとは別に計る", () => {
+  const scene: Scene = {
+    ...scenes[0],
+    role: "goal",
+    beats: [{ say: "文です。", pause: 2 }, { say: "次です。" }],
+  };
+  const [timing] = sceneTimelines([scene], [[1, 2]], {}, 2);
+  const [first, last] = timing.beats;
+  expect(first.speechEnd).toBeCloseTo(1.8);
+  expect(first.end).toBeCloseTo(3.8);
+  expect(last.start - first.end).toBeCloseTo(1.6);
+  expect(timing.duration - last.end).toBeCloseTo(2.4);
+  expect(sceneCaptionAt(timing, 2)).toBe("");
+  expect(
+    sceneTimelines(scenes, [
+      [1, 2],
+      [1, 2],
+      [1, 2],
+    ]),
+  ).toEqual(
+    sceneTimelines(
+      scenes,
+      [
+        [1, 2],
+        [1, 2],
+        [1, 2],
+      ],
+      {},
+      1,
+    ),
+  );
+});
+
+it.each([undefined, 3.5])("問題の強調と pause のあとに考える時間 %s を置く", (think) => {
+  const quiz: Scene = {
+    kind: "view",
+    id: "quiz",
+    role: "quiz",
+    title: "問題",
+    image: "shot:web/one",
+    think,
+    beats: [{ say: "答えは何ですか？", spot: ["question"], pause: 2 }],
+  };
+  const sequence = sceneVideoSequence(
+    [quiz],
+    [[2]],
+    { title: "学ぶ流れ", takeaway: "確認する" },
+    {},
+    undefined,
+    2,
+  );
+  const { timing } = sequence[1];
+  expect(timing.beats[0].end - (timing.beats[0].speechEnd ?? 0)).toBeCloseTo(3.5);
+  expect(timing.think?.start).toBeCloseTo(timing.beats[0].end + 0.6);
+  expect(timing.think?.duration).toBe(think ?? 6);
+  expect(sceneCaptionAt(timing, (timing.think?.start ?? 0) + 1)).toBe("");
+  expect(timing.fadeOut?.start).toBeCloseTo(timing.beats[0].end + 0.6 + (think ?? 6) + 2.4);
+  expect(timing.duration * SCENE_TIMING.fps).toBeCloseTo(
+    Math.round(timing.duration * SCENE_TIMING.fps),
+  );
+});

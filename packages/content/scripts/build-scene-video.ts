@@ -24,6 +24,7 @@ import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-
 import { sceneSfxCues, synthesizeSceneSfx } from "../src/scene-sfx.js";
 import {
   parseStoryboard,
+  sceneBoardName,
   storyboardStates,
   type Scene,
   type ViewSceneState,
@@ -284,7 +285,18 @@ export async function buildSceneTopic(
         estimateSpeechSeconds(speechOf({ text: b.say, speech: b.speech }, topic.readings)),
       ),
     );
-    let sequence = sceneVideoSequence(storyboard.scenes, estimates, topic, assets.context.clips);
+    let sequence = sceneVideoSequence(
+      storyboard.scenes,
+      estimates,
+      topic,
+      assets.context.clips,
+      undefined,
+      storyboard.schema,
+    );
+    const sceneBoard = (i: number) => {
+      const name = sceneBoardName(storyboard.scenes[i]);
+      return name === undefined ? { cols: 1, rows: 1, nodes: [] } : boards[name];
+    };
     const sceneAssets = (i: number) => {
       const scene = storyboard.scenes[i];
       const refs = new Set(
@@ -295,9 +307,7 @@ export async function buildSceneTopic(
                 b.clip ? [`clip:${b.clip}`] : b.image ? [b.image] : [],
               ),
             ]
-          : scene.kind === "code"
-            ? []
-            : boards[scene.board].nodes.flatMap((n) => (n.art ? [`art:${n.art}`] : [])),
+          : sceneBoard(i).nodes.flatMap((n) => (n.art ? [`art:${n.art}`] : [])),
       );
       const previous = states[i - 1];
       if (scene.kind === "view" && previous?.kind === "view") refs.add(previous.end.image);
@@ -331,10 +341,7 @@ export async function buildSceneTopic(
         scene.kind === "text"
           ? textSceneHtml(scene)
           : sceneHtml({
-              board:
-                scene.kind === "view" || scene.kind === "code"
-                  ? { cols: 1, rows: 1, nodes: [] }
-                  : boards[scene.board],
+              board: sceneBoard(sourceIndex),
               scene,
               previousFrame,
               state: states[sourceIndex],
@@ -449,8 +456,10 @@ export async function buildSceneTopic(
       {
         title: pcms[0][0].length / AUDIO_RATE,
       },
+      storyboard.schema,
     );
     boundaryFrames.clear();
+    const code = sceneGenerationCode();
     const clips: string[] = [],
       reports: unknown[] = [];
     for (let i = 0; i < sequence.length; i++) {
@@ -462,15 +471,13 @@ export async function buildSceneTopic(
         timing,
         previous?.kind === "view" ? previous.end.image : undefined,
       );
+      const state = scene.kind === "text" ? undefined : states[sourceIndex];
       const sourceHash = sceneCacheHash({
+        schema: storyboard.schema,
         version: GENERATOR_VERSION,
-        board:
-          scene.kind === "text"
-            ? undefined
-            : scene.kind === "view" || scene.kind === "code"
-              ? { cols: 1, rows: 1, nodes: [] }
-              : boards[scene.board],
-        start: scene.kind === "text" ? undefined : states[sourceIndex].start,
+        board: scene.kind === "text" ? undefined : sceneBoard(sourceIndex),
+        start: state?.start,
+        ...(state?.kind === "code" && state.figure ? { figureStart: state.figure.start } : {}),
         assets: scene.kind === "text" ? {} : sceneAssets(sourceIndex).hashes,
         scene,
         timing: { ...timing, start: 0 },
@@ -480,7 +487,7 @@ export async function buildSceneTopic(
         speeches: sceneSpeeches(scene, topic.readings),
         audio: pcms[i],
         sfx,
-        code: sceneGenerationCode(),
+        code,
       });
       const destination = join(cache, sourceHash),
         clip = join(destination, "clip.mp4");

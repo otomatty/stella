@@ -1,12 +1,15 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { sceneCaptionAt, sceneTimelines, sceneVideoSequence } from "../../src/scene-timeline.js";
 import { storyboardStates, type BoardStoryboard, type Scene } from "../../src/video-storyboard.js";
 import { sceneHtml, textSceneHtml, type ScenePageWindow } from "./scene-html.js";
-const sample = JSON.parse(
-  readFileSync(new URL("../../src/__fixtures__/board-video.json", import.meta.url), "utf8"),
-) as BoardStoryboard;
+const sampleJson = readFileSync(
+  new URL("../../src/__fixtures__/board-video.json", import.meta.url),
+  "utf8",
+);
+const sample = JSON.parse(sampleJson) as BoardStoryboard;
 it("文字だけのタイトルは字幕なしで中央に出し、前後0.4秒でフェードする", async () => {
   const html = textSceneHtml({
     kind: "text",
@@ -573,3 +576,136 @@ for (const art of [true, false])
       expect(box.h).toBeGreaterThan(40);
     }
   });
+
+const lessonHeadings = [
+  ["goal", "学ぶこと"],
+  ["example", "身近な例"],
+  ["syntax", "書き方"],
+  ["apply", "例を書く"],
+  ["note", "補足"],
+  ["quiz", "問題"],
+  ["answer", "答え合わせ"],
+  ["explain", "解説"],
+  ["usage", "使う場面"],
+] as const;
+
+function renderScene(kind: "board" | "view" | "code", role: Scene["role"]) {
+  const common = {
+    id: "scene",
+    title: "値を比べる",
+    role,
+    ...(role === "point" ? { point: 1 } : {}),
+    beats: [{ say: "値を比べます。" }],
+  };
+  const scene: Scene =
+    kind === "board"
+      ? { ...common, kind, board: "main" }
+      : kind === "view"
+        ? { ...common, kind, image: "art:example" }
+        : { ...common, kind, code: ["// 値を比べる", "const larger = 2 > 1;"], show: true };
+  const [state] = storyboardStates({ ...sample, scenes: [scene] });
+  const [timing] = sceneTimelines([scene], [[2]], {}, 2);
+  const html = sceneHtml({
+    scene,
+    state,
+    timing,
+    board: sample.boards.main,
+    index: 0,
+    total: 1,
+    images: { "art:example": { url: "example.png", width: 1600, height: 1000, regions: {} } },
+  });
+  return { html, timing };
+}
+
+describe.each(["board", "view", "code"] as const)("%s のレッスン型の見出しと問題", (kind) => {
+  it.each(lessonHeadings)("%s の見出しは「%s」", (role, label) => {
+    const { html } = renderScene(kind, role);
+    expect(html).toContain(`<span>${label}</span>`);
+    expect(html.includes('id="think-time"')).toBe(role === "quiz");
+    expect(html.includes("function thinkRuntime")).toBe(role === "quiz");
+  });
+  it("schema 1 の見出しは従来の文言のまま", () => {
+    expect(renderScene(kind, "hook").html).toContain(
+      `<span>${kind === "code" ? "つかみ" : ""}</span>`,
+    );
+    expect(renderScene(kind, "point").html).toContain("<span>要点 1</span>");
+    expect(renderScene(kind, "recap").html).toContain("<span>問題へ</span>");
+  });
+});
+
+it("考える時間の残りを場面内の時刻だけで計算し、フェード区間も撮る", async () => {
+  const { html, timing } = renderScene("board", "quiz");
+  const { start, duration } = timing.think as NonNullable<typeof timing.think>;
+  const end = start + duration;
+  const think = { style: {} as Record<string, string> };
+  const seconds = { textContent: "" };
+  const ring = {
+    setAttribute: (_name: string, offset: string) => {
+      ring.offset = Number(offset);
+    },
+    offset: 0,
+  };
+  const document = {
+    getElementById: (id: string) =>
+      ({
+        "think-time": think,
+        "think-seconds": seconds,
+        "think-ring": ring,
+      })[id],
+  };
+  const window = {
+    __setTime: async () => undefined,
+    __busyRanges: [],
+  } as unknown as ScenePageWindow;
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1] ?? "";
+  runInNewContext(script, { window, document });
+  expect(window.__busyRanges).toEqual([[start - 0.3, end + 0.3]]);
+  for (const [time, opacity, remaining] of [
+    [0, 0, 6],
+    [start - 0.15, 0.5, 6],
+    [start, 1, 6],
+    [start + 2.2, 1, 4],
+    [end - 0.01, 1, 1],
+    [end + 0.15, 0.5, 1],
+    [end + 0.3, 0, 1],
+    [start + 2, 1, 4],
+  ]) {
+    await window.__setTime(time);
+    expect(Number(think.style.opacity)).toBeCloseTo(opacity);
+    expect(seconds.textContent).toBe(String(remaining));
+    expect(ring.offset).toBeCloseTo(1 - Math.max(0, Math.min(1, (end - time) / duration)));
+  }
+});
+
+it("札があるノードにだけ札を描き、引き継いだ値と変更後の値を用意する", () => {
+  const sb = structuredClone(sample);
+  sb.scenes[0].beats[0].show = ["read"];
+  sb.scenes[0].beats[0].tag = { read: "2件" };
+  sb.scenes[1].reset = false;
+  sb.scenes[1].beats = [{ say: "値を変えます。", tag: { read: "3<&件" } }];
+  const scene = sb.scenes[1];
+  const html = sceneHtml({
+    scene,
+    state: storyboardStates(sb)[1],
+    timing: sceneTimelines([scene], [[2]])[0],
+    board: sb.boards.main,
+    index: 1,
+    total: 2,
+  });
+  expect(html.match(/data-board-tag="/g)).toHaveLength(1);
+  expect(html).toContain('data-board-tag="read"');
+  expect(html).toContain('data-value="2件"');
+  expect(html).toContain('data-value="3&lt;&amp;件"');
+  expect(html).toContain("function boardTagRuntime");
+  expect(page(0).html).not.toContain("data-board-tag");
+});
+
+it("札を使わない schema 1 の概念図の HTML を維持する", () => {
+  const html = page(0, JSON.parse(sampleJson) as BoardStoryboard).html.replace(
+    /file:\/\/[^)]*\/([^/)]*\.woff2?)/g,
+    "file:///font/$1",
+  );
+  expect(createHash("sha256").update(html).digest("hex")).toBe(
+    "eb90870448578e2cdd6b42cc1d5ba0c4f7218df34e9ace13a3c111577dbbe4a4",
+  );
+});

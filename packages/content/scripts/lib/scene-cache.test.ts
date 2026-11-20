@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BoardScene, BoardState } from "../../src/video-storyboard.js";
-import { sceneSpeeches, sceneVideoSequence } from "../../src/scene-timeline.js";
+import { SCENE_PACING, sceneSpeeches, sceneVideoSequence } from "../../src/scene-timeline.js";
 import { describe, expect, it } from "vitest";
 import {
   beginVideoCacheRun,
@@ -212,6 +212,28 @@ describe("配信前の新方式ハッシュ", () => {
     },
     code: { renderer: "v1" },
   });
+  it("schema 1 の場面と配信のハッシュを維持する", () => {
+    expect(sceneCacheHash(plan())).toBe("0dc71d1989c88b2b553891fa101efd63");
+    expect(sceneVideoSourceHash(input())).toBe("61298f02d212474d640556d90f0bc881");
+  });
+  it("schema 2 の間の設定を場面と配信のハッシュに含める", () => {
+    const scene = plan();
+    const video = input();
+    const sceneV2 = { ...scene, schema: 2 as const };
+    const videoV2 = { ...video, storyboard: { ...video.storyboard, schema: 2 as const } };
+    const v1 = [sceneCacheHash(scene), sceneVideoSourceHash(video)];
+    const v2 = [sceneCacheHash(sceneV2), sceneVideoSourceHash(videoV2)];
+    const pacing: { between: number } = SCENE_PACING[2];
+    const original = pacing.between;
+    try {
+      pacing.between += 0.1;
+      expect([sceneCacheHash({ ...scene, schema: 1 }), sceneVideoSourceHash(video)]).toEqual(v1);
+      expect(sceneCacheHash(sceneV2)).not.toBe(v2[0]);
+      expect(sceneVideoSourceHash(videoV2)).not.toBe(v2[1]);
+    } finally {
+      pacing.between = original;
+    }
+  });
   it("文・使う読み・素材の中身・音声モデル・領域・描画が変わると変わる", () => {
     const edits = [
       (p: ReturnType<typeof input>) => {
@@ -328,4 +350,33 @@ it("使用した場面・音声は時刻を更新し、古い未使用ファイ�
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+it("figure の図解・素材・開始状態はそれぞれ場面キャッシュに入る", () => {
+  const fixture = plan();
+  const input: SceneCacheInput = {
+    ...fixture,
+    scene: {
+      kind: "code",
+      id: "code",
+      role: "point",
+      point: 1,
+      title: "概念図",
+      code: ["const a = 1;"],
+      show: true,
+      panel: { kind: "figure", board: "main" },
+      beats: [{ say: "値です。", figure: { pulse: ["a"] } }],
+    },
+    figureStart: { visible: ["a"], marks: {}, zoom: "all", tags: { a: "1" } },
+    assets: { "art:item": "before" },
+  };
+  const hash = sceneCacheHash(input);
+  expect(
+    sceneCacheHash({
+      ...input,
+      figureStart: { ...fixture.start, visible: ["a"], tags: { a: "2" } },
+    }),
+  ).not.toBe(hash);
+  expect(sceneCacheHash({ ...input, board: { ...fixture.board, rows: 2 } })).not.toBe(hash);
+  expect(sceneCacheHash({ ...input, assets: { "art:item": "after" } })).not.toBe(hash);
 });

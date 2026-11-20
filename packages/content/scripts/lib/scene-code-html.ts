@@ -1,3 +1,10 @@
+import {
+  figureNodes,
+  sceneRoleLabel,
+  type Link,
+  type MarkKind,
+  type SceneState,
+} from "../../src/video-storyboard.js";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
@@ -5,8 +12,10 @@ import { pathToFileURL } from "node:url";
 import hljs from "highlight.js/lib/core";
 import typescript from "highlight.js/lib/languages/typescript";
 import { codeFrame, type CodeScene, type CodeSceneState } from "../../src/scene-code.js";
-import { sceneCaptionAt } from "../../src/scene-timeline.js";
+import { sceneCaptionAt, type SceneTimeline } from "../../src/scene-timeline.js";
 import {
+  iconSvg,
+  mark,
   sceneCaptionCss,
   sceneFontCss,
   type SceneHtmlInput,
@@ -238,10 +247,130 @@ function runtime(data: CodeRenderData, frame: typeof codeFrame, captionAt: typeo
   };
   win.__setTime(0);
 }
+const figureCss = `
+  #panel:has(.figure-flow){overflow:visible}
+  .figure-flow{padding:10px 16px}
+  .figure-node{position:relative;display:flex;align-items:center;gap:16px;padding:0 16px;background:white;border:3px solid #DDDDE2;border-radius:16px}
+  .figure-art{display:grid;place-items:center;flex:none;height:100%}
+  .figure-art img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}
+  .figure-label{flex:1;min-width:0;max-height:100%;font-size:32px;font-weight:700;overflow:hidden;overflow-wrap:anywhere}
+  .figure-tag{flex:none;display:flex;align-items:center;height:56px;padding:0 20px;background:#5749DB;color:white;border-radius:16px;font-size:32px;font-weight:700;white-space:pre}
+  .figure-mark{position:absolute;right:-7px;top:-9px;width:44px;height:44px}
+  .figure-arrow{position:relative;display:grid;place-items:center;overflow:hidden;color:#5C5C66}
+  .figure-arrow-label{position:absolute;left:calc(50% + 20px);font-size:26px;white-space:nowrap}
+  .figure-traveler{position:absolute;left:50%;width:28px;height:28px;transform:translate(-50%,-50%);border-radius:50%;background:#E62F9A}
+`;
+
+interface FigureRenderData {
+  nodes: { id: string; label: string; art: string; link?: Link }[];
+  marks: Record<MarkKind, string>;
+  state: SceneState;
+  timing: SceneTimeline;
+  motions: { travel?: string[]; pause?: number }[];
+}
+
+/** コード描画に重ねて、時刻ごとに図の状態を作る。 */
+function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderData) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const overflows = win.__overflows;
+  const panel = document.getElementById("panel") as HTMLElement;
+  const height = nodes.length === 2 ? 200 : nodes.length === 3 ? 170 : 132;
+  const gap = nodes.length === 4 ? 44 : 48;
+  const accent = "#E62F9A";
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const own = <T>(entries: Record<string, T> | undefined, id: string) =>
+    entries && Object.hasOwn(entries, id) ? entries[id] : undefined;
+  const safe = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  for (const beat of timing.beats)
+    win.__busyRanges.push([beat.start, Math.max(beat.start + 0.6, beat.end) + 1 / 30]);
+
+  const draw = (time: number) => {
+    const i = timing.beats.findLastIndex((beat) => beat.start <= time);
+    const timed = timing.beats[i];
+    const elapsed = timed ? time - timed.start : 0;
+    const beat = state.beats[i];
+    const before = beat?.before ?? state.start;
+    const after = beat?.after ?? state.start;
+    const focus = timed && time < timed.end ? beat.focus : [];
+    const motion = motions[i];
+    const duration = timed ? timed.end - timed.start - (motion?.pause ?? 0) : 0;
+    const path = motion?.travel ?? [];
+    const travel = duration > 0 && elapsed < duration ? (elapsed / duration) * path.length : -1;
+    const traveling = path[Math.floor(travel)];
+    // 点はカードの中心から次の中心へ進み、矢印の枠内だけに描く。
+    const travelY = (travel % 1) * (height + gap) - height / 2;
+    const opacity = (id: string) => {
+      const was = before.visible.includes(id);
+      const is = after.visible.includes(id);
+      const fade = is ? (was ? 1 : clamp(elapsed / 0.5)) : was ? 1 - clamp(elapsed / 0.3) : 0;
+      return fade * (focus.length && !focus.includes(id) ? 0.3 : 1);
+    };
+
+    panel.innerHTML = `<div class="figure-flow">${nodes
+      .map(({ id, label, art, link }, index) => {
+        const pulse = beat?.pulse.includes(id) && elapsed < 0.6;
+        const scale = pulse ? 1 + 0.045 * Math.sin((elapsed / 0.6) * Math.PI) : 1;
+        const focused = focus.includes(id);
+        const mark = own(after.marks, id);
+        const markScale = mark === own(before.marks, id) ? 1 : clamp(elapsed / 0.35);
+        const from = own(before.tags, id);
+        const to = own(after.tags, id);
+        const old = from !== to && from !== undefined && elapsed < (to ? 0.15 : 0.2);
+        const value = old ? from : to;
+        const progress = clamp((elapsed - (from ? 0.15 : 0)) / 0.35);
+        const tagOpacity =
+          from === to ? 1 : old ? 1 - clamp(elapsed / (to ? 0.15 : 0.2)) : 1 - (1 - progress) ** 3;
+        const tagScale =
+          from === to || old ? 1 : 0.9 + 0.1 * tagOpacity + 0.12 * Math.sin(progress * Math.PI);
+        const card = `<div class="figure-node" data-id="${safe(id)}" style="height:${height}px;opacity:${opacity(id)};transform:scale(${scale});border-color:${pulse || focused ? accent : "#DDDDE2"};background:${focused ? "rgba(230,47,154,0.08)" : "white"}"><div class="figure-art" style="width:${(height * 4) / 3}px">${art}</div><div class="figure-label">${safe(label)}</div>${value === undefined ? "" : `<span class="figure-tag" style="opacity:${tagOpacity};transform:scale(${tagScale})">${safe(value)}</span>`}${mark ? `<svg class="figure-mark" data-mark="${mark}" style="transform:scale(${markScale})" viewBox="-30 -30 60 60">${marks[mark]}</svg>` : ""}</div>`;
+        if (index === nodes.length - 1) return card;
+        const arrow = link
+          ? `<svg width="28" height="${gap}" viewBox="0 0 28 ${gap}" fill="none" stroke="${beat?.pulse.includes(link.id) && elapsed < 0.6 ? accent : "#5C5C66"}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3V${gap - 5}m-9-9 9 9 9-9"/></svg>${link.label ? `<span class="figure-arrow-label">${safe(link.label)}</span>` : ""}${traveling === link.id && travelY > -14 && travelY < gap + 14 ? `<span class="figure-traveler" style="top:${travelY}px"></span>` : ""}`
+          : "";
+        return `${card}<div class="figure-arrow" style="height:${gap}px;opacity:${link ? opacity(link.id) : 0}">${arrow}</div>`;
+      })
+      .join("")}</div>`;
+  };
+  win.__setTime = async (time) => {
+    await setTime(time);
+    draw(time);
+  };
+  win.__overflows = () => [
+    ...overflows(),
+    ...[...panel.querySelectorAll<HTMLElement>(".figure-label")].flatMap((label) =>
+      label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight
+        ? [`図のカード「${label.textContent}」のラベルが収まりません`]
+        : [],
+    ),
+  ];
+  draw(0);
+}
 export function codeHtml(input: SceneHtmlInput): string {
   const scene = input.scene as CodeScene;
   const safe = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const { figure, ...state } = input.state as CodeSceneState;
+  const figureData: FigureRenderData | undefined = figure && {
+    nodes: figureNodes(input.board).map((node) => ({
+      id: node.id,
+      label: node.label,
+      art: node.art
+        ? `<img src="${safe(input.images?.[`art:${node.art}`]?.url ?? "")}" alt="">`
+        : iconSvg(node.icon ?? "file", 0, 0, 84),
+      link: input.board.links?.find((link) => link.from === node.id),
+    })),
+    marks: {
+      check: mark("check"),
+      cross: mark("cross"),
+      question: mark("question"),
+      redo: mark("redo"),
+    },
+    state: figure,
+    timing: input.timing,
+    motions: scene.beats.map((beat) => ({ travel: beat.figure?.travel?.along, pause: beat.pause })),
+  };
   const codeWidth = scene.panel ? 1010 : 1752;
   const widest = Math.max(
     1,
@@ -261,7 +390,7 @@ export function codeHtml(input: SceneHtmlInput): string {
   const codeHeight = Math.max(Math.ceil(810 * 0.45), scene.code.length * lineHeight + 56);
   const data: CodeRenderData = {
     scene,
-    state: input.state as CodeSceneState,
+    state,
     timing: input.timing,
     highlighted: scene.code.map((line) =>
       Array.from(
@@ -283,5 +412,5 @@ export function codeHtml(input: SceneHtmlInput): string {
   .number-line{width:100%;height:auto;flex-shrink:0;overflow:hidden;margin-bottom:32px}
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;flex-shrink:0;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace;white-space:nowrap}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content.stacked{flex-direction:column;align-items:flex-end;gap:4px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap;flex-shrink:0}.value-content small{font-size:22px;white-space:nowrap;flex-shrink:0}.answer{display:flex;align-items:center;flex-shrink:0}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}
   #code,#code *,#panel,#panel *{font-variant-ligatures: none;font-feature-settings: "liga" 0, "calt" 0}
-  </style><div id="card"><div id="heading"><span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "問題へ" : "つかみ"}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});</script></html>`;
+  ${figureData ? figureCss : ""}</style><div id="card"><div id="heading"><span>${sceneRoleLabel(scene)}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});${figureData ? `(${figureRuntime.toString()})(${JSON.stringify(figureData).replace(/</g, "\\u003c")});` : ""}</script></html>`;
 }

@@ -1,3 +1,4 @@
+import { sceneRoleLabel } from "../../src/video-storyboard.js";
 import { sceneCaptionAt, sceneTitleOpacity, viewTransition } from "../../src/scene-timeline.js";
 import {
   viewBusyRanges,
@@ -160,9 +161,7 @@ export function viewHtml(input: SceneHtmlInput): string {
   const safe = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
   const heading = (scene: typeof input.scene | undefined) =>
-    scene
-      ? `<span>${scene.role === "point" ? `要点 ${scene.point}` : scene.role === "recap" ? "問題へ" : ""}</span> ${safe(scene.title)}`
-      : "";
+    scene ? `<span>${sceneRoleLabel(scene)}</span> ${safe(scene.title)}` : "";
   const sameTitle =
     input.previous?.role === input.scene.role &&
     input.previous?.point === input.scene.point &&

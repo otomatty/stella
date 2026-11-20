@@ -243,3 +243,13 @@ describe("校正の記録", () => {
     }
   });
 });
+
+it("概念図の札をノードのラベルと値で説明する", () => {
+  const s = fresh();
+  s.scenes[0].beats[0].tag = { read: "3件" };
+  s.scenes[0].beats[0].untag = ["write"];
+  const { scenes } = JSON.parse(buildPolishRequest(s, "").user);
+  expect(scenes[0].lines[0].picture).toEqual(
+    expect.arrayContaining(["札: 読む=3件", "札を外す: 書く"]),
+  );
+});

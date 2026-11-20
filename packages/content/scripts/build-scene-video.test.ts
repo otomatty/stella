@@ -1,3 +1,4 @@
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -12,7 +13,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { estimateSpeechSeconds } from "../src/narration.js";
 import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
-import type { Scene, BoardStoryboard } from "../src/video-storyboard.js";
+import type { Scene, BoardStoryboard, VideoStoryboard } from "../src/video-storyboard.js";
 import type { TtsProvider } from "./lib/tts.js";
 
 vi.mock("playwright", () => ({ chromium: { launch: vi.fn() } }));
@@ -377,7 +378,11 @@ describe("音声モデルと日次上限", () => {
       evaluate: vi.fn(async (callback: unknown) =>
         String(callback).includes("__overflows") ? [] : undefined,
       ),
-      screenshot: vi.fn(async ({ path }: { path: string }) => writeFileSync(path, "poster")),
+      screenshot: vi.fn(async (args: { path: string }) => {
+        const image = Buffer.from("poster");
+        if (args?.path) writeFileSync(args.path, image);
+        return image;
+      }),
     };
     const context = { newPage: vi.fn(async () => page), close: vi.fn() };
     const browser = { newContext: vi.fn(async () => context), close: vi.fn() };
@@ -454,6 +459,85 @@ describe("音声モデルと日次上限", () => {
       expect(screenshots).toHaveLength(
         2 * (storyboard.scenes.reduce((n, s) => n + s.beats.length, 0) + 2),
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(["stills", "video"])("%s は figure の図解とイラストをコード場面に渡す", async (mode) => {
+    const { root, page, storyboard, topics } = fixture();
+    try {
+      const video: VideoStoryboard = {
+        ...storyboard,
+        art: { price: { prompt: "お店の値札" } },
+        boards: {
+          ...storyboard.boards,
+          shop: {
+            cols: 2,
+            rows: 1,
+            nodes: [
+              { id: "price", label: "商品の価格", at: [1, 1], art: "price" },
+              { id: "total", label: "合計", at: [2, 1], icon: "file" },
+            ],
+            links: [{ id: "to-total", from: "price", to: "total", label: "値を渡す" }],
+          },
+        },
+        scenes: [
+          storyboard.scenes[0],
+          {
+            id: "code",
+            kind: "code",
+            role: "point",
+            point: 1,
+            title: "価格のコード",
+            panel: { kind: "figure", board: "shop" },
+            code: ["const price = 1;"],
+            show: true,
+            beats: [
+              { say: "価格と合計を結びます。", figure: { show: ["price", "total", "to-total"] } },
+            ],
+          },
+          {
+            ...storyboard.scenes[2],
+            reset: true,
+            beats: [{ say: "読みます。", show: ["read"] }],
+          },
+        ],
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      mkdirSync(join(root, "assets/art"), { recursive: true });
+      const png = join(root, "assets/art/price.png");
+      const bytes = Buffer.alloc(24);
+      Buffer.from("89504e470d0a1a0a", "hex").copy(bytes);
+      bytes.writeUInt32BE(400, 16);
+      bytes.writeUInt32BE(300, 20);
+      writeFileSync(png, bytes);
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      vi.mocked(createTtsProvider).mockReturnValue(provider("cue"));
+      vi.mocked(decodeTrimmedPcm).mockImplementation(async () => {
+        const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
+        return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
+      });
+
+      const figurePages: string[] = [];
+      page.goto.mockImplementation(async (url: string) => {
+        const html = readFileSync(fileURLToPath(url), "utf8");
+        if (html.includes("figure-flow")) figurePages.push(html);
+      });
+      await buildSceneVideos([
+        "fixture",
+        "--out",
+        join(root, "out"),
+        ...(mode === "stills" ? ["--stills"] : ["--tts", "fake"]),
+      ]);
+      expect(figurePages.length).toBeGreaterThan(0);
+      for (const html of figurePages) {
+        expect(html).toContain("商品の価格");
+        expect(html).toContain("値を渡す");
+        expect(html).toContain(pathToFileURL(png).href);
+      }
+      if (mode === "video") expect(encodeScene).toHaveBeenCalledTimes(video.scenes.length + 1);
+      else expect(synthesizeCached).not.toHaveBeenCalled();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

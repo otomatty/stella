@@ -22,8 +22,11 @@ import {
 } from "../../src/scene-timeline.js";
 import {
   VIDEO_ICONS,
+  sceneRoleLabel,
   type Board,
+  type BoardState,
   type IconName,
+  type MarkKind,
   type Scene,
   type BoardScene,
   type ViewSceneState,
@@ -370,7 +373,7 @@ function runtime(
   ];
   win.__setTime(0);
 }
-function iconSvg(name: IconName, x: number, y: number, size: number): string {
+export function iconSvg(name: IconName, x: number, y: number, size: number): string {
   const file = require.resolve(`lucide-static/icons/${VIDEO_ICONS[name]}.svg`);
   const body = readFileSync(file, "utf8")
     .replace(/<\?xml[^>]*>/g, "")
@@ -387,7 +390,7 @@ function label(text: string, b: Box, size = 36, align: "middle" | "start" = "mid
   const x = align === "middle" ? b.x + b.w / 2 : b.x + 8;
   return `<text data-fit='${JSON.stringify(b)}' x="${x}" y="${b.y + (b.h - lines.length * size * 1.2) / 2 + size}" font-size="${size}" text-anchor="${align}">${lines.map((l, i) => `<tspan x="${x}" dy="${i ? size * 1.2 : 0}">${escapeHtml(l)}</tspan>`).join("")}</text>`;
 }
-function mark(): string {
+export function mark(only?: MarkKind): string {
   const symbols = {
     check: '<path d="M-12 0L-3 10L14 -10"/>',
     cross: '<path d="M-11 -11L11 11M11 -11L-11 11"/>',
@@ -395,21 +398,60 @@ function mark(): string {
       '<path d="M-8 -8C-8 -20 16 -20 10 -3C8 1 0 1 0 7"/><circle cy="16" r="2" fill="white" stroke="none"/>',
     redo: '<path d="M13 -7A15 15 0 1 0 14 8M13 -18V-7H2"/>',
   };
-  return `<g class="mark">${(["check", "cross", "question", "redo"] as const).map((kind, i) => `<g data-kind="${kind}"><circle r="28" fill="${["#16A34A", "#E5342B", "#5C5C66", "#E62F9A"][i]}" stroke="white" stroke-width="3"/><g fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${symbols[kind]}</g></g>`).join("")}</g>`;
+  return `<g${only ? "" : ' class="mark"'}>${(["check", "cross", "question", "redo"] as const).map((kind, i) => (only && kind !== only ? "" : `<g data-kind="${kind}"><circle r="28" fill="${["#16A34A", "#E5342B", "#5C5C66", "#E62F9A"][i]}" stroke="white" stroke-width="3"/><g fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${symbols[kind]}</g></g>`)).join("")}</g>`;
 }
 export function sceneHtml(input: SceneHtmlInput): string {
-  const html =
+  let html =
     input.scene.kind === "view"
       ? viewHtml(input)
       : input.scene.kind === "code"
         ? codeHtml(input)
         : boardHtml(input as BoardHtmlInput);
-  if (!input.previousFrame) return html;
-  const overlay = `<img id="previous-code-frame" src="${escapeHtml(input.previousFrame)}" style="position:absolute;inset:0;width:1920px;height:1080px;z-index:3;pointer-events:none">`;
-  return html
-    .replace("<script>", `${overlay}<script>`)
-    .replace("</html>", `<script>(${codeTransitionRuntime.toString()})();</script></html>`);
+  if (input.previousFrame) {
+    const overlay = `<img id="previous-code-frame" src="${escapeHtml(input.previousFrame)}" style="position:absolute;inset:0;width:1920px;height:1080px;z-index:3;pointer-events:none">`;
+    html = html
+      .replace("<script>", `${overlay}<script>`)
+      .replace("</html>", `<script>(${codeTransitionRuntime.toString()})();</script></html>`);
+  }
+  if (input.scene.role === "quiz" && input.timing.think) {
+    const overlay = `<style>
+      #think-time{position:absolute;right:60px;top:32px;z-index:4;display:flex;align-items:center;gap:20px;padding:12px 16px 12px 24px;background:white;border:2px solid #DDDDE2;border-radius:16px;color:#5C5C66;font-size:28px;visibility:hidden}
+      #think-seconds{fill:#5749DB;font-size:34px;font-weight:700}
+    </style><div id="think-time">考える時間<svg width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="33" fill="none" stroke="#DDDDE2" stroke-width="6"/><circle id="think-ring" cx="36" cy="36" r="33" fill="none" stroke="#5749DB" stroke-width="6" pathLength="1" stroke-dasharray="1" transform="rotate(-90 36 36)"/><text id="think-seconds" x="36" y="36" text-anchor="middle" dominant-baseline="central"></text></svg></div>`;
+    html = html
+      .replace("<script>", `${overlay}<script>`)
+      .replace(
+        "</html>",
+        `<script>(${thinkRuntime.toString()})(${JSON.stringify(input.timing.think)});</script></html>`,
+      );
+  }
+  return html;
 }
+
+function thinkRuntime({ start, duration }: NonNullable<SceneTimeline["think"]>) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const overlay = document.getElementById("think-time") as HTMLElement;
+  const seconds = document.getElementById("think-seconds") as unknown as SVGTextElement;
+  const ring = document.getElementById("think-ring") as unknown as SVGCircleElement;
+  const fade = 0.3;
+  const end = start + duration;
+  win.__busyRanges.push([start - fade, end + fade]);
+  win.__setTime = async (time) => {
+    await setTime(time);
+    const opacity = Math.max(
+      0,
+      Math.min(1, (time - start + fade) / fade, (end + fade - time) / fade),
+    );
+    const remaining = Math.max(0, Math.min(duration, end - time));
+    overlay.style.visibility = opacity > 0 ? "visible" : "hidden";
+    overlay.style.opacity = String(opacity);
+    seconds.textContent = String(Math.max(1, Math.ceil(remaining - 1e-9)));
+    ring.setAttribute("stroke-dashoffset", String(1 - remaining / duration));
+  };
+  win.__setTime(0);
+}
+
 /** イラストと同じ0.4秒のクロスフェード。既存のview/board同士には適用しない。 */
 function codeTransitionRuntime() {
   const win = window as unknown as ScenePageWindow;
@@ -422,6 +464,89 @@ function codeTransitionRuntime() {
   };
   win.__setTime(0);
 }
+/** 札はノードの中で描き、ノードの透明度・拡大・カメラを引き継ぐ。 */
+function boardTagRuntime(state: SceneState, timing: SceneTimeline) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const overflows = win.__overflows;
+  const tags = [...document.querySelectorAll<SVGSVGElement>("[data-board-tag]")].map(
+    (container) => ({
+      id: container.dataset.boardTag as string,
+      variants: [...container.querySelectorAll<SVGGElement>("[data-value]")],
+      width: Number(container.getAttribute("width")),
+    }),
+  );
+  const value = (snapshot: BoardState, id: string) =>
+    snapshot.tags && Object.hasOwn(snapshot.tags, id) ? snapshot.tags[id] : undefined;
+  const changes = state.beats.map(({ before, after }) =>
+    tags.map(({ id }) => ({ from: value(before, id), to: value(after, id) })),
+  );
+  changes.forEach((beat, i) => {
+    const start = timing.beats[i].start;
+    for (const { from, to } of beat)
+      if (from !== to) win.__busyRanges.push([start, start + (to ? (from ? 0.5 : 0.35) : 0.2)]);
+  });
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  win.__setTime = async (time) => {
+    await setTime(time);
+    const i = timing.beats.findLastIndex((beat) => beat.start <= time);
+    const elapsed = i < 0 ? 0 : time - timing.beats[i].start;
+    tags.forEach(({ id, variants }, j) => {
+      const initial = value(state.start, id);
+      const { from, to } = changes[i]?.[j] ?? { from: initial, to: initial };
+      for (const variant of variants) {
+        const text = variant.dataset.value;
+        let opacity = text === to ? 1 : 0;
+        let scale = 1;
+        if (from !== to && text === from) opacity = 1 - clamp(elapsed / (to ? 0.15 : 0.2));
+        if (from !== to && text === to) {
+          const progress = clamp((elapsed - (from ? 0.15 : 0)) / 0.35);
+          opacity = 1 - (1 - progress) ** 3;
+          scale = 0.9 + 0.1 * opacity + 0.12 * Math.sin(progress * Math.PI);
+        }
+        variant.setAttribute("opacity", String(opacity));
+        variant.setAttribute("transform", `scale(${scale})`);
+      }
+    });
+  };
+  win.__overflows = () => [
+    ...overflows(),
+    ...tags.flatMap(({ id, variants, width }) =>
+      variants.flatMap((variant) => {
+        const text = variant.querySelector<SVGTextElement>("text");
+        return text && text.getComputedTextLength() + 40 > width
+          ? [`ノード「${id}」の札「${text.textContent}」が収まりません`]
+          : [];
+      }),
+    ),
+  ];
+  win.__setTime(0);
+}
+
+function boardTag(id: string, box: Box, states: BoardState[]): string {
+  const values = new Set(
+    states.flatMap(({ tags }) => (tags && Object.hasOwn(tags, id) ? [tags[id]] : [])),
+  );
+  if (!values.size) return "";
+  // 右上の印に重ならないよう、左右に同じ余白を確保する。
+  const width = box.w - 64;
+  return `<svg data-board-tag="${escapeHtml(id)}" x="${box.x + 32}" y="${box.y - 32}" width="${width}" height="64" viewBox="${-width / 2} -32 ${width} 64" overflow="hidden">${[
+    ...values,
+  ]
+    .map((value) => {
+      const w = Math.min(
+        width,
+        40 +
+          Array.from(value).reduce(
+            (sum, char) => sum + (/[\x20-\x7e\uff61-\uff9f]/u.test(char) ? 20 : 34),
+            0,
+          ),
+      );
+      return `<g data-value="${escapeHtml(value)}" opacity="0"><rect x="${-w / 2}" y="-28" width="${w}" height="56" rx="16" fill="#5749DB"/><text x="0" y="0" style="fill:white;white-space:pre" font-size="34" font-weight="700" text-anchor="middle" dominant-baseline="central">${escapeHtml(value)}</text></g>`;
+    })
+    .join("")}</svg>`;
+}
+
 function boardHtml(input: BoardHtmlInput): string {
   const toneColor = (tone?: "blue" | "violet") =>
     tone === "blue" ? "#2563EB" : tone === "violet" ? "#8330C7" : undefined;
@@ -433,6 +558,8 @@ function boardHtml(input: BoardHtmlInput): string {
       return `<g id="element-${escapeHtml(z.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="20" fill="${color ?? "none"}" fill-opacity="0.05" stroke="${color ?? "#DDDDE2"}" stroke-opacity="${color ? 0.45 : 1}" stroke-width="3"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="20" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${color ?? "#0E0E10"}">${z.icon ? iconSvg(z.icon, b.x + 18, b.y + 14, 36).replace("<svg ", `<svg id="zone-icon-${escapeHtml(z.id)}" `) : ""}<text id="zone-label-${escapeHtml(z.id)}" style="fill:currentColor" font-size="36">${escapeHtml(z.label)}</text></g>${mark()}</g>`;
     })
     .join("");
+  const tagStates = [input.state.start, ...input.state.beats.map((beat) => beat.after)];
+  const tags = tagStates.some((state) => state.tags && Object.keys(state.tags).length);
   const nodes = input.board.nodes
     .map((n) => {
       const b = layout.nodes[n.id],
@@ -445,7 +572,7 @@ function boardHtml(input: BoardHtmlInput): string {
           n.at[1] >= z.cells[1] &&
           n.at[1] < z.cells[1] + z.cells[3],
       );
-      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${compact ? b.y + (b.h - size) / 2 : b.y + 8}" width="${compact ? size : b.w - 16}" height="${compact ? size : b.h - 88}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", compact ? b.x + 8 : b.x + (b.w - size) / 2, compact ? b.y + (b.h - size) / 2 : b.y + 14, size)}</g>${label(n.label, compact ? { x: b.x + size + 16, y: b.y + 6, w: b.w - size - 24, h: b.h - 12 } : { x: b.x + 6, y: n.art ? b.y + b.h - 80 : b.y + size + 16, w: b.w - 12, h: n.art ? 72 : b.h - size - 20 })}${mark()}</g>`;
+      return `<g id="element-${escapeHtml(n.id)}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="white" stroke="#DDDDE2" stroke-width="2.5" filter="url(#shadow)"/><rect class="ring" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="16" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="3"/><g style="color:${toneColor(zone?.tone) ?? "#0E0E10"}">${n.art ? `<image href="${escapeHtml(input.images?.[`art:${n.art}`]?.url ?? "")}" x="${b.x + 8}" y="${compact ? b.y + (b.h - size) / 2 : b.y + 8}" width="${compact ? size : b.w - 16}" height="${compact ? size : b.h - 88}" preserveAspectRatio="xMidYMid meet"/>` : iconSvg(n.icon ?? "file", compact ? b.x + 8 : b.x + (b.w - size) / 2, compact ? b.y + (b.h - size) / 2 : b.y + 14, size)}</g>${label(n.label, compact ? { x: b.x + size + 16, y: b.y + 6, w: b.w - size - 24, h: b.h - 12 } : { x: b.x + 6, y: n.art ? b.y + b.h - 80 : b.y + size + 16, w: b.w - 12, h: n.art ? 72 : b.h - size - 20 })}${tags ? boardTag(n.id, b, tagStates) : ""}${mark()}</g>`;
     })
     .join("");
   const links = (input.board.links ?? [])
@@ -455,14 +582,25 @@ function boardHtml(input: BoardHtmlInput): string {
     })
     .join("");
   const heading = (s: Scene | undefined) =>
-    s
-      ? `<span>${s.role === "point" ? `要点 ${s.point}` : s.role === "recap" ? "問題へ" : ""}</span> ${escapeHtml(s.title)}`
-      : "";
+    s ? `<span>${sceneRoleLabel(s)}</span> ${escapeHtml(s.title)}` : "";
   const { previous: _previous, ...renderInput } = input;
   const sameTitle =
     input.previous?.role === input.scene.role &&
     input.previous?.point === input.scene.point &&
     input.previous?.title === input.scene.title;
+  // 移動の尺に間を含めず、移動が済んだ絵を保つ。
+  if (input.scene.beats.some((beat) => beat.travel && beat.pause)) {
+    renderInput.timing = {
+      ...input.timing,
+      beats: input.timing.beats.map((timed, i) => {
+        const beat = input.scene.beats[i];
+        return beat.travel && beat.pause ? { ...timed, end: timed.end - beat.pause } : timed;
+      }),
+    };
+  }
+  const tagScript = tags
+    ? `<script>(${boardTagRuntime.toString()})(${JSON.stringify(input.state).replace(/</g, "\\u003c")},${JSON.stringify(input.timing).replace(/</g, "\\u003c")});</script>`
+    : "";
   const data = JSON.stringify({ ...renderInput, layout }).replace(/</g, "\\u003c");
   return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${sceneCaptionCss}
   *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}#heading{position:absolute;top:24px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:1;opacity:0;height:80px;display:flex;align-items:center;padding:0 36px;background:white;border-radius:16px;border:2px solid #DDDDE2;box-shadow:0 4px 12px #0000000D;font-size:40px}#heading span{font-size:26px;color:#5C5C66;margin-right:24px}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:170px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;z-index:2;background:white;pointer-events:none}
@@ -476,5 +614,5 @@ function boardHtml(input: BoardHtmlInput): string {
     .map((name) => `<g data-icon="${name}">${iconSvg(name as IconName, -18, -18, 36)}</g>`)
     .join(
       "",
-    )}</g></svg><div id="caption"></div><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint, ${sceneTitleOpacity.toString()}, ${sceneCaptionAt.toString()});</script></html>`;
+    )}</g></svg><div id="caption"></div><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint, ${sceneTitleOpacity.toString()}, ${sceneCaptionAt.toString()});</script>${tagScript}</html>`;
 }

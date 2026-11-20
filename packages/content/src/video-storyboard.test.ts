@@ -7,7 +7,11 @@ import {
   normalizeStoryboard,
   parseStoryboard,
   storyboardStates,
+  type Board,
+  type BoardScene,
   type BoardStoryboard,
+  type CodeScene,
+  type VideoStoryboard,
 } from "./video-storyboard.js";
 const stages = resolve(import.meta.dirname, "../stages");
 const sample = JSON.parse(
@@ -73,7 +77,7 @@ describe("絵コンテ", () => {
   it("未知の値や必須項目を複数集める", () => {
     expect(parseStoryboard(null).issues.length).toBeGreaterThan(5);
     const result = parseStoryboard({
-      schema: 2,
+      schema: 3,
       brief: {},
       boards: { main: { nodes: [{}] } },
       scenes: [{}],
@@ -730,4 +734,531 @@ it("空行だけの打ち込みや、暗くなる行のないfocusは空振り�
   const focused = structuredClone(base);
   Object.assign(focused.scenes[0], { show: true, beats: [{ say: "名前を見ます。", focus: [0] }] });
   expect(parseStoryboard(focused).issues.some((i) => i.message.includes("空振り"))).toBe(true);
+});
+
+describe("schema 2 のレッスン型", () => {
+  const lesson = (): BoardStoryboard => ({
+    schema: 2,
+    brief: { ...sample.brief, points: ["値を比べる。"] },
+    boards: sample.boards,
+    scenes: (
+      ["goal", "example", "syntax", "apply", "note", "quiz", "answer", "explain", "usage"] as const
+    ).map((role) => ({
+      id: role,
+      role,
+      title: "値を比べる",
+      board: "main",
+      reset: true,
+      beats: [{ say: "値を比べます。", show: ["read"] }],
+    })),
+  });
+  it("9場面で通り、最後の図解に全ノードが出なくてもよい", () => {
+    const storyboard = lesson();
+    const result = parseStoryboard(storyboard);
+    expect(result.storyboard).toEqual(storyboard);
+    expect(result.issues).toEqual([
+      expect.objectContaining({ level: "warning", message: expect.stringContaining("180〜480秒") }),
+    ]);
+  });
+  const invalid = [
+    [
+      "順序",
+      (s: BoardStoryboard) => s.scenes.splice(2, 2, s.scenes[3], s.scenes[2]),
+      "scenes[3].role",
+    ],
+    [
+      "不足",
+      (s: BoardStoryboard) => {
+        s.scenes[3].role = "syntax";
+      },
+      "scenes",
+    ],
+    [
+      "goalの重複",
+      (s: BoardStoryboard) => {
+        s.scenes[1].role = "goal";
+      },
+      "scenes[1].role",
+    ],
+    [
+      "quizの重複",
+      (s: BoardStoryboard) => {
+        s.scenes[6].role = "quiz";
+      },
+      "scenes[6].role",
+    ],
+    [
+      "answerの重複",
+      (s: BoardStoryboard) => {
+        s.scenes[7].role = "answer";
+      },
+      "scenes[7].role",
+    ],
+    [
+      "旧role",
+      (s: BoardStoryboard) => {
+        s.scenes[0].role = "hook";
+      },
+      "scenes[0].role",
+    ],
+    [
+      "要点の数",
+      (s: BoardStoryboard) => {
+        s.brief.points.push("別の要点。");
+      },
+      "brief.points",
+    ],
+    [
+      "要点の番号",
+      (s: BoardStoryboard) => {
+        s.scenes[1].point = 1;
+      },
+      "scenes[1].point",
+    ],
+    [
+      "場面数",
+      (s: BoardStoryboard) => {
+        s.scenes.splice(4, 1);
+      },
+      "scenes",
+    ],
+    [
+      "最初の補足",
+      (s: BoardStoryboard) => {
+        s.scenes.unshift(...s.scenes.splice(4, 1));
+      },
+      "scenes[0].role",
+    ],
+    [
+      "最後の補足",
+      (s: BoardStoryboard) => {
+        s.scenes.push(...s.scenes.splice(4, 1));
+      },
+      "scenes[8].role",
+    ],
+    [
+      "問題直後の補足",
+      (s: BoardStoryboard) => {
+        const [note] = s.scenes.splice(4, 1);
+        s.scenes.splice(5, 0, note);
+      },
+      "scenes[5].role",
+    ],
+    [
+      "間が短い",
+      (s: BoardStoryboard) => {
+        s.scenes[0].beats[0].pause = 0.49;
+      },
+      "scenes[0].beats[0].pause",
+    ],
+    [
+      "間が長い",
+      (s: BoardStoryboard) => {
+        s.scenes[0].beats[0].pause = 8.01;
+      },
+      "scenes[0].beats[0].pause",
+    ],
+    [
+      "考える時間が短い",
+      (s: BoardStoryboard) => {
+        s.scenes[5].think = 2.99;
+      },
+      "scenes[5].think",
+    ],
+    [
+      "考える時間が長い",
+      (s: BoardStoryboard) => {
+        s.scenes[5].think = 15.01;
+      },
+      "scenes[5].think",
+    ],
+    [
+      "問題以外の考える時間",
+      (s: BoardStoryboard) => {
+        s.scenes[0].think = 6;
+      },
+      "scenes[0].think",
+    ],
+  ] as const;
+  it.each(invalid)("%sを検査する", (_name, edit, path) => {
+    const storyboard = lesson();
+    edit(storyboard);
+    const result = parseStoryboard(storyboard);
+    expect(result.storyboard).toBeUndefined();
+    expect(result.issues).toContainEqual(expect.objectContaining({ level: "error", path }));
+  });
+  it.each([0, 1, 8])("コードを出せない場面 %i を検査する", (index) => {
+    const storyboard = lesson();
+    const scene = storyboard.scenes[index];
+    Object.assign(scene, {
+      kind: "code",
+      code: ["// 値を比べる", "const larger = 2 > 1;"],
+      beats: [{ say: "値を比べます。", type: [0, 1] }],
+    });
+    expect(parseStoryboard(storyboard).issues).toContainEqual(
+      expect.objectContaining({ level: "error", path: `scenes[${index}].kind` }),
+    );
+  });
+  it("schema 1 では新しいrole・pause・thinkを拒む", () => {
+    fails((s) => {
+      s.scenes[0].role = "goal";
+    }, "scenes[0].role");
+    fails((s) => {
+      s.scenes[0].beats[0].pause = 1;
+    }, "scenes[0].beats[0].pause");
+    fails((s) => {
+      s.scenes[0].think = 6;
+    }, "scenes[0].think");
+  });
+  it("間だけの文は空振りになる", () => {
+    const storyboard = lesson();
+    storyboard.scenes[0].beats = [{ say: "値を比べます。", pause: 1 }];
+    expect(parseStoryboard(storyboard).issues).toContainEqual(
+      expect.objectContaining({
+        level: "error",
+        path: "scenes[0].beats[0]",
+        message: expect.stringContaining("空振り"),
+      }),
+    );
+  });
+  it.each([
+    [230, undefined],
+    [310, "warning"],
+    [900, "error"],
+  ] as const)("読み上げの長さに応じて推定時間を検査する（%i文字）", (chars, level) => {
+    const storyboard = lesson();
+    for (const scene of storyboard.scenes) scene.beats[0].speech = "あ".repeat(chars);
+    const issue = parseStoryboard(storyboard).issues.find((i) => i.message.includes("180〜480秒"));
+    expect(issue?.level).toBe(level);
+  });
+});
+
+describe("概念図の値の札", () => {
+  const tagged = () => {
+    const s = fresh();
+    s.scenes[0].beats = [
+      { say: "読む場所を出します。", show: ["read"], tag: { read: "短い" } },
+      { say: "値を変えます。", tag: { read: "長い" } },
+    ];
+    s.scenes[1].reset = false;
+    s.scenes[1].beats = [
+      { say: "札を外します。", untag: ["read"] },
+      { say: "値を戻します。", tag: { read: "短い" } },
+      { say: "読む場所を隠します。", hide: ["read"] },
+      { say: "読む場所を出します。", show: ["read"] },
+    ];
+    return s;
+  };
+  it("札だけの変化で通り、入れ替え・場面の引き継ぎ・外す・hideを状態に反映する", () => {
+    const s = tagged();
+    expect(parseStoryboard(s).storyboard).toEqual(s);
+    const [first, next] = storyboardStates(s);
+    expect(first.start).not.toHaveProperty("tags");
+    expect(first.beats[0].after.tags).toEqual({ read: "短い" });
+    expect(first.end.tags).toEqual({ read: "長い" });
+    expect(next.start.tags).toEqual({ read: "長い" });
+    expect(next.beats[0].after).not.toHaveProperty("tags");
+    expect(next.beats[1].after.tags).toEqual({ read: "短い" });
+    expect(next.beats[2].after).not.toHaveProperty("tags");
+    expect(next.beats[3].after).not.toHaveProperty("tags");
+  });
+  it.each([
+    [{ tag: { read: "短い" } }, "空振り"],
+    [{ tag: { quiz: "値" } }, "空振り"],
+    [{ untag: ["quiz"] }, "空振り"],
+    [{ tag: { web: "値" } }, "ノード"],
+    [{ tag: { "write-check": "値" } }, "ノード"],
+    [{ untag: ["unknown"] }, "ノード"],
+    [{ tag: { read: "値" }, untag: ["read"] }, "両方"],
+    [{ tag: { read: "123456789" } }, "8字"],
+    [{ tag: { read: "" } }, "空でない"],
+    [{ tag: { read: "値\n次" } }, "1行"],
+  ] as const)("札 %j を検査する", (edit, message) => {
+    const s = tagged();
+    s.scenes[0].beats[1] = {
+      say: "札を確認します。",
+      ...structuredClone(edit),
+    } as BoardStoryboard["scenes"][number]["beats"][number];
+    const result = parseStoryboard(s);
+    expect(result.storyboard).toBeUndefined();
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ level: "error", message: expect.stringContaining(message) }),
+    );
+  });
+});
+
+describe("コードの横の概念図", () => {
+  const fixture = () => {
+    const board: Board = {
+      cols: 2,
+      rows: 2,
+      nodes: [
+        { id: "total", label: "合計", icon: "file", at: [1, 2] },
+        { id: "price", label: "価格", icon: "file", at: [1, 1] },
+        { id: "shipping", label: "送料", icon: "file", at: [2, 1] },
+      ],
+      links: [
+        { id: "price-shipping", from: "price", to: "shipping" },
+        { id: "shipping-total", from: "shipping", to: "total" },
+      ],
+    };
+    const code: CodeScene = {
+      kind: "code",
+      id: "names",
+      role: "point",
+      point: 1,
+      title: "価格を使う",
+      code: ["// 価格に名前を付ける", "const price = 1200;", "const total = price;"],
+      show: [1],
+      panel: { kind: "figure", board: "shop" },
+      beats: [
+        { say: "価格に印を付けます。", figure: { mark: [{ on: "price", kind: "check" }] } },
+        {
+          say: "合計に値を渡します。",
+          figure: {
+            travel: { along: ["price-shipping", "shipping-total"] },
+            tag: { total: "1200" },
+          },
+        },
+      ],
+    };
+    const scenes: VideoStoryboard["scenes"] = [
+      {
+        id: "prior",
+        role: "hook",
+        title: "お店の例",
+        board: "shop",
+        beats: [
+          {
+            say: "お店の例を見ます。",
+            show: ["price", "shipping", "total", "price-shipping", "shipping-total"],
+            tag: { price: "1200" },
+          },
+        ],
+      },
+      code,
+      {
+        id: "later",
+        role: "recap",
+        title: "お店の例",
+        board: "shop",
+        beats: [{ say: "印を外します。", unmark: ["price"] }],
+      },
+    ];
+    const storyboard: VideoStoryboard = {
+      schema: 1,
+      brief: { ...sample.brief, points: ["価格"] },
+      boards: { shop: board },
+      scenes,
+    };
+    return { storyboard, board, code };
+  };
+
+  it("図だけが変わる文が通り、board → figure → board で矢印・ノード・印・札を引き継ぐ", () => {
+    const { storyboard } = fixture();
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+    const [first, code, last] = storyboardStates(storyboard);
+    if (code.kind !== "code" || !code.figure) throw new Error("図の状態がありません");
+    expect(code.figure.start).toEqual(first.end);
+    expect(code.figure.beats[0].after.marks).toEqual({ price: "check" });
+    expect(code.figure.end.tags).toEqual({ price: "1200", total: "1200" });
+    expect(last.start).toEqual(code.figure.end);
+    if (last.kind === "code" || last.kind === "view")
+      throw new Error("最後の場面が図解ではありません");
+    expect(last.end.marks).toEqual({});
+    expect(code.start.visible).toEqual([1]);
+    expect(code.beats[0].after.visible).toEqual([1]);
+    expect(code.start).not.toHaveProperty("figure");
+  });
+
+  it("reset で空から始まり、その後の board はコード場面の終了状態を使う", () => {
+    const { storyboard, code } = fixture();
+    code.reset = true;
+    code.beats[0].figure = { show: ["price"], tag: { price: "500" } };
+    code.beats[1].figure = { show: ["shipping", "total"] };
+    const lastScene = storyboard.scenes[2] as BoardScene;
+    lastScene.beats[0] = { say: "価格の札を外します。", untag: ["price"] };
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+    const [, state, last] = storyboardStates(storyboard);
+    if (state.kind !== "code" || !state.figure) throw new Error("図の状態がありません");
+    expect(state.figure.start).toEqual({ visible: [], marks: {}, zoom: "all" });
+    expect(last.start).toEqual({
+      visible: ["price", "shipping", "total"],
+      marks: {},
+      tags: { price: "500" },
+      zoom: "all",
+    });
+  });
+
+  it.each([
+    [
+      "図解がない",
+      ({ code }) => {
+        code.panel = { kind: "figure", board: "missing" };
+      },
+      "scenes[1].panel.board",
+    ],
+    [
+      "ノードが5個",
+      ({ board }) => {
+        board.cols = 3;
+        board.nodes.push(
+          { id: "a", label: "品物", icon: "file", at: [3, 1] },
+          { id: "b", label: "袋", icon: "file", at: [3, 2] },
+        );
+      },
+      "scenes[1].panel.board",
+    ],
+    [
+      "囲みがある",
+      ({ board }) => {
+        board.zones = [{ id: "area", label: "店", cells: [1, 1, 2, 2] }];
+      },
+      "scenes[1].panel.board",
+    ],
+    [
+      "隣でない矢印",
+      ({ board }) => {
+        board.links?.push({ id: "skip", from: "price", to: "total" });
+      },
+      "scenes[1].panel.board",
+    ],
+    [
+      "逆向きの矢印",
+      ({ board }) => {
+        board.links?.push({ id: "back", from: "shipping", to: "price" });
+      },
+      "scenes[1].panel.board",
+    ],
+    [
+      "重複した矢印",
+      ({ board }) => {
+        board.links?.push({ id: "extra", from: "price", to: "shipping" });
+      },
+      "scenes[1].panel.board",
+    ],
+    [
+      "figure パネルなしの figure",
+      ({ code }) => {
+        delete code.panel;
+        code.beats[0].type = [0];
+      },
+      "scenes[1].beats[0].figure",
+    ],
+    [
+      "figure パネルなしの reset",
+      ({ code }) => {
+        delete code.panel;
+        code.reset = false;
+      },
+      "scenes[1].reset",
+    ],
+    [
+      "reset が真偽値でない",
+      ({ code }) => {
+        Object.assign(code, { reset: "true" });
+      },
+      "scenes[1].reset",
+    ],
+    [
+      "空の figure",
+      ({ code }) => {
+        code.beats[0].figure = {};
+      },
+      "scenes[1].beats[0].figure",
+    ],
+    [
+      "figure の zoom",
+      ({ code }) => {
+        Object.assign(code.beats[0], { figure: { zoom: "all" } });
+      },
+      "scenes[1].beats[0].figure.zoom",
+    ],
+    [
+      "存在しない id",
+      ({ code }) => {
+        code.beats[0].figure = { pulse: ["missing"] };
+      },
+      "scenes[1].beats[0].figure.pulse[0]",
+    ],
+    [
+      "矢印への印",
+      ({ code }) => {
+        code.beats[0].figure = { mark: [{ on: "price-shipping", kind: "check" }] };
+      },
+      "scenes[1].beats[0].figure.mark[0].on",
+    ],
+    [
+      "隠れた矢印をたどる",
+      ({ code }) => {
+        code.beats[1].figure = { hide: ["price-shipping"], travel: { along: ["price-shipping"] } };
+      },
+      "scenes[1].beats[1].figure.travel.along[0]",
+    ],
+    [
+      "つながらない矢印をたどる",
+      ({ code }) => {
+        code.beats[1].figure = { travel: { along: ["shipping-total", "price-shipping"] } };
+      },
+      "scenes[1].beats[1].figure.travel.along[1]",
+    ],
+    [
+      "空振りの図の動き",
+      ({ code }) => {
+        code.beats[0].figure = { show: ["price"] };
+      },
+      "scenes[1].beats[0]",
+    ],
+    [
+      "行番号の範囲外",
+      ({ code }) => {
+        code.show = [3];
+      },
+      "scenes[1].show[0]",
+    ],
+    [
+      "行番号の重複",
+      ({ code }) => {
+        code.show = [1, 1];
+      },
+      "scenes[1].show",
+    ],
+  ] satisfies [string, (setup: ReturnType<typeof fixture>) => void, string][])(
+    "%sを検査する",
+    (_name, edit, path) => {
+      const setup = fixture();
+      edit(setup);
+      const result = parseStoryboard(setup.storyboard);
+      expect(result.storyboard).toBeUndefined();
+      expect(result.issues).toContainEqual(expect.objectContaining({ level: "error", path }));
+    },
+  );
+
+  it("schema 2 の書き方の場面に figure パネルが必要", () => {
+    const { storyboard, code } = fixture();
+    storyboard.schema = 2;
+    const example = storyboard.scenes[0] as BoardScene;
+    storyboard.scenes = (
+      ["goal", "example", "syntax", "apply", "note", "quiz", "answer", "explain", "usage"] as const
+    ).map((role) =>
+      role === "syntax"
+        ? { ...code, role, point: undefined }
+        : { ...example, id: role, role, reset: true },
+    );
+    expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+    storyboard.scenes[2] = {
+      ...code,
+      role: "syntax",
+      point: undefined,
+      panel: { kind: "values" as const, items: ["price"] },
+      beats: [{ say: "価格に名前を付けます。", type: [0] }],
+    };
+    expect(parseStoryboard(storyboard).issues).toContainEqual(
+      expect.objectContaining({
+        level: "error",
+        path: "scenes[2].panel",
+        message: expect.stringContaining("コードだけの場面は作れません"),
+      }),
+    );
+  });
 });
