@@ -1,4 +1,13 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import {
   Check,
@@ -24,10 +33,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { AppShellContext } from "@/components/shell/app-shell-context";
 import { TopbarSlot } from "@/components/shell/TopbarSlot";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./StageDetail";
 import { LessonCompleteCallout, LessonNavFooter } from "./LessonNav";
+import { LessonComments } from "./LessonComments";
 import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
@@ -42,6 +53,7 @@ import {
 } from "@/hooks/useLessonProgress";
 import { useStageTasks } from "@/hooks/useStageTasks";
 import { lessonSubmissionTarget } from "@/lib/lesson-submissions";
+import { useVideoLessonComments } from "@/hooks/useLessonComments";
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
 import { downloadLessonMaterial } from "@/lib/cms-api";
@@ -88,6 +100,7 @@ export const LessonPlayer = ({
   setPage,
   studentName,
   studentInitials,
+  focusThreadId,
   initialLesson = null,
   onActiveLessonChange,
   onOpenSubmission,
@@ -97,7 +110,8 @@ export const LessonPlayer = ({
   const [activeLesson, setActiveLesson] = useState<string>(
     () => allLessons.find((l) => l.id === initialLesson?.id)?.id ?? allLessons[0]?.id ?? "",
   );
-  const [tab, setTab] = useState("content");
+  const [tabSelection, setTabSelection] = useState<{ key: string; tab: string }>();
+  const shell = useContext(AppShellContext);
   const stageTasks = useStageTasks(stage.id, stage.format === 2 && isBackendConfigured());
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
@@ -131,6 +145,23 @@ export const LessonPlayer = ({
     loading: materialsLoading,
     error: materialsError,
   } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled);
+
+  const lessonId = lessonObj?.id ?? "";
+  const showVideo = Boolean(lessonObj && isVideoLesson(lessonObj));
+  const threadFromRoute = lessonId === initialLesson?.id ? focusThreadId : undefined;
+  const video = useVideoLessonComments(lessonId, showVideo && materialsEnabled, threadFromRoute);
+  const tabKey = JSON.stringify([lessonId, threadFromRoute]);
+  const tab = tabSelection?.key === tabKey ? tabSelection.tab : showVideo ? "comments" : "content";
+  useEffect(() => {
+    setTabSelection((previous) => (previous?.key === tabKey ? previous : undefined));
+  }, [tabKey]);
+  const videoControls = {
+    ...video.controls,
+    onMarkerSelect: (threadId: string) => {
+      setTabSelection({ key: tabKey, tab: "comments" });
+      video.comments.revealThread(threadId);
+    },
+  };
 
   // 表示レッスンの解決。 「検索での選択の適用」と「ステージ切替時の先頭寄せ」を
   // 1 つの効果にまとめている。 別々の効果にすると、 別ステージのレッスンを検索から
@@ -272,7 +303,6 @@ export const LessonPlayer = ({
   const isText = lessonObj.type === "text";
   const isVideo = lessonObj.type === "video";
   const isSlides = lessonObj.type === "slides";
-  const showVideo = isVideoLesson(lessonObj);
   const displayType = displayLessonType(lessonObj);
   const nextMeta = nextLesson
     ? nextLessonMeta(lessonTypeLabel[displayLessonType(nextLesson)], nextLesson.duration)
@@ -380,33 +410,37 @@ export const LessonPlayer = ({
           />
         ) : (
           <>
-            {isVideo ? (
-              lessonObj.videoPath ? (
-                <VideoViewer
-                  key={lessonObj.id}
-                  lessonId={lessonObj.id}
-                  videoPath={lessonObj.videoPath}
-                  totalSec={lessonObj.totalSec}
-                  onComplete={handleMarkComplete}
-                  nextLessonTitle={nextLesson?.title ?? null}
-                  nextLessonMeta={nextMeta}
-                  // 次が無いステージ末尾では渡さない。 渡すと VideoViewer 側の
-                  // canAdvance が true になり、 何もしないオーバーレイが出る。
-                  onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
-                />
-              ) : (
-                <MissingMaterialFallback type="video" />
-              )
-            ) : isSlides && lessonObj.videoPath ? (
-              <SlideLessonMedia
-                key={lessonObj.id}
-                lessonId={lessonObj.id}
-                videoPath={lessonObj.videoPath}
-                onComplete={handleMarkComplete}
-                nextLessonTitle={nextLesson?.title ?? null}
-                nextLessonMeta={nextMeta}
-                onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
-              />
+            {showVideo && lessonObj.videoPath ? (
+              <div ref={video.playerContainer} className="scroll-mt-[var(--shell-header-height)]">
+                {isVideo ? (
+                  <VideoViewer
+                    {...videoControls}
+                    key={lessonObj.id}
+                    lessonId={lessonObj.id}
+                    videoPath={lessonObj.videoPath}
+                    totalSec={lessonObj.totalSec}
+                    onComplete={handleMarkComplete}
+                    nextLessonTitle={nextLesson?.title ?? null}
+                    nextLessonMeta={nextMeta}
+                    // 次が無いステージ末尾では渡さない。 渡すと VideoViewer 側の
+                    // canAdvance が true になり、 何もしないオーバーレイが出る。
+                    onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+                  />
+                ) : (
+                  <SlideLessonMedia
+                    {...videoControls}
+                    key={lessonObj.id}
+                    lessonId={lessonObj.id}
+                    videoPath={lessonObj.videoPath}
+                    onComplete={handleMarkComplete}
+                    nextLessonTitle={nextLesson?.title ?? null}
+                    nextLessonMeta={nextMeta}
+                    onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+                  />
+                )}
+              </div>
+            ) : isVideo ? (
+              <MissingMaterialFallback type="video" />
             ) : isSlides && !lessonObj.markdown ? (
               lessonObj.pdfPath ? (
                 <Suspense fallback={<ViewerLoading />}>
@@ -473,16 +507,29 @@ export const LessonPlayer = ({
                 </div>
               </div>
 
-              <Tabs value={showVideo ? "resources" : tab} onValueChange={setTab}>
+              <Tabs value={tab} onValueChange={(tab) => setTabSelection({ key: tabKey, tab })}>
                 <TabsList>
-                  {!showVideo ? (
+                  {showVideo ? (
+                    <TabsTrigger
+                      value="comments"
+                      className="min-h-11 sm:min-h-8"
+                      count={
+                        video.comments.loading || video.comments.allTotal === undefined
+                          ? undefined
+                          : video.comments.allTotal + video.comments.orphanedCount
+                      }
+                    >
+                      コメント
+                    </TabsTrigger>
+                  ) : (
                     <TabsTrigger value="content" icon={<FileText />}>
                       教材
                     </TabsTrigger>
-                  ) : null}
+                  )}
                   {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
                   <TabsTrigger
                     value="resources"
+                    className={showVideo ? "min-h-11 sm:min-h-8" : undefined}
                     icon={<Folder />}
                     count={materialsLoading ? undefined : materials.length}
                   >
@@ -490,7 +537,27 @@ export const LessonPlayer = ({
                   </TabsTrigger>
                 </TabsList>
 
-                {!showVideo ? (
+                {showVideo ? (
+                  <TabsContent value="comments" forceMount className="data-[state=inactive]:hidden">
+                    {video.comments.enabled ? (
+                      <LessonComments
+                        key={lessonId}
+                        comments={video.comments}
+                        playback={video.playback}
+                        onSeek={video.onSeek}
+                        onPause={video.onPause}
+                        onComposingChange={video.onComposingChange}
+                        focusThreadId={threadFromRoute}
+                        visible={tab === "comments"}
+                        viewer={{
+                          id: shell?.currentUserId ?? "",
+                          name: studentName,
+                          initials: studentInitials,
+                        }}
+                      />
+                    ) : null}
+                  </TabsContent>
+                ) : (
                   <TabsContent value="content">
                     {isQuiz ? (
                       <>
@@ -526,7 +593,7 @@ export const LessonPlayer = ({
                       <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
                     )}
                   </TabsContent>
-                ) : null}
+                )}
                 <TabsContent value="resources">
                   <ResourcesList
                     materials={materials}

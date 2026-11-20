@@ -1,3 +1,4 @@
+import { relativeTime } from "@/lib/relative-time";
 /**
  * 通知センター (Issue #25)。
  *
@@ -58,22 +59,6 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   lesson_comment_mention: { icon: MessageCircle, tone: "text-brand", label: "メンション" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージ完了" },
 };
-
-/** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const diff = Date.now() - then;
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return "たった今";
-  if (min < 60) return `${min}分前`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}時間前`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}日前`;
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
-}
 
 export const NotificationCenter = ({
   role,

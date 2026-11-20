@@ -89,7 +89,7 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 ### Key caveats
 
-- **動画レッスンのコメント**: ログイン必須の `/api/lesson-comments` で動画のあるレッスンにスレッドを作り、返信は先頭に対する 1 段だけ。メンションは返信で本人を除くスレッドの参加者だけにできる。投稿時の位置は場面に結び付け、一覧を読むたびに今の動画の位置へ引き直す (同じ内容は `current`、内容変更は `outdated`、場面が無くなれば `orphaned`)。新しいスレッドは有効な管理者へ、返信は参加者へ通知し、メンションされた人には専用の通知を 1 通だけ送る。受講者の削除でコメント・メンションは CASCADE、通知は宛先または `payload.from_id` で消える。
+- **動画レッスンのコメント**: ログイン必須の `/api/lesson-comments` で動画のあるレッスンにスレッドを作り、返信は先頭に対する 1 段だけ。メンションは返信で本人を除くスレッドの参加者だけにできる。投稿時の位置は場面に結び付け、一覧を読むたびに今の動画の位置へ引き直す (同じ内容は `current`、内容変更は `outdated`、場面が無くなれば `orphaned`)。新しいスレッドは有効な管理者へ、返信は参加者へ通知し、メンションされた人には専用の通知を 1 通だけ送る。受講者の削除でコメント・メンションは CASCADE、通知は宛先または `payload.from_id` で消える。画面は `apps/web/src/components/learner/` の `LessonComments.tsx`・`LessonCommentThread.tsx` と `apps/web/src/hooks/useLessonComments.ts` を共用し、受講者は動画レッスンの「コメント」タブ、管理者は教材確認の画面で読み書きする。通知は `?thread=` 付きでレッスン画面を開き、該当のスレッドを表示する。公開の `/start` にはコメント欄を出さない。
 
 - **外部連携 (#204)**: `/api/integrations/v1/*` は Cookie・セッションを見ず、連携トークンの SHA-256 ハッシュで認証する。管理画面 `/admin/integrations` と管理 API は管理者のみ。後続ルートは `lib/integrations.ts` の認証・scope・所有グループ/メンバーの確認を通し、範囲外は404。トークンは発行・再発行のときだけ返し、DB・ログに平文を残さない。グループはクライアント所有、受講者の削除でメンバー行も CASCADE。staff の一覧の `groupId` は既存の受講者範囲に追加する。仕様・判断は `docs/integrations.md`。
 

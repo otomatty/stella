@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { StageWithChildren } from "@stella/shared/cms/types";
 import { PageContainer } from "@/components/common/PageContainer";
 import { PageHeader } from "@/components/common/PageHeader";
+import { LessonComments } from "@/components/learner/LessonComments";
+import { AppShellContext } from "@/components/shell/app-shell-context";
 import { LessonMarkdown, PlainMarkdownSlides } from "@/components/learner/MarkdownSlides";
 import { SlideLessonMedia } from "@/components/learner/SlideLessonMedia";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useVideoLessonComments } from "@/hooks/useLessonComments";
+import { isBackendConfigured } from "@/lib/backend";
 import { getStageWithChildren } from "@/lib/cms-api";
 import { VideoStatusBadge } from "./VideoStatusBadge";
 import {
@@ -21,6 +25,7 @@ import {
 export function StaffLessonView({
   stageId,
   lessonId,
+  focusThreadId,
 }: {
   stageId: string;
   lessonId: string;
@@ -59,6 +64,12 @@ export function StaffLessonView({
     section.lessons.some((lesson) => lesson.id === lessonId),
   );
   const lesson = section?.lessons.find((lesson) => lesson.id === lessonId);
+  const shell = useContext(AppShellContext);
+  const video = useVideoLessonComments(
+    lessonId,
+    isBackendConfigured() && lesson?.type === "slides" && Boolean(lesson.video_path),
+    focusThreadId,
+  );
   const status = lesson ? lessonVideoStatus(lesson) : "none";
   const adjacent = data ? adjacentStageLessons(data, lessonId) : null;
   const outline = (
@@ -131,17 +142,20 @@ export function StaffLessonView({
             </details>
             <div className="min-w-0 space-y-5">
               {lesson.type === "slides" ? (
-                <SlideLessonMedia
-                  lessonId={lesson.id}
-                  videoPath={lesson.video_path}
-                  showSlidesToggle
-                >
-                  {lesson.markdown ? (
-                    <PlainMarkdownSlides markdown={lesson.markdown} header={data.stage.title} />
-                  ) : (
-                    <p>スライドの本文がありません</p>
-                  )}
-                </SlideLessonMedia>
+                <div ref={video.playerContainer} className="scroll-mt-[var(--shell-header-height)]">
+                  <SlideLessonMedia
+                    {...video.controls}
+                    lessonId={lesson.id}
+                    videoPath={lesson.video_path}
+                    showSlidesToggle
+                  >
+                    {lesson.markdown ? (
+                      <PlainMarkdownSlides markdown={lesson.markdown} header={data.stage.title} />
+                    ) : (
+                      <p>スライドの本文がありません</p>
+                    )}
+                  </SlideLessonMedia>
+                </div>
               ) : lesson.type === "text" && lesson.markdown ? (
                 <div className="prose-lms">
                   <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
@@ -152,6 +166,25 @@ export function StaffLessonView({
                   です。受講者と同じ画面で確かめるときは、ステージ詳細の『受講者の画面で確かめる』を使います
                 </p>
               )}
+              {video.comments.enabled ? (
+                <section className="min-w-0 space-y-3">
+                  <h2 className="text-base font-semibold">コメント</h2>
+                  <LessonComments
+                    key={lessonId}
+                    comments={video.comments}
+                    playback={video.playback}
+                    onSeek={video.onSeek}
+                    onPause={video.onPause}
+                    onComposingChange={video.onComposingChange}
+                    focusThreadId={focusThreadId}
+                    viewer={{
+                      id: shell?.currentUserId ?? "",
+                      name: shell?.studentName ?? "管理者",
+                      initials: shell?.studentInitials ?? "管",
+                    }}
+                  />
+                </section>
+              ) : null}
               {lesson.type === "slides" ? (
                 <Card className="space-y-3 p-4">
                   <h2 className="text-sm font-semibold">管理者向けの情報</h2>
