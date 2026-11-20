@@ -36,7 +36,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { type Browser, chromium } from "playwright";
 
 import { collectPdfTargets } from "../src/material-pdf.js";
-import { SCREEN_VIDEO_FILES, selectVideoSource } from "../src/material-video.js";
+import {
+  SCREEN_VIDEO_FILES,
+  selectVideoSource,
+  slideVideoScenes,
+  storyboardVideoScenes,
+  type VideoScene,
+} from "../src/material-video.js";
 import {
   estimateSpeechSeconds,
   formatIssue,
@@ -206,6 +212,7 @@ interface CuePlan {
 
 interface TopicReport {
   scenes?: unknown[];
+  videoScenes?: VideoScene[];
   stageSlug: string;
   id: string;
   title: string;
@@ -491,6 +498,11 @@ async function buildTopic(
 
   const speechChars = cues.reduce((n, c) => n + [...c.speech.replace(/\s/g, "")].length, 0);
   const audioSec = pcms.reduce((n, p) => n + p.length / AUDIO_RATE, 0);
+  const slides = timeline.slides.map((s) => ({
+    title: s.title,
+    startSec: s.start,
+    durationSec: s.duration,
+  }));
   const report: TopicReport = {
     stageSlug: topic.stageSlug,
     id: topic.id,
@@ -500,11 +512,8 @@ async function buildTopic(
     voice: provider.identity,
     durationSec: timeline.duration,
     probedDurationSec: Math.round(probed * 1000) / 1000,
-    slides: timeline.slides.map((s) => ({
-      title: s.title,
-      startSec: s.start,
-      durationSec: s.duration,
-    })),
+    slides,
+    videoScenes: slideVideoScenes(slides, topic.narration.slides),
     cues: cues.length,
     speechChars,
     charsPerSec: Math.round((speechChars / audioSec) * 100) / 100,
@@ -816,10 +825,18 @@ export async function buildVideos(
           true,
         );
         if (!result) throw new Error("場面の動画がありません");
+        // 生成コードは動画とキャッシュのハッシュに入るので、配信用の場面情報はここで作る。
+        const storyboard = JSON.parse(readFileSync(join(topic.topicDir, "video.json"), "utf8")) as {
+          scenes: { id: string }[];
+        };
         if (planSceneTopic(topic, provider.identity) !== sourceHash)
           throw new Error("動画の入力が計画後に変わりました (生成後)");
         const report: TopicReport = {
           ...result,
+          videoScenes: storyboardVideoScenes(
+            result.scenes as Pick<VideoScene, "id" | "startSec" | "durationSec">[],
+            storyboard.scenes,
+          ),
           stageSlug: topic.stageSlug,
           id: topic.id,
           title: topic.title,

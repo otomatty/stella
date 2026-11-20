@@ -67,7 +67,13 @@ export async function uploadVideos(args: string[]): Promise<void> {
           return false;
         }
         if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
-        manifest[key] = { ...keys, durationSec: state.durations[videoKeyHash(keys.video)] };
+        const videoHash = videoKeyHash(keys.video);
+        const scenes = state.scenes?.[videoHash];
+        manifest[key] = {
+          ...keys,
+          durationSec: state.durations[videoHash],
+          ...(scenes ? { scenes } : {}),
+        };
         return true;
       },
     );
@@ -100,10 +106,16 @@ export async function uploadVideos(args: string[]): Promise<void> {
         continue;
       }
       for (const f of files) state.objects[videoKeyHash(f.key)] = statSync(f.file).size;
-      state.durations[videoKeyHash(keys.video)] = report.durationSec;
+      const videoHash = videoKeyHash(keys.video);
+      const scenes = report.videoScenes;
+      state.durations[videoHash] = report.durationSec;
+      if (scenes) {
+        state.scenes ??= {};
+        state.scenes[videoHash] = scenes;
+      }
       const key = videoManifestKey(plan.stageSlug, plan.id);
       if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
-      manifest[key] = { ...keys, durationSec: report.durationSec };
+      manifest[key] = { ...keys, durationSec: report.durationSec, ...(scenes ? { scenes } : {}) };
     }
     const successCount = Object.keys(manifest).length;
     for (const failure of failures) {

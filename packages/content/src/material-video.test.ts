@@ -5,10 +5,13 @@ import {
   hasVideo,
   mergeVideoFailure,
   serializeVideoManifest,
+  slideVideoScenes,
+  storyboardVideoScenes,
   summarizeVideoError,
   videoKeyHash,
   videoKeys,
   videoManifestKey,
+  videoSceneHash,
   type VideoManifest,
   type VideoState,
 } from "./material-video.js";
@@ -84,12 +87,62 @@ describe("教材動画の配信", () => {
     expect(hasVideo(state, keys)).toBe(false);
   });
   it("manifest を安定したレッスン ID 順の JSON にする", () => {
-    const entry = { ...keys, durationSec: 45 };
+    const legacyEntry = { ...keys, durationSec: 45 };
+    const entry = {
+      ...legacyEntry,
+      scenes: [{ id: "intro", startSec: 2.6, durationSec: 3.125, hash: "0123456789abcdef" }],
+    };
     const failure = { stageSlug: "another-stage", error: "読み上げに失敗しました" };
-    const text = serializeVideoManifest({ c: failure, b: entry, a: entry });
+    const text = serializeVideoManifest({ c: failure, b: legacyEntry, a: entry });
     expect(Object.keys(JSON.parse(text))).toEqual(["a", "b", "c"]);
     expect(JSON.parse(text).a).toEqual(entry);
+    expect(JSON.parse(text).b).toEqual(legacyEntry);
     expect(JSON.parse(text).c).toEqual(failure);
     expect(serializeVideoManifest({})).toBe("{}\n");
+  });
+});
+
+describe("教材動画の場面", () => {
+  it("絵コンテのハッシュはキー順に依存せず、内容が1文字違うと変わる", () => {
+    const scene = { id: "intro", beats: [{ say: "はじめ", hold: 1 }] };
+    const hash = videoSceneHash(scene);
+    expect(hash).toMatch(/^[0-9a-f]{16}$/);
+    expect(videoSceneHash({ beats: [{ hold: 1, say: "はじめ" }], id: "intro" })).toBe(hash);
+    expect(videoSceneHash({ ...scene, beats: [{ say: "はじめる", hold: 1 }] })).not.toBe(hash);
+  });
+
+  it("絵コンテにある場面を再生順で返し、開始位置と長さをミリ秒に丸める", () => {
+    const first = { id: "first", beats: [{ say: "最初" }] };
+    const last = { id: "last", beats: [{ say: "最後" }] };
+    expect(
+      storyboardVideoScenes(
+        [
+          { id: "title", startSec: 0, durationSec: 2.6 },
+          { id: "first", startSec: 2.6001, durationSec: 3.1259 },
+          { id: "last", startSec: 5.726, durationSec: 4.2344 },
+        ],
+        [first, last],
+      ),
+    ).toEqual([
+      { id: "first", startSec: 2.6, durationSec: 3.126, hash: videoSceneHash(first) },
+      { id: "last", startSec: 5.726, durationSec: 4.234, hash: videoSceneHash(last) },
+    ]);
+  });
+
+  it("スライドには1始まりの ID を付け、題名と順に連結した読み上げ文をハッシュにする", () => {
+    const slides = [
+      { title: "最初", startSec: 0, durationSec: 3.4567 },
+      { title: "最後", startSec: 3.4567, durationSec: 4.5433 },
+    ];
+    const narration = [{ cues: [{ text: "一文。" }, { text: "二文。" }] }, { cues: [] }];
+    expect(slideVideoScenes(slides, narration)).toEqual([
+      {
+        id: "slide-1",
+        startSec: 0,
+        durationSec: 3.457,
+        hash: videoSceneHash(["最初", "一文。二文。"]),
+      },
+      { id: "slide-2", startSec: 3.457, durationSec: 4.543, hash: videoSceneHash(["最後", ""]) },
+    ]);
   });
 });

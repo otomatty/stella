@@ -1,5 +1,6 @@
 /** 配信する3ファイルは同じ内容ハッシュを共有する。旧版は台帳に残す。 */
 import { createHash } from "node:crypto";
+import { normalizeStoryboard } from "./video-storyboard.js";
 
 export const SCREEN_VIDEO_FILES = ["screen.mp4", "screen.vtt", "screen.jpg"] as const;
 
@@ -23,11 +24,62 @@ export function selectVideoSource(
   return { kind: "recorded", sourceHash: hash.digest("hex").slice(0, 32) };
 }
 
+export interface VideoScene {
+  /** 場面の ID。動画を作り直しても、同じ場面なら同じ値。 */
+  id: string;
+  /** 動画の先頭からの開始位置 (秒、小数 3 桁まで)。 */
+  startSec: number;
+  /** 場面の長さ (秒、小数 3 桁まで)。 */
+  durationSec: number;
+  /** 場面の内容のハッシュ (sha256 の先頭 16 桁)。 */
+  hash: string;
+}
+
+type SceneTiming = Pick<VideoScene, "startSec" | "durationSec">;
+
+export function videoSceneHash(definition: unknown): string {
+  return createHash("sha256").update(normalizeStoryboard(definition)).digest("hex").slice(0, 16);
+}
+
+function toVideoScene(id: string, timing: SceneTiming, definition: unknown): VideoScene {
+  return {
+    id,
+    startSec: Math.round(timing.startSec * 1000) / 1000,
+    durationSec: Math.round(timing.durationSec * 1000) / 1000,
+    hash: videoSceneHash(definition),
+  };
+}
+
+export function storyboardVideoScenes(
+  report: ReadonlyArray<SceneTiming & { id: string }>,
+  definitions: ReadonlyArray<{ id: string }>,
+): VideoScene[] {
+  const byId = new Map(definitions.map((scene) => [scene.id, scene]));
+  return report.flatMap((timing) => {
+    const definition = byId.get(timing.id);
+    // 自動生成のタイトル画面は絵コンテに定義がない。
+    return definition ? [toVideoScene(timing.id, timing, definition)] : [];
+  });
+}
+
+export function slideVideoScenes(
+  slides: ReadonlyArray<SceneTiming & { title: string }>,
+  narration: ReadonlyArray<{ cues: ReadonlyArray<{ text: string }> }>,
+): VideoScene[] {
+  return slides.map((slide, i) =>
+    toVideoScene(`slide-${i + 1}`, slide, [
+      slide.title,
+      narration[i].cues.map((cue) => cue.text).join(""),
+    ]),
+  );
+}
+
 export interface VideoManifestEntry {
   video: string;
   captions: string;
   poster: string;
   durationSec: number;
+  scenes?: VideoScene[];
 }
 export interface VideoManifestFailure {
   stageSlug: string;
@@ -63,6 +115,7 @@ export interface VideoState {
   version: 1;
   objects: Record<string, number>;
   durations: Record<string, number>;
+  scenes?: Record<string, VideoScene[]>;
 }
 export const videoKeyHash = (key: string): string => createHash("sha256").update(key).digest("hex");
 

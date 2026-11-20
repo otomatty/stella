@@ -782,6 +782,9 @@ export const lessons = sqliteTable(
     order: integer("order").notNull().default(0),
     durationLabel: text("duration_label"),
     videoPath: text("video_path"),
+    videoScenes: text("video_scenes", { mode: "json" }).$type<
+      { id: string; startSec: number; durationSec: number; hash: string }[]
+    >(),
     /** seed が教材動画の manifest から書く。作れなかった理由。null は問題なし。CMS は書かない。 */
     videoIssue: text("video_issue"),
     pdfPath: text("pdf_path"),

@@ -27,6 +27,7 @@ import { buildVideos } from "./build-video.js";
 import { buildSceneTopic } from "./build-scene-video.js";
 import { collectNarrationTopics, type NarrationTopic } from "./lib/narration-topics.js";
 import { collectPdfTargets } from "../src/material-pdf.js";
+import { videoSceneHash } from "../src/material-video.js";
 import { synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
 
 const roots: string[] = [];
@@ -142,6 +143,7 @@ it("新方式の上限は後続のスライド版の音声合成も止める", a
 });
 it("新方式の成功を配信のreportに載せ、出力が同じなら次回の生成を省く", async () => {
   const { root } = fixture();
+  const { scenes } = JSON.parse(readFileSync(join(root, "video.json"), "utf8"));
   const close = vi.fn();
   vi.mocked(chromium.launch).mockResolvedValue({ close } as unknown as Awaited<
     ReturnType<typeof chromium.launch>
@@ -156,7 +158,10 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
       ttsIdentity: "fake",
       durationSec: 90,
       probedDurationSec: 90,
-      scenes: [],
+      scenes: [
+        { id: "title", startSec: 0, durationSec: 2.6, hash: "cache-title" },
+        { id: "hook", startSec: 2.6, durationSec: 3.1259, hash: "cache-hook" },
+      ],
       loudness: { integratedLufs: -16, truePeakDb: -3 },
       warnings: [],
     };
@@ -170,6 +175,9 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
       id: "first",
       durationSec: 90,
       sourceHash: expect.stringMatching(/^[a-f0-9]{32}$/),
+      videoScenes: [
+        { id: "hook", startSec: 2.6, durationSec: 3.126, hash: videoSceneHash(scenes[0]) },
+      ],
     }),
   ]);
   const again = await buildVideos(args);

@@ -405,23 +405,27 @@ function emitLesson(
   // 台本を削除したら解除。manifest が無い／対象外なら既存値を保持する。
   // ステージ slug とトピック ID の組で、自分のステージの項目を引く。
   const videoEntry = videoManifest?.[videoManifestKey(stageId, lesson.id)];
-  const manifestVideo = videoEntry && "video" in videoEntry ? videoEntry.video : undefined;
+  const manifestVideo = videoEntry && "video" in videoEntry ? videoEntry : undefined;
   const videoFailure =
     videoEntry && "error" in videoEntry && videoEntry.stageSlug === stageId
       ? videoEntry
       : undefined;
-  const ownedVideo = manifestVideo?.startsWith(`lesson-video/${tenantId}/${stageId}/${lesson.id}/`)
-    ? manifestVideo
-    : undefined;
-  const preserveVideo = lesson.type === "slides" && lesson.hasNarration && !ownedVideo;
+  const narratedSlides = lesson.type === "slides" && lesson.hasNarration;
+  const ownedVideo =
+    narratedSlides &&
+    manifestVideo?.video?.startsWith(`lesson-video/${tenantId}/${stageId}/${lesson.id}/`)
+      ? manifestVideo
+      : undefined;
+  const preserveVideo = narratedSlides && !ownedVideo;
   const preserveVideoIssue = preserveVideo && !videoFailure;
   const videoIssue = preserveVideo && videoFailure ? videoFailure.error : null;
-  const videoPath =
-    lesson.type === "slides" ? (lesson.hasNarration ? ownedVideo : undefined) : lesson.videoPath;
+  const videoPath = lesson.type === "slides" ? ownedVideo?.video : lesson.videoPath;
+  const scenes = ownedVideo?.scenes;
+  const videoScenes = scenes ? strLit(JSON.stringify(scenes)) : "null";
   lines.push(
     [
-      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, video_issue, created_at, updated_at" : ""})`,
-      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${videoIssue === null ? "null" : strLit(videoIssue)}, ${nowExpr()}, ${nowExpr()}` : ""}`,
+      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, video_issue, video_scenes, created_at, updated_at" : ""})`,
+      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${videoIssue === null ? "null" : strLit(videoIssue)}, ${videoScenes}, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("sections")} s`,
       `where s.id = '${sectionUuid}'`,
       `on conflict (id) ${doUpdate(
@@ -432,7 +436,7 @@ function emitLesson(
           "type",
           '"order"',
           "duration_label",
-          ...(preserveVideo ? [] : ["video_path"]),
+          ...(preserveVideo ? [] : ["video_path", ...(isSqlite ? ["video_scenes"] : [])]),
           "pdf_path",
           "markdown",
           "assignment_id",

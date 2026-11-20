@@ -66,6 +66,7 @@ function stableUuid(key: string): string {
 const COURSE = "dev-env-basics";
 const LESSON = "0-1-1";
 const QUIZ_LESSON = "quiz-0-1";
+const VIDEO_SCENES = [{ id: "intro", startSec: 2.6, durationSec: 3.125, hash: "0123456789abcdef" }];
 
 const pdfDir = mkdtempSync(join(tmpdir(), "stella-seed-writes-"));
 const pdfManifest = join(pdfDir, "pdf-manifest.json");
@@ -172,6 +173,7 @@ describe("seed の書き込み行数", () => {
             captions: path.replace(".mp4", ".vtt"),
             poster: path.replace(".mp4", ".jpg"),
             durationSec: 30,
+            scenes: VIDEO_SCENES,
           },
           [videoManifestKey(otherStage, LESSON)]: { ...otherVideo, durationSec: 30 },
         }),
@@ -194,33 +196,30 @@ describe("seed の書き込み行数", () => {
       };
       const id = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
       const current = () =>
-        (
-          db.prepare("select video_path from lessons where id = ?").get(id) as {
-            video_path: string | null;
-          }
-        ).video_path;
+        db.prepare("select video_path, video_scenes from lessons where id = ?").get(id);
+      const published = { video_path: path, video_scenes: JSON.stringify(VIDEO_SCENES) };
       try {
         const withVideo = await exportSql(narrated, file);
         apply(db, withVideo);
-        expect(current()).toBe(path);
+        expect(current()).toEqual(published);
         expect(
           db
-            .prepare("select video_path from lessons where id = ?")
+            .prepare("select video_path, video_scenes from lessons where id = ?")
             .get(stableUuid(`lesson:ses:${otherStage}:${LESSON}`)),
-        ).toEqual({ video_path: otherVideo.video });
+        ).toEqual({ video_path: otherVideo.video, video_scenes: null });
         expect(apply(db, withVideo)).toEqual({});
         const withoutManifest = await exportSql(narrated);
         expect(apply(db, withoutManifest)).toEqual({});
-        expect(current()).toBe(path);
+        expect(current()).toEqual(published);
         // 空の manifest も、対象を絞った sync で対象外の動画を消さない。
         writeFileSync(file, "{}");
         expect(apply(db, await exportSql(narrated, file))).toEqual({});
-        expect(current()).toBe(path);
+        expect(current()).toEqual(published);
         writeFileSync(file, JSON.stringify({ [LESSON]: videoKeys(COURSE, LESSON, "legacy") }));
         expect(apply(db, await exportSql(narrated, file))).toEqual({});
         const removed = await exportSql(withoutNarration);
         expect(total(apply(db, removed))).toBe(1);
-        expect(current()).toBeNull();
+        expect(current()).toEqual({ video_path: null, video_scenes: null });
         expect(apply(db, removed)).toEqual({});
       } finally {
         db.close();
@@ -248,7 +247,14 @@ describe("seed の書き込み行数", () => {
           lesson.type = type;
         };
       const current = () =>
-        db.prepare("select video_path, video_issue from lessons where id = ?").get(id);
+        db
+          .prepare("select video_path, video_issue, video_scenes from lessons where id = ?")
+          .get(id);
+      const failedWithPreviousVideo = {
+        video_path: "old.mp4",
+        video_issue: "読み上げの失敗 '理由'",
+        video_scenes: JSON.stringify(VIDEO_SCENES),
+      };
       try {
         writeFileSync(
           file,
@@ -261,13 +267,17 @@ describe("seed の書き込み行数", () => {
         );
         const failed = await exportSql(mutate(true), file);
         apply(db, failed);
-        expect(current()).toEqual({ video_path: null, video_issue: "読み上げの失敗 '理由'" });
+        expect(current()).toEqual({
+          video_path: null,
+          video_issue: "読み上げの失敗 '理由'",
+          video_scenes: null,
+        });
         expect(apply(db, failed)).toEqual({});
         db.prepare(
-          "update lessons set video_path = 'old.mp4', video_issue = '前の理由' where id = ?",
-        ).run(id);
+          "update lessons set video_path = 'old.mp4', video_issue = '前の理由', video_scenes = ? where id = ?",
+        ).run(JSON.stringify(VIDEO_SCENES), id);
         expect(total(apply(db, failed))).toBe(1);
-        expect(current()).toEqual({ video_path: "old.mp4", video_issue: "読み上げの失敗 '理由'" });
+        expect(current()).toEqual(failedWithPreviousVideo);
         expect(apply(db, failed)).toEqual({});
         expect(apply(db, await exportSql(mutate(true)))).toEqual({});
         for (const entry of [
@@ -280,10 +290,7 @@ describe("seed の書き込み行数", () => {
             JSON.stringify(entry ? { [videoManifestKey(COURSE, LESSON)]: entry } : {}),
           );
           expect(apply(db, await exportSql(mutate(true), file))).toEqual({});
-          expect(current()).toEqual({
-            video_path: "old.mp4",
-            video_issue: "読み上げの失敗 '理由'",
-          });
+          expect(current()).toEqual(failedWithPreviousVideo);
         }
         writeFileSync(
           file,
@@ -298,13 +305,13 @@ describe("seed の書き込み行数", () => {
         );
         const succeeded = await exportSql(mutate(true), file);
         expect(total(apply(db, succeeded))).toBe(1);
-        expect(current()).toEqual({ video_path: path, video_issue: null });
+        expect(current()).toEqual({ video_path: path, video_issue: null, video_scenes: null });
         expect(apply(db, succeeded)).toEqual({});
         for (const change of [mutate(false), mutate(true, "text")]) {
           db.prepare("update lessons set video_issue = '古い理由' where id = ?").run(id);
           const cleared = await exportSql(change, file);
           expect(total(apply(db, cleared))).toBe(1);
-          expect(current()).toEqual({ video_path: null, video_issue: null });
+          expect(current()).toEqual({ video_path: null, video_issue: null, video_scenes: null });
           expect(apply(db, cleared)).toEqual({});
         }
       } finally {
