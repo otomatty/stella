@@ -1,7 +1,7 @@
 ---
 sourceRefs: ["SRC-dev-env-editor-20261107", "SRC-dev-env-win-setup-20261107", "SRC-dev-env-mac-setup-20261107", "SRC-dev-env-locales-20261107", "SRC-dev-env-jp-pack-20261107", "SRC-dev-env-extensions-20261107", "SRC-dev-env-stella-20261107", "SRC-dev-env-trust-20261107"]
 ---
-## 知識問題
+## 確認クイズ
 
 この問題と解説は教材用に作成しました。
 
@@ -34,7 +34,7 @@ sourceRefs: ["SRC-dev-env-editor-20261107", "SRC-dev-env-win-setup-20261107", "S
 ### Q3. 翌日に同じ課題の続きを開く方法はどれですか？
 <!-- kind: single; skills: open-learning-folder -->
 
-- A. Web の同じ課題のレッスンから「VS Code で開く」を押す
+- A. Web の同じ課題文の教材から「VS Code で開く」を押す
 - B. 毎回、新しい学習フォルダーを作る
 
 <details>

@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "slidesHash": "0cef76feab319f47",
+  "slidesHash": "fbf79a18ff8f4ce0",
   "slides": [
     {
       "cues": [
         {
-          "text": "Web の課題文のレッスンから、VS Code に課題を受け取る流れを学びます。"
+          "text": "Web の課題文の教材から、VS Code に課題を受け取る流れを学びます。"
         },
         {
           "text": "課題文のパネルは、取り組む課題の説明を読む場所です。"
@@ -15,8 +15,8 @@
     {
       "cues": [
         {
-          "text": "Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。",
-          "speech": "Web のレッスンの VS Code で開くボタンで、VS Code に課題が届きます。"
+          "text": "Web の教材の「VS Code で開く」で、VS Code に課題が届きます。",
+          "speech": "Web の教材の VS Code で開くボタンで、VS Code に課題が届きます。"
         },
         {
           "text": "Web のボタンから、課題のファイルと説明を受け取れます。"
@@ -35,7 +35,7 @@
     {
       "cues": [
         {
-          "text": "手順は Web のレッスンから始まり、ブラウザーの確認で開くことを選びます。"
+          "text": "手順は Web の教材から始まり、ブラウザーの確認で開くことを選びます。"
         },
         {
           "text": "VS Code では左にファイル、右に課題文のパネルが表示されます。"
@@ -47,15 +47,15 @@
           "text": "Workspace Trust は信頼を確かめる仕組みで、詳しい手順はまとめで読めます。"
         },
         {
-          "text": "閉じる前に保存すればファイルは残り、同じレッスンから続きへ戻れます。"
+          "text": "閉じる前に保存すればファイルは残り、同じ教材から続きへ戻れます。"
         }
       ]
     },
     {
       "cues": [
         {
-          "text": "Web のレッスンの「VS Code で開く」で、VS Code に課題が届きます。",
-          "speech": "Web のレッスンの VS Code で開くボタンで、VS Code に課題が届きます。"
+          "text": "Web の教材の「VS Code で開く」で、VS Code に課題が届きます。",
+          "speech": "Web の教材の VS Code で開くボタンで、VS Code に課題が届きます。"
         }
       ]
     }
