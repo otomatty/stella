@@ -1,0 +1,1003 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "関数の 1 行めを読んで、引数と戻り値の種類がどこに書いてあるかを言える。",
+    "stuck": "price の後ろのコロンと number が何を表すのか分からず、かっこの後ろにも number がある理由も分からない。",
+    "points": [
+      "型注釈は、値の種類をコロンの後ろに書く書き方。引数はかっこの中、戻り値はかっこの後ろに書く。"
+    ],
+    "leaveOut": [
+      "string の値の書き方 (次の動画)",
+      "型が合わない呼び出しの具体例",
+      "型を書かなくてもよい場合 (型推論)",
+      "number と string 以外の型",
+      "問1の答えのコード"
+    ]
+  },
+  "art": {
+    "vending": {
+      "prompt": "Close-up front view of the payment panel of a drinks vending machine, drawn large and filling the whole image. On the left half, a small round coin slot with a hand inserting one blank coin into it. On the right half, a wide flat banknote slot with one blank banknote halfway inserted. A wide gap between the two slots. No face, no letters, no digits, no symbols.",
+      "aspect": "16:9",
+      "regions": {
+        "coin": [0.04, 0.28, 0.36, 0.42],
+        "bill": [0.5, 0.3, 0.42, 0.44]
+      }
+    },
+    "coin": {
+      "prompt": "One large round blank coin held between two fingers. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "slot": {
+      "prompt": "Close-up of one small round coin slot on a vending machine panel, with a narrow vertical opening. Object only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "bill": {
+      "prompt": "One blank rectangular banknote with a simple plain frame pattern, slightly curved. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "cake": {
+      "prompt": "One birthday cake with three lit candles on a plate. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "calendar": {
+      "prompt": "One wall calendar with a blank grid of squares and one square highlighted in colour, with a small party hat beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "pricetags": {
+      "prompt": "Three blank price tags of different sizes on strings, lying next to a few coins. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "mail": {
+      "prompt": "One open envelope with a blank letter sticking out, next to a blank name card with two short placeholder lines. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "warn": {
+      "prompt": "A laptop screen showing a few horizontal placeholder lines of code, one of them underlined with a red wavy line, and a small round red warning dot beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "price": {
+      "prompt": "One closed hardcover book standing upright, with a blank price tag hanging from it on a short string. Nothing else in the image."
+    },
+    "clerk": {
+      "prompt": "A friendly robot clerk (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, holding a small toy delivery truck in one hand and resting the other hand on a cardboard parcel on the counter. No people."
+    },
+    "total": {
+      "prompt": "A blank paper receipt slip with a zigzag bottom edge, with three coins and one blank banknote shape lying beside it. Objects only, drawn large and centered. No people, no digits, no symbols."
+    },
+    "text": {
+      "prompt": "A large rounded speech bubble and a blank name tag card, each filled only with a few horizontal placeholder lines of different lengths in light grey. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "tax": {
+      "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "entry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "coin",
+          "label": "硬貨",
+          "art": "coin",
+          "at": [1, 1]
+        },
+        {
+          "id": "slot",
+          "label": "硬貨の入口",
+          "art": "slot",
+          "at": [3, 1]
+        },
+        {
+          "id": "bill",
+          "label": "お札",
+          "art": "bill",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "put",
+          "from": "coin",
+          "to": "slot",
+          "label": "入る"
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "price",
+          "label": "本の値段",
+          "art": "price",
+          "at": [1, 1]
+        },
+        {
+          "id": "fee",
+          "label": "送料を足す係",
+          "art": "clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "total",
+          "label": "支払う金額",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "give",
+          "from": "price",
+          "to": "fee",
+          "label": "渡す"
+        },
+        {
+          "id": "back",
+          "from": "fee",
+          "to": "total",
+          "label": "返す"
+        }
+      ]
+    },
+    "kinds": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "knum",
+          "label": "数値",
+          "art": "total",
+          "at": [1, 1]
+        },
+        {
+          "id": "kstr",
+          "label": "文字",
+          "art": "text",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "age": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ain",
+          "label": "受け取る値",
+          "art": "cake",
+          "at": [1, 1]
+        },
+        {
+          "id": "aout",
+          "label": "返す値",
+          "art": "calendar",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "aplus",
+          "from": "ain",
+          "to": "aout",
+          "label": "1 を足す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "金額や個数",
+          "art": "pricetags",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "名前やメール",
+          "art": "mail",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "間違いに気づく",
+          "art": "warn",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tprice",
+          "label": "値段",
+          "art": "price",
+          "at": [1, 1]
+        },
+        {
+          "id": "ttax",
+          "label": "税込にする係",
+          "art": "tax",
+          "at": [3, 1]
+        },
+        {
+          "id": "ttotal",
+          "label": "税込の金額",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tgive",
+          "from": "tprice",
+          "to": "ttax",
+          "label": "渡す"
+        },
+        {
+          "id": "tback",
+          "from": "ttax",
+          "to": "ttotal",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "view",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "image": "art:vending",
+      "beats": [
+        {
+          "say": "この動画で学ぶのは、型注釈です。"
+        },
+        {
+          "say": "自動販売機には、硬貨の入口があります。",
+          "spot": ["coin"],
+          "label": [
+            {
+              "at": "coin",
+              "text": "硬貨だけ"
+            }
+          ]
+        },
+        {
+          "say": "お札は、別の入口から入れる決まりです。",
+          "spot": ["bill"],
+          "label": [
+            {
+              "at": "bill",
+              "text": "お札だけ"
+            }
+          ],
+          "pause": 1
+        },
+        {
+          "say": "見終えると、この書き方が読めるようになります。",
+          "dialog": {
+            "title": "値の種類を書く型注釈が読めます",
+            "code": [
+              "// 本の値段を受け取り、支払う金額を返す関数",
+              "function addShipping(price: number): number {",
+              "  // 受け取った値段に、送料の 500 を足して返す",
+              "  return price + 500;",
+              "}"
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "entry",
+      "role": "example",
+      "title": "入口ごとに種類が決まる",
+      "board": "entry",
+      "beats": [
+        {
+          "say": "硬貨の入口には、硬貨を入れます。",
+          "show": ["coin", "slot", "put"],
+          "travel": {
+            "along": ["put"],
+            "icon": "send"
+          },
+          "pulse": ["slot"]
+        },
+        {
+          "say": "ここにお札を入れようとしても、入りません。",
+          "show": ["bill"],
+          "mark": [
+            {
+              "on": "bill",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["bill"]
+        },
+        {
+          "say": "入口ごとに、入れてよいものの種類が決まっています。",
+          "pulse": ["slot"],
+          "tag": {
+            "slot": "硬貨だけ"
+          }
+        },
+        {
+          "say": "種類を決めておけば、間違ったものは入りません。",
+          "pulse": [],
+          "pause": 1
+        },
+        {
+          "say": "プログラムでは、値の種類を型と呼びます。",
+          "term": {
+            "text": "型",
+            "ruby": "かた",
+            "note": "値の種類"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "colon",
+      "kind": "code",
+      "role": "syntax",
+      "title": "引数の種類を書く",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "shop"
+      },
+      "beats": [
+        {
+          "say": "前の動画の関数を、もう一度見てみましょう。",
+          "figure": {
+            "show": ["price", "give", "fee", "back", "total"]
+          }
+        },
+        {
+          "say": "引数の後ろに、コロンと number が書いてあります。",
+          "speech": "引数の後ろに、コロンとナンバーが書いてあります。",
+          "part": {
+            "line": 1,
+            "text": ": number"
+          },
+          "figure": {
+            "pulse": ["price"]
+          }
+        },
+        {
+          "say": "number は、数値という意味の英語です。",
+          "speech": "ナンバーは、数値という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "number",
+            "note": "数値"
+          },
+          "figure": {
+            "tag": {
+              "price": "数値"
+            }
+          },
+          "pause": 1
+        },
+        {
+          "say": "これで、引数の price は数値だと決まりました。",
+          "speech": "これで、引数のプライスは数値だと決まりました。",
+          "part": {
+            "line": 1,
+            "text": "price: number"
+          }
+        },
+        {
+          "say": "値の種類を書くこの書き方を、型注釈と呼びます。",
+          "term": {
+            "text": "型注釈",
+            "ruby": "かたちゅうしゃく",
+            "note": "値の種類を書く書き方"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "ret",
+      "kind": "code",
+      "role": "syntax",
+      "title": "戻り値の種類を書く",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "shop"
+      },
+      "beats": [
+        {
+          "say": "かっこの後ろにも、コロンと number があります。",
+          "speech": "かっこの後ろにも、コロンとナンバーがあります。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          },
+          "figure": {
+            "pulse": ["total"]
+          }
+        },
+        {
+          "say": "こちらが表すのは、戻り値の種類です。",
+          "figure": {
+            "tag": {
+              "total": "数値"
+            }
+          },
+          "pause": 1
+        },
+        {
+          "say": "支払う金額も数値なので、number と書きました。",
+          "speech": "支払う金額も数値なので、ナンバーと書きました。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          }
+        },
+        {
+          "say": "入口と出口の両方に、種類を書いています。",
+          "focus": [1],
+          "figure": {
+            "pulse": ["price", "total"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "kind": "code",
+      "role": "apply",
+      "title": "自動販売機と見くらべる",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "entry"
+      },
+      "beats": [
+        {
+          "say": "自動販売機の入口と、見くらべてみましょう。",
+          "figure": {
+            "show": ["coin", "put", "slot"]
+          }
+        },
+        {
+          "say": "引数の price が、硬貨の入口にあたります。",
+          "speech": "引数のプライスが、硬貨の入口にあたります。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
+          "figure": {
+            "pulse": ["slot"]
+          }
+        },
+        {
+          "say": "number と書いたので、入るのは数値だけです。",
+          "speech": "ナンバーと書いたので、入るのは数値だけです。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          },
+          "figure": {
+            "tag": {
+              "slot": "数値だけ",
+              "coin": "数値"
+            }
+          }
+        },
+        {
+          "say": "文字のような別の種類は、受け取りません。",
+          "figure": {
+            "show": ["bill"],
+            "tag": {
+              "bill": "文字"
+            },
+            "mark": [
+              {
+                "on": "bill",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["bill"]
+          }
+        },
+        {
+          "say": "種類の合わない値は、エラーとして知らされます。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "kinds",
+      "kind": "code",
+      "role": "note",
+      "title": "種類はほかにもある",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "kinds"
+      },
+      "beats": [
+        {
+          "say": "値の種類は、数値だけではありません。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          },
+          "figure": {
+            "show": ["knum"],
+            "tag": {
+              "knum": "number"
+            },
+            "pulse": ["knum"]
+          }
+        },
+        {
+          "say": "文字を表す種類は、string と書きます。",
+          "speech": "文字を表す種類は、ストリングと書きます。",
+          "figure": {
+            "show": ["kstr"],
+            "tag": {
+              "kstr": "string"
+            },
+            "pulse": ["kstr"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "名前や住所のような文字に使う種類です。",
+          "figure": {
+            "focus": ["kstr"]
+          }
+        },
+        {
+          "say": "今回受け取るのは、本の値段という金額でした。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
+          "figure": {
+            "pulse": ["knum"]
+          }
+        },
+        {
+          "say": "金額は数なので、数値の number を選びます。",
+          "speech": "金額は数なので、数値のナンバーを選びます。",
+          "part": {
+            "line": 1,
+            "text": "price: number"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "knum",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "1行めを、2種類に分けて見てみましょう。",
+          "speech": "一行めを、二種類に分けて見てみましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "コロンと number は、言語で決まっている書き方です。",
+          "speech": "コロンとナンバーは、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": ":"
+              },
+              {
+                "line": 1,
+                "text": "number"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "number のつづりは、自分では変えられません。",
+          "speech": "ナンバーのつづりは、自分では変えられません。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          }
+        },
+        {
+          "say": "一方、price という名前は自分で付けました。",
+          "speech": "一方、プライスという名前は自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "price"
+              },
+              {
+                "line": 1,
+                "text": "addShipping"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻り値の種類はどちら",
+      "code": [
+        "// 年齢を受け取り、来年の年齢を返す関数",
+        "function nextAge(age: number): number {",
+        "  // 受け取った年齢に 1 を足して返す",
+        "  return age + 1;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "age"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["ain", "aplus", "aout"]
+          }
+        },
+        {
+          "say": "年齢を受け取り、来年の年齢を返す関数があります。",
+          "part": {
+            "line": 1,
+            "text": "nextAge"
+          }
+        },
+        {
+          "say": "1つめの number は、かっこの中です。",
+          "speech": "ひとつめのナンバーは、かっこの中です。",
+          "part": {
+            "line": 1,
+            "text": "age: number",
+            "note": "1つめ"
+          },
+          "figure": {
+            "pulse": ["ain"]
+          }
+        },
+        {
+          "say": "2つめの number を、かっこの後ろに書きました。",
+          "speech": "ふたつめのナンバーを、かっこの後ろに書きました。",
+          "part": {
+            "line": 1,
+            "text": "): number",
+            "note": "2つめ"
+          },
+          "figure": {
+            "pulse": ["aout"]
+          }
+        },
+        {
+          "say": "戻り値の種類を表すのは、どちらでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "ain",
+                "kind": "question"
+              },
+              {
+                "on": "aout",
+                "kind": "question"
+              }
+            ],
+            "pulse": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 年齢を受け取り、来年の年齢を返す関数",
+        "function nextAge(age: number): number {",
+        "  // 受け取った年齢に 1 を足して返す",
+        "  return age + 1;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "age"
+      },
+      "beats": [
+        {
+          "say": "答えは、2つめの number です。",
+          "speech": "答えは、ふたつめのナンバーです。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "aout",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["aout"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "書く場所で見分ける",
+      "code": [
+        "// 年齢を受け取り、来年の年齢を返す関数",
+        "function nextAge(age: number): number {",
+        "  // 受け取った年齢に 1 を足して返す",
+        "  return age + 1;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "age"
+      },
+      "beats": [
+        {
+          "say": "かっこの中は、引数を書く場所でした。",
+          "part": {
+            "line": 1,
+            "text": "(age: number)"
+          },
+          "figure": {
+            "pulse": ["ain"]
+          }
+        },
+        {
+          "say": "そのため、1つめは引数 age の種類です。",
+          "speech": "そのため、ひとつめは引数エイジの種類です。",
+          "part": {
+            "line": 1,
+            "text": "age: number"
+          },
+          "figure": {
+            "tag": {
+              "ain": "number"
+            }
+          }
+        },
+        {
+          "say": "かっこの後ろには、戻り値の種類を書きます。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          },
+          "figure": {
+            "pulse": ["aout"]
+          }
+        },
+        {
+          "say": "年齢に 1 を足した結果も、数値です。",
+          "speech": "年齢にいちを足した結果も、数値です。",
+          "part": {
+            "line": 3,
+            "text": "age + 1"
+          },
+          "figure": {
+            "tag": {
+              "aout": "number"
+            }
+          }
+        },
+        {
+          "say": "書いてある場所を見れば、どちらの種類かが分かります。",
+          "focus": [1],
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "型注釈が役立つ場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "型注釈が役立つのは、種類を取り違えたくない場面です。",
+          "show": ["u1"]
+        },
+        {
+          "say": "金額や個数には、数値の number を書きます。",
+          "speech": "金額や個数には、数値のナンバーを書きます。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "名前やメールアドレスは、文字の string です。",
+          "speech": "名前やメールアドレスは、文字のストリングです。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "種類を書いておけば、間違いに早く気づけます。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1の型注釈を読む",
+      "code": [
+        "// 問1 税込価格を返す（税率10%。税額の1円未満は切り捨て）",
+        "//     例: addTax(1000) → 1100",
+        "export function addTax(price: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問1のコードにも、型注釈が書いてあります。",
+          "speech": "問いちのコードにも、型注釈が書いてあります。",
+          "figure": {
+            "show": ["tprice", "tgive", "ttax", "tback", "ttotal"]
+          }
+        },
+        {
+          "say": "引数の price は、数値です。",
+          "speech": "引数のプライスは、数値です。",
+          "part": {
+            "line": 2,
+            "text": "price: number"
+          },
+          "figure": {
+            "tag": {
+              "tprice": "number"
+            },
+            "pulse": ["tprice"]
+          }
+        },
+        {
+          "say": "戻り値も、数値で返す決まりになっています。",
+          "part": {
+            "line": 2,
+            "text": "): number"
+          },
+          "figure": {
+            "tag": {
+              "ttotal": "number"
+            },
+            "pulse": ["ttotal"]
+          }
+        },
+        {
+          "say": "返す値の種類を、先に確かめておきましょう。",
+          "focus": [2],
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

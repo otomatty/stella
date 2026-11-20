@@ -6,7 +6,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-type
 
 ## このレッスンの目標
 
-- [ ] 関数の引数・戻り値・型注釈と、テストで確かめる値を読める
+- [ ] 関数の引数・戻り値・型注釈を読み、関数を呼び出す 1 行を説明できる
 - [ ] const で値に名前を付け、計算結果や切り捨て・切り上げの結果を説明できる
 - [ ] 余りを求め、テンプレートリテラルに値を埋め込む例を読める
 
@@ -14,41 +14,100 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-type
 
 > **関数は、値を受け取り、決まった処理をして、値を返すまとまりです。**
 
-関数は、値を受け取り、処理して、値を返すまとまりです。
-注文数を受け取り、同じ数を返す簡単な関数を読んでみます。
+関数は、値を受け取り、決まった処理をして、値を返すまとまりです。
+本の値段を受け取り、送料を足した金額を返す関数を読んでみます。
 
 ```ts
-// 注文数を受け取り、その数を返す関数を作る
-export function confirmedQuantity(quantity: number): number {
-  // 受け取った数を返す
-  return quantity;
-  // 関数の中身はここまで
+// 本の値段を受け取り、支払う金額を返す関数
+function addShipping(price: number): number {
+  // 受け取った値段に、送料の 500 を足して返す
+  return price + 500;
 }
-// 3 を渡して関数を呼び、戻り値を表示する
-console.log(confirmedQuantity(3));
-// 結果: 3
 ```
 
-- `export` は、別のファイルから使えるようにする印です。課題ではテストが関数を呼びます。
-- `function` は、ここから関数を作る印です。その後ろが関数名です。
-- `quantity` は引数です。受け取る値に付けた名前を指します。
-- `: number` は型注釈です。型は値の種類で、number は数値を表します。
-- かっこの中の型は引数、かっこの後ろの型は戻り値の種類です。戻り値は返す値のことです。
-- `{` から `}` までが中身です。`return` は右の値を返して、関数を終えます。
+- `function` は、ここから関数を作る印です。その後ろの `addShipping` が関数名です。
+- 関数名は自分で付けます。add は足す、shipping は送料という意味の英語です。
+- かっこの中の `price` は引数です。引数は、関数が受け取る値のことです。
+- `{` から `}` までが関数の中身です。ここに処理を書きます。
+- `return` は、右の値を返す命令です。関数が返す値を戻り値と呼びます。
 
-`confirmedQuantity(3)` と呼ぶと、引数 quantity に `3` が入ります。
-`return quantity;` により、呼んだ場所に `3` が戻ります。
-`console.log` は、値を表示して確かめるために使っています。
+この関数が `1200` を受け取ると、`500` を足した `1700` を返します。
+`800` を受け取れば、返すのは `1300` です。処理はいつも同じです。
+
+`function` や `return`、かっこなどの記号は、言語で決まっている書き方です。
+関数名・引数名・足す数の `500` は、書く人が自分で決めます。
 行頭の `//` から先はコメントで、処理の説明を書く場所です。
 
-問題では、まず関数名と引数・戻り値の型を読みます。
-次に「テストで確かめる値」を読み、渡す値と期待される結果を結び付けます。
-問1では `addTax(1000)` は `1100`、`addTax(980)` は `1078`、`addTax(5)` は `5` です。
-外側の名前や型を保ち、`// ここに書く` の場所に処理を書きます。
+問題では、関数の外側が最初から書いてあります。`// ここに書く` の場所に処理を書きます。
 
-参考: サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)・[関数宣言](https://typescriptbook.jp/reference/functions/function-declaration)。説明と例は教材用に独自作成しています。
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
 
-## 1-1-1a 文字列の書き方
+参考: サバイバルTypeScript [関数宣言](https://typescriptbook.jp/reference/functions/function-declaration)。
+
+## 1-1-2 型注釈の書き方
+
+> **型注釈は、値の種類をコロンの後ろに書く書き方です。**
+
+値には種類があり、プログラムでは値の種類を「型」と呼びます。
+型注釈は、値の種類をコロンの後ろに書く書き方です。
+
+```ts
+// 本の値段を受け取り、支払う金額を返す関数
+function addShipping(price: number): number {
+  // 受け取った値段に、送料の 500 を足して返す
+  return price + 500;
+}
+```
+
+- `price: number` は、引数 price が数値だという型注釈です。number は数値を表す型です。
+- かっこの後ろの `: number` は、戻り値が数値だという型注釈です。
+- 引数の型はかっこの中、戻り値の型はかっこの後ろに書きます。
+
+値の種類は、数値だけではありません。文字を表す型は `string` と書きます。
+この関数が受け取るのは本の値段という金額なので、数値の `number` を選んでいます。
+
+型注釈を書いておくと、種類の合わない値を渡したときにエラーで知らされます。
+`number` や `string` は言語で決まっている書き方で、つづりを変えられません。
+
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
+
+参考: サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。
+
+## 1-1-3 関数を呼び出す
+
+> **関数は、名前の後ろのかっこに値を書いて呼び出すと動きます。**
+
+関数は、書いただけでは動きません。呼び出して初めて動きます。
+呼び出すには、関数の名前の後ろにかっこを書き、その中に渡す値を書きます。
+
+```ts
+// 本の値段を受け取り、支払う金額を返す関数
+function addShipping(price: number): number {
+  // 受け取った値段に、送料の 500 を足して返す
+  return price + 500;
+}
+// 1200 円の本の値段を渡して関数を呼び、戻り値を表示する
+console.log(addShipping(1200));
+// 結果: 1700
+// 800 円の本の値段を渡して、もう一度呼ぶ
+console.log(addShipping(800));
+// 結果: 1300
+```
+
+- `addShipping(1200)` と書くと、`1200` が引数 price に入ります。
+- 関数の中で `500` が足され、戻り値の `1700` が呼び出した場所に戻ります。
+- 渡す値を変えれば、同じ関数を何度でも使えます。
+- `console.log` は、値を表示して確かめるために使っています。
+
+問題の関数には、先頭に `export` が付いています。
+`export` は、ほかのファイルからその関数を呼び出せるようにする印です。
+課題では確認用のプログラムが関数を呼び出すので、自分で呼び出しの行を書く必要はありません。
+
+説明とコード例は教材用に独自作成しています。課題の解答コードは載せていません。
+
+参考: サバイバルTypeScript [関数宣言](https://typescriptbook.jp/reference/functions/function-declaration)。
+
+## 1-1-4 文字列の書き方
 
 > **文字は引用符で囲んで書き、その種類を string と呼びます。**
 
@@ -90,7 +149,7 @@ orderCount("3");
 
 参考: サバイバルTypeScript [string型](https://typescriptbook.jp/reference/values-types-variables/string)・[型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)。
 
-## 1-1-2 値に名前を付ける
+## 1-1-5 値に名前を付ける
 
 > **const で変数を作ると、値に名前が付き、その名前で値を使えます。**
 
@@ -131,7 +190,7 @@ const で作った変数には、あとから別の値を入れ直せません�
 
 参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。
 
-## 1-1-2a 計算した結果を入れる
+## 1-1-6 計算した結果を入れる
 
 > **イコールの右側が先に計算され、その結果が変数に入ります。**
 
@@ -167,7 +226,7 @@ console.log(total);
 
 参考: サバイバルTypeScript [letとconst](https://typescriptbook.jp/reference/values-types-variables/let-and-const)・[number型](https://typescriptbook.jp/reference/values-types-variables/number)。
 
-## 1-1-2b 掛け算の書き方
+## 1-1-7 掛け算の書き方
 
 > **掛け算は、アスタリスクという記号で書きます。**
 
@@ -198,7 +257,7 @@ console.log(half);
 
 参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。
 
-## 1-1-2c 小数点以下を切り捨てる
+## 1-1-8 小数点以下を切り捨てる
 
 > **Math.floor を使うと、小数点以下を切り捨てた整数になります。**
 
@@ -234,7 +293,7 @@ console.log(points);
 
 参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。
 
-## 1-1-3 割り算と切り上げ
+## 1-1-9 割り算と切り上げ
 
 > **割り算の結果を Math.ceil に渡すと、大きい側の整数へ切り上げられます。**
 
@@ -276,7 +335,7 @@ console.log(share);
 
 参考: サバイバルTypeScript [number型](https://typescriptbook.jp/reference/values-types-variables/number)。箱数と送料の例、丸めの補足は教材用に独自作成しています。
 
-## 1-1-4 余りと文字の組み立て
+## 1-1-10 余りと文字の組み立て
 
 > **余りを求め、テンプレートリテラルに値を埋め込むと、数を説明する文を作れます。**
 

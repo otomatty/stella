@@ -1,27 +1,18 @@
 {
   "schema": 2,
   "brief": {
-    "goal": "関数のコードを読んで、何を受け取り、何を返すかを言える。",
+    "goal": "関数のコードを読んで、何を受け取り、どんな処理をして、何を返すかを言える。",
     "stuck": "関数を初めて見て、どこが入口でどこが出口か分からず、記号の並びにしか見えない。",
     "points": ["関数は、値を受け取り、決まった処理をして、値を返すまとまり。"],
     "leaveOut": [
-      "export の詳しい仕組みと、テストの読み方",
-      "string の値の書き方と、型が合わないときのエラー",
-      "const による変数宣言と計算",
+      "コロンと number の型注釈 (次の動画)",
+      "関数を呼び出す書き方 (あとの動画)",
+      "export の意味 (あとの動画)",
       "引数が 2 つ以上ある関数",
       "問1の答えのコード"
     ]
   },
   "art": {
-    "robot": {
-      "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) stands behind a long plain shop counter, exactly in the center of the image, drawn large. Composition strictly left to right with wide gaps between three parts: on the left third of the counter, one small plain cardboard parcel; in the center, the robot holds a parcel with both hands; on the right third of the counter, one finished gift box with a ribbon bow. Front view of the counter, no shelves, no background objects. No people.",
-      "aspect": "16:9",
-      "regions": {
-        "in": [0.2, 0.45, 0.13, 0.21],
-        "body": [0.38, 0.14, 0.24, 0.5],
-        "out": [0.675, 0.41, 0.15, 0.25]
-      }
-    },
     "order": {
       "prompt": "The learner sits at a desk on the left half of the image, looking at an open laptop on the right half. The laptop screen shows a blue web browser window with a simple online bookshop page: one large book cover shape and a small shopping cart shape. A cardboard delivery box sits on the desk beside the laptop.",
       "aspect": "16:9",
@@ -52,9 +43,6 @@
     },
     "tax": {
       "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
-    },
-    "text": {
-      "prompt": "A large rounded speech bubble and a blank name tag card, each filled only with a few horizontal placeholder lines of different lengths in light grey. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     },
     "rule": {
       "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
@@ -202,24 +190,6 @@
         }
       ]
     },
-    "kinds": {
-      "cols": 2,
-      "rows": 1,
-      "nodes": [
-        {
-          "id": "knum",
-          "label": "数値",
-          "art": "total",
-          "at": [1, 1]
-        },
-        {
-          "id": "kstr",
-          "label": "文字",
-          "art": "text",
-          "at": [2, 1]
-        }
-      ]
-    },
     "parts": {
       "cols": 2,
       "rows": 1,
@@ -245,44 +215,33 @@
       "kind": "view",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:robot",
+      "image": "art:order",
       "beats": [
         {
-          "say": "この動画では、関数を学びます。"
+          "say": "この動画で学ぶのは、関数です。"
         },
         {
-          "say": "関数には、値を受け取る入口があるんです。",
-          "spot": ["in"],
+          "say": "ネットのお店で本を買うと、送料が足されます。",
+          "spot": ["laptop"],
           "label": [
             {
-              "at": "in",
-              "text": "受け取る"
+              "at": "laptop",
+              "text": "値段と送料"
             }
           ]
         },
         {
-          "say": "中では、決まった処理をします。",
-          "spot": ["body"],
+          "say": "このような決まった計算を受け持つのが、関数です。",
           "label": [
             {
-              "at": "body",
-              "text": "処理する"
-            }
-          ]
-        },
-        {
-          "say": "そして、出口から値を返してくれますね。",
-          "spot": ["out"],
-          "label": [
-            {
-              "at": "out",
-              "text": "返す"
+              "at": "laptop",
+              "text": "決まった計算"
             }
           ],
           "pause": 1
         },
         {
-          "say": "見終えると、関数の基本的な形が分かるようになりますよ。",
+          "say": "見終えると、関数の基本的な形が分かるようになります。",
           "dialog": {
             "title": "関数の基本的な形が分かるようになります",
             "code": [
@@ -298,41 +257,14 @@
       ]
     },
     {
-      "id": "order",
-      "kind": "view",
-      "role": "example",
-      "title": "ネットで本を買う",
-      "image": "art:order",
-      "beats": [
-        {
-          "say": "まず、身近な例で考えましょう。"
-        },
-        {
-          "say": "ネットのお店で、本を1冊買います。",
-          "speech": "ネットのお店で、本を一冊買います。",
-          "spot": ["laptop"]
-        },
-        {
-          "say": "本の値段に送料を足した金額を、支払いますね。",
-          "label": [
-            {
-              "at": "laptop",
-              "text": "値段と送料"
-            }
-          ],
-          "pause": 1
-        }
-      ]
-    },
-    {
       "id": "flow",
       "role": "example",
       "title": "お店の計算の流れ",
       "board": "shop",
       "beats": [
         {
-          "say": "本の値段は、1200円です。",
-          "speech": "本の値段は、千二百円です。",
+          "say": "本の値段は、1200円だとします。",
+          "speech": "本の値段は、千二百円だとします。",
           "show": ["price"],
           "tag": {
             "price": "1200円"
@@ -340,12 +272,12 @@
           "pulse": ["price"]
         },
         {
-          "say": "お店には、送料を足す係がいます。",
+          "say": "お店には、送料を足す係がいるとしましょう。",
           "show": ["fee"],
           "pulse": ["fee"]
         },
         {
-          "say": "この係に、本の値段を渡してみましょう。",
+          "say": "この係に、本の値段を渡します。",
           "show": ["give"],
           "travel": {
             "along": ["give"],
@@ -353,16 +285,16 @@
           }
         },
         {
-          "say": "係は、送料の500円を足します。",
-          "speech": "係は、送料の五百円を足します。",
+          "say": "係が足す送料は、500円です。",
+          "speech": "係が足す送料は、五百円です。",
           "pulse": ["fee"],
           "tag": {
             "fee": "＋500円"
           }
         },
         {
-          "say": "そして、支払う金額の1700円を返してくれるんです。",
-          "speech": "そして、支払う金額の千七百円を返してくれるんです。",
+          "say": "支払う金額として、1700円が返ってきました。",
+          "speech": "支払う金額として、千七百円が返ってきました。",
           "show": ["back", "total"],
           "tag": {
             "total": "1700円"
@@ -371,8 +303,8 @@
             "along": ["back"],
             "icon": "send"
           },
-          "pause": 1,
-          "pulse": ["total"]
+          "pulse": ["total"],
+          "pause": 1
         }
       ]
     },
@@ -396,7 +328,7 @@
           "pulse": ["price"]
         },
         {
-          "say": "係がすることは、さっきと同じですね。",
+          "say": "係がすることは、さっきと変わりません。",
           "pulse": ["fee"]
         },
         {
@@ -412,26 +344,26 @@
           "pulse": ["total"]
         },
         {
-          "say": "受け取って、決まった処理をして、返しています。",
+          "say": "受け取って、決まった処理をして、返しました。",
           "travel": {
             "along": ["give", "back"],
             "icon": "send"
           },
-          "pause": 1,
-          "pulse": []
+          "pulse": [],
+          "pause": 1
         },
         {
-          "say": "この係のことを、プログラムでは関数と呼ぶんです。",
+          "say": "この係のことを、プログラムでは関数と呼びます。",
           "pulse": ["fee"],
           "tag": {
             "fee": "関数"
           },
-          "pause": 1.5,
           "term": {
             "text": "関数",
-            "note": "受け取って、処理して、返すもの",
-            "ruby": "かんすう"
-          }
+            "ruby": "かんすう",
+            "note": "受け取って、処理して、返すもの"
+          },
+          "pause": 1.5
         }
       ]
     },
@@ -453,7 +385,7 @@
       },
       "beats": [
         {
-          "say": "送料を足す係を、コードで書いてみます。",
+          "say": "送料を足す係を、コードで書いてみましょう。",
           "type": [0, 1, 4],
           "figure": {
             "untag": ["price", "total"]
@@ -480,8 +412,8 @@
           "pause": 1
         },
         {
-          "say": "add は、足すという意味の英語ですね。",
-          "speech": "アッドは、足すという意味の英語ですね。",
+          "say": "add は、足すという意味の英語です。",
+          "speech": "アッドは、足すという意味の英語です。",
           "part": {
             "line": 1,
             "text": "add",
@@ -489,8 +421,8 @@
           }
         },
         {
-          "say": "shipping は、送料という意味です。",
-          "speech": "シッピングは、送料という意味です。",
+          "say": "shipping は、送料を表します。",
+          "speech": "シッピングは、送料を表します。",
           "part": {
             "line": 1,
             "text": "Shipping",
@@ -498,7 +430,7 @@
           }
         },
         {
-          "say": "何をする関数かが、名前で分かるようにします。",
+          "say": "名前を読むだけで、何をする関数かが分かるでしょう。",
           "part": {
             "line": 1,
             "text": "addShipping",
@@ -541,12 +473,12 @@
           "say": "受け取る値を、引数と呼びます。",
           "term": {
             "text": "引数",
-            "note": "関数が受け取る値",
-            "ruby": "ひきすう"
+            "ruby": "ひきすう",
+            "note": "関数が受け取る値"
           },
           "part": {
             "line": 1,
-            "text": "price: number"
+            "text": "price"
           },
           "figure": {
             "tag": {
@@ -574,158 +506,17 @@
             "note": "値段"
           },
           "pause": 1
-        }
-      ]
-    },
-    {
-      "id": "types",
-      "kind": "code",
-      "role": "note",
-      "title": "型注釈で種類を決める",
-      "code": [
-        "// 本の値段を受け取り、支払う金額を返す関数",
-        "function addShipping(price: number): number {",
-        "  // 受け取った値段に、送料の 500 を足して返す",
-        "  return price + 500;",
-        "}"
-      ],
-      "show": [0, 1, 4],
-      "panel": {
-        "kind": "figure",
-        "board": "shop"
-      },
-      "beats": [
+        },
         {
-          "say": "コロンの後ろは、値の種類を表します。",
+          "say": "コロンと number は、次の動画で説明します。",
+          "speech": "コロンとナンバーは、次の動画で説明します。",
           "part": {
             "line": 1,
             "text": ": number"
+          },
+          "figure": {
+            "pulse": []
           }
-        },
-        {
-          "say": "number は、数値という意味です。",
-          "speech": "ナンバーは、数値という意味です。",
-          "part": {
-            "line": 1,
-            "text": "number",
-            "note": "数値"
-          },
-          "figure": {
-            "tag": {
-              "price": "数値"
-            },
-            "pulse": ["price"]
-          },
-          "pause": 1
-        },
-        {
-          "say": "つまり、引数は数値だと決めています。",
-          "part": {
-            "line": 1,
-            "text": "price: number"
-          }
-        },
-        {
-          "say": "かっこの後ろは、返す値の種類です。",
-          "part": {
-            "line": 1,
-            "text": "): number"
-          },
-          "figure": {
-            "tag": {
-              "total": "数値"
-            },
-            "pulse": ["total"]
-          }
-        },
-        {
-          "say": "この書き方を、型注釈と呼びます。",
-          "term": {
-            "text": "型注釈",
-            "note": "値の種類を書く書き方",
-            "ruby": "かたちゅうしゃく"
-          },
-          "focus": [1],
-          "pause": 1
-        }
-      ]
-    },
-    {
-      "id": "kinds",
-      "kind": "code",
-      "role": "note",
-      "title": "種類はほかにもある",
-      "code": [
-        "// 本の値段を受け取り、支払う金額を返す関数",
-        "function addShipping(price: number): number {",
-        "  // 受け取った値段に、送料の 500 を足して返す",
-        "  return price + 500;",
-        "}"
-      ],
-      "show": [0, 1, 4],
-      "panel": {
-        "kind": "figure",
-        "board": "kinds"
-      },
-      "beats": [
-        {
-          "say": "値の種類は、数値だけではありません。",
-          "part": {
-            "line": 1,
-            "text": "number"
-          },
-          "figure": {
-            "show": ["knum"],
-            "tag": {
-              "knum": "number"
-            },
-            "pulse": ["knum"]
-          }
-        },
-        {
-          "say": "文字を表す種類は、string と書きます。",
-          "speech": "文字を表す種類は、ストリングと書きます。",
-          "figure": {
-            "show": ["kstr"],
-            "tag": {
-              "kstr": "string"
-            },
-            "pulse": ["kstr"]
-          },
-          "pause": 1
-        },
-        {
-          "say": "名前や住所のような文字に使うんです。",
-          "figure": {
-            "focus": ["kstr"]
-          }
-        },
-        {
-          "say": "今回受け取るのは、本の値段という金額でしたね。",
-          "part": {
-            "line": 1,
-            "text": "price"
-          },
-          "figure": {
-            "pulse": ["knum"]
-          }
-        },
-        {
-          "say": "金額は数なので、数値の number にしています。",
-          "speech": "金額は数なので、数値のナンバーにしています。",
-          "part": {
-            "line": 1,
-            "text": "price: number"
-          },
-          "figure": {
-            "mark": [
-              {
-                "on": "knum",
-                "kind": "check"
-              }
-            ]
-          },
-          "pause": 1
         }
       ]
     },
@@ -785,8 +576,8 @@
           "say": "返す値を、戻り値と呼びます。",
           "term": {
             "text": "戻り値",
-            "note": "関数が返す値",
-            "ruby": "もどりち"
+            "ruby": "もどりち",
+            "note": "関数が返す値"
           },
           "part": {
             "line": 3,
@@ -808,6 +599,79 @@
             },
             "pulse": []
           }
+        }
+      ]
+    },
+    {
+      "id": "match",
+      "kind": "code",
+      "role": "apply",
+      "title": "例とコードを見くらべる",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "shop"
+      },
+      "beats": [
+        {
+          "say": "では、最初の例とコードを見くらべましょう。",
+          "figure": {
+            "pulse": ["price", "fee", "total"]
+          }
+        },
+        {
+          "say": "本の値段にあたるのが、引数の price です。",
+          "speech": "本の値段にあたるのが、引数のプライスです。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
+          "figure": {
+            "pulse": ["price"]
+          }
+        },
+        {
+          "say": "送料を足す係の仕事は、波かっこの中に書きました。",
+          "part": {
+            "line": 3,
+            "text": "price + 500"
+          },
+          "figure": {
+            "pulse": ["fee"]
+          }
+        },
+        {
+          "say": "支払う金額は、return で返す戻り値です。",
+          "speech": "支払う金額は、リターンで返す戻り値です。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["total"]
+          }
+        },
+        {
+          "say": "1200 を受け取れば、1700 を返します。",
+          "speech": "千二百を受け取れば、千七百を返します。",
+          "figure": {
+            "tag": {
+              "price": "1200",
+              "total": "1700"
+            },
+            "travel": {
+              "along": ["give", "back"]
+            },
+            "pulse": []
+          },
+          "pause": 1
         }
       ]
     },
@@ -871,7 +735,7 @@
           }
         },
         {
-          "say": "かっこやコロンなどの記号も、決まった書き方ですね。",
+          "say": "かっこやコロンなどの記号も、決まった書き方です。",
           "classify": {
             "fixed": [
               {
@@ -903,8 +767,8 @@
           "pause": 1
         },
         {
-          "say": "addShipping と price は、自分で付けた名前です。",
-          "speech": "アッドシッピングとプライスは、自分で付けた名前です。",
+          "say": "addShipping と price は、自分で付けました。",
+          "speech": "アッドシッピングとプライスは、自分で付けました。",
           "classify": {
             "free": [
               {
@@ -929,8 +793,8 @@
           }
         },
         {
-          "say": "足す数の 500 も、自分で決めています。",
-          "speech": "足す数の五百も、自分で決めています。",
+          "say": "足す数の 500 も、自分で決めた値です。",
+          "speech": "足す数の五百も、自分で決めた値です。",
           "classify": {
             "free": [
               {
@@ -944,116 +808,23 @@
       ]
     },
     {
-      "id": "call",
-      "kind": "code",
-      "role": "apply",
-      "title": "関数を呼び出す",
-      "code": [
-        "// 本の値段を受け取り、支払う金額を返す関数",
-        "function addShipping(price: number): number {",
-        "  // 受け取った値段に、送料の 500 を足して返す",
-        "  return price + 500;",
-        "}",
-        "// 1200 円の本の値段を渡して、関数を呼ぶ",
-        "addShipping(1200);"
-      ],
-      "show": [0, 1, 2, 3, 4],
-      "panel": {
-        "kind": "figure",
-        "board": "shop"
-      },
-      "beats": [
-        {
-          "say": "では、最初の例をこの関数で動かしてみましょう。",
-          "type": [5, 6],
-          "figure": {
-            "show": ["price", "give", "fee", "back", "total"],
-            "tag": {
-              "fee": "＋500"
-            }
-          }
-        },
-        {
-          "say": "名前の後ろのかっこに、渡す値を書きます。",
-          "part": {
-            "line": 6,
-            "text": "(1200)"
-          }
-        },
-        {
-          "say": "これを、関数を呼び出すと言うんです。",
-          "term": {
-            "text": "呼び出す",
-            "ruby": "よびだす",
-            "note": "関数を使うこと"
-          },
-          "focus": [6],
-          "pause": 1
-        },
-        {
-          "say": "1200 が、引数の price に入ります。",
-          "speech": "千二百が、引数のプライスに入ります。",
-          "part": {
-            "line": 1,
-            "text": "price"
-          },
-          "figure": {
-            "tag": {
-              "price": "1200"
-            },
-            "travel": {
-              "along": ["give"]
-            },
-            "pulse": ["price"]
-          }
-        },
-        {
-          "say": "中で 500 を足すと、1700 ですね。",
-          "speech": "中で五百を足すと、千七百ですね。",
-          "part": {
-            "line": 3,
-            "text": "price + 500"
-          },
-          "figure": {
-            "pulse": ["fee"]
-          }
-        },
-        {
-          "say": "その 1700 が、呼び出した場所に戻ります。",
-          "speech": "その千七百が、呼び出した場所に戻ります。",
-          "focus": [6],
-          "figure": {
-            "tag": {
-              "total": "1700"
-            },
-            "travel": {
-              "along": ["back"]
-            },
-            "pulse": ["total"]
-          },
-          "pause": 1
-        }
-      ]
-    },
-    {
       "id": "quiz",
       "kind": "code",
       "role": "quiz",
-      "title": "戻ってくる値はいくつ",
+      "title": "返ってくる値はいくつ",
       "code": [
         "// 本の値段を受け取り、包装代を足して返す関数",
         "function addWrapping(price: number): number {",
         "  // 受け取った値段に、包装代の 300 を足して返す",
         "  return price + 300;",
-        "}",
-        "// 2000 円の本の値段を渡して、関数を呼ぶ",
-        "addWrapping(2000);"
+        "}"
       ],
-      "show": [0, 1, 2, 3, 4],
+      "show": true,
       "panel": {
         "kind": "figure",
         "board": "gift"
       },
+      "reset": true,
       "think": 8,
       "beats": [
         {
@@ -1082,9 +853,12 @@
           }
         },
         {
-          "say": "この関数に、2000 を渡して呼び出します。",
-          "speech": "この関数に、二千を渡して呼び出します。",
-          "type": [5, 6],
+          "say": "この関数が、2000 を受け取ったとします。",
+          "speech": "この関数が、二千を受け取ったとします。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
           "figure": {
             "tag": {
               "gprice": "2000"
@@ -1093,7 +867,7 @@
           }
         },
         {
-          "say": "戻ってくる値は、いくつでしょうか？",
+          "say": "返ってくる値は、いくつでしょうか？",
           "figure": {
             "mark": [
               {
@@ -1116,9 +890,7 @@
         "function addWrapping(price: number): number {",
         "  // 受け取った値段に、包装代の 300 を足して返す",
         "  return price + 300;",
-        "}",
-        "// 2000 円の本の値段を渡して、関数を呼ぶ",
-        "addWrapping(2000);"
+        "}"
       ],
       "show": true,
       "panel": {
@@ -1155,9 +927,7 @@
         "function addWrapping(price: number): number {",
         "  // 受け取った値段に、包装代の 300 を足して返す",
         "  return price + 300;",
-        "}",
-        "// 2000 円の本の値段を渡して、関数を呼ぶ",
-        "addWrapping(2000);"
+        "}"
       ],
       "show": true,
       "panel": {
@@ -1199,8 +969,8 @@
           "focus": [3]
         },
         {
-          "say": "return で、2300 が呼び出した場所へ戻るんです。",
-          "speech": "リターンで、二千三百が呼び出した場所へ戻るんです。",
+          "say": "この 2300 を、return が返しました。",
+          "speech": "この二千三百を、リターンが返しました。",
           "part": {
             "line": 3,
             "text": "return"
@@ -1213,7 +983,7 @@
           }
         },
         {
-          "say": "入口、中身、出口の順に読めば答えが分かりますね。",
+          "say": "入口、中身、出口の順に読めば、答えが分かります。",
           "figure": {
             "travel": {
               "along": ["ggive", "gback"]
@@ -1245,50 +1015,14 @@
           "pulse": ["split"]
         },
         {
-          "say": "ゲームでも、点数の計算を関数にまとめているんです。",
+          "say": "ゲームの点数を計算するのも、関数の仕事です。",
           "show": ["game"],
           "pulse": ["game"]
         },
         {
-          "say": "一度作れば、値を変えて何度でも呼び出せますね。",
+          "say": "一度作れば、値を変えて何度でも使えます。",
           "pulse": ["cart", "split", "game"],
           "pause": 1
-        }
-      ]
-    },
-    {
-      "id": "next",
-      "kind": "view",
-      "role": "next",
-      "title": "このあとの問題では",
-      "image": "art:robot",
-      "beats": [
-        {
-          "say": "このあとの問題では、関数の中身を書きます。",
-          "spot": ["body"],
-          "label": [
-            {
-              "at": "body",
-              "text": "ここを書く"
-            }
-          ]
-        },
-        {
-          "say": "入口と出口は、最初から書いてあるんです。",
-          "spot": ["in", "out"]
-        },
-        {
-          "say": "何を受け取り、何を返すかを、まず読みましょう。",
-          "label": [
-            {
-              "at": "in",
-              "text": "受け取る"
-            },
-            {
-              "at": "out",
-              "text": "返す"
-            }
-          ]
         }
       ]
     },
@@ -1329,8 +1063,8 @@
           }
         },
         {
-          "say": "tax は、税金という意味の英語ですね。",
-          "speech": "タックスは、税金という意味の英語ですね。",
+          "say": "tax は、税金を表します。",
+          "speech": "タックスは、税金を表します。",
           "part": {
             "line": 2,
             "text": "Tax",
@@ -1338,11 +1072,8 @@
           }
         },
         {
-          "say": "値段を受け取って、税込の金額を返します。",
-          "part": {
-            "line": 2,
-            "text": "(price: number): number"
-          },
+          "say": "値段を受け取り、税込の金額を返す関数です。",
+          "focus": [2],
           "figure": {
             "travel": {
               "along": ["tgive", "tback"]
@@ -1352,16 +1083,15 @@
           "pause": 1
         },
         {
-          "say": "export は、ほかのファイルから使えるようにする印です。",
-          "speech": "エクスポートは、ほかのファイルから使えるようにする印です。",
+          "say": "先頭の export は、あとの動画で説明します。",
+          "speech": "先頭のエクスポートは、あとの動画で説明します。",
           "part": {
             "line": 2,
-            "text": "export",
-            "note": "外へ出す"
+            "text": "export"
           }
         },
         {
-          "say": "書くのは、波かっこの中だけですよ。",
+          "say": "書くのは、波かっこの中だけです。",
           "part": {
             "line": 3,
             "text": "// ここに書く"
@@ -1376,9 +1106,5 @@
         }
       ]
     }
-  ],
-  "polish": {
-    "model": "gemini-4-argon",
-    "sayHash": "d44e366534f72e5edb7214552ee862c96d64177a80a755b3fd0b8cb27698dd25"
-  }
+  ]
 }
