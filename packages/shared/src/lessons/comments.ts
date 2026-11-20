@@ -21,10 +21,10 @@ export type CommentPosition =
   | { state: "current" | "outdated"; positionSec: number }
   | { state: "untimed" | "orphaned"; positionSec: null };
 
-export function sceneAt(
-  scenes: readonly VideoScene[] | null,
+export function sceneAt<Scene extends Pick<VideoScene, "startSec" | "durationSec">>(
+  scenes: readonly Scene[] | null,
   positionSec: number,
-): VideoScene | null {
+): Scene | null {
   return (
     scenes?.find((scene, index) => {
       const end = scene.startSec + scene.durationSec;
@@ -104,7 +104,11 @@ export interface CommentMarker {
   id: string;
   position_sec: number;
   resolved: boolean;
+  author_name: string;
+  excerpt: string;
 }
+
+export type CommentFilter = "all" | "mine" | "scene";
 
 export interface LessonCommentsResponse {
   video: { scenes: { id: string; start_sec: number; duration_sec: number }[] };

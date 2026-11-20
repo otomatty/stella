@@ -309,7 +309,9 @@ describe("動画レッスンのコメント API", () => {
     expect(resolved.status).toBe(200);
     expect(await json(resolved)).toEqual({ resolved: true });
     const response = await list("", other);
-    expect(response.markers).toEqual([{ id: root.id, position_sec: 5, resolved: true }]);
+    expect(response.markers).toEqual([
+      { id: root.id, position_sec: 5, resolved: true, author_name: "受講者", excerpt: "コメント" },
+    ]);
     expect(response.threads[0]).toMatchObject({
       resolved: true,
       can_delete: false,
@@ -380,6 +382,72 @@ describe("動画レッスンのコメント API", () => {
     });
     expect(archived.markers).toEqual(active.markers);
     expect(archived.markers).toHaveLength(3);
+  });
+
+  it("自分のスレッドだけを返し、印は全体の投稿者名と本文の先頭 60 文字を返す", async () => {
+    const mine = await create(learner, { positionSec: 5 });
+    const theirs = await create(other, {
+      positionSec: 7,
+      body: `本文\r\n続き\n${"あ".repeat(60)}`,
+    });
+    await create<CommentReply>(learner, { parentId: theirs.id });
+
+    const filtered = await list("&filter=mine");
+    expect(filtered.total).toBe(1);
+    expect(filtered.threads.map(({ id }) => id)).toEqual([mine.id]);
+    expect(filtered.markers).toHaveLength(2);
+    expect(filtered.markers).toContainEqual({
+      id: theirs.id,
+      position_sec: 7,
+      resolved: false,
+      author_name: "別の受講者",
+      excerpt: `本文 続き ${"あ".repeat(54)}`,
+    });
+  });
+
+  it("現在の動画に引き直した場面で絞り込み、印と場面不明の件数は全体を返す", async () => {
+    const intro = await create(learner, { positionSec: 9 });
+    const search = await create(learner, { positionSec: 12 });
+    await create(learner, { positionSec: 25 });
+    await create();
+    db.sqlite
+      .prepare("UPDATE lessons SET video_path = 'new.mp4', video_scenes = ? WHERE id = 'video'")
+      .run(
+        JSON.stringify([
+          { ...initialScenes[0], durationSec: 6 },
+          { ...initialScenes[1], startSec: 6 },
+        ]),
+      );
+
+    const result = await list(`&filter=scene&sceneId=intro&include=${search.id}`);
+    expect(result.total).toBe(1);
+    expect(result.threads).toMatchObject([{ id: intro.id, scene_id: "intro", position_sec: 6 }]);
+    expect(result.orphaned_count).toBe(1);
+    expect(result.markers).toHaveLength(2);
+    expect((await call(`${path}?lessonId=video&filter=scene`, learner)).status).toBe(400);
+    expect((await call(`${path}?lessonId=video&filter=invalid`, learner)).status).toBe(400);
+  });
+
+  it("対象のスレッドをページの先頭に追加し、件数と既に入っているスレッドの順序を保つ", async () => {
+    const first = await create(learner, { positionSec: 2 });
+    const second = await create(learner, { positionSec: 8 });
+    const otherThread = await create(other, { positionSec: 12 });
+    const foreign = await create(learner, { lessonId: lessons.legacy });
+
+    const included = await list(`&limit=1&include=${second.id}`);
+    expect(included.total).toBe(3);
+    expect(included.threads.map(({ id }) => id)).toEqual([second.id, first.id]);
+
+    const alreadyInPage = await list(`&limit=2&include=${second.id}`);
+    expect(alreadyInPage.threads.map(({ id }) => id)).toEqual([first.id, second.id]);
+
+    const emptyPage = await list(`&offset=100&include=${second.id}`);
+    expect(emptyPage.threads.map(({ id }) => id)).toEqual([second.id]);
+
+    for (const query of [`&filter=mine&include=${otherThread.id}`, `&include=${foreign.id}`]) {
+      expect((await list(`&limit=1${query}`)).threads.map(({ id }) => id)).toEqual([first.id]);
+    }
+    expect((await list(`&scope=orphaned&include=${second.id}`)).threads).toEqual([]);
   });
 
   it("参加者が D1 のバインド上限より多くても通知し、表示する返信は 200 件まで", async () => {

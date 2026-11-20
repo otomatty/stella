@@ -123,7 +123,7 @@ async function readableVideo(db: Db, caller: Caller, lessonId: string) {
 }
 
 async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
-  // ページは最大 50 件。返信・メンションもページの ID で絞り、個々の返信 ID はバインドしない。
+  // ページは include を含めて最大 51 件。返信・メンションもページの ID で絞り、個々の返信 ID はバインドしない。
   const rankedReplies = db
     .select({
       id: lessonComments.id,
@@ -191,13 +191,24 @@ function sceneResponse(scenes: VideoScene[] | null): LessonCommentsResponse["vid
 lessonCommentsRoute.get(PATH, async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const { lessonId, scope = "active", sort = "time" } = c.req.query();
+    const {
+      lessonId,
+      scope = "active",
+      sort = "time",
+      filter = "all",
+      sceneId,
+      include,
+    } = c.req.query();
     const offset = Number(c.req.query("offset") ?? 0);
     const limit = Number(c.req.query("limit") ?? COMMENT_PAGE_SIZE);
     if (!lessonId) throw new ApiError("lessonId が必要です", 400);
     if (scope !== "active" && scope !== "orphaned")
       throw new ApiError("scope の指定が不正です", 400);
     if (sort !== "time" && sort !== "new") throw new ApiError("sort の指定が不正です", 400);
+    if (filter !== "all" && filter !== "mine" && filter !== "scene") {
+      throw new ApiError("filter の指定が不正です", 400);
+    }
+    if (filter === "scene" && !sceneId) throw new ApiError("sceneId が必要です", 400);
     if (
       !Number.isSafeInteger(offset) ||
       offset < 0 ||
@@ -219,8 +230,15 @@ lessonCommentsRoute.get(PATH, async (c) => {
     if (video.videoPath === null) return c.json(response);
 
     const roots = await db
-      .select(anchorColumns)
+      .select({
+        ...anchorColumns,
+        userId: lessonComments.userId,
+        authorName: profiles.displayName,
+        excerpt: sql<string>`substr(replace(replace(replace(
+          ${lessonComments.body}, char(13, 10), ' '), char(13), ' '), char(10), ' '), 1, 60)`,
+      })
       .from(lessonComments)
+      .innerJoin(profiles, eq(profiles.id, lessonComments.userId))
       .where(and(eq(lessonComments.lessonId, lessonId), isNull(lessonComments.parentId)))
       .orderBy(desc(lessonComments.createdAt), desc(lessonComments.id))
       .limit(ROOT_LIMIT);
@@ -236,11 +254,22 @@ lessonCommentsRoute.get(PATH, async (c) => {
           id: root.id,
           position_sec: position.positionSec,
           resolved: root.resolvedAt !== null,
+          author_name: root.authorName,
+          excerpt: root.excerpt,
         });
       }
-      if ((scope === "orphaned") === (position.state === "orphaned")) {
-        matches.push({ root, position });
-      }
+      if ((scope === "orphaned") !== (position.state === "orphaned")) continue;
+      if (filter === "mine" && root.userId !== caller.id) continue;
+
+      // 引き直した位置が場面の末尾でも、対応先は元と同じ ID の場面。
+      const currentSceneId =
+        position.positionSec === null
+          ? null
+          : root.videoPath === video.videoPath
+            ? (sceneAt(video.scenes, position.positionSec)?.id ?? null)
+            : root.sceneId;
+      if (filter === "scene" && currentSceneId !== sceneId) continue;
+      matches.push({ root, position, sceneId: currentSceneId });
     }
     if (scope === "active" && sort === "time") {
       matches.sort((a, b) => {
@@ -254,6 +283,10 @@ lessonCommentsRoute.get(PATH, async (c) => {
     }
 
     const page = matches.slice(offset, offset + limit);
+    if (include && !page.some(({ root }) => root.id === include)) {
+      const included = matches.find(({ root }) => root.id === include);
+      if (included) page.unshift(included);
+    }
     response.total = matches.length;
     response.orphaned_count = orphanedCount;
     response.markers = markers;
@@ -264,16 +297,9 @@ lessonCommentsRoute.get(PATH, async (c) => {
       caller,
       page.map(({ root }) => root.id),
     );
-    for (const { root, position } of page) {
+    for (const { root, position, sceneId } of page) {
       const entry = entries.roots.get(root.id);
       if (!entry) continue;
-      // 引き直した位置が場面の末尾でも、対応先は元と同じ ID の場面。
-      const sceneId =
-        position.positionSec === null
-          ? null
-          : root.videoPath === video.videoPath
-            ? (sceneAt(video.scenes, position.positionSec)?.id ?? null)
-            : root.sceneId;
       response.threads.push(
         threadResponse(
           entry,

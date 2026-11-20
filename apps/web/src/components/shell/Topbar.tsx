@@ -28,6 +28,7 @@ interface TopbarProps {
     onAfterCreateAnnouncement: () => void;
     stages: Stage[];
     onOpenSubmission?: (submissionId: string) => void;
+    onOpenLessonThread?: (stageId: string, lessonId: string, threadId: string) => void;
   };
 }
 
@@ -94,6 +95,7 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
         onAfterCreateAnnouncement={notify.onAfterCreateAnnouncement}
         stages={notify.stages}
         onOpenSubmission={notify.onOpenSubmission}
+        onOpenLessonThread={notify.onOpenLessonThread}
       />
       {/* ライト / ダークの切り替え。 未選択のうちは OS 設定に追従し、 押した時点で固定される。 */}
       <button

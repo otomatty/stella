@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { VideoViewer } from "./VideoViewer";
+import { type VideoCommentControls, VideoViewer } from "./VideoViewer";
 
 /** 字幕・ポスターは動画と同じキーの拡張子違い。 */
 export function SlideLessonMedia({
@@ -12,7 +12,8 @@ export function SlideLessonMedia({
   nextLessonMeta,
   onAdvanceNext,
   children,
-}: {
+  ...videoControls
+}: VideoCommentControls & {
   lessonId: string;
   videoPath?: string | null;
   onComplete?: () => void;
@@ -47,6 +48,7 @@ export function SlideLessonMedia({
       ) : null}
       {!showSlidesToggle || mode === "video" ? (
         <VideoViewer
+          {...videoControls}
           lessonId={lessonId}
           videoPath={videoPath}
           captionsPath={videoPath.replace(/\.mp4$/, ".vtt")}

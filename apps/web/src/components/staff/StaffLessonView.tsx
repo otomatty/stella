@@ -18,7 +18,14 @@ import {
   LESSON_TYPE_LABELS,
 } from "./staff-stage-detail";
 
-export function StaffLessonView({ stageId, lessonId }: { stageId: string; lessonId: string }) {
+export function StaffLessonView({
+  stageId,
+  lessonId,
+}: {
+  stageId: string;
+  lessonId: string;
+  focusThreadId?: string;
+}) {
   const [data, setData] = useState<StageWithChildren | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

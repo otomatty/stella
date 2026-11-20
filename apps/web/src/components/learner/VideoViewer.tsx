@@ -10,7 +10,16 @@
  * - 読み込み失敗時のリトライ + ダウンロード fallback
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type Ref,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { CommentMarker } from "@stella/shared/lessons/comments";
 import {
   Play,
   Pause,
@@ -32,9 +41,36 @@ import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
 import { flushNow } from "@/lib/lesson-progress";
 import { useAutoplayNext } from "@/lib/autoplay-pref";
 import { cn } from "@/lib/utils";
-import { formatSeekValue, formatVideoTime, timeAtPointer } from "@/lib/video-player";
+import {
+  clusterMarkers,
+  formatSeekValue,
+  formatVideoTime,
+  timeAtPointer,
+} from "@/lib/video-player";
 
-interface Props {
+export interface VideoPlaybackState {
+  currentTime: number;
+  duration: number;
+  paused: boolean;
+  hasPlayed: boolean;
+  ended: boolean;
+}
+
+export interface VideoViewerHandle {
+  seekTo(sec: number): void;
+  pause(): void;
+  play(): void;
+}
+
+export interface VideoCommentControls {
+  markers?: readonly CommentMarker[];
+  onMarkerSelect?: (threadId: string) => void;
+  onPlaybackChange?: (state: VideoPlaybackState) => void;
+  ref?: Ref<VideoViewerHandle>;
+  autoAdvanceBlocked?: boolean;
+}
+
+interface Props extends VideoCommentControls {
   lessonId: string;
   videoPath: string;
   totalSec?: number;
@@ -69,13 +105,19 @@ function SeekBar({
   currentTime,
   duration,
   onSeek,
+  markers,
+  onMarkerSelect,
 }: {
   currentTime: number;
   duration: number;
   onSeek: (time: number) => void;
-}) {
+} & Pick<VideoCommentControls, "markers" | "onMarkerSelect">) {
   const position = Math.min(currentTime, duration);
   const percent = duration > 0 ? (position / duration) * 100 : 0;
+  const clusters = useMemo(
+    () => (markers ? clusterMarkers(markers, duration) : []),
+    [markers, duration],
+  );
 
   const seekAtPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     onSeek(timeAtPointer(event.clientX, event.currentTarget.getBoundingClientRect(), duration));
@@ -104,38 +146,79 @@ function SeekBar({
   };
 
   return (
-    <div
-      role="slider"
-      tabIndex={0}
-      aria-label="再生位置"
-      aria-valuemin={0}
-      aria-valuemax={Math.floor(duration)}
-      aria-valuenow={Math.floor(position)}
-      aria-valuetext={formatSeekValue(position, duration)}
-      onKeyDown={onKeyDown}
-      onPointerDown={(event) => {
-        if (event.button !== 0 || !event.isPrimary || duration <= 0) return;
-        event.currentTarget.setPointerCapture(event.pointerId);
-        seekAtPointer(event);
-      }}
-      onPointerMove={(event) => {
-        if (
-          event.isPrimary &&
-          duration > 0 &&
-          event.currentTarget.hasPointerCapture(event.pointerId)
-        ) {
+    <div className="relative">
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label="再生位置"
+        aria-valuemin={0}
+        aria-valuemax={Math.floor(duration)}
+        aria-valuenow={Math.floor(position)}
+        aria-valuetext={formatSeekValue(position, duration)}
+        onKeyDown={onKeyDown}
+        onPointerDown={(event) => {
+          if (event.button !== 0 || !event.isPrimary || duration <= 0) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
           seekAtPointer(event);
-        }
-      }}
-      className="flex h-6 w-full touch-none cursor-pointer select-none items-center rounded focus-visible:outline-2 focus-visible:outline-white"
-    >
-      <div className="pointer-events-none relative h-1 w-full rounded-full bg-white/35">
-        <div className="h-full rounded-full bg-white" style={{ width: `${percent}%` }} />
-        <div
-          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-          style={{ left: `${percent}%` }}
-        />
+        }}
+        onPointerMove={(event) => {
+          if (
+            event.isPrimary &&
+            duration > 0 &&
+            event.currentTarget.hasPointerCapture(event.pointerId)
+          ) {
+            seekAtPointer(event);
+          }
+        }}
+        className="flex h-6 w-full touch-none cursor-pointer select-none items-center rounded focus-visible:outline-2 focus-visible:outline-white"
+      >
+        <div className="pointer-events-none relative h-1 w-full rounded-full bg-white/35">
+          <div className="h-full rounded-full bg-white" style={{ width: `${percent}%` }} />
+          <div
+            className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+            style={{ left: `${percent}%` }}
+          />
+        </div>
       </div>
+      {clusters.map((cluster) => {
+        const at = `${(cluster.positionSec / duration) * 100}%`;
+        const time = formatVideoTime(cluster.positionSec);
+        return (
+          <div key={cluster.ids[0]} className="group/marker pointer-events-none absolute inset-0">
+            <button
+              type="button"
+              aria-label={`${time} のコメント ${cluster.count}件`}
+              className="pointer-events-auto absolute top-0 grid size-6 -translate-x-1/2 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-white"
+              style={{ left: at }}
+              onClick={() => {
+                onSeek(cluster.positionSec);
+                onMarkerSelect?.(cluster.ids[0]);
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "grid place-items-center rounded-full border-2 border-violet-950 bg-(--sf-rose) text-[10px] font-bold leading-none text-violet-950",
+                  cluster.count === 1 ? "size-3" : "h-5 min-w-5 px-0.5",
+                  cluster.resolved && "opacity-60",
+                )}
+              >
+                {cluster.count > 1 ? cluster.count : null}
+              </span>
+            </button>
+            <div
+              className="invisible absolute bottom-full z-10 mb-1 w-48 max-w-full -translate-x-1/2 rounded-md border border-violet-300 bg-zinc-950 px-2 py-1 text-xs text-white shadow-md group-focus-within/marker:visible group-hover/marker:visible"
+              style={{ left: `clamp(min(6rem, 50%), ${at}, max(calc(100% - 6rem), 50%))` }}
+            >
+              <div className="truncate font-semibold">
+                {time} {cluster.authorName}
+              </div>
+              <div className="truncate">{cluster.excerpt}</div>
+              {cluster.count > 1 ? <div>ほか {cluster.count - 1} 件</div> : null}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -157,6 +240,11 @@ export function VideoViewer({
   nextLessonTitle = null,
   nextLessonMeta = null,
   onAdvanceNext,
+  markers,
+  onMarkerSelect,
+  onPlaybackChange,
+  ref,
+  autoAdvanceBlocked = false,
 }: Props) {
   const { entry, recordWatchTime, markComplete } = useLessonProgress(lessonId);
   const isCompleted = entry?.completed === true;
@@ -214,6 +302,40 @@ export function VideoViewer({
       video.textTracks.removeEventListener("change", syncCaptions);
     };
   }, []);
+  const hasPlayedRef = useRef(false);
+  const lastPlaybackState = useRef<VideoPlaybackState | null>(null);
+  const reportPlayback = useCallback(
+    (video: HTMLVideoElement, fromTimeUpdate = false) => {
+      if (!onPlaybackChange) return;
+      const previous = lastPlaybackState.current;
+      if (
+        fromTimeUpdate &&
+        (video.paused || Math.floor(previous?.currentTime ?? -1) === Math.floor(video.currentTime))
+      ) {
+        return;
+      }
+      const state = {
+        currentTime: video.currentTime,
+        duration: Number.isFinite(video.duration) ? video.duration : seekDuration,
+        paused: video.paused,
+        hasPlayed: hasPlayedRef.current,
+        ended: video.ended,
+      };
+      if (
+        previous?.currentTime === state.currentTime &&
+        previous.duration === state.duration &&
+        previous.paused === state.paused &&
+        previous.hasPlayed === state.hasPlayed &&
+        previous.ended === state.ended
+      ) {
+        return;
+      }
+      lastPlaybackState.current = state;
+      onPlaybackChange(state);
+    },
+    [onPlaybackChange, seekDuration],
+  );
+
   const completedRef = useRef(isCompleted);
   const lastSaveRef = useRef<number>(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -258,7 +380,8 @@ export function VideoViewer({
     if (captionsPath && track?.mode === "disabled") track.mode = "showing";
     resumePlayback();
     setCurrentTime(v.currentTime);
-  }, [captionsPath, resumePlayback, speed]);
+    reportPlayback(v);
+  }, [captionsPath, resumePlayback, speed, reportPlayback]);
 
   // メタデータが先に読み終わっていた場合は、 進捗が決着した時点で再開位置を当てる。
   useEffect(() => {
@@ -297,6 +420,7 @@ export function VideoViewer({
     if (!v) return;
     const sec = v.currentTime;
     setCurrentTime(sec);
+    reportPlayback(v, true);
     if (!recordProgress) {
       if (reachesVideoCompletion(sec, v.duration)) completeSlideVideo();
       return;
@@ -307,7 +431,7 @@ export function VideoViewer({
       saveTimerRef.current = null;
       flushSave(lastSaveRef.current);
     }, SAVE_DEBOUNCE_MS);
-  }, [recordProgress, completeSlideVideo, flushSave]);
+  }, [recordProgress, completeSlideVideo, flushSave, reportPlayback]);
 
   const onPauseOrEnded = useCallback(() => {
     setIsPlaying(false);
@@ -316,9 +440,12 @@ export function VideoViewer({
       saveTimerRef.current = null;
     }
     const v = videoRef.current;
-    if (v) flushSave(v.currentTime);
+    if (v) {
+      reportPlayback(v);
+      flushSave(v.currentTime);
+    }
     if (recordProgress) flushNow();
-  }, [flushSave, recordProgress]);
+  }, [flushSave, recordProgress, reportPlayback]);
 
   // 最後まで見終わったら次のレッスンへの導線を出す。 自動遷移が有効なら
   // カウントダウンも始める (見直しのために再生を再開したら取り消す)。
@@ -327,15 +454,20 @@ export function VideoViewer({
     completeSlideVideo();
     if (!canAdvance) return;
     setShowNextOverlay(true);
-    setCountdown(autoAdvance ? AUTO_ADVANCE_SEC : null);
-  }, [onPauseOrEnded, completeSlideVideo, canAdvance, autoAdvance]);
+    setCountdown(autoAdvance && !autoAdvanceBlocked ? AUTO_ADVANCE_SEC : null);
+  }, [onPauseOrEnded, completeSlideVideo, canAdvance, autoAdvance, autoAdvanceBlocked]);
 
-  const onPlay = useCallback(() => {
-    setIsPlaying(true);
-    // 見直しを始めたら勝手に次へ飛ばさない。
-    setShowNextOverlay(false);
-    setCountdown(null);
-  }, []);
+  const onPlay = useCallback(
+    (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      hasPlayedRef.current = true;
+      reportPlayback(event.currentTarget);
+      setIsPlaying(true);
+      // 見直しを始めたら勝手に次へ飛ばさない。
+      setShowNextOverlay(false);
+      setCountdown(null);
+    },
+    [reportPlayback],
+  );
 
   // unmount でフラッシュ。 flushSave の identity 変化で unmount 相当の保存を走らせない
   // biome-ignore lint/correctness/useExhaustiveDependencies: unmount 時だけフラッシュする
@@ -366,7 +498,7 @@ export function VideoViewer({
   }, [onAdvanceNext]);
 
   useEffect(() => {
-    if (countdown === null) return;
+    if (autoAdvanceBlocked || countdown === null) return;
     if (countdown <= 0) {
       setCountdown(null);
       setShowNextOverlay(false);
@@ -377,17 +509,24 @@ export function VideoViewer({
       setCountdown((sec) => (sec === null ? null : sec - 1));
     }, 1000);
     return () => clearTimeout(timer);
-  }, [countdown]);
+  }, [autoAdvanceBlocked, countdown]);
+
+  const play = useCallback(() => {
+    void videoRef.current?.play().catch(() => {
+      // 自動再生が拒否されても再生ボタンから再試行できる。
+    });
+  }, []);
+
+  const pause = useCallback(() => {
+    videoRef.current?.pause();
+  }, []);
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) {
-      v.play().catch(() => {
-        // autoplay 拒否は無視する
-      });
-    } else v.pause();
-  }, []);
+    if (v.paused) play();
+    else pause();
+  }, [play, pause]);
 
   const toggleMute = useCallback(() => {
     const v = videoRef.current;
@@ -405,10 +544,12 @@ export function VideoViewer({
 
   const seekTo = useCallback((time: number) => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !Number.isFinite(time)) return;
     video.currentTime = Math.max(0, Math.min(video.duration || Number.POSITIVE_INFINITY, time));
     setCurrentTime(video.currentTime);
   }, []);
+
+  useImperativeHandle(ref, () => ({ seekTo, pause, play }), [seekTo, pause, play]);
 
   const seek = useCallback(
     (deltaSec: number) => {
@@ -507,7 +648,8 @@ export function VideoViewer({
     onAdvanceNext?.();
   };
 
-  const advanceLabel = countdown === null ? "次へ進む" : `次へ進む (${countdown})`;
+  const advanceLabel =
+    autoAdvanceBlocked || countdown === null ? "次へ進む" : `次へ進む (${countdown})`;
   const togglePlaybackFromVideo = () => {
     containerRef.current?.focus({ preventScroll: true });
     togglePlay();
@@ -518,9 +660,7 @@ export function VideoViewer({
     setShowNextOverlay(false);
     containerRef.current?.focus({ preventScroll: true });
     seekTo(0);
-    videoRef.current?.play().catch(() => {
-      // 再生が拒否された場合は、再生ボタンから再試行できる。
-    });
+    play();
   };
 
   if (!url) {
@@ -603,6 +743,7 @@ export function VideoViewer({
               onClick={togglePlaybackFromVideo}
               onLoadedMetadata={onLoadedMetadata}
               onTimeUpdate={onTimeUpdate}
+              onSeeked={(event) => reportPlayback(event.currentTarget)}
               onVolumeChange={(event) => setIsMuted(event.currentTarget.muted)}
               onPlay={onPlay}
               onPause={onPauseOrEnded}
@@ -663,7 +804,7 @@ export function VideoViewer({
                         onChange={(event) => {
                           const enabled = event.target.checked;
                           setAutoAdvance(enabled);
-                          setCountdown(enabled ? AUTO_ADVANCE_SEC : null);
+                          setCountdown(enabled && !autoAdvanceBlocked ? AUTO_ADVANCE_SEC : null);
                         }}
                         className="shrink-0 accent-brand"
                       />
@@ -684,7 +825,13 @@ export function VideoViewer({
             ) : null}
           </div>
           <div className="shrink-0 bg-zinc-950 px-2 pb-1 text-white">
-            <SeekBar currentTime={currentTime} duration={seekDuration} onSeek={seekTo} />
+            <SeekBar
+              currentTime={currentTime}
+              duration={seekDuration}
+              onSeek={seekTo}
+              markers={markers}
+              onMarkerSelect={onMarkerSelect}
+            />
             <div className="flex flex-wrap items-center text-xs">
               <button
                 type="button"

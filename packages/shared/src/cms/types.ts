@@ -550,7 +550,10 @@ export type NotificationType =
   // 永続する通知としても残す。
   | "stage_cleared"
   // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。payload に submission_id。
-  | "review_comment";
+  | "review_comment"
+  | "lesson_comment"
+  | "lesson_comment_reply"
+  | "lesson_comment_mention";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。

@@ -42,6 +42,7 @@ interface NotificationCenterProps {
   /** お知らせのステージ指定に使う (任意。 空なら全員)。 */
   stages: Stage[];
   onOpenSubmission?: (submissionId: string) => void;
+  onOpenLessonThread?: (stageId: string, lessonId: string, threadId: string) => void;
 }
 
 const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; label: string }> = {
@@ -52,6 +53,9 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   learning_pace_delayed: { icon: Bell, tone: "text-warning", label: "学習ペース" },
   learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
   mentor_message: { icon: Send, tone: "text-brand", label: "管理者から" },
+  lesson_comment: { icon: MessageCircle, tone: "text-brand", label: "動画へのコメント" },
+  lesson_comment_reply: { icon: MessageCircle, tone: "text-brand", label: "コメントへの返信" },
+  lesson_comment_mention: { icon: MessageCircle, tone: "text-brand", label: "メンション" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージ完了" },
 };
 
@@ -81,6 +85,7 @@ export const NotificationCenter = ({
   onAfterCreateAnnouncement,
   stages,
   onOpenSubmission,
+  onOpenLessonThread,
 }: NotificationCenterProps) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -180,6 +185,25 @@ export const NotificationCenter = ({
                       key={n.id}
                       onClick={() => {
                         if (!n.read) onMarkRead(n.id);
+                        if (
+                          (n.type === "lesson_comment" ||
+                            n.type === "lesson_comment_reply" ||
+                            n.type === "lesson_comment_mention") &&
+                          onOpenLessonThread
+                        ) {
+                          const { stage_id, lesson_id, thread_id } = n.payload ?? {};
+                          if (
+                            typeof stage_id === "string" &&
+                            stage_id &&
+                            typeof lesson_id === "string" &&
+                            lesson_id &&
+                            typeof thread_id === "string" &&
+                            thread_id
+                          ) {
+                            onOpenLessonThread(stage_id, lesson_id, thread_id);
+                            setOpen(false);
+                          }
+                        }
                         if (
                           (n.type === "review_completed" || n.type === "review_comment") &&
                           onOpenSubmission

@@ -122,6 +122,41 @@ describe("スライドの動画表示", () => {
     expect(html).not.toContain("完了済み");
     expect(html).not.toContain("視聴 ");
   });
+  it("コメントの印をシークバーの外に描画し、近い印はまとめる", () => {
+    const html = renderToStaticMarkup(
+      createElement(VideoViewer, {
+        lessonId: "video",
+        videoPath: "video.mp4",
+        totalSec: 100,
+        markers: [
+          {
+            id: "a",
+            position_sec: 48,
+            resolved: false,
+            author_name: "受講者",
+            excerpt: "質問です",
+          },
+          { id: "b", position_sec: 75, resolved: true, author_name: "管理者", excerpt: "補足です" },
+          {
+            id: "c",
+            position_sec: 77,
+            resolved: true,
+            author_name: "受講者",
+            excerpt: "解決しました",
+          },
+        ],
+      }),
+    );
+    expect(html).toMatch(/<button[^>]+type="button"[^>]+aria-label="0:48 のコメント 1件"/);
+    expect(html).toMatch(/<button[^>]+type="button"[^>]+aria-label="1:15 のコメント 2件"/);
+    expect(html).not.toContain('aria-label="1:17 のコメント');
+    expect(html).toMatch(
+      /<div role="slider".*?<\/div><\/div><\/div><div[^>]*><button[^>]+aria-label="0:48 のコメント 1件"/,
+    );
+    expect(html).toContain("質問です");
+    expect(html).toContain("ほか 1 件");
+  });
+
   it.each([
     ["lesson", false],
     ["completed-lesson", true],

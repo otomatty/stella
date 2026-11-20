@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { CURRENT_USER } from "@/demo/fixtures";
 import type { Stage, Role, User } from "@/data/types";
@@ -134,6 +134,7 @@ function firstLessonId(stage: Stage): string | null {
 
 export function AppShell() {
   const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
@@ -388,6 +389,14 @@ export function AppShell() {
     [navigate],
   );
 
+  const openLessonThread = (stageId: string, lessonId: string, threadId: string) => {
+    void navigate({
+      to: "/stages/$stageId/lessons/$lessonId",
+      params: { stageId, lessonId },
+      search: { thread: threadId },
+    });
+  };
+
   /**
    * レッスン画面内での切替 (サイドバー / 次のレッスン) を受講位置と URL へ反映する。
    * replace で履歴を汚さない (戻るでレッスンを 1 つずつ遡らせない)。
@@ -397,13 +406,19 @@ export function AppShell() {
       setLastLocation((prev) =>
         prev?.stageId === stageId && prev.lessonId === lessonId ? prev : { stageId, lessonId },
       );
+      const current = router.state.matches.find(
+        (match) => match.routeId === "/_app/stages/$stageId/lessons/$lessonId",
+      );
+      // 同じレッスンの表示通知では、通知リンクの thread を残す。
+      if (current?.params.stageId === stageId && current.params.lessonId === lessonId) return;
       void navigate({
         to: "/stages/$stageId/lessons/$lessonId",
         params: { stageId, lessonId },
+        search: {},
         replace: true,
       });
     },
-    [navigate],
+    [navigate, router],
   );
 
   /** 検索パレットのヒットを開く。 受講者は受講画面、 staff はステージ管理画面へ。 */
@@ -588,6 +603,7 @@ export function AppShell() {
               onAfterCreateAnnouncement: () => void notifications.refetch(),
               stages: browseStages.stages,
               onOpenSubmission: openSubmissionResult,
+              onOpenLessonThread: openLessonThread,
             }}
           />
           <div

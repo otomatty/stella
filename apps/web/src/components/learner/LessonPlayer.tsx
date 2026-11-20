@@ -59,6 +59,7 @@ const SlidesViewer = lazy(() =>
 );
 
 interface LessonPlayerProps {
+  focusThreadId?: string;
   stage: Stage;
   setPage: (page: string) => void;
   studentName: string;
