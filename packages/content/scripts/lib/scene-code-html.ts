@@ -275,10 +275,12 @@ interface FigureRenderData {
   state: SceneState;
   timing: SceneTimeline;
   motions: { travel?: string[]; pause?: number }[];
+  /** schema 2 の入場と強調。無いときは schema 1 の式。 */
+  schema?: 2;
 }
 
 /** コード描画に重ねて、時刻ごとに図の状態を作る。 */
-function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderData) {
+function figureRuntime({ nodes, marks, state, timing, motions, schema }: FigureRenderData) {
   const win = window as unknown as ScenePageWindow;
   const setTime = win.__setTime;
   const overflows = win.__overflows;
@@ -287,12 +289,16 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
   const gap = nodes.length === 4 ? 44 : 48;
   const accent = "#E62F9A";
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
   const own = <T>(entries: Record<string, T> | undefined, id: string) =>
     entries && Object.hasOwn(entries, id) ? entries[id] : undefined;
   const safe = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   for (const beat of timing.beats)
     win.__busyRanges.push([beat.start, Math.max(beat.start + 0.6, beat.end) + 1 / 30]);
+  if (schema === 2)
+    for (const [index, beat] of timing.beats.entries())
+      if (state.beats[index]?.focus.length) win.__busyRanges.push([beat.end, beat.end + 0.2]);
 
   const draw = (time: number) => {
     const i = timing.beats.findLastIndex((beat) => beat.start <= time);
@@ -312,30 +318,107 @@ function figureRuntime({ nodes, marks, state, timing, motions }: FigureRenderDat
     const opacity = (id: string) => {
       const was = before.visible.includes(id);
       const is = after.visible.includes(id);
-      const fade = is ? (was ? 1 : clamp(elapsed / 0.5)) : was ? 1 - clamp(elapsed / 0.3) : 0;
+      const fade = is
+        ? was
+          ? 1
+          : schema === 2
+            ? ease(elapsed / 0.5)
+            : clamp(elapsed / 0.5)
+        : was
+          ? 1 - clamp(elapsed / 0.3)
+          : 0;
       return fade * (focus.length && !focus.includes(id) ? 0.3 : 1);
+    };
+    const emphasisAt = (id: string) => {
+      if (schema !== 2 || !beat || !timed) return 0;
+      const inBefore = (before.emphasis ?? []).includes(id);
+      const inAfter = (after.emphasis ?? []).includes(id);
+      const focused = beat.focus.includes(id);
+      if (beat.focus.length && time < timed.end) {
+        if (focused) return inBefore ? 1 : clamp(elapsed / 0.2);
+        return inBefore ? 1 - clamp(elapsed / 0.2) : 0;
+      }
+      if (beat.focus.length && time < timed.end + 0.2) {
+        const t = clamp((time - timed.end) / 0.2);
+        if (focused && inAfter) return 1;
+        if (focused) return 1 - t;
+        return inAfter ? t : 0;
+      }
+      if (inAfter && inBefore) return 1;
+      if (inAfter) return clamp(elapsed / 0.2);
+      if (inBefore) return 1 - clamp(elapsed / 0.2);
+      return 0;
     };
 
     panel.innerHTML = `<div class="figure-flow">${nodes
       .map(({ id, label, art, link }, index) => {
-        const pulse = beat?.pulse.includes(id) && elapsed < 0.6;
-        const scale = pulse ? 1 + 0.045 * Math.sin((elapsed / 0.6) * Math.PI) : 1;
+        const was = before.visible.includes(id);
+        const is = after.visible.includes(id);
+        const pulsing = beat?.pulse.includes(id) && elapsed < 0.6;
+        const scale =
+          schema === 2
+            ? !was && is
+              ? 0.94 + 0.06 * ease(elapsed / 0.5)
+              : 1
+            : pulsing
+              ? 1 + 0.045 * Math.sin((elapsed / 0.6) * Math.PI)
+              : 1;
         const focused = focus.includes(id);
-        const mark = own(after.marks, id);
-        const markScale = mark === own(before.marks, id) ? 1 : clamp(elapsed / 0.35);
+        const strength = emphasisAt(id);
+        const frame =
+          schema === 2
+            ? `border-width:${3 + strength}px;border-color:${strength === 0 ? "#DDDDE2" : strength === 1 ? accent : `rgba(230,47,154,${strength})`};background:white`
+            : `border-color:${pulsing || focused ? accent : "#DDDDE2"};background:${focused ? "rgba(230,47,154,0.08)" : "white"}`;
+        const beforeMark = own(before.marks, id);
+        const afterMark = own(after.marks, id);
+        let shownMark = afterMark;
+        let markStyle = "";
+        if (schema === 2) {
+          if (!beat) {
+            shownMark = own(state.start.marks, id);
+            markStyle = "opacity:1;transform:scale(1)";
+          } else if (afterMark && afterMark !== beforeMark) {
+            const entered = ease(elapsed / 0.35);
+            markStyle = `opacity:${entered};transform:scale(${0.94 + 0.06 * entered})`;
+          } else if (!afterMark && beforeMark) {
+            shownMark = beforeMark;
+            markStyle = `opacity:${1 - ease(elapsed / 0.3)};transform:scale(1)`;
+          } else if (afterMark) markStyle = "opacity:1;transform:scale(1)";
+        } else if (afterMark) {
+          const markScale = afterMark === beforeMark ? 1 : clamp(elapsed / 0.35);
+          markStyle = `transform:scale(${markScale})`;
+        }
         const from = own(before.tags, id);
         const to = own(after.tags, id);
         const old = from !== to && from !== undefined && elapsed < (to ? 0.15 : 0.2);
         const value = old ? from : to;
         const progress = clamp((elapsed - (from ? 0.15 : 0)) / 0.35);
-        const tagOpacity =
-          from === to ? 1 : old ? 1 - clamp(elapsed / (to ? 0.15 : 0.2)) : 1 - (1 - progress) ** 3;
-        const tagScale =
-          from === to || old ? 1 : 0.9 + 0.1 * tagOpacity + 0.12 * Math.sin(progress * Math.PI);
-        const card = `<div class="figure-node" data-id="${safe(id)}" style="height:${height}px;opacity:${opacity(id)};transform:scale(${scale});border-color:${pulse || focused ? accent : "#DDDDE2"};background:${focused ? "rgba(230,47,154,0.08)" : "white"}"><div class="figure-art" style="width:${(height * 4) / 3}px;--art-min:${Math.round(height * 0.7)}px">${art}</div><div class="figure-label">${safe(label)}</div>${value === undefined ? "" : `<span class="figure-tag" style="opacity:${tagOpacity};transform:scale(${tagScale})">${safe(value)}</span>`}${mark ? `<svg class="figure-mark" data-mark="${mark}" style="transform:scale(${markScale})" viewBox="-30 -30 60 60">${marks[mark]}</svg>` : ""}</div>`;
+        let tagOpacity = 1;
+        let tagScale = 1;
+        if (from !== to) {
+          if (schema === 2) {
+            if (old) tagOpacity = 1 - ease(elapsed / (to ? 0.15 : 0.2));
+            else {
+              const entered = ease((elapsed - (from ? 0.15 : 0)) / 0.35);
+              tagOpacity = entered;
+              tagScale = 0.94 + 0.06 * entered;
+            }
+          } else if (old) tagOpacity = 1 - clamp(elapsed / (to ? 0.15 : 0.2));
+          else {
+            tagOpacity = 1 - (1 - progress) ** 3;
+            tagScale = 0.9 + 0.1 * tagOpacity + 0.12 * Math.sin(progress * Math.PI);
+          }
+        }
+        const card = `<div class="figure-node" data-id="${safe(id)}" style="height:${height}px;opacity:${opacity(id)};transform:scale(${scale});${frame}"><div class="figure-art" style="width:${(height * 4) / 3}px;--art-min:${Math.round(height * 0.7)}px">${art}</div><div class="figure-label">${safe(label)}</div>${value === undefined ? "" : `<span class="figure-tag" style="opacity:${tagOpacity};transform:scale(${tagScale})">${safe(value)}</span>`}${shownMark ? `<svg class="figure-mark" data-mark="${shownMark}" style="${markStyle}" viewBox="-30 -30 60 60">${marks[shownMark]}</svg>` : ""}</div>`;
         if (index === nodes.length - 1) return card;
+        const highlighted = Boolean(link && beat?.pulse.includes(link.id) && elapsed < 0.6);
+        const arrowStroke = schema === 2 ? "#5C5C66" : highlighted ? accent : "#5C5C66";
+        const accentPath =
+          schema === 2 && link
+            ? `<path d="M14 3V${gap - 5}m-9-9 9 9 9-9" stroke="${accent}" stroke-opacity="${emphasisAt(link.id)}"/>`
+            : "";
         const arrow = link
-          ? `<svg width="28" height="${gap}" viewBox="0 0 28 ${gap}" fill="none" stroke="${beat?.pulse.includes(link.id) && elapsed < 0.6 ? accent : "#5C5C66"}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3V${gap - 5}m-9-9 9 9 9-9"/></svg>${link.label ? `<span class="figure-arrow-label">${safe(link.label)}</span>` : ""}${traveling === link.id && travelY > -14 && travelY < gap + 14 ? `<span class="figure-traveler" style="top:${travelY}px"></span>` : ""}`
+          ? `<svg width="28" height="${gap}" viewBox="0 0 28 ${gap}" fill="none" stroke="${arrowStroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3V${gap - 5}m-9-9 9 9 9-9"/>${accentPath}</svg>${link.label ? `<span class="figure-arrow-label">${safe(link.label)}</span>` : ""}${traveling === link.id && travelY > -14 && travelY < gap + 14 ? `<span class="figure-traveler" style="top:${travelY}px"></span>` : ""}`
           : "";
         return `${card}<div class="figure-arrow" style="height:${gap}px;opacity:${link ? opacity(link.id) : 0}">${arrow}</div>`;
       })
@@ -399,7 +482,7 @@ function codeCutRuntime() {
   draw(0);
 }
 
-function partNoteRuntime(notes: { start: number; html?: string }[]) {
+function partNoteRuntime(notes: { start: number; html?: string }[], lesson?: boolean) {
   const win = window as unknown as ScenePageWindow;
   const setTime = win.__setTime;
   const code = document.getElementById("code") as HTMLElement;
@@ -434,7 +517,10 @@ function partNoteRuntime(notes: { start: number; html?: string }[]) {
     bubble.classList.toggle("below", !above);
     const progress = Math.max(0, Math.min(1, (time - note.start) / fade));
     bubble.style.opacity = String(1 - (1 - progress) ** 3);
-    bubble.style.transform = `translateY(${(above ? 3 : -3) * (1 - progress)}px)`;
+    bubble.style.transform = lesson
+      ? `scale(${0.94 + 0.06 * (1 - (1 - progress) ** 3)})`
+      : `translateY(${(above ? 3 : -3) * (1 - progress)}px)`;
+    if (lesson) bubble.style.transformOrigin = "center";
   };
 }
 
@@ -463,7 +549,8 @@ function withCodeOverlays(html: string, input: SceneHtmlInput, scene: CodeScene)
     )
     .replace(
       "</html>",
-      () => `<script>(${partNoteRuntime.toString()})(${sceneScriptData(notes)});</script></html>`,
+      () =>
+        `<script>(${partNoteRuntime.toString()})(${sceneScriptData(notes)}${input.schema === 2 ? ",true" : ""});</script></html>`,
     );
 }
 
@@ -496,6 +583,7 @@ export function codeHtml(input: SceneHtmlInput): string {
         pause: beat.term || beat.dialog ? timed.end - (timed.speechEnd ?? timed.end) : beat.pause,
       };
     }),
+    ...(input.schema === 2 ? { schema: 2 as const } : {}),
   };
   const codeWidth = scene.panel ? 1010 : 1752;
   const widest = Math.max(1, ...scene.code.map(codeTextWidth));

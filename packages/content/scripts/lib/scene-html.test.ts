@@ -3,7 +3,12 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { sceneCaptionAt, sceneTimelines, sceneVideoSequence } from "../../src/scene-timeline.js";
-import { storyboardStates, type BoardStoryboard, type Scene } from "../../src/video-storyboard.js";
+import {
+  storyboardStates,
+  type Beat,
+  type BoardStoryboard,
+  type Scene,
+} from "../../src/video-storyboard.js";
 import { sceneHtml, textSceneHtml, type ScenePageWindow } from "./scene-html.js";
 const sampleJson = readFileSync(
   new URL("../../src/__fixtures__/board-video.json", import.meta.url),
@@ -249,7 +254,7 @@ describe.each(["view", "board"] as const)("%s のタイトル札と字幕", (kin
     }
   });
 });
-function page(index: number, sb = sample) {
+function page(index: number, sb = sample, options?: { marks?: boolean }) {
   const states = storyboardStates(sb),
     timelines = sceneTimelines(
       sb.scenes,
@@ -292,7 +297,9 @@ function page(index: number, sb = sample) {
               ? document.getElementById(`ring-${id}`)
               : selector === ".link" && sb.boards.main.links?.some((l) => id === `element-${l.id}`)
                 ? document.getElementById(`path-${id}`)
-                : null,
+                : selector === ".mark" && options?.marks
+                  ? document.getElementById(`mark-${id}`)
+                  : null,
           getTotalLength: () => 100,
           querySelectorAll: () => [],
         };
@@ -782,6 +789,32 @@ describe("用語とダイアログの描画", () => {
     return { html, timing };
   }
 
+  async function expectEnterScale(
+    setTime: (time: number) => Promise<void>,
+    read: () => { transform?: string },
+    overlayOpacity: () => number,
+    start: number,
+    end: number,
+  ) {
+    const scales: number[] = [];
+    for (const offset of [0, 0.1, 0.15, 0.2, 0.3]) {
+      await setTime(start + offset);
+      const scale = Number(/scale\(([^)]+)\)/.exec(read().transform ?? "")?.[1]);
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      scales.push(scale);
+    }
+    expect(scales[0]).toBeCloseTo(0.94);
+    expect(scales[2]).toBeCloseTo(0.9925);
+    expect(scales.at(-1)).toBeCloseTo(1);
+    for (let i = 1; i < scales.length; i++) expect(scales[i]).toBeGreaterThanOrEqual(scales[i - 1]);
+    await setTime(end + 0.15);
+    expect(read().transform).toBe("scale(1)");
+    expect(overlayOpacity()).toBeCloseTo(0.5);
+    await setTime(start + 0.4);
+    expect(read().transform).toBe("scale(1)");
+  }
+
   function script(html: string, name: string): string {
     const found = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, script]) =>
       script.includes(`function ${name}(`),
@@ -797,7 +830,7 @@ describe("用語とダイアログの描画", () => {
       expect(html).toContain("rgba(14,14,16,0.78)");
       expect(html).toContain('<ruby>引数<rt style="font-size:40px">ひきすう</rt></ruby>');
       expect(html).toContain('<div class="term-note">関数が受け取る値</div>');
-      const entry = { hidden: true, style: {} };
+      const entry = { hidden: true, style: {} as Record<string, string> };
       const overlay = { style: {} as Record<string, string>, children: [entry] };
       const caption = { style: {} as Record<string, string> };
       const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
@@ -823,6 +856,13 @@ describe("用語とダイアログの描画", () => {
         expect(caption.style.zIndex).toBe(opacity > 0 ? "6" : "");
         expect(entry.hidden).toBe(opacity === 0);
       }
+      await expectEnterScale(
+        (time) => (window as unknown as ScenePageWindow).__setTime(time),
+        () => entry.style,
+        () => Number(overlay.style.opacity),
+        start,
+        end,
+      );
     },
   );
 
@@ -886,12 +926,15 @@ describe("用語とダイアログの描画", () => {
       if (opacity > 0) expect(overlay.style.background).toBe("rgba(14,14,16,0.55)");
       expect(window.__overflows()).toEqual([]);
     }
-    await (window as unknown as ScenePageWindow).__setTime(start + 0.15);
-    expect(entry.style.transform).toBe("scale(1.06)");
+    await expectEnterScale(
+      (time) => (window as unknown as ScenePageWindow).__setTime(time),
+      () => entry.style,
+      () => Number(overlay.style.opacity),
+      start,
+      end,
+    );
     code.scrollWidth = 125;
     expect(window.__overflows()).toEqual(["ダイアログに文字が収まりません: 関数の形"]);
-    await (window as unknown as ScenePageWindow).__setTime(start + 0.4);
-    expect(entry.style.transform).toBe("scale(1)");
   });
 
   it("同じ場面に用語とダイアログがあるときは、文に合わせて幕と内容を切り替える", async () => {
@@ -922,5 +965,348 @@ describe("用語とダイアログの描画", () => {
     expect(render(kind, { term }).html).not.toMatch(
       /code-dialog|dialog-heading|dialog-code|dialogOverflow/,
     );
+  });
+});
+
+it("schema 1 の pulse は膨らみ、印は 1 倍を超える", () => {
+  const pulsed = page(2);
+  pulsed.window.__setTime(pulsed.timing.beats[0].start + 0.3);
+  expect(pulsed.elements.get("element-write")?.attrs.transform).toContain("scale(1.045)");
+  const marked = page(0, sample, { marks: true });
+  marked.window.__setTime(marked.timing.beats[1].start + 0.25);
+  const transform = marked.elements.get("mark-element-web")?.attrs.transform ?? "";
+  expect(Number(/scale\(([^)]+)\)/.exec(transform)?.[1])).toBeGreaterThan(1);
+  expect(page(0).html).not.toContain("link-accent");
+  expect(page(0).html).not.toContain("lessonBoardMotion");
+});
+
+describe("schema 2 の概念図は等倍までフェードし、強調を枠で続ける", () => {
+  const board = {
+    cols: 2,
+    rows: 1,
+    nodes: [
+      { id: "a", label: "A", icon: "file" as const, at: [1, 1] as [number, number] },
+      { id: "b", label: "B", icon: "file" as const, at: [2, 1] as [number, number] },
+    ],
+    links: [{ id: "ab", from: "a", to: "b" }],
+  };
+  const brief = { goal: "図", stuck: "図", points: ["図"], leaveOut: [] };
+
+  function open(scenes: Scene[], index = 0) {
+    const states = storyboardStates({ schema: 2, brief, boards: { main: board }, scenes });
+    const timelines = sceneTimelines(
+      scenes,
+      scenes.map((scene) => scene.beats.map(() => 2)),
+      {},
+      2,
+    );
+    const html = sceneHtml({
+      schema: 2,
+      board,
+      scene: scenes[index],
+      state: states[index],
+      timing: timelines[index],
+      index,
+      total: scenes.length,
+      previous: scenes[index - 1],
+    });
+    const linkIds = new Set(board.links.map((link) => `element-${link.id}`));
+    const elements = new Map<string, TestNode>();
+    const tags = [
+      ...html.matchAll(/data-board-tag="([^"]+)"[^>]*width="([^"]+)"[\s\S]*?<\/svg>/g),
+    ].map((match) => {
+      const variants = [...match[0].matchAll(/data-value="([^"]*)"/g)].map((value) => {
+        const attrs: Record<string, string> = {};
+        return {
+          dataset: { value: value[1] },
+          attrs,
+          setAttribute: (key: string, item: string) => {
+            attrs[key] = item;
+          },
+          querySelector: () => ({ getComputedTextLength: () => 10, textContent: value[1] }),
+        };
+      });
+      return {
+        dataset: { boardTag: match[1] },
+        getAttribute: (name: string) => (name === "width" ? match[2] : null),
+        querySelectorAll: (selector: string) => (selector === "[data-value]" ? variants : []),
+        variants,
+      };
+    });
+    const document = {
+      getElementById: (id: string): TestNode => {
+        let el = elements.get(id);
+        if (!el) {
+          const attrs: Record<string, string> = {};
+          const kinds = ["check", "cross", "question", "redo"].map((kind) => {
+            const kindAttrs: Record<string, string> = {};
+            return {
+              dataset: { kind },
+              attrs: kindAttrs,
+              setAttribute: (key: string, item: string) => {
+                kindAttrs[key] = item;
+              },
+            };
+          });
+          el = {
+            attrs,
+            style: {},
+            innerHTML: "",
+            dataset: {},
+            firstElementChild: { scrollHeight: 44 },
+            kinds,
+            setAttribute: (key, item) => {
+              attrs[key] = item;
+            },
+            getAttribute: (key) => (Object.hasOwn(attrs, key) ? attrs[key] : null),
+            getTotalLength: () => 100,
+            querySelector: (selector) =>
+              selector === ".ring"
+                ? document.getElementById(`ring-${id}`)
+                : selector === ".link" && linkIds.has(id)
+                  ? document.getElementById(`path-${id}`)
+                  : selector === ".link-accent" && linkIds.has(id)
+                    ? document.getElementById(`accent-${id}`)
+                    : selector === ".mark"
+                      ? document.getElementById(`mark-${id}`)
+                      : null,
+            querySelectorAll: (selector) =>
+              id.startsWith("mark-") && selector === "[data-kind]" ? kinds : [],
+          };
+          elements.set(id, el);
+        }
+        return el;
+      },
+      querySelectorAll: (selector: string) => (selector === "[data-board-tag]" ? tags : []),
+    };
+    const window = {} as ScenePageWindow;
+    for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+      runInNewContext(script, { window, document });
+    const scaleOf = (transform = "") => Number(/scale\(([^)]+)\)/.exec(transform)?.[1]);
+    return {
+      html,
+      window,
+      elements,
+      tags,
+      timing: timelines[index],
+      scaleOf,
+      async at(time: number) {
+        await window.__setTime(time);
+      },
+    };
+  }
+
+  interface TestNode {
+    attrs: Record<string, string>;
+    style: Record<string, string>;
+    innerHTML: string;
+    dataset: Record<string, string>;
+    firstElementChild: { scrollHeight: number };
+    kinds: { dataset: { kind: string }; attrs: Record<string, string> }[];
+    setAttribute: (key: string, item: string) => void;
+    getAttribute: (key: string) => string | null;
+    getTotalLength: () => number;
+    querySelector: (selector: string) => TestNode | null;
+    querySelectorAll: (selector: string) => TestNode["kinds"];
+  }
+
+  function scene(id: string, beats: Beat[], reset?: boolean): Scene {
+    return {
+      id,
+      kind: "board",
+      role: "point",
+      point: 1,
+      title: "値の動き",
+      board: "main",
+      ...(reset === undefined ? {} : { reset }),
+      beats,
+    };
+  }
+
+  it("show・印・札は 0.94 から 1 へ向かい、pulse は枠の色だけで続く", async () => {
+    const view = open([
+      scene("main", [
+        {
+          say: "出します。",
+          show: ["a", "b", "ab"],
+          mark: [{ on: "a", kind: "check" }],
+          tag: { a: "1" },
+        },
+        { say: "Aを強調します。", pulse: ["a", "ab"] },
+        { say: "Bを見ます。", focus: ["b"] },
+        { say: "Bへ替えます。", pulse: ["b"] },
+        { say: "外します。", pulse: [] },
+        { say: "Aに戻します。", pulse: ["a"] },
+        { say: "Aを隠します。", hide: ["a"] },
+      ]),
+    ]);
+    expect(view.html).toContain("link-accent");
+    expect(view.html).toContain("function lessonBoardMotion");
+    expect(view.html).toContain("function lessonBoardTagRuntime");
+    expect(view.html).not.toContain("function boardTagRuntime");
+    const [show, pulse, focus, next, clear, again, hide] = view.timing.beats;
+    await view.at(0);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("0");
+
+    const showScales: number[] = [];
+    const showOpacity: number[] = [];
+    for (const offset of [0, 0.125, 0.25, 0.375, 0.5]) {
+      await view.at(show.start + offset);
+      const scale = view.scaleOf(view.elements.get("element-a")?.attrs.transform);
+      const opacity = Number(view.elements.get("element-a")?.attrs.opacity);
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      showScales.push(scale);
+      showOpacity.push(opacity);
+    }
+    expect(showScales[0]).toBeCloseTo(0.94);
+    expect(showOpacity[2]).toBeCloseTo(0.875);
+    expect(showScales[2]).toBeCloseTo(0.9925);
+    expect(showScales.at(-1)).toBeCloseTo(1);
+    expect(showOpacity.at(-1)).toBeCloseTo(1);
+    for (let i = 1; i < showScales.length; i++) {
+      expect(showScales[i]).toBeGreaterThanOrEqual(showScales[i - 1]);
+      expect(showOpacity[i]).toBeGreaterThanOrEqual(showOpacity[i - 1]);
+    }
+
+    const markScales: number[] = [];
+    const markOpacity: number[] = [];
+    for (const offset of [0, 0.1, 0.175, 0.35]) {
+      await view.at(show.start + offset);
+      const mark = view.elements.get("mark-element-a");
+      markScales.push(view.scaleOf(mark?.attrs.transform));
+      markOpacity.push(Number(mark?.attrs.opacity));
+    }
+    expect(markScales[0]).toBeCloseTo(0.94);
+    expect(markOpacity[0]).toBeCloseTo(0);
+    expect(markScales[2]).toBeCloseTo(0.9925);
+    expect(markOpacity[2]).toBeCloseTo(0.875);
+    expect(markScales.at(-1)).toBeCloseTo(1);
+    expect(markOpacity.at(-1)).toBeCloseTo(1);
+    for (let i = 1; i < markScales.length; i++) {
+      expect(markScales[i]).toBeGreaterThanOrEqual(markScales[i - 1]);
+      expect(markOpacity[i]).toBeGreaterThanOrEqual(markOpacity[i - 1]);
+    }
+    expect(markScales.every((scale) => scale <= 1)).toBe(true);
+
+    const tag = view.tags[0]?.variants[0];
+    if (!tag) throw new Error("札がありません");
+    const tagScales: number[] = [];
+    const tagOpacity: number[] = [];
+    for (const offset of [0, 0.1, 0.175, 0.35]) {
+      await view.at(show.start + offset);
+      tagScales.push(view.scaleOf(tag.attrs.transform));
+      tagOpacity.push(Number(tag.attrs.opacity));
+    }
+    expect(tagScales[0]).toBeCloseTo(0.94);
+    expect(tagOpacity[2]).toBeCloseTo(0.875);
+    expect(tagScales.at(-1)).toBeCloseTo(1);
+    expect(tagOpacity.at(-1)).toBeCloseTo(1);
+    for (let i = 1; i < tagScales.length; i++) {
+      expect(tagScales[i]).toBeGreaterThanOrEqual(tagScales[i - 1]);
+      expect(tagOpacity[i]).toBeGreaterThanOrEqual(tagOpacity[i - 1]);
+    }
+    expect(view.window.__busyRanges).toContainEqual([show.start, show.start + 0.35]);
+
+    await view.at(show.start + 0.2);
+    expect(view.elements.get("path-element-ab")?.attrs["marker-end"]).toBe("");
+    expect(view.elements.get("path-element-ab")?.attrs["stroke-width"]).toBe("3");
+
+    await view.at(pulse.start + 0.3);
+    expect(view.elements.get("element-a")?.attrs.transform).toMatch(/scale\(1\)/);
+    expect(view.elements.get("element-a")?.attrs.transform).not.toMatch(/scale\(1\.045\)/);
+    expect(view.elements.get("ring-element-a")?.attrs).toMatchObject({
+      opacity: "1",
+      fill: "none",
+      stroke: "#E62F9A",
+      "stroke-width": "4",
+    });
+    const link = view.elements.get("path-element-ab");
+    const accent = view.elements.get("accent-element-ab");
+    expect(link?.attrs.stroke).toBe("#5C5C66");
+    expect(link?.attrs["stroke-width"]).toBe("3");
+    expect(accent?.attrs.opacity).toBe("1");
+    expect(accent?.attrs["stroke-dasharray"]).toBe(link?.attrs["stroke-dasharray"]);
+    expect(accent?.attrs["marker-end"]).toBe("url(#arrow-accent)");
+
+    await view.at(pulse.end + 0.3);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("1");
+    expect(accent?.attrs.opacity).toBe("1");
+
+    await view.at(focus.start + 0.3);
+    expect(view.elements.get("ring-element-b")?.attrs.opacity).toBe("1");
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("0");
+    expect(accent?.attrs.opacity).toBe("0");
+    await view.at(focus.end + 0.25);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("1");
+    expect(view.elements.get("ring-element-b")?.attrs.opacity).toBe("0");
+    expect(accent?.attrs.opacity).toBe("1");
+
+    await view.at(next.start + 0.3);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("0");
+    expect(view.elements.get("ring-element-b")?.attrs.opacity).toBe("1");
+    expect(accent?.attrs.opacity).toBe("0");
+    await view.at(clear.start + 0.3);
+    expect(view.elements.get("ring-element-b")?.attrs.opacity).toBe("0");
+    await view.at(again.start + 0.3);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("1");
+    await view.at(hide.start + 0.3);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("0");
+  });
+
+  it("場面の頭では強調が外れ、引き継いだ印は最初から等倍", async () => {
+    const scenes = [
+      scene("main", [
+        { say: "出します。", show: ["a"], mark: [{ on: "a", kind: "check" }] },
+        { say: "Aを強調します。", pulse: ["a"] },
+      ]),
+      scene("next", [{ say: "続きです。" }], false),
+    ];
+    const view = open(scenes, 1);
+    await view.at(0);
+    expect(view.elements.get("element-a")?.attrs.opacity).toBe("1");
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("0");
+    const mark = view.elements.get("mark-element-a");
+    expect(mark?.attrs.opacity).toBe("1");
+    expect(view.scaleOf(mark?.attrs.transform)).toBe(1);
+  });
+
+  it("札の入れ替えは消してから出て、印が消える間は大きさを変えない", async () => {
+    const view = open([
+      scene("main", [
+        { say: "出します。", show: ["a"], mark: [{ on: "a", kind: "check" }], tag: { a: "1" } },
+        { say: "替えます。", tag: { a: "2" }, unmark: ["a"] },
+      ]),
+    ]);
+    const change = view.timing.beats[1];
+    await view.at(change.start + 0.1);
+    const previous = view.tags[0]?.variants.find((item) => item.dataset.value === "1");
+    const next = view.tags[0]?.variants.find((item) => item.dataset.value === "2");
+    expect(Number(previous?.attrs.opacity)).toBeLessThan(1);
+    expect(view.scaleOf(previous?.attrs.transform)).toBe(1);
+    expect(Number(next?.attrs.opacity)).toBeCloseTo(0);
+    await view.at(change.start + 0.5);
+    expect(view.scaleOf(next?.attrs.transform)).toBeCloseTo(1);
+    expect(Number(next?.attrs.opacity)).toBeCloseTo(1);
+    await view.at(change.start + 0.15);
+    const mark = view.elements.get("mark-element-a");
+    expect(Number(mark?.attrs.opacity)).toBeCloseTo(0.125);
+    expect(view.scaleOf(mark?.attrs.transform)).toBe(1);
+    expect(mark?.kinds.find((item) => item.dataset.kind === "check")?.attrs.display).toBe("inline");
+  });
+
+  it("focus と強調が重なる枠は消えない", async () => {
+    const view = open([
+      scene("main", [
+        { say: "出します。", show: ["a"] },
+        { say: "Aを強調します。", pulse: ["a"] },
+        { say: "Aを見ます。", focus: ["a"] },
+      ]),
+    ]);
+    const focus = view.timing.beats[2];
+    await view.at(focus.start + 0.05);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("1");
+    await view.at(focus.end + 0.1);
+    expect(view.elements.get("ring-element-a")?.attrs.opacity).toBe("1");
   });
 });

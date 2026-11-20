@@ -1,5 +1,5 @@
 import { runInNewContext } from "node:vm";
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { codeSceneState, type CodeScene } from "../../src/scene-code.js";
 import { sceneTimelines } from "../../src/scene-timeline.js";
 import { storyboardStates, type Board, type Scene } from "../../src/video-storyboard.js";
@@ -1040,6 +1040,12 @@ it("意味の吹き出しはフリガナなしで出て番号を消し、次の�
   expect(below).toBe(true);
   expect(bubble.style.left).toBe("862px");
   expect(Number(bubble.style.opacity)).toBeCloseTo(1);
+  expect(bubble.style.transform).toBe("translateY(0px)");
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.15);
+  expect(Number(/translateY\(([^)]+)px\)/.exec(String(bubble.style.transform))?.[1])).toBeCloseTo(
+    -1.5,
+  );
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
   expect(bubble.innerHTML).toBe("足す");
   expect(html).toContain("font:700 30px/1.2");
   top = 100;
@@ -1136,4 +1142,325 @@ it("170pxの3枚のfigureで6字のラベルと5字の札に横幅を渡す", as
       expect(Number(minimum) + textWidth).toBeLessThanOrEqual(available);
     }
   }
+});
+
+describe("schema 2 の図は等倍までフェードし、強調を枠で続ける", () => {
+  const board: Board = {
+    cols: 2,
+    rows: 1,
+    nodes: [
+      { id: "price", label: "価格", icon: "file", at: [1, 1] },
+      { id: "shipping", label: "送料", icon: "file", at: [2, 1] },
+    ],
+    links: [{ id: "add", from: "price", to: "shipping", label: "足す" }],
+  };
+  const brief = { goal: "図", stuck: "図", points: ["図"], leaveOut: [] };
+
+  function codeScene(id: string, beats: CodeScene["beats"], reset?: boolean): CodeScene {
+    return {
+      kind: "code",
+      id,
+      role: "point",
+      point: 1,
+      title: "価格",
+      code: ["const price = 1200;"],
+      show: true,
+      panel: { kind: "figure", board: "main" },
+      ...(reset === undefined ? {} : { reset }),
+      beats,
+    };
+  }
+
+  function open(scenes: CodeScene[], index = 0) {
+    const timelines = sceneTimelines(
+      scenes,
+      scenes.map((scene) => scene.beats.map(() => 2)),
+      {},
+      2,
+    );
+    const state = storyboardStates({
+      schema: 2,
+      brief,
+      boards: { main: board },
+      scenes,
+    })[index];
+    const html = sceneHtml({
+      schema: 2,
+      board,
+      scene: scenes[index],
+      state,
+      timing: timelines[index],
+      index,
+      total: scenes.length,
+    });
+    const panel = { innerHTML: "", querySelectorAll: () => [] as never[] };
+    const elements = new Map(
+      ["code", "card", "caption"].map((id) => [id, { innerHTML: "", style: {} }]),
+    );
+    const window = {} as ScenePageWindow;
+    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
+    runInNewContext(script, {
+      window,
+      document: {
+        getElementById: (id: string) => (id === "panel" ? panel : elements.get(id)),
+        querySelectorAll: () => [],
+      },
+    });
+    const markup = () => panel.innerHTML;
+    return { window, timing: timelines[index], markup };
+  }
+
+  function card(html: string, id: string): string {
+    const found = new RegExp(`data-id="${id}" style="([^"]*)"`).exec(html);
+    if (!found) throw new Error(`カードがありません: ${id}`);
+    return found[1];
+  }
+  function prop(style: string, name: string): string {
+    return new RegExp(`(?:^|;)${name}:([^;]*)`).exec(style)?.[1] ?? "";
+  }
+  function scaleOf(style: string): number {
+    return Number(/scale\(([^)]+)\)/.exec(prop(style, "transform"))?.[1]);
+  }
+  function mark(html: string): { kind: string; style: string } | undefined {
+    const found = /data-mark="([^"]+)" style="([^"]*)"/.exec(html);
+    return found ? { kind: found[1], style: found[2] } : undefined;
+  }
+  function tag(html: string): { style: string; text: string } | undefined {
+    const found = /class="figure-tag" style="([^"]*)">([^<]*)</.exec(html);
+    return found ? { style: found[1], text: found[2] } : undefined;
+  }
+  function accent(html: string): number {
+    const found = /stroke="#E62F9A" stroke-opacity="([^"]+)"/.exec(html);
+    if (!found) throw new Error("矢印の強調がありません");
+    return Number(found[1]);
+  }
+
+  it("カード・印・札は 0.94 から 1 へ向かい、枠が続く", async () => {
+    const view = open([
+      codeScene("main", [
+        {
+          say: "出します。",
+          figure: {
+            show: ["price", "shipping", "add"],
+            mark: [{ on: "price", kind: "check" }],
+            tag: { price: "1200" },
+          },
+        },
+        { say: "価格を強調します。", figure: { pulse: ["price", "add"] } },
+        { say: "送料を見ます。", figure: { focus: ["shipping"] } },
+        { say: "送料へ替えます。", figure: { pulse: ["shipping"] } },
+        { say: "外します。", figure: { pulse: [] } },
+        { say: "価格に戻します。", figure: { pulse: ["price"] } },
+        { say: "価格を隠します。", figure: { hide: ["price"] } },
+      ]),
+    ]);
+    const [show, pulse, focus, next, clear, again, hide] = view.timing.beats;
+    await view.window.__setTime(0);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+
+    const scales: number[] = [];
+    const opacities: number[] = [];
+    for (const offset of [0, 0.125, 0.25, 0.375, 0.5]) {
+      await view.window.__setTime(show.start + offset);
+      const style = card(view.markup(), "price");
+      const scale = scaleOf(style);
+      const opacity = Number(prop(style, "opacity"));
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      scales.push(scale);
+      opacities.push(opacity);
+    }
+    expect(scales[0]).toBeCloseTo(0.94);
+    expect(opacities[2]).toBeCloseTo(0.875);
+    expect(scales[2]).toBeCloseTo(0.9925);
+    expect(scales.at(-1)).toBeCloseTo(1);
+    expect(opacities.at(-1)).toBeCloseTo(1);
+    for (let i = 1; i < scales.length; i++) {
+      expect(scales[i]).toBeGreaterThanOrEqual(scales[i - 1]);
+      expect(opacities[i]).toBeGreaterThanOrEqual(opacities[i - 1]);
+    }
+
+    const markScales: number[] = [];
+    for (const offset of [0, 0.175, 0.35]) {
+      await view.window.__setTime(show.start + offset);
+      const shown = mark(view.markup());
+      if (!shown) throw new Error("印がありません");
+      expect(shown.kind).toBe("check");
+      const scale = scaleOf(shown.style);
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      markScales.push(scale);
+    }
+    expect(markScales[0]).toBeCloseTo(0.94);
+    expect(markScales.at(-1)).toBeCloseTo(1);
+    expect(markScales[1]).toBeGreaterThan(markScales[0]);
+
+    const tagScales: number[] = [];
+    for (const offset of [0, 0.175, 0.35]) {
+      await view.window.__setTime(show.start + offset);
+      const shown = tag(view.markup());
+      if (shown?.text !== "1200") throw new Error("札がありません");
+      const scale = scaleOf(shown.style);
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      tagScales.push(scale);
+    }
+    expect(tagScales[0]).toBeCloseTo(0.94);
+    expect(tagScales.at(-1)).toBeCloseTo(1);
+    expect(tagScales[1]).toBeGreaterThan(tagScales[0]);
+
+    await view.window.__setTime(pulse.start + 0.1);
+    expect(
+      Number(
+        /rgba\(230,47,154,([^)]+)\)/.exec(prop(card(view.markup(), "price"), "border-color"))?.[1],
+      ),
+    ).toBeCloseTo(0.5);
+    expect(prop(card(view.markup(), "price"), "background")).toBe("white");
+    await view.window.__setTime(pulse.start + 0.3);
+    const emphasized = card(view.markup(), "price");
+    expect(scaleOf(emphasized)).toBe(1);
+    expect(emphasized).not.toContain("scale(1.045)");
+    expect(prop(emphasized, "border-width")).toBe("4px");
+    expect(prop(emphasized, "border-color")).toBe("#E62F9A");
+    expect(prop(emphasized, "background")).toBe("white");
+    expect(view.markup()).toContain('stroke="#5C5C66" stroke-width="3"');
+    expect(accent(view.markup())).toBe(1);
+    await view.window.__setTime(pulse.end + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#E62F9A");
+    expect(accent(view.markup())).toBe(1);
+
+    await view.window.__setTime(focus.start + 0.3);
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#E62F9A");
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+    expect(accent(view.markup())).toBe(0);
+    expect(view.window.__busyRanges).toContainEqual([focus.end, focus.end + 0.2]);
+    await view.window.__setTime(focus.end + 0.25);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#E62F9A");
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#DDDDE2");
+    expect(accent(view.markup())).toBe(1);
+
+    await view.window.__setTime(next.start + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#E62F9A");
+    expect(accent(view.markup())).toBe(0);
+    await view.window.__setTime(clear.start + 0.3);
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#DDDDE2");
+    await view.window.__setTime(again.start + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#E62F9A");
+    await view.window.__setTime(hide.start + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+  });
+
+  it("場面の頭では枠が外れ、引き継いだ印は最初から等倍", async () => {
+    const scenes = [
+      codeScene("main", [
+        {
+          say: "出します。",
+          figure: { show: ["price"], mark: [{ on: "price", kind: "check" }] },
+        },
+        { say: "強調します。", figure: { pulse: ["price"] } },
+      ]),
+      codeScene("next", [{ say: "続きです。" }], false),
+    ];
+    const view = open(scenes, 1);
+    await view.window.__setTime(0);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+    const shown = mark(view.markup());
+    expect(shown?.kind).toBe("check");
+    expect(scaleOf(shown?.style ?? "")).toBe(1);
+    expect(prop(shown?.style ?? "", "opacity")).toBe("1");
+  });
+
+  it("札の入れ替えは消してから小さめに出る", async () => {
+    const view = open([
+      codeScene("main", [
+        { say: "出します。", figure: { show: ["price"], tag: { price: "1200" } } },
+        { say: "替えます。", figure: { tag: { price: "500" } } },
+      ]),
+    ]);
+    const change = view.timing.beats[1];
+    await view.window.__setTime(change.start + 0.1);
+    const fading = tag(view.markup());
+    expect(fading?.text).toBe("1200");
+    expect(scaleOf(fading?.style ?? "")).toBe(1);
+    expect(Number(prop(fading?.style ?? "", "opacity"))).toBeLessThan(1);
+    await view.window.__setTime(change.start + 0.2);
+    const next = tag(view.markup());
+    expect(next?.text).toBe("500");
+    expect(scaleOf(next?.style ?? "")).toBeGreaterThanOrEqual(0.94);
+    expect(scaleOf(next?.style ?? "")).toBeLessThan(1);
+  });
+});
+
+it("schema 2 の吹き出しは 0.94 から等倍へフェードする", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "name",
+    role: "point",
+    point: 1,
+    title: "関数を作る",
+    code: ["function add() {}"],
+    show: true,
+    beats: [{ say: "足すという意味です。", part: { line: 0, text: "add", note: "足す" } }],
+  };
+  const [timing] = sceneTimelines([scene], [[2]], {}, 2);
+  const html = sceneHtml({
+    schema: 2,
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 0,
+    total: 1,
+  });
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, item]) =>
+    item.includes("function partNoteRuntime("),
+  )?.[1];
+  if (!script) throw new Error("吹き出しの描画処理がありません");
+  expect(script).toContain(",true");
+  const style = {
+    transform: "",
+    opacity: "",
+    transformOrigin: "",
+    setProperty: () => undefined,
+  };
+  const bubble = {
+    className: "",
+    innerHTML: "",
+    offsetWidth: 140,
+    offsetHeight: 44,
+    style,
+    classList: { toggle: () => undefined },
+  };
+  const span = {
+    getBoundingClientRect: () => ({ left: 930, right: 1000, top: 28, bottom: 64 }),
+    closest: () => ({ nextElementSibling: { querySelector: () => ({ textContent: "" }) } }),
+    classList: { remove: () => undefined },
+  };
+  const code = {
+    clientWidth: 1010,
+    clientHeight: 365,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    querySelector: () => span,
+    append: () => undefined,
+  };
+  const window = { __busyRanges: [] as [number, number][], __setTime: async () => undefined };
+  runInNewContext(script, {
+    window,
+    document: { getElementById: () => code, createElement: () => bubble },
+  });
+  const start = timing.beats[0].start;
+  const scales: number[] = [];
+  for (const offset of [0, 0.15, 0.3]) {
+    await (window as unknown as ScenePageWindow).__setTime(start + offset);
+    const scale = Number(/scale\(([^)]+)\)/.exec(bubble.style.transform)?.[1]);
+    expect(scale).toBeGreaterThanOrEqual(0.94);
+    expect(scale).toBeLessThanOrEqual(1);
+    scales.push(scale);
+  }
+  expect(scales[0]).toBeCloseTo(0.94);
+  expect(scales[1]).toBeCloseTo(0.9925);
+  expect(scales[2]).toBe(1);
+  expect(bubble.style.transformOrigin).toBe("center");
+  expect(Number(bubble.style.opacity)).toBeCloseTo(1);
 });

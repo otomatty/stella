@@ -10,7 +10,7 @@ import {
   type PolishLine,
   type PolishResponse,
 } from "./video-polish.js";
-import { parseStoryboard, type BoardStoryboard } from "./video-storyboard.js";
+import { parseStoryboard, type BoardStoryboard, type VideoStoryboard } from "./video-storyboard.js";
 const sample = JSON.parse(
   readFileSync(new URL("./__fixtures__/board-video.json", import.meta.url), "utf8"),
 ) as BoardStoryboard;
@@ -268,4 +268,55 @@ it("ダイアログの見出しを絵の説明に含める", () => {
   sb.scenes[0].beats[0].dialog = { title: "完成したコード", code: ["const value = 1;"] };
   const { scenes } = JSON.parse(buildPolishRequest(sb, "").user);
   expect(scenes[0].lines[0].picture).toContain("ダイアログ: 完成したコード");
+});
+
+it("schema 2 の pulse は続く強調として説明し、空なら外す", () => {
+  const sb = fresh();
+  sb.schema = 2;
+  sb.scenes[0].beats[0] = {
+    say: "説明します。",
+    show: ["read"],
+    pulse: ["vscode", "web"],
+  };
+  const picture = JSON.parse(buildPolishRequest(sb, "").user).scenes[0].lines[0]
+    .picture as string[];
+  expect(picture).toContain("強調 (続く): VS Code、Web");
+  expect(picture.join("\n")).not.toContain("脈動");
+  sb.scenes[0].beats[0].pulse = [];
+  const cleared = JSON.parse(buildPolishRequest(sb, "").user).scenes[0].lines[0]
+    .picture as string[];
+  expect(cleared).toContain("強調を外す");
+  expect(cleared.join("\n")).not.toContain("脈動");
+});
+
+it("コード場面の figure.pulse も強調の説明を足す", () => {
+  const kept = {
+    say: "価格を見ます。",
+    figure: { show: ["read"], focus: ["quiz"], pulse: ["read"] },
+  };
+  const cleared = { say: "強調を外します。", figure: { pulse: [] as string[] } };
+  const storyboard: VideoStoryboard = {
+    schema: 2,
+    brief: sample.brief,
+    boards: { main: sample.boards.main },
+    scenes: [
+      {
+        id: "names",
+        kind: "code",
+        role: "syntax",
+        title: "名前",
+        code: ["const price = 1;"],
+        panel: { kind: "figure", board: "main" },
+        beats: [kept, cleared],
+      },
+    ],
+  };
+  const lines = JSON.parse(buildPolishRequest(storyboard, "").user).scenes[0].lines as {
+    picture: string[];
+  }[];
+  expect(lines[0].picture).toEqual([JSON.stringify(kept), "強調: 知識問題", "強調 (続く): 読む"]);
+  expect(lines[1].picture).toEqual([JSON.stringify(cleared), "強調を外す"]);
+  const schema1: VideoStoryboard = { ...storyboard, schema: 1 };
+  const plain = JSON.parse(buildPolishRequest(schema1, "").user).scenes[0].lines[0].picture;
+  expect(plain).toBe(JSON.stringify(kept));
 });

@@ -8,6 +8,8 @@ import {
   type ViewSceneState,
   type Beat,
   type Board,
+  type BoardMotion,
+  type CodeScene,
   type Issue,
   type VideoStoryboard,
 } from "./video-storyboard.js";
@@ -120,7 +122,7 @@ function viewPicture(image: string, beat: ViewBeat): string[] {
     ...(beat.click ? [`押す: ${beat.click}`] : []),
   ];
 }
-function pictureOf(board: Board, beat: Beat): string[] {
+function pictureOf(board: Board, beat: BoardMotion, schema: 1 | 2 = 1): string[] {
   const nodeLabel = (id: string) => board.nodes.find((n) => n.id === id)?.label ?? "不明なノード";
   const linkLabel = (id: string) => {
     const link = board.links?.find((l) => l.id === id);
@@ -137,9 +139,13 @@ function pictureOf(board: Board, beat: Beat): string[] {
     ["show", "出す"],
     ["hide", "隠す"],
     ["focus", "強調"],
-    ["pulse", "脈動"],
+    ["pulse", schema === 2 ? "強調 (続く)" : "脈動"],
     ["unmark", "印を消す"],
   ] as const) {
+    if (key === "pulse" && schema === 2 && beat.pulse?.length === 0) {
+      actions.push("強調を外す");
+      continue;
+    }
     if (beat[key]?.length) actions.push(`${verb}: ${beat[key].map(label).join("、")}`);
   }
   for (const [id, value] of Object.entries(beat.tag ?? {}))
@@ -155,6 +161,20 @@ function pictureOf(board: Board, beat: Beat): string[] {
   if (beat.zoom)
     actions.push(`寄る: ${beat.zoom === "all" ? "全体" : beat.zoom.map(label).join("、")}`);
   return actions;
+}
+function codeBeatPicture(
+  scene: CodeScene,
+  beat: CodeScene["beats"][number],
+  boards: Record<string, Board>,
+  schema: 1 | 2,
+): string | string[] {
+  const base = JSON.stringify(beat);
+  const figure = beat.figure;
+  if (schema !== 2 || scene.panel?.kind !== "figure" || figure?.pulse === undefined) return base;
+  const board = boards[scene.panel.board];
+  if (!board) return base;
+  const lines = pictureOf(board, figure, 2).filter((line) => line.startsWith("強調"));
+  return lines.length ? [base, ...lines] : base;
 }
 export function buildPolishRequest(storyboard: VideoStoryboard, guideText: string) {
   const system = `あなたは未経験者向け研修動画の台本の校正者です。次のガイド全文に従ってください。\n\n${guideText}\n\n見る観点:
@@ -187,8 +207,13 @@ kinds は上記6種類から選び、reason は日本語にしてください。
               scene.kind === "view"
                 ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
                 : scene.kind === "code"
-                  ? JSON.stringify(beat)
-                  : pictureOf(boards[scene.board], beat as Beat);
+                  ? codeBeatPicture(
+                      scene,
+                      beat as CodeScene["beats"][number],
+                      boards,
+                      storyboard.schema,
+                    )
+                  : pictureOf(boards[scene.board], beat as Beat, storyboard.schema);
             if (!beat.term && !beat.dialog) return picture;
             return [
               ...(typeof picture === "string" ? [picture] : picture),

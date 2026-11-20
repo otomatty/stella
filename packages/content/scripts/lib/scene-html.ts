@@ -463,6 +463,7 @@ function beatOverlayRuntime(
   const entries = [...overlay.children] as HTMLElement[];
   const fade = 0.3;
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
   for (const { start, end } of beats)
     win.__busyRanges.push([start, start + fade], [end, end + fade]);
   const draw = (time: number) => {
@@ -477,8 +478,12 @@ function beatOverlayRuntime(
     caption.style.color = opacity > 0 ? "white" : "";
     entries.forEach((entry, index) => {
       entry.hidden = index !== i;
-      if (!entry.hidden)
-        entry.style.transform = `scale(${1 + 0.06 * Math.sin(progress * Math.PI)})`;
+      if (!entry.hidden && beat) {
+        // 退場（end 以降）は enter が 1 なので、大きさは 1 のまま親の不透明度だけ下がる。
+        const enter = time < beat.end ? ease((time - beat.start) / fade) : 1;
+        entry.style.transform = `scale(${0.94 + 0.06 * enter})`;
+        entry.style.transformOrigin = "center";
+      }
     });
   };
   win.__setTime = async (time) => {
@@ -659,6 +664,223 @@ function boardTagRuntime(state: SceneState, timing: SceneTimeline) {
   win.__setTime(0);
 }
 
+/** schema 2 の札。0.94 から 1 へフェードし、入れ替えは消してから同じ出方をする。 */
+function lessonBoardTagRuntime(state: SceneState, timing: SceneTimeline) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const overflows = win.__overflows;
+  const tags = [...document.querySelectorAll<SVGSVGElement>("[data-board-tag]")].map(
+    (container) => ({
+      id: container.dataset.boardTag as string,
+      variants: [...container.querySelectorAll<SVGGElement>("[data-value]")],
+      width: Number(container.getAttribute("width")),
+    }),
+  );
+  const value = (snapshot: BoardState, id: string) =>
+    snapshot.tags && Object.hasOwn(snapshot.tags, id) ? snapshot.tags[id] : undefined;
+  const changes = state.beats.map(({ before, after }) =>
+    tags.map(({ id }) => ({ from: value(before, id), to: value(after, id) })),
+  );
+  changes.forEach((beat, i) => {
+    const start = timing.beats[i].start;
+    for (const { from, to } of beat)
+      if (from !== to) win.__busyRanges.push([start, start + (to ? (from ? 0.5 : 0.35) : 0.2)]);
+  });
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
+  win.__setTime = async (time) => {
+    await setTime(time);
+    const i = timing.beats.findLastIndex((beat) => beat.start <= time);
+    const elapsed = i < 0 ? 0 : time - timing.beats[i].start;
+    tags.forEach(({ id, variants }, j) => {
+      const initial = value(state.start, id);
+      const { from, to } = changes[i]?.[j] ?? { from: initial, to: initial };
+      for (const variant of variants) {
+        const text = variant.dataset.value;
+        let opacity = text === to ? 1 : 0;
+        let scale = 1;
+        if (from !== to && text === from) {
+          opacity = 1 - ease(elapsed / (to ? 0.15 : 0.2));
+          scale = 1;
+        }
+        if (from !== to && text === to) {
+          const progress = ease((elapsed - (from ? 0.15 : 0)) / 0.35);
+          opacity = progress;
+          scale = 0.94 + 0.06 * progress;
+        }
+        variant.setAttribute("opacity", String(opacity));
+        variant.setAttribute("transform", `scale(${scale})`);
+      }
+    });
+  };
+  win.__overflows = () => [
+    ...overflows(),
+    ...tags.flatMap(({ id, variants, width }) =>
+      variants.flatMap((variant) => {
+        const text = variant.querySelector<SVGTextElement>("text");
+        return text && text.getComputedTextLength() + 40 > width
+          ? [`ノード「${id}」の札「${text.textContent}」が収まりません`]
+          : [];
+      }),
+    ),
+  ];
+  win.__setTime(0);
+}
+
+/**
+ * schema 2 の概念図。runtime の拡大を上書きし、入場だけ 0.94→1、強調は枠の色にする。
+ * runtime のあとに実行する。
+ */
+function lessonBoardMotion(data: RenderData) {
+  const win = window as unknown as ScenePageWindow;
+  const setTime = win.__setTime;
+  const { board, state, timing, layout } = data;
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
+  const ids = [...(board.zones ?? []), ...board.nodes, ...(board.links ?? [])].map((e) => e.id);
+  const elements = new Map(
+    ids.map((id) => [id, document.getElementById(`element-${id}`) as unknown as SVGGElement]),
+  );
+  const showSeconds = 0.5,
+    zoneNodeDelay = 0.3;
+  const zoneNodes = new Map(
+    (board.zones ?? []).map((z) => [
+      z.id,
+      board.nodes
+        .filter(
+          (n) =>
+            n.at[0] >= z.cells[0] &&
+            n.at[0] < z.cells[0] + z.cells[2] &&
+            n.at[1] >= z.cells[1] &&
+            n.at[1] < z.cells[1] + z.cells[3],
+        )
+        .map((n) => n.id),
+    ]),
+  );
+  // 空の囲みの中身は runtime と同じだけ遅らせ、拡大の進行を不透明度とそろえる。
+  const delayedShows = state.beats.map((bs) => {
+    const delayed = new Set<string>();
+    for (const inside of zoneNodes.values()) {
+      if (
+        inside.some((id) => bs.before.visible.includes(id)) ||
+        !inside.some((id) => bs.after.visible.includes(id))
+      )
+        continue;
+      const members = [
+        ...inside,
+        ...(board.links ?? [])
+          .filter((link) => inside.includes(link.from) && inside.includes(link.to))
+          .map((link) => link.id),
+      ];
+      for (const id of members)
+        if (!bs.before.visible.includes(id) && bs.after.visible.includes(id)) delayed.add(id);
+    }
+    return delayed;
+  });
+  const emphasis = (id: string, index: number, time: number, elapsed: number) => {
+    const beat = index >= 0 ? state.beats[index] : undefined;
+    const timed = index >= 0 ? timing.beats[index] : undefined;
+    if (!beat || !timed) return 0;
+    const inBefore = (beat.before.emphasis ?? []).includes(id);
+    const inAfter = (beat.after.emphasis ?? []).includes(id);
+    const focused = beat.focus.includes(id);
+    if (beat.focus.length && time < timed.end) {
+      if (focused) return inBefore ? 1 : clamp(elapsed / 0.2);
+      return inBefore ? 1 - clamp(elapsed / 0.2) : 0;
+    }
+    if (beat.focus.length && time < timed.end + 0.2) {
+      const t = clamp((time - timed.end) / 0.2);
+      if (focused && inAfter) return 1;
+      if (focused) return 1 - t;
+      return inAfter ? t : 0;
+    }
+    if (inAfter && inBefore) return 1;
+    if (inAfter) return clamp(elapsed / 0.2);
+    if (inBefore) return 1 - clamp(elapsed / 0.2);
+    return 0;
+  };
+  win.__setTime = async (time: number) => {
+    await setTime(time);
+    let k = -1;
+    for (let i = 0; i < timing.beats.length; i++) if (timing.beats[i].start <= time) k = i;
+    const bt = k >= 0 ? timing.beats[k] : undefined;
+    const bs = k >= 0 ? state.beats[k] : undefined;
+    const elapsed = bt ? time - bt.start : 0;
+    for (const id of ids) {
+      const el = elements.get(id);
+      if (!el) continue;
+      const showElapsed = elapsed - (delayedShows[k]?.has(id) ? zoneNodeDelay : 0);
+      const box = layout.nodes[id] ?? layout.zones[id];
+      if (box) {
+        const was = bs?.before.visible.includes(id) ?? false;
+        const now = (bs?.after ?? state.start).visible.includes(id);
+        const appearing = Boolean(bs) && !was && now;
+        const s = appearing ? 0.94 + 0.06 * ease(showElapsed / showSeconds) : 1;
+        const cx = box.x + box.w / 2,
+          cy = box.y + box.h / 2;
+        el.setAttribute("transform", `translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`);
+      }
+      const strength = emphasis(id, k, time, elapsed);
+      const ring = el.querySelector(".ring");
+      if (ring) {
+        ring.setAttribute("fill", "none");
+        ring.setAttribute("stroke", "#E62F9A");
+        ring.setAttribute("stroke-width", "4");
+        ring.setAttribute("opacity", String(strength));
+      }
+      const link = el.querySelector(".link");
+      const accent = el.querySelector(".link-accent");
+      if (link) {
+        link.setAttribute("stroke", "#5C5C66");
+        link.setAttribute("stroke-width", "3");
+        const show = Boolean(
+          bs && !bs.before.visible.includes(id) && bs.after.visible.includes(id),
+        );
+        const drawing = show && showElapsed < 0.45;
+        link.setAttribute("marker-end", drawing ? "" : "url(#arrow)");
+        if (accent) {
+          const dash = link.getAttribute("stroke-dasharray");
+          const offset = link.getAttribute("stroke-dashoffset");
+          if (dash != null) accent.setAttribute("stroke-dasharray", dash);
+          if (offset != null) accent.setAttribute("stroke-dashoffset", offset);
+          accent.setAttribute("opacity", String(strength));
+          accent.setAttribute("marker-end", drawing ? "" : "url(#arrow-accent)");
+        }
+      }
+      const mark = el.querySelector(".mark");
+      if (mark) {
+        const beforeKind = bs?.before.marks[id];
+        const afterKind = (bs?.after ?? state.start).marks[id];
+        let kind = afterKind;
+        let opacity = afterKind ? 1 : 0;
+        let s = 1;
+        if (!bs) {
+          kind = state.start.marks[id];
+          opacity = kind ? 1 : 0;
+          s = 1;
+        } else if (afterKind && afterKind !== beforeKind) {
+          const entered = ease(elapsed / 0.35);
+          kind = afterKind;
+          opacity = entered;
+          s = 0.94 + 0.06 * entered;
+        } else if (!afterKind && beforeKind) {
+          const entered = ease(elapsed / 0.3);
+          kind = beforeKind;
+          opacity = 1 - entered;
+          s = 1;
+        }
+        mark.setAttribute("opacity", String(opacity));
+        const x = (box?.x ?? 0) + (box?.w ?? 0) - 4,
+          y = (box?.y ?? 0) + 10;
+        mark.setAttribute("transform", `translate(${x} ${y}) scale(${s})`);
+        for (const item of mark.querySelectorAll<SVGElement>("[data-kind]"))
+          item.setAttribute("display", item.dataset.kind === kind ? "inline" : "none");
+      }
+    }
+  };
+  win.__setTime(0);
+}
+
 function boardTag(id: string, box: Box, states: BoardState[]): string {
   const values = new Set(
     states.flatMap(({ tags }) => (tags && Object.hasOwn(tags, id) ? [tags[id]] : [])),
@@ -716,7 +938,12 @@ function boardHtml(input: BoardHtmlInput): string {
     .map((l) => {
       const p = layout.links[l.id];
       const length = Array.from(l.label ?? "").length;
-      return `<g id="element-${escapeHtml(l.id)}"><path class="link" d="${linkPath(p)}" fill="none" stroke="#5C5C66" stroke-width="3" stroke-linejoin="round" marker-end="url(#arrow)"/>${l.label ? `<rect x="${p.label.x - length * 20 - 10}" y="${p.label.y - 28}" width="${length * 40 + 20}" height="56" rx="8" fill="#F7F7F9"/>${label(l.label, { x: p.label.x - 140, y: p.label.y - 28, w: 280, h: 56 })}` : ""}</g>`;
+      const d = linkPath(p);
+      const accent =
+        input.schema === 2
+          ? `<path class="link-accent" d="${d}" fill="none" stroke="#E62F9A" stroke-width="3" stroke-linejoin="round" opacity="0" marker-end="url(#arrow-accent)"/>`
+          : "";
+      return `<g id="element-${escapeHtml(l.id)}"><path class="link" d="${d}" fill="none" stroke="#5C5C66" stroke-width="3" stroke-linejoin="round" marker-end="url(#arrow)"/>${accent}${l.label ? `<rect x="${p.label.x - length * 20 - 10}" y="${p.label.y - 28}" width="${length * 40 + 20}" height="56" rx="8" fill="#F7F7F9"/>${label(l.label, { x: p.label.x - 140, y: p.label.y - 28, w: 280, h: 56 })}` : ""}</g>`;
     })
     .join("");
   const heading = (s: Scene | undefined) =>
@@ -744,10 +971,13 @@ function boardHtml(input: BoardHtmlInput): string {
       }),
     };
   }
+  const tagRuntime = input.schema === 2 ? lessonBoardTagRuntime : boardTagRuntime;
   const tagScript = tags
-    ? `<script>(${boardTagRuntime.toString()})(${JSON.stringify(input.state).replace(/</g, "\\u003c")},${JSON.stringify(input.timing).replace(/</g, "\\u003c")});</script>`
+    ? `<script>(${tagRuntime.toString()})(${JSON.stringify(input.state).replace(/</g, "\\u003c")},${JSON.stringify(input.timing).replace(/</g, "\\u003c")});</script>`
     : "";
   const data = JSON.stringify({ ...renderInput, layout }).replace(/</g, "\\u003c");
+  const lessonScript =
+    input.schema === 2 ? `<script>(${lessonBoardMotion.toString()})(${data});</script>` : "";
   return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${sceneCaptionCss}
   *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}#heading{position:absolute;top:24px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:1;opacity:0;height:80px;display:flex;align-items:center;padding:0 36px;background:white;border-radius:16px;border:2px solid #DDDDE2;box-shadow:0 4px 12px #0000000D;font-size:40px}#heading span{font-size:26px;color:#5C5C66;margin-right:24px}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:170px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;z-index:2;background:white;pointer-events:none}
   </style>${Object.values(input.images ?? {})
@@ -760,5 +990,5 @@ function boardHtml(input: BoardHtmlInput): string {
     .map((name) => `<g data-icon="${name}">${iconSvg(name as IconName, -18, -18, 36)}</g>`)
     .join(
       "",
-    )}</g></svg><div id="caption"></div><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint, ${sceneTitleOpacity.toString()}, ${sceneCaptionAt.toString()});</script>${tagScript}</html>`;
+    )}</g></svg><div id="caption"></div><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint, ${sceneTitleOpacity.toString()}, ${sceneCaptionAt.toString()});</script>${tagScript}${lessonScript}</html>`;
 }

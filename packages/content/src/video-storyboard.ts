@@ -205,6 +205,8 @@ export interface BoardState {
   visible: string[];
   marks: Record<string, MarkKind>;
   tags?: Record<string, string>;
+  /** schema 2 だけ。空のときはキー自体を付けない。 */
+  emphasis?: string[];
   zoom: string[] | "all";
 }
 export interface BeatState {
@@ -224,8 +226,37 @@ const cloneState = (s: BoardState): BoardState => ({
   visible: [...s.visible],
   marks: { ...s.marks },
   ...(s.tags && Object.keys(s.tags).length ? { tags: { ...s.tags } } : {}),
+  ...(s.emphasis?.length ? { emphasis: [...s.emphasis] } : {}),
   zoom: s.zoom === "all" ? "all" : [...s.zoom],
 });
+
+/** pulse の順で、見えている id だけを重複なく並べる。 */
+function visiblePulse(pulse: string[], visible: ReadonlySet<string>): string[] {
+  const seen = new Set<string>();
+  const shown: string[] = [];
+  for (const id of pulse) {
+    if (!visible.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    shown.push(id);
+  }
+  return shown;
+}
+
+/**
+ * schema 2 の強調。hide した id を外し、pulse があれば見えている id へ入れ替える。
+ * 見えていない id だけの pulse は、hide で外したあとの強調を変えない。
+ */
+function emphasisAfter(
+  previous: string[] | undefined,
+  beat: BoardMotion,
+  visible: ReadonlySet<string>,
+): string[] | undefined {
+  const kept = (previous ?? []).filter((id) => !beat.hide?.includes(id));
+  if (beat.pulse === undefined) return kept.length ? kept : undefined;
+  const shown = visiblePulse(beat.pulse, visible);
+  if (beat.pulse.length > 0 && shown.length === 0) return kept.length ? kept : undefined;
+  return shown.length ? shown : undefined;
+}
 
 /** zone の焦点には内側のノードと、両端が内側のリンクを含む。 */
 export function expandFocus(board: Board, ids: string[]): string[] {
@@ -325,6 +356,8 @@ export function storyboardStates(
     const board = boards[name];
     const start =
       lastBoard?.name === name && !reset ? cloneState(lastBoard.end) : emptyBoardState();
+    // 同じ図解の続きでも、場面の頭では強調を消す。前の場面の end には残す。
+    if (storyboard.schema === 2) delete start.emphasis;
     let current = cloneState(start);
     const beats = motions.map((beat) => {
       const before = cloneState(current);
@@ -339,11 +372,14 @@ export function storyboardStates(
           ([id]) => !beat.hide?.includes(id) && !beat.untag?.includes(id),
         ),
       );
+      const emphasis =
+        storyboard.schema === 2 ? emphasisAfter(current.emphasis, beat, visible) : undefined;
       current = {
         visible: [...visible].sort(),
         marks,
         zoom: beat.zoom ?? current.zoom,
         ...(Object.keys(tags).length ? { tags } : {}),
+        ...(emphasis?.length ? { emphasis } : {}),
       };
       return {
         before,
@@ -399,7 +435,7 @@ export function parseStoryboard(
     arr(v, p, size, size).forEach((n, i) => {
       integer(n, `${p}[${i}]`, 1, 6);
     });
-  const validateBoardMotionShape = (beat: Record<string, unknown>, q: string) => {
+  const validateBoardMotionShape = (beat: Record<string, unknown>, q: string, schema2 = false) => {
     if (beat.tag !== undefined)
       for (const [id, value] of Object.entries(obj(beat.tag, `${q}.tag`))) {
         str(value, `${q}.tag.${id}`, 8);
@@ -412,7 +448,7 @@ export function parseStoryboard(
       });
     for (const key of ["show", "hide", "focus", "pulse", "unmark", "zoom"]) {
       if (beat[key] === undefined || (key === "zoom" && beat[key] === "all")) continue;
-      arr(beat[key], `${q}.${key}`, 1, 32).forEach((id, k) => {
+      arr(beat[key], `${q}.${key}`, schema2 && key === "pulse" ? 0 : 1, 32).forEach((id, k) => {
         str(id, `${q}.${key}[${k}]`);
       });
     }
@@ -645,7 +681,7 @@ export function parseStoryboard(
               ].includes(key)
             )
               error(`${q}.figure.${key}`, "figure では指定できない項目です");
-          validateBoardMotionShape(figure, `${q}.figure`);
+          validateBoardMotionShape(figure, `${q}.figure`, lesson);
         } else if (s.kind !== "code") {
           error(`${q}.figure`, "figure は figure パネルだけに指定できます");
         }
@@ -683,7 +719,7 @@ export function parseStoryboard(
           });
         return;
       }
-      validateBoardMotionShape(beat, q);
+      validateBoardMotionShape(beat, q, lesson);
     });
   });
   if (!usable) return { issues };
@@ -849,6 +885,13 @@ export function parseStoryboard(
       .map((name) => [name, { cols: 1, rows: 1, nodes: [] } satisfies Board]),
   ]);
   const states = storyboardStates({ ...sb, boards: analysisBoards });
+  const sameMembers = (a: readonly string[] | undefined, b: readonly string[] | undefined) => {
+    const left = new Set(a ?? []);
+    const right = new Set(b ?? []);
+    if (left.size !== right.size) return false;
+    for (const id of left) if (!right.has(id)) return false;
+    return true;
+  };
   sb.scenes.forEach((s, i) => {
     const name = sceneBoardName(s);
     if (s.kind === "view" || name === undefined) return;
@@ -860,11 +903,15 @@ export function parseStoryboard(
       const q = `scenes[${i}].beats[${j}]${s.kind === "code" ? ".figure" : ""}`,
         state = sceneState.beats[j];
       const visible = new Set(state.after.visible);
+      // schema 2 の pulse は、強調の集合が変わるときだけ絵が変わる。
+      const pulseChange = lesson
+        ? b.pulse !== undefined && !sameMembers(state.before.emphasis, state.after.emphasis)
+        : (b.pulse ?? []).some((id) => visible.has(id));
       const change =
         (b.show ?? []).some((id) => !state.before.visible.includes(id) && visible.has(id)) ||
         (b.hide ?? []).some((id) => state.before.visible.includes(id) && !visible.has(id)) ||
         (b.focus ?? []).some((id) => visible.has(id)) ||
-        (b.pulse ?? []).some((id) => visible.has(id)) ||
+        pulseChange ||
         (b.mark ?? []).some((m) => visible.has(m.on) && state.before.marks[m.on] !== m.kind) ||
         (b.unmark ?? []).some((id) => state.before.marks[id] !== undefined && visible.has(id)) ||
         [...visible].some(

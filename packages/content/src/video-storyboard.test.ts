@@ -533,6 +533,15 @@ describe("場面の状態", () => {
     s.scenes[0].beats[0].travel = { along: ["read-quiz"] };
     expect(parseStoryboard(s).storyboard).toBeDefined();
   });
+  it("schema 1 の状態に emphasis を付けない", () => {
+    const visit = (value: unknown): boolean => {
+      if (Array.isArray(value)) return value.some(visit);
+      if (typeof value === "object" && value !== null)
+        return Object.entries(value).some(([key, child]) => key === "emphasis" || visit(child));
+      return false;
+    };
+    expect(visit(storyboardStates(sample))).toBe(false);
+  });
 });
 
 it("同じクリップで始まる次の view は直前の最後のコマを引き継ぐ", () => {
@@ -1111,6 +1120,147 @@ describe("schema 2 のレッスン型", () => {
     for (const scene of storyboard.scenes) scene.beats[0].speech = "あ".repeat(chars);
     const issue = parseStoryboard(storyboard).issues.find((i) => i.message.includes("180〜480秒"));
     expect(issue?.level).toBe(level);
+  });
+  it("schema 2 は空の pulse を受け付け、schema 1 は個数で拒む", () => {
+    const storyboard = lesson();
+    storyboard.scenes[0].beats = [
+      { say: "読む場所を出します。", show: ["read"], pulse: ["read"] },
+      { say: "強調を外します。", pulse: [] },
+    ];
+    expect(parseStoryboard(storyboard).issues.filter((issue) => issue.level === "error")).toEqual(
+      [],
+    );
+    const schema1 = fresh();
+    schema1.scenes[0].beats[0].pulse = [];
+    expect(parseStoryboard(schema1).issues).toContainEqual(
+      expect.objectContaining({
+        level: "error",
+        path: "scenes[0].beats[0].pulse",
+        message: expect.stringContaining("1〜32個"),
+      }),
+    );
+  });
+  it("schema 2 の pulse は強調の集合が変わるときだけ空振りにならない", () => {
+    const whiffs = (beats: BoardStoryboard["scenes"][number]["beats"]) => {
+      const storyboard = lesson();
+      storyboard.scenes[0].beats = beats;
+      return parseStoryboard(storyboard).issues.filter(
+        (issue) => issue.level === "error" && issue.message.includes("空振り"),
+      );
+    };
+    const at = expect.objectContaining({ path: "scenes[0].beats[1]" });
+    expect(
+      whiffs([
+        { say: "読む場所を出します。", show: ["read", "quiz"], pulse: ["read"] },
+        { say: "同じ場所を見ます。", pulse: ["read"] },
+      ]),
+    ).toContainEqual(at);
+    expect(
+      whiffs([
+        { say: "読む場所を出します。", show: ["read", "quiz"], pulse: ["read", "quiz"] },
+        { say: "順を変えて見ます。", pulse: ["quiz", "read"] },
+      ]),
+    ).toContainEqual(at);
+    expect(
+      whiffs([
+        { say: "読む場所を出します。", show: ["read", "quiz"], pulse: ["read"] },
+        { say: "問題を見ます。", pulse: ["quiz"] },
+      ]),
+    ).toEqual([]);
+    expect(
+      whiffs([
+        { say: "読む場所を出します。", show: ["read"], pulse: ["read"] },
+        { say: "強調を外します。", pulse: [] },
+      ]),
+    ).toEqual([]);
+    expect(
+      whiffs([
+        { say: "読む場所を出します。", show: ["read"] },
+        { say: "強調はありません。", pulse: [] },
+      ]),
+    ).toContainEqual(at);
+    expect(
+      whiffs([
+        { say: "読む場所を出します。", show: ["read"], pulse: ["read"] },
+        { say: "出ていない場所です。", pulse: ["quiz"] },
+      ]),
+    ).toContainEqual(at);
+  });
+  it("emphasis は文をまたぎ、場面の頭では消える", () => {
+    const storyboard: VideoStoryboard = {
+      schema: 2,
+      brief: { ...sample.brief, points: ["値を比べる。"] },
+      boards: sample.boards,
+      scenes: [
+        {
+          id: "goal",
+          role: "goal",
+          title: "値を比べる",
+          board: "main",
+          beats: [
+            { say: "読む場所を出します。", show: ["read", "quiz", "write"], pulse: ["read"] },
+            { say: "出ていない場所です。", pulse: ["submit"] },
+            { say: "ほかも出します。", show: ["check"] },
+            { say: "問題も見ます。", pulse: ["quiz", "read", "quiz"] },
+            { say: "問題を隠します。", hide: ["quiz"] },
+          ],
+        },
+        {
+          id: "example",
+          role: "example",
+          title: "続き",
+          board: "main",
+          beats: [{ say: "問題を戻します。", show: ["quiz"] }],
+        },
+        {
+          id: "names",
+          kind: "code",
+          role: "syntax",
+          title: "図",
+          code: ["const price = 1;"],
+          panel: { kind: "figure", board: "main" },
+          beats: [
+            { say: "行を打ちます。", type: [0] },
+            { say: "読む場所を見ます。", figure: { pulse: ["read"] } },
+            { say: "名前を続けます。", type: [0] },
+            { say: "問題も見ます。", figure: { pulse: ["quiz", "read", "quiz"] } },
+            { say: "問題を隠します。", figure: { hide: ["quiz"] } },
+          ],
+        },
+        {
+          id: "apply",
+          role: "apply",
+          title: "そのあと",
+          board: "main",
+          beats: [{ say: "確認を見ます。", focus: ["check"] }],
+        },
+      ],
+    };
+    const [first, next, code, later] = storyboardStates(storyboard);
+    if (first.kind === "code" || first.kind === "view") throw new Error("最初が図解ではありません");
+    expect(first.start).not.toHaveProperty("emphasis");
+    expect(first.beats[0].after.emphasis).toEqual(["read"]);
+    expect(first.beats[1].after.emphasis).toEqual(["read"]);
+    expect(first.beats[2].before.emphasis).toEqual(["read"]);
+    expect(first.beats[2].after.emphasis).toEqual(["read"]);
+    expect(first.beats[3].after.emphasis).toEqual(["quiz", "read"]);
+    expect(first.beats[4].after.emphasis).toEqual(["read"]);
+    expect(first.end.emphasis).toEqual(["read"]);
+    if (next.kind === "code" || next.kind === "view") throw new Error("次が図解ではありません");
+    expect(next.start.visible).toEqual(first.end.visible);
+    expect(next.start).not.toHaveProperty("emphasis");
+    if (code.kind !== "code" || !code.figure) throw new Error("図の状態がありません");
+    expect(code.figure.start.visible).toEqual(next.end.visible);
+    expect(code.figure.start).not.toHaveProperty("emphasis");
+    expect(code.figure.beats[0].after).not.toHaveProperty("emphasis");
+    expect(code.figure.beats[1].after.emphasis).toEqual(["read"]);
+    expect(code.figure.beats[2].after.emphasis).toEqual(["read"]);
+    expect(code.figure.beats[3].after.emphasis).toEqual(["quiz", "read"]);
+    expect(code.figure.beats[4].after.emphasis).toEqual(["read"]);
+    expect(code.figure.end.emphasis).toEqual(["read"]);
+    if (later.kind === "code" || later.kind === "view") throw new Error("最後が図解ではありません");
+    expect(later.start).not.toHaveProperty("emphasis");
+    expect(later.start.visible).toEqual(code.figure.end.visible);
   });
 });
 
