@@ -1,4 +1,5 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
@@ -12,7 +13,16 @@ vi.mock("./lib/narration-topics.js", async (original) => ({
 }));
 vi.mock("./lib/ffmpeg.js", async (original) => ({
   ...(await original<typeof import("./lib/ffmpeg.js")>()),
+  concatAndMux: vi.fn(async (_files: string[], _list: string, _audio: string, out: string) =>
+    writeFileSync(out, "fixture"),
+  ),
+  decodeTrimmedPcm: vi.fn(async () => new Int16Array(48_000)),
+  encodeNarration: vi.fn(async () => undefined),
+  encodeStill: vi.fn(async () => undefined),
   ffmpegVersion: vi.fn(async () => "fixture ffmpeg"),
+  measureLoudness: vi.fn(async () => ({ integratedLufs: -16, truePeakDb: -3 })),
+  probeDuration: vi.fn(),
+  toPosterJpeg: vi.fn(async (_png: string, out: string) => writeFileSync(out, "fixture")),
 }));
 vi.mock("./build-scene-video.js", async (original) => ({
   ...(await original<typeof import("./build-scene-video.js")>()),
@@ -25,8 +35,10 @@ vi.mock("./lib/tts.js", async (original) => ({
 import { chromium } from "playwright";
 import { buildVideos } from "./build-video.js";
 import { buildSceneTopic } from "./build-scene-video.js";
+import { probeDuration } from "./lib/ffmpeg.js";
 import { collectNarrationTopics, type NarrationTopic } from "./lib/narration-topics.js";
 import { collectPdfTargets } from "../src/material-pdf.js";
+import { videoSceneHash } from "../src/material-video.js";
 import { synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
 
 const roots: string[] = [];
@@ -142,6 +154,7 @@ it("新方式の上限は後続のスライド版の音声合成も止める", a
 });
 it("新方式の成功を配信のreportに載せ、出力が同じなら次回の生成を省く", async () => {
   const { root } = fixture();
+  const { scenes, boards } = JSON.parse(readFileSync(join(root, "video.json"), "utf8"));
   const close = vi.fn();
   vi.mocked(chromium.launch).mockResolvedValue({ close } as unknown as Awaited<
     ReturnType<typeof chromium.launch>
@@ -156,7 +169,10 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
       ttsIdentity: "fake",
       durationSec: 90,
       probedDurationSec: 90,
-      scenes: [],
+      scenes: [
+        { id: "title", startSec: 0, durationSec: 2.6, hash: "cache-title" },
+        { id: "hook", startSec: 2.6, durationSec: 3.1259, hash: "cache-hook" },
+      ],
       loudness: { integratedLufs: -16, truePeakDb: -3 },
       warnings: [],
     };
@@ -170,6 +186,18 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
       id: "first",
       durationSec: 90,
       sourceHash: expect.stringMatching(/^[a-f0-9]{32}$/),
+      videoScenes: [
+        {
+          id: "hook",
+          startSec: 2.6,
+          durationSec: 3.126,
+          hash: videoSceneHash({
+            definition: scenes[0],
+            board: boards[scenes[0].board],
+            assets: {},
+          }),
+        },
+      ],
     }),
   ]);
   const again = await buildVideos(args);
@@ -218,3 +246,89 @@ for (const phase of ["生成前", "生成後"] as const)
     if (phase === "生成前") expect(buildSceneTopic).not.toHaveBeenCalled();
     else expect(buildSceneTopic).toHaveBeenCalledOnce();
   });
+
+it.each([false, true])(
+  "旧方式の生成後に画像が変わったか (%s) を確かめてレポートを確定する",
+  async (changed) => {
+    const { root, topic } = fixture();
+    const legacyDir = join(root, "legacy");
+    mkdirSync(legacyDir);
+    const image = join(legacyDir, "diagram.svg");
+    const originalImage = '<svg xmlns="http://www.w3.org/2000/svg"/>';
+    writeFileSync(image, originalImage);
+    const imageKey = "tenant/ses/stages/fixture/diagram.svg";
+    const body = "# 最初\n\n![図](assets/diagram.svg)";
+    vi.mocked(collectNarrationTopics).mockReturnValue([
+      {
+        ...topic,
+        id: "legacy",
+        topicDir: legacyDir,
+        slidesSource: `---\ntitle: 動画\n---\n${body}`,
+        parseError: undefined,
+        narration: {
+          schema: 1,
+          slidesHash: "fixture",
+          slides: [{ cues: [{ text: "読みます。" }] }],
+        },
+      },
+    ]);
+    vi.mocked(collectPdfTargets).mockReturnValue([
+      {
+        kind: "slides",
+        stageSlug: "fixture",
+        lessonId: "legacy",
+        courseTitle: "fixture",
+        source: body.replace("assets/diagram.svg", imageKey),
+        assets: [{ key: imageKey, file: image }],
+      } as ReturnType<typeof collectPdfTargets>[number],
+    ]);
+    vi.mocked(synthesizeCached).mockResolvedValueOnce({
+      file: join(legacyDir, "narration.wav"),
+      cached: true,
+    });
+    const screenshot = vi.fn();
+    vi.mocked(chromium.launch).mockResolvedValueOnce({
+      close: vi.fn(),
+      newContext: vi.fn(async () => ({
+        close: vi.fn(),
+        newPage: vi.fn(async () => ({
+          route: vi.fn(),
+          goto: vi.fn(),
+          evaluate: vi.fn(),
+          locator: vi.fn(() => ({ count: vi.fn(() => 1), nth: vi.fn(() => ({ screenshot })) })),
+        })),
+      })),
+    } as unknown as Awaited<ReturnType<typeof chromium.launch>>);
+    vi.mocked(probeDuration).mockImplementationOnce(async () => {
+      if (changed) writeFileSync(image, originalImage.replace("/>", ' width="1"/>'));
+      return 3;
+    });
+
+    const out = join(root, "out");
+    const result = await buildVideos(["--tts", "fake", "--out", out]);
+    const reportFile = join(out, "fixture", "legacy", "report.json");
+    expect(screenshot).toHaveBeenCalledOnce();
+    expect(probeDuration).toHaveBeenCalledOnce();
+    if (changed) {
+      expect(result.reports).toEqual([]);
+      expect(result.failures).toEqual([
+        { stageSlug: "fixture", id: "legacy", reason: "動画の入力が計画後に変わりました (生成後)" },
+      ]);
+      expect(existsSync(reportFile)).toBe(false);
+    } else {
+      expect(result.failures).toEqual([]);
+      expect(existsSync(reportFile)).toBe(true);
+      expect(result.reports[0].videoScenes).toMatchObject([
+        {
+          id: "slide-1",
+          hash: videoSceneHash([
+            "最初",
+            "読みます。",
+            body,
+            { [imageKey]: createHash("sha256").update(originalImage).digest("hex") },
+          ]),
+        },
+      ]);
+    }
+  },
+);

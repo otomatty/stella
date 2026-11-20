@@ -5,13 +5,18 @@ import {
   hasVideo,
   mergeVideoFailure,
   serializeVideoManifest,
+  slideAssetHashes,
+  slideVideoScenes,
+  storyboardVideoScenes,
   summarizeVideoError,
   videoKeyHash,
   videoKeys,
   videoManifestKey,
+  videoSceneHash,
   type VideoManifest,
   type VideoState,
 } from "./material-video.js";
+import type { BoardScene, VideoStoryboard, ViewScene } from "./video-storyboard.js";
 
 describe("教材動画の配信", () => {
   const failure = { stageSlug: "dev-env-basics", id: "0-1-1", reason: "最初の理由\n詳細" };
@@ -84,12 +89,231 @@ describe("教材動画の配信", () => {
     expect(hasVideo(state, keys)).toBe(false);
   });
   it("manifest を安定したレッスン ID 順の JSON にする", () => {
-    const entry = { ...keys, durationSec: 45 };
+    const legacyEntry = { ...keys, durationSec: 45 };
+    const entry = {
+      ...legacyEntry,
+      scenes: [{ id: "intro", startSec: 2.6, durationSec: 3.125, hash: "0123456789abcdef" }],
+    };
     const failure = { stageSlug: "another-stage", error: "読み上げに失敗しました" };
-    const text = serializeVideoManifest({ c: failure, b: entry, a: entry });
+    const text = serializeVideoManifest({ c: failure, b: legacyEntry, a: entry });
     expect(Object.keys(JSON.parse(text))).toEqual(["a", "b", "c"]);
     expect(JSON.parse(text).a).toEqual(entry);
+    expect(JSON.parse(text).b).toEqual(legacyEntry);
     expect(JSON.parse(text).c).toEqual(failure);
     expect(serializeVideoManifest({})).toBe("{}\n");
+  });
+});
+
+describe("教材動画の場面", () => {
+  const brief = { goal: "流れを確認する", stuck: "順番が分からない", points: [], leaveOut: [] };
+  it("絵コンテのハッシュはキー順に依存せず、内容が1文字違うと変わる", () => {
+    const scene = { id: "intro", beats: [{ say: "はじめ", hold: 1 }] };
+    const hash = videoSceneHash(scene);
+    expect(hash).toMatch(/^[0-9a-f]{16}$/);
+    expect(videoSceneHash({ beats: [{ hold: 1, say: "はじめ" }], id: "intro" })).toBe(hash);
+    expect(videoSceneHash({ ...scene, beats: [{ say: "はじめる", hold: 1 }] })).not.toBe(hash);
+  });
+
+  it("絵コンテにある場面を再生順で返し、開始位置と長さをミリ秒に丸める", () => {
+    const first: ViewScene = {
+      kind: "view",
+      id: "first",
+      role: "hook",
+      title: "最初",
+      image: "shot:example/first",
+      beats: [{ say: "最初" }],
+    };
+    const last: ViewScene = { ...first, id: "last", title: "最後", image: "shot:example/last" };
+    expect(
+      storyboardVideoScenes(
+        [
+          { id: "title", startSec: 0, durationSec: 2.6 },
+          { id: "first", startSec: 2.6001, durationSec: 3.1259 },
+          { id: "last", startSec: 5.726, durationSec: 4.2344 },
+        ],
+        { schema: 1, brief, scenes: [first, last] },
+        { [first.image]: "first-hash", [last.image]: "last-hash" },
+      ),
+    ).toEqual([
+      {
+        id: "first",
+        startSec: 2.6,
+        durationSec: 3.126,
+        hash: videoSceneHash({ definition: first, assets: { [first.image]: "first-hash" } }),
+      },
+      {
+        id: "last",
+        startSec: 5.726,
+        durationSec: 4.234,
+        hash: videoSceneHash({ definition: last, assets: { [last.image]: "last-hash" } }),
+      },
+    ]);
+  });
+
+  const storyboard: VideoStoryboard = {
+    schema: 1,
+    brief,
+    scenes: [
+      {
+        kind: "view",
+        id: "view",
+        title: "操作",
+        role: "hook",
+        image: "shot:editor/start",
+        beats: [
+          { say: "画像", image: "shot:editor/next" },
+          { say: "操作", clip: "web/example#open" },
+        ],
+      },
+      { id: "board", title: "概要", role: "recap", board: "main", beats: [{ say: "まとめ" }] },
+    ],
+    boards: {
+      main: { cols: 4, rows: 4, nodes: [{ id: "main", label: "概要", at: [1, 1], art: "main" }] },
+      other: {
+        cols: 4,
+        rows: 4,
+        nodes: [{ id: "other", label: "別の盤面", at: [1, 1], art: "other" }],
+      },
+    },
+  };
+  const timings = storyboard.scenes.map(({ id }, i) => ({ id, startSec: i * 5, durationSec: 5 }));
+  const hashes = {
+    "shot:editor/start": "start-hash",
+    "shot:editor/next": "next-hash",
+    "clip:web/example#open": "clip-hash",
+    "art:main": "main-hash",
+    "art:other": "other-hash",
+  };
+
+  it.each([
+    ["shot:editor/start", "view"],
+    ["shot:editor/next", "view"],
+    ["clip:web/example#open", "view"],
+    ["art:main", "board"],
+    ["art:other", null],
+  ] as const)("素材 %s の変更は使っている場面だけに反映する", (ref, changedScene) => {
+    const original = storyboardVideoScenes(timings, storyboard, hashes);
+    const updated = storyboardVideoScenes(timings, storyboard, {
+      ...hashes,
+      [ref]: "changed",
+    });
+    expect(
+      updated.filter((scene, i) => scene.hash !== original[i].hash).map(({ id }) => id),
+    ).toEqual(changedScene ? [changedScene] : []);
+  });
+
+  it("盤面の定義が変わると参照する場面だけのハッシュが変わる", () => {
+    const [view, board] = storyboardVideoScenes(timings, storyboard, hashes);
+    const updated = storyboardVideoScenes(
+      timings,
+      {
+        ...storyboard,
+        boards: { ...storyboard.boards, main: { cols: 5, rows: 4, nodes: [] } },
+      },
+      hashes,
+    );
+    expect(updated[0].hash).toBe(view.hash);
+    expect(updated[1].hash).not.toBe(board.hash);
+  });
+
+  it("前の場面から引き継ぐ盤面の表示をハッシュに含め、時刻は含めない", () => {
+    const first: BoardScene = {
+      id: "first",
+      title: "最初",
+      role: "hook",
+      board: "main",
+      beats: [{ say: "表示します。", show: ["main"] }],
+    };
+    const second: BoardScene = {
+      ...first,
+      id: "second",
+      role: "point",
+      point: 1,
+      beats: [{ say: "続けます。" }],
+    };
+    const reset: BoardScene = { ...second, id: "last", role: "recap", reset: true };
+    const boardStoryboard = { ...storyboard, scenes: [first, second, reset] };
+    const timings = boardStoryboard.scenes.map(({ id }, i) => ({
+      id,
+      startSec: i * 5,
+      durationSec: 5,
+    }));
+    const original = storyboardVideoScenes(timings, boardStoryboard, hashes);
+    const changed = storyboardVideoScenes(
+      timings,
+      {
+        ...boardStoryboard,
+        scenes: [{ ...first, beats: [{ say: "表示します。" }] }, second, reset],
+      },
+      hashes,
+    );
+    expect(changed[1].hash).not.toBe(original[1].hash);
+    expect(changed[2].hash).toBe(original[2].hash);
+
+    const retimed = storyboardVideoScenes(
+      timings.map((timing, i) => ({
+        ...timing,
+        startSec: i === 0 ? 0 : timing.startSec + 2,
+        durationSec: i === 0 ? 7 : timing.durationSec,
+      })),
+      boardStoryboard,
+      hashes,
+    );
+    expect(retimed[1].startSec).toBe(7);
+    expect(retimed.map(({ hash }) => hash)).toEqual(original.map(({ hash }) => hash));
+  });
+
+  it("スライドには1始まりの ID を付け、題名と読み上げ文と本文をハッシュにする", () => {
+    const slides = [
+      { title: "最初", body: "最初の本文", startSec: 0, durationSec: 3.4567 },
+      { title: "最後", body: "最後の本文", startSec: 3.4567, durationSec: 4.5433 },
+    ];
+    const narration = [{ cues: [{ text: "一文。" }, { text: "二文。" }] }, { cues: [] }];
+    const original = slideVideoScenes(slides, narration);
+    expect(original).toEqual([
+      {
+        id: "slide-1",
+        startSec: 0,
+        durationSec: 3.457,
+        hash: videoSceneHash(["最初", "一文。二文。", "最初の本文"]),
+      },
+      {
+        id: "slide-2",
+        startSec: 3.457,
+        durationSec: 4.543,
+        hash: videoSceneHash(["最後", "", "最後の本文"]),
+      },
+    ]);
+    const updated = slideVideoScenes(
+      [{ ...slides[0], body: "変更した本文" }, slides[1]],
+      narration,
+    );
+    expect(updated[0].hash).not.toBe(original[0].hash);
+    expect(updated[1]).toEqual(original[1]);
+  });
+
+  it("参照している画像の内容だけを場面のハッシュに加える", () => {
+    const image = "tenant/ses/stages/example/diagram.svg";
+    const unused = "tenant/ses/stages/example/unused.svg";
+    const slides = [
+      { title: "図", body: "![図](assets/diagram.svg)", startSec: 0, durationSec: 5 },
+      { title: "説明", body: "本文", startSec: 5, durationSec: 5 },
+    ];
+    const renderedBodies = [`![図](${image})`, "本文"];
+    const narration = [{ cues: [] }, { cues: [{ text: "説明します。" }] }];
+    const scenes = (assetHashes: Record<string, string>) =>
+      slideVideoScenes(
+        slides.map((slide, i) => ({
+          ...slide,
+          assetHashes: slideAssetHashes(renderedBodies[i], assetHashes),
+        })),
+        narration,
+      );
+    const original = scenes({ [image]: "a".repeat(64), [unused]: "b".repeat(64) });
+    const updated = scenes({ [image]: "c".repeat(64), [unused]: "b".repeat(64) });
+    expect(updated[0].hash).not.toBe(original[0].hash);
+    expect(updated[1]).toEqual(original[1]);
+    expect(scenes({ [image]: "a".repeat(64), [unused]: "d".repeat(64) })).toEqual(original);
+    expect(original[1].hash).toBe(videoSceneHash(["説明", "説明します。", "本文"]));
   });
 });

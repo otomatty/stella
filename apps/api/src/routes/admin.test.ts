@@ -197,7 +197,7 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
   let env: Env;
   let app: ReturnType<typeof mountTestApp>["app"];
 
-  function run(query: string, ...params: (string | number)[]) {
+  function run(query: string, ...params: (string | number | null)[]) {
     database.sqlite.prepare(query).run(...params);
   }
 
@@ -388,6 +388,83 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expect(await json<{ error: string }>(res)).toEqual({ error: message });
     expectNotDeleted();
   }
+
+  it("受講者を消すと動画コメント・メンション・投稿記録と、消えたスレッドや返信の通知が消える", async () => {
+    run(`INSERT INTO stages (id, tenant_id, slug, title, status, created_at, updated_at)
+      VALUES ('video-stage', 'ses', 'video-stage', '動画ステージ', 'published', 1, 1)`);
+    run(`INSERT INTO sections (id, stage_id, title, "order", created_at)
+      VALUES ('video-section', 'video-stage', '単元', 0, 1)`);
+    run(`INSERT INTO lessons (id, section_id, title, type, video_path, created_at, updated_at)
+      VALUES ('video', 'video-section', '動画', 'video', 'video.mp4', 1, 1)`);
+    const comment = `INSERT INTO lesson_comments (id, lesson_id, user_id, parent_id, body, created_at)
+      VALUES (?, 'video', ?, ?, '本文', 1)`;
+    run(comment, "learner-root", LEARNER, null);
+    run(comment, "third-reply", ADMIN, "learner-root");
+    run(comment, "cascaded-reply", OTHER, "learner-root");
+    run(comment, "other-root", OTHER, null);
+    run(comment, "learner-reply", LEARNER, "other-root");
+    run(comment, "retained-reply", OTHER, "other-root");
+    const mention = "INSERT INTO lesson_comment_mentions (comment_id, user_id) VALUES (?, ?)";
+    run(mention, "learner-reply", OTHER);
+    run(mention, "retained-reply", LEARNER);
+    run(mention, "retained-reply", ADMIN);
+    const record = "INSERT INTO lesson_comment_posts (id, user_id, created_at) VALUES (?, ?, 1)";
+    run(record, "learner-post", LEARNER);
+    run(record, "other-post", OTHER);
+    const notification = `INSERT INTO notifications
+      (id, user_id, tenant_id, type, title, payload, created_at) VALUES (?, ?, 'ses', ?, '通知', ?, 1)`;
+    run(
+      notification,
+      "comment-note",
+      ADMIN,
+      "lesson_comment",
+      JSON.stringify({ from_id: LEARNER, comment_id: "learner-root" }),
+    );
+    run(
+      notification,
+      "cascaded-note",
+      ADMIN,
+      "lesson_comment_reply",
+      JSON.stringify({ from_id: OTHER, thread_id: "learner-root", comment_id: "cascaded-reply" }),
+    );
+    run(
+      notification,
+      "reply-note",
+      ADMIN,
+      "lesson_comment_mention",
+      JSON.stringify({ thread_id: "other-root", comment_id: "learner-reply" }),
+    );
+    run(notification, "invalid-note", ADMIN, "lesson_comment_reply", "{");
+    run(
+      notification,
+      "unrelated-note",
+      ADMIN,
+      "announcement",
+      JSON.stringify({ thread_id: "learner-root" }),
+    );
+    expect(countRows("SELECT count(*) AS n FROM notifications WHERE id = ?", "cascaded-note")).toBe(
+      1,
+    );
+
+    const res = await remove({ userId: LEARNER, confirmEmail: "learner@example.com" });
+    expect(res.status).toBe(200);
+    expect(database.sqlite.prepare("SELECT id FROM lesson_comments ORDER BY id").all()).toEqual([
+      { id: "other-root" },
+      { id: "retained-reply" },
+    ]);
+    expect(
+      database.sqlite.prepare("SELECT comment_id, user_id FROM lesson_comment_mentions").all(),
+    ).toEqual([{ comment_id: "retained-reply", user_id: ADMIN }]);
+    for (const id of ["comment-note", "cascaded-note", "reply-note"]) {
+      expect(countRows("SELECT count(*) AS n FROM notifications WHERE id = ?", id)).toBe(0);
+    }
+    for (const id of ["invalid-note", "unrelated-note"]) {
+      expect(countRows("SELECT count(*) AS n FROM notifications WHERE id = ?", id)).toBe(1);
+    }
+    expect(database.sqlite.prepare("SELECT id FROM lesson_comment_posts").all()).toEqual([
+      { id: "other-post" },
+    ]);
+  });
 
   it("受講者を消すと提出・接続・認証が消え、監査の個人情報だけ外れる", async () => {
     const res = await remove({

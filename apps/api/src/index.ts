@@ -23,6 +23,7 @@ import { cmsDiscoveryRoute } from "./routes/cms-discovery.js";
 import { discoveryRoute } from "./routes/discovery.js";
 import { healthzRoute } from "./routes/healthz.js";
 import { lessonProgressRoute } from "./routes/lesson-progress.js";
+import { lessonCommentsRoute } from "./routes/lesson-comments.js";
 import { materialsRoute } from "./routes/materials.js";
 import { meRoute } from "./routes/me.js";
 import { onboardingRoute } from "./routes/onboarding.js";
@@ -107,6 +108,7 @@ app.route("/", supportRoute);
 app.route("/", publicContentRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
+app.route("/", lessonCommentsRoute);
 app.route("/", r2MaintenanceRoute);
 app.route("/", searchRoute);
 

@@ -19,6 +19,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
 
 import { isAssignableProfileRole, validateInviteUsersRequest } from "@stella/shared/admin/types";
 import type { AssignableProfileRole, InviteResult } from "@stella/shared/admin/types";
+import { COMMENT_NOTIFICATION_TYPES } from "@stella/shared/lessons/comments";
 import { and, asc, count, eq, exists, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Hono, type Context } from "hono";
@@ -28,6 +29,7 @@ import {
   auditLogs,
   authUsers,
   authVscodeLinks,
+  lessonComments,
   notifications,
   profiles,
   submissions,
@@ -288,12 +290,25 @@ adminRoute.post("/api/admin/users/delete", async (c) => {
     const deleted = {
       submissions: Number(submissionCount?.value ?? 0),
     };
+    const authoredComments = db
+      .select({ id: lessonComments.id })
+      .from(lessonComments)
+      .where(eq(lessonComments.userId, userId));
     // audit_logs.metadata は NOT NULL (既定 '{}') なので、空オブジェクトにしてメールなどを外す。
     await db.batch([
       db.delete(submissions).where(eq(submissions.studentId, userId)),
       db.delete(authVscodeLinks).where(eq(authVscodeLinks.userId, userId)),
       db.delete(supportInquiries).where(eq(supportInquiries.userId, userId)),
       db.delete(notifications).where(sql`instr(payload, ${userId}) > 0`),
+      db.delete(notifications).where(
+        and(
+          inArray(notifications.type, COMMENT_NOTIFICATION_TYPES),
+          sql`case when json_valid(${notifications.payload}) then
+            json_extract(${notifications.payload}, '$.thread_id') in ${authoredComments}
+            or json_extract(${notifications.payload}, '$.comment_id') in ${authoredComments}
+          end`,
+        ),
+      ),
       db
         .update(auditLogs)
         .set({ metadata: {} })

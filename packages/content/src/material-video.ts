@@ -1,5 +1,6 @@
 /** 配信する3ファイルは同じ内容ハッシュを共有する。旧版は台帳に残す。 */
 import { createHash } from "node:crypto";
+import { normalizeStoryboard, storyboardStates, type VideoStoryboard } from "./video-storyboard.js";
 
 export const SCREEN_VIDEO_FILES = ["screen.mp4", "screen.vtt", "screen.jpg"] as const;
 
@@ -23,11 +24,103 @@ export function selectVideoSource(
   return { kind: "recorded", sourceHash: hash.digest("hex").slice(0, 32) };
 }
 
+export interface VideoScene {
+  /** 場面の ID。動画を作り直しても、同じ場面なら同じ値。 */
+  id: string;
+  /** 動画の先頭からの開始位置 (秒、小数 3 桁まで)。 */
+  startSec: number;
+  /** 場面の長さ (秒、小数 3 桁まで)。 */
+  durationSec: number;
+  /** 場面の内容のハッシュ (sha256 の先頭 16 桁)。 */
+  hash: string;
+}
+
+type SceneTiming = Pick<VideoScene, "startSec" | "durationSec">;
+
+export function videoSceneHash(definition: unknown): string {
+  return createHash("sha256").update(normalizeStoryboard(definition)).digest("hex").slice(0, 16);
+}
+
+function toVideoScene(id: string, timing: SceneTiming, definition: unknown): VideoScene {
+  return {
+    id,
+    startSec: Math.round(timing.startSec * 1000) / 1000,
+    durationSec: Math.round(timing.durationSec * 1000) / 1000,
+    hash: videoSceneHash(definition),
+  };
+}
+
+export function storyboardVideoScenes(
+  report: ReadonlyArray<SceneTiming & { id: string }>,
+  storyboard: VideoStoryboard,
+  assetHashes: Readonly<Record<string, string>>,
+): VideoScene[] {
+  const states = storyboardStates(storyboard);
+  const byId = new Map(
+    storyboard.scenes.map((definition, i) => [definition.id, { definition, state: states[i] }]),
+  );
+  return report.flatMap((timing) => {
+    const scene = byId.get(timing.id);
+    // 自動生成のタイトル画面は絵コンテに定義がない。
+    if (!scene) return [];
+    const { definition, state } = scene;
+    const board = "board" in definition ? storyboard.boards?.[definition.board] : undefined;
+    const references = new Set<string>();
+    if (definition.kind === "view") {
+      references.add(definition.image);
+      for (const beat of definition.beats) {
+        if (beat.image) references.add(beat.image);
+        if (beat.clip) references.add(`clip:${beat.clip}`);
+      }
+    }
+    for (const node of board?.nodes ?? []) {
+      if (node.art) references.add(`art:${node.art}`);
+    }
+    const assets = Object.fromEntries([...references].map((ref) => [ref, assetHashes[ref]]));
+    // 定義だけから決まる開始状態は省き、前の場面から引き継いだ状態を含める。
+    let start: typeof state.start | undefined;
+    if (state.kind === "view") {
+      if (state.start.lastFrame) start = state.start;
+    } else if (state.kind !== "code") {
+      const { visible, marks, zoom } = state.start;
+      if (visible.length || Object.keys(marks).length || zoom !== "all") start = state.start;
+    }
+    const content =
+      board || references.size || start ? { definition, board, assets, start } : definition;
+    return [toVideoScene(timing.id, timing, content)];
+  });
+}
+
+export function slideAssetHashes(
+  body: string,
+  assetHashes: Readonly<Record<string, string>>,
+): Record<string, string> {
+  return Object.fromEntries(Object.entries(assetHashes).filter(([ref]) => body.includes(ref)));
+}
+
+export function slideVideoScenes(
+  slides: ReadonlyArray<
+    SceneTiming & { title: string; body: string; assetHashes?: Readonly<Record<string, string>> }
+  >,
+  narration: ReadonlyArray<{ cues: ReadonlyArray<{ text: string }> }>,
+): VideoScene[] {
+  return slides.map((slide, i) => {
+    const content = [slide.title, narration[i].cues.map((cue) => cue.text).join(""), slide.body];
+    const assets = slide.assetHashes;
+    return toVideoScene(
+      `slide-${i + 1}`,
+      slide,
+      assets && Object.keys(assets).length > 0 ? [...content, assets] : content,
+    );
+  });
+}
+
 export interface VideoManifestEntry {
   video: string;
   captions: string;
   poster: string;
   durationSec: number;
+  scenes?: VideoScene[];
 }
 export interface VideoManifestFailure {
   stageSlug: string;
@@ -63,6 +156,7 @@ export interface VideoState {
   version: 1;
   objects: Record<string, number>;
   durations: Record<string, number>;
+  scenes?: Record<string, VideoScene[]>;
 }
 export const videoKeyHash = (key: string): string => createHash("sha256").update(key).digest("hex");
 

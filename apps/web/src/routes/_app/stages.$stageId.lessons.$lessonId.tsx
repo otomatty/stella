@@ -10,12 +10,15 @@ import { StaffLessonView } from "@/components/staff/StaffLessonView";
 import { LessonPlayer } from "@/components/learner/LessonPlayer";
 
 export const Route = createFileRoute("/_app/stages/$stageId/lessons/$lessonId")({
+  validateSearch: (search: Record<string, unknown>): { thread?: string } =>
+    typeof search.thread === "string" ? { thread: search.thread } : {},
   component: LessonPage,
 });
 
 function LessonPage() {
   const s = useAppShell();
   const { stageId, lessonId } = Route.useParams();
+  const { thread } = Route.useSearch();
   const target = s.stages.find((c) => c.id === stageId);
   // lessonId がステージに無いまま LessonPlayer へ渡すと先頭レッスンへ差し替えられて
   // URL まで書き換わるため、 ここで解決して不在なら明示的に表示する。
@@ -24,11 +27,18 @@ function LessonPage() {
   return (
     <RoleGuard allow={["learner", "admin"]}>
       {s.role !== "learner" ? (
-        <StaffLessonView key={`${stageId}:${lessonId}`} stageId={stageId} lessonId={lessonId} />
+        <StaffLessonView
+          key={`${stageId}:${lessonId}`}
+          stageId={stageId}
+          lessonId={lessonId}
+          focusThreadId={thread}
+        />
       ) : target && !lessonExists ? (
         <LessonNotFoundNotice setPage={s.setPage} />
       ) : target ? (
         <LessonPlayer
+          // ステージ切替時は URL のレッスンから表示を始める。
+          key={stageId}
           stage={target}
           setPage={s.setPage}
           studentName={s.studentName}
@@ -38,6 +48,7 @@ function LessonPage() {
           initialLesson={{ id: lessonId, seq: 0 }}
           onActiveLessonChange={s.onActiveLessonChange}
           onOpenSubmission={s.onOpenSubmission}
+          focusThreadId={thread}
         />
       ) : s.stages.length === 0 ? (
         <EmptyStagesNotice setPage={s.setPage} />

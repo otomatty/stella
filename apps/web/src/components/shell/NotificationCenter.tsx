@@ -1,3 +1,4 @@
+import { relativeTime } from "@/lib/relative-time";
 /**
  * 通知センター (Issue #25)。
  *
@@ -42,6 +43,7 @@ interface NotificationCenterProps {
   /** お知らせのステージ指定に使う (任意。 空なら全員)。 */
   stages: Stage[];
   onOpenSubmission?: (submissionId: string) => void;
+  onOpenLessonThread?: (stageId: string, lessonId: string, threadId: string) => void;
 }
 
 const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; label: string }> = {
@@ -52,24 +54,11 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   learning_pace_delayed: { icon: Bell, tone: "text-warning", label: "学習ペース" },
   learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
   mentor_message: { icon: Send, tone: "text-brand", label: "管理者から" },
+  lesson_comment: { icon: MessageCircle, tone: "text-brand", label: "動画へのコメント" },
+  lesson_comment_reply: { icon: MessageCircle, tone: "text-brand", label: "コメントへの返信" },
+  lesson_comment_mention: { icon: MessageCircle, tone: "text-brand", label: "メンション" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージ完了" },
 };
-
-/** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const diff = Date.now() - then;
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return "たった今";
-  if (min < 60) return `${min}分前`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}時間前`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}日前`;
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
-}
 
 export const NotificationCenter = ({
   role,
@@ -81,6 +70,7 @@ export const NotificationCenter = ({
   onAfterCreateAnnouncement,
   stages,
   onOpenSubmission,
+  onOpenLessonThread,
 }: NotificationCenterProps) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -180,6 +170,25 @@ export const NotificationCenter = ({
                       key={n.id}
                       onClick={() => {
                         if (!n.read) onMarkRead(n.id);
+                        if (
+                          (n.type === "lesson_comment" ||
+                            n.type === "lesson_comment_reply" ||
+                            n.type === "lesson_comment_mention") &&
+                          onOpenLessonThread
+                        ) {
+                          const { stage_id, lesson_id, thread_id } = n.payload ?? {};
+                          if (
+                            typeof stage_id === "string" &&
+                            stage_id &&
+                            typeof lesson_id === "string" &&
+                            lesson_id &&
+                            typeof thread_id === "string" &&
+                            thread_id
+                          ) {
+                            onOpenLessonThread(stage_id, lesson_id, thread_id);
+                            setOpen(false);
+                          }
+                        }
                         if (
                           (n.type === "review_completed" || n.type === "review_comment") &&
                           onOpenSubmission

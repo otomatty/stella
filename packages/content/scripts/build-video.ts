@@ -36,7 +36,14 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { type Browser, chromium } from "playwright";
 
 import { collectPdfTargets } from "../src/material-pdf.js";
-import { SCREEN_VIDEO_FILES, selectVideoSource } from "../src/material-video.js";
+import {
+  SCREEN_VIDEO_FILES,
+  selectVideoSource,
+  slideAssetHashes,
+  slideVideoScenes,
+  storyboardVideoScenes,
+  type VideoScene,
+} from "../src/material-video.js";
 import {
   estimateSpeechSeconds,
   formatIssue,
@@ -46,6 +53,8 @@ import {
 } from "../src/narration.js";
 import { splitNarration, trimSilence } from "../src/narration-split.js";
 import { splitSlides } from "../src/split-slides.js";
+import { storyboardAssets } from "../src/storyboard-assets.js";
+import type { VideoStoryboard } from "../src/video-storyboard.js";
 import {
   buildTimeline,
   captionSegments,
@@ -75,7 +84,7 @@ import {
   type NarrationTopic,
   validateTopic,
 } from "./lib/narration-topics.js";
-import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml } from "./lib/slide-html.js";
+import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml, splitLessonSlides } from "./lib/slide-html.js";
 import {
   QuotaExhaustedError,
   createTtsProvider,
@@ -113,6 +122,7 @@ interface BuildOptions {
   cacheDir: string;
   captioned: boolean;
   keepWork: boolean;
+  voice: VoiceConfig;
 }
 
 // ---------------------------------------------------------------- 設定
@@ -204,8 +214,18 @@ interface CuePlan {
   file?: string;
 }
 
+interface TopicPlan {
+  topic: VideoTopic;
+  cues: CuePlan[];
+  warnings: string[];
+  recorded: boolean;
+  sourceHash: string;
+  assetHashes: Readonly<Record<string, string>>;
+}
+
 interface TopicReport {
   scenes?: unknown[];
+  videoScenes?: VideoScene[];
   stageSlug: string;
   id: string;
   title: string;
@@ -231,6 +251,7 @@ function sourceHashOf(
   cues: CuePlan[],
   voice: VoiceConfig,
   provider: TtsProvider,
+  assetHashes?: Record<string, string>,
 ): string {
   const h = createHash("sha256");
   h.update(
@@ -252,8 +273,10 @@ function sourceHashOf(
   );
   h.update(topic.markdown);
   for (const [key, file] of [...topic.assets].sort(([a], [b]) => a.localeCompare(b))) {
+    const contents = readFileSync(file);
     h.update(key);
-    h.update(readFileSync(file));
+    h.update(contents);
+    if (assetHashes) assetHashes[key] = createHash("sha256").update(contents).digest("hex");
   }
   return h.digest("hex").slice(0, 32);
 }
@@ -268,10 +291,11 @@ const VIDEO_CSS = `html, body { margin: 0; padding: 0; background: #fff; }
   text-wrap: balance; word-break: auto-phrase;
 }`;
 
-function slidesHeadings(topic: VideoTopic): { title: string; isTitleSlide: boolean }[] {
+function slidesHeadings(topic: VideoTopic) {
   return splitSlides(topic.slidesSource).map((s) => ({
     title: s.cls === "lead" ? topic.title : (slideHeading(s.body) ?? topic.title),
     isTitleSlide: s.cls === "lead",
+    body: s.body,
   }));
 }
 
@@ -346,13 +370,10 @@ async function encodeFromSegments(
 }
 
 async function buildTopic(
-  topic: VideoTopic,
-  cues: CuePlan[],
-  sourceHash: string,
+  { topic, cues, sourceHash, warnings, assetHashes }: TopicPlan,
   provider: TtsProvider,
   browser: Browser,
-  warnings: string[],
-  { outDir, cacheDir, captioned, keepWork }: BuildOptions,
+  { outDir, cacheDir, captioned, keepWork, voice }: BuildOptions,
 ): Promise<TopicReport> {
   const topicOut = join(outDir, topic.stageSlug, topic.id);
   const workDir = join(topicOut, "work");
@@ -491,6 +512,15 @@ async function buildTopic(
 
   const speechChars = cues.reduce((n, c) => n + [...c.speech.replace(/\s/g, "")].length, 0);
   const audioSec = pcms.reduce((n, p) => n + p.length / AUDIO_RATE, 0);
+  const slides = timeline.slides.map((s) => ({
+    title: s.title,
+    startSec: s.start,
+    durationSec: s.duration,
+  }));
+  if (sourceHashOf(topic, cues, voice, provider) !== sourceHash)
+    throw new Error("動画の入力が計画後に変わりました (生成後)");
+  // 描画側と同じ、画像の参照が R2 キーに変換された本文で探す。
+  const renderedSlides = splitLessonSlides(topic.markdown);
   const report: TopicReport = {
     stageSlug: topic.stageSlug,
     id: topic.id,
@@ -500,11 +530,17 @@ async function buildTopic(
     voice: provider.identity,
     durationSec: timeline.duration,
     probedDurationSec: Math.round(probed * 1000) / 1000,
-    slides: timeline.slides.map((s) => ({
-      title: s.title,
-      startSec: s.start,
-      durationSec: s.duration,
-    })),
+    slides,
+    videoScenes: slideVideoScenes(
+      slides.map((slide, i) => {
+        return {
+          ...slide,
+          body: headings[i].body,
+          assetHashes: slideAssetHashes(renderedSlides[i], assetHashes),
+        };
+      }),
+      topic.narration.slides,
+    ),
     cues: cues.length,
     speechChars,
     charsPerSec: Math.round((speechChars / audioSec) * 100) / 100,
@@ -685,13 +721,7 @@ export async function buildVideos(
   const failures: VideoFailure[] = [...invalid];
 
   // 台本の検証 (エラーのあるトピックは作らない)
-  const plans: {
-    topic: VideoTopic;
-    cues: CuePlan[];
-    warnings: string[];
-    recorded: boolean;
-    sourceHash: string;
-  }[] = [];
+  const plans: TopicPlan[] = [];
   for (const topic of topics) {
     const label = `${topic.stageSlug}/${topic.id}`;
     const source = topic.source;
@@ -716,12 +746,16 @@ export async function buildVideos(
               };
             }),
           );
+    const assetHashes: Record<string, string> = {};
     plans.push({
       topic,
       cues,
       recorded: source.kind === "recorded",
       sourceHash:
-        source.kind === "recorded" ? source.sourceHash : sourceHashOf(topic, cues, voice, provider),
+        source.kind === "recorded"
+          ? source.sourceHash
+          : sourceHashOf(topic, cues, voice, provider, assetHashes),
+      assetHashes,
       warnings: issues.filter((i) => i.level === "warning").map((i) => formatIssue("", i).slice(2)),
     });
   }
@@ -816,10 +850,22 @@ export async function buildVideos(
           true,
         );
         if (!result) throw new Error("場面の動画がありません");
+        // 生成コードは動画とキャッシュのハッシュに入るので、配信用の場面情報はここで作る。
+        const storyboard = JSON.parse(
+          readFileSync(join(topic.topicDir, "video.json"), "utf8"),
+        ) as VideoStoryboard;
+        const { hashes } = storyboardAssets(contentRoot, topic.topicDir, storyboard, {
+          onlyReferenced: true,
+        });
         if (planSceneTopic(topic, provider.identity) !== sourceHash)
           throw new Error("動画の入力が計画後に変わりました (生成後)");
         const report: TopicReport = {
           ...result,
+          videoScenes: storyboardVideoScenes(
+            result.scenes as Pick<VideoScene, "id" | "startSec" | "durationSec">[],
+            storyboard,
+            hashes,
+          ),
           stageSlug: topic.stageSlug,
           id: topic.id,
           title: topic.title,
@@ -954,23 +1000,17 @@ export async function buildVideos(
     const generated = buildable.filter((p) => !p.recorded);
     if (generated.length > 0) {
       const sharedBrowser = await getBrowser();
-      await mapPool(generated, concurrency, async ({ topic, cues, warnings, sourceHash }) => {
+      await mapPool(generated, concurrency, async (plan) => {
+        const { topic } = plan;
         const label = `${topic.stageSlug}/${topic.id}`;
         try {
-          const report = await buildTopic(
-            topic,
-            cues,
-            sourceHash,
-            provider,
-            sharedBrowser,
-            warnings,
-            {
-              outDir,
-              cacheDir,
-              captioned,
-              keepWork,
-            },
-          );
+          const report = await buildTopic(plan, provider, sharedBrowser, {
+            outDir,
+            cacheDir,
+            captioned,
+            keepWork,
+            voice,
+          });
           reports.push(report);
           console.log(
             `  ✓ ${label} ${report.durationSec.toFixed(1)}s (audio ${report.timingsMs.audio}ms / render ${report.timingsMs.render}ms / encode ${report.timingsMs.encode}ms)`,

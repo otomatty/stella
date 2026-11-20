@@ -1,15 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { StageWithChildren } from "@stella/shared/cms/types";
 import { PageContainer } from "@/components/common/PageContainer";
 import { PageHeader } from "@/components/common/PageHeader";
+import { LessonComments } from "@/components/learner/LessonComments";
+import { AppShellContext } from "@/components/shell/app-shell-context";
 import { LessonMarkdown, PlainMarkdownSlides } from "@/components/learner/MarkdownSlides";
 import { SlideLessonMedia } from "@/components/learner/SlideLessonMedia";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useVideoLessonComments } from "@/hooks/useLessonComments";
+import { isBackendConfigured } from "@/lib/backend";
 import { getStageWithChildren } from "@/lib/cms-api";
+import { isVideoLesson } from "@/lib/lesson-video";
 import { VideoStatusBadge } from "./VideoStatusBadge";
 import {
   adjacentStageLessons,
@@ -18,7 +23,15 @@ import {
   LESSON_TYPE_LABELS,
 } from "./staff-stage-detail";
 
-export function StaffLessonView({ stageId, lessonId }: { stageId: string; lessonId: string }) {
+export function StaffLessonView({
+  stageId,
+  lessonId,
+  focusThreadId,
+}: {
+  stageId: string;
+  lessonId: string;
+  focusThreadId?: string;
+}) {
   const [data, setData] = useState<StageWithChildren | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +65,14 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
     section.lessons.some((lesson) => lesson.id === lessonId),
   );
   const lesson = section?.lessons.find((lesson) => lesson.id === lessonId);
+  const shell = useContext(AppShellContext);
+  const hasVideo = !!lesson && isVideoLesson({ type: lesson.type, videoPath: lesson.video_path });
+  const video = useVideoLessonComments(
+    lessonId,
+    isBackendConfigured() && hasVideo,
+    lesson?.video_path,
+    focusThreadId,
+  );
   const status = lesson ? lessonVideoStatus(lesson) : "none";
   const adjacent = data ? adjacentStageLessons(data, lessonId) : null;
   const outline = (
@@ -123,14 +144,22 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
               <div className="mt-3">{outline}</div>
             </details>
             <div className="min-w-0 space-y-5">
-              {lesson.type === "slides" ? (
-                <SlideLessonMedia lessonId={lesson.id} videoPath={lesson.video_path}>
-                  {lesson.markdown ? (
-                    <PlainMarkdownSlides markdown={lesson.markdown} header={data.stage.title} />
-                  ) : (
-                    <p>スライドの本文がありません</p>
-                  )}
-                </SlideLessonMedia>
+              {lesson.type === "slides" || hasVideo ? (
+                <div ref={video.playerContainer} className="scroll-mt-[var(--shell-header-height)]">
+                  <SlideLessonMedia
+                    {...video.controls}
+                    lessonId={lesson.id}
+                    videoPath={lesson.video_path}
+                    showSlidesToggle={lesson.type === "slides"}
+                  >
+                    {lesson.type === "slides" &&
+                      (lesson.markdown ? (
+                        <PlainMarkdownSlides markdown={lesson.markdown} header={data.stage.title} />
+                      ) : (
+                        <p>スライドの本文がありません</p>
+                      ))}
+                  </SlideLessonMedia>
+                </div>
               ) : lesson.type === "text" && lesson.markdown ? (
                 <div className="prose-lms">
                   <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
@@ -141,6 +170,26 @@ export function StaffLessonView({ stageId, lessonId }: { stageId: string; lesson
                   です。受講者と同じ画面で確かめるときは、ステージ詳細の『受講者の画面で確かめる』を使います
                 </p>
               )}
+              {video.comments.enabled ? (
+                <section className="min-w-0 space-y-3">
+                  <h2 className="text-base font-semibold">コメント</h2>
+                  <LessonComments
+                    key={lessonId}
+                    comments={video.comments}
+                    playback={video.playback}
+                    getPlaybackState={video.getPlaybackState}
+                    onSeek={video.onSeek}
+                    onPause={video.onPause}
+                    onComposingChange={video.onComposingChange}
+                    focusThreadId={focusThreadId}
+                    viewer={{
+                      id: shell?.currentUserId ?? "",
+                      name: shell?.studentName ?? "管理者",
+                      initials: shell?.studentInitials ?? "管",
+                    }}
+                  />
+                </section>
+              ) : null}
               {lesson.type === "slides" ? (
                 <Card className="space-y-3 p-4">
                   <h2 className="text-sm font-semibold">管理者向けの情報</h2>

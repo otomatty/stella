@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SlideLessonMedia } from "./SlideLessonMedia";
-import { reachesVideoCompletion, VideoViewer } from "./VideoViewer";
+import { reachesVideoCompletion, seekDismissesNextOverlay, VideoViewer } from "./VideoViewer";
 
 vi.mock("@/lib/backend", () => ({ isBackendConfigured: () => true }));
 vi.mock("@/lib/storage", () => ({
@@ -31,8 +31,20 @@ describe("スライド動画の完了判定", () => {
   });
 });
 
+describe("シーク後に次の教材の案内を閉じる判定", () => {
+  it.each([
+    [98.99, 100, true],
+    [99, 100, false],
+    [100, 100, false],
+    [30, Number.NaN, false],
+    [30, Number.POSITIVE_INFINITY, false],
+  ])("再生位置 %s 秒、長さ %s 秒では案内を閉じるか (%s)", (time, duration, expected) => {
+    expect(seekDismissesNextOverlay(time, duration)).toBe(expected);
+  });
+});
+
 describe("スライドの動画表示", () => {
-  it("動画を既定で表示し、同じキーの字幕をオンにしてポスターを付ける", () => {
+  it("既定では動画だけを表示し、同じキーの字幕をオンにしてポスターを付ける", () => {
     const html = renderToStaticMarkup(
       createElement(
         SlideLessonMedia,
@@ -43,19 +55,32 @@ describe("スライドの動画表示", () => {
         "SLIDES_CONTENT",
       ),
     );
-    expect(html).toContain('aria-label="教材の表示"');
-    expect(html).toContain('aria-pressed="true">動画');
+    expect(html).not.toContain('aria-label="教材の表示"');
     expect(html).toContain("hash.mp4");
     expect(html).toContain(
       'poster="https://materials.example/lesson-video/ses/stage/topic/hash.jpg"',
     );
     expect(html).toMatch(/<track[^>]+hash\.vtt[^>]+default=""/);
+    expect(html).toMatch(/<button[^>]+aria-label="字幕を隠す"[^>]+aria-pressed="true"/);
     expect(html).not.toContain("SLIDES_CONTENT");
     expect(html).not.toContain("完了にする");
     expect(html).not.toContain("完了済み");
     expect(html).not.toContain("視聴 ");
   });
-  it("受講者のスライド動画では完了ボタンを出す", () => {
+  it("管理者の確認用に切り替えを表示し、動画を選択する", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        SlideLessonMedia,
+        { lessonId: "lesson", videoPath: "video.mp4", showSlidesToggle: true },
+        "SLIDES_CONTENT",
+      ),
+    );
+    expect(html).toContain('aria-label="教材の表示"');
+    expect(html).toContain('aria-pressed="true">動画');
+    expect(html).toContain('aria-pressed="false">スライド');
+    expect(html).not.toContain("SLIDES_CONTENT");
+  });
+  it("受講者のスライド動画でも手動の完了ボタンを出さない", () => {
     const html = renderToStaticMarkup(
       createElement(SlideLessonMedia, {
         lessonId: "lesson",
@@ -63,10 +88,11 @@ describe("スライドの動画表示", () => {
         onComplete: vi.fn(),
       }),
     );
-    expect(html).toContain("完了にする");
+    expect(html).not.toContain("完了にする");
+    expect(html).not.toContain("完了済み");
     expect(html).not.toContain("視聴 ");
   });
-  it("完了したスライド動画では完了済みと表示する", () => {
+  it("完了したスライド動画でも完了の帯を出さない", () => {
     const html = renderToStaticMarkup(
       createElement(SlideLessonMedia, {
         lessonId: "completed-lesson",
@@ -74,7 +100,7 @@ describe("スライドの動画表示", () => {
         onComplete: vi.fn(),
       }),
     );
-    expect(html).toContain("完了済み");
+    expect(html).not.toContain("完了済み");
     expect(html).not.toContain("完了にする");
     expect(html).not.toContain("視聴 ");
   });
@@ -91,11 +117,70 @@ describe("スライドの動画表示", () => {
       ),
     ).toBe("SLIDES_CONTENT");
   });
-  it("既存の動画レッスンは進捗と完了操作を引き続き出す", () => {
+  it("動画レッスンでは独自の操作バーを出し、字幕と進捗の帯を出さない", () => {
     const html = renderToStaticMarkup(
-      createElement(VideoViewer, { lessonId: "video", videoPath: "video.mp4" }),
+      createElement(VideoViewer, { lessonId: "video", videoPath: "video.mp4", totalSec: 400 }),
     );
-    expect(html).toContain("完了にする");
-    expect(html).toContain("視聴 ");
+    expect(html).not.toMatch(/<video[^>]*\scontrols(?:[\s=>])/);
+    expect(html).toMatch(/<video[^>]+playsInline=""/i);
+    expect(html).toContain('role="slider"');
+    expect(html).toContain('aria-label="再生位置"');
+    expect(html).toContain('aria-valuenow="0"');
+    expect(html).toContain('aria-valuemax="400"');
+    expect(html).toContain('aria-valuetext="0分0秒 / 6分40秒"');
+    expect(html).toMatch(/<button[^>]+type="button"[^>]+aria-label="再生"/);
+    expect(html).not.toMatch(/<button[^>]+aria-label="字幕を(?:表示|隠す)"/);
+    expect(html).not.toContain("完了にする");
+    expect(html).not.toContain("完了済み");
+    expect(html).not.toContain("視聴 ");
+  });
+  it("コメントの印をシークバーの外に描画し、近い印はまとめる", () => {
+    const html = renderToStaticMarkup(
+      createElement(VideoViewer, {
+        lessonId: "video",
+        videoPath: "video.mp4",
+        totalSec: 100,
+        markers: [
+          {
+            id: "a",
+            position_sec: 48,
+            resolved: false,
+            author_name: "受講者",
+            excerpt: "質問です",
+          },
+          { id: "b", position_sec: 75, resolved: true, author_name: "管理者", excerpt: "補足です" },
+          {
+            id: "c",
+            position_sec: 77,
+            resolved: true,
+            author_name: "受講者",
+            excerpt: "解決しました",
+          },
+        ],
+      }),
+    );
+    expect(html).toMatch(/<button[^>]+type="button"[^>]+aria-label="0:48 のコメント 1件"/);
+    expect(html).toMatch(/<button[^>]+type="button"[^>]+aria-label="1:15 のコメント 2件"/);
+    expect(html).not.toContain('aria-label="1:17 のコメント');
+    expect(html).toMatch(
+      /<div role="slider".*?<\/div><\/div><\/div><div[^>]*><button[^>]+aria-label="0:48 のコメント 1件"/,
+    );
+    expect(html).toContain("質問です");
+    expect(html).toContain("ほか 1 件");
+  });
+
+  it.each([
+    ["lesson", false],
+    ["completed-lesson", true],
+  ])("レッスン %s で次へボタンを表示するかは %s", (lessonId, visible) => {
+    const html = renderToStaticMarkup(
+      createElement(VideoViewer, {
+        lessonId,
+        videoPath: "video.mp4",
+        nextLessonTitle: "次の操作を試す",
+        onAdvanceNext: vi.fn(),
+      }),
+    );
+    expect(html.includes('aria-label="次の教材へ: 次の操作を試す"')).toBe(visible);
   });
 });
