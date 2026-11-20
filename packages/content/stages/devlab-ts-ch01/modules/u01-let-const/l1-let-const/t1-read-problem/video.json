@@ -312,11 +312,13 @@
           "show": ["price"],
           "tag": {
             "price": "1200円"
-          }
+          },
+          "pulse": ["price"]
         },
         {
           "say": "お店には、送料を足す係がいます。",
-          "show": ["fee"]
+          "show": ["fee"],
+          "pulse": ["fee"]
         },
         {
           "say": "係に、本の値段を渡します。",
@@ -345,7 +347,8 @@
             "along": ["back"],
             "icon": "send"
           },
-          "pause": 1
+          "pause": 1,
+          "pulse": ["total"]
         }
       ]
     },
@@ -365,7 +368,8 @@
           "travel": {
             "along": ["give"],
             "icon": "send"
-          }
+          },
+          "pulse": ["price"]
         },
         {
           "say": "係がすることは、さっきと同じです。",
@@ -380,7 +384,8 @@
           "travel": {
             "along": ["back"],
             "icon": "send"
-          }
+          },
+          "pulse": ["total"]
         },
         {
           "say": "受け取って、決まった処理をして、返しています。",
@@ -388,7 +393,8 @@
             "along": ["give", "back"],
             "icon": "send"
           },
-          "pause": 1
+          "pause": 1,
+          "pulse": []
         },
         {
           "say": "プログラムでは、この係を関数と呼びます。",
@@ -473,9 +479,6 @@
             "line": 1,
             "text": "addShipping",
             "note": "送料を足す"
-          },
-          "figure": {
-            "pulse": ["fee"]
           },
           "pause": 1
         }
@@ -586,7 +589,8 @@
           "figure": {
             "tag": {
               "price": "数値"
-            }
+            },
+            "pulse": ["price"]
           },
           "pause": 1
         },
@@ -595,9 +599,6 @@
           "part": {
             "line": 1,
             "text": "price: number"
-          },
-          "figure": {
-            "pulse": ["price"]
           }
         },
         {
@@ -609,7 +610,8 @@
           "figure": {
             "tag": {
               "total": "数値"
-            }
+            },
+            "pulse": ["total"]
           }
         },
         {
@@ -652,7 +654,8 @@
             "show": ["knum"],
             "tag": {
               "knum": "number"
-            }
+            },
+            "pulse": ["knum"]
           }
         },
         {
@@ -662,14 +665,15 @@
             "show": ["kstr"],
             "tag": {
               "kstr": "string"
-            }
+            },
+            "pulse": ["kstr"]
           },
           "pause": 1
         },
         {
           "say": "名前や住所のような文字に使います。",
           "figure": {
-            "pulse": ["kstr"]
+            "focus": ["kstr"]
           }
         },
         {
@@ -767,7 +771,8 @@
           "figure": {
             "tag": {
               "total": "戻り値"
-            }
+            },
+            "pulse": ["total"]
           },
           "pause": 1
         },
@@ -776,7 +781,8 @@
           "figure": {
             "travel": {
               "along": ["give", "back"]
-            }
+            },
+            "pulse": []
           }
         }
       ]
@@ -838,7 +844,8 @@
             },
             "travel": {
               "along": ["give"]
-            }
+            },
+            "pulse": ["price"]
           }
         },
         {
@@ -862,7 +869,8 @@
             },
             "travel": {
               "along": ["back"]
-            }
+            },
+            "pulse": ["total"]
           },
           "pause": 1
         }
@@ -921,7 +929,8 @@
           "figure": {
             "tag": {
               "gprice": "2000"
-            }
+            },
+            "pulse": ["gprice"]
           }
         },
         {
@@ -932,7 +941,8 @@
                 "on": "gtotal",
                 "kind": "question"
               }
-            ]
+            ],
+            "pulse": ["gtotal"]
           }
         }
       ]
@@ -969,7 +979,8 @@
                 "on": "gtotal",
                 "kind": "check"
               }
-            ]
+            ],
+            "pulse": ["gtotal"]
           },
           "pause": 1.5
         }
@@ -1005,7 +1016,8 @@
           "figure": {
             "travel": {
               "along": ["ggive"]
-            }
+            },
+            "pulse": ["gprice"]
           }
         },
         {
@@ -1018,15 +1030,14 @@
           "figure": {
             "tag": {
               "gwrap": "＋300"
-            }
+            },
+            "pulse": ["gwrap"]
           }
         },
         {
           "say": "2000 に 300 を足すと、2300 です。",
           "speech": "二千に三百を足すと、二千三百です。",
-          "figure": {
-            "pulse": ["gwrap"]
-          }
+          "focus": [3]
         },
         {
           "say": "return で、2300 が呼び出した場所に戻ります。",
@@ -1038,7 +1049,8 @@
           "figure": {
             "travel": {
               "along": ["gback"]
-            }
+            },
+            "pulse": ["gtotal"]
           }
         },
         {
@@ -1046,7 +1058,8 @@
           "figure": {
             "travel": {
               "along": ["ggive", "gback"]
-            }
+            },
+            "pulse": []
           },
           "pause": 1
         }
@@ -1069,11 +1082,13 @@
         {
           "say": "割り勘のアプリは、1人分の金額を関数で求めます。",
           "speech": "割り勘のアプリは、ひとり分の金額を関数で求めます。",
-          "show": ["split"]
+          "show": ["split"],
+          "pulse": ["split"]
         },
         {
           "say": "ゲームは、点数の計算を関数にまとめています。",
-          "show": ["game"]
+          "show": ["game"],
+          "pulse": ["game"]
         },
         {
           "say": "一度作れば、値を変えて何度でも呼び出せます。",
@@ -1172,7 +1187,8 @@
           "figure": {
             "travel": {
               "along": ["tgive", "tback"]
-            }
+            },
+            "pulse": []
           },
           "pause": 1
         },
