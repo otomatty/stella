@@ -18,6 +18,8 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import type { VideoScene } from "@stella/shared/lessons/comments";
 import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
 import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 
@@ -782,9 +784,7 @@ export const lessons = sqliteTable(
     order: integer("order").notNull().default(0),
     durationLabel: text("duration_label"),
     videoPath: text("video_path"),
-    videoScenes: text("video_scenes", { mode: "json" }).$type<
-      { id: string; startSec: number; durationSec: number; hash: string }[]
-    >(),
+    videoScenes: text("video_scenes", { mode: "json" }).$type<VideoScene[]>(),
     /** seed が教材動画の manifest から書く。作れなかった理由。null は問題なし。CMS は書かない。 */
     videoIssue: text("video_issue"),
     pdfPath: text("pdf_path"),
@@ -805,6 +805,55 @@ export const lessons = sqliteTable(
     sectionIdx: index("lessons_section_id_idx").on(t.sectionId),
     // 公開 API は匿名で叩かれるので、印のある行だけを引く (表を全走査させない)。
     publicIdx: index("lessons_public_idx").on(t.sectionId).where(sql`public = 1`),
+  }),
+);
+
+export const lessonComments = sqliteTable(
+  "lesson_comments",
+  {
+    id: uuid(),
+    lessonId: text("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    parentId: text("parent_id").references((): AnySQLiteColumn => lessonComments.id, {
+      onDelete: "cascade",
+    }),
+    body: text("body").notNull(),
+    positionSec: real("position_sec"),
+    videoPath: text("video_path"),
+    sceneId: text("scene_id"),
+    sceneOffsetSec: real("scene_offset_sec"),
+    sceneHash: text("scene_hash"),
+    resolvedAt: ts("resolved_at"),
+    resolvedBy: text("resolved_by").references(() => profiles.id, { onDelete: "set null" }),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    lessonParentCreatedIdx: index("lesson_comments_lesson_parent_created_idx").on(
+      t.lessonId,
+      t.parentId,
+      t.createdAt,
+    ),
+    parentCreatedIdx: index("lesson_comments_parent_created_idx").on(t.parentId, t.createdAt),
+    userCreatedIdx: index("lesson_comments_user_created_idx").on(t.userId, t.createdAt),
+  }),
+);
+
+export const lessonCommentMentions = sqliteTable(
+  "lesson_comment_mentions",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => lessonComments.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.commentId, t.userId] }),
   }),
 );
 
@@ -1532,6 +1581,9 @@ export const notifications = sqliteTable("notifications", {
       "stage_cleared",
       // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。受講者宛て。
       "review_comment",
+      "lesson_comment",
+      "lesson_comment_reply",
+      "lesson_comment_mention",
     ],
   }).notNull(),
   title: text("title").notNull().default(""),

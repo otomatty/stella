@@ -69,6 +69,7 @@
     "./tasks/help": "./src/tasks/help.ts",
     "./tasks/variants": "./src/tasks/variants.ts",
     "./search/types": "./src/search/types.ts",
+    "./lessons/comments": "./src/lessons/comments.ts",
     "./enrollment/access": "./src/enrollment/access.ts",
     "./enrollment/preset": "./src/enrollment/preset.ts",
     "./brand/display": "./src/brand/display.ts",

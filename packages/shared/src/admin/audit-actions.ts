@@ -32,6 +32,7 @@ const LABELS = {
   // 配布資料
   material_withdraw: "配布資料を配信から外す",
   material_restore: "配布資料を配信に戻す",
+  lesson_comment_delete: "動画コメントの削除",
   // 受講登録 (#20)
   //
   // Phase 3b で **割当を廃止** した。 登録を作る入口は受講者の自己開始だけで、

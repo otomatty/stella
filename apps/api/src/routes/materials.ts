@@ -35,6 +35,7 @@ import {
 } from "../db/schema.js";
 import { errorResponse, getCaller, isStaffRole, requireAdmin, ApiError } from "../lib/authz.js";
 import { auditLogInsert, clientIp } from "../lib/audit.js";
+import { assertLessonReadable, lessonStageInfo } from "../lib/lesson-access.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -66,54 +67,6 @@ function listedMaterials(caller: Caller, includeArchived: string | undefined) {
     : isNull(lessonMaterials.archivedAt);
 }
 
-/** レッスンのステージ公開状態 / ステージ ID を join で解決する。 */
-async function lessonStageInfo(
-  db: Db,
-  lessonId: string,
-): Promise<{ stageStatus: string; stageId: string } | null> {
-  const rows = await db
-    .select({
-      stageStatus: stages.status,
-      stageId: stages.id,
-    })
-    .from(lessons)
-    .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(stages, eq(stages.id, sections.stageId))
-    .where(eq(lessons.id, lessonId))
-    .limit(1);
-  return rows[0] ?? null;
-}
-
-/**
- * 配布資料の閲覧認可。
- * - staff: レッスンが存在すれば可
- * - student: published かつ当該ステージに閲覧可能な enrollment
- *   (`active` に加えて `completed`。 修了済みステージも受講者のステージ一覧に並ぶため、
- *    `active` だけにすると一覧に出ているステージの資料が 404 になる)
- */
-async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string): Promise<void> {
-  const info = await lessonStageInfo(db, lessonId);
-  if (!info) {
-    throw new ApiError("教材が見つかりません", 404);
-  }
-  if (isStaffRole(caller.role)) return;
-  if (info.stageStatus !== "published") {
-    throw new ApiError("教材が見つかりません", 404);
-  }
-  const enrolled = await db
-    .select({ id: enrollments.id })
-    .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.userId, caller.id),
-        eq(enrollments.stageId, info.stageId),
-        inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
-      ),
-    )
-    .limit(1);
-  if (!enrolled[0]) throw new ApiError("教材が見つかりません", 404);
-}
-
 function requireBucket(env: Env): NonNullable<Env["MATERIALS_BUCKET"]> {
   const bucket = env.MATERIALS_BUCKET;
   if (!bucket) {
@@ -123,7 +76,7 @@ function requireBucket(env: Env): NonNullable<Env["MATERIALS_BUCKET"]> {
 }
 
 /**
- * ステージ全体の配布資料の閲覧認可。 レッスン単位 (`assertMaterialReadable`) と同基準を
+ * ステージ全体の配布資料の閲覧認可。 レッスン単位 (`assertLessonReadable`) と同基準を
  * ステージ行に対して直接適用する。
  */
 async function assertStageMaterialsReadable(
@@ -190,7 +143,7 @@ materialsRoute.get("/api/materials", async (c) => {
 
     if (!lessonId) throw new ApiError("lessonId または stageId が必要です", 400);
 
-    await assertMaterialReadable(db, caller, lessonId);
+    await assertLessonReadable(db, caller, lessonId);
 
     const rows = await db
       .select()
@@ -366,7 +319,7 @@ materialsRoute.get("/api/materials/:id/download", async (c) => {
     const material = rows[0];
     if (!material) throw new ApiError("資料が見つかりません", 404);
 
-    await assertMaterialReadable(db, caller, material.lessonId);
+    await assertLessonReadable(db, caller, material.lessonId);
     // 作らなくなった資料・staff が配信から外した資料は受講者に渡さない (旧版と同じく staff だけが取れる)。
     if (material.archivedAt && !isStaffRole(caller.role))
       throw new ApiError("資料が見つかりません", 404);
