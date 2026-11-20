@@ -78,7 +78,13 @@ describe("動画レッスンのコメント API", () => {
   }
 
   function post(user: string, details: Record<string, unknown> = {}) {
-    return call(path, user, "POST", { lessonId: lessons.video, body: "コメント", ...details });
+    const videoPath = details.lessonId === lessons.legacy ? "legacy.mp4" : "old.mp4";
+    return call(path, user, "POST", {
+      lessonId: lessons.video,
+      body: "コメント",
+      ...(details.parentId === undefined ? { videoPath } : {}),
+      ...details,
+    });
   }
 
   async function create<T = CommentThread>(user = learner, details: Record<string, unknown> = {}) {
@@ -226,18 +232,22 @@ describe("動画レッスンのコメント API", () => {
     expect(thread.replies.find(({ id }) => id === reply.id)).toEqual(reply);
   });
 
-  it("先頭の投稿は表示中の動画と版が違うと拒否し、同じ版と旧クライアントの投稿は保存する", async () => {
+  it("先頭の投稿は動画の版を必須にし、表示中の動画と同じ版なら保存する", async () => {
     const stale = await post(learner, { videoPath: "older.mp4", positionSec: 12 });
     expect(stale.status).toBe(409);
     expect(await json(stale)).toEqual({
       error: "動画が更新されました。画面を読み込み直してからコメントしてください",
     });
+    for (const videoPath of [undefined, null, 123, ""]) {
+      const missing = await post(learner, { videoPath, positionSec: 13 });
+      expect(missing.status).toBe(400);
+      expect(await json(missing)).toEqual({ error: "動画の版を指定してください" });
+    }
     expect((await list()).total).toBe(0);
     expect(await create(learner, { videoPath: "old.mp4", positionSec: 12 })).toMatchObject({
       position_sec: 12,
       scene_id: "search",
     });
-    expect(await create(learner, { positionSec: 13 })).toMatchObject({ position_sec: 13 });
   });
 
   it("投稿の保存直前に動画が差し替わった場合も旧版の位置を拒否する", async () => {
@@ -254,16 +264,39 @@ describe("動画レッスンのコメント API", () => {
     });
   });
 
-  it("最後の場面の終点と 1 秒の余裕を受け付け、その先は拒否する", async () => {
+  it("1 秒の余裕内の位置は最後の場面の終点に寄せ、その先は拒否する", async () => {
     db.sqlite.exec("UPDATE lessons SET total_sec = 100 WHERE id = 'video'");
     expect(await create(learner, { positionSec: 30 })).toMatchObject({
       position_sec: 30,
       scene_id: "end",
     });
-    expect(await create(learner, { positionSec: 31 })).toMatchObject({ position_sec: 31 });
+    const nearEnd = await create(learner, { positionSec: 30.6 });
+    expect(nearEnd).toMatchObject({ position_sec: 30, scene_id: "end", state: "current" });
+    expect(
+      db.sqlite
+        .prepare(
+          "SELECT position_sec, scene_id, scene_offset_sec, scene_hash FROM lesson_comments WHERE id = ?",
+        )
+        .get(nearEnd.id),
+    ).toEqual({ position_sec: 30, scene_id: "end", scene_offset_sec: 10, scene_hash: "c" });
+    expect(await create(learner, { positionSec: 31 })).toMatchObject({
+      position_sec: 30,
+      scene_id: "end",
+    });
     const pastEnd = await post(learner, { positionSec: 31.01 });
     expect(pastEnd.status).toBe(400);
     expect(await json(pastEnd)).toEqual({ error: "動画の位置が動画の長さを超えています" });
+
+    db.sqlite
+      .prepare("UPDATE lessons SET video_path = 'new.mp4', video_scenes = ? WHERE id = 'video'")
+      .run(JSON.stringify([...initialScenes.slice(0, -1), { ...initialScenes[2], startSec: 25 }]));
+    const updated = await list();
+    expect(updated.orphaned_count).toBe(0);
+    expect(updated.threads.find(({ id }) => id === nearEnd.id)).toMatchObject({
+      position_sec: 35,
+      scene_id: "end",
+      state: "current",
+    });
   });
 
   it("場面がなければ total_sec を使い、それもなければ 86400 秒まで受け付ける", async () => {
@@ -274,7 +307,8 @@ describe("動画レッスンのコメント API", () => {
     expect((await post(learner, { lessonId, positionSec: 86401 })).status).toBe(400);
     db.sqlite.exec("UPDATE lessons SET total_sec = 60 WHERE id = 'legacy'");
     expect(await create(learner, { lessonId, positionSec: 61 })).toMatchObject({
-      position_sec: 61,
+      position_sec: 60,
+      scene_id: null,
     });
     const pastEnd = await post(learner, { lessonId, positionSec: 61.01 });
     expect(pastEnd.status).toBe(400);

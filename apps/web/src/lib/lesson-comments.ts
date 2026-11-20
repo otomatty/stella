@@ -32,7 +32,7 @@ export function splitMentions(body: string, mentions: readonly CommentMention[])
   const names = [...byName.keys()]
     .sort((a, b) => b.length - a.length)
     .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`(?<!\\S)@(${names.join("|")})(?![\\p{L}\\p{M}\\p{N}_])`, "gu");
+  const pattern = new RegExp(`(?<!\\S)@(${names.join("|")})(?!\\S)`, "gu");
   const parts: MentionPart[] = [];
   let offset = 0;
   for (const match of body.matchAll(pattern)) {
@@ -44,24 +44,35 @@ export function splitMentions(body: string, mentions: readonly CommentMention[])
   return parts;
 }
 
-export interface MentionRange {
-  id: string;
+export interface MentionRange extends CommentMention {
   start: number;
   length: number;
 }
 
+function hasMentionAt(body: string, { name, start, length }: MentionRange): boolean {
+  const end = start + length;
+  return (
+    body.slice(start, end) === `@${name}` &&
+    !/\S/u.test(body[start - 1] ?? "") &&
+    !/\S/u.test(body[end] ?? "")
+  );
+}
+
 export function moveMentionRanges(
   mentions: readonly MentionRange[],
+  body: string,
   start: number,
   end: number,
   insertedLength: number,
 ): MentionRange[] {
   const shift = insertedLength - (end - start);
-  return mentions.flatMap((mention) => {
-    if (mention.start + mention.length <= start) return [mention];
-    if (mention.start >= end) return [{ ...mention, start: mention.start + shift }];
-    return [];
-  });
+  return mentions
+    .flatMap((mention) => {
+      if (mention.start + mention.length <= start) return [mention];
+      if (mention.start >= end) return [{ ...mention, start: mention.start + shift }];
+      return [];
+    })
+    .filter((mention) => hasMentionAt(body, mention));
 }
 
 export function trackMentionRanges(
@@ -70,7 +81,7 @@ export function trackMentionRanges(
   mentions: readonly MentionRange[],
   caret: number,
 ): MentionRange[] {
-  if (before === after) return [...mentions];
+  if (before === after) return mentions.filter((mention) => hasMentionAt(after, mention));
 
   // 編集後のカーソルを手掛かりに、同じ表示名が続く場合も編集箇所を選ぶ。
   let suffix = 0;
@@ -84,7 +95,13 @@ export function trackMentionRanges(
   while (start < Math.min(caret, before.length - suffix) && before[start] === after[start]) {
     start++;
   }
-  return moveMentionRanges(mentions, start, before.length - suffix, after.length - suffix - start);
+  return moveMentionRanges(
+    mentions,
+    after,
+    start,
+    before.length - suffix,
+    after.length - suffix - start,
+  );
 }
 
 export function mentionedIds(mentions: readonly MentionRange[]): string[] {

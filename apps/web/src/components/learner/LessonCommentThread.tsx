@@ -294,8 +294,14 @@ export function ReplyComposer({
     onChange({
       body: mention.text,
       mentions: [
-        ...moveMentionRanges(draft.mentions, query.start, caret, mention.caret - query.start),
-        { id: person.id, start: query.start, length: mention.caret - query.start - 1 },
+        ...moveMentionRanges(
+          draft.mentions,
+          mention.text,
+          query.start,
+          caret,
+          mention.caret - query.start,
+        ),
+        { ...person, start: query.start, length: mention.caret - query.start - 1 },
       ],
     });
     setCaret(mention.caret);

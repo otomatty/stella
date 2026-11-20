@@ -5,6 +5,7 @@ import {
   hasVideo,
   mergeVideoFailure,
   serializeVideoManifest,
+  slideAssetHashes,
   slideVideoScenes,
   storyboardVideoScenes,
   summarizeVideoError,
@@ -239,5 +240,30 @@ describe("教材動画の場面", () => {
     );
     expect(updated[0].hash).not.toBe(original[0].hash);
     expect(updated[1]).toEqual(original[1]);
+  });
+
+  it("参照している画像の内容だけを場面のハッシュに加える", () => {
+    const image = "tenant/ses/stages/example/diagram.svg";
+    const unused = "tenant/ses/stages/example/unused.svg";
+    const slides = [
+      { title: "図", body: "![図](assets/diagram.svg)", startSec: 0, durationSec: 5 },
+      { title: "説明", body: "本文", startSec: 5, durationSec: 5 },
+    ];
+    const renderedBodies = [`![図](${image})`, "本文"];
+    const narration = [{ cues: [] }, { cues: [{ text: "説明します。" }] }];
+    const scenes = (assetHashes: Record<string, string>) =>
+      slideVideoScenes(
+        slides.map((slide, i) => ({
+          ...slide,
+          assetHashes: slideAssetHashes(renderedBodies[i], assetHashes),
+        })),
+        narration,
+      );
+    const original = scenes({ [image]: "a".repeat(64), [unused]: "b".repeat(64) });
+    const updated = scenes({ [image]: "c".repeat(64), [unused]: "b".repeat(64) });
+    expect(updated[0].hash).not.toBe(original[0].hash);
+    expect(updated[1]).toEqual(original[1]);
+    expect(scenes({ [image]: "a".repeat(64), [unused]: "d".repeat(64) })).toEqual(original);
+    expect(original[1].hash).toBe(videoSceneHash(["説明", "説明します。", "本文"]));
   });
 });

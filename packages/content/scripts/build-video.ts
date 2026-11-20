@@ -39,6 +39,7 @@ import { collectPdfTargets } from "../src/material-pdf.js";
 import {
   SCREEN_VIDEO_FILES,
   selectVideoSource,
+  slideAssetHashes,
   slideVideoScenes,
   storyboardVideoScenes,
   type VideoScene,
@@ -83,7 +84,7 @@ import {
   type NarrationTopic,
   validateTopic,
 } from "./lib/narration-topics.js";
-import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml } from "./lib/slide-html.js";
+import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml, splitLessonSlides } from "./lib/slide-html.js";
 import {
   QuotaExhaustedError,
   createTtsProvider,
@@ -506,6 +507,14 @@ async function buildTopic(
     startSec: s.start,
     durationSec: s.duration,
   }));
+  const assetHashes = Object.fromEntries(
+    [...topic.assets].map(([ref, file]) => [
+      ref,
+      createHash("sha256").update(readFileSync(file)).digest("hex"),
+    ]),
+  );
+  // 描画側と同じ、画像の参照が R2 キーに変換された本文で探す。
+  const renderedSlides = splitLessonSlides(topic.markdown);
   const report: TopicReport = {
     stageSlug: topic.stageSlug,
     id: topic.id,
@@ -517,7 +526,13 @@ async function buildTopic(
     probedDurationSec: Math.round(probed * 1000) / 1000,
     slides,
     videoScenes: slideVideoScenes(
-      slides.map((slide, i) => ({ ...slide, body: headings[i].body })),
+      slides.map((slide, i) => {
+        return {
+          ...slide,
+          body: headings[i].body,
+          assetHashes: slideAssetHashes(renderedSlides[i], assetHashes),
+        };
+      }),
       topic.narration.slides,
     ),
     cues: cues.length,

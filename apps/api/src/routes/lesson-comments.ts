@@ -371,8 +371,8 @@ function parsePost(input: unknown) {
   if (parentId !== undefined && (typeof parentId !== "string" || !parentId)) {
     throw new ApiError("parentId の指定が不正です", 400);
   }
-  if (parentId === undefined && videoPath !== undefined && typeof videoPath !== "string") {
-    throw new ApiError("videoPath の指定が不正です", 400);
+  if (parentId === undefined && (typeof videoPath !== "string" || !videoPath.trim())) {
+    throw new ApiError("動画の版を指定してください", 400);
   }
   if (
     parentId === undefined &&
@@ -435,12 +435,13 @@ lessonCommentsRoute.post(PATH, async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const input = parsePost(await c.req.json().catch(() => null));
-    const { lessonId, body, positionSec, expectedVideoPath, parentId, mentionIds } = input;
+    const { lessonId, body, expectedVideoPath, parentId, mentionIds } = input;
+    let positionSec = input.positionSec;
     const video = await readableVideo(db, caller, lessonId);
+    if (video.videoPath === null) throw new ApiError("この教材にはコメントできません", 409);
     if (expectedVideoPath !== undefined && expectedVideoPath !== video.videoPath) {
       throw new ApiError(VIDEO_UPDATED, 409);
     }
-    if (video.videoPath === null) throw new ApiError("この教材にはコメントできません", 409);
     if (positionSec !== null) {
       const lastScene = video.scenes?.at(-1);
       const duration = lastScene ? lastScene.startSec + lastScene.durationSec : video.totalSec;
@@ -448,6 +449,7 @@ lessonCommentsRoute.post(PATH, async (c) => {
         if (positionSec > duration + 1) {
           throw new ApiError("動画の位置が動画の長さを超えています", 400);
         }
+        positionSec = Math.min(positionSec, duration);
       } else if (positionSec > 86400) {
         throw new ApiError("動画の位置は 0〜86400 秒で指定してください", 400);
       }

@@ -49,37 +49,55 @@ describe("本文のメンション", () => {
   const special = { id: "special", name: "A.*" };
 
   it("長い名前を優先し、名前と通常の文字列を分ける", () => {
-    expect(splitMentions("@田中 花子、確認を\n@田中 @A.*。", [short, long, special])).toEqual([
+    expect(splitMentions("@田中 花子 確認を\n@田中 @A.* 。", [short, long, special])).toEqual([
       { text: "@田中 花子", mention: long },
-      { text: "、確認を\n" },
+      { text: " 確認を\n" },
       { text: "@田中", mention: short },
       { text: " " },
       { text: "@A.*", mention: special },
-      { text: "。" },
+      { text: " 。" },
     ]);
     expect(splitMentions("@田中山 user@田中", [short])).toEqual([{ text: "@田中山 user@田中" }]);
+    expect(splitMentions("@田中。", [short])).toEqual([{ text: "@田中。" }]);
   });
 
   it("本文に残っている候補の ID だけを重複なしで返す", () => {
     expect(
       mentionedIds([
-        { id: long.id, start: 0, length: 6 },
-        { id: long.id, start: 7, length: 6 },
+        { ...long, start: 0, length: 6 },
+        { ...long, start: 7, length: 6 },
       ]),
     ).toEqual(["long"]);
     expect(mentionedIds([])).toEqual([]);
   });
 
   it("メンションの前に文字を入力すると範囲をずらす", () => {
-    const mention = { id: short.id, start: 0, length: 3 };
+    const mention = { ...short, start: 0, length: 3 };
     expect(trackMentionRanges("@田中", "確認 @田中", [mention], 3)).toEqual([
       { ...mention, start: 3 },
     ]);
   });
 
   it("メンションの中を削除すると範囲を捨てる", () => {
-    const mention = { id: short.id, start: 0, length: 3 };
+    const mention = { ...short, start: 0, length: 3 };
     expect(trackMentionRanges("@田中", "@中", [mention], 1)).toEqual([]);
+  });
+
+  it("名前の直後に文字を続けると範囲を捨てる", () => {
+    const mention = { ...short, start: 0, length: 3 };
+    const atEnd = trackMentionRanges("@田中 ", "@田中", [mention], 3);
+    expect(atEnd).toEqual([mention]);
+    expect(trackMentionRanges("@田中", "@田中山", atEnd, 4)).toEqual([]);
+  });
+
+  it.each([" ", "\n"])("名前と後続の文字を %j で区切ると範囲を残す", (separator) => {
+    const mention = { ...short, start: 0, length: 3 };
+    expect(trackMentionRanges("@田中", `@田中${separator}山`, [mention], 5)).toEqual([mention]);
+  });
+
+  it("メンションの直前に文字を続けると範囲を捨てる", () => {
+    const mention = { ...short, start: 0, length: 3 };
+    expect(trackMentionRanges("@田中", "山@田中", [mention], 1)).toEqual([]);
   });
 
   it.each([
@@ -87,11 +105,11 @@ describe("本文のメンション", () => {
     [3, "first"],
   ])("同じ名前の片方を削除するとカーソル位置 %s に応じて %s が残る", (caret, id) => {
     const mentions = [
-      { id: "first", start: 0, length: 3 },
-      { id: "second", start: 4, length: 3 },
+      { ...short, id: "first", start: 0, length: 3 },
+      { ...short, id: "second", start: 4, length: 3 },
     ];
     const remaining = trackMentionRanges("@田中 @田中", "@田中", mentions, caret);
-    expect(remaining).toEqual([{ id, start: 0, length: 3 }]);
+    expect(remaining).toEqual([{ ...short, id, start: 0, length: 3 }]);
     expect(mentionedIds(remaining)).toEqual([id]);
   });
 });

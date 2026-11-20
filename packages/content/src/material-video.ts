@@ -78,17 +78,28 @@ export function storyboardVideoScenes(
   });
 }
 
+export function slideAssetHashes(
+  body: string,
+  assetHashes: Readonly<Record<string, string>>,
+): Record<string, string> {
+  return Object.fromEntries(Object.entries(assetHashes).filter(([ref]) => body.includes(ref)));
+}
+
 export function slideVideoScenes(
-  slides: ReadonlyArray<SceneTiming & { title: string; body: string }>,
+  slides: ReadonlyArray<
+    SceneTiming & { title: string; body: string; assetHashes?: Readonly<Record<string, string>> }
+  >,
   narration: ReadonlyArray<{ cues: ReadonlyArray<{ text: string }> }>,
 ): VideoScene[] {
-  return slides.map((slide, i) =>
-    toVideoScene(`slide-${i + 1}`, slide, [
-      slide.title,
-      narration[i].cues.map((cue) => cue.text).join(""),
-      slide.body,
-    ]),
-  );
+  return slides.map((slide, i) => {
+    const content = [slide.title, narration[i].cues.map((cue) => cue.text).join(""), slide.body];
+    const assets = slide.assetHashes;
+    return toVideoScene(
+      `slide-${i + 1}`,
+      slide,
+      assets && Object.keys(assets).length > 0 ? [...content, assets] : content,
+    );
+  });
 }
 
 export interface VideoManifestEntry {
