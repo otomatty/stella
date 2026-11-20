@@ -157,6 +157,58 @@ const total = (writes: Record<string, number>) =>
 
 describe("seed の書き込み行数", () => {
   it(
+    "開発ラボG の旧単元を除去しても提出履歴を保持し、未登録の新課題に問題結果を写す",
+    async () => {
+      const db = migratedDb();
+      const from = "devlab-ts-ch01/u99-problems/chapter";
+      const to = "devlab-ts-ch01/u01-let-const/q01";
+      try {
+        const sql = await exportSql();
+        apply(db, sql);
+        const destination = db.prepare("select content_hash from tasks where id = ?").get(to);
+        db.prepare("delete from tasks where id = ?").run(to);
+        db.prepare(
+          `insert into sections (id, stage_id, title, "order", created_at) values ('old-unit', ?, '章の課題', 99, 1)`,
+        ).run(stableUuid("course:ses:devlab-ts-ch01"));
+        db.exec(`
+          insert into lessons (id, section_id, title, type, created_at, updated_at)
+          values ('old-lesson', 'old-unit', '章の課題', 'text', 1, 1);
+          insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, lesson_id)
+          values ('${from}', 'old-unit', '章の課題', 'practice', 'build', '[]', 1, 0, 'old-hash', '{}', '{}', 'old-lesson');
+          insert into task_problem_results (user_id, task_id, problem_id, content_hash, path, code, sha256, first_passed_at, updated_at)
+          values ('seed-learner', '${from}', 'q01-01-add-tax', 'old-hash', 'src/q01-01-add-tax.ts', 'answer', 'sha', 1, 2);
+          insert into submissions (id, tenant_id, student_id, lesson_id, task_id, stage_title, assignment_title, code, submitted_at)
+          values ('old-submission', 'ses', 'seed-learner', 'old-lesson', '${from}', '開発ラボG', '章の課題', 'answer', 2);
+        `);
+        const originalResults = db.prepare("select * from task_problem_results where task_id = ?");
+        const submission = db.prepare("select * from submissions where id = 'old-submission'");
+        const original = originalResults.get(from);
+        const submissionBefore = submission.get();
+
+        apply(db, sql);
+        expect(db.prepare("select id from sections where id = 'old-unit'").get()).toBeUndefined();
+        expect(db.prepare("select active, content_hash from tasks where id = ?").get(from)).toEqual(
+          { active: 0, content_hash: "old-hash" },
+        );
+        expect(originalResults.get(from)).toEqual(original);
+        expect(originalResults.get(to)).toEqual({
+          ...original,
+          task_id: to,
+          content_hash: destination?.content_hash,
+        });
+        expect(submission.get()).toEqual(submissionBefore);
+        expect(
+          db.prepare("select status, content_hash from task_progress where task_id = ?").get(to),
+        ).toEqual({ status: "local-passed", content_hash: destination?.content_hash });
+        expect(apply(db, sql)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
     "動画 manifest を反映し、同一 seed は書かず、未指定は保持し、台本削除で解除する",
     async () => {
       const db = migratedDb();
