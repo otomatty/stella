@@ -157,7 +157,7 @@ const total = (writes: Record<string, number>) =>
 
 describe("seed の書き込み行数", () => {
   it(
-    "開発ラボG の旧単元を除去しても提出履歴を保持し、未登録の新課題に問題結果を写す",
+    "開発ラボG の旧単元を除去しても提出履歴を保持し、未登録の新課題に問題結果を移す",
     async () => {
       const db = migratedDb();
       const from = "devlab-ts-ch01/u99-problems/chapter";
@@ -190,7 +190,7 @@ describe("seed の書き込み行数", () => {
         expect(db.prepare("select active, content_hash from tasks where id = ?").get(from)).toEqual(
           { active: 0, content_hash: "old-hash" },
         );
-        expect(originalResults.get(from)).toEqual(original);
+        expect(originalResults.get(from)).toBeUndefined();
         expect(originalResults.get(to)).toEqual({
           ...original,
           task_id: to,

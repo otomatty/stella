@@ -49,6 +49,12 @@ export function taskProblemCarryoverStatements(
           `where ${sourceFilter}`,
           "on conflict (user_id, task_id) do nothing;",
         ].join(" "),
+        // 進捗を記録してから移し済みの結果を消し、取り消された結果を次の seed で復元しない。
+        [
+          `delete from task_problem_results as src where ${sourceFilter}`,
+          "and exists (select 1 from task_problem_results dest",
+          `where dest.user_id = src.user_id and dest.task_id = ${to} and dest.problem_id = src.problem_id);`,
+        ].join(" "),
       ];
     }),
   );

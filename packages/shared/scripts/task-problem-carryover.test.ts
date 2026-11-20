@@ -32,7 +32,7 @@ describe("taskProblemCarryoverStatements", () => {
     }
   });
 
-  it("旧課題が教材に残っている章は写さない", () => {
+  it("旧課題が教材に残っている章は移さない", () => {
     expect(taskProblemCarryoverStatements(moves, [first, task(from, ["q01-01"])])).toEqual([]);
   });
 
@@ -44,20 +44,20 @@ describe("taskProblemCarryoverStatements", () => {
       { ...task("without-problems", []), definition: { id: "without-problems" } },
       second,
     ]);
-    expect(statements).toHaveLength(4);
-    for (const sql of statements.slice(0, 2)) {
+    expect(statements).toHaveLength(6);
+    for (const sql of statements.slice(0, 3)) {
       expect(sql).toContain(firstId);
       expect(sql).toContain("src.problem_id in ('q01-01', 'q01-02')");
       expect(sql).not.toContain("q02-01");
     }
-    for (const sql of statements.slice(2)) {
+    for (const sql of statements.slice(3)) {
       expect(sql).toContain(secondId);
       expect(sql).toContain("src.problem_id in ('q02-01')");
       expect(sql).not.toContain("q01-01");
     }
   });
 
-  it("現行版の結果だけを写し、移し先の結果と進捗を保持して再実行時は書き込まない", () => {
+  it("現行版の結果を移し、既存の結果と進捗を保持し、再実行で取り消しを戻さない", () => {
     const db = new DatabaseSync(":memory:");
     try {
       db.exec(`
@@ -93,14 +93,15 @@ describe("taskProblemCarryoverStatements", () => {
       insertTask.run(firstId, "first-hash", 1);
       insertTask.run(secondId, "second-hash", 1);
       const statements = taskProblemCarryoverStatements(moves, [first, second]);
-      const runCarryover = () => statements.map((sql) => Number(db.prepare(sql).run().changes));
+      const runCarryover = (sqlStatements = statements) =>
+        sqlStatements.map((sql) => Number(db.prepare(sql).run().changes));
       const result = db.prepare(`
         insert into task_problem_results
           (user_id, task_id, problem_id, content_hash, path, code, sha256, source, manual_reason, manual_by, manual_at, attempts, first_passed_at, updated_at)
         values (?, ?, ?, ?, 'src/problem.ts', ?, 'sha', ?, ?, ?, ?, 3, 1000, 2000)
       `);
       result.run("alice", firstId, "q01-02", "first-hash", "existing", "tests", null, null, null);
-      expect(runCarryover()).toEqual([0, 0, 0, 0]);
+      expect(runCarryover()).toEqual([0, 0, 0, 0, 0, 0]);
 
       insertTask.run(from, "old-current-hash", 0);
       result.run(
@@ -154,8 +155,13 @@ describe("taskProblemCarryoverStatements", () => {
         "select * from task_progress where task_id = ? order by user_id",
       );
       const existingProgress = progressFor.get(firstId);
-      expect(runCarryover()).toEqual([2, 1, 1, 1]);
+      // 結果を移し先に書いた直後に停止しても、旧課題の行から進捗を補える。
+      expect(runCarryover(statements.slice(0, 1))).toEqual([2]);
       expect(resultsFor.all(from)).toEqual(originals);
+      expect(progressFor.all(firstId)).toEqual([existingProgress]);
+
+      expect(runCarryover()).toEqual([0, 1, 3, 1, 1, 1]);
+      expect(resultsFor.all(from)).toEqual([originals[4], originals[5]]);
       expect(resultsFor.all(firstId)).toEqual([
         { ...originals[0], task_id: firstId, content_hash: "first-hash" },
         existing,
@@ -185,7 +191,18 @@ describe("taskProblemCarryoverStatements", () => {
           passed_at: null,
         },
       ]);
-      expect(runCarryover()).toEqual([0, 0, 0, 0]);
+      expect(runCarryover()).toEqual([0, 0, 0, 0, 0, 0]);
+
+      // 管理者による手動完了の取り消しを模す。
+      const revoke = db.prepare(
+        "delete from task_problem_results where user_id = ? and task_id = ? and problem_id = ?",
+      );
+      expect(revoke.run("alice", firstId, "q01-01").changes).toBe(1);
+      expect(runCarryover()).toEqual([0, 0, 0, 0, 0, 0]);
+      expect(resultsFor.all(firstId)).toEqual([
+        existing,
+        { ...originals[2], task_id: firstId, content_hash: "first-hash" },
+      ]);
     } finally {
       db.close();
     }
