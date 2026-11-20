@@ -146,6 +146,7 @@ describe("動画レッスンのコメント API", () => {
       created_at: expect.any(Number),
       can_delete: true,
       can_resolve: true,
+      reply_count: 0,
       replies: [],
       mention_candidates: [],
     });
@@ -690,7 +691,7 @@ describe("動画レッスンのコメント API", () => {
     expect(archived.threads).toMatchObject([{ id: orphaned.id, state: "orphaned" }]);
   });
 
-  it("参加者が D1 のバインド上限より多くても通知し、表示する返信は 200 件まで", async () => {
+  it("参加者が D1 のバインド上限より多くても通知し、返信は新しい 200 件と総数を返す", async () => {
     const root = await create();
     const addProfile = db.sqlite.prepare(`
       INSERT INTO profiles (id, tenant_id, role, display_name, created_at)
@@ -707,13 +708,17 @@ describe("動画レッスンのコメント API", () => {
     }
     const latest = await create<CommentReply>(other, { parentId: root.id });
     expect(notes(latest.id)).toHaveLength(206);
-    const [thread] = (await list()).threads;
+    const [thread] = (await list(`&include=${root.id}`)).threads;
+    expect(thread.reply_count).toBe(206);
     expect(thread.replies).toHaveLength(200);
-    expect(thread.replies.at(-1)?.id).toBe("reply-199");
+    expect(thread.replies.map(({ id }) => id)).toEqual([
+      ...Array.from({ length: 199 }, (_, i) => `reply-${i + 6}`),
+      latest.id,
+    ]);
     expect(thread.mention_candidates).toHaveLength(206);
     expect(thread.mention_candidates).toContainEqual({
-      id: "participant-204",
-      name: "participant-204",
+      id: "participant-0",
+      name: "participant-0",
     });
   });
 });

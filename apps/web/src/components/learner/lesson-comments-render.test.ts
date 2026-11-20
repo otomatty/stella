@@ -148,6 +148,17 @@ describe("動画レッスンのコメント欄", () => {
     expect(html).toContain("質問です\n&lt;script&gt;本文&lt;/script&gt;");
   });
 
+  it("返信の総数をボタンに表示し、開いたときは省略した古い返信の件数を出す", () => {
+    const comments = { threads: [{ ...thread, reply_count: 7 }] };
+    const collapsed = render(comments);
+    expect(collapsed).toContain("返信 7 件を見る");
+    expect(collapsed).not.toContain("古い返信");
+
+    const open = render(comments, thread.id);
+    expect(open).toContain("返信 7 件を閉じる");
+    expect(open).toMatch(/古い返信 6 件は表示していません[\s\S]*ありがとうございます/);
+  });
+
   it("削除と解決の操作を権限に応じて出す", () => {
     const readonlyThread = {
       ...thread,

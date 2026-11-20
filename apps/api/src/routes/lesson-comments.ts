@@ -102,6 +102,7 @@ function threadResponse(
   resolved: boolean,
   replies: CommentReply[],
   candidates: CommentMention[],
+  replyCount = replies.length,
 ): CommentThread {
   return {
     ...commentEntry(row, caller),
@@ -110,6 +111,7 @@ function threadResponse(
     scene_id: position.sceneId,
     resolved,
     can_resolve: canManage(caller, row.userId),
+    reply_count: replyCount,
     replies,
     mention_candidates: candidates,
   };
@@ -136,8 +138,11 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
       id: lessonComments.id,
       rank: sql<number>`row_number() over (
         partition by ${lessonComments.parentId}
-        order by ${lessonComments.createdAt}, ${lessonComments.id}
+        order by ${lessonComments.createdAt} desc, ${lessonComments.id} desc
       )`.as("rank"),
+      replyCount: sql<number>`count(*) over (partition by ${lessonComments.parentId})`.as(
+        "reply_count",
+      ),
     })
     .from(lessonComments)
     .where(inArray(lessonComments.parentId, threadIds))
@@ -150,7 +155,11 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
       .innerJoin(profiles, eq(profiles.id, lessonComments.userId))
       .where(inArray(lessonComments.id, threadIds)),
     db
-      .select({ ...entryColumns, parentId: lessonComments.parentId })
+      .select({
+        ...entryColumns,
+        parentId: lessonComments.parentId,
+        replyCount: rankedReplies.replyCount,
+      })
       .from(rankedReplies)
       .innerJoin(lessonComments, eq(lessonComments.id, rankedReplies.id))
       .innerJoin(profiles, eq(profiles.id, lessonComments.userId))
@@ -167,7 +176,7 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
       .innerJoin(profiles, eq(profiles.id, lessonCommentMentions.userId))
       .where(sql`${rankedReplies.rank} <= ${REPLY_LIMIT}`)
       .orderBy(asc(profiles.id)),
-    // 候補には、表示件数の上限より後に初めて返信した参加者も含める。
+    // 候補には、表示されない古い返信にだけ参加している人も含める。
     db
       .select({
         parentId: lessonComments.parentId,
@@ -187,12 +196,15 @@ async function pageEntries(db: Db, caller: Caller, threadIds: string[]) {
     list.push({ id, name });
     mentionsByReply.set(commentId, list);
   }
-  const repliesByThread = new Map<string, CommentReply[]>();
+  const repliesByThread = new Map<string, { replies: CommentReply[]; count: number }>();
   for (const row of replies) {
     if (!row.parentId) continue;
-    const list = repliesByThread.get(row.parentId) ?? [];
-    list.push({ ...commentEntry(row, caller), mentions: mentionsByReply.get(row.id) ?? [] });
-    repliesByThread.set(row.parentId, list);
+    const group = repliesByThread.get(row.parentId) ?? { replies: [], count: row.replyCount };
+    group.replies.push({
+      ...commentEntry(row, caller),
+      mentions: mentionsByReply.get(row.id) ?? [],
+    });
+    repliesByThread.set(row.parentId, group);
   }
   const participantsByThread = new Map<string, Map<string, string>>();
   for (const root of roots) {
@@ -356,14 +368,16 @@ lessonCommentsRoute.get(PATH, async (c) => {
       for (const [id, name] of entries.participantsByThread.get(root.id) ?? []) {
         if (readableIds.has(id)) candidates.push({ id, name });
       }
+      const replyGroup = entries.repliesByThread.get(root.id);
       response.threads.push(
         threadResponse(
           entry,
           caller,
           position,
           root.resolvedAt !== null,
-          entries.repliesByThread.get(root.id) ?? [],
+          replyGroup?.replies ?? [],
           candidates,
+          replyGroup?.count,
         ),
       );
     }

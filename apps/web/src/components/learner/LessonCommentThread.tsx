@@ -79,7 +79,10 @@ export function LessonCommentThread({
   const position = thread.position_sec;
   const time = position === null ? null : formatVideoTime(position);
   const collapsed = thread.resolved && !open;
-  const replyCount = thread.replies.length;
+  const visibleReplyCount = thread.replies.length;
+  // 投稿直後は、受け取った総数より先に返信一覧が増えることがある。
+  const replyCount = Math.max(thread.reply_count ?? 0, visibleReplyCount);
+  const hiddenReplyCount = replyCount - visibleReplyCount;
   const repliesId = useId();
 
   return (
@@ -197,6 +200,11 @@ export function LessonCommentThread({
         </div>
         {replyCount > 0 ? (
           <ul id={repliesId} hidden={!open} className="space-y-3 border-t border-border pt-3">
+            {open && hiddenReplyCount > 0 ? (
+              <li className="text-xs text-ink-3">
+                古い返信 {hiddenReplyCount} 件は表示していません
+              </li>
+            ) : null}
             {open
               ? thread.replies.map((reply) => (
                   <li key={reply.id} className="flex items-start gap-2">

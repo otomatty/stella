@@ -115,6 +115,7 @@ export interface CommentThread extends CommentEntry {
   scene_id: string | null;
   resolved: boolean;
   can_resolve: boolean;
+  reply_count?: number;
   replies: CommentReply[];
   mention_candidates: CommentMention[];
 }
