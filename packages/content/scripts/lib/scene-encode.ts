@@ -112,11 +112,11 @@ export async function encodeScene(
   duration: number,
   audio: string,
   out: string,
-  fadeOut?: { start: number; duration: number },
+  fadeOut?: FadeOut,
 ): Promise<number> {
   const ranges = await page.evaluate(() => (window as unknown as ScenePageWindow).__busyRanges);
   const work = mkdtempSync(join(dirname(out), "frames-"));
-  const entries: { file: string; frames: number }[] = [];
+  const entries: SceneFrames = [];
   let wasBusy = true,
     screenshots = 0;
   try {
@@ -131,65 +131,89 @@ export async function encodeScene(
       } else entries[entries.length - 1].frames++;
       wasBusy = busy;
     }
-    const quoted = (file: string) => `file '${file.replace(/'/g, "'\\''")}'\noption framerate 30`;
-    const list = join(work, "frames.txt");
-    writeFileSync(
-      list,
-      [
-        "ffconcat version 1.0",
-        ...entries.map((e) => `${quoted(e.file)}\nduration ${(e.frames / 30).toFixed(9)}`),
-        quoted(entries[entries.length - 1].file),
-      ].join("\n"),
-    );
-    await runFfmpeg([
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      list,
-      "-i",
-      audio,
-      "-map",
-      "0:v:0",
-      "-map",
-      "1:a:0",
-      "-vf",
-      fadeOut
-        ? `fps=30,fade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}:color=0xffffff`
-        : "fps=30",
-      "-frames:v",
-      String(Math.round(duration * 30)),
-      "-c:v",
-      "libx264",
-      "-preset",
-      "ultrafast",
-      "-crf",
-      "20",
-      "-pix_fmt",
-      "yuv420p",
-      ...(fadeOut
-        ? [
-            "-af",
-            `afade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}`,
-            "-c:a",
-            "aac",
-            "-b:a",
-            "128k",
-          ]
-        : ["-c:a", "copy"]),
-      "-t",
-      String(duration),
-      "-r",
-      "30",
-      "-video_track_timescale",
-      "15360",
-      "-movflags",
-      "+faststart",
-      out,
-    ]);
+    await encodeSceneFrames(entries, work, duration, audio, out, fadeOut);
     return screenshots;
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
+}
+
+export type SceneFrames = { file: string; frames: number }[];
+type FadeOut = { start: number; duration: number };
+
+export async function encodeSceneFrames(
+  entries: SceneFrames,
+  work: string,
+  duration: number,
+  audio: string,
+  out: string,
+  fadeOut?: FadeOut,
+): Promise<void> {
+  const quoted = (file: string) => `file '${file.replace(/'/g, "'\\''")}'\noption framerate 30`;
+  const list = join(work, "frames.txt");
+  writeFileSync(
+    list,
+    [
+      "ffconcat version 1.0",
+      ...entries.map((e) => `${quoted(e.file)}\nduration ${(e.frames / 30).toFixed(9)}`),
+      quoted(entries[entries.length - 1].file),
+    ].join("\n"),
+  );
+  await runFfmpeg(sceneFfmpegArgs(list, duration, audio, out, fadeOut));
+}
+
+export function sceneFfmpegArgs(
+  list: string,
+  duration: number,
+  audio: string,
+  out: string,
+  fadeOut?: FadeOut,
+): string[] {
+  return [
+    "-f",
+    "concat",
+    "-safe",
+    "0",
+    "-i",
+    list,
+    "-i",
+    audio,
+    "-map",
+    "0:v:0",
+    "-map",
+    "1:a:0",
+    "-vf",
+    fadeOut
+      ? `fps=30,fade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}:color=0xffffff`
+      : "fps=30",
+    "-frames:v",
+    String(Math.round(duration * 30)),
+    "-c:v",
+    "libx264",
+    "-preset",
+    "ultrafast",
+    "-crf",
+    "20",
+    "-pix_fmt",
+    "yuv420p",
+    ...(fadeOut
+      ? [
+          "-af",
+          `afade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}`,
+          "-c:a",
+          "aac",
+          "-b:a",
+          "128k",
+        ]
+      : ["-c:a", "copy"]),
+    "-t",
+    String(duration),
+    "-r",
+    "30",
+    "-video_track_timescale",
+    "15360",
+    "-movflags",
+    "+faststart",
+    out,
+  ];
 }

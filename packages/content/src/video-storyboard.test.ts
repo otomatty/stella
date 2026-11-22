@@ -1340,7 +1340,8 @@ describe("schema 2 のレッスン型", () => {
       ],
     };
     const [first, next, code, later] = storyboardStates(storyboard);
-    if (first.kind === "code" || first.kind === "view") throw new Error("最初が図解ではありません");
+    if (first.kind === "code" || first.kind === "view" || first.kind === "motion")
+      throw new Error("最初が図解ではありません");
     expect(first.start).not.toHaveProperty("emphasis");
     expect(first.beats[0].after.emphasis).toEqual(["read"]);
     expect(first.beats[1].after.emphasis).toEqual(["read"]);
@@ -1349,7 +1350,8 @@ describe("schema 2 のレッスン型", () => {
     expect(first.beats[3].after.emphasis).toEqual(["quiz", "read"]);
     expect(first.beats[4].after.emphasis).toEqual(["read"]);
     expect(first.end.emphasis).toEqual(["read"]);
-    if (next.kind === "code" || next.kind === "view") throw new Error("次が図解ではありません");
+    if (next.kind === "code" || next.kind === "view" || next.kind === "motion")
+      throw new Error("次が図解ではありません");
     expect(next.start.visible).toEqual(first.end.visible);
     expect(next.start).not.toHaveProperty("emphasis");
     if (code.kind !== "code" || !code.figure) throw new Error("図の状態がありません");
@@ -1361,7 +1363,8 @@ describe("schema 2 のレッスン型", () => {
     expect(code.figure.beats[3].after.emphasis).toEqual(["quiz", "read"]);
     expect(code.figure.beats[4].after.emphasis).toEqual(["read"]);
     expect(code.figure.end.emphasis).toEqual(["read"]);
-    if (later.kind === "code" || later.kind === "view") throw new Error("最後が図解ではありません");
+    if (later.kind === "code" || later.kind === "view" || later.kind === "motion")
+      throw new Error("最後が図解ではありません");
     expect(later.start).not.toHaveProperty("emphasis");
     expect(later.start.visible).toEqual(code.figure.end.visible);
   });
@@ -1493,11 +1496,12 @@ describe("コードの横の概念図", () => {
     expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
     const [first, code, last] = storyboardStates(storyboard);
     if (code.kind !== "code" || !code.figure) throw new Error("図の状態がありません");
+    if (first.kind === "motion") throw new Error("最初が図解ではありません");
     expect(code.figure.start).toEqual(first.end);
     expect(code.figure.beats[0].after.marks).toEqual({ price: "check" });
     expect(code.figure.end.tags).toEqual({ price: "1200", total: "1200" });
     expect(last.start).toEqual(code.figure.end);
-    if (last.kind === "code" || last.kind === "view")
+    if (last.kind === "code" || last.kind === "view" || last.kind === "motion")
       throw new Error("最後の場面が図解ではありません");
     expect(last.end.marks).toEqual({});
     expect(code.start.visible).toEqual([1]);
@@ -1764,4 +1768,135 @@ it("part.note だけの変更も絵が変わる動きに数える", () => {
     ],
   });
   expect(parseStoryboard(storyboard).storyboard).toEqual(storyboard);
+});
+
+describe("motion の場面", () => {
+  const source = () =>
+    JSON.parse(
+      readFileSync(
+        resolve(
+          stages,
+          "devlab-ts-ch01/modules/u01-let-const/l1-let-const/t1-read-problem/video.json",
+        ),
+        "utf8",
+      ),
+    );
+
+  it("重ね表示の文を数に含めず、場面の状態を並びに残す", () => {
+    const json = source();
+    const { storyboard, issues } = parseStoryboard(json);
+    expect(issues.filter(({ level }) => level === "error")).toEqual([]);
+    if (!storyboard) throw new Error("絵コンテがありません");
+    expect(storyboardStates(storyboard)[0]).toEqual({ kind: "motion" });
+  });
+
+  it("前後の view 場面で再生済みクリップのコマを引き継がない", () => {
+    const { storyboard } = parseStoryboard(source());
+    if (!storyboard) throw new Error("絵コンテがありません");
+    const clip = "web/demo#open";
+    const [previous, motion, next] = storyboardStates({
+      ...storyboard,
+      scenes: [
+        {
+          kind: "view",
+          id: "previous",
+          role: "goal",
+          title: "手前",
+          image: "shot:web/demo",
+          beats: [{ say: "操作します。", clip }],
+        },
+        storyboard.scenes[0],
+        {
+          kind: "view",
+          id: "next",
+          role: "example",
+          title: "次",
+          image: `clip:${clip}`,
+          beats: [{ say: "結果です。" }],
+        },
+      ],
+    });
+    expect(previous).toMatchObject({ kind: "view", end: { lastFrame: true } });
+    expect(motion).toEqual({ kind: "motion" });
+    expect(next.start).not.toHaveProperty("lastFrame");
+  });
+
+  it.each([
+    [
+      "scenes[0].motion",
+      "vending-change",
+      (json) => {
+        json.scenes[0].motion = "toString";
+      },
+    ],
+    [
+      "scenes[0].beats",
+      "この動きは 5 文ぶんです",
+      (json) => {
+        json.scenes[0].beats.splice(0, 1);
+      },
+    ],
+    [
+      "scenes[0].kind",
+      "schema 2",
+      (json) => {
+        json.schema = 1;
+      },
+    ],
+    [
+      "scenes[0].point",
+      "指定できない",
+      (json) => {
+        json.scenes[0].point = 1;
+      },
+    ],
+    [
+      "scenes[0].think",
+      "指定できない",
+      (json) => {
+        json.scenes[0].think = 6;
+      },
+    ],
+    [
+      "scenes[0].image",
+      "指定できない",
+      (json) => {
+        json.scenes[0].image = "art:order";
+      },
+    ],
+    [
+      "scenes[0].beats[0].show",
+      "指定できない",
+      (json) => {
+        json.scenes[0].beats[0].show = [];
+      },
+    ],
+    [
+      "scenes[0].beats[0].spot",
+      "指定できない",
+      (json) => {
+        json.scenes[0].beats[0].spot = [];
+      },
+    ],
+    [
+      "scenes[0].beats[0].say",
+      "くだけた文末",
+      (json) => {
+        json.scenes[0].beats[0].say = "自動販売機ですね。";
+      },
+    ],
+  ] satisfies [string, string, (json: ReturnType<typeof source>) => void][])(
+    "%s を検査する",
+    (path, message, edit) => {
+      const json = source();
+      edit(json);
+      const result = parseStoryboard(json);
+      expect(result.storyboard).toBeUndefined();
+      expect(result.issues).toContainEqual({
+        level: "error",
+        path,
+        message: expect.stringContaining(message),
+      });
+    },
+  );
 });

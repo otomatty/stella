@@ -1,11 +1,13 @@
 import {
-  codeColorsCss,
-  codeFontCss,
-  codeHtml,
-  codeTextWidth,
-  highlightCode,
-} from "./scene-code-html.js";
-import type { CodeSceneState } from "../../src/scene-code.js";
+  beatOverlayCss,
+  beatOverlayFrame,
+  dialogFontSize,
+  dialogOverlayCss,
+  overlayBackdrop,
+  OVERLAY_FADE_SECONDS,
+  termOverlayCss,
+} from "../../src/scene-overlays.js";
+import { codeColorsCss, codeFontCss, codeHtml, highlightCode } from "./scene-code-html.js";
 import { viewHtml } from "./scene-view-html.js";
 import type { ViewImage } from "../../src/scene-view.js";
 /** 時刻から全属性を再計算する場面。時計・CSS transition・外部通信を使わない。 */
@@ -30,6 +32,7 @@ import {
   type Scene,
   type BoardScene,
   type ViewSceneState,
+  type StoryboardSceneState,
   type SceneState,
   type VideoStoryboard,
 } from "../../src/video-storyboard.js";
@@ -54,7 +57,7 @@ export interface SceneHtmlInput {
   /** code の前後だけ、直前の場面の最終コマを重ねてクロスフェードする。 */
   previousFrame?: string;
   scene: Scene;
-  state: SceneState | ViewSceneState | CodeSceneState;
+  state: StoryboardSceneState;
   timing: SceneTimeline;
   index: number;
   total: number;
@@ -382,6 +385,8 @@ export function mark(only?: MarkKind): string {
   return `<g${only ? "" : ' class="mark"'}>${(["check", "cross", "question", "redo"] as const).map((kind, i) => (only && kind !== only ? "" : `<g data-kind="${kind}"><circle r="28" fill="${["#16A34A", "#E5342B", "#5C5C66", "#E62F9A"][i]}" stroke="white" stroke-width="3"/><g fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${symbols[kind]}</g></g>`)).join("")}</g>`;
 }
 export function sceneHtml(input: SceneHtmlInput): string {
+  if (input.scene.kind === "motion" || input.state.kind === "motion")
+    throw new Error(`HTML の場面を作れません: ${input.scene.id}`);
   if (input.schema === 2 && input.previousFrame) input = { ...input, previousFrame: undefined };
   let html =
     input.scene.kind === "view"
@@ -426,6 +431,8 @@ function dialogOverflow(entry: HTMLElement): string[] | undefined {
 
 function beatOverlayRuntime(
   beats: { start: number; end: number; backdrop: string }[],
+  fade: number,
+  frameAt: typeof beatOverlayFrame,
   extraOverflow?: (entry: HTMLElement) => string[] | undefined,
 ) {
   const win = window as unknown as ScenePageWindow;
@@ -433,25 +440,18 @@ function beatOverlayRuntime(
   const overflows = win.__overflows;
   const overlay = document.getElementById("beat-overlay") as HTMLElement;
   const entries = [...overlay.children] as HTMLElement[];
-  const fade = 0.3;
-  const clamp = (n: number) => Math.max(0, Math.min(1, n));
-  const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
   for (const { start, end } of beats)
     win.__busyRanges.push([start, start + fade], [end, end + fade]);
   const draw = (time: number) => {
-    const i = beats.findIndex(({ start, end }) => time >= start && time < end + fade);
+    const { index: i, opacity, scale } = frameAt(beats, time, fade);
     const beat = beats[i];
-    const progress = beat ? clamp((time - beat.start) / fade) : 0;
-    const opacity = beat ? Math.min(progress, clamp((beat.end + fade - time) / fade)) : 0;
     overlay.style.background = beat?.backdrop ?? "";
     overlay.style.opacity = String(opacity);
     overlay.style.visibility = opacity > 0 ? "visible" : "hidden";
     entries.forEach((entry, index) => {
       entry.hidden = index !== i;
       if (!entry.hidden && beat) {
-        // 退場（end 以降）は enter が 1 なので、大きさは 1 のまま親の不透明度だけ下がる。
-        const enter = time < beat.end ? ease((time - beat.start) / fade) : 1;
-        entry.style.transform = `scale(${0.94 + 0.06 * enter})`;
+        entry.style.transform = `scale(${scale})`;
         entry.style.transformOrigin = "center";
       }
     });
@@ -485,30 +485,9 @@ function withBeatOverlays(html: string, input: SceneHtmlInput): string {
   if (!beats.length) return html;
   const hasDialog = beats.some(({ dialog }) => dialog);
   const overlay = `<style>
-    #beat-overlay{position:absolute;inset:0;z-index:5;display:grid;place-items:center;color:white;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
-    ${
-      beats.some(({ term }) => term)
-        ? `
-    .term-text{max-width:1800px;margin:auto;font-size:120px;font-weight:700;line-height:1.2;white-space:nowrap}
-    .term-line{width:96px;height:6px;background:#E62F9A;margin:24px auto}
-    .term-note{font-size:44px;color:#DDDDE2}
-    .term-text rt{line-height:1}
-    `
-        : ""
-    }
-    ${
-      hasDialog
-        ? `
-    ${input.scene.kind === "code" ? "" : codeFontCss + codeColorsCss}
-    .code-dialog{width:1240px;border-radius:24px;background:white;box-shadow:0 16px 60px #00000040;overflow:hidden}
-    .dialog-heading{position:relative;display:grid;place-items:center;height:88px;border-bottom:2px solid #DDDDE2}
-    .dialog-heading::before{content:'';position:absolute;left:32px;width:16px;height:16px;border-radius:50%;background:#DDDDE2;box-shadow:28px 0 #DDDDE2,56px 0 #DDDDE2}
-    .dialog-title{max-width:calc(100% - 240px);margin:0;color:#0E0E10;font-size:36px;font-weight:700;white-space:nowrap;overflow:hidden}
-    .dialog-code{margin:32px;padding:32px;border-radius:12px;background:#16161A;color:#F4F4F6;text-align:left;line-height:1.5;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:400;font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0;overflow:hidden}
-    .dialog-code code{font:inherit}
-    `
-        : ""
-    }
+    ${beatOverlayCss}
+    ${beats.some(({ term }) => term) ? termOverlayCss : ""}
+    ${hasDialog ? (input.scene.kind === "code" ? "" : codeFontCss + codeColorsCss) + dialogOverlayCss : ""}
   </style><div id="beat-overlay">${beats
     .map(({ term, dialog }) => {
       if (term) {
@@ -519,15 +498,14 @@ function withBeatOverlays(html: string, input: SceneHtmlInput): string {
         return `<div hidden><div class="term-text">${label}</div><div class="term-line"></div>${term.note ? `<div class="term-note">${escapeHtml(term.note)}</div>` : ""}</div>`;
       }
       if (!dialog) return "";
-      const widest = Math.max(1, ...dialog.code.map(codeTextWidth));
-      const fontSize = Math.min(34, Math.floor((1240 - 4 * 32) / widest));
+      const fontSize = dialogFontSize(dialog.code);
       return `<div class="code-dialog" hidden><header class="dialog-heading"><h2 class="dialog-title">${escapeHtml(dialog.title)}</h2></header><pre class="dialog-code" style="font-size:${fontSize}px"><code>${highlightCode(dialog.code.join("\n"))}</code></pre></div>`;
     })
     .join("")}</div>`;
   const times = beats.map(({ start, end, dialog }) => ({
     start,
     end,
-    backdrop: dialog ? "rgba(14,14,16,0.55)" : "rgba(14,14,16,0.78)",
+    backdrop: overlayBackdrop(Boolean(dialog)),
   }));
   const overflow = hasDialog ? `,${dialogOverflow.toString()}` : "";
   return html
@@ -535,7 +513,7 @@ function withBeatOverlays(html: string, input: SceneHtmlInput): string {
     .replace(
       "</html>",
       () =>
-        `<script>(${beatOverlayRuntime.toString()})(${sceneScriptData(times)}${overflow});</script></html>`,
+        `<script>(${beatOverlayRuntime.toString()})(${sceneScriptData(times)},${OVERLAY_FADE_SECONDS},${beatOverlayFrame.toString()}${overflow});</script></html>`,
     );
 }
 

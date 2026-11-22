@@ -1,3 +1,4 @@
+import { WHITE_FADE_SECONDS } from "../../src/scene-overlays.js";
 import { viewTransition } from "../../src/scene-timeline.js";
 import {
   viewBusyRanges,
@@ -14,6 +15,7 @@ function runtime(
   busy: typeof viewBusyRanges,
   groups: typeof SHOT_GROUPS,
   transition: typeof viewTransition,
+  whiteFadeSeconds: number,
 ) {
   const win = window as unknown as ScenePageWindow;
   const safe = (s: string) =>
@@ -115,7 +117,7 @@ function runtime(
       ? `<g transform="translate(${c.x} ${c.y})">${c.ripple >= 0 ? `<circle r="${8 + c.ripple * 45}" fill="none" stroke="#E62F9A" stroke-width="4" opacity="${1 - c.ripple}"/>` : ""}<path d="M0 0L3 40L14 29L23 44L31 40L22 25L38 24Z" fill="#0E0E10" stroke="white" stroke-width="3" stroke-linejoin="round"/></g>`
       : "";
     surface.innerHTML = `${f.old && f.fade < 1 ? imageLayer(f.old.image, f.old.url, f.old.box, f.old.camera, f.oldOpacity, f.oldMotion, f.oldDim) : ""}${imageLayer(f.image, f.url, b, f.camera, f.incomingOpacity, f.motion)}${spots}${labels}${cursor}`;
-    const fade = Math.max(0, Math.min(1, time / 0.4));
+    const fade = Math.max(0, Math.min(1, time / whiteFadeSeconds));
     element("white").style.opacity = String(
       data.index === 0 || data.fadeFromBackground ? 1 - fade : 0,
     );
@@ -157,5 +159,5 @@ export function viewHtml(input: SceneHtmlInput): string {
     .map((img) => `<img hidden src="${safe(img.url)}">`)
     .join(
       "",
-    )}<svg id="surface" viewBox="0 0 1920 1080"></svg><div id="white"></div><script>(${runtime.toString()})(${data}, ${viewFrame.toString()}, ${viewBusyRanges.toString()}, ${JSON.stringify(SHOT_GROUPS)}, ${viewTransition.toString()});</script></html>`;
+    )}<svg id="surface" viewBox="0 0 1920 1080"></svg><div id="white"></div><script>(${runtime.toString()})(${data}, ${viewFrame.toString()}, ${viewBusyRanges.toString()}, ${JSON.stringify(SHOT_GROUPS)}, ${viewTransition.toString()}, ${WHITE_FADE_SECONDS});</script></html>`;
 }

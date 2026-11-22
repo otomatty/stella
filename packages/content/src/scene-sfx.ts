@@ -1,10 +1,9 @@
 import { viewTransition, type SceneTimeline, type TextScene } from "./scene-timeline.js";
-import { addsCodeClassification, codeSceneState, type CodeSceneState } from "./scene-code.js";
+import { addsCodeClassification, codeSceneState } from "./scene-code.js";
 import type {
   BeatState,
   Scene,
-  SceneState,
-  ViewSceneState,
+  StoryboardSceneState,
   VideoStoryboard,
 } from "./video-storyboard.js";
 
@@ -36,7 +35,7 @@ export function sceneSfxCues(
   timing: SceneTimeline,
   previousImage?: string,
   schema: VideoStoryboard["schema"] = 1,
-  state?: SceneState | ViewSceneState | CodeSceneState,
+  state?: StoryboardSceneState,
 ): SceneSfxCue[] {
   if (scene.kind === "text") return [{ kind: scene.id, at: 0.1 }];
   if (schema === 1 && scene.kind !== "view") return [];
@@ -48,7 +47,12 @@ export function sceneSfxCues(
     if (scene.role === "quiz") cues.push({ kind: "quiz", at: 0 });
     else if (!openingSwitch) cues.push({ kind: "scene", at: 0 });
   }
-  const board = state?.kind === "code" ? state.figure : state?.kind === "view" ? undefined : state;
+  const board =
+    state?.kind === "code"
+      ? state.figure
+      : state?.kind === "view" || state?.kind === "motion"
+        ? undefined
+        : state;
   const code =
     state?.kind === "code"
       ? state
@@ -70,7 +74,11 @@ export function sceneSfxCues(
     if (schema !== 2) continue;
     const codeBeat = scene.kind === "code" ? scene.beats[i] : undefined;
     const motion =
-      scene.kind === "code" ? codeBeat?.figure : scene.kind === "view" ? undefined : scene.beats[i];
+      scene.kind === "code"
+        ? codeBeat?.figure
+        : scene.kind === "view" || scene.kind === "motion"
+          ? undefined
+          : scene.beats[i];
     const boardBeat = board?.beats[i];
     const lineBeat = state?.kind === "code" ? state.beats[i] : undefined;
     const lineCross = lineBeat?.after.visible.some(

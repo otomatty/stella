@@ -220,7 +220,9 @@ export function sceneTimelines(
         ? {
             start: lastBeat.end + SCENE_PACING[2].beforeThink,
             duration:
-              typeof scene.think === "number" && Number.isFinite(scene.think)
+              scene.kind !== "motion" &&
+              typeof scene.think === "number" &&
+              Number.isFinite(scene.think)
                 ? scene.think
                 : SCENE_PACING[2].defaultThink,
           }

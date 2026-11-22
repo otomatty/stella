@@ -5,7 +5,8 @@
     "types": ["node"],
     "noEmit": true,
     "moduleDetection": "force",
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "remotion/**/*.ts", "remotion/**/*.tsx"]
 }

@@ -1,3 +1,4 @@
+import { codeColorsCss, codeTextWidth } from "../../src/scene-overlays.js";
 import {
   figureNodes,
   type Link,
@@ -35,11 +36,9 @@ export const codeFontCss = readFileSync(fontFile, "utf8").replace(
   /url\(\.\/(.+?)\)/g,
   (_, p: string) => `url(${pathToFileURL(join(dirname(fontFile), p)).href})`,
 );
-export const codeColorsCss = `.hljs-keyword,.hljs-literal{color:#c4a5ff}.hljs-number{color:#ffcd91}.hljs-string,.hljs-template-variable{color:#b5e39c}.hljs-title,.hljs-type{color:#96d4ff}.hljs-comment{color:#a0a0ac}.hljs-built_in,.hljs-params{color:#f4dfa3}`;
 export const highlightCode = (code: string) =>
   hljs.highlight(code, { language: "typescript" }).value;
-export const codeTextWidth = (line: string) =>
-  Array.from(line).reduce((width, c) => width + (/[\x20-\x7e]/u.test(c) ? 0.61 : 1), 0);
+export { codeColorsCss, codeTextWidth } from "../../src/scene-overlays.js";
 
 interface CodeRenderData {
   scene: CodeScene;

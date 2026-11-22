@@ -1,3 +1,4 @@
+import type { MotionSceneProps } from "../../remotion/lib/props.js";
 import type { CodeState } from "../../src/scene-code.js";
 import { existsSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
@@ -27,7 +28,8 @@ export interface SceneCacheInput<
   scene: S;
   timing: SceneTimeline;
   /** 場面内の時刻だけを含む HTML。全体の開始時刻は描画に使わない。 */
-  html: string;
+  html?: string;
+  motion?: MotionSceneProps;
   /** 抽出したコマの一時URL。作業フォルダーの違いはキャッシュを変えない。 */
   assetRoot?: string;
   voice: string;
@@ -45,7 +47,7 @@ export function sceneCacheHash({ schema, ...input }: SceneCacheInput): string {
       ...input,
       assetRoot: undefined,
       html: input.assetRoot
-        ? input.html.replaceAll(input.assetRoot, "file:///__scene_work__")
+        ? input.html?.replaceAll(input.assetRoot, "file:///__scene_work__")
         : input.html,
       timing: { ...input.timing, start: 0 },
       settings: SCENE_TIMING,

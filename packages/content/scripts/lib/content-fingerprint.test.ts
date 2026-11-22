@@ -25,6 +25,8 @@ const GENERATORS = [
 const READ_BY_PATH = [
   "packages/content/shots",
   "packages/content/clips",
+  "packages/content/remotion",
+  "packages/content/scripts/lib/remotion-runtime.mjs",
   "packages/content/stages",
   "packages/content/coding-rules.md",
   "packages/content/narration",

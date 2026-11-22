@@ -223,7 +223,9 @@ kinds は上記6種類から選び、reason は日本語にしてください。
                       boards,
                       storyboard.schema,
                     )
-                  : pictureOf(boards[scene.board], beat as Beat, storyboard.schema);
+                  : scene.kind === "motion"
+                    ? `動くイラスト: ${scene.motion}`
+                    : pictureOf(boards[scene.board], beat as Beat, storyboard.schema);
             if (!beat.term && !beat.dialog) return picture;
             return [
               ...(typeof picture === "string" ? [picture] : picture),

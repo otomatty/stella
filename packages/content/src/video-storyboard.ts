@@ -1,3 +1,4 @@
+import { MOTIONS, type MotionId } from "../remotion/motions/manifest.js";
 export type { CodeScene, CodeBeat } from "./scene-code.js";
 import {
   codeSceneState,
@@ -92,7 +93,7 @@ const LESSON_ROLE_LABELS = {
 } as const;
 export type SceneRole = "hook" | "point" | "recap" | keyof typeof LESSON_ROLE_LABELS;
 
-export function sceneRoleLabel(scene: Pick<Scene, "role" | "point" | "kind">): string {
+export function sceneRoleLabel(scene: Pick<Scene, "role" | "kind"> & { point?: number }): string {
   switch (scene.role) {
     case "hook":
       return scene.kind === "code" ? "つかみ" : "";
@@ -169,9 +170,17 @@ export interface ViewScene {
   image: string;
   beats: ViewBeat[];
 }
-export type Scene = BoardScene | ViewScene | CodeScene;
+export interface MotionScene {
+  kind: "motion";
+  id: string;
+  role: SceneRole;
+  title: string;
+  motion: MotionId;
+  beats: NarratedBeat[];
+}
+export type Scene = BoardScene | ViewScene | CodeScene | MotionScene;
 export function sceneBoardName(scene: Scene): string | undefined {
-  if (scene.kind === "view") return undefined;
+  if (scene.kind === "view" || scene.kind === "motion") return undefined;
   if (scene.kind === "code") return scene.panel?.kind === "figure" ? scene.panel.board : undefined;
   return scene.board;
 }
@@ -290,17 +299,23 @@ export interface ViewSceneState {
   beats: { before: ViewState; after: ViewState }[];
   end: ViewState;
 }
+export interface MotionSceneState {
+  kind: "motion";
+  start?: never;
+}
+export type StoryboardSceneState = SceneState | ViewSceneState | CodeSceneState | MotionSceneState;
+
 export function storyboardStates(storyboard: BoardStoryboard): SceneState[];
-export function storyboardStates(
-  storyboard: VideoStoryboard,
-): (SceneState | ViewSceneState | CodeSceneState)[];
-export function storyboardStates(
-  storyboard: VideoStoryboard,
-): (SceneState | ViewSceneState | CodeSceneState)[] {
-  const states: (SceneState | ViewSceneState | CodeSceneState)[] = [];
+export function storyboardStates(storyboard: VideoStoryboard): StoryboardSceneState[];
+export function storyboardStates(storyboard: VideoStoryboard): StoryboardSceneState[] {
+  const states: StoryboardSceneState[] = [];
   const boards = storyboard.boards ?? {};
   let lastBoard: { name: string; end: BoardState } | undefined;
   for (const scene of storyboard.scenes) {
+    if (scene.kind === "motion") {
+      states.push({ kind: "motion" });
+      continue;
+    }
     if (scene.kind === "code") {
       const figure =
         scene.panel?.kind === "figure"
@@ -426,7 +441,8 @@ export function parseStoryboard(
       error(p, "配列にしてください");
       return [];
     }
-    if (v.length < min || v.length > max) error(p, `${min}〜${max}個にしてください`);
+    if (v.length < min || v.length > max)
+      error(p, max === Infinity ? `${min}個以上にしてください` : `${min}〜${max}個にしてください`);
     return v;
   };
   const integer = (v: unknown, p: string, min: number, max: number) => {
@@ -582,10 +598,33 @@ export function parseStoryboard(
     if (s.id === "title") error(`${p}.id`, "title は自動で入るタイトルの場面に使うidです");
     if (s.id === "summary") error(`${p}.id`, "summary は廃止した場面のidなので使えません");
     str(s.title, `${p}.title`, 16);
-    if (s.kind !== undefined && s.kind !== "board" && s.kind !== "view" && s.kind !== "code")
-      error(`${p}.kind`, "board・view・codeから選んでください");
+    if (
+      s.kind !== undefined &&
+      s.kind !== "board" &&
+      s.kind !== "view" &&
+      s.kind !== "code" &&
+      s.kind !== "motion"
+    )
+      error(`${p}.kind`, "board・view・code・motionから選んでください");
     if (s.kind === "view") str(s.image, `${p}.image`);
-    else if (s.kind !== "code") str(s.board, `${p}.board`);
+    else if (s.kind === "motion") {
+      if (!lesson) error(`${p}.kind`, "motion は schema 2 の場面だけに指定できます");
+      for (const key of Object.keys(s))
+        if (!["kind", "id", "role", "title", "motion", "beats"].includes(key))
+          error(`${p}.${key}`, "motion の場面では指定できない項目です");
+      const motion =
+        typeof s.motion === "string" && Object.hasOwn(MOTIONS, s.motion)
+          ? MOTIONS[s.motion as MotionId]
+          : undefined;
+      if (!motion) error(`${p}.motion`, `${Object.keys(MOTIONS).join("・")}から選んでください`);
+      else if (
+        Array.isArray(s.beats) &&
+        s.beats.filter(
+          (beat) => record(beat) && beat.term === undefined && beat.dialog === undefined,
+        ).length !== motion.beats
+      )
+        error(`${p}.beats`, `この動きは ${motion.beats} 文ぶんです（term・dialog の文を除く）`);
+    } else if (s.kind !== "code") str(s.board, `${p}.board`);
     if (s.kind === "code") {
       const codeIssues = validateCodeScene(s, p, lesson ? 2 : 1);
       issues.push(...codeIssues);
@@ -609,15 +648,25 @@ export function parseStoryboard(
         integer(s.point, `${p}.point`, 1, Array.isArray(brief.points) ? brief.points.length : 3);
       else if (s.point !== undefined) error(`${p}.point`, "pointの場面だけに指定してください");
     }
-    if (s.think !== undefined) {
+    if (s.kind !== "motion" && s.think !== undefined) {
       if (!lesson || s.role !== "quiz")
         error(`${p}.think`, "think は schema 2 の quiz の場面だけに指定できます");
       else if (!inSeconds(s.think, 3, 15)) error(`${p}.think`, "think は3〜15秒にしてください");
     }
-    if (s.kind !== "code" && s.reset !== undefined && typeof s.reset !== "boolean")
+    if (
+      s.kind !== "code" &&
+      s.kind !== "motion" &&
+      s.reset !== undefined &&
+      typeof s.reset !== "boolean"
+    )
       error(`${p}.reset`, "真偽値にしてください");
     let previousEnding: string | undefined;
-    arr(s.beats, `${p}.beats`, 1, s.kind === "code" ? 6 : 5).forEach((value, j) => {
+    arr(
+      s.beats,
+      `${p}.beats`,
+      1,
+      s.kind === "motion" ? Infinity : s.kind === "code" ? 6 : 5,
+    ).forEach((value, j) => {
       const q = `${p}.beats[${j}]`,
         beat = obj(value, q);
       str(beat.say, `${q}.say`, 40);
@@ -644,7 +693,7 @@ export function parseStoryboard(
         previousEnding = currentEnding;
       }
       if (beat.speech !== undefined) str(beat.speech, `${q}.speech`);
-      if (beat.classify !== undefined && s.kind !== "code")
+      if (beat.classify !== undefined && s.kind !== "code" && s.kind !== "motion")
         error(`${q}.classify`, "classify は schema 2 のコードの場面だけに指定できます");
       if (beat.term !== undefined) {
         if (!lesson) error(`${q}.term`, "term は schema 2 の文だけに指定できます");
@@ -676,6 +725,12 @@ export function parseStoryboard(
         if (!lesson) error(`${q}.pause`, "pause は schema 2 の文だけに指定できます");
         else if (!inSeconds(beat.pause, 0.5, 8))
           error(`${q}.pause`, "pause は0.5〜8秒にしてください");
+      }
+      if (s.kind === "motion") {
+        for (const key of Object.keys(beat))
+          if (!["say", "speech", "pause", "term", "dialog"].includes(key))
+            error(`${q}.${key}`, "motion の文では指定できない項目です");
+        return;
       }
       if (s.kind === "code" || s.kind === "view") {
         for (const key of ["tag", "untag"])
@@ -819,12 +874,13 @@ export function parseStoryboard(
     } else {
       const expected = i === 0 ? "hook" : i === sb.scenes.length - 1 ? "recap" : "point";
       if (s.role !== expected) error(`${p}.role`, `${expected}の場面にしてください`);
-      if (s.point !== undefined) pointNumbers.push(s.point);
+      if (s.kind !== "motion" && s.point !== undefined) pointNumbers.push(s.point);
     }
     if (s.kind === "view") {
       validateView(s, i, sb, context, issues);
       return;
     }
+    if (s.kind === "motion") return;
     const name = sceneBoardName(s);
     if (name === undefined) return;
     const boardPath = s.kind === "code" ? `${p}.panel.board` : `${p}.board`;
@@ -919,7 +975,7 @@ export function parseStoryboard(
   };
   sb.scenes.forEach((s, i) => {
     const name = sceneBoardName(s);
-    if (s.kind === "view" || name === undefined) return;
+    if (s.kind === "view" || s.kind === "motion" || name === undefined) return;
     const state = states[i];
     const sceneState = state.kind === "code" ? state.figure : (state as SceneState);
     if (!sceneState) return;
@@ -972,6 +1028,7 @@ export function parseStoryboard(
     last >= 0 &&
     finalScene.kind !== "view" &&
     finalScene.kind !== "code" &&
+    finalScene.kind !== "motion" &&
     analysisBoards[finalScene.board].nodes.some(
       (n) => !(states[last] as SceneState).end.visible.includes(n.id),
     )

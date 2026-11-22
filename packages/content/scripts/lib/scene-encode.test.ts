@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { Page } from "playwright";
 import { expect, it, vi } from "vitest";
 import { AUDIO_RATE, decodePcm, probeDuration, writeNarrationWav } from "./ffmpeg.js";
-import { encodeScene, renderCaptionTrack, runFfmpeg } from "./scene-encode.js";
+import { encodeScene, renderCaptionTrack, runFfmpeg, sceneFfmpegArgs } from "./scene-encode.js";
 
 it("字幕の HTML を描き、cue の境界と空白をミリ秒単位で並べる", async () => {
   const root = mkdtempSync(join(tmpdir(), "stella-captions-"));
@@ -151,3 +151,59 @@ it.skipIf(!hasFfmpeg)(
   },
   30_000,
 );
+
+it("HTML の場面と共通の書き出しで従来の ffmpeg 引数を使う", () => {
+  const args = [
+    "-f",
+    "concat",
+    "-safe",
+    "0",
+    "-i",
+    "frames.txt",
+    "-i",
+    "audio.m4a",
+    "-map",
+    "0:v:0",
+    "-map",
+    "1:a:0",
+    "-vf",
+    "fps=30",
+    "-frames:v",
+    "90",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "ultrafast",
+    "-crf",
+    "20",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "copy",
+    "-t",
+    "3",
+    "-r",
+    "30",
+    "-video_track_timescale",
+    "15360",
+    "-movflags",
+    "+faststart",
+    "clip.mp4",
+  ];
+  expect(sceneFfmpegArgs("frames.txt", 3, "audio.m4a", "clip.mp4")).toEqual(args);
+  const fading = [...args];
+  fading[fading.indexOf("fps=30")] = "fps=30,fade=t=out:st=2.2:d=0.8:color=0xffffff";
+  fading.splice(
+    fading.indexOf("-c:a"),
+    2,
+    "-af",
+    "afade=t=out:st=2.2:d=0.8",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+  );
+  expect(
+    sceneFfmpegArgs("frames.txt", 3, "audio.m4a", "clip.mp4", { start: 2.2, duration: 0.8 }),
+  ).toEqual(fading);
+});

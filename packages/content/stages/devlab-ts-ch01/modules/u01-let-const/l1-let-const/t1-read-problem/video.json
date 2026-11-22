@@ -13,13 +13,6 @@
     ]
   },
   "art": {
-    "order": {
-      "prompt": "The learner sits at a desk on the left half of the image, looking at an open laptop on the right half. The laptop screen shows a blue web browser window with a simple online bookshop page: one large book cover shape and a small shopping cart shape. A cardboard delivery box sits on the desk beside the laptop.",
-      "aspect": "16:9",
-      "regions": {
-        "laptop": [0.52, 0.29, 0.26, 0.37]
-      }
-    },
     "price": {
       "prompt": "One closed hardcover book standing upright, with a blank price tag hanging from it on a short string. Nothing else in the image."
     },
@@ -212,32 +205,28 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:order",
+      "motion": "vending-change",
       "beats": [
         {
           "say": "この動画で学ぶのは、関数です。"
         },
         {
-          "say": "ネットのお店で本を買うと、送料が足されます。",
-          "spot": ["laptop"],
-          "label": [
-            {
-              "at": "laptop",
-              "text": "値段と送料"
-            }
-          ]
+          "say": "自動販売機に、500円を入れます。",
+          "speech": "自動販売機に、五百円を入れます。"
         },
         {
-          "say": "このような決まった計算を受け持つのが、関数です。",
-          "label": [
-            {
-              "at": "laptop",
-              "text": "決まった計算"
-            }
-          ],
+          "say": "中では、飲み物の値段の120円が引かれました。",
+          "speech": "中では、飲み物の値段の百二十円が引かれました。"
+        },
+        {
+          "say": "お釣りの380円が、返ってきます。",
+          "speech": "お釣りの三百八十円が、返ってきます。"
+        },
+        {
+          "say": "受け取って、決まった処理をして、返すのが関数です。",
           "pause": 1
         },
         {
