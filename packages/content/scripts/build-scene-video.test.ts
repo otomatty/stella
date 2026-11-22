@@ -35,7 +35,8 @@ vi.mock("./lib/ffmpeg.js", async (original) => ({
   probeDuration: vi.fn(async () => 10),
   toPosterJpeg: vi.fn(async (_source: string, out: string) => writeFileSync(out, "poster")),
 }));
-vi.mock("./lib/scene-encode.js", () => ({
+vi.mock("./lib/scene-encode.js", async (original) => ({
+  ...(await original<typeof import("./lib/scene-encode.js")>()),
   encodeScene: vi.fn(async (_page: unknown, _duration: number, _audio: string, out: string) => {
     writeFileSync(out, "clip");
     return 1;
@@ -745,8 +746,8 @@ describe("音声モデルと日次上限", () => {
       }
     },
   );
-  it("--burn-captions は公開用の動画と字幕を保ち、2種類の ASS スタイルで確認版を作る", async () => {
-    const { root, topics, storyboard } = fixture();
+  it("--burn-captions は公開用の動画と字幕を保ち、字幕の PNG を重ねた確認版を作る", async () => {
+    const { root, topics, storyboard, page, browser } = fixture();
     try {
       const roles = [
         "goal",
@@ -817,6 +818,9 @@ describe("音声モデルと日次上限", () => {
       await buildSceneVideos([...args, "--out", plain]);
       expect(runFfmpeg).toHaveBeenCalledTimes(1);
       expect(existsSync(join(plain, "fixture/first/video.captions.mp4"))).toBe(false);
+      expect(page.screenshot).not.toHaveBeenCalledWith(
+        expect.objectContaining({ omitBackground: true }),
+      );
       const timing = () =>
         vi
           .mocked(writeNarrationWav)
@@ -835,11 +839,12 @@ describe("音声モデルと日次上限", () => {
       vi.mocked(writeNarrationWav).mockClear();
       vi.mocked(synthesizeCached).mockClear();
 
-      let ass = "";
-      vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs, cwd) => {
-        if (cwd) ass = readFileSync(join(cwd, "captions.ass"), "utf8");
+      let track = "";
+      vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs) => {
         const file = ffmpegArgs.at(-1) ?? "";
-        writeFileSync(file, cwd ? "preview" : "video");
+        const preview = ffmpegArgs.includes("-filter_complex");
+        if (preview) track = readFileSync(ffmpegArgs[7], "utf8");
+        writeFileSync(file, preview ? "preview" : "video");
       });
       try {
         await buildSceneVideos([...args, "--out", burned, "--burn-captions"]);
@@ -849,35 +854,39 @@ describe("音声モデルと日次上限", () => {
         );
       }
 
+      expect(browser.newContext).toHaveBeenLastCalledWith({
+        viewport: { width: 1920, height: 1080 },
+        deviceScaleFactor: 1,
+      });
       expect(runFfmpeg).toHaveBeenCalledTimes(3);
-      expect(runFfmpeg).toHaveBeenLastCalledWith(
-        [
-          "-i",
-          expect.stringMatching(/\/video\.mp4$/),
-          "-vf",
-          "ass=captions.ass",
-          "-c:v",
-          "libx264",
-          "-crf",
-          "20",
-          "-c:a",
-          "copy",
-          "-movflags",
-          "+faststart",
-          expect.stringMatching(/\/video\.captions\.mp4$/),
-        ],
-        expect.stringContaining("work-"),
-      );
-      expect(ass).toContain(
-        "Style: Default,Noto Sans CJK JP,38,&H00000000,&H00000000,&H00FFFFFF,&H00000000,-1",
-      );
-      expect(ass).toContain(
-        "Style: OnDark,Noto Sans CJK JP,38,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1",
-      );
-      expect(ass).toMatch(/Dialogue: 0,[\d:.]+,[\d:.]+,OnDark,,0,0,0,,完成形を見ます。/);
-      expect(ass).toMatch(/,OnDark,,0,0,0,,絵に注目してください。/);
-      expect(ass).toMatch(/,OnDark,,0,0,0,,二つの値を比べます。/);
-      expect(ass).toMatch(/,Default,,0,0,0,,要点を確かめます。/);
+      expect(runFfmpeg).toHaveBeenLastCalledWith([
+        "-i",
+        expect.stringMatching(/\/video\.mp4$/),
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        expect.stringMatching(/\/captions\.ffconcat$/),
+        "-filter_complex",
+        "[0:v:0][1:v:0]overlay[v]",
+        "-map",
+        "[v]",
+        "-map",
+        "0:a:0",
+        "-c:v",
+        "libx264",
+        "-crf",
+        "20",
+        "-c:a",
+        "copy",
+        "-movflags",
+        "+faststart",
+        expect.stringMatching(/\/video\.captions\.mp4$/),
+      ]);
+      expect(track).toMatch(/^ffconcat version 1\.0\nfile 'caption-blank\.png'/);
+      const screenshots = page.screenshot.mock.calls.filter(([args]) => "omitBackground" in args);
+      expect(screenshots).toHaveLength(roles.length + 1);
       for (const file of ["video.mp4", "captions.vtt"])
         expect(readFileSync(join(burned, "fixture/first", file))).toEqual(
           readFileSync(join(plain, "fixture/first", file)),
@@ -894,7 +903,7 @@ describe("音声モデルと日次上限", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 15_000);
 
   it("schema 2 のタイトル直後と、状態が変わる文の効果音をミックスに渡す", async () => {
     const { root, topics, storyboard } = fixture();

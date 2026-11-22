@@ -47,7 +47,7 @@ import {
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
 import { sceneCacheHash, sceneVideoSourceHash, touchVideoCacheFile } from "./lib/scene-cache.js";
 import { sceneHtml, textSceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.js";
-import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
+import { encodeScene, renderCaptionTrack, runFfmpeg } from "./lib/scene-encode.js";
 import {
   createTtsProvider,
   QuotaExhaustedError,
@@ -131,42 +131,6 @@ export function argumentsOf(args: string[]) {
   };
 }
 
-/** このビルドで書いた WebVTT を、確認用の2色の ASS に変換する。 */
-function captionsAss(vtt: string): string {
-  const events = vtt
-    .trimEnd()
-    .split("\n\n")
-    .slice(1)
-    .map((block) => {
-      const [, time, cue] = block.split("\n");
-      // ASS の時刻は百分の一秒まで。
-      const [start, end] = time.split(" --> ").map((t) => t.slice(0, -1));
-      const dark = cue.startsWith("<c.on-dark>");
-      const text = (dark ? cue.slice("<c.on-dark>".length, -"</c>".length) : cue)
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&amp;/g, "&")
-        // 字幕のバックスラッシュと波括弧を ASS の制御記号として解釈させない。
-        .replace(/\\/g, "\\\u2060")
-        .replace(/[{}]/g, "\\$&");
-      return `Dialogue: 0,${start},${end},${dark ? "OnDark" : "Default"},,0,0,0,,${text}`;
-    });
-  return `[Script Info]
-ScriptType: v4.00+
-PlayResX: 1920
-PlayResY: 1080
-WrapStyle: 0
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Noto Sans CJK JP,38,&H00000000,&H00000000,&H00FFFFFF,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,72,72,28,1
-Style: OnDark,Noto Sans CJK JP,38,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,72,72,28,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-${events.join("\n")}
-`;
-}
 /** 壊れた復元音声は捨てて再合成する。合成そのもののエラーは呼び出し元へ返す。 */
 async function cachedScenePcm(
   provider: TtsProvider,
@@ -656,26 +620,32 @@ export async function buildSceneTopic(
     writeFileSync(join(out, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
     if (options.burnCaptions) {
       const preview = join(work, "video.captions.mp4");
-      writeFileSync(join(work, "captions.ass"), captionsAss(captions));
-      // フィルターには作業フォルダーからの相対名を渡す。
-      await runFfmpeg(
-        [
-          "-i",
-          video,
-          "-vf",
-          "ass=captions.ass",
-          "-c:v",
-          "libx264",
-          "-crf",
-          "20",
-          "-c:a",
-          "copy",
-          "-movflags",
-          "+faststart",
-          preview,
-        ],
-        work,
-      );
+      const track = await renderCaptionTrack(page, captions, work);
+      await runFfmpeg([
+        "-i",
+        video,
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        track,
+        "-filter_complex",
+        "[0:v:0][1:v:0]overlay[v]",
+        "-map",
+        "[v]",
+        "-map",
+        "0:a:0",
+        "-c:v",
+        "libx264",
+        "-crf",
+        "20",
+        "-c:a",
+        "copy",
+        "-movflags",
+        "+faststart",
+        preview,
+      ]);
       copyFileSync(preview, join(out, "video.captions.mp4"));
     }
     console.info(`${topic.stageSlug}/${topic.id}: ${duration.toFixed(2)}秒`);

@@ -37,7 +37,6 @@ function runtime(
       opacity: number,
       motion: typeof f.motion,
       dim = 0,
-      shadow = false,
     ) => {
       const shot = !id.startsWith("art:");
       const group = shot ? id.slice(5).split("/")[0] : undefined;
@@ -89,9 +88,9 @@ function runtime(
         group === "vscode"
           ? `<g transform="translate(${box.x} ${box.y}) scale(${box.w / img.width})">${captionButtons(img.width - 172, 0, 172, 44, "#CCCCCC")}</g>`
           : "";
-      return `<g opacity="${opacity}" ${shot || shadow ? 'style="filter:drop-shadow(0px 10px 18px #00000028)"' : ""} transform="translate(${960 + motion.x} 540) scale(${motion.scale}) translate(-960 -540)">
+      return `<g opacity="${opacity}" ${shot ? 'style="filter:drop-shadow(0px 10px 18px #00000028)"' : ""} transform="translate(${960 + motion.x} 540) scale(${motion.scale}) translate(-960 -540)">
         <defs><clipPath id="${clip}-window"><rect x="${box.x}" y="${top}" width="${box.w}" height="${height}" rx="${radius}"/></clipPath><clipPath id="${clip}"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs>
-        <rect x="${box.x}" y="${top}" width="${box.w}" height="${height}" rx="${radius}" fill="white" ${shot ? "" : 'style="filter:drop-shadow(0px 5px 10px #00000012)"'}/>
+        <rect x="${box.x}" y="${top}" width="${box.w}" height="${height}" rx="${radius}" fill="white"/>
         <g clip-path="url(#${clip}-window)">
           <g clip-path="url(#${clip})"><g data-camera="true" transform="translate(${cam.x} ${cam.y}) scale(${cam.scale})"><foreignObject x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"><img src="${safe(url)}" style="display:block;width:100%;height:100%"/></foreignObject>${vscodeChrome}</g></g>
           ${browserChrome}
@@ -115,7 +114,7 @@ function runtime(
     const cursor = c
       ? `<g transform="translate(${c.x} ${c.y})">${c.ripple >= 0 ? `<circle r="${8 + c.ripple * 45}" fill="none" stroke="#E62F9A" stroke-width="4" opacity="${1 - c.ripple}"/>` : ""}<path d="M0 0L3 40L14 29L23 44L31 40L22 25L38 24Z" fill="#0E0E10" stroke="white" stroke-width="3" stroke-linejoin="round"/></g>`
       : "";
-    surface.innerHTML = `${f.old && f.fade < 1 ? imageLayer(f.old.image, f.old.url, f.old.box, f.old.camera, f.oldOpacity, f.oldMotion, f.oldDim) : ""}${imageLayer(f.image, f.url, b, f.camera, f.incomingOpacity, f.motion, 0, f.switching)}${spots}${labels}${cursor}`;
+    surface.innerHTML = `${f.old && f.fade < 1 ? imageLayer(f.old.image, f.old.url, f.old.box, f.old.camera, f.oldOpacity, f.oldMotion, f.oldDim) : ""}${imageLayer(f.image, f.url, b, f.camera, f.incomingOpacity, f.motion)}${spots}${labels}${cursor}`;
     const fade = Math.max(0, Math.min(1, time / 0.4));
     element("white").style.opacity = String(
       data.index === 0 || data.fadeFromBackground ? 1 - fade : 0,

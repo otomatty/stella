@@ -147,6 +147,7 @@ describe("Windows のウィンドウ枠", () => {
       expect(chrome(initial)).toContain("stella.saedgewell.workers.dev");
       expect(initial).toContain('rx="8"');
       expect(initial).toContain('stroke="#C8C8CE" stroke-width="1"');
+      expect(initial).toContain("filter:drop-shadow");
       expect(zoomed).toMatch(/<\/foreignObject><\/g><\/g>\s*<g data-browser-chrome/);
       expect(zoomed).not.toContain("Webアプリ");
       expect(zoomed).not.toContain("#2563EB");
@@ -183,9 +184,12 @@ describe("Windows のウィンドウ枠", () => {
       expect(zoomed).not.toContain("data-browser-chrome");
     },
   );
-  it("art には枠線もブラウザーもキャプションボタンも付けない", async () => {
+  it("art は角丸を保ち、枠線・影・窓の装飾を付けない", async () => {
     const html = await render("art:art").at(0);
-    expect(html).not.toMatch(/data-caption-buttons|data-window-border|data-browser-chrome/);
+    expect(html).toContain('rx="16"');
+    expect(html).not.toMatch(
+      /data-caption-buttons|data-window-border|data-browser-chrome|drop-shadow/,
+    );
   });
 });
 function setup() {
