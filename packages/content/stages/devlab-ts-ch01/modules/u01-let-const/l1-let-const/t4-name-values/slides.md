@@ -1,6 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number]
 id: 1-1-4
+progressRevision: 2
 title: 値に名前を付ける
 takeaway: "const で変数を作ると、値に名前が付き、その名前で値を使えます。"
 introduces: ["const", "変数", "代入"]

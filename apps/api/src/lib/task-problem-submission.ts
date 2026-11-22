@@ -163,24 +163,6 @@ export async function submitTaskProblem(
         .limit(1);
       const defined = readTaskDefinition(current?.definition ?? "");
       const currentProblems = defined.problems ?? [];
-      let stepLessonId: string | undefined;
-      if (bundle.manifest.problemSteps) {
-        const rows = await loadProblemSteps(db, caller.id, { taskId: task.id });
-        const submitted = countedProblemIds(saved, task.contentHash, false);
-        const step = evaluatedProblemSteps(rows, currentProblems, submitted).find(
-          (row) => row.problemId === problemId,
-        );
-        if (!step)
-          throw new ApiError("問題の準備中です。少し待ってからもう一度開いてください。", 503);
-        if (step.state === "locked-video")
-          throw new ApiError(
-            `この問題はまだ解けません。先に${step.afterTitle}の動画を見てください。`,
-            409,
-          );
-        if (step.state === "locked-previous")
-          throw new ApiError("この問題はまだ解けません。先に前の問題を提出してください。", 409);
-        stepLessonId = step.stepLessonId;
-      }
       const [progress] = await db
         .select({ status: taskProgress.status })
         .from(taskProgress)
@@ -201,6 +183,23 @@ export async function submitTaskProblem(
         progress?.status === "ai-passed" ||
         passedSubmissions.length > 0;
       const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed);
+      let stepLessonId: string | undefined;
+      if (bundle.manifest.problemSteps) {
+        const rows = await loadProblemSteps(db, caller.id, { taskId: task.id });
+        const step = evaluatedProblemSteps(rows, currentProblems, passedIds).find(
+          (row) => row.problemId === problemId,
+        );
+        if (!step)
+          throw new ApiError("問題の準備中です。少し待ってからもう一度開いてください。", 503);
+        if (step.state === "locked-video")
+          throw new ApiError(
+            `この問題はまだ解けません。先に${step.afterTitle}の動画を見てください。`,
+            409,
+          );
+        if (step.state === "locked-previous")
+          throw new ApiError("この問題はまだ解けません。先に前の問題を提出してください。", 409);
+        stepLessonId = step.stepLessonId;
+      }
       passedIds.add(problemId);
       const passedProblems = currentProblems.filter((problem) => passedIds.has(problem.id)).length;
       const totalProblems = currentProblems.length;

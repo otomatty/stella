@@ -1,6 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-typescriptbook-values-types-variables-number]
 id: 1-1-2
+progressRevision: 2
 title: 型注釈の書き方
 takeaway: "型注釈は、値の種類をコロンの後ろに書く書き方です。"
 introduces: ["型注釈", "型", "number"]

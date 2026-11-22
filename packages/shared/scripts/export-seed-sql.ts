@@ -174,7 +174,9 @@ function lessonNamespace(stageId: string, lessonId: string): string {
 
 /** レッスン ID はステージ内で一意。セクションをキーに含めると移動時に履歴が切れる。 */
 function lessonUuid(tenantId: string, stageId: string, lessonId: string): string {
-  return stableUuid(`lesson:${tenantId}:${lessonNamespace(stageId, lessonId)}:${lessonId}`);
+  const revision = progressRevisions.get(`${stageId}:${lessonId}`);
+  const key = revision === undefined ? lessonId : `${lessonId}@r${revision}`;
+  return stableUuid(`lesson:${tenantId}:${lessonNamespace(stageId, lessonId)}:${key}`);
 }
 
 /** 以前の section 込みキー。初回 seed で進捗を新 UUID へ付け替えるために残す。 */
@@ -200,6 +202,16 @@ const stagesToPrune: {
 
 /** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
+const progressRevisions = new Map<string, number>();
+for (const stage of content.stages) {
+  for (const section of stage.sections ?? []) {
+    for (const lesson of section.lessons) {
+      if (lesson.progressRevision !== undefined) {
+        progressRevisions.set(`${stage.id}:${lesson.id}`, lesson.progressRevision);
+      }
+    }
+  }
+}
 // VIDEO_MANIFEST は seed-d1.ts の process.env 経由で受け取る。
 const videoManifest: VideoManifest | null = process.env.VIDEO_MANIFEST
   ? JSON.parse(readFileSync(process.env.VIDEO_MANIFEST, "utf8"))
@@ -269,7 +281,8 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
       emittedLessonUuids.add(newLessonUuid);
       const oldLessonUuid = legacyLessonUuid(tenantId, stage.id, section.id, lesson.id);
       lessonUuids.push(newLessonUuid);
-      if (oldLessonUuid !== newLessonUuid) {
+      // 進捗を振り直すレッスンには旧形式の進捗も引き継がない。
+      if (lesson.progressRevision === undefined && oldLessonUuid !== newLessonUuid) {
         lessonIdRemaps.push({ from: oldLessonUuid, to: newLessonUuid });
       }
       emitLesson(tenantId, stage.id, sectionUuid, j, lesson);
