@@ -852,13 +852,16 @@ describe("課題文のパネル・ステータスバー・エディターの右�
       const { root } = await trainingTask();
       await writeDistribution(root);
       await run("stella.runTask", root);
-      apiRequest.mockResolvedValueOnce({ status: "resubmit" });
       if (openGuide) {
+        apiRequest.mockResolvedValueOnce({ status: "resubmit" });
         await run("stella.showTaskReadme", root);
         expect(readGuide()).toHaveProperty("taskStatus", "resubmit");
       }
+      apiRequest.mockResolvedValueOnce({ status: "resubmit" });
       await run("stella.consultTask", root);
-      expect(apiRequest.mock.calls.filter(([url]) => url === helpEndpoint)).toHaveLength(1);
+      expect(apiRequest.mock.calls.filter(([url]) => url === helpEndpoint)).toHaveLength(
+        openGuide ? 2 : 1,
+      );
       expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
         expect.objectContaining({ mode: "consult" }),
         expect.anything(),
@@ -900,6 +903,33 @@ describe("課題文のパネル・ステータスバー・エディターの右�
       expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
         "手元の確認が通っています。「提出」を使ってください",
       );
+    },
+  );
+
+  it.each(["resubmit", "passed"])(
+    "手元で合格した課題の相談はキャッシュの submitted に代えて最新の %s で判定する",
+    async (status) => {
+      const { root } = await trainingTask();
+      await writeDistribution(root);
+      await run("stella.runTask", root);
+      apiRequest.mockResolvedValueOnce({ status: "submitted" });
+      await run("stella.showTaskReadme", root);
+      expect(readGuide()).toHaveProperty("taskStatus", "submitted");
+
+      apiRequest.mockResolvedValueOnce({ status });
+      await run("stella.consultTask", root);
+      expect(apiRequest.mock.calls.filter(([url]) => url === helpEndpoint)).toHaveLength(2);
+      if (status === "resubmit") {
+        expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+          expect.objectContaining({ mode: "consult" }),
+          expect.anything(),
+        );
+      } else {
+        expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+        expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+          "手元の確認が通っています。「提出」を使ってください",
+        );
+      }
     },
   );
 

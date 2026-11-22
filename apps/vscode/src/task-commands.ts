@@ -594,7 +594,7 @@ async function submitTaskCommand(
         throw new Error("先にこの課題を確認してください");
       if (canSubmit(result)) {
         if (!manifest.problems?.length) {
-          await refreshTaskState(root, manifest.id);
+          await refreshTaskState(root, manifest.id, { forceLms: true });
           if (session === apiSession() && getTaskState(root, manifest.id)?.lmsStatus === "resubmit")
             resubmitTaskId = manifest.id;
         }
