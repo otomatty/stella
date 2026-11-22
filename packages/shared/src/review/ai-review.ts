@@ -586,6 +586,14 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
   };
 }
 
+/** 確定した判定を返す。判定案を残していない古い確定は合格。 */
+export function aiConfirmedVerdict(review: {
+  outcome: "confirmed" | "escalated";
+  proposedVerdict: "pass" | "resubmit" | null;
+}): "pass" | "resubmit" | null {
+  return review.outcome === "confirmed" ? (review.proposedVerdict ?? "pass") : null;
+}
+
 /**
  * 提出ごとの AI の状態。queued = AI が確認中、escalated = 人に回した、
  * human = AI の結果が出る前に講師が確定した (AI の結果は一致率の評価のために記録だけする)。

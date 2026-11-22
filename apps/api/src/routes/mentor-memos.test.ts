@@ -477,6 +477,35 @@ describe("週次の育成メモを書く (cron)", () => {
     expect(await runMentorMemoCron(env, db, () => NOW.getTime() + 15 * MIN)).toEqual([]);
   });
 
+  it("AI の再提出と合格を分け、再提出の必須項目をメモに残す", async () => {
+    await seedWeek();
+    const [original] = await db.select().from(aiReviews);
+    if (!original) throw new Error("AI の結果がありません");
+    await db
+      .update(aiReviews)
+      .set({ outcome: "confirmed", proposedVerdict: "resubmit", routeReasons: [] })
+      .where(eq(aiReviews.id, original.id));
+    await db.insert(aiReviews).values({
+      ...original,
+      id: "legacy-ai-pass",
+      submissionId: "s2",
+      outcome: "confirmed",
+      proposedVerdict: null,
+      routeReasons: [],
+      rubricResults: [],
+    });
+    expect(await runMentorMemoCron(env, db, () => NOW.getTime())).toEqual(["fallback"]);
+    const [memo] = await memoRows();
+    expect(memo?.material?.reviews).toMatchObject({
+      aiConfirmed: 1,
+      aiResubmitted: 1,
+      aiEscalated: 0,
+      escalationReasons: {},
+      unmetCriteria: [{ criterion: "関数名が戻り値の意味を表している", count: 1 }],
+    });
+    expect(memo?.summary).toContain("AI が再提出にした提出が1件");
+  });
+
   it("AI が書いたメモを残し、AI には名前・メール・コード・所見を渡さない", async () => {
     env.ANTHROPIC_API_KEY = "sk-test";
     env.MENTOR_MEMO_MODEL = "memo-model-setting";

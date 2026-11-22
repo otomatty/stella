@@ -61,6 +61,7 @@ import {
   replayCustomId,
   replayPrepareCommand,
   subjectsOf,
+  summarizeReplay,
 } from "./ai-review-replay.js";
 
 vi.mock("../../src/lib/anthropic-complete.js", async (importOriginal) => {
@@ -241,6 +242,43 @@ describe("候補と引数", () => {
       ["aaaa"],
       ["bbbb"],
     ]);
+  });
+});
+
+it("当て直しは、危ない取りこぼしと厳しすぎた再提出を別々に数える", () => {
+  const trial = (
+    proposedVerdict: "pass" | "resubmit" | null,
+    humanVerdict: "pass" | "resubmit" | "fail",
+  ) => ({
+    taskId: "task",
+    taskKind: "basic",
+    humanVerdict,
+    decision: {
+      outcome: "confirmed" as const,
+      confidence: "high",
+      routeReasons: [],
+      proposedVerdict,
+      failure: null,
+    },
+    usage: null,
+  });
+  expect(
+    summarizeReplay(
+      { label: "候補", model: MODEL, promptVersion: "p", thresholdVersion: "t" },
+      [
+        trial(null, "fail"),
+        trial("pass", "pass"),
+        trial("resubmit", "resubmit"),
+        trial("resubmit", "pass"),
+      ],
+      null,
+    ),
+  ).toMatchObject({
+    confirmed: 4,
+    riskyConfirmed: 1,
+    riskyConfirmedRate: 0.5,
+    strictResubmits: 1,
+    strictResubmitRate: 0.5,
   });
 });
 
@@ -667,6 +705,7 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     });
     const markdown = formatReplayReport(report);
     expect(markdown).toContain("| 本番の記録 |");
+    expect(markdown).toContain("| 厳しすぎた再提出 |");
     expect(markdown).toContain(
       `| ${MODEL}@${AI_REVIEW_PROMPT_VERSION} | ${MODEL} | ${AI_REVIEW_PROMPT_VERSION} | 2 | 0 | 2 | 50.0% | 50.0% (1) | 100.0% (1) | 0 |`,
     );

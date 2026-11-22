@@ -49,7 +49,7 @@ import {
   formatSubmittedAt,
   refreshSubmission,
 } from "@/lib/submissions-store";
-import { isAiPassed, passByLabel } from "@/lib/review-queue";
+import { isAiPassed, isAiResubmitted, passByLabel } from "@/lib/review-queue";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
@@ -156,8 +156,14 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
     setDraftLoading(false);
     // 詰まって引き継がれた提出は、 まず「どこで落ちたか」から読ませる。
     // 新形式の提出は AI の一次レビュー (人に回した理由・所見・返信案) から読ませる。
-    // AI が合格にした提出は事後確認 (確認済み・コメント・覆す) から始める (#34)。
-    setTab(submission.gradingSummary ? "grade" : isAiPassed(submission) ? "check" : "ai");
+    // AI が判定した提出は事後確認 (確認済み・コメント・覆す) から始める (#34)。
+    setTab(
+      submission.gradingSummary
+        ? "grade"
+        : isAiPassed(submission) || isAiResubmitted(submission)
+          ? "check"
+          : "ai",
+    );
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
@@ -297,7 +303,11 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
 
   // まだ誰も確定していない提出は「確定しなかったときだけ確定」にする (別の講師が先に確定して
   // いれば 409 でキューに戻す)。確定済みの提出の訂正は従来どおり上書きする。
-  const aiPassedNow = isAiPassed(submission);
+  const aiVerdict = isAiPassed(submission)
+    ? "pass"
+    : isAiResubmitted(submission)
+      ? "resubmit"
+      : null;
   const testsLocked = submission.reviewSource === "tests";
   // 問題の相談は合格にできない (課題の合格は全問の提出だけ。API も 409)。
   const problemConsult = !testsLocked && Boolean(taskDetail?.localResult?.problemId);
@@ -402,12 +412,11 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
           {passByLabel(submission) === "テストで確認" ? (
             <Badge variant="success">テストで確認</Badge>
           ) : null}
-          {testsLocked ? null : aiPassedNow ? (
-            // AI が合格にした提出は、合否を付け直さず事後確認の 3 つの操作で扱う (#34)。
+          {testsLocked ? null : aiVerdict ? (
             <>
-              <Badge variant="success">
+              <Badge variant={aiVerdict === "pass" ? "success" : "warning"}>
                 <Sparkles size={10} />
-                AI で合格
+                {aiVerdict === "pass" ? "AI で合格" : "AI で再提出"}
               </Badge>
               {/* 狭幅では事後確認のボタンに行全体を使えるようにする。 */}
               <span aria-hidden="true" className="basis-full sm:hidden" />
@@ -645,7 +654,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 >
                   <PostCheckPanel
                     submissionId={submission.id}
-                    aiPassed={aiPassedNow}
+                    aiVerdict={aiVerdict}
                     checks={taskDetail?.checks}
                     stageId={submission.stageId}
                     pattern={submission.taskPattern}
@@ -796,9 +805,9 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 value="comment"
                 className="mt-0 p-4 sm:p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
               >
-                {!isBackendConfigured() ? null : aiPassedNow ? (
+                {!isBackendConfigured() ? null : aiVerdict ? (
                   <p className="text-[12px] text-ink-3 mb-3">
-                    AI が合格にした提出の総評は AI
+                    AI が判定した提出の総評は AI
                     の返信です。コメントを足す・覆すときは「事後確認」から行ってください。
                   </p>
                 ) : (
@@ -857,7 +866,10 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                   className="w-full mb-3"
                   onClick={() => verdict && handleFinalize(verdict)}
                   disabled={
-                    !verdict || aiPassedNow || finalizing || (!!submission.taskId && !taskDetail)
+                    !verdict ||
+                    aiVerdict !== null ||
+                    finalizing ||
+                    (!!submission.taskId && !taskDetail)
                   }
                 >
                   レビューを確定

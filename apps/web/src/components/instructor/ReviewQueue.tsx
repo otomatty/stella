@@ -65,7 +65,7 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
  *
  * - 人に回した提出: 人に回した理由で分け、待ち時間・理由で並べる。行から開いて 1 回の
  *   操作で確定する。同じ課題の提出を並べて見て、共通のつまずきを全体への補足・発見教材に回す。
- * - AI が合格にした提出: いつでも確認できる (確認済み・コメント・覆す)。
+ * - AI が判定した提出: いつでも確認できる (確認済み・コメント・覆す)。
  * - テストで合格した提出: 受け取った提出から、テストで確定した行を新しい順に読む。判定は変えない。
  * - 見直しの数字: しきい値の月次見直しに使う割合。
  * - 類題の在庫: コードの復習の類題が足りないパターンと、在庫切れで待っている受講者 (#39)。
@@ -137,7 +137,7 @@ export const ReviewQueue = ({
           {backendEnabled ? (
             <>
               <TabsTrigger value="ai-passed" icon={<CheckCheck />}>
-                AI が合格にした提出
+                AI が判定した提出
               </TabsTrigger>
               <TabsTrigger value="tests-passed" icon={<ClipboardList />}>
                 テストで合格した提出

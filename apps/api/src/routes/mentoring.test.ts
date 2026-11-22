@@ -619,7 +619,12 @@ describe("つまずきの検知 (cron)", () => {
     async function judged(
       outcome: "confirmed" | "escalated",
       reasons: string[] = ["rubric-unmet"],
-      opts: { mode?: "submit" | "consult"; at?: Date; appliedAt?: Date } = {},
+      opts: {
+        mode?: "submit" | "consult";
+        at?: Date;
+        appliedAt?: Date;
+        proposedVerdict?: "pass" | "resubmit";
+      } = {},
     ) {
       const id = `judged-${++order}`;
       const at = opts.at ?? new Date(now.getTime() - (20 - order) * HOUR);
@@ -643,6 +648,7 @@ describe("つまずきの検知 (cron)", () => {
         taskKind: "basic",
         outcome,
         routeReasons: reasons as never,
+        proposedVerdict: opts.proposedVerdict ?? null,
         promptVersion: "test",
         thresholdVersion: "test",
         disposition: "applied",
@@ -719,6 +725,40 @@ describe("つまずきの検知 (cron)", () => {
       await notifyStumbles(db, now);
       sent = await escalationAlerts();
       expect(sent).toHaveLength(2);
+    });
+
+    it("AI の再提出だけでも検知し、合格までは同じ続きとして扱う", async () => {
+      await keepActive();
+      const resubmit = () => judged("confirmed", [], { proposedVerdict: "resubmit" });
+      const first = await resubmit();
+      const second = await resubmit();
+      const third = await resubmit();
+      await notifyStumbles(db, now);
+      expect((await escalationAlerts()).map((n) => n.payload.submission_ids)).toEqual([
+        [first, second, third],
+      ]);
+
+      await resubmit();
+      await judged("escalated");
+      await judged("escalated");
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toHaveLength(1);
+
+      await judged("confirmed", [], { proposedVerdict: "pass" });
+      const next = await resubmit();
+      const escalated = await judged("escalated");
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toHaveLength(1);
+      const latest = await resubmit();
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            payload: expect.objectContaining({ submission_ids: [next, escalated, latest] }),
+          }),
+        ]),
+      );
+      expect(await escalationAlerts()).toHaveLength(2);
     });
 
     it("AI や教材の都合だけで回った提出と、講師への相談は数えない", async () => {

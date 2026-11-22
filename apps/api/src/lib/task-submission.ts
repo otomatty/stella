@@ -596,16 +596,15 @@ export function resetPassedAt(db: Db, row: { studentId: string; taskId: string }
 }
 
 /**
- * 人と AI の一次レビューが共有する確定処理。AI は人に回す条件に当たる提出を合格にせず、
+ * 人と AI の一次レビューが共有する確定処理。AI は人に回す条件に当たる提出を確定せず、
  * 人が先に確定した提出・新しい提出がある試行には結果を当てない (`aiReviewId` を置き換え済みにする)。
  *
  * 人の判定では、AI の判定と比べた記録も同じ batch で残す (#34)。
- * - AI が合格にした提出を人が合格以外にした = 事後確認で覆した。確認の記録 (`submission_checks`)
- *   と覆した記録を足し、この提出の合格・スキルの証拠・初回の合格日を取り消す (同じ課題の別の
- *   提出の合格は残る)。受講者には理由を知らせる。
+ * - AI の判定と人の判定が合格か否かで食い違った = 事後確認で覆した。確認と覆した記録を足す。
+ *   AI の合格を覆したらこの提出の合格・スキルの証拠・初回の合格日を取り消す。
  * - 人に回した提出の最初の判定が AI の判定案と食い違えば、覆した記録を足す。
  *
- * `requireUndecided` は「まだ誰も確定していない」ことを、`requireAiPass` は「AI の合格のまま」
+ * `requireUndecided` は「まだ誰も確定していない」ことを、`requireAiVerdict` は「指定した AI の判定のまま」
  * であることを課題のロックの中で確かめる (二重の確定・別の講師の確定との競合を 409 にする)。
  */
 export async function reviewTaskSubmission(
@@ -619,7 +618,7 @@ export async function reviewTaskSubmission(
     aiReviewId?: string;
     waitMs?: number;
     requireUndecided?: boolean;
-    requireAiPass?: boolean;
+    requireAiVerdict?: "pass" | "resubmit";
   } = {},
 ) {
   const [initial] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
@@ -736,11 +735,16 @@ export async function reviewTaskSubmission(
     }
     if (options.requireUndecided && row.verdict !== null)
       throw new ApiError("別の管理者が先に確定しました。提出を開き直してください", 409);
-    const aiPassed = row.verdict === "pass" && row.reviewSource === "ai";
-    if (options.requireAiPass && !aiPassed)
-      throw new ApiError("この提出はもう AI の合格ではありません。提出を開き直してください", 409);
-    // 人が AI の合格を合格以外にした = 事後確認で覆した。
-    const overturned = source === "human" && aiPassed && verdict !== "pass";
+    const aiVerdict =
+      row.reviewSource === "ai" && (row.verdict === "pass" || row.verdict === "resubmit")
+        ? row.verdict
+        : null;
+    if (options.requireAiVerdict && aiVerdict !== options.requireAiVerdict)
+      throw new ApiError(
+        "この提出はもう AI の判定のままではありません。提出を開き直してください",
+        409,
+      );
+    const overturned = source === "human" && aiVerdict !== null && overridesAi(aiVerdict, verdict);
     // この提出の合格を取り消す (AI の合格を覆す・人の合格を訂正する)。人の訂正では初回の合格日を
     // 残す (講師が自分の判定を直しただけで確認Bの予定をずらさない) が、類題はやり直させる。
     const revoked = row.verdict === "pass" && verdict !== "pass";
@@ -822,13 +826,13 @@ export async function reviewTaskSubmission(
           createdAt: now,
         }),
       );
-      if (confirmedReview)
+      if (confirmedReview && aiVerdict)
         statements.push(
           db.insert(aiReviewOverrides).values({
             submissionId: id,
             aiReviewId: confirmedReview.id,
             source: "post-check",
-            aiVerdict: "pass",
+            aiVerdict,
             humanVerdict: verdict,
             reviewerId: caller.id,
             note: notes,
@@ -854,7 +858,7 @@ export async function reviewTaskSubmission(
     if (notice && source === "ai" && verdict === "resubmit") {
       notice.body = "書き方を直すと合格です。直すところを確認してください。";
     }
-    if (notice && overturned) {
+    if (notice && overturned && revoked) {
       // 覆したときは理由を知らせる (07 §6.4 の 6)。
       const reason = notes.trim();
       notice.title = `${row.assignmentTitle || "課題"} の合格が${verdict === "fail" ? "不合格" : "再提出"}に変わりました`;
@@ -930,7 +934,7 @@ export async function reviewTaskSubmission(
           .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId))),
       );
     // 進捗を付け直した後に置く (トリガーが残した覆した合格の日付を上書きする)。
-    if (overturned)
+    if (overturned && revoked)
       statements.push(resetPassedAt(db, { studentId: row.studentId, taskId: row.taskId }));
     // 類題 (#39) の合格を人が合格以外にしたら、出題の記録を「出した」に戻す (やり直させる)。
     if (variantPattern && revoked)

@@ -5,7 +5,7 @@
  * - 同じ課題で手元の確認の失敗が続く (`task_local_runs`)
  * - 数日進まない (学習の記録が平日 3 日ない)
  * - 確認 B が再提出・不合格になる (同じ課題の後の試行で合格していれば除く)
- * - 人に回る提出が続く (AI の一次レビューが、受講者の取り組みを理由に続けて人に回した)
+ * - 受講者の取り組みを理由に人に回した・AI が再提出にした提出が続く
  * - ヒントを最後まで開く (合格前に、今の版のヒントの最後の段まで開いた。`task_help_opens`)
  *
  * 知らせすぎないよう、通知 ID を出来事ごとに決めて同じ出来事を 2 度送らない。
@@ -31,7 +31,11 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { StumbleSignal } from "@stella/shared/mentoring/weekly-memo";
-import { ROUTE_REASON_LABELS, type RouteReason } from "@stella/shared/review/ai-review";
+import {
+  aiConfirmedVerdict,
+  ROUTE_REASON_LABELS,
+  type RouteReason,
+} from "@stella/shared/review/ai-review";
 import { addStudyDays, studyDateWeekday, toStudyDate } from "@stella/shared/study/activity";
 import {
   effectiveHintLevels,
@@ -62,7 +66,7 @@ export const LOCAL_FAILURE_MIN_SPAN_MS = 60 * 60_000;
 export const IDLE_WEEKDAYS = 3;
 /** 確認 B の判定をさかのぼる期間。導入時に過去の判定をまとめて送らないため。 */
 export const ASSESSMENT_B_WINDOW_MS = 3 * 86_400_000;
-/** 人に回る提出が続く: AI の一次レビューが続けて人に回した提出の数の下限。 */
+/** 人に回した・AI が再提出にした提出が続いたとみなす件数。 */
 export const REVIEW_ESCALATION_STREAK = 3;
 /**
  * 知らせる続きの、判定が当たった時刻 (`ai_reviews.applied_at`) の期間。続きの中で最後に当たった
@@ -411,11 +415,11 @@ async function notifyAssessmentB(
 }
 
 /**
- * 人に回る提出が続く。受講者の新形式の提出 (相談を除く) に当てた AI の一次レビューを、提出の
- * 新しい順にたどり、AI で確定した提出に当たるまでに、受講者の取り組みを理由に人に回した提出が
+ * 新形式の提出 (相談を除く) の一次レビューを提出の新しい順にたどる。AI の合格に当たるまでに、
+ * 受講者の取り組みを理由に人に回した・AI が再提出にした提出が
  * `REVIEW_ESCALATION_STREAK` 件以上続いていれば知らせる。
  *
- * 続きごとに 1 度。続きの境目は、受講者が最後に AI で確定した提出 (提出の順。30 日より前でも引く)
+ * 続きごとに 1 度。続きの境目は、受講者が最後に AI で合格した提出 (提出の順。30 日より前でも引く)
  * で決める。その境目より後の提出を含む知らせを、この宛先にすでに送っていれば送らない (知らせに
  * 続きの最後の提出の日時を残しておき、境目と比べる)。続きの最初の提出で ID を決めると、続きが
  * 30 日の期間を超えたときに最初の提出が期間から落ち、同じ続きを知らせ直してしまう。続きが伸びても
@@ -436,7 +440,7 @@ async function notifyReviewEscalations(
     eq(aiReviews.disposition, "applied"),
     eq(submissions.submissionMode, "submit"),
   );
-  // 直近に人に回した受講者だけを見る (15分ごとに全員の履歴を読まない)。
+  // 直近に人に回した・AI が再提出にした提出の受講者だけを見る (15分ごとに全員の履歴を読まない)。
   const recent = await db
     .selectDistinct({ learnerId: submissions.studentId })
     .from(aiReviews)
@@ -444,7 +448,7 @@ async function notifyReviewEscalations(
     .where(
       and(
         applied,
-        eq(aiReviews.outcome, "escalated"),
+        or(eq(aiReviews.outcome, "escalated"), eq(aiReviews.proposedVerdict, "resubmit")),
         gte(aiReviews.appliedAt, new Date(now.getTime() - REVIEW_ESCALATION_WINDOW_MS)),
       ),
     );
@@ -454,7 +458,7 @@ async function notifyReviewEscalations(
   });
   const candidates: {
     learner: Learner;
-    /** 続きの境目 (最後に AI で確定した提出の日時、ミリ秒)。無ければ 0。 */
+    /** 続きの境目 (最後に AI で合格した提出の日時、ミリ秒)。無ければ 0。 */
     segmentStart: number;
     streak: {
       submissionId: string;
@@ -473,6 +477,7 @@ async function notifyReviewEscalations(
         taskId: submissions.taskId,
         title: submissions.assignmentTitle,
         outcome: aiReviews.outcome,
+        proposedVerdict: aiReviews.proposedVerdict,
         reasons: aiReviews.routeReasons,
         appliedAt: aiReviews.appliedAt,
         submittedAt: submissions.submittedAt,
@@ -490,7 +495,7 @@ async function notifyReviewEscalations(
         ),
       )
       .orderBy(desc(submissions.submittedAt), desc(aiReviews.appliedAt));
-    // 続きの境目 = 受講者が最後に AI で確定した提出の日時。30 日の期間の外にあっても引く。
+    // 続きの境目 = 受講者が最後に AI で合格した提出の日時。30 日の期間の外にあっても引く。
     const cuts = new Map(
       (
         await db
@@ -504,6 +509,7 @@ async function notifyReviewEscalations(
             and(
               applied,
               eq(aiReviews.outcome, "confirmed"),
+              sql`coalesce(${aiReviews.proposedVerdict}, 'pass') = 'pass'`,
               inArray(
                 submissions.studentId,
                 part.map((p) => p.learnerId),
@@ -554,7 +560,7 @@ async function notifyReviewEscalations(
       byLearner.set(row.learnerId, list);
     }
     for (const learner of part) {
-      // 新しい順。AI で確定した提出で続きが切れる。AI や教材の都合だけで回った提出は飛ばす。
+      // 新しい順。AI の合格で続きが切れる。AI や教材の都合だけで回った提出は飛ばす。
       // 判定待ちの提出より前 (提出の順) には進まない。
       const stopAt = waiting.get(learner.learnerId) ?? Number.NEGATIVE_INFINITY;
       const streak: typeof rows = [];
@@ -563,8 +569,11 @@ async function notifyReviewEscalations(
         if (row.submittedAt.getTime() <= stopAt) break;
         if (seen.has(row.submissionId)) continue;
         seen.add(row.submissionId);
-        if (row.outcome === "confirmed") break;
-        if (row.reasons.some((r) => LEARNER_ESCALATION_REASONS.includes(r))) streak.push(row);
+        const verdict = aiConfirmedVerdict(row);
+        if (verdict === "pass") break;
+        // AI が再提出を確定すると routeReasons は空になる。通知には未達があったことを残す。
+        if (verdict === "resubmit") streak.push({ ...row, reasons: ["rubric-unmet"] });
+        else if (row.reasons.some((r) => LEARNER_ESCALATION_REASONS.includes(r))) streak.push(row);
       }
       // 続きがそろった時刻 = 続きの中で最後に当たった判定の時刻。
       const completedAt = Math.max(0, ...streak.map((r) => r.appliedAt?.getTime() ?? 0));
@@ -608,8 +617,8 @@ async function notifyReviewEscalations(
           id,
           userId: staffId,
           type: "learner_stumble",
-          title: `${learner.learnerName}さんの提出が続けて管理者の確認に回っています`,
-          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて管理者の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
+          title: `${learner.learnerName}さんの提出で続けて確認や修正が必要になっています`,
+          body: `直近の提出${streak.length}件 (最新は「${latest.title}」) は、人に回した・AI が再提出にした提出です。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
           payload: {
             learner_id: learner.learnerId,
             signal: "review-escalations",
