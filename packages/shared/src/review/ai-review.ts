@@ -24,6 +24,14 @@ export const RUBRIC_RESULT_LABELS: Record<RubricResult, string> = {
   undetermined: "判断できない",
 };
 
+/** AI が評価項目を「満たさない」と判定したときに受講者へ見せる教材。 */
+export interface RubricGuide {
+  title: string;
+  problem: string;
+  why: string;
+  example?: { context: string; ng: string; ok: string };
+}
+
 export const CONFIDENCE_LEVELS = ["high", "medium", "low"] as const;
 export type Confidence = (typeof CONFIDENCE_LEVELS)[number];
 export const CONFIDENCE_LABELS: Record<Confidence, string> = {

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { checkSolutionLeak } from "../../shared/src/review/solution-leak.js";
 import {
   validateEnvironmentRequirement,
   type EnvironmentRequirement,
@@ -484,6 +485,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     ...collectFiles(join(taskDir, "private/solution"), "solution", false, solutionRemoves),
     "explanation.md": readFileSync(join(taskDir, "private/explanation.md")).toString("base64"),
   };
+  assertRubricGuides(definition, starter, testFiles, privateFiles);
   if (existsSync(reviewFile))
     privateFiles["review.md"] = readFileSync(reviewFile).toString("base64");
   privateFiles["hints.md"] = hints.toString("base64");
@@ -522,6 +524,45 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     ...(mutants ? { mutants } : {}),
     directory: taskDir,
   };
+}
+
+function assertRubricGuides(
+  definition: TaskDefinition,
+  starter: Record<string, string>,
+  tests: Record<string, string>,
+  privateFiles: Record<string, string>,
+): void {
+  const fields = definition.review.rubric.flatMap(({ id, guide }) => {
+    if (!guide) return [];
+    const at = `review.rubric[${id}].guide`;
+    return [
+      { at: `${at}.problem`, text: guide.problem },
+      { at: `${at}.why`, text: guide.why },
+      ...(guide.example
+        ? [
+            { at: `${at}.example.ng`, text: guide.example.ng },
+            { at: `${at}.example.ok`, text: guide.example.ok },
+          ]
+        : []),
+    ];
+  });
+  if (fields.length === 0) return;
+
+  const decode = (value: string) => Buffer.from(value, "base64").toString("utf8");
+  const { hits } = checkSolutionLeak({
+    texts: fields.map(({ text }) => text),
+    solution: Object.entries(privateFiles)
+      .filter(([path]) => path.startsWith("solution/"))
+      .map(([, value]) => decode(value)),
+    known: [...Object.values(starter), ...Object.values(tests)].map(decode),
+    strict: false,
+  });
+  if (hits.length > 0)
+    throw new Error(
+      hits
+        .map((index) => `${fields[index].at}: 解答例と重なる記述があります (${definition.id})`)
+        .join("\n"),
+    );
 }
 
 /**

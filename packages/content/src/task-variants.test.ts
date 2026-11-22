@@ -95,6 +95,63 @@ const CHECK = {
   submit: { files: ["index.html"], explanation: true, debuggingRecord: false },
 };
 
+describe("評価項目の直し方ガイド", () => {
+  it.each([false, true])("解答例の行を写した ok はエラーになる (類題: %s)", (variant) => {
+    const root = fixture();
+    const dir = variant ? addVariant(root, "v01-guide", "類題の見出し") : join(root, PARENT);
+    const file = join(dir, "task.json");
+    const raw = JSON.parse(readFileSync(file, "utf8"));
+    const rubric = raw.review.rubric[0];
+    const solutionFile = join(dir, "private/solution/index.html");
+    // 一行で通常の照合に必要な字句数になるよう、見出しに属性を足す。
+    const solution = readFileSync(solutionFile, "utf8").replace("<h1>", '<h1 class="page-title">');
+    writeFileSync(solutionFile, solution);
+    const copied = solution.split("\n").find((line) => line.includes("<h1 "));
+    if (!copied) throw new Error("解答例に見出しの行がありません");
+
+    rubric.guide = {
+      title: "見出しを指定のタグで書く",
+      problem: "見出しが段落になっています。",
+      why: "見出しのタグは文書の構造を表します。",
+      example: { context: "公園の案内ページ", ng: "<p>公園案内</p>", ok: copied },
+    };
+    writeFileSync(file, JSON.stringify(raw));
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(
+      `review.rubric[${rubric.id}].guide.example.ok: 解答例と重なる記述があります`,
+    );
+
+    writeFileSync(join(dir, "tests/guide-example.md"), copied);
+    expect(() => buildContentManifest(join(root, "stages"))).not.toThrow();
+  });
+
+  it("ガイドだけを足すと定義に入り、課題の内容ハッシュが変わる", () => {
+    const root = fixture();
+    const file = join(root, PARENT, "task.json");
+    const raw = JSON.parse(readFileSync(file, "utf8"));
+    const load = () => {
+      const task = buildContentManifest(join(root, "stages")).tasks.find(
+        (t) => t.definition.id === raw.id,
+      );
+      if (!task) throw new Error("見本の課題がありません");
+      return task;
+    };
+    const before = load();
+    expect(before.definition.review.rubric[0]).not.toHaveProperty("guide");
+    const guide = {
+      title: "見出しを指定のタグで書く",
+      problem: "見出しが段落になっています。",
+      why: "見出しのタグは文書の構造を表します。",
+    };
+    raw.review.rubric[0].guide = guide;
+    writeFileSync(file, JSON.stringify(raw));
+
+    const after = load();
+    expect(after.definition.review.rubric[0].guide).toEqual(guide);
+    expect(after.bundle.files).toEqual(before.bundle.files);
+    expect(after.bundle.contentHash).not.toBe(before.bundle.contentHash);
+  });
+});
+
 describe("予備の類題", () => {
   const gitPatch = {
     runner: "git-record",

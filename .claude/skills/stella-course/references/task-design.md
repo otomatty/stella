@@ -101,7 +101,7 @@ tasks/<task>/
 | `submit.files` | 受講者が編集し、提出する相対パス。`env-diagnose` 以外は 1 つ以上 |
 | `submit.explanation` | 自力・統合・確認は `true` |
 | `submit.debuggingRecord` | 修正は `true` |
-| `review.rubric` | `{ id, criterion, required }`。`criterion` は当否を決められる文。尺度 (1〜5) や疑問文にしない。必須項目は rubric と rules を合わせて 1 つ以上 |
+| `review.rubric` | `{ id, criterion, required, guide? }`。`criterion` は当否を決められる文。尺度 (1〜5) や疑問文にしない。必須項目は rubric と rules を合わせて 1 つ以上 |
 | `review.rules` | 任意。`coding-rules.md` とステージの `coding-rules.md` の id。導入より前の課題では必須にできない |
 | `review.escalateWhen` | `optional-unmet` か `major-finding`。無ければ空配列 |
 | `support.hintLevels` | `hints.md` の段数と一致。確認と統合は 0 |
@@ -117,6 +117,8 @@ tasks/<task>/
 | `fixedStart.covers` | `fixed-start/` がある課題だけ。同じステージで、この課題より前の課題 ID |
 
 `schemaVersion` は教材の `task.json` には書きません。読み込みが 1 を足します。
+
+`guide` は AI が「満たさない」を付けたときに受講者に見せる直し方です。`title` は「〜する」の形、`problem` は行番号やファイル名を挙げずに問題点を1文で、`why` は理由を書きます。任意の `example` は課題と別の題材を `context` に書き、解答例を写さずに `ng` と `ok` のコードを比べます。
 
 `hints.md` の見出しは `## ヒント1 方針` のように、1 から順の番号と題です。最初の見出しより前に本文を置かないでください。0 段の課題は空か、コメントだけにします。段の中の見出しは `###` 以下です。
 

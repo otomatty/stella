@@ -27,17 +27,47 @@
       {
         "id": "return-comparison",
         "criterion": "各関数は比較式の真偽値を直接返し、if や三項演算子で真偽値を選び直していない。",
-        "required": true
+        "required": true,
+        "guide": {
+          "title": "比べた結果を、そのまま返す",
+          "problem": "比べた結果を、if で true と false に選び直しています。",
+          "why": "比べる式は、それだけで true か false になります。if を通しても返る値は変わりません。行が増えて読みにくくなり、true と false を書き間違える余地も生まれます。",
+          "example": {
+            "context": "荷物が 10 kg 以下かを返す",
+            "ng": "if (weight <= 10) {\n  return true;\n} else {\n  return false;\n}",
+            "ok": "return weight <= 10;"
+          }
+        }
       },
       {
         "id": "strict-equality",
         "criterion": "等しさには === を使い、== や != および商品コードの型変換を使っていない。",
-        "required": true
+        "required": true,
+        "guide": {
+          "title": "値と型が同じかを確かめる",
+          "problem": "等しさを比べるときに型を変えているため、型が違う値を区別できません。",
+          "why": "== で比べると、たとえば文字列の \"007\" と数値の 7 が等しいと判定されます。=== を使うと、値と型の両方が同じときだけ true になります。",
+          "example": {
+            "context": "入力された会員番号が登録済みの番号と同じかを返す",
+            "ng": "return enteredMemberNumber == registeredMemberNumber;",
+            "ok": "return enteredMemberNumber === registeredMemberNumber;"
+          }
+        }
       },
       {
         "id": "boundary-comparison",
         "criterion": "3,000 円と 18 歳を含め、在庫 0 個、締切ちょうど、定員ちょうどを含めない比較を使っている。",
-        "required": true
+        "required": true,
+        "guide": {
+          "title": "境界の値を含めるか確かめる",
+          "problem": "条件の境界ちょうどの値が、仕様で決めた側に入りません。",
+          "why": "「60 点以上」には 60 点も入ります。> で比べると 60 点が不合格になるので、境界を含む >= を使います。",
+          "example": {
+            "context": "試験の得点が 60 点以上なら合格とする",
+            "ng": "return examPoints > 60;",
+            "ok": "return examPoints >= 60;"
+          }
+        }
       }
     ],
     "escalateWhen": []
