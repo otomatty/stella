@@ -180,20 +180,6 @@
               "text": "数"
             }
           ]
-        },
-        {
-          "say": "次のコードの意味が分かるようになります。",
-          "dialog": {
-            "title": "次のコードの意味が分かるようになります",
-            "code": [
-              "// 名前を受け取り、その名前を返す関数",
-              "function customerName(name: string): string {",
-              "  // 受け取った名前をそのまま返す",
-              "  return name;",
-              "}"
-            ]
-          },
-          "pause": 1
         }
       ]
     },
