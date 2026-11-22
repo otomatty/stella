@@ -31,14 +31,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
+      created: ${{ steps.create.outputs.created }}
+      release_url: ${{ steps.meta.outputs.release_url }}
     steps:
+      # ビルドと変更履歴の読み取りに同じコミットを使う。
       - uses: actions/checkout@v7
 
+      # ワークスペースの依存関係とリリース用スクリプトを Bun で扱う。
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
+      # ロックファイルの版でパッケージを再現する。
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -51,34 +56,67 @@ jobs:
           bun run build
           bunx @vscode/vsce package --no-dependencies --allow-missing-repository --readme-path MARKETPLACE.md
 
+      # 手動で採番した版からタグと通知に載せる URL を決める。
       - name: Read version
         id: meta
-        run: echo "version=$(node -p "require('./apps/vscode/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(node -p "require('./apps/vscode/package.json').version")
+          tag="vscode-v${version}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release_url=https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag" >> "$GITHUB_OUTPUT"
 
-      # 同一バージョンで再度 main に push された場合は既存 Release に上書き添付する
-      # （バージョン採番は apps/vscode/package.json の手動更新。自動 bump はしない）。
-      - name: Create or update release
+      # 同じ版の再 push で本文の手直しを失わないよう、先に Release の有無を確かめる。
+      - name: Check for an existing release
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: vscode-v${{ steps.meta.outputs.version }}
-          NOTES: |
-            commit ${{ github.sha }} からビルド。
-            .vsix をダウンロードし、VS Code の「Extensions: Install from VSIX...」でインストールする。
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
-            # .vsix と本文をセットで差し替える（本文の commit がビルド元）。
-            # タグ自体は初回リリース時のコミットを指したままなので、
-            # コミットとタグを一致させたい場合はバージョンを上げること。
-            gh release upload "$TAG" apps/vscode/*.vsix --clobber
-            gh release edit "$TAG" --notes "$NOTES"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            # タグ未作成時の gh release create はデフォルトブランチの最新から
-            # タグを切るため、ビルドした commit を --target で明示する。
-            gh release create "$TAG" apps/vscode/*.vsix \
-              --target "$GITHUB_SHA" \
-              --title "VS Code 拡張 $TAG" \
-              --notes "$NOTES"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # 同じ版の再ビルドは配布ファイルだけに反映する。
+      - name: Replace the existing VSIX
+        if: steps.release.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: gh release upload "$TAG" apps/vscode/*.vsix --clobber
+
+      # 初回だけ本文と通知に使う要約を用意する。
+      - name: Prepare release notes
+        if: steps.release.outputs.exists == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          bun run release:notes prepare --product vscode --version "$VERSION" \
+            --changelog apps/vscode/CHANGELOG.md --commit "$GITHUB_SHA" --out-dir "$RUNNER_TEMP/release"
+
+      # ビルドしたコミットからタグを切り、本文と VSIX を公開する。
+      - name: Create release
+        id: create
+        if: steps.release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          gh release create "$TAG" apps/vscode/*.vsix --target "$GITHUB_SHA" \
+            --title "VS Code 拡張 $TAG" --notes-file "$RUNNER_TEMP/release/release-body.md"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      # Marketplace 公開後の通知でも、本文と同じ要約を使う。
+      - name: Save release summary
+        if: steps.create.outputs.created == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-summary
+          path: ${{ runner.temp }}/release/release-summary.json
+          if-no-files-found: error
 
   # 公開だけが OIDC トークンを要求できる。bun install や build と同じジョブに置くと、
   # それらの処理からも Trusted Publishing のトークンを取れてしまう。
@@ -90,6 +128,7 @@ jobs:
       contents: read
       id-token: write
     steps:
+      # vsce を Bun から起動する。
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -106,8 +145,47 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: gh release download "vscode-v${VERSION}" --pattern "stella-lms-*.vsix" --dir vsix
 
+      # 公開済みの版を飛ばし、同じ版の再 push でも手順を再実行できるようにする。
       - name: Publish to Marketplace
         working-directory: vsix
         env:
           VERSION: ${{ needs.release.outputs.version }}
         run: bunx @vscode/vsce@4.1.0 publish --oidc --packagePath "stella-lms-${VERSION}.vsix" --skip-duplicate
+
+  # 受講者が Marketplace から入れられるようになってから、新しい Release を知らせる。
+  announce:
+    needs: [release, publish]
+    if: needs.release.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # 通知用スクリプトを実行するコミットを取得する。
+      - uses: actions/checkout@v7
+
+      # リリース用スクリプトは Bun で動かす。
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # 通知用スクリプトの依存関係をロックファイルから揃える。
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Release を作ったときの要約を引き継ぐ。
+      - name: Download release summary
+        uses: actions/download-artifact@v7
+        with:
+          name: release-summary
+          path: ${{ runner.temp }}/release
+
+      # Google Chat の障害で公開済みのリリースを失敗扱いにしない。
+      - name: Notify Google Chat
+        continue-on-error: true
+        env:
+          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
+          RELEASE_URL: ${{ needs.release.outputs.release_url }}
+        run: |
+          bun run release:notes notify --summary "$RUNNER_TEMP/release/release-summary.json" \
+            --release-url "$RELEASE_URL"
