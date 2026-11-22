@@ -27,10 +27,27 @@ const sample = JSON.parse(
   readFileSync(new URL("../src/__fixtures__/board-video.json", import.meta.url), "utf8"),
 ) as BoardStoryboard;
 const root = mkdtempSync(join(tmpdir(), "stella-polish-test-"));
+const guide = readFileSync(new URL("../VIDEO_GUIDE.md", import.meta.url), "utf8");
 const video = join(root, "topic/video.json"),
   report = join(root, "dist/video-polish/fixture/topic.json");
 const readVideo = () => JSON.parse(readFileSync(video, "utf8")) as BoardStoryboard;
 const readReport = () => JSON.parse(readFileSync(report, "utf8"));
+const readMarkdown = () => readFileSync(report.replace(/\.json$/, ".md"), "utf8");
+const keepLines = sample.scenes.flatMap((s) =>
+  s.beats.map((_, i) => ({
+    id: `${s.id}#${i + 1}`,
+    verdict: "keep" as const,
+    kinds: [],
+    reason: "修正不要です",
+  })),
+);
+const usageMetadata = {
+  promptTokenCount: 2000,
+  cachedContentTokenCount: 1000,
+  candidatesTokenCount: 900,
+  thoughtsTokenCount: 2000,
+  totalTokenCount: 4900,
+};
 let response: PolishResponse;
 let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
@@ -41,17 +58,10 @@ beforeEach(() => {
   mkdirSync(join(root, "topic"), { recursive: true });
   rmSync(join(root, "dist"), { recursive: true, force: true });
   writeFileSync(video, JSON.stringify(sample, null, 2) + "\n");
-  writeFileSync(join(root, "VIDEO_GUIDE.md"), "テスト用ガイド");
+  writeFileSync(join(root, "VIDEO_GUIDE.md"), guide);
   response = {
     summary: "簡潔な台本です。文を短くできます。",
-    lines: sample.scenes.flatMap((s) =>
-      s.beats.map((_, i) => ({
-        id: `${s.id}#${i + 1}`,
-        verdict: "keep" as const,
-        kinds: [],
-        reason: "修正不要です",
-      })),
-    ),
+    lines: keepLines.slice(0, 2).map((line) => ({ ...line })),
     missing: [],
     offPoint: [],
   };
@@ -72,11 +82,13 @@ beforeEach(() => {
       candidates: [
         { content: { parts: [{ text: "途中の本文" }, { text: JSON.stringify(response) }] } },
       ],
+      usageMetadata,
     }),
   );
   vi.stubGlobal("fetch", fetchMock);
   vi.stubEnv("GEMINI_API_KEY", "test-key");
   vi.stubEnv("VIDEO_POLISH_MODEL", "fixture-model");
+  vi.stubEnv("VIDEO_POLISH_THINKING", undefined);
   vi.spyOn(console, "info").mockImplementation(() => undefined);
 });
 afterEach(() => {
@@ -106,6 +118,62 @@ describe("video:polish の取得と保存済みの案の反映", () => {
     );
   });
 
+  it.each([
+    { env: undefined, args: [], thinkingLevel: "low" },
+    { env: "medium", args: [], thinkingLevel: "medium" },
+    { env: "high", args: ["--thinking", "minimal"], thinkingLevel: "minimal" },
+  ])("thinkingConfig に $thinkingLevel を送る", async ({ env, args, thinkingLevel }) => {
+    vi.stubEnv("VIDEO_POLISH_THINKING", env);
+    await polishVideo(["fixture", ...args]);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel });
+  });
+
+  it("不正な thinking の環境変数・引数や値のない引数は、取得前にエラーにする", async () => {
+    vi.stubEnv("VIDEO_POLISH_THINKING", "unexpected");
+    await expect(polishVideo(["fixture"])).rejects.toThrow("考える量");
+    vi.stubEnv("VIDEO_POLISH_THINKING", "low");
+    await expect(polishVideo(["fixture", "--thinking", "unexpected"])).rejects.toThrow("考える量");
+    await expect(polishVideo(["fixture", "--thinking"])).rejects.toThrow("--thinking");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("使用量を報告に残し、キャッシュと考えた量を含む料金を動画ごとと合計で表示する", async () => {
+    const otherDir = join(root, "other");
+    mkdirSync(otherDir, { recursive: true });
+    writeFileSync(join(otherDir, "video.json"), JSON.stringify(sample));
+    fixture.topics.push({ stageSlug: "fixture", id: "other", topicDir: otherDir });
+    await polishVideo(["fixture", "--model", "gemini-4-neon"]);
+    const line = "入力 2000 (うちキャッシュ 1000)・出力 900・考えた量 2000 トークン、目安 $0.05";
+    expect(readReport().usage).toEqual(usageMetadata);
+    expect(readMarkdown()).toContain(line);
+    expect(console.info).toHaveBeenNthCalledWith(2, expect.stringContaining(line));
+    expect(console.info).toHaveBeenNthCalledWith(3, expect.stringContaining(line));
+    expect(console.info).toHaveBeenLastCalledWith(
+      "合計 (2 本) 入力 4000 (うちキャッシュ 2000)・出力 1800・考えた量 4000 トークン、目安 $0.09",
+    );
+  });
+
+  it("使用量の欠けた項目を0にし、単価表に無いモデルでは金額を不明と表示する", async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(response) }] } }],
+        usageMetadata: { promptTokenCount: 42 },
+      }),
+    );
+    await polishVideo(["fixture"]);
+    expect(readReport().usage).toEqual({
+      promptTokenCount: 42,
+      cachedContentTokenCount: 0,
+      candidatesTokenCount: 0,
+      thoughtsTokenCount: 0,
+      totalTokenCount: 0,
+    });
+    expect(readMarkdown()).toContain(
+      "入力 42 (うちキャッシュ 0)・出力 0・考えた量 0 トークン、目安 不明",
+    );
+  });
+
   it("残高切れでは本文の理由を示し、再試行しない", async () => {
     fetchMock.mockResolvedValueOnce(
       Response.json({ error: { message: "prepayment credits are depleted" } }, { status: 402 }),
@@ -126,7 +194,12 @@ describe("video:polish の取得と保存済みの案の反映", () => {
       model: "gemini-4-argon",
       response,
     });
-    expect(readFileSync(report.replace(/\.json$/, ".md"), "utf8")).toContain(response.summary);
+    expect(readMarkdown()).toContain(response.summary);
+    expect(readMarkdown()).toContain(`そのままの文: ${keepLines.length - 2} 文`);
+    expect(readMarkdown()).not.toContain(`| ${keepLines[2].id} |`);
+    expect(readMarkdown()).toContain("| hook#1 |");
+    expect(readMarkdown()).toContain("## missing");
+    expect(readMarkdown()).toContain("## offPoint");
     fetchMock.mockClear();
     vi.mocked(console.info).mockClear();
     vi.stubEnv("GEMINI_API_KEY", "");
@@ -148,6 +221,24 @@ describe("video:polish の取得と保存済みの案の反映", () => {
     );
     expect(console.warn).not.toHaveBeenCalled();
     expect(console.info).toHaveBeenCalledTimes(1);
+    expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("反映しました"));
+  });
+  it("全idとkeepを含む旧報告を読み、保存済みの言い換えだけを反映する", async () => {
+    mkdirSync(join(root, "dist/video-polish/fixture"), { recursive: true });
+    writeFileSync(
+      report,
+      JSON.stringify({
+        model: "gemini-4-neon",
+        sayHash: sayHash(sample),
+        response: { ...response, lines: [...response.lines, ...keepLines.slice(2)] },
+      }),
+    );
+    await polishVideo(["fixture", "--apply"]);
+    expect(fetchMock).not.toHaveBeenCalled();
+    const expected = structuredClone(sample);
+    expected.scenes[0].beats[0].say = response.lines[0].rewrite as string;
+    expected.scenes[0].beats[1].say = response.lines[1].rewrite as string;
+    expect(readVideo().scenes).toEqual(expected.scenes);
     expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("反映しました"));
   });
   for (const [name, failure] of [
@@ -256,11 +347,14 @@ describe("video:polish の取得と保存済みの案の反映", () => {
   });
   it("dry-runは送信内容を表示し、applyと一緒なら反映予定だけを表示する", async () => {
     const source = readFileSync(video, "utf8");
-    await polishVideo(["fixture", "--dry-run"]);
+    await polishVideo(["fixture", "--dry-run", "--thinking", "high"]);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(execFileSync).not.toHaveBeenCalled();
     expect(console.info).toHaveBeenCalledTimes(1);
     expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("SYSTEM"));
+    expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("thinking: high"));
+    expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("## 書く順番"));
+    expect(console.info).toHaveBeenLastCalledWith(expect.not.stringContaining("効果音"));
     expect(readFileSync(video, "utf8")).toBe(source);
     await polishVideo(["fixture"]);
     fetchMock.mockClear();

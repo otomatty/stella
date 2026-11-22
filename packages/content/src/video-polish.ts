@@ -57,7 +57,7 @@ export const polishResponseSchema = {
         required: ["id", "verdict", "kinds", "reason"],
         properties: {
           id: { type: "STRING" },
-          verdict: { type: "STRING", enum: ["keep", "rewrite", "cut"] },
+          verdict: { type: "STRING", enum: ["rewrite", "cut"] },
           rewrite: { type: "STRING" },
           kinds: { type: "ARRAY", items: { type: "STRING", enum: [...POLISH_KINDS] } },
           reason: { type: "STRING" },
@@ -186,8 +186,42 @@ function codeBeatPicture(
   }
   return lines.length ? [base, ...lines] : base;
 }
-export function buildPolishRequest(storyboard: VideoStoryboard, guideText: string) {
-  const system = `あなたは未経験者向け研修動画の台本の校正者です。次のガイド全文に従ってください。\n\n${guideText}\n\n見る観点:
+export function excerptPolishGuide(guideText: string): string {
+  const lines = guideText.split(/\r?\n/);
+  const section = (heading: string) => {
+    const start = lines.findIndex((line) => line.trimEnd() === heading);
+    if (start < 0) throw new Error(`VIDEO_GUIDE.md に見出しがありません: ${heading}`);
+    const end = lines.findIndex((line, i) => i > start && /^#{1,2}\s/.test(line));
+    return lines.slice(start, end < 0 ? undefined : end);
+  };
+  const writing = section("## 書く順番");
+  const lesson = section("## レッスン型の動画 (schema 2)");
+  const narration = section("## 読み上げ 1 文 (`beats`) のルール");
+  const tableEnd = (sectionLines: string[], start: number) => {
+    const end = sectionLines.findIndex((line, i) => i > start && !line.startsWith("|"));
+    return end < 0 ? sectionLines.length : end;
+  };
+  const roleTable = lesson.findIndex((line) => line.startsWith("| `role` |"));
+  const subsection = lesson.findIndex((line) => /^###\s/.test(line));
+  if (roleTable < 0 || (subsection >= 0 && roleTable > subsection))
+    throw new Error("VIDEO_GUIDE.md のレッスン型の節に role の表がありません");
+  const soundEffects = narration.findIndex((line) => line.startsWith("- タイトルと Web アプリ"));
+  if (soundEffects < 0) throw new Error("VIDEO_GUIDE.md の読み上げの節に効果音の項目がありません");
+  const soundTable = narration.findIndex(
+    (line, i) => i > soundEffects && line.startsWith("| タイミング | 効果音 |"),
+  );
+  if (soundTable < 0) throw new Error("VIDEO_GUIDE.md の読み上げの節に効果音の表がありません");
+  return [
+    writing,
+    lesson.slice(0, tableEnd(lesson, roleTable)),
+    [...narration.slice(0, soundEffects), ...narration.slice(tableEnd(narration, soundTable))],
+  ]
+    .map((part) => part.join("\n").trimEnd())
+    .join("\n\n");
+}
+
+export function buildPolishRequest(storyboard: VideoStoryboard, guideExcerpt: string) {
+  const system = `あなたは未経験者向け研修動画の台本の校正者です。次のガイドの抜粋に従ってください。\n\n${guideExcerpt}\n\n見る観点:
 unnatural: 不自然な日本語
 wordy: 冗長
 written: 書き言葉や硬い言い回し
@@ -197,8 +231,8 @@ off-point: 学習設計 brief.points に無い話
 
 意味を変えず、事実や数字を足さないでください。画面のラベルと同じ言葉は言い換えないでください。
 1文40字まで、です・ます調の話し言葉にし、ボタンの名前の「」以外の括弧や記号を使わず、文末に句点か疑問符を1つ置いてください。
-直す必要のない文はそのまま keep にしてください。全部を書き換えないでください。
-全IDについて1件ずつ lines を返してください。rewrite のときは rewrite に言い換えの全文を必ず入れ、cut は削除の提案にしてください。
+直す提案がある文だけを lines に入れてください。返さないIDは keep として扱います。提案がなければ lines は空配列にしてください。
+verdict は rewrite または cut にしてください。rewrite のときは rewrite に言い換えの全文を必ず入れ、cut は削除の提案にしてください。
 kinds は上記6種類から選び、reason は日本語にしてください。summary は全体の講評を2〜3文で、missing は points のうち伝わっていないもの、offPoint は points に無いのに話していることを挙げてください。`;
   const states = storyboardStates(storyboard);
   const boards = storyboard.boards ?? {};
@@ -247,6 +281,7 @@ const record = (v: unknown): v is Record<string, unknown> =>
 export function parsePolishResponse(
   json: unknown,
   storyboard: VideoStoryboard,
+  { allowKeep = false } = {},
 ): { response?: PolishResponse; issues: Issue[] } {
   const issues: Issue[] = [];
   const error = (path: string, message: string) => issues.push({ level: "error", path, message });
@@ -273,8 +308,12 @@ export function parsePolishResponse(
         error(`${p}.id`, `知らないid: ${String(line.id)}`);
       else if (seen.has(line.id)) error(`${p}.id`, `重複したid: ${line.id}`);
       else seen.add(line.id);
-      if (!["keep", "rewrite", "cut"].includes(String(line.verdict)))
-        error(`${p}.verdict`, "keep・rewrite・cutから選んでください");
+      if (
+        line.verdict !== "rewrite" &&
+        line.verdict !== "cut" &&
+        !(allowKeep && line.verdict === "keep")
+      )
+        error(`${p}.verdict`, "rewrite・cutから選んでください");
       if (line.rewrite !== undefined && typeof line.rewrite !== "string")
         error(`${p}.rewrite`, "文字列にしてください");
       if (line.verdict === "rewrite" && (typeof line.rewrite !== "string" || !line.rewrite.trim()))
@@ -286,13 +325,8 @@ export function parsePolishResponse(
         error(`${p}.kinds`, "許可された観点の配列にしてください");
       if (typeof line.reason !== "string" || !line.reason.trim())
         error(`${p}.reason`, "理由がありません");
-      lines.push(line as unknown as PolishLine);
+      if (line.verdict !== "keep") lines.push(line as unknown as PolishLine);
     });
-  for (const id of expected)
-    if (!seen.has(id)) {
-      issues.push({ level: "warning", path: id, message: "応答にidがないためkeep扱いにします" });
-      lines.push({ id, verdict: "keep", kinds: [], reason: "応答にないため元の文を保持" });
-    }
   if (issues.some((i) => i.level === "error")) return { issues };
   return {
     response: {
@@ -416,14 +450,11 @@ export function readSavedPolish(storyboard: VideoStoryboard, report: unknown) {
     throw new Error(`報告がないか、報告後に読み上げ文が変わっています。${again}`);
   if (typeof report.model !== "string" || !report.model.trim())
     throw new Error(`報告のモデルがありません。${again}`);
-  const parsed = parsePolishResponse(report.response, storyboard);
+  const parsed = parsePolishResponse(report.response, storyboard, { allowKeep: true });
   if (!parsed.response) throw new Error(`保存済みの校正応答が不正です。${again}`);
   return {
     model: report.model,
     response: parsed.response,
     judgments: judgeRewrites(storyboard, parsed.response),
-    warnings: parsed.issues
-      .filter((i) => i.level === "warning")
-      .map((i) => `${i.path}: ${i.message}`),
   };
 }
