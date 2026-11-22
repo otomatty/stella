@@ -20,7 +20,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-type
 
 </details>
 
-### Q2. `"ORD-451"[0]` の結果はどれですか？
+### Q2. `"ORD-451".charAt(0)` の結果はどれですか？
 <!-- kind: single; skills: devlab-ts-ch01 -->
 
 - A. `"O"`
@@ -30,7 +30,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-type
 <details>
 <summary>解答</summary>
 
-**A** — 添字は 0 から数えます。0 番は先頭の一文字です。
+**A** — `charAt` は丸かっこで指定した位置の文字を返します。添字は 0 から数えるので、0 番は先頭の一文字です。
 
 </details>
 

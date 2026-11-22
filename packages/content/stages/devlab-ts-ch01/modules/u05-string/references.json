@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u05-string@5",
-  "contentHash": "c1c8c4aec893141d12e90ac29e76ab274fc74fd1e37a5207d5766585b1fcd55c",
+  "unitId": "devlab-ts-ch01/u05-string@6",
+  "contentHash": "4aabb8b9b462ab0f4224f3c5cd17d8dd29f98aa2d259e71b10b61ab354a6e9cb",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

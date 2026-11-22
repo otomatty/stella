@@ -6,7 +6,7 @@ import type { MotionProps } from "./index";
 import { MOTIONS } from "./manifest";
 
 const LETTERS = [..."Taro"];
-const LOOKUP = 'name[0] → "T"';
+const LOOKUP = 'name.charAt(0) → "T"';
 export const letterIndexText = `${LETTERS.join("")}0123${LOOKUP}`;
 
 export function LetterIndex({ beats }: MotionProps) {
@@ -54,7 +54,7 @@ export function LetterIndex({ beats }: MotionProps) {
           );
         })}
       </g>
-      <Callout id="index-lookup" x={1200} y={285} text={LOOKUP} />
+      <Callout id="index-lookup" x={1115} y={285} text={LOOKUP} />
     </Stage>
   );
 }
