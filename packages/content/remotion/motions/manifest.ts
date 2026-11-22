@@ -13,6 +13,16 @@ export const MOTIONS = {
   "shopping-order": { title: "パンと牛乳の買い物", beats: 5, seconds: [2.5, 3.0, 2.0, 2.2, 1.8] },
   "candy-rest": { title: "あめを 3 人で分ける", beats: 4, seconds: [2.5, 2.2, 3.0, 2.2] },
   "platform-sign": { title: "駅ののりば案内", beats: 4, seconds: [2.5, 1.4, 3.6, 1.8] },
+  scoreboard: { title: "試合の得点板", beats: 4, seconds: [2.5, 4.7, 4.3, 4.3] },
+  "piggy-bank": { title: "豚の貯金箱", beats: 4, seconds: [2.5, 5.2, 4.5, 4.5] },
+  laps: { title: "トラックを5周", beats: 5, seconds: [2.5, 3.5, 3.6, 4.0, 4.8] },
+  "fold-paper": { title: "紙を半分に折る", beats: 4, seconds: [2.5, 4.8, 4.3, 5.0] },
+  "rocket-countdown": { title: "打ち上げの秒読み", beats: 4, seconds: [2.5, 4.8, 4.1, 3.8] },
+  beads: { title: "ビーズを糸に通す", beats: 4, seconds: [2.5, 4.7, 3.5, 4.1] },
+  "jump-rope": { title: "なわとびを3回", beats: 4, seconds: [2.5, 3.0, 4.5, 4.5] },
+  "letter-cards": { title: "文字のカード", beats: 4, seconds: [2.5, 4.5, 3.5, 5.0] },
+  "fruit-count": { title: "りんごだけ数える", beats: 4, seconds: [2.5, 4.1, 4.3, 3.5] },
+  "stack-plates": { title: "お皿を重ねる", beats: 4, seconds: [2.5, 4.0, 4.0, 3.3] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;
