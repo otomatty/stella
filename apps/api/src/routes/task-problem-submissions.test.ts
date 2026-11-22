@@ -581,6 +581,13 @@ describe("問題の提出", () => {
         const response = await post(await problemInput(CURRENT, problems, problem.id, sources[i]));
         expect(response.status, await response.clone().text()).toBe(201);
       }
+      const saved = await db.select().from(taskProblemResults);
+      expect(saved.find((row) => row.problemId === "q01-add")?.problemDependencies).toEqual(
+        change === "unresolved" ? null : ["q02-sub"],
+      );
+      expect(saved.find((row) => row.problemId === "q02-sub")?.problemDependencies).toEqual([
+        "q03-mul",
+      ]);
       const hash = await replaceProblems(
         problems,
         change === "changed" ? THIRD_PROBLEM.id : undefined,

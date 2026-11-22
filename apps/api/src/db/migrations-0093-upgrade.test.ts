@@ -3,7 +3,7 @@ import { URL } from "node:url";
 import { expect, it } from "vitest";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 
-it("0093: 既存の課題の版を保ち、問題の指紋を未設定で追加する", () => {
+it("0093: 既存の課題の版と問題合格イベントを保ち、指紋と依存を未設定で追加する", () => {
   const { sqlite } = sqliteD1({ beforeMigration: "0093_task_revision_problem_hashes" });
   try {
     sqlite.exec(`
@@ -14,8 +14,13 @@ it("0093: 既存の課題の版を保ち、問題の指紋を未設定で追加�
         values ('task', 'unit', '課題', 'basic', 'practice', '{}', 30, 0, 'hash', '{}', '{}');
       insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash)
         values ('task', 'hash', '{}', '{}', 1, 'private');
+      insert into profiles (id, tenant_id, role, display_name, created_at)
+        values ('learner', 'ses', 'student', '架空の受講者', 1);
+      insert into integration_events (id, type, occurred_at, user_id, stage_id, task_id, source, problem_id, content_hash)
+        values ('passed', 'problem_passed', 1, 'learner', 'stage', 'task', 'tests', 'q1', 'hash');
     `);
     const previous = sqlite.prepare("select * from task_revisions").get();
+    const event = sqlite.prepare("select * from integration_events").get();
     sqlite.exec(
       readFileSync(
         new URL("../../drizzle/0093_task_revision_problem_hashes.sql", import.meta.url),
@@ -25,6 +30,10 @@ it("0093: 既存の課題の版を保ち、問題の指紋を未設定で追加�
     expect(sqlite.prepare("select * from task_revisions").get()).toEqual({
       ...previous,
       problem_hashes: null,
+    });
+    expect(sqlite.prepare("select * from integration_events").get()).toEqual({
+      ...event,
+      problem_dependencies: null,
     });
     expect(sqlite.prepare("pragma foreign_key_check").all()).toEqual([]);
   } finally {

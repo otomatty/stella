@@ -25,6 +25,7 @@ import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
 import {
   loadTaskProblemHashes,
   countableProblemResults,
+  submittedProblemDependencies,
   type SavedProblemResult,
   type ProblemRevisionHashes,
 } from "./task-problem-hashes.js";
@@ -417,6 +418,7 @@ export async function submitTaskProblem(
   const [file] = verified.files;
   if (!file) throw new ApiError("提出するファイルが不足しています", 400);
   const code = new TextDecoder().decode(file.data);
+  const problemDependencies = submittedProblemDependencies(bundle, file.path, code);
   const now = new Date();
   const metadata = await problemCompletionMetadata(db, caller.id, task, now, input.support);
 
@@ -523,6 +525,7 @@ export async function submitTaskProblem(
             contentHash: input.contentHash,
             path: file.path,
             code,
+            problemDependencies,
             sha256: file.sha256,
             attempts: 1,
             firstPassedAt: now,
@@ -538,6 +541,7 @@ export async function submitTaskProblem(
               contentHash: input.contentHash,
               path: file.path,
               code,
+              problemDependencies,
               sha256: file.sha256,
               updatedAt: now,
               source: "tests",

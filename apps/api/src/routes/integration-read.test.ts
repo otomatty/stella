@@ -15,6 +15,7 @@ import {
   enrollments,
   taskProgress,
   taskProblemResults,
+  taskRevisions,
   submissions,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
@@ -235,6 +236,94 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     expect((await read("progress?at=2026-02-30T00:00:00Z")).status).toBe(400);
     expect((await read("progress?at=2026-11-01")).status).toBe(400);
   });
+  it.each([true, false])(
+    "at の旧版引き継ぎを再提出前の依存で数える (依存の記録あり: %s)",
+    async (recorded) => {
+      const db = getDb(env);
+      const taskId = "task-stage";
+      const ids = ["q1", "q2", "q3"];
+      const definition = JSON.stringify({ problems: ids.map((id) => ({ id, title: id })) });
+      const bundle = JSON.stringify({
+        files: Object.fromEntries(ids.map((id) => [`src/${id}.ts`, ""])),
+      });
+      const problemHashes = JSON.stringify(
+        Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
+      );
+      sqlite.sqlite.exec(`
+        delete from task_problem_results where user_id='inside' and task_id='task-stage';
+        delete from integration_events where user_id='inside' and task_id='task-stage' and problem_id is not null;
+      `);
+      sqlite.sqlite.prepare("update tasks set definition=? where id=?").run(definition, taskId);
+      await db.insert(taskRevisions).values(
+        ["old", "current"].map((contentHash) => ({
+          taskId,
+          contentHash,
+          definition,
+          bundle,
+          problemHashes,
+        })),
+      );
+      const results = ids.map((problemId, index) => {
+        const dependency = ids[index + 1];
+        const date = new Date(T1 + (ids.length - index) * 100);
+        return {
+          userId: "inside",
+          taskId,
+          problemId,
+          contentHash: "old",
+          source: "tests" as const,
+          path: `src/${problemId}.ts`,
+          code: dependency ? `import "./${dependency}.js";` : "export {};",
+          sha256: "hash",
+          problemDependencies: recorded ? (dependency ? [dependency] : []) : null,
+          firstPassedAt: date,
+          updatedAt: date,
+        };
+      });
+      await db.insert(taskProblemResults).values(results);
+      const history = () =>
+        sqlite.sqlite
+          .prepare(`
+        select problem_id, problem_dependencies from integration_events
+        where user_id='inside' and task_id='task-stage' and type='problem_passed' order by seq
+      `)
+          .all();
+      expect(history()).toEqual([
+        { problem_id: "q1", problem_dependencies: recorded ? '["q2"]' : null },
+        { problem_id: "q2", problem_dependencies: recorded ? '["q3"]' : null },
+        { problem_id: "q3", problem_dependencies: recorded ? "[]" : null },
+      ]);
+      const at = `?at=${new Date(T1 + 500).toISOString()}`;
+      const counted = async () => (await progress(at)).members[0]?.stages[0]?.units[0]?.tasks[0];
+      expect(await counted()).toMatchObject({ passed: false, problems: { passed: 3 } });
+
+      const resubmit = sqlite.sqlite.prepare(`
+        update task_problem_results set content_hash=?, code='export {};', problem_dependencies='[]', updated_at=?
+        where user_id='inside' and task_id='task-stage' and problem_id=?
+      `);
+      resubmit.run("current", T2 + 10, "q1");
+      resubmit.run("old", T2 + 20, "q2");
+      expect(history().slice(-2)).toEqual([
+        { problem_id: "q1", problem_dependencies: "[]" },
+        { problem_id: "q2", problem_dependencies: "[]" },
+      ]);
+      expect(await counted()).toMatchObject({
+        passed: false,
+        problems: { passed: recorded ? 3 : 1 },
+      });
+
+      if (recorded) {
+        // q1 は、その後の依存なしの q2 ではなく、指定時点に q3 を読み込んでいた q2 をたどる。
+        const changed = JSON.stringify({ ...JSON.parse(problemHashes), q3: "b".repeat(64) });
+        sqlite.sqlite
+          .prepare(
+            "update task_revisions set problem_hashes=? where task_id=? and content_hash='current'",
+          )
+          .run(changed, taskId);
+        expect(await counted()).toMatchObject({ passed: false, problems: { passed: 0 } });
+      }
+    },
+  );
   it("段の自動修了を取り消して再修了しても、締切時点の修了日時を保つ", async () => {
     const db = getDb(env);
     await db.insert(profiles).values({ id: "teacher", displayName: "架空の管理者", role: "admin" });

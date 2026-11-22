@@ -1,5 +1,6 @@
-import { parsePublicTaskBundle } from "@stella/shared/tasks/catalog";
+import { parsePublicTaskBundle, type TaskBundle } from "@stella/shared/tasks/catalog";
 import {
+  isProblemId,
   problemFingerprints,
   problemFiles,
   readProblems,
@@ -13,10 +14,12 @@ import { taskRevisions } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
 
 type ProblemHashes = Readonly<Record<string, string>>;
-interface ProblemRevision {
-  hashes: ProblemHashes;
+interface ProblemPaths {
   files: ReadonlySet<string>;
   owners: ReadonlyMap<string, string>;
+}
+interface ProblemRevision extends ProblemPaths {
+  hashes: ProblemHashes;
 }
 export type ProblemRevisionHashes = ReadonlyMap<string, ProblemRevision | undefined>;
 export type ProblemHashCache = Map<string, Map<string, ProblemRevision | undefined>>;
@@ -27,6 +30,67 @@ export interface SavedProblemResult {
   source: "manual" | "tests";
   path?: string | null;
   code?: string | null;
+  historicalDependencies?: readonly string[] | null;
+}
+
+function problemPaths(files: Iterable<string>, problemIds: Iterable<string>): ProblemPaths {
+  const owners = new Map<string, string>();
+  for (const id of problemIds) {
+    const paths = problemFiles("typescript", id);
+    if (!paths) continue;
+    owners.set(paths.source, id);
+    owners.set(paths.test, id);
+  }
+  return { files: new Set(files), owners };
+}
+
+/** 相対 import が解決できない場合は、依存なしの空配列と区別する。 */
+function directProblemDependencies(
+  path: string,
+  specifiers: readonly string[],
+  revision: ProblemPaths,
+  comparisons: readonly ProblemPaths[] = [],
+): string[] | null {
+  if (!revision.files.has(path) || comparisons.some((other) => !other.files.has(path))) return null;
+  const dependencies = new Set<string>();
+  for (const specifier of specifiers) {
+    const resolved = resolveRelativeImport(path, specifier, revision.files);
+    if (
+      !resolved ||
+      comparisons.some(
+        (other) =>
+          resolveRelativeImport(path, specifier, other.files) !== resolved ||
+          other.owners.get(resolved) !== revision.owners.get(resolved),
+      )
+    )
+      return null;
+    const owner = revision.owners.get(resolved);
+    if (owner && owner !== revision.owners.get(path)) dependencies.add(owner);
+  }
+  return [...dependencies].sort();
+}
+
+export function submittedProblemDependencies(bundle: TaskBundle, path: string, code: string) {
+  return directProblemDependencies(
+    path,
+    path.endsWith(".ts") ? relativeImportSpecifiers(code) : [],
+    problemPaths(
+      Object.keys(bundle.files),
+      (bundle.manifest.problems ?? []).map((problem) => problem.id),
+    ),
+  );
+}
+
+export function readProblemDependencies(raw: string | null): string[] | null {
+  if (raw === null) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string" && isProblemId(id)))
+      return parsed;
+  } catch {
+    // 古い出来事と同様、保存済みのコードで照合できる場合だけ使う。
+  }
+  return null;
 }
 
 function sameProblemHash(id: string, current?: ProblemRevision, previous?: ProblemRevision) {
@@ -56,27 +120,25 @@ export function countableProblemResults<T extends SavedProblemResult>(
     const pending: SavedProblemResult[] = [row];
     const visited = new Set([row.problemId]);
     for (const result of pending) {
-      if (result.source === "manual" || result.path == null || result.code == null) return false;
-      if (!original.files.has(result.path) || !current.files.has(result.path)) return false;
-      if (!result.path.endsWith(".ts")) continue;
-      const submittedRevision = revisions?.get(result.contentHash);
-      if (!submittedRevision) return false;
-      let specifiers = imports.get(result);
-      if (!specifiers) {
-        specifiers = relativeImportSpecifiers(result.code);
-        imports.set(result, specifiers);
+      if (result.source === "manual") return false;
+      let dependencies = result.historicalDependencies;
+      if (dependencies == null) {
+        if (result.path == null || result.code == null) return false;
+        const submittedRevision = revisions?.get(result.contentHash);
+        if (!submittedRevision) return false;
+        let specifiers = imports.get(result);
+        if (!specifiers) {
+          specifiers = result.path.endsWith(".ts") ? relativeImportSpecifiers(result.code) : [];
+          imports.set(result, specifiers);
+        }
+        dependencies = directProblemDependencies(result.path, specifiers, current, [
+          original,
+          submittedRevision,
+        ]);
+        if (dependencies === null) return false;
       }
-      for (const specifier of specifiers) {
-        const path = resolveRelativeImport(result.path, specifier, current.files);
-        if (
-          !path ||
-          resolveRelativeImport(result.path, specifier, original.files) !== path ||
-          resolveRelativeImport(result.path, specifier, submittedRevision.files) !== path
-        )
-          return false;
-        const dependency = current.owners.get(path);
-        if (dependency !== original.owners.get(path)) return false;
-        if (!dependency || visited.has(dependency)) continue;
+      for (const dependency of dependencies) {
+        if (visited.has(dependency)) continue;
         const submitted = byId.get(dependency);
         if (
           !submitted ||
@@ -185,15 +247,10 @@ export async function loadProblemRevisionHashes(
         ? await computeRevisionHashes(row)
         : parseHashes(row.problem_hashes);
     if (!hashes) continue;
-    const files = new Set<string>(JSON.parse(row.paths));
-    const owners = new Map<string, string>();
-    for (const id of Object.keys(hashes)) {
-      const paths = problemFiles("typescript", id);
-      if (!paths) continue;
-      owners.set(paths.source, id);
-      owners.set(paths.test, id);
-    }
-    cache.get(row.task_id)?.set(row.content_hash, { hashes, files, owners });
+    cache.get(row.task_id)?.set(row.content_hash, {
+      hashes,
+      ...problemPaths(JSON.parse(row.paths) as string[], Object.keys(hashes)),
+    });
     if (row.problem_hashes === null) {
       writes.push(
         db

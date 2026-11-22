@@ -454,6 +454,7 @@ export async function writeManualCompletion(
                       path: sql`excluded.path`,
                       code: sql`excluded.code`,
                       sha256: sql`excluded.sha256`,
+                      problemDependencies: null,
                       contentHash: sql`excluded.content_hash`,
                       source: sql`excluded.source`,
                       manualReason: sql`excluded.manual_reason`,

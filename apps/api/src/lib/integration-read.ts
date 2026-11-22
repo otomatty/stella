@@ -10,6 +10,7 @@ import { ApiError } from "./authz.js";
 import {
   loadProblemRevisionHashes,
   countableProblemResults,
+  readProblemDependencies,
   type ProblemRevisionHashes,
 } from "./task-problem-hashes.js";
 import { readTaskDefinition } from "./task-problem-submission.js";
@@ -54,6 +55,7 @@ interface ProblemRow {
   firstPassedAt: number;
   path: string | null;
   code: string | null;
+  dependenciesJson?: string | null;
 }
 function problemSummary(
   definition: string,
@@ -67,7 +69,15 @@ function problemSummary(
   const current = new Set(problems.map((p) => p.id));
   const sources = new Map<string, ProblemRow["source"]>();
   // 履歴は新しい順。数える版の中で各問題のいちばん新しい出所だけを使う。
-  for (const row of countableProblemResults(rows, hash, taskPassed, revisions)) {
+  for (const row of countableProblemResults(
+    rows.map((row) => ({
+      ...row,
+      historicalDependencies: readProblemDependencies(row.dependenciesJson ?? null),
+    })),
+    hash,
+    taskPassed,
+    revisions,
+  )) {
     if (current.has(row.problemId) && !sources.has(row.problemId)) {
       sources.set(row.problemId, row.source);
     }
@@ -179,13 +189,13 @@ export async function readIntegrationProgress(
     db.all<ProblemRow & { user_id: string; task_id: string }>(
       at === null
         ? sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt,r.path,r.code from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id`
-        : sql`select h.user_id,h.task_id,h.problemId,h.contentHash,h.source,h.firstPassedAt,r.path,r.code from (
-            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,
+        : sql`select h.user_id,h.task_id,h.problemId,h.contentHash,h.source,h.firstPassedAt,r.path,r.code,h.dependenciesJson from (
+            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,e.problem_dependencies dependenciesJson,
               row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
             from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
             where e.type in ('problem_passed','problem_pass_revoked') and e.occurred_at <= ${at}
           ) h left join task_problem_results r on r.user_id=h.user_id and r.task_id=h.task_id
-              and r.problem_id=h.problemId and r.content_hash=h.contentHash and r.updated_at <= ${at}
+              and h.dependenciesJson is null and r.problem_id=h.problemId and r.content_hash=h.contentHash and r.updated_at <= ${at}
             where h.position=1 and h.type='problem_passed' order by h.firstPassedAt desc,h.sequence desc`,
     ),
     db.all<{ id: string }>(
