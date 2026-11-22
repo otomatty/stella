@@ -88,6 +88,9 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
       taskId: taskProblemResults.taskId,
       problemId: taskProblemResults.problemId,
       contentHash: taskProblemResults.contentHash,
+      path: taskProblemResults.path,
+      code: taskProblemResults.code,
+      source: taskProblemResults.source,
     })
     .from(taskProblemResults)
     .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))

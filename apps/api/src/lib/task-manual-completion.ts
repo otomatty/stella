@@ -22,7 +22,12 @@ import { ApiError, type Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { auditLogInsert } from "./audit.js";
 import { loadProblemRevisionHashes, loadTaskProblemHashes } from "./task-problem-hashes.js";
-import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
+import {
+  countedProblemIds,
+  manualTaskPassWrites,
+  pendingProblemCompletion,
+  readTaskDefinition,
+} from "./task-problem-submission.js";
 import { recomputeTaskProgress, resetPassedAt, taskSubmissionLockId } from "./task-submission.js";
 import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
 import { loadProblemSteps } from "./task-problem-steps.js";
@@ -142,6 +147,8 @@ export async function readManualCompletion(
             source: taskProblemResults.source,
             manualReason: taskProblemResults.manualReason,
             manualAt: taskProblemResults.manualAt,
+            path: taskProblemResults.path,
+            code: taskProblemResults.code,
             manualByName: profiles.displayName,
           })
           .from(taskProblemResults)
@@ -365,18 +372,7 @@ export async function writeManualCompletion(
               // 最後の問題の保存後、tests の確定がロックを取り直す前の提出も捨てる。
               // 相談や AI の確認待ちは対象にしない。
               writes.push(
-                db
-                  .delete(submissions)
-                  .where(
-                    and(
-                      eq(submissions.studentId, input.userId),
-                      eq(submissions.taskId, task.id),
-                      eq(submissions.submissionMode, "submit"),
-                      isNull(submissions.verdict),
-                      isNull(submissions.aiReviewStatus),
-                      sql`json_extract(${submissions.localResult}, '$.problemId') is not null`,
-                    ),
-                  ),
+                db.delete(submissions).where(pendingProblemCompletion(input.userId, task.id)),
               );
             }
             if (
@@ -474,32 +470,22 @@ export async function writeManualCompletion(
             for (const pid of additions) counted.add(pid);
             const complete = !problems || problems.every((p) => counted.has(p.id));
             if (complete && !taskPassed) {
-              const submissionId = crypto.randomUUID();
               writes.push(
-                db.insert(submissions).values({
-                  id: submissionId,
-                  studentId: input.userId,
-                  taskId: task.id,
-                  taskContentHash: task.contentHash,
-                  taskKind: task.kind,
-                  submissionMode: "submit",
-                  stageTitle: scope.stage.title,
-                  sectionTitle: unitTitle,
-                  assignmentTitle: task.title,
-                  code: "",
-                  reviewSource: "manual",
-                  verdict: "pass",
-                  status: "passed",
-                  reviewerId: caller.id,
-                  reviewNotes: input.reason,
-                  reviewTaskContentHash: task.contentHash,
-                  submittedAt: now,
-                  reviewedAt: now,
-                  attempt: sql`(select coalesce(max(attempt), 0) + 1 from submissions where student_id = ${input.userId} and task_id = ${task.id})`,
-                }),
-              );
-              writes.push(
-                recomputeTaskProgress(db, { studentId: input.userId, taskId: task.id }, now),
+                ...manualTaskPassWrites(
+                  db,
+                  input.userId,
+                  task.id,
+                  {
+                    taskContentHash: task.contentHash,
+                    taskKind: task.kind,
+                    stageTitle: scope.stage.title,
+                    sectionTitle: unitTitle,
+                    assignmentTitle: task.title,
+                  },
+                  caller.id,
+                  input.reason,
+                  now,
+                ),
               );
               passedTaskIds.push(task.id);
               if (!problems) inserted++;

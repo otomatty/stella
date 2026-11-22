@@ -1,5 +1,11 @@
 import { parsePublicTaskBundle } from "@stella/shared/tasks/catalog";
-import { problemFingerprints, readProblems } from "@stella/shared/tasks/problems";
+import {
+  problemFingerprints,
+  problemFiles,
+  readProblems,
+  relativeImportSpecifiers,
+  resolveRelativeImport,
+} from "@stella/shared/tasks/problems";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
@@ -7,18 +13,83 @@ import { taskRevisions } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
 
 type ProblemHashes = Readonly<Record<string, string>>;
-export type ProblemRevisionHashes = ReadonlyMap<string, ProblemHashes | undefined>;
-export type ProblemHashCache = Map<string, Map<string, ProblemHashes | undefined>>;
+interface ProblemRevision {
+  hashes: ProblemHashes;
+  files: ReadonlySet<string>;
+  owners: ReadonlyMap<string, string>;
+}
+export type ProblemRevisionHashes = ReadonlyMap<string, ProblemRevision | undefined>;
+export type ProblemHashCache = Map<string, Map<string, ProblemRevision | undefined>>;
 
-export function problemResultCounts(
-  row: { problemId: string; contentHash: string },
+export interface SavedProblemResult {
+  problemId: string;
+  contentHash: string;
+  source: "manual" | "tests";
+  path?: string | null;
+  code?: string | null;
+}
+
+function sameProblemHash(id: string, current?: ProblemRevision, previous?: ProblemRevision) {
+  const hash = current?.hashes[id];
+  return typeof hash === "string" && hash === previous?.hashes[id];
+}
+
+/** 照合は提出元の版から見た依存関係にも適用する。依存先自体が現行版で提出されていても同じ。 */
+export function countableProblemResults<T extends SavedProblemResult>(
+  rows: readonly T[],
   currentHash: string,
   taskPassed: boolean,
   revisions?: ProblemRevisionHashes,
-): boolean {
-  if (taskPassed || row.contentHash === currentHash) return true;
-  const hash = revisions?.get(currentHash)?.[row.problemId];
-  return typeof hash === "string" && hash === revisions?.get(row.contentHash)?.[row.problemId];
+): T[] {
+  if (taskPassed) return [...rows];
+  const current = revisions?.get(currentHash);
+  const byId = new Map<string, T>();
+  const imports = new Map<SavedProblemResult, string[]>();
+  for (const row of rows) if (!byId.has(row.problemId)) byId.set(row.problemId, row);
+
+  return rows.filter((row) => {
+    if (row.contentHash === currentHash) return true;
+    const original = revisions?.get(row.contentHash);
+    if (!sameProblemHash(row.problemId, current, original)) return false;
+    if (row.source === "manual") return true;
+    if (!current || !original) return false;
+    const pending: SavedProblemResult[] = [row];
+    const visited = new Set([row.problemId]);
+    for (const result of pending) {
+      if (result.source === "manual" || result.path == null || result.code == null) return false;
+      if (!original.files.has(result.path) || !current.files.has(result.path)) return false;
+      if (!result.path.endsWith(".ts")) continue;
+      const submittedRevision = revisions?.get(result.contentHash);
+      if (!submittedRevision) return false;
+      let specifiers = imports.get(result);
+      if (!specifiers) {
+        specifiers = relativeImportSpecifiers(result.code);
+        imports.set(result, specifiers);
+      }
+      for (const specifier of specifiers) {
+        const path = resolveRelativeImport(result.path, specifier, current.files);
+        if (
+          !path ||
+          resolveRelativeImport(result.path, specifier, original.files) !== path ||
+          resolveRelativeImport(result.path, specifier, submittedRevision.files) !== path
+        )
+          return false;
+        const dependency = current.owners.get(path);
+        if (dependency !== original.owners.get(path)) return false;
+        if (!dependency || visited.has(dependency)) continue;
+        const submitted = byId.get(dependency);
+        if (
+          !submitted ||
+          !sameProblemHash(dependency, current, original) ||
+          !sameProblemHash(dependency, current, revisions?.get(submitted.contentHash))
+        )
+          return false;
+        visited.add(dependency);
+        pending.push(submitted);
+      }
+    }
+    return true;
+  });
 }
 
 interface RevisionScope {
@@ -91,10 +162,13 @@ export async function loadProblemRevisionHashes(
     problem_hashes: string | null;
     definition: string | null;
     bundle: string | null;
+    paths: string;
   }>(sql`
     select r.task_id, r.content_hash, r.problem_hashes,
       case when r.problem_hashes is null then r.definition end definition,
-      case when r.problem_hashes is null then r.bundle end bundle
+      case when r.problem_hashes is null then r.bundle end bundle,
+      (select json_group_array(f.key)
+       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f) paths
     from json_each(${JSON.stringify(keys)}) k
     join task_revisions r on r.task_id = json_extract(k.value, '$[0]')
       and r.content_hash = json_extract(k.value, '$[1]')
@@ -111,7 +185,15 @@ export async function loadProblemRevisionHashes(
         ? await computeRevisionHashes(row)
         : parseHashes(row.problem_hashes);
     if (!hashes) continue;
-    cache.get(row.task_id)?.set(row.content_hash, hashes);
+    const files = new Set<string>(JSON.parse(row.paths));
+    const owners = new Map<string, string>();
+    for (const id of Object.keys(hashes)) {
+      const paths = problemFiles("typescript", id);
+      if (!paths) continue;
+      owners.set(paths.source, id);
+      owners.set(paths.test, id);
+    }
+    cache.get(row.task_id)?.set(row.content_hash, { hashes, files, owners });
     if (row.problem_hashes === null) {
       writes.push(
         db

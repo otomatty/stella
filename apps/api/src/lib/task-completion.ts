@@ -2,7 +2,7 @@ import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   loadProblemRevisionHashes,
-  problemResultCounts,
+  countableProblemResults,
   type ProblemHashCache,
 } from "./task-problem-hashes.js";
 import { readTaskDefinition } from "./task-problem-submission.js";
@@ -142,6 +142,7 @@ export async function manualCompletionCounts(
         taskId: taskProblemResults.taskId,
         problemId: taskProblemResults.problemId,
         contentHash: taskProblemResults.contentHash,
+        source: taskProblemResults.source,
         status: taskProgress.status,
       })
       .from(taskProblemResults)
@@ -183,12 +184,12 @@ export async function manualCompletionCounts(
     const current = currentByTask.get(row.taskId);
     if (!current?.problemIds.has(row.problemId)) continue;
     if (
-      !problemResultCounts(
-        row,
+      countableProblemResults(
+        [row],
         current.hash,
         row.status === "passed" || row.status === "ai-passed",
         hashes.get(row.taskId),
-      )
+      ).length === 0
     )
       continue;
     const entry = out.get(row.userId);

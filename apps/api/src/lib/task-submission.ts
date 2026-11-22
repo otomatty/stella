@@ -668,6 +668,8 @@ export async function reviewTaskSubmission(
             problemId: taskProblemResults.problemId,
             contentHash: taskProblemResults.contentHash,
             source: taskProblemResults.source,
+            path: taskProblemResults.path,
+            code: taskProblemResults.code,
           })
           .from(taskProblemResults)
           .where(
@@ -690,7 +692,10 @@ export async function reviewTaskSubmission(
           taskPassed,
         });
         const counted = countedProblemIds(saved, currentHash, taskPassed, hashes);
-        if (!problems?.every((problem) => counted.has(problem.id))) {
+        if (
+          row.taskContentHash !== currentHash ||
+          !problems?.every((problem) => counted.has(problem.id))
+        ) {
           // 確認中の表示や人の一覧に取り残さず、残っている提出・問題の結果から状態を付け直す。
           const scope = { studentId: row.studentId, taskId: row.taskId };
           const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [

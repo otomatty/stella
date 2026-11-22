@@ -89,6 +89,34 @@ export function readProblems(
   return { problems, errors };
 }
 
+// ponytail: 正規表現なのでコメントの中の import も拾う。控えるファイルが増えるだけで、見落としにはならない。
+const RELATIVE_IMPORT =
+  /\b(?:import\s+(?:[^'";]*?\s+from\s*)?|export\s+[^'";]*?\s+from\s*|(?:import|require)\s*\(\s*)(["'])(\.{1,2}\/[^"'\r\n]+)\1/g;
+
+export function relativeImportSpecifiers(code: string): string[] {
+  return Array.from(code.matchAll(RELATIVE_IMPORT), (match) => match[2] ?? "");
+}
+
+/** 拡張・教材・API で同じ順序で候補を試し、課題フォルダーの外には出ない。 */
+export function resolveRelativeImport(
+  from: string,
+  specifier: string,
+  files: ReadonlySet<string>,
+): string | undefined {
+  const parts = from.split("/").slice(0, -1);
+  for (const segment of specifier.split("/")) {
+    if (!segment || segment === ".") continue;
+    if (segment === "..") {
+      if (!parts.length) return undefined;
+      parts.pop();
+    } else parts.push(segment);
+  }
+  const path = parts.join("/");
+  return [path, `${path}.ts`, `${path}.tsx`, path.replace(/\.js$/, ".ts"), `${path}/index.ts`].find(
+    (candidate) => files.has(candidate),
+  );
+}
+
 const explanationFiles = new Set([
   "readme.md",
   "hints.md",
@@ -111,10 +139,13 @@ export async function problemFingerprints(
     if (!paths) throw new Error(`問題のファイル名が不正です: ${id}`);
     return { id, title, paths: [paths.source, paths.test] };
   });
-  const ownedPaths = new Set(problems.flatMap((problem) => problem.paths));
+  const ownerByPath = new Map(
+    problems.flatMap(({ id, paths }) => paths.map((path) => [path, id] as const)),
+  );
+  const distributedPaths = new Set(Object.keys(files));
   const sharedFiles = Object.keys(files)
     .sort()
-    .filter((path) => !ownedPaths.has(path) && !explanationFiles.has(path.toLowerCase()))
+    .filter((path) => !ownerByPath.has(path) && !explanationFiles.has(path.toLowerCase()))
     .map((path) => [path, files[path]]);
   const dotnet = plan === "dotnet" ? definition.environment?.dotnet : undefined;
   const encoder = new TextEncoder();
@@ -129,7 +160,7 @@ export async function problemFingerprints(
       ]),
     ),
   );
-  return Object.fromEntries(
+  const ownHashes = new Map(
     await Promise.all(
       problems.map(async ({ id, title, paths }) => {
         const problem = paths.map((path) => {
@@ -138,7 +169,47 @@ export async function problemFingerprints(
           return [path, files[path]];
         });
         const hash = await sha256Hex(encoder.encode(JSON.stringify([sharedHash, title, problem])));
-        return [id, hash];
+        return [id, hash] as const;
+      }),
+    ),
+  );
+  if (plan === "dotnet") return Object.fromEntries(ownHashes);
+
+  const decoder = new TextDecoder();
+  const importsByPath = new Map<string, string[]>();
+  const importsOf = (path: string) => {
+    const cached = importsByPath.get(path);
+    if (cached) return cached;
+    if (!/\.[cm]?[jt]sx?$/.test(path)) return [];
+    const code = decoder.decode(Uint8Array.from(atob(files[path] ?? ""), (ch) => ch.charCodeAt(0)));
+    const paths = relativeImportSpecifiers(code).flatMap((specifier) => {
+      const dependency = resolveRelativeImport(path, specifier, distributedPaths);
+      return dependency ? [dependency] : [];
+    });
+    importsByPath.set(path, paths);
+    return paths;
+  };
+  const problemPaths = new Map(problems.map(({ id, paths }) => [id, paths]));
+
+  return Object.fromEntries(
+    await Promise.all(
+      [...ownHashes].map(async ([id, ownHash]) => {
+        const paths = problemPaths.get(id);
+        const dependencies = new Set<string>([id]);
+        const visited = new Set(paths);
+        for (const path of visited) {
+          for (const dependency of importsOf(path)) {
+            visited.add(dependency);
+            const owner = ownerByPath.get(dependency);
+            if (!owner || dependencies.has(owner)) continue;
+            dependencies.add(owner);
+            // 依存先の雛形とテストの両方をたどる。循環は visited と dependencies で止まる。
+            for (const related of problemPaths.get(owner) ?? []) visited.add(related);
+          }
+        }
+        if (dependencies.size === 1) return [id, ownHash];
+        const hashes = [...dependencies].sort().map((key) => [key, ownHashes.get(key)]);
+        return [id, await sha256Hex(encoder.encode(JSON.stringify(hashes)))];
       }),
     ),
   );

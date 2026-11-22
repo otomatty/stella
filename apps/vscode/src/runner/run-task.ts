@@ -19,7 +19,11 @@ import {
   type RunStepResult,
 } from "@stella/shared/tasks/run-result";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
-import { problemFiles } from "@stella/shared/tasks/problems";
+import {
+  problemFiles,
+  relativeImportSpecifiers,
+  resolveRelativeImport,
+} from "@stella/shared/tasks/problems";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import {
   checkSubmitSizes,
@@ -148,10 +152,6 @@ function readProblem(error: unknown): string {
   return "ファイルを読めませんでした";
 }
 
-// ponytail: 正規表現なのでコメントの中の import も拾う。控えるファイルが増えるだけで、見落としにはならない。
-const RELATIVE_IMPORT =
-  /\b(?:import\s+(?:[^'";]*?\s+from\s*)?|export\s+[^'";]*?\s+from\s*|(?:import|require)\s*\(\s*)(["'])(\.{1,2}\/[^"'\r\n]+)\1/g;
-
 /** 問題から相対 import でたどれる提出対象のファイルを集める。 */
 export async function importedEditableFiles(
   root: string,
@@ -168,17 +168,8 @@ export async function importedEditableFiles(
     } catch {
       continue;
     }
-    for (const match of content.matchAll(RELATIVE_IMPORT)) {
-      const specifier = match[2];
-      if (!specifier) continue;
-      const resolved = path.posix.join(path.posix.dirname(file), specifier);
-      const imported = [
-        resolved,
-        `${resolved}.ts`,
-        `${resolved}.tsx`,
-        resolved.replace(/\.js$/, ".ts"),
-        path.posix.join(resolved, "index.ts"),
-      ].find((candidate) => allowed.has(candidate));
+    for (const specifier of relativeImportSpecifiers(content)) {
+      const imported = resolveRelativeImport(file, specifier, allowed);
       if (!imported || visited.has(imported)) continue;
       visited.add(imported);
       pending.push(imported);

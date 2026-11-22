@@ -59,6 +59,45 @@ describe("問題の指紋", () => {
     },
   );
 
+  it.each(["src/q1.ts", "tests/q1.test.ts"])(
+    "%s から依存する問題の雛形・テストも指紋に含める",
+    async (source) => {
+      const dependent = { ...files, [source]: btoa('import "../src/q2.js";') };
+      const original = await problemFingerprints(definition, dependent);
+      for (const path of ["src/q2.ts", "tests/q2.test.ts"]) {
+        const changed = await problemFingerprints(definition, {
+          ...dependent,
+          [path]: btoa("changed"),
+        });
+        expect(changed.q1).not.toBe(original.q1);
+      }
+    },
+  );
+
+  it("間接依存をたどり、循環しても無関係な問題に影響しない", async () => {
+    const expanded = {
+      ...definition,
+      problems: [...definition.problems, { id: "q3", title: "問3" }, { id: "q4", title: "問4" }],
+    };
+    const dependent = {
+      ...files,
+      "src/q1.ts": btoa('export { value } from "./q2";'),
+      "tests/q2.test.ts": btoa('void import("../src/q3");'),
+      "src/q3.ts": btoa('import "./q1";'),
+      "tests/q3.test.ts": btoa("third test"),
+      "src/q4.ts": btoa("fourth starter"),
+      "tests/q4.test.ts": btoa("fourth test"),
+    };
+    const original = await problemFingerprints(expanded, dependent);
+    const changed = await problemFingerprints(expanded, {
+      ...dependent,
+      "tests/q3.test.ts": btoa("changed"),
+    });
+    expect(changed.q1).not.toBe(original.q1);
+    expect(changed.q2).not.toBe(original.q2);
+    expect(changed.q4).toBe(original.q4);
+  });
+
   it("問題の題名と実行手順を指紋に含める", async () => {
     const original = await problemFingerprints(definition, files);
     const renamed = await problemFingerprints(

@@ -78,6 +78,9 @@ async function problemProgressOf(
             taskId: taskProblemResults.taskId,
             problemId: taskProblemResults.problemId,
             contentHash: taskProblemResults.contentHash,
+            path: taskProblemResults.path,
+            code: taskProblemResults.code,
+            source: taskProblemResults.source,
           })
           .from(taskProblemResults)
           .where(
