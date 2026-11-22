@@ -761,6 +761,22 @@ describe("つまずきの検知 (cron)", () => {
       expect(await escalationAlerts()).toHaveLength(2);
     });
 
+    it("AI の再提出が 2 回続いて人に回った 3 件目も、同じ続きとして知らせる", async () => {
+      await keepActive();
+      const first = await judged("confirmed", [], { proposedVerdict: "resubmit" });
+      const second = await judged("confirmed", [], { proposedVerdict: "resubmit" });
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+
+      const third = await judged("escalated", ["rubric-unmet", "ai-resubmit-repeated"], {
+        proposedVerdict: "resubmit",
+      });
+      await notifyStumbles(db, now);
+      expect((await escalationAlerts()).map((n) => n.payload.submission_ids)).toEqual([
+        [first, second, third],
+      ]);
+    });
+
     it("AI や教材の都合だけで回った提出と、講師への相談は数えない", async () => {
       await keepActive();
       await judged("escalated");
