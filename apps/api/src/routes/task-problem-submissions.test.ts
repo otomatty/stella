@@ -677,6 +677,29 @@ describe("問題の提出", () => {
     },
   );
 
+  it.each([`import(\`./\${name}\`);`, "import(name);", "require(name);"])(
+    "依存が確定しない提出は現行版で数えるが旧版からは引き継がない (%s)",
+    async (code) => {
+      const input = await problemInput(CURRENT, PROBLEMS, "q01-add", code);
+      const response = await post(input);
+      expect(response.status, await response.clone().text()).toBe(201);
+      expect(await response.json()).toMatchObject({ passedProblems: 1 });
+      const [saved] = await db.select().from(taskProblemResults);
+      expect(saved.problemDependencies).toBeNull();
+
+      await replaceProblems(PROBLEMS);
+      const result = await problemResults();
+      expect(result.status, await result.clone().text()).toBe(200);
+      expect(await result.json()).toMatchObject({
+        passedProblems: 0,
+        problems: [
+          { id: "q01-add", status: "not-submitted" },
+          { id: "q02-sub", status: "not-submitted" },
+        ],
+      });
+    },
+  );
+
   it.each(["tests", "mixed", "manual"] as const)(
     "未提出の問題が消えると、一覧の同時読み取りで課題の合格を一度だけ記録する (%s)",
     async (source) => {

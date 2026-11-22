@@ -89,15 +89,46 @@ export function readProblems(
   return { problems, errors };
 }
 
-// ponytail: 正規表現なのでコメントの中の import も拾う。控えるファイルが増えるだけで、見落としにはならない。
-const FROM = String.raw`from(?:\s|/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//[^\r\n]*(?:\r\n?|\n))*`;
-const RELATIVE_IMPORT = new RegExp(
-  String.raw`\b(?:import\s+(?:[^'";]*?\s+${FROM})?|export\s+[^'";]*?\s+${FROM}|(?:import|require)\s*\(\s*)(["'])(\.{1,2}/[^"'\r\n]+)\1`,
+// 正規表現なのでコメント中の import も拾うことがある。依存が不明なら API は引き継がない。
+const COMMENT = String.raw`/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//[^\r\n]*(?:\r\n?|\n|$)`;
+const TRIVIA = String.raw`(?:\s|(?:${COMMENT}))*`;
+const FROM_CLAUSE = String.raw`(?:(?:${COMMENT})|/(?![/*])|[^/'";\x60()])*?\bfrom${TRIVIA}`;
+const STATIC_IMPORT = new RegExp(
+  String.raw`\b(?:import\b${TRIVIA}|(?:import|export)\b${FROM_CLAUSE})(["'])(\.{1,2}/[^"'\r\n]+)\1`,
   "g",
 );
+const DYNAMIC_CALL = new RegExp(String.raw`\b(?:import|require)\b${TRIVIA}\(${TRIVIA}`, "g");
+const DYNAMIC_LITERAL = String.raw`"(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*'|\x60(?:\\[\s\S]|[^\x60\\])*\x60`;
+
+export function readRelativeImports(code: string): {
+  specifiers: string[];
+  unresolvedDynamicImport: boolean;
+} {
+  const matches = Array.from(code.matchAll(STATIC_IMPORT), (match) => ({
+    index: match.index,
+    specifier: match[2] ?? "",
+  }));
+  const firstLiteral = new RegExp(DYNAMIC_LITERAL, "y");
+  const argumentEnd = new RegExp(`${TRIVIA}(?=[,)])`, "y");
+  let unresolvedDynamicImport = false;
+  for (const call of code.matchAll(DYNAMIC_CALL)) {
+    firstLiteral.lastIndex = call.index + call[0].length;
+    const literal = firstLiteral.exec(code)?.[0];
+    if (!literal || (literal[0] === "\x60" && literal.includes("${"))) {
+      unresolvedDynamicImport = true;
+      continue;
+    }
+    const specifier = literal.slice(1, -1);
+    if (/^\.{1,2}\//.test(specifier)) matches.push({ index: call.index, specifier });
+    argumentEnd.lastIndex = firstLiteral.lastIndex;
+    if (literal.includes("\\") || !argumentEnd.test(code)) unresolvedDynamicImport = true;
+  }
+  matches.sort((a, b) => a.index - b.index);
+  return { specifiers: matches.map(({ specifier }) => specifier), unresolvedDynamicImport };
+}
 
 export function relativeImportSpecifiers(code: string): string[] {
-  return Array.from(code.matchAll(RELATIVE_IMPORT), (match) => match[2] ?? "");
+  return readRelativeImports(code).specifiers;
 }
 
 /** 拡張・教材・API で同じ順序で候補を試し、課題フォルダーの外には出ない。 */

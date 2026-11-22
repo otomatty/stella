@@ -4,7 +4,7 @@ import {
   problemFingerprints,
   problemFiles,
   readProblems,
-  relativeImportSpecifiers,
+  readRelativeImports,
   resolveRelativeImport,
 } from "@stella/shared/tasks/problems";
 import { RUNNERS } from "@stella/shared/tasks/runners";
@@ -83,7 +83,9 @@ function directProblemDependencies(
         const text = new TextDecoder().decode(
           Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0)),
         );
-        pending.push({ path: resolved, specifiers: relativeImportSpecifiers(text) });
+        const imports = readRelativeImports(text);
+        if (imports.unresolvedDynamicImport) return null;
+        pending.push({ path: resolved, specifiers: imports.specifiers });
       } catch {
         return null;
       }
@@ -96,18 +98,22 @@ function isDistributedScript(path: string) {
   return /\.[cm]?[jt]sx?$/.test(path);
 }
 
+function submissionSpecifiers(path: string, code: string): string[] | null {
+  if (!path.endsWith(".ts")) return [];
+  const imports = readRelativeImports(code);
+  return imports.unresolvedDynamicImport ? null : imports.specifiers;
+}
+
 export function submittedProblemDependencies(bundle: TaskBundle, path: string, code: string) {
-  return directProblemDependencies(
-    path,
-    path.endsWith(".ts") ? relativeImportSpecifiers(code) : [],
-    {
-      ...problemPaths(
-        Object.keys(bundle.files),
-        (bundle.manifest.problems ?? []).map((problem) => problem.id),
-      ),
-      distributedCode: bundle.files,
-    },
-  );
+  const specifiers = submissionSpecifiers(path, code);
+  if (specifiers === null) return null;
+  return directProblemDependencies(path, specifiers, {
+    ...problemPaths(
+      Object.keys(bundle.files),
+      (bundle.manifest.problems ?? []).map((problem) => problem.id),
+    ),
+    distributedCode: bundle.files,
+  });
 }
 
 export function readProblemDependencies(raw: string | null): string[] | null {
@@ -137,7 +143,7 @@ export function countableProblemResults<T extends SavedProblemResult>(
   if (taskPassed) return [...rows];
   const current = revisions?.get(currentHash);
   const byId = new Map<string, T>();
-  const imports = new Map<SavedProblemResult, string[]>();
+  const imports = new Map<SavedProblemResult, string[] | null>();
   for (const row of rows) if (!byId.has(row.problemId)) byId.set(row.problemId, row);
 
   return rows.filter((row) => {
@@ -158,10 +164,11 @@ export function countableProblemResults<T extends SavedProblemResult>(
       if (dependencies == null) {
         if (result.path == null || result.code == null) return false;
         let specifiers = imports.get(result);
-        if (!specifiers) {
-          specifiers = result.path.endsWith(".ts") ? relativeImportSpecifiers(result.code) : [];
+        if (specifiers === undefined) {
+          specifiers = submissionSpecifiers(result.path, result.code);
           imports.set(result, specifiers);
         }
+        if (specifiers === null) return false;
         dependencies = directProblemDependencies(result.path, specifiers, current, [
           original,
           submittedRevision,

@@ -3,6 +3,7 @@ import type { TaskManifest } from "./manifest.js";
 import {
   problemFingerprints,
   relativeImportSpecifiers,
+  readRelativeImports,
   resolveRelativeImport,
 } from "./problems.js";
 
@@ -153,6 +154,39 @@ describe("相対 import", () => {
         ].join("\n"),
       ),
     ).toEqual(["./q2", "../q3", "./q4"]);
+  });
+
+  it.each([
+    'import { value }from "./q2";',
+    'import { value }from"./q2";',
+    'export * from"./q2";',
+    'export*from"./q2";',
+    'export * /* comment */from"./q2";',
+    "import(`./q2`);",
+    "require(`./q2`);",
+    'import(/* comment */ "./q2", { with: { type: "json" } });',
+  ])("相対 import の依存を確定できる (%s)", (code) => {
+    expect(readRelativeImports(code)).toEqual({
+      specifiers: ["./q2"],
+      unresolvedDynamicImport: false,
+    });
+  });
+
+  it.each([`import(\`./\${name}\`);`, "import(name);", "require(name);"])(
+    "引数が固定の文字列でない呼び出しを区別する (%s)",
+    (code) => {
+      expect(readRelativeImports(`${code} import "./other";`)).toEqual({
+        specifiers: ["./other"],
+        unresolvedDynamicImport: true,
+      });
+    },
+  );
+
+  it("文字列で始まる式も依存は未確定とし、従来の抽出候補は控える", () => {
+    expect(readRelativeImports('import("./q" + number);')).toEqual({
+      specifiers: ["./q"],
+      unresolvedDynamicImport: true,
+    });
   });
 
   it("index.tsx に解決し、index.ts や明示のファイルを先に選ぶ", () => {
