@@ -34,12 +34,18 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { SUPPORT_LABELS } from "@stella/shared/tasks/submission-support";
 import { formatGradingSummaryText } from "@stella/shared/review/grading-summary";
-import { FINDING_SEVERITY_LABELS, formatLearnerReply } from "@stella/shared/review/ai-review";
+import {
+  type EvidenceRef,
+  FINDING_SEVERITY_LABELS,
+  formatLearnerReply,
+} from "@stella/shared/review/ai-review";
 import type {
   GradingSummary,
   ReviewSuggestion,
   RubricCriterion,
   ReviewVerdict,
+  Submission,
+  SubmissionReference,
 } from "@stella/shared/review/types";
 import { useSubmission, useSubmissions } from "@/hooks/useSubmissions";
 import { isBackendConfigured } from "@/lib/backend";
@@ -50,10 +56,12 @@ import {
   refreshSubmission,
 } from "@/lib/submissions-store";
 import { isAiPassed, isAiResubmitted, passByLabel } from "@/lib/review-queue";
-import { fetchSubmissionById } from "@/lib/submissions-api";
-import type { Submission } from "@stella/shared/review/types";
+import { fetchSubmissionById, fetchSubmissionReference } from "@/lib/submissions-api";
 import { cn } from "@/lib/utils";
-import { highlightSubmission } from "@/lib/submission-highlight";
+import { type CodeSegment, highlightSubmission } from "@/lib/submission-highlight";
+import { alignReference } from "@/lib/reference-align";
+import { rubricEvidenceByLine } from "@/lib/review-evidence";
+import { LessonMarkdown } from "@/components/learner/MarkdownSlides";
 import { AiReviewPanel } from "./AiReviewPanel";
 import { CiRunPanel } from "./CiRunPanel";
 import { CommentTemplatePicker } from "./CommentTemplatePicker";
@@ -84,6 +92,16 @@ const severityDot: Record<ReviewSuggestion["severity"], string> = {
   low: "bg-info",
 };
 
+const REFERENCE_VIEW_KEY = "stella_review_code_view";
+
+function readReferenceView(): boolean {
+  try {
+    return localStorage.getItem(REFERENCE_VIEW_KEY) !== "submission";
+  } catch {
+    return true;
+  }
+}
+
 interface ReviewEditorProps {
   submissionId: string | null;
   setPage: (page: string) => void;
@@ -91,21 +109,71 @@ interface ReviewEditorProps {
 
 export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
   const submission = useSubmission(submissionId);
-  const [loadedDetail, setLoadedDetail] = useState<Submission | undefined>();
-  // 別の提出に切り替えた直後は、前の提出の詳細 (ファイル) を出さない。
-  const taskDetail = loadedDetail?.id === submission?.id ? loadedDetail : undefined;
+  const version = submission ? submissionVersion(submission) : null;
+  const [loadedDetail, setLoadedDetail] = useState<{ version: string; detail: Submission }>();
+  const taskDetail = loadedDetail?.version === version ? loadedDetail.detail : undefined;
   const fileSelectId = useId();
   const [selectedFile, setSelectedFile] = useState("");
+  const [loadedReference, setLoadedReference] = useState<{
+    version: string;
+    reference: SubmissionReference;
+  }>();
+  const referenceResult =
+    loadedReference?.version === version ? loadedReference.reference : undefined;
+  const reference = referenceResult?.available ? referenceResult : undefined;
+  const [referenceView, setReferenceView] = useState(readReferenceView);
+  const [referenceSelection, setReferenceSelection] = useState<{
+    version: string | null;
+    path: string;
+  }>();
+  const codeViewer = useRef<HTMLDivElement>(null);
+  const [evidenceJump, setEvidenceJump] = useState<{
+    version: string | null;
+    target: EvidenceRef;
+  }>();
+  const activeJump =
+    evidenceJump?.version === version && evidenceJump.target.file === selectedFile
+      ? evidenceJump
+      : undefined;
+
+  useEffect(() => {
+    if (!submission?.taskId || !version || submission.reviewSource === "manual") return;
+    let current = true;
+    void fetchSubmissionReference(submission.id)
+      .then((reference) => {
+        if (current) setLoadedReference({ version, reference });
+      })
+      .catch(() => {
+        if (current) {
+          setLoadedReference({
+            version,
+            reference: { available: false, reason: "参考の書き方を読み込めませんでした。" },
+          });
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [submission?.id, submission?.taskId, submission?.reviewSource, version]);
+
+  useEffect(() => {
+    if (!activeJump) return;
+    codeViewer.current
+      ?.querySelector(`[data-submission-line="${activeJump.target.startLine}"]`)
+      ?.scrollIntoView({ block: "center", inline: "nearest" });
+    const timer = window.setTimeout(() => setEvidenceJump(undefined), 2000);
+    return () => window.clearTimeout(timer);
+  }, [activeJump]);
   // 事後確認の操作のあとに取り直す (確認の記録・判定が変わる)。
   const [detailVersion, setDetailVersion] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: detailVersion は取り直しの合図
   useEffect(() => {
-    if (!submission?.taskId) return;
+    if (!submission?.taskId || !version) return;
     let current = true;
     void fetchSubmissionById(submission.id)
       .then((detail) => {
         if (current) {
-          setLoadedDetail(detail);
+          setLoadedDetail({ version, detail });
           setSelectedFile((prev) =>
             detail.taskFiles?.some((f) => f.path === prev)
               ? prev
@@ -119,7 +187,7 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
     return () => {
       current = false;
     };
-  }, [submission?.id, submission?.taskId, detailVersion]);
+  }, [submission?.id, submission?.taskId, detailVersion, version]);
   const reloadAfterCheck = useCallback(async () => {
     if (!submission) return;
     await refreshSubmission(submission.id);
@@ -250,6 +318,43 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
     [sourceCode, sourceFilename, fallbackLanguage],
   );
 
+  const fileLineCounts = useMemo(
+    () => new Map(taskDetail?.taskFiles?.map(({ path, text }) => [path, text.split("\n").length])),
+    [taskDetail?.taskFiles],
+  );
+  const evidenceLines = useMemo(
+    () => rubricEvidenceByLine(taskDetail?.aiReview?.rubricResults, selectedFile, fileLineCounts),
+    [taskDetail?.aiReview?.rubricResults, selectedFile, fileLineCounts],
+  );
+  const matchingReference = reference?.files.find((file) => file.path === selectedFile);
+  const chooseReferenceFile = !matchingReference && (reference?.files.length ?? 0) > 1;
+  const referenceFile = referenceView
+    ? (matchingReference ??
+      reference?.files.find(
+        (file) => referenceSelection?.version === version && file.path === referenceSelection?.path,
+      ) ??
+      reference?.files[0])
+    : undefined;
+  const referenceLines = useMemo(
+    () => (referenceFile ? highlightSubmission(referenceFile.text, referenceFile.path) : []),
+    [referenceFile],
+  );
+  const alignedBlocks = useMemo(
+    () =>
+      referenceFile
+        ? alignReference(codeLines, sourceFilename, referenceLines, referenceFile.path)
+        : [],
+    [codeLines, sourceFilename, referenceFile, referenceLines],
+  );
+  const setCodeView = (compare: boolean) => {
+    setReferenceView(compare);
+    try {
+      localStorage.setItem(REFERENCE_VIEW_KEY, compare ? "reference" : "submission");
+    } catch {
+      // 保存できない環境でも、開いている画面では切り替えられる。
+    }
+  };
+
   if (!submissionId || !submission) {
     return (
       <div className="p-7 text-center text-ink-3">
@@ -299,7 +404,11 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
   const maxScore = rubric.reduce((a, r) => a + r.max, 0);
   const pct = maxScore ? Math.round((totalScore / maxScore) * 100) : 0;
 
-  const commentedLines = new Set(suggestions.filter((s) => s.adopted === true).map((s) => s.line));
+  const lineMarks: SubmissionLineMarks = {
+    commentedLines: new Set(suggestions.filter((s) => s.adopted === true).map((s) => s.line)),
+    evidenceLines,
+    activeEvidence: activeJump?.target,
+  };
 
   // まだ誰も確定していない提出は「確定しなかったときだけ確定」にする (別の講師が先に確定して
   // いれば 409 でキューに戻す)。確定済みの提出の訂正は従来どおり上書きする。
@@ -552,7 +661,10 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 <NativeSelect
                   id={fileSelectId}
                   value={selectedFile}
-                  onChange={(e) => setSelectedFile(e.target.value)}
+                  onChange={(e) => {
+                    setEvidenceJump(undefined);
+                    setSelectedFile(e.target.value);
+                  }}
                   size="sm"
                 >
                   {taskDetail?.taskFiles?.map((f) => (
@@ -568,48 +680,129 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
               {submission.explanation}
             </p>
           ) : null}
-          <div className="px-4 sm:px-5 py-2.5 border-b border-border bg-card flex items-center gap-1.5">
+          <div className="px-4 sm:px-5 py-2.5 border-b border-border bg-card flex flex-wrap items-center gap-1.5">
             <Badge>提出コード</Badge>
-            <div className="flex-1" />
             <span className="text-[11.5px] text-ink-3">{codeLines.length}行</span>
-          </div>
-          <div className="flex-1 overflow-auto font-mono text-[12.5px] leading-[1.6] py-3.5 code-viewer-bg max-lg:max-h-[60vh]">
-            {codeLines.map((line, i) => {
-              const lineNum = i + 1;
-              const isCommented = commentedLines.has(lineNum);
-              return (
-                <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: 行番号が同一性
-                  key={i}
-                  className={cn(
-                    "flex gap-4 px-4 sm:px-5 relative",
-                    isCommented ? "code-viewer-commented" : "code-viewer-hover",
-                  )}
+            <div className="flex-1" />
+            {evidenceLines.size > 0 ? (
+              <span className="flex items-center gap-1 text-[11.5px] text-ink-3">
+                <span aria-hidden="true" className="size-3 rounded-sm bg-warning-soft" />
+                AI が根拠にした行
+              </span>
+            ) : null}
+            {reference?.files.length ? (
+              <fieldset
+                aria-label="コードの表示"
+                className="inline-flex min-w-0 gap-0.5 rounded-md border border-border bg-muted p-0.5"
+              >
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={referenceView ? "ghost" : "default"}
+                  aria-pressed={!referenceView}
+                  onClick={() => setCodeView(false)}
                 >
-                  <div
-                    className={cn(
-                      "w-[30px] text-right shrink-0 select-none",
-                      isCommented ? "code-viewer-ln-commented" : "code-viewer-ln",
-                    )}
+                  提出だけ
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={referenceView ? "default" : "ghost"}
+                  aria-pressed={referenceView}
+                  onClick={() => setCodeView(true)}
+                >
+                  参考と並べる
+                </Button>
+              </fieldset>
+            ) : null}
+          </div>
+          {referenceResult && (!referenceResult.available || !referenceResult.files.length) ? (
+            <p
+              role="status"
+              className="px-4 sm:px-5 py-2 text-xs text-ink-3 border-b border-border"
+            >
+              {referenceResult.available
+                ? "この課題の解答例が見つかりません。"
+                : referenceResult.reason}
+            </p>
+          ) : null}
+          {referenceFile && reference ? (
+            <div className="grid min-w-0 grid-cols-1 border-b border-border bg-card lg:grid-cols-2">
+              <div className="hidden px-4 sm:px-5 py-2 text-xs font-semibold lg:block">
+                提出コード
+              </div>
+              <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 px-4 sm:px-5 py-2 text-xs lg:border-l lg:border-border">
+                <span className="font-semibold text-brand-ink">参考の書き方</span>
+                <span className="min-w-0 break-words text-ink-3">
+                  解答例 ·{" "}
+                  {reference.version === "submitted" ? "提出時の版" : (reference.note ?? "今の版")}{" "}
+                  · 受講者には表示しません
+                </span>
+                {chooseReferenceFile ? (
+                  <NativeSelect
+                    aria-label="参考のファイル"
+                    size="sm"
+                    value={referenceFile.path}
+                    onChange={(e) => setReferenceSelection({ version, path: e.target.value })}
                   >
-                    {lineNum}
-                  </div>
-                  <code className="flex-1 whitespace-pre">
-                    {line.map((segment, index) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: トークンの位置が同一性
-                      <span key={index} className={segment.className || undefined}>
-                        {segment.text}
-                      </span>
+                    {reference.files.map(({ path }) => (
+                      <option key={path} value={path}>
+                        {path}
+                      </option>
                     ))}
-                  </code>
-                  {isCommented ? (
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 code-comment-indicator text-[10px] px-1.5 py-[1px] rounded-lg font-semibold">
-                      レビュー
-                    </span>
-                  ) : null}
-                </div>
-              );
-            })}
+                  </NativeSelect>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          <div
+            ref={codeViewer}
+            className={cn(
+              "flex-1 overflow-auto font-mono text-[12.5px] leading-[1.6] code-viewer-bg max-lg:max-h-[60vh]",
+              referenceFile ? "lg:max-h-[calc(100vh-14rem)]" : "py-3.5",
+            )}
+          >
+            {referenceFile
+              ? alignedBlocks.map(({ submitted, reference: counterpart }) => (
+                  <div
+                    key={submitted?.startLine ?? `reference-${counterpart?.startLine}`}
+                    className="grid grid-cols-1 border-b border-border/60 last:border-b-0 lg:grid-cols-2"
+                  >
+                    <div
+                      className={cn(
+                        "min-w-0 overflow-x-auto py-2",
+                        !submitted && "hidden lg:block",
+                      )}
+                    >
+                      {submitted ? (
+                        <>
+                          <div className="px-4 sm:px-5 text-xs font-sans text-white/70 lg:hidden">
+                            提出
+                          </div>
+                          {renderCodeLines(
+                            codeLines,
+                            submitted.startLine,
+                            submitted.endLine,
+                            lineMarks,
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 overflow-x-auto border-t border-border/60 bg-brand/5 py-2 lg:border-l lg:border-t-0">
+                      <div className="px-4 sm:px-5 text-xs font-sans text-white/70 lg:hidden">
+                        参考
+                      </div>
+                      {counterpart ? (
+                        renderCodeLines(referenceLines, counterpart.startLine, counterpart.endLine)
+                      ) : (
+                        <p className="px-4 sm:px-5 font-sans text-xs text-white/60">
+                          参考にはありません
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              : renderCodeLines(codeLines, 1, codeLines.length, lineMarks)}
           </div>
         </div>
 
@@ -679,6 +872,11 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                   <AiReviewPanel
                     status={taskDetail?.aiReviewStatus ?? submission.aiReviewStatus}
                     review={taskDetail?.aiReview}
+                    fileLineCounts={fileLineCounts}
+                    onJumpToEvidence={(target) => {
+                      setSelectedFile(target.file);
+                      setEvidenceJump({ version, target });
+                    }}
                     onUseReply={(text) => {
                       setNotes(text);
                       setTab("comment");
@@ -755,6 +953,16 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                     </div>
                   </div>
                 ))}
+                {reference?.reviewGuide.trim() ? (
+                  <details className="mt-4 rounded-md border border-border p-3">
+                    <summary className="cursor-pointer text-xs font-semibold">
+                      この課題のレビューの観点 (private/review.md)
+                    </summary>
+                    <div className="mt-3 break-words">
+                      <LessonMarkdown>{reference.reviewGuide}</LessonMarkdown>
+                    </div>
+                  </details>
+                ) : null}
               </TabsContent>
 
               <TabsContent
@@ -891,6 +1099,83 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
     </div>
   );
 };
+
+interface SubmissionLineMarks {
+  commentedLines: ReadonlySet<number>;
+  evidenceLines: ReadonlyMap<number, ReadonlySet<string>>;
+  activeEvidence: EvidenceRef | undefined;
+}
+
+function renderCodeLines(
+  lines: CodeSegment[][],
+  startLine: number,
+  endLine: number,
+  marks?: SubmissionLineMarks,
+) {
+  return (
+    <div className="min-w-full w-max">
+      {lines.slice(startLine - 1, endLine).map((segments, index) => {
+        const line = startLine + index;
+        const isCommented = marks?.commentedLines.has(line);
+        const evidenceLabels = marks?.evidenceLines.get(line);
+        const active = marks?.activeEvidence;
+        const isJumped = active && line >= active.startLine && line <= active.endLine;
+        return (
+          <div
+            key={line}
+            data-submission-line={marks ? line : undefined}
+            className={cn(
+              "relative flex items-baseline gap-4 px-4 sm:px-5",
+              evidenceLabels
+                ? "bg-warning-soft"
+                : isCommented
+                  ? "code-viewer-commented"
+                  : "code-viewer-hover",
+              isJumped && "ring-1 ring-inset ring-warning",
+            )}
+          >
+            <div
+              className={cn(
+                "w-[30px] text-right shrink-0 select-none",
+                isCommented ? "code-viewer-ln-commented" : "code-viewer-ln",
+              )}
+            >
+              {line}
+            </div>
+            <code className="flex-1 whitespace-pre">
+              {segments.map((segment, tokenIndex) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: トークンの位置が同一性
+                <span key={tokenIndex} className={segment.className || undefined}>
+                  {segment.text}
+                </span>
+              ))}
+            </code>
+            {isCommented && !evidenceLabels?.size ? (
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 code-comment-indicator text-[10px] px-1.5 py-[1px] rounded-lg font-semibold">
+                レビュー
+              </span>
+            ) : null}
+            {evidenceLabels?.size ? (
+              <div className="sticky right-2 flex shrink-0 items-center gap-1.5 whitespace-nowrap font-sans text-[10px] font-semibold">
+                {isCommented ? (
+                  <span className="code-comment-indicator rounded-lg px-1.5">レビュー</span>
+                ) : null}
+                {[...evidenceLabels].map((label) => (
+                  <span
+                    key={label}
+                    className="rounded-lg border border-warning/50 bg-card px-1.5 text-warning"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /**
  * VS Code から引き継がれた提出に付く自動採点の記録 (Issue #9)。
