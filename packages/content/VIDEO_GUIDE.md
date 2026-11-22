@@ -154,7 +154,7 @@
 
 `video.json` の schema 2 で、場面に `kind: "motion"` と、使う動きの ID を `motion` に書きます。たとえば `"motion": "vending-change"` は自動販売機のお釣りを見せる動きです。この動きでは、`beats` に通常の読み上げを順に 5 文書きます。`term` や `dialog` を出す文は、この 5 文とは別に足せます。各文に書ける項目は `say`・`speech`・`pause`・`term`・`dialog` です。
 
-使える動きは次の 8 つです。
+使える動きは次の 14 個です。
 
 | ID | 題名 |
 | --- | --- |
@@ -166,6 +166,12 @@
 | `test-total` | テストの合計点 |
 | `onigiri-times` | おにぎり 3 個の値段 |
 | `age-floor` | 年齢の数え方 |
+| `pizza-share` | ピザを 4 人で分ける |
+| `bus-seats` | 遠足のバスの台数 |
+| `route-search` | 乗り換え案内の入力 |
+| `shopping-order` | パンと牛乳の買い物 |
+| `candy-rest` | あめを 3 人で分ける |
+| `platform-sign` | 駅ののりば案内 |
 
 新しい動きを加えるときは、`remotion/motions/manifest.ts` に ID・題名・通常の読み上げ文の数を書きます。`seconds` には、通常の読み上げ文ごとに設計上の長さを秒で並べます。動きの開始時刻は `beatClock` で求めると、短い文に合わせて開始時刻の間隔が縮まります。同じ ID で `remotion/motions/index.ts` に部品と、その絵に出る文字を登録します。部品は `beats`（文の開始と終了）と `duration`（場面の長さ）を秒で受け取り、1920×1080 の SVG を返します。
 

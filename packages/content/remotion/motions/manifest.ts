@@ -7,6 +7,12 @@ export const MOTIONS = {
   "test-total": { title: "テストの合計点", beats: 4, seconds: [2.5, 2.2, 4.0, 2.2] },
   "onigiri-times": { title: "おにぎり 3 個の値段", beats: 4, seconds: [2.5, 3.0, 3.0, 1.8] },
   "age-floor": { title: "年齢の数え方", beats: 4, seconds: [2.5, 3.0, 3.2, 2.4] },
+  "pizza-share": { title: "ピザを 4 人で分ける", beats: 5, seconds: [2.5, 2.2, 3.5, 2.8, 1.8] },
+  "bus-seats": { title: "遠足のバスの台数", beats: 5, seconds: [2.5, 1.8, 3.2, 2.4, 2.4] },
+  "route-search": { title: "乗り換え案内の入力", beats: 5, seconds: [2.5, 2.6, 1.6, 2.2, 2.2] },
+  "shopping-order": { title: "パンと牛乳の買い物", beats: 5, seconds: [2.5, 3.0, 2.0, 2.2, 1.8] },
+  "candy-rest": { title: "あめを 3 人で分ける", beats: 4, seconds: [2.5, 2.2, 3.0, 2.2] },
+  "platform-sign": { title: "駅ののりば案内", beats: 4, seconds: [2.5, 1.4, 3.6, 1.8] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;

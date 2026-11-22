@@ -1,0 +1,933 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "パーセントを使った式を読んで、割り算の余りを言える。",
+    "stuck": "% を割合の記号だと思っていて、余りを求める書き方を知らない。",
+    "points": ["割り算の余りは、パーセントという記号で求める。割り切れるときの余りは 0。"],
+    "leaveOut": [
+      "負の数や小数の余り",
+      "偶数・奇数の判定の書き方 (条件分岐)",
+      "0 で割ったときの結果",
+      "問3の答えのコード"
+    ]
+  },
+  "art": {
+    "eggbasket": {
+      "prompt": "A basket full of white eggs. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "carton": {
+      "prompt": "Three egg cartons side by side, each completely filled with four eggs. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "twoeggs": {
+      "prompt": "Two loose eggs resting in a small bowl. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "monthcal": {
+      "prompt": "A wall calendar page with a blank grid of day squares, no numbers. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "weekrows": {
+      "prompt": "Four horizontal strips, each made of seven joined squares, stacked in rows. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "twodays": {
+      "prompt": "Two separate blank calendar squares side by side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "timer": {
+      "prompt": "A kitchen timer and a round clock without numbers side by side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "evenodd": {
+      "prompt": "Pairs of socks neatly matched in a row, with one single sock left over at the end. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "tiles": {
+      "prompt": "Square tiles being laid in neat rows on a floor, with a few spare tiles stacked at the side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "wallclock": {
+      "prompt": "One round wall clock with two hands and tick marks but no numbers. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "typist": {
+      "prompt": "Two hands typing on a laptop keyboard, the screen showing a few placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "bubble": {
+      "prompt": "One large rounded speech bubble filled with two thick placeholder lines. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "egg": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "卵",
+          "art": "eggbasket",
+          "at": [1, 1]
+        },
+        {
+          "id": "pack",
+          "label": "4個ずつ詰める",
+          "art": "carton",
+          "at": [3, 1]
+        },
+        {
+          "id": "rest",
+          "label": "残った卵",
+          "art": "twoeggs",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "e1",
+          "from": "all",
+          "to": "pack",
+          "label": "詰める"
+        },
+        {
+          "id": "e2",
+          "from": "pack",
+          "to": "rest",
+          "label": "余り"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "week": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "w1",
+          "label": "日数",
+          "art": "monthcal",
+          "at": [1, 1]
+        },
+        {
+          "id": "w2",
+          "label": "週にまとめる",
+          "art": "weekrows",
+          "at": [3, 1]
+        },
+        {
+          "id": "w3",
+          "label": "残りの日数",
+          "art": "twodays",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "wa",
+          "from": "w1",
+          "to": "w2",
+          "label": "まとめる"
+        },
+        {
+          "id": "wb",
+          "from": "w2",
+          "to": "w3",
+          "label": "余り"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "残りの分",
+          "art": "timer",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "割り切れるか",
+          "art": "tiles",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "偶数と奇数",
+          "art": "evenodd",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task3": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "min",
+          "label": "分の数",
+          "art": "wallclock",
+          "at": [1, 1]
+        },
+        {
+          "id": "mfn",
+          "label": "文字にする関数",
+          "art": "typist",
+          "at": [3, 1]
+        },
+        {
+          "id": "mout",
+          "label": "文字列",
+          "art": "bubble",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "mgive",
+          "from": "min",
+          "to": "mfn",
+          "label": "渡す"
+        },
+        {
+          "id": "mback",
+          "from": "mfn",
+          "to": "mout",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "candy-rest",
+      "beats": [
+        {
+          "say": "この動画では、余りの求め方を学びます。"
+        },
+        {
+          "say": "あめが10個あり、分ける相手は3人です。",
+          "speech": "あめが十個あり、分ける相手は三人です。"
+        },
+        {
+          "say": "3個ずつ配ると、1個だけ残りました。",
+          "speech": "三個ずつ配ると、一個だけ残りました。"
+        },
+        {
+          "say": "分けきれずに残った数が、余りです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "packing",
+      "role": "example",
+      "title": "卵をパックに詰める",
+      "board": "egg",
+      "beats": [
+        {
+          "say": "卵が、14個あります。",
+          "speech": "卵が、十四個あります。",
+          "show": ["all"],
+          "tag": {
+            "all": "14個"
+          },
+          "pulse": ["all"]
+        },
+        {
+          "say": "これを、4個入りのパックに詰めていきましょう。",
+          "speech": "これを、四個入りのパックに詰めていきましょう。",
+          "show": ["e1", "pack"],
+          "travel": {
+            "along": ["e1"],
+            "icon": "send"
+          },
+          "pulse": ["pack"]
+        },
+        {
+          "say": "パックは、3つできました。",
+          "speech": "パックは、みっつできました。",
+          "tag": {
+            "pack": "3パック"
+          }
+        },
+        {
+          "say": "詰めた卵は12個なので、2個が残ります。",
+          "speech": "詰めた卵は十二個なので、二個が残ります。",
+          "show": ["e2", "rest"],
+          "tag": {
+            "rest": "2個"
+          },
+          "travel": {
+            "along": ["e2"],
+            "icon": "send"
+          },
+          "pulse": ["rest"]
+        },
+        {
+          "say": "割り算で分けたあとに残る数が、余りです。",
+          "term": {
+            "text": "余り",
+            "ruby": "あまり",
+            "note": "割ったあとに残る数"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "kind": "code",
+      "role": "syntax",
+      "title": "余りはパーセント",
+      "code": ["// 余り left を作り、14 を 4 で割った余りを入れる", "const left = 14 % 4;"],
+      "panel": {
+        "kind": "figure",
+        "board": "egg"
+      },
+      "beats": [
+        {
+          "say": "余りを求めるコードは、こう書きます。",
+          "type": [0, 1],
+          "figure": {
+            "tag": {
+              "all": "14",
+              "pack": "4個ずつ"
+            },
+            "untag": ["rest"]
+          }
+        },
+        {
+          "say": "使う記号は、パーセントです。",
+          "part": {
+            "line": 1,
+            "text": "%",
+            "note": "余り"
+          },
+          "figure": {
+            "pulse": ["pack"]
+          }
+        },
+        {
+          "say": "ここでは、割合という意味では使いません。",
+          "focus": [1]
+        },
+        {
+          "say": "14 を 4 で割った余りが、left に入ります。",
+          "speech": "十四をよんで割った余りが、レフトに入ります。",
+          "part": {
+            "line": 1,
+            "text": "14 % 4"
+          },
+          "figure": {
+            "travel": {
+              "along": ["e1", "e2"]
+            },
+            "pulse": ["rest"]
+          }
+        },
+        {
+          "say": "left は、残りという意味の英語です。",
+          "speech": "レフトは、残りという意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "left",
+            "note": "残り"
+          }
+        },
+        {
+          "say": "変数 left の中身は、2 になりました。",
+          "speech": "変数レフトの中身は、にになりました。",
+          "figure": {
+            "tag": {
+              "rest": "2"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "zero",
+      "kind": "code",
+      "role": "note",
+      "title": "割り切れるとき",
+      "code": ["// 余り left を作り、12 を 4 で割った余りを入れる", "const left = 12 % 4;"],
+      "reset": true,
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "egg"
+      },
+      "beats": [
+        {
+          "say": "割り切れるときも、確かめておきましょう。",
+          "figure": {
+            "show": ["all", "e1", "pack", "e2", "rest"],
+            "tag": {
+              "all": "12"
+            },
+            "untag": ["rest"],
+            "pulse": ["all"]
+          }
+        },
+        {
+          "say": "12個の卵は、3つのパックにちょうど収まります。",
+          "speech": "十二個の卵は、みっつのパックにちょうど収まります。",
+          "part": {
+            "line": 1,
+            "text": "12 % 4"
+          },
+          "figure": {
+            "tag": {
+              "pack": "3パック"
+            },
+            "travel": {
+              "along": ["e1"]
+            },
+            "pulse": ["pack"]
+          }
+        },
+        {
+          "say": "残る卵は、ありません。",
+          "figure": {
+            "pulse": ["rest"]
+          }
+        },
+        {
+          "say": "このとき、余りは 0 です。",
+          "speech": "このとき、余りはゼロです。",
+          "figure": {
+            "tag": {
+              "rest": "0"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "both",
+      "kind": "code",
+      "role": "note",
+      "title": "割り算と並べる",
+      "code": [
+        "// パックの数 packs を作る",
+        "const packs = Math.floor(14 / 4);",
+        "// 残りの数 left を作る",
+        "const left = 14 % 4;"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "egg"
+      },
+      "beats": [
+        {
+          "say": "割り算と余りを、並べて見てみます。",
+          "type": [0, 1, 2, 3],
+          "figure": {
+            "show": ["all", "e1", "pack", "e2", "rest"],
+            "tag": {
+              "all": "14"
+            },
+            "untag": ["pack", "rest"]
+          }
+        },
+        {
+          "say": "スラッシュで求めたのは、何パックできるかです。",
+          "part": {
+            "line": 1,
+            "text": "14 / 4"
+          },
+          "figure": {
+            "pulse": ["pack"]
+          }
+        },
+        {
+          "say": "小数になるので、Math.floor で切り捨てました。",
+          "speech": "小数になるので、マスフロアで切り捨てました。",
+          "part": {
+            "line": 1,
+            "text": "Math.floor"
+          },
+          "figure": {
+            "tag": {
+              "pack": "3パック"
+            }
+          }
+        },
+        {
+          "say": "パーセントで求めるのは、残りの数です。",
+          "part": {
+            "line": 3,
+            "text": "14 % 4"
+          },
+          "figure": {
+            "tag": {
+              "rest": "2個"
+            },
+            "pulse": ["rest"]
+          }
+        },
+        {
+          "say": "2つを合わせると、3パックと2個だと分かります。",
+          "speech": "ふたつを合わせると、三パックと二個だと分かります。",
+          "figure": {
+            "pulse": ["pack", "rest"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数の中で余りを求める",
+      "code": [
+        "// 卵の数を受け取り、パックに入らない残りの数を返す関数",
+        "function leftEggs(eggs: number): number {",
+        "  // 4 個入りのパックに詰めた残りを返す",
+        "  return eggs % 4;",
+        "}",
+        "// 14 個を渡して、関数を呼ぶ",
+        "leftEggs(14);"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "egg"
+      },
+      "beats": [
+        {
+          "say": "卵の数を受け取る関数にしてみましょう。",
+          "type": [0, 1, 2, 3, 4],
+          "figure": {
+            "show": ["all", "e1", "pack", "e2", "rest"],
+            "tag": {
+              "all": "eggs",
+              "pack": "4個ずつ"
+            },
+            "untag": ["rest"]
+          }
+        },
+        {
+          "say": "受け取った数を 4 で割り、その余りを返します。",
+          "speech": "受け取った数をよんで割り、その余りを返します。",
+          "part": {
+            "line": 3,
+            "text": "eggs % 4"
+          },
+          "figure": {
+            "pulse": ["pack"]
+          }
+        },
+        {
+          "say": "14 を渡して、この関数を呼び出しました。",
+          "speech": "十四を渡して、この関数を呼び出しました。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "all": "14"
+            },
+            "pulse": ["all"]
+          }
+        },
+        {
+          "say": "戻ってくるのは、余りの 2 です。",
+          "speech": "戻ってくるのは、余りのにです。",
+          "focus": [6],
+          "figure": {
+            "tag": {
+              "rest": "2"
+            },
+            "travel": {
+              "along": ["e1", "e2"]
+            },
+            "pulse": ["rest"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 卵の数を受け取り、パックに入らない残りの数を返す関数",
+        "function leftEggs(eggs: number): number {",
+        "  // 4 個入りのパックに詰めた残りを返す",
+        "  return eggs % 4;",
+        "}",
+        "// 14 個を渡して、関数を呼ぶ",
+        "leftEggs(14);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この関数も、2つに分けて見てみましょう。",
+          "speech": "この関数も、二つに分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "パーセントは、言語で決まっている記号です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "%"
+              },
+              {
+                "line": 3,
+                "text": "return"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "leftEggs と eggs は、自分で付けました。",
+          "speech": "レフトエッグズとエッグズは、自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "leftEggs"
+              },
+              {
+                "line": 6,
+                "text": "leftEggs"
+              },
+              {
+                "line": 1,
+                "text": "eggs"
+              },
+              {
+                "line": 3,
+                "text": "eggs"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "パックに入る 4 という数も、自分で決めた値です。",
+          "speech": "パックに入るよんという数も、自分で決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "4"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻ってくる値はいくつ",
+      "code": [
+        "// 日数を受け取り、週にまとめた残りの日数を返す関数",
+        "function restDays(days: number): number {",
+        "  // 1 週間は 7 日なので、7 で割った余りを返す",
+        "  return days % 7;",
+        "}",
+        "// 30 日を渡して、関数を呼ぶ",
+        "restDays(30);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "week"
+      },
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["w1", "wa", "w2", "wb", "w3"]
+          }
+        },
+        {
+          "say": "日数を週にまとめる関数を、用意しました。",
+          "part": {
+            "line": 1,
+            "text": "restDays"
+          },
+          "figure": {
+            "pulse": ["w2"]
+          }
+        },
+        {
+          "say": "1週間は、7日です。",
+          "speech": "一週間は、七日です。",
+          "part": {
+            "line": 3,
+            "text": "days % 7"
+          },
+          "figure": {
+            "tag": {
+              "w2": "7日ずつ"
+            }
+          }
+        },
+        {
+          "say": "この関数に、30 を渡して呼び出します。",
+          "speech": "この関数に、三十を渡して呼び出します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "w1": "30日"
+            },
+            "pulse": ["w1"]
+          }
+        },
+        {
+          "say": "戻ってくる値は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "w3",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["w3"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 日数を受け取り、週にまとめた残りの日数を返す関数",
+        "function restDays(days: number): number {",
+        "  // 1 週間は 7 日なので、7 で割った余りを返す",
+        "  return days % 7;",
+        "}",
+        "// 30 日を渡して、関数を呼ぶ",
+        "restDays(30);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "week"
+      },
+      "beats": [
+        {
+          "say": "答えは、2 です。",
+          "speech": "答えは、にです。",
+          "figure": {
+            "tag": {
+              "w3": "2日"
+            },
+            "mark": [
+              {
+                "on": "w3",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["w3"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "まとめたあとの残り",
+      "code": [
+        "// 日数を受け取り、週にまとめた残りの日数を返す関数",
+        "function restDays(days: number): number {",
+        "  // 1 週間は 7 日なので、7 で割った余りを返す",
+        "  return days % 7;",
+        "}",
+        "// 30 日を渡して、関数を呼ぶ",
+        "restDays(30);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "week"
+      },
+      "beats": [
+        {
+          "say": "30日の中に、7日のまとまりは4つ入ります。",
+          "speech": "三十日の中に、七日のまとまりはよっつ入ります。",
+          "part": {
+            "line": 3,
+            "text": "days % 7"
+          },
+          "figure": {
+            "tag": {
+              "w2": "4週間"
+            },
+            "pulse": ["w2"]
+          }
+        },
+        {
+          "say": "4週間ぶんの日数は、28日です。",
+          "speech": "四週間ぶんの日数は、二十八日です。",
+          "figure": {
+            "tag": {
+              "w2": "28日"
+            }
+          }
+        },
+        {
+          "say": "30 から 28 を引くと、2 が残ります。",
+          "speech": "三十から二十八を引くと、にが残ります。",
+          "figure": {
+            "travel": {
+              "along": ["wb"]
+            },
+            "pulse": ["w3"]
+          }
+        },
+        {
+          "say": "この残りの 2 が、7 で割った余りです。",
+          "speech": "この残りのにが、ななで割った余りです。",
+          "focus": [3],
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "余りを使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "余りは、まとめたあとの残りを知りたい場面で使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "分を時間に直したときの残りの分は、その代表です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "余りが 0 かどうかで、割り切れるかも分かります。",
+          "speech": "余りがゼロかどうかで、割り切れるかも分かります。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "偶数か奇数かの判定に使うのも、2 で割った余りです。",
+          "speech": "偶数か奇数かの判定に使うのも、にで割った余りです。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問3で使う",
+      "code": [
+        "// 問3 分を「◯時間◯分」の文字列にする",
+        "//     例: minutesToText(125) → \"2時間5分\"",
+        "export function minutesToText(minutes: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task3"
+      },
+      "beats": [
+        {
+          "say": "問3では、分を時間と残りの分に分けます。",
+          "speech": "問さんでは、分を時間と残りの分に分けます。",
+          "figure": {
+            "show": ["min", "mgive", "mfn", "mback", "mout"]
+          }
+        },
+        {
+          "say": "125分は、2時間と5分です。",
+          "speech": "百二十五分は、二時間と五分です。",
+          "part": {
+            "line": 1,
+            "text": "minutesToText(125)"
+          },
+          "figure": {
+            "tag": {
+              "min": "125分"
+            },
+            "pulse": ["min"]
+          }
+        },
+        {
+          "say": "残りの分を求めるときに、余りが使えます。",
+          "figure": {
+            "tag": {
+              "mfn": "余りを使う"
+            },
+            "pulse": ["mfn"]
+          }
+        },
+        {
+          "say": "何で割った余りなのかを、考えてみてください。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

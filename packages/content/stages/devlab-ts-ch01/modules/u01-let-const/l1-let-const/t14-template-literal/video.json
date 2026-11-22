@@ -1,0 +1,931 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "テンプレートリテラルの 1 行を読んで、できあがる文字列を言える。",
+    "stuck": "バッククォートと引用符の違いを知らず、ドル記号と波かっこが何を表すのか分からない。",
+    "points": [
+      "全体をバッククォートで囲み、ドル記号と波かっこの中に書いた値が、文字列に埋め込まれる。"
+    ],
+    "leaveOut": [
+      "波かっこの中に計算を書く例",
+      "複数行の文字列",
+      "文字列を + でつなぐ書き方の詳しい説明",
+      "バッククォートのキーの位置 (まとめで扱う)",
+      "問3の答えのコード"
+    ]
+  },
+  "art": {
+    "tile": {
+      "prompt": "One small rounded tile with a thick placeholder mark on it, held between two fingers. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "slotcard": {
+      "prompt": "One message card made of thick placeholder lines with one empty highlighted slot in the middle of a line. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "donecard": {
+      "prompt": "One message card made of thick placeholder lines with one coloured tile fitted neatly into the middle of a line. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "badge": {
+      "prompt": "One blank name badge on a clip with one short placeholder line. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "giftslot": {
+      "prompt": "One gift tag card on a string with one empty highlighted slot followed by a short placeholder line. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "giftdone": {
+      "prompt": "One gift tag card on a string tied to a wrapped present, with a coloured tile fitted into the tag. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "confirm": {
+      "prompt": "A smartphone showing an order confirmation screen made of placeholder lines with a round check mark circle at the top. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "pricescreen": {
+      "prompt": "A shop cash register display showing one thick placeholder bar, with a blank receipt coming out. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "timeboard": {
+      "prompt": "A station departure board made of rows of placeholder bars, with a round clock without numbers above it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "wallclock": {
+      "prompt": "One round wall clock with two hands and tick marks but no numbers. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "typist": {
+      "prompt": "Two hands typing on a laptop keyboard, the screen showing a few placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "bubble": {
+      "prompt": "One large rounded speech bubble filled with two thick placeholder lines. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "fill": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "val",
+          "label": "入れる値",
+          "art": "tile",
+          "at": [1, 1]
+        },
+        {
+          "id": "tpl",
+          "label": "穴のある文",
+          "art": "slotcard",
+          "at": [3, 1]
+        },
+        {
+          "id": "msg",
+          "label": "できた文",
+          "art": "donecard",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "put",
+          "from": "val",
+          "to": "tpl",
+          "label": "埋め込む"
+        },
+        {
+          "id": "done",
+          "from": "tpl",
+          "to": "msg",
+          "label": "完成"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "tag": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "g1",
+          "label": "名前",
+          "art": "badge",
+          "at": [1, 1]
+        },
+        {
+          "id": "g2",
+          "label": "穴のある宛名",
+          "art": "giftslot",
+          "at": [3, 1]
+        },
+        {
+          "id": "g3",
+          "label": "できた文字列",
+          "art": "giftdone",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ga",
+          "from": "g1",
+          "to": "g2",
+          "label": "埋め込む"
+        },
+        {
+          "id": "gb",
+          "from": "g2",
+          "to": "g3",
+          "label": "完成"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "注文の確認",
+          "art": "confirm",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "金額の表示",
+          "art": "pricescreen",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "時刻の表示",
+          "art": "timeboard",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task3": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "min",
+          "label": "分の数",
+          "art": "wallclock",
+          "at": [1, 1]
+        },
+        {
+          "id": "mfn",
+          "label": "文字にする関数",
+          "art": "typist",
+          "at": [3, 1]
+        },
+        {
+          "id": "mout",
+          "label": "文字列",
+          "art": "bubble",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "mgive",
+          "from": "min",
+          "to": "mfn",
+          "label": "渡す"
+        },
+        {
+          "id": "mback",
+          "from": "mfn",
+          "to": "mout",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "platform-sign",
+      "beats": [
+        {
+          "say": "この動画では、文字列に値を埋め込む方法を学びます。"
+        },
+        {
+          "say": "駅の案内は、毎回ほとんど同じ文です。"
+        },
+        {
+          "say": "変わるのは、何番線かという数だけでした。"
+        },
+        {
+          "say": "決まった文の穴に値を入れると、案内が完成します。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "slot",
+      "role": "example",
+      "title": "文に穴を空けておく",
+      "board": "fill",
+      "beats": [
+        {
+          "say": "通知の文は、毎回ほとんど同じです。",
+          "show": ["tpl"],
+          "tag": {
+            "tpl": "◯冊注文"
+          },
+          "pulse": ["tpl"]
+        },
+        {
+          "say": "注文ごとに変わるのは、冊数の部分だけでした。",
+          "pulse": ["tpl"],
+          "mark": [
+            {
+              "on": "tpl",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、冊数を入れる穴を空けた文を用意します。",
+          "show": ["val"],
+          "tag": {
+            "val": "3"
+          },
+          "pulse": ["val"]
+        },
+        {
+          "say": "この穴に 3 を入れると、文が完成です。",
+          "speech": "この穴にさんを入れると、文が完成です。",
+          "show": ["put", "done", "msg"],
+          "tag": {
+            "msg": "3冊注文"
+          },
+          "travel": {
+            "along": ["put", "done"],
+            "icon": "send"
+          },
+          "pulse": ["msg"]
+        },
+        {
+          "say": "穴に値を入れることを、埋め込むと言います。",
+          "pulse": [],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "backtick",
+      "kind": "code",
+      "role": "syntax",
+      "title": "バッククォートで囲む",
+      "code": [
+        "// 冊数 count を作り、3 を入れる",
+        "const count = 3;",
+        "// 案内文 message を作り、冊数を埋め込む",
+        "const message = `ノートを${count}冊注文しました`;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "fill"
+      },
+      "beats": [
+        {
+          "say": "値を埋め込む文字列を、書いてみます。",
+          "type": [0, 1, 2, 3],
+          "figure": {
+            "untag": ["tpl", "msg"],
+            "tag": {
+              "val": "count"
+            }
+          }
+        },
+        {
+          "say": "全体を囲んでいるのは、引用符ではありません。",
+          "part": {
+            "line": 3,
+            "text": "`"
+          },
+          "figure": {
+            "pulse": ["tpl"]
+          }
+        },
+        {
+          "say": "この記号を、バッククォートと呼びます。",
+          "term": {
+            "text": "バッククォート",
+            "note": "埋め込む文字列を囲む記号"
+          },
+          "pause": 1
+        },
+        {
+          "say": "穴にあたるのが、ドル記号と波かっこです。",
+          "part": {
+            "line": 3,
+            "text": "${count}",
+            "note": "値を入れる穴"
+          },
+          "figure": {
+            "pulse": ["val"]
+          }
+        },
+        {
+          "say": "波かっこの中に、埋め込みたい変数を書きます。",
+          "part": {
+            "line": 3,
+            "text": "count"
+          },
+          "pause": 1
+        },
+        {
+          "say": "この書き方の名前は、テンプレートリテラルです。",
+          "term": {
+            "text": "テンプレートリテラル",
+            "note": "値を埋め込める文字列"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "kind": "code",
+      "role": "syntax",
+      "title": "穴が値に置きかわる",
+      "code": [
+        "// 冊数 count を作り、3 を入れる",
+        "const count = 3;",
+        "// 案内文 message を作り、冊数を埋め込む",
+        "const message = `ノートを${count}冊注文しました`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fill"
+      },
+      "beats": [
+        {
+          "say": "count の中身は、3 でした。",
+          "speech": "カウントの中身は、さんでした。",
+          "focus": [1],
+          "figure": {
+            "tag": {
+              "val": "3"
+            },
+            "pulse": ["val"]
+          }
+        },
+        {
+          "say": "穴の部分が、その 3 に置きかわります。",
+          "speech": "穴の部分が、そのさんに置きかわります。",
+          "part": {
+            "line": 3,
+            "text": "${count}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["put"]
+            },
+            "pulse": ["tpl"]
+          }
+        },
+        {
+          "say": "message に入るのは、できあがった1つの文字列です。",
+          "speech": "メッセージに入るのは、できあがったひとつの文字列です。",
+          "part": {
+            "line": 3,
+            "text": "message"
+          },
+          "figure": {
+            "tag": {
+              "msg": "3冊注文"
+            },
+            "travel": {
+              "along": ["done"]
+            },
+            "pulse": ["msg"]
+          }
+        },
+        {
+          "say": "数値の 3 も、文字として文の中に入りました。",
+          "speech": "数値のさんも、文字として文の中に入りました。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quote",
+      "kind": "code",
+      "role": "note",
+      "title": "引用符では埋め込めない",
+      "code": [
+        "// 冊数 count を作り、3 を入れる",
+        "const count = 3;",
+        "// 普通の引用符で囲んだ書き方",
+        "const message = \"ノートを${count}冊注文しました\";"
+      ],
+      "reset": true,
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fill"
+      },
+      "beats": [
+        {
+          "say": "普通の引用符で囲むと、どうなるでしょうか？",
+          "part": {
+            "line": 3,
+            "text": "\""
+          },
+          "figure": {
+            "show": ["val", "put", "tpl", "done", "msg"],
+            "tag": {
+              "val": "3"
+            },
+            "untag": ["msg"]
+          }
+        },
+        {
+          "say": "この場合、穴は値に置きかわりません。",
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "msg",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["msg"]
+          }
+        },
+        {
+          "say": "ドル記号と波かっこが、そのまま文字として残ります。",
+          "part": {
+            "line": 3,
+            "text": "${count}"
+          }
+        },
+        {
+          "say": "値を埋め込めるのは、バッククォートのときだけです。",
+          "focus": [3],
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数の中で埋め込む",
+      "code": [
+        "// 商品名と冊数を受け取り、案内文を返す関数",
+        "function orderMessage(item: string, count: number): string {",
+        "  // 商品名と冊数を埋め込んだ文字列を返す",
+        "  return `${item}を${count}冊注文しました`;",
+        "}",
+        "// ノートと 3 を渡して、関数を呼ぶ",
+        "orderMessage(\"ノート\", 3);"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fill"
+      },
+      "beats": [
+        {
+          "say": "今度は、案内文を返す関数にしてみましょう。",
+          "type": [0, 1, 2, 3, 4],
+          "figure": {
+            "show": ["val", "put", "tpl", "done", "msg"],
+            "untag": ["val", "msg"]
+          }
+        },
+        {
+          "say": "引数は、商品名の item と冊数の count です。",
+          "speech": "引数は、商品名のアイテムと冊数のカウントです。",
+          "part": {
+            "line": 1,
+            "text": "item: string, count: number"
+          },
+          "figure": {
+            "tag": {
+              "val": "2つの値"
+            },
+            "pulse": ["val"]
+          }
+        },
+        {
+          "say": "穴は、1つの文字列にいくつでも空けられます。",
+          "speech": "穴は、ひとつの文字列にいくつでも空けられます。",
+          "part": {
+            "line": 3,
+            "text": "${item}"
+          },
+          "figure": {
+            "tag": {
+              "tpl": "穴が2つ"
+            },
+            "pulse": ["tpl"]
+          }
+        },
+        {
+          "say": "ノートと 3 を渡して、この関数を呼び出しました。",
+          "speech": "ノートとさんを渡して、この関数を呼び出しました。",
+          "type": [5, 6],
+          "figure": {
+            "travel": {
+              "along": ["put"]
+            }
+          }
+        },
+        {
+          "say": "戻り値は、ノートを3冊注文しましたという文字列です。",
+          "speech": "戻り値は、ノートを三冊注文しましたという文字列です。",
+          "focus": [6],
+          "figure": {
+            "tag": {
+              "msg": "ノートを3冊"
+            },
+            "travel": {
+              "along": ["done"]
+            },
+            "pulse": ["msg"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 商品名と冊数を受け取り、案内文を返す関数",
+        "function orderMessage(item: string, count: number): string {",
+        "  // 商品名と冊数を埋め込んだ文字列を返す",
+        "  return `${item}を${count}冊注文しました`;",
+        "}",
+        "// ノートと 3 を渡して、関数を呼ぶ",
+        "orderMessage(\"ノート\", 3);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "戻り値の1行を、2つに分けて見てみましょう。",
+          "speech": "戻り値の一行を、二つに分けて見てみましょう。",
+          "focus": [3],
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "バッククォートとドル記号と波かっこは、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "`"
+              },
+              {
+                "line": 3,
+                "text": "${"
+              },
+              {
+                "line": 3,
+                "text": "}"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "item と count は、自分で付けた名前でした。",
+          "speech": "アイテムとカウントは、自分で付けた名前でした。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "item"
+              },
+              {
+                "line": 3,
+                "text": "count"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "穴の外に書く文も、自分で決めています。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "を"
+              },
+              {
+                "line": 3,
+                "text": "冊注文しました"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "label に入る文字列は",
+      "code": [
+        "// 名前 name を作り、佐藤を入れる",
+        "const name = \"佐藤\";",
+        "// 宛名 label を作り、名前を埋め込む",
+        "const label = `${name}さんへ`;"
+      ],
+      "reset": true,
+      "show": [0, 1],
+      "panel": {
+        "kind": "figure",
+        "board": "tag"
+      },
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["g1", "ga", "g2", "gb", "g3"]
+          }
+        },
+        {
+          "say": "変数 name には、佐藤という文字列を入れました。",
+          "speech": "変数ネームには、佐藤という文字列を入れました。",
+          "part": {
+            "line": 1,
+            "text": "\"佐藤\""
+          },
+          "figure": {
+            "tag": {
+              "g1": "佐藤"
+            },
+            "pulse": ["g1"]
+          }
+        },
+        {
+          "say": "次の行は、宛名を作るテンプレートリテラルです。",
+          "type": [2, 3],
+          "figure": {
+            "pulse": ["g2"]
+          }
+        },
+        {
+          "say": "label に入る文字列は、何でしょうか？",
+          "speech": "ラベルに入る文字列は、何でしょうか？",
+          "part": {
+            "line": 3,
+            "text": "label"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "g3",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["g3"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 名前 name を作り、佐藤を入れる",
+        "const name = \"佐藤\";",
+        "// 宛名 label を作り、名前を埋め込む",
+        "const label = `${name}さんへ`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "tag"
+      },
+      "beats": [
+        {
+          "say": "答えは、佐藤さんへという文字列です。",
+          "figure": {
+            "tag": {
+              "g3": "佐藤さんへ"
+            },
+            "mark": [
+              {
+                "on": "g3",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["g3"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "穴を値に読みかえる",
+      "code": [
+        "// 名前 name を作り、佐藤を入れる",
+        "const name = \"佐藤\";",
+        "// 宛名 label を作り、名前を埋め込む",
+        "const label = `${name}さんへ`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "tag"
+      },
+      "beats": [
+        {
+          "say": "穴の中に書いてあるのは、変数の name です。",
+          "speech": "穴の中に書いてあるのは、変数のネームです。",
+          "part": {
+            "line": 3,
+            "text": "${name}"
+          },
+          "figure": {
+            "pulse": ["g2"]
+          }
+        },
+        {
+          "say": "name の中身は、佐藤でした。",
+          "speech": "ネームの中身は、佐藤でした。",
+          "focus": [1],
+          "figure": {
+            "pulse": ["g1"]
+          }
+        },
+        {
+          "say": "穴の部分が、佐藤に置きかわります。",
+          "part": {
+            "line": 3,
+            "text": "${name}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ga"]
+            },
+            "pulse": ["g2"]
+          }
+        },
+        {
+          "say": "穴の外のさんへは、そのまま残る文字です。",
+          "part": {
+            "line": 3,
+            "text": "さんへ"
+          },
+          "figure": {
+            "travel": {
+              "along": ["gb"]
+            },
+            "pulse": ["g3"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "値を埋め込む場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "この書き方は、文の一部だけが変わる場面で使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "注文の確認や、あいさつの文がその代表です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "計算した金額を、文にして画面に表示できます。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "時間と分を並べた表示も、同じ書き方で作る文字列です。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問3で使う",
+      "code": [
+        "// 問3 分を「◯時間◯分」の文字列にする",
+        "//     例: minutesToText(125) → \"2時間5分\"",
+        "export function minutesToText(minutes: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task3"
+      },
+      "beats": [
+        {
+          "say": "問3では、時間と分を埋め込んだ文字列を返します。",
+          "speech": "問さんでは、時間と分を埋め込んだ文字列を返します。",
+          "part": {
+            "line": 1,
+            "text": "\"2時間5分\""
+          },
+          "figure": {
+            "show": ["min", "mgive", "mfn", "mback", "mout"]
+          }
+        },
+        {
+          "say": "戻り値の型は、文字列の string です。",
+          "speech": "戻り値の型は、文字列のストリングです。",
+          "part": {
+            "line": 2,
+            "text": "): string"
+          },
+          "figure": {
+            "pulse": ["mout"]
+          }
+        },
+        {
+          "say": "この課題では、文字列をプラスでつなぐ書き方は使えません。",
+          "figure": {
+            "tag": {
+              "mfn": "埋め込む"
+            },
+            "pulse": ["mfn"]
+          }
+        },
+        {
+          "say": "テンプレートリテラルで、組み立ててみてください。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}
