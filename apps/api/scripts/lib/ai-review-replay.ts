@@ -39,6 +39,7 @@ import { submissions } from "../../src/db/schema.js";
 import type { Env } from "../../src/env.js";
 import {
   type AiReviewJudgeMaterial,
+  consecutiveAiResubmits,
   interpretAiCompletion,
   judgeAiReview,
   judgeMaterialOf,
@@ -243,6 +244,7 @@ export interface ReplayJudgeContext {
   kind: string;
   material: AiReviewJudgeMaterial;
   forced: RouteReason[];
+  priorAiResubmits: number;
   /** 根拠に使えるファイルと記録の行数 (`BuiltReviewPrompt.lines`)。 */
   lines: [string, number][];
 }
@@ -291,14 +293,16 @@ async function prepareOne(
   const large = built.find((b) => b.prompt.variableChars > MAX_REVIEW_INPUT_CHARS);
   if (large)
     return { subject, failure: "too-large", detail: `${large.prompt.variableChars} chars` };
+  const kind = row.taskKind ?? "basic";
   return {
     subject,
     judge: {
-      kind: row.taskKind ?? "basic",
+      kind,
       material: judgeMaterialOf(loaded),
       // 人に回す条件は今の記録で当てる。本番も AI の結果を当てる直前に、後から届いた支援の
       // 記録を含めて確かめ直す (`assertAiApplicable`) ので、本番の最終的な扱いと同じになる。
       forced: await submissionForcedReasons(deps.db, row),
+      priorAiResubmits: isEvidenceKind(kind) ? 0 : await consecutiveAiResubmits(deps.db, row),
       lines: [...(built[0]?.prompt.lines ?? new Map<string, number>())],
     },
     requests: built.map((b) => b.params),
@@ -719,6 +723,8 @@ export function judgeBatchResult(
     forced: judge.forced,
     output,
     lines: new Map(judge.lines),
+    // 回数を保存する前の state.json は 0 として判定する。
+    priorAiResubmits: judge.priorAiResubmits ?? 0,
   });
   return {
     decision: {
