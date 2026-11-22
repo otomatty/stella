@@ -21,7 +21,7 @@ vi.mock("./lib/narration-topics.js", () => ({
   },
   collectNarrationTopics: () => fixture.topics,
 }));
-import { polishVideo } from "./polish-video.js";
+import { polishVideo, supportsThinkingLevel } from "./polish-video.js";
 
 const sample = JSON.parse(
   readFileSync(new URL("../src/__fixtures__/board-video.json", import.meta.url), "utf8"),
@@ -98,6 +98,20 @@ afterEach(() => {
 });
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
+it.each([
+  ["gemini-3-flash-preview", true],
+  ["gemini-3.1-pro-preview", true],
+  ["gemini-4-neon", true],
+  ["gemini-10-flash", true],
+  ["gemini-2.5-flash-lite", false],
+  ["gemini-2.5-flash", false],
+  ["gemini-3flash", false],
+  ["gemini-flash-latest", false],
+  ["other-4-neon", false],
+])("%s の thinkingLevel 対応は %s", (model, supported) => {
+  expect(supportsThinkingLevel(model)).toBe(supported);
+});
+
 describe("video:polish の取得と保存済みの案の反映", () => {
   it.each([
     { env: undefined, args: [], model: "gemini-4-neon" },
@@ -121,19 +135,55 @@ describe("video:polish の取得と保存済みの案の反映", () => {
   it.each([
     { env: undefined, args: [], thinkingLevel: "low" },
     { env: "medium", args: [], thinkingLevel: "medium" },
-    { env: "high", args: ["--thinking", "minimal"], thinkingLevel: "minimal" },
+    {
+      env: "high",
+      args: ["--model", "gemini-3-flash-preview", "--thinking", "minimal"],
+      thinkingLevel: "minimal",
+    },
   ])("thinkingConfig に $thinkingLevel を送る", async ({ env, args, thinkingLevel }) => {
+    vi.stubEnv("VIDEO_POLISH_MODEL", undefined);
     vi.stubEnv("VIDEO_POLISH_THINKING", env);
     await polishVideo(["fixture", ...args]);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel });
   });
 
+  it("Gemini 2.5 Flash-Lite には既定の thinkingConfig を送らない", async () => {
+    await polishVideo(["fixture", "--model", "gemini-2.5-flash-lite"]);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.generationConfig).not.toHaveProperty("thinkingConfig");
+  });
+
+  it.each([
+    { env: undefined, args: ["--thinking", "low"] },
+    { env: "low", args: [] },
+  ])("Gemini 2.5 で考える量を明示すると取得前にエラーにする (%j)", async ({ env, args }) => {
+    vi.stubEnv("VIDEO_POLISH_MODEL", "gemini-2.5-flash");
+    vi.stubEnv("VIDEO_POLISH_THINKING", env);
+    await expect(polishVideo(["fixture", ...args])).rejects.toThrow(
+      "gemini-2.5-flash: このモデルでは考える量を指定できません",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("非対応モデルの dry-run では考える量を指定なしと表示する", async () => {
+    await polishVideo(["fixture", "--dry-run", "--model", "gemini-2.5-flash-lite"]);
+    expect(console.info).toHaveBeenLastCalledWith(
+      expect.stringContaining("thinking: 指定なし (このモデルは非対応)"),
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("不正な thinking の環境変数・引数や値のない引数は、取得前にエラーにする", async () => {
+    vi.stubEnv("VIDEO_POLISH_MODEL", "gemini-4-neon");
     vi.stubEnv("VIDEO_POLISH_THINKING", "unexpected");
-    await expect(polishVideo(["fixture"])).rejects.toThrow("考える量");
+    await expect(polishVideo(["fixture"])).rejects.toThrow(
+      "考える量は minimal / low / medium / high",
+    );
     vi.stubEnv("VIDEO_POLISH_THINKING", "low");
-    await expect(polishVideo(["fixture", "--thinking", "unexpected"])).rejects.toThrow("考える量");
+    await expect(polishVideo(["fixture", "--thinking", "unexpected"])).rejects.toThrow(
+      "考える量は minimal / low / medium / high",
+    );
     await expect(polishVideo(["fixture", "--thinking"])).rejects.toThrow("--thinking");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -347,7 +397,7 @@ describe("video:polish の取得と保存済みの案の反映", () => {
   });
   it("dry-runは送信内容を表示し、applyと一緒なら反映予定だけを表示する", async () => {
     const source = readFileSync(video, "utf8");
-    await polishVideo(["fixture", "--dry-run", "--thinking", "high"]);
+    await polishVideo(["fixture", "--dry-run", "--model", "gemini-4-neon", "--thinking", "high"]);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(execFileSync).not.toHaveBeenCalled();
     expect(console.info).toHaveBeenCalledTimes(1);

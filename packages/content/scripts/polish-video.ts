@@ -27,6 +27,11 @@ const GEMINI_REQUEST_TIMEOUT_MS = 600_000;
 const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
 type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 
+export function supportsThinkingLevel(model: string): boolean {
+  const major = /^gemini-(\d+)(?=[.-]|$)/.exec(model)?.[1];
+  return Number(major) >= 3;
+}
+
 const USAGE_FIELDS = [
   "promptTokenCount",
   "cachedContentTokenCount",
@@ -69,7 +74,7 @@ function argumentsOf(args: string[]) {
   let apply = false,
     dryRun = false,
     model = process.env.VIDEO_POLISH_MODEL || "gemini-4-neon",
-    thinkingValue = process.env.VIDEO_POLISH_THINKING ?? "low";
+    thinkingValue = process.env.VIDEO_POLISH_THINKING;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--") continue;
@@ -94,19 +99,29 @@ function argumentsOf(args: string[]) {
   if (!selectors.length) throw new Error("ステージのslugかトピックのパスを指定してください");
   if (!/^[A-Za-z0-9._-]+$/.test(model))
     throw new Error("モデルIDは英数字・ドット・ハイフン・下線で指定してください");
-  const thinking = THINKING_LEVELS.find((level) => level === thinkingValue);
+  const supportsThinking = supportsThinkingLevel(model);
+  if (!supportsThinking && thinkingValue !== undefined)
+    throw new Error(`${model}: このモデルでは考える量を指定できません`);
+  const thinking = THINKING_LEVELS.find((level) => level === (thinkingValue ?? "low"));
   if (!thinking) throw new Error(`考える量は ${THINKING_LEVELS.join(" / ")} から指定してください`);
   if (selection.only !== undefined && selection.skip !== undefined)
     throw new Error("--only と --skip は同時に指定できません");
   if (!apply && (selection.only !== undefined || selection.skip !== undefined))
     throw new Error("--only / --skip は --apply と一緒に指定してください");
-  return { selectors, apply, dryRun, model, thinking, selection };
+  return {
+    selectors,
+    apply,
+    dryRun,
+    model,
+    thinking: supportsThinking ? thinking : undefined,
+    selection,
+  };
 }
 async function generate(
   model: string,
   key: string,
   request: ReturnType<typeof buildPolishRequest>,
-  thinkingLevel: ThinkingLevel,
+  thinkingLevel: ThinkingLevel | undefined,
 ): Promise<{ rawResponse: unknown; usage: PolishUsage }> {
   return withRetry("video:polish", async () => {
     let res: Response;
@@ -122,7 +137,7 @@ async function generate(
             contents: [{ role: "user", parts: [{ text: request.user }] }],
             generationConfig: {
               temperature: 0.2,
-              thinkingConfig: { thinkingLevel },
+              ...(thinkingLevel === undefined ? {} : { thinkingConfig: { thinkingLevel } }),
               responseMimeType: "application/json",
               responseSchema: polishResponseSchema,
             },
@@ -264,7 +279,7 @@ export async function polishVideo(args: string[]) {
     const request = options.apply ? undefined : buildPolishRequest(storyboard, guide);
     if (options.dryRun && request) {
       console.info(
-        `${title} / model: ${options.model} / thinking: ${options.thinking}\n\nSYSTEM\n${request.system}\n\nUSER\n${request.user}`,
+        `${title} / model: ${options.model} / thinking: ${options.thinking ?? "指定なし (このモデルは非対応)"}\n\nSYSTEM\n${request.system}\n\nUSER\n${request.user}`,
       );
       continue;
     }

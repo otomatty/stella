@@ -329,7 +329,7 @@ bun run --filter=@stella/content video:polish -- <トピックのパス> --apply
 - 案は提案です。数字や新しい用語を足した案・長すぎる案は、自動では反映されません。文を削る案 (`cut`) も反映されないので、絵の動きごと見直します
 - 反映したら、必ず自分で読み直します。画面の言葉とそろっているか、`points` から外れていないかを見ます
 - 案を取得すると現在の文で、反映すると反映後の文で、`video.json` の `polish` に記録が残ります。そのあと文を直すと `video:check` が警告するので、もう一度通します
-- 考える量の既定は `low` です。`VIDEO_POLISH_THINKING` または `--thinking <minimal|low|medium|high>` で変更でき、引数が優先されます。`minimal` を使う場合は、対応するモデルを選びます。Gemini 4 Neon でこのコマンドから選べる値は `low`・`medium`・`high` です
+- 考える量の既定は `low` です。`VIDEO_POLISH_THINKING` または `--thinking <minimal|low|medium|high>` で変更でき、引数が優先されます。`minimal` を使う場合は、対応するモデルを選びます。Gemini 4 Neon でこのコマンドから選べる値は `low`・`medium`・`high` です。Gemini 3 より前のモデルには考える量を送らず、明示的に指定するとエラーになります。
 - 取得に使うモデルは `VIDEO_POLISH_MODEL` で変更できます。`--model` を指定すると環境変数より優先されます。`--dry-run` はモデルと考える量、送信する system と user を表示します。API の呼び出しやファイルの更新は行いません
 
 ## 確かめ方
