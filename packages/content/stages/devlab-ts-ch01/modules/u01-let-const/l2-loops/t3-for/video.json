@@ -1,0 +1,804 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "for の 1 行を読んで、何回くり返し、変数がどう変わるかを言える。",
+    "stuck": "番号だけを変えて同じ足し算を何度も書いている。",
+    "points": ["for は、始め・続ける条件・進め方を決めて、同じ処理をくり返します。"],
+    "leaveOut": ["別のくり返しの書き方", "問5の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A starter flag beside the white starting line of a blue running track, overhead view. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A young adult in a violet sweater and blue running shoes jogging on a running lane. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A finish line on a running track with a plain magenta flag. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "savings": {
+      "prompt": "A neat stack of plain coins in a shallow blue tray. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "seats": {
+      "prompt": "A small row of identical empty violet stadium seats. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "始め",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "走る周",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "終わり",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "練習の周回",
+          "art": "step",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "毎月の積み立て",
+          "art": "savings",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "座席の番号",
+          "art": "seats",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最後の数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "合計",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "laps",
+      "beats": [
+        {
+          "say": "この動画では、for でくり返す書き方を学びます。",
+          "speech": "この動画では、フォーでくり返す書き方を学びます。"
+        },
+        {
+          "say": "陸上のトラックを、5周走る場面です。",
+          "speech": "陸上のトラックを、五周走る場面です。"
+        },
+        {
+          "say": "1周目から始めて、5周目まで走ります。",
+          "speech": "一周目から始めて、五周目まで走ります。"
+        },
+        {
+          "say": "1周走るたびに、周回の数が1つ増えました。",
+          "speech": "一周走るたびに、周回の数が一つ増えました。"
+        },
+        {
+          "say": "始め、続ける条件、進め方を決めるのが、for です。",
+          "speech": "始め、続ける条件、進め方を決めるのが、フォーです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "トラックを五周する",
+      "board": "example",
+      "beats": [
+        {
+          "say": "スタートの線から、1 周目を走ります。",
+          "speech": "スタートの線から、一周目を走ります。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "1周目"
+          }
+        },
+        {
+          "say": "次は、周回の番号を一つ増やしましょう。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "2周目"
+          }
+        },
+        {
+          "say": "同じように進んで、5 周目に入りました。",
+          "speech": "同じように進んで、五周目に入りました。",
+          "tag": {
+            "step": "5周目"
+          }
+        },
+        {
+          "say": "最後の周を走り終えたら、そこで止まります。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "5周で終了"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "for の三つの部分",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から五周目まで一周ずつ進む",
+        "for (let i = 1; i <= 5; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "同じ処理をくり返すのが、for です。",
+          "speech": "同じ処理をくり返すのが、フォーです。",
+          "term": {
+            "text": "for",
+            "note": "同じ処理をくり返す"
+          },
+          "pause": 1
+        },
+        {
+          "say": "最初の区切りまでは、始めの値を書きましょう。",
+          "part": {
+            "line": 3,
+            "text": "let i = 1",
+            "note": "i は周の番号"
+          },
+          "figure": {
+            "tag": {
+              "start": "1"
+            }
+          }
+        },
+        {
+          "say": "真ん中は、くり返しを続ける条件になります。",
+          "part": {
+            "line": 3,
+            "text": "i <= 5",
+            "note": "続ける条件"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "小なりイコールは、以下という意味です。",
+          "term": {
+            "text": "<=",
+            "note": "同じ値も含む"
+          },
+          "pause": 1
+        },
+        {
+          "say": "最後には、一周ごとの進め方を書いてください。",
+          "part": {
+            "line": 3,
+            "text": "i++",
+            "note": "一つ増やす"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "条件に合った周は、波かっこの中を実行します。",
+          "part": {
+            "line": 5,
+            "text": "total += i"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "note-1",
+      "kind": "code",
+      "role": "note",
+      "title": "中身を動かす前に条件を調べる",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から五周目まで一周ずつ進む",
+        "for (let i = 1; i <= 5; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "トゥルーは、条件が成り立つときの値です。",
+          "term": {
+            "text": "true",
+            "note": "条件が成り立つ"
+          },
+          "pause": 1
+        },
+        {
+          "say": "番号が 5 の周も、中の足し算を実行します。",
+          "speech": "番号が五の周も、中の足し算を実行します。",
+          "part": {
+            "line": 3,
+            "text": "i <= 5"
+          },
+          "figure": {
+            "tag": {
+              "step": "5はtrue"
+            }
+          }
+        },
+        {
+          "say": "成り立たないときの値は、フォールスです。",
+          "term": {
+            "text": "false",
+            "note": "条件が成り立たない"
+          },
+          "pause": 1
+        },
+        {
+          "say": "番号が 6 になると、足し算せずに終わります。",
+          "speech": "番号が六になると、足し算せずに終わります。",
+          "part": {
+            "line": 3,
+            "text": "i <= 5"
+          },
+          "figure": {
+            "tag": {
+              "step": "6はfalse"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "周回の番号を一つずつ足す",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から五周目まで一周ずつ進む",
+        "for (let i = 1; i <= 5; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "合計をゼロから始めます。",
+          "part": {
+            "line": 1,
+            "text": "0"
+          },
+          "figure": {
+            "tag": {
+              "result": "0"
+            }
+          }
+        },
+        {
+          "say": "1 周目は、合計に 1 を足しました。",
+          "speech": "一周目は、合計に一を足しました。",
+          "part": {
+            "line": 5,
+            "text": "+= i"
+          },
+          "figure": {
+            "tag": {
+              "step": "1を足す",
+              "result": "1"
+            }
+          }
+        },
+        {
+          "say": "2 周目は、前の合計に 2 を足します。",
+          "speech": "二周目は、前の合計に二を足します。",
+          "figure": {
+            "tag": {
+              "step": "2を足す",
+              "result": "3"
+            }
+          }
+        },
+        {
+          "say": "3 と 4 を順に足すと、合計は 10 です。",
+          "speech": "三と四を順に足すと、合計は十です。",
+          "figure": {
+            "tag": {
+              "step": "4を足す",
+              "result": "10"
+            }
+          }
+        },
+        {
+          "say": "5 周目を足して、合計が 15 になりました。",
+          "speech": "五周目を足して、合計が十五になりました。",
+          "figure": {
+            "tag": {
+              "step": "5を足す",
+              "result": "15"
+            }
+          }
+        },
+        {
+          "say": "番号が 6 になると、もう中身は動きません。",
+          "speech": "番号が六になると、もう中身は動きません。",
+          "part": {
+            "line": 3,
+            "text": "i <= 5"
+          },
+          "figure": {
+            "tag": {
+              "step": "6で終了"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から五周目まで一周ずつ進む",
+        "for (let i = 1; i <= 5; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "for"
+              },
+              {
+                "line": 3,
+                "text": "let"
+              },
+              {
+                "line": 3,
+                "text": ";"
+              },
+              {
+                "line": 3,
+                "text": "<="
+              },
+              {
+                "line": 3,
+                "text": "++"
+              },
+              {
+                "line": 5,
+                "text": "+="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一方の色は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "i"
+              },
+              {
+                "line": 3,
+                "text": "1"
+              },
+              {
+                "line": 3,
+                "text": "5"
+              },
+              {
+                "line": 5,
+                "text": "total"
+              },
+              {
+                "line": 5,
+                "text": "i"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "四周分の番号を足すと",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から四周目まで一周ずつ進む",
+        "for (let i = 1; i <= 4; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "今度は、4 周目までの番号を足します。",
+          "speech": "今度は、四周目までの番号を足します。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "最後の合計は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から四周目まで一周ずつ進む",
+        "for (let i = 1; i <= 4; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "合計は 10 です。",
+          "speech": "合計は十です。",
+          "figure": {
+            "tag": {
+              "result": "10"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "条件を確かめてから足す",
+      "code": [
+        "// 合計を入れる変数を作る",
+        "let total = 0;",
+        "// 一周目から四周目まで一周ずつ進む",
+        "for (let i = 1; i <= 4; i++) {",
+        "  // 周回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "始めの番号は、1 でした。",
+          "speech": "始めの番号は、一でした。",
+          "part": {
+            "line": 3,
+            "text": "let i = 1"
+          },
+          "figure": {
+            "tag": {
+              "start": "1"
+            }
+          }
+        },
+        {
+          "say": "同じ数も含むので、4 周目まで足します。",
+          "speech": "同じ数も含むので、四周目まで足します。",
+          "part": {
+            "line": 3,
+            "text": "<= 4"
+          },
+          "figure": {
+            "tag": {
+              "step": "1から4"
+            }
+          }
+        },
+        {
+          "say": "1、2、3、4 を足した結果が、10 です。",
+          "speech": "いち、に、さん、しを足した結果が、十です。",
+          "part": {
+            "line": 5,
+            "text": "total += i"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "番号が 5 になったときに止まりました。",
+          "speech": "番号が五になったときに止まりました。",
+          "part": {
+            "line": 3,
+            "text": "i++"
+          },
+          "figure": {
+            "tag": {
+              "step": "5で終了"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "決められた周の数だけ、練習をくり返します。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "毎月の積み立ては、足し算をくり返す場面です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "座席の番号を順に確かめるときにも使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問5で使う",
+      "code": [
+        "// 問5 1から n までの合計を返す（for 文で足していく）",
+        "//     例: sumTo(10) → 55",
+        "export function sumTo(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問5では、1から n までの合計を返します。",
+          "speech": "問ごでは、一からエヌまでの合計を返します。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "例の 5 の代わりに、引数 n が最後の数です。",
+          "speech": "例の五の代わりに、引数エヌが最後の数です。",
+          "part": {
+            "line": 2,
+            "text": "n: number"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "どの条件なら最後の数も足せるか、考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "sumTo"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e9f8d651679e27ee17b4cd72a8e8f71307e0020d7f306998505deba551f3eab2"
+  }
+}

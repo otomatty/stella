@@ -115,15 +115,15 @@ const item = "ノート";
 const prefix = "新";
 // 表示 label を入れ直せる変数として作り、item を入れる
 let label = item;
-// もし item にノートが含まれるなら
-if (item.includes("ノート")) {
+// もし商品名がノートと等しいなら
+if (item === "ノート") {
   // prefix の後ろに label をつなげ、label に入れ直す
   label = prefix + label;
   // 条件に合うときの中身はここまで
 }
 ```
 
-- A. `item.includes("ノート")` は `true` になる
+- A. `item === "ノート"` は `true` になる
 - B. `label` は `"ノート新"` になる
 - C. `label` は `"新ノート"` になる
 - D. 等しいかを比べるときも、`=` を一つ書く

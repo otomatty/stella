@@ -1,0 +1,693 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ゼロから小なりで進む for を読んで、何回動くかを言える。",
+    "stuck": "ゼロから数え始めても、最後の数まで含めようとしている。",
+    "points": ["0 から始めて < n まで進めると、ちょうど n 回くり返せます。"],
+    "leaveOut": ["配列の取り出し", "問8の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A neatly coiled blue jump rope with violet handles resting on the floor. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A young adult learner in a violet sweater in midair over a blue jump rope. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A blue score card with three evenly spaced magenta dots. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "printer": {
+      "prompt": "A small blue label printer producing a short blank strip. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "lamp": {
+      "prompt": "A simple blue warning lamp with violet light rays. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "跳ぶ前",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "跳ぶ回",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "跳んだ回数",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "なわとび",
+          "art": "step",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "ラベル印刷",
+          "art": "printer",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "決まった回数の点灯",
+          "art": "lamp",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "底と回数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "掛けた結果",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "jump-rope",
+      "beats": [
+        {
+          "say": "この動画では、決まった回数だけくり返す書き方を学びます。"
+        },
+        {
+          "say": "なわとびを、3回跳ぶ場面です。",
+          "speech": "なわとびを、三回跳ぶ場面です。"
+        },
+        {
+          "say": "0から数え始めると、0、1、2で3回になります。",
+          "speech": "ゼロから数え始めると、ゼロ、いち、にで三回になります。"
+        },
+        {
+          "say": "小なりで終わりを決めると、ちょうどその回数だけくり返す仕組みです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "なわとびを三回跳ぶ",
+      "board": "example",
+      "beats": [
+        {
+          "say": "最初に跳ぶ回に、ゼロの番号を付けます。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "番号0"
+          }
+        },
+        {
+          "say": "二回目の番号は、一です。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "番号1"
+          }
+        },
+        {
+          "say": "三回目には、番号が二になりました。",
+          "tag": {
+            "step": "番号2"
+          }
+        },
+        {
+          "say": "跳んだ回数を数えると、全部で三回です。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "全部で3回"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "小なりで回数を決める",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let log = \"\";",
+        "// ゼロから三の手前まで一ずつ増やす",
+        "for (let i = 0; i < 3; i++) {",
+        "  // 今の文字列の後ろに印と空白をつなぐ",
+        "  log += \"ok \";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初に使う番号を、ゼロにします。",
+          "part": {
+            "line": 3,
+            "text": "let i = 0"
+          },
+          "figure": {
+            "tag": {
+              "start": "0"
+            }
+          }
+        },
+        {
+          "say": "小なりは、右の値より小さいという意味です。",
+          "term": {
+            "text": "<",
+            "note": "右の値より小さい"
+          },
+          "pause": 1
+        },
+        {
+          "say": "三と同じ値のときは、条件に合いません。",
+          "part": {
+            "line": 3,
+            "text": "i < 3"
+          },
+          "figure": {
+            "tag": {
+              "step": "3は含めない"
+            }
+          }
+        },
+        {
+          "say": "実行したら、番号を一つ増やします。",
+          "part": {
+            "line": 3,
+            "text": "i++"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "番号は、何回進んだかを数える役割です。",
+          "part": {
+            "line": 5,
+            "text": "log += \"ok \""
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "同じ印を三回つなぐ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let log = \"\";",
+        "// ゼロから三の手前まで一ずつ増やす",
+        "for (let i = 0; i < 3; i++) {",
+        "  // 今の文字列の後ろに印と空白をつなぐ",
+        "  log += \"ok \";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "空の文字列を、先に作ります。",
+          "part": {
+            "line": 1,
+            "text": "\"\""
+          },
+          "figure": {
+            "tag": {
+              "result": "空"
+            }
+          }
+        },
+        {
+          "say": "ゼロの回で、最初の印をつなぎました。",
+          "part": {
+            "line": 5,
+            "text": "\"ok \""
+          },
+          "figure": {
+            "tag": {
+              "step": "0の回",
+              "result": "ok "
+            }
+          }
+        },
+        {
+          "say": "一の回で、印は二つです。",
+          "figure": {
+            "tag": {
+              "step": "1の回",
+              "result": "ok ok "
+            }
+          }
+        },
+        {
+          "say": "二の回のあと、印は三つになりました。",
+          "figure": {
+            "tag": {
+              "step": "2の回",
+              "result": "ok ×3"
+            }
+          }
+        },
+        {
+          "say": "次の三は条件に合わないので、くり返しが止まります。",
+          "part": {
+            "line": 3,
+            "text": "i < 3"
+          },
+          "figure": {
+            "tag": {
+              "step": "3で終了"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let log = \"\";",
+        "// ゼロから三の手前まで一ずつ増やす",
+        "for (let i = 0; i < 3; i++) {",
+        "  // 今の文字列の後ろに印と空白をつなぐ",
+        "  log += \"ok \";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けて確認しましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "for"
+              },
+              {
+                "line": 3,
+                "text": "let"
+              },
+              {
+                "line": 3,
+                "text": ";"
+              },
+              {
+                "line": 3,
+                "text": "<"
+              },
+              {
+                "line": 3,
+                "text": "++"
+              },
+              {
+                "line": 5,
+                "text": "+="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一つの色は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "i"
+              },
+              {
+                "line": 3,
+                "text": "0"
+              },
+              {
+                "line": 3,
+                "text": "3"
+              },
+              {
+                "line": 5,
+                "text": "log"
+              },
+              {
+                "line": 5,
+                "text": "\"ok \""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "四の手前まで何回くり返す",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let log = \"\";",
+        "// ゼロから四の手前まで一ずつ増やす",
+        "for (let i = 0; i < 4; i++) {",
+        "  // 今の文字列の後ろに丸の印をつなぐ",
+        "  log += \"○\";",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "ゼロから、四より小さい間だけくり返します。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "波かっこの中は、何回動くでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let log = \"\";",
+        "// ゼロから四の手前まで一ずつ増やす",
+        "for (let i = 0; i < 4; i++) {",
+        "  // 今の文字列の後ろに丸の印をつなぐ",
+        "  log += \"○\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは、四回です。",
+          "figure": {
+            "tag": {
+              "result": "4回"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "始めのゼロも一回に数える",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let log = \"\";",
+        "// ゼロから四の手前まで一ずつ増やす",
+        "for (let i = 0; i < 4; i++) {",
+        "  // 今の文字列の後ろに丸の印をつなぐ",
+        "  log += \"○\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初のゼロで、一回実行します。",
+          "part": {
+            "line": 3,
+            "text": "let i = 0"
+          },
+          "figure": {
+            "tag": {
+              "start": "0も実行"
+            }
+          }
+        },
+        {
+          "say": "次は、一、二、三の回です。",
+          "figure": {
+            "tag": {
+              "step": "1、2、3"
+            }
+          }
+        },
+        {
+          "say": "四になると条件に合いません。",
+          "part": {
+            "line": 3,
+            "text": "i < 4"
+          },
+          "figure": {
+            "tag": {
+              "step": "4で終了"
+            }
+          }
+        },
+        {
+          "say": "実行した四回分の印が残ります。",
+          "figure": {
+            "tag": {
+              "result": "○○○○"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "練習の回数を決めて、同じ動きをくり返します。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "同じラベルを、必要な枚数だけ出すときも同じ書き方です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "合図のランプを決まった回数だけ光らせるのにも使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問8で使う",
+      "code": [
+        "// 問8 base の exponent 乗を返す（** や Math.pow を使わず、for 文で掛けていく）",
+        "//     例: power(2, 10) → 1024",
+        "export function power(base: number, exponent: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問8では、base を exponent 回掛けます。",
+          "speech": "問はちでは、ベースをエクスポーネント回掛けます。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "二つ目の引数で、くり返す回数を決める形です。",
+          "part": {
+            "line": 2,
+            "text": "exponent: number"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "掛けて入れ直す書き方を、思い出してみましょう。",
+          "figure": {
+            "tag": {
+              "result": "掛けて更新"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9d539be84fed19cfba5b49997b5e57b342a96ef2f15fa38a58108d3631febed1"
+  }
+}

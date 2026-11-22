@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@10",
-  "contentHash": "088913c1f6b27e9b126b6fd58d3707c4944ebd0c2801d6f55a13ec52ddf4d9ac",
+  "unitId": "devlab-ts-ch01/u01-let-const@11",
+  "contentHash": "d982c46cadfd6c273f29e004e3fcfe120d8fd360863208ab57e758baca0d871d",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -160,36 +160,110 @@
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l2-loops/t1-let-for/slides.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-statements-for-of"
-      ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "contentId": "l2-loops/t1-let/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-let-and-const"],
+      "usedFor": "入れ直せる変数に関わる概念を参照。得点板の例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l2-loops/t2-count-direction/slides.md",
+      "contentId": "l2-loops/t2-add-assign/slides.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-statements-for-of"
+        "SRC-typescriptbook-values-types-variables-number"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "足し算と再代入の概念を参照。貯金箱の例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l2-loops/t3-each-char/slides.md",
+      "contentId": "l2-loops/t3-for/slides.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-let-and-const",
         "SRC-typescriptbook-statements-for-of",
-        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-values-types-variables-boolean"
+      ],
+      "usedFor": "くり返しと条件の概念を参照。陸上トラックの例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t4-multiply-assign/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "掛け算と再代入の概念を参照。紙を折り重ねる例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t5-count-down/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-statements-for-of",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "くり返しと数の比較の概念を参照。打ち上げ前のカウントダウンの例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t6-join-text/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-statements-for-of"
+      ],
+      "usedFor": "文字列の連結の概念を参照。糸にビーズを通す例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t7-times/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-statements-for-of",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "くり返しと回数の概念を参照。なわとびの例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t8-for-of/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-statements-for-of",
         "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "文字列を一文字ずつ取り出す書き方を参照。文字のカードの例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t9-if-count/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-statements-if-else",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-boolean"
+      ],
+      "usedFor": "条件と比較の概念を参照。かごからりんごを数える例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-loops/t10-prepend/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-statements-for-of"
+      ],
+      "usedFor": "文字列の連結の概念を参照。お皿を上に重ねる例、図解、コード例、動画内の問題と解説、台本は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -202,7 +276,7 @@
         "SRC-typescriptbook-statements-if-else",
         "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "変数の再代入、くり返し、文字列、条件の概念を参照。10トピックの解説、例と問5〜問10のヒントは教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -215,7 +289,7 @@
         "SRC-typescriptbook-statements-if-else",
         "SRC-typescriptbook-values-types-variables-string"
       ],
-      "usedFor": "let による再代入と、くり返し・条件・文字列の概念を参照。ガイドの説明と課題のテスト値を素材に、積立・発送便・注文番号・在庫の説明と例、動画台本・知識問題を独自作成。課題の解答コードは示さない",
+      "usedFor": "変数の再代入、くり返し、文字列、条件の概念を参照。知識問題と解説は教材用に独自作成",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

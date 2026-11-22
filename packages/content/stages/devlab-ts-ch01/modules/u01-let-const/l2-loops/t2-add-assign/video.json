@@ -1,0 +1,732 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "+= と ++ を使った行を読んで、変数の値がどう変わるかを言える。",
+    "stuck": "最初の値に足すたびに、同じ変数名を二度書いている。",
+    "points": ["+= は足して入れ直し、++ は 1 増やします。"],
+    "leaveOut": ["for の書き方", "増やす前の値と増やした後の値を式として使う書き方"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A blue ceramic piggy bank facing right in a three-quarter view. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A hand lowering a plain metallic coin into the slot of a blue piggy bank. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "An open blue piggy bank with a small pile of plain metallic coins beside it. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "stamp": {
+      "prompt": "A violet rubber stamp beside a light grey loyalty card with four blue circles. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "stock": {
+      "prompt": "A small violet shelf with three plain blue storage boxes. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "今の貯金額",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "追加するお金",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "入れたあと",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "貯金額",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "スタンプの数",
+          "art": "stamp",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "在庫",
+          "art": "stock",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "足す数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "合計",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "piggy-bank",
+      "beats": [
+        {
+          "say": "この動画では、足して入れ直す書き方を学びます。"
+        },
+        {
+          "say": "貯金箱に毎日100円ずつ入れると、中身が増えていきました。",
+          "speech": "貯金箱に毎日百円ずつ入れると、中身が増えていきました。"
+        },
+        {
+          "say": "入れるたびに、今の金額に100円を足しています。",
+          "speech": "入れるたびに、今の金額に百円を足しています。"
+        },
+        {
+          "say": "今の値に足して入れ直すのが、プラスイコールです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "貯金箱に百円を入れる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "貯金箱には、すでに 200 円入っています。",
+          "speech": "貯金箱には、すでに二百円入っています。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "200"
+          }
+        },
+        {
+          "say": "そこへ、100 円を入れました。",
+          "speech": "そこへ、百円を入れました。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "100"
+          }
+        },
+        {
+          "say": "中の金額は、合わせて 300 円です。",
+          "speech": "中の金額は、合わせて三百円です。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "300"
+          }
+        },
+        {
+          "say": "次に入れるときは、この金額から足し始めます。",
+          "tag": {
+            "result": "次は300から"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "プラスイコールで足して入れ直す",
+      "code": [
+        "// 現在の貯金額を作る",
+        "let total = 200;",
+        "// 貯金額に百円を足して入れ直す",
+        "total += 100;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "まず、貯金額を入れる変数を作りましょう。",
+          "part": {
+            "line": 1,
+            "text": "total",
+            "note": "合計"
+          },
+          "figure": {
+            "tag": {
+              "start": "200"
+            }
+          }
+        },
+        {
+          "say": "プラスイコールで、足して入れ直せます。",
+          "term": {
+            "text": "+=",
+            "note": "足して入れ直す"
+          },
+          "pause": 1
+        },
+        {
+          "say": "足す金額は、記号の右に書きましょう。",
+          "part": {
+            "line": 3,
+            "text": "100"
+          },
+          "figure": {
+            "tag": {
+              "step": "100"
+            }
+          }
+        },
+        {
+          "say": "計算した 300 が、貯金額に入りました。",
+          "speech": "計算した三百が、貯金額に入りました。",
+          "part": {
+            "line": 3,
+            "text": "total"
+          },
+          "figure": {
+            "tag": {
+              "result": "300"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "note-1",
+      "kind": "code",
+      "role": "note",
+      "title": "同じ意味の長い書き方",
+      "code": [
+        "// 現在の貯金額を作る",
+        "let total = 200;",
+        "// 貯金額に百円を足して入れ直す",
+        "total = total + 100;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "前に習った形では、右側に足し算を書きます。",
+          "part": {
+            "line": 3,
+            "text": "total + 100"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "足し算の結果が入るのは、同じ変数です。",
+          "part": {
+            "line": 3,
+            "text": "total"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "プラスイコールでも、結果は同じになります。",
+          "figure": {
+            "tag": {
+              "result": "300"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "一つだけ増やす書き方",
+      "code": [
+        "// 今の貯金額を作る",
+        "let total = 200;",
+        "// 今のスタンプの数を作る",
+        "let count = 4;",
+        "// 貯金額に百円を足す",
+        "total += 100;",
+        "// スタンプの数を一つ増やす",
+        "count++;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初の貯金は 200 円です。",
+          "speech": "最初の貯金は二百円です。",
+          "part": {
+            "line": 1,
+            "text": "200"
+          },
+          "figure": {
+            "tag": {
+              "start": "200円"
+            }
+          }
+        },
+        {
+          "say": "スタンプの数は、別の変数に入れておきます。",
+          "part": {
+            "line": 3,
+            "text": "count",
+            "note": "個数"
+          },
+          "figure": {
+            "tag": {
+              "step": "4個"
+            }
+          }
+        },
+        {
+          "say": "お金を入れると、貯金が 300 円になりました。",
+          "speech": "お金を入れると、貯金が三百円になりました。",
+          "part": {
+            "line": 5,
+            "text": "+="
+          },
+          "figure": {
+            "tag": {
+              "start": "300円"
+            }
+          }
+        },
+        {
+          "say": "プラスプラスは、値を一つ増やす書き方です。",
+          "term": {
+            "text": "++",
+            "note": "一つ増やす"
+          },
+          "pause": 1
+        },
+        {
+          "say": "この行で、スタンプの数を 5 にします。",
+          "speech": "この行で、スタンプの数をごにします。",
+          "part": {
+            "line": 7,
+            "text": "++"
+          },
+          "figure": {
+            "tag": {
+              "step": "5個"
+            }
+          }
+        },
+        {
+          "say": "増やす量に合わせて、二つを使い分けましょう。",
+          "figure": {
+            "pulse": ["start"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 現在の貯金額を作る",
+        "let total = 200;",
+        "// 貯金額に百円を足して入れ直す",
+        "total += 100;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 1,
+                "text": "="
+              },
+              {
+                "line": 3,
+                "text": "+="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一方の色は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "total"
+              },
+              {
+                "line": 1,
+                "text": "200"
+              },
+              {
+                "line": 3,
+                "text": "total"
+              },
+              {
+                "line": 3,
+                "text": "100"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "点数はいくつになる",
+      "code": [
+        "// 現在の点数を作る",
+        "let points = 5;",
+        "// 点数に三点を足す",
+        "points += 3;",
+        "// もう一度、点数に三点を足す",
+        "points += 3;"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "5 点が入った変数に、3 点を 2 回足しました。",
+          "speech": "五点が入った変数に、三点を二回足しました。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "最後の点数はいくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 現在の点数を作る",
+        "let points = 5;",
+        "// 点数に三点を足す",
+        "points += 3;",
+        "// もう一度、点数に三点を足す",
+        "points += 3;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最後は 11 点です。",
+          "speech": "最後は十一点です。",
+          "figure": {
+            "tag": {
+              "result": "11"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "足すたびに今の値を使う",
+      "code": [
+        "// 現在の点数を作る",
+        "let points = 5;",
+        "// 点数に三点を足す",
+        "points += 3;",
+        "// もう一度、点数に三点を足す",
+        "points += 3;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "初めは、点数に 5 が入っています。",
+          "speech": "初めは、点数に五が入っています。",
+          "part": {
+            "line": 1,
+            "text": "5"
+          },
+          "figure": {
+            "tag": {
+              "start": "5"
+            }
+          }
+        },
+        {
+          "say": "最初の足し算で、点数が 8 になりました。",
+          "speech": "最初の足し算で、点数が八になりました。",
+          "part": {
+            "line": 3,
+            "text": "+= 3"
+          },
+          "figure": {
+            "tag": {
+              "step": "8"
+            }
+          }
+        },
+        {
+          "say": "次の行は、その 8 に 3 を足します。",
+          "speech": "次の行は、その八に三を足します。",
+          "part": {
+            "line": 5,
+            "text": "+= 3"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "合計が 11 になり、同じ変数に入りました。",
+          "speech": "合計が十一になり、同じ変数に入りました。",
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "たとえば、貯金額に入れたお金を足す場面です。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "スタンプを押すたびに、個数を一つ増やします。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "商品が届いたら、その数を在庫に足しましょう。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問5で使う",
+      "code": [
+        "// 問5 1から n までの合計を返す（for 文で足していく）",
+        "//     例: sumTo(10) → 55",
+        "export function sumTo(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問5では、1から最後の数までを順に足します。",
+          "speech": "問ごでは、一から最後の数までを順に足します。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "合計に足して入れ直す記号は、プラスイコールです。",
+          "part": {
+            "line": 2,
+            "text": "sumTo"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "足す数を一つずつ進めるときは、プラスプラスを使いましょう。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b1313afe3a91860681b40c9fab66420ffda833f7c802bc1e80369cf5571b2360"
+  }
+}

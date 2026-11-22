@@ -99,7 +99,7 @@ export function FruitCount({ beats }: MotionProps) {
           id,
           {
             x: x - 480,
-            y: apple ? 60 : 30 + i * 53,
+            y: apple ? 114 : 30 + i * 53,
             duration: settle - move,
             ease: "power2.inOut",
           },
@@ -153,7 +153,7 @@ export function FruitCount({ beats }: MotionProps) {
         <Text x={1365} y={484} size={120}>
           {count}個
         </Text>
-        <path d="M 1137 647 H 1593" stroke={LINE} strokeWidth={6} strokeLinecap="round" />
+        <path d="M 1137 712 H 1593" stroke={LINE} strokeWidth={6} strokeLinecap="round" />
       </g>
       {FRUIT.map(({ kind, x }, i) => (
         <g id={`fruit-${i}`} key={`${kind}-${x}`}>
@@ -164,7 +164,7 @@ export function FruitCount({ beats }: MotionProps) {
           </g>
         </g>
       ))}
-      <Callout id="fruit-if" x={1365} y={776} text="if" />
+      <Callout id="fruit-if" x={1365} y={810} text="if" />
     </Stage>
   );
 }

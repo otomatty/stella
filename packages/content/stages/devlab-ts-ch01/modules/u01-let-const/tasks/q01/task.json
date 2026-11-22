@@ -35,32 +35,32 @@
     {
       "id": "q01-05-sum-to",
       "title": "1から n までの合計を返す",
-      "after": "1-2-1"
+      "after": "1-2-3"
     },
     {
       "id": "q01-06-factorial",
       "title": "n の階乗を返す",
-      "after": "1-2-1"
+      "after": "1-2-4"
     },
     {
       "id": "q01-07-count-down",
       "title": "n から 1 まで数えて、最後に「発射」を付けた文字列を返す",
-      "after": "1-2-2"
+      "after": "1-2-6"
     },
     {
       "id": "q01-08-power",
       "title": "base の exponent 乗を返す",
-      "after": "1-2-2"
+      "after": "1-2-7"
     },
     {
       "id": "q01-09-count-char",
       "title": "text の中に char が何回出てくるかを返す",
-      "after": "1-2-3"
+      "after": "1-2-9"
     },
     {
       "id": "q01-10-reverse-text",
       "title": "文字列を逆順にして返す",
-      "after": "1-2-3"
+      "after": "1-2-10"
     },
     {
       "id": "q01-11-digit-sum",
@@ -90,7 +90,7 @@
     {
       "id": "q01-16-count-vowels",
       "title": "英字の文字列に含まれる母音の数を返す",
-      "after": "1-2-3"
+      "after": "1-2-10"
     },
     {
       "id": "q01-17-collatz-steps",

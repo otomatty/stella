@@ -1,0 +1,714 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字を前につないだときに、並びがどう変わるかを言える。",
+    "stuck": "後ろにつなぐ書き方のままで、元と同じ並びになることに気付いていない。",
+    "points": ["取り出した文字を前につなぐと、逆の順番になります。"],
+    "leaveOut": ["配列を使う書き方", "問10の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A single white ceramic plate with a blue rim, seen in three-quarter view. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "Hands setting a white plate with a violet rim onto a plate with a blue rim. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A stack of three white ceramic plates with magenta, violet and blue rims visible from top to bottom. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "books": {
+      "prompt": "A stack of three plain blue and violet hardcover books. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "history": {
+      "prompt": "A vertical pile of blank violet appointment cards with the newest card lifted above it. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "はじめの皿",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "上に置く",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "上からの順",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "お皿の重なり",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "本の積み重ね",
+          "art": "books",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "新しい順の記録",
+          "art": "history",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "元の文字列",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "逆順の文字列",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "stack-plates",
+      "beats": [
+        {
+          "say": "この動画では、文字を逆の順番に並べる方法を学びます。"
+        },
+        {
+          "say": "お皿を洗って、1枚ずつ上に重ねていきました。",
+          "speech": "お皿を洗って、一枚ずつ上に重ねていきました。"
+        },
+        {
+          "say": "最後に置いたお皿が、いちばん上です。"
+        },
+        {
+          "say": "文字を前につなぐと、並びが逆になります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "お皿を上に重ねる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "最初に、青いお皿を置きます。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "青"
+          }
+        },
+        {
+          "say": "その上に、紫のお皿を重ねました。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "紫が上"
+          }
+        },
+        {
+          "say": "最後に置いた桃色のお皿が、いちばん上です。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "桃、紫、青"
+          }
+        },
+        {
+          "say": "上からの順は、置いた順の逆になりました。",
+          "pulse": ["start"]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "新しい文字を左に置く",
+      "code": [
+        "// 今までの文字を用意する",
+        "let result = \"青\";",
+        "// 次に受け取った文字を用意する",
+        "const c = \"紫\";",
+        "// 受け取った文字を先頭につないで入れ直す",
+        "result = c + result;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "先に来た青を、結果に入れます。",
+          "part": {
+            "line": 1,
+            "text": "result",
+            "note": "結果"
+          },
+          "figure": {
+            "tag": {
+              "start": "青"
+            }
+          }
+        },
+        {
+          "say": "次に来た文字は、紫です。",
+          "part": {
+            "line": 3,
+            "text": "c",
+            "note": "新しい文字"
+          },
+          "figure": {
+            "tag": {
+              "step": "紫"
+            }
+          }
+        },
+        {
+          "say": "新しい文字を、足す記号の左に置きましょう。",
+          "part": {
+            "line": 5,
+            "text": "c + result"
+          },
+          "figure": {
+            "tag": {
+              "result": "紫青"
+            }
+          }
+        },
+        {
+          "say": "つないだ文字列が、結果に入りました。",
+          "part": {
+            "line": 5,
+            "text": "result ="
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "note-1",
+      "kind": "code",
+      "role": "note",
+      "title": "後ろにつなぐと元の順番",
+      "code": [
+        "// 今までの文字を用意する",
+        "let result = \"青\";",
+        "// 次に受け取った文字を用意する",
+        "const c = \"紫\";",
+        "// 受け取った文字を後ろにつないで入れ直す",
+        "result += c;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "プラスイコールを使うと、青の後ろに紫をつなぎます。",
+          "part": {
+            "line": 5,
+            "text": "+= c"
+          },
+          "figure": {
+            "tag": {
+              "result": "青紫"
+            }
+          }
+        },
+        {
+          "say": "この書き方では、受け取った順のままです。",
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "数字の文字列を逆順にする",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let result = \"\";",
+        "// 数字の文字列から一文字ずつ取り出す",
+        "for (const c of \"123\") {",
+        "  // 取り出した文字を今までの結果の前につなぐ",
+        "  result = c + result;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "初めは、空の文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"\""
+          },
+          "figure": {
+            "tag": {
+              "result": "空"
+            }
+          }
+        },
+        {
+          "say": "取り出した一を、いちばん前に置きます。",
+          "part": {
+            "line": 5,
+            "text": "c + result"
+          },
+          "figure": {
+            "tag": {
+              "step": "1",
+              "result": "1"
+            }
+          }
+        },
+        {
+          "say": "次は二を前に置いて、二、一になりました。",
+          "figure": {
+            "tag": {
+              "step": "2",
+              "result": "21"
+            }
+          }
+        },
+        {
+          "say": "三を前に置いた結果は、三、二、一です。",
+          "figure": {
+            "tag": {
+              "step": "3",
+              "result": "321"
+            }
+          }
+        },
+        {
+          "say": "取り出す順と、出来上がる順を見くらべましょう。",
+          "part": {
+            "line": 3,
+            "text": "\"123\""
+          },
+          "figure": {
+            "tag": {
+              "start": "123"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 今までの文字を用意する",
+        "let result = \"青\";",
+        "// 次に受け取った文字を用意する",
+        "const c = \"紫\";",
+        "// 受け取った文字を先頭につないで入れ直す",
+        "result = c + result;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 3,
+                "text": "const"
+              },
+              {
+                "line": 5,
+                "text": "="
+              },
+              {
+                "line": 5,
+                "text": "+"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一つの色は、この例に合わせて自分で決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "result"
+              },
+              {
+                "line": 1,
+                "text": "\"青\""
+              },
+              {
+                "line": 3,
+                "text": "c"
+              },
+              {
+                "line": 3,
+                "text": "\"紫\""
+              },
+              {
+                "line": 5,
+                "text": "c"
+              },
+              {
+                "line": 5,
+                "text": "result"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "二つの文字を前につなぐと",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let result = \"\";",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"xy\") {",
+        "  // 取り出した文字を今までの結果の前につなぐ",
+        "  result = c + result;",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "今度は、先に x、次に y を取り出します。",
+          "speech": "今度は、先にエックス、次にワイを取り出します。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "それぞれ前につなぐと、答えは何になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let result = \"\";",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"xy\") {",
+        "  // 取り出した文字を今までの結果の前につなぐ",
+        "  result = c + result;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは、yx です。",
+          "speech": "答えは、ワイエックスです。",
+          "figure": {
+            "tag": {
+              "result": "yx"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "後から取った文字が先頭になる",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let result = \"\";",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"xy\") {",
+        "  // 取り出した文字を今までの結果の前につなぐ",
+        "  result = c + result;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "はじめに、x だけが入りました。",
+          "speech": "はじめに、エックスだけが入りました。",
+          "part": {
+            "line": 3,
+            "text": "\"xy\""
+          },
+          "figure": {
+            "tag": {
+              "start": "x"
+            }
+          }
+        },
+        {
+          "say": "二回目には、y を左に置きます。",
+          "speech": "二回目には、ワイを左に置きます。",
+          "part": {
+            "line": 5,
+            "text": "c + result"
+          },
+          "figure": {
+            "tag": {
+              "step": "y + x"
+            }
+          }
+        },
+        {
+          "say": "だから、順番は y、x です。",
+          "speech": "だから、順番はワイ、エックスです。",
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "お皿の重なりのように、後から来たものが上になります。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "本の積み重ねでも、後から積んだ本がいちばん上です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "新しい記録を先頭にしたいときにも使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問10で使う",
+      "code": [
+        "// 問10 文字列を逆順にして返す（for-of で1文字ずつ前に足していく）",
+        "//     例: reverseText(\"abc\") → \"cba\"",
+        "export function reverseText(text: string): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問10では、文字列を逆順にして返します。",
+          "speech": "問じゅうでは、文字列を逆順にして返します。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "引数の文字列を、左から一文字ずつ取り出しましょう。",
+          "part": {
+            "line": 2,
+            "text": "text: string"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "空の文字列を受け取った場合も、考えてください。",
+          "figure": {
+            "tag": {
+              "result": "空の場合も"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "8b72f7169cdb21836bd1f47478f6aac62956d30d060199346f9686b05c0261ed"
+  }
+}

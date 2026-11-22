@@ -412,6 +412,33 @@ export function shippingFee(subtotal: number, isMember: boolean): number {
 
 「以上」は `>=`、「または」は `||` です。「isMember が true」は、`isMember` とだけ書きます。
 
+### 問 16 母音の数を返す
+
+母音は `a`、`e`、`i`、`o`、`u` の五つの英字です。
+
+**テストで確かめる値**
+
+- `countVowels("education")` は `5`
+- `countVowels("rhythm")` は `0`（母音がない）
+- `countVowels("")` は `0`
+
+**ヒント 1 日本語の手順**
+
+```ts
+export function countVowels(text: string): number {
+  // 母音 vowels を作り、"aeiou" を入れる
+  // 数 count を入れ直せる変数として作り、0 を入れる
+  // text から 1 文字ずつ c に取り出してくり返す
+  //   もし vowels に c が含まれるなら
+  //     count を 1 増やす
+  // count を返す
+}
+```
+
+**ヒント 2 コードへの直し方**
+
+「vowels に c が含まれる」は、1-2 の「もっと知りたい人へ」で説明した `.includes()` を使います。問9 と同じ形で、条件だけが違います。
+
 ### 問 17 n が 1 になるまでの手順の数を返す
 
 **テストで確かめる値**

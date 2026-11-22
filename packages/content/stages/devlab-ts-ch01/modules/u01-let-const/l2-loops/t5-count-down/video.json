@@ -1,0 +1,685 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "逆向きの for を読んで、値の順番と止まる値を言える。",
+    "stuck": "始めの数を大きくしても、進め方や続ける条件を増やす場合のままにしている。",
+    "points": ["i-- で 1 ずつ減らし、>= で終わりを決めると、大きい数から数えられます。"],
+    "leaveOut": ["文字列としてつなぐ書き方", "問7の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A white rocket with small violet fins standing on a blue launch pad. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A close view of a blank blue electronic countdown display with two indicator lights. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A grounded white rocket at dusk with a single magenta readiness light on its pad. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "timer": {
+      "prompt": "A compact violet kitchen timer with a blank face. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "queue": {
+      "prompt": "A row of blank blue paper tickets with clean torn edges. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "始めの番号",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "減らす",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "止まる",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "打ち上げ",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "タイマー",
+          "art": "timer",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "逆順の券番号",
+          "art": "queue",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "始めの数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "数える順",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "rocket-countdown",
+      "beats": [
+        {
+          "say": "この動画では、大きい数から数える書き方を学びます。"
+        },
+        {
+          "say": "打ち上げの前に数える数は、5から1までです。",
+          "speech": "打ち上げの前に数える数は、ごからいちまでです。"
+        },
+        {
+          "say": "1まで数えると、カウントダウンが終わります。",
+          "speech": "いちまで数えると、カウントダウンが終わります。"
+        },
+        {
+          "say": "1ずつ減らすのが、マイナスマイナスです。",
+          "speech": "一ずつ減らすのが、マイナスマイナスです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "大きい数から数える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "打ち上げ前に、5 から数え始めます。",
+          "speech": "打ち上げ前に、ごから数え始めます。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "5"
+          }
+        },
+        {
+          "say": "次に表示するのは、4 です。",
+          "speech": "次に表示するのは、よんです。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "4"
+          }
+        },
+        {
+          "say": "さらに一つずつ減らすと、3、2 と進みます。",
+          "speech": "さらに一つずつ減らすと、さん、にと進みます。",
+          "tag": {
+            "step": "3 → 2"
+          }
+        },
+        {
+          "say": "1 を表示し終えたら、それ以上は数えません。",
+          "speech": "いちを表示し終えたら、それ以上は数えません。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "1で最後"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "以上と減らす記号を使う",
+      "code": [
+        "// 五から一まで一ずつ減らす",
+        "for (let i = 5; i >= 1; i--) {",
+        "  // その回の番号を表示する",
+        "  console.log(i);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "大きいほうの数から始めましょう。",
+          "part": {
+            "line": 1,
+            "text": "let i = 5"
+          },
+          "figure": {
+            "tag": {
+              "start": "5"
+            }
+          }
+        },
+        {
+          "say": "大なりイコールは、以上という意味です。",
+          "term": {
+            "text": ">=",
+            "note": "同じ値も含む"
+          },
+          "pause": 1
+        },
+        {
+          "say": "一のときも含めて、その周の処理をします。",
+          "part": {
+            "line": 1,
+            "text": "i >= 1"
+          },
+          "figure": {
+            "tag": {
+              "result": "1も実行"
+            }
+          }
+        },
+        {
+          "say": "一つずつ減らす記号が、マイナスマイナスです。",
+          "term": {
+            "text": "--",
+            "note": "一つ減らす"
+          },
+          "pause": 1
+        },
+        {
+          "say": "周が終わるたびに、番号を一つ減らします。",
+          "part": {
+            "line": 1,
+            "text": "i--"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "五から一まで表示する",
+      "code": [
+        "// 五から一まで一ずつ減らす",
+        "for (let i = 5; i >= 1; i--) {",
+        "  // その回の番号を表示する",
+        "  console.log(i);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初に表示するのは、5 です。",
+          "speech": "最初に表示するのは、ごです。",
+          "part": {
+            "line": 3,
+            "text": "console.log(i)"
+          },
+          "figure": {
+            "tag": {
+              "step": "5"
+            }
+          }
+        },
+        {
+          "say": "その周のあと、番号を 4 に減らします。",
+          "speech": "その周のあと、番号をよんに減らします。",
+          "part": {
+            "line": 1,
+            "text": "i--"
+          },
+          "figure": {
+            "tag": {
+              "step": "4"
+            }
+          }
+        },
+        {
+          "say": "同じ手順で、3、2、1 と表示しました。",
+          "speech": "同じ手順で、さん、に、いちと表示しました。",
+          "figure": {
+            "tag": {
+              "step": "3、2、1"
+            }
+          }
+        },
+        {
+          "say": "次はゼロになり、一以上の条件を満たしません。",
+          "part": {
+            "line": 1,
+            "text": "i >= 1"
+          },
+          "figure": {
+            "tag": {
+              "result": "0で終了"
+            }
+          }
+        },
+        {
+          "say": "そのため、ゼロは表示されずに終わります。",
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 五から一まで一ずつ減らす",
+        "for (let i = 5; i >= 1; i--) {",
+        "  // その回の番号を表示する",
+        "  console.log(i);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "for"
+              },
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 1,
+                "text": ";"
+              },
+              {
+                "line": 1,
+                "text": ">="
+              },
+              {
+                "line": 1,
+                "text": "--"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一方の色は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "i"
+              },
+              {
+                "line": 1,
+                "text": "5"
+              },
+              {
+                "line": 1,
+                "text": "1"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "逆から足した合計は",
+      "code": [
+        "// 合計をゼロから始める",
+        "let total = 0;",
+        "// 三から一まで一ずつ減らす",
+        "for (let i = 3; i >= 1; i--) {",
+        "  // その回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "今度は、三から逆向きに数えます。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "数えた値を足すと、合計はいくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 合計をゼロから始める",
+        "let total = 0;",
+        "// 三から一まで一ずつ減らす",
+        "for (let i = 3; i >= 1; i--) {",
+        "  // その回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "合計は、六です。",
+          "figure": {
+            "tag": {
+              "result": "6"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "順番を逆にしても足す数は同じ",
+      "code": [
+        "// 合計をゼロから始める",
+        "let total = 0;",
+        "// 三から一まで一ずつ減らす",
+        "for (let i = 3; i >= 1; i--) {",
+        "  // その回の番号を合計に足す",
+        "  total += i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初の番号は、三です。",
+          "part": {
+            "line": 3,
+            "text": "let i = 3"
+          },
+          "figure": {
+            "tag": {
+              "start": "3"
+            }
+          }
+        },
+        {
+          "say": "次の番号は、二と一になります。",
+          "part": {
+            "line": 3,
+            "text": "i--"
+          },
+          "figure": {
+            "tag": {
+              "step": "2 → 1"
+            }
+          }
+        },
+        {
+          "say": "三、二、一を足した合計は、六です。",
+          "part": {
+            "line": 5,
+            "text": "total += i"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "ゼロになったところで、くり返しを止めます。",
+          "part": {
+            "line": 3,
+            "text": "i >= 1"
+          },
+          "figure": {
+            "tag": {
+              "step": "0で終了"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "打ち上げ前の表示は、大きい数から減らします。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "タイマーの残り時間も、減っていく表示です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "大きい番号の券から確認するときにも使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問7で使う",
+      "code": [
+        "// 問7 n から 1 まで数えて、最後に「発射」を付けた文字列を返す",
+        "//     例: countDown(3) → \"3, 2, 1, 発射\"",
+        "export function countDown(n: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問7では、n から 1 まで逆向きに数えます。",
+          "speech": "問ななでは、エヌからいちまで逆向きに数えます。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "数え始める値は、引数 n です。",
+          "speech": "数え始める値は、引数エヌです。",
+          "part": {
+            "line": 2,
+            "text": "n: number"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "どこまで数えるかを決めてから、一つずつ減らしましょう。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ccf7e381fec75be9b36a23e65609c03be1f874dae5c84d57c0a151ca0ba2a3b2"
+  }
+}
