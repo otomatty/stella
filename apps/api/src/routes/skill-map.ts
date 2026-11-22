@@ -89,6 +89,8 @@ import {
   wantsDevReveal,
 } from "../lib/skill-map-data.js";
 import type { SkillMapSource, StaffSkillMapStageRow } from "../lib/skill-map-data.js";
+import { loadStageContentSummaries } from "../lib/stage-content-summary.js";
+import type { StageContentSummary } from "../lib/stage-content-summary.js";
 import type { Env } from "../env.js";
 
 export const skillMapRoute = new Hono<{ Bindings: Env }>();
@@ -232,6 +234,30 @@ function hasIconPayload(
     : {};
 }
 
+export interface StageContentPayload {
+  units: number;
+  videos: number;
+  texts: number;
+  knowledge_questions: number;
+  tasks: number;
+  problems: number;
+  runners: string[];
+  planned_hours: number | null;
+}
+
+function toStageContentPayload(summary: StageContentSummary): StageContentPayload {
+  return {
+    units: summary.units,
+    videos: summary.videos,
+    texts: summary.texts,
+    knowledge_questions: summary.knowledgeQuestions,
+    tasks: summary.tasks,
+    problems: summary.problems,
+    runners: summary.runners,
+    planned_hours: summary.plannedHours,
+  };
+}
+
 /** 応答に載せる 1 つの星。視界に応じて欠ける項目がある。 */
 export interface SkillMapStagePayload {
   id: string;
@@ -261,6 +287,8 @@ export interface SkillMapStagePayload {
   has_icon?: true;
   /** `full` かつ locked でない星にだけ入る。 */
   can_do?: string;
+  /** 開発者表示でも `full` かつ locked でない星にだけ入る。 */
+  content?: StageContentPayload;
   /**
    * `full` かつ locked の星にだけ入る (2 歩先から先には出さない)。未充足の前提の表示名 —
    * 名前の見えている前提はタイトル、それ以外はテーマ名 / 伏せ字、未知 slug は「非公開の教材」。
@@ -474,6 +502,22 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
         },
       ];
     });
+
+    const contentStages = payload.filter(
+      (stage) => stage.visibility === "full" && stage.state !== "locked",
+    );
+    try {
+      const summaries = await loadStageContentSummaries(
+        db,
+        contentStages.map((stage) => stage.id),
+      );
+      for (const stage of contentStages) {
+        const summary = summaries.get(stage.id);
+        if (summary) stage.content = toStageContentPayload(summary);
+      }
+    } catch (err) {
+      console.error("[skill-map] 教材の集計に失敗しました", err);
+    }
 
     // 集中ボーナスは表示専用の係数 (XP の保存値は動かさない)。導出仕様は
     // `@stella/shared/skill-map/focus` の JSDoc にまとめてある。
@@ -689,6 +733,7 @@ export interface StaffSkillMapStagePayload {
   appearances?: string[];
   appearance_parent_ids?: Record<string, string>;
   has_icon?: true;
+  content?: StageContentPayload;
   /** 盤面の描き分けに使う値。管理画面では常に unlocked。 */
   state: "unlocked";
   visibility: "full";
@@ -774,6 +819,15 @@ skillMapRoute.get("/api/skill-map/staff", async (c) => {
     const { caller, db } = await getCaller(c);
     requireAdmin(caller);
     const { stages, cycles } = buildStaffSkillMap(await loadStaffSkillMapRows(db));
+    try {
+      const summaries = await loadStageContentSummaries(db);
+      for (const stage of stages) {
+        const summary = summaries.get(stage.id);
+        if (summary) stage.content = toStageContentPayload(summary);
+      }
+    } catch (err) {
+      console.error("[skill-map] 教材の集計に失敗しました", err);
+    }
     if (cycles.length > 0) {
       console.error("[skill-map] 前提が循環しています", JSON.stringify(cycles));
     }

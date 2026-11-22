@@ -15,6 +15,17 @@ import { emitStageCleared, toStageClearedEvents } from "./stage-clear-events";
 
 export type { SkillMapState, SkillMapVisibility };
 
+export interface StageContentPayload {
+  units: number;
+  videos: number;
+  texts: number;
+  knowledge_questions: number;
+  tasks: number;
+  problems: number;
+  runners: string[];
+  planned_hours: number | null;
+}
+
 /** スキルマップの星 1 つ。視界に応じて欠ける項目がある。 */
 export interface SkillMapStageNode {
   id: string;
@@ -37,6 +48,8 @@ export interface SkillMapStageNode {
    */
   has_icon?: true;
   can_do?: string;
+  /** 受講者には解放済み (full かつ locked 以外) の星にだけ入る。古い API には無い。 */
+  content?: StageContentPayload;
   lock_reasons?: string[];
   enrolled?: boolean;
   /**
