@@ -722,6 +722,21 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${definition}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", '"order"', "lesson_id", "variant_of"])};`,
   );
+  const steps = task.problemSteps ?? [];
+  if (steps.length > 0) {
+    const values = steps.map(
+      ({ problemId, stepLessonId, afterLessonId }, position) =>
+        `(${strLit(d.id)}, ${strLit(problemId)}, ${strLit(lessonUuid("ses", task.stageId, stepLessonId))}, ${strLit(lessonUuid("ses", task.stageId, afterLessonId))}, ${position})`,
+    );
+    lines.push(
+      `insert into task_problem_steps (task_id, problem_id, step_lesson_id, after_lesson_id, position) values ${values.join(", ")} on conflict (task_id, problem_id) ${doUpdate("task_problem_steps", ["step_lesson_id", "after_lesson_id", "position"])};`,
+    );
+  }
+  const keepSteps =
+    steps.length > 0
+      ? ` and problem_id not in (${steps.map((step) => strLit(step.problemId)).join(", ")})`
+      : "";
+  lines.push(`delete from task_problem_steps where task_id = ${strLit(d.id)}${keepSteps};`);
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
@@ -791,6 +806,10 @@ for (const [order, task] of content.tasks.entries()) {
       : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
+
+lines.push(
+  "delete from task_problem_steps where task_id in (select id from tasks where active = 0);",
+);
 
 // 新課題の行と配布版がそろったあと、章の課題で記録した問題結果を引き継ぐ。
 lines.push(

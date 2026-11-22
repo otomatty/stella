@@ -15,6 +15,7 @@ import {
   certificates,
   contentUnits,
   lessons,
+  lessonProgress,
   enrollments,
   notifications,
   profiles,
@@ -26,6 +27,7 @@ import {
   submissionReviews,
   submissions,
   taskProblemResults,
+  taskProblemSteps,
   taskProgress,
   taskRevisions,
   tasks,
@@ -324,6 +326,138 @@ describe("問題の提出", () => {
       }
     },
   );
+
+  it("動画と直前の問題の提出で解放し、管理者の引き継ぎも数える", async () => {
+    const built = await problemBundle(CURRENT, PROBLEMS, true);
+    const definition = JSON.stringify(built.definition);
+    const bundle = JSON.stringify(built.bundle);
+    await db.batch([
+      db.update(tasks).set({ definition, bundle }).where(eq(tasks.id, TASK_ID)),
+      db.update(taskRevisions).set({ definition, bundle }).where(eq(taskRevisions.taskId, TASK_ID)),
+      db.insert(lessons).values([
+        { id: "video", sectionId: "unit", title: "計算の基礎", type: "slides", order: 0 },
+        { id: "step-sub", sectionId: "unit", title: "問2 引く", type: "text", order: 1 },
+        { id: "step-add", sectionId: "unit", title: "問1 足す", type: "text", order: 2 },
+      ]),
+      db.insert(taskProblemSteps).values([
+        {
+          taskId: TASK_ID,
+          problemId: "q01-add",
+          stepLessonId: "step-add",
+          afterLessonId: "video",
+          position: 1,
+        },
+        {
+          taskId: TASK_ID,
+          problemId: "q02-sub",
+          stepLessonId: "step-sub",
+          afterLessonId: "video",
+          position: 0,
+        },
+      ]),
+      db.insert(lessonProgress).values({ userId: "learner", lessonId: "video", completed: false }),
+    ]);
+    const input = await problemInput(CURRENT, PROBLEMS, "q01-add");
+    input.localResult.manifestSha256 = await hashBytes(
+      new TextEncoder().encode(built.manifestText),
+    );
+    async function results() {
+      const response = await request(app(), env, `/api/tasks/problem-results?taskId=${TASK_ID}`, {
+        token,
+      });
+      expect(response.status).toBe(200);
+      return response.json();
+    }
+    const lockedVideo = await post(input);
+    expect(lockedVideo.status).toBe(409);
+    expect(await lockedVideo.json()).toMatchObject({
+      error: "この問題はまだ解けません。先に計算の基礎の動画を見てください。",
+    });
+    expect(await results()).toMatchObject({
+      gated: true,
+      problems: [
+        { id: "q02-sub", state: "locked-video", stepLessonId: "step-sub", afterLessonId: "video" },
+        { id: "q01-add", state: "locked-video", stepLessonId: "step-add", afterLessonId: "video" },
+      ],
+    });
+
+    await db
+      .update(lessonProgress)
+      .set({ completed: true })
+      .where(eq(lessonProgress.lessonId, "video"));
+    expect(await results()).toMatchObject({
+      problems: [{ state: "open" }, { state: "locked-previous" }],
+    });
+    const lockedPrevious = await post(input);
+    expect(lockedPrevious.status).toBe(409);
+    expect(await lockedPrevious.json()).toMatchObject({
+      error: "この問題はまだ解けません。先に前の問題を提出してください。",
+    });
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+
+    await db
+      .update(lessonProgress)
+      .set({ completed: false })
+      .where(eq(lessonProgress.lessonId, "video"));
+    expect((await manual(["q02-sub"])).status).toBe(200);
+    expect(await results()).toMatchObject({
+      problems: [{ state: "submitted", source: "manual" }, { state: "locked-video" }],
+    });
+    await db
+      .update(lessonProgress)
+      .set({ completed: true })
+      .where(eq(lessonProgress.lessonId, "video"));
+    await db.update(taskProblemResults).set({ contentHash: "old" });
+    expect(await results()).toMatchObject({
+      problems: [{ state: "open" }, { state: "locked-previous" }],
+    });
+    await db.update(taskProblemResults).set({ contentHash: CURRENT });
+    const stage = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+    expect(stage.status).toBe(200);
+    expect(await stage.json()).toMatchObject({
+      tasks: expect.arrayContaining([
+        expect.objectContaining({
+          id: TASK_ID,
+          problems_total: 2,
+          problems_passed: 1,
+          problems: [
+            {
+              id: "q02-sub",
+              title: "引く",
+              label: "問2",
+              stepLessonId: "step-sub",
+              afterLessonId: "video",
+              state: "submitted",
+            },
+            {
+              id: "q01-add",
+              title: "足す",
+              label: "問1",
+              stepLessonId: "step-add",
+              afterLessonId: "video",
+              state: "open",
+            },
+          ],
+        }),
+      ]),
+    });
+    expect((await post(input)).status).toBe(201);
+    expect(await results()).toMatchObject({
+      problems: [
+        { state: "submitted", source: "manual" },
+        { state: "submitted", source: "tests" },
+      ],
+    });
+    const old = await request(app(), env, `/api/tasks/bundle?taskId=${TASK_ID}&extension=0.10.1`, {
+      token,
+    });
+    expect(old.status).toBe(426);
+    expect(await old.json()).toMatchObject({ error: expect.stringContaining("0.11.0") });
+    expect(
+      (await request(app(), env, `/api/tasks/bundle?taskId=${TASK_ID}&extension=0.11.0`, { token }))
+        .status,
+    ).toBe(200);
+  });
 
   it("manual合格の取消しで本人の問題の相談のレビュー待ちを消さない", async () => {
     await submitProblem("q01-add");
@@ -1677,7 +1811,11 @@ describe("問題の提出", () => {
   });
 });
 
-async function problemBundle(contentHash: string, problems: { id: string; title: string }[]) {
+async function problemBundle(
+  contentHash: string,
+  problems: { id: string; title: string }[],
+  gated = false,
+) {
   const manifest: TaskManifest = {
     schemaVersion: 1,
     id: TASK_ID,
@@ -1685,6 +1823,7 @@ async function problemBundle(contentHash: string, problems: { id: string; title:
     kind: "basic",
     runner: "node-test",
     problems,
+    ...(gated ? { problemSteps: true } : {}),
     submit: { files: ["src/**/*.ts"] },
     protected: ["tests/**/*.test.ts"],
     checks: { lint: false, format: false },
@@ -1712,7 +1851,7 @@ async function problemBundle(contentHash: string, problems: { id: string; title:
   const definition = {
     submit: { explanation: true, debuggingRecord: true },
     skills: { assesses: ["calc"] },
-    problems,
+    problems: gated ? problems.map((problem) => ({ ...problem, after: "video" })) : problems,
   };
   return { bundle, definition, manifestText, protectedFiles };
 }

@@ -11,7 +11,7 @@ import { buildContentManifest, collectStageThumbnails } from "./manifest.js";
 import { LEARNING_PROGRAM_SLUGS } from "../../shared/src/study/pace.js";
 
 describe("buildContentManifest", () => {
-  const { stages, quizzes } = buildContentManifest();
+  const { stages, quizzes, tasks } = buildContentManifest();
   const sample = stages.find((c) => c.id === "salesforce-dev-basics");
   if (!sample) throw new Error("salesforce-dev-basics stage missing");
   const sampleQuizzes = quizzes.filter((q) => q.stageId === "salesforce-dev-basics");
@@ -20,6 +20,42 @@ describe("buildContentManifest", () => {
     expect(stages.map((c) => c.id)).toContain("salesforce-dev-basics");
     expect(sample.category).toBe("Salesforce案件");
     expect(sample.title).toBe("Salesforce 開発 入門");
+  });
+
+  it("q01 の課題文と問題を動画の直後に置き、動画順に提出する", () => {
+    const stage = stages.find((item) => item.id === "devlab-ts-ch01");
+    const lessons = stage?.sections?.find((section) => section.id === "u01-let-const")?.lessons;
+    const task = tasks.find((item) => item.definition.id === "devlab-ts-ch01/u01-let-const/q01");
+    expect(lessons?.slice(0, 13).map((lesson) => lesson.id)).toEqual([
+      "1-1-1",
+      "1-1-2",
+      "1-1-3",
+      "1-1-4",
+      "1-1-5",
+      "1-1-6",
+      "1-1-7",
+      "task-u01-let-const-q01",
+      "problem-u01-let-const-q01-q01-01-add-tax",
+      "1-1-8",
+      "1-1-9",
+      "1-1-10",
+      "problem-u01-let-const-q01-q01-02-split-bill",
+    ]);
+    expect(lessons?.[8]).toMatchObject({
+      title: "問1 税込価格を返す",
+      type: "text",
+      markdown: expect.stringContaining("例: addTax(1000) → 1100"),
+    });
+    expect(lessons?.find((lesson) => lesson.id.endsWith("q01-q01-let-const"))?.title).toBe(
+      "応用 letとconst（応用問題）",
+    );
+    expect(task?.problemSteps).toHaveLength(21);
+    expect(task?.problemSteps?.slice(8, 12).map((step) => step.problemId)).toEqual([
+      "q01-09-count-char",
+      "q01-10-reverse-text",
+      "q01-16-count-vowels",
+      "q01-11-digit-sum",
+    ]);
   });
 
   it("標準18ステージの予定時間が教材から入り、合計1229時間になる", () => {

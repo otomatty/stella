@@ -624,6 +624,13 @@
       "when": 1795046400007,
       "tag": "0091_lesson_comment_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "6",
+      "when": 1795046400008,
+      "tag": "0092_task_problem_steps",
+      "breakpoints": true
     }
   ]
 }

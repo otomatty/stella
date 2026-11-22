@@ -26,6 +26,9 @@ import {
   referenceNotesMarkdown,
   referencesMarkdown,
 } from "./source-references.js";
+import { problemStepLabel } from "../../shared/src/tasks/problem-steps.js";
+import { problemFiles, type TaskProblem } from "../../shared/src/tasks/problems.js";
+import { RUNNERS } from "../../shared/src/tasks/runners.js";
 import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
 import { isIslandWithoutRequirements } from "../../shared/src/skill-map/islands.js";
 import { sortNatural } from "./natural-order.mjs";
@@ -444,6 +447,80 @@ function assertPublicUnitStage(
     );
 }
 
+function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string): string {
+  const plan = RUNNERS[task.definition.runner].plan;
+  const path = problemFiles(plan, problem.id)?.source;
+  const file = path ? task.bundle.files[path] : undefined;
+  const source = file ? Buffer.from(file, "base64").toString("utf8") : "";
+  const body: string[] = [];
+  for (const line of source.split(/\r?\n/).map((value) => value.trim())) {
+    if (!line.startsWith("//") && (line || body.length)) break;
+    if (body.length || line.startsWith("// 問")) body.push(line.slice(2).trim());
+  }
+  return [
+    `# ${title}`,
+    ...(body.length ? [body.join("  \n")] : []),
+    "VS Code で開いて解き、確認して提出します。",
+  ].join("\n\n");
+}
+
+/** 指定された動画の単元に問題を置き、提出順をレッスンの位置から決めます。 */
+function insertProblemSteps(
+  sections: Section[],
+  tasks: TaskSeed[],
+  taskLessons: Map<string, Lesson>,
+) {
+  const topics = new Map(
+    sections.flatMap((section, unitIndex) =>
+      section.lessons.flatMap((lesson, lessonIndex) =>
+        lesson.type === "slides" ? [[lesson.id, { unitIndex, lessonIndex }] as const] : [],
+      ),
+    ),
+  );
+  const after = new Map<string, Lesson[]>();
+  for (const task of tasks) {
+    if (task.lessonId === null || !task.bundle.manifest.problemSteps) continue;
+    const unitIndex = sections.findIndex((section) => section.id === task.unitId);
+    const problems = (task.definition.problems ?? []).map((problem, index) => {
+      const afterLessonId = problem.after;
+      const topic = afterLessonId ? topics.get(afterLessonId) : undefined;
+      if (!afterLessonId || !topic || topic.unitIndex > unitIndex) {
+        throw new Error(
+          `${task.definition.id} の問題 ${problem.id} の after は同じ単元か前の単元のトピック ID を書いてください: ${problem.after}`,
+        );
+      }
+      return { problem, index, afterLessonId, ...topic };
+    });
+    problems.sort(
+      (a, b) => a.unitIndex - b.unitIndex || a.lessonIndex - b.lessonIndex || a.index - b.index,
+    );
+    const taskLesson = taskLessons.get(task.lessonId);
+    const taskId = task.definition.id.split("/")[2];
+    task.problemSteps = problems.map(({ problem, index, afterLessonId }, position) => {
+      const stepLessonId = `problem-${task.unitId}-${taskId}-${problem.id}`;
+      const title = `${problemStepLabel(problem.title, index)} ${problem.title}`;
+      const insert = after.get(afterLessonId) ?? [];
+      if (position === 0 && taskLesson) insert.push(taskLesson);
+      insert.push({
+        id: stepLessonId,
+        title,
+        type: "text",
+        duration: "",
+        status: "todo",
+        markdown: problemStepMarkdown(task, problem, title),
+      });
+      after.set(afterLessonId, insert);
+      return { problemId: problem.id, stepLessonId, afterLessonId };
+    });
+  }
+  for (const section of sections) {
+    section.lessons = section.lessons.flatMap((lesson) => [
+      lesson,
+      ...(after.get(lesson.id) ?? []),
+    ]);
+  }
+}
+
 function buildOneStage(
   slug: string,
   stageDir: string,
@@ -459,6 +536,7 @@ function buildOneStage(
     config.format === 2 ? registryIds(contentRoot, "skills.json") : new Set<string>();
   const moduleTitles = config.modules ?? {};
   const usedExerciseKeys = new Set<string>();
+  const taskLessons = new Map<string, Lesson>();
 
   for (const moduleDir of dirsIn(modulesRoot)) {
     const modulePath = join(modulesRoot, moduleDir);
@@ -623,14 +701,16 @@ function buildOneStage(
       // 類題 (#39) は課題文のレッスンを作らない。出題した受講者にだけ拡張が配る。
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
         if (task.lessonId === null) continue;
-        lessons.push({
+        const lesson: Lesson = {
           id: task.lessonId,
           title: `${task.definition.title} 課題文`,
           type: "text",
           duration: "5分",
           status: "todo",
           markdown: Buffer.from(task.bundle.files["README.md"], "base64").toString("utf8"),
-        });
+        };
+        if (task.bundle.manifest.problemSteps) taskLessons.set(task.lessonId, lesson);
+        else lessons.push(lesson);
       }
     }
 
@@ -651,6 +731,7 @@ function buildOneStage(
 
   // 固定した開始点が実装を含むのはステージの課題だけ (類題は出題した受講者にしか配らない)。
   assertFixedStartCovers(tasks.filter((t) => !t.variantOf));
+  insertProblemSteps(sections, tasks, taskLessons);
 
   // タイポしたキーの演習が黙って消えないように、未使用キーはビルドで落とす。
   const unusedExerciseKeys = Object.keys(config.exercises ?? {}).filter(

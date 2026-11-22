@@ -108,6 +108,7 @@ export interface TaskManifest {
    * (今の課題の内容ハッシュを変えないため)。
    */
   problems?: TaskProblem[];
+  problemSteps?: true;
   submit: {
     /** 提出するファイルの glob。提出と採点で読むのはここに当たるファイルだけ。 */
     files: string[];
@@ -459,6 +460,9 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
   const problemPlan = isRunnerId(raw.runner) ? RUNNERS[raw.runner].plan : null;
   const problems = readProblems(raw.problems, problemPlan);
   errors.push(...problems.errors);
+  if (raw.problemSteps !== undefined && (raw.problemSteps !== true || !problems.problems)) {
+    errors.push("problemSteps は problems のある課題に true を指定できます");
+  }
 
   if (errors.length > 0) return { ok: false, errors };
 
@@ -479,5 +483,6 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
   if (gitChecks) manifest.git = { checks: gitChecks };
   if (ci) manifest.ci = ci;
   if (problems.problems) manifest.problems = problems.problems;
+  if (raw.problemSteps === true) manifest.problemSteps = true;
   return { ok: true, manifest };
 }

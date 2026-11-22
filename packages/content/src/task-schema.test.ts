@@ -72,6 +72,26 @@ describe("問題つきの課題の定義", () => {
     expect(plain).not.toHaveProperty("problems");
   });
 
+  it("全問の after を教材の定義に残し、配布には problemSteps だけを足す", () => {
+    const problems = problemTask().problems.map((problem) => ({ ...problem, after: "1-1-7" }));
+    const parsed = parseTaskDefinition(problemTask({ problems }), {});
+    expect(parsed.problems).toEqual(problems);
+    expect(toRuntimeManifest(parsed, {})).toMatchObject({
+      problems: problemTask().problems,
+      problemSteps: true,
+    });
+    expect(toRuntimeManifest(parsed, {}).problems).toEqual(problemTask().problems);
+    expect(toRuntimeManifest(parseTaskDefinition(problemTask(), {}), {})).not.toHaveProperty(
+      "problemSteps",
+    );
+    expect(() =>
+      parseTaskDefinition(problemTask({ problems: [problems[0], problemTask().problems[1]] }), {}),
+    ).toThrow("全問");
+    expect(() =>
+      parseTaskDefinition(problemTask({ problems: [{ ...problems[0], after: null }] }), {}),
+    ).toThrow("after");
+  });
+
   it("説明欄・修正記録・必須の評価項目を、問題つきの課題には求めない", () => {
     const support = { hintLevels: 0, solutionUnlock: "passed" };
     const submit = { files: ["src/**/*.ts"], explanation: false, debuggingRecord: false };
@@ -180,6 +200,72 @@ describe("問題つきの課題のファイル", () => {
   function build(root: string) {
     return buildContentManifest(join(root, "stages"));
   }
+
+  it("前の単元の動画にも問題を置き、存在しないトピックと後の単元は拒む", () => {
+    const problems = problemTask().problems;
+    const task = problemTask({
+      problems: [
+        { ...problems[0], after: "0-1-1" },
+        { ...problems[1], after: "01-1-3" },
+      ],
+    });
+    const root = place({}, task);
+    const sections = build(root).stages[0].sections;
+    const earlier = sections?.find((section) => section.id === "u01-vscode-setup")?.lessons ?? [];
+    const video = earlier.findIndex((lesson) => lesson.id === "01-1-3");
+    expect(earlier.slice(video, video + 3).map((lesson) => lesson.id)).toEqual([
+      "01-1-3",
+      "task-u02-first-task-q02-problems",
+      "problem-u02-first-task-q02-problems-q02-split-bill",
+    ]);
+    expect(earlier[video + 2].markdown).toBe(
+      "# 問2 割り勘\n\nVS Code で開いて解き、確認して提出します。",
+    );
+
+    const taskFile = join(root, unit, "task.json");
+    writeFileSync(
+      taskFile,
+      JSON.stringify({
+        ...task,
+        problems: [{ ...problems[0], after: "unknown" }, task.problems[1]],
+      }),
+    );
+    expect(() => build(root)).toThrow(/after.*unknown/);
+
+    writeFileSync(taskFile, JSON.stringify(task));
+    const laterUnit = join(root, "stages/dev-env-basics/modules/u03-later");
+    mkdirSync(laterUnit);
+    cpSync(
+      join(root, "stages/dev-env-basics/modules/u02-first-task/l1-first-task"),
+      join(laterUnit, "l1-first-task"),
+      { recursive: true },
+    );
+    cpSync(
+      join(root, "stages/dev-env-basics/modules/u02-first-task/unit.json"),
+      join(laterUnit, "unit.json"),
+    );
+    const laterReferences = JSON.parse(
+      readFileSync(
+        join(root, "stages/dev-env-basics/modules/u02-first-task/references.json"),
+        "utf8",
+      ),
+    );
+    laterReferences.unitId = "dev-env-basics/u03-later@1";
+    writeFileSync(join(laterUnit, "references.json"), JSON.stringify(laterReferences));
+    const laterSlides = join(laterUnit, "l1-first-task/t1-edit-save/slides.md");
+    writeFileSync(
+      laterSlides,
+      readFileSync(laterSlides, "utf8").replace('id: "0-1-1"', 'id: "later-video"'),
+    );
+    writeFileSync(
+      taskFile,
+      JSON.stringify({
+        ...task,
+        problems: [{ ...problems[0], after: "later-video" }, task.problems[1]],
+      }),
+    );
+    expect(() => build(root)).toThrow(/after.*later-video/);
+  });
 
   it("問題つきの課題は private/review.md が無くても読める", () => {
     const root = place({});

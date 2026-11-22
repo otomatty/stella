@@ -15,6 +15,7 @@ const EXTENSION_REQUIREMENTS: {
   },
   fields: {
     problems: "0.8.0",
+    problemSteps: "0.11.0",
   },
 };
 
