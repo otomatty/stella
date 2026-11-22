@@ -94,44 +94,97 @@ export function buildReleaseBody(args: {
 
 const chatCopy = {
   web: {
-    heading: "🚀 *STELLA（Web）を更新しました*",
+    icon: "🚀",
     guidance: "開いたままの画面は、再読み込みすると新しい版になります。",
   },
   vscode: {
-    heading: "🧩 *STELLA の VS Code 拡張を更新しました*",
+    icon: "🧩",
     guidance: "VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。",
   },
-} satisfies Record<ReleaseProduct, { heading: string; guidance: string }>;
+};
 
-export function buildChatMessage(args: {
+export interface DigestEntry {
   product: ReleaseProduct;
   version: string;
   points: string[];
   releaseUrl: string;
-}): string {
+  publishedAt: string;
+}
+
+export function buildDigestMessage(entries: DigestEntry[], now: Date): string {
   const limit = 4000;
-  const { heading, guidance } = chatCopy[args.product];
-  const title = `${heading} — v`;
-  const linkStart = `\n\n${guidance}\n<`;
-  const linkEnd = "|変更の詳細を見る>";
-  // 箇条書きの長さを決める前に、見出し・案内・リンクの分を確保する。
-  const budget = limit - title.length - linkStart.length - linkEnd.length;
-  const url = args.releaseUrl.slice(0, budget);
-  const version = args.version.replace(/^v/, "").slice(0, budget - url.length);
-  const bullet = "\n• ";
-  const lines = [`${title}${version}`];
-  let remaining = budget - url.length - version.length;
-  for (const point of args.points.slice(0, 5)) {
-    if (remaining <= bullet.length) break;
-    const text = point
-      .replace(/\s*[\r\n]+\s*/g, " ")
-      .replaceAll("<", "＜")
-      .replaceAll(">", "＞");
-    const line = `${bullet}${text.slice(0, Math.min(200, remaining - bullet.length))}`;
-    lines.push(line);
-    remaining -= line.length;
+  const date = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "long",
+    day: "numeric",
+  }).format(now);
+  const groups = (["web", "vscode"] as const).flatMap((product) => {
+    const releases = entries
+      .filter((entry) => entry.product === product)
+      .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+    if (releases.length === 0) return [];
+
+    const uniquePoints = [...new Set(releases.flatMap(({ points }) => points))];
+    const points = uniquePoints.slice(0, 5).map((point) =>
+      point
+        .replace(/\s*[\r\n]+\s*/g, " ")
+        .replaceAll("<", "＜")
+        .replaceAll(">", "＞")
+        .slice(0, 200),
+    );
+    return [{ product, releases, points, pointCount: uniquePoints.length }];
+  });
+
+  const render = (compactLinks = false, versionScale = 1) => {
+    const blocks = groups.map(({ product, releases, points, pointCount }) => {
+      const { icon, guidance } = chatCopy[product];
+      const version = (entry: DigestEntry) => {
+        const value = entry.version.replace(/^v/, "");
+        return `v${value.slice(0, Math.floor(value.length * versionScale))}`;
+      };
+      const link = ({ releaseUrl }: DigestEntry, label: string) => {
+        if (!compactLinks) return `<${releaseUrl}|${label}>`;
+        const releaseList = /^https:\/\/github\.com\/[\w-]{1,39}\/[\w.-]{1,100}\/releases\//.exec(
+          releaseUrl,
+        )?.[0];
+        return `<${releaseList ?? "https://github.com"}|${label}>`;
+      };
+      const count = releases.length;
+      const heading = `${icon} *${releaseProductName(product)}* — ${version(releases[0])}`;
+      const lines = [count === 1 ? heading : `${heading}（前回のお知らせから ${count} 回更新）`];
+      lines.push(...points.map((point) => `• ${point}`));
+      const omittedPoints = pointCount - points.length;
+      if (omittedPoints > 0) lines.push(`（ほか ${omittedPoints} 件は変更の詳細をご覧ください）`);
+      lines.push(guidance);
+      if (count === 1) {
+        lines.push(link(releases[0], "変更の詳細を見る"));
+      } else {
+        const links = releases
+          .slice(0, 5)
+          .reverse()
+          .map((entry) => link(entry, version(entry)));
+        if (count > 5) links.push(`ほか ${count - 5} 版`);
+        lines.push(`変更の詳細: ${links.join("・")}`);
+      }
+      return lines.join("\n");
+    });
+    return [`📣 *STELLA の更新情報*（${date}）`, ...blocks].join("\n\n");
+  };
+
+  let message = render();
+  for (const { points } of groups.slice().reverse()) {
+    while (message.length > limit && points.length > 0) {
+      points.pop();
+      message = render();
+    }
   }
-  return `${lines.join("")}${linkStart}${url}${linkEnd}`;
+  if (message.length <= limit) return message;
+
+  // リンクだけで収まらない場合も、有効なリンクを残す。
+  message = render(true);
+  if (message.length <= limit) return message;
+  const fixedLength = render(true, 0).length;
+  return render(true, (limit - fixedLength) / (message.length - fixedLength));
 }
 
 export function isGoogleChatWebhookUrl(url: string): boolean {

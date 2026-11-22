@@ -244,7 +244,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=web-v$version" >> "$GITHUB_OUTPUT"
 
-      # 同じ版のデプロイでは Release の作成と通知を省く。
+      # 同じ版のデプロイでは Release の作成を省く。
       - name: Check for an existing release
         id: release
         env:
@@ -270,22 +270,12 @@ jobs:
 
       # タグは Release の作成と同時に切る。作成に失敗したらタグは残らず、
       # 次のデプロイで作り直せる。
+      # 添付した要点は毎朝の release-announce.yml が Google Chat に送る。
       - name: Create Web release
         if: steps.release.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
-          gh release create "$TAG" --target "$GITHUB_SHA" \
+          gh release create "$TAG" "$RUNNER_TEMP/release/release-summary.json" --target "$GITHUB_SHA" \
             --title "Web 本体 $TAG" --notes-file "$RUNNER_TEMP/release/release-body.md"
-
-      # Google Chat の障害で公開済みのリリースを失敗扱いにしない。
-      - name: Notify Google Chat
-        if: steps.release.outputs.exists == 'false'
-        continue-on-error: true
-        env:
-          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
-          TAG: ${{ steps.meta.outputs.tag }}
-        run: |
-          bun run release:notes notify --summary "$RUNNER_TEMP/release/release-summary.json" \
-            --release-url "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"

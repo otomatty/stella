@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildChatMessage,
+  buildDigestMessage,
+  type DigestEntry,
   buildReleaseBody,
   extractChangelogSection,
   fallbackSummary,
@@ -87,78 +88,137 @@ it("uses both product names and adds the VSIX instructions to the extension rele
   );
 });
 
-describe("buildChatMessage", () => {
-  const releaseUrl = "https://github.com/example/stella/releases/tag/web-v1.1.0";
-
-  it("formats the full Web announcement", () => {
-    expect(
-      buildChatMessage({
-        product: "web",
-        version: "1.1.0",
-        points: [
-          "課題の一覧で、提出の状態がひと目で分かるようになりました",
-          "スマートフォンでスライドが途中で切れる不具合を直しました",
-        ],
-        releaseUrl,
-      }),
-    ).toBe(`🚀 *STELLA（Web）を更新しました* — v1.1.0
-• 課題の一覧で、提出の状態がひと目で分かるようになりました
-• スマートフォンでスライドが途中で切れる不具合を直しました
-
-開いたままの画面は、再読み込みすると新しい版になります。
-<${releaseUrl}|変更の詳細を見る>`);
+describe("buildDigestMessage", () => {
+  const now = new Date("2026-11-22T22:50:00Z");
+  const title = "📣 *STELLA の更新情報*（11月23日）";
+  const webGuidance = "開いたままの画面は、再読み込みすると新しい版になります。";
+  const extensionGuidance =
+    "VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。";
+  const baseUrl = "https://github.com/example/stella/releases/tag";
+  const web = (minor: number, points = [`変更 ${minor}`]): DigestEntry => ({
+    product: "web",
+    version: `1.${minor}.0`,
+    points,
+    releaseUrl: `${baseUrl}/web-v1.${minor}.0`,
+    publishedAt: `2026-11-22T0${minor}:00:00Z`,
   });
 
-  it("formats the full VS Code announcement without duplicating the version prefix", () => {
-    const extensionUrl = "https://github.com/example/stella/releases/tag/vscode-v0.11.0";
-    expect(
-      buildChatMessage({
-        product: "vscode",
-        version: "v0.11.0",
-        points: ["課題文を表示できるようになりました"],
-        releaseUrl: extensionUrl,
-      }),
-    ).toBe(`🧩 *STELLA の VS Code 拡張を更新しました* — v0.11.0
-• 課題文を表示できるようになりました
+  it("formats one Web release using the next date in Japan at 22:50 UTC", () => {
+    expect(buildDigestMessage([web(1, ["変更 A", "変更 B"])], now)).toBe(`${title}
 
-VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。
-<${extensionUrl}|変更の詳細を見る>`);
+🚀 *Web* — v1.1.0
+• 変更 A
+• 変更 B
+${webGuidance}
+<${baseUrl}/web-v1.1.0|変更の詳細を見る>`);
   });
 
-  it("escapes angle brackets and folds multiline points", () => {
-    const message = buildChatMessage({
+  it("puts Web first and formats both products without duplicating the version prefix", () => {
+    const extension: DigestEntry = {
       product: "vscode",
-      version: "0.11.0",
-      points: ["<引数|値> \r\n\n 続き"],
-      releaseUrl,
-    });
-    expect(message.split("\n")[1]).toBe("• ＜引数|値＞ 続き");
+      version: "v0.11.0",
+      points: ["課題文を表示できるようになりました"],
+      releaseUrl: `${baseUrl}/vscode-v0.11.0`,
+      publishedAt: "2026-11-22T18:00:00Z",
+    };
+    expect(buildDigestMessage([extension, web(1)], now)).toBe(`${title}
+
+🚀 *Web* — v1.1.0
+• 変更 1
+${webGuidance}
+<${baseUrl}/web-v1.1.0|変更の詳細を見る>
+
+🧩 *VS Code 拡張* — v0.11.0
+• 課題文を表示できるようになりました
+${extensionGuidance}
+<${baseUrl}/vscode-v0.11.0|変更の詳細を見る>`);
   });
 
-  it("limits points to five lines of at most 200 characters each", () => {
-    const points = Array(6).fill("点".repeat(201));
-    const lines = buildChatMessage({ product: "web", version: "1.2.0", points, releaseUrl }).split(
-      "\n",
-    );
-    expect(lines.filter((line) => line.startsWith("• "))).toEqual(
-      Array(5).fill(`• ${"点".repeat(200)}`),
-    );
+  it("orders three releases by publication date for the heading, points and links", () => {
+    const oldest = { ...web(3), publishedAt: "2026-11-22T00:00:00Z" };
+    expect(buildDigestMessage([web(1), oldest, web(2)], now)).toBe(`${title}
+
+🚀 *Web* — v1.2.0（前回のお知らせから 3 回更新）
+• 変更 2
+• 変更 1
+• 変更 3
+${webGuidance}
+変更の詳細: <${baseUrl}/web-v1.3.0|v1.3.0>・<${baseUrl}/web-v1.1.0|v1.1.0>・<${baseUrl}/web-v1.2.0|v1.2.0>`);
   });
 
-  it("keeps the whole message within 4000 characters and reserves space for the link", () => {
-    const longUrl = `${releaseUrl}?query=${"x".repeat(3800)}`;
-    const args = { product: "web" as const, points: ["点".repeat(200)], releaseUrl: longUrl };
-    const message = buildChatMessage({ ...args, version: "1.2.0" });
-    expect(message).toHaveLength(4000);
-    expect(message.split("\n").at(-1)).toBe(`<${longUrl}|変更の詳細を見る>`);
+  it("deduplicates exact points before folding line breaks and escaping brackets", () => {
+    const repeated = "<引数|値> \r\n\n 続き";
+    expect(buildDigestMessage([web(1, [repeated]), web(2, [repeated, "追加"])], now)).toBe(`${title}
 
-    const oversizedMessage = buildChatMessage({
-      ...args,
-      version: "v".repeat(4000),
-      releaseUrl: `${longUrl}${longUrl}`,
-    });
-    expect(oversizedMessage).toHaveLength(4000);
-    expect(oversizedMessage.split("\n").at(-1)).toMatch(/^<https:\/\/[^>]+\|変更の詳細を見る>$/);
+🚀 *Web* — v1.2.0（前回のお知らせから 2 回更新）
+• ＜引数|値＞ 続き
+• 追加
+${webGuidance}
+変更の詳細: <${baseUrl}/web-v1.1.0|v1.1.0>・<${baseUrl}/web-v1.2.0|v1.2.0>`);
+  });
+
+  it("limits points to five lines of at most 200 characters and counts the omitted points", () => {
+    const points = Array.from({ length: 7 }, (_, i) => `${i}${"点".repeat(200)}`);
+    const displayed = [0, 1, 2, 3, 4].map((i) => `• ${i}${"点".repeat(199)}`).join("\n");
+    expect(buildDigestMessage([web(1, points)], now)).toBe(`${title}
+
+🚀 *Web* — v1.1.0
+${displayed}
+（ほか 2 件は変更の詳細をご覧ください）
+${webGuidance}
+<${baseUrl}/web-v1.1.0|変更の詳細を見る>`);
+  });
+
+  it("links to the five newest versions in ascending publication order", () => {
+    expect(
+      buildDigestMessage(
+        [1, 2, 3, 4, 5, 6].map((i) => web(i)),
+        now,
+      ),
+    ).toBe(`${title}
+
+🚀 *Web* — v1.6.0（前回のお知らせから 6 回更新）
+• 変更 6
+• 変更 5
+• 変更 4
+• 変更 3
+• 変更 2
+（ほか 1 件は変更の詳細をご覧ください）
+${webGuidance}
+変更の詳細: <${baseUrl}/web-v1.2.0|v1.2.0>・<${baseUrl}/web-v1.3.0|v1.3.0>・<${baseUrl}/web-v1.4.0|v1.4.0>・<${baseUrl}/web-v1.5.0|v1.5.0>・<${baseUrl}/web-v1.6.0|v1.6.0>・ほか 1 版`);
+  });
+
+  it("drops points from the end before changing headings, guidance or links", () => {
+    const longUrl = `${web(1).releaseUrl}?query=${"x".repeat(3650)}`;
+    const message = buildDigestMessage(
+      [{ ...web(1), points: ["残る点", "点".repeat(200)], releaseUrl: longUrl }],
+      now,
+    );
+    expect(message.length).toBeLessThanOrEqual(4000);
+    expect(message).toBe(`${title}
+
+🚀 *Web* — v1.1.0
+• 残る点
+（ほか 1 件は変更の詳細をご覧ください）
+${webGuidance}
+<${longUrl}|変更の詳細を見る>`);
+  });
+
+  it("keeps the required lines within the limit for oversized version and link text", () => {
+    const message = buildDigestMessage(
+      [
+        {
+          ...web(1),
+          version: "v".repeat(4000),
+          releaseUrl: `${web(1).releaseUrl}/${"x".repeat(8000)}`,
+        },
+      ],
+      now,
+    );
+    expect(message.length).toBeLessThanOrEqual(4000);
+    expect(message).toContain("🚀 *Web* — v");
+    expect(message).toContain(webGuidance);
+    expect(message.split("\n").at(-1)).toMatch(/^<https:\/\/[^>]+\|変更の詳細を見る>$/);
   });
 });
 

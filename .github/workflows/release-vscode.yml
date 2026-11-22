@@ -32,7 +32,6 @@ jobs:
     outputs:
       version: ${{ steps.meta.outputs.version }}
       created: ${{ steps.create.outputs.created }}
-      release_url: ${{ steps.meta.outputs.release_url }}
     steps:
       # ビルドと変更履歴の読み取りに同じコミットを使う。
       - uses: actions/checkout@v7
@@ -64,7 +63,6 @@ jobs:
           tag="vscode-v${version}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "release_url=https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag" >> "$GITHUB_OUTPUT"
 
       # 同じ版の再 push で本文の手直しを失わないよう、先に Release の有無を確かめる。
       - name: Check for an existing release
@@ -152,40 +150,23 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: bunx @vscode/vsce@4.1.0 publish --oidc --packagePath "stella-lms-${VERSION}.vsix" --skip-duplicate
 
-  # 受講者が Marketplace から入れられるようになってから、新しい Release を知らせる。
-  announce:
+  # Marketplace に公開できた版だけを翌朝のお知らせに載せる。
+  queue-announcement:
     needs: [release, publish]
     if: needs.release.outputs.created == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
-      # 通知用スクリプトを実行するコミットを取得する。
-      - uses: actions/checkout@v7
-
-      # リリース用スクリプトは Bun で動かす。
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      # 通知用スクリプトの依存関係をロックファイルから揃える。
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # Release を作ったときの要約を引き継ぐ。
       - name: Download release summary
         uses: actions/download-artifact@v7
         with:
           name: release-summary
           path: ${{ runner.temp }}/release
 
-      # Google Chat の障害で公開済みのリリースを失敗扱いにしない。
-      - name: Notify Google Chat
-        continue-on-error: true
+      - name: Attach release summary
         env:
-          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
-          RELEASE_URL: ${{ needs.release.outputs.release_url }}
-        run: |
-          bun run release:notes notify --summary "$RUNNER_TEMP/release/release-summary.json" \
-            --release-url "$RELEASE_URL"
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: gh release upload "vscode-v${VERSION}" "$RUNNER_TEMP/release/release-summary.json" --clobber

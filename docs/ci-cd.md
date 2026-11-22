@@ -7,8 +7,9 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify`（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）、`core-loop`（API スモーク）、`e2e`（PR のブラウザー E2E） |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) → Web の新しい版の GitHub Release と Google Chat 通知（任意） |
-| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` を GitHub Release（タグ `vscode-v<版>`）に添付 → 未掲載の版を Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 → 新しい版を Google Chat で通知（任意） |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote) → 教材動画 sync(remote、Gemini)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) → Web の新しい版の GitHub Release に更新の要点を添付 |
+| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` を GitHub Release（タグ `vscode-v<版>`）に添付 → 未掲載の版を Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 → 公開できた版の Release に更新の要点を添付 |
+| `.github/workflows/release-announce.yml` | 毎日 7:50（日本時間）または手動（main のみ） | 送信待ちの版をまとめて Google Chat に投稿（任意） |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
 `uses: ./.github/workflows/ci.yml` で呼ぶ。3 つのワークフローに同じ手順を書き写すと、
@@ -102,7 +103,11 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 
 Release の本文は CHANGELOG の該当節を AI で要約し、全文も折りたたみに残す。既定のモデルは `claude-opus-5-5` で、`prepare` を実行する環境の `RELEASE_NOTES_MODEL` で変更できる。要約用の `ANTHROPIC_API_KEY` が空か、要約に失敗した場合は、該当節をそのまま本文に使う。
 
-Google Chat には、新しい版の Release を初めて作ったときに 1 回だけ投稿する。投稿には見出し、変更点（最大 5 件）、製品ごとの固定の更新案内、変更の詳細へのリンクをこの順に載せる。VS Code 拡張は Marketplace 公開の成功後に投稿する。Chat のスペースの「アプリと統合」→「Webhook」で作った URL を Repository secret `GOOGLE_CHAT_WEBHOOK_URL` に登録する。未設定なら投稿を省略し、通知が失敗してもリリースは成功のままとする。
+Google Chat のお知らせは毎日 7:50（日本時間）に起動する。GitHub の定時実行は遅れることがある。前回のお知らせから出た版をまとめて 1 通にし、送る版が無い日は投稿しない。VS Code 拡張は Marketplace に公開できた版だけを載せる。
+
+Release に `release-summary.json` があり、`release-announced.json` が無い版を送信待ちとする。Chat の投稿に成功したら、対象の各 Release に `release-announced.json` を添付する。定時実行が飛んだ日や投稿に失敗した日の分は翌日に送る。投稿後に印の添付だけが失敗した版は、翌日に重ねて送られることがある。今すぐ送るには、Actions の「Release announcement」で **Run workflow** を選ぶ（main のみ）。
+
+Chat のスペースの「アプリと統合」→「Webhook」で作った URL を Repository secret `GOOGLE_CHAT_WEBHOOK_URL` に登録する。未設定の場合は送信待ちのまま残る。
 
 リリースのトリガは `main` への push のみ。やり直しは Actions の Re-run で行う。
 
@@ -150,6 +155,7 @@ Google のクライアント (`GOOGLE_CLIENT_ID` は `wrangler.toml`、`GOOGLE_C
 `ANTHROPIC_API_KEY` は既存のチャット・下書き・育成メモにも使うため、未登録・空白はリモート処理前に失敗する。
 `OPENAI_API_KEY` は任意の Repository secret として同期する。一次レビューに `AI_REVIEW_PROVIDER = "openai"` を選んだ場合は `AI_REVIEW_MODEL` とこのキーもリモート処理前に検査する。設定は `apps/api/wrangler.toml`、比較と切り替えは [AI 一次レビューのプロバイダー](ai-review-providers.md) を参照。
 `GOOGLE_CHAT_WEBHOOK_URL` はリリース通知用の任意の Repository secret。未設定なら Google Chat への投稿を省略する。
+`release-announce.yml` が読む。`apps/api/deployment.json` は `deploy.yml` が読む設定だけを管理するため、この Secret は掲載対象外。
 Cloudflare にだけキーが入っていても、次の deploy に備えて GitHub の Repository secret に同名で登録する。
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
 

@@ -15,8 +15,6 @@ const prepareArgs = [
   "--out-dir",
   "dist",
 ];
-const releaseUrl = "https://github.com/example/stella/releases/tag/v1.2.0";
-const notifyArgs = ["notify", "--summary", "release-summary.json", "--release-url", releaseUrl];
 const webhookUrl =
   "https://chat.googleapis.com/v1/spaces/example/messages?key=secret&token=private";
 
@@ -24,6 +22,7 @@ function mockDeps(env: Record<string, string | undefined> = {}) {
   return {
     env,
     fetch: vi.fn<typeof fetch>(),
+    now: () => new Date("2026-11-22T22:50:00Z"),
     readFile: vi.fn<(path: string) => Promise<string>>(),
     writeFile: vi.fn<(path: string, content: string) => Promise<void>>(),
     makeDir: vi.fn<(path: string) => Promise<void>>(),
@@ -125,90 +124,276 @@ describe("prepare", () => {
   );
 });
 
-describe("notify", () => {
-  function configuredDeps() {
-    const deps = mockDeps({ GOOGLE_CHAT_WEBHOOK_URL: webhookUrl });
-    deps.readFile.mockResolvedValue(
-      JSON.stringify({ product: "web", version: "1.2.0", points: ["<変更>"] }),
-    );
-    return deps;
+describe("digest", () => {
+  const repo = "example/stella";
+  const token = "private-github-token";
+  const api = `https://api.github.com/repos/${repo}/releases`;
+  const uploadApi = `https://uploads.github.com/repos/${repo}/releases`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  const summaryName = "release-summary.json";
+  const markerName = "release-announced.json";
+  const summary = { product: "web", version: "1.2.0", points: ["<変更>"] };
+
+  function release(id: number, tag = "web-v1.2.0") {
+    return {
+      id,
+      tag_name: tag,
+      html_url: `https://github.com/${repo}/releases/tag/${tag}`,
+      published_at: "2026-11-22T12:00:00Z",
+      draft: false,
+      prerelease: false,
+      assets: [{ id: id + 1000, name: summaryName }],
+    };
   }
 
-  it("skips reading the summary and posting when the webhook is unset", async () => {
-    const deps = mockDeps();
-    await expect(main(notifyArgs, deps)).resolves.toBe(0);
-    expect(console.log).toHaveBeenCalledExactlyOnceWith(
-      "::notice::Google Chat の通知先が未設定なので投稿しません",
-    );
-    expect(deps.fetch).not.toHaveBeenCalled();
-    expect(deps.readFile).not.toHaveBeenCalled();
-  });
-
-  it("rejects invalid webhook URLs without printing them", async () => {
-    const deps = mockDeps({
-      GOOGLE_CHAT_WEBHOOK_URL: "https://chat.googleapis.com.evil.example/?token=private",
+  function configuredDeps(env: Record<string, string | undefined> = {}) {
+    return mockDeps({
+      GOOGLE_CHAT_WEBHOOK_URL: webhookUrl,
+      GITHUB_REPOSITORY: repo,
+      GH_TOKEN: token,
+      ...env,
     });
-    await expect(main(notifyArgs, deps)).resolves.toBe(1);
-    expect(console.error).toHaveBeenCalledExactlyOnceWith(
-      "::error::GOOGLE_CHAT_WEBHOOK_URL が Google Chat の Webhook ではありません",
-    );
+  }
+
+  it.each([
+    { GITHUB_REPOSITORY: undefined },
+    { GITHUB_REPOSITORY: "owner/repo/extra" },
+    { GITHUB_REPOSITORY: "owner/.." },
+    { GH_TOKEN: undefined },
+  ])("rejects incomplete GitHub configuration %j", async (env) => {
+    const deps = configuredDeps(env);
+    await expect(main(["digest"], deps)).resolves.toBe(2);
     expect(deps.fetch).not.toHaveBeenCalled();
   });
 
-  it("posts the Chat text once as JSON with a timeout", async () => {
+  it("leaves Chat untouched when there are no pending releases and accepts GITHUB_TOKEN", async () => {
+    const deps = configuredDeps({ GH_TOKEN: undefined, GITHUB_TOKEN: token });
+    deps.fetch.mockResolvedValueOnce(Response.json([]));
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(console.log).toHaveBeenCalledExactlyOnceWith("::notice::送る更新情報はありません");
+    expect(deps.fetch).toHaveBeenCalledExactlyOnceWith(`${api}?per_page=100&page=1`, { headers });
+  });
+
+  it("skips marked, draft, prerelease and unrelated releases and warns about bad summaries", async () => {
     const deps = configuredDeps();
-    deps.fetch.mockResolvedValue(new Response(null, { status: 204 }));
-    await expect(main(notifyArgs, deps)).resolves.toBe(0);
-    expect(deps.fetch).toHaveBeenCalledExactlyOnceWith(webhookUrl, {
+    const marked = release(1);
+    marked.assets.push({ id: 2001, name: markerName });
+    deps.fetch
+      .mockResolvedValueOnce(
+        Response.json([
+          marked,
+          { ...release(2), draft: true },
+          { ...release(3), prerelease: true },
+          release(4, "v1.2.0"),
+          { ...release(5), assets: [] },
+          release(6, "vscode-v1.2.0"),
+          release(7, "web-v1.1.0"),
+          release(8),
+          release(9),
+        ]),
+      )
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(Response.json({ ...summary, points: [42] }))
+      .mockResolvedValueOnce(new Response("{"));
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(deps.fetch.mock.calls.map(([url]) => url)).toEqual([
+      `${api}?per_page=100&page=1`,
+      `${api}/assets/1006`,
+      `${api}/assets/1007`,
+      `${api}/assets/1008`,
+      `${api}/assets/1009`,
+    ]);
+    expect(deps.fetch.mock.calls[1][1]).toEqual({
+      headers: { ...headers, Accept: "application/octet-stream" },
+    });
+    expect(console.warn).toHaveBeenCalledTimes(4);
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("::warning::vscode-v1.2.0"));
+    expect(console.log).toHaveBeenCalledExactlyOnceWith("::notice::送る更新情報はありません");
+  });
+
+  it("posts a single JSON digest with a timeout, then marks each release", async () => {
+    const deps = configuredDeps();
+    const web = release(1);
+    const extension = release(2, "vscode-v1.2.0");
+    deps.fetch
+      .mockResolvedValueOnce(Response.json([web, extension]))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(Response.json({ ...summary, product: "vscode" }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(deps.fetch).toHaveBeenCalledTimes(6);
+    expect(deps.fetch).toHaveBeenNthCalledWith(4, webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=UTF-8" },
       body: JSON.stringify({
-        text: `🚀 *STELLA（Web）を更新しました* — v1.2.0
-• ＜変更＞
+        text: `📣 *STELLA の更新情報*（11月23日）
 
+🚀 *Web* — v1.2.0
+• ＜変更＞
 開いたままの画面は、再読み込みすると新しい版になります。
-<${releaseUrl}|変更の詳細を見る>`,
+<${web.html_url}|変更の詳細を見る>
+
+🧩 *VS Code 拡張* — v1.2.0
+• ＜変更＞
+VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。
+<${extension.html_url}|変更の詳細を見る>`,
       }),
       signal: expect.any(AbortSignal),
       redirect: "manual",
     });
+    for (const id of [1, 2]) {
+      expect(deps.fetch).toHaveBeenNthCalledWith(
+        4 + id,
+        `${uploadApi}/${id}/assets?name=${markerName}`,
+        {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ announcedAt: "2026-11-22T22:50:00.000Z" }),
+          redirect: "manual",
+        },
+      );
+    }
   });
 
-  it("logs only the HTTP status on an unsuccessful response", async () => {
+  it("logs only the HTTP status and skips markers when Chat returns an error", async () => {
     const deps = configuredDeps();
-    deps.fetch.mockResolvedValue(new Response(webhookUrl, { status: 503 }));
-    await expect(main(notifyArgs, deps)).resolves.toBe(1);
+    deps.fetch
+      .mockResolvedValueOnce(Response.json([release(1)]))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(new Response(webhookUrl, { status: 503 }));
+    await expect(main(["digest"], deps)).resolves.toBe(1);
     expect(console.error).toHaveBeenCalledExactlyOnceWith("::error::HTTP 503");
-    expect(deps.fetch).toHaveBeenCalledTimes(1);
+    expect(deps.fetch).toHaveBeenCalledTimes(3);
   });
 
-  it("does not print webhook URLs that appear in exceptions", async () => {
+  it.each(["list", "summary", "chat", "upload"])(
+    "omits secrets from %s exceptions",
+    async (stage) => {
+      const deps = configuredDeps();
+      const responses = [
+        Response.json([release(1)]),
+        Response.json(summary),
+        new Response(null, { status: 204 }),
+      ];
+      const index = ["list", "summary", "chat", "upload"].indexOf(stage);
+      for (const response of responses.slice(0, index)) deps.fetch.mockResolvedValueOnce(response);
+      deps.fetch.mockRejectedValueOnce(new Error(`Failed to fetch ${webhookUrl} with ${token}`));
+      await expect(main(["digest"], deps)).resolves.toBe(1);
+      expect(deps.fetch).toHaveBeenCalledTimes(index + 1);
+      for (const logger of [console.log, console.warn, console.error]) {
+        const calls = JSON.stringify(vi.mocked(logger).mock.calls);
+        expect(calls).not.toContain(webhookUrl);
+        expect(calls).not.toContain(token);
+      }
+      if (stage === "chat") {
+        expect(console.error).toHaveBeenCalledExactlyOnceWith(
+          "::error::HTTP ステータスを取得できませんでした",
+        );
+      }
+    },
+  );
+
+  it("fails if any marker upload fails and still attempts the rest", async () => {
     const deps = configuredDeps();
-    deps.fetch.mockRejectedValue(new Error(`Failed to fetch ${webhookUrl}`));
-    await expect(main(notifyArgs, deps)).resolves.toBe(1);
+    const unmarked = release(1);
+    const marked = release(2, "web-v1.3.0");
+    deps.fetch
+      .mockResolvedValueOnce(Response.json([unmarked, marked]))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(Response.json({ ...summary, version: "1.3.0" }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    await expect(main(["digest"], deps)).resolves.toBe(1);
     expect(console.error).toHaveBeenCalledExactlyOnceWith(
-      "::error::HTTP ステータスを取得できませんでした",
+      "::error::web-v1.2.0 に送信済みの印を付けられず、翌日に重ねて送られるかもしれません (HTTP 500)",
     );
-    expect(deps.fetch).toHaveBeenCalledTimes(1);
+    expect(deps.fetch.mock.calls.at(-1)?.[0]).toBe(`${uploadApi}/2/assets?name=${markerName}`);
+
+    marked.assets.push({ id: 2002, name: markerName });
+    deps.fetch
+      .mockClear()
+      .mockResolvedValueOnce(Response.json([unmarked, marked]))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(deps.fetch.mock.calls.map(([url]) => url)).toEqual([
+      `${api}?per_page=100&page=1`,
+      `${api}/assets/1001`,
+      webhookUrl,
+      `${uploadApi}/1/assets?name=${markerName}`,
+    ]);
+  });
+
+  it.each([
+    [undefined, 0, "Google Chat の通知先が未設定なので投稿しません"],
+    [
+      "https://chat.googleapis.com.evil.example/?token=private",
+      1,
+      "GOOGLE_CHAT_WEBHOOK_URL が Google Chat の Webhook ではありません",
+    ],
+  ])("leaves pending releases alone for webhook configuration %j", async (url, code, message) => {
+    const deps = configuredDeps({ GOOGLE_CHAT_WEBHOOK_URL: url });
+    deps.fetch
+      .mockResolvedValueOnce(Response.json([release(1)]))
+      .mockResolvedValueOnce(Response.json(summary));
+    await expect(main(["digest"], deps)).resolves.toBe(code);
+    expect(code === 0 ? console.log : console.error).toHaveBeenCalledExactlyOnceWith(
+      `${code === 0 ? "::notice::" : "::error::"}${message}`,
+    );
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads another page after a full page and queues its pending release", async () => {
+    const deps = configuredDeps();
+    deps.fetch
+      .mockResolvedValueOnce(
+        Response.json(Array.from({ length: 100 }, (_, i) => release(i, "other"))),
+      )
+      .mockResolvedValueOnce(Response.json([release(100)]))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(deps.fetch.mock.calls.map(([url]) => url)).toEqual([
+      `${api}?per_page=100&page=1`,
+      `${api}?per_page=100&page=2`,
+      `${api}/assets/1100`,
+      webhookUrl,
+      `${uploadApi}/100/assets?name=${markerName}`,
+    ]);
+  });
+
+  it("stops after three full pages", async () => {
+    const deps = configuredDeps();
+    deps.fetch.mockImplementation(async () =>
+      Response.json(Array.from({ length: 100 }, (_, i) => release(i, "other"))),
+    );
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(deps.fetch).toHaveBeenCalledTimes(3);
+    expect(deps.fetch).toHaveBeenLastCalledWith(`${api}?per_page=100&page=3`, { headers });
   });
 });
 
 it.each([
   [],
   ["prepare"],
-  [
-    "notify",
-    "--summary",
-    "release-summary.json",
-    "--release-url",
-    "https://github.com.evil.example/",
-  ],
-  ["notify", "--summary=release-summary.json", "--release-url", releaseUrl],
-  ["notify", "--summary", "--release-url", releaseUrl],
-  [...notifyArgs, "--summary", "again.json"],
+  ["notify", "--summary", "release-summary.json"],
+  ["digest", "--summary=release-summary.json"],
+  ["digest", "--summary"],
+  ["digest", "release-summary.json", "again.json"],
 ])("prints usage for invalid arguments %j", async (...argv) => {
   const deps = mockDeps();
   await expect(main(argv, deps)).resolves.toBe(2);
   expect(console.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("使い方"));
   expect(deps.readFile).not.toHaveBeenCalled();
+  expect(deps.fetch).not.toHaveBeenCalled();
 });
