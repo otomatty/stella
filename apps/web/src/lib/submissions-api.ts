@@ -11,6 +11,7 @@ import type {
   RubricCriterion,
   ReviewVerdict,
   Submission,
+  SubmissionReference,
   SubmissionStatus,
   ReviewPriority,
   ReviewAvatarTone,
@@ -174,6 +175,11 @@ export async function fetchSubmissionById(id: string): Promise<Submission> {
     `/api/submissions/${encodeURIComponent(id)}`,
   );
   return rowToSubmission(row);
+}
+
+/** staff: 提出時の解答例とレビューの観点。 */
+export async function fetchSubmissionReference(id: string): Promise<SubmissionReference> {
+  return apiFetch<SubmissionReference>(`/api/submissions/${encodeURIComponent(id)}/reference`);
 }
 
 /** staff: 提出物一覧 (新着順)。 認可はサーバ側 (admin)。 */

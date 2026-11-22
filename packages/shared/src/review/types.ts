@@ -10,6 +10,18 @@ export type ReviewAvatarTone = "c1" | "c2" | "c3" | "c4" | "c5" | "c6";
 
 export type SubmissionStatus = "pending" | "passed" | "resubmit" | "failed";
 
+/** staff 向けの参考の書き方。 */
+export type SubmissionReference =
+  | { available: false; reason: string }
+  | {
+      available: true;
+      version: "submitted" | "latest";
+      note?: string;
+      /** 解答例のファイル。パスは private/solution/ からの相対パス。 */
+      files: { path: string; text: string }[];
+      reviewGuide: string;
+    };
+
 export type ReviewVerdict = "pass" | "resubmit" | "fail";
 
 export type SuggestionSeverity = "high" | "med" | "low";
