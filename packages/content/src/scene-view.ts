@@ -208,12 +208,9 @@ export function viewFrame(
 export function viewBusyRanges(timing: SceneTimeline): [number, number][] {
   return [
     [0, 1],
-    [2.6, 3.0],
-    ...timing.beats.flatMap((b): [number, number][] => [
-      [b.start, Math.max(b.start + 1.2, b.clip?.end ?? 0)],
-      // 境界がフレームの間でも、字幕が出る・消える最初のコマを必ず撮る。
-      [b.speechStart ?? b.start, (b.speechStart ?? b.start) + 1 / 30],
-      [b.speechEnd ?? b.end, (b.speechEnd ?? b.end) + 1 / 30],
+    ...timing.beats.map((b): [number, number] => [
+      b.start,
+      Math.max(b.start + 1.2, b.clip?.end ?? 0),
     ]),
   ];
 }

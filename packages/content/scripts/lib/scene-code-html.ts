@@ -1,6 +1,5 @@
 import {
   figureNodes,
-  sceneRoleLabel,
   type Link,
   type MarkKind,
   type SceneState,
@@ -18,13 +17,12 @@ import {
   type CodeSceneState,
   type CodeState,
 } from "../../src/scene-code.js";
-import { sceneCaptionAt, type SceneTimeline } from "../../src/scene-timeline.js";
+import type { SceneTimeline } from "../../src/scene-timeline.js";
 import {
   iconSvg,
   mark,
   escapeHtml,
   sceneScriptData,
-  sceneCaptionCss,
   sceneFontCss,
   type SceneHtmlInput,
   type ScenePageWindow,
@@ -49,7 +47,7 @@ interface CodeRenderData {
   timing: SceneHtmlInput["timing"];
   highlighted: string[][];
 }
-function runtime(data: CodeRenderData, frame: typeof codeFrame, captionAt: typeof sceneCaptionAt) {
+function runtime(data: CodeRenderData, frame: typeof codeFrame) {
   const win = window as unknown as ScenePageWindow;
   const element = (id: string) => document.getElementById(id) as HTMLElement;
   const safe = (s: string) =>
@@ -218,16 +216,22 @@ function runtime(data: CodeRenderData, frame: typeof codeFrame, captionAt: typeo
         result.style.fontSize = `${size}px`;
       }
     }
-    element("caption").innerHTML = `<span>${safe(captionAt(timing, time))}</span>`;
     const fade = Math.max(0, Math.min(1, time / 0.4));
-    element("card").style.opacity = String(fade);
+    element("content").style.opacity = String(fade);
   };
   win.__overflows = () => {
     const messages: string[] = [];
+    for (const item of document.querySelectorAll<HTMLElement>("#code,#panel,#panel > *")) {
+      const { top, bottom } = item.getBoundingClientRect();
+      if (top < 0 || bottom > 960) {
+        messages.push("コードと横の図が画面の上端から960pxの範囲に収まりません");
+        break;
+      }
+    }
     // Grid/flex の scrollHeight は文字そのものの描画範囲ではない。
     // テキストの行ボックスを、実際に切り取る枠の内側と比較する。
     for (const container of document.querySelectorAll<HTMLElement>(
-      "#code,#panel,#heading,#caption,.line,.value-box,.name,.value-content,.call-row",
+      "#code,#panel,.line,.value-box,.name,.value-content,.call-row",
     )) {
       const box = container.getBoundingClientRect();
       const left = box.left + container.clientLeft;
@@ -472,11 +476,11 @@ function figureRuntime({ nodes, marks, state, timing, motions, schema }: FigureR
 function codeCutRuntime() {
   const win = window as unknown as ScenePageWindow;
   const setTime = win.__setTime;
-  const card = document.getElementById("card") as HTMLElement;
+  const content = document.getElementById("content") as HTMLElement;
   const background = document.getElementById("code-opening");
   if (!background) win.__busyRanges.shift();
   const draw = (time: number) => {
-    card.style.opacity = "1";
+    content.style.opacity = "1";
     if (background)
       background.style.opacity = String((1 - Math.max(0, Math.min(1, time / 0.4))) ** 3);
   };
@@ -663,7 +667,7 @@ function withCodeOverlays(html: string, input: SceneHtmlInput, scene: CodeScene)
     if (input.fadeFromBackground)
       html = html.replace(
         "<script>",
-        '<div id="code-opening" style="position:absolute;inset:0;background:#F7F7F9;z-index:2;pointer-events:none"></div><script>',
+        '<div id="code-opening" style="position:absolute;inset:0;background:#FFFFFF;z-index:2;pointer-events:none"></div><script>',
       );
     html = html.replace("</html>", `<script>(${codeCutRuntime.toString()})();</script></html>`);
   }
@@ -764,11 +768,9 @@ export function codeHtml(input: SceneHtmlInput): string {
       ),
     ),
   };
-  const html = `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${codeFontCss}${sceneCaptionCss}
-  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#f7f7f9;color:#16161a;font:500 30px 'Noto Sans JP',sans-serif}
-  #card{position:absolute;left:60px;top:140px;width:1800px;height:810px;padding:24px;background:white;border-radius:20px;box-shadow:0 5px 18px #00000012;display:flex;flex-direction:column;gap:24px}
-  #heading{height:56px;flex-shrink:0;display:flex;align-items:center;gap:20px;overflow:hidden;white-space:nowrap}#heading span{padding:8px 16px;border-radius:8px;background:#0e0e10;color:#fff;font-size:24px}#heading h2{margin:0;font-size:28px;font-weight:700}
-  #content{display:flex;align-items:center;gap:36px;flex:1;min-height:0}
+  const html = `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${codeFontCss}
+  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#FFFFFF;color:#16161a;font:500 30px 'Noto Sans JP',sans-serif}
+  #content{position:absolute;left:84px;top:480px;transform:translateY(-50%);width:1752px;height:682px;display:flex;align-items:center;gap:36px}
   #code{position:relative;width:${codeWidth}px;flex-shrink:0;height:${codeHeight}px;padding:28px 24px;background:#16161a;border-radius:12px;color:#f4f4f6;font:400 ${fontSize}px/${lineHeight}px 'JetBrains Mono',ui-monospace,monospace;overflow:hidden}
   .line{height:${lineHeight}px;position:relative;white-space:pre;padding-right:38px}.source{white-space:pre}.mark{position:absolute;right:0;top:0;font:700 34px/${lineHeight}px sans-serif}.part{border-bottom:3px solid #b6a9ff}.numbered{position:relative}.numbered:after{content:'1';position:absolute;right:-10px;top:-16px;width:20px;height:20px;border-radius:50%;background:#5749db;color:white;text-align:center;font:500 14px/20px sans-serif}
   ${codeColorsCss}
@@ -776,7 +778,7 @@ export function codeHtml(input: SceneHtmlInput): string {
   .number-line{width:100%;height:auto;flex-shrink:0;overflow:hidden;margin-bottom:32px}
   .value-box{display:flex;min-height:76px;border:3px solid #dddde2;border-radius:12px;overflow:hidden;flex-shrink:0}.value-box.active{border-color:#5749db}.name{display:flex;align-items:center;flex-shrink:0;padding:12px 16px;background:#eeeef2;font:400 28px 'JetBrains Mono',ui-monospace,monospace;white-space:nowrap}.value-content{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 16px}.value-content.stacked{flex-direction:column;align-items:flex-end;gap:4px}.value-content strong{display:inline-block;font-size:38px;white-space:nowrap;flex-shrink:0}.value-content small{font-size:22px;white-space:nowrap;flex-shrink:0}.answer{display:flex;align-items:center;flex-shrink:0}.calls-heading{font-size:28px;color:#5c5c66}.call-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:18px 12px;border-bottom:2px solid #dddde2;flex-shrink:0}.call-row code{font:400 28px 'JetBrains Mono',ui-monospace,monospace}.call-row strong{font-size:34px}.call-row small{grid-column:1/-1;text-align:right;font-size:22px;color:#5c5c66}
   #code,#code *,#panel,#panel *{font-variant-ligatures: none;font-feature-settings: "liga" 0, "calt" 0}
-  ${figureData ? figureCss : ""}</style><div id="card"><div id="heading"><span>${sceneRoleLabel(scene)}</span><h2>${safe(scene.title)}</h2></div><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div></div><div id="caption"></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()},${sceneCaptionAt.toString()});${figureData ? `(${figureRuntime.toString()})(${JSON.stringify(figureData).replace(/</g, "\\u003c")});` : ""}</script></html>`;
+  ${figureData ? figureCss : ""}</style><div id="content"><div id="code"></div><div id="panel" ${scene.panel ? "" : 'style="display:none"'}></div></div><script>(${runtime.toString()})(${JSON.stringify(data).replace(/</g, "\\u003c")},${codeFrame.toString()});${figureData ? `(${figureRuntime.toString()})(${JSON.stringify(figureData).replace(/</g, "\\u003c")});` : ""}</script></html>`;
   const withOverlays = withCodeOverlays(html, input, scene);
   const withoutNumbers =
     input.schema === 2 && scene.beats.some((beat) => beat.part)

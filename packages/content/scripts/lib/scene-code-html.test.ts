@@ -5,7 +5,7 @@ import { sceneTimelines } from "../../src/scene-timeline.js";
 import { storyboardStates, type Board, type Scene } from "../../src/video-storyboard.js";
 import { sceneHtml, type ScenePageWindow } from "./scene-html.js";
 
-it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・印・字幕と撮影区間を出す", async () => {
+it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・印と撮影区間を出す", async () => {
   const scene: CodeScene = {
     kind: "code",
     id: "names",
@@ -37,7 +37,7 @@ it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・
   expect(html).toContain("hljs-keyword");
   expect(html).toContain("#16161a");
   const elements = new Map(
-    ["code", "panel", "heading", "caption", "card"].map((id) => [
+    ["code", "panel", "content"].map((id) => [
       id,
       { innerHTML: "", style: {} as Record<string, string> },
     ]),
@@ -53,7 +53,6 @@ it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・
   expect(content("code")).not.toContain("1200");
   expect(content("panel")).toContain("1200 + 500");
   expect(content("panel")).toContain('class="answer" style="opacity:0"');
-  expect(content("caption")).toContain("合計を作ります。");
   await window.__setTime(timing.beats[0].start + 1.5);
   expect(content("code")).toContain("const");
   expect(content("panel")).toContain('class="answer" style="opacity:1"');
@@ -66,10 +65,9 @@ it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・
   expect(content("panel")).toContain("980");
   expect(window.__busyRanges).toContainEqual([timing.beats[0].start, timing.beats[0].end + 1 / 30]);
   await window.__setTime(timing.duration);
-  expect(elements.get("card")?.style.opacity).toBe("1");
-  expect(elements.get("heading")?.style.opacity).toBeUndefined();
-  expect(html).toContain("background:#0e0e10;color:#fff");
-  expect(html).toContain("<span>要点 1</span><h2>値に名前を付ける</h2>");
+  expect(elements.get("content")?.style.opacity).toBe("1");
+  expect(html).toContain("background:#FFFFFF");
+  expect(html).not.toMatch(/id="(?:card|heading|caption)"/);
   expect(window.__overflows()).toEqual([]);
 });
 
@@ -92,6 +90,7 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
     total: 3,
   });
   let rect = { left: 120, right: 400, top: 220, bottom: 260, width: 280, height: 40 };
+  let panelBounds = { left: 100, top: 200, bottom: 680 };
   const node = { textContent: "addTax(1000) → 1100" };
   const panel = {
     id: "panel",
@@ -104,7 +103,7 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
     // 内部のレイアウト寸法が枠を超えていても、文字が枠内ならエラーにしない。
     scrollWidth: 706,
     scrollHeight: 482,
-    getBoundingClientRect: () => ({ left: 100, top: 200 }),
+    getBoundingClientRect: () => panelBounds,
   };
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
@@ -134,6 +133,8 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
   ]);
   rect = { ...rect, right: 400, width: 280, bottom: 685, height: 465 };
   expect(window.__overflows()).toHaveLength(1);
+  panelBounds = { ...panelBounds, top: -1, bottom: 961 };
+  expect(window.__overflows()).toContain("コードと横の図が画面の上端から960pxの範囲に収まりません");
 });
 
 it.each([
@@ -286,14 +287,15 @@ it("短いコードは36pxまで拡大し、枠を内容に合わせて中央に
       timing: sceneTimelines([scene], [[3]])[0],
       index: 1,
       total: 3,
-      previous: scene,
     });
   };
   const short = render(["// 価格", "const price = 1200;", "// 送料", "const shipping = 500;"]);
   expect(short).toContain("font:400 36px/54px");
   expect(short).toContain("height:365px;padding:28px 24px");
-  expect(short).toContain("#content{display:flex;align-items:center;");
-  expect(short).toContain('<div id="card"><div id="heading"><span>つかみ</span>');
+  expect(short).toMatch(
+    /#content\{[^}]*top:480px;transform:translateY\(-50%\);[^}]*display:flex;align-items:center;/,
+  );
+  expect(short).not.toMatch(/id="(?:card|heading|caption)"/);
   expect(short).not.toContain("titleOpacity");
   const long = render(Array.from({ length: 14 }, () => "const price = 1200;"));
   const height = Number(/#code\{[^}]*height:(\d+)px/.exec(long)?.[1]);
@@ -324,7 +326,7 @@ it("callsの行を出し、コードや値に含むHTMLを実行しない", () =
     index: 1,
     total: 3,
   });
-  expect(html).toContain("<span>問題へ</span>");
+  expect(html).not.toContain("<span>問題へ</span>");
   expect(html).not.toContain("<span>まとめ</span>");
   expect(html.match(/<\/script>/g)).toHaveLength(1);
   expect(html).not.toContain("</script><img>");
@@ -359,10 +361,7 @@ it("部分の下線は最初に一致する箇所を囲み、丸い番号を付�
   const code = { innerHTML: "", children: [{ querySelector: () => source }] };
   const elements = new Map<string, unknown>([
     ["code", code],
-    ...["panel", "caption", "card", "heading"].map((id): [string, unknown] => [
-      id,
-      { innerHTML: "", style: {} },
-    ]),
+    ...["panel", "content"].map((id): [string, unknown] => [id, { innerHTML: "", style: {} }]),
   ]);
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
@@ -481,7 +480,7 @@ it("数直線の点の出現・移動・区間・矢印・目盛りの印・値�
     total: 1,
   });
   const elements = new Map(
-    ["code", "panel", "caption", "card"].map((id) => [id, { innerHTML: "", style: {} }]),
+    ["code", "panel", "content"].map((id) => [id, { innerHTML: "", style: {} }]),
   );
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
@@ -931,14 +930,9 @@ it("レッスン型はコードの前後をカットにし、冒頭だけ背景�
     [sceneHtml({ ...input, schema: 2, fadeFromBackground: true }), 2, true],
   ] as const) {
     const elements = new Map(
-      [
-        "code",
-        "panel",
-        "caption",
-        "card",
-        "previous-code-frame",
-        ...(opening ? ["code-opening"] : []),
-      ].map((id) => [id, { innerHTML: "", style: {} as Record<string, string> }]),
+      ["code", "panel", "content", "previous-code-frame", ...(opening ? ["code-opening"] : [])].map(
+        (id) => [id, { innerHTML: "", style: {} as Record<string, string> }],
+      ),
     );
     const window = {} as ScenePageWindow;
     const vm = {
@@ -948,13 +942,13 @@ it("レッスン型はコードの前後をカットにし、冒頭だけ背景�
     for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
       runInNewContext(script, vm);
     await window.__setTime(0);
-    expect(elements.get("card")?.style.opacity).toBe(schema === 1 ? "0" : "1");
+    expect(elements.get("content")?.style.opacity).toBe(schema === 1 ? "0" : "1");
     expect(elements.get("code-opening")?.style.opacity).toBe(opening ? "1" : undefined);
     await window.__setTime(0.2);
     if (schema === 1) {
       expect(elements.get("previous-code-frame")?.style.opacity).toBe("0.5");
-      expect(elements.get("card")?.style.opacity).toBe("0.5");
-    } else expect(elements.get("card")?.style.opacity).toBe("1");
+      expect(elements.get("content")?.style.opacity).toBe("0.5");
+    } else expect(elements.get("content")?.style.opacity).toBe("1");
     await window.__setTime(0.4);
     expect(elements.get("code-opening")?.style.opacity).toBe(opening ? "0" : undefined);
   }
@@ -1108,9 +1102,7 @@ it("170pxの3枚のfigureで6字のラベルと5字の札に横幅を渡す", as
   });
 
   const panel = { innerHTML: "", querySelectorAll: () => [] };
-  const elements = new Map(
-    ["code", "card", "caption"].map((id) => [id, { innerHTML: "", style: {} }]),
-  );
+  const elements = new Map(["code", "content"].map((id) => [id, { innerHTML: "", style: {} }]));
   const window = {} as ScenePageWindow;
   const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1];
   runInNewContext(script ?? "", {
@@ -1194,9 +1186,7 @@ describe("schema 2 の図は等倍までフェードし、強調を枠で続け�
       total: scenes.length,
     });
     const panel = { innerHTML: "", querySelectorAll: () => [] as never[] };
-    const elements = new Map(
-      ["code", "card", "caption"].map((id) => [id, { innerHTML: "", style: {} }]),
-    );
+    const elements = new Map(["code", "content"].map((id) => [id, { innerHTML: "", style: {} }]));
     const window = {} as ScenePageWindow;
     const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
     runInNewContext(script, {

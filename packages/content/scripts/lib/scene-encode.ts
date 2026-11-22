@@ -4,12 +4,13 @@ import { dirname, join } from "node:path";
 import type { Page } from "playwright";
 import type { ScenePageWindow } from "./scene-html.js";
 
-export function runFfmpeg(args: string[]): Promise<void> {
+export function runFfmpeg(args: string[], cwd?: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(
       "ffmpeg",
       ["-hide_banner", "-loglevel", "error", "-nostdin", "-y", ...args],
       {
+        cwd,
         stdio: ["ignore", "ignore", "pipe"],
       },
     );
@@ -74,7 +75,7 @@ export async function encodeScene(
       "1:a:0",
       "-vf",
       fadeOut
-        ? `fps=30,fade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}:color=0xf7f7f9`
+        ? `fps=30,fade=t=out:st=${fadeOut.start}:d=${fadeOut.duration}:color=0xffffff`
         : "fps=30",
       "-frames:v",
       String(Math.round(duration * 30)),

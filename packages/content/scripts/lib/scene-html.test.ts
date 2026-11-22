@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import { sceneCaptionAt, sceneTimelines, sceneVideoSequence } from "../../src/scene-timeline.js";
+import { sceneTimelines, sceneVideoSequence } from "../../src/scene-timeline.js";
 import {
   storyboardStates,
   type Beat,
@@ -27,6 +27,7 @@ it("文字だけのタイトルは字幕なしで中央に出し、前後0.4秒�
   expect(html).toContain("<header>開発&amp;環境</header>");
   expect(html).toContain("font-size:80px;font-weight:700");
   expect(html).toContain("width:96px;height:6px;background:#E62F9A");
+  expect(html).toContain("background:#FFFFFF");
   expect(html).not.toContain('id="caption"');
   expect(
     textSceneHtml({ kind: "text", id: "title", title: "学ぶ流れ", duration: 2.6 }),
@@ -103,11 +104,11 @@ it.each(["title"] as const)(
     expect(Number(content.style.opacity)).toBeCloseTo(0);
   },
 );
-describe.each(["view", "board"] as const)("%s のタイトル札と字幕", (kind) => {
-  function titlePage(previous?: Scene, role: Scene["role"] = "point", say = "読みます。") {
+describe.each(["view", "board"] as const)("%s の描画領域", (kind) => {
+  function render(say = "読みます。", role: Scene["role"] = "point") {
     const scene: Scene = {
       ...(kind === "view" ? { kind, image: "shot:web/one" } : { kind, board: "main" }),
-      id: "title",
+      id: "scene",
       role,
       point: role === "point" ? 1 : undefined,
       title: "読む場所と、書く場所",
@@ -122,138 +123,128 @@ describe.each(["view", "board"] as const)("%s のタイトル札と字幕", (kin
       state,
       board,
       timing,
-      index: previous ? 1 : 0,
-      total: 2,
-      previous,
+      index: 0,
+      total: 1,
       images: {
         "shot:web/one": { url: "file:///tmp/one.png", width: 1600, height: 1000, regions: {} },
       },
     });
-    const elements = new Map<
-      string,
-      {
-        style: Record<string, string>;
-        innerHTML: string;
-        textContent?: string;
-        firstElementChild: { scrollHeight: number };
-      }
-    >();
-    const document = {
-      getElementById: (id: string) => {
-        if (id === "heading" && !html.includes('id="heading"')) return null;
-        if (!["heading", "surface", "white", "caption"].includes(id)) return null;
-        if (!elements.has(id))
-          elements.set(id, { style: {}, innerHTML: "", firstElementChild: { scrollHeight: 44 } });
-        return elements.get(id);
-      },
-      querySelectorAll: () => [],
-    };
+    const white = { style: {} as Record<string, string> };
+    const surface = { innerHTML: "" };
     const window = {} as ScenePageWindow;
-    runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", { window, document });
-    return { html, scene, window, elements, timing };
+    runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+      window,
+      document: {
+        getElementById: (id: string) => ({ white, surface })[id as "white" | "surface"],
+        querySelectorAll: () => [],
+      },
+    });
+    return { html, window, white, timing };
   }
-  it("字幕を下端の2行分の欄に出し、白より奥・図や画像より手前にする", () => {
-    const { html } = titlePage();
-    expect(html).toContain(
-      "#caption{position:absolute;left:72px;right:72px;top:990px;height:90px;display:flex;align-items:center;justify-content:center;font-size:34px;line-height:1.3;color:#0E0E10;text-align:center;z-index:1;overflow:hidden}",
-    );
-    expect(html).toContain('</svg><div id="caption"></div><div id="white"></div>');
+  it("字幕欄を描かず、切り替えの白幕を残す", () => {
+    const { html } = render();
+    expect(html).not.toMatch(/#caption|id="caption"/);
+    expect(html).toContain('</svg><div id="white"></div>');
   });
-  it("sayをエスケープし、読み終わりで消す。巻き戻しても同じ字幕になる", async () => {
-    const { window, elements, timing } = titlePage(undefined, "point", "<b>&</script>");
-    for (const [time, text] of [
-      [0, ""],
-      [0.8, "&lt;b&gt;&amp;&lt;/script&gt;"],
-      [4.212, "&lt;b&gt;&amp;&lt;/script&gt;"],
-      [4.213, ""],
-      [timing.beats[1].start, "次の文です。"],
-      [timing.beats[1].end, ""],
-      [timing.duration, ""],
-      [0.8, "&lt;b&gt;&amp;&lt;/script&gt;"],
-    ] as const) {
-      await window.__setTime(time);
-      expect(elements.get("caption")?.innerHTML).toBe(`<span>${text}</span>`);
-    }
-  });
-  it("30fpsで静止コマを使い回しても、字幕の開始と終了の最初のコマを撮り直す", async () => {
-    const { window, elements, timing } = titlePage();
-    let previousBusy = true,
-      captured = "",
-      captures = 0;
-    for (let frame = 0; frame < Math.round(timing.duration * 30); frame++) {
-      const time = frame / 30;
-      const busy = window.__busyRanges.some(([a, b]) => time >= a && time <= b);
-      if (!frame || busy || previousBusy) {
-        await window.__setTime(time);
-        captured = elements.get("caption")?.innerHTML ?? "";
-        captures++;
-      }
-      expect(captured, `frame ${frame}`).toBe(`<span>${sceneCaptionAt(timing, time)}</span>`);
-      previousBusy = busy;
-    }
-    expect(captures).toBeLessThan((timing.duration * 30) / 2);
-  });
-  it("2行を超える字幕は文を添えて報告し、消えた字幕は報告しない", async () => {
-    const { window, elements } = titlePage();
-    const caption = elements.get("caption");
-    if (!caption) throw new Error("字幕欄がありません");
-    caption.textContent = "読みます。";
-    caption.firstElementChild.scrollHeight = 89;
+  it("字幕用の文にマークアップがあっても場面に文字を描かない", async () => {
+    const { html, window } = render("<b>&</script>");
+    expect(html.split("<script>")[0]).not.toContain("<b>");
     await window.__setTime(1);
     expect(window.__overflows()).toEqual([]);
-    caption.firstElementChild.scrollHeight = 133;
+  });
+  it("字幕が終わるだけの静止コマを撮り直さない", () => {
+    const { window, timing } = render();
+    const end = timing.beats[0].speechEnd ?? 0;
+    expect(window.__busyRanges.some(([a, b]) => a <= end && end <= b)).toBe(false);
+  });
+  it("長い字幕で場面のはみ出しを報告しない", async () => {
+    const { window } = render("あ".repeat(40));
     await window.__setTime(1);
-    expect(window.__overflows()).toEqual(["字幕が2行に収まりません: 読みます。"]);
-    caption.firstElementChild.scrollHeight = 0;
-    await window.__setTime(0);
     expect(window.__overflows()).toEqual([]);
   });
-  it("帯と進捗の点を出さず、タイトルを上部中央の札にする", () => {
-    const { html } = titlePage();
+  it("白い地に描画し、帯と進捗の点を出さない", () => {
+    const { html } = render();
     expect(html).not.toMatch(/<header|previous-heading|\.dots?\b|class="dots?\b/);
-    expect(html).toContain('<div id="heading"><span>要点 1</span> 読む場所と、書く場所</div>');
-    expect(html).toContain("top:24px;left:50%;transform:translateX(-50%)");
-    expect(html).toContain("white-space:nowrap;z-index:1;opacity:0;height:80px");
+    expect(html).not.toMatch(/#heading|id="heading"|id="card"/);
+    expect(html).toContain("background:#FFFFFF");
     expect(html).toContain("#white{position:absolute;inset:0;z-index:2;");
-    expect(titlePage(undefined, "recap").html).toContain('<div id="heading"><span>問題へ</span>');
     if (kind === "board") {
       expect(html).toContain('id="diagram" viewBox="0 170 1920 760"');
-      expect(html).toContain("top:170px;width:1920px;height:760px");
+      expect(html).toContain("top:100px;width:1920px;height:760px");
     }
   });
-  it("最初の3秒だけ表示し、フェードアウト中も毎コマ更新する", async () => {
-    const { window, elements } = titlePage();
-    for (const [time, opacity] of [
-      [0, 0],
-      [0.2, 0.5],
-      [1, 1],
-      [2.6, 1],
-      [2.8, 0.5],
-      [3, 0],
-      [10, 0],
-      [0.2, 0.5],
-    ]) {
-      await window.__setTime(time);
-      expect(Number(elements.get("heading")?.style.opacity)).toBeCloseTo(opacity);
-    }
-    expect(window.__busyRanges).toContainEqual([2.6, 3]);
+  it("残した白幕だけを冒頭でフェードし、見出し用の撮影区間は持たない", async () => {
+    const { window, white } = render();
+    await window.__setTime(0);
+    expect(white.style.opacity).toBe("1");
+    await window.__setTime(0.4);
+    expect(white.style.opacity).toBe("0");
+    expect(window.__busyRanges).not.toContainEqual([2.6, 3]);
     expect(window.__busyRanges.some(([start, end]) => start === 0 && end >= 0.4)).toBe(true);
   });
-  it("直前とrole・point・titleが一致すると札を出さず、どれかが違えば出す", async () => {
-    const { scene } = titlePage();
-    const same = titlePage({ ...scene, id: "previous" });
-    expect(same.html).not.toContain('id="heading"');
-    await same.window.__setTime(1);
-    expect(same.elements.has("heading")).toBe(false);
-    for (const difference of [
-      { role: "recap" as const },
-      { point: 2 },
-      { title: "別のタイトル" },
-    ]) {
-      expect(titlePage({ ...scene, ...difference }).html).toContain('id="heading"');
-    }
+  it("場面の役割にかかわらず見出しを描かない", () => {
+    for (const role of ["hook", "point", "recap"] as const)
+      expect(render("読みます。", role).html).not.toContain('id="heading"');
   });
 });
+it.each(["art:one", "shot:web/one", "clip:vscode/one#open"])(
+  "%s の spot は範囲だけを抜いて画面全体を暗くする",
+  async (image) => {
+    const scene = {
+      kind: "view",
+      id: "spot",
+      role: "hook",
+      title: "注目する場所",
+      image,
+      beats: [{ say: "ここを見ます。", spot: ["target"] }, { say: "次へ進みます。" }],
+    } satisfies Scene;
+    const board = { cols: 1, rows: 1, nodes: [] };
+    const [state] = storyboardStates({ ...sample, scenes: [scene] });
+    const [timing] = sceneTimelines([scene], [[2, 2]]);
+    const html = sceneHtml({
+      scene,
+      state,
+      timing,
+      board,
+      index: 0,
+      total: 1,
+      images: {
+        [image]: {
+          url: "one.png",
+          width: 1600,
+          height: 1000,
+          regions: { target: [100, 100, 180, 120] },
+        },
+      },
+    });
+    const surface = { innerHTML: "" };
+    const white = { style: {} };
+    const window = {} as ScenePageWindow;
+    runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+      window,
+      document: { getElementById: (id: string) => (id === "surface" ? surface : white) },
+    });
+    expect(surface.innerHTML).not.toContain("spot-mask");
+    const { start } = timing.beats[0];
+    await window.__setTime(start + 0.15);
+    expect(surface.innerHTML).toMatch(/<g opacity="0\.[45]\d*"><rect width="1920" height="1080"/);
+    expect(window.__busyRanges.some(([a, b]) => a <= start && b >= start + 0.3)).toBe(true);
+    await window.__setTime(start + 0.4);
+    expect(surface.innerHTML).toContain(
+      '<mask id="spot-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">',
+    );
+    expect(surface.innerHTML).toContain(
+      '<g opacity="1"><rect width="1920" height="1080" fill="rgba(14,14,16,0.4)" mask="url(#spot-mask)"/>',
+    );
+    const hole = /<rect ([^>]+) fill="black"\/>/.exec(surface.innerHTML)?.[1];
+    expect(hole).toMatch(/^x="[\d.]+".*width="[\d.]+".*height="[\d.]+"/);
+    expect(surface.innerHTML).toContain(
+      `<rect ${hole} fill="none" stroke="#E62F9A" stroke-width="4"/>`,
+    );
+    await window.__setTime(timing.beats[1].start);
+    expect(surface.innerHTML).not.toContain("spot-mask");
+  },
+);
 function page(index: number, sb = sample, options?: { marks?: boolean }) {
   const states = storyboardStates(sb),
     timelines = sceneTimelines(
@@ -267,7 +258,6 @@ function page(index: number, sb = sample, options?: { marks?: boolean }) {
     timing: timelines[index],
     index,
     total: sb.scenes.length,
-    previous: sb.scenes[index - 1],
   });
   const script = /<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "";
   interface TestElement {
@@ -517,10 +507,10 @@ describe("場面HTMLの時刻による描画", () => {
       p.window.__busyRanges.some(([start, end]) => start === p.timing.beats[0].end && end > start),
     ).toBe(true);
   });
-  it("字幕欄を持ち、外部リソースと時計を含まない", () => {
+  it("字幕欄、外部リソース、時計を含まない", () => {
     const { html } = page(4);
     expect(html.split("<script>")[0]).not.toContain(sample.scenes[4].beats[0].say);
-    expect(html).toContain('<div id="caption"></div>');
+    expect(html).not.toContain('id="caption"');
     expect(html).not.toMatch(/(?:src|href)="https?:/);
     expect(html).not.toMatch(/requestAnimationFrame|setInterval|Date\.now|transition:/);
     expect(html).toContain("file://");
@@ -584,17 +574,17 @@ for (const art of [true, false])
     }
   });
 
-const lessonHeadings = [
-  ["goal", "学ぶこと"],
-  ["example", "身近な例"],
-  ["syntax", "書き方"],
-  ["apply", "例を書く"],
-  ["note", "補足"],
-  ["quiz", "問題"],
-  ["answer", "答え合わせ"],
-  ["explain", "解説"],
-  ["usage", "使う場面"],
-  ["next", "次の課題"],
+const lessonRoles = [
+  "goal",
+  "example",
+  "syntax",
+  "apply",
+  "note",
+  "quiz",
+  "answer",
+  "explain",
+  "usage",
+  "next",
 ] as const;
 
 function renderScene(kind: "board" | "view" | "code", role: Scene["role"]) {
@@ -625,19 +615,17 @@ function renderScene(kind: "board" | "view" | "code", role: Scene["role"]) {
   return { html, timing };
 }
 
-describe.each(["board", "view", "code"] as const)("%s のレッスン型の見出しと問題", (kind) => {
-  it.each(lessonHeadings)("%s の見出しは「%s」", (role, label) => {
+describe.each(["board", "view", "code"] as const)("%s の場面の表示", (kind) => {
+  it.each(lessonRoles)("schema 2 の %s では見出しと字幕を描かない", (role) => {
     const { html } = renderScene(kind, role);
-    expect(html).toContain(`<span>${label}</span>`);
+    expect(html).not.toMatch(/id="(?:heading|caption|card)"/);
+    expect(html).toContain("background:#FFFFFF");
     expect(html.includes('id="think-time"')).toBe(role === "quiz");
     expect(html.includes("function thinkRuntime")).toBe(role === "quiz");
   });
-  it("schema 1 の見出しは従来の文言のまま", () => {
-    expect(renderScene(kind, "hook").html).toContain(
-      `<span>${kind === "code" ? "つかみ" : ""}</span>`,
-    );
-    expect(renderScene(kind, "point").html).toContain("<span>要点 1</span>");
-    expect(renderScene(kind, "recap").html).toContain("<span>問題へ</span>");
+  it("schema 1 でも場面の役割のラベルを描かない", () => {
+    for (const role of ["hook", "point", "recap"] as const)
+      expect(renderScene(kind, role).html).not.toMatch(/id="(?:heading|caption|card)"/);
   });
 });
 
@@ -708,13 +696,13 @@ it("札があるノードにだけ札を描き、引き継いだ値と変更後�
   expect(page(0).html).not.toContain("data-board-tag");
 });
 
-it("札を使わない schema 1 の概念図の HTML を維持する", () => {
+it("札を使わない schema 1 の概念図を白い地に描く", () => {
   const html = page(0, JSON.parse(sampleJson) as BoardStoryboard).html.replace(
     /file:\/\/[^)]*\/([^/)]*\.woff2?)/g,
     "file:///font/$1",
   );
   expect(createHash("sha256").update(html).digest("hex")).toBe(
-    "eb90870448578e2cdd6b42cc1d5ba0c4f7218df34e9ace13a3c111577dbbe4a4",
+    "7b18da3e84f4c1d77675acbccf0a3a6acc4b51afba62bde6818f4c734bebe132",
   );
 });
 
@@ -823,53 +811,47 @@ describe("用語とダイアログの描画", () => {
     return found[1];
   }
 
-  it.each(["board", "view", "code"] as const)(
-    "%s で用語の幕と字幕を文の時刻から描く",
-    async (kind) => {
-      const { html, timing } = render(kind, { term });
-      expect(html).toContain("rgba(14,14,16,0.78)");
-      expect(html).toContain('<ruby>引数<rt style="font-size:40px">ひきすう</rt></ruby>');
-      expect(html).toContain('<div class="term-note">関数が受け取る値</div>');
-      const entry = { hidden: true, style: {} as Record<string, string> };
-      const overlay = { style: {} as Record<string, string>, children: [entry] };
-      const caption = { style: {} as Record<string, string> };
-      const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
-      const document = { getElementById: (id: string) => (id === "caption" ? caption : overlay) };
-      runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
-      const { start, end } = timing.beats[0];
-      expect(window.__busyRanges).toEqual([
-        [start, start + 0.3],
-        [end, end + 0.3],
-      ]);
-      for (const [time, opacity] of [
-        [0, 0],
-        [start + 0.15, 0.5],
-        [start + 0.4, 1],
-        [end - 1 / 30, 1],
-        [end + 0.15, 0.5],
-        [end + 0.31, 0],
-        [start + 0.4, 1],
-      ]) {
-        await (window as unknown as ScenePageWindow).__setTime(time);
-        expect(Number(overlay.style.opacity)).toBeCloseTo(opacity);
-        expect(caption.style.color).toBe(opacity > 0 ? "white" : "");
-        expect(caption.style.zIndex).toBe(opacity > 0 ? "6" : "");
-        expect(entry.hidden).toBe(opacity === 0);
-      }
-      await expectEnterScale(
-        (time) => (window as unknown as ScenePageWindow).__setTime(time),
-        () => entry.style,
-        () => Number(overlay.style.opacity),
-        start,
-        end,
-      );
-    },
-  );
+  it.each(["board", "view", "code"] as const)("%s で用語の幕を文の時刻から描く", async (kind) => {
+    const { html, timing } = render(kind, { term });
+    expect(html).toContain("rgba(14,14,16,0.78)");
+    expect(html).toContain('<ruby>引数<rt style="font-size:40px">ひきすう</rt></ruby>');
+    expect(html).toContain('<div class="term-note">関数が受け取る値</div>');
+    const entry = { hidden: true, style: {} as Record<string, string> };
+    const overlay = { style: {} as Record<string, string>, children: [entry] };
+    const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
+    const document = { getElementById: () => overlay };
+    runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
+    const { start, end } = timing.beats[0];
+    expect(window.__busyRanges).toEqual([
+      [start, start + 0.3],
+      [end, end + 0.3],
+    ]);
+    for (const [time, opacity] of [
+      [0, 0],
+      [start + 0.15, 0.5],
+      [start + 0.4, 1],
+      [end - 1 / 30, 1],
+      [end + 0.15, 0.5],
+      [end + 0.31, 0],
+      [start + 0.4, 1],
+    ]) {
+      await (window as unknown as ScenePageWindow).__setTime(time);
+      expect(Number(overlay.style.opacity)).toBeCloseTo(opacity);
+      expect(entry.hidden).toBe(opacity === 0);
+    }
+    await expectEnterScale(
+      (time) => (window as unknown as ScenePageWindow).__setTime(time),
+      () => entry.style,
+      () => Number(overlay.style.opacity),
+      start,
+      end,
+    );
+  });
 
-  it.each(kinds)("%s の字幕・図・札・コードにフリガナを足さない", (kind) => {
+  it.each(kinds)("%s の図・札・コードにフリガナを足さない", (kind) => {
     const { html } = render(kind);
-    expect(html).toContain("<span>次の課題</span>");
-    expect(html).toContain("引数と戻り値");
+    expect(html).not.toMatch(/id="(?:heading|caption)"/);
+    expect(html.split("<script>")[0]).not.toContain("引数と戻り値");
     expect(html).toContain("戻り値と値です。");
     expect(html).not.toMatch(/<ruby>|<rt[ >]|ruby-fit|beat-overlay/);
     if (kind === "board") {
@@ -904,9 +886,8 @@ describe("用語とダイアログの描画", () => {
       querySelector: () => ({ textContent: "関数の形" }),
     };
     const overlay = { style: {} as Record<string, string>, children: [entry] };
-    const caption = { style: {} as Record<string, string> };
     const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
-    const document = { getElementById: (id: string) => (id === "caption" ? caption : overlay) };
+    const document = { getElementById: () => overlay };
     runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
     const { start, end } = timing.beats[0];
     for (const [time, opacity] of [
@@ -921,8 +902,6 @@ describe("用語とダイアログの描画", () => {
       await (window as unknown as ScenePageWindow).__setTime(time);
       expect(Number(overlay.style.opacity)).toBeCloseTo(opacity);
       expect(entry.hidden).toBe(opacity === 0);
-      expect(caption.style.color).toBe(opacity > 0 ? "white" : "");
-      expect(caption.style.zIndex).toBe(opacity > 0 ? "6" : "");
       if (opacity > 0) expect(overlay.style.background).toBe("rgba(14,14,16,0.55)");
       expect(window.__overflows()).toEqual([]);
     }
@@ -943,7 +922,7 @@ describe("用語とダイアログの描画", () => {
     const overlay = { style: {} as Record<string, string>, children: entries };
     const window = { __setTime: async () => undefined, __busyRanges: [], __overflows: () => [] };
     const document = {
-      getElementById: (id: string) => (id === "caption" ? { style: {} } : overlay),
+      getElementById: () => overlay,
     };
     runInNewContext(script(html, "beatOverlayRuntime"), { window, document });
     for (const index of [0, 1, 0]) {
@@ -1008,7 +987,6 @@ describe("schema 2 の概念図は等倍までフェードし、強調を枠で�
       timing: timelines[index],
       index,
       total: scenes.length,
-      previous: scenes[index - 1],
     });
     const linkIds = new Set(board.links.map((link) => `element-${link.id}`));
     const elements = new Map<string, TestNode>();

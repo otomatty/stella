@@ -67,9 +67,9 @@ import {
   writeNarrationWav,
   toPosterJpeg,
 } from "./lib/ffmpeg.js";
-import { encodeScene } from "./lib/scene-encode.js";
+import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
-import { createTtsProvider, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
+import { createTtsProvider, cueHash, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
 const videoFile = new URL("../src/__fixtures__/board-video.json", import.meta.url);
 const sample = JSON.parse(readFileSync(videoFile, "utf8")) as BoardStoryboard;
 const scene = sample.scenes[0];
@@ -539,7 +539,6 @@ describe("音声モデルと日次上限", () => {
         querySelectorAll: () => [],
       };
       const overlay = { style: { opacity: "" }, children: [entry] };
-      const caption = { style: {} };
       let activePage = false;
       page.goto.mockImplementation(async (url: string) => {
         const html = readFileSync(fileURLToPath(url), "utf8");
@@ -551,7 +550,7 @@ describe("音声モデルと日次上限", () => {
         window.__setTime = async () => undefined;
         runInNewContext(script, {
           window,
-          document: { getElementById: (id: string) => (id === "caption" ? caption : overlay) },
+          document: { getElementById: () => overlay },
         });
       });
       page.evaluate.mockImplementation(async (callback, time?: number) => {
@@ -719,9 +718,13 @@ describe("音声モデルと日次上限", () => {
           join(contentRoot, "dist/video-cache/scenes", report.scenes.at(-1).hash, "poster.png"),
           expect.stringContaining("poster.jpg"),
         );
-        expect(readFileSync(join(root, "out/fixture/first/captions.vtt"), "utf8")).toBe(
-          "WEBVTT\n\nNOTE 字幕は動画に焼き込み済み\n\n",
-        );
+        const out = join(root, "out/fixture/first");
+        const captions = readFileSync(join(out, "captions.vtt"), "utf8");
+        expect(captions).toMatch(/^WEBVTT\n\n1\n00:00:03.400 --> [^\n]+\n読みます。/);
+        expect(captions.match(/ --> /g)).toHaveLength(storyboard.scenes.length);
+        expect(captions).not.toContain(topics[0].title);
+        expect(existsSync(join(out, "video.captions.mp4"))).toBe(false);
+        expect(runFfmpeg).toHaveBeenCalledTimes(1);
         expect(encodeNarration).toHaveBeenCalledTimes(storyboard.scenes.length + 1);
         const sfxWavs = vi
           .mocked(writeNarrationWav)
@@ -742,6 +745,157 @@ describe("音声モデルと日次上限", () => {
       }
     },
   );
+  it("--burn-captions は公開用の動画と字幕を保ち、2種類の ASS スタイルで確認版を作る", async () => {
+    const { root, topics, storyboard } = fixture();
+    try {
+      const roles = [
+        "goal",
+        "example",
+        "syntax",
+        "apply",
+        "quiz",
+        "answer",
+        "explain",
+        "usage",
+        "next",
+      ] as const;
+      const video: VideoStoryboard = {
+        ...storyboard,
+        schema: 2,
+        art: {
+          example: { prompt: "見本のイラスト", regions: { object: [0.1, 0.1, 0.2, 0.2] } },
+        },
+        scenes: roles.map((role) => {
+          const base = { id: role, role, title: "説明" };
+          if (role === "example")
+            return {
+              ...base,
+              kind: "view",
+              image: "art:example",
+              beats: [{ say: "絵に注目してください。", spot: ["object"] }],
+            };
+          return {
+            ...base,
+            kind: "board",
+            board: "main",
+            beats: [
+              role === "goal"
+                ? {
+                    say: "完成形を見ます。",
+                    show: ["read"],
+                    dialog: { title: "コードの例", code: ["const x = 1;"] },
+                  }
+                : role === "syntax"
+                  ? {
+                      say: "二つの値を比べます。",
+                      speech: "順番を確かめます。",
+                      term: { text: "比較", ruby: "ひかく" },
+                    }
+                  : { say: "要点を確かめます。", pulse: ["read"] },
+            ],
+          };
+        }),
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      mkdirSync(join(root, "assets/art"), { recursive: true });
+      const image = Buffer.alloc(24);
+      Buffer.from("89504e470d0a1a0a", "hex").copy(image);
+      image.writeUInt32BE(400, 16);
+      image.writeUInt32BE(300, 20);
+      writeFileSync(join(root, "assets/art/example.png"), image);
+
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      const voice = provider("cue");
+      vi.mocked(createTtsProvider).mockReturnValue(voice);
+      vi.mocked(decodeTrimmedPcm).mockImplementation(async () => {
+        const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
+        return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
+      });
+      const plain = join(root, "plain");
+      const burned = join(root, "確認用's video");
+      const args = ["fixture", "--tts", "fake"];
+      await buildSceneVideos([...args, "--out", plain]);
+      expect(runFfmpeg).toHaveBeenCalledTimes(1);
+      expect(existsSync(join(plain, "fixture/first/video.captions.mp4"))).toBe(false);
+      const timing = () =>
+        vi
+          .mocked(writeNarrationWav)
+          .mock.calls.map(([file, duration, placements]) => [
+            file.split("/").at(-1),
+            duration,
+            placements,
+          ]);
+      const audioAndSfx = timing();
+      const speechKeys = () =>
+        vi
+          .mocked(synthesizeCached)
+          .mock.calls.map(([tts, speech]) => cueHash(tts.identity, speech));
+      const keys = speechKeys();
+      expect(keys).toContain(cueHash("fixture", "順番を確かめます。"));
+      vi.mocked(writeNarrationWav).mockClear();
+      vi.mocked(synthesizeCached).mockClear();
+
+      let ass = "";
+      vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs, cwd) => {
+        if (cwd) ass = readFileSync(join(cwd, "captions.ass"), "utf8");
+        const file = ffmpegArgs.at(-1) ?? "";
+        writeFileSync(file, cwd ? "preview" : "video");
+      });
+      try {
+        await buildSceneVideos([...args, "--out", burned, "--burn-captions"]);
+      } finally {
+        vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs) =>
+          writeFileSync(ffmpegArgs.at(-1) ?? "", "video"),
+        );
+      }
+
+      expect(runFfmpeg).toHaveBeenCalledTimes(3);
+      expect(runFfmpeg).toHaveBeenLastCalledWith(
+        [
+          "-i",
+          expect.stringMatching(/\/video\.mp4$/),
+          "-vf",
+          "ass=captions.ass",
+          "-c:v",
+          "libx264",
+          "-crf",
+          "20",
+          "-c:a",
+          "copy",
+          "-movflags",
+          "+faststart",
+          expect.stringMatching(/\/video\.captions\.mp4$/),
+        ],
+        expect.stringContaining("work-"),
+      );
+      expect(ass).toContain(
+        "Style: Default,Noto Sans CJK JP,38,&H00000000,&H00000000,&H00FFFFFF,&H00000000,-1",
+      );
+      expect(ass).toContain(
+        "Style: OnDark,Noto Sans CJK JP,38,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1",
+      );
+      expect(ass).toMatch(/Dialogue: 0,[\d:.]+,[\d:.]+,OnDark,,0,0,0,,完成形を見ます。/);
+      expect(ass).toMatch(/,OnDark,,0,0,0,,絵に注目してください。/);
+      expect(ass).toMatch(/,OnDark,,0,0,0,,二つの値を比べます。/);
+      expect(ass).toMatch(/,Default,,0,0,0,,要点を確かめます。/);
+      for (const file of ["video.mp4", "captions.vtt"])
+        expect(readFileSync(join(burned, "fixture/first", file))).toEqual(
+          readFileSync(join(plain, "fixture/first", file)),
+        );
+      const captions = readFileSync(join(plain, "fixture/first/captions.vtt"), "utf8");
+      expect(captions.match(/<c\.on-dark>/g)).toHaveLength(3);
+      expect(captions).toContain("<c.on-dark>二つの値を比べます。</c>");
+      expect(captions).not.toContain("順番を確かめます。");
+      expect(readFileSync(join(burned, "fixture/first/video.captions.mp4"), "utf8")).toBe(
+        "preview",
+      );
+      expect(timing()).toEqual(audioAndSfx);
+      expect(speechKeys()).toEqual(keys);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("schema 2 のタイトル直後と、状態が変わる文の効果音をミックスに渡す", async () => {
     const { root, topics, storyboard } = fixture();
     try {

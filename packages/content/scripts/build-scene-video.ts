@@ -20,7 +20,12 @@ import { pathToFileURL } from "node:url";
 import { chromium, type Browser } from "playwright";
 import { estimateSpeechSeconds, speechOf } from "../src/narration.js";
 import { splitNarration, trimSilence } from "../src/narration-split.js";
-import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
+import {
+  sceneCaptionsVtt,
+  sceneSpeeches,
+  sceneVideoSequence,
+  type TextScene,
+} from "../src/scene-timeline.js";
 import { mixSceneSfx, sceneSfxCues, synthesizeSceneSfx } from "../src/scene-sfx.js";
 import {
   parseStoryboard,
@@ -53,7 +58,7 @@ import {
   type VoiceConfig,
 } from "./lib/tts.js";
 
-export const SCENE_GENERATOR_VERSION = 1;
+export const SCENE_GENERATOR_VERSION = 2;
 const GENERATOR_VERSION = SCENE_GENERATOR_VERSION;
 /** 指定の出力先の直下だけを掃除し、リンクで別のフォルダーを消さない。 */
 export function prepareSceneStills(outputRoot: string, stage: string, topic: string): string {
@@ -78,6 +83,7 @@ export function argumentsOf(args: string[]) {
   const selectors: string[] = [];
   const refreshAudio: string[] = [];
   let stills = false,
+    burnCaptions = false,
     tts: TtsProviderName | undefined,
     ttsModel = process.env.VIDEO_TTS_MODEL?.trim() || undefined,
     out = join(contentRoot, "dist/video");
@@ -85,6 +91,7 @@ export function argumentsOf(args: string[]) {
     const a = args[i];
     if (a === "--") continue;
     if (a === "--stills") stills = true;
+    else if (a === "--burn-captions") burnCaptions = true;
     else if (a === "--refresh-audio") {
       const value = args[++i];
       if (!value || value.startsWith("--") || value.split(",").some((id) => !id.trim()))
@@ -112,7 +119,53 @@ export function argumentsOf(args: string[]) {
   }
   if (stills && refreshAudio.length)
     throw new Error("--refresh-audio と --stills は同時に指定できません");
-  return { selectors, stills, tts, ttsModel, out, refreshAudio: [...new Set(refreshAudio)] };
+  if (stills && burnCaptions) throw new Error("--burn-captions と --stills は同時に指定できません");
+  return {
+    selectors,
+    stills,
+    ...(burnCaptions ? { burnCaptions } : {}),
+    tts,
+    ttsModel,
+    out,
+    refreshAudio: [...new Set(refreshAudio)],
+  };
+}
+
+/** このビルドで書いた WebVTT を、確認用の2色の ASS に変換する。 */
+function captionsAss(vtt: string): string {
+  const events = vtt
+    .trimEnd()
+    .split("\n\n")
+    .slice(1)
+    .map((block) => {
+      const [, time, cue] = block.split("\n");
+      // ASS の時刻は百分の一秒まで。
+      const [start, end] = time.split(" --> ").map((t) => t.slice(0, -1));
+      const dark = cue.startsWith("<c.on-dark>");
+      const text = (dark ? cue.slice("<c.on-dark>".length, -"</c>".length) : cue)
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        // 字幕のバックスラッシュと波括弧を ASS の制御記号として解釈させない。
+        .replace(/\\/g, "\\\u2060")
+        .replace(/[{}]/g, "\\$&");
+      return `Dialogue: 0,${start},${end},${dark ? "OnDark" : "Default"},,0,0,0,,${text}`;
+    });
+  return `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Noto Sans CJK JP,38,&H00000000,&H00000000,&H00FFFFFF,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,72,72,28,1
+Style: OnDark,Noto Sans CJK JP,38,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,72,72,28,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+${events.join("\n")}
+`;
 }
 /** 壊れた復元音声は捨てて再合成する。合成そのもののエラーは呼び出し元へ返す。 */
 async function cachedScenePcm(
@@ -355,7 +408,6 @@ export async function buildSceneTopic(
               timing: { ...timing, start: 0 },
               index: i,
               total: sequence.length,
-              previous: storyboard.scenes[sourceIndex - 1],
               fadeFromBackground: sourceIndex === 0,
             });
       const htmlFile = join(work, `scene-${i}.html`);
@@ -582,12 +634,50 @@ export async function buildSceneTopic(
       loudness: await measureLoudness(video),
       warnings: issues.filter((i) => i.level === "warning"),
     };
-    // 検査・生成に成功した3ファイルだけを公開用の出力先へ移す。
+    const captions = sceneCaptionsVtt(
+      sequence.flatMap(({ scene, timing }) =>
+        scene.kind === "text"
+          ? []
+          : [
+              {
+                timing,
+                onDark: scene.beats.map((beat, index) => {
+                  const spot = scene.kind === "view" ? scene.beats[index].spot : undefined;
+                  return Boolean(beat.term || beat.dialog || spot?.length);
+                }),
+              },
+            ],
+      ),
+    );
+    // 検査・生成に成功した公開用のファイルを出力先へ移す。
     copyFileSync(video, join(out, "video.mp4"));
     copyFileSync(join(work, "poster.jpg"), join(out, "poster.jpg"));
-    // ponytail: 字幕は焼き込み。プレイヤーで字幕を消せるようにするなら、動画ごとの印を manifest と D1 に足して cue を戻す
-    writeFileSync(join(out, "captions.vtt"), "WEBVTT\n\nNOTE 字幕は動画に焼き込み済み\n\n");
+    writeFileSync(join(out, "captions.vtt"), captions);
     writeFileSync(join(out, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+    if (options.burnCaptions) {
+      const preview = join(work, "video.captions.mp4");
+      writeFileSync(join(work, "captions.ass"), captionsAss(captions));
+      // フィルターには作業フォルダーからの相対名を渡す。
+      await runFfmpeg(
+        [
+          "-i",
+          video,
+          "-vf",
+          "ass=captions.ass",
+          "-c:v",
+          "libx264",
+          "-crf",
+          "20",
+          "-c:a",
+          "copy",
+          "-movflags",
+          "+faststart",
+          preview,
+        ],
+        work,
+      );
+      copyFileSync(preview, join(out, "video.captions.mp4"));
+    }
     console.info(`${topic.stageSlug}/${topic.id}: ${duration.toFixed(2)}秒`);
     return report;
   } finally {

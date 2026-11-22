@@ -110,9 +110,41 @@ export function sceneCaptionAt(timing: SceneTimeline, time: number): string {
       ?.say ?? ""
   );
 }
-/** 場面のタイトルは冒頭の3秒だけ表示する。 */
-export function sceneTitleOpacity(time: number): number {
-  return Math.max(0, Math.min(1, time / 0.4, (3 - time) / 0.4));
+
+function vttTime(seconds: number): string {
+  const total = Math.round(seconds * 1000);
+  const hours = Math.floor(total / 3_600_000);
+  const minutes = Math.floor(total / 60_000) % 60;
+  const secs = Math.floor(total / 1000) % 60;
+  const pad = (value: number, width = 2) => String(value).padStart(width, "0");
+  return `${pad(hours)}:${pad(minutes)}:${pad(secs)}.${pad(total % 1000, 3)}`;
+}
+
+/** 絵コンテの各文を、読み上げ中だけ出す字幕にする。タイトルのタイムラインは渡さない。 */
+export function sceneCaptionsVtt(
+  scenes: readonly { timing: SceneTimeline; onDark: readonly boolean[] }[],
+): string {
+  const cues = scenes
+    .flatMap(({ timing, onDark }) =>
+      timing.beats.map((beat, index) => {
+        const text = beat.say
+          .replace(/[\r\n]+/g, " ")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        return {
+          start: timing.start + (beat.speechStart ?? beat.start),
+          end: timing.start + (beat.speechEnd ?? beat.end),
+          text: onDark[index] ? `<c.on-dark>${text}</c>` : text,
+        };
+      }),
+    )
+    .sort((a, b) => a.start - b.start);
+  const blocks = cues.map(
+    ({ start, end, text }, index) =>
+      `${index + 1}\n${vttTime(start)} --> ${vttTime(end)}\n${text}\n\n`,
+  );
+  return `WEBVTT\n\n${blocks.join("")}`;
 }
 /** 別アプリの窓は入れ替え、それ以外はクロスフェード。 */
 export function viewTransition(from: string | undefined, to: string): number {

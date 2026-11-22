@@ -20,15 +20,9 @@ import {
   type BoardLayout,
   type Box,
 } from "../../src/scene-layout.js";
-import {
-  sceneCaptionAt,
-  sceneTitleOpacity,
-  type SceneTimeline,
-  type TextScene,
-} from "../../src/scene-timeline.js";
+import type { SceneTimeline, TextScene } from "../../src/scene-timeline.js";
 import {
   VIDEO_ICONS,
-  sceneRoleLabel,
   type Board,
   type BoardState,
   type IconName,
@@ -52,8 +46,6 @@ export const sceneFontCss = readFileSync(fontFile, "utf8").replace(
   /url\(\.\/(.+?)\)/g,
   (_, p: string) => `url(${pathToFileURL(join(dirname(fontFile), p)).href})`,
 );
-export const sceneCaptionCss =
-  "#caption{position:absolute;left:72px;right:72px;top:990px;height:90px;display:flex;align-items:center;justify-content:center;font-size:34px;line-height:1.3;color:#0E0E10;text-align:center;z-index:1;overflow:hidden}#caption span{display:block;width:100%;overflow-wrap:anywhere}";
 export interface SceneHtmlInput {
   board: Board;
   schema?: VideoStoryboard["schema"];
@@ -66,7 +58,6 @@ export interface SceneHtmlInput {
   timing: SceneTimeline;
   index: number;
   total: number;
-  previous?: Scene;
   fadeFromBackground?: boolean;
 }
 interface BoardHtmlInput extends Omit<SceneHtmlInput, "scene" | "state"> {
@@ -104,20 +95,13 @@ function textRuntime(scene: TextScene) {
 export function textSceneHtml(scene: TextScene): string {
   const data = JSON.stringify(scene).replace(/</g, "\\u003c");
   return `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
-  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}
+  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#FFFFFF;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}
   body{display:flex;align-items:center;justify-content:center}#text-scene{width:1680px;text-align:center;overflow-wrap:anywhere;opacity:0}#text-scene header{font-size:32px;color:#5C5C66;margin-bottom:24px}#text-scene h1{font-size:80px;font-weight:700;line-height:1.4;margin:0}#accent{width:96px;height:6px;background:#E62F9A;margin:40px auto 0}#white{position:absolute;inset:0;background:white;pointer-events:none}
   </style><main id="text-scene">${scene.header ? `<header>${escapeHtml(scene.header)}</header>` : ""}<h1>${escapeHtml(scene.title)}</h1><div id="accent"></div></main><div id="white"></div><script>(${textRuntime.toString()})(${data});</script></html>`;
 }
-function runtime(
-  data: RenderData,
-  interpolate: typeof travelPoint,
-  titleOpacity: typeof sceneTitleOpacity,
-  captionAt: typeof sceneCaptionAt,
-) {
+function runtime(data: RenderData, interpolate: typeof travelPoint) {
   const win = window as unknown as ScenePageWindow;
   const { board, scene, state, timing, layout } = data;
-  const caption = document.getElementById("caption") as HTMLElement;
-  const safe = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
   const ease = (n: number) => 1 - (1 - clamp(n)) ** 3;
   const smooth = (n: number) => {
@@ -129,6 +113,7 @@ function runtime(
     ids.map((id) => [id, document.getElementById(`element-${id}`) as unknown as SVGGElement]),
   );
   const camera = (zoom: string[] | "all"): Box => {
+    // 図の座標はそのまま使い、SVG の表示位置を上へ移す。
     const all = { x: 0, y: 170, w: 1920, h: 760 };
     if (zoom === "all") return all;
     const boxes = zoom.flatMap(
@@ -191,17 +176,12 @@ function runtime(
   });
   win.__busyRanges = [
     [0, 0.4],
-    [2.6, 3.0],
-    ...timing.beats.map((b): [number, number] => [
-      b.speechEnd ?? b.end,
-      (b.speechEnd ?? b.end) + 1 / 30,
-    ]),
     ...timing.beats.map((t, i): [number, number] => [
       t.start,
       Math.max(
         t.start + 0.8,
         t.start + (delayedShows[i].size ? zoneNodeDelay : 0) + showSeconds,
-        scene.beats[i].travel ? t.end : t.start,
+        scene.beats[i].travel ? t.end + 1 / 30 : t.start,
       ),
     ]),
     ...timing.beats
@@ -209,7 +189,6 @@ function runtime(
       .map((t) => [t.end, t.end + 0.2] as [number, number]),
   ];
   win.__setTime = async (time: number) => {
-    caption.innerHTML = `<span>${safe(captionAt(timing, time))}</span>`;
     let k = -1;
     for (let i = 0; i < timing.beats.length; i++) if (timing.beats[i].start <= time) k = i;
     const beat = k >= 0 ? scene.beats[k] : undefined,
@@ -354,20 +333,14 @@ function runtime(
           el.dataset.icon === (beat?.travel?.icon ?? "file") ? "inline" : "none",
         );
     }
-    const title = document.getElementById("heading");
-    if (title) title.style.opacity = String(titleOpacity(time));
     const white = document.getElementById("white");
     if (white) {
-      white.style.background = data.fadeFromBackground ? "#F7F7F9" : "white";
       white.style.opacity = String(
         data.index === 0 || data.fadeFromBackground ? 1 - ease(time / 0.4) : 0,
       );
     }
   };
   win.__overflows = () => [
-    ...((caption.firstElementChild as HTMLElement).scrollHeight > 90
-      ? [`字幕が2行に収まりません: ${caption.textContent}`]
-      : []),
     ...[...document.querySelectorAll<SVGTextElement>("[data-fit]")].flatMap((el) => {
       const b = el.getBBox(),
         limit = JSON.parse(el.dataset.fit ?? "{}") as Box;
@@ -459,7 +432,6 @@ function beatOverlayRuntime(
   const setTime = win.__setTime;
   const overflows = win.__overflows;
   const overlay = document.getElementById("beat-overlay") as HTMLElement;
-  const caption = document.getElementById("caption") as HTMLElement;
   const entries = [...overlay.children] as HTMLElement[];
   const fade = 0.3;
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
@@ -474,8 +446,6 @@ function beatOverlayRuntime(
     overlay.style.background = beat?.backdrop ?? "";
     overlay.style.opacity = String(opacity);
     overlay.style.visibility = opacity > 0 ? "visible" : "hidden";
-    caption.style.zIndex = opacity > 0 ? "6" : "";
-    caption.style.color = opacity > 0 ? "white" : "";
     entries.forEach((entry, index) => {
       entry.hidden = index !== i;
       if (!entry.hidden && beat) {
@@ -943,16 +913,10 @@ function boardHtml(input: BoardHtmlInput): string {
         input.schema === 2
           ? `<path class="link-accent" d="${d}" fill="none" stroke="#E62F9A" stroke-width="3" stroke-linejoin="round" opacity="0" marker-end="url(#arrow-accent)"/>`
           : "";
-      return `<g id="element-${escapeHtml(l.id)}"><path class="link" d="${d}" fill="none" stroke="#5C5C66" stroke-width="3" stroke-linejoin="round" marker-end="url(#arrow)"/>${accent}${l.label ? `<rect x="${p.label.x - length * 20 - 10}" y="${p.label.y - 28}" width="${length * 40 + 20}" height="56" rx="8" fill="#F7F7F9"/>${label(l.label, { x: p.label.x - 140, y: p.label.y - 28, w: 280, h: 56 })}` : ""}</g>`;
+      return `<g id="element-${escapeHtml(l.id)}"><path class="link" d="${d}" fill="none" stroke="#5C5C66" stroke-width="3" stroke-linejoin="round" marker-end="url(#arrow)"/>${accent}${l.label ? `<rect x="${p.label.x - length * 20 - 10}" y="${p.label.y - 28}" width="${length * 40 + 20}" height="56" rx="8" fill="#FFFFFF"/>${label(l.label, { x: p.label.x - 140, y: p.label.y - 28, w: 280, h: 56 })}` : ""}</g>`;
     })
     .join("");
-  const heading = (s: Scene | undefined) =>
-    s ? `<span>${sceneRoleLabel(s)}</span> ${escapeHtml(s.title)}` : "";
-  const { previous: _previous, schema: _schema, ...renderInput } = input;
-  const sameTitle =
-    input.previous?.role === input.scene.role &&
-    input.previous?.point === input.scene.point &&
-    input.previous?.title === input.scene.title;
+  const { schema: _schema, ...renderInput } = input;
   // 移動の尺に間を含めず、移動が済んだ絵を保つ。
   if (input.scene.beats.some((beat) => beat.travel && (beat.pause || beat.term || beat.dialog))) {
     renderInput.timing = {
@@ -978,17 +942,17 @@ function boardHtml(input: BoardHtmlInput): string {
   const data = JSON.stringify({ ...renderInput, layout }).replace(/</g, "\\u003c");
   const lessonScript =
     input.schema === 2 ? `<script>(${lessonBoardMotion.toString()})(${data});</script>` : "";
-  return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}${sceneCaptionCss}
-  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#F7F7F9;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}#heading{position:absolute;top:24px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:1;opacity:0;height:80px;display:flex;align-items:center;padding:0 36px;background:white;border-radius:16px;border:2px solid #DDDDE2;box-shadow:0 4px 12px #0000000D;font-size:40px}#heading span{font-size:26px;color:#5C5C66;margin-right:24px}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:170px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;z-index:2;background:white;pointer-events:none}
+  return `<!doctype html><!-- ${iconLicense} --><html lang="ja"><meta charset="utf-8"><style>${sceneFontCss}
+  *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#FFFFFF;color:#0E0E10;font-family:'Noto Sans JP',sans-serif;font-weight:500}svg text{fill:#0E0E10}#diagram{position:absolute;left:0;top:100px;width:1920px;height:760px;overflow:hidden}#white{position:absolute;inset:0;z-index:2;background:white;pointer-events:none}
   </style>${Object.values(input.images ?? {})
     .map((img) => `<img hidden src="${escapeHtml(img.url)}">`)
     .join(
       "",
-    )}${sameTitle ? "" : `<div id="heading">${heading(input.scene)}</div>`}<svg id="diagram" viewBox="0 170 1920 760"><defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/></filter>${["arrow", "arrow-accent"].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9Z" fill="${i ? "#E62F9A" : "#5C5C66"}"/></marker>`).join("")}</defs>${zones}${links}${nodes}<g id="traveler" style="color:white"><circle r="27" fill="#E62F9A"/>${Object.keys(
+    )}<svg id="diagram" viewBox="0 170 1920 760"><defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/></filter>${["arrow", "arrow-accent"].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9Z" fill="${i ? "#E62F9A" : "#5C5C66"}"/></marker>`).join("")}</defs>${zones}${links}${nodes}<g id="traveler" style="color:white"><circle r="27" fill="#E62F9A"/>${Object.keys(
     VIDEO_ICONS,
   )
     .map((name) => `<g data-icon="${name}">${iconSvg(name as IconName, -18, -18, 36)}</g>`)
     .join(
       "",
-    )}</g></svg><div id="caption"></div><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint, ${sceneTitleOpacity.toString()}, ${sceneCaptionAt.toString()});</script>${tagScript}${lessonScript}</html>`;
+    )}</g></svg><div id="white"></div><script>const travelPoint=${travelPoint.toString()};(${runtime.toString()})(${data}, travelPoint);</script>${tagScript}${lessonScript}</html>`;
 }
