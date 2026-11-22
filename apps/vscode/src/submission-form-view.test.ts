@@ -70,4 +70,25 @@ describe("提出の振り返りテンプレート", () => {
     expect(html).toContain("✓ 確認はすべて通りました</p><h1>");
     expect(html).toContain("script-src 'nonce-test'");
   });
+
+  it.each([
+    ["submit", "この内容で提出する"],
+    ["consult", "相談を送る"],
+  ] as const)("%s の操作バーをフォーム内の見出しより前に出す", (mode, submitLabel) => {
+    const formInput = { ...input, mode };
+    const html = renderSubmissionForm(formInput, initialSubmissionDraft(formInput), {
+      nonce: "test",
+      cspSource: "https://local.test",
+      styleUri: "https://local.test/style.css",
+      scriptUri: "https://local.test/script.js",
+    });
+    const actionBar = html.match(
+      /<form id="submission-form"><div class="action-bar">(.*?)<\/div><header>/,
+    )?.[1];
+    expect(actionBar).toContain('id="form-status" role="status" aria-live="polite"');
+    expect(actionBar).toContain(
+      `id="save-draft">下書きを保存</button><button type="submit" class="primary" id="submit">${submitLabel}</button>`,
+    );
+    expect(html.match(/id="submit"/g)).toHaveLength(1);
+  });
 });

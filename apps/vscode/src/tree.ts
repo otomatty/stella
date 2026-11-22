@@ -86,11 +86,16 @@ export function lessonCommand(node: LessonNode): vscode.Command {
   }
 }
 
+interface RefreshOptions {
+  showLoading?: boolean;
+}
+
 export class LearningSidebarProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   private view: vscode.WebviewView | undefined;
   private catalog: CatalogStage[] = [];
   private selection: LearningSelection = {};
   private state: LearningSidebarState = { kind: "loading" };
+  private renderedCatalog: string | undefined;
   private loadGeneration = 0;
   private messageToken = "";
   private documentToken = "";
@@ -143,11 +148,12 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
     this.render();
   }
 
-  async refresh(): Promise<void> {
+  async refresh(options?: RefreshOptions): Promise<void> {
     const generation = ++this.loadGeneration;
     if (!this.view?.visible) return;
-    this.state = { kind: "loading" };
-    this.render();
+    const showLoading = options?.showLoading || this.state.kind !== "catalog";
+    if (showLoading) this.state = { kind: "loading" };
+    if (showLoading || !this.documentToken) this.render();
     try {
       const token = await this.auth.getToken();
       if (generation !== this.loadGeneration) return;
@@ -159,9 +165,11 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
         if (generation !== this.loadGeneration) return;
         this.catalog = catalog;
         this.state = { kind: "catalog", catalog, selection: this.selection };
+        if (!showLoading && JSON.stringify(catalog) === this.renderedCatalog) return;
       }
     } catch (err) {
       if (generation !== this.loadGeneration) return;
+      if (!showLoading && !(err instanceof AuthExpiredError)) return;
       this.catalog = [];
       this.state =
         err instanceof AuthExpiredError
@@ -180,6 +188,9 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
     const resource = (name: string) =>
       webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", name)).toString();
     if (this.state.kind === "catalog") this.state.selection = this.selection;
+    // 進捗の記録は共有カタログを書き換えるため、描画時点の内容と比べる。
+    this.renderedCatalog =
+      this.state.kind === "catalog" ? JSON.stringify(this.state.catalog) : undefined;
     const html = renderLearningSidebar(this.state, {
       nonce: this.messageToken,
       cspSource: webview.cspSource,
@@ -205,7 +216,7 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
     if (raw.token !== this.messageToken) return;
     // Webview からコマンド名・URL・教材の本文を受け取らない。
     const id = "id" in raw && typeof raw.id === "string" ? raw.id : undefined;
-    if (raw.action === "refresh") return this.refresh();
+    if (raw.action === "refresh") return this.refresh({ showLoading: true });
     if (raw.action === "connect") {
       await vscode.commands.executeCommand("stella.connect");
       return;
@@ -244,8 +255,8 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
 
 let registeredProvider: LearningSidebarProvider | undefined;
 
-export function refreshLearningSidebar(): void {
-  void registeredProvider?.refresh();
+export function refreshLearningSidebar(options?: RefreshOptions): void {
+  void registeredProvider?.refresh(options);
 }
 
 export function openLessonNode(node: LessonNode): void {
@@ -262,7 +273,10 @@ export function registerLearningSidebar(
   registeredProvider = provider;
   context.subscriptions.push(
     provider,
-    vscode.window.registerWebviewViewProvider("stella.lessons", provider),
+    // ビューを隠して戻したときに、読み込み中の文書へ戻るのを防ぐ。
+    vscode.window.registerWebviewViewProvider("stella.lessons", provider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
     vscode.commands.registerCommand("stella.revealTask", (taskId: unknown) => {
       if (typeof taskId === "string") provider.reveal({ taskId });
     }),

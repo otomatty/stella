@@ -6,7 +6,7 @@
 }
 body {
   margin: 0;
-  padding: 28px 24px;
+  padding: 0 24px 28px;
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
   font: var(--vscode-font-size, 13px) / 1.7 var(--vscode-font-family, sans-serif);
@@ -84,13 +84,23 @@ textarea {
   font-size: 11px;
   margin-top: 7px;
 }
-.actions {
+.action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 17px 0;
+  background: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-widget-border, transparent);
+}
+.action-buttons {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
-  padding: 17px 0;
-  border-top: 1px solid var(--vscode-widget-border, transparent);
 }
 button {
   font: inherit;
@@ -124,8 +134,7 @@ textarea:disabled {
   cursor: default;
 }
 #form-status {
-  min-height: 26px;
-  margin-bottom: 10px;
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: var(--vscode-descriptionForeground);
 }
@@ -143,12 +152,15 @@ textarea:disabled {
 }
 @media (max-width: 460px) {
   body {
-    padding: 20px 14px;
+    padding: 0 14px 20px;
   }
   h1 {
     font-size: 20px;
   }
-  .actions button {
+  .action-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .action-buttons button {
     flex: 1;
   }
 }
